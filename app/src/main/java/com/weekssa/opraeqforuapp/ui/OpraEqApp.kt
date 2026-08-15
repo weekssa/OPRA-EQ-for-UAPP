@@ -2,12 +2,14 @@ package com.weekssa.opraeqforuapp.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.Headphones
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -27,6 +29,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshFailureReason
+import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshResult
+import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityCategory
 import com.weekssa.opraeqforuapp.domain.settings.ThemeMode
@@ -44,6 +50,8 @@ private enum class TopLevelDestination(val label: String) {
 @Composable
 fun OpraEqApp(
     appPreferences: AppPreferences,
+    catalogState: CatalogState,
+    onRefreshCatalog: suspend () -> CatalogRefreshResult,
     onThemeModeChange: (ThemeMode) -> Unit,
     onProfileVisibilityChange: (ProfileVisibilityCategory, Boolean) -> Unit,
 ) {
@@ -53,6 +61,17 @@ fun OpraEqApp(
     val selectedDestination = destinations[selectedDestinationIndex]
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val catalogBusy = catalogState is CatalogState.Loading ||
+        (catalogState as? CatalogState.Ready)?.isRefreshing == true
+
+    val requestCatalogRefresh: () -> Unit = {
+        if (!catalogBusy) {
+            scope.launch {
+                val message = refreshMessage(onRefreshCatalog())
+                snackbarHostState.showSnackbar(message)
+            }
+        }
+    }
 
     BackHandler(enabled = settingsOpen) {
         settingsOpen = false
@@ -77,18 +96,20 @@ fun OpraEqApp(
                     title = { Text(selectedDestination.label) },
                     actions = {
                         IconButton(
-                            onClick = {
-                                scope.launch {
-                                    snackbarHostState.showSnackbar(
-                                        "Catalog refresh is not available in this foundation build.",
-                                    )
-                                }
-                            },
+                            onClick = requestCatalogRefresh,
+                            enabled = !catalogBusy,
                         ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Refresh,
-                                contentDescription = "Refresh OPRA catalog",
-                            )
+                            if (catalogBusy) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    strokeWidth = 2.dp,
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Outlined.Refresh,
+                                    contentDescription = "Refresh OPRA catalog",
+                                )
+                            }
                         }
                         IconButton(onClick = { settingsOpen = true }) {
                             Icon(
@@ -128,6 +149,8 @@ fun OpraEqApp(
         if (settingsOpen) {
             SettingsScreen(
                 appPreferences = appPreferences,
+                catalogState = catalogState,
+                onRefreshCatalog = requestCatalogRefresh,
                 onThemeModeChange = onThemeModeChange,
                 onProfileVisibilityChange = onProfileVisibilityChange,
                 modifier = contentModifier,
@@ -135,11 +158,39 @@ fun OpraEqApp(
         } else {
             when (selectedDestination) {
                 TopLevelDestination.MyHeadphones -> MyHeadphonesScreen(
+                    catalogState = catalogState,
                     onBrowseOpra = { selectedDestinationIndex = TopLevelDestination.BrowseOpra.ordinal },
+                    onRefreshCatalog = requestCatalogRefresh,
                     modifier = contentModifier,
                 )
-                TopLevelDestination.BrowseOpra -> BrowseOpraScreen(modifier = contentModifier)
+                TopLevelDestination.BrowseOpra -> BrowseOpraScreen(
+                    catalogState = catalogState,
+                    profileVisibility = appPreferences.profileVisibility,
+                    onRefreshCatalog = requestCatalogRefresh,
+                    modifier = contentModifier,
+                )
             }
+        }
+    }
+}
+
+private fun refreshMessage(result: CatalogRefreshResult): String = when (result) {
+    is CatalogRefreshResult.Success -> "OPRA catalog is up to date."
+    is CatalogRefreshResult.Failure -> when (result.reason) {
+        CatalogRefreshFailureReason.Network -> if (result.usingSavedCatalog) {
+            "Couldn’t refresh OPRA. Using your saved catalog."
+        } else {
+            "Couldn’t download the OPRA catalog."
+        }
+        CatalogRefreshFailureReason.InvalidCatalog -> if (result.usingSavedCatalog) {
+            "Couldn’t use the new OPRA catalog. Your previous saved catalog is still available."
+        } else {
+            "The downloaded OPRA catalog couldn’t be processed."
+        }
+        CatalogRefreshFailureReason.Storage -> if (result.usingSavedCatalog) {
+            "Couldn’t save the new OPRA catalog. Using your previous saved catalog."
+        } else {
+            "Couldn’t save the OPRA catalog on this device."
         }
     }
 }

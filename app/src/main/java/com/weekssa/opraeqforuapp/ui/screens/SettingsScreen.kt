@@ -15,18 +15,24 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.BuildConfig
+import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityCategory
 import com.weekssa.opraeqforuapp.domain.settings.ThemeMode
+import java.text.DateFormat
+import java.util.Date
 
 @Composable
 fun SettingsScreen(
     appPreferences: AppPreferences,
+    catalogState: CatalogState,
+    onRefreshCatalog: () -> Unit,
     onThemeModeChange: (ThemeMode) -> Unit,
     onProfileVisibilityChange: (ProfileVisibilityCategory, Boolean) -> Unit,
     modifier: Modifier = Modifier,
@@ -89,12 +95,53 @@ fun SettingsScreen(
 
         SectionDivider()
         SectionTitle("OPRA catalog")
-        Text("Catalog status")
-        Text(
-            text = "Not downloaded yet",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        when (catalogState) {
+            CatalogState.Loading -> Text(
+                text = "Downloading OPRA catalog…",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            is CatalogState.Unavailable -> {
+                Text(
+                    text = unavailableCatalogMessage(catalogState.reason),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                TextButton(onClick = onRefreshCatalog) {
+                    Text("Try refresh")
+                }
+            }
+            is CatalogState.Ready -> {
+                Text(
+                    text = if (catalogState.isRefreshing) "Refreshing…" else "Saved catalog available",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Text(
+                    text = "${catalogState.catalog.vendors.size} manufacturers · ${catalogState.catalog.products.size} headphones · ${catalogState.catalog.profiles.size} EQ profiles",
+                    modifier = Modifier.padding(top = 4.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = "Last refreshed ${formatCatalogTime(catalogState.lastSuccessfulRefreshMillis)}",
+                    modifier = Modifier.padding(top = 4.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = "The app checks for OPRA updates approximately daily.",
+                    modifier = Modifier.padding(top = 4.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                TextButton(
+                    onClick = onRefreshCatalog,
+                    enabled = !catalogState.isRefreshing,
+                ) {
+                    Text("Refresh now")
+                }
+            }
+        }
 
         SectionDivider()
         SectionTitle("About")
@@ -175,3 +222,6 @@ private fun ThemeOption(
         }
     }
 }
+
+private fun formatCatalogTime(epochMillis: Long): String =
+    DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(epochMillis))
