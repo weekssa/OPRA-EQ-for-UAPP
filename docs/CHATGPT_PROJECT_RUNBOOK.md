@@ -206,6 +206,28 @@ Browse OPRA is approved with the following behavior:
 
 The user approved this Browse OPRA approach on 2026-08-15. Do not redesign it without a new explicit product decision.
 
+### Approved Phase 0 Search — 2026-08-15
+
+Search is approved with the following behavior:
+
+- Place a visible **Search headphones…** field directly below the Browse OPRA top app bar at the Browse root.
+- Search the locally cached OPRA catalog; do not make a network request for each query or keystroke.
+- Search remains fully usable offline after the initial successful catalog sync.
+- Primary v1 search scope is manufacturer/vendor name plus headphone model/product name.
+- Do not expose or require internal OPRA identifiers for normal search.
+- Do not include EQ author, EQ details, frequencies, or other profile metadata in the main Browse search for v1.
+- Matching should be case-insensitive and tolerant of ordinary spacing and punctuation differences so queries such as `hd600`, `HD 600`, and `hd 600` can reasonably find the same product.
+- Search normalization is only for matching; always display the OPRA-provided manufacturer and model names rather than rewritten names.
+- Search results are headphone/model-first and show manufacturer, model, available EQ-profile count, and subdued selected state when relevant.
+- Tapping a search result goes directly to that headphone’s EQ-profile destination.
+- A visible clear control restores the normal alphabetic manufacturer list.
+- A no-results state should be brief, such as **“No headphones found”** with guidance to try another manufacturer or model name.
+- Do not fall back to web search, GitHub lookup, or other remote search when no local catalog result matches.
+- Android Back while actively searching should first dismiss the keyboard/search interaction as appropriate rather than unexpectedly leaving Browse; normal approved root Back behavior then applies.
+- Search results update naturally after a successful catalog refresh updates the local cache.
+
+The user approved this Search approach on 2026-08-15. Do not redesign it without a new explicit product decision.
+
 ## 7. Profile selection model
 
 Every usable OPRA parametric EQ profile must be represented as a checkbox.
@@ -443,6 +465,6 @@ At bootstrap, the repository contains documentation only.
 
 Phase 0 is active. Android implementation has not begun.
 
-Overall navigation, first-launch behavior, My Headphones, and Browse OPRA were approved on 2026-08-15. The next Phase 0 UX area is **Search**.
+Overall navigation, first-launch behavior, My Headphones, Browse OPRA, and Search were approved on 2026-08-15. The next Phase 0 UX area is **profile selection, Select all / Select none, and future-profile behavior**.
 
 The next design work must proceed one approved UX area at a time. Do not advance to a later Phase 0 UX area when the user has explicitly asked to approve the current area first.
