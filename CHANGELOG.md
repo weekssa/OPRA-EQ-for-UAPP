@@ -14,14 +14,18 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Persistent local **System default / Light / Dark** appearance preference using Preferences DataStore.
 - Persistent local visibility preferences for **Fully compatible**, **Compatible with limitation**, and **Not compatible**, all enabled by default.
 - Initial domain compatibility model that makes **Not compatible** profiles non-selectable and non-exportable by construction.
-- Initial unit tests for compatibility, visibility defaults, isolation of visibility changes, and theme fallback behavior.
+- Runtime OPRA `database_v1.jsonl` download from the Roon Labs mirror with full-candidate validation before cache promotion.
+- App-private last-known-good OPRA catalog cache with atomic replacement, offline reuse, startup freshness checks, and manual Refresh.
+- Local Manufacturer → Model browsing and manufacturer/model search over the cached OPRA catalog.
+- OPRA profile metadata display with **Fully compatible**, **Compatible with limitation**, and **Not compatible** classification separated from catalog validity.
+- Settings catalog status with saved-catalog counts, last successful refresh time, and manual refresh action.
+- Unit tests covering compatibility, visibility defaults, theme fallback, OPRA JSONL parsing, relationship validation, local search normalization, unsupported-filter discoverability, 10-band classification, OPRA band-gain defaults, first-load failure, fresh-cache reuse, and last-known-good preservation after a malformed refresh.
 
 ### Not yet implemented
 
-- OPRA runtime catalog download/cache/refresh and offline catalog use.
-- Room catalog and managed-headphone persistence.
+- Room persistence for managed headphones, exact profile selections/exclusions, review state, and catalog snapshots.
 - OPRA-to-UAPP/ToneBoosters conversion.
 - System document-tree export.
-- WorkManager background checks.
+- WorkManager background catalog checks and managed-profile change reporting.
 - GitHub Release update checks.
 - Production app-icon assets.
