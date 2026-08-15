@@ -6,9 +6,14 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshResult
+import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.data.catalog.HttpOpraCatalogSource
 import com.weekssa.opraeqforuapp.data.catalog.OpraCatalogRepository
+import com.weekssa.opraeqforuapp.data.managed.ManagedHeadphonesRepository
+import com.weekssa.opraeqforuapp.data.managed.OpraEqDatabase
 import com.weekssa.opraeqforuapp.data.preferences.AppPreferencesRepository
+import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
 import com.weekssa.opraeqforuapp.ui.OpraEqApp
 import com.weekssa.opraeqforuapp.ui.theme.OpraEqTheme
@@ -28,12 +33,24 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    private val database by lazy {
+        OpraEqDatabase.create(applicationContext)
+    }
+
+    private val managedHeadphonesRepository by lazy {
+        ManagedHeadphonesRepository(database)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
         lifecycleScope.launch {
             catalogRepository.initialize()
+            val ready = catalogRepository.state.value as? CatalogState.Ready
+            if (ready != null) {
+                managedHeadphonesRepository.reconcileCatalog(ready.catalog)
+            }
         }
 
         setContent {
@@ -41,12 +58,35 @@ class MainActivity : ComponentActivity() {
                 initialValue = AppPreferences(),
             ).value
             val catalogState = catalogRepository.state.collectAsStateWithLifecycle().value
+            val managedHeadphones = managedHeadphonesRepository.observeHeadphones().collectAsStateWithLifecycle(
+                initialValue = emptyList<ManagedHeadphoneRecord>(),
+            ).value
 
             OpraEqTheme(themeMode = appPreferences.themeMode) {
                 OpraEqApp(
                     appPreferences = appPreferences,
                     catalogState = catalogState,
-                    onRefreshCatalog = catalogRepository::refresh,
+                    managedHeadphones = managedHeadphones,
+                    onRefreshCatalog = {
+                        val result = catalogRepository.refresh()
+                        if (result is CatalogRefreshResult.Success) {
+                            managedHeadphonesRepository.reconcileCatalog(result.catalog)
+                        }
+                        result
+                    },
+                    onLoadManagedHeadphone = managedHeadphonesRepository::getHeadphone,
+                    onSaveSelection = { productId, selectedIds, autoInclude ->
+                        val ready = catalogRepository.state.value as? CatalogState.Ready
+                        if (ready != null) {
+                            managedHeadphonesRepository.saveSelection(
+                                catalog = ready.catalog,
+                                productId = productId,
+                                stagedSelectedProfileIds = selectedIds,
+                                autoIncludeNewProfiles = autoInclude,
+                            )
+                        }
+                    },
+                    onRemoveHeadphone = managedHeadphonesRepository::removeHeadphone,
                     onThemeModeChange = { themeMode ->
                         lifecycleScope.launch {
                             appPreferencesRepository.setThemeMode(themeMode)

@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshFailureReason
 import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshResult
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
+import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityCategory
 import com.weekssa.opraeqforuapp.domain.settings.ThemeMode
@@ -51,7 +52,11 @@ private enum class TopLevelDestination(val label: String) {
 fun OpraEqApp(
     appPreferences: AppPreferences,
     catalogState: CatalogState,
+    managedHeadphones: List<ManagedHeadphoneRecord>,
     onRefreshCatalog: suspend () -> CatalogRefreshResult,
+    onLoadManagedHeadphone: suspend (String) -> ManagedHeadphoneRecord?,
+    onSaveSelection: suspend (String, Set<String>, Boolean) -> Unit,
+    onRemoveHeadphone: suspend (String) -> Unit,
     onThemeModeChange: (ThemeMode) -> Unit,
     onProfileVisibilityChange: (ProfileVisibilityCategory, Boolean) -> Unit,
 ) {
@@ -159,6 +164,7 @@ fun OpraEqApp(
             when (selectedDestination) {
                 TopLevelDestination.MyHeadphones -> MyHeadphonesScreen(
                     catalogState = catalogState,
+                    managedHeadphones = managedHeadphones,
                     onBrowseOpra = { selectedDestinationIndex = TopLevelDestination.BrowseOpra.ordinal },
                     onRefreshCatalog = requestCatalogRefresh,
                     modifier = contentModifier,
@@ -166,6 +172,10 @@ fun OpraEqApp(
                 TopLevelDestination.BrowseOpra -> BrowseOpraScreen(
                     catalogState = catalogState,
                     profileVisibility = appPreferences.profileVisibility,
+                    managedHeadphones = managedHeadphones,
+                    onLoadManagedHeadphone = onLoadManagedHeadphone,
+                    onSaveSelection = onSaveSelection,
+                    onRemoveHeadphone = onRemoveHeadphone,
                     onRefreshCatalog = requestCatalogRefresh,
                     modifier = contentModifier,
                 )
