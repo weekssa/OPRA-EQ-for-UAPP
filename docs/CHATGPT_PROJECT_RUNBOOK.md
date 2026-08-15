@@ -116,7 +116,7 @@ Do not redesign this without a new explicit product decision.
 - After first successful sync, use cached catalog immediately on future launches and allow normal offline use.
 - Do not request storage/folder access merely to browse/select; folder access belongs to export.
 - Do not interrupt first use with update prompt, changelog modal, attribution wall, or other nonessential blocking surface.
-- If the first-ever catalog download fails, My Headphones may still render; detailed loading/offline/error presentation follows its dedicated Phase 0 design.
+- If the first-ever catalog download fails, My Headphones may still render; detailed loading/offline/error presentation follows the approved loading/offline/error behavior below.
 - First launch adds no special Back-stack destination.
 
 Do not redesign this without a new explicit product decision.
@@ -174,22 +174,50 @@ Do not redesign this without a new explicit product decision.
 
 ### Profile selection, Select all / Select none, and future-profile behavior — approved 2026-08-15
 
-- Every usable OPRA parametric EQ profile is a checkbox.
+- Every usable/selectable OPRA parametric EQ profile is represented by a checkbox.
 - Profile rows show enough metadata to distinguish them, including creator/author and details when present.
-- Provide **Select all** and **Select none** for current usable profiles.
+- Provide **Select all** and **Select none** for current selectable profiles.
 - Checkbox and future-profile-switch edits are staged until **Save changes**.
 - If Save removes selected profiles, require confirmation and offer opt-in deletion of corresponding app-created saved preset files.
 - Saving zero selected profiles is treated as removing the headphone and uses the approved headphone-removal confirmation.
 - Back with unsaved changes offers keep editing or discard; never silently save/discard.
 - **Automatically include new OPRA profiles for this headphone defaults to ON for every newly managed headphone.**
 - The user may turn it OFF per headphone. Select all/none do not silently change this setting.
-- ON + all current selected = follow all current and future profiles.
-- ON + some current unchecked = preserve those exact unchecked profiles as explicit exclusions while automatically including future unrelated profiles.
-- OFF = fixed exact selection; future profiles appear but are not silently selected.
+- ON + all current selectable profiles selected = follow all current and future compatible profiles.
+- ON + some current selectable profiles unchecked = preserve those exact unchecked profiles as explicit exclusions while automatically including future unrelated compatible profiles.
+- OFF = fixed exact selection; future profiles appear according to visibility settings but are not silently selected.
 - Persist explicit exclusions as domain state, not merely inferred from counts.
-- New profiles may show **New** based on previously known local catalog state; ON causes a new non-excluded profile to appear checked, OFF leaves it unchecked.
-- Rows retain room for conversion warnings such as >10 bands or unsupported filters.
-- Problematic/unsupported profiles remain visible; never silently disappear.
+- New profiles may show **New** based on previously known local catalog state; ON causes a new non-excluded compatible profile to appear checked, OFF leaves it unchecked.
+
+#### Approved compatibility outcomes — 2026-08-15
+
+Every OPRA parametric EQ relevant to the headphone is classified into one of three user-facing outcomes:
+
+1. **Fully compatible** — converts without a known UAPP/ToneBoosters limitation. It is selectable and exportable and normally needs no compatibility badge.
+2. **Compatible with limitation** — conversion is supported and exportable, but a meaningful known limitation applies. It remains selectable and the limitation is shown clearly. The established >10-band case uses the first 10 OPRA priority-sorted bands and warns that lower-priority bands cannot be included.
+3. **Not compatible** — the established conversion cannot represent the EQ faithfully enough to create a preset. The profile remains discoverable but is never selectable/exportable while that limitation remains.
+
+For **Not compatible** profiles:
+
+- show the profile so OPRA content never silently disappears;
+- show a disabled/uncheckable checkbox or equivalent disabled selection affordance;
+- the user cannot check it manually;
+- **Select all** always skips it;
+- automatic future-profile inclusion always skips it, even though the default is ON;
+- it never counts as a selected/exportable preset;
+- tapping the row opens an explanation of the exact incompatibility;
+- if a future app version gains a proven, validated conversion for that case, compatibility may be reevaluated and the profile may then become selectable.
+
+Current proven reference behavior maps `peak_dip`, `low_shelf`, and `high_shelf`. OPRA can also describe `low_pass`, `high_pass`, `band_pass`, and `band_stop`; those are **Not compatible** unless/until the Android implementation has a separately proven and validated UAPP/ToneBoosters mapping that preserves intended behavior. Do not approximate or silently drop them.
+
+Missing or invalid acoustic information required for faithful conversion is **Not compatible** rather than guessed, clamped, or silently changed. The established reference also rejects unsupported frequency/gain/Q ranges rather than silently coercing them.
+
+Missing optional descriptive metadata is different from acoustic incompatibility:
+
+- missing optional details or source link does not by itself make the EQ incompatible;
+- harmless ISO-8859-1 display/name substitutions or compact display wording do not make the EQ incompatible because full Unicode/original metadata is retained locally;
+- documented OPRA defaults may be applied exactly as defined by the OPRA schema and are not treated as missing-data errors;
+- required creator/attribution data is a separate data-quality/attribution concern and must never be invented or silently discarded.
 
 Do not redesign this without a new explicit product decision.
 
@@ -202,7 +230,7 @@ Do not redesign this without a new explicit product decision.
 - Approximately daily background checks perform the same comparison; no-change checks are silent.
 - Relevant background changes produce a small non-blocking in-app banner on next app open; no notification permission required in v1.
 - Relevant categories: new profiles, changed selected profiles, and profiles no longer available in OPRA.
-- New-profile checkbox state follows auto-inclusion behavior and can remain **New** until reviewed.
+- New-profile checkbox state follows auto-inclusion and compatibility behavior and can remain **New** until reviewed.
 - Changed selected profiles regenerate deterministic XML locally and are reported; changed unselected profiles need no prominent My Headphones attention.
 - Removed selected/generated profiles keep last XML/local record, remain visible, and are marked **“No longer available in OPRA.”** This state persists until removal or reappearance.
 - Multiple transient changes may be summarized, e.g. **“2 new profiles · 1 updated.”**
@@ -232,10 +260,12 @@ Do not redesign this without a new explicit product decision.
 - Lost folder access prompts user to choose a folder again; never escalate to broad storage permission.
 - My Headphones may show **“2 presets ready to export”** or **“All selected presets exported.”**
 - Catalog updates may automatically change local generated state; external mutations require explicit Export.
+- Export includes Fully compatible and selected Compatible-with-limitation profiles. Not-compatible profiles are never exported.
+- Export summaries distinguish successful presets, presets exported with known limitations where useful, and profiles that cannot be exported. Never count a failed/not-compatible profile as successfully exported.
 
 Do not redesign this without a new explicit product decision.
 
-### Settings / About — approved 2026-08-15
+### Settings / About — approved 2026-08-15, amended 2026-08-15
 
 - Keep Settings small and focused with primary areas **Presets**, **OPRA catalog**, and **About**.
 - Export folder shows whether configured and the selected destination; **Change folder** opens Android picker again and does not automatically move/delete old files.
@@ -248,6 +278,22 @@ Do not redesign this without a new explicit product decision.
 - Provide open-source license information as appropriate.
 - Permanent app/version/update destination is **Settings → About & updates**.
 - About & updates shows app name/version and entry points for What’s new, update checking, and obtaining an update.
+
+#### Profile visibility
+
+Settings includes **Profile visibility** with three independent options, all ON by default:
+
+- **Fully compatible**
+- **Compatible with limitation**
+- **Not compatible**
+
+These options control presentation only. They never change the underlying compatibility result, saved selection, explicit exclusions, or export eligibility.
+
+- Hiding **Compatible with limitation** must not silently deselect a limited profile that was already selected.
+- **Not compatible** remains permanently unselectable/unexportable whether shown or hidden.
+- **Select all** and automatic future-profile inclusion operate from underlying compatibility rules, not from what happens to be visible: Not-compatible profiles are always skipped.
+- If compatibility filtering hides profiles for a headphone, the profile screen should disclose that fact with a concise message such as **“2 OPRA profiles hidden by your compatibility filter.”** This avoids making OPRA content appear to have silently vanished.
+- The user can return to Settings to restore any hidden compatibility category.
 
 Do not redesign this without a new explicit product decision.
 
@@ -273,17 +319,82 @@ Do not redesign this without a new explicit product decision.
 
 Do not redesign this without a new explicit product decision.
 
-## 7. Selection and catalog domain rules
+### Loading / Offline / Error states — approved 2026-08-15
+
+General rule: OPRA EQ for UAPP is a local-first app that occasionally synchronizes OPRA. If valid local data exists, keep showing and using it. A failed network/catalog/conversion/export operation must be contained to that operation and must never silently destroy known-good user state.
+
+#### Loading and normal launch
+
+- On first-ever catalog download, My Headphones still renders its normal empty shell with a simple indeterminate **Downloading OPRA catalog…** state.
+- If Browse OPRA is opened before that first catalog arrives, show a normal indeterminate **Loading OPRA catalog…** state rather than inventing a percentage.
+- After the first successful sync, normal launches show the cached catalog immediately. Background freshness work must not force a catalog loading screen or blank existing UI.
+- During manual Refresh with cached data, keep the current catalog usable and show only a small progress indication.
+
+#### Offline behavior
+
+- Offline with a valid cached catalog is a supported operating mode, not an app-wide error.
+- My Headphones, Browse, local search, profile management, local conversion, and export continue from valid local state where they do not otherwise require network access.
+- A small non-blocking status such as **“Offline · Using saved OPRA catalog”** may be shown.
+- Settings → Catalog status may show the date/time of the last successful catalog and offer **Try refresh**.
+- Only actions that genuinely require the network, such as catalog Refresh or app-update checks, should report that they cannot complete offline.
+
+#### No catalog yet
+
+- On first-ever use with no network and no cached catalog, My Headphones still renders its shell but explains that the OPRA catalog could not be downloaded and offers **Try again**.
+- Browse explains that the catalog has not been downloaded yet and offers **Try again**.
+- Do not ship or fabricate a fallback headphone catalog; the app ships with zero headphones.
+
+#### Catalog refresh/validation failures
+
+- A failed refresh with a valid cache keeps the cache and local user state and reports a concise recoverable message.
+- A newly downloaded catalog is not allowed to replace the last known-good catalog until download, parse, and required validation have completed successfully.
+- Partial, malformed, or otherwise unusable candidate catalogs are rejected as a whole rather than partially replacing known-good state.
+- With a good prior cache, explain **“Couldn’t use the new OPRA catalog. Your previous saved catalog is still available.”**
+- If no valid catalog has ever existed, explain that the downloaded catalog could not be processed and offer **Try again**.
+- Do not expose raw parser stack traces to normal v1 users.
+
+#### Conversion presentation
+
+- Conversion outcome uses the approved compatibility taxonomy: Fully compatible, Compatible with limitation, Not compatible.
+- Fully compatible normally needs no warning.
+- Compatible with limitation stays selectable/exportable and explains the limitation; >10 bands is the established example and uses the first 10 OPRA priority bands.
+- Not compatible stays visible when its visibility option is ON but is disabled/uncheckable and never exported. The row explains the exact incompatibility on tap.
+- Harmless missing optional descriptive metadata does not receive an alarming conversion-error treatment when the acoustic EQ is still complete.
+- Do not silently approximate, clamp, omit unsupported acoustic behavior, or claim successful conversion when a profile is Not compatible.
+
+#### Export and cleanup failures
+
+- Export should be resilient per independent file where technically safe rather than turning one file problem into a misleading total failure.
+- A partial result may say, for example, **“8 presets saved · 1 preset could not be exported”** with **Review**.
+- Never count a failed file or Not-compatible profile as successfully exported.
+- Review explains the specific issue, e.g. lost folder access or same-named non-app-managed conflict.
+- Successful independent file writes remain successful rather than being unnecessarily rolled back because another independent file failed.
+- If profile/headphone local removal succeeds but optional external saved-preset deletion fails, local removal still succeeds and the UI explains that the external file could not be deleted.
+
+#### Background failures, severity, and retry
+
+- Transient background catalog/update-check failures are quiet unless they materially affect usable user state.
+- Use proportional visual severity: informational for loading/refreshing/offline-with-cache; attention for items such as update available or partial export; action-required error for no initial catalog, lost export-folder access, or Not-compatible conversion when the user inspects it.
+- Avoid alarming full-screen red error treatment for recoverable network issues.
+- Every user-visible recoverable network failure has a straightforward **Try again** or **Refresh** action.
+- Retry never clears known-good local state first.
+
+Do not redesign this without a new explicit product decision.
+
+## 7. Selection, compatibility, and catalog domain rules
 
 For each managed headphone, domain state must be able to represent:
 
 - currently selected profile identities;
 - automatic future-profile inclusion ON/OFF;
 - explicit exclusions while auto-inclusion is ON;
+- compatibility outcome per relevant OPRA profile;
+- compatibility-visibility settings independent of selection;
 - previously known profile identities needed to detect newly discovered profiles;
 - reviewed/unreviewed transient New/Updated state;
 - local/removal state needed to preserve removed-upstream profiles and generated files;
-- app-managed external-file ownership/state needed for incremental export.
+- app-managed external-file ownership/state needed for incremental export;
+- last known-good catalog state separate from an unvalidated refresh candidate.
 
 These rules are domain behavior, not merely presentation logic. They must be deterministic and tested.
 
@@ -293,20 +404,31 @@ Implement conversion natively in Kotlin and treat `weekssa/opra-uapp-converter` 
 
 Preserve OPRA preamp, frequency, gain, Q, band/filter priority/order, author/creator, details, and attribution. Do not silently alter OPRA values or silently ignore unsupported filters.
 
+### Compatibility and established reference limits
+
+- Fully compatible profiles preserve established supported behavior and are exportable.
+- Compatible-with-limitation profiles remain exportable only when there is an explicit, deterministic, validated rule for the limitation.
+- Not-compatible profiles never produce an XML preset until a proven mapping exists.
+- Current reference mapping supports `peak_dip`, `low_shelf`, and `high_shelf`.
+- Current OPRA filter types `low_pass`, `high_pass`, `band_pass`, and `band_stop` are not mapped by the reference converter and therefore remain Not compatible unless a future validated product decision/implementation establishes faithful UAPP/ToneBoosters behavior.
+- The reference rejects required values outside its established UAPP/ToneBoosters frequency, gain, or Q ranges rather than silently clamping them. The Android implementation must preserve this no-silent-coercion principle.
+- Missing optional descriptive metadata does not itself change the acoustic EQ and should not be conflated with acoustic incompatibility.
+- Follow documented OPRA defaults exactly when applicable; do not invent undocumented defaults.
+
 ### ToneBoosters/UAPP 10-band limit
 
 When a profile contains more than 10 applicable bands:
 
 1. preserve OPRA priority/order;
 2. use the first 10 according to that priority;
-3. surface a warning;
+3. classify as **Compatible with limitation** and surface the warning;
 4. cover the behavior with golden fixtures.
 
 ### Naming and encoding
 
 Use `Model [Variant] - Creator - Details`, using a variant only when source data provides a verified distinction.
 
-ToneBoosters XML must be ISO-8859-1-safe while full Unicode metadata remains retained locally. Conversion output must be deterministic for identical source data and selection state.
+ToneBoosters XML must be ISO-8859-1-safe while full Unicode/original metadata remains retained locally. Harmless display substitutions or compacting do not alter the stored OPRA source metadata. Conversion output must be deterministic for identical source data and selection state.
 
 ## 9. Testing strategy
 
@@ -316,8 +438,14 @@ Treat the Python converter as the behavioral reference. Build golden fixtures an
 - preamp;
 - filters;
 - deterministic XML;
-- 10-band handling;
-- unsupported filters;
+- 10-band handling and Compatible-with-limitation classification;
+- unsupported filters and Not-compatible classification;
+- missing/invalid required acoustic values;
+- optional metadata/default handling;
+- disabled/uncheckable behavior for Not-compatible profiles;
+- Select all and automatic-inclusion skipping Not-compatible profiles;
+- compatibility visibility filters not mutating selection;
+- hidden-profile disclosure counts/messages;
 - preset naming;
 - ISO-8859-1-safe export encoding;
 - full Unicode local metadata retention;
@@ -327,9 +455,11 @@ Treat the Python converter as the behavioral reference. Build golden fixtures an
 - fixed exact selections;
 - catalog updates;
 - new-profile detection and reviewed/unreviewed state;
+- last-known-good catalog retention after network/parse/validation failure;
+- offline behavior after first successful sync;
 - changed profiles;
 - removed profiles;
-- export behavior, including incremental writes, managed-file ownership, conflicts, retained files, and lost folder access.
+- export behavior, including incremental writes, partial failures, managed-file ownership, conflicts, retained files, and lost folder access.
 
 Never weaken validation merely to make tests pass. If Kotlin and reference behavior differ, understand and resolve the difference rather than relaxing validation without a justified product decision.
 
@@ -393,11 +523,15 @@ Approved on 2026-08-15:
 - profile selection;
 - Select all / Select none;
 - future-profile behavior, including default ON for automatic inclusion on newly managed headphones;
+- three compatibility outcomes: Fully compatible, Compatible with limitation, Not compatible;
+- disabled/uncheckable Not-compatible profile behavior;
+- Settings Profile visibility for all three compatibility outcomes, all ON by default;
 - Refresh and change reporting;
 - Export;
 - Settings / About;
-- app updates and What’s new / changelog UX.
+- app updates and What’s new / changelog UX;
+- Loading / Offline / Error states.
 
-The next Phase 0 UX area is the combined **Loading / Offline / Error states** design.
+The next Phase 0 UX area is **Accessibility**.
 
 Proceed one UX area at a time and do not advance when the user has asked to approve the current area first.
