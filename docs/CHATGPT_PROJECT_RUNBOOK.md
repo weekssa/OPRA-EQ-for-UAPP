@@ -161,6 +161,30 @@ First-launch behavior is approved as follows:
 
 The user approved this first-launch approach on 2026-08-15. Do not redesign it without a new explicit product decision.
 
+### Approved Phase 0 My Headphones — 2026-08-15
+
+My Headphones is approved with the following behavior:
+
+- Present the user's selected headphones as a simple, scannable library grouped by manufacturer.
+- Within a manufacturer, order models alphabetically.
+- Each headphone row shows the model name, any genuinely verified deeper OPRA path distinction when required, and a concise count such as **“3 profiles selected.”**
+- Do not require or download OPRA artwork for this list in v1.
+- Keep normal rows visually quiet. Add a short attention line only when something needs action or awareness, such as **“1 profile updated”** or **“1 no longer available in OPRA.”**
+- Tapping a headphone opens its detail/management screen.
+- The headphone detail shows manufacturer/model identity, selected-profile count, status, and profile management.
+- Selected profiles must be visible from this management experience, and each selected profile must have an explicit **Remove** action so the user can remove one profile without removing the entire headphone.
+- Do not use swipe-to-delete as the primary removal mechanism for profiles or headphones.
+- Removing an individual profile requires an explicit confirmation.
+- Removing an entire headphone requires an explicit confirmation.
+- When removing either a profile or a headphone, ask whether the user also wants to remove the corresponding saved preset files created by OPRA EQ for UAPP.
+- Preset-file deletion is **opt-in** at removal time; keeping saved presets is the safe default so files are never silently deleted.
+- The app may delete only preset files it created and can validly manage through its retained Android document-tree access. If an exported file is no longer accessible to the app, removal of the local selection must still succeed and the UI should explain that the inaccessible external file could not be removed rather than pretending it was deleted.
+- Detailed profile checkbox selection, Select all/none, automatic future-profile behavior, export mechanics, and refresh/change reporting remain separate Phase 0 design items and should not be prematurely redefined here.
+- The approved first-launch empty state remains the My Headphones empty state whenever the user has no selected headphones.
+- Back from headphone detail returns to the My Headphones list and should preserve useful list/scroll state.
+
+The user approved this My Headphones approach, including per-profile removal and the saved-preset deletion choice, on 2026-08-15. Do not redesign it without a new explicit product decision.
+
 ## 7. Profile selection model
 
 Every usable OPRA parametric EQ profile must be represented as a checkbox.
@@ -398,6 +422,6 @@ At bootstrap, the repository contains documentation only.
 
 Phase 0 is active. Android implementation has not begun.
 
-Overall navigation and first-launch behavior were approved on 2026-08-15. The next Phase 0 UX area is **My Headphones**.
+Overall navigation, first-launch behavior, and My Headphones were approved on 2026-08-15. The next Phase 0 UX area is **Browse OPRA**.
 
 The next design work must proceed one approved UX area at a time. Do not advance to a later Phase 0 UX area when the user has explicitly asked to approve the current area first.
