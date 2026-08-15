@@ -87,7 +87,7 @@ Before Phase 1, review and receive user approval for:
 - accessibility;
 - three original app-icon concepts.
 
-Do not start Phase 1 until the user explicitly approves Phase 0. For every major user-facing feature, explain UX/behavior in plain language or simple wireframes before implementation and wait for approval.
+Phase 0 was explicitly approved as a whole on **2026-08-15**. The Phase 0 gate is satisfied and Phase 1 is unblocked. For every major user-facing feature, the already approved Phase 0 UX remains authoritative unless the user explicitly changes the product decision.
 
 ## 6. Approved Phase 0 UX decisions
 
@@ -567,7 +567,7 @@ When an approved decision changes, update this runbook so future work does not d
 
 ## 16. Current project state
 
-The repository remains documentation-only for app development purposes. **Phase 0 design review is complete at the individual-area level. Android implementation has not begun. Phase 1 remains blocked until the user explicitly approves Phase 0 as a whole.**
+The repository remains documentation-only for app development purposes. **Phase 0 is complete and explicitly approved as a whole on 2026-08-15. Android implementation has not begun. Phase 1 is unblocked.**
 
 Approved on 2026-08-15:
 
@@ -589,6 +589,7 @@ Approved on 2026-08-15:
 - Loading / Offline / Error states;
 - Accessibility;
 - Appearance with System default / Light / Dark, defaulting to System default;
-- three original app-icon concepts reviewed, with **Concept B — Equalizer Headphones** selected as the app-icon direction.
+- three original app-icon concepts reviewed, with **Concept B — Equalizer Headphones** selected as the app-icon direction;
+- **Phase 0 as a whole**.
 
-All required Phase 0 UX areas now have individual decisions. **Do not start Phase 1 until the user explicitly approves Phase 0 as a whole.**
+All required Phase 0 UX areas are approved. **Phase 1 implementation may begin when the user asks to start implementation work.**
