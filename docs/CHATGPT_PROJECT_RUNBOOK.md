@@ -112,7 +112,7 @@ Do not redesign this without a new explicit product decision.
 - Open directly to My Headphones, genuinely empty because the app ships with zero headphones.
 - Automatically begin the first runtime-catalog download.
 - Show the empty state with **Browse OPRA** as the obvious action and optionally **“Your selections stay on this device.”**
-- If Browse opens while the first catalog download is running, show the normal Browse loading state rather than redirecting elsewhere.
+- If Browse OPRA opens while the first catalog download is running, show the normal Browse loading state rather than redirecting elsewhere.
 - After first successful sync, use cached catalog immediately on future launches and allow normal offline use.
 - Do not request storage/folder access merely to browse/select; folder access belongs to export.
 - Do not interrupt first use with update prompt, changelog modal, attribution wall, or other nonessential blocking surface.
@@ -420,6 +420,21 @@ Accessibility is part of the core interaction design, not a final cosmetic pass.
 
 Do not redesign this without a new explicit product decision.
 
+### App icon direction — approved 2026-08-15
+
+Three original app-icon directions were reviewed. The selected direction is **Concept B — Equalizer Headphones**.
+
+- The primary symbol is an original headphone/headband form surrounding three simplified EQ-control/sliders elements.
+- The outer geometry should also read as earcups so the mark communicates **headphones + EQ/control** without requiring text.
+- Keep the design simple enough to remain recognizable at small Android launcher sizes.
+- Design it as an Android adaptive icon with generous safe-zone margins so system masks do not cut off important geometry.
+- Do not put text, initials, model names, or other lettering inside the icon.
+- Do not copy or incorporate OPRA, Roon Labs, UAPP/USB Audio Player PRO, or ToneBoosters brand marks/logos; the icon must remain an original OPRA EQ for UAPP identity and must not imply endorsement.
+- The selected concept is the design direction; exact production geometry, palette, adaptive foreground/background layers, monochrome/themed-icon treatment, and final asset sizes are implementation details to be validated later without changing the approved concept.
+- App-icon artwork is separate from OPRA headphone artwork; the v1 rule against downloading OPRA artwork remains unchanged.
+
+Do not redesign this without a new explicit product decision.
+
 ## 7. Selection, compatibility, and catalog domain rules
 
 For each managed headphone, domain state must be able to represent:
@@ -552,7 +567,7 @@ When an approved decision changes, update this runbook so future work does not d
 
 ## 16. Current project state
 
-The repository remains documentation-only for app development purposes. **Phase 0 is active. Android implementation has not begun.**
+The repository remains documentation-only for app development purposes. **Phase 0 design review is complete at the individual-area level. Android implementation has not begun. Phase 1 remains blocked until the user explicitly approves Phase 0 as a whole.**
 
 Approved on 2026-08-15:
 
@@ -573,8 +588,7 @@ Approved on 2026-08-15:
 - app updates and What’s new / changelog UX;
 - Loading / Offline / Error states;
 - Accessibility;
-- Appearance with System default / Light / Dark, defaulting to System default.
+- Appearance with System default / Light / Dark, defaulting to System default;
+- three original app-icon concepts reviewed, with **Concept B — Equalizer Headphones** selected as the app-icon direction.
 
-The next Phase 0 UX area is **three original app-icon concepts**.
-
-Proceed one UX area at a time and do not advance when the user has asked to approve the current area first.
+All required Phase 0 UX areas now have individual decisions. **Do not start Phase 1 until the user explicitly approves Phase 0 as a whole.**
