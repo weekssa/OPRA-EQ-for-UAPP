@@ -1,6 +1,7 @@
 package com.weekssa.opraeqforuapp.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Explore
