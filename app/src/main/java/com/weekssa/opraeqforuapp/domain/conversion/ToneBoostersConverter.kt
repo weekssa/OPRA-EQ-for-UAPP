@@ -19,6 +19,8 @@ data class ToneBoostersConversionResult(
 )
 
 object ToneBoostersConverter {
+    const val MISSING_CREATOR_LABEL = "Creator information missing"
+
     private const val F_MIN = 16.0
     private const val F_MAX = 20_000.0
     private const val GAIN_MIN = -20.0
@@ -159,12 +161,11 @@ object ToneBoostersConverter {
 
     fun buildPresetName(
         modelLabel: String,
-        creator: String,
+        creator: String?,
         details: String?,
         verifiedVariantLabel: String? = null,
     ): String {
-        val creatorValue = creator.trim()
-        require(creatorValue.isNotEmpty()) { "Creator must be resolved before building an attributed preset name." }
+        val creatorValue = creator?.trim().orEmpty().ifEmpty { MISSING_CREATOR_LABEL }
         val compactDetails = compactDetails(details, verifiedVariantLabel)
         return uappSafeName(
             buildList {

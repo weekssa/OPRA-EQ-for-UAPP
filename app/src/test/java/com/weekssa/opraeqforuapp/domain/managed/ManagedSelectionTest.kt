@@ -8,6 +8,24 @@ import org.junit.Test
 
 class ManagedSelectionTest {
     @Test
+    fun firstTimeDefaultsSelectAllCurrentSelectableProfiles() {
+        val fullyCompatible = compatibleProfile("fully")
+        val limited = compatibleProfile("limited").copy(
+            bands = (1..11).map { index ->
+                OpraBand("peak_dip", 100.0 * index, 0.0, 1.0, null)
+            },
+        )
+        val blocked = unsupportedProfile("blocked")
+
+        val selected = defaultStagedSelectedProfileIds(listOf(fullyCompatible, limited, blocked))
+
+        assertTrue(DEFAULT_AUTO_INCLUDE_NEW_PROFILES)
+        assertTrue("fully" in selected)
+        assertTrue("limited" in selected)
+        assertFalse("blocked" in selected)
+    }
+
+    @Test
     fun autoIncludeSelectsFutureCompatibleProfile() {
         val state = ManagedHeadphoneSelection(
             productId = "product",

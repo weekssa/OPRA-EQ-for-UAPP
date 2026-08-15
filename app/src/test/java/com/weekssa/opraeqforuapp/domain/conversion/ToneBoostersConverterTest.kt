@@ -2,6 +2,7 @@ package com.weekssa.opraeqforuapp.domain.conversion
 
 import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
+import com.weekssa.opraeqforuapp.domain.catalog.assessCompatibility
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
@@ -84,7 +85,7 @@ class ToneBoostersConverterTest {
     @Test
     fun safeNameAndHeadphoneFirstNamingMatchReference() {
         assertEquals("RTINGS - Studio", ToneBoostersConverter.uappSafeName("RTINGS • Studio"))
-        assertEquals("Unicode ?", ToneBoostersConverter.uappSafeName("Unicode 測"))
+        assertEquals("Unicode -", ToneBoostersConverter.uappSafeName("Unicode 測"))
         assertEquals(
             "HD650 - oratory1990 - Harman Target",
             ToneBoostersConverter.buildPresetName("HD650", "oratory1990", "Harman Target"),
@@ -98,6 +99,27 @@ class ToneBoostersConverterTest {
                 verifiedVariantLabel = "Gold",
             ),
         )
+    }
+
+    @Test
+    fun missingCreatorUsesApprovedLiteralLabelWithoutChangingCompatibility() {
+        val profile = OpraEqProfile(
+            id = "missing-author",
+            productId = "product",
+            author = null,
+            details = "Harman Target",
+            link = null,
+            profileType = "parametric_eq",
+            preampGainDb = -3.0,
+            bands = listOf(OpraBand("peak_dip", 1_000.0, 1.0, 1.0, null)),
+        )
+
+        assertTrue(profile.assessCompatibility().category.isSelectable)
+        assertEquals(
+            "HD650 - Creator information missing - Harman Target",
+            ToneBoostersConverter.buildPresetName("HD650", profile.author, profile.details),
+        )
+        assertEquals(null, profile.author)
     }
 
     @Test

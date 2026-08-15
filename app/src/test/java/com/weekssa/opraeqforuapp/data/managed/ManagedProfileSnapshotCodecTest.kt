@@ -27,6 +27,25 @@ class ManagedProfileSnapshotCodecTest {
         assertNotEquals(codec.fingerprint(original), codec.fingerprint(changed))
     }
 
+    @Test
+    fun fingerprintIgnoresProvenanceLinkOnlyChanges() {
+        val original = sampleProfile(details = "Original")
+        val linkChanged = original.copy(link = "https://example.invalid/other-source")
+
+        assertEquals(codec.fingerprint(original), codec.fingerprint(linkChanged))
+    }
+
+    @Test
+    fun fingerprintTreatsAuthorAndDetailsCaseAsReferenceEquivalent() {
+        val original = sampleProfile(details = "Harman Target")
+        val caseChanged = original.copy(
+            author = original.author?.uppercase(),
+            details = original.details?.uppercase(),
+        )
+
+        assertEquals(codec.fingerprint(original), codec.fingerprint(caseChanged))
+    }
+
     private fun sampleProfile(details: String) = OpraEqProfile(
         id = "profile-1",
         productId = "product-1",
