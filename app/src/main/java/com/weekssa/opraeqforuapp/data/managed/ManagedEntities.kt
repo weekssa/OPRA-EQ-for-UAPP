@@ -40,4 +40,8 @@ data class ManagedProfileEntity(
     val isNewUnreviewed: Boolean,
     val isUpdatedUnreviewed: Boolean,
     val noLongerAvailable: Boolean,
+    val generatedPresetName: String?,
+    val generatedXml: String?,
+    val generatedFromFingerprint: String?,
+    val generatedAtMillis: Long?,
 )

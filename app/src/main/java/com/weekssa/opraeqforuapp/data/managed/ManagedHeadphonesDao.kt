@@ -21,6 +21,14 @@ interface ManagedHeadphonesDao {
     @Query("SELECT * FROM managed_profiles WHERE productId = :productId ORDER BY profileId")
     fun observeProfiles(productId: String): Flow<List<ManagedProfileEntity>>
 
+    @Query(
+        """
+        SELECT * FROM managed_headphones
+        ORDER BY vendorName COLLATE NOCASE, productName COLLATE NOCASE, productId
+        """,
+    )
+    suspend fun getHeadphones(): List<ManagedHeadphoneEntity>
+
     @Query("SELECT * FROM managed_headphones WHERE productId = :productId")
     suspend fun getHeadphone(productId: String): ManagedHeadphoneEntity?
 

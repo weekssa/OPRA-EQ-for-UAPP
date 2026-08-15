@@ -2,7 +2,6 @@ package com.weekssa.opraeqforuapp.data.managed
 
 import androidx.room.withTransaction
 import com.weekssa.opraeqforuapp.domain.catalog.OpraCatalog
-import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneSelection
 import com.weekssa.opraeqforuapp.domain.managed.ManagedProfileRecord
@@ -80,23 +79,78 @@ class ManagedHeadphonesRepository(
                 currentProfiles.map { profile ->
                     val existing = existingProfiles[profile.id]
                     val selection = requireNotNull(selectionUpdates[profile.id])
+                    val fingerprint = snapshotCodec.fingerprint(profile)
+                    val generated = if (selection.selected) {
+                        generateManagedPreset(
+                            productName = product.name,
+                            profile = profile,
+                            fingerprint = fingerprint,
+                            nowMillis = now,
+                        )
+                    } else {
+                        null
+                    }
                     ManagedProfileEntity(
                         profileId = profile.id,
                         productId = product.id,
                         selected = selection.selected,
                         explicitlyExcluded = selection.explicitlyExcluded,
                         snapshotJson = snapshotCodec.encode(profile),
-                        fingerprint = snapshotCodec.fingerprint(profile),
+                        fingerprint = fingerprint,
                         firstSeenAtMillis = existing?.firstSeenAtMillis ?: now,
                         lastSeenAtMillis = now,
                         isNewUnreviewed = existing?.isNewUnreviewed ?: false,
                         isUpdatedUnreviewed = existing?.isUpdatedUnreviewed ?: false,
                         noLongerAvailable = false,
+                        generatedPresetName = generated?.presetName ?: existing?.generatedPresetName,
+                        generatedXml = generated?.xml ?: existing?.generatedXml,
+                        generatedFromFingerprint = generated?.fingerprint ?: existing?.generatedFromFingerprint,
+                        generatedAtMillis = generated?.generatedAtMillis ?: existing?.generatedAtMillis,
                     )
                 },
             )
         }
     }
+
+    suspend fun reconcileCatalog(catalog: OpraCatalog): ManagedCatalogChangeSummary =
+        database.withTransaction {
+            val now = nowMillis()
+            var summary = ManagedCatalogChangeSummary()
+
+            dao.getHeadphones().forEach { headphone ->
+                val product = catalog.product(headphone.productId)
+                val vendor = product?.let { catalog.vendor(it.vendorId) }
+                val currentProfiles = if (product != null) {
+                    catalog.profilesForProduct(product.id)
+                } else {
+                    emptyList()
+                }
+                val reconciled = reconcileManagedProfiles(
+                    productId = headphone.productId,
+                    productName = product?.name ?: headphone.productName,
+                    currentProfiles = currentProfiles,
+                    existingProfiles = dao.getProfiles(headphone.productId),
+                    autoIncludeNewProfiles = headphone.autoIncludeNewProfiles,
+                    nowMillis = now,
+                    snapshotCodec = snapshotCodec,
+                )
+
+                dao.upsertHeadphone(
+                    headphone.copy(
+                        vendorId = vendor?.id ?: headphone.vendorId,
+                        vendorName = vendor?.name ?: headphone.vendorName,
+                        productName = product?.name ?: headphone.productName,
+                        updatedAtMillis = now,
+                    ),
+                )
+                if (reconciled.profiles.isNotEmpty()) {
+                    dao.upsertProfiles(reconciled.profiles)
+                }
+                summary += reconciled.changes
+            }
+
+            summary
+        }
 
     suspend fun removeHeadphone(productId: String) {
         dao.deleteHeadphone(productId)
@@ -132,4 +186,8 @@ private fun ManagedProfileEntity.toDomain(snapshotCodec: ManagedProfileSnapshotC
     isNewUnreviewed = isNewUnreviewed,
     isUpdatedUnreviewed = isUpdatedUnreviewed,
     noLongerAvailable = noLongerAvailable,
+    generatedPresetName = generatedPresetName,
+    generatedXml = generatedXml,
+    generatedFromFingerprint = generatedFromFingerprint,
+    generatedAtMillis = generatedAtMillis,
 )
