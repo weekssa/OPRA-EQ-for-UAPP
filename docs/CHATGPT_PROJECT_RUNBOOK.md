@@ -271,6 +271,27 @@ Do not redesign this without a new explicit product decision.
 
 Do not redesign this without a new explicit product decision.
 
+### Settings / About — approved 2026-08-15
+
+- Keep Settings intentionally small and focused rather than exposing advanced or developer-oriented configuration in v1.
+- Settings contains three primary areas: **Presets**, **OPRA catalog**, and **About**.
+- **Export folder** shows whether a destination has been chosen and, when configured, displays the currently selected preset destination in a concise form.
+- **Change folder** reopens Android’s system folder picker. Changing the destination does not automatically move or delete files from the previously selected folder.
+- **Catalog status** shows the last successful OPRA refresh and may provide **Refresh now**.
+- Explain that background catalog checks occur approximately daily.
+- Do not add a background-refresh enable/disable toggle in v1.
+- Do not expose account, sync-service, GitHub credential, Google Drive, OPRA URL/server, developer, broad-storage-permission, or similar configuration pages in v1.
+- A short **Privacy** page explains that headphone selections and settings remain local, conversion occurs locally, no account is required, and the app does not use analytics or telemetry.
+- Privacy may also explain that network access is used for the OPRA runtime catalog and public app-update metadata.
+- Do not present a blocking privacy/legal wall on first launch.
+- **Credits & licenses** clearly credits OPRA and explains that individual EQ creators/sources are credited with their profiles.
+- Credits must state that OPRA EQ for UAPP is not endorsed by OPRA, Roon Labs, USB Audio Player PRO/UAPP, or ToneBoosters.
+- Provide access to open-source license information as appropriate.
+- The permanent app/version/update destination is **Settings → About & updates** rather than separate About and Updates areas.
+- **About & updates** shows the app name and installed version and provides entry points for **What’s new**, update checking, and obtaining an update; detailed behavior of those update actions is governed by the separate app-update/changelog UX approval.
+
+Do not redesign this without a new explicit product decision.
+
 ## 7. Selection domain rules
 
 The approved selection behavior is a required domain model, not merely presentation logic.
@@ -503,8 +524,9 @@ Approved on 2026-08-15:
 - Select all / Select none;
 - future-profile behavior, including default **ON** for automatic inclusion on newly managed headphones;
 - Refresh and change reporting;
-- Export.
+- Export;
+- Settings / About.
 
-The next Phase 0 UX area is **Settings / About**.
+The next Phase 0 UX area is **app updates and changelog / What’s new**.
 
 Proceed one UX area at a time and do not advance when the user has asked to approve the current area first.
