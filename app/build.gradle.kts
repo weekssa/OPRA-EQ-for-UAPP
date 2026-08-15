@@ -47,6 +47,7 @@ android {
 dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2026.06.00")
     val roomVersion = "2.8.4"
+    val workVersion = "2.11.2"
 
     implementation(composeBom)
     implementation("androidx.core:core-ktx:1.17.0")
@@ -58,6 +59,7 @@ dependencies {
     implementation("androidx.room:room-runtime:$roomVersion")
     implementation("androidx.room:room-ktx:$roomVersion")
     ksp("androidx.room:room-compiler:$roomVersion")
+    implementation("androidx.work:work-runtime-ktx:$workVersion")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.ui:ui-tooling-preview")

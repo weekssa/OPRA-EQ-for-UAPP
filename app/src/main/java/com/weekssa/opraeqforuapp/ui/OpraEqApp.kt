@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshFailureReason
 import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshResult
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
+import com.weekssa.opraeqforuapp.data.sync.CatalogSyncOutcome
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityCategory
@@ -53,7 +54,7 @@ fun OpraEqApp(
     appPreferences: AppPreferences,
     catalogState: CatalogState,
     managedHeadphones: List<ManagedHeadphoneRecord>,
-    onRefreshCatalog: suspend () -> CatalogRefreshResult,
+    onRefreshCatalog: suspend () -> CatalogSyncOutcome,
     onLoadManagedHeadphone: suspend (String) -> ManagedHeadphoneRecord?,
     onSaveSelection: suspend (String, Set<String>, Boolean) -> Unit,
     onRemoveHeadphone: suspend (String) -> Unit,
@@ -184,23 +185,33 @@ fun OpraEqApp(
     }
 }
 
-private fun refreshMessage(result: CatalogRefreshResult): String = when (result) {
-    is CatalogRefreshResult.Success -> "OPRA catalog is up to date."
-    is CatalogRefreshResult.Failure -> when (result.reason) {
-        CatalogRefreshFailureReason.Network -> if (result.usingSavedCatalog) {
-            "Couldn’t refresh OPRA. Using your saved catalog."
-        } else {
-            "Couldn’t download the OPRA catalog."
+private fun refreshMessage(outcome: CatalogSyncOutcome): String {
+    val result = outcome.catalogResult
+    return when (result) {
+        is CatalogRefreshResult.Success -> {
+            val affected = outcome.managedChanges?.affectedProductIds?.size ?: 0
+            when (affected) {
+                0 -> "OPRA catalog is up to date."
+                1 -> "1 of your headphones has changes."
+                else -> "$affected of your headphones have changes."
+            }
         }
-        CatalogRefreshFailureReason.InvalidCatalog -> if (result.usingSavedCatalog) {
-            "Couldn’t use the new OPRA catalog. Your previous saved catalog is still available."
-        } else {
-            "The downloaded OPRA catalog couldn’t be processed."
-        }
-        CatalogRefreshFailureReason.Storage -> if (result.usingSavedCatalog) {
-            "Couldn’t save the new OPRA catalog. Using your previous saved catalog."
-        } else {
-            "Couldn’t save the OPRA catalog on this device."
+        is CatalogRefreshResult.Failure -> when (result.reason) {
+            CatalogRefreshFailureReason.Network -> if (result.usingSavedCatalog) {
+                "Couldn’t refresh OPRA. Using your saved catalog."
+            } else {
+                "Couldn’t download the OPRA catalog."
+            }
+            CatalogRefreshFailureReason.InvalidCatalog -> if (result.usingSavedCatalog) {
+                "Couldn’t use the new OPRA catalog. Your previous saved catalog is still available."
+            } else {
+                "The downloaded OPRA catalog couldn’t be processed."
+            }
+            CatalogRefreshFailureReason.Storage -> if (result.usingSavedCatalog) {
+                "Couldn’t save the new OPRA catalog. Using your previous saved catalog."
+            } else {
+                "Couldn’t save the OPRA catalog on this device."
+            }
         }
     }
 }

@@ -6,13 +6,14 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
-import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshResult
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.data.catalog.HttpOpraCatalogSource
 import com.weekssa.opraeqforuapp.data.catalog.OpraCatalogRepository
 import com.weekssa.opraeqforuapp.data.managed.ManagedHeadphonesRepository
 import com.weekssa.opraeqforuapp.data.managed.OpraEqDatabase
 import com.weekssa.opraeqforuapp.data.preferences.AppPreferencesRepository
+import com.weekssa.opraeqforuapp.data.sync.BackgroundSyncScheduler
+import com.weekssa.opraeqforuapp.data.sync.CatalogSyncCoordinator
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
 import com.weekssa.opraeqforuapp.ui.OpraEqApp
@@ -41,9 +42,17 @@ class MainActivity : ComponentActivity() {
         ManagedHeadphonesRepository(database)
     }
 
+    private val syncCoordinator by lazy {
+        CatalogSyncCoordinator(
+            catalogRepository = catalogRepository,
+            managedHeadphonesRepository = managedHeadphonesRepository,
+        )
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        BackgroundSyncScheduler.ensureScheduled(applicationContext)
 
         lifecycleScope.launch {
             catalogRepository.initialize()
@@ -67,13 +76,7 @@ class MainActivity : ComponentActivity() {
                     appPreferences = appPreferences,
                     catalogState = catalogState,
                     managedHeadphones = managedHeadphones,
-                    onRefreshCatalog = {
-                        val result = catalogRepository.refresh()
-                        if (result is CatalogRefreshResult.Success) {
-                            managedHeadphonesRepository.reconcileCatalog(result.catalog)
-                        }
-                        result
-                    },
+                    onRefreshCatalog = syncCoordinator::refresh,
                     onLoadManagedHeadphone = managedHeadphonesRepository::getHeadphone,
                     onSaveSelection = { productId, selectedIds, autoInclude ->
                         val ready = catalogRepository.state.value as? CatalogState.Ready
