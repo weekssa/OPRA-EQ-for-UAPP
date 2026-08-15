@@ -235,7 +235,6 @@ Do not redesign this without a new explicit product decision.
 - Relevant managed-headphone change categories are: newly added profiles, changed selected profiles, and profiles that are no longer available in OPRA.
 - For a newly discovered profile, automatic-inclusion ON causes the new non-excluded profile to be selected automatically; automatic-inclusion OFF leaves it unchecked. In both cases it can be marked **New** until reviewed.
 - A changed **selected** OPRA profile is regenerated deterministically from the new OPRA data and reported to the user.
-- The updated generated XML/local generated state is refreshed automatically; behavior for rewriting an already-exported external preset file is intentionally deferred to the Export UX decision.
 - A changed unselected profile does not require prominent My Headphones attention.
 - If a selected/generated profile is removed upstream, keep its last generated XML and local record, keep it visible, mark it **“No longer available in OPRA,”** and do not delete it automatically.
 - **No longer available in OPRA** is a persistent state, not a transient reviewed badge. It remains until the user removes the retained profile or it becomes available again.
@@ -246,6 +245,29 @@ Do not redesign this without a new explicit product decision.
 - Opening/reviewing the affected headphone’s profile/change view clears the transient New/Updated attention state for what was reviewed; the underlying profiles and selection state remain.
 - A failed refresh must preserve the cached catalog and local user state and may show a concise message such as **“Couldn’t refresh OPRA. Using your saved catalog.”**
 - A failed background check should not unnecessarily interrupt the user; retain the cached catalog and allow normal future checks/retries.
+
+Do not redesign this without a new explicit product decision.
+
+### Export — approved 2026-08-15
+
+- **My Headphones** provides a clear **Export presets** action that exports all currently selected profiles across managed headphones.
+- An individual headphone may also provide **Export this headphone** for convenience.
+- On first export, use Android’s system folder/document picker and suggest `Documents/OPRA EQ for UAPP/Presets` where the platform allows a useful suggestion; the user chooses the actual folder.
+- Persist supported directory access so repeated exports do not require picking the folder again while access remains valid.
+- Do not request broad storage access and do not write directly into UAPP’s or another app’s private storage.
+- Export hierarchy begins `Manufacturer/Model/` and may add deeper folders only for genuinely verified OPRA distinctions. Never invent folder meaning.
+- Generated XML filenames and embedded ToneBoosters preset names use the same deterministic headphone-first naming rule: `Model [Variant] - Creator - Details`.
+- Export is incremental. Before writing, summarize new, updated, and already-current selected presets where practical.
+- The app tracks which external preset files it created so it can safely update only its own managed files.
+- Newly auto-included profiles are generated locally when discovered but are written to the external preset folder only when the user explicitly invokes Export.
+- When a selected OPRA profile changes, regenerate its XML locally and mark the corresponding external preset as update-ready; do **not** silently rewrite external preset files during background catalog refresh.
+- When the user explicitly exports, replace the app-managed previously exported copy with the regenerated version.
+- If an upstream profile is removed, retain its last generated XML and do not delete an existing exported preset automatically.
+- If a user deselects/removes a profile but chooses to keep its saved preset during the approved removal confirmation, later Export operations leave that retained external file alone.
+- If the destination already contains a same-named file that the app cannot establish it created/manages, do not silently overwrite it, do not invent a `(2)` name, and do not change deterministic preset naming. Report the conflict and offer a review path.
+- If retained Android folder access is lost, explain that preset-folder access is no longer available and let the user choose a folder again; do not escalate to broad storage permission.
+- My Headphones may show a concise export state such as **“2 presets ready to export”** or **“All selected presets exported.”**
+- Catalog refresh and external-file mutation are deliberately separated: catalog updates may automatically update local generated state, while changes to the user’s external preset folder require an explicit Export action.
 
 Do not redesign this without a new explicit product decision.
 
@@ -335,7 +357,7 @@ Build golden fixtures and require Kotlin parity for at least:
 - new-profile detection and reviewed/unreviewed state;
 - changed profiles;
 - removed profiles;
-- export behavior.
+- export behavior, including incremental writes, managed-file ownership, conflicts, retained files, and lost folder access.
 
 Never weaken validation merely to make tests pass. If Kotlin and the reference behavior differ, understand and resolve the difference rather than relaxing validation without a justified product decision.
 
@@ -354,24 +376,19 @@ No Android code, Gradle files, Kotlin files, signing configuration, GitHub Actio
 
 ## 11. Export behavior
 
-Use Android’s system folder/document picker rather than broad storage permissions.
+The approved Export UX in section 6 is authoritative.
 
-Required direction:
+Platform/storage requirements:
 
+- Use Android’s system folder/document picker rather than broad storage permissions.
 - Suggest `Documents/OPRA EQ for UAPP/Presets` where Android’s picker/API allows a useful suggestion.
 - Let the user choose the actual destination.
 - Persist supported directory access using the platform mechanism where appropriate.
 - Do not request broad storage access.
 - Do not write directly into another app’s private storage.
 - Manage only files created by OPRA EQ for UAPP.
-
-Export folder layout begins:
-
-`Manufacturer/Model/`
-
-It may add deeper path segments only when those segments are verified by OPRA source hierarchy and genuinely needed. Never invent folder meaning.
-
-Detailed export UX, including how catalog-driven regenerated presets affect already-exported external files, remains a Phase 0 item until explicitly approved.
+- Export folder layout begins `Manufacturer/Model/` and may add deeper verified OPRA path segments only when genuinely needed.
+- Background catalog updates regenerate local state as required, but already-exported external preset files are rewritten only through an explicit Export action.
 
 ## 12. Upstream OPRA changes
 
@@ -381,9 +398,9 @@ When a selected OPRA profile changes upstream:
 
 1. detect the change through catalog refresh/update handling;
 2. regenerate its XML deterministically;
-3. report the change to the user.
-
-External exported-file rewrite behavior is governed by the approved Export UX once that decision is made.
+3. report the change to the user;
+4. mark any app-managed exported copy as update-ready rather than silently modifying it in the background;
+5. update that external app-managed copy on the user’s next explicit Export action.
 
 ### Removed OPRA profile
 
@@ -393,9 +410,10 @@ When a previously selected/generated OPRA profile is removed upstream:
 2. retain the local record needed to explain its state;
 3. mark it **“No longer available in OPRA”**;
 4. do not delete it automatically;
-5. let the user remove it explicitly.
+5. let the user remove it explicitly;
+6. do not delete its exported preset unless the user explicitly opts to delete that app-created saved preset during removal.
 
-These behaviors must be covered by catalog-update tests.
+These behaviors must be covered by catalog-update and export tests.
 
 ## 13. App updates and changelog architecture
 
@@ -484,8 +502,9 @@ Approved on 2026-08-15:
 - profile selection;
 - Select all / Select none;
 - future-profile behavior, including default **ON** for automatic inclusion on newly managed headphones;
-- Refresh and change reporting.
+- Refresh and change reporting;
+- Export.
 
-The next Phase 0 UX area is **Export**.
+The next Phase 0 UX area is **Settings / About**.
 
 Proceed one UX area at a time and do not advance when the user has asked to approve the current area first.
