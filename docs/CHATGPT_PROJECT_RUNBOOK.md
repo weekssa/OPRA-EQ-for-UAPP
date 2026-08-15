@@ -123,6 +123,26 @@ Rules:
 - Never invent folder meaning.
 - Never force deeper path segments into a semantic interpretation that the source data does not support.
 
+### Approved Phase 0 navigation — 2026-08-15
+
+Overall navigation is approved with the following behavior:
+
+- **My Headphones** and **Browse OPRA** are peer top-level destinations in bottom navigation.
+- **My Headphones** is the local management area for headphones and selected profiles.
+- **Browse OPRA** is the discovery area and begins at Manufacturer → Model, with deeper verified OPRA path segments only when source data genuinely requires them.
+- Changing selections while browsing does not automatically switch the user to My Headphones.
+- A visible **Refresh** action is available from the top app bar because OPRA catalog freshness affects both primary areas.
+- A visible **Settings** action is available from the top app bar.
+- App-update information may appear as a non-blocking banner when an update exists; the permanent home for installed-version, What’s new/changelog, and Get update information is **Settings → About & updates**.
+- Bottom-navigation changes do not create an endlessly growing back stack.
+- Back navigation within Browse OPRA unwinds one hierarchy/detail level at a time.
+- Back from a My Headphones detail returns to the My Headphones list.
+- Back from Settings or another secondary screen returns to the top-level screen that opened it.
+- At the root of either primary destination, system Back follows normal Android exit/background behavior rather than switching to the other bottom-navigation destination.
+- Each primary destination should retain useful navigation state where practical.
+
+The user approved this overall navigation on 2026-08-15. Do not redesign it without a new explicit product decision.
+
 ## 7. Profile selection model
 
 Every usable OPRA parametric EQ profile must be represented as a checkbox.
@@ -359,5 +379,7 @@ The repository is the maintained source of truth. When a later approved decision
 At bootstrap, the repository contains documentation only.
 
 Phase 0 is active. Android implementation has not begun.
+
+Overall navigation was approved on 2026-08-15. The next Phase 0 UX area is first launch.
 
 The next design work must proceed one approved UX area at a time. Do not advance to a later Phase 0 UX area when the user has explicitly asked to approve the current area first.
