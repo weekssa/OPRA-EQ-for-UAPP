@@ -1,0 +1,144 @@
+package com.weekssa.opraeqforuapp.ui
+
+import androidx.activity.compose.BackHandler
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Explore
+import androidx.compose.material.icons.outlined.Headphones
+import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
+import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityCategory
+import com.weekssa.opraeqforuapp.domain.settings.ThemeMode
+import com.weekssa.opraeqforuapp.ui.screens.BrowseOpraScreen
+import com.weekssa.opraeqforuapp.ui.screens.MyHeadphonesScreen
+import com.weekssa.opraeqforuapp.ui.screens.SettingsScreen
+import kotlinx.coroutines.launch
+
+private enum class TopLevelDestination(val label: String) {
+    MyHeadphones("My Headphones"),
+    BrowseOpra("Browse OPRA"),
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun OpraEqApp(
+    appPreferences: AppPreferences,
+    onThemeModeChange: (ThemeMode) -> Unit,
+    onProfileVisibilityChange: (ProfileVisibilityCategory, Boolean) -> Unit,
+) {
+    var selectedDestinationIndex by rememberSaveable { mutableIntStateOf(0) }
+    var settingsOpen by rememberSaveable { mutableStateOf(false) }
+    val destinations = remember { TopLevelDestination.entries }
+    val selectedDestination = destinations[selectedDestinationIndex]
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    BackHandler(enabled = settingsOpen) {
+        settingsOpen = false
+    }
+
+    Scaffold(
+        topBar = {
+            if (settingsOpen) {
+                TopAppBar(
+                    title = { Text("Settings") },
+                    navigationIcon = {
+                        IconButton(onClick = { settingsOpen = false }) {
+                            Icon(
+                                imageVector = Icons.Outlined.ArrowBack,
+                                contentDescription = "Back",
+                            )
+                        }
+                    },
+                )
+            } else {
+                TopAppBar(
+                    title = { Text(selectedDestination.label) },
+                    actions = {
+                        IconButton(
+                            onClick = {
+                                scope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        "Catalog refresh is not available in this foundation build.",
+                                    )
+                                }
+                            },
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Refresh,
+                                contentDescription = "Refresh OPRA catalog",
+                            )
+                        }
+                        IconButton(onClick = { settingsOpen = true }) {
+                            Icon(
+                                imageVector = Icons.Outlined.Settings,
+                                contentDescription = "Settings",
+                            )
+                        }
+                    },
+                )
+            }
+        },
+        bottomBar = {
+            if (!settingsOpen) {
+                NavigationBar {
+                    destinations.forEachIndexed { index, destination ->
+                        NavigationBarItem(
+                            selected = selectedDestinationIndex == index,
+                            onClick = { selectedDestinationIndex = index },
+                            icon = {
+                                Icon(
+                                    imageVector = when (destination) {
+                                        TopLevelDestination.MyHeadphones -> Icons.Outlined.Headphones
+                                        TopLevelDestination.BrowseOpra -> Icons.Outlined.Explore
+                                    },
+                                    contentDescription = null,
+                                )
+                            },
+                            label = { Text(destination.label) },
+                        )
+                    }
+                }
+            }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+    ) { innerPadding ->
+        val contentModifier = Modifier.padding(innerPadding)
+        if (settingsOpen) {
+            SettingsScreen(
+                appPreferences = appPreferences,
+                onThemeModeChange = onThemeModeChange,
+                onProfileVisibilityChange = onProfileVisibilityChange,
+                modifier = contentModifier,
+            )
+        } else {
+            when (selectedDestination) {
+                TopLevelDestination.MyHeadphones -> MyHeadphonesScreen(
+                    onBrowseOpra = { selectedDestinationIndex = TopLevelDestination.BrowseOpra.ordinal },
+                    modifier = contentModifier,
+                )
+                TopLevelDestination.BrowseOpra -> BrowseOpraScreen(modifier = contentModifier)
+            }
+        }
+    }
+}
