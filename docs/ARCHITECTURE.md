@@ -10,13 +10,13 @@ Baseline:
 
 - application ID / namespace: `com.weekssa.opraeqforuapp`
 - minSdk: 26
-- compileSdk / targetSdk: 37
+- compileSdk / targetSdk: 36 (Android 16 stable baseline)
 - Java target: 17
 - Android Gradle Plugin: 9.2.0
 - Kotlin / Compose compiler plugin: 2.3.21
 - Compose BOM: 2026.06.00
 
-The project uses AGP 9 built-in Kotlin support rather than applying the legacy `org.jetbrains.kotlin.android` plugin.
+The project uses AGP 9 built-in Kotlin support rather than applying the legacy `org.jetbrains.kotlin.android` plugin. API 37 is supported by AGP 9.2 but remains an Android 17 preview SDK at this stage, so the app deliberately targets stable API 36 until a later validated baseline update is justified.
 
 ## Package boundaries
 
