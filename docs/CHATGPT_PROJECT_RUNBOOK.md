@@ -10,22 +10,20 @@ The only repository that may be modified is:
 
 `weekssa/OPRA-EQ-for-UAPP`
 
-### Read-only behavioral reference
+Before every repository write, confirm this exact repository is the target.
 
-The following repository is reference material only unless the user explicitly changes that instruction:
+### Read-only behavioral reference
 
 `weekssa/opra-uapp-converter`
 
-It contains proven OPRA → UAPP/ToneBoosters conversion behavior and is the behavioral reference for the Android/Kotlin port. Do not modify it.
+This repository contains proven OPRA → UAPP/ToneBoosters conversion behavior and is the behavioral reference for the Android/Kotlin port. Do not modify it unless the user explicitly changes that instruction.
 
 ### OPRA upstream and runtime catalog
 
 - OPRA upstream: `https://github.com/opra-project/OPRA`
 - Runtime OPRA catalog: `https://opra.roonlabs.net/database_v1.jsonl`
 
-Normal app operation must use the runtime `database_v1.jsonl` catalog. It must not scrape GitHub during normal runtime.
-
-Before any repository write, confirm that the target is `weekssa/OPRA-EQ-for-UAPP`.
+Normal app operation must use the runtime `database_v1.jsonl` catalog. Do not scrape GitHub during normal app runtime.
 
 ## 2. Product identity
 
@@ -41,7 +39,7 @@ The app converts user-selected OPRA parametric EQ profiles into UAPP/ToneBooster
 
 The app must ship with **ZERO headphones at install**.
 
-End users must not need any of the following for normal use:
+Normal use requires no:
 
 - login or account;
 - cloud backend;
@@ -51,9 +49,9 @@ End users must not need any of the following for normal use:
 - GitHub account;
 - Google Drive account.
 
-User selections remain local. Normal conversion is local. Do not introduce data collection or remote account dependencies without an explicit product decision.
+User selections remain local. Conversion is local. Do not introduce data collection or remote-account dependencies without an explicit product decision.
 
-The app should not download OPRA artwork by default in v1.
+Do not download OPRA artwork by default in v1.
 
 ## 4. Runtime catalog, local storage, and offline behavior
 
@@ -65,7 +63,7 @@ Required behavior:
 
 1. Obtain the runtime OPRA catalog from `database_v1.jsonl`.
 2. Cache the catalog locally.
-3. Work offline after the initial successful sync using the cached catalog.
+3. Work offline after the first successful sync using that cached catalog.
 4. Provide a user-initiated **Refresh** action.
 5. Perform approximately daily background checks for catalog changes.
 6. Do not scrape GitHub during normal runtime.
@@ -101,132 +99,106 @@ Before Phase 1, review and receive user approval for the UX/behavior of:
 
 Do not start Phase 1 until the user explicitly approves Phase 0.
 
-For each major user-facing feature, explain its UX/behavior in plain language or simple wireframes before implementation and wait for approval.
+For every major user-facing feature, explain UX/behavior in plain language or simple wireframes before implementation and wait for approval.
 
-## 6. Primary information architecture
+## 6. Approved Phase 0 UX decisions
 
-The two primary product areas are:
-
-- **My Headphones**
-- **Browse OPRA**
-
-Browse OPRA begins with the hierarchy:
-
-**Manufacturer → Model**
-
-The hierarchy must support deeper path segments when the actual OPRA data genuinely requires them.
-
-Rules:
-
-- Preserve verified deeper OPRA path structure when needed.
-- Never invent variants.
-- Never invent folder meaning.
-- Never force deeper path segments into a semantic interpretation that the source data does not support.
-
-### Approved Phase 0 navigation — 2026-08-15
-
-Overall navigation is approved with the following behavior:
+### Overall navigation — approved 2026-08-15
 
 - **My Headphones** and **Browse OPRA** are peer top-level destinations in bottom navigation.
 - **My Headphones** is the local management area for headphones and selected profiles.
 - **Browse OPRA** is the discovery area and begins at Manufacturer → Model, with deeper verified OPRA path segments only when source data genuinely requires them.
 - Changing selections while browsing does not automatically switch the user to My Headphones.
-- A visible **Refresh** action is available from the top app bar because OPRA catalog freshness affects both primary areas.
+- A visible **Refresh** action is available from the top app bar because catalog freshness affects both primary areas.
 - A visible **Settings** action is available from the top app bar.
 - App-update information may appear as a non-blocking banner when an update exists; the permanent home for installed-version, What’s new/changelog, and Get update information is **Settings → About & updates**.
 - Bottom-navigation changes do not create an endlessly growing back stack.
-- Back navigation within Browse OPRA unwinds one hierarchy/detail level at a time.
+- Back navigation inside Browse OPRA unwinds one hierarchy/detail level at a time.
 - Back from a My Headphones detail returns to the My Headphones list.
 - Back from Settings or another secondary screen returns to the top-level screen that opened it.
 - At the root of either primary destination, system Back follows normal Android exit/background behavior rather than switching to the other bottom-navigation destination.
-- Each primary destination should retain useful navigation state where practical.
+- Each primary destination should retain useful navigation and scroll state where practical.
 
-The user approved this overall navigation on 2026-08-15. Do not redesign it without a new explicit product decision.
+Do not redesign this without a new explicit product decision.
 
-### Approved Phase 0 first launch — 2026-08-15
+### First launch — approved 2026-08-15
 
-First-launch behavior is approved as follows:
-
-- Do not use a blocking onboarding wizard, account screen, tutorial carousel, or special first-launch screen.
-- Open directly to **My Headphones**, which is genuinely empty because the app ships with zero headphones.
+- Do not use a blocking onboarding wizard, account screen, tutorial carousel, or special first-launch destination.
+- Open directly to **My Headphones**, genuinely empty because the app ships with zero headphones.
 - Automatically begin the first download of the OPRA runtime catalog from `database_v1.jsonl`.
 - Show an empty-state explanation with **Browse OPRA** as the obvious primary action.
-- The empty state may include the brief reassurance **“Your selections stay on this device.”**
-- If Browse OPRA is opened while the first catalog download is still in progress, show a normal Browse loading state rather than redirecting elsewhere.
+- The empty state may include **“Your selections stay on this device.”**
+- If Browse OPRA is opened while the first catalog download is still running, show the normal Browse loading state rather than redirecting elsewhere.
 - After the first successful sync, use the locally cached catalog immediately on future launches and allow normal offline use.
-- Do not request storage/folder permissions merely to browse or select headphones; folder access belongs to the later export flow.
+- Do not request storage/folder access merely to browse or select headphones; folder access belongs to export.
 - Do not interrupt first use with an update prompt, changelog modal, attribution wall, or other nonessential blocking surface.
-- If the first-ever catalog download cannot complete, the app may still show the My Headphones shell, while detailed offline/error presentation remains a separate Phase 0 design item.
-- First launch adds no special destination to the Android Back stack; normal approved navigation and Back behavior apply.
+- If the first-ever catalog download cannot complete, My Headphones may still render while detailed offline/error behavior follows its later Phase 0 design.
+- First launch adds no special destination to the Android Back stack.
 
-The user approved this first-launch approach on 2026-08-15. Do not redesign it without a new explicit product decision.
+Do not redesign this without a new explicit product decision.
 
-### Approved Phase 0 My Headphones — 2026-08-15
+### My Headphones — approved 2026-08-15
 
-My Headphones is approved with the following behavior:
-
-- Present the user's selected headphones as a simple, scannable library grouped by manufacturer.
-- Within a manufacturer, order models alphabetically.
-- Each headphone row shows the model name, any genuinely verified deeper OPRA path distinction when required, and a concise count such as **“3 profiles selected.”**
+- Present selected headphones as a simple, scannable library grouped by manufacturer.
+- Within each manufacturer, order models alphabetically.
+- Each headphone row shows model name, any genuinely verified deeper OPRA path distinction when required, and a concise count such as **“3 profiles selected.”**
 - Do not require or download OPRA artwork for this list in v1.
-- Keep normal rows visually quiet. Add a short attention line only when something needs action or awareness, such as **“1 profile updated”** or **“1 no longer available in OPRA.”**
+- Keep normal rows visually quiet. Add a short attention line only when something needs awareness, such as **“1 profile updated”**, **“2 new OPRA profiles”**, or **“1 no longer available in OPRA.”**
+- New-profile attention is based on the user’s previously known local catalog state, so users can see when OPRA profiles appeared after they added or last processed that headphone/catalog state.
+- Opening the headphone shows the newly discovered profiles and whether each is selected according to the user’s future-profile setting.
+- The new-profile attention indicator should remain until the user reviews that headphone’s changes; final clearing/reporting behavior is part of the dedicated refresh/change-reporting UX.
 - Tapping a headphone opens its detail/management screen.
-- The headphone detail shows manufacturer/model identity, selected-profile count, status, and profile management.
-- Selected profiles must be visible from this management experience, and each selected profile must have an explicit **Remove** action so the user can remove one profile without removing the entire headphone.
+- The detail shows manufacturer/model identity, selected-profile count, status, and profile management.
+- Selected profiles are visible there, and every selected profile has an explicit **Remove** action.
 - Do not use swipe-to-delete as the primary removal mechanism for profiles or headphones.
-- Removing an individual profile requires an explicit confirmation.
-- Removing an entire headphone requires an explicit confirmation.
-- When removing either a profile or a headphone, ask whether the user also wants to remove the corresponding saved preset files created by OPRA EQ for UAPP.
-- Preset-file deletion is **opt-in** at removal time; keeping saved presets is the safe default so files are never silently deleted.
-- The app may delete only preset files it created and can validly manage through its retained Android document-tree access. If an exported file is no longer accessible to the app, removal of the local selection must still succeed and the UI should explain that the inaccessible external file could not be removed rather than pretending it was deleted.
-- Detailed profile checkbox selection, Select all/none, automatic future-profile behavior, export mechanics, and refresh/change reporting remain separate Phase 0 design items and should not be prematurely redefined here.
-- The approved first-launch empty state remains the My Headphones empty state whenever the user has no selected headphones.
-- Back from headphone detail returns to the My Headphones list and should preserve useful list/scroll state.
+- Removing an individual profile requires explicit confirmation.
+- Removing an entire headphone requires explicit confirmation.
+- When removing either a profile or a headphone, ask whether the user also wants to remove corresponding saved preset files created by OPRA EQ for UAPP.
+- Preset-file deletion is **opt-in** at removal time; keeping files is the safe default.
+- The app may delete only files it created and can validly manage through retained Android document-tree access.
+- If an exported file is no longer accessible, removal of the local selection must still succeed and the UI must explain that the inaccessible file could not be removed rather than pretending it was deleted.
+- The first-launch empty state is also used whenever My Headphones contains no headphones.
+- Back from headphone detail returns to My Headphones and should preserve useful list/scroll state.
 
-The user approved this My Headphones approach, including per-profile removal and the saved-preset deletion choice, on 2026-08-15. Do not redesign it without a new explicit product decision.
+Do not redesign this without a new explicit product decision.
 
-### Approved Phase 0 Browse OPRA — 2026-08-15
-
-Browse OPRA is approved with the following behavior:
+### Browse OPRA — approved 2026-08-15
 
 - Browse is a simple, alphabetic discovery flow beginning at **Manufacturer → Model**.
-- Manufacturer and model names must come from OPRA source data; do not invent or reinterpret names from identifiers.
+- Manufacturer and model names come from OPRA source data; never invent or reinterpret names from internal identifiers.
 - Do not use OPRA artwork in Browse for v1.
 - A manufacturer opens an alphabetic model list.
 - A model row may show a concise available-EQ-profile count.
 - If the headphone already has local selections, Browse may show a subdued state such as **“2 selected”** or **“In My Headphones.”**
 - Tapping a normal model opens its EQ-profile destination.
-- Changing selections while browsing does not automatically switch the user to My Headphones.
-- Preserve deeper hierarchy only when the OPRA source data genuinely establishes additional path segments that must be represented.
+- Changing selections while browsing does not automatically switch to My Headphones.
+- Preserve deeper hierarchy only when OPRA source data genuinely establishes additional path segments that must be represented.
 - Never split IDs or filenames and assign invented semantics such as Variant, Revision, Pad, or similar labels.
 - Never create a deeper level merely because an internal identifier or filesystem structure contains extra text.
-- Search, checkbox/profile-selection controls, Select all/none, automatic future-profile behavior, and detailed refresh/change reporting remain separate Phase 0 design items.
-- Back navigation unwinds from EQ profiles to a verified deeper level when one exists, otherwise directly to Models, then to Manufacturers.
-- Browse should retain useful navigation and scroll state when the user switches top-level destinations and later returns.
+- Back navigation unwinds from EQ profiles to a verified deeper level when one exists, otherwise to Models, then Manufacturers.
+- Browse should retain useful navigation and scroll state when users switch top-level destinations and return.
 
-The user approved this Browse OPRA approach on 2026-08-15. Do not redesign it without a new explicit product decision.
+Do not redesign this without a new explicit product decision.
 
-### Approved Phase 0 Search — 2026-08-15
-
-Search is approved with the following behavior:
+### Search — approved 2026-08-15
 
 - Place a visible **Search headphones…** field directly below the Browse OPRA top app bar at the Browse root.
 - Search the locally cached OPRA catalog; do not make a network request for each query or keystroke.
-- Search remains fully usable offline after the initial successful catalog sync.
+- Search remains fully usable offline after the first successful catalog sync.
 - Primary v1 search scope is manufacturer/vendor name plus headphone model/product name.
 - Do not expose or require internal OPRA identifiers for normal search.
 - Do not include EQ author, EQ details, frequencies, or other profile metadata in the main Browse search for v1.
 - Matching should be case-insensitive and tolerant of ordinary spacing and punctuation differences so queries such as `hd600`, `HD 600`, and `hd 600` can reasonably find the same product.
-- Search normalization is only for matching; always display the OPRA-provided manufacturer and model names rather than rewritten names.
+- Search normalization is for matching only; always display OPRA-provided manufacturer and model names.
 - Search results are headphone/model-first and show manufacturer, model, available EQ-profile count, and subdued selected state when relevant.
-- Tapping a search result goes directly to that headphone’s EQ-profile destination.
+- Tapping a search result opens that headphone’s EQ-profile destination.
 - A visible clear control restores the normal alphabetic manufacturer list.
 - A no-results state should be brief, such as **“No headphones found”** with guidance to try another manufacturer or model name.
-- Do not fall back to web search, GitHub lookup, or other remote search when no local catalog result matches.
-- Android Back while actively searching should first dismiss the keyboard/search interaction as appropriate rather than unexpectedly leaving Browse; normal approved root Back behavior then applies.
-- Search results update naturally after a successful catalog refresh updates the local cache.
+- Do not fall back to web search, GitHub lookup, or another remote search when no local result matches.
+- Android Back while actively searching should first dismiss the keyboard/search interaction as appropriate rather than unexpectedly leaving Browse; normal root Back behavior then applies.
+- Results update naturally after successful catalog refresh updates the local cache.
 
-The user approved this Search approach on 2026-08-15. Do not redesign it without a new explicit product decision.
+Do not redesign this without a new explicit product decision.
 
 ## 7. Profile selection model
 
@@ -238,7 +210,15 @@ Provide:
 - **Select none**
 - **Automatically include new OPRA profiles for this headphone**
 
-The automatic-inclusion behavior is fixed as follows.
+### Approved default for future-profile inclusion — 2026-08-15
+
+For a newly managed headphone, **Automatically include new OPRA profiles for this headphone defaults to ON**.
+
+The user may turn it OFF for any headphone.
+
+Defaulting this control ON does **not** itself force every current profile checkbox to be selected. If the user leaves a current profile unchecked while automatic inclusion is ON, that unchecked profile is an explicit exclusion. Future unrelated profiles are still automatically included.
+
+This default is an approved product decision. The remainder of the profile-selection screen is still in Phase 0 review until explicitly approved.
 
 ### Automatic inclusion ON + all current profiles selected
 
@@ -248,11 +228,11 @@ The headphone follows all current profiles and all future profiles.
 
 Preserve those exact exclusions. Future unrelated OPRA profiles for the headphone are automatically included.
 
-In other words, unchecked profiles remain explicitly excluded while newly appearing profiles that are not one of those exclusions are included automatically.
+Unchecked profiles remain explicitly excluded while newly appearing profiles that are not one of those exclusions are included automatically.
 
 ### Automatic inclusion OFF
 
-The current selection is a fixed exact selection. Future profiles may appear in the UI after catalog updates, but they must not be silently added to the user’s selection.
+The current selection is a fixed exact selection. Future profiles appear in the UI after catalog updates but are not silently added to the user’s selection.
 
 This selection model must be represented explicitly in domain logic and covered by tests.
 
@@ -294,13 +274,13 @@ Use headphone-first names in this form:
 
 `Model [Variant] - Creator - Details`
 
-Only use a variant when the source data actually provides a verified variant/path distinction. Do not invent one.
+Only use a variant when source data actually provides a verified variant/path distinction. Do not invent one.
 
 ### Encoding
 
 ToneBoosters XML must remain ISO-8859-1-safe.
 
-Full Unicode metadata must still be retained locally so the app does not lose source information merely because the exported XML format has stricter encoding constraints.
+Full Unicode metadata must still be retained locally so source information is not lost merely because exported XML has stricter encoding constraints.
 
 Conversion output must be deterministic for identical source data and selection state.
 
@@ -328,7 +308,7 @@ Build golden fixtures and require Kotlin parity for at least:
 - removed profiles;
 - export behavior.
 
-Never weaken validation just to make tests pass. If Kotlin and the reference behavior differ, understand and resolve the difference rather than relaxing the test without a justified product decision.
+Never weaken validation merely to make tests pass. If Kotlin and the reference behavior differ, understand and resolve the difference rather than relaxing validation without a justified product decision.
 
 ## 10. Android architecture baseline
 
@@ -341,15 +321,15 @@ Unless a concrete technical reason changes the decision, prefer:
 - WorkManager for approximately daily background catalog checks, or current Android-recommended equivalents if the ecosystem changes materially;
 - minSdk 26.
 
-No Android code, Gradle files, Kotlin files, signing configuration, GitHub Actions, app icons, or release files are part of the documentation/bootstrap step that created this runbook.
+No Android code, Gradle files, Kotlin files, signing configuration, GitHub Actions, app icons, or release files belong to Phase 0 design work.
 
 ## 11. Export behavior
 
 Use Android’s system folder/document picker rather than broad storage permissions.
 
-Desired experience:
+Required direction:
 
-- Suggest `Documents/OPRA EQ for UAPP/Presets` as the preferred location where Android’s picker/API allows a useful suggestion.
+- Suggest `Documents/OPRA EQ for UAPP/Presets` where Android’s picker/API allows a useful suggestion.
 - Let the user choose the actual destination.
 - Persist supported directory access using the platform mechanism where appropriate.
 - Do not request broad storage access.
@@ -360,7 +340,9 @@ Export folder layout begins:
 
 `Manufacturer/Model/`
 
-It may add deeper path segments only when those segments are verified by the OPRA source hierarchy and are genuinely needed. Never invent folder meaning.
+It may add deeper path segments only when those segments are verified by OPRA source hierarchy and genuinely needed. Never invent folder meaning.
+
+Detailed export UX remains a Phase 0 item until explicitly approved.
 
 ## 12. Upstream OPRA changes
 
@@ -380,7 +362,7 @@ When a previously selected/generated OPRA profile is removed upstream:
 2. retain the local record needed to explain its state;
 3. mark it **“No longer available in OPRA”**;
 4. do not delete it automatically;
-5. allow the user to remove it explicitly.
+5. let the user remove it explicitly.
 
 These behaviors must be covered by catalog-update tests.
 
@@ -402,7 +384,7 @@ Update behavior for v1 is manual from the user’s perspective:
 
 A repository-level `CHANGELOG.md` is part of the project architecture and must be maintained from the beginning of implementation/release work so release notes and in-app What’s new content have a durable source of truth.
 
-This documentation/bootstrap step intentionally does **not** create `CHANGELOG.md`; the user explicitly deferred its creation.
+The documentation/bootstrap step intentionally did **not** create `CHANGELOG.md`; creation remains deferred until the appropriate implementation/release stage.
 
 Use SemVer:
 
@@ -419,7 +401,7 @@ Never commit:
 - credentials;
 - other secrets.
 
-When release signing is intentionally introduced later, use one stable release-signing identity. Signing configuration is not part of Phase 0/bootstrap.
+When release signing is intentionally introduced later, use one stable release-signing identity. Signing configuration is not part of Phase 0.
 
 ## 15. Attribution and product claims
 
@@ -429,7 +411,7 @@ Clearly credit:
 
 - OPRA;
 - individual EQ creators/authors;
-- relevant sources represented by the OPRA data.
+- relevant sources represented by OPRA data.
 
 Do not imply endorsement by:
 
@@ -438,11 +420,9 @@ Do not imply endorsement by:
 - UAPP;
 - ToneBoosters.
 
-Preserve attribution through the conversion/export pipeline to the extent supported by the output format, while retaining richer metadata locally when required.
+Preserve attribution through conversion/export to the extent supported by the output format while retaining richer metadata locally when required.
 
 ## 16. Communication and implementation workflow
-
-Work in clear phases.
 
 For substantive work:
 
@@ -455,16 +435,23 @@ For substantive work:
 7. After changes, state exactly what changed.
 8. State whether relevant validation passed.
 9. Ask only questions that materially affect the product.
-10. Prefer connected GitHub tools directly; give the user manual Git/Terminal steps only when truly required.
+10. Prefer connected GitHub tools directly; give manual Git/Terminal steps only when truly required.
 
-The repository is the maintained source of truth. When a later approved decision changes this runbook, update the runbook so future work does not depend on conversational memory alone.
+The repository is the maintained source of truth. When an approved decision changes, update this runbook so future work does not depend on conversational memory alone.
 
 ## 17. Current project state
 
-At bootstrap, the repository contains documentation only.
+The repository remains documentation-only for app development purposes. Phase 0 is active. Android implementation has not begun.
 
-Phase 0 is active. Android implementation has not begun.
+Approved on 2026-08-15:
 
-Overall navigation, first-launch behavior, My Headphones, Browse OPRA, and Search were approved on 2026-08-15. The next Phase 0 UX area is **profile selection, Select all / Select none, and future-profile behavior**.
+- overall navigation;
+- first launch;
+- My Headphones;
+- Browse OPRA;
+- Search;
+- default **ON** for automatic inclusion of new OPRA profiles on newly managed headphones.
 
-The next design work must proceed one approved UX area at a time. Do not advance to a later Phase 0 UX area when the user has explicitly asked to approve the current area first.
+The current Phase 0 UX area is **profile selection, Select all / Select none, and future-profile behavior**. The default-ON decision above is approved, but the full profile-selection screen has not yet received final approval.
+
+Proceed one UX area at a time and do not advance when the user has asked to approve the current area first.
