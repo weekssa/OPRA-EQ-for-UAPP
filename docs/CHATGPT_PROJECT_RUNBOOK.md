@@ -185,6 +185,27 @@ My Headphones is approved with the following behavior:
 
 The user approved this My Headphones approach, including per-profile removal and the saved-preset deletion choice, on 2026-08-15. Do not redesign it without a new explicit product decision.
 
+### Approved Phase 0 Browse OPRA — 2026-08-15
+
+Browse OPRA is approved with the following behavior:
+
+- Browse is a simple, alphabetic discovery flow beginning at **Manufacturer → Model**.
+- Manufacturer and model names must come from OPRA source data; do not invent or reinterpret names from identifiers.
+- Do not use OPRA artwork in Browse for v1.
+- A manufacturer opens an alphabetic model list.
+- A model row may show a concise available-EQ-profile count.
+- If the headphone already has local selections, Browse may show a subdued state such as **“2 selected”** or **“In My Headphones.”**
+- Tapping a normal model opens its EQ-profile destination.
+- Changing selections while browsing does not automatically switch the user to My Headphones.
+- Preserve deeper hierarchy only when the OPRA source data genuinely establishes additional path segments that must be represented.
+- Never split IDs or filenames and assign invented semantics such as Variant, Revision, Pad, or similar labels.
+- Never create a deeper level merely because an internal identifier or filesystem structure contains extra text.
+- Search, checkbox/profile-selection controls, Select all/none, automatic future-profile behavior, and detailed refresh/change reporting remain separate Phase 0 design items.
+- Back navigation unwinds from EQ profiles to a verified deeper level when one exists, otherwise directly to Models, then to Manufacturers.
+- Browse should retain useful navigation and scroll state when the user switches top-level destinations and later returns.
+
+The user approved this Browse OPRA approach on 2026-08-15. Do not redesign it without a new explicit product decision.
+
 ## 7. Profile selection model
 
 Every usable OPRA parametric EQ profile must be represented as a checkbox.
@@ -422,6 +443,6 @@ At bootstrap, the repository contains documentation only.
 
 Phase 0 is active. Android implementation has not begun.
 
-Overall navigation, first-launch behavior, and My Headphones were approved on 2026-08-15. The next Phase 0 UX area is **Browse OPRA**.
+Overall navigation, first-launch behavior, My Headphones, and Browse OPRA were approved on 2026-08-15. The next Phase 0 UX area is **Search**.
 
 The next design work must proceed one approved UX area at a time. Do not advance to a later Phase 0 UX area when the user has explicitly asked to approve the current area first.
