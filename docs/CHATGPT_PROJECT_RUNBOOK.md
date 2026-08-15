@@ -381,6 +381,30 @@ General rule: OPRA EQ for UAPP is a local-first app that occasionally synchroniz
 
 Do not redesign this without a new explicit product decision.
 
+### Accessibility — approved 2026-08-15
+
+Accessibility is part of the core interaction design, not a final cosmetic pass. Use standard Android/Compose semantics and controls where practical and ensure the same meaningful information/actions are available visually, through TalkBack, with large text, and for users who cannot make precise gestures.
+
+- Interactive controls and useful tappable areas should meet Android’s recommended minimum touch-target sizing, including at least 48 × 48 dp for interactive targets.
+- Profile rows expose meaningful accessibility semantics including creator/details, compatibility outcome, selected/unselected state, disabled state, and control role as applicable.
+- A **Not compatible** profile remains discoverable to TalkBack. Its selection control is disabled/uncheckable, but the explanatory row remains focusable/actionable so the user can open the exact incompatibility reason.
+- For selectable profiles, the useful selection area should be comfortably tappable rather than requiring precise contact with the checkbox glyph. Not-compatible rows must never toggle selection.
+- Do not communicate **New**, **Updated**, **Compatible with limitation**, **Not compatible**, **No longer available in OPRA**, offline state, export readiness, errors, or other important state by color/icon alone; meaningful text or accessibility semantics must carry the state.
+- Respect Android text-size/font scaling. Avoid rigid row heights that clip important manufacturer/model/profile identity, compatibility warnings, errors, buttons, or dialog content. Prefer wrapping/reflowing important text over ellipsis when truncation could hide identity, compatibility, warning, or error meaning.
+- Icon-only functional controls such as Refresh and Settings must have meaningful accessibility labels. Purely decorative visuals/icons should not create unnecessary TalkBack stops.
+- Accessibility traversal/focus order should follow the conceptual screen order. Profile management should not jump unpredictably among app-bar actions, rows, auto-inclusion settings, and Save controls.
+- Destructive/confirmation dialogs use explicit action labels such as **Remove profiles**, **Keep editing**, or **Discard** rather than ambiguous **Yes/No**. Optional saved-preset deletion remains a separately understandable unchecked choice by default.
+- Do not unnecessarily default accessibility focus to a destructive action.
+- User-triggered status changes such as Refresh should announce meaningful transitions without repetitive chatter: e.g. **Refreshing OPRA catalog**, then the relevant completion/change result. Quiet background checks remain quiet unless they produce information the user needs.
+- Settings → **Profile visibility** exposes all three options with understandable labels and checked/unchecked state. Hidden-profile disclosure text remains available to accessibility services.
+- Bottom navigation exposes destination names and selected state, e.g. **My Headphones, selected** and **Browse OPRA**; its Browse affordance must not be confused with the separate headphone Search field.
+- No important function may require a swipe, long press, precise drag, or hidden gesture. Such gestures may be optional shortcuts only if an equivalent visible accessible action exists.
+- Phase 1 validation on the primary Pixel 9 includes manual TalkBack use, large system text/font scaling, logical focus order, touch-target checks, disabled Not-compatible behavior, compatibility-state announcements, dialogs, Profile visibility, and reasonable contrast/color-independence checks.
+- Automated accessibility checks/Scanner findings may supplement but do not replace manual accessibility validation.
+- Add a regression case for Not-compatible profiles verifying: visible when configured to show; discoverable by TalkBack; incompatibility reason accessible; selection control disabled; Select all skips it; automatic inclusion skips it; export skips it.
+
+Do not redesign this without a new explicit product decision.
+
 ## 7. Selection, compatibility, and catalog domain rules
 
 For each managed headphone, domain state must be able to represent:
@@ -459,7 +483,8 @@ Treat the Python converter as the behavioral reference. Build golden fixtures an
 - offline behavior after first successful sync;
 - changed profiles;
 - removed profiles;
-- export behavior, including incremental writes, partial failures, managed-file ownership, conflicts, retained files, and lost folder access.
+- export behavior, including incremental writes, partial failures, managed-file ownership, conflicts, retained files, and lost folder access;
+- accessibility-critical Not-compatible behavior, focus/semantics where testable, and large-text/layout regressions where practical.
 
 Never weaken validation merely to make tests pass. If Kotlin and reference behavior differ, understand and resolve the difference rather than relaxing validation without a justified product decision.
 
@@ -530,8 +555,9 @@ Approved on 2026-08-15:
 - Export;
 - Settings / About;
 - app updates and What’s new / changelog UX;
-- Loading / Offline / Error states.
+- Loading / Offline / Error states;
+- Accessibility.
 
-The next Phase 0 UX area is **Accessibility**.
+The next Phase 0 UX area is **three original app-icon concepts**.
 
 Proceed one UX area at a time and do not advance when the user has asked to approve the current area first.
