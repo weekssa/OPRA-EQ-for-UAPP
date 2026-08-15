@@ -295,6 +295,20 @@ These options control presentation only. They never change the underlying compat
 - If compatibility filtering hides profiles for a headphone, the profile screen should disclose that fact with a concise message such as **“2 OPRA profiles hidden by your compatibility filter.”** This avoids making OPRA content appear to have silently vanished.
 - The user can return to Settings to restore any hidden compatibility category.
 
+#### Appearance — approved 2026-08-15
+
+Settings includes **Appearance → Theme** with exactly three normal user choices:
+
+- **System default** — default choice; follow the Android device appearance and change automatically when the system theme changes.
+- **Light** — keep the app in its light appearance regardless of system theme.
+- **Dark** — keep the app in its dark appearance regardless of system theme.
+
+The selected appearance preference remains local on the device. Theme choice changes presentation only and must never affect profile compatibility, selection, conversion, export, refresh, or other domain behavior.
+
+Dark/light appearance applies consistently across My Headphones, Browse OPRA, search, profile-management/compatibility screens, Settings, dialogs, banners, loading/offline/error states, export results, and What’s new/update surfaces.
+
+Both light and dark appearances must preserve readable contrast and the approved rule that important status is communicated by text/semantics as well as any color or icon. Do not create dark-mode-only or light-mode-only meanings.
+
 Do not redesign this without a new explicit product decision.
 
 ### App updates and What’s new / changelog — approved 2026-08-15
@@ -381,9 +395,9 @@ General rule: OPRA EQ for UAPP is a local-first app that occasionally synchroniz
 
 Do not redesign this without a new explicit product decision.
 
-### Accessibility — approved 2026-08-15
+### Accessibility — approved 2026-08-15, amended 2026-08-15
 
-Accessibility is part of the core interaction design, not a final cosmetic pass. Use standard Android/Compose semantics and controls where practical and ensure the same meaningful information/actions are available visually, through TalkBack, with large text, and for users who cannot make precise gestures.
+Accessibility is part of the core interaction design, not a final cosmetic pass. Use standard Android/Compose semantics and controls where practical and ensure the same meaningful information/actions are available visually, through TalkBack, with large text, in both light and dark appearance, and for users who cannot make precise gestures.
 
 - Interactive controls and useful tappable areas should meet Android’s recommended minimum touch-target sizing, including at least 48 × 48 dp for interactive targets.
 - Profile rows expose meaningful accessibility semantics including creator/details, compatibility outcome, selected/unselected state, disabled state, and control role as applicable.
@@ -397,9 +411,10 @@ Accessibility is part of the core interaction design, not a final cosmetic pass.
 - Do not unnecessarily default accessibility focus to a destructive action.
 - User-triggered status changes such as Refresh should announce meaningful transitions without repetitive chatter: e.g. **Refreshing OPRA catalog**, then the relevant completion/change result. Quiet background checks remain quiet unless they produce information the user needs.
 - Settings → **Profile visibility** exposes all three options with understandable labels and checked/unchecked state. Hidden-profile disclosure text remains available to accessibility services.
+- Settings → **Appearance** exposes **System default**, **Light**, and **Dark** with a clear selected state; appearance changes must not change semantic meaning or hide information.
 - Bottom navigation exposes destination names and selected state, e.g. **My Headphones, selected** and **Browse OPRA**; its Browse affordance must not be confused with the separate headphone Search field.
 - No important function may require a swipe, long press, precise drag, or hidden gesture. Such gestures may be optional shortcuts only if an equivalent visible accessible action exists.
-- Phase 1 validation on the primary Pixel 9 includes manual TalkBack use, large system text/font scaling, logical focus order, touch-target checks, disabled Not-compatible behavior, compatibility-state announcements, dialogs, Profile visibility, and reasonable contrast/color-independence checks.
+- Phase 1 validation on the primary Pixel 9 includes manual TalkBack use, large system text/font scaling, logical focus order, touch-target checks, disabled Not-compatible behavior, compatibility-state announcements, dialogs, Profile visibility, both Light and Dark themes plus System-follow behavior, and reasonable contrast/color-independence checks in both appearances.
 - Automated accessibility checks/Scanner findings may supplement but do not replace manual accessibility validation.
 - Add a regression case for Not-compatible profiles verifying: visible when configured to show; discoverable by TalkBack; incompatibility reason accessible; selection control disabled; Select all skips it; automatic inclusion skips it; export skips it.
 
@@ -470,6 +485,7 @@ Treat the Python converter as the behavioral reference. Build golden fixtures an
 - Select all and automatic-inclusion skipping Not-compatible profiles;
 - compatibility visibility filters not mutating selection;
 - hidden-profile disclosure counts/messages;
+- appearance preference persistence and System/Light/Dark behavior without domain-state mutation;
 - preset naming;
 - ISO-8859-1-safe export encoding;
 - full Unicode local metadata retention;
@@ -556,7 +572,8 @@ Approved on 2026-08-15:
 - Settings / About;
 - app updates and What’s new / changelog UX;
 - Loading / Offline / Error states;
-- Accessibility.
+- Accessibility;
+- Appearance with System default / Light / Dark, defaulting to System default.
 
 The next Phase 0 UX area is **three original app-icon concepts**.
 
