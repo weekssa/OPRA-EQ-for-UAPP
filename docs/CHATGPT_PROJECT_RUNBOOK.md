@@ -143,6 +143,24 @@ Overall navigation is approved with the following behavior:
 
 The user approved this overall navigation on 2026-08-15. Do not redesign it without a new explicit product decision.
 
+### Approved Phase 0 first launch — 2026-08-15
+
+First-launch behavior is approved as follows:
+
+- Do not use a blocking onboarding wizard, account screen, tutorial carousel, or special first-launch screen.
+- Open directly to **My Headphones**, which is genuinely empty because the app ships with zero headphones.
+- Automatically begin the first download of the OPRA runtime catalog from `database_v1.jsonl`.
+- Show an empty-state explanation with **Browse OPRA** as the obvious primary action.
+- The empty state may include the brief reassurance **“Your selections stay on this device.”**
+- If Browse OPRA is opened while the first catalog download is still in progress, show a normal Browse loading state rather than redirecting elsewhere.
+- After the first successful sync, use the locally cached catalog immediately on future launches and allow normal offline use.
+- Do not request storage/folder permissions merely to browse or select headphones; folder access belongs to the later export flow.
+- Do not interrupt first use with an update prompt, changelog modal, attribution wall, or other nonessential blocking surface.
+- If the first-ever catalog download cannot complete, the app may still show the My Headphones shell, while detailed offline/error presentation remains a separate Phase 0 design item.
+- First launch adds no special destination to the Android Back stack; normal approved navigation and Back behavior apply.
+
+The user approved this first-launch approach on 2026-08-15. Do not redesign it without a new explicit product decision.
+
 ## 7. Profile selection model
 
 Every usable OPRA parametric EQ profile must be represented as a checkbox.
@@ -380,6 +398,6 @@ At bootstrap, the repository contains documentation only.
 
 Phase 0 is active. Android implementation has not begun.
 
-Overall navigation was approved on 2026-08-15. The next Phase 0 UX area is first launch.
+Overall navigation and first-launch behavior were approved on 2026-08-15. The next Phase 0 UX area is **My Headphones**.
 
 The next design work must proceed one approved UX area at a time. Do not advance to a later Phase 0 UX area when the user has explicitly asked to approve the current area first.
