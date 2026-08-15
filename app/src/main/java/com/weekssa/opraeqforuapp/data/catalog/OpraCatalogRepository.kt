@@ -57,7 +57,6 @@ class HttpOpraCatalogSource(
     private val catalogUrl: URL = URL(DEFAULT_CATALOG_URL),
 ) : OpraCatalogSource {
     override suspend fun downloadTo(destination: File) = withContext(Dispatchers.IO) {
-        destination.parentFile?.mkdirs()
         val connection = (catalogUrl.openConnection() as HttpURLConnection).apply {
             connectTimeout = CONNECT_TIMEOUT_MILLIS
             readTimeout = READ_TIMEOUT_MILLIS
@@ -138,6 +137,14 @@ class OpraCatalogRepository(
     suspend fun refresh(): CatalogRefreshResult = refreshMutex.withLock {
         val previous = mutableState.value as? CatalogState.Ready
         mutableState.value = previous?.copy(isRefreshing = true) ?: CatalogState.Loading
+
+        val cacheDirectoryReady = withContext(Dispatchers.IO) {
+            catalogDirectory.isDirectory || catalogDirectory.mkdirs()
+        }
+        if (!cacheDirectoryReady) {
+            return@withLock fail(CatalogRefreshFailureReason.Storage, previous)
+        }
+
         candidateFile.delete()
 
         try {
@@ -201,7 +208,6 @@ class OpraCatalogRepository(
 
     @Throws(IOException::class)
     private fun promoteCandidate() {
-        catalogDirectory.mkdirs()
         try {
             Files.move(
                 candidateFile.toPath(),
