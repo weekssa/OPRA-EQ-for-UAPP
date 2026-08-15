@@ -200,41 +200,44 @@ Do not redesign this without a new explicit product decision.
 
 Do not redesign this without a new explicit product decision.
 
-## 7. Profile selection model
+### Profile selection, Select all / Select none, and future-profile behavior — approved 2026-08-15
 
-Every usable OPRA parametric EQ profile must be represented as a checkbox.
+- Every usable OPRA parametric EQ profile is represented as a checkbox.
+- Each profile row shows enough OPRA metadata to distinguish it, including creator/author and details when present.
+- Provide **Select all** and **Select none** controls for the current usable profiles on the headphone.
+- Checkbox and future-profile-switch edits are staged until the user chooses **Save changes** rather than committing each tap immediately.
+- If Save would remove one or more currently selected profiles, require an explicit removal confirmation.
+- That removal confirmation asks whether to also remove corresponding saved preset files created by OPRA EQ for UAPP; preset deletion is opt-in and defaults to keeping the files.
+- If the saved selection contains zero profiles, treat that as removing the headphone from My Headphones and use the approved headphone-removal confirmation, including the optional saved-preset deletion choice.
+- If the user presses Back with unsaved selection changes, do not silently save or discard them; offer to keep editing or discard the staged changes.
+- **Automatically include new OPRA profiles for this headphone defaults to ON for every newly managed headphone.**
+- The user may turn automatic inclusion OFF independently for any headphone.
+- Select all and Select none do not silently change the automatic-inclusion setting.
+- Automatic inclusion ON with all current profiles selected means follow all current and future profiles.
+- Automatic inclusion ON with some current profiles unchecked preserves those exact unchecked profiles as explicit exclusions while automatically including future unrelated profiles.
+- Automatic inclusion OFF means the saved selection is fixed and exact; future profiles appear but are not silently selected.
+- The app must persist explicit exclusions as domain state rather than infer them merely from a selected-count snapshot.
+- Newly discovered profiles may show a subtle **New** marker based on the user’s previously known local catalog state.
+- When automatic inclusion is ON, a newly discovered non-excluded profile appears checked; when it is OFF, the new profile appears unchecked.
+- Profile rows must retain room for conversion warnings such as **more than 10 EQ bands** or a filter that cannot be converted safely.
+- A problematic or unsupported profile must remain visible and must not disappear silently merely because conversion has a limitation.
+- Detailed refresh timing, change-summary presentation, and when New/attention indicators clear are governed by the separate refresh/change-reporting UX.
 
-Provide:
+Do not redesign this without a new explicit product decision.
 
-- **Select all**
-- **Select none**
-- **Automatically include new OPRA profiles for this headphone**
+## 7. Selection domain rules
 
-### Approved default for future-profile inclusion — 2026-08-15
+The approved selection behavior above is a required domain model, not merely presentation logic.
 
-For a newly managed headphone, **Automatically include new OPRA profiles for this headphone defaults to ON**.
+For each managed headphone, domain state must be able to represent:
 
-The user may turn it OFF for any headphone.
+- currently selected profile identities;
+- whether automatic future-profile inclusion is ON or OFF;
+- explicit exclusions when automatic inclusion is ON;
+- previously known profile identities needed to detect newly discovered profiles;
+- local/removal state needed to preserve removed-upstream profiles and generated files as required elsewhere in this runbook.
 
-Defaulting this control ON does **not** itself force every current profile checkbox to be selected. If the user leaves a current profile unchecked while automatic inclusion is ON, that unchecked profile is an explicit exclusion. Future unrelated profiles are still automatically included.
-
-This default is an approved product decision. The remainder of the profile-selection screen is still in Phase 0 review until explicitly approved.
-
-### Automatic inclusion ON + all current profiles selected
-
-The headphone follows all current profiles and all future profiles.
-
-### Automatic inclusion ON + some current profiles unchecked
-
-Preserve those exact exclusions. Future unrelated OPRA profiles for the headphone are automatically included.
-
-Unchecked profiles remain explicitly excluded while newly appearing profiles that are not one of those exclusions are included automatically.
-
-### Automatic inclusion OFF
-
-The current selection is a fixed exact selection. Future profiles appear in the UI after catalog updates but are not silently added to the user’s selection.
-
-This selection model must be represented explicitly in domain logic and covered by tests.
+These rules must be deterministic and covered by tests.
 
 ## 8. Conversion requirements
 
@@ -450,8 +453,10 @@ Approved on 2026-08-15:
 - My Headphones;
 - Browse OPRA;
 - Search;
-- default **ON** for automatic inclusion of new OPRA profiles on newly managed headphones.
+- profile selection;
+- Select all / Select none;
+- future-profile behavior, including default **ON** for automatic inclusion on newly managed headphones.
 
-The current Phase 0 UX area is **profile selection, Select all / Select none, and future-profile behavior**. The default-ON decision above is approved, but the full profile-selection screen has not yet received final approval.
+The next Phase 0 UX area is **Refresh and change reporting**.
 
 Proceed one UX area at a time and do not advance when the user has asked to approve the current area first.
