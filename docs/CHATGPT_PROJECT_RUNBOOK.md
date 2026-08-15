@@ -141,12 +141,11 @@ Do not redesign this without a new explicit product decision.
 
 - Present selected headphones as a simple, scannable library grouped by manufacturer.
 - Within each manufacturer, order models alphabetically.
-- Each headphone row shows model name, any genuinely verified deeper OPRA path distinction when required, and a concise count such as **“3 profiles selected.”**
+- Each headphone row shows model name, any genuinely verified deeper OPRA path distinction when required, and a concise selected-profile count.
 - Do not require or download OPRA artwork for this list in v1.
 - Keep normal rows visually quiet. Add a short attention line only when something needs awareness, such as **“1 profile updated”**, **“2 new OPRA profiles”**, or **“1 no longer available in OPRA.”**
-- New-profile attention is based on the user’s previously known local catalog state, so users can see when OPRA profiles appeared after they added or last processed that headphone/catalog state.
-- Opening the headphone shows the newly discovered profiles and whether each is selected according to the user’s future-profile setting.
-- The new-profile attention indicator should remain until the user reviews that headphone’s changes; final clearing/reporting behavior is part of the dedicated refresh/change-reporting UX.
+- New-profile attention is based on the user’s previously known local catalog state.
+- Opening the headphone shows newly discovered profiles and whether each is selected according to the user’s future-profile setting.
 - Tapping a headphone opens its detail/management screen.
 - The detail shows manufacturer/model identity, selected-profile count, status, and profile management.
 - Selected profiles are visible there, and every selected profile has an explicit **Remove** action.
@@ -221,13 +220,38 @@ Do not redesign this without a new explicit product decision.
 - When automatic inclusion is ON, a newly discovered non-excluded profile appears checked; when it is OFF, the new profile appears unchecked.
 - Profile rows must retain room for conversion warnings such as **more than 10 EQ bands** or a filter that cannot be converted safely.
 - A problematic or unsupported profile must remain visible and must not disappear silently merely because conversion has a limitation.
-- Detailed refresh timing, change-summary presentation, and when New/attention indicators clear are governed by the separate refresh/change-reporting UX.
+
+Do not redesign this without a new explicit product decision.
+
+### Refresh and change reporting — approved 2026-08-15
+
+- Manual **Refresh** downloads the runtime OPRA catalog, compares it with the locally cached previous state, and keeps the existing cached catalog usable while refresh is in progress; do not blank the UI during refresh.
+- If a manual refresh succeeds with no relevant changes to managed headphones, show a brief success state such as **“OPRA catalog is up to date.”**
+- If relevant changes are found, report a concise summary such as **“3 of your headphones have changes”** with a **Review** action.
+- Prominent change reporting is scoped to headphones in **My Headphones**. Unrelated additions elsewhere in OPRA should not create noise.
+- Approximately daily background checks perform the same catalog comparison.
+- A successful background check with no relevant changes is silent.
+- If a background check finds relevant changes, show a small non-blocking in-app banner on the next app open; v1 does not require Android notification permission for this behavior.
+- Relevant managed-headphone change categories are: newly added profiles, changed selected profiles, and profiles that are no longer available in OPRA.
+- For a newly discovered profile, automatic-inclusion ON causes the new non-excluded profile to be selected automatically; automatic-inclusion OFF leaves it unchecked. In both cases it can be marked **New** until reviewed.
+- A changed **selected** OPRA profile is regenerated deterministically from the new OPRA data and reported to the user.
+- The updated generated XML/local generated state is refreshed automatically; behavior for rewriting an already-exported external preset file is intentionally deferred to the Export UX decision.
+- A changed unselected profile does not require prominent My Headphones attention.
+- If a selected/generated profile is removed upstream, keep its last generated XML and local record, keep it visible, mark it **“No longer available in OPRA,”** and do not delete it automatically.
+- **No longer available in OPRA** is a persistent state, not a transient reviewed badge. It remains until the user removes the retained profile or it becomes available again.
+- Removing a retained unavailable profile uses the already approved removal flow, including the opt-in choice to delete corresponding app-created saved preset files.
+- My Headphones may summarize multiple transient changes concisely, for example **“2 new profiles · 1 updated.”**
+- **New** and **Updated** mean changes the user has not yet reviewed for that headphone, not merely changes since the most recent network refresh.
+- Another refresh must not silently clear unreviewed New/Updated indicators.
+- Opening/reviewing the affected headphone’s profile/change view clears the transient New/Updated attention state for what was reviewed; the underlying profiles and selection state remain.
+- A failed refresh must preserve the cached catalog and local user state and may show a concise message such as **“Couldn’t refresh OPRA. Using your saved catalog.”**
+- A failed background check should not unnecessarily interrupt the user; retain the cached catalog and allow normal future checks/retries.
 
 Do not redesign this without a new explicit product decision.
 
 ## 7. Selection domain rules
 
-The approved selection behavior above is a required domain model, not merely presentation logic.
+The approved selection behavior is a required domain model, not merely presentation logic.
 
 For each managed headphone, domain state must be able to represent:
 
@@ -235,6 +259,7 @@ For each managed headphone, domain state must be able to represent:
 - whether automatic future-profile inclusion is ON or OFF;
 - explicit exclusions when automatic inclusion is ON;
 - previously known profile identities needed to detect newly discovered profiles;
+- reviewed/unreviewed transient change state for New/Updated reporting;
 - local/removal state needed to preserve removed-upstream profiles and generated files as required elsewhere in this runbook.
 
 These rules must be deterministic and covered by tests.
@@ -307,6 +332,7 @@ Build golden fixtures and require Kotlin parity for at least:
 - preserved exclusions;
 - fixed exact selections;
 - catalog updates;
+- new-profile detection and reviewed/unreviewed state;
 - changed profiles;
 - removed profiles;
 - export behavior.
@@ -345,7 +371,7 @@ Export folder layout begins:
 
 It may add deeper path segments only when those segments are verified by OPRA source hierarchy and genuinely needed. Never invent folder meaning.
 
-Detailed export UX remains a Phase 0 item until explicitly approved.
+Detailed export UX, including how catalog-driven regenerated presets affect already-exported external files, remains a Phase 0 item until explicitly approved.
 
 ## 12. Upstream OPRA changes
 
@@ -354,8 +380,10 @@ Detailed export UX remains a Phase 0 item until explicitly approved.
 When a selected OPRA profile changes upstream:
 
 1. detect the change through catalog refresh/update handling;
-2. regenerate its XML;
+2. regenerate its XML deterministically;
 3. report the change to the user.
+
+External exported-file rewrite behavior is governed by the approved Export UX once that decision is made.
 
 ### Removed OPRA profile
 
@@ -455,8 +483,9 @@ Approved on 2026-08-15:
 - Search;
 - profile selection;
 - Select all / Select none;
-- future-profile behavior, including default **ON** for automatic inclusion on newly managed headphones.
+- future-profile behavior, including default **ON** for automatic inclusion on newly managed headphones;
+- Refresh and change reporting.
 
-The next Phase 0 UX area is **Refresh and change reporting**.
+The next Phase 0 UX area is **Export**.
 
 Proceed one UX area at a time and do not advance when the user has asked to approve the current area first.
