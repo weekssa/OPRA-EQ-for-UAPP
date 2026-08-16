@@ -162,6 +162,11 @@ class MainActivity : ComponentActivity() {
     ): PresetCleanupSummary? {
         val managed = managedHeadphonesRepository.getHeadphone(productId) ?: return null
         val record = managed.profiles.firstOrNull { it.profileId == profileId } ?: return null
+        val cleanup = if (deleteSavedFiles) {
+            cleanupRepository.deleteForProfiles(setOf(profileId))
+        } else {
+            null
+        }
         val ready = catalogRepository.state.value as? CatalogState.Ready
         val currentProfiles = ready?.catalog?.profilesForProduct(productId).orEmpty()
         val currentProfile = currentProfiles.firstOrNull { it.id == profileId }
@@ -189,23 +194,20 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        return if (deleteSavedFiles) {
-            cleanupRepository.deleteForProfiles(setOf(profileId))
-        } else {
-            null
-        }
+        return cleanup
     }
 
     private suspend fun removeManagedHeadphone(
         productId: String,
         deleteSavedFiles: Boolean,
     ): PresetCleanupSummary? {
-        managedHeadphonesRepository.removeHeadphone(productId)
-        return if (deleteSavedFiles) {
+        val cleanup = if (deleteSavedFiles) {
             cleanupRepository.deleteForProduct(productId)
         } else {
             null
         }
+        managedHeadphonesRepository.removeHeadphone(productId)
+        return cleanup
     }
 
     private suspend fun persistExportTree(uri: Uri): Boolean {
