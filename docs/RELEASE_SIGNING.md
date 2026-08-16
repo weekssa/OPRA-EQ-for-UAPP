@@ -25,11 +25,20 @@ Do not generate a different replacement key after a public APK has shipped unles
 
 ## Generate the key locally
 
-On Windows, `tools/create-release-keystore.ps1` locates `keytool` from the JDK/Android Studio, creates the keystore under the user's home directory rather than inside the repository, and creates a Base64 text representation for GitHub Actions.
+Use the helper for the maintainer's local platform:
 
-The helper never stores the password. `keytool` prompts for it locally.
+- macOS: `tools/create-release-keystore.sh`
+- Windows: `tools/create-release-keystore.ps1`
 
-Expected local outputs:
+Both helpers locate `keytool` from the local JDK/Android Studio, create the keystore under the user's home directory rather than inside the repository, and create a Base64 text representation for GitHub Actions. The helpers never store the password; `keytool` prompts for it locally.
+
+On macOS, run the helper from Terminal with:
+
+```bash
+bash tools/create-release-keystore.sh
+```
+
+Expected local outputs on either platform:
 
 - `~/OPRA-EQ-release-signing/opra-eq-for-uapp-release.p12`
 - `~/OPRA-EQ-release-signing/opra-eq-for-uapp-release.p12.base64.txt`
