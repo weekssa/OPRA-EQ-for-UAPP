@@ -61,6 +61,8 @@ The app ships with zero headphone/EQ records and does not scrape GitHub during n
 
 A fresh saved catalog loads immediately and supports Browse/Search offline. Manual Refresh and approximately daily WorkManager checks share the same safe acquisition/reconciliation behavior. Network failures leave cached/local state usable.
 
+Foreground and WorkManager refreshes are serialized across repository instances so they cannot race over the shared candidate cache file. The first periodic worker run is delayed by roughly 24 hours so fresh-install foreground catalog acquisition owns initial synchronization.
+
 ## Browse and local search
 
 Browse uses the current in-memory model parsed from the last-known-good catalog:
@@ -160,19 +162,21 @@ Export is explicit and user-driven through Android's Storage Access Framework.
 
 Room schema version 2 adds generated-preset state and export ownership with an explicit v1→v2 migration.
 
+Cleanup uses the retained SAF tree permission and attempts external owned-file deletion before local managed-state removal. Files orphaned by an uninstall are deliberately treated as untracked and must not be deleted merely because their names match.
+
 ## App updates
 
 The app checks the repository's latest GitHub Release metadata without user credentials at a modest cadence. SemVer comparison uses the normal release channel only; prereleases are not normal update candidates.
 
 A newer version can surface a nonblocking banner and Settings → About & updates actions. What’s new displays release notes; Get update opens the release page in the browser. There is no silent APK download, self-install, install-unknown-apps permission, or forced update.
 
-The repository is currently private, so public no-auth release availability remains a distribution prerequisite before public release.
+Public unauthenticated release checking becomes operational once the repository is public and at least one GitHub Release exists.
 
 ## Attribution, privacy, and licenses
 
 The app bundles the official OPRA logo solely for source attribution and does not download OPRA headphone artwork at runtime. Browse and Settings credit OPRA, link to the OPRA project, preserve individual profile creator/source metadata where available, and disclose CC BY-SA 4.0 data licensing.
 
-Root `NOTICE` documents converter/software provenance and `DATA_LICENSE.md` documents OPRA-derived data licensing. The UI states that the app is not affiliated with or endorsed by OPRA, Roon Labs, USB Audio Player PRO/UAPP, ToneBoosters, or headphone manufacturers.
+Root `NOTICE` documents converter/software provenance and `DATA_LICENSE.md` documents OPRA-derived data licensing. `PRIVACY.md` is the public privacy statement and matches the app's in-product disclosure. The UI states that the app is not affiliated with or endorsed by OPRA, Roon Labs, USB Audio Player PRO/UAPP, ToneBoosters, or headphone manufacturers.
 
 Selections, settings, generated preset state, and conversion remain local; there is no account, analytics, or telemetry.
 
@@ -188,13 +192,15 @@ Android CI is the automated gate and runs:
 - `:app:lintDebug`
 - `:app:assembleDebug`
 
-Same-branch obsolete runs are cancelled so validation tracks the newest `main` state. Tests cover catalog parsing/cache safety, search, compatibility, selection defaults/exclusions, first-add action eligibility, snapshot/fingerprint semantics, native conversion/golden XML, reconciliation, export planning/conflicts, SemVer, and other deterministic domain rules.
+Same-branch obsolete runs are cancelled so validation tracks the newest `main` state. Tests cover catalog parsing/cache safety, startup retry/concurrent refresh safety, search, compatibility, selection defaults/exclusions, first-add action eligibility, snapshot/fingerprint semantics, native conversion/golden XML, reconciliation, export planning/conflicts, SemVer, and other deterministic domain rules.
 
-Automated CI does not replace final hardware/app-integration testing. Before a public release the project still requires a Pixel 9 hands-on pass for first launch/offline behavior, managed selection/review, SAF provider behavior, UAPP/ToneBoosters preset import, TalkBack/large text/themes, and launcher/themed-icon presentation.
+The primary Pixel 9 hands-on validation gate **passed on 2026-08-15**. It covered first launch/fresh catalog acquisition, offline reuse, Browse/Search, My Headphones management, selection persistence, SAF export and owned-file cleanup, successful UAPP/ToneBoosters XML import, appearance, large text, TalkBack, themed icon presentation, privacy, and attribution. See `docs/DEVICE_TEST_PLAN.md`.
 
-## Phase 1 status
+A future signed release build still requires a short release-build smoke test because signing/build-type differences are not covered by the completed debug-device pass.
 
-Implemented autonomous slices:
+## Phase 1 / public release status
+
+Implemented and validated product slices:
 
 1. Foundation Android/Compose app and local settings.
 2. Runtime OPRA client, validation, last-known-good cache, Browse/Search.
@@ -204,6 +210,7 @@ Implemented autonomous slices:
 6. SAF export, ownership/conflict tracking, persisted folder access, and optional app-created-file cleanup.
 7. Public GitHub Release metadata/update UX.
 8. OPRA attribution/privacy/license surfaces and production adaptive icon assets.
-9. Android lint added to the CI gate and final accessibility/release hardening in progress.
+9. Accessibility/release hardening and Pixel 9/UAPP hands-on validation.
+10. Public-repository documentation, privacy, contribution/security guidance, and release checklist.
 
-The current device-testing refinement makes first-time default selections directly addable and lets per-headphone XML export persist/update My Headphones before writing files. The next required gate after current `main` is green is continued **hands-on Pixel 9/UAPP validation**. Public distribution/signing comes only after that validation and requires explicit user input for release-signing identity/distribution readiness.
+The app implementation and primary device-validation gate are complete for the current `0.1.0` development line. The remaining pre-binary-release work is distribution infrastructure: change repository visibility to public, establish one stable Android release-signing identity, build/smoke-test the signed `0.1.0` APK, and publish the `v0.1.0` GitHub Release. Google Play work is intentionally deferred.
