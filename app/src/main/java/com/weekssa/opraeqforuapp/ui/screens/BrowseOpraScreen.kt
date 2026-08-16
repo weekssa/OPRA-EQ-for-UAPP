@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Clear
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -238,7 +238,7 @@ private fun VendorProducts(
     val products = catalog.productsForVendor(vendorId)
     Column(modifier = modifier.fillMaxSize()) {
         TextButton(onClick = onBack, modifier = Modifier.padding(horizontal = 8.dp)) {
-            Icon(Icons.Outlined.ArrowBack, contentDescription = null)
+            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = null)
             Text("Manufacturers", modifier = Modifier.padding(start = 4.dp))
         }
         Text(
