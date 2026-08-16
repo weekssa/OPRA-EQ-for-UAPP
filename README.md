@@ -10,7 +10,7 @@ Current development version: **0.1.0**
 
 The Android implementation and its primary Pixel 9 device-validation gate are complete. End-to-end testing has covered first launch, offline catalog reuse, Browse/Search, managed headphone selections, XML export through Android's Storage Access Framework, app-owned preset cleanup, accessibility/appearance checks, and successful preset import into USB Audio Player PRO/ToneBoosters.
 
-A signed public binary release has not been published yet. Release signing and GitHub Release packaging are the remaining distribution steps. See [docs/PUBLIC_RELEASE_CHECKLIST.md](docs/PUBLIC_RELEASE_CHECKLIST.md).
+A signed public binary release has not been published yet. The repository now contains the hardened GitHub Release workflow and curated `v0.1.0` release notes; establishing/backing up the permanent signing identity and smoke-testing the first signed APK are the remaining distribution gates. See [docs/PUBLIC_RELEASE_CHECKLIST.md](docs/PUBLIC_RELEASE_CHECKLIST.md) and [docs/RELEASE_SIGNING.md](docs/RELEASE_SIGNING.md).
 
 ## What it does
 
@@ -64,7 +64,10 @@ The repository's Android CI runs:
 :app:testDebugUnitTest
 :app:lintDebug
 :app:assembleDebug
+:app:assembleRelease
 ```
+
+Normal CI does not publish development APKs. Public APKs are produced only by the dedicated signed GitHub Release workflow.
 
 ## Data, attribution, and trademarks
 
@@ -86,13 +89,14 @@ OPRA-derived data is separately licensed; see [DATA_LICENSE.md](DATA_LICENSE.md)
 - [PRIVACY.md](PRIVACY.md) — public privacy policy
 - [CONTRIBUTING.md](CONTRIBUTING.md) — contribution and validation expectations
 - [SECURITY.md](SECURITY.md) — security-reporting guidance
-- [docs/PUBLIC_RELEASE_CHECKLIST.md](docs/PUBLIC_RELEASE_CHECKLIST.md) — GitHub public-release/signing checklist
+- [docs/PUBLIC_RELEASE_CHECKLIST.md](docs/PUBLIC_RELEASE_CHECKLIST.md) — GitHub public-release checklist
+- [docs/RELEASE_SIGNING.md](docs/RELEASE_SIGNING.md) — permanent GitHub APK signing process
 - [docs/DEVICE_TEST_PLAN.md](docs/DEVICE_TEST_PLAN.md) — completed Pixel 9 validation record
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — implementation architecture and invariants
 - [docs/CHATGPT_PROJECT_RUNBOOK.md](docs/CHATGPT_PROJECT_RUNBOOK.md) — maintained product/UX source of truth
 
 ## Issues and contributions
 
-Once the repository is public, GitHub Issues can be used for reproducible bugs and feature requests. See [CONTRIBUTING.md](CONTRIBUTING.md).
+GitHub Issues can be used for reproducible bugs and feature requests. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Please do not post credentials, signing keys, tokens, private files, or other sensitive information in an issue. Security-sensitive reports should follow [SECURITY.md](SECURITY.md).
