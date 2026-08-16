@@ -30,7 +30,7 @@ Do not publish a public installable release until one permanent signing identity
 - [x] Document one fixed release-key profile and local generation procedure in `docs/RELEASE_SIGNING.md`.
 - [x] Provide local Windows and macOS helpers that create the key outside the repository and never store its password.
 - [x] Generate one dedicated Android release keystore outside the repository.
-- [x] Back up the keystore securely in at least two controlled locations.
+- [ ] Back up the keystore securely in at least two controlled locations.
 - [x] Record the key alias and signing-certificate SHA-256 fingerprint in a non-secret release record.
 - [ ] Store the Base64 keystore/password/alias only in GitHub Actions secrets or other approved secure stores; never commit them.
 - [x] Configure a manually dispatched signed-release workflow whose signing secrets are supplied externally and scoped only to signing steps.
