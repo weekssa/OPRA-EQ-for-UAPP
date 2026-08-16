@@ -30,7 +30,7 @@ Do not publish a public installable release until one permanent signing identity
 - [x] Document one fixed release-key profile and local generation procedure in `docs/RELEASE_SIGNING.md`.
 - [x] Provide local Windows and macOS helpers that create the key outside the repository and never store its password.
 - [x] Generate one dedicated Android release keystore outside the repository.
-- [ ] Back up the keystore securely in at least two controlled locations.
+- [x] Back up the keystore securely in at least two controlled locations.
 - [x] Record the key alias and signing-certificate SHA-256 fingerprint in a non-secret release record.
 - [ ] Store the Base64 keystore/password/alias only in GitHub Actions secrets or other approved secure stores; never commit them.
 - [x] Configure a manually dispatched signed-release workflow whose signing secrets are supplied externally and scoped only to signing steps.
@@ -46,7 +46,7 @@ The signing identity is effectively part of the app's long-term update identity.
 - [x] `versionName` is `0.1.0` and `versionCode` is `1`.
 - [x] Curated `docs/releases/v0.1.0.md` release notes are prepared.
 - [x] Add the generated public signing-certificate SHA-256 fingerprint as `release-signing-cert.sha256`.
-- [ ] Finalize the `0.1.0` changelog date before building the signed candidate.
+- [x] Finalize the `0.1.0` changelog date before building the signed candidate.
 - [ ] Run the full automated gate on the exact finalized `main` release commit.
 - [ ] Run **Signed GitHub Release** in `candidate` mode for `v0.1.0` from that exact commit.
 - [ ] Download the signed candidate APK and install it on the Pixel 9.
