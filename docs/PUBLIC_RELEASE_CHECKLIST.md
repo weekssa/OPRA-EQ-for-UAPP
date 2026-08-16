@@ -33,7 +33,9 @@ Do not publish a public installable release until one permanent signing identity
 - [ ] Back up the keystore securely in at least two controlled locations.
 - [ ] Record the key alias and signing-certificate SHA-256 fingerprint in a non-secret release record.
 - [ ] Store the Base64 keystore/password/alias only in GitHub Actions secrets or other approved secure stores; never commit them.
-- [x] Configure a dedicated GitHub Release workflow so signing secrets are supplied externally and scoped only to signing steps.
+- [x] Configure a manually dispatched signed-release workflow whose signing secrets are supplied externally and scoped only to signing steps.
+- [x] Candidate mode produces a signed, fingerprint-verified short-lived Actions artifact without creating a public release.
+- [x] Publish mode is separate, requires explicit `PUBLISH` confirmation, refuses to replace an existing tag/release, and creates the version tag only after the signed build passes.
 - [ ] Confirm future release builds can be signed by the same identity.
 
 The signing identity is effectively part of the app's long-term update identity. Losing it can prevent users of a GitHub-distributed build from receiving normal in-place updates.
@@ -44,13 +46,15 @@ The signing identity is effectively part of the app's long-term update identity.
 - [x] `versionName` is `0.1.0` and `versionCode` is `1`.
 - [x] Curated `docs/releases/v0.1.0.md` release notes are prepared.
 - [ ] Add the generated public signing-certificate SHA-256 fingerprint as `release-signing-cert.sha256`.
-- [ ] Run the full automated gate on the exact release commit: unit tests, Android lint, debug assembly, and unsigned release assembly.
-- [ ] Produce a signed release APK from the exact release commit.
-- [ ] Install the signed APK on the Pixel 9 and perform a short release-build smoke test: launch, first catalog sync, Browse/Search, add one headphone, export XML, import one preset into UAPP/ToneBoosters, Settings/About.
+- [ ] Finalize the `0.1.0` changelog date before building the signed candidate.
+- [ ] Run the full automated gate on the exact finalized `main` release commit.
+- [ ] Run **Signed GitHub Release** in `candidate` mode for `v0.1.0` from that exact commit.
+- [ ] Download the signed candidate APK and install it on the Pixel 9.
+- [ ] Perform the short release-build smoke test: launch, first catalog sync, Browse/Search, add one headphone, export XML, import one preset into UAPP/ToneBoosters, Settings/About.
 - [ ] Verify the signed release contains no debug-only labeling or unintended permissions.
-- [ ] Finalize the `0.1.0` changelog date and release notes.
-- [ ] Tag the exact release commit `v0.1.0`.
-- [ ] Allow `.github/workflows/github-release.yml` to build, re-verify the pinned certificate fingerprint, and publish the signed APK plus SHA-256 checksum as the GitHub Release for `v0.1.0`.
+- [ ] Confirm no source change is needed after the signed candidate passes.
+- [ ] Run **Signed GitHub Release** in `publish` mode for `v0.1.0` with confirmation `PUBLISH` from the same finalized `main` commit.
+- [ ] Verify that the workflow created tag `v0.1.0` at the exact release commit and published the signed APK, APK SHA-256 checksum, and public signature-verification output.
 - [ ] Verify unauthenticated access to the release page and release metadata endpoint.
 - [ ] Verify the app's **Check for update** path can read public release metadata.
 
