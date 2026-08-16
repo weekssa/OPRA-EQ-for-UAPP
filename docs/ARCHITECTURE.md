@@ -170,7 +170,7 @@ The app checks the repository's latest GitHub Release metadata without user cred
 
 A newer version can surface a nonblocking banner and Settings → About & updates actions. What’s new displays release notes; Get update opens the release page in the browser. There is no silent APK download, self-install, install-unknown-apps permission, or forced update.
 
-Public unauthenticated release checking becomes operational once the repository is public and at least one GitHub Release exists.
+The source repository is public. Public unauthenticated release checking becomes fully operational once the first GitHub Release exists; until then the latest-release endpoint correctly has no release to return.
 
 ## Attribution, privacy, and licenses
 
@@ -191,6 +191,9 @@ Android CI is the automated gate and runs:
 - `:app:testDebugUnitTest`
 - `:app:lintDebug`
 - `:app:assembleDebug`
+- `:app:assembleRelease`
+
+The normal CI workflow does not publish development APK artifacts. Signed installable binaries are reserved for deliberate GitHub Releases.
 
 Same-branch obsolete runs are cancelled so validation tracks the newest `main` state. Tests cover catalog parsing/cache safety, startup retry/concurrent refresh safety, search, compatibility, selection defaults/exclusions, first-add action eligibility, snapshot/fingerprint semantics, native conversion/golden XML, reconciliation, export planning/conflicts, SemVer, and other deterministic domain rules.
 
@@ -212,5 +215,6 @@ Implemented and validated product slices:
 8. OPRA attribution/privacy/license surfaces and production adaptive icon assets.
 9. Accessibility/release hardening and Pixel 9/UAPP hands-on validation.
 10. Public-repository documentation, privacy, contribution/security guidance, and release checklist.
+11. Public source-repository publication and CI validation of both debug and unsigned release builds.
 
-The app implementation and primary device-validation gate are complete for the current `0.1.0` development line. The remaining pre-binary-release work is distribution infrastructure: change repository visibility to public, establish one stable Android release-signing identity, build/smoke-test the signed `0.1.0` APK, and publish the `v0.1.0` GitHub Release. Google Play work is intentionally deferred.
+The app implementation, primary device-validation gate, and public-source publication are complete for the current `0.1.0` development line. The remaining pre-binary-release work is distribution infrastructure: establish one stable Android release-signing identity, build/smoke-test the signed `0.1.0` APK, and publish the `v0.1.0` GitHub Release. Google Play work is intentionally deferred.
