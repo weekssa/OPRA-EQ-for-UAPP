@@ -26,6 +26,47 @@ class ManagedSelectionTest {
     }
 
     @Test
+    fun neverManagedHeadphoneCanBeAddedWithoutArtificialSelectionChange() {
+        val selected = setOf("profile")
+
+        assertTrue(
+            managedSelectionCommitEnabled(
+                isManaged = false,
+                stagedSelectedProfileIds = selected,
+                baselineSelectedProfileIds = selected,
+                autoIncludeNewProfiles = true,
+                baselineAutoIncludeNewProfiles = true,
+            ),
+        )
+    }
+
+    @Test
+    fun neverManagedHeadphoneWithNoSelectedProfilesCannotBeAdded() {
+        assertFalse(
+            managedSelectionCommitEnabled(
+                isManaged = false,
+                stagedSelectedProfileIds = emptySet(),
+                baselineSelectedProfileIds = emptySet(),
+                autoIncludeNewProfiles = true,
+                baselineAutoIncludeNewProfiles = true,
+            ),
+        )
+    }
+
+    @Test
+    fun unchangedManagedHeadphoneDoesNotNeedAnotherSave() {
+        assertFalse(
+            managedSelectionCommitEnabled(
+                isManaged = true,
+                stagedSelectedProfileIds = setOf("profile"),
+                baselineSelectedProfileIds = setOf("profile"),
+                autoIncludeNewProfiles = true,
+                baselineAutoIncludeNewProfiles = true,
+            ),
+        )
+    }
+
+    @Test
     fun autoIncludeSelectsFutureCompatibleProfile() {
         val state = ManagedHeadphoneSelection(
             productId = "product",
