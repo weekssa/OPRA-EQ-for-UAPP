@@ -53,23 +53,37 @@ The repository release workflow expects exactly these Actions secrets:
 
 Secrets are scoped only to the workflow steps that need them. The checkout/setup actions never receive the signing secrets.
 
-## Release workflow
+## Signed candidate and release workflow
 
-`.github/workflows/github-release.yml` runs only for pushed tags beginning with `v`, and then performs additional checks before publishing:
+`.github/workflows/github-release.yml` is manually dispatched from `main`. It has two explicit modes:
 
-1. requires exact `vMAJOR.MINOR.PATCH` tag syntax;
-2. requires the tag version to equal Android `versionName`;
-3. requires curated `docs/releases/<tag>.md` release notes;
-4. requires the public pinned signing-certificate SHA-256 fingerprint;
-5. runs unit tests, Android lint, and the release build from the exact tagged source;
-6. aligns and signs the unsigned APK with Android build tools;
-7. verifies the APK signature;
-8. refuses publication if the actual signing certificate does not match the pinned public fingerprint;
-9. creates a SHA-256 checksum file for the APK; and
-10. publishes the APK and checksum through GitHub Releases.
+- **candidate** — builds the real signed APK, verifies it, and uploads a short-lived GitHub Actions artifact for device smoke testing. It does not create a tag or GitHub Release.
+- **publish** — repeats the same signed build and verification after the candidate passes, then creates the version tag at that exact `main` commit and publishes the GitHub Release.
 
-The workflow uses the repository-provided `GITHUB_TOKEN` only for the final release publication step. Normal Android CI never receives the release-signing key and never publishes a development APK.
+Both modes:
+
+1. require exact `vMAJOR.MINOR.PATCH` tag syntax;
+2. require the requested version to equal Android `versionName`;
+3. require curated `docs/releases/<tag>.md` release notes;
+4. require the public pinned signing-certificate SHA-256 fingerprint;
+5. run unit tests, Android lint, and the release build from the exact selected `main` commit;
+6. align and sign the unsigned APK with Android build tools;
+7. verify the APK signature;
+8. refuse to continue if the actual signing certificate does not match the pinned public fingerprint;
+9. create a SHA-256 checksum file for the APK; and
+10. upload the signed outputs as a short-lived Actions artifact.
+
+Publish mode additionally requires the literal confirmation value `PUBLISH`, refuses to replace an existing tag/release, and uses the repository-provided `GITHUB_TOKEN` only in the final publication job. That final job creates the requested tag at the exact workflow commit and publishes the APK, APK checksum, and public `apksigner` verification output through GitHub Releases.
+
+Normal Android CI never receives the release-signing key and never publishes a development APK.
 
 ## First-release gate
 
-Before `v0.1.0` is published, install the signed APK on the Pixel 9 and perform the short signed-release smoke test recorded in `docs/PUBLIC_RELEASE_CHECKLIST.md`. Only after that passes should the final tag be pushed and the public GitHub Release be created.
+For `v0.1.0`:
+
+1. Run **Signed GitHub Release** in `candidate` mode from the finalized `main` commit.
+2. Download and install the signed candidate on the Pixel 9.
+3. Perform the short signed-release smoke test recorded in `docs/PUBLIC_RELEASE_CHECKLIST.md`.
+4. If the candidate passes, make no source changes that would alter the release commit.
+5. Run the same workflow from `main` in `publish` mode with tag `v0.1.0` and confirmation `PUBLISH`.
+6. Verify the public release page, assets, checksum, and in-app update metadata path.
