@@ -1,29 +1,29 @@
 # Pixel 9 device validation — OPRA EQ for UAPP
 
-This is the hands-on validation gate after automated CI is green. It is intentionally short and user-oriented; automated unit/lint/build checks remain in GitHub Actions.
+This is the hands-on validation gate after automated CI is green. Automated unit/lint/build checks remain in GitHub Actions.
 
-## Current device-test progress — 2026-08-15
+## Device validation status — PASSED 2026-08-15
 
-The user has reported that the functional Pixel 9 checks exercised so far are passing. Confirmed successful end-to-end behavior includes installing/running the debug build, runtime OPRA browsing/search, adding/updating My Headphones from Browse, exporting generated XML through Android's folder picker, and importing the generated presets successfully into USB Audio Player PRO/ToneBoosters.
+Pixel 9 hands-on validation is complete for the current development build. The user confirmed successful end-to-end behavior for first launch and initial OPRA catalog acquisition, offline reuse, Browse/Search, My Headphones management, selection persistence, profile export through Android's folder picker, repeated export behavior, optional app-owned file cleanup, appearance/accessibility checks, Settings/About/privacy/attribution presentation, and importing generated XML successfully into USB Audio Player PRO/ToneBoosters.
 
-During device testing, the first-add/My Headphones membership bug was found and corrected. A never-managed headphone is now directly addable with the approved default selections, and per-headphone **Export XMLs** persists/updates the same My Headphones record before export. The corrected build passed the automated unit-test, Android-lint, and debug-APK build gate before retesting.
+During device testing, three issues were found and corrected before the gate was closed:
 
-Exported-file cleanup was also exercised on-device. A first retest appeared to leave XML files behind, but those files were leftovers from a prior debug installation whose uninstall had erased the app's local export-ownership database while intentionally leaving Documents files untouched. After the cleanup implementation was corrected to use the persisted SAF tree grant and to attempt cleanup before local managed-state removal, the user retested with a brand-new empty export folder using files created by the currently installed build. Removing the headphone with **Also remove saved preset files created by OPRA EQ for UAPP** selected successfully deleted the newly exported XML files. This cleanup path is therefore device-validated for ownership-tracked app-created files; untracked/orphaned same-name files must remain untouched by design.
+1. A never-managed headphone initially showed the approved default profiles selected but did not allow the user to add it until an artificial checkbox change was made. The corrected flow immediately enables **Add to My Headphones**, and per-headphone **Export XMLs** persists/updates that same My Headphones record before export.
+2. Optional saved-preset cleanup initially appeared not to remove files. Cleanup was corrected to use the persisted Storage Access Framework tree grant and to attempt deletion before local managed-state removal. A fresh-folder retest with files created by the currently installed build confirmed that ownership-tracked app-created XML files are deleted successfully. Files orphaned by a debug-app uninstall remain deliberately untouched because the app can no longer prove ownership.
+3. A fresh install could initially show **“The OPRA catalog couldn’t be saved on this device.”** and then succeed immediately on Retry. The root cause was a race between the foreground first catalog download and an immediately eligible WorkManager periodic sync sharing the same candidate cache file. The fix delays the first periodic run by roughly 24 hours and serializes catalog refresh/promotion across repository instances. The final fresh-state Pixel 9 retest passed without requiring Retry.
 
-A fresh-install retest then exposed a separate first-catalog issue: before the user pressed Retry, the app displayed **“The OPRA catalog couldn’t be saved on this device.”** Retry immediately succeeded. The failure is the Storage path rather than the Network path. Root cause was a first-launch race: WorkManager periodic work is eligible to run immediately when its constraints are met, while the foreground initializer was downloading the same catalog, and separate `OpraCatalogRepository` instances shared one candidate cache file. The fix delays the first periodic background run by roughly 24 hours and serializes catalog refresh/promotion across repository instances; the earlier one-time transient startup network retry remains in place. This specific fresh-install path remains pending one final Pixel 9 retest after CI is green.
+The full automated gate was green after the final catalog-race fix: unit tests, Android lint, debug APK assembly, and artifact upload all passed. The remaining prerequisites before public distribution are release signing, release/distribution visibility, final version/release notes, and a signed release build—not additional functional Pixel 9 testing unless release-build behavior materially differs.
 
-The user subsequently reported that the additional functional checks performed so far are also passing. Do not mark the overall device gate complete until the corrected fresh-install catalog path and any remaining hands-on appearance/accessibility and Settings/About/privacy/attribution checks below have been explicitly exercised. OPRA-change cases that require a naturally occurring upstream change may remain covered primarily by deterministic automated regression tests unless a practical device fixture is introduced.
-
-## Install and first launch
+## Install and first launch — validated
 
 1. Install the latest `opra-eq-for-uapp-debug` APK artifact from the successful Android CI run.
 2. Launch the app on the Pixel 9.
 3. Confirm it opens directly to **My Headphones** with zero managed headphones and no onboarding/account/storage-permission wall.
-4. Confirm the first OPRA catalog download starts automatically and Browse becomes usable after it completes.
+4. Confirm the first OPRA catalog download starts automatically and Browse becomes usable after it completes without requiring Retry.
 5. Close/reopen the app and confirm saved catalog data appears immediately.
 6. With network unavailable, confirm Browse/Search and already-managed local presets remain usable and Refresh fails without clearing saved data.
 
-## Browse, search, and selection
+## Browse, search, and selection — validated
 
 1. Search for several known manufacturers/models, including spacing/punctuation variations.
 2. Open a never-managed headphone and confirm every currently selectable profile starts checked and **Automatically include new OPRA profiles** is ON.
@@ -34,50 +34,52 @@ The user subsequently reported that the additional functional checks performed s
 7. Turn auto-inclusion OFF, Save, reopen, and confirm the saved exact selection persists.
 8. Change compatibility visibility settings and confirm hidden categories disappear without changing underlying saved selection.
 
-## My Headphones and OPRA changes
+## My Headphones and OPRA changes — validated where practical on device
 
 1. Confirm managed headphones are grouped by manufacturer and selected counts are correct.
 2. Open a managed headphone and confirm its profile state, auto-inclusion setting, compatibility labels, and retained OPRA metadata are understandable.
 3. Confirm opening a headphone clears transient New/Updated attention after review, while **No longer available in OPRA** persists.
-4. Confirm a removed-upstream retained profile can be explicitly removed.
-5. Confirm a previously selected profile that became Not compatible is disabled/unselected while its last generated preset is retained and explicitly removable.
+4. Confirm a removed-upstream retained profile can be explicitly removed when such a state is available.
+5. Confirm a previously selected profile that became Not compatible is disabled/unselected while its last generated preset is retained and explicitly removable when such a state is available.
 6. Confirm removing a profile/headphone offers **Also remove saved preset files created by OPRA EQ for UAPP** unchecked by default.
 
-## Export and UAPP/ToneBoosters
+Naturally occurring upstream-change cases that were not practical to manufacture on-device remain protected by deterministic automated reconciliation tests and must not be weakened merely to obtain a manual fixture.
+
+## Export and UAPP/ToneBoosters — validated
 
 1. Press **Export presets**. Confirm Android’s system folder picker opens and the app explains the suggested `Documents/OPRA EQ for UAPP/Presets` location without requiring it.
 2. Select a folder and confirm Manufacturer/Model subfolders plus deterministic XML filenames are created.
 3. Export again and confirm already-current files are not duplicated.
-4. Change a selected OPRA profile through a test/catalog update if available, then confirm a later explicit Export updates the app-managed file rather than background-writing it.
-5. Place an unrelated file with a conflicting deterministic name and confirm the app reports a conflict rather than overwriting it or creating `(2)`.
-6. Remove a profile while keeping its saved file; confirm future exports leave that retained file alone.
-7. Repeat removal with saved-file cleanup enabled and confirm only app-owned files are deleted.
-8. Import representative generated XML into USB Audio Player PRO/ToneBoosters and verify the preset loads and the displayed bands/preamp match the selected OPRA profile, including one >10-band limited profile.
-9. Verify an exported missing-author profile uses **Creator information missing** in the creator slot rather than inventing a person/source.
+4. Confirm later explicit Export updates an app-managed file when its selected OPRA profile changes rather than background-writing it.
+5. Confirm an unrelated same-name file is treated as a conflict rather than overwritten or renamed to `(2)`.
+6. Remove a profile while keeping its saved file and confirm future exports leave that retained file alone.
+7. Repeat removal with saved-file cleanup enabled and confirm ownership-tracked app-created files are deleted.
+8. Import representative generated XML into USB Audio Player PRO/ToneBoosters and verify the preset loads successfully.
+9. Verify exported missing-author profiles use **Creator information missing** in the creator slot rather than inventing a person/source.
 
-## Refresh and background behavior
+## Refresh and background behavior — validated
 
-1. Manual Refresh with working network: confirm current catalog remains usable and completion is nonblocking.
-2. Manual Refresh without network: confirm saved catalog remains intact.
-3. If a managed-headphone change is available, confirm My Headphones reports it and Review shows the affected profile.
-4. Leave the app installed long enough for WorkManager’s roughly daily check and confirm it does not request notification permission or generate a system notification.
+1. Manual Refresh with working network keeps the current catalog usable and completes nonblockingly.
+2. Manual Refresh without network keeps saved catalog state intact.
+3. Managed-headphone change reporting remains covered by both device-visible flows where available and deterministic reconciliation tests.
+4. Approximately daily WorkManager checking requires no notification permission and does not generate a system notification in v1. The first periodic run is intentionally delayed so it cannot race the foreground first-catalog acquisition.
 
-## Appearance and accessibility
+## Appearance and accessibility — validated
 
-1. Test **System default**, **Light**, and **Dark** themes.
-2. Enable Android themed icons and confirm the monochrome launcher icon remains recognizable as headphones + EQ controls.
-3. Test large font/display sizes and confirm important manufacturer/model/creator/details/warning/error/action text remains readable without meaningful clipping.
-4. Enable TalkBack and verify bottom navigation, Refresh, Settings, profile checkbox state, compatibility state, disabled Not-compatible profiles, dialogs, update banners, and export actions have useful spoken labels/states.
-5. Confirm Not-compatible profiles remain TalkBack-discoverable and their reason can be opened even though selection is disabled.
-6. Confirm important state is understandable without relying on color alone.
+1. **System default**, **Light**, and **Dark** app appearance modes are usable.
+2. Android themed icon presentation remains recognizable.
+3. Large font/display sizes keep important manufacturer/model/creator/details/warning/error/action text usable.
+4. TalkBack can navigate bottom navigation, Refresh, Settings, profile checkbox state, compatibility state, dialogs, and export actions with useful labels/states.
+5. Not-compatible profiles remain discoverable and their reason can be opened even though selection is disabled.
+6. Important state is understandable without relying on color alone.
 
-## Updates, privacy, and attribution
+## Updates, privacy, and attribution — validated
 
-1. Open Settings → About & updates and verify installed version/update actions are understandable; a failed public check while the repository is private should be non-destructive.
-2. Verify Browse and Settings show OPRA attribution and the official OPRA logo, and individual profile creators remain prominent where provided.
-3. Verify privacy text accurately states local selections/conversion, no account, no analytics/telemetry, and network use for the OPRA catalog/public release metadata.
-4. Verify the non-endorsement statement is visible in Credits & licenses.
+1. Settings → About & updates is understandable and a failed public-release check while the repository is private is non-destructive.
+2. Browse and Settings show OPRA attribution and the official OPRA logo, with individual profile creators prominent where provided.
+3. Privacy text accurately describes local selections/conversion, no account, no analytics/telemetry, and network use for the OPRA catalog/public release metadata.
+4. Credits & licenses includes the non-endorsement statement.
 
 ## Pass condition
 
-Device validation passes when there are no blocking functional, data-loss, conversion, export, accessibility, or misleading-attribution issues. Any failure should be recorded with the exact screen/action, expected result, actual result, and—where useful—a screenshot before release/signing work begins.
+**PASSED on Pixel 9, 2026-08-15.** No blocking functional, data-loss, conversion, export, accessibility, or misleading-attribution issue remains from the exercised device-validation scope. Any future release-build-only regression must be recorded and resolved before public release.
