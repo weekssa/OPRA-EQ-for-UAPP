@@ -114,7 +114,6 @@ class OpraCatalogRepository(
     private val catalogDirectory = File(filesDir, "opra/catalog")
     private val currentFile = File(catalogDirectory, "database_v1.jsonl")
     private val candidateFile = File(catalogDirectory, "database_v1.candidate.jsonl")
-    private val refreshMutex = Mutex()
     private val mutableState = MutableStateFlow<CatalogState>(CatalogState.Loading)
 
     val state: StateFlow<CatalogState> = mutableState.asStateFlow()
@@ -142,7 +141,7 @@ class OpraCatalogRepository(
 
     suspend fun refresh(): CatalogRefreshResult = refresh(networkAttempts = 1)
 
-    private suspend fun refresh(networkAttempts: Int): CatalogRefreshResult = refreshMutex.withLock {
+    private suspend fun refresh(networkAttempts: Int): CatalogRefreshResult = processRefreshMutex.withLock {
         require(networkAttempts >= 1)
         val previous = mutableState.value as? CatalogState.Ready
         mutableState.value = previous?.copy(isRefreshing = true) ?: CatalogState.Loading
@@ -248,5 +247,9 @@ class OpraCatalogRepository(
         private const val AUTO_REFRESH_INTERVAL_MILLIS = 24L * 60L * 60L * 1000L
         private const val STARTUP_NETWORK_ATTEMPTS = 2
         private const val STARTUP_RETRY_DELAY_MILLIS = 1_000L
+
+        // Activity and WorkManager can construct separate repository instances that share the
+        // same on-disk candidate/current files. Serialize promotion across those instances.
+        private val processRefreshMutex = Mutex()
     }
 }
