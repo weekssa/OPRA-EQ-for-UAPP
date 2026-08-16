@@ -26,10 +26,15 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - My Headphones library grouped by manufacturer with selected counts, New/Updated/No-longer-available attention summaries, managed-headphone detail/review, profile management, and explicit removal flows.
 - Staged profile editing with **Select all**, **Select none**, auto-include-new-profiles setting, unsaved-change protection, explicit exclusions, disabled Not-compatible controls, and optional app-created saved-file cleanup on removal.
 - Android Storage Access Framework export with persisted tree access, suggested Documents/OPRA EQ for UAPP/Presets location, Manufacturer/Model folder layout, deterministic filenames, incremental create/update/current handling, exact unmanaged-file conflicts, per-file failure isolation, and app-file ownership tracking.
+- Per-headphone **Export XMLs** from the Browse/managed profile editor; exporting a new or changed headphone persists its staged selection first so My Headphones is created or updated before files are written.
 - GitHub Release update checks at a modest cadence, SemVer comparison, non-blocking update banner, About & updates status/actions, What’s new dialog, manual browser handoff, and one-time post-update card state; no self-install or APK-install permission.
 - OPRA attribution in Browse and Settings using the official OPRA logo, project description/link, individual creator identity from profile metadata, CC BY-SA 4.0 data attribution, software provenance notice, privacy disclosure, and non-endorsement language.
 - Original production **Equalizer Headphones** adaptive launcher icon direction with round and monochrome/themed-icon treatment.
 - Android CI with unit tests, Android lint, and debug APK assembly; obsolete same-branch CI runs are cancelled automatically.
+
+### Fixed
+
+- A never-managed headphone with the approved default profiles already selected now offers an enabled **Add to My Headphones** action immediately instead of requiring an artificial checkbox change before it can be saved.
 
 ### Documentation
 
