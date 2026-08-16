@@ -36,9 +36,20 @@ data class ProfileVisibilityPreferences(
         }
 }
 
+data class UpdatePreferences(
+    val latestVersion: String? = null,
+    val releaseUrl: String? = null,
+    val releaseNotes: String? = null,
+    val lastCheckAttemptMillis: Long? = null,
+    val dismissedVersion: String? = null,
+    val lastSeenInstalledVersion: String? = null,
+    val postUpdateVersionToShow: String? = null,
+)
+
 data class AppPreferences(
     val themeMode: ThemeMode = ThemeMode.System,
     val profileVisibility: ProfileVisibilityPreferences = ProfileVisibilityPreferences(),
     val exportTreeUri: String? = null,
     val exportTreeLabel: String? = null,
+    val updates: UpdatePreferences = UpdatePreferences(),
 )

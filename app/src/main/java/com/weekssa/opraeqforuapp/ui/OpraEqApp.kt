@@ -4,6 +4,10 @@ import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -33,15 +37,21 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.weekssa.opraeqforuapp.BuildConfig
 import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshFailureReason
 import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshResult
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.data.export.PresetExportSummary
 import com.weekssa.opraeqforuapp.data.sync.CatalogSyncOutcome
+import com.weekssa.opraeqforuapp.data.update.AppUpdateCheckResult
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityCategory
 import com.weekssa.opraeqforuapp.domain.settings.ThemeMode
+import com.weekssa.opraeqforuapp.domain.update.SemVer
+import com.weekssa.opraeqforuapp.ui.components.PostUpdateBanner
+import com.weekssa.opraeqforuapp.ui.components.UpdateAvailableBanner
+import com.weekssa.opraeqforuapp.ui.components.WhatsNewDialog
 import com.weekssa.opraeqforuapp.ui.screens.BrowseOpraScreen
 import com.weekssa.opraeqforuapp.ui.screens.MyHeadphonesScreen
 import com.weekssa.opraeqforuapp.ui.screens.SettingsScreen
@@ -64,18 +74,48 @@ fun OpraEqApp(
     onRemoveHeadphone: suspend (String) -> Unit,
     onPersistExportTree: suspend (Uri) -> Boolean,
     onExportSelected: suspend (Uri) -> PresetExportSummary,
+    onCheckForUpdates: suspend () -> AppUpdateCheckResult,
+    onDismissUpdate: suspend (String) -> Unit,
+    onDismissPostUpdate: suspend () -> Unit,
+    onOpenUrl: (String) -> Unit,
     onThemeModeChange: (ThemeMode) -> Unit,
     onProfileVisibilityChange: (ProfileVisibilityCategory, Boolean) -> Unit,
 ) {
     var selectedDestinationIndex by rememberSaveable { mutableIntStateOf(0) }
     var settingsOpen by rememberSaveable { mutableStateOf(false) }
     var exportAfterFolderPick by remember { mutableStateOf(false) }
+    var whatsNewVersion by remember { mutableStateOf<String?>(null) }
+    var whatsNewNotes by remember { mutableStateOf("") }
     val destinations = remember { TopLevelDestination.entries }
     val selectedDestination = destinations[selectedDestinationIndex]
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val catalogBusy = catalogState is CatalogState.Loading ||
         (catalogState as? CatalogState.Ready)?.isRefreshing == true
+
+    val latestVersion = appPreferences.updates.latestVersion
+    val updateAvailable = latestVersion != null &&
+        SemVer.parse(latestVersion)?.let { latest ->
+            SemVer.parse(BuildConfig.VERSION_NAME)?.let { installed -> latest > installed }
+        } == true
+    val showUpdateBanner = updateAvailable &&
+        appPreferences.updates.dismissedVersion != latestVersion
+    val postUpdateVersion = appPreferences.updates.postUpdateVersionToShow
+        ?.takeIf { it == BuildConfig.VERSION_NAME }
+
+    fun showWhatsNew(version: String?, notes: String?) {
+        val actualVersion = version ?: return
+        whatsNewVersion = actualVersion
+        whatsNewNotes = notes.orEmpty()
+    }
+
+    whatsNewVersion?.let { version ->
+        WhatsNewDialog(
+            version = version,
+            notes = whatsNewNotes,
+            onDismiss = { whatsNewVersion = null },
+        )
+    }
 
     val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         if (uri == null) {
@@ -105,12 +145,19 @@ fun OpraEqApp(
         } else {
             scope.launch {
                 val summary = onExportSelected(storedUri)
-                if (summary.accessLost) {
-                    snackbarHostState.showSnackbar("Export folder access was lost. Choose the folder again.")
-                } else {
-                    snackbarHostState.showSnackbar(exportMessage(summary))
-                }
+                snackbarHostState.showSnackbar(exportMessage(summary))
             }
+        }
+    }
+
+    val requestUpdateCheck: () -> Unit = {
+        scope.launch {
+            val message = when (val result = onCheckForUpdates()) {
+                is AppUpdateCheckResult.UpdateAvailable -> "Version ${result.release.version} is available."
+                is AppUpdateCheckResult.UpToDate -> "OPRA EQ for UAPP is up to date."
+                AppUpdateCheckResult.Unavailable -> "Couldn’t check for updates right now. Try again later."
+            }
+            snackbarHostState.showSnackbar(message)
         }
     }
 
@@ -195,37 +242,81 @@ fun OpraEqApp(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
-        val contentModifier = Modifier.padding(innerPadding)
-        if (settingsOpen) {
-            SettingsScreen(
-                appPreferences = appPreferences,
-                catalogState = catalogState,
-                onRefreshCatalog = requestCatalogRefresh,
-                onChangeExportFolder = { chooseExportFolder(false) },
-                onThemeModeChange = onThemeModeChange,
-                onProfileVisibilityChange = onProfileVisibilityChange,
-                modifier = contentModifier,
-            )
-        } else {
-            when (selectedDestination) {
-                TopLevelDestination.MyHeadphones -> MyHeadphonesScreen(
-                    catalogState = catalogState,
-                    managedHeadphones = managedHeadphones,
-                    onBrowseOpra = { selectedDestinationIndex = TopLevelDestination.BrowseOpra.ordinal },
-                    onRefreshCatalog = requestCatalogRefresh,
-                    onExportPresets = requestExport,
-                    modifier = contentModifier,
-                )
-                TopLevelDestination.BrowseOpra -> BrowseOpraScreen(
-                    catalogState = catalogState,
-                    profileVisibility = appPreferences.profileVisibility,
-                    managedHeadphones = managedHeadphones,
-                    onLoadManagedHeadphone = onLoadManagedHeadphone,
-                    onSaveSelection = onSaveSelection,
-                    onRemoveHeadphone = onRemoveHeadphone,
-                    onRefreshCatalog = requestCatalogRefresh,
-                    modifier = contentModifier,
-                )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+        ) {
+            if (!settingsOpen) {
+                when {
+                    showUpdateBanner && latestVersion != null -> UpdateAvailableBanner(
+                        version = latestVersion,
+                        onWhatsNew = {
+                            showWhatsNew(latestVersion, appPreferences.updates.releaseNotes)
+                        },
+                        onGetUpdate = {
+                            appPreferences.updates.releaseUrl?.let(onOpenUrl)
+                        },
+                        onDismiss = {
+                            scope.launch { onDismissUpdate(latestVersion) }
+                        },
+                    )
+                    postUpdateVersion != null -> PostUpdateBanner(
+                        version = postUpdateVersion,
+                        onWhatsNew = {
+                            showWhatsNew(postUpdateVersion, appPreferences.updates.releaseNotes)
+                        },
+                        onDismiss = {
+                            scope.launch { onDismissPostUpdate() }
+                        },
+                    )
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+            ) {
+                if (settingsOpen) {
+                    SettingsScreen(
+                        appPreferences = appPreferences,
+                        catalogState = catalogState,
+                        onRefreshCatalog = requestCatalogRefresh,
+                        onChangeExportFolder = { chooseExportFolder(false) },
+                        onCheckForUpdates = requestUpdateCheck,
+                        onWhatsNew = {
+                            showWhatsNew(latestVersion, appPreferences.updates.releaseNotes)
+                        },
+                        onGetUpdate = {
+                            appPreferences.updates.releaseUrl?.let(onOpenUrl)
+                        },
+                        onThemeModeChange = onThemeModeChange,
+                        onProfileVisibilityChange = onProfileVisibilityChange,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                } else {
+                    when (selectedDestination) {
+                        TopLevelDestination.MyHeadphones -> MyHeadphonesScreen(
+                            catalogState = catalogState,
+                            managedHeadphones = managedHeadphones,
+                            onBrowseOpra = { selectedDestinationIndex = TopLevelDestination.BrowseOpra.ordinal },
+                            onRefreshCatalog = requestCatalogRefresh,
+                            onExportPresets = requestExport,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                        TopLevelDestination.BrowseOpra -> BrowseOpraScreen(
+                            catalogState = catalogState,
+                            profileVisibility = appPreferences.profileVisibility,
+                            managedHeadphones = managedHeadphones,
+                            onLoadManagedHeadphone = onLoadManagedHeadphone,
+                            onSaveSelection = onSaveSelection,
+                            onRemoveHeadphone = onRemoveHeadphone,
+                            onRefreshCatalog = requestCatalogRefresh,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
+                }
             }
         }
     }

@@ -25,6 +25,7 @@ import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityCategory
 import com.weekssa.opraeqforuapp.domain.settings.ThemeMode
+import com.weekssa.opraeqforuapp.domain.update.SemVer
 import java.text.DateFormat
 import java.util.Date
 
@@ -34,6 +35,9 @@ fun SettingsScreen(
     catalogState: CatalogState,
     onRefreshCatalog: () -> Unit,
     onChangeExportFolder: () -> Unit,
+    onCheckForUpdates: () -> Unit,
+    onWhatsNew: () -> Unit,
+    onGetUpdate: () -> Unit,
     onThemeModeChange: (ThemeMode) -> Unit,
     onProfileVisibilityChange: (ProfileVisibilityCategory, Boolean) -> Unit,
     modifier: Modifier = Modifier,
@@ -161,11 +165,48 @@ fun SettingsScreen(
         }
 
         SectionDivider()
-        SectionTitle("About")
+        SectionTitle("About & updates")
         Text("OPRA EQ for UAPP")
         Text(
-            text = "Version ${BuildConfig.VERSION_NAME}",
+            text = "Installed version ${BuildConfig.VERSION_NAME}",
             style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        val latestVersion = appPreferences.updates.latestVersion
+        val updateAvailable = latestVersion != null &&
+            SemVer.parse(latestVersion)?.let { latest ->
+                SemVer.parse(BuildConfig.VERSION_NAME)?.let { installed -> latest > installed }
+            } == true
+        when {
+            updateAvailable -> Text(
+                text = "Version $latestVersion is available.",
+                modifier = Modifier.padding(top = 6.dp),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            latestVersion != null -> Text(
+                text = "You’re up to date.",
+                modifier = Modifier.padding(top = 6.dp),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            else -> Text(
+                text = "Update status not available yet.",
+                modifier = Modifier.padding(top = 6.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            TextButton(onClick = onCheckForUpdates) { Text("Check for update") }
+            if (latestVersion != null && !appPreferences.updates.releaseNotes.isNullOrBlank()) {
+                TextButton(onClick = onWhatsNew) { Text("What’s new") }
+            }
+            if (updateAvailable && appPreferences.updates.releaseUrl != null) {
+                TextButton(onClick = onGetUpdate) { Text("Get update") }
+            }
+        }
+        Text(
+            text = "Updates are downloaded manually from the public GitHub Release page. The app does not silently download or install APKs.",
+            style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(24.dp))

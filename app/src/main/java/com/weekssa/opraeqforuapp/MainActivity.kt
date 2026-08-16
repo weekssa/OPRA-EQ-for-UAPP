@@ -18,6 +18,7 @@ import com.weekssa.opraeqforuapp.data.managed.OpraEqDatabase
 import com.weekssa.opraeqforuapp.data.preferences.AppPreferencesRepository
 import com.weekssa.opraeqforuapp.data.sync.BackgroundSyncScheduler
 import com.weekssa.opraeqforuapp.data.sync.CatalogSyncCoordinator
+import com.weekssa.opraeqforuapp.data.update.AppUpdateCoordinator
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
 import com.weekssa.opraeqforuapp.ui.OpraEqApp
@@ -57,11 +58,19 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    private val updateCoordinator by lazy {
+        AppUpdateCoordinator(
+            installedVersion = BuildConfig.VERSION_NAME,
+            preferencesRepository = appPreferencesRepository,
+        )
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         BackgroundSyncScheduler.ensureScheduled(applicationContext)
 
+        lifecycleScope.launch { updateCoordinator.initialize() }
         lifecycleScope.launch {
             catalogRepository.initialize()
             val ready = catalogRepository.state.value as? CatalogState.Ready
@@ -105,6 +114,10 @@ class MainActivity : ComponentActivity() {
                             headphones = managedHeadphones,
                         )
                     },
+                    onCheckForUpdates = updateCoordinator::checkNow,
+                    onDismissUpdate = appPreferencesRepository::dismissUpdate,
+                    onDismissPostUpdate = appPreferencesRepository::dismissPostUpdateCard,
+                    onOpenUrl = ::openExternalUrl,
                     onThemeModeChange = { themeMode ->
                         lifecycleScope.launch {
                             appPreferencesRepository.setThemeMode(themeMode)
@@ -133,6 +146,13 @@ class MainActivity : ComponentActivity() {
             true
         } catch (_: SecurityException) {
             false
+        }
+    }
+
+    private fun openExternalUrl(url: String) {
+        val uri = runCatching { Uri.parse(url) }.getOrNull() ?: return
+        runCatching {
+            startActivity(Intent(Intent.ACTION_VIEW, uri))
         }
     }
 }
