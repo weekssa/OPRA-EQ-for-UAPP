@@ -15,6 +15,7 @@ import com.weekssa.opraeqforuapp.data.catalog.OpraCatalogRepository
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupRepository
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
 import com.weekssa.opraeqforuapp.data.export.PresetExportRepository
+import com.weekssa.opraeqforuapp.data.export.PresetExportSummary
 import com.weekssa.opraeqforuapp.data.managed.ManagedHeadphonesRepository
 import com.weekssa.opraeqforuapp.data.managed.OpraEqDatabase
 import com.weekssa.opraeqforuapp.data.preferences.AppPreferencesRepository
@@ -125,6 +126,7 @@ class MainActivity : ComponentActivity() {
                             headphones = managedHeadphones,
                         )
                     },
+                    onExportProduct = ::exportManagedProduct,
                     onCheckForUpdates = updateCoordinator::checkNow,
                     onDismissUpdate = appPreferencesRepository::dismissUpdate,
                     onDismissPostUpdate = appPreferencesRepository::dismissPostUpdateCard,
@@ -142,6 +144,15 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    private suspend fun exportManagedProduct(treeUri: Uri, productId: String): PresetExportSummary {
+        val managed = managedHeadphonesRepository.getHeadphone(productId)
+            ?: return PresetExportSummary(results = emptyList())
+        return exportRepository.exportSelected(
+            treeUri = treeUri,
+            headphones = listOf(managed),
+        )
     }
 
     private suspend fun removeManagedProfile(
