@@ -56,7 +56,7 @@ The signing identity is effectively part of the app's long-term update identity.
 - [x] Run **Signed GitHub Release** in `publish` mode for `v0.1.0` with confirmation `PUBLISH` from the same finalized `main` commit.
 - [x] Verify that the workflow created tag `v0.1.0` at exact commit `7bc0f687aece6f58f3431a71b5bb32794c0b7ffa` and published the signed APK, APK SHA-256 checksum, and public signature-verification output.
 - [x] Verify the public non-draft release and latest-release metadata endpoint expose `v0.1.0` and its downloadable assets.
-- [ ] On the installed release build after publication, manually run **Check for update** once and confirm it reads the now-live public release metadata and reports the current version appropriately.
+- [x] On the installed `v0.1.0` release build after publication, manually run **Check for update** and confirm it reads the live public release metadata and reports **You're up to date**.
 
 ## After publishing
 
