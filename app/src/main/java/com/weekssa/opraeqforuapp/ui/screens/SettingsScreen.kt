@@ -33,6 +33,7 @@ fun SettingsScreen(
     appPreferences: AppPreferences,
     catalogState: CatalogState,
     onRefreshCatalog: () -> Unit,
+    onChangeExportFolder: () -> Unit,
     onThemeModeChange: (ThemeMode) -> Unit,
     onProfileVisibilityChange: (ProfileVisibilityCategory, Boolean) -> Unit,
     modifier: Modifier = Modifier,
@@ -88,10 +89,26 @@ fun SettingsScreen(
         SectionTitle("Presets")
         Text("Export folder")
         Text(
-            text = "Not chosen yet",
+            text = appPreferences.exportTreeLabel ?: "Not chosen yet",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        Text(
+            text = "Suggested location: Documents/OPRA EQ for UAPP/Presets. You can choose any folder offered by Android.",
+            modifier = Modifier.padding(top = 4.dp),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        TextButton(onClick = onChangeExportFolder) {
+            Text(if (appPreferences.exportTreeUri == null) "Choose folder" else "Change folder")
+        }
+        if (appPreferences.exportTreeUri != null) {
+            Text(
+                text = "Changing the folder affects future exports only. Files in the previous folder are not moved or deleted.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
 
         SectionDivider()
         SectionTitle("OPRA catalog")

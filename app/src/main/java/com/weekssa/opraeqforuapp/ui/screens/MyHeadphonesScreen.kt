@@ -32,6 +32,7 @@ fun MyHeadphonesScreen(
     managedHeadphones: List<ManagedHeadphoneRecord>,
     onBrowseOpra: () -> Unit,
     onRefreshCatalog: () -> Unit,
+    onExportPresets: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (managedHeadphones.isEmpty()) {
@@ -47,10 +48,28 @@ fun MyHeadphonesScreen(
     val grouped = managedHeadphones
         .groupBy(ManagedHeadphoneRecord::vendorName)
         .toSortedMap(String.CASE_INSENSITIVE_ORDER)
+    val totalSelected = managedHeadphones.sumOf(ManagedHeadphoneRecord::selectedProfileCount)
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
     ) {
+        item(key = "export") {
+            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                Button(
+                    onClick = onExportPresets,
+                    enabled = totalSelected > 0,
+                ) {
+                    Text("Export presets")
+                }
+                Text(
+                    text = "$totalSelected selected presets across ${managedHeadphones.size} headphones",
+                    modifier = Modifier.padding(top = 6.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            HorizontalDivider()
+        }
         grouped.forEach { (manufacturer, headphones) ->
             item(key = "manufacturer:$manufacturer") {
                 Text(

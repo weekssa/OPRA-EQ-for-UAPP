@@ -39,4 +39,6 @@ data class ProfileVisibilityPreferences(
 data class AppPreferences(
     val themeMode: ThemeMode = ThemeMode.System,
     val profileVisibility: ProfileVisibilityPreferences = ProfileVisibilityPreferences(),
+    val exportTreeUri: String? = null,
+    val exportTreeLabel: String? = null,
 )

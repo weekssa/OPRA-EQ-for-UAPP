@@ -1,14 +1,18 @@
 package com.weekssa.opraeqforuapp
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.data.catalog.HttpOpraCatalogSource
 import com.weekssa.opraeqforuapp.data.catalog.OpraCatalogRepository
+import com.weekssa.opraeqforuapp.data.export.PresetExportRepository
 import com.weekssa.opraeqforuapp.data.managed.ManagedHeadphonesRepository
 import com.weekssa.opraeqforuapp.data.managed.OpraEqDatabase
 import com.weekssa.opraeqforuapp.data.preferences.AppPreferencesRepository
@@ -40,6 +44,10 @@ class MainActivity : ComponentActivity() {
 
     private val managedHeadphonesRepository by lazy {
         ManagedHeadphonesRepository(database)
+    }
+
+    private val exportRepository by lazy {
+        PresetExportRepository(applicationContext, database)
     }
 
     private val syncCoordinator by lazy {
@@ -90,6 +98,13 @@ class MainActivity : ComponentActivity() {
                         }
                     },
                     onRemoveHeadphone = managedHeadphonesRepository::removeHeadphone,
+                    onPersistExportTree = ::persistExportTree,
+                    onExportSelected = { uri ->
+                        exportRepository.exportSelected(
+                            treeUri = uri,
+                            headphones = managedHeadphones,
+                        )
+                    },
                     onThemeModeChange = { themeMode ->
                         lifecycleScope.launch {
                             appPreferencesRepository.setThemeMode(themeMode)
@@ -102,6 +117,22 @@ class MainActivity : ComponentActivity() {
                     },
                 )
             }
+        }
+    }
+
+    private suspend fun persistExportTree(uri: Uri): Boolean {
+        return try {
+            contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+            )
+            val label = DocumentFile.fromTreeUri(applicationContext, uri)?.name
+                ?.takeIf { it.isNotBlank() }
+                ?: "Selected folder"
+            appPreferencesRepository.setExportTree(uri.toString(), label)
+            true
+        } catch (_: SecurityException) {
+            false
         }
     }
 }
