@@ -1,0 +1,64 @@
+# Public release checklist — OPRA EQ for UAPP
+
+This checklist covers public GitHub distribution only. Google Play work is intentionally out of scope until a later product decision.
+
+## Source repository readiness
+
+- [x] Apache-2.0 software license present.
+- [x] Software provenance documented in `NOTICE`.
+- [x] OPRA-derived data licensing documented separately in `DATA_LICENSE.md`.
+- [x] Public-facing README reflects implemented behavior and current validation status.
+- [x] Standalone privacy policy present in `PRIVACY.md`.
+- [x] Contribution and security-reporting guidance present.
+- [x] `.gitignore` excludes Android keystores, APK/AAB outputs, local configuration, Google Services configuration, IDE state, and build artifacts.
+- [x] Current-tree search found no committed credential/token/key material.
+- [x] Android manifest requests only `android.permission.INTERNET`.
+- [x] Pixel 9 functional/accessibility/UAPP import validation passed and is recorded in `docs/DEVICE_TEST_PLAN.md`.
+- [ ] Repository visibility changed from private to public.
+
+## Stable Android release signing
+
+Do not publish a public installable release until one permanent signing identity is established.
+
+- [ ] Generate one dedicated Android release keystore outside the repository.
+- [ ] Back up the keystore securely in at least two controlled locations.
+- [ ] Record the key alias and signing-certificate fingerprints in a non-secret release record.
+- [ ] Store keystore/password material only in an approved secure secret store; never commit it.
+- [ ] Configure release builds so signing secrets are supplied externally.
+- [ ] Confirm future release builds can be signed by the same identity.
+
+The signing identity is effectively part of the app's long-term update identity. Losing it can prevent users of a GitHub-distributed build from receiving normal in-place updates.
+
+## First GitHub binary release — v0.1.0
+
+- [ ] Keep Android package ID `com.weekssa.opraeqforuapp` unchanged.
+- [x] `versionName` is `0.1.0` and `versionCode` is `1`.
+- [ ] Run the full automated gate on the exact release commit: unit tests, Android lint, and release build validation.
+- [ ] Produce a signed release APK from the exact tagged commit.
+- [ ] Install the signed APK on the Pixel 9 and perform a short release-build smoke test: launch, first catalog sync, Browse/Search, add one headphone, export XML, import one preset into UAPP/ToneBoosters, Settings/About.
+- [ ] Verify the signed release contains no debug-only labeling or unintended permissions.
+- [ ] Finalize the `0.1.0` changelog date and release notes.
+- [ ] Tag the exact release commit `v0.1.0`.
+- [ ] Publish the signed APK in a GitHub Release for `v0.1.0`.
+- [ ] Verify unauthenticated access to the release page and release metadata endpoint.
+- [ ] Verify the app's **Check for update** path can read public release metadata.
+
+## After publishing
+
+- [ ] Keep the release-signing identity unchanged for subsequent GitHub releases.
+- [ ] Increment `versionCode` for every installable Android release.
+- [ ] Use SemVer `0.x` while the project is in development; reserve `v1.0.0` for the first stable release.
+- [ ] Update `CHANGELOG.md` for every release.
+- [ ] Never replace an already-published APK with a differently signed file under the same version/tag.
+
+## Explicitly deferred
+
+The following are not required to make the source repository public or publish the first GitHub release:
+
+- Google Play Console setup;
+- Play App Signing;
+- Play Store listing assets/forms;
+- Play testing-track requirements;
+- Play-specific update routing.
+
+Those items will be handled separately when Google Play work is intentionally started.
