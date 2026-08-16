@@ -41,8 +41,8 @@ jobs:
           gradle-version: "9.4.1"
           cache-provider: basic
 
-      - name: Run unit tests, Android lint, and build debug APK
-        run: gradle :app:testDebugUnitTest :app:lintDebug :app:assembleDebug --stacktrace
+      - name: Run tests, lint, and assemble debug/release builds
+        run: gradle :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleRelease --stacktrace
 
       - name: Upload debug APK
         if: github.event_name == 'push'
