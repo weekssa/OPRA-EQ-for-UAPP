@@ -45,11 +45,10 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Added `docs/ARCHITECTURE.md` for implementation boundaries and validated architecture.
 - Added `docs/PHASE1_DECISIONS.md` for post-Phase-0 implementation decisions.
 - Added `NOTICE` for converter/software provenance and `DATA_LICENSE.md` for OPRA-derived data licensing/attribution.
+- Completed and recorded the Pixel 9 hands-on validation gate, including successful UAPP/ToneBoosters preset import and the corrected fresh-install catalog path.
 
 ### Validation still required before a public release
 
-- Hands-on Pixel 9 validation of first launch, offline reuse, Browse/Search, managed selections, compatibility states, refresh/change review, SAF export/cleanup, themes, large text, TalkBack, and launcher/themed icon presentation.
-- Import representative generated XML into USB Audio Player PRO/ToneBoosters on the target device and verify practical preset loading/behavior.
 - Resolve public GitHub Release accessibility while the development repository remains private.
 - Introduce and securely retain one stable release-signing identity; no signing key or credential may be committed.
 - Complete release-version/release-notes checks and a final signed release build before `v1.0.0`.
