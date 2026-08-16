@@ -35,6 +35,9 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 ### Fixed
 
 - A never-managed headphone with the approved default profiles already selected now offers an enabled **Add to My Headphones** action immediately instead of requiring an artificial checkbox change before it can be saved.
+- Optional saved-preset cleanup now uses the retained Storage Access Framework tree grant and attempts deletion before local managed-state removal; only ownership-tracked app-created files are deleted.
+- First-launch catalog initialization now retries one transient network failure before showing an unavailable state.
+- Prevented the foreground first catalog download and WorkManager background sync from racing over the same candidate cache file: periodic background sync now waits roughly 24 hours before its first run, and catalog refresh/promotion is serialized across repository instances.
 
 ### Documentation
 
