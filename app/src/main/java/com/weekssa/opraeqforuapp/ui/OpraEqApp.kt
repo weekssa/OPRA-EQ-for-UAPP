@@ -166,8 +166,7 @@ fun OpraEqApp(
             chooseExportFolder(true)
         } else {
             scope.launch {
-                val summary = onExportSelected(storedUri)
-                snackbarHostState.showSnackbar(exportMessage(summary))
+                snackbarHostState.showSnackbar(exportMessage(onExportSelected(storedUri)))
             }
         }
     }
@@ -186,8 +185,7 @@ fun OpraEqApp(
     val requestCatalogRefresh: () -> Unit = {
         if (!catalogBusy) {
             scope.launch {
-                val message = refreshMessage(onRefreshCatalog())
-                snackbarHostState.showSnackbar(message)
+                snackbarHostState.showSnackbar(refreshMessage(onRefreshCatalog()))
             }
         }
     }
@@ -293,6 +291,7 @@ fun OpraEqApp(
                         onCheckForUpdates = requestUpdateCheck,
                         onWhatsNew = { showWhatsNew(latestVersion, appPreferences.updates.releaseNotes) },
                         onGetUpdate = { appPreferences.updates.releaseUrl?.let(onOpenUrl) },
+                        onOpenUrl = onOpenUrl,
                         onThemeModeChange = onThemeModeChange,
                         onProfileVisibilityChange = onProfileVisibilityChange,
                         modifier = Modifier.fillMaxSize(),
@@ -340,6 +339,7 @@ fun OpraEqApp(
                             onDeleteSavedFilesForProduct = onDeleteSavedFilesForProduct,
                             onMessage = ::showMessage,
                             onRefreshCatalog = requestCatalogRefresh,
+                            onOpenUrl = onOpenUrl,
                             modifier = Modifier.fillMaxSize(),
                         )
                     }
