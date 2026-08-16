@@ -46,9 +46,12 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Added `docs/PHASE1_DECISIONS.md` for post-Phase-0 implementation decisions.
 - Added `NOTICE` for converter/software provenance and `DATA_LICENSE.md` for OPRA-derived data licensing/attribution.
 - Completed and recorded the Pixel 9 hands-on validation gate, including successful UAPP/ToneBoosters preset import and the corrected fresh-install catalog path.
+- Replaced the stale design-only README with public-facing app, build, privacy, attribution, compatibility, and validation documentation.
+- Added `PRIVACY.md`, `CONTRIBUTING.md`, and `SECURITY.md` for public-repository readiness.
 
-### Validation still required before a public release
+### Remaining before the first public binary release
 
-- Resolve public GitHub Release accessibility while the development repository remains private.
-- Introduce and securely retain one stable release-signing identity; no signing key or credential may be committed.
-- Complete release-version/release-notes checks and a final signed release build before `v1.0.0`.
+- Make the GitHub repository publicly accessible so unauthenticated release metadata and source links work as designed.
+- Introduce and securely retain one stable Android release-signing identity; no signing key or credential may be committed.
+- Build and device-smoke-test the signed `0.1.0` release APK before publishing the GitHub Release.
+- Finalize the `v0.1.0` release notes and publish the signed APK as the first GitHub Release.
