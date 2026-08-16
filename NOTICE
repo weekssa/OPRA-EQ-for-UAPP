@@ -1,0 +1,17 @@
+OPRA EQ for UAPP
+Copyright 2026 weekssa and contributors
+
+Portions of the ToneBoosters/UAPP normalization and XML mapping are based on
+SiliconExarch/EqConverter, licensed under the Apache License, Version 2.0.
+
+Source: https://github.com/SiliconExarch/EqConverter
+License: https://www.apache.org/licenses/LICENSE-2.0
+
+The implementation in this repository is a native Kotlin/Android port of the
+established weekssa/opra-uapp-converter behavior and has been substantially
+rewritten for local OPRA catalog ingestion, validation, Room-managed user state,
+background reconciliation, Android Storage Access Framework export, and native
+app UX.
+
+OPRA-derived headphone and EQ data is separately licensed under CC BY-SA 4.0.
+See DATA_LICENSE.md for data attribution and licensing details.
