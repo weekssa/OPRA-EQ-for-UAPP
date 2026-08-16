@@ -10,7 +10,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
@@ -137,7 +137,7 @@ fun ManagedHeadphoneDetailScreen(
 
     Column(modifier = modifier.fillMaxSize()) {
         TextButton(onClick = onBack, modifier = Modifier.padding(horizontal = 8.dp)) {
-            Icon(Icons.Outlined.ArrowBack, contentDescription = null)
+            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = null)
             Text("My Headphones", modifier = Modifier.padding(start = 4.dp))
         }
         Text(
