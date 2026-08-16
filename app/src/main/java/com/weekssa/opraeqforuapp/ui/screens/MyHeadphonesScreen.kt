@@ -1,5 +1,6 @@
 package com.weekssa.opraeqforuapp.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,6 +34,7 @@ fun MyHeadphonesScreen(
     onBrowseOpra: () -> Unit,
     onRefreshCatalog: () -> Unit,
     onExportPresets: () -> Unit,
+    onOpenHeadphone: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (managedHeadphones.isEmpty()) {
@@ -50,9 +52,7 @@ fun MyHeadphonesScreen(
         .toSortedMap(String.CASE_INSENSITIVE_ORDER)
     val totalSelected = managedHeadphones.sumOf(ManagedHeadphoneRecord::selectedProfileCount)
 
-    LazyColumn(
-        modifier = modifier.fillMaxSize(),
-    ) {
+    LazyColumn(modifier = modifier.fillMaxSize()) {
         item(key = "export") {
             Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
                 Button(
@@ -96,7 +96,9 @@ fun MyHeadphonesScreen(
                             }
                         }
                     },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onOpenHeadphone(headphone.productId) },
                 )
                 HorizontalDivider()
             }
