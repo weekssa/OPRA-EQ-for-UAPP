@@ -32,7 +32,7 @@ Do not publish a public installable release until one permanent signing identity
 - [x] Generate one dedicated Android release keystore outside the repository.
 - [ ] Back up the keystore securely in at least two controlled locations.
 - [x] Record the key alias and signing-certificate SHA-256 fingerprint in a non-secret release record.
-- [ ] Store the Base64 keystore/password/alias only in GitHub Actions secrets or other approved secure stores; never commit them.
+- [x] Store the Base64 keystore/password/alias only in GitHub Actions secrets or other approved secure stores; never commit them.
 - [x] Configure a manually dispatched signed-release workflow whose signing secrets are supplied externally and scoped only to signing steps.
 - [x] Candidate mode produces a signed, fingerprint-verified short-lived Actions artifact without creating a public release.
 - [x] Publish mode is separate, requires explicit `PUBLISH` confirmation, refuses to replace an existing tag/release, and creates the version tag only after the signed build passes.
