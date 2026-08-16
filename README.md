@@ -4,13 +4,23 @@
 
 The app ships with **zero headphone profiles bundled in the APK**. It downloads the supported OPRA runtime catalog, validates and caches it locally, and works offline after the first successful sync.
 
+## Download
+
+Latest public development release: **v0.1.0**
+
+- [Download OPRA EQ for UAPP v0.1.0 from GitHub Releases](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.1.0)
+- Signed APK: `OPRA-EQ-for-UAPP-v0.1.0.apk`
+- APK SHA-256: `5bc6f4cf22e5b2c67df6c932ef3372d6f4956ea3590e8cf7df77cd0093aa8f64`
+
+Android may ask you to allow installation from the browser or file manager used to open the APK because this development release is distributed directly from GitHub rather than an app store. OPRA EQ for UAPP itself does not request package-install permission and does not silently install updates.
+
 ## Status
 
 Current development version: **0.1.0**
 
-The Android implementation and its primary Pixel 9 device-validation gate are complete. End-to-end testing has covered first launch, offline catalog reuse, Browse/Search, managed headphone selections, XML export through Android's Storage Access Framework, app-owned preset cleanup, accessibility/appearance checks, and successful preset import into USB Audio Player PRO/ToneBoosters.
+The first signed public GitHub release is published. The Android implementation passed its automated unit/lint/build gate, the primary Pixel 9 device-validation gate, and an additional smoke test of the permanently signed `v0.1.0` release build. End-to-end testing covered first launch, offline catalog reuse, Browse/Search, managed headphone selections, XML export through Android's Storage Access Framework, app-owned preset cleanup, accessibility/appearance checks, and successful preset import into USB Audio Player PRO/ToneBoosters.
 
-A signed public binary release has not been published yet. The repository now contains the hardened GitHub Release workflow and curated `v0.1.0` release notes; establishing/backing up the permanent signing identity and smoke-testing the first signed APK are the remaining distribution gates. See [docs/PUBLIC_RELEASE_CHECKLIST.md](docs/PUBLIC_RELEASE_CHECKLIST.md) and [docs/RELEASE_SIGNING.md](docs/RELEASE_SIGNING.md).
+The `v0.1.0` APK is signed with the project's permanent GitHub-distribution Android signing identity. The public signing-certificate fingerprint is recorded in [`release-signing-cert.sha256`](release-signing-cert.sha256). Future installable releases must keep that signing identity and increment Android `versionCode`.
 
 ## What it does
 
