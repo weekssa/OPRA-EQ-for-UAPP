@@ -26,6 +26,8 @@ import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityCategory
 import com.weekssa.opraeqforuapp.domain.settings.ThemeMode
 import com.weekssa.opraeqforuapp.domain.update.SemVer
+import com.weekssa.opraeqforuapp.ui.components.OPRA_DATA_LICENSE_URL
+import com.weekssa.opraeqforuapp.ui.components.OpraAttribution
 import java.text.DateFormat
 import java.util.Date
 
@@ -38,6 +40,7 @@ fun SettingsScreen(
     onCheckForUpdates: () -> Unit,
     onWhatsNew: () -> Unit,
     onGetUpdate: () -> Unit,
+    onOpenUrl: (String) -> Unit,
     onThemeModeChange: (ThemeMode) -> Unit,
     onProfileVisibilityChange: (ProfileVisibilityCategory, Boolean) -> Unit,
     modifier: Modifier = Modifier,
@@ -206,6 +209,37 @@ fun SettingsScreen(
         }
         Text(
             text = "Updates are downloaded manually from the public GitHub Release page. The app does not silently download or install APKs.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        SectionDivider()
+        SectionTitle("Privacy")
+        Text(
+            text = "Headphone selections, app settings, generated preset state, and conversion stay on this device. No account is required, and the app contains no analytics or telemetry. Network access is used for the OPRA catalog and public app-release metadata.",
+            style = MaterialTheme.typography.bodyMedium,
+        )
+
+        SectionDivider()
+        SectionTitle("Credits & licenses")
+        OpraAttribution(onOpenUrl = onOpenUrl)
+        Text(
+            text = "OPRA manufacturer, product, and EQ data is provided under CC BY-SA 4.0. The app preserves individual EQ creator/source information from OPRA where provided.",
+            modifier = Modifier.padding(top = 8.dp),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        TextButton(onClick = { onOpenUrl(OPRA_DATA_LICENSE_URL) }) {
+            Text("CC BY-SA 4.0 license")
+        }
+        Text(
+            text = "OPRA EQ for UAPP source code is Apache-2.0. The ToneBoosters/UAPP conversion mapping is based in part on SiliconExarch/EqConverter (Apache-2.0); provenance is documented in the project NOTICE. AndroidX, Kotlin, and kotlinx libraries retain their respective open-source licenses.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = "OPRA EQ for UAPP is not affiliated with or endorsed by OPRA, Roon Labs, USB Audio Player PRO/UAPP, ToneBoosters, or headphone manufacturers.",
+            modifier = Modifier.padding(top = 8.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
