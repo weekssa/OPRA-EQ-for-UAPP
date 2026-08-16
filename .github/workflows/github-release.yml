@@ -20,9 +20,8 @@ jobs:
 
     env:
       OPRA_RELEASE_KEYSTORE_BASE64: ${{ secrets.OPRA_RELEASE_KEYSTORE_BASE64 }}
-      OPRA_RELEASE_STORE_PASSWORD: ${{ secrets.OPRA_RELEASE_STORE_PASSWORD }}
+      OPRA_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.OPRA_RELEASE_KEYSTORE_PASSWORD }}
       OPRA_RELEASE_KEY_ALIAS: ${{ secrets.OPRA_RELEASE_KEY_ALIAS }}
-      OPRA_RELEASE_KEY_PASSWORD: ${{ secrets.OPRA_RELEASE_KEY_PASSWORD }}
 
     steps:
       - name: Check out tagged source
@@ -73,16 +72,15 @@ jobs:
         run: |
           set -euo pipefail
           : "${OPRA_RELEASE_KEYSTORE_BASE64:?Missing OPRA_RELEASE_KEYSTORE_BASE64 repository secret}"
-          : "${OPRA_RELEASE_STORE_PASSWORD:?Missing OPRA_RELEASE_STORE_PASSWORD repository secret}"
+          : "${OPRA_RELEASE_KEYSTORE_PASSWORD:?Missing OPRA_RELEASE_KEYSTORE_PASSWORD repository secret}"
           : "${OPRA_RELEASE_KEY_ALIAS:?Missing OPRA_RELEASE_KEY_ALIAS repository secret}"
-          : "${OPRA_RELEASE_KEY_PASSWORD:?Missing OPRA_RELEASE_KEY_PASSWORD repository secret}"
 
       - name: Restore release keystore
         shell: bash
         run: |
           set -euo pipefail
-          printf '%s' "$OPRA_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/opra-eq-release.keystore"
-          chmod 600 "$RUNNER_TEMP/opra-eq-release.keystore"
+          printf '%s' "$OPRA_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/opra-eq-release.p12"
+          chmod 600 "$RUNNER_TEMP/opra-eq-release.p12"
 
       - name: Run release gate and build unsigned APK
         run: gradle :app:testDebugUnitTest :app:lintDebug :app:assembleRelease --stacktrace
@@ -99,10 +97,10 @@ jobs:
           test -f "$unsigned_apk"
           "$build_tools/zipalign" -p -f 4 "$unsigned_apk" "$aligned_apk"
           "$build_tools/apksigner" sign \
-            --ks "$RUNNER_TEMP/opra-eq-release.keystore" \
+            --ks "$RUNNER_TEMP/opra-eq-release.p12" \
             --ks-key-alias "$OPRA_RELEASE_KEY_ALIAS" \
-            --ks-pass env:OPRA_RELEASE_STORE_PASSWORD \
-            --key-pass env:OPRA_RELEASE_KEY_PASSWORD \
+            --ks-pass env:OPRA_RELEASE_KEYSTORE_PASSWORD \
+            --key-pass env:OPRA_RELEASE_KEYSTORE_PASSWORD \
             --out "$output_apk" \
             "$aligned_apk"
 
