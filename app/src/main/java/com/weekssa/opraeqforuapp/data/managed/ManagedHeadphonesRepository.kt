@@ -152,6 +152,20 @@ class ManagedHeadphonesRepository(
             summary
         }
 
+    suspend fun removeUnavailableProfile(productId: String, profileId: String) {
+        database.withTransaction {
+            val profile = dao.getProfiles(productId).firstOrNull { it.profileId == profileId }
+                ?: return@withTransaction
+            require(profile.noLongerAvailable) {
+                "Only profiles no longer available in OPRA may be removed directly from retained state."
+            }
+            dao.deleteProfile(productId, profileId)
+            if (dao.countSelectedProfiles(productId) == 0) {
+                dao.deleteHeadphone(productId)
+            }
+        }
+    }
+
     suspend fun removeHeadphone(productId: String) {
         dao.deleteHeadphone(productId)
     }
