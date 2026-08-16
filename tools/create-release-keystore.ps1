@@ -11,14 +11,18 @@ function Find-Keytool {
         return $command.Source
     }
 
-    $candidates = @(
-        (Join-Path $env:ProgramFiles "Android\Android Studio\jbr\bin\keytool.exe"),
-        (Join-Path $env:ProgramFiles "Android\Android Studio\jre\bin\keytool.exe"),
-        (if ($env:JAVA_HOME) { Join-Path $env:JAVA_HOME "bin\keytool.exe" } else { $null })
-    ) | Where-Object { $_ -and (Test-Path $_) }
+    $candidates = @()
+    if ($env:ProgramFiles) {
+        $candidates += Join-Path $env:ProgramFiles "Android\Android Studio\jbr\bin\keytool.exe"
+        $candidates += Join-Path $env:ProgramFiles "Android\Android Studio\jre\bin\keytool.exe"
+    }
+    if ($env:JAVA_HOME) {
+        $candidates += Join-Path $env:JAVA_HOME "bin\keytool.exe"
+    }
 
-    if ($candidates.Count -gt 0) {
-        return $candidates[0]
+    $candidate = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+    if ($candidate) {
+        return $candidate
     }
 
     throw "keytool was not found. Install Android Studio or a JDK 17+ and run this script again."
@@ -39,16 +43,19 @@ Write-Host "Choose a strong unique password and store it in your password manage
 Write-Host "Do not post the password, keystore, or Base64 file in GitHub Issues or chat."
 Write-Host ""
 
-& $keytool \
-    -genkeypair \
-    -v \
-    -keystore $keystorePath \
-    -storetype PKCS12 \
-    -alias $alias \
-    -keyalg RSA \
-    -keysize 4096 \
-    -validity 10000 \
-    -dname "CN=OPRA EQ for UAPP,O=weekssa"
+$keytoolArguments = @(
+    "-genkeypair",
+    "-v",
+    "-keystore", $keystorePath,
+    "-storetype", "PKCS12",
+    "-alias", $alias,
+    "-keyalg", "RSA",
+    "-keysize", "4096",
+    "-validity", "10000",
+    "-dname", "CN=OPRA EQ for UAPP,O=weekssa"
+)
+
+& $keytool @keytoolArguments
 
 if ($LASTEXITCODE -ne 0) {
     throw "keytool failed while generating the release keystore."
