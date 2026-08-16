@@ -37,6 +37,7 @@ import com.weekssa.opraeqforuapp.domain.catalog.OpraCatalog
 import com.weekssa.opraeqforuapp.domain.catalog.OpraProduct
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityPreferences
+import com.weekssa.opraeqforuapp.ui.components.OpraAttribution
 
 @Composable
 fun BrowseOpraScreen(
@@ -50,6 +51,7 @@ fun BrowseOpraScreen(
     onDeleteSavedFilesForProduct: suspend (String) -> PresetCleanupSummary,
     onMessage: (String) -> Unit,
     onRefreshCatalog: () -> Unit,
+    onOpenUrl: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var searchQuery by rememberSaveable { mutableStateOf("") }
@@ -117,6 +119,7 @@ fun BrowseOpraScreen(
                     onSearchQueryChange = { searchQuery = it },
                     onVendorSelected = { selectedVendorId = it },
                     onProductSelected = { selectedProductId = it.id },
+                    onOpenUrl = onOpenUrl,
                     modifier = modifier,
                 )
             }
@@ -132,6 +135,7 @@ private fun BrowseRoot(
     onSearchQueryChange: (String) -> Unit,
     onVendorSelected: (String) -> Unit,
     onProductSelected: (OpraProduct) -> Unit,
+    onOpenUrl: (String) -> Unit,
     modifier: Modifier,
 ) {
     Column(
@@ -161,6 +165,14 @@ private fun BrowseRoot(
         if (searchQuery.isBlank()) {
             val vendors = catalog.vendors.sortedBy { it.name.lowercase() }
             LazyColumn(modifier = Modifier.fillMaxSize()) {
+                item(key = "opra-attribution") {
+                    OpraAttribution(
+                        onOpenUrl = onOpenUrl,
+                        compact = true,
+                        modifier = Modifier.padding(vertical = 8.dp),
+                    )
+                    HorizontalDivider()
+                }
                 items(vendors, key = { it.id }) { vendor ->
                     val modelCount = catalog.productsForVendor(vendor.id).size
                     ListItem(
