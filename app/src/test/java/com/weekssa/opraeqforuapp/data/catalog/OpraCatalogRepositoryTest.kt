@@ -3,6 +3,11 @@ package com.weekssa.opraeqforuapp.data.catalog
 import java.io.File
 import java.io.IOException
 import java.nio.file.Files
+import java.util.concurrent.atomic.AtomicInteger
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -120,6 +125,37 @@ class OpraCatalogRepositoryTest {
         secondRepository.initialize()
 
         assertEquals(1, calls)
+        assertTrue(secondRepository.state.value is CatalogState.Ready)
+    }
+
+    @Test
+    fun concurrentRepositoryInstancesSerializeSharedCatalogRefresh() = runBlocking {
+        val filesDir = Files.createTempDirectory("opra-catalog-test").toFile()
+        val activeDownloads = AtomicInteger(0)
+        val maxConcurrentDownloads = AtomicInteger(0)
+        val source = OpraCatalogSource { destination ->
+            val active = activeDownloads.incrementAndGet()
+            maxConcurrentDownloads.updateAndGet { previous -> maxOf(previous, active) }
+            try {
+                delay(50)
+                destination.writeText(validCatalog())
+            } finally {
+                activeDownloads.decrementAndGet()
+            }
+        }
+        val firstRepository = OpraCatalogRepository(filesDir = filesDir, source = source)
+        val secondRepository = OpraCatalogRepository(filesDir = filesDir, source = source)
+
+        val results = coroutineScope {
+            listOf(
+                async { firstRepository.refresh() },
+                async { secondRepository.refresh() },
+            ).awaitAll()
+        }
+
+        assertTrue(results.all { it is CatalogRefreshResult.Success })
+        assertEquals(1, maxConcurrentDownloads.get())
+        assertTrue(firstRepository.state.value is CatalogState.Ready)
         assertTrue(secondRepository.state.value is CatalogState.Ready)
     }
 
