@@ -37,17 +37,67 @@ class OpraCatalogRepositoryTest {
     @Test
     fun networkFailureWithoutCacheLeavesCatalogUnavailable() = runBlocking {
         val filesDir = Files.createTempDirectory("opra-catalog-test").toFile()
+        var calls = 0
         val repository = OpraCatalogRepository(
             filesDir = filesDir,
-            source = OpraCatalogSource { throw IOException("offline") },
+            source = OpraCatalogSource {
+                calls += 1
+                throw IOException("offline")
+            },
         )
 
         val result = repository.refresh()
 
+        assertEquals(1, calls)
         assertTrue(result is CatalogRefreshResult.Failure)
         result as CatalogRefreshResult.Failure
         assertEquals(CatalogRefreshFailureReason.Network, result.reason)
         assertFalse(result.usingSavedCatalog)
+        assertEquals(
+            CatalogState.Unavailable(CatalogRefreshFailureReason.Network),
+            repository.state.value,
+        )
+    }
+
+    @Test
+    fun initializeRetriesTransientFirstDownloadFailureBeforeShowingUnavailable() = runBlocking {
+        val filesDir = Files.createTempDirectory("opra-catalog-test").toFile()
+        var calls = 0
+        val repository = OpraCatalogRepository(
+            filesDir = filesDir,
+            source = OpraCatalogSource { destination ->
+                calls += 1
+                if (calls == 1) {
+                    throw IOException("temporary network startup failure")
+                }
+                destination.writeText(validCatalog())
+            },
+            startupRetryDelayMillis = 0L,
+        )
+
+        repository.initialize()
+
+        assertEquals(2, calls)
+        val ready = repository.state.value as CatalogState.Ready
+        assertEquals("HD 600", ready.catalog.products.single().name)
+    }
+
+    @Test
+    fun initializeReportsUnavailableAfterBothStartupAttemptsFail() = runBlocking {
+        val filesDir = Files.createTempDirectory("opra-catalog-test").toFile()
+        var calls = 0
+        val repository = OpraCatalogRepository(
+            filesDir = filesDir,
+            source = OpraCatalogSource {
+                calls += 1
+                throw IOException("offline")
+            },
+            startupRetryDelayMillis = 0L,
+        )
+
+        repository.initialize()
+
+        assertEquals(2, calls)
         assertEquals(
             CatalogState.Unavailable(CatalogRefreshFailureReason.Network),
             repository.state.value,
