@@ -3,7 +3,7 @@ name: Publish GitHub Release
 on:
   push:
     tags:
-      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v*"
 
 permissions:
   contents: write
@@ -17,11 +17,6 @@ jobs:
     if: github.repository == 'weekssa/OPRA-EQ-for-UAPP'
     runs-on: ubuntu-latest
     timeout-minutes: 40
-
-    env:
-      OPRA_RELEASE_KEYSTORE_BASE64: ${{ secrets.OPRA_RELEASE_KEYSTORE_BASE64 }}
-      OPRA_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.OPRA_RELEASE_KEYSTORE_PASSWORD }}
-      OPRA_RELEASE_KEY_ALIAS: ${{ secrets.OPRA_RELEASE_KEY_ALIAS }}
 
     steps:
       - name: Check out tagged source
@@ -51,6 +46,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
+            echo "Release tags must use exact SemVer form vMAJOR.MINOR.PATCH" >&2
+            exit 1
+          }
           tag_version="${GITHUB_REF_NAME#v}"
           version_name="$(sed -n 's/^[[:space:]]*versionName = "\([^"]*\)".*/\1/p' app/build.gradle.kts | head -n 1)"
           test -n "$version_name"
@@ -68,6 +67,10 @@ jobs:
           }
 
       - name: Validate signing secrets
+        env:
+          OPRA_RELEASE_KEYSTORE_BASE64: ${{ secrets.OPRA_RELEASE_KEYSTORE_BASE64 }}
+          OPRA_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.OPRA_RELEASE_KEYSTORE_PASSWORD }}
+          OPRA_RELEASE_KEY_ALIAS: ${{ secrets.OPRA_RELEASE_KEY_ALIAS }}
         shell: bash
         run: |
           set -euo pipefail
@@ -76,6 +79,8 @@ jobs:
           : "${OPRA_RELEASE_KEY_ALIAS:?Missing OPRA_RELEASE_KEY_ALIAS repository secret}"
 
       - name: Restore release keystore
+        env:
+          OPRA_RELEASE_KEYSTORE_BASE64: ${{ secrets.OPRA_RELEASE_KEYSTORE_BASE64 }}
         shell: bash
         run: |
           set -euo pipefail
@@ -86,6 +91,9 @@ jobs:
         run: gradle :app:testDebugUnitTest :app:lintDebug :app:assembleRelease --stacktrace
 
       - name: Align, sign, and verify APK
+        env:
+          OPRA_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.OPRA_RELEASE_KEYSTORE_PASSWORD }}
+          OPRA_RELEASE_KEY_ALIAS: ${{ secrets.OPRA_RELEASE_KEY_ALIAS }}
         shell: bash
         run: |
           set -euo pipefail
