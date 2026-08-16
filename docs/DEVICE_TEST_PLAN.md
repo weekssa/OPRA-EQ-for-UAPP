@@ -2,6 +2,14 @@
 
 This is the hands-on validation gate after automated CI is green. It is intentionally short and user-oriented; automated unit/lint/build checks remain in GitHub Actions.
 
+## Current device-test progress — 2026-08-15
+
+The user has reported that the functional Pixel 9 checks exercised so far are passing. Confirmed successful end-to-end behavior includes installing/running the debug build, runtime OPRA browsing/search, adding/updating My Headphones from Browse, exporting generated XML through Android's folder picker, and importing the generated presets successfully into USB Audio Player PRO/ToneBoosters.
+
+During device testing, the first-add/My Headphones membership bug was found and corrected. A never-managed headphone is now directly addable with the approved default selections, and per-headphone **Export XMLs** persists/updates the same My Headphones record before export. The corrected build passed the automated unit-test, Android-lint, and debug-APK build gate before retesting.
+
+The user subsequently reported that the additional functional checks performed so far are also passing. Do not mark the overall device gate complete until the remaining hands-on appearance/accessibility and Settings/About/privacy/attribution checks below have been explicitly exercised. OPRA-change cases that require a naturally occurring upstream change may remain covered primarily by deterministic automated regression tests unless a practical device fixture is introduced.
+
 ## Install and first launch
 
 1. Install the latest `opra-eq-for-uapp-debug` APK artifact from the successful Android CI run.
