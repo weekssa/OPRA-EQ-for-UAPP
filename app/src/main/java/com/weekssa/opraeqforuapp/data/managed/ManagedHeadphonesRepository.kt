@@ -160,7 +160,7 @@ class ManagedHeadphonesRepository(
                 "Only profiles no longer available in OPRA may be removed directly from retained state."
             }
             dao.deleteProfile(productId, profileId)
-            if (dao.countSelectedProfiles(productId) == 0) {
+            if (dao.countProfiles(productId) == 0) {
                 dao.deleteHeadphone(productId)
             }
         }
