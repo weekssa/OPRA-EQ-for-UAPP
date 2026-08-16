@@ -17,6 +17,7 @@ object BackgroundSyncScheduler {
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
         val request = PeriodicWorkRequestBuilder<OpraCatalogSyncWorker>(24, TimeUnit.HOURS)
+            .setInitialDelay(24, TimeUnit.HOURS)
             .setConstraints(constraints)
             .setBackoffCriteria(
                 BackoffPolicy.EXPONENTIAL,
