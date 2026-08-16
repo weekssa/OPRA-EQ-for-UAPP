@@ -325,6 +325,7 @@ fun OpraEqApp(
                                     onDeleteSavedFilesForProfiles = onDeleteSavedFilesForProfiles,
                                     onDeleteSavedFilesForProduct = onDeleteSavedFilesForProduct,
                                     onMarkReviewed = onMarkReviewed,
+                                    onExportProduct = requestExportProduct,
                                     onMessage = ::showMessage,
                                     onBack = { selectedManagedProductId = null },
                                     modifier = Modifier.fillMaxSize(),
