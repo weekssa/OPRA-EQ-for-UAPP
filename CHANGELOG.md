@@ -30,7 +30,8 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - GitHub Release update checks at a modest cadence, SemVer comparison, non-blocking update banner, About & updates status/actions, What’s new dialog, manual browser handoff, and one-time post-update card state; no self-install or APK-install permission.
 - OPRA attribution in Browse and Settings using the official OPRA logo, project description/link, individual creator identity from profile metadata, CC BY-SA 4.0 data attribution, software provenance notice, privacy disclosure, and non-endorsement language.
 - Original production **Equalizer Headphones** adaptive launcher icon direction with round and monochrome/themed-icon treatment.
-- Android CI with unit tests, Android lint, and debug APK assembly; obsolete same-branch CI runs are cancelled automatically.
+- Android CI with unit tests, Android lint, debug assembly, and unsigned release assembly; obsolete same-branch CI runs are cancelled automatically and normal CI does not publish development APK artifacts.
+- Public Apache-2.0 GitHub source repository with issue templates and public privacy/contribution/security guidance.
 
 ### Fixed
 
@@ -47,11 +48,10 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Added `NOTICE` for converter/software provenance and `DATA_LICENSE.md` for OPRA-derived data licensing/attribution.
 - Completed and recorded the Pixel 9 hands-on validation gate, including successful UAPP/ToneBoosters preset import and the corrected fresh-install catalog path.
 - Replaced the stale design-only README with public-facing app, build, privacy, attribution, compatibility, and validation documentation.
-- Added `PRIVACY.md`, `CONTRIBUTING.md`, and `SECURITY.md` for public-repository readiness.
+- Added `PRIVACY.md`, `CONTRIBUTING.md`, `SECURITY.md`, issue templates, and `docs/PUBLIC_RELEASE_CHECKLIST.md` for public-repository readiness.
 
 ### Remaining before the first public binary release
 
-- Make the GitHub repository publicly accessible so unauthenticated release metadata and source links work as designed.
 - Introduce and securely retain one stable Android release-signing identity; no signing key or credential may be committed.
 - Build and device-smoke-test the signed `0.1.0` release APK before publishing the GitHub Release.
 - Finalize the `v0.1.0` release notes and publish the signed APK as the first GitHub Release.
