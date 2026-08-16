@@ -38,3 +38,22 @@ If an already-selected OPRA profile changes upstream and the newly validated pro
 - require an explicit user action for any later removal/cleanup.
 
 The transition must be covered by deterministic reconciliation tests and must never destroy the last known-good generated/exported preset.
+
+## My Headphones membership and Browse export — approved 2026-08-15 during device testing
+
+**My Headphones** is the persistent local library of headphones the user intentionally manages. A headphone enters or updates that library when either of these actions occurs:
+
+- the user explicitly adds/saves the headphone from its Browse profile-selection screen; or
+- the user explicitly exports/downloads XML presets for that headphone from its Browse profile-selection screen.
+
+Required behavior:
+
+- A never-managed headphone whose compatible profiles are preselected by the approved default must offer an enabled **Add to My Headphones** action immediately. The user must not be forced to toggle a checkbox merely to make the initial default state saveable.
+- Browse continues to provide the local manufacturer/model search used to find headphones.
+- The headphone profile-selection screen provides an explicit **Export XMLs** action when at least one profile is selected.
+- If the headphone is new or has staged changes, **Export XMLs** first persists the staged selection/future-profile setting using the same save/removal-confirmation rules, then exports that headphone's selected presets.
+- Exporting therefore creates or updates the matching My Headphones record before files are written.
+- If the headphone is already managed and unchanged, Export XMLs exports it without manufacturing an artificial state change.
+- My Headphones is keyed by the OPRA product identity. Re-adding or re-exporting a headphone updates the existing record rather than creating duplicates.
+- Exporting zero selected profiles is not offered; a managed headphone with a staged zero-selection state follows the existing remove-headphone confirmation flow instead.
+- The existing My Headphones **Export presets** action remains the explicit bulk export for all selected presets across the managed library.
