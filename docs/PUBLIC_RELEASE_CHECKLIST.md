@@ -14,7 +14,8 @@ This checklist covers public GitHub distribution only. Google Play work is inten
 - [x] Current-tree search found no committed credential/token/key material.
 - [x] Android manifest requests only `android.permission.INTERNET`.
 - [x] Pixel 9 functional/accessibility/UAPP import validation passed and is recorded in `docs/DEVICE_TEST_PLAN.md`.
-- [ ] Repository visibility changed from private to public.
+- [x] Repository visibility changed from private to public.
+- [x] Normal Android CI validates unit tests, Android lint, debug assembly, and unsigned release assembly without publishing development APK artifacts.
 
 ## Stable Android release signing
 
@@ -33,7 +34,7 @@ The signing identity is effectively part of the app's long-term update identity.
 
 - [ ] Keep Android package ID `com.weekssa.opraeqforuapp` unchanged.
 - [x] `versionName` is `0.1.0` and `versionCode` is `1`.
-- [ ] Run the full automated gate on the exact release commit: unit tests, Android lint, and release build validation.
+- [ ] Run the full automated gate on the exact release commit: unit tests, Android lint, debug assembly, and unsigned release assembly.
 - [ ] Produce a signed release APK from the exact tagged commit.
 - [ ] Install the signed APK on the Pixel 9 and perform a short release-build smoke test: launch, first catalog sync, Browse/Search, add one headphone, export XML, import one preset into UAPP/ToneBoosters, Settings/About.
 - [ ] Verify the signed release contains no debug-only labeling or unintended permissions.
