@@ -122,9 +122,11 @@ Room stores managed headphone identity and per-profile state including:
 - generated preset name/XML/source fingerprint/time;
 - external app-owned export records.
 
-A never-managed headphone starts with auto-inclusion ON and all currently selectable profiles checked. Not-compatible profiles are excluded from this default and from Select all/automatic inclusion.
+A never-managed headphone starts with auto-inclusion ON and all currently selectable profiles checked. Not-compatible profiles are excluded from this default and from Select all/automatic inclusion. These first-use defaults are staged UI state rather than an already-persisted baseline: if at least one selectable profile exists, the screen must immediately allow **Add to My Headphones** without forcing an artificial checkbox change.
 
 With auto-inclusion ON, unchecking a selectable profile becomes an explicit exclusion; future unrelated compatible profiles are included. With auto-inclusion OFF, the saved selection is fixed exact state.
+
+A headphone is keyed by OPRA product identity in Room. Explicit Add/Save and per-headphone XML export both create or update that same record rather than creating parallel/duplicate library state.
 
 ## Catalog reconciliation and review
 
@@ -142,6 +144,8 @@ Manual and background refresh share deterministic managed-state reconciliation.
 
 Export is explicit and user-driven through Android's Storage Access Framework.
 
+- Bulk **Export presets** from My Headphones exports the selected presets across the managed library.
+- Per-headphone **Export XMLs** is available from the headphone profile editor. If that headphone is new or has staged changes, the staged selection/future-profile setting is persisted first; export then reloads the durable Room record by OPRA product ID and writes only that headphone's selected generated presets. This guarantees that any headphone explicitly exported from Browse is also present/updated in My Headphones.
 - First Export opens the system directory picker; the UI suggests `Documents/OPRA EQ for UAPP/Presets` but the user chooses.
 - Supported tree access is persisted in DataStore and via Android persistable URI permission.
 - No broad storage permission or writes into another app's private storage.
@@ -184,7 +188,7 @@ Android CI is the automated gate and runs:
 - `:app:lintDebug`
 - `:app:assembleDebug`
 
-Same-branch obsolete runs are cancelled so validation tracks the newest `main` state. Tests cover catalog parsing/cache safety, search, compatibility, selection defaults/exclusions, snapshot/fingerprint semantics, native conversion/golden XML, reconciliation, export planning/conflicts, SemVer, and other deterministic domain rules.
+Same-branch obsolete runs are cancelled so validation tracks the newest `main` state. Tests cover catalog parsing/cache safety, search, compatibility, selection defaults/exclusions, first-add action eligibility, snapshot/fingerprint semantics, native conversion/golden XML, reconciliation, export planning/conflicts, SemVer, and other deterministic domain rules.
 
 Automated CI does not replace final hardware/app-integration testing. Before a public release the project still requires a Pixel 9 hands-on pass for first launch/offline behavior, managed selection/review, SAF provider behavior, UAPP/ToneBoosters preset import, TalkBack/large text/themes, and launcher/themed-icon presentation.
 
@@ -202,4 +206,4 @@ Implemented autonomous slices:
 8. OPRA attribution/privacy/license surfaces and production adaptive icon assets.
 9. Android lint added to the CI gate and final accessibility/release hardening in progress.
 
-The next required gate after current `main` is green is **hands-on Pixel 9/UAPP validation**. Public distribution/signing comes only after that validation and requires explicit user input for release-signing identity/distribution readiness.
+The current device-testing refinement makes first-time default selections directly addable and lets per-headphone XML export persist/update My Headphones before writing files. The next required gate after current `main` is green is continued **hands-on Pixel 9/UAPP validation**. Public distribution/signing comes only after that validation and requires explicit user input for release-signing identity/distribution readiness.
