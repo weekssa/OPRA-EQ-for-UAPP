@@ -25,6 +25,18 @@ data class ManagedHeadphoneSelection(
 fun defaultStagedSelectedProfileIds(profiles: List<OpraEqProfile>): Set<String> =
     selectableProfileIds(profiles)
 
+fun managedSelectionCommitEnabled(
+    isManaged: Boolean,
+    stagedSelectedProfileIds: Set<String>,
+    baselineSelectedProfileIds: Set<String>,
+    autoIncludeNewProfiles: Boolean,
+    baselineAutoIncludeNewProfiles: Boolean,
+): Boolean {
+    if (!isManaged) return stagedSelectedProfileIds.isNotEmpty()
+    return stagedSelectedProfileIds != baselineSelectedProfileIds ||
+        autoIncludeNewProfiles != baselineAutoIncludeNewProfiles
+}
+
 fun selectionUpdatesForSave(
     profiles: List<OpraEqProfile>,
     stagedSelectedProfileIds: Set<String>,
