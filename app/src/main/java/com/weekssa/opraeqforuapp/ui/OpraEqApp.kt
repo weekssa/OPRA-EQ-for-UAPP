@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.Headphones
 import androidx.compose.material.icons.outlined.Refresh
@@ -122,8 +122,9 @@ fun OpraEqApp(
         SemVer.parse(latestVersion)?.let { latest ->
             SemVer.parse(BuildConfig.VERSION_NAME)?.let { installed -> latest > installed }
         } == true
-    val showUpdateBanner = updateAvailable &&
-        appPreferences.updates.dismissedVersion != latestVersion
+    val updateBannerVersion = latestVersion?.takeIf {
+        updateAvailable && appPreferences.updates.dismissedVersion != it
+    }
     val postUpdateVersion = appPreferences.updates.postUpdateVersionToShow
         ?.takeIf { it == BuildConfig.VERSION_NAME }
 
@@ -214,7 +215,7 @@ fun OpraEqApp(
                     title = { Text("Settings") },
                     navigationIcon = {
                         IconButton(onClick = { settingsOpen = false }) {
-                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
                         }
                     },
                 )
@@ -276,11 +277,11 @@ fun OpraEqApp(
         ) {
             if (!settingsOpen) {
                 when {
-                    showUpdateBanner && latestVersion != null -> UpdateAvailableBanner(
-                        version = latestVersion,
-                        onWhatsNew = { showWhatsNew(latestVersion, appPreferences.updates.releaseNotes) },
+                    updateBannerVersion != null -> UpdateAvailableBanner(
+                        version = updateBannerVersion,
+                        onWhatsNew = { showWhatsNew(updateBannerVersion, appPreferences.updates.releaseNotes) },
                         onGetUpdate = { appPreferences.updates.releaseUrl?.let(onOpenUrl) },
-                        onDismiss = { scope.launch { onDismissUpdate(latestVersion) } },
+                        onDismiss = { scope.launch { onDismissUpdate(updateBannerVersion) } },
                     )
                     postUpdateVersion != null -> PostUpdateBanner(
                         version = postUpdateVersion,
