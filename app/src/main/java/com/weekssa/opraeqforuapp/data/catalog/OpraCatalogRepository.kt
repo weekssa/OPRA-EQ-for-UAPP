@@ -9,6 +9,7 @@ import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -108,6 +109,7 @@ class OpraCatalogRepository(
     private val source: OpraCatalogSource,
     private val parser: OpraCatalogParser = OpraCatalogParser(),
     private val nowMillis: () -> Long = System::currentTimeMillis,
+    private val startupRetryDelayMillis: Long = STARTUP_RETRY_DELAY_MILLIS,
 ) {
     private val catalogDirectory = File(filesDir, "opra/catalog")
     private val currentFile = File(catalogDirectory, "database_v1.jsonl")
@@ -130,11 +132,18 @@ class OpraCatalogRepository(
         val isFresh = ready != null &&
             nowMillis() - ready.lastSuccessfulRefreshMillis < AUTO_REFRESH_INTERVAL_MILLIS
         if (!isFresh) {
-            refresh()
+            if (ready == null) {
+                refresh(networkAttempts = STARTUP_NETWORK_ATTEMPTS)
+            } else {
+                refresh()
+            }
         }
     }
 
-    suspend fun refresh(): CatalogRefreshResult = refreshMutex.withLock {
+    suspend fun refresh(): CatalogRefreshResult = refresh(networkAttempts = 1)
+
+    private suspend fun refresh(networkAttempts: Int): CatalogRefreshResult = refreshMutex.withLock {
+        require(networkAttempts >= 1)
         val previous = mutableState.value as? CatalogState.Ready
         mutableState.value = previous?.copy(isRefreshing = true) ?: CatalogState.Loading
 
@@ -145,12 +154,8 @@ class OpraCatalogRepository(
             return@withLock fail(CatalogRefreshFailureReason.Storage, previous)
         }
 
-        candidateFile.delete()
-
         try {
-            try {
-                source.downloadTo(candidateFile)
-            } catch (_: IOException) {
+            if (!downloadCandidate(networkAttempts)) {
                 return@withLock fail(CatalogRefreshFailureReason.Network, previous)
             }
 
@@ -180,6 +185,21 @@ class OpraCatalogRepository(
         } finally {
             candidateFile.delete()
         }
+    }
+
+    private suspend fun downloadCandidate(networkAttempts: Int): Boolean {
+        repeat(networkAttempts) { attempt ->
+            candidateFile.delete()
+            try {
+                source.downloadTo(candidateFile)
+                return true
+            } catch (_: IOException) {
+                if (attempt + 1 < networkAttempts && startupRetryDelayMillis > 0L) {
+                    delay(startupRetryDelayMillis)
+                }
+            }
+        }
+        return false
     }
 
     private suspend fun loadCurrentCatalog(): OpraCatalog? = withContext(Dispatchers.IO) {
@@ -226,5 +246,7 @@ class OpraCatalogRepository(
 
     companion object {
         private const val AUTO_REFRESH_INTERVAL_MILLIS = 24L * 60L * 60L * 1000L
+        private const val STARTUP_NETWORK_ATTEMPTS = 2
+        private const val STARTUP_RETRY_DELAY_MILLIS = 1_000L
     }
 }
