@@ -4,7 +4,7 @@ All notable changes to **OPRA EQ for UAPP** will be documented in this file.
 
 The project uses Semantic Versioning. Development releases remain in the `0.x` series until the first stable `v1.0.0` release.
 
-## [0.1.0] - Unreleased
+## [0.1.0] - 2026-08-16
 
 ### Added
 
@@ -32,6 +32,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Original production **Equalizer Headphones** adaptive launcher icon direction with round and monochrome/themed-icon treatment.
 - Android CI with unit tests, Android lint, debug assembly, and unsigned release assembly; obsolete same-branch CI runs are cancelled automatically and normal CI does not publish development APK artifacts.
 - Public Apache-2.0 GitHub source repository with issue templates and public privacy/contribution/security guidance.
+- Permanent GitHub-distribution release-signing identity, public certificate-fingerprint pinning, and a controlled candidate/publish GitHub Actions release workflow.
 
 ### Fixed
 
@@ -49,9 +50,10 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Completed and recorded the Pixel 9 hands-on validation gate, including successful UAPP/ToneBoosters preset import and the corrected fresh-install catalog path.
 - Replaced the stale design-only README with public-facing app, build, privacy, attribution, compatibility, and validation documentation.
 - Added `PRIVACY.md`, `CONTRIBUTING.md`, `SECURITY.md`, issue templates, and `docs/PUBLIC_RELEASE_CHECKLIST.md` for public-repository readiness.
+- Added `docs/RELEASE_SIGNING.md` plus local Windows/macOS signing-key helpers for the GitHub-distribution release process.
 
 ### Remaining before the first public binary release
 
-- Introduce and securely retain one stable Android release-signing identity; no signing key or credential may be committed.
-- Build and device-smoke-test the signed `0.1.0` release APK before publishing the GitHub Release.
-- Finalize the `v0.1.0` release notes and publish the signed APK as the first GitHub Release.
+- Back up the permanent release keystore and store its Base64 form, password, and alias in GitHub Actions secrets.
+- Build and device-smoke-test the signed `0.1.0` candidate APK.
+- Publish the verified signed APK as the first GitHub Release for `v0.1.0`.
