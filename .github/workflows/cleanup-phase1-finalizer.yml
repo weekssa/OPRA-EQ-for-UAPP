@@ -1,0 +1,28 @@
+name: Clean Phase 1 finalizer
+
+on:
+  workflow_run:
+    workflows: ["Finalize Phase 1 status edits"]
+    types: [completed]
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          ref: main
+
+      - name: Remove one-shot maintenance workflows
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/finalize-phase1-status.yml
+          git rm .github/workflows/cleanup-phase1-finalizer.yml
+          git commit -m "Remove Phase 1 maintenance workflows"
+          git push
