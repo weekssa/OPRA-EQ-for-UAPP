@@ -1,0 +1,25 @@
+name: Feature request
+description: Suggest an improvement for OPRA EQ for UAPP
+title: "[Feature] "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe the user need rather than only the proposed implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe how you think the app should behave.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Include examples, OPRA profile types, or UAPP/ToneBoosters behavior when relevant. Do not include sensitive information.
