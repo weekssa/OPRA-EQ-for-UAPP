@@ -65,6 +65,11 @@ private enum class TopLevelDestination(val label: String) {
     BrowseOpra("Browse OPRA"),
 }
 
+private sealed interface ExportRequest {
+    data object AllManaged : ExportRequest
+    data class Product(val productId: String) : ExportRequest
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OpraEqApp(
@@ -82,6 +87,7 @@ fun OpraEqApp(
     onMarkReviewed: suspend (String) -> Unit,
     onPersistExportTree: suspend (Uri) -> Boolean,
     onExportSelected: suspend (Uri) -> PresetExportSummary,
+    onExportProduct: suspend (Uri, String) -> PresetExportSummary,
     onCheckForUpdates: suspend () -> AppUpdateCheckResult,
     onDismissUpdate: suspend (String) -> Unit,
     onDismissPostUpdate: suspend () -> Unit,
@@ -92,7 +98,7 @@ fun OpraEqApp(
     var selectedDestinationIndex by rememberSaveable { mutableIntStateOf(0) }
     var selectedManagedProductId by rememberSaveable { mutableStateOf<String?>(null) }
     var settingsOpen by rememberSaveable { mutableStateOf(false) }
-    var exportAfterFolderPick by remember { mutableStateOf(false) }
+    var pendingExportRequest by remember { mutableStateOf<ExportRequest?>(null) }
     var whatsNewVersion by remember { mutableStateOf<String?>(null) }
     var whatsNewNotes by remember { mutableStateOf("") }
     val destinations = remember { TopLevelDestination.entries }
@@ -131,42 +137,49 @@ fun OpraEqApp(
         whatsNewNotes = notes.orEmpty()
     }
 
-    whatsNewVersion?.let { version ->
-        WhatsNewDialog(
-            version = version,
-            notes = whatsNewNotes,
-            onDismiss = { whatsNewVersion = null },
-        )
-    }
-
     val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        val request = pendingExportRequest
+        pendingExportRequest = null
         if (uri == null) {
-            exportAfterFolderPick = false
             return@rememberLauncherForActivityResult
         }
-        val shouldExport = exportAfterFolderPick
-        exportAfterFolderPick = false
         scope.launch {
             if (!onPersistExportTree(uri)) {
                 snackbarHostState.showSnackbar("Couldn’t retain access to that folder. Choose another folder.")
-            } else if (shouldExport) {
-                snackbarHostState.showSnackbar(exportMessage(onExportSelected(uri)))
+            } else {
+                val summary = when (request) {
+                    ExportRequest.AllManaged -> onExportSelected(uri)
+                    is ExportRequest.Product -> onExportProduct(uri, request.productId)
+                    null -> null
+                }
+                summary?.let { snackbarHostState.showSnackbar(exportMessage(it)) }
             }
         }
     }
 
-    val chooseExportFolder: (Boolean) -> Unit = { exportAfterPick ->
-        exportAfterFolderPick = exportAfterPick
+    val chooseExportFolder: (ExportRequest?) -> Unit = { request ->
+        pendingExportRequest = request
         folderPicker.launch(appPreferences.exportTreeUri?.let(Uri::parse))
     }
 
-    val requestExport: () -> Unit = {
+    val requestExportAll: () -> Unit = {
         val storedUri = appPreferences.exportTreeUri?.let(Uri::parse)
         if (storedUri == null) {
-            chooseExportFolder(true)
+            chooseExportFolder(ExportRequest.AllManaged)
         } else {
             scope.launch {
                 snackbarHostState.showSnackbar(exportMessage(onExportSelected(storedUri)))
+            }
+        }
+    }
+
+    val requestExportProduct: (String) -> Unit = { productId ->
+        val storedUri = appPreferences.exportTreeUri?.let(Uri::parse)
+        if (storedUri == null) {
+            chooseExportFolder(ExportRequest.Product(productId))
+        } else {
+            scope.launch {
+                snackbarHostState.showSnackbar(exportMessage(onExportProduct(storedUri, productId)))
             }
         }
     }
@@ -287,7 +300,7 @@ fun OpraEqApp(
                         appPreferences = appPreferences,
                         catalogState = catalogState,
                         onRefreshCatalog = requestCatalogRefresh,
-                        onChangeExportFolder = { chooseExportFolder(false) },
+                        onChangeExportFolder = { chooseExportFolder(null) },
                         onCheckForUpdates = requestUpdateCheck,
                         onWhatsNew = { showWhatsNew(latestVersion, appPreferences.updates.releaseNotes) },
                         onGetUpdate = { appPreferences.updates.releaseUrl?.let(onOpenUrl) },
@@ -322,7 +335,7 @@ fun OpraEqApp(
                                     managedHeadphones = managedHeadphones,
                                     onBrowseOpra = { selectedDestinationIndex = TopLevelDestination.BrowseOpra.ordinal },
                                     onRefreshCatalog = requestCatalogRefresh,
-                                    onExportPresets = requestExport,
+                                    onExportPresets = requestExportAll,
                                     onOpenHeadphone = { selectedManagedProductId = it },
                                     modifier = Modifier.fillMaxSize(),
                                 )
@@ -337,6 +350,7 @@ fun OpraEqApp(
                             onRemoveHeadphone = onRemoveHeadphone,
                             onDeleteSavedFilesForProfiles = onDeleteSavedFilesForProfiles,
                             onDeleteSavedFilesForProduct = onDeleteSavedFilesForProduct,
+                            onExportProduct = requestExportProduct,
                             onMessage = ::showMessage,
                             onRefreshCatalog = requestCatalogRefresh,
                             onOpenUrl = onOpenUrl,
