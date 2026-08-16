@@ -22,6 +22,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -45,6 +46,7 @@ import com.weekssa.opraeqforuapp.domain.catalog.visibilityCategory
 import com.weekssa.opraeqforuapp.domain.managed.DEFAULT_AUTO_INCLUDE_NEW_PROFILES
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.managed.defaultStagedSelectedProfileIds
+import com.weekssa.opraeqforuapp.domain.managed.managedSelectionCommitEnabled
 import com.weekssa.opraeqforuapp.domain.managed.selectableProfileIds
 import com.weekssa.opraeqforuapp.domain.model.ProfileCompatibility
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityPreferences
@@ -60,6 +62,7 @@ internal fun ProfileSelectionEditor(
     onRemoveHeadphone: suspend (String) -> Unit,
     onDeleteSavedFilesForProfiles: suspend (Set<String>) -> PresetCleanupSummary,
     onDeleteSavedFilesForProduct: suspend (String) -> PresetCleanupSummary,
+    onExportProduct: (String) -> Unit,
     onMessage: (String) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
@@ -80,6 +83,7 @@ internal fun ProfileSelectionEditor(
     var baselineAutoInclude by remember(product.id) { mutableStateOf(DEFAULT_AUTO_INCLUDE_NEW_PROFILES) }
     var showDiscardDialog by remember(product.id) { mutableStateOf(false) }
     var pendingRemoval by remember(product.id) { mutableStateOf<RemovalRequest?>(null) }
+    var pendingExportAfterRemoval by remember(product.id) { mutableStateOf(false) }
     var deleteSavedFiles by remember(product.id) { mutableStateOf(false) }
     var incompatibilityExplanation by remember(product.id) { mutableStateOf<String?>(null) }
 
@@ -101,10 +105,22 @@ internal fun ProfileSelectionEditor(
 
     val dirty = initialized &&
         (stagedSelectedIds != baselineSelectedIds || autoInclude != baselineAutoInclude)
+    val commitEnabled = initialized && managedSelectionCommitEnabled(
+        isManaged = managedRecord != null,
+        stagedSelectedProfileIds = stagedSelectedIds,
+        baselineSelectedProfileIds = baselineSelectedIds,
+        autoIncludeNewProfiles = autoInclude,
+        baselineAutoIncludeNewProfiles = baselineAutoInclude,
+    )
     val removedCurrentIds = baselineSelectedIds - stagedSelectedIds
     val retainedSelectedUnavailable = managedRecord?.profiles.orEmpty().count { it.selected && it.noLongerAvailable }
 
-    fun completeSave(removeWholeHeadphone: Boolean, removeIds: Set<String>, deleteFiles: Boolean) {
+    fun completeSave(
+        removeWholeHeadphone: Boolean,
+        removeIds: Set<String>,
+        deleteFiles: Boolean,
+        exportAfterSave: Boolean,
+    ) {
         scope.launch {
             if (removeWholeHeadphone) {
                 onRemoveHeadphone(product.id)
@@ -124,21 +140,41 @@ internal fun ProfileSelectionEditor(
             baselineSelectedIds = stagedSelectedIds
             baselineAutoInclude = autoInclude
             managedRecord = onLoadManagedHeadphone(product.id)
+            if (exportAfterSave && stagedSelectedIds.isNotEmpty()) {
+                onExportProduct(product.id)
+            }
         }
     }
 
-    fun requestSave() {
+    fun requestSave(exportAfterSave: Boolean = false) {
+        if (exportAfterSave && stagedSelectedIds.isEmpty()) return
         val removeWhole = stagedSelectedIds.isEmpty() && retainedSelectedUnavailable == 0 && managedRecord != null
         when {
             removeWhole -> {
                 deleteSavedFiles = false
+                pendingExportAfterRemoval = exportAfterSave
                 pendingRemoval = RemovalRequest.WholeHeadphone
             }
             removedCurrentIds.isNotEmpty() -> {
                 deleteSavedFiles = false
+                pendingExportAfterRemoval = exportAfterSave
                 pendingRemoval = RemovalRequest.Profiles(removedCurrentIds)
             }
-            else -> completeSave(removeWholeHeadphone = false, removeIds = emptySet(), deleteFiles = false)
+            else -> completeSave(
+                removeWholeHeadphone = false,
+                removeIds = emptySet(),
+                deleteFiles = false,
+                exportAfterSave = exportAfterSave,
+            )
+        }
+    }
+
+    fun requestExport() {
+        if (stagedSelectedIds.isEmpty()) return
+        if (managedRecord == null || dirty) {
+            requestSave(exportAfterSave = true)
+        } else {
+            onExportProduct(product.id)
         }
     }
 
@@ -168,7 +204,10 @@ internal fun ProfileSelectionEditor(
     pendingRemoval?.let { request ->
         val wholeHeadphone = request is RemovalRequest.WholeHeadphone
         AlertDialog(
-            onDismissRequest = { pendingRemoval = null },
+            onDismissRequest = {
+                pendingRemoval = null
+                pendingExportAfterRemoval = false
+            },
             title = {
                 Text(
                     if (wholeHeadphone) {
@@ -212,18 +251,24 @@ internal fun ProfileSelectionEditor(
             confirmButton = {
                 TextButton(onClick = {
                     val removeIds = (request as? RemovalRequest.Profiles)?.profileIds.orEmpty()
+                    val exportAfterSave = pendingExportAfterRemoval
                     pendingRemoval = null
+                    pendingExportAfterRemoval = false
                     completeSave(
                         removeWholeHeadphone = wholeHeadphone,
                         removeIds = removeIds,
                         deleteFiles = deleteSavedFiles,
+                        exportAfterSave = exportAfterSave,
                     )
                 }) {
                     Text(if (wholeHeadphone) "Remove headphone" else "Remove profiles")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { pendingRemoval = null }) { Text("Cancel") }
+                TextButton(onClick = {
+                    pendingRemoval = null
+                    pendingExportAfterRemoval = false
+                }) { Text("Cancel") }
             },
         )
     }
@@ -319,11 +364,18 @@ internal fun ProfileSelectionEditor(
         }
 
         Button(
-            onClick = ::requestSave,
-            enabled = dirty,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            onClick = { requestSave() },
+            enabled = commitEnabled,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
         ) {
-            Text("Save changes")
+            Text(if (managedRecord == null) "Add to My Headphones" else "Save changes")
+        }
+        OutlinedButton(
+            onClick = ::requestExport,
+            enabled = stagedSelectedIds.isNotEmpty(),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+        ) {
+            Text("Export XMLs")
         }
 
         LazyColumn(modifier = Modifier.fillMaxSize()) {
