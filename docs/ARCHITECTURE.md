@@ -170,7 +170,7 @@ The app checks the repository's latest GitHub Release metadata without user cred
 
 A newer version can surface a nonblocking banner and Settings → About & updates actions. What’s new displays release notes; Get update opens the release page in the browser. There is no silent APK download, self-install, install-unknown-apps permission, or forced update.
 
-The source repository is public. Public unauthenticated release checking becomes fully operational once the first GitHub Release exists; until then the latest-release endpoint correctly has no release to return.
+The source repository is public and `v0.1.0` is published. Public unauthenticated latest-release metadata is live and has been verified on an installed `v0.1.0` build, which reports **You're up to date** when the installed version is current.
 
 ## Attribution, privacy, and licenses
 
@@ -216,5 +216,7 @@ Implemented and validated product slices:
 9. Accessibility/release hardening and Pixel 9/UAPP hands-on validation.
 10. Public-repository documentation, privacy, contribution/security guidance, and release checklist.
 11. Public source-repository publication and CI validation of both debug and unsigned release builds.
+12. Permanent GitHub release-signing identity, fingerprint verification, signed-candidate Pixel 9 smoke test, and public `v0.1.0` GitHub Release with APK/checksum/signature-verification assets.
+13. Live installed-app update-metadata validation against the public `releases/latest` endpoint.
 
-The app implementation, primary device-validation gate, and public-source publication are complete for the current `0.1.0` development line. The remaining pre-binary-release work is distribution infrastructure: establish one stable Android release-signing identity, build/smoke-test the signed `0.1.0` APK, and publish the `v0.1.0` GitHub Release. Google Play work is intentionally deferred.
+The app implementation, primary device-validation gate, public-source publication, stable release-signing setup, signed release-build smoke test, and first public GitHub binary release `v0.1.0` are complete. Normal post-release maintenance now applies: preserve the release-signing identity, increment `versionCode` for every installable release, update `CHANGELOG.md`, and repeat the candidate/device/publish gates for future releases. Google Play work remains intentionally deferred.
