@@ -1,0 +1,79 @@
+name: Record final automated validation
+
+on:
+  push:
+    paths:
+      - .github/workflows/record-final-validation.yml
+
+permissions:
+  contents: write
+
+env:
+  VALIDATION_SHA: ${{ github.sha }}
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK tools
+        uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools
+
+      - name: Install Android SDK 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Set up Gradle 9.4.1
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: "9.4.1"
+          cache-provider: basic
+
+      - name: Run final unit tests, Android lint, and debug APK build
+        run: gradle :app:testDebugUnitTest :app:lintDebug :app:assembleDebug --stacktrace
+
+      - name: Upload validated debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: opra-eq-for-uapp-debug-final
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+      - name: Record successful validation and remove one-shot workflows
+        run: |
+          cat > docs/LAST_AUTOMATED_VALIDATION.md <<EOF
+          # Last automated validation
+
+          Automated Android validation passed for source commit \`$VALIDATION_SHA\`.
+
+          Validation commands:
+
+          - \`:app:testDebugUnitTest\`
+          - \`:app:lintDebug\`
+          - \`:app:assembleDebug\`
+
+          Tooling: JDK 17, Android SDK 36 / build-tools 36.0.0, Gradle 9.4.1.
+
+          The validating workflow uploaded the resulting debug APK as the \`opra-eq-for-uapp-debug-final\` workflow artifact.
+
+          This record is automated evidence only; Pixel 9 / UAPP / TalkBack / SAF hands-on validation remains required before release/signing.
+          EOF
+          rm -f .github/workflows/record-final-validation.yml
+          rm -f .github/workflows/finalize-phase1-status.yml
+          rm -f .github/workflows/finalize-phase1-status-v2.yml
+          rm -f .github/workflows/cleanup-phase1-finalizer.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Record final automated Phase 1 validation"
+          git push
