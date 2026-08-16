@@ -12,6 +12,8 @@ import androidx.lifecycle.lifecycleScope
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.data.catalog.HttpOpraCatalogSource
 import com.weekssa.opraeqforuapp.data.catalog.OpraCatalogRepository
+import com.weekssa.opraeqforuapp.data.export.PresetCleanupRepository
+import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
 import com.weekssa.opraeqforuapp.data.export.PresetExportRepository
 import com.weekssa.opraeqforuapp.data.managed.ManagedHeadphonesRepository
 import com.weekssa.opraeqforuapp.data.managed.OpraEqDatabase
@@ -49,6 +51,10 @@ class MainActivity : ComponentActivity() {
 
     private val exportRepository by lazy {
         PresetExportRepository(applicationContext, database)
+    }
+
+    private val cleanupRepository by lazy {
+        PresetCleanupRepository(applicationContext, database)
     }
 
     private val syncCoordinator by lazy {
@@ -107,6 +113,11 @@ class MainActivity : ComponentActivity() {
                         }
                     },
                     onRemoveHeadphone = managedHeadphonesRepository::removeHeadphone,
+                    onRemoveManagedProfile = ::removeManagedProfile,
+                    onRemoveManagedHeadphone = ::removeManagedHeadphone,
+                    onDeleteSavedFilesForProfiles = cleanupRepository::deleteForProfiles,
+                    onDeleteSavedFilesForProduct = cleanupRepository::deleteForProduct,
+                    onMarkReviewed = managedHeadphonesRepository::markReviewed,
                     onPersistExportTree = ::persistExportTree,
                     onExportSelected = { uri ->
                         exportRepository.exportSelected(
@@ -130,6 +141,59 @@ class MainActivity : ComponentActivity() {
                     },
                 )
             }
+        }
+    }
+
+    private suspend fun removeManagedProfile(
+        productId: String,
+        profileId: String,
+        deleteSavedFiles: Boolean,
+    ): PresetCleanupSummary? {
+        val managed = managedHeadphonesRepository.getHeadphone(productId) ?: return null
+        val record = managed.profiles.firstOrNull { it.profileId == profileId } ?: return null
+        val ready = catalogRepository.state.value as? CatalogState.Ready
+        val currentProfiles = ready?.catalog?.profilesForProduct(productId).orEmpty()
+        val currentProfile = currentProfiles.firstOrNull { it.id == profileId }
+
+        if (record.noLongerAvailable || currentProfile == null || ready == null) {
+            managedHeadphonesRepository.removeUnavailableProfile(productId, profileId)
+        } else {
+            val selectionState = managed.toSelectionState()
+            val remainingCurrentSelected = currentProfiles
+                .filter(selectionState::isSelected)
+                .mapTo(mutableSetOf()) { it.id }
+                .also { it.remove(profileId) }
+            val retainedSelectedRemain = managed.profiles.any {
+                it.profileId != profileId && it.selected && it.noLongerAvailable
+            }
+            if (remainingCurrentSelected.isEmpty() && !retainedSelectedRemain) {
+                managedHeadphonesRepository.removeHeadphone(productId)
+            } else {
+                managedHeadphonesRepository.saveSelection(
+                    catalog = ready.catalog,
+                    productId = productId,
+                    stagedSelectedProfileIds = remainingCurrentSelected,
+                    autoIncludeNewProfiles = managed.autoIncludeNewProfiles,
+                )
+            }
+        }
+
+        return if (deleteSavedFiles) {
+            cleanupRepository.deleteForProfiles(setOf(profileId))
+        } else {
+            null
+        }
+    }
+
+    private suspend fun removeManagedHeadphone(
+        productId: String,
+        deleteSavedFiles: Boolean,
+    ): PresetCleanupSummary? {
+        managedHeadphonesRepository.removeHeadphone(productId)
+        return if (deleteSavedFiles) {
+            cleanupRepository.deleteForProduct(productId)
+        } else {
+            null
         }
     }
 
