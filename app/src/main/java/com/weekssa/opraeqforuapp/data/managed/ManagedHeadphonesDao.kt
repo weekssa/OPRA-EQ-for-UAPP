@@ -44,8 +44,8 @@ interface ManagedHeadphonesDao {
     @Query("DELETE FROM managed_profiles WHERE profileId = :profileId AND productId = :productId")
     suspend fun deleteProfile(productId: String, profileId: String)
 
-    @Query("SELECT COUNT(*) FROM managed_profiles WHERE productId = :productId AND selected = 1")
-    suspend fun countSelectedProfiles(productId: String): Int
+    @Query("SELECT COUNT(*) FROM managed_profiles WHERE productId = :productId")
+    suspend fun countProfiles(productId: String): Int
 
     @Query("DELETE FROM managed_headphones WHERE productId = :productId")
     suspend fun deleteHeadphone(productId: String)
