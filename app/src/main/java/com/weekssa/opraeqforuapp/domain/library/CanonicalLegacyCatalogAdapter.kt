@@ -169,7 +169,20 @@ object CanonicalLegacyCatalogAdapter {
     private fun displaySourceId(value: String): String = when (value.lowercase(Locale.ROOT)) {
         "opra" -> "OPRA"
         "autoeq" -> "AutoEQ"
+        "oratory1990" -> "oratory1990"
+        "mrchillstorm-headphone-target" -> "MrChillStorm"
+        "github-community" -> "GitHub"
+        "squiglink" -> "Squiglink"
+        "reddit-audio" -> "Reddit"
+        "head-fi" -> "Head-Fi"
+        "audio-science-review" -> "Audio Science Review"
+        "headphone-community" -> "The HEADPHONE Community"
+        "topping-community" -> "Topping Community"
         else -> value
+            .split('-', '_')
+            .filter(String::isNotBlank)
+            .joinToString(" ") { token -> token.replaceFirstChar { it.titlecase(Locale.ROOT) } }
+            .ifBlank { value }
     }
 
     private fun displayProductName(headphone: HeadphoneIdentity): String = buildList {
