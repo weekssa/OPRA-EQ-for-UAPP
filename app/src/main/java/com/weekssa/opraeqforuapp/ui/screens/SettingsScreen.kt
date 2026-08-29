@@ -128,7 +128,7 @@ fun SettingsScreen(
             )
             is CatalogState.Unavailable -> {
                 Text(
-                    text = unavailableCatalogMessage(catalogState.reason),
+                    text = eqLibraryCatalogFailureMessage(catalogState.reason),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -319,7 +319,7 @@ private fun ThemeOption(
 private fun formatCatalogTime(epochMillis: Long): String =
     DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(epochMillis))
 
-private fun unavailableCatalogMessage(reason: CatalogRefreshFailureReason): String = when (reason) {
+private fun eqLibraryCatalogFailureMessage(reason: CatalogRefreshFailureReason): String = when (reason) {
     CatalogRefreshFailureReason.Network -> "Couldn’t download the OPRA source. Check your connection and try refresh."
     CatalogRefreshFailureReason.InvalidCatalog -> "The downloaded OPRA source could not be processed. Try refresh again later."
     CatalogRefreshFailureReason.Storage -> "EQ Library couldn’t save the OPRA source on this device."
