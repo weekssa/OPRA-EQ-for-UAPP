@@ -1,5 +1,8 @@
 package com.weekssa.opraeqforuapp.domain.library
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 enum class EqSourceKind {
     STRUCTURED_CATALOG,
     CREATOR,
@@ -8,6 +11,7 @@ enum class EqSourceKind {
     PERSONAL,
 }
 
+@Serializable
 enum class ProvenanceTier {
     AUTHORITATIVE,
     MEASUREMENT_DERIVED,
@@ -16,12 +20,14 @@ enum class ProvenanceTier {
     AMBIGUOUS,
 }
 
+@Serializable
 data class HeadphoneIdentity(
     val manufacturer: String,
     val model: String,
     val variant: String? = null,
 )
 
+@Serializable
 data class EqFilter(
     val type: String,
     val frequencyHz: Double,
@@ -30,6 +36,7 @@ data class EqFilter(
     val slope: Double? = null,
 )
 
+@Serializable
 data class SourceReference(
     val sourceId: String,
     val url: String?,
@@ -41,6 +48,7 @@ data class SourceReference(
     val isPrimary: Boolean = false,
 )
 
+@Serializable
 data class EqRevision(
     val revisionId: String,
     val acousticFingerprint: String,
@@ -53,6 +61,7 @@ data class EqRevision(
     val changeSummary: String? = null,
 )
 
+@Serializable
 data class EqProfile(
     val canonicalId: String,
     val headphone: HeadphoneIdentity,
