@@ -11,11 +11,12 @@ enum class ExportDevice(
     val folderName: String,
     val extension: String,
     val mimeType: String,
+    val validationStatus: String? = null,
 ) {
     UAPP("UAPP", "xml", "application/xml"),
     BLACK_PEARL("TRN Black Pearl", "txt", "text/plain"),
-    TOPPING_DX5_II("Topping DX5 II", "txt", "text/plain"),
-    TOPPING_DX1_II("Topping DX1 II", "txt", "text/plain"),
+    TOPPING_DX5_II("Topping DX5 II", "txt", "text/plain", validationStatus = "Untested"),
+    TOPPING_DX1_II("Topping DX1 II", "txt", "text/plain", validationStatus = "Untested"),
 }
 
 data class DevicePresetVariant(
@@ -24,37 +25,31 @@ data class DevicePresetVariant(
     val transformation: String,
 )
 
-fun buildTextDeviceVariants(profile: OpraEqProfile): List<DevicePresetVariant> {
-    val topping = formatToppingTunePreset(profile)
-    val blackPearl = formatBlackPearlPreset(profile)
-    return buildList {
-        if (blackPearl != null) {
-            add(
-                DevicePresetVariant(
-                    device = ExportDevice.BLACK_PEARL,
-                    content = blackPearl,
-                    transformation = "Optimized to a maximum of 10 peaking filters for Black Pearl compatibility.",
-                ),
-            )
-        }
-        if (topping != null) {
-            add(
-                DevicePresetVariant(
-                    device = ExportDevice.TOPPING_DX5_II,
-                    content = topping,
-                    transformation = "Converted to TOPPING Tune / Equalizer APO parameter text.",
-                ),
-            )
-            add(
-                DevicePresetVariant(
-                    device = ExportDevice.TOPPING_DX1_II,
-                    content = topping,
-                    transformation = "Converted to TOPPING Tune / Equalizer APO parameter text.",
-                ),
-            )
-        }
+fun buildTextDeviceVariant(
+    profile: OpraEqProfile,
+    device: ExportDevice,
+): DevicePresetVariant? = when (device) {
+    ExportDevice.UAPP -> null
+    ExportDevice.BLACK_PEARL -> formatBlackPearlPreset(profile)?.let { content ->
+        DevicePresetVariant(
+            device = device,
+            content = content,
+            transformation = "Optimized to a maximum of 10 peaking filters for Black Pearl compatibility.",
+        )
+    }
+    ExportDevice.TOPPING_DX5_II,
+    ExportDevice.TOPPING_DX1_II,
+    -> formatToppingTunePreset(profile)?.let { content ->
+        DevicePresetVariant(
+            device = device,
+            content = content,
+            transformation = "Converted to TOPPING Tune / Equalizer APO parameter text.",
+        )
     }
 }
+
+fun buildTextDeviceVariants(profile: OpraEqProfile): List<DevicePresetVariant> =
+    ExportDevice.entries.mapNotNull { device -> buildTextDeviceVariant(profile, device) }
 
 private fun formatToppingTunePreset(profile: OpraEqProfile): String? {
     val mapped = profile.bands.orEmpty().mapNotNull(::mapToppingBand).take(MAX_BANDS)
