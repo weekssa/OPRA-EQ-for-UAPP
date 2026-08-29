@@ -46,6 +46,7 @@ import com.weekssa.opraeqforuapp.domain.catalog.OpraCatalog
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.OpraProduct
 import com.weekssa.opraeqforuapp.domain.catalog.assessCompatibility
+import com.weekssa.opraeqforuapp.domain.catalog.isHistoricalRevision
 import com.weekssa.opraeqforuapp.domain.catalog.visibilityCategory
 import com.weekssa.opraeqforuapp.domain.managed.DEFAULT_AUTO_INCLUDE_NEW_PROFILES
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
@@ -86,6 +87,7 @@ internal fun ProfileSelectionEditor(
         profileVisibility.isVisible(profile.assessCompatibility().category.visibilityCategory())
     }
     val hiddenCompatibilityCount = profiles.size - compatibilityVisibleProfiles.size
+    val historicalProfileCount = compatibilityVisibleProfiles.count(OpraEqProfile::isHistoricalRevision)
     val sourceOptions = remember(profiles) {
         profiles.mapNotNull { it.detailMetadata("Source") }
             .distinct()
@@ -106,6 +108,7 @@ internal fun ProfileSelectionEditor(
     var sourceFilter by rememberSaveable(product.id) { mutableStateOf<String?>(null) }
     var creatorFilter by rememberSaveable(product.id) { mutableStateOf<String?>(null) }
     var targetFilter by rememberSaveable(product.id) { mutableStateOf<String?>(null) }
+    var showHistoricalRevisions by rememberSaveable(product.id) { mutableStateOf(false) }
     var filterDialog by remember { mutableStateOf<ProfileFilterDimension?>(null) }
 
     LaunchedEffect(sourceOptions, creatorOptions, targetOptions) {
@@ -114,12 +117,17 @@ internal fun ProfileSelectionEditor(
         if (targetFilter != null && targetFilter !in targetOptions) targetFilter = null
     }
 
-    val visibleProfiles = compatibilityVisibleProfiles.filter { profile ->
+    val revisionVisibleProfiles = if (showHistoricalRevisions) {
+        compatibilityVisibleProfiles
+    } else {
+        compatibilityVisibleProfiles.filterNot(OpraEqProfile::isHistoricalRevision)
+    }
+    val visibleProfiles = revisionVisibleProfiles.filter { profile ->
         (sourceFilter == null || profile.detailMetadata("Source") == sourceFilter) &&
             (creatorFilter == null || profile.author?.trim() == creatorFilter) &&
             (targetFilter == null || profile.detailMetadata("Target") == targetFilter)
     }
-    val filteredOutCount = compatibilityVisibleProfiles.size - visibleProfiles.size
+    val filteredOutCount = revisionVisibleProfiles.size - visibleProfiles.size
 
     var initialized by remember(product.id) { mutableStateOf(false) }
     var managedRecord by remember(product.id) { mutableStateOf<ManagedHeadphoneRecord?>(null) }
@@ -157,6 +165,9 @@ internal fun ProfileSelectionEditor(
     )
     val retainedSelectedUnavailable = managedRecord?.profiles.orEmpty().count {
         it.selected && it.noLongerAvailable
+    }
+    val selectedHistoricalCount = compatibilityVisibleProfiles.count {
+        it.isHistoricalRevision() && it.id in stagedSelectedIds
     }
 
     fun completeSave(exportAfterSave: Boolean) {
@@ -322,16 +333,45 @@ internal fun ProfileSelectionEditor(
             }
         }
 
+        if (historicalProfileCount > 0) {
+            TextButton(
+                onClick = { showHistoricalRevisions = !showHistoricalRevisions },
+                modifier = Modifier.padding(horizontal = 8.dp),
+            ) {
+                val selectedSuffix = if (selectedHistoricalCount > 0) {
+                    " · $selectedHistoricalCount selected"
+                } else {
+                    ""
+                }
+                Text(
+                    if (showHistoricalRevisions) {
+                        "Hide history"
+                    } else {
+                        "History ($historicalProfileCount)$selectedSuffix"
+                    },
+                )
+            }
+        }
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 2.dp),
+                .padding(horizontal = 16.dp, vertical = 0.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            TextButton(onClick = { stagedSelectedIds = selectableProfileIds(profiles) }) {
+            TextButton(
+                onClick = {
+                    stagedSelectedIds = stagedSelectedIds +
+                        selectableProfileIds(visibleProfiles, includeHistorical = true)
+                },
+            ) {
                 Text("Select all")
             }
-            TextButton(onClick = { stagedSelectedIds = emptySet() }) {
+            TextButton(
+                onClick = {
+                    stagedSelectedIds = stagedSelectedIds - visibleProfiles.map(OpraEqProfile::id).toSet()
+                },
+            ) {
                 Text("Select none")
             }
         }
