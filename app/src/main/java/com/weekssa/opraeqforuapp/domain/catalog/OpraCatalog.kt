@@ -56,13 +56,15 @@ data class OpraCatalog(
 ) {
     private val vendorById = vendors.associateBy(OpraVendor::id)
     private val productById = products.associateBy(OpraProduct::id)
-    private val visibleProducts = products.filter { resolveProductId(it.id) == it.id }
+    private val visibleProducts = products.filter { canonicalProductId(it.id) == it.id }
     private val productsByVendor = visibleProducts.groupBy(OpraProduct::vendorId)
-    private val profilesByProduct = profiles.groupBy { resolveProductId(it.productId) }
+    private val profilesByProduct = profiles.groupBy { canonicalProductId(it.productId) }
 
     fun vendor(vendorId: String): OpraVendor? = vendorById[vendorId]
 
-    fun product(productId: String): OpraProduct? = productById[resolveProductId(productId)]
+    fun canonicalProductId(productId: String): String = resolveProductId(productId)
+
+    fun product(productId: String): OpraProduct? = productById[canonicalProductId(productId)]
 
     fun productsForVendor(vendorId: String): List<OpraProduct> =
         productsByVendor[vendorId]
@@ -70,7 +72,7 @@ data class OpraCatalog(
             .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
 
     fun profilesForProduct(productId: String): List<OpraEqProfile> =
-        profilesByProduct[resolveProductId(productId)]
+        profilesByProduct[canonicalProductId(productId)]
             .orEmpty()
             .sortedWith(
                 compareBy<OpraEqProfile> { it.author.orEmpty().lowercase(Locale.ROOT) }
@@ -79,7 +81,7 @@ data class OpraCatalog(
             )
 
     fun profileCount(productId: String): Int =
-        profilesByProduct[resolveProductId(productId)]?.size ?: 0
+        profilesByProduct[canonicalProductId(productId)]?.size ?: 0
 
     fun searchProducts(query: String): List<OpraProductSearchResult> {
         val tokens = query
