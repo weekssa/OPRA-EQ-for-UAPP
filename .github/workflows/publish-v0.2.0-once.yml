@@ -138,3 +138,5 @@ jobs:
             --target "$TARGET_SHA" \
             --title "EQ Library v0.2.0" \
             --notes-file docs/releases/v0.2.0.md
+
+# Triggered after the workflow was registered on the default branch.
