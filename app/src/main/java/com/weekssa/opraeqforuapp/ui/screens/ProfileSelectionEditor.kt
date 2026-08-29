@@ -224,7 +224,7 @@ internal fun ProfileSelectionEditor(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
-                text = "Automatically include new OPRA profiles for this headphone",
+                text = "Automatically include new EQ profiles for this headphone",
                 modifier = Modifier.weight(1f).padding(end = 12.dp),
                 style = MaterialTheme.typography.bodyMedium,
             )
@@ -243,7 +243,7 @@ internal fun ProfileSelectionEditor(
 
         if (hiddenCount > 0) {
             Text(
-                text = "$hiddenCount OPRA profiles hidden by your compatibility filter.",
+                text = "$hiddenCount EQ profiles hidden by your compatibility filter.",
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -251,7 +251,7 @@ internal fun ProfileSelectionEditor(
         }
         if (retainedSelectedUnavailable > 0) {
             Text(
-                text = "$retainedSelectedUnavailable selected presets are retained because they are no longer available in OPRA. Manage them from My Headphones.",
+                text = "$retainedSelectedUnavailable selected presets are retained because they are no longer available in the current EQ Library catalog. Manage them from My Headphones.",
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -288,7 +288,7 @@ internal fun ProfileSelectionEditor(
                     },
                     onExplainIncompatibility = {
                         incompatibilityExplanation = assessment.reason
-                            ?: "This OPRA profile cannot be converted safely for the selected export target."
+                            ?: "This EQ profile cannot be converted safely for the selected export target."
                     },
                 )
                 HorizontalDivider()
