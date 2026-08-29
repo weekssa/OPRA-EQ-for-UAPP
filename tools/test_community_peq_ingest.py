@@ -10,7 +10,7 @@ Filter 2: ON PK Fc 3000 Hz Gain -2.0 dB Q 1.20
 
 
 class CommunityPeqIngestTest(unittest.TestCase):
-    def test_structured_data_policy_keeps_filters_and_provenance(self):
+    def test_structured_data_policy_keeps_filters_and_canonical_provenance(self):
         parsed = parse_peq(SAMPLE)
         candidate = build_candidate(
             parsed,
@@ -29,12 +29,16 @@ class CommunityPeqIngestTest(unittest.TestCase):
             discovered_at_epoch_seconds=123456,
         )
         revision = candidate["revisions"][0]
+        source = revision["source_references"][0]
         self.assertEqual(2, len(revision["filters"]))
         self.assertEqual("Original Author", candidate["creator"])
-        self.assertEqual("structured-data-only", revision["source_references"][0]["redistribution_policy"])
+        self.assertEqual("structured-data-only", source["redistribution_policy"])
+        self.assertEqual("repository", source["source_kind"])
+        self.assertEqual("traceable_community", source["provenance_tier"])
         self.assertEqual("Diffuse Field", candidate["target"]["name"])
+        self.assertTrue(candidate["publication_eligible"])
 
-    def test_link_only_keeps_fingerprint_but_does_not_redistribute_filters(self):
+    def test_link_only_keeps_fingerprint_but_is_not_catalog_publishable(self):
         parsed = parse_peq(SAMPLE)
         candidate = build_candidate(
             parsed,
@@ -56,6 +60,29 @@ class CommunityPeqIngestTest(unittest.TestCase):
         self.assertEqual([], revision["filters"])
         self.assertTrue(revision["acoustic_fingerprint"])
         self.assertEqual("link-only", revision["source_references"][0]["redistribution_policy"])
+        self.assertEqual({"name": None, "kind": "unknown"}, candidate["target"])
+        self.assertFalse(candidate["publication_eligible"])
+
+    def test_creator_source_maps_to_authoritative_provenance(self):
+        candidate = build_candidate(
+            parse_peq(SAMPLE),
+            manufacturer="Example",
+            model="Headphone",
+            variant=None,
+            creator="Creator",
+            tuning_label="Creator preset",
+            target=None,
+            source_id="creator-source",
+            source_kind="creator",
+            source_url="https://example.com/creator",
+            source_record_id="preset-1",
+            redistribution_policy="structured-data-only",
+            source_version=None,
+            discovered_at_epoch_seconds=None,
+        )
+        source = candidate["revisions"][0]["source_references"][0]
+        self.assertEqual("creator", source["source_kind"])
+        self.assertEqual("authoritative", source["provenance_tier"])
 
     def test_rejects_unspecified_redistribution_policy(self):
         parsed = parse_peq(SAMPLE)
