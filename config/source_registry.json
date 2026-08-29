@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "registry_version": "0.3.0-autoeq-active",
+  "registry_version": "0.3.0-guarded-discovery",
   "sources": [
     {
       "id": "opra",
@@ -27,7 +27,7 @@
       "cursor_strategy": "repository commit and file content hash",
       "redistribution": "structured-data-only",
       "attribution_required": true,
-      "license_notes": "AutoEq repository is MIT licensed. Ingestion stores structured PEQ parameters and explicit provenance only; source-specific measurement/creator attribution is retained."
+      "license_notes": "AutoEq software is MIT licensed, while measurements originate from multiple third-party sources. EQ Library retains measurement/creator provenance and does not treat the software license as blanket permission for raw third-party measurement redistribution."
     },
     {
       "id": "oratory1990",
@@ -40,7 +40,8 @@
       "parser_version": "1",
       "cursor_strategy": "source update timestamp and acoustic fingerprint",
       "redistribution": "review-required",
-      "attribution_required": true
+      "attribution_required": true,
+      "license_notes": "Creator-authored presets remain distinct from AutoEq results derived from oratory1990 measurements. Publication requires explicit source/redistribution qualification; otherwise retain link-only provenance."
     },
     {
       "id": "squiglink",
@@ -49,11 +50,12 @@
       "scope": "Public structured measurement/target data where source terms permit use",
       "lifecycle": "reviewing",
       "cadence": "weekly",
-      "parser": "squiglink",
-      "parser_version": "1",
+      "parser": "squiglink-metadata-discovery",
+      "parser_version": "2",
       "cursor_strategy": "dataset revision and content hash",
       "redistribution": "review-required",
-      "attribution_required": true
+      "attribution_required": true,
+      "license_notes": "Squiglink server/tooling is permissively licensed, but hosted measurement/database rights can be creator-specific. The v0.3 adapter discovers structured metadata only and never makes measurement records publication-eligible until source-specific rights and attribution are qualified."
     },
     {
       "id": "reddit-audio",
@@ -114,11 +116,12 @@
       "scope": "Licensed structured EQ datasets and original preset repositories",
       "lifecycle": "reviewing",
       "cadence": "daily",
-      "parser": "github-structured-eq",
-      "parser_version": "1",
+      "parser": "github-structured-eq-discovery",
+      "parser_version": "2",
       "cursor_strategy": "repository commit SHA and file content hash",
       "redistribution": "review-required",
-      "attribution_required": true
+      "attribution_required": true,
+      "license_notes": "Discovery emits review-only candidates. A matching public file is never published until originality, repository/file licensing, creator attribution, headphone identity, parse validity and canonical dedupe are qualified."
     },
     {
       "id": "topping-community",
