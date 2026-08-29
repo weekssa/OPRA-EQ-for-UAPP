@@ -77,6 +77,7 @@ class CanonicalLegacyCatalogAdapterTest {
             creator = "User",
             provenanceTier = ProvenanceTier.TRACEABLE_COMMUNITY,
             redistributionPolicy = RedistributionPolicy.LINK_ONLY,
+            publishedAtEpochSeconds = 1_700_000_000,
             isPrimary = true,
         )
         val profile = CanonicalEqProfile(
@@ -102,6 +103,7 @@ class CanonicalLegacyCatalogAdapterTest {
         assertThat(previous.id).isEqualTo("eq-library:community-hd650@old")
         assertThat(latest.details).contains("Latest")
         assertThat(previous.details).contains("Previous revision")
+        assertThat(previous.details).contains("Revision date: 2023-11-14")
         assertThat(previous.details).contains("Provenance: traceable community")
     }
 
