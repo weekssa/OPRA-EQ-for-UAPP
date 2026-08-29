@@ -75,7 +75,7 @@ fun MyHeadphonesScreen(
             text = {
                 Column {
                     Text(
-                        "This removes all ${managedHeadphones.size} headphones and their saved preset selections from My Headphones. The source catalog, settings, and selected root folder are kept.",
+                        "This removes all ${managedHeadphones.size} headphones and their saved preset selections from My Headphones. The source catalog, My EQs, settings, and selected root folder are kept.",
                     )
                     Row(
                         modifier = Modifier
@@ -93,7 +93,7 @@ fun MyHeadphonesScreen(
                             onCheckedChange = null,
                         )
                         Text(
-                            text = "Also delete all exported files created by EQ Library. Files EQ Library does not own will not be touched.",
+                            text = "Also delete exported files EQ Library owns for these headphones. Unknown files and My EQs exports will not be touched.",
                             modifier = Modifier.padding(start = 8.dp),
                         )
                     }
@@ -269,7 +269,7 @@ private fun EmptyMyHeadphones(
                     strokeWidth = 2.dp,
                 )
                 Text(
-                    text = "Downloading OPRA catalog…",
+                    text = "Downloading EQ Library catalog…",
                     modifier = Modifier.padding(start = 12.dp),
                     style = MaterialTheme.typography.bodyMedium,
                 )
@@ -298,12 +298,12 @@ private fun attentionSummary(headphone: ManagedHeadphoneRecord): String? {
     return buildList {
         if (newCount > 0) add("$newCount new")
         if (updatedCount > 0) add("$updatedCount updated")
-        if (removedCount > 0) add("$removedCount no longer available in OPRA")
+        if (removedCount > 0) add("$removedCount no longer available in the EQ Library catalog")
     }.takeIf { it.isNotEmpty() }?.joinToString(" · ")
 }
 
 internal fun unavailableCatalogMessage(reason: CatalogRefreshFailureReason): String = when (reason) {
-    CatalogRefreshFailureReason.Network -> "The OPRA catalog couldn’t be downloaded. Check your connection and try again."
-    CatalogRefreshFailureReason.InvalidCatalog -> "The downloaded OPRA catalog couldn’t be processed."
-    CatalogRefreshFailureReason.Storage -> "The OPRA catalog couldn’t be saved on this device."
+    CatalogRefreshFailureReason.Network -> "The EQ Library catalog couldn’t be downloaded. Check your connection and try again."
+    CatalogRefreshFailureReason.InvalidCatalog -> "The downloaded EQ Library catalog couldn’t be processed."
+    CatalogRefreshFailureReason.Storage -> "The EQ Library catalog couldn’t be saved on this device."
 }
