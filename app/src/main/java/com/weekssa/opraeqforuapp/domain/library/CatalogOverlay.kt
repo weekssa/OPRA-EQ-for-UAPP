@@ -64,9 +64,9 @@ private fun deduplicateAcoustically(profiles: List<OpraEqProfile>): List<OpraEqP
 private fun OpraEqProfile.preferenceScore(): Int {
     var score = 0
     val detailText = details.orEmpty()
-    if (detailText.contains("Source:", ignoreCase = true)) score += 100
-    if (detailText.contains("Latest", ignoreCase = true)) score += 20
-    if (id.startsWith("eq-library:", ignoreCase = true)) score += 10
+    if (detailText.contains("Latest", ignoreCase = true)) score += 30
+    if (id.startsWith("eq-library:", ignoreCase = true)) score += 20
+    if (detailText.contains("Measurement:", ignoreCase = true)) score += 10
     if (!link.isNullOrBlank()) score += 5
     if (!author.isNullOrBlank()) score += 1
     return score
@@ -88,12 +88,21 @@ private fun OpraEqProfile.acousticKey(): String? {
 private fun OpraBand.normalizedKey(): String? {
     val frequencyValue = frequency ?: return null
     return listOf(
-        type.orEmpty().trim().lowercase(Locale.ROOT),
+        normalizedType(type),
         format(frequencyValue, 3),
         format(gainDb ?: 0.0, 3),
         format(q ?: 0.0, 4),
         format(slope ?: 0.0, 4),
     ).joinToString("|")
+}
+
+private fun normalizedType(value: String?): String = when (value?.trim()?.lowercase(Locale.ROOT)) {
+    "peak_dip", "peak", "pk", "peq" -> "PK"
+    "low_shelf", "ls", "lsc" -> "LS"
+    "high_shelf", "hs", "hsc" -> "HS"
+    "low_pass", "lp" -> "LP"
+    "high_pass", "hp" -> "HP"
+    else -> value.orEmpty().trim().uppercase(Locale.ROOT)
 }
 
 private fun OpraEqProfile.toUserFacingProfile(defaultSource: String?): OpraEqProfile {
@@ -121,9 +130,17 @@ private fun OpraEqProfile.toUserFacingProfile(defaultSource: String?): OpraEqPro
         ?.takeIf(String::isNotEmpty)
     val source = humanizeSource(explicitSource ?: defaultSource)
     val measurement = originalParts.firstNotNullOfOrNull(::measurementFromLabel)
+    val context = originalParts.mapNotNull { part ->
+        humanReadableContext(
+            value = part,
+            status = status,
+            target = explicitTarget,
+        )
+    }
     val existingSoundSummary = originalParts.firstOrNull(::looksLikeSoundSummary)
+    val hasBands = bands.orEmpty().isNotEmpty()
     val generatedSoundSummary = soundImpactFromLegacyBands()
-        ?: "Makes small frequency-response adjustments."
+        ?: if (hasBands) "Makes small frequency-response adjustments." else null
 
     val compactDetails = buildList {
         status?.let(::add)
@@ -131,12 +148,30 @@ private fun OpraEqProfile.toUserFacingProfile(defaultSource: String?): OpraEqPro
             revisionDate?.let { add("Revision: $it") }
         }
         measurement?.let { add("Measurement: $it") }
+        context.forEach(::add)
         target?.let { add("Target: $it") }
         source?.let { add("Source: $it") }
-        add(existingSoundSummary ?: generatedSoundSummary)
+        (existingSoundSummary ?: generatedSoundSummary)?.let(::add)
     }.distinct().joinToString(" · ")
 
-    return copy(details = compactDetails)
+    return copy(details = compactDetails.takeIf(String::isNotBlank))
+}
+
+private fun humanReadableContext(value: String, status: String?, target: String?): String? {
+    val trimmed = value.trim()
+    if (trimmed.isEmpty()) return null
+    if (trimmed.equals(status, ignoreCase = true)) return null
+    if (trimmed.startsWith("Revision date:", ignoreCase = true)) return null
+    if (trimmed.startsWith("Target:", ignoreCase = true)) return null
+    if (trimmed.startsWith("Source:", ignoreCase = true)) return null
+    if (trimmed.startsWith("Provenance:", ignoreCase = true)) return null
+    if (trimmed.startsWith("Version:", ignoreCase = true)) return null
+    if (targetFromRawLabel(trimmed) != null) return null
+    if (measurementFromLabel(trimmed) != null) return null
+    if (looksLikeSoundSummary(trimmed)) return null
+    if (trimmed.equals("Consolidated", ignoreCase = true)) return null
+    if (target != null && trimmed.equals("$target Target", ignoreCase = true)) return null
+    return trimmed
 }
 
 private fun targetFromRawLabel(value: String): String? = when {
