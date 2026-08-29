@@ -9,6 +9,9 @@ import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshFailureReason
 import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshResult
 import com.weekssa.opraeqforuapp.data.catalog.HttpOpraCatalogSource
 import com.weekssa.opraeqforuapp.data.catalog.OpraCatalogRepository
+import com.weekssa.opraeqforuapp.data.library.CanonicalCatalogRepository
+import com.weekssa.opraeqforuapp.data.library.CanonicalFirstCatalogRepository
+import com.weekssa.opraeqforuapp.data.library.HttpCanonicalCatalogSource
 import com.weekssa.opraeqforuapp.data.managed.ManagedHeadphonesRepository
 import com.weekssa.opraeqforuapp.data.managed.OpraEqDatabase
 
@@ -19,10 +22,18 @@ class OpraCatalogSyncWorker(
     override suspend fun doWork(): Result {
         val database = OpraEqDatabase.create(applicationContext)
         return try {
-            val catalogRepository = OpraCatalogRepository(
-                filesDir = applicationContext.filesDir,
-                source = HttpOpraCatalogSource(
-                    userAgent = "OPRA EQ for UAPP/${BuildConfig.VERSION_NAME}",
+            val catalogRepository = CanonicalFirstCatalogRepository(
+                canonicalRepository = CanonicalCatalogRepository(
+                    filesDir = applicationContext.filesDir,
+                    source = HttpCanonicalCatalogSource(
+                        userAgent = "EQ Library/${BuildConfig.VERSION_NAME}",
+                    ),
+                ),
+                legacyFallback = OpraCatalogRepository(
+                    filesDir = applicationContext.filesDir,
+                    source = HttpOpraCatalogSource(
+                        userAgent = "EQ Library/${BuildConfig.VERSION_NAME}",
+                    ),
                 ),
             )
             val managedRepository = ManagedHeadphonesRepository(database)
