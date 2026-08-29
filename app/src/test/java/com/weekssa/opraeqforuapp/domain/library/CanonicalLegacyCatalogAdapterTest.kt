@@ -66,7 +66,7 @@ class CanonicalLegacyCatalogAdapterTest {
     }
 
     @Test
-    fun projectsOnlyLatestRevisionIntoLegacySelectionEngine() {
+    fun projectsHistoricalRevisionsAsExplicitSelectableProfiles() {
         val source = EqSourceReference(
             sourceId = "community",
             sourceKind = EqSourceKind.COMMUNITY,
@@ -93,8 +93,50 @@ class CanonicalLegacyCatalogAdapterTest {
             CatalogSnapshot(1, "2026-08-29T17:00:00Z", "test", listOf(profile)),
         )
 
-        assertThat(legacy.profiles).hasSize(1)
-        assertThat(legacy.profiles.single().bands!!.single().frequency).isEqualTo(90.0)
+        assertThat(legacy.profiles).hasSize(2)
+        val latest = legacy.profiles.first { it.bands!!.single().frequency == 90.0 }
+        val previous = legacy.profiles.first { it.bands!!.single().frequency == 80.0 }
+        assertThat(latest.id).isEqualTo("eq-library:community-hd650@new")
+        assertThat(previous.id).isEqualTo("eq-library:community-hd650@old")
+        assertThat(latest.details).contains("Latest")
+        assertThat(previous.details).contains("Previous revision")
+        assertThat(previous.details).contains("Provenance: traceable community")
+    }
+
+    @Test
+    fun latestOpraRevisionKeepsLegacyIdButOlderOpraRevisionDoesNot() {
+        val source = EqSourceReference(
+            sourceId = "opra",
+            sourceKind = EqSourceKind.STRUCTURED_CATALOG,
+            sourceRecordId = "legacy-profile-id",
+            sourceVendorId = "vendor",
+            sourceProductId = "product",
+            url = "https://example.com/opra",
+            creator = "Creator",
+            provenanceTier = ProvenanceTier.AUTHORITATIVE,
+            redistributionPolicy = RedistributionPolicy.STRUCTURED_DATA_ONLY,
+            isPrimary = true,
+        )
+        val profile = CanonicalEqProfile(
+            canonicalProfileId = "opra-history",
+            headphone = HeadphoneIdentity("Maker", "Model"),
+            creator = "Creator",
+            target = EqTarget("Target", EqTargetKind.EXPLICIT_TARGET),
+            tuningLabel = "Tuning",
+            revisions = listOf(
+                revision("old", 100.0, source, isLatest = false),
+                revision("new", 110.0, source, isLatest = true),
+            ),
+        )
+
+        val legacy = CanonicalLegacyCatalogAdapter.adapt(
+            CatalogSnapshot(1, "2026-08-29T17:00:00Z", "test", listOf(profile)),
+        )
+
+        assertThat(legacy.profiles.first { it.bands!!.single().frequency == 110.0 }.id)
+            .isEqualTo("legacy-profile-id")
+        assertThat(legacy.profiles.first { it.bands!!.single().frequency == 100.0 }.id)
+            .isEqualTo("eq-library:opra-history@old")
     }
 
     private fun profile(
