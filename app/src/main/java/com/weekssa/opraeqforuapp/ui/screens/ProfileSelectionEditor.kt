@@ -253,14 +253,6 @@ internal fun ProfileSelectionEditor(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
             style = MaterialTheme.typography.headlineSmall,
         )
-        vendor?.let {
-            Text(
-                text = it.name,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
 
         if (!initialized) {
             Row(
@@ -333,7 +325,7 @@ internal fun ProfileSelectionEditor(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp),
+                .padding(horizontal = 16.dp, vertical = 2.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             TextButton(onClick = { stagedSelectedIds = selectableProfileIds(profiles) }) {
@@ -347,12 +339,12 @@ internal fun ProfileSelectionEditor(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp),
+                .padding(horizontal = 16.dp, vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
-                text = "Automatically include new EQ profiles for this headphone",
+                text = "Automatically include new EQs",
                 modifier = Modifier.weight(1f).padding(end = 12.dp),
                 style = MaterialTheme.typography.bodyMedium,
             )
@@ -360,8 +352,8 @@ internal fun ProfileSelectionEditor(
         }
 
         Text(
-            text = "Changing this selection does not delete exported files. Remove presets or the headphone from My Headphones when you want saved files cleaned up.",
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+            text = "Changing selections never deletes exported files.",
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -494,10 +486,11 @@ internal fun ProfileSelectionRow(
 ) {
     val compatibility = profile.assessCompatibility()
     val selectable = compatibility.category.isSelectable
+    val displayDetails = profile.displayDetails()
     val rowModifier = if (selectable) {
         Modifier
             .fillMaxWidth()
-            .heightIn(min = 48.dp)
+            .heightIn(min = 56.dp)
             .toggleable(
                 value = selected,
                 role = Role.Checkbox,
@@ -506,7 +499,7 @@ internal fun ProfileSelectionRow(
     } else {
         Modifier
             .fillMaxWidth()
-            .heightIn(min = 48.dp)
+            .heightIn(min = 56.dp)
             .clickable(onClick = onExplainIncompatibility)
     }
 
@@ -519,20 +512,46 @@ internal fun ProfileSelectionRow(
             )
         },
         headlineContent = {
-            Text(profile.author?.takeIf(String::isNotBlank) ?: "Creator information missing")
+            Text(
+                text = profile.author?.takeIf(String::isNotBlank) ?: "Creator information missing",
+                style = MaterialTheme.typography.titleMedium,
+            )
         },
         supportingContent = {
-            Column {
-                profile.details?.let { Text(it) }
+            Column(modifier = Modifier.padding(top = 2.dp, bottom = 4.dp)) {
+                displayDetails.metadata?.let {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                displayDetails.soundImpact?.let {
+                    Text(
+                        text = it,
+                        modifier = Modifier.padding(top = 4.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
                 when (compatibility.category) {
                     ProfileCompatibility.FullyCompatible -> Unit
                     ProfileCompatibility.CompatibleWithLimitation -> {
-                        Text("Compatible with limitation")
-                        compatibility.reason?.let { Text(it) }
+                        Text(
+                            text = "Compatible with limitation",
+                            modifier = Modifier.padding(top = 4.dp),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.tertiary,
+                        )
+                        compatibility.reason?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                     }
                     ProfileCompatibility.NotCompatible -> {
-                        Text("Not compatible · unavailable for selection")
-                        compatibility.reason?.let { Text(it) }
+                        Text(
+                            text = "Not compatible · unavailable for selection",
+                            modifier = Modifier.padding(top = 4.dp),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                        compatibility.reason?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                     }
                 }
             }
@@ -549,6 +568,38 @@ internal fun ProfileSelectionRow(
         },
         modifier = rowModifier,
     )
+}
+
+private data class ProfileDisplayDetails(
+    val metadata: String?,
+    val soundImpact: String?,
+)
+
+private fun OpraEqProfile.displayDetails(): ProfileDisplayDetails {
+    val parts = details
+        ?.split(" · ")
+        ?.map(String::trim)
+        ?.filter(String::isNotEmpty)
+        .orEmpty()
+    val soundImpact = parts.lastOrNull(::isSoundImpactText)
+    val metadata = parts
+        .filterNot { it == soundImpact }
+        .joinToString(" · ")
+        .takeIf(String::isNotBlank)
+    return ProfileDisplayDetails(metadata = metadata, soundImpact = soundImpact)
+}
+
+private fun isSoundImpactText(value: String): Boolean {
+    val normalized = value.lowercase()
+    return normalized.endsWith('.') && listOf(
+        "adds ",
+        "reduces ",
+        "slightly adds ",
+        "slightly reduces ",
+        "noticeably adds ",
+        "noticeably reduces ",
+        "makes small ",
+    ).any(normalized::startsWith)
 }
 
 private fun OpraEqProfile.detailMetadata(label: String): String? = details
