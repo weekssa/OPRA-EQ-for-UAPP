@@ -84,18 +84,27 @@ class CatalogPipelineTest(unittest.TestCase):
         self.assertEqual("new_revision", classify_candidate(["a"], "b"))
 
     def test_invalid_candidate_never_replaces_last_known_good(self):
+        revision = {
+            "revision_id": "r1",
+            "acoustic_fingerprint": "abc",
+            "is_latest": True,
+            "filters": [{"type": "peak", "frequency_hz": 1000.0, "gain_db": 1.0, "q": 1.0}],
+            "source_references": [{"source_id": "test", "source_kind": "community"}],
+        }
         valid = {
             "schema_version": 1,
+            "generated_at": "2026-08-29T00:00:00Z",
+            "source_registry_version": "test",
             "profiles": [{
                 "canonical_profile_id": "p1",
-                "revisions": [{"revision_id": "r1", "acoustic_fingerprint": "abc", "is_latest": True}],
+                "revisions": [revision],
             }],
         }
         invalid = {
-            "schema_version": 1,
+            **valid,
             "profiles": [{
                 "canonical_profile_id": "p1",
-                "revisions": [{"revision_id": "r2", "acoustic_fingerprint": "def", "is_latest": False}],
+                "revisions": [{**revision, "revision_id": "r2", "acoustic_fingerprint": "def", "is_latest": False}],
             }],
         }
         with tempfile.TemporaryDirectory() as temp:
