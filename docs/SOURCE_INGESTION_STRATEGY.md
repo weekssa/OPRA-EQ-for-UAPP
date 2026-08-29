@@ -163,6 +163,141 @@ For every registered source, record:
 
 Prefer APIs, feeds, public structured endpoints, repository files, and search indexes over brittle HTML scraping. Never scrape authenticated/private content. Never bypass access controls. If terms are uncertain, keep the source in discovery/link-only mode until resolved.
 
+## Permanent currentness pathway
+
+Keeping EQ Library current is a permanent operating requirement, not a one-time v0.3 migration task. The ingestion system must maintain three independent update loops so the Android app can stay current without requiring an APK for ordinary catalog/source changes.
+
+### 1. Known-source update loop
+
+Continuously scan active registered sources for:
+
+- newly published EQs
+- changed EQ parameters
+- creator/source version labels
+- target or provenance corrections
+- removed or moved source pages
+- source-side metadata changes
+
+Use source-specific cursors, timestamps, ETags, release IDs, hashes, or equivalent high-water marks so unchanged content is not repeatedly reprocessed.
+
+Default cadence guidance:
+
+- high-change structured sources and active communities: daily where appropriate
+- slower creator pages/forums: weekly where appropriate
+- source health probes: at least weekly
+
+A source-specific cadence may be tightened or relaxed based on observed change frequency, rate limits, reliability, and terms.
+
+### 2. Existing-profile revision loop
+
+Every changed candidate must be compared against the latest canonical revision.
+
+- identical acoustic fingerprint: update provenance/last-seen metadata only
+- materially changed acoustic fingerprint in the same tuning lineage: create an immutable new revision
+- clearly separate alternate tuning: create a separate canonical profile
+- source deletion/removal: preserve already-valid historical records where legally appropriate and mark source state rather than silently erasing the EQ
+
+Users who pin/favorite an older revision must never be silently moved to a newer revision.
+
+### 3. New-source discovery loop
+
+Periodically search beyond the existing source registry for newly launched or newly useful:
+
+- EQ databases/catalogs
+- measurement projects
+- creator repositories
+- public GitHub/Gist collections
+- headphone/IEM forums and communities
+- manufacturer/device tuning ecosystems
+- public APIs/feeds
+- maintained preset projects
+
+Newly discovered sources enter a qualification queue rather than becoming active automatically.
+
+Qualification must determine:
+
+- originality vs mirror/repackaged AutoEq data
+- structured parseability
+- public accessibility
+- licensing/redistribution status
+- attribution requirements
+- source reliability/stability
+- expected update cadence
+- likely data quality/provenance tier
+
+Source lifecycle states:
+
+- `proposed`
+- `reviewing`
+- `active`
+- `limited_link_only`
+- `paused`
+- `retired`
+
+A source can change states automatically for technical health reasons, but licensing/redistribution changes that require product judgment remain a user stop condition.
+
+## Source health and freshness metadata
+
+The machine-readable source registry must persist at least:
+
+- source ID/type/name
+- current URL/scope
+- parser/adapter version
+- discovery method
+- cadence
+- last scan attempted
+- last successful scan
+- last content change detected
+- current cursor/high-water mark
+- consecutive failure count
+- source lifecycle state
+- redistribution/attribution status
+- last terms/license review date
+- notes/reason when paused or retired
+
+Catalog publication should expose source freshness internally so stale sources can be diagnosed without deleting otherwise valid EQs.
+
+## Automated failure handling
+
+Ordinary source failures should not require user intervention.
+
+- transient timeout/rate-limit -> retry with backoff
+- repeated source failure -> mark degraded/paused while retaining last-known-good catalog data
+- parser break due to format change -> quarantine new candidates from that source until parser validation passes
+- moved URL -> update registry if confidently resolved
+- removed source -> preserve provenance/history where appropriate and mark source removed/retired
+- changed terms/license -> stop redistribution for newly affected data until reviewed
+
+No failed source may invalidate the last-known-good canonical catalog.
+
+## Catalog publication discipline
+
+Updates are published only after:
+
+1. parse/schema validation
+2. headphone identity validation
+3. provenance validation
+4. dedupe/revision classification
+5. target classification
+6. source/license policy checks
+7. deterministic catalog generation
+8. regression validation against the prior catalog
+
+Publication must be atomic. Android clients continue using the previous last-known-good catalog if a new catalog build fails validation.
+
+## APK independence
+
+Ordinary changes should not require a new Android release. The following should normally be data/pipeline-only updates:
+
+- adding another source that maps to an existing adapter/schema
+- discovering new EQs
+- adding new community revisions
+- changing provenance links/status
+- retiring or pausing a source
+- adding mirrors/secondary references
+
+An APK update is required only when the new source/data requires a genuinely new client schema, interaction model, parser executed on-device, or new export/device capability.
+
 ## Initial v0.3 priority
 
 P0: OPRA, AutoEq, canonical data model, dedupe/revisions
@@ -173,4 +308,6 @@ P2: Reddit, Head-Fi, Audio Science Review, HEADPHONE Community, Topping Communit
 
 P3: public user submission form / GitHub Issue Form, additional device/app communities, new source discovery
 
-The Android app should consume only the validated canonical catalog. Discovery, parsing, terms checks, and catalog publication remain outside the Android runtime.
+P4: source-health dashboard data, automated source qualification scaffolding, permanent post-v0.3 currentness jobs, and documented maintenance/recovery procedures
+
+The Android app should consume only the validated canonical catalog. Discovery, parsing, terms checks, currentness monitoring, source qualification, and catalog publication remain outside the Android runtime.
