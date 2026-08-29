@@ -4,18 +4,21 @@ import com.weekssa.opraeqforuapp.data.catalog.AppCatalogRepository
 import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshFailureReason
 import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshResult
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
+import com.weekssa.opraeqforuapp.domain.catalog.OpraCatalog
 import com.weekssa.opraeqforuapp.domain.library.CanonicalLegacyCatalogAdapter
 import com.weekssa.opraeqforuapp.domain.library.CatalogSnapshot
+import com.weekssa.opraeqforuapp.domain.library.overlayCanonicalCatalog
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * Canonical multi-source catalog is the v0.3 source of truth.
+ * v0.3 multi-source catalog bridge.
  *
- * The legacy OPRA repository remains a temporary compatibility/failure fallback so an upgrade
- * from v0.2 does not strand saved headphones when the canonical endpoint is unavailable or has
- * not yet published its first usable snapshot.
+ * The complete OPRA catalog remains the compatibility/base layer while canonical records are
+ * overlaid on top. This prevents a small canonical snapshot from shrinking the v0.2 library:
+ * matching OPRA IDs gain canonical provenance/revision metadata, canonical-only sources and
+ * historical revisions are added, and all other OPRA records remain available.
  */
 class CanonicalFirstCatalogRepository(
     private val canonicalRepository: CanonicalCatalogRepository,
@@ -27,58 +30,80 @@ class CanonicalFirstCatalogRepository(
 
     override suspend fun initialize() {
         canonicalRepository.initialize()
-        val canonicalReady = canonicalRepository.state.value as? CanonicalCatalogState.Ready
-        if (canonicalReady != null && canonicalReady.snapshot.isUsable()) {
-            applyCanonical(canonicalReady.snapshot, canonicalReady.refreshedAtMillis)
-            return
-        }
-
         legacyFallback.initialize()
-        mutableState.value = legacyFallback.state.value
+        renderAvailableCatalog()
     }
 
     override suspend fun refresh(): CatalogRefreshResult {
         val previous = mutableState.value as? CatalogState.Ready
         if (previous != null) mutableState.value = previous.copy(isRefreshing = true)
 
-        return when (val canonicalResult = canonicalRepository.refresh()) {
-            is CanonicalCatalogRefreshResult.Success -> {
-                if (canonicalResult.snapshot.isUsable()) {
-                    val mapped = CanonicalLegacyCatalogAdapter.adapt(canonicalResult.snapshot)
-                    mutableState.value = CatalogState.Ready(
-                        catalog = mapped,
-                        lastSuccessfulRefreshMillis = canonicalResult.refreshedAtMillis,
-                    )
-                    CatalogRefreshResult.Success(mapped, canonicalResult.refreshedAtMillis)
-                } else {
-                    refreshFallback()
-                }
+        val canonicalResult = canonicalRepository.refresh()
+        val legacyResult = legacyFallback.refresh()
+        val ready = renderAvailableCatalog()
+
+        if (ready != null) {
+            val eitherSucceeded = canonicalResult is CanonicalCatalogRefreshResult.Success ||
+                legacyResult is CatalogRefreshResult.Success
+            if (eitherSucceeded) {
+                return CatalogRefreshResult.Success(
+                    catalog = ready.catalog,
+                    refreshedAtMillis = ready.lastSuccessfulRefreshMillis,
+                )
             }
-            is CanonicalCatalogRefreshResult.Failure -> {
-                val cachedCanonical = canonicalRepository.state.value as? CanonicalCatalogState.Ready
-                if (cachedCanonical != null && cachedCanonical.snapshot.isUsable()) {
-                    applyCanonical(cachedCanonical.snapshot, cachedCanonical.refreshedAtMillis)
-                    CatalogRefreshResult.Failure(
-                        reason = canonicalResult.reason.toLegacyReason(),
-                        usingSavedCatalog = true,
-                    )
-                } else {
-                    refreshFallback()
-                }
-            }
+            return CatalogRefreshResult.Failure(
+                reason = when (canonicalResult) {
+                    is CanonicalCatalogRefreshResult.Failure -> canonicalResult.reason.toLegacyReason()
+                    is CanonicalCatalogRefreshResult.Success -> CatalogRefreshFailureReason.Network
+                },
+                usingSavedCatalog = true,
+            )
+        }
+
+        return when {
+            canonicalResult is CanonicalCatalogRefreshResult.Failure -> CatalogRefreshResult.Failure(
+                reason = canonicalResult.reason.toLegacyReason(),
+                usingSavedCatalog = false,
+            )
+            legacyResult is CatalogRefreshResult.Failure -> legacyResult
+            else -> CatalogRefreshResult.Failure(CatalogRefreshFailureReason.InvalidCatalog, usingSavedCatalog = false)
         }
     }
 
-    private suspend fun refreshFallback(): CatalogRefreshResult {
-        val result = legacyFallback.refresh()
-        mutableState.value = legacyFallback.state.value
-        return result
+    private fun renderAvailableCatalog(): CatalogState.Ready? {
+        val canonicalReady = canonicalRepository.state.value as? CanonicalCatalogState.Ready
+        val legacyReady = legacyFallback.state.value as? CatalogState.Ready
+        val canonicalCatalog = canonicalReady
+            ?.takeIf { it.snapshot.isUsable() }
+            ?.let { CanonicalLegacyCatalogAdapter.adapt(it.snapshot) }
+
+        val catalog: OpraCatalog = when {
+            legacyReady != null && canonicalCatalog != null ->
+                overlayCanonicalCatalog(legacyReady.catalog, canonicalCatalog)
+            canonicalCatalog != null -> canonicalCatalog
+            legacyReady != null -> legacyReady.catalog
+            else -> {
+                mutableState.value = unavailableState()
+                return null
+            }
+        }
+
+        val refreshedAt = maxOf(
+            legacyReady?.lastSuccessfulRefreshMillis ?: Long.MIN_VALUE,
+            canonicalReady?.refreshedAtMillis ?: Long.MIN_VALUE,
+        ).takeIf { it != Long.MIN_VALUE } ?: System.currentTimeMillis()
+
+        return CatalogState.Ready(
+            catalog = catalog,
+            lastSuccessfulRefreshMillis = refreshedAt,
+        ).also { mutableState.value = it }
     }
 
-    private fun applyCanonical(snapshot: CatalogSnapshot, refreshedAtMillis: Long) {
-        mutableState.value = CatalogState.Ready(
-            catalog = CanonicalLegacyCatalogAdapter.adapt(snapshot),
-            lastSuccessfulRefreshMillis = refreshedAtMillis,
+    private fun unavailableState(): CatalogState.Unavailable {
+        val canonicalReason = (canonicalRepository.state.value as? CanonicalCatalogState.Unavailable)?.reason
+        val legacyReason = (legacyFallback.state.value as? CatalogState.Unavailable)?.reason
+        return CatalogState.Unavailable(
+            reason = canonicalReason?.toLegacyReason() ?: legacyReason ?: CatalogRefreshFailureReason.Network,
         )
     }
 
