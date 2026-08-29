@@ -32,7 +32,7 @@ object SoundImpactSummary {
         val gain = filter.gainDb ?: return null
         if (abs(gain) < 0.5) return null
         val region = when {
-            filter.frequencyHz < 80.0 -> Region.SUB_BASS
+            filter.frequencyHz < 60.0 -> Region.SUB_BASS
             filter.frequencyHz < 250.0 -> Region.BASS
             filter.frequencyHz < 1_000.0 -> Region.LOWER_MIDS
             filter.frequencyHz < 3_000.0 -> Region.MIDS
@@ -54,12 +54,13 @@ object SoundImpactSummary {
 
     private fun phrase(region: Region, weight: Double): String {
         val verb = if (weight > 0) "adds" else "reduces"
-        val amount = when {
-            abs(weight) >= 6.0 -> "noticeably "
-            abs(weight) >= 3.0 -> ""
-            else -> "slightly "
+        val magnitude = abs(weight)
+        return when {
+            magnitude >= 6.0 -> "noticeably $verb ${region.label}"
+            magnitude >= 3.0 -> "$verb ${region.label}"
+            weight < 0 -> "slightly $verb ${region.label}"
+            else -> "$verb slightly ${region.label}"
         }
-        return "$verb ${amount}${region.label}"
     }
 
     private data class Contribution(val region: Region, val weight: Double)
