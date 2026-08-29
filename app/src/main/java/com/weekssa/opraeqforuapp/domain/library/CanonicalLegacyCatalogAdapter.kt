@@ -129,17 +129,29 @@ object CanonicalLegacyCatalogAdapter {
         revision: EqRevision,
         primary: EqSourceReference?,
     ): String? {
+        val soundImpact = revision.soundImpactSummary?.takeIf(String::isNotBlank)
+            ?: SoundImpactSummary.fromFilters(revision.filters)
+            ?: "Makes small frequency-response adjustments."
+        val measurement = measurementSource(profile.tuningLabel)
+        val target = profile.target.name?.takeIf(String::isNotBlank)
         val parts = buildList {
             add(if (revision.isLatest) "Latest" else "Previous revision")
-            revisionDisplayDate(revision, primary)?.let { add("Revision date: $it") }
-            profile.tuningLabel?.takeIf(String::isNotBlank)?.let(::add)
-            profile.target.name?.takeIf(String::isNotBlank)?.let { add("Target: $it") }
+            if (!revision.isLatest) {
+                revisionDisplayDate(revision, primary)?.let { add("Revision: $it") }
+            }
+            measurement?.let { add("Measurement: $it") }
+            target?.let { add("Target: $it") }
             primary?.sourceId?.takeIf(String::isNotBlank)?.let { add("Source: ${displaySourceId(it)}") }
-            primary?.provenanceTier?.let { add("Provenance: ${displayProvenance(it)}") }
-            revision.sourceVersionLabel?.takeIf(String::isNotBlank)?.let { add("Version: $it") }
-            revision.soundImpactSummary?.takeIf(String::isNotBlank)?.let(::add)
+            add(soundImpact)
         }
         return parts.distinct().joinToString(" · ").takeIf(String::isNotBlank)
+    }
+
+    private fun measurementSource(label: String?): String? {
+        val value = label?.trim()?.takeIf(String::isNotEmpty) ?: return null
+        val match = Regex("^AutoEq \\((.+) measurement\\)$", RegexOption.IGNORE_CASE).matchEntire(value)
+            ?: return null
+        return match.groupValues[1].trim().takeIf(String::isNotEmpty)
     }
 
     private fun revisionDisplayDate(revision: EqRevision, primary: EqSourceReference?): String? {
@@ -158,14 +170,6 @@ object CanonicalLegacyCatalogAdapter {
         "opra" -> "OPRA"
         "autoeq" -> "AutoEQ"
         else -> value
-    }
-
-    private fun displayProvenance(value: ProvenanceTier): String = when (value) {
-        ProvenanceTier.AUTHORITATIVE -> "authoritative"
-        ProvenanceTier.MEASUREMENT_DERIVED -> "measurement-derived"
-        ProvenanceTier.TRACEABLE_COMMUNITY -> "traceable community"
-        ProvenanceTier.MIRROR -> "mirror"
-        ProvenanceTier.NEEDS_REVIEW -> "needs review"
     }
 
     private fun displayProductName(headphone: HeadphoneIdentity): String = buildList {
