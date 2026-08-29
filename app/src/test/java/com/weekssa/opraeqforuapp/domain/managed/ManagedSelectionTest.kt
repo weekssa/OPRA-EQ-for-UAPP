@@ -16,13 +16,35 @@ class ManagedSelectionTest {
             },
         )
         val blocked = unsupportedProfile("blocked")
+        val historical = compatibleProfile("historical").copy(
+            details = "Previous revision · Revision: 2023-10-29 · Source: AutoEQ",
+        )
 
-        val selected = defaultStagedSelectedProfileIds(listOf(fullyCompatible, limited, blocked))
+        val selected = defaultStagedSelectedProfileIds(
+            listOf(fullyCompatible, limited, blocked, historical),
+        )
 
         assertTrue(DEFAULT_AUTO_INCLUDE_NEW_PROFILES)
         assertTrue("fully" in selected)
         assertTrue("limited" in selected)
         assertFalse("blocked" in selected)
+        assertFalse("historical" in selected)
+    }
+
+    @Test
+    fun historyCanStillBeSelectedExplicitly() {
+        val current = compatibleProfile("current")
+        val historical = compatibleProfile("historical").copy(
+            details = "Previous revision · Revision: 2023-10-29 · Source: AutoEQ",
+        )
+
+        val selected = selectableProfileIds(
+            listOf(current, historical),
+            includeHistorical = true,
+        )
+
+        assertTrue("current" in selected)
+        assertTrue("historical" in selected)
     }
 
     @Test
@@ -78,6 +100,20 @@ class ManagedSelectionTest {
     }
 
     @Test
+    fun autoIncludeDoesNotSelectFutureHistoricalRevision() {
+        val state = ManagedHeadphoneSelection(
+            productId = "product",
+            autoIncludeNewProfiles = true,
+            profileSelections = emptyMap(),
+        )
+        val historical = compatibleProfile("old").copy(
+            details = "Previous revision · Revision: 2023-10-29 · Source: AutoEQ",
+        )
+
+        assertFalse(state.isSelected(historical))
+    }
+
+    @Test
     fun fixedSelectionDoesNotSelectFutureProfile() {
         val state = ManagedHeadphoneSelection(
             productId = "product",
@@ -126,6 +162,21 @@ class ManagedSelectionTest {
         assertFalse(updates.getValue("selected").explicitlyExcluded)
         assertFalse(updates.getValue("excluded").selected)
         assertTrue(updates.getValue("excluded").explicitlyExcluded)
+    }
+
+    @Test
+    fun unselectedHistoricalRevisionIsNotStoredAsExplicitExclusion() {
+        val historical = compatibleProfile("historical").copy(
+            details = "Previous revision · Revision: 2023-10-29 · Source: AutoEQ",
+        )
+        val updates = selectionUpdatesForSave(
+            profiles = listOf(historical),
+            stagedSelectedProfileIds = emptySet(),
+            autoIncludeNewProfiles = true,
+        )
+
+        assertFalse(updates.getValue("historical").selected)
+        assertFalse(updates.getValue("historical").explicitlyExcluded)
     }
 
     @Test
