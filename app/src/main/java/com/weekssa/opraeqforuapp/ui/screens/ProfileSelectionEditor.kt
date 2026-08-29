@@ -14,12 +14,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -58,6 +61,8 @@ internal fun ProfileSelectionEditor(
     catalog: OpraCatalog,
     product: OpraProduct,
     profileVisibility: ProfileVisibilityPreferences,
+    favoriteProfileIds: Set<String>,
+    onToggleFavorite: suspend (OpraEqProfile, String, String) -> Boolean,
     onLoadManagedHeadphone: suspend (String) -> ManagedHeadphoneRecord?,
     onSaveSelection: suspend (String, Set<String>, Boolean) -> Unit,
     onRemoveHeadphone: suspend (String) -> Unit,
@@ -279,11 +284,22 @@ internal fun ProfileSelectionEditor(
                 ProfileSelectionRow(
                     profile = profile,
                     selected = profile.id in stagedSelectedIds,
+                    isFavorite = profile.id in favoriteProfileIds,
                     onSelectionChange = { selected ->
                         stagedSelectedIds = if (selected) {
                             stagedSelectedIds + profile.id
                         } else {
                             stagedSelectedIds - profile.id
+                        }
+                    },
+                    onToggleFavorite = {
+                        scope.launch {
+                            val favorited = onToggleFavorite(
+                                profile,
+                                vendor?.name ?: "Unknown manufacturer",
+                                product.name,
+                            )
+                            onMessage(if (favorited) "Saved to My EQs favorites." else "Removed from My EQs favorites.")
                         }
                     },
                     onExplainIncompatibility = {
@@ -301,7 +317,9 @@ internal fun ProfileSelectionEditor(
 internal fun ProfileSelectionRow(
     profile: OpraEqProfile,
     selected: Boolean,
+    isFavorite: Boolean,
     onSelectionChange: (Boolean) -> Unit,
+    onToggleFavorite: () -> Unit,
     onExplainIncompatibility: () -> Unit,
 ) {
     val compatibility = profile.assessCompatibility()
@@ -347,6 +365,14 @@ internal fun ProfileSelectionRow(
                         compatibility.reason?.let { Text(it) }
                     }
                 }
+            }
+        },
+        trailingContent = {
+            IconButton(onClick = onToggleFavorite) {
+                Icon(
+                    imageVector = if (isFavorite) Icons.Outlined.Star else Icons.Outlined.StarBorder,
+                    contentDescription = if (isFavorite) "Remove favorite" else "Add favorite",
+                )
             }
         },
         modifier = rowModifier,
