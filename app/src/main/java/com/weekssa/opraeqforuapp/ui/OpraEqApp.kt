@@ -208,7 +208,7 @@ fun OpraEqApp(
         scope.launch {
             val message = when (val result = onCheckForUpdates()) {
                 is AppUpdateCheckResult.UpdateAvailable -> "Version ${result.release.version} is available."
-                is AppUpdateCheckResult.UpToDate -> "OPRA EQ for UAPP is up to date."
+                is AppUpdateCheckResult.UpToDate -> "EQ Library is up to date."
                 AppUpdateCheckResult.Unavailable -> "Couldn’t check for updates right now. Try again later."
             }
             snackbarHostState.showSnackbar(message)
@@ -408,6 +408,8 @@ fun OpraEqApp(
                                     onRefreshCatalog = requestCatalogRefresh,
                                     onExportPresets = requestExportAll,
                                     onOpenHeadphone = { selectedManagedProductId = it },
+                                    onRemoveManagedHeadphone = onRemoveManagedHeadphone,
+                                    onMessage = ::showMessage,
                                     modifier = Modifier.fillMaxSize(),
                                 )
                             }
@@ -431,6 +433,17 @@ fun OpraEqApp(
                 }
             }
         }
+    }
+
+    if (whatsNewVersion != null) {
+        WhatsNewDialog(
+            version = whatsNewVersion.orEmpty(),
+            notes = whatsNewNotes,
+            onDismiss = {
+                whatsNewVersion = null
+                whatsNewNotes = ""
+            },
+        )
     }
 }
 
