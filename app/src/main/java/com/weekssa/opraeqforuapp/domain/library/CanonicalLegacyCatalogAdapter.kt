@@ -158,13 +158,19 @@ object CanonicalLegacyCatalogAdapter {
         headphone.padsOrMode?.takeIf(String::isNotBlank)?.let(::add)
     }.joinToString(" · ")
 
+    /**
+     * Keep the v0.2 engine's internal OPRA filter names here. Device-specific PK/LS/HS formatting
+     * happens later in the exporter; using device abbreviations at this bridge would make an
+     * otherwise compatible canonical profile fail v0.2 compatibility checks and saved-selection
+     * migration.
+     */
     private fun EqFilterType.toLegacyType(): String = when (this) {
-        EqFilterType.PEAK -> "PK"
-        EqFilterType.LOW_SHELF -> "LS"
-        EqFilterType.HIGH_SHELF -> "HS"
-        EqFilterType.LOW_PASS -> "LP"
-        EqFilterType.HIGH_PASS -> "HP"
-        EqFilterType.OTHER -> "OTHER"
+        EqFilterType.PEAK -> "peak_dip"
+        EqFilterType.LOW_SHELF -> "low_shelf"
+        EqFilterType.HIGH_SHELF -> "high_shelf"
+        EqFilterType.LOW_PASS -> "low_pass"
+        EqFilterType.HIGH_PASS -> "high_pass"
+        EqFilterType.OTHER -> "other"
     }
 
     private fun slug(value: String): String = value
