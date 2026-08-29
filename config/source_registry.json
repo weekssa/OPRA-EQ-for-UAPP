@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "registry_version": "0.3.0-guarded-discovery",
+  "registry_version": "0.3.0-oratory-link-only",
   "sources": [
     {
       "id": "opra",
@@ -33,15 +33,15 @@
       "id": "oratory1990",
       "kind": "creator",
       "name": "oratory1990",
-      "scope": "Author-created EQ presets and measurement-linked revisions",
-      "lifecycle": "reviewing",
+      "scope": "Direct creator provenance and update discovery for author-created EQ presets; structured filter values continue to arrive through separately qualified sources such as OPRA unless redistribution permission is explicit",
+      "lifecycle": "link-only",
       "cadence": "weekly",
-      "parser": "creator-oratory1990",
-      "parser_version": "1",
-      "cursor_strategy": "source update timestamp and acoustic fingerprint",
-      "redistribution": "review-required",
+      "parser": "creator-oratory1990-provenance",
+      "parser_version": "2",
+      "cursor_strategy": "creator update timestamp/source URL plus acoustic fingerprint of the qualified structured carrier",
+      "redistribution": "link-only",
       "attribution_required": true,
-      "license_notes": "Creator-authored presets remain distinct from AutoEq results derived from oratory1990 measurements. Publication requires explicit source/redistribution qualification; otherwise retain link-only provenance."
+      "license_notes": "Direct creator pages/PDFs are used for attribution and update discovery only. EQ Library does not infer blanket redistribution permission from public availability. OPRA-carried structured presets may be enriched with direct creator provenance without duplicating the tuning. AutoEq results derived from oratory1990 measurements remain AutoEq-created results, not oratory-authored presets."
     },
     {
       "id": "squiglink",
