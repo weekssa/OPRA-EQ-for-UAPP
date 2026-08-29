@@ -135,7 +135,10 @@ class SavedEqRepository(
             creator = record.profile.author,
             details = record.displayName,
         )
-        val converted = ToneBoostersConverter.convert(record.profile, presetName)
+        // Keep the source profile available to text-device formatters even when UAPP cannot
+        // represent it. UAPP simply receives no XML candidate rather than preventing export to
+        // another compatible target.
+        val uapp = runCatching { ToneBoostersConverter.convert(record.profile, presetName) }.getOrNull()
         return ManagedHeadphoneRecord(
             productId = record.productId,
             vendorId = "saved-eq-vendor:${sha256(record.manufacturer)}",
@@ -156,8 +159,8 @@ class SavedEqRepository(
                     isNewUnreviewed = false,
                     isUpdatedUnreviewed = false,
                     noLongerAvailable = false,
-                    generatedPresetName = converted.presetName,
-                    generatedXml = converted.xml,
+                    generatedPresetName = presetName,
+                    generatedXml = uapp?.xml,
                     generatedFromFingerprint = fingerprint,
                     generatedAtMillis = record.updatedAtMillis,
                 ),
