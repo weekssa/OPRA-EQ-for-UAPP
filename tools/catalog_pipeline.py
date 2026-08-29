@@ -1,0 +1,309 @@
+#!/usr/bin/env python3
+"""EQ Library v0.3 external catalog currentness pipeline.
+
+The Android app consumes only validated published snapshots. This module owns the
+source-registry state machine, incremental scan bookkeeping, revision detection,
+and atomic last-known-good publication primitives used by source-specific jobs.
+It intentionally uses only the Python standard library so GitHub Actions can run
+it without a dependency bootstrap.
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+import tempfile
+from dataclasses import dataclass, asdict
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Iterable
+
+VALID_LIFECYCLES = {"proposed", "reviewing", "active", "link-only", "paused", "retired"}
+VALID_REDISTRIBUTION = {"allowed", "structured-data-only", "link-only", "review-required"}
+VALID_CADENCES = {"hourly", "daily", "weekly", "monthly", "manual"}
+
+
+def utc_now() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def stable_json(value: Any) -> str:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+
+
+def sha256_json(value: Any) -> str:
+    return hashlib.sha256(stable_json(value).encode("utf-8")).hexdigest()
+
+
+@dataclass(frozen=True)
+class SourceHealth:
+    source_id: str
+    lifecycle: str
+    last_successful_scan_at: str | None = None
+    last_attempt_at: str | None = None
+    cursor: str | None = None
+    parser_version: str | None = None
+    consecutive_failures: int = 0
+    last_error: str | None = None
+    last_content_fingerprint: str | None = None
+    last_terms_review_at: str | None = None
+
+
+class RegistryError(ValueError):
+    pass
+
+
+def load_json(path: Path) -> Any:
+    with path.open("r", encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def validate_registry(registry: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if registry.get("schema_version") != 1:
+        errors.append("schema_version must be 1")
+    if not str(registry.get("registry_version", "")).strip():
+        errors.append("registry_version is required")
+    sources = registry.get("sources")
+    if not isinstance(sources, list) or not sources:
+        errors.append("sources must be a non-empty list")
+        return errors
+
+    seen: set[str] = set()
+    required = {
+        "id", "kind", "name", "scope", "lifecycle", "cadence", "parser",
+        "parser_version", "cursor_strategy", "redistribution", "attribution_required",
+    }
+    for index, source in enumerate(sources):
+        prefix = f"sources[{index}]"
+        if not isinstance(source, dict):
+            errors.append(f"{prefix} must be an object")
+            continue
+        missing = sorted(field for field in required if field not in source)
+        if missing:
+            errors.append(f"{prefix} missing: {', '.join(missing)}")
+        source_id = str(source.get("id", "")).strip()
+        if not source_id:
+            errors.append(f"{prefix}.id must be non-empty")
+        elif source_id in seen:
+            errors.append(f"duplicate source id: {source_id}")
+        seen.add(source_id)
+        if source.get("lifecycle") not in VALID_LIFECYCLES:
+            errors.append(f"{prefix}.lifecycle is invalid: {source.get('lifecycle')}")
+        if source.get("redistribution") not in VALID_REDISTRIBUTION:
+            errors.append(f"{prefix}.redistribution is invalid: {source.get('redistribution')}")
+        if source.get("cadence") not in VALID_CADENCES:
+            errors.append(f"{prefix}.cadence is invalid: {source.get('cadence')}")
+        if source.get("attribution_required") not in (True, False):
+            errors.append(f"{prefix}.attribution_required must be boolean")
+    return errors
+
+
+def load_health(path: Path) -> dict[str, SourceHealth]:
+    if not path.exists():
+        return {}
+    raw = load_json(path)
+    items = raw.get("sources", []) if isinstance(raw, dict) else []
+    return {item["source_id"]: SourceHealth(**item) for item in items}
+
+
+def write_health(path: Path, health: dict[str, SourceHealth]) -> None:
+    payload = {
+        "schema_version": 1,
+        "updated_at": utc_now(),
+        "sources": [asdict(health[key]) for key in sorted(health)],
+    }
+    atomic_write_json(path, payload)
+
+
+def reconcile_health(registry: dict[str, Any], current: dict[str, SourceHealth]) -> dict[str, SourceHealth]:
+    reconciled: dict[str, SourceHealth] = {}
+    for source in registry["sources"]:
+        source_id = source["id"]
+        previous = current.get(source_id)
+        if previous is None:
+            previous = SourceHealth(source_id=source_id, lifecycle=source["lifecycle"])
+        reconciled[source_id] = SourceHealth(
+            **{
+                **asdict(previous),
+                "lifecycle": source["lifecycle"],
+                "parser_version": str(source["parser_version"]),
+            }
+        )
+    return reconciled
+
+
+def record_scan_success(
+    health: SourceHealth,
+    *,
+    cursor: str | None,
+    content_fingerprint: str | None,
+    attempted_at: str | None = None,
+) -> SourceHealth:
+    when = attempted_at or utc_now()
+    return SourceHealth(
+        **{
+            **asdict(health),
+            "last_attempt_at": when,
+            "last_successful_scan_at": when,
+            "cursor": cursor,
+            "consecutive_failures": 0,
+            "last_error": None,
+            "last_content_fingerprint": content_fingerprint,
+        }
+    )
+
+
+def record_scan_failure(health: SourceHealth, error: str, *, attempted_at: str | None = None) -> SourceHealth:
+    return SourceHealth(
+        **{
+            **asdict(health),
+            "last_attempt_at": attempted_at or utc_now(),
+            "consecutive_failures": health.consecutive_failures + 1,
+            "last_error": error[:1000],
+        }
+    )
+
+
+def acoustic_fingerprint(preamp_db: float | None, filters: Iterable[dict[str, Any]]) -> str:
+    """Stable fingerprint that ignores harmless ordering/precision differences."""
+    normalized: list[dict[str, Any]] = []
+    for item in filters:
+        normalized.append(
+            {
+                "type": str(item.get("type", "peak")).strip().lower(),
+                "frequency_hz": round(float(item["frequency_hz"]), 3),
+                "gain_db": None if item.get("gain_db") is None else round(float(item["gain_db"]), 3),
+                "q": None if item.get("q") is None else round(float(item["q"]), 4),
+                "slope": None if item.get("slope") is None else round(float(item["slope"]), 4),
+            }
+        )
+    normalized.sort(key=lambda f: (f["type"], f["frequency_hz"], f["gain_db"] or 0.0, f["q"] or 0.0))
+    return sha256_json({"preamp_db": None if preamp_db is None else round(float(preamp_db), 3), "filters": normalized})
+
+
+def classify_candidate(previous_fingerprints: Iterable[str], new_fingerprint: str) -> str:
+    previous = set(previous_fingerprints)
+    return "duplicate" if new_fingerprint in previous else ("new_candidate" if not previous else "new_revision")
+
+
+def validate_snapshot(snapshot: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if int(snapshot.get("schema_version", 0)) < 1:
+        errors.append("snapshot schema_version must be >= 1")
+    profiles = snapshot.get("profiles")
+    if not isinstance(profiles, list):
+        errors.append("snapshot profiles must be a list")
+        return errors
+    ids: set[str] = set()
+    for index, profile in enumerate(profiles):
+        profile_id = str(profile.get("canonical_profile_id", "")).strip()
+        if not profile_id:
+            errors.append(f"profiles[{index}] missing canonical_profile_id")
+        elif profile_id in ids:
+            errors.append(f"duplicate canonical_profile_id: {profile_id}")
+        ids.add(profile_id)
+        revisions = profile.get("revisions", [])
+        latest = [r for r in revisions if r.get("is_latest") is True]
+        if revisions and len(latest) != 1:
+            errors.append(f"{profile_id or index} must have exactly one latest revision")
+        revision_ids: set[str] = set()
+        for revision in revisions:
+            revision_id = str(revision.get("revision_id", "")).strip()
+            if not revision_id:
+                errors.append(f"{profile_id or index} has revision without revision_id")
+            elif revision_id in revision_ids:
+                errors.append(f"{profile_id or index} duplicate revision_id: {revision_id}")
+            revision_ids.add(revision_id)
+            if not str(revision.get("acoustic_fingerprint", "")).strip():
+                errors.append(f"{profile_id or index}/{revision_id or '?'} missing acoustic_fingerprint")
+    return errors
+
+
+def atomic_write_json(path: Path, payload: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=path.parent, delete=False) as handle:
+        json.dump(payload, handle, indent=2, sort_keys=True, ensure_ascii=False)
+        handle.write("\n")
+        temp_name = handle.name
+    os.replace(temp_name, path)
+
+
+def publish_snapshot(candidate: Path, published: Path, last_known_good: Path) -> str:
+    snapshot = load_json(candidate)
+    errors = validate_snapshot(snapshot)
+    if errors:
+        raise RegistryError("candidate snapshot rejected: " + "; ".join(errors))
+    snapshot_hash = sha256_json(snapshot)
+    if published.exists():
+        old = load_json(published)
+        if not validate_snapshot(old):
+            atomic_write_json(last_known_good, old)
+    atomic_write_json(published, snapshot)
+    atomic_write_json(last_known_good, snapshot)
+    return snapshot_hash
+
+
+def command_validate(args: argparse.Namespace) -> int:
+    registry = load_json(Path(args.registry))
+    errors = validate_registry(registry)
+    if errors:
+        for error in errors:
+            print(f"ERROR: {error}")
+        return 1
+    print(f"registry OK: {len(registry['sources'])} sources; version={registry['registry_version']}")
+    return 0
+
+
+def command_reconcile(args: argparse.Namespace) -> int:
+    registry = load_json(Path(args.registry))
+    errors = validate_registry(registry)
+    if errors:
+        raise RegistryError("; ".join(errors))
+    state_path = Path(args.state)
+    health = reconcile_health(registry, load_health(state_path))
+    write_health(state_path, health)
+    print(f"reconciled {len(health)} source-health records")
+    return 0
+
+
+def command_publish(args: argparse.Namespace) -> int:
+    digest = publish_snapshot(Path(args.candidate), Path(args.published), Path(args.last_known_good))
+    print(f"published validated snapshot sha256={digest}")
+    return 0
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description=__doc__)
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    validate = sub.add_parser("validate-registry")
+    validate.add_argument("--registry", default="config/source_registry.json")
+    validate.set_defaults(func=command_validate)
+
+    reconcile = sub.add_parser("reconcile-health")
+    reconcile.add_argument("--registry", default="config/source_registry.json")
+    reconcile.add_argument("--state", default="catalog/source_health.json")
+    reconcile.set_defaults(func=command_reconcile)
+
+    publish = sub.add_parser("publish")
+    publish.add_argument("--candidate", required=True)
+    publish.add_argument("--published", default="catalog/catalog.json")
+    publish.add_argument("--last-known-good", default="catalog/catalog.last-known-good.json")
+    publish.set_defaults(func=command_publish)
+    return parser
+
+
+def main() -> int:
+    args = build_parser().parse_args()
+    try:
+        return int(args.func(args))
+    except (OSError, json.JSONDecodeError, RegistryError, ValueError, KeyError) as exc:
+        print(f"ERROR: {exc}")
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
