@@ -105,7 +105,7 @@ class CanonicalLegacyCatalogAdapterTest {
         assertThat(previous.details).contains("Previous revision")
         assertThat(previous.details).contains("Revision: 2023-11-14")
         assertThat(previous.details).contains("Target: Custom")
-        assertThat(previous.details).contains("Source: community")
+        assertThat(previous.details).contains("Source: Community")
         assertThat(previous.details).contains("Adds bass.")
         assertThat(previous.details).doesNotContain("Provenance:")
         assertThat(previous.details).doesNotContain("Version:")
