@@ -1,42 +1,43 @@
 package com.weekssa.opraeqforuapp.domain.library
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class CatalogSnapshot(
-    val schemaVersion: Int,
-    val generatedAt: String,
-    val sourceRegistryVersion: String,
+    @SerialName("schema_version") val schemaVersion: Int,
+    @SerialName("generated_at") val generatedAt: String,
+    @SerialName("source_registry_version") val sourceRegistryVersion: String,
     val profiles: List<CanonicalEqProfile>,
     val sources: List<SourceStatus> = emptyList(),
 )
 
 @Serializable
 data class SourceStatus(
-    val sourceId: String,
+    @SerialName("source_id") val sourceId: String,
     val lifecycle: SourceLifecycle,
-    val lastSuccessfulScanAt: String? = null,
-    val lastAttemptAt: String? = null,
+    @SerialName("last_successful_scan_at") val lastSuccessfulScanAt: String? = null,
+    @SerialName("last_attempt_at") val lastAttemptAt: String? = null,
     val cursor: String? = null,
-    val parserVersion: String? = null,
-    val consecutiveFailures: Int = 0,
+    @SerialName("parser_version") val parserVersion: String? = null,
+    @SerialName("consecutive_failures") val consecutiveFailures: Int = 0,
     val redistribution: RedistributionMode = RedistributionMode.REVIEW_REQUIRED,
 )
 
 @Serializable
 enum class SourceLifecycle {
-    PROPOSED,
-    REVIEWING,
-    ACTIVE,
-    LINK_ONLY,
-    PAUSED,
-    RETIRED,
+    @SerialName("proposed") PROPOSED,
+    @SerialName("reviewing") REVIEWING,
+    @SerialName("active") ACTIVE,
+    @SerialName("link-only") LINK_ONLY,
+    @SerialName("paused") PAUSED,
+    @SerialName("retired") RETIRED,
 }
 
 @Serializable
 enum class RedistributionMode {
-    ALLOWED,
-    STRUCTURED_DATA_ONLY,
-    LINK_ONLY,
-    REVIEW_REQUIRED,
+    @SerialName("allowed") ALLOWED,
+    @SerialName("structured-data-only") STRUCTURED_DATA_ONLY,
+    @SerialName("link-only") LINK_ONLY,
+    @SerialName("review-required") REVIEW_REQUIRED,
 }
