@@ -8,6 +8,7 @@ on:
       - 'catalog/catalog.json'
       - 'catalog/source_health.json'
       - 'config/source_registry.json'
+      - 'config/qualified_github_sources.json'
       - 'tools/acoustic_fingerprint.py'
       - 'tools/catalog_pipeline.py'
       - 'tools/catalog_merge.py'
@@ -16,6 +17,7 @@ on:
       - 'tools/autoeq_currentness.py'
       - 'tools/community_peq_ingest.py'
       - 'tools/github_preset_discovery.py'
+      - 'tools/qualified_github_ingest.py'
       - 'tools/squiglink_discovery.py'
       - 'tools/oratory_provenance.py'
       - 'tools/oratory_update_discovery.py'
@@ -27,6 +29,7 @@ on:
       - 'catalog/catalog.json'
       - 'catalog/source_health.json'
       - 'config/source_registry.json'
+      - 'config/qualified_github_sources.json'
       - 'tools/acoustic_fingerprint.py'
       - 'tools/catalog_pipeline.py'
       - 'tools/catalog_merge.py'
@@ -35,6 +38,7 @@ on:
       - 'tools/autoeq_currentness.py'
       - 'tools/community_peq_ingest.py'
       - 'tools/github_preset_discovery.py'
+      - 'tools/qualified_github_ingest.py'
       - 'tools/squiglink_discovery.py'
       - 'tools/oratory_provenance.py'
       - 'tools/oratory_update_discovery.py'
@@ -82,12 +86,33 @@ jobs:
           --registry config/source_registry.json
           --health catalog/source_health.json
           --catalog-output "${RUNNER_TEMP}/catalog.autoeq.json"
-          --health-output "${RUNNER_TEMP}/source_health.candidate.json"
+          --health-output "${RUNNER_TEMP}/source_health.autoeq.json"
           --github-token "${GITHUB_TOKEN}"
+      - name: Exercise live explicitly qualified GitHub sources
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python3 tools/qualified_github_ingest.py \
+            --catalog "${RUNNER_TEMP}/catalog.autoeq.json" \
+            --registry config/source_registry.json \
+            --health "${RUNNER_TEMP}/source_health.autoeq.json" \
+            --manifest config/qualified_github_sources.json \
+            --catalog-output "${RUNNER_TEMP}/catalog.github.json" \
+            --health-output "${RUNNER_TEMP}/source_health.candidate.json" \
+            --report "${RUNNER_TEMP}/qualified-github-report.json" \
+            --github-token "${GITHUB_TOKEN}"
+          python3 - <<'PY'
+          import json, os
+          path = os.environ['RUNNER_TEMP'] + '/qualified-github-report.json'
+          report = json.load(open(path, encoding='utf-8'))
+          degraded = [item for item in report if item.get('status') != 'ok']
+          if degraded:
+              raise SystemExit('qualified GitHub live source degraded: ' + json.dumps(degraded, sort_keys=True))
+          PY
       - name: Enrich qualified presets with direct oratory creator provenance
         run: >-
           python3 tools/oratory_provenance.py
-          --catalog "${RUNNER_TEMP}/catalog.autoeq.json"
+          --catalog "${RUNNER_TEMP}/catalog.github.json"
           --output "${RUNNER_TEMP}/catalog.candidate.json"
           --report "${RUNNER_TEMP}/oratory-provenance.json"
       - name: Validate refreshed candidate atomically
