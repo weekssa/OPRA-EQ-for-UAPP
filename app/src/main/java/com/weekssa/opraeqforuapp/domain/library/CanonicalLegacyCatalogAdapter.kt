@@ -42,6 +42,9 @@ object CanonicalLegacyCatalogAdapter {
                     name = displayProductName(representative.headphone),
                     type = "headphones",
                     subtype = "",
+                    aliases = canonicalProfiles
+                        .flatMap { it.headphone.modelAliases }
+                        .distinct(),
                 )
                 canonicalProfiles.forEach { canonical ->
                     profiles += revisionProfiles(canonical, identity.productId)
