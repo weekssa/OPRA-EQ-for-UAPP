@@ -395,6 +395,8 @@ fun OpraEqApp(
                                     headphone = selectedManagedHeadphone,
                                     catalogState = catalogState,
                                     profileVisibility = appPreferences.profileVisibility,
+                                    favoriteProfileIds = favoriteProfileIds,
+                                    onToggleFavorite = onToggleFavorite,
                                     onLoadManagedHeadphone = onLoadManagedHeadphone,
                                     onSaveSelection = onSaveSelection,
                                     onRemoveHeadphone = onRemoveHeadphone,
