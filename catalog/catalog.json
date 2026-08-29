@@ -130,6 +130,46 @@
           "first_seen_at_epoch_seconds": null,
           "source_updated_at_epoch_seconds": null,
           "is_latest": true
+        },
+        {
+          "revision_id": "rev-e46443b02620f3d34209b505",
+          "acoustic_fingerprint": "e46443b02620f3d34209b505a87bdc21c98d6745a659c489b22736cf92ed887e",
+          "preamp_gain_db": -4.5,
+          "filters": [
+            {"type": "low_shelf", "frequency_hz": 105.0, "gain_db": 5.4, "q": 0.7, "slope": null},
+            {"type": "peak", "frequency_hz": 89.0, "gain_db": -2.6, "q": 0.32, "slope": null},
+            {"type": "peak", "frequency_hz": 1900.0, "gain_db": 4.0, "q": 1.88, "slope": null},
+            {"type": "peak", "frequency_hz": 2926.0, "gain_db": -3.5, "q": 2.97, "slope": null},
+            {"type": "peak", "frequency_hz": 1431.0, "gain_db": 1.3, "q": 3.81, "slope": null},
+            {"type": "high_shelf", "frequency_hz": 10000.0, "gain_db": -5.5, "q": 0.7, "slope": null},
+            {"type": "peak", "frequency_hz": 66.0, "gain_db": -0.4, "q": 1.9, "slope": null},
+            {"type": "peak", "frequency_hz": 108.0, "gain_db": 0.3, "q": 1.85, "slope": null},
+            {"type": "peak", "frequency_hz": 5688.0, "gain_db": 1.8, "q": 5.9, "slope": null},
+            {"type": "peak", "frequency_hz": 6221.0, "gain_db": -1.0, "q": 6.0, "slope": null}
+          ],
+          "source_references": [
+            {
+              "source_id": "autoeq",
+              "source_kind": "measurement_derived",
+              "source_record_id": "results/oratory1990/over-ear/HIFIMAN Edition XS/HIFIMAN Edition XS ParametricEQ.txt@853360a1626b387e1d3d87f3f7ad8c7514d30839",
+              "source_vendor_id": "HIFIMAN",
+              "source_product_id": "Edition XS",
+              "url": "https://github.com/jaakkopasanen/AutoEq/blob/853360a1626b387e1d3d87f3f7ad8c7514d30839/results/oratory1990/over-ear/HIFIMAN%20Edition%20XS/HIFIMAN%20Edition%20XS%20ParametricEQ.txt",
+              "creator": "AutoEq",
+              "provenance_tier": "measurement_derived",
+              "redistribution_policy": "structured-data-only",
+              "published_at_epoch_seconds": 1698572942,
+              "updated_at_epoch_seconds": 1698572942,
+              "discovered_at_epoch_seconds": null,
+              "last_verified_at_epoch_seconds": 1698572942,
+              "is_primary": true
+            }
+          ],
+          "source_version_label": "AutoEq commit 853360a1626b387e1d3d87f3f7ad8c7514d30839",
+          "sound_impact_summary": "Adds bass and slightly increases midrange energy.",
+          "first_seen_at_epoch_seconds": 1698572942,
+          "source_updated_at_epoch_seconds": 1698572942,
+          "is_latest": false
         }
       ]
     }
