@@ -41,6 +41,8 @@ object OpraProfileAdapter {
             sourceId = "opra",
             sourceKind = EqSourceKind.STRUCTURED_CATALOG,
             sourceRecordId = profile.id,
+            sourceVendorId = vendor.id,
+            sourceProductId = product.id,
             url = profile.link,
             creator = creator,
             provenanceTier = ProvenanceTier.AUTHORITATIVE,
