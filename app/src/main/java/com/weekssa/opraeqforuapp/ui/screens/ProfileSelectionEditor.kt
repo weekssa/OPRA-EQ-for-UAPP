@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.toggleable
@@ -70,7 +69,7 @@ internal fun ProfileSelectionEditor(
     product: OpraProduct,
     profileVisibility: ProfileVisibilityPreferences,
     favoriteProfileIds: Set<String>,
-    onToggleFavorite: suspend (OpraEqProfile, String, String) -> Boolean,
+    onToggleFavorite: (suspend (OpraEqProfile, String, String) -> Boolean)?,
     onLoadManagedHeadphone: suspend (String) -> ManagedHeadphoneRecord?,
     onSaveSelection: suspend (String, Set<String>, Boolean) -> Unit,
     onRemoveHeadphone: suspend (String) -> Unit,
@@ -88,7 +87,9 @@ internal fun ProfileSelectionEditor(
     }
     val hiddenCompatibilityCount = profiles.size - compatibilityVisibleProfiles.size
     val sourceOptions = remember(profiles) {
-        profiles.mapNotNull { it.detailMetadata("Source") }.distinct().sortedWith(String.CASE_INSENSITIVE_ORDER)
+        profiles.mapNotNull { it.detailMetadata("Source") }
+            .distinct()
+            .sortedWith(String.CASE_INSENSITIVE_ORDER)
     }
     val creatorOptions = remember(profiles) {
         profiles.mapNotNull { it.author?.trim()?.takeIf(String::isNotEmpty) }
@@ -96,7 +97,9 @@ internal fun ProfileSelectionEditor(
             .sortedWith(String.CASE_INSENSITIVE_ORDER)
     }
     val targetOptions = remember(profiles) {
-        profiles.mapNotNull { it.detailMetadata("Target") }.distinct().sortedWith(String.CASE_INSENSITIVE_ORDER)
+        profiles.mapNotNull { it.detailMetadata("Target") }
+            .distinct()
+            .sortedWith(String.CASE_INSENSITIVE_ORDER)
     }
     val scope = rememberCoroutineScope()
 
@@ -106,14 +109,14 @@ internal fun ProfileSelectionEditor(
     var filterDialog by remember { mutableStateOf<ProfileFilterDimension?>(null) }
 
     LaunchedEffect(sourceOptions, creatorOptions, targetOptions) {
-        if (sourceFilter !in sourceOptions) sourceFilter = null
-        if (creatorFilter !in creatorOptions) creatorFilter = null
-        if (targetFilter !in targetOptions) targetFilter = null
+        if (sourceFilter != null && sourceFilter !in sourceOptions) sourceFilter = null
+        if (creatorFilter != null && creatorFilter !in creatorOptions) creatorFilter = null
+        if (targetFilter != null && targetFilter !in targetOptions) targetFilter = null
     }
 
     val visibleProfiles = compatibilityVisibleProfiles.filter { profile ->
         (sourceFilter == null || profile.detailMetadata("Source") == sourceFilter) &&
-            (creatorFilter == null || profile.author == creatorFilter) &&
+            (creatorFilter == null || profile.author?.trim() == creatorFilter) &&
             (targetFilter == null || profile.detailMetadata("Target") == targetFilter)
     }
     val filteredOutCount = compatibilityVisibleProfiles.size - visibleProfiles.size
@@ -152,7 +155,9 @@ internal fun ProfileSelectionEditor(
         autoIncludeNewProfiles = autoInclude,
         baselineAutoIncludeNewProfiles = baselineAutoInclude,
     )
-    val retainedSelectedUnavailable = managedRecord?.profiles.orEmpty().count { it.selected && it.noLongerAvailable }
+    val retainedSelectedUnavailable = managedRecord?.profiles.orEmpty().count {
+        it.selected && it.noLongerAvailable
+    }
 
     fun completeSave(exportAfterSave: Boolean) {
         scope.launch {
@@ -166,15 +171,10 @@ internal fun ProfileSelectionEditor(
         }
     }
 
-    fun requestSave(exportAfterSave: Boolean = false) {
-        if (exportAfterSave && stagedSelectedIds.isEmpty()) return
-        completeSave(exportAfterSave)
-    }
-
     fun requestExport() {
         if (stagedSelectedIds.isEmpty()) return
         if (managedRecord == null || dirty) {
-            requestSave(exportAfterSave = true)
+            completeSave(exportAfterSave = true)
         } else {
             onExportProduct(product.id)
         }
@@ -192,10 +192,12 @@ internal fun ProfileSelectionEditor(
             title = { Text("Discard changes?") },
             text = { Text("Your unsaved preset-selection changes will be discarded.") },
             confirmButton = {
-                TextButton(onClick = {
-                    showDiscardDialog = false
-                    onBack()
-                }) { Text("Discard") }
+                TextButton(
+                    onClick = {
+                        showDiscardDialog = false
+                        onBack()
+                    },
+                ) { Text("Discard") }
             },
             dismissButton = {
                 TextButton(onClick = { showDiscardDialog = false }) { Text("Keep editing") }
@@ -318,13 +320,13 @@ internal fun ProfileSelectionEditor(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                TextButton(onClick = {
-                    sourceFilter = null
-                    creatorFilter = null
-                    targetFilter = null
-                }) {
-                    Text("Clear")
-                }
+                TextButton(
+                    onClick = {
+                        sourceFilter = null
+                        creatorFilter = null
+                        targetFilter = null
+                    },
+                ) { Text("Clear") }
             }
         }
 
@@ -354,10 +356,7 @@ internal fun ProfileSelectionEditor(
                 modifier = Modifier.weight(1f).padding(end = 12.dp),
                 style = MaterialTheme.typography.bodyMedium,
             )
-            Switch(
-                checked = autoInclude,
-                onCheckedChange = { autoInclude = it },
-            )
+            Switch(checked = autoInclude, onCheckedChange = { autoInclude = it })
         }
 
         Text(
@@ -393,7 +392,7 @@ internal fun ProfileSelectionEditor(
         }
 
         Button(
-            onClick = { requestSave() },
+            onClick = { completeSave(exportAfterSave = false) },
             enabled = commitEnabled,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
         ) {
@@ -421,14 +420,22 @@ internal fun ProfileSelectionEditor(
                             stagedSelectedIds - profile.id
                         }
                     },
-                    onToggleFavorite = {
-                        scope.launch {
-                            val favorited = onToggleFavorite(
-                                profile,
-                                vendor?.name ?: "Unknown manufacturer",
-                                product.name,
-                            )
-                            onMessage(if (favorited) "Saved to My EQs favorites." else "Removed from My EQs favorites.")
+                    onToggleFavorite = onToggleFavorite?.let { toggle ->
+                        {
+                            scope.launch {
+                                val favorited = toggle(
+                                    profile,
+                                    vendor?.name ?: "Unknown manufacturer",
+                                    product.name,
+                                )
+                                onMessage(
+                                    if (favorited) {
+                                        "Saved to My EQs favorites."
+                                    } else {
+                                        "Removed from My EQs favorites."
+                                    },
+                                )
+                            }
                         }
                     },
                     onExplainIncompatibility = {
@@ -472,9 +479,7 @@ private fun ProfileFilterDialog(
             }
         },
         confirmButton = {},
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
-        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }
 
@@ -484,7 +489,7 @@ internal fun ProfileSelectionRow(
     selected: Boolean,
     isFavorite: Boolean,
     onSelectionChange: (Boolean) -> Unit,
-    onToggleFavorite: () -> Unit,
+    onToggleFavorite: (() -> Unit)?,
     onExplainIncompatibility: () -> Unit,
 ) {
     val compatibility = profile.assessCompatibility()
@@ -514,7 +519,7 @@ internal fun ProfileSelectionRow(
             )
         },
         headlineContent = {
-            Text(profile.author?.takeIf { it.isNotBlank() } ?: "Creator information missing")
+            Text(profile.author?.takeIf(String::isNotBlank) ?: "Creator information missing")
         },
         supportingContent = {
             Column {
@@ -532,12 +537,14 @@ internal fun ProfileSelectionRow(
                 }
             }
         },
-        trailingContent = {
-            IconButton(onClick = onToggleFavorite) {
-                Icon(
-                    imageVector = if (isFavorite) Icons.Outlined.Star else Icons.Outlined.StarBorder,
-                    contentDescription = if (isFavorite) "Remove favorite" else "Add favorite",
-                )
+        trailingContent = onToggleFavorite?.let { action ->
+            {
+                IconButton(onClick = action) {
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Outlined.Star else Icons.Outlined.StarBorder,
+                        contentDescription = if (isFavorite) "Remove favorite" else "Add favorite",
+                    )
+                }
             }
         },
         modifier = rowModifier,
