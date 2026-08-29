@@ -56,6 +56,8 @@ data class HeadphoneIdentity(
     val model: String,
     val variant: String? = null,
     @SerialName("pads_or_mode") val padsOrMode: String? = null,
+    /** Explicit source-qualified names known to refer to this same physical product. */
+    @SerialName("model_aliases") val modelAliases: List<String> = emptyList(),
 ) {
     val normalizedKey: String
         get() = listOf(manufacturer, model, variant.orEmpty(), padsOrMode.orEmpty())
