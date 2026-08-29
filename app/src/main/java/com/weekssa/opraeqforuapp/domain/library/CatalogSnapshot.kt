@@ -7,7 +7,7 @@ data class CatalogSnapshot(
     val schemaVersion: Int,
     val generatedAt: String,
     val sourceRegistryVersion: String,
-    val profiles: List<EqProfile>,
+    val profiles: List<CanonicalEqProfile>,
     val sources: List<SourceStatus> = emptyList(),
 )
 
