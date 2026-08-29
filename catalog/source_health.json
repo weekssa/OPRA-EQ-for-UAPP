@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-08-29T19:35:00Z",
+  "sources": [
+    {
+      "source_id": "audio-science-review",
+      "lifecycle": "reviewing",
+      "last_successful_scan_at": null,
+      "last_attempt_at": null,
+      "cursor": null,
+      "parser_version": "1",
+      "consecutive_failures": 0,
+      "last_error": null,
+      "last_content_fingerprint": null,
+      "last_terms_review_at": "2026-08-29T19:35:00Z"
+    },
+    {
+      "source_id": "autoeq",
+      "lifecycle": "active",
+      "last_successful_scan_at": "2026-08-29T19:35:00Z",
+      "last_attempt_at": "2026-08-29T19:35:00Z",
+      "cursor": "de6afb42f76127937bf155454c6a790a08c803ae",
+      "parser_version": "2",
+      "consecutive_failures": 0,
+      "last_error": null,
+      "last_content_fingerprint": "5af24a7cd10bfbc5d5d7eb1cc29cc86712a8a2d72e40c7fec616bdd4199d074a",
+      "last_terms_review_at": "2026-08-29T19:35:00Z"
+    },
+    {
+      "source_id": "github-community",
+      "lifecycle": "reviewing",
+      "last_successful_scan_at": null,
+      "last_attempt_at": null,
+      "cursor": null,
+      "parser_version": "2",
+      "consecutive_failures": 0,
+      "last_error": null,
+      "last_content_fingerprint": null,
+      "last_terms_review_at": "2026-08-29T19:35:00Z"
+    },
+    {
+      "source_id": "head-fi",
+      "lifecycle": "reviewing",
+      "last_successful_scan_at": null,
+      "last_attempt_at": null,
+      "cursor": null,
+      "parser_version": "1",
+      "consecutive_failures": 0,
+      "last_error": null,
+      "last_content_fingerprint": null,
+      "last_terms_review_at": "2026-08-29T19:35:00Z"
+    },
+    {
+      "source_id": "headphone-community",
+      "lifecycle": "reviewing",
+      "last_successful_scan_at": null,
+      "last_attempt_at": null,
+      "cursor": null,
+      "parser_version": "1",
+      "consecutive_failures": 0,
+      "last_error": null,
+      "last_content_fingerprint": null,
+      "last_terms_review_at": "2026-08-29T19:35:00Z"
+    },
+    {
+      "source_id": "opra",
+      "lifecycle": "active",
+      "last_successful_scan_at": "2026-08-29T19:35:00Z",
+      "last_attempt_at": "2026-08-29T19:35:00Z",
+      "cursor": "8de4b39ee5a2a26fab1e1abc71ba95e52dd03bcc",
+      "parser_version": "1",
+      "consecutive_failures": 0,
+      "last_error": null,
+      "last_content_fingerprint": "b99b8966bb2505065a939ab01e160dc059e833f5284abad89bf0d349959254db",
+      "last_terms_review_at": "2026-08-29T19:35:00Z"
+    },
+    {
+      "source_id": "oratory1990",
+      "lifecycle": "reviewing",
+      "last_successful_scan_at": null,
+      "last_attempt_at": null,
+      "cursor": null,
+      "parser_version": "1",
+      "consecutive_failures": 0,
+      "last_error": null,
+      "last_content_fingerprint": null,
+      "last_terms_review_at": "2026-08-29T19:35:00Z"
+    },
+    {
+      "source_id": "reddit-audio",
+      "lifecycle": "reviewing",
+      "last_successful_scan_at": null,
+      "last_attempt_at": null,
+      "cursor": null,
+      "parser_version": "1",
+      "consecutive_failures": 0,
+      "last_error": null,
+      "last_content_fingerprint": null,
+      "last_terms_review_at": "2026-08-29T19:35:00Z"
+    },
+    {
+      "source_id": "squiglink",
+      "lifecycle": "reviewing",
+      "last_successful_scan_at": null,
+      "last_attempt_at": null,
+      "cursor": null,
+      "parser_version": "2",
+      "consecutive_failures": 0,
+      "last_error": null,
+      "last_content_fingerprint": null,
+      "last_terms_review_at": "2026-08-29T19:35:00Z"
+    },
+    {
+      "source_id": "topping-community",
+      "lifecycle": "reviewing",
+      "last_successful_scan_at": null,
+      "last_attempt_at": null,
+      "cursor": null,
+      "parser_version": "1",
+      "consecutive_failures": 0,
+      "last_error": null,
+      "last_content_fingerprint": null,
+      "last_terms_review_at": "2026-08-29T19:35:00Z"
+    }
+  ]
+}
