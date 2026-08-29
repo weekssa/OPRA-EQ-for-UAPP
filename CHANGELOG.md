@@ -1,8 +1,33 @@
 # Changelog
 
-All notable changes to **OPRA EQ for UAPP** will be documented in this file.
+All notable changes to **OPRA EQ for UAPP / EQ Library** will be documented in this file.
 
 The project uses Semantic Versioning. Development releases remain in the `0.x` series until the first stable `v1.0.0` release.
+
+## [0.2.0] - 2026-08-28
+
+### Added
+
+- Visible product rebrand to **EQ Library** while preserving application ID `com.weekssa.opraeqforuapp` and the permanent Android release-signing identity for in-place upgrades.
+- Explicit one-device-at-a-time export chooser for UAPP / ToneBoosters, TRN Black Pearl, Topping DX5 II, and Topping DX1 II.
+- Device-first root-folder layout: device → manufacturer → headphone → exported preset.
+- TRN Black Pearl text conversion constrained to a maximum of 10 PK filters to avoid passing unsupported/broken shelf filters through directly.
+- Topping Tune text output for DX5 II and DX1 II, marked hardware-validation pending until physical devices are available.
+- Full saved-library cleanup in addition to existing single-preset and single-headphone cleanup.
+
+### Changed
+
+- Selecting or deselecting EQ profiles is now a library-management action only; it does not automatically export or delete files.
+- New-headphone preset selection is non-destructive and no longer warns that unselected default profiles will be removed.
+- Export now requires an explicit target-device choice and writes only that target format.
+- Cleanup actions are separated from ordinary selection and can optionally remove only ownership-tracked files created by EQ Library.
+
+### Validation
+
+- Android CI and CodeQL passed on the exact beta commit promoted to release.
+- The permanently signed beta candidate passed test/lint/release assembly, APK alignment, pinned signing-certificate fingerprint verification, and SHA-256 generation.
+- Hands-on testing passed for in-place upgrade, OPRA browsing/selection, revised selection behavior, device-targeted export, app-owned file cleanup, UAPP import, and TRN Black Pearl import.
+- DX5 II and DX1 II export formats remain implemented but hardware-untested.
 
 ## [0.1.0] - 2026-08-16
 
