@@ -58,8 +58,7 @@ object SoundImpactSummary {
         return when {
             magnitude >= 6.0 -> "noticeably $verb ${region.label}"
             magnitude >= 3.0 -> "$verb ${region.label}"
-            weight < 0 -> "slightly $verb ${region.label}"
-            else -> "$verb slightly ${region.label}"
+            else -> "slightly $verb ${region.label}"
         }
     }
 
