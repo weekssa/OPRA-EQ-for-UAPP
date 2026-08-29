@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.BuildConfig
+import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshFailureReason
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityCategory
@@ -318,10 +319,8 @@ private fun ThemeOption(
 private fun formatCatalogTime(epochMillis: Long): String =
     DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(epochMillis))
 
-private fun unavailableCatalogMessage(reason: com.weekssa.opraeqforuapp.data.catalog.CatalogUnavailableReason): String =
-    when (reason) {
-        com.weekssa.opraeqforuapp.data.catalog.CatalogUnavailableReason.NoSavedCatalog ->
-            "No saved OPRA catalog is available yet. Connect to the internet and try refresh."
-        com.weekssa.opraeqforuapp.data.catalog.CatalogUnavailableReason.SavedCatalogInvalid ->
-            "The saved OPRA catalog could not be used. Try refresh to download a clean copy."
-    }
+private fun unavailableCatalogMessage(reason: CatalogRefreshFailureReason): String = when (reason) {
+    CatalogRefreshFailureReason.Network -> "Couldn’t download the OPRA source. Check your connection and try refresh."
+    CatalogRefreshFailureReason.InvalidCatalog -> "The downloaded OPRA source could not be processed. Try refresh again later."
+    CatalogRefreshFailureReason.Storage -> "EQ Library couldn’t save the OPRA source on this device."
+}
