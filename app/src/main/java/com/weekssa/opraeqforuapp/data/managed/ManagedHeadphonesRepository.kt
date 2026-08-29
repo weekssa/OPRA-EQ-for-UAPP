@@ -146,6 +146,9 @@ class ManagedHeadphonesRepository(
                 if (reconciled.profiles.isNotEmpty()) {
                     dao.upsertProfiles(reconciled.profiles)
                 }
+                reconciled.profileIdsToDelete.forEach { profileId ->
+                    dao.deleteProfile(headphone.productId, profileId)
+                }
                 summary += reconciled.changes
             }
 
