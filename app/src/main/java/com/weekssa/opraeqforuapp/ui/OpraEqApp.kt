@@ -66,7 +66,7 @@ import kotlinx.coroutines.launch
 
 private enum class TopLevelDestination(val label: String) {
     MyHeadphones("My Headphones"),
-    BrowseOpra("Browse OPRA"),
+    BrowseOpra("Browse EQs"),
 }
 
 private sealed interface ExportScope {
@@ -304,7 +304,7 @@ fun OpraEqApp(
                             } else {
                                 Icon(
                                     imageVector = Icons.Outlined.Refresh,
-                                    contentDescription = "Refresh OPRA catalog",
+                                    contentDescription = "Refresh EQ Library catalog",
                                 )
                             }
                         }
@@ -474,26 +474,26 @@ private fun refreshMessage(outcome: CatalogSyncOutcome): String {
         is CatalogRefreshResult.Success -> {
             val affected = outcome.managedChanges?.affectedProductIds?.size ?: 0
             when (affected) {
-                0 -> "OPRA catalog is up to date."
+                0 -> "EQ Library catalog is up to date."
                 1 -> "1 of your headphones has changes."
                 else -> "$affected of your headphones have changes."
             }
         }
         is CatalogRefreshResult.Failure -> when (result.reason) {
             CatalogRefreshFailureReason.Network -> if (result.usingSavedCatalog) {
-                "Couldn’t refresh OPRA. Using your saved catalog."
+                "Couldn’t refresh EQ Library. Using your saved catalog."
             } else {
-                "Couldn’t download the OPRA catalog."
+                "Couldn’t download the EQ Library catalog."
             }
             CatalogRefreshFailureReason.InvalidCatalog -> if (result.usingSavedCatalog) {
-                "Couldn’t use the new OPRA catalog. Your previous saved catalog is still available."
+                "Couldn’t use the new EQ Library catalog. Your previous saved catalog is still available."
             } else {
-                "The downloaded OPRA catalog couldn’t be processed."
+                "The downloaded EQ Library catalog couldn’t be processed."
             }
             CatalogRefreshFailureReason.Storage -> if (result.usingSavedCatalog) {
-                "Couldn’t save the new OPRA catalog. Using your previous saved catalog."
+                "Couldn’t save the new EQ Library catalog. Using your previous saved catalog."
             } else {
-                "Couldn’t save the OPRA catalog on this device."
+                "Couldn’t save the EQ Library catalog on this device."
             }
         }
     }
