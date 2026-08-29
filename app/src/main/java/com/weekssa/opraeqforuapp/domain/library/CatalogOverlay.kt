@@ -1,9 +1,11 @@
 package com.weekssa.opraeqforuapp.domain.library
 
+import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraCatalog
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.OpraProduct
 import com.weekssa.opraeqforuapp.domain.catalog.OpraVendor
+import java.util.Locale
 
 /**
  * Adds canonical v0.3 records on top of the complete legacy OPRA catalog.
@@ -12,6 +14,11 @@ import com.weekssa.opraeqforuapp.domain.catalog.OpraVendor
  * revision can carry v0.3 provenance/revision metadata, while every OPRA product/profile not
  * represented in the canonical snapshot remains available. Canonical-only sources and historical
  * revisions are appended with their stable synthetic IDs.
+ *
+ * The compatibility catalog can contain multiple legacy records for the exact same acoustic
+ * tuning. Those records remain source data, but the app should not make a person choose between
+ * acoustically identical rows. The rendered overlay therefore keeps one preferred visible record
+ * per exact normalized filter set and strips machine-only labels from the compatibility details.
  */
 fun overlayCanonicalCatalog(
     legacy: OpraCatalog,
@@ -26,13 +33,179 @@ fun overlayCanonicalCatalog(
     canonical.products.forEach { products[it.id] = it }
 
     val profiles = linkedMapOf<String, OpraEqProfile>()
-    legacy.profiles.forEach { profiles[it.id] = it }
-    canonical.profiles.forEach { profiles[it.id] = it }
+    legacy.profiles.forEach { profiles[it.id] = it.toUserFacingProfile(defaultSource = "OPRA") }
+    canonical.profiles.forEach { profiles[it.id] = it.toUserFacingProfile(defaultSource = null) }
 
     return OpraCatalog(
         vendors = vendors.values.toList(),
         products = products.values.toList(),
-        profiles = profiles.values.toList(),
+        profiles = deduplicateAcoustically(profiles.values.toList()),
         ignoredEntryCount = legacy.ignoredEntryCount + canonical.ignoredEntryCount,
     )
 }
+
+private fun deduplicateAcoustically(profiles: List<OpraEqProfile>): List<OpraEqProfile> {
+    val retained = linkedMapOf<String, OpraEqProfile>()
+    profiles.forEach { profile ->
+        val acousticKey = profile.acousticKey()
+        if (acousticKey == null) {
+            retained["id:${profile.id}"] = profile
+            return@forEach
+        }
+        val key = "${profile.productId}|$acousticKey"
+        val previous = retained[key]
+        if (previous == null || profile.preferenceScore() > previous.preferenceScore()) {
+            retained[key] = profile
+        }
+    }
+    return retained.values.toList()
+}
+
+private fun OpraEqProfile.preferenceScore(): Int {
+    var score = 0
+    val detailText = details.orEmpty()
+    if (detailText.contains("Source:", ignoreCase = true)) score += 100
+    if (detailText.contains("Latest", ignoreCase = true)) score += 20
+    if (id.startsWith("eq-library:", ignoreCase = true)) score += 10
+    if (!link.isNullOrBlank()) score += 5
+    if (!author.isNullOrBlank()) score += 1
+    return score
+}
+
+private fun OpraEqProfile.acousticKey(): String? {
+    val normalizedBands = bands.orEmpty().mapNotNull(OpraBand::normalizedKey).sorted()
+    if (normalizedBands.isEmpty()) return null
+    return buildString {
+        append("preamp=")
+        append(format(preampGainDb ?: 0.0, 3))
+        normalizedBands.forEach {
+            append(';')
+            append(it)
+        }
+    }
+}
+
+private fun OpraBand.normalizedKey(): String? {
+    val frequencyValue = frequency ?: return null
+    return listOf(
+        type.orEmpty().trim().lowercase(Locale.ROOT),
+        format(frequencyValue, 3),
+        format(gainDb ?: 0.0, 3),
+        format(q ?: 0.0, 4),
+        format(slope ?: 0.0, 4),
+    ).joinToString("|")
+}
+
+private fun OpraEqProfile.toUserFacingProfile(defaultSource: String?): OpraEqProfile {
+    val originalParts = details.orEmpty()
+        .split(" · ")
+        .map(String::trim)
+        .filter(String::isNotEmpty)
+
+    val status = originalParts.firstOrNull {
+        it.equals("Latest", ignoreCase = true) || it.equals("Previous revision", ignoreCase = true)
+    }
+    val revisionDate = originalParts.firstOrNull { it.startsWith("Revision date:", ignoreCase = true) }
+        ?.substringAfter(':')
+        ?.trim()
+        ?.takeIf(String::isNotEmpty)
+    val explicitTarget = originalParts.firstOrNull { it.startsWith("Target:", ignoreCase = true) }
+        ?.substringAfter(':')
+        ?.trim()
+        ?.takeIf(String::isNotEmpty)
+    val rawTarget = originalParts.firstNotNullOfOrNull(::targetFromRawLabel)
+    val target = humanizeTarget(explicitTarget ?: rawTarget)
+    val explicitSource = originalParts.firstOrNull { it.startsWith("Source:", ignoreCase = true) }
+        ?.substringAfter(':')
+        ?.trim()
+        ?.takeIf(String::isNotEmpty)
+    val source = humanizeSource(explicitSource ?: defaultSource)
+    val measurement = originalParts.firstNotNullOfOrNull(::measurementFromLabel)
+    val existingSoundSummary = originalParts.firstOrNull(::looksLikeSoundSummary)
+    val generatedSoundSummary = soundImpactFromLegacyBands()
+        ?: "Makes small frequency-response adjustments."
+
+    val compactDetails = buildList {
+        status?.let(::add)
+        if (status.equals("Previous revision", ignoreCase = true)) {
+            revisionDate?.let { add("Revision: $it") }
+        }
+        measurement?.let { add("Measurement: $it") }
+        target?.let { add("Target: $it") }
+        source?.let { add("Source: $it") }
+        add(existingSoundSummary ?: generatedSoundSummary)
+    }.distinct().joinToString(" · ")
+
+    return copy(details = compactDetails)
+}
+
+private fun targetFromRawLabel(value: String): String? = when {
+    value.startsWith("Target_", ignoreCase = true) -> value.substringAfter('_')
+    else -> null
+}
+
+private fun measurementFromLabel(value: String): String? {
+    val match = Regex("^AutoEq \\((.+) measurement\\)$", RegexOption.IGNORE_CASE).matchEntire(value)
+        ?: return null
+    return match.groupValues[1].trim().takeIf(String::isNotEmpty)
+}
+
+private fun humanizeTarget(value: String?): String? {
+    val cleaned = value
+        ?.trim()
+        ?.takeIf(String::isNotEmpty)
+        ?.replace('_', ' ')
+        ?: return null
+    return when (cleaned.lowercase(Locale.ROOT).replace(" ", "")) {
+        "rtingscom" -> "RTINGS.com"
+        "senselabaizu" -> "SenseLab Aizu"
+        else -> cleaned.replace(Regex("\\s+"), " ")
+    }
+}
+
+private fun humanizeSource(value: String?): String? = when (value?.trim()?.lowercase(Locale.ROOT)) {
+    null, "" -> null
+    "opra" -> "OPRA"
+    "autoeq" -> "AutoEQ"
+    else -> value.trim()
+}
+
+private fun looksLikeSoundSummary(value: String): Boolean {
+    val normalized = value.trim().lowercase(Locale.ROOT)
+    return normalized.endsWith('.') && listOf(
+        "adds ",
+        "reduces ",
+        "slightly adds ",
+        "slightly reduces ",
+        "noticeably adds ",
+        "noticeably reduces ",
+        "makes small ",
+    ).any(normalized::startsWith)
+}
+
+private fun OpraEqProfile.soundImpactFromLegacyBands(): String? {
+    val filters = bands.orEmpty().mapNotNull { band ->
+        val frequency = band.frequency ?: return@mapNotNull null
+        EqFilter(
+            type = band.type.toEqFilterType(),
+            frequencyHz = frequency,
+            gainDb = band.gainDb,
+            q = band.q,
+            slope = band.slope,
+        )
+    }
+    if (filters.isEmpty()) return null
+    return SoundImpactSummary.fromFilters(filters)
+}
+
+private fun String?.toEqFilterType(): EqFilterType = when (this?.trim()?.lowercase(Locale.ROOT)) {
+    "peak_dip", "peak", "pk", "peq" -> EqFilterType.PEAK
+    "low_shelf", "ls", "lsc" -> EqFilterType.LOW_SHELF
+    "high_shelf", "hs", "hsc" -> EqFilterType.HIGH_SHELF
+    "low_pass", "lp" -> EqFilterType.LOW_PASS
+    "high_pass", "hp" -> EqFilterType.HIGH_PASS
+    else -> EqFilterType.OTHER
+}
+
+private fun format(value: Double, decimals: Int): String =
+    String.format(Locale.US, "%.${decimals}f", value)
