@@ -10,7 +10,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
@@ -18,14 +21,22 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshFailureReason
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
+import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
+import kotlinx.coroutines.launch
 
 @Composable
 fun MyHeadphonesScreen(
@@ -35,6 +46,8 @@ fun MyHeadphonesScreen(
     onRefreshCatalog: () -> Unit,
     onExportPresets: () -> Unit,
     onOpenHeadphone: (String) -> Unit,
+    onRemoveManagedHeadphone: suspend (String, Boolean) -> PresetCleanupSummary?,
+    onMessage: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (managedHeadphones.isEmpty()) {
@@ -51,6 +64,83 @@ fun MyHeadphonesScreen(
         .groupBy(ManagedHeadphoneRecord::vendorName)
         .toSortedMap(String.CASE_INSENSITIVE_ORDER)
     val totalSelected = managedHeadphones.sumOf(ManagedHeadphoneRecord::selectedProfileCount)
+    val scope = rememberCoroutineScope()
+    var showClearLibraryDialog by remember { mutableStateOf(false) }
+    var deleteSavedFiles by remember { mutableStateOf(false) }
+
+    if (showClearLibraryDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearLibraryDialog = false },
+            title = { Text("Clear entire saved library?") },
+            text = {
+                Column {
+                    Text(
+                        "This removes all ${managedHeadphones.size} headphones and their saved preset selections from My Headphones. The source catalog, settings, and selected root folder are kept.",
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp)
+                            .toggleable(
+                                value = deleteSavedFiles,
+                                role = Role.Checkbox,
+                                onValueChange = { deleteSavedFiles = it },
+                            ),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Checkbox(
+                            checked = deleteSavedFiles,
+                            onCheckedChange = null,
+                        )
+                        Text(
+                            text = "Also delete all exported files created by EQ Library. Files EQ Library does not own will not be touched.",
+                            modifier = Modifier.padding(start = 8.dp),
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val headphonesToRemove = managedHeadphones.toList()
+                        val shouldDeleteFiles = deleteSavedFiles
+                        showClearLibraryDialog = false
+                        deleteSavedFiles = false
+                        scope.launch {
+                            var removedFiles = 0
+                            var failedFiles = 0
+                            headphonesToRemove.forEach { headphone ->
+                                val cleanup = onRemoveManagedHeadphone(
+                                    headphone.productId,
+                                    shouldDeleteFiles,
+                                )
+                                if (cleanup != null) {
+                                    removedFiles += cleanup.removedCount
+                                    failedFiles += cleanup.failedCount
+                                }
+                            }
+                            val message = when {
+                                !shouldDeleteFiles ->
+                                    "Saved headphone library cleared. Existing exported files were kept."
+                                failedFiles > 0 ->
+                                    "Saved headphone library cleared. $removedFiles exported files deleted; $failedFiles could not be removed."
+                                else ->
+                                    "Saved headphone library cleared. $removedFiles exported files deleted."
+                            }
+                            onMessage(message)
+                        }
+                    },
+                ) {
+                    Text("Clear entire library")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearLibraryDialog = false }) {
+                    Text("Cancel")
+                }
+            },
+        )
+    }
 
     LazyColumn(modifier = modifier.fillMaxSize()) {
         item(key = "export") {
@@ -103,6 +193,30 @@ fun MyHeadphonesScreen(
                 HorizontalDivider()
             }
         }
+        item(key = "library-cleanup") {
+            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp)) {
+                Text(
+                    text = "Library cleanup",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = "Remove individual presets or headphones by opening them above. Use this only when you want to clear the entire saved headphone library.",
+                    modifier = Modifier.padding(top = 6.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                TextButton(
+                    onClick = {
+                        deleteSavedFiles = false
+                        showClearLibraryDialog = true
+                    },
+                    modifier = Modifier.padding(top = 4.dp),
+                ) {
+                    Text("Clear saved library")
+                }
+            }
+        }
     }
 }
 
@@ -126,7 +240,7 @@ private fun EmptyMyHeadphones(
             textAlign = TextAlign.Center,
         )
         Text(
-            text = "Choose OPRA profiles to build your local preset library.",
+            text = "Choose EQ profiles to build your local preset library.",
             modifier = Modifier.padding(top = 12.dp),
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center,
@@ -142,7 +256,7 @@ private fun EmptyMyHeadphones(
             onClick = onBrowseOpra,
             modifier = Modifier.padding(top = 24.dp),
         ) {
-            Text("Browse OPRA")
+            Text("Browse EQs")
         }
 
         when (catalogState) {

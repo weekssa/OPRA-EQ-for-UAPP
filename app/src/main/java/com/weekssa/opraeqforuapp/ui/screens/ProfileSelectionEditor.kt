@@ -52,6 +52,7 @@ import com.weekssa.opraeqforuapp.domain.model.ProfileCompatibility
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityPreferences
 import kotlinx.coroutines.launch
 
+@Suppress("UNUSED_PARAMETER")
 @Composable
 internal fun ProfileSelectionEditor(
     catalog: OpraCatalog,
@@ -82,9 +83,6 @@ internal fun ProfileSelectionEditor(
     var autoInclude by remember(product.id) { mutableStateOf(DEFAULT_AUTO_INCLUDE_NEW_PROFILES) }
     var baselineAutoInclude by remember(product.id) { mutableStateOf(DEFAULT_AUTO_INCLUDE_NEW_PROFILES) }
     var showDiscardDialog by remember(product.id) { mutableStateOf(false) }
-    var pendingRemoval by remember(product.id) { mutableStateOf<RemovalRequest?>(null) }
-    var pendingExportAfterRemoval by remember(product.id) { mutableStateOf(false) }
-    var deleteSavedFiles by remember(product.id) { mutableStateOf(false) }
     var incompatibilityExplanation by remember(product.id) { mutableStateOf<String?>(null) }
 
     LaunchedEffect(product.id) {
@@ -112,31 +110,11 @@ internal fun ProfileSelectionEditor(
         autoIncludeNewProfiles = autoInclude,
         baselineAutoIncludeNewProfiles = baselineAutoInclude,
     )
-    val removedCurrentIds = baselineSelectedIds - stagedSelectedIds
     val retainedSelectedUnavailable = managedRecord?.profiles.orEmpty().count { it.selected && it.noLongerAvailable }
 
-    fun completeSave(
-        removeWholeHeadphone: Boolean,
-        removeIds: Set<String>,
-        deleteFiles: Boolean,
-        exportAfterSave: Boolean,
-    ) {
+    fun completeSave(exportAfterSave: Boolean) {
         scope.launch {
-            if (removeWholeHeadphone) {
-                onRemoveHeadphone(product.id)
-            } else {
-                onSaveSelection(product.id, stagedSelectedIds, autoInclude)
-            }
-            if (deleteFiles) {
-                val cleanup = if (removeWholeHeadphone) {
-                    onDeleteSavedFilesForProduct(product.id)
-                } else {
-                    onDeleteSavedFilesForProfiles(removeIds)
-                }
-                if (cleanup.failedCount > 0) {
-                    onMessage("Selection was saved, but ${cleanup.failedCount} saved preset files could not be removed.")
-                }
-            }
+            onSaveSelection(product.id, stagedSelectedIds, autoInclude)
             baselineSelectedIds = stagedSelectedIds
             baselineAutoInclude = autoInclude
             managedRecord = onLoadManagedHeadphone(product.id)
@@ -148,25 +126,7 @@ internal fun ProfileSelectionEditor(
 
     fun requestSave(exportAfterSave: Boolean = false) {
         if (exportAfterSave && stagedSelectedIds.isEmpty()) return
-        val removeWhole = stagedSelectedIds.isEmpty() && retainedSelectedUnavailable == 0 && managedRecord != null
-        when {
-            removeWhole -> {
-                deleteSavedFiles = false
-                pendingExportAfterRemoval = exportAfterSave
-                pendingRemoval = RemovalRequest.WholeHeadphone
-            }
-            removedCurrentIds.isNotEmpty() -> {
-                deleteSavedFiles = false
-                pendingExportAfterRemoval = exportAfterSave
-                pendingRemoval = RemovalRequest.Profiles(removedCurrentIds)
-            }
-            else -> completeSave(
-                removeWholeHeadphone = false,
-                removeIds = emptySet(),
-                deleteFiles = false,
-                exportAfterSave = exportAfterSave,
-            )
-        }
+        completeSave(exportAfterSave)
     }
 
     fun requestExport() {
@@ -188,7 +148,7 @@ internal fun ProfileSelectionEditor(
         AlertDialog(
             onDismissRequest = { showDiscardDialog = false },
             title = { Text("Discard changes?") },
-            text = { Text("Your unsaved profile-selection changes will be discarded.") },
+            text = { Text("Your unsaved preset-selection changes will be discarded.") },
             confirmButton = {
                 TextButton(onClick = {
                     showDiscardDialog = false
@@ -197,78 +157,6 @@ internal fun ProfileSelectionEditor(
             },
             dismissButton = {
                 TextButton(onClick = { showDiscardDialog = false }) { Text("Keep editing") }
-            },
-        )
-    }
-
-    pendingRemoval?.let { request ->
-        val wholeHeadphone = request is RemovalRequest.WholeHeadphone
-        AlertDialog(
-            onDismissRequest = {
-                pendingRemoval = null
-                pendingExportAfterRemoval = false
-            },
-            title = {
-                Text(
-                    if (wholeHeadphone) {
-                        "Remove headphone?"
-                    } else {
-                        "Remove ${(request as RemovalRequest.Profiles).profileIds.size} profiles?"
-                    },
-                )
-            },
-            text = {
-                Column {
-                    Text(
-                        if (wholeHeadphone) {
-                            "This headphone will be removed from My Headphones."
-                        } else {
-                            "These profiles will no longer be selected for this headphone."
-                        },
-                    )
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 12.dp)
-                            .toggleable(
-                                value = deleteSavedFiles,
-                                role = Role.Checkbox,
-                                onValueChange = { deleteSavedFiles = it },
-                            ),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Checkbox(
-                            checked = deleteSavedFiles,
-                            onCheckedChange = null,
-                        )
-                        Text(
-                            text = "Also remove saved preset files created by OPRA EQ for UAPP",
-                            modifier = Modifier.padding(start = 8.dp),
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    val removeIds = (request as? RemovalRequest.Profiles)?.profileIds.orEmpty()
-                    val exportAfterSave = pendingExportAfterRemoval
-                    pendingRemoval = null
-                    pendingExportAfterRemoval = false
-                    completeSave(
-                        removeWholeHeadphone = wholeHeadphone,
-                        removeIds = removeIds,
-                        deleteFiles = deleteSavedFiles,
-                        exportAfterSave = exportAfterSave,
-                    )
-                }) {
-                    Text(if (wholeHeadphone) "Remove headphone" else "Remove profiles")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    pendingRemoval = null
-                    pendingExportAfterRemoval = false
-                }) { Text("Cancel") }
             },
         )
     }
@@ -346,6 +234,13 @@ internal fun ProfileSelectionEditor(
             )
         }
 
+        Text(
+            text = "Changing this selection does not delete exported files. Remove presets or the headphone from My Headphones when you want saved files cleaned up.",
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
         if (hiddenCount > 0) {
             Text(
                 text = "$hiddenCount OPRA profiles hidden by your compatibility filter.",
@@ -368,14 +263,14 @@ internal fun ProfileSelectionEditor(
             enabled = commitEnabled,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
         ) {
-            Text(if (managedRecord == null) "Add to My Headphones" else "Save changes")
+            Text(if (managedRecord == null) "Add to My Headphones" else "Save selection")
         }
         OutlinedButton(
             onClick = ::requestExport,
             enabled = stagedSelectedIds.isNotEmpty(),
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
         ) {
-            Text("Export XMLs")
+            Text("Export selected presets")
         }
 
         LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -393,7 +288,7 @@ internal fun ProfileSelectionEditor(
                     },
                     onExplainIncompatibility = {
                         incompatibilityExplanation = assessment.reason
-                            ?: "This OPRA profile cannot be converted safely by the established UAPP/ToneBoosters mapping."
+                            ?: "This OPRA profile cannot be converted safely for the selected export target."
                     },
                 )
                 HorizontalDivider()
@@ -456,9 +351,4 @@ internal fun ProfileSelectionRow(
         },
         modifier = rowModifier,
     )
-}
-
-private sealed interface RemovalRequest {
-    data object WholeHeadphone : RemovalRequest
-    data class Profiles(val profileIds: Set<String>) : RemovalRequest
 }

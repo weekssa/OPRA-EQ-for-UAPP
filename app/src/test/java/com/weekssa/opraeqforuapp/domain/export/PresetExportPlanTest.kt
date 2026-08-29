@@ -54,6 +54,25 @@ class PresetExportPlanTest {
     }
 
     @Test
+    fun eqLibraryPlanCanTargetExactlyOneDevice() {
+        val headphone = headphone(
+            vendor = "Sennheiser",
+            model = "HD 650",
+            profiles = listOf(profile("p1", selected = true, presetName = "HD 650 - Creator - Target")),
+        )
+
+        val uapp = buildEqLibraryExportPlan(listOf(headphone), ExportDevice.UAPP)
+        assertEquals(1, uapp.candidates.size)
+        assertTrue(uapp.candidates.all { it.deviceName == ExportDevice.UAPP.folderName })
+        assertTrue(uapp.candidates.all { it.relativeDirectory.startsWith("UAPP/") })
+
+        val blackPearl = buildEqLibraryExportPlan(listOf(headphone), ExportDevice.BLACK_PEARL)
+        assertEquals(1, blackPearl.candidates.size)
+        assertTrue(blackPearl.candidates.all { it.deviceName == ExportDevice.BLACK_PEARL.folderName })
+        assertTrue(blackPearl.candidates.all { it.relativeDirectory.startsWith("TRN Black Pearl/") })
+    }
+
+    @Test
     fun folderSanitizationPreservesUnicodeAndOnlyRemovesPathSeparators() {
         assertEquals("A-B 測定", safeSharedPathSegment(" A/B 測定 "))
         assertEquals("Model-Variant", safeSharedPathSegment("Model\\Variant"))

@@ -16,16 +16,19 @@ import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.Headphones
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -46,6 +49,7 @@ import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
 import com.weekssa.opraeqforuapp.data.export.PresetExportSummary
 import com.weekssa.opraeqforuapp.data.sync.CatalogSyncOutcome
 import com.weekssa.opraeqforuapp.data.update.AppUpdateCheckResult
+import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityCategory
@@ -65,9 +69,22 @@ private enum class TopLevelDestination(val label: String) {
     BrowseOpra("Browse OPRA"),
 }
 
+private sealed interface ExportScope {
+    data object AllManaged : ExportScope
+    data class Product(val productId: String) : ExportScope
+}
+
 private sealed interface ExportRequest {
-    data object AllManaged : ExportRequest
-    data class Product(val productId: String) : ExportRequest
+    val device: ExportDevice
+
+    data class AllManaged(
+        override val device: ExportDevice,
+    ) : ExportRequest
+
+    data class Product(
+        val productId: String,
+        override val device: ExportDevice,
+    ) : ExportRequest
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -86,8 +103,8 @@ fun OpraEqApp(
     onDeleteSavedFilesForProduct: suspend (String) -> PresetCleanupSummary,
     onMarkReviewed: suspend (String) -> Unit,
     onPersistExportTree: suspend (Uri) -> Boolean,
-    onExportSelected: suspend (Uri) -> PresetExportSummary,
-    onExportProduct: suspend (Uri, String) -> PresetExportSummary,
+    onExportSelected: suspend (Uri, ExportDevice) -> PresetExportSummary,
+    onExportProduct: suspend (Uri, String, ExportDevice) -> PresetExportSummary,
     onCheckForUpdates: suspend () -> AppUpdateCheckResult,
     onDismissUpdate: suspend (String) -> Unit,
     onDismissPostUpdate: suspend () -> Unit,
@@ -99,6 +116,7 @@ fun OpraEqApp(
     var selectedManagedProductId by rememberSaveable { mutableStateOf<String?>(null) }
     var settingsOpen by rememberSaveable { mutableStateOf(false) }
     var pendingExportRequest by remember { mutableStateOf<ExportRequest?>(null) }
+    var pendingExportScope by remember { mutableStateOf<ExportScope?>(null) }
     var whatsNewVersion by remember { mutableStateOf<String?>(null) }
     var whatsNewNotes by remember { mutableStateOf("") }
     val destinations = remember { TopLevelDestination.entries }
@@ -149,8 +167,8 @@ fun OpraEqApp(
                 snackbarHostState.showSnackbar("Couldn’t retain access to that folder. Choose another folder.")
             } else {
                 val summary = when (request) {
-                    ExportRequest.AllManaged -> onExportSelected(uri)
-                    is ExportRequest.Product -> onExportProduct(uri, request.productId)
+                    is ExportRequest.AllManaged -> onExportSelected(uri, request.device)
+                    is ExportRequest.Product -> onExportProduct(uri, request.productId, request.device)
                     null -> null
                 }
                 summary?.let { snackbarHostState.showSnackbar(exportMessage(it)) }
@@ -163,33 +181,34 @@ fun OpraEqApp(
         folderPicker.launch(appPreferences.exportTreeUri?.let(Uri::parse))
     }
 
-    val requestExportAll: () -> Unit = {
+    val runExportRequest: (ExportRequest) -> Unit = { request ->
         val storedUri = appPreferences.exportTreeUri?.let(Uri::parse)
         if (storedUri == null) {
-            chooseExportFolder(ExportRequest.AllManaged)
+            chooseExportFolder(request)
         } else {
             scope.launch {
-                snackbarHostState.showSnackbar(exportMessage(onExportSelected(storedUri)))
+                val summary = when (request) {
+                    is ExportRequest.AllManaged -> onExportSelected(storedUri, request.device)
+                    is ExportRequest.Product -> onExportProduct(storedUri, request.productId, request.device)
+                }
+                snackbarHostState.showSnackbar(exportMessage(summary))
             }
         }
     }
 
+    val requestExportAll: () -> Unit = {
+        pendingExportScope = ExportScope.AllManaged
+    }
+
     val requestExportProduct: (String) -> Unit = { productId ->
-        val storedUri = appPreferences.exportTreeUri?.let(Uri::parse)
-        if (storedUri == null) {
-            chooseExportFolder(ExportRequest.Product(productId))
-        } else {
-            scope.launch {
-                snackbarHostState.showSnackbar(exportMessage(onExportProduct(storedUri, productId)))
-            }
-        }
+        pendingExportScope = ExportScope.Product(productId)
     }
 
     val requestUpdateCheck: () -> Unit = {
         scope.launch {
             val message = when (val result = onCheckForUpdates()) {
                 is AppUpdateCheckResult.UpdateAvailable -> "Version ${result.release.version} is available."
-                is AppUpdateCheckResult.UpToDate -> "OPRA EQ for UAPP is up to date."
+                is AppUpdateCheckResult.UpToDate -> "EQ Library is up to date."
                 AppUpdateCheckResult.Unavailable -> "Couldn’t check for updates right now. Try again later."
             }
             snackbarHostState.showSnackbar(message)
@@ -202,6 +221,56 @@ fun OpraEqApp(
                 snackbarHostState.showSnackbar(refreshMessage(onRefreshCatalog()))
             }
         }
+    }
+
+    pendingExportScope?.let { exportScope ->
+        AlertDialog(
+            onDismissRequest = { pendingExportScope = null },
+            title = { Text("Export to device") },
+            text = {
+                Column {
+                    Text(
+                        text = "Choose one target. Only that device format will be exported.",
+                        modifier = Modifier.padding(bottom = 8.dp),
+                    )
+                    ExportDevice.entries.forEach { device ->
+                        TextButton(
+                            onClick = {
+                                pendingExportScope = null
+                                val request = when (exportScope) {
+                                    ExportScope.AllManaged -> ExportRequest.AllManaged(device)
+                                    is ExportScope.Product -> ExportRequest.Product(exportScope.productId, device)
+                                }
+                                runExportRequest(request)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Text(device.folderName, style = MaterialTheme.typography.titleMedium)
+                                Text(
+                                    text = exportDeviceDescription(device),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                device.validationStatus?.let { status ->
+                                    Text(
+                                        text = "$status · hardware validation pending",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.tertiary,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { pendingExportScope = null }) {
+                    Text("Cancel")
+                }
+            },
+        )
     }
 
     BackHandler(enabled = settingsOpen) {
@@ -339,6 +408,8 @@ fun OpraEqApp(
                                     onRefreshCatalog = requestCatalogRefresh,
                                     onExportPresets = requestExportAll,
                                     onOpenHeadphone = { selectedManagedProductId = it },
+                                    onRemoveManagedHeadphone = onRemoveManagedHeadphone,
+                                    onMessage = ::showMessage,
                                     modifier = Modifier.fillMaxSize(),
                                 )
                             }
@@ -363,16 +434,38 @@ fun OpraEqApp(
             }
         }
     }
+
+    if (whatsNewVersion != null) {
+        WhatsNewDialog(
+            version = whatsNewVersion.orEmpty(),
+            notes = whatsNewNotes,
+            onDismiss = {
+                whatsNewVersion = null
+                whatsNewNotes = ""
+            },
+        )
+    }
 }
 
-private fun exportMessage(summary: PresetExportSummary): String = when {
-    summary.accessLost -> "Export folder access was lost. Choose the folder again."
-    summary.results.isEmpty() -> "No selected presets are ready to export."
-    summary.conflictCount > 0 || summary.failedCount > 0 ->
-        "${summary.successfulCount} presets saved/current · ${summary.conflictCount + summary.failedCount} need review."
-    summary.createdCount > 0 || summary.updatedCount > 0 ->
-        "${summary.createdCount} new · ${summary.updatedCount} updated · ${summary.currentCount} already current."
-    else -> "All ${summary.currentCount} selected presets are already current."
+private fun exportDeviceDescription(device: ExportDevice): String = when (device) {
+    ExportDevice.UAPP -> "UAPP / ToneBoosters XML"
+    ExportDevice.BLACK_PEARL -> "10-band Black Pearl-compatible PK text"
+    ExportDevice.TOPPING_DX5_II -> "TOPPING Tune text for DX5 II"
+    ExportDevice.TOPPING_DX1_II -> "TOPPING Tune text for DX1 II"
+}
+
+private fun exportMessage(summary: PresetExportSummary): String {
+    val message = when {
+        summary.accessLost -> "Export folder access was lost. Choose the folder again."
+        summary.results.isEmpty() -> "No selected presets are ready to export."
+        summary.conflictCount > 0 || summary.failedCount > 0 ->
+            "${summary.successfulCount} presets saved/current · ${summary.conflictCount + summary.failedCount} need review."
+        summary.createdCount > 0 || summary.updatedCount > 0 ->
+            "${summary.createdCount} new · ${summary.updatedCount} updated · ${summary.currentCount} already current."
+        else -> "All ${summary.currentCount} selected presets are already current."
+    }
+    val device = summary.results.firstOrNull()?.candidate?.deviceName
+    return if (device == null) message else "$device · $message"
 }
 
 private fun refreshMessage(outcome: CatalogSyncOutcome): String {

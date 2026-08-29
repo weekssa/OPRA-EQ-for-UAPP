@@ -4,8 +4,10 @@ import android.content.Context
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
 import com.weekssa.opraeqforuapp.data.managed.OpraEqDatabase
+import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.export.PresetExportCandidate
-import com.weekssa.opraeqforuapp.domain.export.buildPresetExportPlan
+import com.weekssa.opraeqforuapp.domain.export.buildEqLibraryExportPlan
+import com.weekssa.opraeqforuapp.domain.export.presetBytes
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import java.io.IOException
 import kotlinx.coroutines.Dispatchers
@@ -37,6 +39,9 @@ data class PresetExportSummary(
     val conflictCount = results.count { it is PresetExportItemResult.Conflict }
     val failedCount = results.count { it is PresetExportItemResult.Failed }
     val successfulCount = createdCount + updatedCount + currentCount
+    val devicesWritten: Set<String> = results
+        .filter { it is PresetExportItemResult.Created || it is PresetExportItemResult.Updated || it is PresetExportItemResult.Current }
+        .mapTo(linkedSetOf()) { it.candidate.deviceName }
 }
 
 class PresetExportRepository(
@@ -51,12 +56,13 @@ class PresetExportRepository(
     suspend fun exportSelected(
         treeUri: Uri,
         headphones: List<ManagedHeadphoneRecord>,
+        device: ExportDevice,
     ): PresetExportSummary = withContext(Dispatchers.IO) {
-        val plan = buildPresetExportPlan(headphones)
+        val plan = buildEqLibraryExportPlan(headphones, device)
         val results = plan.duplicateConflicts.map { candidate ->
             PresetExportItemResult.Conflict(
                 candidate,
-                "Two selected OPRA profiles resolve to the same deterministic filename. No file was written.",
+                "Two selected EQ profiles resolve to the same deterministic filename. No file was written.",
             )
         }.toMutableList<PresetExportItemResult>()
 
@@ -85,17 +91,18 @@ class PresetExportRepository(
         treeUri: Uri,
         candidate: PresetExportCandidate,
     ): PresetExportItemResult {
-        val manufacturerDirectory = ensureDirectory(root, candidate.manufacturerName)
-            ?: return PresetExportItemResult.Failed(candidate, "Couldn’t create or access the manufacturer folder.")
-        val modelDirectory = ensureDirectory(manufacturerDirectory, candidate.modelName)
-            ?: return PresetExportItemResult.Failed(candidate, "Couldn’t create or access the model folder.")
+        var targetDirectory = root
+        for (segment in candidate.relativeDirectory.split('/').filter(String::isNotBlank)) {
+            targetDirectory = ensureDirectory(targetDirectory, segment)
+                ?: return PresetExportItemResult.Failed(candidate, "Couldn’t create or access ${candidate.relativeDirectory}.")
+        }
 
-        val existing = modelDirectory.findFile(candidate.fileName)
+        val existing = targetDirectory.findFile(candidate.fileName)
         if (existing != null) {
             val ownership = ownershipDao.getByDocumentUri(existing.uri.toString())
                 ?: return PresetExportItemResult.Conflict(
                     candidate,
-                    "A file with this deterministic name already exists and is not known to be managed by OPRA EQ for UAPP.",
+                    "A file with this deterministic name already exists and is not known to be managed by EQ Library.",
                 )
             if (ownership.profileId != candidate.profileId || ownership.productId != candidate.productId) {
                 return PresetExportItemResult.Conflict(
@@ -104,7 +111,7 @@ class PresetExportRepository(
                 )
             }
 
-            val expectedBytes = candidate.xml.toByteArray(Charsets.ISO_8859_1)
+            val expectedBytes = presetBytes(candidate)
             val currentHash = readContentHash(existing.uri)
             if (
                 ownership.exportedFingerprint == candidate.generatedFingerprint &&
@@ -131,7 +138,7 @@ class PresetExportRepository(
             }
         }
 
-        val created = modelDirectory.createFile(XML_MIME_TYPE, candidate.fileName)
+        val created = targetDirectory.createFile(candidate.mimeType, candidate.fileName)
             ?: return PresetExportItemResult.Failed(candidate, "The preset file could not be created.")
         if (created.name != candidate.fileName) {
             runCatching { created.delete() }
@@ -141,7 +148,7 @@ class PresetExportRepository(
             )
         }
 
-        val bytes = candidate.xml.toByteArray(Charsets.ISO_8859_1)
+        val bytes = presetBytes(candidate)
         if (!writeBytes(created.uri, bytes)) {
             runCatching { created.delete() }
             return PresetExportItemResult.Failed(candidate, "The preset file could not be written.")
@@ -212,7 +219,6 @@ class PresetExportRepository(
     }
 
     companion object {
-        private const val XML_MIME_TYPE = "application/xml"
         private const val MAX_BACKUP_BYTES = 1024 * 1024
     }
 }
