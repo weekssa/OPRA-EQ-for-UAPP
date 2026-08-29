@@ -94,6 +94,7 @@ object CommunityProfileAdapter {
                     filters = parsed.filters,
                     sourceReferences = listOf(sourceReference),
                     sourceVersionLabel = metadata.sourceVersionLabel,
+                    soundImpactSummary = SoundImpactSummary.fromFilters(parsed.filters),
                     firstSeenAtEpochSeconds = metadata.discoveredAtEpochSeconds,
                     sourceUpdatedAtEpochSeconds = metadata.sourceUpdatedAtEpochSeconds,
                     isLatest = true,
