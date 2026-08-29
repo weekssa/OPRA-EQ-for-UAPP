@@ -66,6 +66,7 @@ object OpraProfileAdapter {
                     preampGainDb = profile.preampGainDb,
                     filters = filters,
                     sourceReferences = listOf(sourceReference),
+                    soundImpactSummary = SoundImpactSummary.fromFilters(filters),
                     firstSeenAtEpochSeconds = discoveredAtEpochSeconds,
                     isLatest = true,
                 ),
