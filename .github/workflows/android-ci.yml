@@ -41,8 +41,17 @@ jobs:
           gradle-version: "9.4.1"
           cache-provider: basic
 
-      - name: Run tests, lint, and assemble debug/release builds
-        run: gradle :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleRelease --stacktrace
+      - name: Run unit tests
+        run: gradle :app:testDebugUnitTest --stacktrace
+
+      - name: Run Android lint
+        run: gradle :app:lintDebug --stacktrace
+
+      - name: Assemble debug APK
+        run: gradle :app:assembleDebug --stacktrace
+
+      - name: Assemble release APK
+        run: gradle :app:assembleRelease --stacktrace
 
       - name: Upload debug APK for device testing
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
