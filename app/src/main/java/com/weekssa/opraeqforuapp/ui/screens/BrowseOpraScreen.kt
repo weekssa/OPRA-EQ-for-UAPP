@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
 import com.weekssa.opraeqforuapp.domain.catalog.OpraCatalog
+import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.OpraProduct
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityPreferences
@@ -44,6 +45,8 @@ fun BrowseOpraScreen(
     catalogState: CatalogState,
     profileVisibility: ProfileVisibilityPreferences,
     managedHeadphones: List<ManagedHeadphoneRecord>,
+    favoriteProfileIds: Set<String>,
+    onToggleFavorite: suspend (OpraEqProfile, String, String) -> Boolean,
     onLoadManagedHeadphone: suspend (String) -> ManagedHeadphoneRecord?,
     onSaveSelection: suspend (String, Set<String>, Boolean) -> Unit,
     onRemoveHeadphone: suspend (String) -> Unit,
@@ -93,6 +96,8 @@ fun BrowseOpraScreen(
                     catalog = catalog,
                     product = product,
                     profileVisibility = profileVisibility,
+                    favoriteProfileIds = favoriteProfileIds,
+                    onToggleFavorite = onToggleFavorite,
                     onLoadManagedHeadphone = onLoadManagedHeadphone,
                     onSaveSelection = onSaveSelection,
                     onRemoveHeadphone = onRemoveHeadphone,
