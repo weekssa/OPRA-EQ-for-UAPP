@@ -10,13 +10,11 @@ import java.util.Locale
 /**
  * Compatibility bridge for the v0.2 managed-headphone/export engine.
  *
- * Only latest canonical revisions are projected here. Historical revisions remain in the
- * canonical model and will be surfaced by revision-aware UI instead of being implicitly
- * selected by legacy auto-include behavior.
- *
- * When a canonical headphone has OPRA provenance, the original OPRA vendor/product/profile
- * IDs are retained for the latest OPRA revision. This preserves existing v0.2 managed state
- * while allowing additional source profiles to share the same logical headphone.
+ * Canonical revisions are projected as selectable legacy profiles so the stable v0.2 selection
+ * and export engine can support v0.3 revision-aware behavior without a second export path.
+ * The latest OPRA-backed revision retains its original OPRA profile ID to preserve existing v0.2
+ * managed state. Historical revisions always receive stable synthetic IDs and can therefore be
+ * selected/exported explicitly without silently moving a saved selection to a newer revision.
  */
 object CanonicalLegacyCatalogAdapter {
     fun adapt(snapshot: CatalogSnapshot): OpraCatalog {
@@ -43,7 +41,7 @@ object CanonicalLegacyCatalogAdapter {
                     subtype = "",
                 )
                 canonicalProfiles.forEach { canonical ->
-                    profiles += latestProfile(canonical, identity.productId)
+                    profiles += revisionProfiles(canonical, identity.productId)
                 }
             }
 
@@ -54,15 +52,31 @@ object CanonicalLegacyCatalogAdapter {
         )
     }
 
-    private fun latestProfile(profile: CanonicalEqProfile, productId: String): OpraEqProfile {
-        val revision = profile.latestRevision
+    private fun revisionProfiles(profile: CanonicalEqProfile, productId: String): List<OpraEqProfile> =
+        profile.revisions
+            .sortedWith(
+                compareByDescending<EqRevision> { it.isLatest }
+                    .thenByDescending {
+                        it.sourceUpdatedAtEpochSeconds ?: it.firstSeenAtEpochSeconds ?: Long.MIN_VALUE
+                    },
+            )
+            .map { revision -> revisionProfile(profile, revision, productId) }
+
+    private fun revisionProfile(
+        profile: CanonicalEqProfile,
+        revision: EqRevision,
+        productId: String,
+    ): OpraEqProfile {
         val primary = revision.sourceReferences.firstOrNull { it.isPrimary }
             ?: revision.sourceReferences.firstOrNull()
         val opra = revision.sourceReferences.firstOrNull {
             it.sourceId == "opra" && !it.sourceRecordId.isNullOrBlank()
         }
-        val legacyProfileId = opra?.sourceRecordId
-            ?: "eq-library:${profile.canonicalProfileId}@${revision.revisionId}"
+        val legacyProfileId = if (revision.isLatest && opra != null) {
+            requireNotNull(opra.sourceRecordId)
+        } else {
+            "eq-library:${profile.canonicalProfileId}@${revision.revisionId}"
+        }
 
         return OpraEqProfile(
             id = legacyProfileId,
@@ -113,12 +127,29 @@ object CanonicalLegacyCatalogAdapter {
         primary: EqSourceReference?,
     ): String? {
         val parts = buildList {
+            add(if (revision.isLatest) "Latest" else "Previous revision")
             profile.tuningLabel?.takeIf(String::isNotBlank)?.let(::add)
             profile.target.name?.takeIf(String::isNotBlank)?.let { add("Target: $it") }
-            primary?.sourceId?.takeIf(String::isNotBlank)?.let { add("Source: $it") }
+            primary?.sourceId?.takeIf(String::isNotBlank)?.let { add("Source: ${displaySourceId(it)}") }
+            primary?.provenanceTier?.let { add("Provenance: ${displayProvenance(it)}") }
+            revision.sourceVersionLabel?.takeIf(String::isNotBlank)?.let { add("Version: $it") }
             revision.soundImpactSummary?.takeIf(String::isNotBlank)?.let(::add)
         }
         return parts.distinct().joinToString(" · ").takeIf(String::isNotBlank)
+    }
+
+    private fun displaySourceId(value: String): String = when (value.lowercase(Locale.ROOT)) {
+        "opra" -> "OPRA"
+        "autoeq" -> "AutoEQ"
+        else -> value
+    }
+
+    private fun displayProvenance(value: ProvenanceTier): String = when (value) {
+        ProvenanceTier.AUTHORITATIVE -> "authoritative"
+        ProvenanceTier.MEASUREMENT_DERIVED -> "measurement-derived"
+        ProvenanceTier.TRACEABLE_COMMUNITY -> "traceable community"
+        ProvenanceTier.MIRROR -> "mirror"
+        ProvenanceTier.NEEDS_REVIEW -> "needs review"
     }
 
     private fun displayProductName(headphone: HeadphoneIdentity): String = buildList {
