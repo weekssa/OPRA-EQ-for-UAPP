@@ -33,6 +33,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
+import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.assessCompatibility
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedProfileRecord
@@ -45,6 +46,8 @@ fun ManagedHeadphoneDetailScreen(
     headphone: ManagedHeadphoneRecord,
     catalogState: CatalogState,
     profileVisibility: ProfileVisibilityPreferences,
+    favoriteProfileIds: Set<String>,
+    onToggleFavorite: suspend (OpraEqProfile, String, String) -> Boolean,
     onLoadManagedHeadphone: suspend (String) -> ManagedHeadphoneRecord?,
     onSaveSelection: suspend (String, Set<String>, Boolean) -> Unit,
     onRemoveHeadphone: suspend (String) -> Unit,
@@ -71,6 +74,8 @@ fun ManagedHeadphoneDetailScreen(
             catalog = readyCatalog.catalog,
             product = product,
             profileVisibility = profileVisibility,
+            favoriteProfileIds = favoriteProfileIds,
+            onToggleFavorite = onToggleFavorite,
             onLoadManagedHeadphone = onLoadManagedHeadphone,
             onSaveSelection = onSaveSelection,
             onRemoveHeadphone = onRemoveHeadphone,
@@ -156,9 +161,9 @@ fun ManagedHeadphoneDetailScreen(
         )
         Text(
             text = if (headphone.autoIncludeNewProfiles) {
-                "Automatically include new compatible OPRA profiles: On"
+                "Automatically include new compatible EQ profiles: On"
             } else {
-                "Automatically include new compatible OPRA profiles: Off"
+                "Automatically include new compatible EQ profiles: Off"
             },
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
             style = MaterialTheme.typography.bodyMedium,
@@ -172,7 +177,7 @@ fun ManagedHeadphoneDetailScreen(
             }
         } else {
             Text(
-                text = "This headphone is no longer present in the current OPRA catalog. Retained presets remain available until you remove them.",
+                text = "This headphone is no longer present in the current EQ Library catalog. Retained presets remain available until you remove them.",
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -222,7 +227,7 @@ private fun ManagedProfileRow(
             Column {
                 source.details?.let { Text(it) }
                 when {
-                    profile.noLongerAvailable -> Text("No longer available in OPRA")
+                    profile.noLongerAvailable -> Text("No longer available in EQ Library")
                     compatibility == ProfileCompatibility.NotCompatible -> Text("Not compatible · unavailable for selection")
                     compatibility == ProfileCompatibility.CompatibleWithLimitation -> Text("Compatible with limitation")
                     profile.selected -> Text("Selected")
