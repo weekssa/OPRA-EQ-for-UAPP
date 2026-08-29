@@ -229,6 +229,7 @@ private fun humanReadableContext(value: String, status: String?, target: String?
 
 private fun targetFromRawLabel(value: String): String? = when {
     value.startsWith("Target_", ignoreCase = true) -> value.substringAfter('_')
+    value.equals("HRTF_5128_Diffuse_Field", ignoreCase = true) -> value
     else -> null
 }
 
