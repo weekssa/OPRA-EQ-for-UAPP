@@ -23,16 +23,18 @@ object AcousticFingerprint {
     private fun normalize(filter: EqFilter): String = listOf(
         normalizeType(filter.type),
         format(filter.frequencyHz, 3),
-        format(filter.gainDb, 3),
+        format(filter.gainDb ?: 0.0, 3),
         format(filter.q ?: 0.0, 4),
         format(filter.slope ?: 0.0, 4),
     ).joinToString("|")
 
-    private fun normalizeType(value: String): String = when (value.trim().uppercase(Locale.ROOT)) {
-        "PK", "PEQ", "PEAK", "PEAKING" -> "PK"
-        "LS", "LSC", "LOW_SHELF", "LOWSHELF" -> "LS"
-        "HS", "HSC", "HIGH_SHELF", "HIGHSHELF" -> "HS"
-        else -> value.trim().uppercase(Locale.ROOT)
+    private fun normalizeType(value: EqFilterType): String = when (value) {
+        EqFilterType.PEAK -> "PK"
+        EqFilterType.LOW_SHELF -> "LS"
+        EqFilterType.HIGH_SHELF -> "HS"
+        EqFilterType.LOW_PASS -> "LP"
+        EqFilterType.HIGH_PASS -> "HP"
+        EqFilterType.OTHER -> "OTHER"
     }
 
     private fun format(value: Double, decimals: Int): String =
