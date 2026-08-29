@@ -21,14 +21,23 @@ object OpraCanonicalCatalogAdapter {
                     )
                 }
             }
+            .distinctBy { profile ->
+                val revision = profile.latestRevision
+                listOf(profile.headphone.normalizedKey, revision.acousticFingerprint)
+            }
+            .sortedWith(
+                compareBy<CanonicalEqProfile> { it.headphone.manufacturer.lowercase() }
+                    .thenBy { it.headphone.model.lowercase() }
+                    .thenBy { it.creator.orEmpty().lowercase() }
+                    .thenBy { it.tuningLabel.orEmpty().lowercase() },
+            )
             .toList()
 
-        val deduplicated = EqCatalogBuilder.mergeProfiles(profiles)
         return CatalogSnapshot(
             schemaVersion = 1,
             generatedAt = generatedAt,
             sourceRegistryVersion = sourceRegistryVersion,
-            profiles = deduplicated,
+            profiles = profiles,
             sources = listOf(
                 SourceStatus(
                     sourceId = "opra",
