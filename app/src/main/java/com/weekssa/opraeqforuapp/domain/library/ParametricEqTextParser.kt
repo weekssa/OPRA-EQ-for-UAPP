@@ -66,8 +66,7 @@ object ParametricEqTextParser {
             when (type) {
                 EqFilterType.PEAK,
                 EqFilterType.LOW_SHELF,
-                EqFilterType.HIGH_SHELF,
-                -> if (gain == null) return@forEach
+                EqFilterType.HIGH_SHELF -> if (gain == null) return@forEach
 
                 else -> Unit
             }
