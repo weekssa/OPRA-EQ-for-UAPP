@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
 import com.weekssa.opraeqforuapp.data.managed.OpraEqDatabase
+import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.export.PresetExportCandidate
 import com.weekssa.opraeqforuapp.domain.export.buildEqLibraryExportPlan
 import com.weekssa.opraeqforuapp.domain.export.presetBytes
@@ -55,8 +56,9 @@ class PresetExportRepository(
     suspend fun exportSelected(
         treeUri: Uri,
         headphones: List<ManagedHeadphoneRecord>,
+        device: ExportDevice,
     ): PresetExportSummary = withContext(Dispatchers.IO) {
-        val plan = buildEqLibraryExportPlan(headphones)
+        val plan = buildEqLibraryExportPlan(headphones, device)
         val results = plan.duplicateConflicts.map { candidate ->
             PresetExportItemResult.Conflict(
                 candidate,
