@@ -93,32 +93,32 @@ fun SettingsScreen(
         )
 
         SectionDivider()
-        SectionTitle("Presets")
-        Text("Export folder")
+        SectionTitle("Exports")
+        Text("EQ Library root folder")
         Text(
             text = appPreferences.exportTreeLabel ?: "Not chosen yet",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            text = "Suggested location: Documents/OPRA EQ for UAPP/Presets. You can choose any folder offered by Android.",
+            text = "Suggested location: Documents/EQ Library. Each export creates device-first folders for UAPP, TRN Black Pearl, Topping DX5 II, and Topping DX1 II.",
             modifier = Modifier.padding(top = 4.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         TextButton(onClick = onChangeExportFolder) {
-            Text(if (appPreferences.exportTreeUri == null) "Choose folder" else "Change folder")
+            Text(if (appPreferences.exportTreeUri == null) "Choose root folder" else "Change root folder")
         }
         if (appPreferences.exportTreeUri != null) {
             Text(
-                text = "Changing the folder affects future exports only. Files in the previous folder are not moved or deleted.",
+                text = "Changing the root affects future exports only. Existing files are not moved or deleted.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
         SectionDivider()
-        SectionTitle("OPRA catalog")
+        SectionTitle("OPRA source")
         when (catalogState) {
             CatalogState.Loading -> Text(
                 text = "Downloading OPRA catalog…",
@@ -137,7 +137,7 @@ fun SettingsScreen(
             }
             is CatalogState.Ready -> {
                 Text(
-                    text = if (catalogState.isRefreshing) "Refreshing…" else "Saved catalog available",
+                    text = if (catalogState.isRefreshing) "Refreshing…" else "Saved OPRA source available",
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 Text(
@@ -153,7 +153,7 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = "The app checks for OPRA updates approximately daily.",
+                    text = "OPRA is the first live source in this beta. Additional canonical/community sources are being added behind the same library model.",
                     modifier = Modifier.padding(top = 4.dp),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -169,7 +169,7 @@ fun SettingsScreen(
 
         SectionDivider()
         SectionTitle("About & updates")
-        Text("OPRA EQ for UAPP")
+        Text("EQ Library")
         Text(
             text = "Installed version ${BuildConfig.VERSION_NAME}",
             style = MaterialTheme.typography.bodyMedium,
@@ -208,7 +208,7 @@ fun SettingsScreen(
             }
         }
         Text(
-            text = "Updates are downloaded manually from the public GitHub Release page. The app does not silently download or install APKs.",
+            text = "Updates are downloaded manually from the public GitHub Release page. EQ Library does not silently download or install APKs.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -216,7 +216,7 @@ fun SettingsScreen(
         SectionDivider()
         SectionTitle("Privacy")
         Text(
-            text = "Headphone selections, app settings, generated preset state, and conversion stay on this device. No account is required, and the app contains no analytics or telemetry. Network access is used for the OPRA catalog and public app-release metadata.",
+            text = "Headphone selections, app settings, generated preset state, and conversion stay on this device. No account is required, and EQ Library contains no analytics or telemetry. This beta uses network access for the OPRA source catalog and public app-release metadata.",
             style = MaterialTheme.typography.bodyMedium,
         )
 
@@ -224,7 +224,7 @@ fun SettingsScreen(
         SectionTitle("Credits & licenses")
         OpraAttribution(onOpenUrl = onOpenUrl)
         Text(
-            text = "OPRA manufacturer, product, and EQ data is provided under CC BY-SA 4.0. The app preserves individual EQ creator/source information from OPRA where provided.",
+            text = "OPRA manufacturer, product, and EQ data is provided under CC BY-SA 4.0. EQ Library preserves individual EQ creator/source information from OPRA where provided.",
             modifier = Modifier.padding(top = 8.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -233,12 +233,12 @@ fun SettingsScreen(
             Text("CC BY-SA 4.0 license")
         }
         Text(
-            text = "OPRA EQ for UAPP source code is Apache-2.0. The ToneBoosters/UAPP conversion mapping is based in part on SiliconExarch/EqConverter (Apache-2.0); provenance is documented in the project NOTICE. AndroidX, Kotlin, and kotlinx libraries retain their respective open-source licenses.",
+            text = "EQ Library source code is Apache-2.0. The ToneBoosters/UAPP conversion mapping is based in part on SiliconExarch/EqConverter (Apache-2.0); provenance is documented in the project NOTICE. AndroidX, Kotlin, and kotlinx libraries retain their respective open-source licenses.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            text = "OPRA EQ for UAPP is not affiliated with or endorsed by OPRA, Roon Labs, USB Audio Player PRO/UAPP, ToneBoosters, or headphone manufacturers.",
+            text = "EQ Library is not affiliated with or endorsed by OPRA, Roon Labs, USB Audio Player PRO/UAPP, ToneBoosters, TRN, TOPPING, or headphone manufacturers.",
             modifier = Modifier.padding(top = 8.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -317,3 +317,11 @@ private fun ThemeOption(
 
 private fun formatCatalogTime(epochMillis: Long): String =
     DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(epochMillis))
+
+private fun unavailableCatalogMessage(reason: com.weekssa.opraeqforuapp.data.catalog.CatalogUnavailableReason): String =
+    when (reason) {
+        com.weekssa.opraeqforuapp.data.catalog.CatalogUnavailableReason.NoSavedCatalog ->
+            "No saved OPRA catalog is available yet. Connect to the internet and try refresh."
+        com.weekssa.opraeqforuapp.data.catalog.CatalogUnavailableReason.SavedCatalogInvalid ->
+            "The saved OPRA catalog could not be used. Try refresh to download a clean copy."
+    }
