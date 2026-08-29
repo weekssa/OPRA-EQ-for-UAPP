@@ -14,10 +14,15 @@ import java.util.Locale
  * represented in the canonical snapshot remains available. Canonical-only sources and historical
  * revisions are appended with their stable synthetic IDs.
  *
- * The compatibility catalog can contain multiple legacy records for the exact same acoustic
- * tuning. Those records remain source data, but the app should not make a person choose between
- * acoustically identical rows. The rendered overlay therefore keeps one preferred visible record
- * per exact normalized filter set and strips machine-only labels from the compatibility details.
+ * Product identity is resolved conservatively: normalized manufacturer/model equality is accepted,
+ * and any broader equivalence must be supplied explicitly as a model alias by a qualified source.
+ * Alternate product IDs remain resolvable so consolidating duplicate names does not break existing
+ * managed-headphone state.
+ *
+ * The compatibility catalog can also contain multiple records for the exact same acoustic tuning.
+ * Those records remain source data, but the app should not make a person choose between acoustically
+ * identical rows. The rendered overlay therefore keeps one preferred visible record per exact
+ * normalized filter set and strips machine-only labels from the compatibility details.
  */
 fun overlayCanonicalCatalog(
     legacy: OpraCatalog,
@@ -27,21 +32,103 @@ fun overlayCanonicalCatalog(
     legacy.vendors.forEach { vendors[it.id] = it }
     canonical.vendors.forEach { vendors[it.id] = it }
 
-    val products = linkedMapOf<String, OpraProduct>()
-    legacy.products.forEach { products[it.id] = it }
-    canonical.products.forEach { products[it.id] = it }
+    val rawProducts = linkedMapOf<String, OpraProduct>()
+    legacy.products.forEach { rawProducts[it.id] = it }
+    canonical.products.forEach { rawProducts[it.id] = it }
+
+    val aliasResolution = resolveProductAliases(legacy, canonical, vendors)
+    val visibleProducts = rawProducts.values
+        .filter { resolveProductId(it.id, aliasResolution.aliases) == it.id }
+        .map { product -> aliasResolution.preferredProducts[product.id] ?: product }
+
+    val visibleVendorIds = visibleProducts.map(OpraProduct::vendorId).toSet()
 
     val profiles = linkedMapOf<String, OpraEqProfile>()
     legacy.profiles.forEach { profiles[it.id] = it.toUserFacingProfile(defaultSource = "OPRA") }
     canonical.profiles.forEach { profiles[it.id] = it.toUserFacingProfile(defaultSource = null) }
+    val resolvedProfiles = profiles.values.map { profile ->
+        profile.copy(productId = resolveProductId(profile.productId, aliasResolution.aliases))
+    }
 
     return OpraCatalog(
-        vendors = vendors.values.toList(),
-        products = products.values.toList(),
-        profiles = deduplicateAcoustically(profiles.values.toList()),
+        vendors = vendors.values.filter { it.id in visibleVendorIds },
+        products = visibleProducts,
+        profiles = deduplicateAcoustically(resolvedProfiles),
         ignoredEntryCount = legacy.ignoredEntryCount + canonical.ignoredEntryCount,
+        productAliases = aliasResolution.aliases,
     )
 }
+
+private data class ProductAliasResolution(
+    val aliases: Map<String, String>,
+    val preferredProducts: Map<String, OpraProduct>,
+)
+
+private fun resolveProductAliases(
+    legacy: OpraCatalog,
+    canonical: OpraCatalog,
+    vendors: Map<String, OpraVendor>,
+): ProductAliasResolution {
+    val aliases = linkedMapOf<String, String>()
+    val preferred = linkedMapOf<String, OpraProduct>()
+
+    canonical.products.forEach { canonicalProduct ->
+        val canonicalVendor = vendors[canonicalProduct.vendorId]?.name ?: return@forEach
+        val canonicalVendorKey = normalizeIdentityText(canonicalVendor)
+        val canonicalNameKey = normalizeIdentityText(canonicalProduct.name)
+        val acceptedNameKeys = buildSet {
+            add(canonicalNameKey)
+            canonicalProduct.aliases.forEach { add(normalizeIdentityText(it)) }
+        }.filter(String::isNotEmpty).toSet()
+        if (acceptedNameKeys.isEmpty()) return@forEach
+
+        val matchingLegacy = legacy.products.filter { legacyProduct ->
+            val legacyVendor = vendors[legacyProduct.vendorId]?.name ?: return@filter false
+            normalizeIdentityText(legacyVendor) == canonicalVendorKey &&
+                normalizeIdentityText(legacyProduct.name) in acceptedNameKeys
+        }
+        if (matchingLegacy.isEmpty()) return@forEach
+
+        // Prefer an existing product whose normalized display name exactly matches the canonical
+        // model. This preserves a stable legacy ID whenever the catalog already has the best name.
+        val retained = matchingLegacy.firstOrNull {
+            normalizeIdentityText(it.name) == canonicalNameKey
+        } ?: matchingLegacy.first()
+        val retainedId = retained.id
+
+        matchingLegacy.forEach { product ->
+            if (product.id != retainedId) aliases[product.id] = retainedId
+        }
+        if (canonicalProduct.id != retainedId) aliases[canonicalProduct.id] = retainedId
+
+        preferred[retainedId] = retained.copy(
+            name = canonicalProduct.name,
+            aliases = (
+                canonicalProduct.aliases +
+                    matchingLegacy.map(OpraProduct::name) +
+                    matchingLegacy.flatMap(OpraProduct::aliases)
+                )
+                .filterNot { normalizeIdentityText(it) == canonicalNameKey }
+                .distinctBy(::normalizeIdentityText),
+        )
+    }
+
+    return ProductAliasResolution(aliases = aliases, preferredProducts = preferred)
+}
+
+private fun resolveProductId(productId: String, aliases: Map<String, String>): String {
+    var current = productId
+    val visited = mutableSetOf<String>()
+    while (visited.add(current)) {
+        val next = aliases[current] ?: return current
+        if (next == current) return current
+        current = next
+    }
+    return productId
+}
+
+private fun normalizeIdentityText(value: String): String =
+    value.lowercase(Locale.ROOT).filter(Char::isLetterOrDigit)
 
 private fun deduplicateAcoustically(profiles: List<OpraEqProfile>): List<OpraEqProfile> {
     val retained = linkedMapOf<String, OpraEqProfile>()
@@ -160,6 +247,7 @@ private fun humanizeTarget(value: String?): String? {
     return when (cleaned.lowercase(Locale.ROOT).replace(" ", "")) {
         "rtingscom" -> "RTINGS.com"
         "senselabaizu" -> "SenseLab Aizu"
+        "hrtf5128diffusefield", "5128diffusefield" -> "B&K 5128 Diffuse Field (reference)"
         else -> cleaned.replace(Regex("\\s+"), " ")
     }
 }
