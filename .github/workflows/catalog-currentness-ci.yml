@@ -5,27 +5,35 @@ on:
     branches:
       - eq-library-community-v0.3
     paths:
+      - 'catalog/catalog.json'
       - 'config/source_registry.json'
+      - 'tools/acoustic_fingerprint.py'
       - 'tools/catalog_pipeline.py'
       - 'tools/currentness_scheduler.py'
       - 'tools/autoeq_ingest.py'
       - 'tools/community_peq_ingest.py'
+      - 'tools/test_acoustic_fingerprint.py'
       - 'tools/test_catalog_pipeline.py'
       - 'tools/test_currentness_scheduler.py'
       - 'tools/test_autoeq_ingest.py'
       - 'tools/test_community_peq_ingest.py'
+      - 'tools/test_published_catalog.py'
       - '.github/workflows/catalog-currentness-ci.yml'
   pull_request:
     paths:
+      - 'catalog/catalog.json'
       - 'config/source_registry.json'
+      - 'tools/acoustic_fingerprint.py'
       - 'tools/catalog_pipeline.py'
       - 'tools/currentness_scheduler.py'
       - 'tools/autoeq_ingest.py'
       - 'tools/community_peq_ingest.py'
+      - 'tools/test_acoustic_fingerprint.py'
       - 'tools/test_catalog_pipeline.py'
       - 'tools/test_currentness_scheduler.py'
       - 'tools/test_autoeq_ingest.py'
       - 'tools/test_community_peq_ingest.py'
+      - 'tools/test_published_catalog.py'
       - '.github/workflows/catalog-currentness-ci.yml'
   workflow_dispatch:
 
@@ -42,6 +50,12 @@ jobs:
         run: python3 --version
       - name: Validate source registry
         run: python3 tools/catalog_pipeline.py validate-registry --registry config/source_registry.json
+      - name: Validate published catalog and LKG publication
+        run: >-
+          python3 tools/catalog_pipeline.py publish
+          --candidate catalog/catalog.json
+          --published "${RUNNER_TEMP}/published.json"
+          --last-known-good "${RUNNER_TEMP}/catalog.last-known-good.json"
       - name: Reconcile source-health state in a temporary file
         run: python3 tools/catalog_pipeline.py reconcile-health --registry config/source_registry.json --state "${RUNNER_TEMP}/source_health.json"
       - name: Build deterministic currentness plan
@@ -51,5 +65,15 @@ jobs:
           --state "${RUNNER_TEMP}/source_health.json"
           --now 2026-08-29T15:00:00Z
           --last-discovery-at 2026-08-20T15:00:00Z
-      - name: Unit tests
-        run: python3 -m unittest discover -s tools -p 'test_*.py' -v
+      - name: Acoustic fingerprint tests
+        run: python3 -m unittest discover -s tools -p 'test_acoustic_fingerprint.py' -v
+      - name: Catalog pipeline tests
+        run: python3 -m unittest discover -s tools -p 'test_catalog_pipeline.py' -v
+      - name: Currentness scheduler tests
+        run: python3 -m unittest discover -s tools -p 'test_currentness_scheduler.py' -v
+      - name: AutoEQ ingestion tests
+        run: python3 -m unittest discover -s tools -p 'test_autoeq_ingest.py' -v
+      - name: Community ingestion tests
+        run: python3 -m unittest discover -s tools -p 'test_community_peq_ingest.py' -v
+      - name: Published catalog canary tests
+        run: python3 -m unittest discover -s tools -p 'test_published_catalog.py' -v
