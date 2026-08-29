@@ -5,6 +5,9 @@ import com.weekssa.opraeqforuapp.domain.catalog.OpraCatalog
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.OpraProduct
 import com.weekssa.opraeqforuapp.domain.catalog.OpraVendor
+import java.time.Instant
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /**
@@ -128,6 +131,7 @@ object CanonicalLegacyCatalogAdapter {
     ): String? {
         val parts = buildList {
             add(if (revision.isLatest) "Latest" else "Previous revision")
+            revisionDisplayDate(revision, primary)?.let { add("Revision date: $it") }
             profile.tuningLabel?.takeIf(String::isNotBlank)?.let(::add)
             profile.target.name?.takeIf(String::isNotBlank)?.let { add("Target: $it") }
             primary?.sourceId?.takeIf(String::isNotBlank)?.let { add("Source: ${displaySourceId(it)}") }
@@ -136,6 +140,18 @@ object CanonicalLegacyCatalogAdapter {
             revision.soundImpactSummary?.takeIf(String::isNotBlank)?.let(::add)
         }
         return parts.distinct().joinToString(" · ").takeIf(String::isNotBlank)
+    }
+
+    private fun revisionDisplayDate(revision: EqRevision, primary: EqSourceReference?): String? {
+        val epochSeconds = revision.sourceUpdatedAtEpochSeconds
+            ?: primary?.updatedAtEpochSeconds
+            ?: primary?.publishedAtEpochSeconds
+            ?: revision.firstSeenAtEpochSeconds
+            ?: primary?.discoveredAtEpochSeconds
+            ?: return null
+        return runCatching {
+            REVISION_DATE_FORMATTER.format(Instant.ofEpochSecond(epochSeconds))
+        }.getOrNull()
     }
 
     private fun displaySourceId(value: String): String = when (value.lowercase(Locale.ROOT)) {
@@ -182,4 +198,7 @@ object CanonicalLegacyCatalogAdapter {
         val vendorId: String,
         val productId: String,
     )
+
+    private val REVISION_DATE_FORMATTER: DateTimeFormatter =
+        DateTimeFormatter.ISO_LOCAL_DATE.withZone(ZoneOffset.UTC)
 }
