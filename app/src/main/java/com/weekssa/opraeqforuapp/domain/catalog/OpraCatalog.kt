@@ -13,6 +13,7 @@ data class OpraProduct(
     val name: String,
     val type: String,
     val subtype: String,
+    val aliases: List<String> = emptyList(),
 )
 
 data class OpraBand(
@@ -45,14 +46,23 @@ data class OpraCatalog(
     val products: List<OpraProduct>,
     val profiles: List<OpraEqProfile>,
     val ignoredEntryCount: Int = 0,
+    /**
+     * Maps alternate/legacy product IDs to the single visible product ID.
+     *
+     * This lets catalog overlays consolidate duplicate model names from different sources without
+     * breaking managed-headphone records that still reference an older product ID.
+     */
+    val productAliases: Map<String, String> = emptyMap(),
 ) {
     private val vendorById = vendors.associateBy(OpraVendor::id)
-    private val productsByVendor = products.groupBy(OpraProduct::vendorId)
-    private val profilesByProduct = profiles.groupBy(OpraEqProfile::productId)
+    private val productById = products.associateBy(OpraProduct::id)
+    private val visibleProducts = products.filter { resolveProductId(it.id) == it.id }
+    private val productsByVendor = visibleProducts.groupBy(OpraProduct::vendorId)
+    private val profilesByProduct = profiles.groupBy { resolveProductId(it.productId) }
 
     fun vendor(vendorId: String): OpraVendor? = vendorById[vendorId]
 
-    fun product(productId: String): OpraProduct? = products.firstOrNull { it.id == productId }
+    fun product(productId: String): OpraProduct? = productById[resolveProductId(productId)]
 
     fun productsForVendor(vendorId: String): List<OpraProduct> =
         productsByVendor[vendorId]
@@ -60,7 +70,7 @@ data class OpraCatalog(
             .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
 
     fun profilesForProduct(productId: String): List<OpraEqProfile> =
-        profilesByProduct[productId]
+        profilesByProduct[resolveProductId(productId)]
             .orEmpty()
             .sortedWith(
                 compareBy<OpraEqProfile> { it.author.orEmpty().lowercase(Locale.ROOT) }
@@ -68,7 +78,8 @@ data class OpraCatalog(
                     .thenBy { it.id },
             )
 
-    fun profileCount(productId: String): Int = profilesByProduct[productId]?.size ?: 0
+    fun profileCount(productId: String): Int =
+        profilesByProduct[resolveProductId(productId)]?.size ?: 0
 
     fun searchProducts(query: String): List<OpraProductSearchResult> {
         val tokens = query
@@ -79,9 +90,19 @@ data class OpraCatalog(
 
         if (tokens.isEmpty()) return emptyList()
 
-        return products.mapNotNull { product ->
+        return visibleProducts.mapNotNull { product ->
             val vendor = vendorById[product.vendorId] ?: return@mapNotNull null
-            val haystack = normalizeSearchText("${vendor.name} ${product.name}")
+            val haystack = normalizeSearchText(
+                buildString {
+                    append(vendor.name)
+                    append(' ')
+                    append(product.name)
+                    product.aliases.forEach { alias ->
+                        append(' ')
+                        append(alias)
+                    }
+                },
+            )
             if (tokens.all(haystack::contains)) {
                 OpraProductSearchResult(
                     vendor = vendor,
@@ -96,6 +117,17 @@ data class OpraCatalog(
                 .thenBy { it.vendor.name.lowercase(Locale.ROOT) }
                 .thenBy { it.product.id },
         )
+    }
+
+    private fun resolveProductId(productId: String): String {
+        var current = productId
+        val visited = mutableSetOf<String>()
+        while (visited.add(current)) {
+            val next = productAliases[current] ?: return current
+            if (next == current) return current
+            current = next
+        }
+        return productId
     }
 
     companion object {
