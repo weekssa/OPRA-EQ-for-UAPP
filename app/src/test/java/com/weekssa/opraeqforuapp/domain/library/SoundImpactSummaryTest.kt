@@ -13,7 +13,7 @@ class SoundImpactSummaryTest {
             ),
         )
 
-        assertThat(summary).isEqualTo("Adds bass and reduces upper-mid energy.")
+        assertThat(summary).isEqualTo("Adds bass and slightly reduces upper-mid energy.")
     }
 
     @Test
