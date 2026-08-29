@@ -20,6 +20,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
+from acoustic_fingerprint import acoustic_fingerprint as canonical_acoustic_fingerprint
+
 VALID_LIFECYCLES = {"proposed", "reviewing", "active", "link-only", "paused", "retired"}
 VALID_REDISTRIBUTION = {"allowed", "structured-data-only", "link-only", "review-required"}
 VALID_CADENCES = {"hourly", "daily", "weekly", "monthly", "manual"}
@@ -168,20 +170,8 @@ def record_scan_failure(health: SourceHealth, error: str, *, attempted_at: str |
 
 
 def acoustic_fingerprint(preamp_db: float | None, filters: Iterable[dict[str, Any]]) -> str:
-    """Stable fingerprint that ignores harmless ordering/precision differences."""
-    normalized: list[dict[str, Any]] = []
-    for item in filters:
-        normalized.append(
-            {
-                "type": str(item.get("type", "peak")).strip().lower(),
-                "frequency_hz": round(float(item["frequency_hz"]), 3),
-                "gain_db": None if item.get("gain_db") is None else round(float(item["gain_db"]), 3),
-                "q": None if item.get("q") is None else round(float(item["q"]), 4),
-                "slope": None if item.get("slope") is None else round(float(item["slope"]), 4),
-            }
-        )
-    normalized.sort(key=lambda f: (f["type"], f["frequency_hz"], f["gain_db"] or 0.0, f["q"] or 0.0))
-    return sha256_json({"preamp_db": None if preamp_db is None else round(float(preamp_db), 3), "filters": normalized})
+    """Canonical fingerprint shared with Android and all source adapters."""
+    return canonical_acoustic_fingerprint(preamp_db, filters)
 
 
 def classify_candidate(previous_fingerprints: Iterable[str], new_fingerprint: str) -> str:
@@ -193,6 +183,10 @@ def validate_snapshot(snapshot: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     if int(snapshot.get("schema_version", 0)) < 1:
         errors.append("snapshot schema_version must be >= 1")
+    if not str(snapshot.get("generated_at", "")).strip():
+        errors.append("snapshot generated_at is required")
+    if not str(snapshot.get("source_registry_version", "")).strip():
+        errors.append("snapshot source_registry_version is required")
     profiles = snapshot.get("profiles")
     if not isinstance(profiles, list):
         errors.append("snapshot profiles must be a list")
@@ -206,8 +200,11 @@ def validate_snapshot(snapshot: dict[str, Any]) -> list[str]:
             errors.append(f"duplicate canonical_profile_id: {profile_id}")
         ids.add(profile_id)
         revisions = profile.get("revisions", [])
+        if not revisions:
+            errors.append(f"{profile_id or index} must have at least one revision")
+            continue
         latest = [r for r in revisions if r.get("is_latest") is True]
-        if revisions and len(latest) != 1:
+        if len(latest) != 1:
             errors.append(f"{profile_id or index} must have exactly one latest revision")
         revision_ids: set[str] = set()
         for revision in revisions:
@@ -219,6 +216,10 @@ def validate_snapshot(snapshot: dict[str, Any]) -> list[str]:
             revision_ids.add(revision_id)
             if not str(revision.get("acoustic_fingerprint", "")).strip():
                 errors.append(f"{profile_id or index}/{revision_id or '?'} missing acoustic_fingerprint")
+            if not revision.get("filters"):
+                errors.append(f"{profile_id or index}/{revision_id or '?'} must contain filters")
+            if not revision.get("source_references"):
+                errors.append(f"{profile_id or index}/{revision_id or '?'} must contain source references")
     return errors
 
 
