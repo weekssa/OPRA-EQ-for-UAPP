@@ -1,6 +1,5 @@
 package com.weekssa.opraeqforuapp.domain.library
 
-import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraCatalog
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.OpraProduct
@@ -47,7 +46,7 @@ fun overlayCanonicalCatalog(
 private fun deduplicateAcoustically(profiles: List<OpraEqProfile>): List<OpraEqProfile> {
     val retained = linkedMapOf<String, OpraEqProfile>()
     profiles.forEach { profile ->
-        val acousticKey = profile.acousticKey()
+        val acousticKey = profile.legacyAcousticSignature()
         if (acousticKey == null) {
             retained["id:${profile.id}"] = profile
             return@forEach
@@ -70,39 +69,6 @@ private fun OpraEqProfile.preferenceScore(): Int {
     if (!link.isNullOrBlank()) score += 5
     if (!author.isNullOrBlank()) score += 1
     return score
-}
-
-private fun OpraEqProfile.acousticKey(): String? {
-    val normalizedBands = bands.orEmpty().mapNotNull(OpraBand::normalizedKey).sorted()
-    if (normalizedBands.isEmpty()) return null
-    return buildString {
-        append("preamp=")
-        append(format(preampGainDb ?: 0.0, 3))
-        normalizedBands.forEach {
-            append(';')
-            append(it)
-        }
-    }
-}
-
-private fun OpraBand.normalizedKey(): String? {
-    val frequencyValue = frequency ?: return null
-    return listOf(
-        normalizedType(type),
-        format(frequencyValue, 3),
-        format(gainDb ?: 0.0, 3),
-        format(q ?: 0.0, 4),
-        format(slope ?: 0.0, 4),
-    ).joinToString("|")
-}
-
-private fun normalizedType(value: String?): String = when (value?.trim()?.lowercase(Locale.ROOT)) {
-    "peak_dip", "peak", "pk", "peq" -> "PK"
-    "low_shelf", "ls", "lsc" -> "LS"
-    "high_shelf", "hs", "hsc" -> "HS"
-    "low_pass", "lp" -> "LP"
-    "high_pass", "hp" -> "HP"
-    else -> value.orEmpty().trim().uppercase(Locale.ROOT)
 }
 
 private fun OpraEqProfile.toUserFacingProfile(defaultSource: String?): OpraEqProfile {
@@ -241,6 +207,3 @@ private fun String?.toEqFilterType(): EqFilterType = when (this?.trim()?.lowerca
     "high_pass", "hp" -> EqFilterType.HIGH_PASS
     else -> EqFilterType.OTHER
 }
-
-private fun format(value: Double, decimals: Int): String =
-    String.format(Locale.US, "%.${decimals}f", value)
