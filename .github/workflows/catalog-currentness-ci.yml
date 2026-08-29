@@ -8,16 +8,20 @@ on:
       - 'config/source_registry.json'
       - 'tools/catalog_pipeline.py'
       - 'tools/currentness_scheduler.py'
+      - 'tools/autoeq_ingest.py'
       - 'tools/test_catalog_pipeline.py'
       - 'tools/test_currentness_scheduler.py'
+      - 'tools/test_autoeq_ingest.py'
       - '.github/workflows/catalog-currentness-ci.yml'
   pull_request:
     paths:
       - 'config/source_registry.json'
       - 'tools/catalog_pipeline.py'
       - 'tools/currentness_scheduler.py'
+      - 'tools/autoeq_ingest.py'
       - 'tools/test_catalog_pipeline.py'
       - 'tools/test_currentness_scheduler.py'
+      - 'tools/test_autoeq_ingest.py'
       - '.github/workflows/catalog-currentness-ci.yml'
   workflow_dispatch:
 
