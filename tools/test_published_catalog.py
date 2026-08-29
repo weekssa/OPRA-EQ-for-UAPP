@@ -39,9 +39,23 @@ class PublishedCatalogTest(unittest.TestCase):
         ]
         self.assertEqual({"oratory1990", "AutoEq"}, {profile["creator"] for profile in profiles})
         autoeq = next(profile for profile in profiles if profile["creator"] == "AutoEq")
-        refs = autoeq["revisions"][0]["source_references"]
+        latest = next(revision for revision in autoeq["revisions"] if revision["is_latest"])
+        refs = latest["source_references"]
         self.assertEqual("autoeq", next(ref for ref in refs if ref["is_primary"])["source_id"])
         self.assertTrue(any(ref["provenance_tier"] == "mirror" for ref in refs))
+
+    def test_canary_contains_real_immutable_revision_history(self):
+        autoeq = next(profile for profile in self.snapshot["profiles"] if profile["creator"] == "AutoEq")
+        revisions = autoeq["revisions"]
+        self.assertGreaterEqual(len(revisions), 2)
+        self.assertEqual(1, sum(1 for revision in revisions if revision["is_latest"]))
+        previous = next(revision for revision in revisions if not revision["is_latest"])
+        self.assertEqual(
+            "AutoEq commit 853360a1626b387e1d3d87f3f7ad8c7514d30839",
+            previous["source_version_label"],
+        )
+        self.assertEqual(1698572942, previous["source_updated_at_epoch_seconds"])
+        self.assertNotEqual(previous["acoustic_fingerprint"], autoeq["revisions"][0]["acoustic_fingerprint"])
 
     def test_published_fingerprints_match_android_algorithm(self):
         for profile in self.snapshot["profiles"]:
