@@ -2,6 +2,7 @@ package com.weekssa.opraeqforuapp.data.managed
 
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.assessCompatibility
+import com.weekssa.opraeqforuapp.domain.catalog.isHistoricalRevision
 import com.weekssa.opraeqforuapp.domain.conversion.ToneBoostersConverter
 import com.weekssa.opraeqforuapp.domain.library.legacyAcousticSignature
 
@@ -76,7 +77,7 @@ internal fun reconcileManagedProfiles(
 
         if (existing == null) {
             newCount += 1
-            val selected = autoIncludeNewProfiles && selectable
+            val selected = autoIncludeNewProfiles && selectable && !profile.isHistoricalRevision()
             val generated = if (selected) {
                 generateManagedPreset(productName, profile, fingerprint, nowMillis)
             } else {
