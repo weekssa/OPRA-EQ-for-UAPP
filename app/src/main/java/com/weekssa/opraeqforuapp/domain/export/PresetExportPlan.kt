@@ -50,7 +50,17 @@ fun buildPresetExportPlan(headphones: List<ManagedHeadphoneRecord>): PresetExpor
     return finalizePlan(candidates)
 }
 
-fun buildEqLibraryExportPlan(headphones: List<ManagedHeadphoneRecord>): PresetExportPlan {
+fun buildEqLibraryExportPlan(
+    headphones: List<ManagedHeadphoneRecord>,
+    device: ExportDevice? = null,
+): PresetExportPlan {
+    val requestedTextDevices = when (device) {
+        null -> ExportDevice.entries.filterNot { it == ExportDevice.UAPP }
+        ExportDevice.UAPP -> emptyList()
+        else -> listOf(device)
+    }
+    val includeUapp = device == null || device == ExportDevice.UAPP
+
     val candidates = buildList {
         headphones.forEach { headphone ->
             val manufacturer = safeSharedPathSegment(headphone.vendorName)
@@ -60,46 +70,52 @@ fun buildEqLibraryExportPlan(headphones: List<ManagedHeadphoneRecord>): PresetEx
                 val presetName = profile.generatedPresetName ?: return@forEach
                 val fingerprint = profile.generatedFromFingerprint ?: profile.fingerprint
 
-                profile.generatedXml?.let { xml ->
-                    add(
-                        PresetExportCandidate(
-                            profileId = profile.profileId,
-                            productId = headphone.productId,
-                            manufacturerName = manufacturer,
-                            modelName = model,
-                            relativeDirectory = "${ExportDevice.UAPP.folderName}/$manufacturer/$model",
-                            fileName = "$presetName.${ExportDevice.UAPP.extension}",
-                            xml = xml,
-                            generatedFingerprint = "$fingerprint:${ExportDevice.UAPP.name}",
-                            contentHash = sha256(xml.toByteArray(Charsets.ISO_8859_1)),
-                            mimeType = ExportDevice.UAPP.mimeType,
-                            charsetName = Charsets.ISO_8859_1.name(),
-                            deviceName = ExportDevice.UAPP.folderName,
-                            transformation = "Exact ToneBoosters/UAPP conversion",
-                        ),
-                    )
+                if (includeUapp) {
+                    profile.generatedXml?.let { xml ->
+                        add(
+                            PresetExportCandidate(
+                                profileId = profile.profileId,
+                                productId = headphone.productId,
+                                manufacturerName = manufacturer,
+                                modelName = model,
+                                relativeDirectory = "${ExportDevice.UAPP.folderName}/$manufacturer/$model",
+                                fileName = "$presetName.${ExportDevice.UAPP.extension}",
+                                xml = xml,
+                                generatedFingerprint = "$fingerprint:${ExportDevice.UAPP.name}",
+                                contentHash = sha256(xml.toByteArray(Charsets.ISO_8859_1)),
+                                mimeType = ExportDevice.UAPP.mimeType,
+                                charsetName = Charsets.ISO_8859_1.name(),
+                                deviceName = ExportDevice.UAPP.folderName,
+                                transformation = "Exact ToneBoosters/UAPP conversion",
+                            ),
+                        )
+                    }
                 }
 
-                buildTextDeviceVariants(profile.lastKnownProfile).forEach { variant ->
-                    val charset = Charsets.UTF_8
-                    add(
-                        PresetExportCandidate(
-                            profileId = profile.profileId,
-                            productId = headphone.productId,
-                            manufacturerName = manufacturer,
-                            modelName = model,
-                            relativeDirectory = "${variant.device.folderName}/$manufacturer/$model",
-                            fileName = "$presetName.${variant.device.extension}",
-                            xml = variant.content,
-                            generatedFingerprint = "$fingerprint:${variant.device.name}",
-                            contentHash = sha256(variant.content.toByteArray(charset)),
-                            mimeType = variant.device.mimeType,
-                            charsetName = charset.name(),
-                            deviceName = variant.device.folderName,
-                            transformation = variant.transformation,
-                        ),
-                    )
-                }
+                requestedTextDevices
+                    .mapNotNull { requestedDevice ->
+                        buildTextDeviceVariant(profile.lastKnownProfile, requestedDevice)
+                    }
+                    .forEach { variant ->
+                        val charset = Charsets.UTF_8
+                        add(
+                            PresetExportCandidate(
+                                profileId = profile.profileId,
+                                productId = headphone.productId,
+                                manufacturerName = manufacturer,
+                                modelName = model,
+                                relativeDirectory = "${variant.device.folderName}/$manufacturer/$model",
+                                fileName = "$presetName.${variant.device.extension}",
+                                xml = variant.content,
+                                generatedFingerprint = "$fingerprint:${variant.device.name}",
+                                contentHash = sha256(variant.content.toByteArray(charset)),
+                                mimeType = variant.device.mimeType,
+                                charsetName = charset.name(),
+                                deviceName = variant.device.folderName,
+                                transformation = variant.transformation,
+                            ),
+                        )
+                    }
             }
         }
     }
