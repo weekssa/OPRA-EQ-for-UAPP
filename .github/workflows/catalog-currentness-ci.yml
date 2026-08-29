@@ -24,13 +24,13 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Show Python runtime
+        run: python3 --version
       - name: Validate source registry
-        run: python tools/catalog_pipeline.py validate-registry --registry config/source_registry.json
+        run: python3 tools/catalog_pipeline.py validate-registry --registry config/source_registry.json
       - name: Reconcile source-health state in a temporary file
-        run: python tools/catalog_pipeline.py reconcile-health --registry config/source_registry.json --state "${RUNNER_TEMP}/source_health.json"
+        run: python3 tools/catalog_pipeline.py reconcile-health --registry config/source_registry.json --state "${RUNNER_TEMP}/source_health.json"
       - name: Unit tests
-        run: python -m unittest discover -s tools -p 'test_*.py' -v
+        run: python3 -m unittest discover -s tools -p 'test_*.py' -v
