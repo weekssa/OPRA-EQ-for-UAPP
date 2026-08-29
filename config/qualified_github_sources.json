@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "sources": [
+    {
+      "id": "mrchillstorm-headphone-target",
+      "repository": "MrChillStorm/Headphone_Target",
+      "branch": "main",
+      "license_spdx": "MIT",
+      "license_url": "https://github.com/MrChillStorm/Headphone_Target/blob/main/LICENSE",
+      "creator": "MrChillStorm",
+      "profiles": [
+        {
+          "source_path": "README.md",
+          "marker": "7Hz Zero:2 to ISO 226:2023 EQ Profile",
+          "manufacturer": "7Hz",
+          "model": "Zero:2",
+          "variant": null,
+          "tuning_label": "ISO 226:2023 85 phon",
+          "target": "ISO 226:2023 85 phon (author-defined)",
+          "source_url": "https://github.com/MrChillStorm/Headphone_Target#iem-compatibility",
+          "source_record_id": "MrChillStorm/Headphone_Target:README.md:7hz-zero2-iso226-85phon"
+        }
+      ]
+    }
+  ]
+}
