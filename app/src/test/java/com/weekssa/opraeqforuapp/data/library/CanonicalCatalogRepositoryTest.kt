@@ -67,6 +67,67 @@ class CanonicalCatalogRepositoryTest {
         }
     }
 
+    @Test
+    fun offlineRestartLoadsLastKnownGoodBeforeFailedRefresh() = runBlocking {
+        val root = createTempDirectory(prefix = "canonical-catalog-").toFile()
+        try {
+            val online = CanonicalCatalogRepository(
+                root,
+                CanonicalCatalogSource { destination ->
+                    destination.writeText(json.encodeToString(sampleSnapshot("rev-1")))
+                },
+                nowMillis = { 1_000L },
+            )
+            assertTrue(online.refresh() is CanonicalCatalogRefreshResult.Success)
+
+            val offline = CanonicalCatalogRepository(
+                root,
+                CanonicalCatalogSource { throw IOException("offline") },
+                nowMillis = { 100_000_000L },
+            )
+            offline.initialize()
+
+            val ready = offline.state.value as CanonicalCatalogState.Ready
+            assertEquals("rev-1", ready.snapshot.profiles.single().latestRevision.revisionId)
+            assertTrue(!ready.isRefreshing)
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun emptyRefreshCannotReplaceLastKnownGoodSnapshot() = runBlocking {
+        val root = createTempDirectory(prefix = "canonical-catalog-").toFile()
+        try {
+            var returnEmpty = false
+            val source = CanonicalCatalogSource { destination ->
+                val snapshot = if (returnEmpty) {
+                    CatalogSnapshot(
+                        schemaVersion = 1,
+                        generatedAt = "2026-08-29T00:00:00Z",
+                        sourceRegistryVersion = "0.3.0-test",
+                        profiles = emptyList(),
+                    )
+                } else {
+                    sampleSnapshot("rev-1")
+                }
+                destination.writeText(json.encodeToString(snapshot))
+            }
+            val repository = CanonicalCatalogRepository(root, source, nowMillis = { 1234L })
+            assertTrue(repository.refresh() is CanonicalCatalogRefreshResult.Success)
+
+            returnEmpty = true
+            val failed = repository.refresh() as CanonicalCatalogRefreshResult.Failure
+
+            assertEquals(CanonicalCatalogFailureReason.InvalidCatalog, failed.reason)
+            assertTrue(failed.usingLastKnownGood)
+            val ready = repository.state.value as CanonicalCatalogState.Ready
+            assertEquals("rev-1", ready.snapshot.profiles.single().latestRevision.revisionId)
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
     private fun sampleSnapshot(revisionId: String) = CatalogSnapshot(
         schemaVersion = 1,
         generatedAt = "2026-08-29T00:00:00Z",
