@@ -71,12 +71,12 @@ fun BrowseOpraScreen(
 
     when (catalogState) {
         CatalogState.Loading -> CatalogUnavailableContent(
-            title = "Loading OPRA catalog…",
+            title = "Loading EQ Library…",
             showProgress = true,
             modifier = modifier,
         )
         is CatalogState.Unavailable -> CatalogUnavailableContent(
-            title = "OPRA catalog not downloaded yet",
+            title = "EQ Library catalog not downloaded yet",
             detail = unavailableCatalogMessage(catalogState.reason),
             onRetry = onRefreshCatalog,
             modifier = modifier,
@@ -167,7 +167,13 @@ private fun BrowseRoot(
         if (searchQuery.isBlank()) {
             val vendors = catalog.vendors.sortedBy { it.name.lowercase() }
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                item(key = "opra-attribution") {
+                item(key = "source-attribution") {
+                    Text(
+                        text = "EQ Library combines supported EQ sources. Profile details identify the creator, target, source, provenance, and revision status.",
+                        modifier = Modifier.padding(top = 8.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                     OpraAttribution(
                         onOpenUrl = onOpenUrl,
                         compact = true,
