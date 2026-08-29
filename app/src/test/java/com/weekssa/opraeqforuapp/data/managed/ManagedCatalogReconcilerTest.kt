@@ -161,6 +161,42 @@ class ManagedCatalogReconcilerTest {
         assertEquals(0, result.changes.updatedSelectedProfileCount)
     }
 
+    @Test
+    fun selectedDuplicateMigratesToRetainedAcousticRepresentative() {
+        val duplicate = compatibleProfile("legacy-duplicate").copy(
+            author = "Rtings/AutoEQ",
+            details = "Target_Rtings_com · Consolidated",
+            bands = listOf(OpraBand("PK", 1_000.0, 1.0, 1.0, null)),
+        )
+        val existing = existingEntity(duplicate, selected = true, generatedXml = "old xml")
+        val representative = duplicate.copy(
+            id = "canonical-representative",
+            author = "AutoEQ",
+            details = "Target: RTINGS.com · Source: OPRA · Slightly adds midrange energy.",
+            bands = listOf(OpraBand("peak_dip", 1_000.0, 1.0, 1.0, null)),
+        )
+
+        val result = reconcileManagedProfiles(
+            productId = "product",
+            productName = "Headphone",
+            currentProfiles = listOf(representative),
+            existingProfiles = listOf(existing),
+            autoIncludeNewProfiles = false,
+            nowMillis = 200L,
+            snapshotCodec = codec,
+        )
+
+        val migrated = result.profiles.single()
+        assertEquals("canonical-representative", migrated.profileId)
+        assertTrue(migrated.selected)
+        assertFalse(migrated.noLongerAvailable)
+        assertEquals(1L, migrated.firstSeenAtMillis)
+        assertNotEquals("old xml", migrated.generatedXml)
+        assertEquals(setOf("legacy-duplicate"), result.profileIdsToDelete)
+        assertEquals(0, result.changes.newProfileCount)
+        assertEquals(0, result.changes.removedSelectedProfileCount)
+    }
+
     private fun existingEntity(
         profile: OpraEqProfile,
         selected: Boolean,
