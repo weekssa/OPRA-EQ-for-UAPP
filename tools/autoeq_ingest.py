@@ -18,6 +18,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from acoustic_fingerprint import acoustic_fingerprint as canonical_acoustic_fingerprint
+
 PREAMP_RE = re.compile(r"^Preamp:\s*([+-]?\d+(?:\.\d+)?)\s*dB\s*$", re.IGNORECASE)
 FILTER_RE = re.compile(
     r"^Filter\s+\d+:\s+ON\s+(?P<type>\S+)\s+Fc\s+(?P<frequency>[+-]?\d+(?:\.\d+)?)\s+Hz\s+"
@@ -39,14 +41,6 @@ TYPE_MAP = {
 class ParsedAutoEq:
     preamp_db: float | None
     filters: list[dict[str, Any]]
-
-
-def _stable_json(value: Any) -> str:
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
-
-
-def _sha256(value: Any) -> str:
-    return hashlib.sha256(_stable_json(value).encode("utf-8")).hexdigest()
 
 
 def parse_parametric_eq(text: str) -> ParsedAutoEq:
@@ -81,18 +75,7 @@ def parse_parametric_eq(text: str) -> ParsedAutoEq:
 
 
 def acoustic_fingerprint(parsed: ParsedAutoEq) -> str:
-    filters = [
-        {
-            "type": item["type"],
-            "frequency_hz": round(float(item["frequency_hz"]), 3),
-            "gain_db": round(float(item["gain_db"]), 3),
-            "q": round(float(item["q"]), 4),
-            "slope": None,
-        }
-        for item in parsed.filters
-    ]
-    filters.sort(key=lambda f: (f["type"], f["frequency_hz"], f["gain_db"], f["q"]))
-    return _sha256({"preamp_db": parsed.preamp_db, "filters": filters})
+    return canonical_acoustic_fingerprint(parsed.preamp_db, parsed.filters)
 
 
 def build_candidate(
