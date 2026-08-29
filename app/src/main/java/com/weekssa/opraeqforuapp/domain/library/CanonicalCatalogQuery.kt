@@ -19,8 +19,8 @@ object CanonicalCatalogQuery {
         filters: CanonicalCatalogFilters = CanonicalCatalogFilters(),
     ): List<CanonicalProfileSearchResult> {
         val normalizedQuery = normalize(filters.query)
-        val normalizedCreators = filters.creators.mapTo(mutableSetOf())(::normalize)
-        val normalizedTargets = filters.targets.mapTo(mutableSetOf())(::normalize)
+        val normalizedCreators = filters.creators.mapTo(mutableSetOf()) { normalize(it) }
+        val normalizedTargets = filters.targets.mapTo(mutableSetOf()) { normalize(it) }
 
         return snapshot.profiles.mapNotNull { profile ->
             if (normalizedCreators.isNotEmpty() && normalize(profile.creator.orEmpty()) !in normalizedCreators) {
@@ -39,7 +39,7 @@ object CanonicalCatalogQuery {
             }
             if (matchingRevisions.isEmpty()) null else CanonicalProfileSearchResult(
                 profile = profile,
-                matchingRevisionIds = matchingRevisions.map(EqRevision::revisionId),
+                matchingRevisionIds = matchingRevisions.map { it.revisionId },
             )
         }.sortedWith(
             compareBy<CanonicalProfileSearchResult>(
@@ -53,38 +53,38 @@ object CanonicalCatalogQuery {
     }
 
     fun availableCreators(snapshot: CatalogSnapshot): List<String> =
-        snapshot.profiles.mapNotNull(CanonicalEqProfile::creator)
-            .filter(String::isNotBlank)
-            .distinctBy(::normalize)
-            .sortedBy(::normalize)
+        snapshot.profiles.mapNotNull { it.creator }
+            .filter { it.isNotBlank() }
+            .distinctBy { normalize(it) }
+            .sortedBy { normalize(it) }
 
     fun availableTargets(snapshot: CatalogSnapshot): List<String> =
         snapshot.profiles.mapNotNull { it.target.name }
-            .filter(String::isNotBlank)
-            .distinctBy(::normalize)
-            .sortedBy(::normalize)
+            .filter { it.isNotBlank() }
+            .distinctBy { normalize(it) }
+            .sortedBy { normalize(it) }
 
     fun availableSourceKinds(snapshot: CatalogSnapshot): Set<EqSourceKind> =
         snapshot.profiles.asSequence()
             .flatMap { it.revisions.asSequence() }
             .flatMap { it.sourceReferences.asSequence() }
-            .map(EqSourceReference::sourceKind)
+            .map { it.sourceKind }
             .toSet()
 
     private fun matchesQuery(profile: CanonicalEqProfile, revision: EqRevision, query: String): Boolean {
         val values = buildList {
             add(profile.headphone.manufacturer)
             add(profile.headphone.model)
-            profile.headphone.variant?.let(::add)
-            profile.headphone.padsOrMode?.let(::add)
-            profile.creator?.let(::add)
-            profile.target.name?.let(::add)
-            profile.tuningLabel?.let(::add)
-            revision.sourceVersionLabel?.let(::add)
-            revision.soundImpactSummary?.let(::add)
+            profile.headphone.variant?.let { add(it) }
+            profile.headphone.padsOrMode?.let { add(it) }
+            profile.creator?.let { add(it) }
+            profile.target.name?.let { add(it) }
+            profile.tuningLabel?.let { add(it) }
+            revision.sourceVersionLabel?.let { add(it) }
+            revision.soundImpactSummary?.let { add(it) }
             revision.sourceReferences.forEach { source ->
                 add(source.sourceId)
-                source.creator?.let(::add)
+                source.creator?.let { add(it) }
             }
         }
         return values.any { normalize(it).contains(query) }
