@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.toggleable
@@ -35,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,6 +56,12 @@ import com.weekssa.opraeqforuapp.domain.managed.selectableProfileIds
 import com.weekssa.opraeqforuapp.domain.model.ProfileCompatibility
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityPreferences
 import kotlinx.coroutines.launch
+
+private enum class ProfileFilterDimension(val label: String) {
+    Source("Source"),
+    Creator("Creator"),
+    Target("Target"),
+}
 
 @Suppress("UNUSED_PARAMETER")
 @Composable
@@ -75,11 +83,40 @@ internal fun ProfileSelectionEditor(
 ) {
     val vendor = catalog.vendor(product.vendorId)
     val profiles = catalog.profilesForProduct(product.id)
-    val visibleProfiles = profiles.filter { profile ->
+    val compatibilityVisibleProfiles = profiles.filter { profile ->
         profileVisibility.isVisible(profile.assessCompatibility().category.visibilityCategory())
     }
-    val hiddenCount = profiles.size - visibleProfiles.size
+    val hiddenCompatibilityCount = profiles.size - compatibilityVisibleProfiles.size
+    val sourceOptions = remember(profiles) {
+        profiles.mapNotNull { it.detailMetadata("Source") }.distinct().sortedWith(String.CASE_INSENSITIVE_ORDER)
+    }
+    val creatorOptions = remember(profiles) {
+        profiles.mapNotNull { it.author?.trim()?.takeIf(String::isNotEmpty) }
+            .distinct()
+            .sortedWith(String.CASE_INSENSITIVE_ORDER)
+    }
+    val targetOptions = remember(profiles) {
+        profiles.mapNotNull { it.detailMetadata("Target") }.distinct().sortedWith(String.CASE_INSENSITIVE_ORDER)
+    }
     val scope = rememberCoroutineScope()
+
+    var sourceFilter by rememberSaveable(product.id) { mutableStateOf<String?>(null) }
+    var creatorFilter by rememberSaveable(product.id) { mutableStateOf<String?>(null) }
+    var targetFilter by rememberSaveable(product.id) { mutableStateOf<String?>(null) }
+    var filterDialog by remember { mutableStateOf<ProfileFilterDimension?>(null) }
+
+    LaunchedEffect(sourceOptions, creatorOptions, targetOptions) {
+        if (sourceFilter !in sourceOptions) sourceFilter = null
+        if (creatorFilter !in creatorOptions) creatorFilter = null
+        if (targetFilter !in targetOptions) targetFilter = null
+    }
+
+    val visibleProfiles = compatibilityVisibleProfiles.filter { profile ->
+        (sourceFilter == null || profile.detailMetadata("Source") == sourceFilter) &&
+            (creatorFilter == null || profile.author == creatorFilter) &&
+            (targetFilter == null || profile.detailMetadata("Target") == targetFilter)
+    }
+    val filteredOutCount = compatibilityVisibleProfiles.size - visibleProfiles.size
 
     var initialized by remember(product.id) { mutableStateOf(false) }
     var managedRecord by remember(product.id) { mutableStateOf<ManagedHeadphoneRecord?>(null) }
@@ -177,6 +214,33 @@ internal fun ProfileSelectionEditor(
         )
     }
 
+    filterDialog?.let { dimension ->
+        val options = when (dimension) {
+            ProfileFilterDimension.Source -> sourceOptions
+            ProfileFilterDimension.Creator -> creatorOptions
+            ProfileFilterDimension.Target -> targetOptions
+        }
+        val selected = when (dimension) {
+            ProfileFilterDimension.Source -> sourceFilter
+            ProfileFilterDimension.Creator -> creatorFilter
+            ProfileFilterDimension.Target -> targetFilter
+        }
+        ProfileFilterDialog(
+            dimension = dimension,
+            options = options,
+            selected = selected,
+            onSelect = { value ->
+                when (dimension) {
+                    ProfileFilterDimension.Source -> sourceFilter = value
+                    ProfileFilterDimension.Creator -> creatorFilter = value
+                    ProfileFilterDimension.Target -> targetFilter = value
+                }
+                filterDialog = null
+            },
+            onDismiss = { filterDialog = null },
+        )
+    }
+
     Column(modifier = modifier.fillMaxSize()) {
         TextButton(onClick = ::requestBack, modifier = Modifier.padding(horizontal = 8.dp)) {
             Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = null)
@@ -210,7 +274,64 @@ internal fun ProfileSelectionEditor(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = 16.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            OutlinedButton(
+                onClick = { filterDialog = ProfileFilterDimension.Source },
+                enabled = sourceOptions.isNotEmpty(),
+                modifier = Modifier.weight(1f),
+            ) {
+                Text(if (sourceFilter == null) "Source" else "Source ✓")
+            }
+            OutlinedButton(
+                onClick = { filterDialog = ProfileFilterDimension.Creator },
+                enabled = creatorOptions.isNotEmpty(),
+                modifier = Modifier.weight(1f),
+            ) {
+                Text(if (creatorFilter == null) "Creator" else "Creator ✓")
+            }
+            OutlinedButton(
+                onClick = { filterDialog = ProfileFilterDimension.Target },
+                enabled = targetOptions.isNotEmpty(),
+                modifier = Modifier.weight(1f),
+            ) {
+                Text(if (targetFilter == null) "Target" else "Target ✓")
+            }
+        }
+
+        val activeFilters = listOfNotNull(
+            sourceFilter?.let { "Source: $it" },
+            creatorFilter?.let { "Creator: $it" },
+            targetFilter?.let { "Target: $it" },
+        )
+        if (activeFilters.isNotEmpty()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = activeFilters.joinToString(" · "),
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                TextButton(onClick = {
+                    sourceFilter = null
+                    creatorFilter = null
+                    targetFilter = null
+                }) {
+                    Text("Clear")
+                }
+            }
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             TextButton(onClick = { stagedSelectedIds = selectableProfileIds(profiles) }) {
@@ -246,10 +367,18 @@ internal fun ProfileSelectionEditor(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
-        if (hiddenCount > 0) {
+        if (hiddenCompatibilityCount > 0) {
             Text(
-                text = "$hiddenCount EQ profiles hidden by your compatibility filter.",
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                text = "$hiddenCompatibilityCount EQ profiles hidden by your compatibility filter.",
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (filteredOutCount > 0) {
+            Text(
+                text = "$filteredOutCount EQ profiles hidden by Source / Creator / Target filters.",
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -311,6 +440,42 @@ internal fun ProfileSelectionEditor(
             }
         }
     }
+}
+
+@Composable
+private fun ProfileFilterDialog(
+    dimension: ProfileFilterDimension,
+    options: List<String>,
+    selected: String?,
+    onSelect: (String?) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Filter by ${dimension.label.lowercase()}") },
+        text = {
+            Column {
+                TextButton(
+                    onClick = { onSelect(null) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(if (selected == null) "All ✓" else "All")
+                }
+                options.forEach { option ->
+                    TextButton(
+                        onClick = { onSelect(option) },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(if (selected == option) "$option ✓" else option)
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
 }
 
 @Composable
@@ -378,3 +543,10 @@ internal fun ProfileSelectionRow(
         modifier = rowModifier,
     )
 }
+
+private fun OpraEqProfile.detailMetadata(label: String): String? = details
+    ?.split(" · ")
+    ?.firstOrNull { part -> part.startsWith("$label:", ignoreCase = true) }
+    ?.substringAfter(':')
+    ?.trim()
+    ?.takeIf(String::isNotEmpty)
