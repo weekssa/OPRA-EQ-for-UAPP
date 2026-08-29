@@ -1,7 +1,7 @@
 package com.weekssa.opraeqforuapp.data.sync
 
+import com.weekssa.opraeqforuapp.data.catalog.AppCatalogRepository
 import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshResult
-import com.weekssa.opraeqforuapp.data.catalog.OpraCatalogRepository
 import com.weekssa.opraeqforuapp.data.managed.ManagedCatalogChangeSummary
 import com.weekssa.opraeqforuapp.data.managed.ManagedHeadphonesRepository
 
@@ -11,7 +11,7 @@ data class CatalogSyncOutcome(
 )
 
 class CatalogSyncCoordinator(
-    private val catalogRepository: OpraCatalogRepository,
+    private val catalogRepository: AppCatalogRepository,
     private val managedHeadphonesRepository: ManagedHeadphonesRepository,
 ) {
     suspend fun refresh(): CatalogSyncOutcome {
