@@ -1,0 +1,81 @@
+name: Submit an EQ source
+description: Suggest an original or traceable EQ preset/source for catalog review.
+title: "[EQ source] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Submissions enter the validation, provenance, deduplication, and revision pipeline. They are not published automatically.
+  - type: input
+    id: headphone
+    attributes:
+      label: Headphone / IEM
+      description: Manufacturer and exact model.
+      placeholder: HIFIMAN Edition XS
+    validations:
+      required: true
+  - type: input
+    id: variant
+    attributes:
+      label: Variant / revision / pads / mode
+      description: Include only when it materially affects the tuning.
+  - type: input
+    id: creator
+    attributes:
+      label: EQ creator / username
+      description: Use the original author when known.
+    validations:
+      required: true
+  - type: input
+    id: original_url
+    attributes:
+      label: Original source URL
+      description: Prefer the creator's original post/file over a mirror or repost.
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Source platform
+      options:
+        - OPRA
+        - AutoEq
+        - oratory1990
+        - Squiglink-compatible source
+        - Reddit
+        - Head-Fi
+        - Audio Science Review
+        - HEADPHONE Community
+        - GitHub / Gist
+        - Topping Community
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: target
+    attributes:
+      label: Target / curve (only if explicitly stated)
+      description: Leave blank rather than guessing.
+  - type: textarea
+    id: filters
+    attributes:
+      label: Parametric EQ / preset data
+      description: Paste structured filter data or provide the exact preset-file link.
+      render: text
+  - type: input
+    id: source_date
+    attributes:
+      label: Source published / updated date
+      description: Optional; use YYYY-MM-DD when known.
+  - type: checkboxes
+    id: authorship
+    attributes:
+      label: Authorship
+      options:
+        - label: I am the creator of this EQ.
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Optional provenance, measurement, revision, or variant context.
