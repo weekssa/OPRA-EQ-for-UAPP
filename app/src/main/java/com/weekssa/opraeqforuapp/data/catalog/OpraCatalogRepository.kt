@@ -110,15 +110,15 @@ class OpraCatalogRepository(
     private val parser: OpraCatalogParser = OpraCatalogParser(),
     private val nowMillis: () -> Long = System::currentTimeMillis,
     private val startupRetryDelayMillis: Long = STARTUP_RETRY_DELAY_MILLIS,
-) {
+) : AppCatalogRepository {
     private val catalogDirectory = File(filesDir, "opra/catalog")
     private val currentFile = File(catalogDirectory, "database_v1.jsonl")
     private val candidateFile = File(catalogDirectory, "database_v1.candidate.jsonl")
     private val mutableState = MutableStateFlow<CatalogState>(CatalogState.Loading)
 
-    val state: StateFlow<CatalogState> = mutableState.asStateFlow()
+    override val state: StateFlow<CatalogState> = mutableState.asStateFlow()
 
-    suspend fun initialize() {
+    override suspend fun initialize() {
         val cached = loadCurrentCatalog()
         if (cached != null) {
             mutableState.value = CatalogState.Ready(
@@ -139,7 +139,7 @@ class OpraCatalogRepository(
         }
     }
 
-    suspend fun refresh(): CatalogRefreshResult = refresh(networkAttempts = 1)
+    override suspend fun refresh(): CatalogRefreshResult = refresh(networkAttempts = 1)
 
     private suspend fun refresh(networkAttempts: Int): CatalogRefreshResult = processRefreshMutex.withLock {
         require(networkAttempts >= 1)
