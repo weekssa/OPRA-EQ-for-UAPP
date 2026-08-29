@@ -109,10 +109,97 @@ class CatalogOverlayTest {
             .isEqualTo("Target: SenseLab Aizu · Source: OPRA · Slightly adds bass.")
     }
 
+    @Test
+    fun diffuseFieldReferenceGetsHumanReadableTargetName() {
+        val legacy = OpraCatalog(
+            vendors = listOf(vendor("hifiman", "HIFIMAN")),
+            products = listOf(product("edition-xs", "hifiman", "Edition XS")),
+            profiles = listOf(
+                profileWithBand(
+                    id = "diffuse-field",
+                    productId = "edition-xs",
+                    details = "HRTF_5128_Diffuse_Field · Consolidated",
+                    type = "peak_dip",
+                    frequency = 80.0,
+                ),
+            ),
+        )
+
+        val merged = overlayCanonicalCatalog(
+            legacy,
+            OpraCatalog(vendors = emptyList(), products = emptyList(), profiles = emptyList()),
+        )
+
+        assertThat(merged.profiles.single().details)
+            .isEqualTo("Target: B&K 5128 Diffuse Field (reference) · Source: OPRA · Slightly adds bass.")
+    }
+
+    @Test
+    fun qualifiedModelAliasesConsolidateDuplicateHeadphoneRowsAndPreserveOldIds() {
+        val legacy = OpraCatalog(
+            vendors = listOf(vendor("7hz", "7Hz")),
+            products = listOf(
+                product("salnotes-zero", "7hz", "Salnotes Zero"),
+                product("salnotes-zero-2", "7hz", "Salnotes Zero 2"),
+                product("crinacle-zero-2", "7hz", "x Crinacle Zero 2"),
+                product("zero-2-space", "7hz", "Zero 2"),
+                product("zero-2-colon", "7hz", "Zero:2"),
+            ),
+            profiles = listOf(
+                profileWithBand("original-zero", "salnotes-zero", "Original Zero", "peak_dip", 70.0),
+                profileWithBand("salnotes-two", "salnotes-zero-2", "Zero 2 A", "peak_dip", 80.0),
+                profileWithBand("crinacle-two", "crinacle-zero-2", "Zero 2 B", "peak_dip", 90.0),
+                profileWithBand("space-two", "zero-2-space", "Zero 2 C", "peak_dip", 100.0),
+                profileWithBand("colon-two", "zero-2-colon", "Zero 2 D", "peak_dip", 110.0),
+            ),
+        )
+        val canonical = OpraCatalog(
+            vendors = listOf(vendor("eq-library-vendor:7hz", "7Hz")),
+            products = listOf(
+                product(
+                    id = "eq-library-product:7hz-zero2",
+                    vendorId = "eq-library-vendor:7hz",
+                    name = "Zero:2",
+                    aliases = listOf("Zero 2", "Salnotes Zero 2", "x Crinacle Zero 2"),
+                ),
+            ),
+            profiles = listOf(
+                profileWithBand(
+                    "eq-library:mrchillstorm-zero2@latest",
+                    "eq-library-product:7hz-zero2",
+                    "Latest · Target: ISO 226 · Source: MrChillStorm",
+                    "peak_dip",
+                    120.0,
+                ),
+            ),
+        )
+
+        val merged = overlayCanonicalCatalog(legacy, canonical)
+
+        assertThat(merged.products.map(OpraProduct::name)).containsExactly("Salnotes Zero", "Zero:2")
+        assertThat(merged.searchProducts("7hz zer").map { it.product.name })
+            .containsExactly("Salnotes Zero", "Zero:2")
+        assertThat(merged.product("crinacle-zero-2")?.name).isEqualTo("Zero:2")
+        assertThat(merged.product("salnotes-zero-2")?.name).isEqualTo("Zero:2")
+        assertThat(merged.profilesForProduct("crinacle-zero-2").map(OpraEqProfile::id)).containsExactly(
+            "salnotes-two",
+            "crinacle-two",
+            "space-two",
+            "colon-two",
+            "eq-library:mrchillstorm-zero2@latest",
+        )
+        assertThat(merged.profilesForProduct("salnotes-zero").map(OpraEqProfile::id))
+            .containsExactly("original-zero")
+    }
+
     private fun vendor(id: String, name: String) = OpraVendor(id, name)
 
-    private fun product(id: String, vendorId: String, name: String) =
-        OpraProduct(id, vendorId, name, "headphones", "")
+    private fun product(
+        id: String,
+        vendorId: String,
+        name: String,
+        aliases: List<String> = emptyList(),
+    ) = OpraProduct(id, vendorId, name, "headphones", "", aliases)
 
     private fun profile(id: String, productId: String, details: String) = OpraEqProfile(
         id = id,
