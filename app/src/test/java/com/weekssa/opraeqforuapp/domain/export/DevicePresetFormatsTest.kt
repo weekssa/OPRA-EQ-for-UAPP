@@ -53,4 +53,19 @@ class DevicePresetFormatsTest {
             variants.mapTo(mutableSetOf()) { it.device },
         )
     }
+
+    @Test
+    fun singleDeviceFormatterReturnsOnlyTheRequestedTarget() {
+        val blackPearl = buildTextDeviceVariant(profile, ExportDevice.BLACK_PEARL)
+        assertEquals(ExportDevice.BLACK_PEARL, blackPearl?.device)
+        assertTrue(buildTextDeviceVariant(profile, ExportDevice.UAPP) == null)
+    }
+
+    @Test
+    fun toppingTargetsRemainAvailableButAreMarkedUntested() {
+        assertEquals("Untested", ExportDevice.TOPPING_DX5_II.validationStatus)
+        assertEquals("Untested", ExportDevice.TOPPING_DX1_II.validationStatus)
+        assertTrue(ExportDevice.UAPP.validationStatus == null)
+        assertTrue(ExportDevice.BLACK_PEARL.validationStatus == null)
+    }
 }
