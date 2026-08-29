@@ -7,13 +7,17 @@ on:
     paths:
       - 'config/source_registry.json'
       - 'tools/catalog_pipeline.py'
+      - 'tools/currentness_scheduler.py'
       - 'tools/test_catalog_pipeline.py'
+      - 'tools/test_currentness_scheduler.py'
       - '.github/workflows/catalog-currentness-ci.yml'
   pull_request:
     paths:
       - 'config/source_registry.json'
       - 'tools/catalog_pipeline.py'
+      - 'tools/currentness_scheduler.py'
       - 'tools/test_catalog_pipeline.py'
+      - 'tools/test_currentness_scheduler.py'
       - '.github/workflows/catalog-currentness-ci.yml'
   workflow_dispatch:
 
@@ -32,5 +36,12 @@ jobs:
         run: python3 tools/catalog_pipeline.py validate-registry --registry config/source_registry.json
       - name: Reconcile source-health state in a temporary file
         run: python3 tools/catalog_pipeline.py reconcile-health --registry config/source_registry.json --state "${RUNNER_TEMP}/source_health.json"
+      - name: Build deterministic currentness plan
+        run: >-
+          python3 tools/currentness_scheduler.py
+          --registry config/source_registry.json
+          --state "${RUNNER_TEMP}/source_health.json"
+          --now 2026-08-29T15:00:00Z
+          --last-discovery-at 2026-08-20T15:00:00Z
       - name: Unit tests
         run: python3 -m unittest discover -s tools -p 'test_*.py' -v
