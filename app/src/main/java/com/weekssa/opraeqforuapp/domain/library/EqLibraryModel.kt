@@ -87,6 +87,8 @@ data class EqSourceReference(
     @SerialName("source_id") val sourceId: String,
     @SerialName("source_kind") val sourceKind: EqSourceKind,
     @SerialName("source_record_id") val sourceRecordId: String?,
+    @SerialName("source_vendor_id") val sourceVendorId: String? = null,
+    @SerialName("source_product_id") val sourceProductId: String? = null,
     val url: String?,
     val creator: String?,
     @SerialName("provenance_tier") val provenanceTier: ProvenanceTier,
