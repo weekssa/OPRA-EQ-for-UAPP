@@ -3,6 +3,7 @@ package com.weekssa.opraeqforuapp.data.managed
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.assessCompatibility
 import com.weekssa.opraeqforuapp.domain.conversion.ToneBoostersConverter
+import com.weekssa.opraeqforuapp.domain.library.legacyAcousticSignature
 
 data class ManagedCatalogChangeSummary(
     val newProfileCount: Int = 0,
@@ -30,6 +31,7 @@ data class ManagedCatalogChangeSummary(
 internal data class ReconciledManagedProfiles(
     val profiles: List<ManagedProfileEntity>,
     val changes: ManagedCatalogChangeSummary,
+    val profileIdsToDelete: Set<String> = emptySet(),
 )
 
 internal fun reconcileManagedProfiles(
@@ -42,14 +44,33 @@ internal fun reconcileManagedProfiles(
     snapshotCodec: ManagedProfileSnapshotCodec,
 ): ReconciledManagedProfiles {
     val existingById = existingProfiles.associateBy(ManagedProfileEntity::profileId)
+    val existingWithSignatures = existingProfiles.mapNotNull { entity ->
+        runCatching { snapshotCodec.decode(entity.snapshotJson) }
+            .getOrNull()
+            ?.legacyAcousticSignature()
+            ?.let { signature -> entity to signature }
+    }
     val currentIds = currentProfiles.mapTo(mutableSetOf(), OpraEqProfile::id)
+    val migratedAliasIds = mutableSetOf<String>()
     var newCount = 0
     var updatedSelectedCount = 0
     var removedSelectedCount = 0
     var becameNotCompatibleSelectedCount = 0
 
     val reconciledCurrent = currentProfiles.map { profile ->
-        val existing = existingById[profile.id]
+        val signature = profile.legacyAcousticSignature()
+        val acousticAliases = if (signature == null) {
+            emptyList()
+        } else {
+            existingWithSignatures
+                .filter { (entity, existingSignature) ->
+                    entity.profileId != profile.id && existingSignature == signature
+                }
+                .map { it.first }
+        }
+        migratedAliasIds += acousticAliases.map(ManagedProfileEntity::profileId)
+        val exactExisting = existingById[profile.id]
+        val existing = exactExisting ?: acousticAliases.preferredMigrationSource()
         val fingerprint = snapshotCodec.fingerprint(profile)
         val selectable = profile.assessCompatibility().category.isSelectable
 
@@ -79,13 +100,23 @@ internal fun reconcileManagedProfiles(
                 generatedAtMillis = generated?.generatedAtMillis,
             )
         } else {
-            val changed = fingerprint != existing.fingerprint
-            val wasSelected = existing.selected
-            val becameNotCompatible = wasSelected && !selectable
-            if (changed && wasSelected) updatedSelectedCount += 1
+            val migrated = exactExisting == null
+            val selectedBeforeMigration = if (migrated) {
+                acousticAliases.any { it.selected }
+            } else {
+                existing.selected
+            }
+            val explicitlyExcludedBeforeMigration = if (migrated && !selectedBeforeMigration) {
+                acousticAliases.any { it.explicitlyExcluded }
+            } else {
+                existing.explicitlyExcluded
+            }
+            val changed = fingerprint != existing.fingerprint || migrated
+            val becameNotCompatible = selectedBeforeMigration && !selectable
+            if (changed && selectedBeforeMigration && !migrated) updatedSelectedCount += 1
             if (becameNotCompatible) becameNotCompatibleSelectedCount += 1
 
-            val selected = if (becameNotCompatible) false else existing.selected
+            val selected = if (becameNotCompatible) false else selectedBeforeMigration
             val shouldRegenerate = selected && selectable &&
                 (changed || existing.generatedXml == null || existing.generatedFromFingerprint != fingerprint)
             val generated = if (shouldRegenerate) {
@@ -95,11 +126,24 @@ internal fun reconcileManagedProfiles(
             }
 
             existing.copy(
+                profileId = profile.id,
+                productId = productId,
                 selected = selected,
+                explicitlyExcluded = explicitlyExcludedBeforeMigration,
                 snapshotJson = snapshotCodec.encode(profile),
                 fingerprint = fingerprint,
+                firstSeenAtMillis = if (migrated) {
+                    acousticAliases.minOfOrNull { it.firstSeenAtMillis } ?: existing.firstSeenAtMillis
+                } else {
+                    existing.firstSeenAtMillis
+                },
                 lastSeenAtMillis = nowMillis,
-                isUpdatedUnreviewed = existing.isUpdatedUnreviewed || (changed && wasSelected),
+                isNewUnreviewed = if (migrated) acousticAliases.any { it.isNewUnreviewed } else existing.isNewUnreviewed,
+                isUpdatedUnreviewed = if (migrated) {
+                    acousticAliases.any { it.isUpdatedUnreviewed }
+                } else {
+                    existing.isUpdatedUnreviewed || (changed && selectedBeforeMigration)
+                },
                 noLongerAvailable = false,
                 generatedPresetName = generated?.presetName ?: existing.generatedPresetName,
                 generatedXml = generated?.xml ?: existing.generatedXml,
@@ -111,7 +155,7 @@ internal fun reconcileManagedProfiles(
 
     val retainedRemoved = existingProfiles
         .asSequence()
-        .filter { it.profileId !in currentIds }
+        .filter { it.profileId !in currentIds && it.profileId !in migratedAliasIds }
         .map { existing ->
             if (!existing.noLongerAvailable && existing.selected) removedSelectedCount += 1
             existing.copy(noLongerAvailable = true)
@@ -135,8 +179,17 @@ internal fun reconcileManagedProfiles(
     return ReconciledManagedProfiles(
         profiles = (reconciledCurrent + retainedRemoved).sortedBy(ManagedProfileEntity::profileId),
         changes = changes,
+        profileIdsToDelete = migratedAliasIds - currentIds,
     )
 }
+
+private fun List<ManagedProfileEntity>.preferredMigrationSource(): ManagedProfileEntity? =
+    sortedWith(
+        compareByDescending<ManagedProfileEntity> { it.selected }
+            .thenByDescending { it.explicitlyExcluded }
+            .thenBy { it.firstSeenAtMillis }
+            .thenBy { it.profileId },
+    ).firstOrNull()
 
 internal data class GeneratedManagedPreset(
     val presetName: String,
