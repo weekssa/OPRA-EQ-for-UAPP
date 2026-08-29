@@ -73,6 +73,26 @@ class PresetExportPlanTest {
     }
 
     @Test
+    fun historicalCanonicalRevisionCanBeExportedWithoutSelectingLatest() {
+        val historicalId = "eq-library:autoeq-edition-xs@rev-2023"
+        val headphone = headphone(
+            vendor = "HIFIMAN",
+            model = "Edition XS",
+            profiles = listOf(
+                profile(historicalId, selected = true, presetName = "Edition XS - AutoEq - Previous revision"),
+                profile("eq-library:autoeq-edition-xs@rev-latest", selected = false, presetName = "Edition XS - AutoEq - Latest"),
+            ),
+        )
+
+        val plan = buildEqLibraryExportPlan(listOf(headphone), ExportDevice.UAPP)
+
+        assertEquals(1, plan.candidates.size)
+        assertEquals(historicalId, plan.candidates.single().profileId)
+        assertEquals(ExportDevice.UAPP.folderName, plan.candidates.single().deviceName)
+        assertTrue(plan.candidates.single().relativeDirectory.startsWith("UAPP/HIFIMAN/Edition XS"))
+    }
+
+    @Test
     fun folderSanitizationPreservesUnicodeAndOnlyRemovesPathSeparators() {
         assertEquals("A-B 測定", safeSharedPathSegment(" A/B 測定 "))
         assertEquals("Model-Variant", safeSharedPathSegment("Model\\Variant"))
