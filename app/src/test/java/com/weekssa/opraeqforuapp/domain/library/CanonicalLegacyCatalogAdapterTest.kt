@@ -103,8 +103,12 @@ class CanonicalLegacyCatalogAdapterTest {
         assertThat(previous.id).isEqualTo("eq-library:community-hd650@old")
         assertThat(latest.details).contains("Latest")
         assertThat(previous.details).contains("Previous revision")
-        assertThat(previous.details).contains("Revision date: 2023-11-14")
-        assertThat(previous.details).contains("Provenance: traceable community")
+        assertThat(previous.details).contains("Revision: 2023-11-14")
+        assertThat(previous.details).contains("Target: Custom")
+        assertThat(previous.details).contains("Source: community")
+        assertThat(previous.details).contains("Adds bass.")
+        assertThat(previous.details).doesNotContain("Provenance:")
+        assertThat(previous.details).doesNotContain("Version:")
     }
 
     @Test
