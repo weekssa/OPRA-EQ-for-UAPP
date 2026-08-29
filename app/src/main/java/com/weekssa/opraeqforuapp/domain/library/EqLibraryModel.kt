@@ -1,5 +1,8 @@
 package com.weekssa.opraeqforuapp.domain.library
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 enum class EqSourceKind {
     STRUCTURED_CATALOG,
     CREATOR,
@@ -11,6 +14,7 @@ enum class EqSourceKind {
     PERSONAL_IMPORT,
 }
 
+@Serializable
 enum class ProvenanceTier {
     AUTHORITATIVE,
     MEASUREMENT_DERIVED,
@@ -19,6 +23,7 @@ enum class ProvenanceTier {
     NEEDS_REVIEW,
 }
 
+@Serializable
 enum class RedistributionPolicy {
     ALLOWED,
     STRUCTURED_DATA_ONLY,
@@ -26,6 +31,7 @@ enum class RedistributionPolicy {
     UNKNOWN_REVIEW,
 }
 
+@Serializable
 enum class EqFilterType {
     PEAK,
     LOW_SHELF,
@@ -35,6 +41,7 @@ enum class EqFilterType {
     OTHER,
 }
 
+@Serializable
 enum class EqTargetKind {
     EXPLICIT_TARGET,
     CREATOR_TARGET,
@@ -42,6 +49,7 @@ enum class EqTargetKind {
     UNKNOWN,
 }
 
+@Serializable
 data class HeadphoneIdentity(
     val manufacturer: String,
     val model: String,
@@ -58,6 +66,7 @@ data class HeadphoneIdentity(
     }
 }
 
+@Serializable
 data class EqFilter(
     val type: EqFilterType,
     val frequencyHz: Double,
@@ -66,11 +75,13 @@ data class EqFilter(
     val slope: Double? = null,
 )
 
+@Serializable
 data class EqTarget(
     val name: String?,
     val kind: EqTargetKind,
 )
 
+@Serializable
 data class EqSourceReference(
     val sourceId: String,
     val sourceKind: EqSourceKind,
@@ -86,6 +97,7 @@ data class EqSourceReference(
     val isPrimary: Boolean = false,
 )
 
+@Serializable
 data class EqRevision(
     val revisionId: String,
     val acousticFingerprint: String,
@@ -99,6 +111,7 @@ data class EqRevision(
     val isLatest: Boolean = false,
 )
 
+@Serializable
 data class CanonicalEqProfile(
     val canonicalProfileId: String,
     val headphone: HeadphoneIdentity,
@@ -107,10 +120,13 @@ data class CanonicalEqProfile(
     val tuningLabel: String?,
     val revisions: List<EqRevision>,
 ) {
-    val latestRevision: EqRevision?
-        get() = revisions.firstOrNull(EqRevision::isLatest) ?: revisions.maxByOrNull {
-            it.sourceUpdatedAtEpochSeconds ?: it.firstSeenAtEpochSeconds ?: Long.MIN_VALUE
-        }
+    init {
+        require(revisions.isNotEmpty()) { "EQ profile must contain at least one revision" }
+        require(revisions.count(EqRevision::isLatest) == 1) { "EQ profile must contain exactly one latest revision" }
+    }
+
+    val latestRevision: EqRevision
+        get() = revisions.first(EqRevision::isLatest)
 }
 
 data class EqCandidate(
