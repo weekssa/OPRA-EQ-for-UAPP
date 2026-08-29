@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Delete
@@ -16,7 +15,6 @@ import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -25,18 +23,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
 import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
 import kotlinx.coroutines.launch
@@ -51,7 +45,7 @@ fun MyEqsScreen(
         target: String?,
         peqText: String,
     ) -> String?,
-    onDeleteSavedEq: suspend (String, Boolean) -> PresetCleanupSummary?,
+    onDeleteSavedEq: suspend (String) -> Unit,
     onExportSavedEq: (String) -> Unit,
     onMessage: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -59,8 +53,6 @@ fun MyEqsScreen(
     val favorites = remember(savedEqs) { savedEqs.filter { it.kind == SavedEqKind.Favorite } }
     val personal = remember(savedEqs) { savedEqs.filter { it.kind == SavedEqKind.Personal } }
     var importOpen by remember { mutableStateOf(false) }
-    var pendingDelete by remember { mutableStateOf<SavedEqRecord?>(null) }
-    var deleteSavedFiles by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     if (importOpen) {
@@ -75,74 +67,6 @@ fun MyEqsScreen(
                     } else {
                         onMessage(error)
                     }
-                }
-            },
-        )
-    }
-
-    pendingDelete?.let { record ->
-        AlertDialog(
-            onDismissRequest = {
-                pendingDelete = null
-                deleteSavedFiles = false
-            },
-            title = {
-                Text(if (record.kind == SavedEqKind.Favorite) "Remove favorite?" else "Delete personal EQ?")
-            },
-            text = {
-                Column {
-                    Text(
-                        if (record.kind == SavedEqKind.Favorite) {
-                            "This removes the saved favorite snapshot from My EQs. It does not change any My Headphones selection."
-                        } else {
-                            "This removes ${record.displayName} from My EQs."
-                        },
-                    )
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 16.dp)
-                            .toggleable(
-                                value = deleteSavedFiles,
-                                role = Role.Checkbox,
-                                onValueChange = { deleteSavedFiles = it },
-                            ),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Checkbox(checked = deleteSavedFiles, onCheckedChange = null)
-                        Text(
-                            text = "Also delete exported files created by EQ Library for this saved EQ. Unknown files will not be touched.",
-                            modifier = Modifier.padding(start = 8.dp),
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    val shouldDeleteFiles = deleteSavedFiles
-                    pendingDelete = null
-                    deleteSavedFiles = false
-                    scope.launch {
-                        val cleanup = onDeleteSavedEq(record.entryId, shouldDeleteFiles)
-                        val base = if (record.kind == SavedEqKind.Favorite) "Favorite removed." else "Personal EQ deleted."
-                        val message = when {
-                            !shouldDeleteFiles -> "$base Existing exported files were kept."
-                            cleanup == null -> base
-                            cleanup.failedCount > 0 -> "$base ${cleanup.removedCount} exported files deleted; ${cleanup.failedCount} could not be removed."
-                            else -> "$base ${cleanup.removedCount} exported files deleted."
-                        }
-                        onMessage(message)
-                    }
-                }) {
-                    Text(if (record.kind == SavedEqKind.Favorite) "Remove" else "Delete")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    pendingDelete = null
-                    deleteSavedFiles = false
-                }) {
-                    Text("Cancel")
                 }
             },
         )
@@ -183,8 +107,10 @@ fun MyEqsScreen(
                         leadingFavorite = true,
                         onExport = { onExportSavedEq(record.entryId) },
                         onDelete = {
-                            deleteSavedFiles = false
-                            pendingDelete = record
+                            scope.launch {
+                                onDeleteSavedEq(record.entryId)
+                                onMessage("Favorite removed. Existing exported files were kept.")
+                            }
                         },
                     )
                     HorizontalDivider()
@@ -205,8 +131,10 @@ fun MyEqsScreen(
                         leadingFavorite = false,
                         onExport = { onExportSavedEq(record.entryId) },
                         onDelete = {
-                            deleteSavedFiles = false
-                            pendingDelete = record
+                            scope.launch {
+                                onDeleteSavedEq(record.entryId)
+                                onMessage("Personal EQ deleted. Existing exported files were kept.")
+                            }
                         },
                     )
                     HorizontalDivider()
