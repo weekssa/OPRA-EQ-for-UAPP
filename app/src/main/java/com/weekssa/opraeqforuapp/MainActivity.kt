@@ -16,6 +16,9 @@ import com.weekssa.opraeqforuapp.data.export.PresetCleanupRepository
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
 import com.weekssa.opraeqforuapp.data.export.PresetExportRepository
 import com.weekssa.opraeqforuapp.data.export.PresetExportSummary
+import com.weekssa.opraeqforuapp.data.library.CanonicalCatalogRepository
+import com.weekssa.opraeqforuapp.data.library.CanonicalFirstCatalogRepository
+import com.weekssa.opraeqforuapp.data.library.HttpCanonicalCatalogSource
 import com.weekssa.opraeqforuapp.data.managed.ManagedHeadphonesRepository
 import com.weekssa.opraeqforuapp.data.managed.OpraEqDatabase
 import com.weekssa.opraeqforuapp.data.preferences.AppPreferencesRepository
@@ -35,10 +38,18 @@ class MainActivity : ComponentActivity() {
     }
 
     private val catalogRepository by lazy {
-        OpraCatalogRepository(
-            filesDir = filesDir,
-            source = HttpOpraCatalogSource(
-                userAgent = "OPRA EQ for UAPP/${BuildConfig.VERSION_NAME}",
+        CanonicalFirstCatalogRepository(
+            canonicalRepository = CanonicalCatalogRepository(
+                filesDir = filesDir,
+                source = HttpCanonicalCatalogSource(
+                    userAgent = "EQ Library/${BuildConfig.VERSION_NAME}",
+                ),
+            ),
+            legacyFallback = OpraCatalogRepository(
+                filesDir = filesDir,
+                source = HttpOpraCatalogSource(
+                    userAgent = "EQ Library/${BuildConfig.VERSION_NAME}",
+                ),
             ),
         )
     }
