@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "registry_version": "0.3.0-seed",
+  "registry_version": "0.3.0-autoeq-active",
   "sources": [
     {
       "id": "opra",
@@ -20,13 +20,14 @@
       "kind": "measurement_derived",
       "name": "AutoEq",
       "scope": "Structured parametric EQ results with measurement and target provenance",
-      "lifecycle": "reviewing",
+      "lifecycle": "active",
       "cadence": "daily",
-      "parser": "autoeq",
-      "parser_version": "1",
+      "parser": "autoeq-parametric-text",
+      "parser_version": "2",
       "cursor_strategy": "repository commit and file content hash",
-      "redistribution": "review-required",
-      "attribution_required": true
+      "redistribution": "structured-data-only",
+      "attribution_required": true,
+      "license_notes": "AutoEq repository is MIT licensed. Ingestion stores structured PEQ parameters and explicit provenance only; source-specific measurement/creator attribution is retained."
     },
     {
       "id": "oratory1990",
