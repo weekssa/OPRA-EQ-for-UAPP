@@ -12,11 +12,15 @@ on:
       - 'tools/currentness_scheduler.py'
       - 'tools/autoeq_ingest.py'
       - 'tools/community_peq_ingest.py'
+      - 'tools/github_preset_discovery.py'
+      - 'tools/squiglink_discovery.py'
       - 'tools/test_acoustic_fingerprint.py'
       - 'tools/test_catalog_pipeline.py'
       - 'tools/test_currentness_scheduler.py'
       - 'tools/test_autoeq_ingest.py'
       - 'tools/test_community_peq_ingest.py'
+      - 'tools/test_github_preset_discovery.py'
+      - 'tools/test_squiglink_discovery.py'
       - 'tools/test_published_catalog.py'
       - '.github/workflows/catalog-currentness-ci.yml'
   pull_request:
@@ -28,11 +32,15 @@ on:
       - 'tools/currentness_scheduler.py'
       - 'tools/autoeq_ingest.py'
       - 'tools/community_peq_ingest.py'
+      - 'tools/github_preset_discovery.py'
+      - 'tools/squiglink_discovery.py'
       - 'tools/test_acoustic_fingerprint.py'
       - 'tools/test_catalog_pipeline.py'
       - 'tools/test_currentness_scheduler.py'
       - 'tools/test_autoeq_ingest.py'
       - 'tools/test_community_peq_ingest.py'
+      - 'tools/test_github_preset_discovery.py'
+      - 'tools/test_squiglink_discovery.py'
       - 'tools/test_published_catalog.py'
       - '.github/workflows/catalog-currentness-ci.yml'
   workflow_dispatch:
@@ -75,5 +83,9 @@ jobs:
         run: python3 -m unittest discover -s tools -p 'test_autoeq_ingest.py' -v
       - name: Community ingestion tests
         run: python3 -m unittest discover -s tools -p 'test_community_peq_ingest.py' -v
+      - name: GitHub and Gist discovery tests
+        run: python3 -m unittest discover -s tools -p 'test_github_preset_discovery.py' -v
+      - name: Squiglink discovery tests
+        run: python3 -m unittest discover -s tools -p 'test_squiglink_discovery.py' -v
       - name: Published catalog canary tests
         run: python3 -m unittest discover -s tools -p 'test_published_catalog.py' -v
