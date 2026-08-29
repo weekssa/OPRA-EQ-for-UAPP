@@ -1,0 +1,194 @@
+#!/usr/bin/env python3
+"""Ingest explicitly qualified GitHub PEQ sources into the canonical catalog.
+
+Only repositories listed in config/qualified_github_sources.json are eligible.
+Each entry must name a recognized license and an exact marker for the structured
+PEQ block. Discovery alone never reaches this adapter.
+"""
+
+from __future__ import annotations
+
+import argparse
+import base64
+import hashlib
+import json
+import re
+import time
+import urllib.parse
+import urllib.request
+from pathlib import Path
+from typing import Any
+
+from catalog_merge import merge_candidate
+from catalog_pipeline import (
+    load_health,
+    load_json,
+    reconcile_health,
+    record_scan_failure,
+    record_scan_success,
+    write_health,
+)
+from community_peq_ingest import build_candidate, parse_peq
+
+FENCE_RE = re.compile(r"```(?:text|txt)?\s*\n(?P<body>.*?)\n```", re.IGNORECASE | re.DOTALL)
+ALLOWED_LICENSES = {"MIT", "BSD-2-Clause", "BSD-3-Clause", "0BSD", "CC0-1.0", "CC-BY-4.0", "CC-BY-SA-4.0"}
+
+
+def extract_fenced_peq(text: str, marker: str) -> str:
+    marker_index = text.casefold().find(marker.casefold())
+    if marker_index < 0:
+        raise ValueError(f"marker not found: {marker}")
+    tail = text[marker_index:]
+    match = FENCE_RE.search(tail)
+    if not match:
+        raise ValueError(f"structured PEQ code block not found after marker: {marker}")
+    return match.group("body").strip()
+
+
+def github_contents(repository: str, path: str, ref: str, token: str | None = None) -> tuple[str, str]:
+    quoted_path = "/".join(urllib.parse.quote(segment, safe="") for segment in path.split("/"))
+    url = f"https://api.github.com/repos/{repository}/contents/{quoted_path}?ref={urllib.parse.quote(ref, safe='')}"
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "User-Agent": "EQ-Library-currentness/0.3",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    if token:
+        headers["Authorization"] = "Bearer " + token
+    request = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(request, timeout=30) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+    encoded = str(payload.get("content") or "").replace("\n", "")
+    if not encoded:
+        raise ValueError(f"GitHub contents response missing content for {repository}/{path}")
+    return base64.b64decode(encoded).decode("utf-8"), str(payload.get("sha") or "")
+
+
+def validate_manifest(manifest: dict[str, Any]) -> None:
+    if manifest.get("schema_version") != 1:
+        raise ValueError("qualified GitHub manifest schema_version must be 1")
+    for source in manifest.get("sources", []):
+        source_id = str(source.get("id") or "").strip()
+        if not source_id:
+            raise ValueError("qualified GitHub source id is required")
+        license_spdx = str(source.get("license_spdx") or "").strip()
+        if license_spdx not in ALLOWED_LICENSES:
+            raise ValueError(f"{source_id}: license is not on the explicit allow-list: {license_spdx}")
+        if not source.get("profiles"):
+            raise ValueError(f"{source_id}: at least one profile is required")
+
+
+def candidate_from_text(source: dict[str, Any], profile: dict[str, Any], text: str, blob_sha: str, now_epoch: int) -> dict[str, Any]:
+    peq_text = extract_fenced_peq(text, str(profile["marker"]))
+    parsed = parse_peq(peq_text)
+    candidate = build_candidate(
+        parsed,
+        manufacturer=str(profile["manufacturer"]),
+        model=str(profile["model"]),
+        variant=profile.get("variant"),
+        creator=str(source["creator"]),
+        tuning_label=str(profile["tuning_label"]),
+        target=profile.get("target"),
+        source_id=str(source["id"]),
+        source_kind="community_repository",
+        source_url=str(profile["source_url"]),
+        source_record_id=str(profile["source_record_id"]),
+        redistribution_policy="structured-data-only",
+        source_version=f"GitHub blob {blob_sha}",
+        discovered_at_epoch_seconds=now_epoch,
+    )
+    return candidate
+
+
+def refresh(
+    catalog: dict[str, Any],
+    registry: dict[str, Any],
+    health_path: Path,
+    manifest: dict[str, Any],
+    *,
+    github_token: str | None = None,
+    now_epoch: int | None = None,
+) -> tuple[dict[str, Any], dict[str, Any], list[dict[str, Any]]]:
+    validate_manifest(manifest)
+    now_epoch = now_epoch or int(time.time())
+    health = reconcile_health(registry, load_health(health_path))
+    source_by_id = {item["id"]: item for item in registry.get("sources", [])}
+    result_catalog = catalog
+    outcomes: list[dict[str, Any]] = []
+
+    for source in manifest.get("sources", []):
+        source_id = str(source["id"])
+        source_registry = source_by_id.get(source_id)
+        if source_registry is None:
+            raise ValueError(f"qualified GitHub source missing from registry: {source_id}")
+        if source_registry.get("lifecycle") != "active" or source_registry.get("redistribution") != "structured-data-only":
+            raise ValueError(f"qualified GitHub source is not active/structured-data-only: {source_id}")
+        try:
+            file_cache: dict[str, tuple[str, str]] = {}
+            source_outcomes: list[str] = []
+            cursor_parts: list[str] = []
+            fingerprints: list[str] = []
+            for profile in source.get("profiles", []):
+                path = str(profile["source_path"])
+                if path not in file_cache:
+                    file_cache[path] = github_contents(str(source["repository"]), path, str(source.get("branch") or "main"), github_token)
+                text, blob_sha = file_cache[path]
+                cursor_parts.append(f"{path}:{blob_sha}")
+                candidate = candidate_from_text(source, profile, text, blob_sha, now_epoch)
+                fingerprints.append(candidate["revisions"][0]["acoustic_fingerprint"])
+                result_catalog, outcome = merge_candidate(
+                    result_catalog,
+                    candidate,
+                    source_registry_version=str(registry.get("registry_version") or ""),
+                )
+                source_outcomes.append(outcome)
+            cursor = hashlib.sha256("|".join(sorted(cursor_parts)).encode("utf-8")).hexdigest()
+            content_fingerprint = hashlib.sha256("|".join(sorted(fingerprints)).encode("utf-8")).hexdigest()
+            health[source_id] = record_scan_success(health[source_id], cursor=cursor, content_fingerprint=content_fingerprint)
+            outcomes.append({"source_id": source_id, "status": "ok", "outcomes": source_outcomes})
+        except Exception as exc:  # source degradation must preserve the last-known-good catalog
+            health[source_id] = record_scan_failure(health[source_id], str(exc))
+            outcomes.append({"source_id": source_id, "status": "degraded", "error": str(exc)[:500]})
+
+    health_payload = {
+        "schema_version": 1,
+        "sources": [health[key].__dict__ for key in sorted(health)],
+    }
+    return result_catalog, health_payload, outcomes
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--catalog", type=Path, required=True)
+    parser.add_argument("--registry", type=Path, default=Path("config/source_registry.json"))
+    parser.add_argument("--health", type=Path, default=Path("catalog/source_health.json"))
+    parser.add_argument("--manifest", type=Path, default=Path("config/qualified_github_sources.json"))
+    parser.add_argument("--catalog-output", type=Path, required=True)
+    parser.add_argument("--health-output", type=Path, required=True)
+    parser.add_argument("--report", type=Path)
+    parser.add_argument("--github-token")
+    args = parser.parse_args()
+
+    catalog = load_json(args.catalog)
+    registry = load_json(args.registry)
+    manifest = load_json(args.manifest)
+    refreshed, health_payload, outcomes = refresh(
+        catalog,
+        registry,
+        args.health,
+        manifest,
+        github_token=args.github_token,
+    )
+    args.catalog_output.parent.mkdir(parents=True, exist_ok=True)
+    args.catalog_output.write_text(json.dumps(refreshed, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    args.health_output.parent.mkdir(parents=True, exist_ok=True)
+    args.health_output.write_text(json.dumps(health_payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    if args.report:
+        args.report.parent.mkdir(parents=True, exist_ok=True)
+        args.report.write_text(json.dumps(outcomes, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    print(json.dumps(outcomes, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
