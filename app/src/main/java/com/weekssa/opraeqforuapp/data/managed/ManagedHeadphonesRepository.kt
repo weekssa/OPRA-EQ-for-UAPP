@@ -47,13 +47,14 @@ class ManagedHeadphonesRepository(
         stagedSelectedProfileIds: Set<String>,
         autoIncludeNewProfiles: Boolean,
     ) {
-        val product = requireNotNull(catalog.product(productId)) {
-            "Cannot manage unknown OPRA product $productId."
+        val canonicalProductId = catalog.canonicalProductId(productId)
+        val product = requireNotNull(catalog.product(canonicalProductId)) {
+            "Cannot manage unknown EQ Library product $productId."
         }
         val vendor = requireNotNull(catalog.vendor(product.vendorId)) {
-            "Cannot manage OPRA product $productId without its vendor."
+            "Cannot manage EQ Library product $productId without its vendor."
         }
-        val currentProfiles = catalog.profilesForProduct(productId)
+        val currentProfiles = catalog.profilesForProduct(canonicalProductId)
         val selectionUpdates = selectionUpdatesForSave(
             profiles = currentProfiles,
             stagedSelectedProfileIds = stagedSelectedProfileIds,
@@ -62,11 +63,14 @@ class ManagedHeadphonesRepository(
         val now = nowMillis()
 
         database.withTransaction {
-            val existingHeadphone = dao.getHeadphone(productId)
-            val existingProfiles = dao.getProfiles(productId).associateBy(ManagedProfileEntity::profileId)
+            if (canonicalProductId != productId) {
+                migrateManagedHeadphoneAlias(catalog, productId, now)
+            }
+            val existingHeadphone = dao.getHeadphone(canonicalProductId)
+            val existingProfiles = dao.getProfiles(canonicalProductId).associateBy(ManagedProfileEntity::profileId)
             dao.upsertHeadphone(
                 ManagedHeadphoneEntity(
-                    productId = product.id,
+                    productId = canonicalProductId,
                     vendorId = vendor.id,
                     vendorName = vendor.name,
                     productName = product.name,
@@ -92,7 +96,7 @@ class ManagedHeadphonesRepository(
                     }
                     ManagedProfileEntity(
                         profileId = profile.id,
-                        productId = product.id,
+                        productId = canonicalProductId,
                         selected = selection.selected,
                         explicitlyExcluded = selection.explicitlyExcluded,
                         snapshotJson = snapshotCodec.encode(profile),
@@ -115,6 +119,7 @@ class ManagedHeadphonesRepository(
     suspend fun reconcileCatalog(catalog: OpraCatalog): ManagedCatalogChangeSummary =
         database.withTransaction {
             val now = nowMillis()
+            migrateAllManagedHeadphoneAliases(catalog, now)
             var summary = ManagedCatalogChangeSummary()
 
             dao.getHeadphones().forEach { headphone ->
@@ -155,12 +160,62 @@ class ManagedHeadphonesRepository(
             summary
         }
 
+    private suspend fun migrateAllManagedHeadphoneAliases(catalog: OpraCatalog, now: Long) {
+        dao.getHeadphones().forEach { headphone ->
+            if (catalog.canonicalProductId(headphone.productId) != headphone.productId) {
+                migrateManagedHeadphoneAlias(catalog, headphone.productId, now)
+            }
+        }
+    }
+
+    /**
+     * Moves an existing managed-headphone record onto the retained catalog product ID.
+     *
+     * Product aliases can appear when a newly qualified source proves that several source names
+     * refer to the same physical headphone/IEM. The move is intentionally non-destructive: saved
+     * profile snapshots, selections, exclusions and generated exports are retained, then the normal
+     * catalog reconciler handles acoustic-profile aliases on the canonical product.
+     */
+    private suspend fun migrateManagedHeadphoneAlias(
+        catalog: OpraCatalog,
+        oldProductId: String,
+        now: Long,
+    ) {
+        val canonicalProductId = catalog.canonicalProductId(oldProductId)
+        if (canonicalProductId == oldProductId) return
+        val oldHeadphone = dao.getHeadphone(oldProductId) ?: return
+        val product = catalog.product(canonicalProductId) ?: return
+        val vendor = catalog.vendor(product.vendorId) ?: return
+        val canonicalHeadphone = dao.getHeadphone(canonicalProductId)
+        val oldProfiles = dao.getProfiles(oldProductId)
+
+        dao.upsertHeadphone(
+            ManagedHeadphoneEntity(
+                productId = canonicalProductId,
+                vendorId = vendor.id,
+                vendorName = vendor.name,
+                productName = product.name,
+                autoIncludeNewProfiles = oldHeadphone.autoIncludeNewProfiles ||
+                    (canonicalHeadphone?.autoIncludeNewProfiles ?: false),
+                createdAtMillis = minOf(
+                    oldHeadphone.createdAtMillis,
+                    canonicalHeadphone?.createdAtMillis ?: oldHeadphone.createdAtMillis,
+                ),
+                updatedAtMillis = now,
+            ),
+        )
+        if (oldProfiles.isNotEmpty()) {
+            dao.upsertProfiles(oldProfiles.map { it.copy(productId = canonicalProductId) })
+        }
+        dao.deleteHeadphone(oldProductId)
+    }
+
     suspend fun removeUnavailableProfile(productId: String, profileId: String) {
         database.withTransaction {
             val profile = dao.getProfiles(productId).firstOrNull { it.profileId == profileId }
                 ?: return@withTransaction
             require(profile.noLongerAvailable) {
-                "Only profiles no longer available in OPRA may be removed directly from retained state."
+                "Only profiles no longer available in EQ Library may be removed directly from retained state."
             }
             dao.deleteProfile(productId, profileId)
             if (dao.countProfiles(productId) == 0) {
