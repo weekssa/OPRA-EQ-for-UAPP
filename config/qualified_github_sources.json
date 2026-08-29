@@ -14,6 +14,11 @@
           "marker": "7Hz Zero:2 to ISO 226:2023 EQ Profile",
           "manufacturer": "7Hz",
           "model": "Zero:2",
+          "model_aliases": [
+            "Zero 2",
+            "Salnotes Zero 2",
+            "x Crinacle Zero 2"
+          ],
           "variant": null,
           "tuning_label": "ISO 226:2023 85 phon",
           "target": "ISO 226:2023 85 phon (author-defined)",
