@@ -1,0 +1,128 @@
+name: EQ catalog currentness
+
+on:
+  push:
+    branches:
+      - eq-library-community-v0.3
+    paths:
+      - '.github/workflows/catalog-currentness.yml'
+      - 'catalog/catalog.json'
+      - 'catalog/source_health.json'
+      - 'config/source_registry.json'
+      - 'tools/autoeq_currentness.py'
+      - 'tools/autoeq_ingest.py'
+      - 'tools/catalog_merge.py'
+      - 'tools/catalog_pipeline.py'
+      - 'tools/currentness_scheduler.py'
+      - 'tools/github_preset_discovery.py'
+  workflow_dispatch:
+  schedule:
+    - cron: '17 9 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: eq-catalog-currentness
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 1
+      - name: Show currentness mode
+        run: |
+          echo "event=${GITHUB_EVENT_NAME} ref=${GITHUB_REF_NAME}"
+          if [[ "${GITHUB_EVENT_NAME}" == "schedule" && "${GITHUB_REF_NAME}" != "main" ]]; then
+            echo "Scheduled publication is only supported from main." >&2
+            exit 1
+          fi
+      - name: Validate registry and current published snapshot
+        run: |
+          python3 tools/catalog_pipeline.py validate-registry --registry config/source_registry.json
+          python3 tools/catalog_pipeline.py publish \
+            --candidate catalog/catalog.json \
+            --published "${RUNNER_TEMP}/baseline-published.json" \
+            --last-known-good "${RUNNER_TEMP}/baseline-lkg.json"
+      - name: Build currentness plan
+        run: >-
+          python3 tools/currentness_scheduler.py
+          --registry config/source_registry.json
+          --state catalog/source_health.json
+          > "${RUNNER_TEMP}/currentness-plan.json"
+      - name: Refresh qualified AutoEQ source incrementally
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: >-
+          python3 tools/autoeq_currentness.py
+          --catalog catalog/catalog.json
+          --registry config/source_registry.json
+          --health catalog/source_health.json
+          --catalog-output "${RUNNER_TEMP}/catalog.candidate.json"
+          --health-output "${RUNNER_TEMP}/source_health.candidate.json"
+          --github-token "${GITHUB_TOKEN}"
+      - name: Validate candidate with atomic last-known-good publication
+        run: >-
+          python3 tools/catalog_pipeline.py publish
+          --candidate "${RUNNER_TEMP}/catalog.candidate.json"
+          --published "${RUNNER_TEMP}/validated-catalog.json"
+          --last-known-good "${RUNNER_TEMP}/validated-lkg.json"
+      - name: Discover public GitHub structured-EQ candidates
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import json, os, urllib.parse, urllib.request
+          query = urllib.parse.urlencode({'q': 'ParametricEQ.txt in:path', 'per_page': 50})
+          request = urllib.request.Request(
+              'https://api.github.com/search/code?' + query,
+              headers={
+                  'Accept': 'application/vnd.github+json',
+                  'Authorization': 'Bearer ' + os.environ['GITHUB_TOKEN'],
+                  'User-Agent': 'EQ-Library-currentness/0.3',
+                  'X-GitHub-Api-Version': '2022-11-28',
+              },
+          )
+          with urllib.request.urlopen(request, timeout=30) as response:
+              payload = json.loads(response.read().decode('utf-8'))
+          with open(os.environ['RUNNER_TEMP'] + '/github-code-search.json', 'w', encoding='utf-8') as handle:
+              json.dump(payload, handle)
+          PY
+          python3 tools/github_preset_discovery.py \
+            "${RUNNER_TEMP}/github-code-search.json" \
+            --kind code-search \
+            --output "${RUNNER_TEMP}/github-candidates.json"
+      - name: Stage validated persistent currentness outputs
+        if: github.event_name == 'schedule' && github.ref_name == 'main'
+        run: |
+          cp "${RUNNER_TEMP}/validated-catalog.json" catalog/catalog.json
+          cp "${RUNNER_TEMP}/source_health.candidate.json" catalog/source_health.json
+          mkdir -p catalog/discovery
+          cp "${RUNNER_TEMP}/github-candidates.json" catalog/discovery/github_candidates.json
+      - name: Commit validated currentness changes
+        if: github.event_name == 'schedule' && github.ref_name == 'main'
+        run: |
+          if git diff --quiet -- catalog/catalog.json catalog/source_health.json catalog/discovery/github_candidates.json; then
+            echo "No persistent currentness changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add catalog/catalog.json catalog/source_health.json catalog/discovery/github_candidates.json
+          git commit -m "Refresh EQ catalog currentness"
+          git push
+      - name: Upload currentness validation artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: eq-catalog-currentness-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/currentness-plan.json
+            ${{ runner.temp }}/validated-catalog.json
+            ${{ runner.temp }}/validated-lkg.json
+            ${{ runner.temp }}/source_health.candidate.json
+            ${{ runner.temp }}/github-candidates.json
+          retention-days: 14
