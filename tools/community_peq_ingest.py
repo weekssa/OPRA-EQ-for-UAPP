@@ -4,7 +4,8 @@
 This adapter is intentionally conservative. It consumes only structured PEQ values
 and caller-supplied provenance metadata. It never copies surrounding post prose.
 Redistribution policy must be explicitly supplied by the source registry/caller so
-link-only sources remain link-only while still participating in discovery/dedupe.
+link-only sources remain discovery/provenance candidates but are not publishable
+Android catalog profiles until structured filters may legally be redistributed.
 """
 
 from __future__ import annotations
@@ -16,6 +17,8 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+from acoustic_fingerprint import acoustic_fingerprint as canonical_acoustic_fingerprint
 
 PREAMP_RE = re.compile(r"^Preamp:\s*([+-]?\d+(?:\.\d+)?)\s*dB\s*$", re.IGNORECASE)
 FILTER_RE = re.compile(
@@ -38,20 +41,24 @@ ALLOWED_SOURCE_KINDS = {
     "creator",
     "device_community",
 }
+CANONICAL_SOURCE_KIND = {
+    "community": "community",
+    "community_repository": "repository",
+    "creator": "creator",
+    "device_community": "device_community",
+}
+PROVENANCE_TIER = {
+    "community": "traceable_community",
+    "community_repository": "traceable_community",
+    "creator": "authoritative",
+    "device_community": "traceable_community",
+}
 
 
 @dataclass(frozen=True)
 class ParsedPeq:
     preamp_db: float | None
     filters: list[dict[str, Any]]
-
-
-def _stable_json(value: Any) -> str:
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
-
-
-def _sha256(value: Any) -> str:
-    return hashlib.sha256(_stable_json(value).encode("utf-8")).hexdigest()
 
 
 def parse_peq(text: str) -> ParsedPeq:
@@ -86,18 +93,7 @@ def parse_peq(text: str) -> ParsedPeq:
 
 
 def acoustic_fingerprint(parsed: ParsedPeq) -> str:
-    filters = [
-        {
-            "type": item["type"],
-            "frequency_hz": round(float(item["frequency_hz"]), 3),
-            "gain_db": round(float(item["gain_db"]), 3),
-            "q": round(float(item["q"]), 4),
-            "slope": None,
-        }
-        for item in parsed.filters
-    ]
-    filters.sort(key=lambda f: (f["type"], f["frequency_hz"], f["gain_db"], f["q"]))
-    return _sha256({"preamp_db": parsed.preamp_db, "filters": filters})
+    return canonical_acoustic_fingerprint(parsed.preamp_db, parsed.filters)
 
 
 def build_candidate(
@@ -141,6 +137,8 @@ def build_candidate(
     )
     canonical_id = "community-" + hashlib.sha256(identity.lower().encode("utf-8")).hexdigest()[:24]
     revision_id = "rev-" + fingerprint[:24]
+    target_name = target.strip() if target and target.strip() else None
+    publication_eligible = redistribution_policy == "structured-data-only"
     return {
         "canonical_profile_id": canonical_id,
         "headphone": {
@@ -150,24 +148,28 @@ def build_candidate(
             "pads_or_mode": None,
         },
         "creator": creator.strip(),
-        "target": ({"name": target.strip(), "kind": "explicit_target"} if target else None),
+        "target": {
+            "name": target_name,
+            "kind": "explicit_target" if target_name else "unknown",
+        },
         "tuning_label": tuning_label.strip(),
+        "publication_eligible": publication_eligible,
         "revisions": [
             {
                 "revision_id": revision_id,
                 "acoustic_fingerprint": fingerprint,
                 "preamp_gain_db": parsed.preamp_db,
-                "filters": parsed.filters if redistribution_policy == "structured-data-only" else [],
+                "filters": parsed.filters if publication_eligible else [],
                 "source_references": [
                     {
                         "source_id": source_id,
-                        "source_kind": source_kind,
+                        "source_kind": CANONICAL_SOURCE_KIND[source_kind],
                         "source_record_id": source_record_id,
                         "source_vendor_id": manufacturer.strip(),
                         "source_product_id": model.strip(),
                         "url": source_url,
                         "creator": creator.strip(),
-                        "provenance_tier": source_kind,
+                        "provenance_tier": PROVENANCE_TIER[source_kind],
                         "redistribution_policy": redistribution_policy,
                         "published_at_epoch_seconds": None,
                         "updated_at_epoch_seconds": None,
