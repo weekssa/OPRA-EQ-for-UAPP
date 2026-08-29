@@ -15,6 +15,8 @@ on:
       - 'tools/catalog_pipeline.py'
       - 'tools/currentness_scheduler.py'
       - 'tools/github_preset_discovery.py'
+      - 'tools/oratory_provenance.py'
+      - 'tools/oratory_update_discovery.py'
   workflow_dispatch:
   schedule:
     - cron: '17 9 * * *'
@@ -62,9 +64,21 @@ jobs:
           --catalog catalog/catalog.json
           --registry config/source_registry.json
           --health catalog/source_health.json
-          --catalog-output "${RUNNER_TEMP}/catalog.candidate.json"
+          --catalog-output "${RUNNER_TEMP}/catalog.autoeq.json"
           --health-output "${RUNNER_TEMP}/source_health.candidate.json"
           --github-token "${GITHUB_TOKEN}"
+      - name: Enrich OPRA-carried oratory presets with direct creator provenance
+        run: >-
+          python3 tools/oratory_provenance.py
+          --catalog "${RUNNER_TEMP}/catalog.autoeq.json"
+          --output "${RUNNER_TEMP}/catalog.candidate.json"
+          --report "${RUNNER_TEMP}/oratory-provenance.json"
+      - name: Discover latest direct oratory update metadata
+        run: >-
+          python3 tools/oratory_update_discovery.py
+          --fetch-url 'https://www.reddit.com/r/oratory1990/new.json?limit=100&raw_json=1'
+          --output "${RUNNER_TEMP}/oratory-updates.json"
+          --allow-degraded
       - name: Validate candidate with atomic last-known-good publication
         run: >-
           python3 tools/catalog_pipeline.py publish
@@ -103,16 +117,17 @@ jobs:
           cp "${RUNNER_TEMP}/source_health.candidate.json" catalog/source_health.json
           mkdir -p catalog/discovery
           cp "${RUNNER_TEMP}/github-candidates.json" catalog/discovery/github_candidates.json
+          cp "${RUNNER_TEMP}/oratory-updates.json" catalog/discovery/oratory_updates.json
       - name: Commit validated currentness changes
         if: github.event_name == 'schedule' && github.ref_name == 'main'
         run: |
-          if git diff --quiet -- catalog/catalog.json catalog/source_health.json catalog/discovery/github_candidates.json; then
+          if git diff --quiet -- catalog/catalog.json catalog/source_health.json catalog/discovery/github_candidates.json catalog/discovery/oratory_updates.json; then
             echo "No persistent currentness changes."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add catalog/catalog.json catalog/source_health.json catalog/discovery/github_candidates.json
+          git add catalog/catalog.json catalog/source_health.json catalog/discovery/github_candidates.json catalog/discovery/oratory_updates.json
           git commit -m "Refresh EQ catalog currentness"
           git push
       - name: Upload currentness validation artifacts
@@ -125,4 +140,6 @@ jobs:
             ${{ runner.temp }}/validated-lkg.json
             ${{ runner.temp }}/source_health.candidate.json
             ${{ runner.temp }}/github-candidates.json
+            ${{ runner.temp }}/oratory-provenance.json
+            ${{ runner.temp }}/oratory-updates.json
           retention-days: 14
