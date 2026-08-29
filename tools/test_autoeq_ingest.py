@@ -41,8 +41,25 @@ class AutoEqIngestTest(unittest.TestCase):
         self.assertEqual("AutoEq", candidate["creator"])
         self.assertEqual("measurement_derived", source["source_kind"])
         self.assertEqual("structured-data-only", source["redistribution_policy"])
+        self.assertEqual("explicit_target", candidate["target"]["kind"])
         self.assertTrue(revision["is_latest"])
         self.assertEqual(3, len(revision["filters"]))
+
+    def test_preserves_unknown_target_instead_of_guessing(self):
+        candidate = build_candidate(
+            parse_parametric_eq(SAMPLE),
+            manufacturer="HIFIMAN",
+            model="Edition XS",
+            measurement_source="oratory1990",
+            target=None,
+            source_url="https://github.com/jaakkopasanen/AutoEq",
+            source_record_id="results/oratory1990/over-ear/HIFIMAN Edition XS",
+            source_version="abc123",
+            discovered_at_epoch_seconds=1788020000,
+        )
+        self.assertIsNone(candidate["target"]["name"])
+        self.assertEqual("unknown", candidate["target"]["kind"])
+        self.assertEqual("AutoEq (oratory1990 measurement)", candidate["tuning_label"])
 
     def test_rejects_unknown_lines(self):
         with self.assertRaises(ValueError):
