@@ -64,6 +64,7 @@ class QualifiedGithubIngestTest(unittest.TestCase):
                             "marker": "7Hz Zero:2 to ISO 226:2023 EQ Profile",
                             "manufacturer": "7Hz",
                             "model": "Zero:2",
+                            "model_aliases": ["Zero 2", "Salnotes Zero 2", "x Crinacle Zero 2"],
                             "variant": None,
                             "tuning_label": "ISO 226:2023 85 phon",
                             "target": "ISO 226:2023 85 phon (author-defined)",
@@ -107,6 +108,10 @@ class QualifiedGithubIngestTest(unittest.TestCase):
         profile = catalog["profiles"][0]
         self.assertEqual("7Hz", profile["headphone"]["manufacturer"])
         self.assertEqual("Zero:2", profile["headphone"]["model"])
+        self.assertEqual(
+            ["Zero 2", "Salnotes Zero 2", "x Crinacle Zero 2"],
+            profile["headphone"]["model_aliases"],
+        )
         self.assertEqual("MrChillStorm", profile["creator"])
         self.assertEqual(10, len(profile["revisions"][0]["filters"]))
         ref = profile["revisions"][0]["source_references"][0]
