@@ -4,7 +4,8 @@
 This adapter intentionally consumes only the structured filter values plus explicit
 metadata supplied by the source watcher. It does not copy prose from upstream
 README files. The caller is responsible for selecting an AutoEq result path and
-supplying the measurement source/target labels used to build provenance.
+supplying measurement/source metadata. Target metadata is optional because some
+precomputed AutoEq result files do not identify the target inside the preset itself.
 """
 
 from __future__ import annotations
@@ -100,14 +101,16 @@ def build_candidate(
     manufacturer: str,
     model: str,
     measurement_source: str,
-    target: str,
+    target: str | None,
     source_url: str,
     source_record_id: str,
     source_version: str | None,
     discovered_at_epoch_seconds: int | None,
 ) -> dict[str, Any]:
     fingerprint = acoustic_fingerprint(parsed)
-    identity = f"{manufacturer.strip()}|{model.strip()}|AutoEq|{measurement_source.strip()}|{target.strip()}"
+    target_name = target.strip() if target and target.strip() else None
+    identity_target = target_name or "unknown-target"
+    identity = f"{manufacturer.strip()}|{model.strip()}|AutoEq|{measurement_source.strip()}|{identity_target}"
     canonical_id = "autoeq-" + hashlib.sha256(identity.lower().encode("utf-8")).hexdigest()[:24]
     revision_id = "rev-" + fingerprint[:24]
     return {
@@ -119,8 +122,11 @@ def build_candidate(
             "pads_or_mode": None,
         },
         "creator": "AutoEq",
-        "target": {"name": target.strip(), "kind": "explicit_target"},
-        "tuning_label": f"AutoEq ({measurement_source.strip()})",
+        "target": {
+            "name": target_name,
+            "kind": "explicit_target" if target_name else "unknown",
+        },
+        "tuning_label": f"AutoEq ({measurement_source.strip()} measurement)",
         "revisions": [
             {
                 "revision_id": revision_id,
@@ -161,7 +167,7 @@ def main() -> int:
     parser.add_argument("--manufacturer", required=True)
     parser.add_argument("--model", required=True)
     parser.add_argument("--measurement-source", required=True)
-    parser.add_argument("--target", required=True)
+    parser.add_argument("--target")
     parser.add_argument("--source-url", required=True)
     parser.add_argument("--source-record-id", required=True)
     parser.add_argument("--source-version")
