@@ -22,6 +22,7 @@ import com.weekssa.opraeqforuapp.data.preferences.AppPreferencesRepository
 import com.weekssa.opraeqforuapp.data.sync.BackgroundSyncScheduler
 import com.weekssa.opraeqforuapp.data.sync.CatalogSyncCoordinator
 import com.weekssa.opraeqforuapp.data.update.AppUpdateCoordinator
+import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
 import com.weekssa.opraeqforuapp.ui.OpraEqApp
@@ -120,10 +121,11 @@ class MainActivity : ComponentActivity() {
                     onDeleteSavedFilesForProduct = cleanupRepository::deleteForProduct,
                     onMarkReviewed = managedHeadphonesRepository::markReviewed,
                     onPersistExportTree = ::persistExportTree,
-                    onExportSelected = { uri ->
+                    onExportSelected = { uri, device ->
                         exportRepository.exportSelected(
                             treeUri = uri,
                             headphones = managedHeadphones,
+                            device = device,
                         )
                     },
                     onExportProduct = ::exportManagedProduct,
@@ -146,12 +148,17 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private suspend fun exportManagedProduct(treeUri: Uri, productId: String): PresetExportSummary {
+    private suspend fun exportManagedProduct(
+        treeUri: Uri,
+        productId: String,
+        device: ExportDevice,
+    ): PresetExportSummary {
         val managed = managedHeadphonesRepository.getHeadphone(productId)
             ?: return PresetExportSummary(results = emptyList())
         return exportRepository.exportSelected(
             treeUri = treeUri,
             headphones = listOf(managed),
+            device = device,
         )
     }
 
