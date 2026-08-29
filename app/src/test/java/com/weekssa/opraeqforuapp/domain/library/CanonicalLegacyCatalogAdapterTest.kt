@@ -1,6 +1,8 @@
 package com.weekssa.opraeqforuapp.domain.library
 
 import com.google.common.truth.Truth.assertThat
+import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneSelection
+import com.weekssa.opraeqforuapp.domain.managed.StoredProfileSelection
 import org.junit.Test
 
 class CanonicalLegacyCatalogAdapterTest {
@@ -137,6 +139,48 @@ class CanonicalLegacyCatalogAdapterTest {
             .isEqualTo("legacy-profile-id")
         assertThat(legacy.profiles.first { it.bands!!.single().frequency == 100.0 }.id)
             .isEqualTo("eq-library:opra-history@old")
+    }
+
+    @Test
+    fun v02StoredSelectionStillSelectsLatestOpraRevisionAfterCanonicalCutover() {
+        val source = EqSourceReference(
+            sourceId = "opra",
+            sourceKind = EqSourceKind.STRUCTURED_CATALOG,
+            sourceRecordId = "legacy-profile-id",
+            sourceVendorId = "legacy-vendor",
+            sourceProductId = "legacy-product",
+            url = "https://example.com/opra",
+            creator = "Creator",
+            provenanceTier = ProvenanceTier.AUTHORITATIVE,
+            redistributionPolicy = RedistributionPolicy.STRUCTURED_DATA_ONLY,
+            isPrimary = true,
+        )
+        val profile = CanonicalEqProfile(
+            canonicalProfileId = "opra-history",
+            headphone = HeadphoneIdentity("Maker", "Model"),
+            creator = "Creator",
+            target = EqTarget("Target", EqTargetKind.EXPLICIT_TARGET),
+            tuningLabel = "Tuning",
+            revisions = listOf(
+                revision("old", 100.0, source, isLatest = false),
+                revision("new", 110.0, source, isLatest = true),
+            ),
+        )
+        val legacy = CanonicalLegacyCatalogAdapter.adapt(
+            CatalogSnapshot(1, "2026-08-29T17:00:00Z", "test", listOf(profile)),
+        )
+        val v02Selection = ManagedHeadphoneSelection(
+            productId = "legacy-product",
+            autoIncludeNewProfiles = false,
+            profileSelections = mapOf(
+                "legacy-profile-id" to StoredProfileSelection(selected = true, explicitlyExcluded = false),
+            ),
+        )
+
+        val latest = legacy.profiles.single { it.id == "legacy-profile-id" }
+        assertThat(legacy.products.single().id).isEqualTo(v02Selection.productId)
+        assertThat(v02Selection.isSelected(latest)).isTrue()
+        assertThat(legacy.profiles.any { it.id == "eq-library:opra-history@old" }).isTrue()
     }
 
     private fun profile(
