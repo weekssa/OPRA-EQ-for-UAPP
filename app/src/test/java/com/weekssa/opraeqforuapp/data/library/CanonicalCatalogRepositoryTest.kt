@@ -12,8 +12,8 @@ import com.weekssa.opraeqforuapp.domain.library.EqTargetKind
 import com.weekssa.opraeqforuapp.domain.library.HeadphoneIdentity
 import com.weekssa.opraeqforuapp.domain.library.ProvenanceTier
 import com.weekssa.opraeqforuapp.domain.library.RedistributionPolicy
-import java.io.File
 import java.io.IOException
+import kotlin.io.path.createTempDirectory
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -26,7 +26,7 @@ class CanonicalCatalogRepositoryTest {
 
     @Test
     fun validDownloadIsPromotedAndLoaded() = runBlocking {
-        val root = createTempDir(prefix = "canonical-catalog-")
+        val root = createTempDirectory(prefix = "canonical-catalog-").toFile()
         try {
             val snapshot = sampleSnapshot("rev-1")
             val source = CanonicalCatalogSource { destination ->
@@ -46,7 +46,7 @@ class CanonicalCatalogRepositoryTest {
 
     @Test
     fun invalidRefreshKeepsLastKnownGoodSnapshot() = runBlocking {
-        val root = createTempDir(prefix = "canonical-catalog-")
+        val root = createTempDirectory(prefix = "canonical-catalog-").toFile()
         try {
             var fail = false
             val source = CanonicalCatalogSource { destination ->
