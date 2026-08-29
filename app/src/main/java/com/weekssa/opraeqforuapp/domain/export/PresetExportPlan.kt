@@ -1,6 +1,7 @@
 package com.weekssa.opraeqforuapp.domain.export
 
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
+import java.nio.charset.Charset
 import java.security.MessageDigest
 
 data class PresetExportCandidate(
@@ -13,6 +14,10 @@ data class PresetExportCandidate(
     val xml: String,
     val generatedFingerprint: String,
     val contentHash: String,
+    val mimeType: String = "application/xml",
+    val charsetName: String = "ISO-8859-1",
+    val deviceName: String = "UAPP",
+    val transformation: String = "Exact",
 )
 
 data class PresetExportPlan(
@@ -42,7 +47,66 @@ fun buildPresetExportPlan(headphones: List<ManagedHeadphoneRecord>): PresetExpor
             )
         }
     }
+    return finalizePlan(candidates)
+}
 
+fun buildEqLibraryExportPlan(headphones: List<ManagedHeadphoneRecord>): PresetExportPlan {
+    val candidates = buildList {
+        headphones.forEach { headphone ->
+            val manufacturer = safeSharedPathSegment(headphone.vendorName)
+            val model = safeSharedPathSegment(headphone.productName)
+            headphone.profiles.forEach { profile ->
+                if (!profile.selected) return@forEach
+                val presetName = profile.generatedPresetName ?: return@forEach
+                val fingerprint = profile.generatedFromFingerprint ?: profile.fingerprint
+
+                profile.generatedXml?.let { xml ->
+                    add(
+                        PresetExportCandidate(
+                            profileId = profile.profileId,
+                            productId = headphone.productId,
+                            manufacturerName = manufacturer,
+                            modelName = model,
+                            relativeDirectory = "${ExportDevice.UAPP.folderName}/$manufacturer/$model",
+                            fileName = "$presetName.${ExportDevice.UAPP.extension}",
+                            xml = xml,
+                            generatedFingerprint = "$fingerprint:${ExportDevice.UAPP.name}",
+                            contentHash = sha256(xml.toByteArray(Charsets.ISO_8859_1)),
+                            mimeType = ExportDevice.UAPP.mimeType,
+                            charsetName = Charsets.ISO_8859_1.name(),
+                            deviceName = ExportDevice.UAPP.folderName,
+                            transformation = "Exact ToneBoosters/UAPP conversion",
+                        ),
+                    )
+                }
+
+                buildTextDeviceVariants(profile.lastKnownProfile).forEach { variant ->
+                    val charset = Charsets.UTF_8
+                    add(
+                        PresetExportCandidate(
+                            profileId = profile.profileId,
+                            productId = headphone.productId,
+                            manufacturerName = manufacturer,
+                            modelName = model,
+                            relativeDirectory = "${variant.device.folderName}/$manufacturer/$model",
+                            fileName = "$presetName.${variant.device.extension}",
+                            xml = variant.content,
+                            generatedFingerprint = "$fingerprint:${variant.device.name}",
+                            contentHash = sha256(variant.content.toByteArray(charset)),
+                            mimeType = variant.device.mimeType,
+                            charsetName = charset.name(),
+                            deviceName = variant.device.folderName,
+                            transformation = variant.transformation,
+                        ),
+                    )
+                }
+            }
+        }
+    }
+    return finalizePlan(candidates)
+}
+
+private fun finalizePlan(candidates: List<PresetExportCandidate>): PresetExportPlan {
     val duplicates = candidates
         .groupBy { it.relativeDirectory to it.fileName }
         .values
@@ -56,14 +120,17 @@ fun buildPresetExportPlan(headphones: List<ManagedHeadphoneRecord>): PresetExpor
     )
 }
 
+fun presetBytes(candidate: PresetExportCandidate): ByteArray =
+    candidate.xml.toByteArray(Charset.forName(candidate.charsetName))
+
 fun safeSharedPathSegment(value: String): String {
     val trimmed = value.trim()
-    require(trimmed.isNotEmpty()) { "OPRA folder segment must not be blank." }
+    require(trimmed.isNotEmpty()) { "EQ Library folder segment must not be blank." }
     return trimmed
         .replace(Regex("[\\\\/]"), "-")
         .replace(Regex("[\\u0000-\\u001f\\u007f]"), "-")
         .trim(' ', '.')
-        .ifEmpty { throw IllegalArgumentException("OPRA folder segment becomes empty after filesystem sanitization.") }
+        .ifEmpty { throw IllegalArgumentException("EQ Library folder segment becomes empty after filesystem sanitization.") }
 }
 
 private fun sha256(bytes: ByteArray): String =
