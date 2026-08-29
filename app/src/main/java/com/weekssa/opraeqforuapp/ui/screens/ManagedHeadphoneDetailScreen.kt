@@ -92,11 +92,11 @@ fun ManagedHeadphoneDetailScreen(
 
     pendingProfileRemoval?.let { profile ->
         RemovalDialog(
-            title = "Remove profile?",
-            body = "This profile will be removed from this headphone.",
+            title = "Remove preset?",
+            body = "This preset will be removed from this headphone.",
             deleteSavedFiles = deleteSavedFiles,
             onDeleteSavedFilesChange = { deleteSavedFiles = it },
-            confirmLabel = "Remove profile",
+            confirmLabel = "Remove preset",
             onConfirm = {
                 pendingProfileRemoval = null
                 scope.launch {
@@ -106,7 +106,7 @@ fun ManagedHeadphoneDetailScreen(
                         deleteSavedFiles,
                     )
                     if (cleanup != null && cleanup.failedCount > 0) {
-                        onMessage("Profile was removed locally, but ${cleanup.failedCount} saved preset files could not be removed.")
+                        onMessage("Preset was removed locally, but ${cleanup.failedCount} exported files could not be removed.")
                     }
                 }
             },
@@ -127,7 +127,7 @@ fun ManagedHeadphoneDetailScreen(
                     val cleanup = onRemoveManagedHeadphone(headphone.productId, deleteSavedFiles)
                     onBack()
                     if (cleanup != null && cleanup.failedCount > 0) {
-                        onMessage("Headphone was removed locally, but ${cleanup.failedCount} saved preset files could not be removed.")
+                        onMessage("Headphone was removed locally, but ${cleanup.failedCount} exported files could not be removed.")
                     }
                 }
             },
@@ -151,7 +151,7 @@ fun ManagedHeadphoneDetailScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            text = "${headphone.selectedProfileCount} selected profiles",
+            text = "${headphone.selectedProfileCount} selected presets",
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         )
         Text(
@@ -168,7 +168,7 @@ fun ManagedHeadphoneDetailScreen(
                 onClick = { editing = true },
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             ) {
-                Text("Manage profiles")
+                Text("Manage preset selection")
             }
         } else {
             Text(
@@ -226,7 +226,7 @@ private fun ManagedProfileRow(
                     compatibility == ProfileCompatibility.NotCompatible -> Text("Not compatible · unavailable for selection")
                     compatibility == ProfileCompatibility.CompatibleWithLimitation -> Text("Compatible with limitation")
                     profile.selected -> Text("Selected")
-                    profile.explicitlyExcluded -> Text("Excluded from automatic inclusion")
+                    profile.explicitlyExcluded -> Text("Not selected · excluded from automatic inclusion")
                     else -> Text("Not selected")
                 }
             }
@@ -266,10 +266,16 @@ private fun RemovalDialog(
                 ) {
                     Checkbox(checked = deleteSavedFiles, onCheckedChange = null)
                     Text(
-                        text = "Also remove saved preset files created by OPRA EQ for UAPP",
+                        text = "Also delete exported files created by EQ Library for this item.",
                         modifier = Modifier.padding(start = 8.dp),
                     )
                 }
+                Text(
+                    text = "Files not owned by EQ Library are never deleted.",
+                    modifier = Modifier.padding(top = 8.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         },
         confirmButton = {
