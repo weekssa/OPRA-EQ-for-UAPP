@@ -6,43 +6,37 @@ on:
       - eq-library-community-v0.3
     paths:
       - 'catalog/catalog.json'
+      - 'catalog/source_health.json'
       - 'config/source_registry.json'
       - 'tools/acoustic_fingerprint.py'
       - 'tools/catalog_pipeline.py'
+      - 'tools/catalog_merge.py'
       - 'tools/currentness_scheduler.py'
       - 'tools/autoeq_ingest.py'
+      - 'tools/autoeq_currentness.py'
       - 'tools/community_peq_ingest.py'
       - 'tools/github_preset_discovery.py'
       - 'tools/squiglink_discovery.py'
-      - 'tools/test_acoustic_fingerprint.py'
-      - 'tools/test_catalog_pipeline.py'
-      - 'tools/test_currentness_scheduler.py'
-      - 'tools/test_autoeq_ingest.py'
-      - 'tools/test_community_peq_ingest.py'
-      - 'tools/test_github_preset_discovery.py'
-      - 'tools/test_squiglink_discovery.py'
-      - 'tools/test_published_catalog.py'
+      - 'tools/test_*.py'
       - '.github/workflows/catalog-currentness-ci.yml'
+      - '.github/workflows/catalog-currentness.yml'
   pull_request:
     paths:
       - 'catalog/catalog.json'
+      - 'catalog/source_health.json'
       - 'config/source_registry.json'
       - 'tools/acoustic_fingerprint.py'
       - 'tools/catalog_pipeline.py'
+      - 'tools/catalog_merge.py'
       - 'tools/currentness_scheduler.py'
       - 'tools/autoeq_ingest.py'
+      - 'tools/autoeq_currentness.py'
       - 'tools/community_peq_ingest.py'
       - 'tools/github_preset_discovery.py'
       - 'tools/squiglink_discovery.py'
-      - 'tools/test_acoustic_fingerprint.py'
-      - 'tools/test_catalog_pipeline.py'
-      - 'tools/test_currentness_scheduler.py'
-      - 'tools/test_autoeq_ingest.py'
-      - 'tools/test_community_peq_ingest.py'
-      - 'tools/test_github_preset_discovery.py'
-      - 'tools/test_squiglink_discovery.py'
-      - 'tools/test_published_catalog.py'
+      - 'tools/test_*.py'
       - '.github/workflows/catalog-currentness-ci.yml'
+      - '.github/workflows/catalog-currentness.yml'
   workflow_dispatch:
 
 permissions:
@@ -65,7 +59,7 @@ jobs:
           --published "${RUNNER_TEMP}/published.json"
           --last-known-good "${RUNNER_TEMP}/catalog.last-known-good.json"
       - name: Reconcile source-health state in a temporary file
-        run: python3 tools/catalog_pipeline.py reconcile-health --registry config/source_registry.json --state "${RUNNER_TEMP}/source_health.json"
+        run: cp catalog/source_health.json "${RUNNER_TEMP}/source_health.json" && python3 tools/catalog_pipeline.py reconcile-health --registry config/source_registry.json --state "${RUNNER_TEMP}/source_health.json"
       - name: Build deterministic currentness plan
         run: >-
           python3 tools/currentness_scheduler.py
@@ -73,19 +67,22 @@ jobs:
           --state "${RUNNER_TEMP}/source_health.json"
           --now 2026-08-29T15:00:00Z
           --last-discovery-at 2026-08-20T15:00:00Z
-      - name: Acoustic fingerprint tests
-        run: python3 -m unittest discover -s tools -p 'test_acoustic_fingerprint.py' -v
-      - name: Catalog pipeline tests
-        run: python3 -m unittest discover -s tools -p 'test_catalog_pipeline.py' -v
-      - name: Currentness scheduler tests
-        run: python3 -m unittest discover -s tools -p 'test_currentness_scheduler.py' -v
-      - name: AutoEQ ingestion tests
-        run: python3 -m unittest discover -s tools -p 'test_autoeq_ingest.py' -v
-      - name: Community ingestion tests
-        run: python3 -m unittest discover -s tools -p 'test_community_peq_ingest.py' -v
-      - name: GitHub and Gist discovery tests
-        run: python3 -m unittest discover -s tools -p 'test_github_preset_discovery.py' -v
-      - name: Squiglink discovery tests
-        run: python3 -m unittest discover -s tools -p 'test_squiglink_discovery.py' -v
-      - name: Published catalog canary tests
-        run: python3 -m unittest discover -s tools -p 'test_published_catalog.py' -v
+      - name: Run all external catalog unit tests
+        run: python3 -m unittest discover -s tools -p 'test_*.py' -v
+      - name: Exercise live qualified AutoEQ refresh without publishing
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: >-
+          python3 tools/autoeq_currentness.py
+          --catalog catalog/catalog.json
+          --registry config/source_registry.json
+          --health catalog/source_health.json
+          --catalog-output "${RUNNER_TEMP}/catalog.candidate.json"
+          --health-output "${RUNNER_TEMP}/source_health.candidate.json"
+          --github-token "${GITHUB_TOKEN}"
+      - name: Validate refreshed candidate atomically
+        run: >-
+          python3 tools/catalog_pipeline.py publish
+          --candidate "${RUNNER_TEMP}/catalog.candidate.json"
+          --published "${RUNNER_TEMP}/refreshed-published.json"
+          --last-known-good "${RUNNER_TEMP}/refreshed-lkg.json"
