@@ -76,6 +76,10 @@ def validate_manifest(manifest: dict[str, Any]) -> None:
             raise ValueError(f"{source_id}: license is not on the explicit allow-list: {license_spdx}")
         if not source.get("profiles"):
             raise ValueError(f"{source_id}: at least one profile is required")
+        for profile in source.get("profiles", []):
+            aliases = profile.get("model_aliases") or []
+            if not isinstance(aliases, list) or any(not str(alias).strip() for alias in aliases):
+                raise ValueError(f"{source_id}: model_aliases must be a list of non-empty strings")
 
 
 def candidate_from_text(source: dict[str, Any], profile: dict[str, Any], text: str, blob_sha: str, now_epoch: int) -> dict[str, Any]:
@@ -97,6 +101,9 @@ def candidate_from_text(source: dict[str, Any], profile: dict[str, Any], text: s
         source_version=f"GitHub blob {blob_sha}",
         discovered_at_epoch_seconds=now_epoch,
     )
+    aliases = [str(alias).strip() for alias in profile.get("model_aliases") or [] if str(alias).strip()]
+    if aliases:
+        candidate["headphone"]["model_aliases"] = list(dict.fromkeys(aliases))
     return candidate
 
 
