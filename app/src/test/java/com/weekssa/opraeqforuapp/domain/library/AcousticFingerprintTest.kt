@@ -11,14 +11,14 @@ import org.junit.Test
 
 class AcousticFingerprintTest {
     @Test
-    fun fingerprintIgnoresBandOrderAndCommonAliases() {
+    fun fingerprintIgnoresBandOrderAndHarmlessPrecisionDifferences() {
         val a = listOf(
-            EqFilter("PK", 1000.0, -2.0, 1.4),
-            EqFilter("LOW_SHELF", 105.0, 3.0, 0.71),
+            EqFilter(EqFilterType.PEAK, 1000.0, -2.0, 1.4),
+            EqFilter(EqFilterType.LOW_SHELF, 105.0, 3.0, 0.71),
         )
         val b = listOf(
-            EqFilter("LS", 105.0001, 3.0001, 0.71001),
-            EqFilter("PEAKING", 1000.0001, -2.0001, 1.40001),
+            EqFilter(EqFilterType.LOW_SHELF, 105.0001, 3.0001, 0.71001),
+            EqFilter(EqFilterType.PEAK, 1000.0001, -2.0001, 1.40001),
         )
 
         assertEquals(AcousticFingerprint.of(-5.0, a), AcousticFingerprint.of(-5.0001, b))
@@ -26,8 +26,8 @@ class AcousticFingerprintTest {
 
     @Test
     fun fingerprintChangesForMaterialGainChange() {
-        val base = listOf(EqFilter("PK", 1000.0, -2.0, 1.4))
-        val changed = listOf(EqFilter("PK", 1000.0, -1.5, 1.4))
+        val base = listOf(EqFilter(EqFilterType.PEAK, 1000.0, -2.0, 1.4))
+        val changed = listOf(EqFilter(EqFilterType.PEAK, 1000.0, -1.5, 1.4))
 
         assertNotEquals(AcousticFingerprint.of(-5.0, base), AcousticFingerprint.of(-5.0, changed))
     }
@@ -47,14 +47,17 @@ class AcousticFingerprintTest {
                 preampGainDb = -5.0,
                 bands = listOf(OpraBand("PK", 1000.0, -2.0, 1.4, null)),
             ),
-            discoveredAt = "2026-08-29T00:00:00Z",
+            discoveredAtEpochSeconds = 1_788_134_400L,
         )
 
         assertNotNull(adapted)
         adapted!!
-        assertEquals("Harman", adapted.target)
-        assertEquals(ProvenanceTier.AUTHORITATIVE, adapted.provenanceTier)
-        assertEquals("opra:example-profile", adapted.sourceReferences.single().sourceId)
-        assertEquals(adapted.latestRevisionId, adapted.latestRevision.revisionId)
+        assertEquals("Harman", adapted.target.name)
+        assertEquals(EqTargetKind.EXPLICIT_TARGET, adapted.target.kind)
+        val source = adapted.latestRevision.sourceReferences.single()
+        assertEquals(ProvenanceTier.AUTHORITATIVE, source.provenanceTier)
+        assertEquals("opra", source.sourceId)
+        assertEquals("example-profile", source.sourceRecordId)
+        assertEquals(adapted.latestRevision.revisionId, adapted.revisions.single().revisionId)
     }
 }
