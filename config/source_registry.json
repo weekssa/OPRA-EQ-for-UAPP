@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "registry_version": "0.3.0-oratory-link-only",
+  "registry_version": "0.3.0-qualified-github-1",
   "sources": [
     {
       "id": "opra",
@@ -28,6 +28,20 @@
       "redistribution": "structured-data-only",
       "attribution_required": true,
       "license_notes": "AutoEq software is MIT licensed, while measurements originate from multiple third-party sources. EQ Library retains measurement/creator provenance and does not treat the software license as blanket permission for raw third-party measurement redistribution."
+    },
+    {
+      "id": "mrchillstorm-headphone-target",
+      "kind": "community_repository",
+      "name": "MrChillStorm Headphone Target",
+      "scope": "Explicitly MIT-licensed author repository with structured headphone/IEM PEQ examples derived from the author's ISO 226:2023 target framework",
+      "lifecycle": "active",
+      "cadence": "weekly",
+      "parser": "github-qualified-fenced-peq",
+      "parser_version": "1",
+      "cursor_strategy": "qualified manifest plus GitHub file blob SHA and acoustic fingerprint",
+      "redistribution": "structured-data-only",
+      "attribution_required": true,
+      "license_notes": "Repository LICENSE is MIT (copyright 2026 MrChillStorm). Only exact profiles enumerated in config/qualified_github_sources.json are publication-eligible. EQ Library presents these as creator/community tunings and does not endorse source claims about target superiority or scientific validity."
     },
     {
       "id": "oratory1990",
