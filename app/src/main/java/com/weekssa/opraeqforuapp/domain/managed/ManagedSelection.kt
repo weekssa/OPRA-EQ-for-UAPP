@@ -2,6 +2,7 @@ package com.weekssa.opraeqforuapp.domain.managed
 
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.assessCompatibility
+import com.weekssa.opraeqforuapp.domain.catalog.isHistoricalRevision
 
 const val DEFAULT_AUTO_INCLUDE_NEW_PROFILES = true
 
@@ -18,12 +19,12 @@ data class ManagedHeadphoneSelection(
     fun isSelected(profile: OpraEqProfile): Boolean {
         if (!profile.assessCompatibility().category.isSelectable) return false
         val stored = profileSelections[profile.id]
-        return stored?.selected ?: autoIncludeNewProfiles
+        return stored?.selected ?: (autoIncludeNewProfiles && !profile.isHistoricalRevision())
     }
 }
 
 fun defaultStagedSelectedProfileIds(profiles: List<OpraEqProfile>): Set<String> =
-    selectableProfileIds(profiles)
+    selectableProfileIds(profiles, includeHistorical = false)
 
 fun managedSelectionCommitEnabled(
     isManaged: Boolean,
@@ -56,13 +57,19 @@ fun selectionUpdatesForSave(
         val selected = selectable && profile.id in stagedSelectedProfileIds
         profile.id to StoredProfileSelection(
             selected = selected,
-            explicitlyExcluded = selectable && autoIncludeNewProfiles && !selected,
+            explicitlyExcluded = selectable &&
+                autoIncludeNewProfiles &&
+                !profile.isHistoricalRevision() &&
+                !selected,
         )
     }
 }
 
-fun selectableProfileIds(profiles: List<OpraEqProfile>): Set<String> =
-    profiles.asSequence()
-        .filter { it.assessCompatibility().category.isSelectable }
-        .map(OpraEqProfile::id)
-        .toSet()
+fun selectableProfileIds(
+    profiles: List<OpraEqProfile>,
+    includeHistorical: Boolean = false,
+): Set<String> = profiles.asSequence()
+    .filter { it.assessCompatibility().category.isSelectable }
+    .filter { includeHistorical || !it.isHistoricalRevision() }
+    .map(OpraEqProfile::id)
+    .toSet()
