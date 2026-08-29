@@ -38,8 +38,7 @@ fun buildTextDeviceVariant(
         )
     }
     ExportDevice.TOPPING_DX5_II,
-    ExportDevice.TOPPING_DX1_II,
-    -> formatToppingTunePreset(profile)?.let { content ->
+    ExportDevice.TOPPING_DX1_II -> formatToppingTunePreset(profile)?.let { content ->
         DevicePresetVariant(
             device = device,
             content = content,
