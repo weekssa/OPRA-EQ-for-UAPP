@@ -16,6 +16,7 @@ import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.Headphones
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -49,7 +50,10 @@ import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
 import com.weekssa.opraeqforuapp.data.export.PresetExportSummary
 import com.weekssa.opraeqforuapp.data.sync.CatalogSyncOutcome
 import com.weekssa.opraeqforuapp.data.update.AppUpdateCheckResult
+import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
+import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
+import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityCategory
@@ -60,18 +64,21 @@ import com.weekssa.opraeqforuapp.ui.components.UpdateAvailableBanner
 import com.weekssa.opraeqforuapp.ui.components.WhatsNewDialog
 import com.weekssa.opraeqforuapp.ui.screens.BrowseOpraScreen
 import com.weekssa.opraeqforuapp.ui.screens.ManagedHeadphoneDetailScreen
+import com.weekssa.opraeqforuapp.ui.screens.MyEqsScreen
 import com.weekssa.opraeqforuapp.ui.screens.MyHeadphonesScreen
 import com.weekssa.opraeqforuapp.ui.screens.SettingsScreen
 import kotlinx.coroutines.launch
 
 private enum class TopLevelDestination(val label: String) {
     MyHeadphones("My Headphones"),
-    BrowseOpra("Browse EQs"),
+    BrowseEqs("Browse EQs"),
+    MyEqs("My EQs"),
 }
 
 private sealed interface ExportScope {
     data object AllManaged : ExportScope
     data class Product(val productId: String) : ExportScope
+    data class SavedEq(val entryId: String) : ExportScope
 }
 
 private sealed interface ExportRequest {
@@ -85,6 +92,11 @@ private sealed interface ExportRequest {
         val productId: String,
         override val device: ExportDevice,
     ) : ExportRequest
+
+    data class SavedEq(
+        val entryId: String,
+        override val device: ExportDevice,
+    ) : ExportRequest
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -93,6 +105,7 @@ fun OpraEqApp(
     appPreferences: AppPreferences,
     catalogState: CatalogState,
     managedHeadphones: List<ManagedHeadphoneRecord>,
+    savedEqs: List<SavedEqRecord>,
     onRefreshCatalog: suspend () -> CatalogSyncOutcome,
     onLoadManagedHeadphone: suspend (String) -> ManagedHeadphoneRecord?,
     onSaveSelection: suspend (String, Set<String>, Boolean) -> Unit,
@@ -102,9 +115,13 @@ fun OpraEqApp(
     onDeleteSavedFilesForProfiles: suspend (Set<String>) -> PresetCleanupSummary,
     onDeleteSavedFilesForProduct: suspend (String) -> PresetCleanupSummary,
     onMarkReviewed: suspend (String) -> Unit,
+    onToggleFavorite: suspend (OpraEqProfile, String, String) -> Boolean,
+    onImportPersonal: suspend (String, String, String, String?, String) -> String?,
+    onDeleteSavedEq: suspend (String) -> Unit,
     onPersistExportTree: suspend (Uri) -> Boolean,
     onExportSelected: suspend (Uri, ExportDevice) -> PresetExportSummary,
     onExportProduct: suspend (Uri, String, ExportDevice) -> PresetExportSummary,
+    onExportSavedEq: suspend (Uri, String, ExportDevice) -> PresetExportSummary,
     onCheckForUpdates: suspend () -> AppUpdateCheckResult,
     onDismissUpdate: suspend (String) -> Unit,
     onDismissPostUpdate: suspend () -> Unit,
@@ -123,6 +140,12 @@ fun OpraEqApp(
     val selectedDestination = destinations[selectedDestinationIndex]
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val favoriteProfileIds = remember(savedEqs) {
+        savedEqs.asSequence()
+            .filter { it.kind == SavedEqKind.Favorite }
+            .mapNotNull { it.sourceProfileId }
+            .toSet()
+    }
     val catalogBusy = catalogState is CatalogState.Loading ||
         (catalogState as? CatalogState.Ready)?.isRefreshing == true
     val selectedManagedHeadphone = selectedManagedProductId?.let { productId ->
@@ -159,9 +182,7 @@ fun OpraEqApp(
     val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         val request = pendingExportRequest
         pendingExportRequest = null
-        if (uri == null) {
-            return@rememberLauncherForActivityResult
-        }
+        if (uri == null) return@rememberLauncherForActivityResult
         scope.launch {
             if (!onPersistExportTree(uri)) {
                 snackbarHostState.showSnackbar("Couldn’t retain access to that folder. Choose another folder.")
@@ -169,6 +190,7 @@ fun OpraEqApp(
                 val summary = when (request) {
                     is ExportRequest.AllManaged -> onExportSelected(uri, request.device)
                     is ExportRequest.Product -> onExportProduct(uri, request.productId, request.device)
+                    is ExportRequest.SavedEq -> onExportSavedEq(uri, request.entryId, request.device)
                     null -> null
                 }
                 summary?.let { snackbarHostState.showSnackbar(exportMessage(it)) }
@@ -190,19 +212,16 @@ fun OpraEqApp(
                 val summary = when (request) {
                     is ExportRequest.AllManaged -> onExportSelected(storedUri, request.device)
                     is ExportRequest.Product -> onExportProduct(storedUri, request.productId, request.device)
+                    is ExportRequest.SavedEq -> onExportSavedEq(storedUri, request.entryId, request.device)
                 }
                 snackbarHostState.showSnackbar(exportMessage(summary))
             }
         }
     }
 
-    val requestExportAll: () -> Unit = {
-        pendingExportScope = ExportScope.AllManaged
-    }
-
-    val requestExportProduct: (String) -> Unit = { productId ->
-        pendingExportScope = ExportScope.Product(productId)
-    }
+    val requestExportAll: () -> Unit = { pendingExportScope = ExportScope.AllManaged }
+    val requestExportProduct: (String) -> Unit = { pendingExportScope = ExportScope.Product(it) }
+    val requestExportSavedEq: (String) -> Unit = { pendingExportScope = ExportScope.SavedEq(it) }
 
     val requestUpdateCheck: () -> Unit = {
         scope.launch {
@@ -217,9 +236,7 @@ fun OpraEqApp(
 
     val requestCatalogRefresh: () -> Unit = {
         if (!catalogBusy) {
-            scope.launch {
-                snackbarHostState.showSnackbar(refreshMessage(onRefreshCatalog()))
-            }
+            scope.launch { snackbarHostState.showSnackbar(refreshMessage(onRefreshCatalog())) }
         }
     }
 
@@ -240,6 +257,7 @@ fun OpraEqApp(
                                 val request = when (exportScope) {
                                     ExportScope.AllManaged -> ExportRequest.AllManaged(device)
                                     is ExportScope.Product -> ExportRequest.Product(exportScope.productId, device)
+                                    is ExportScope.SavedEq -> ExportRequest.SavedEq(exportScope.entryId, device)
                                 }
                                 runExportRequest(request)
                             },
@@ -266,16 +284,12 @@ fun OpraEqApp(
             },
             confirmButton = {},
             dismissButton = {
-                TextButton(onClick = { pendingExportScope = null }) {
-                    Text("Cancel")
-                }
+                TextButton(onClick = { pendingExportScope = null }) { Text("Cancel") }
             },
         )
     }
 
-    BackHandler(enabled = settingsOpen) {
-        settingsOpen = false
-    }
+    BackHandler(enabled = settingsOpen) { settingsOpen = false }
 
     Scaffold(
         topBar = {
@@ -292,20 +306,13 @@ fun OpraEqApp(
                 TopAppBar(
                     title = { Text(selectedDestination.label) },
                     actions = {
-                        IconButton(
-                            onClick = requestCatalogRefresh,
-                            enabled = !catalogBusy,
-                        ) {
-                            if (catalogBusy) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(24.dp),
-                                    strokeWidth = 2.dp,
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Outlined.Refresh,
-                                    contentDescription = "Refresh EQ Library catalog",
-                                )
+                        if (selectedDestination != TopLevelDestination.MyEqs) {
+                            IconButton(onClick = requestCatalogRefresh, enabled = !catalogBusy) {
+                                if (catalogBusy) {
+                                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                                } else {
+                                    Icon(Icons.Outlined.Refresh, contentDescription = "Refresh EQ Library catalog")
+                                }
                             }
                         }
                         IconButton(onClick = { settingsOpen = true }) {
@@ -326,7 +333,8 @@ fun OpraEqApp(
                                 Icon(
                                     imageVector = when (destination) {
                                         TopLevelDestination.MyHeadphones -> Icons.Outlined.Headphones
-                                        TopLevelDestination.BrowseOpra -> Icons.Outlined.Explore
+                                        TopLevelDestination.BrowseEqs -> Icons.Outlined.Explore
+                                        TopLevelDestination.MyEqs -> Icons.Outlined.Star
                                     },
                                     contentDescription = null,
                                 )
@@ -404,7 +412,7 @@ fun OpraEqApp(
                                 MyHeadphonesScreen(
                                     catalogState = catalogState,
                                     managedHeadphones = managedHeadphones,
-                                    onBrowseOpra = { selectedDestinationIndex = TopLevelDestination.BrowseOpra.ordinal },
+                                    onBrowseOpra = { selectedDestinationIndex = TopLevelDestination.BrowseEqs.ordinal },
                                     onRefreshCatalog = requestCatalogRefresh,
                                     onExportPresets = requestExportAll,
                                     onOpenHeadphone = { selectedManagedProductId = it },
@@ -414,10 +422,12 @@ fun OpraEqApp(
                                 )
                             }
                         }
-                        TopLevelDestination.BrowseOpra -> BrowseOpraScreen(
+                        TopLevelDestination.BrowseEqs -> BrowseOpraScreen(
                             catalogState = catalogState,
                             profileVisibility = appPreferences.profileVisibility,
                             managedHeadphones = managedHeadphones,
+                            favoriteProfileIds = favoriteProfileIds,
+                            onToggleFavorite = onToggleFavorite,
                             onLoadManagedHeadphone = onLoadManagedHeadphone,
                             onSaveSelection = onSaveSelection,
                             onRemoveHeadphone = onRemoveHeadphone,
@@ -427,6 +437,14 @@ fun OpraEqApp(
                             onMessage = ::showMessage,
                             onRefreshCatalog = requestCatalogRefresh,
                             onOpenUrl = onOpenUrl,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                        TopLevelDestination.MyEqs -> MyEqsScreen(
+                            savedEqs = savedEqs,
+                            onImportPersonal = onImportPersonal,
+                            onDeleteSavedEq = onDeleteSavedEq,
+                            onExportSavedEq = requestExportSavedEq,
+                            onMessage = ::showMessage,
                             modifier = Modifier.fillMaxSize(),
                         )
                     }
