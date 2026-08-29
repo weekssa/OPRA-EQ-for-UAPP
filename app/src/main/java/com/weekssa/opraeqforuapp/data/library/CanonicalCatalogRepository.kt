@@ -116,7 +116,7 @@ class CanonicalCatalogRepository(
     val state: StateFlow<CanonicalCatalogState> = mutableState.asStateFlow()
 
     suspend fun initialize() {
-        val cached = loadSnapshot(currentFile)
+        val cached = loadSnapshot(currentFile)?.takeIf(::isValid)
         if (cached != null) {
             mutableState.value = CanonicalCatalogState.Ready(
                 snapshot = cached,
@@ -185,6 +185,7 @@ class CanonicalCatalogRepository(
     private fun isValid(snapshot: CatalogSnapshot): Boolean {
         if (snapshot.schemaVersion < 1) return false
         if (snapshot.generatedAt.isBlank() || snapshot.sourceRegistryVersion.isBlank()) return false
+        if (snapshot.profiles.isEmpty()) return false
         val profileIds = mutableSetOf<String>()
         return snapshot.profiles.all { profile ->
             profile.canonicalProfileId.isNotBlank() &&
