@@ -1,6 +1,19 @@
 # EQ Library v0.3 Source Ingestion Strategy
 
-This document expands the source-adapter section of `AUTONOMOUS_V0.3_PLAN.md`. The goal is broad coverage without flattening provenance quality. EQ Library should ingest normalized EQ parameters and source metadata, not republish third-party prose.
+This document expands the source-adapter section of `AUTONOMOUS_V0.3_PLAN.md`. The goal is broad coverage without flattening provenance quality. EQ Library should ingest normalized source-authentic EQ parameters and source metadata, not republish third-party prose or convert canonical data to device constraints.
+
+## Core ingestion rules
+
+These rules apply to every lane below.
+
+- Resolve headphone identity before presenting or publishing duplicate physical-model rows.
+- Preserve source preamp exactly; when the source omits preamp, canonical `preamp_gain_db` remains null.
+- Store any EQ Library-generated playback safety headroom separately as derived metadata.
+- Preserve arbitrary source filter counts and source filter parameters/types supported by the canonical schema; never truncate ingestion to a device band limit.
+- Never invent filters, target claims, variants, authorship, or provenance.
+- Ambiguous identity/provenance/rights candidates remain review-only.
+- Mirrors/reposts become secondary provenance when they carry an already-canonical acoustic tuning.
+- Genuine changed tunings become immutable revisions; application-modeling corrections must not create fake acoustic history.
 
 ## Ingestion lanes
 
@@ -13,7 +26,7 @@ Highest-priority machine-readable or consistently structured sources.
 - Squiglink/Squiglink-compatible public structured data where terms allow
 - future structured EQ databases with explicit usable licensing/terms
 
-These sources can feed automatic validation, normalization, deduplication, revision detection, and publication when provenance is clear.
+These sources can feed automatic validation, headphone identity normalization, acoustic deduplication, revision detection, and publication when provenance is clear.
 
 ### B. Established creator / measurer sources
 
@@ -41,7 +54,9 @@ Initial forums/community surfaces:
 
 Discovery should search for high-signal tokens such as `Preamp:`, `Filter 1:`, `ON PK`, `Fc`, `Gain`, `Q`, `parametric EQ`, `PEQ`, and known preset attachment formats rather than scraping whole forums indiscriminately.
 
-Forum/community entries are candidates until parsed, attributed, validated, deduplicated, and classified. Store the normalized filters, creator username, original URL, timestamps, target claim, and minimal necessary metadata. Do not copy forum prose into the catalog.
+Forum/community entries are candidates until parsed, attributed, identity-resolved, validated, deduplicated, and classified. Store the normalized filters, creator username, original URL, timestamps, target claim, and minimal necessary metadata. Do not copy unrelated forum prose into the catalog.
+
+Curated community inputs use the generic `catalog/discovery/*_community_curated.json` shape. The scheduled community publication workflow processes every such file in deterministic sorted order and chains each validated candidate set into the next. Edition XS remains a useful pilot dataset, but the workflow itself must never be Edition-XS-specific or require code changes for each new headphone.
 
 ### D. GitHub repositories and Gists
 
@@ -54,6 +69,8 @@ Search public GitHub repositories/Gists for structured preset files and maintain
 - maintained personal/community EQ collections
 
 Require repository/license review before redistribution. When redistribution is not clearly permitted, store/link provenance and ingest only data that can legally be normalized/published.
+
+Explicitly qualified repositories/files are publication inputs; broad GitHub/Gist discovery remains review-only until originality and licensing are established.
 
 ### E. Manufacturer/device community ecosystems
 
@@ -73,26 +90,41 @@ Do not duplicate AutoEq simply because another app bundles or mirrors AutoEq res
 
 Provide a structured low-friction contribution route so useful EQs do not depend on scraping.
 
-Recommended surfaces:
+Current repository surface:
 
 1. GitHub Issue Form: `Submit an EQ source`
-2. Future lightweight web form linked from the repository/app
-3. Future in-app `Submit source URL` / `Import from URL`
 
-Submission fields should include:
+Potential later surfaces:
 
-- headphone manufacturer/model
-- exact variant/revision/pads/mode when relevant
+2. lightweight web form linked from the repository/app
+3. in-app `Submit source URL` / `Import from URL`
+
+The GitHub Issue Form uses separate fields for:
+
+- manufacturer
+- exact model
+- exact variant/revision/pads/mode when materially relevant
 - EQ creator/username
 - original source URL
 - source platform
 - source published/updated date if known
-- target/curve if explicitly stated
-- preamp
-- filters or attached structured preset
-- optional notes describing whether the submitter is the creator
+- target/curve only if explicitly stated
+- exact structured PEQ/preset data or exact preset-file link
+- optional submitter-authorship and provenance notes
 
-Submissions enter the same candidate pipeline and do not publish directly.
+The Issue Form is intake, not publication. `tools/eq_submission_issue.py` normalizes GitHub issue events into `catalog/submissions/github-issue-<number>.json` with `candidate_state: needs_review` and `publication_eligible: false`.
+
+Form intake rules:
+
+- do not infer manufacturer/model from a legacy combined label;
+- do not invent a variant or target;
+- parse structured PEQ with the same conservative community parser;
+- preserve every parsed filter and preserve a missing source preamp as null;
+- stage a single preset URL as `preset_link_needs_fetch` rather than fetching/interpreting it automatically;
+- retain invalid/incomplete input with diagnostics for review instead of silently dropping it;
+- require the normal source-policy, identity, provenance, acoustic dedupe, and revision pipeline before any later publication.
+
+The issue-event staging workflow writes only to the submission queue and never directly to `catalog/catalog.json`.
 
 ### G. User-local imports
 
@@ -105,11 +137,23 @@ Potential inputs:
 - pasted public URL
 - manual filter editor
 
-Store these as `My EQs`. A user may later explicitly submit provenance for public-catalog consideration.
+Store these as `My EQs`. A user may later explicitly submit provenance for public-catalog consideration. This is a future user-facing feature and remains subject to the project UX approval gate.
 
 ### H. Search/discovery fallback
 
 Use targeted web discovery to find new source communities and one-off original presets that are not in known registries. Newly discovered domains remain disabled or `needs_review` until their access/terms/provenance strategy is documented.
+
+## Canonical headphone identity across lanes
+
+Different sources frequently spell the same physical product differently. Identity cleanup is therefore part of ingestion, not a display-only post-process.
+
+Use three classes of decisions:
+
+1. **Auto-safe normalization** — punctuation/spacing/casing or redundant manufacturer tokens where manufacturer/model/subtype make equivalence unambiguous.
+2. **Reviewed aliases** — evidence-backed alternate labels for the same physical product, stored in `config/headphone_identity_decisions.json` with a chosen canonical model name and evidence.
+3. **Reviewed distinct pairs** — similarly named products/variants with evidence that they must not be merged.
+
+`tools/headphone_identity_audit.py` emits unresolved review candidates. Ambiguous candidates stay unresolved rather than triggering a broad heuristic. The Android browse/managed-state migration layer must follow reviewed canonical aliases so dedupe does not lose saved state.
 
 ## Trust / provenance tiers
 
@@ -125,17 +169,20 @@ Likes, votes, downloads, or forum reputation may be stored as popularity metadat
 
 ## Deduplication across lanes
 
-One acoustic tuning is shown once even if it appears in OPRA, AutoEq mirrors, forum reposts, GitHub files, and device communities.
+One acoustic tuning is shown once even if it appears in OPRA, AutoEq mirrors, forum reposts, GitHub files, device communities, or user submissions.
 
+- resolve canonical headphone identity first
 - exact/normalized acoustic fingerprint match -> one canonical revision
 - original/authoritative source becomes primary
 - mirrors/reposts become `source_references`
 - same creator/headphone/target with materially changed acoustic fingerprint -> new revision when lineage indicates an update
 - clearly separate named alternatives (for example Neutral vs Bass) remain separate canonical profiles unless the creator explicitly marks one as a replacement
 
+Acoustic dedupe never means device conversion: the canonical profile keeps its source filter count and source data even when an export target can represent fewer bands.
+
 ## Revision handling
 
-For public/community sources, retain old acoustic revisions when the source changes.
+For public/community sources, retain old genuine acoustic revisions when the source changes.
 
 Store when available:
 
@@ -150,6 +197,8 @@ Store when available:
 
 Formatting-only edits do not create a new acoustic revision.
 
+Generated safety headroom is derived metadata and is not a source preamp. Same-fingerprint changes to that derived value update metadata in place. A narrowly proven legacy case where generated safety headroom was previously stored as source preamp may be repaired in place when canonical profile, exact source-reference identity, exact filters, and numeric safety value all establish that the old revision is an application representation bug rather than genuine source history.
+
 ## Access and redistribution policy
 
 For every registered source, record:
@@ -158,10 +207,10 @@ For every registered source, record:
 - structured API/feed availability
 - robots/terms constraints
 - rate limits
-- redistribution status: `allowed`, `structured-data-only`, `link-only`, `unknown/review`
+- redistribution status: `allowed`, `structured-data-only`, `link-only`, `review-required/unknown`
 - required attribution
 
-Prefer APIs, feeds, public structured endpoints, repository files, and search indexes over brittle HTML scraping. Never scrape authenticated/private content. Never bypass access controls. If terms are uncertain, keep the source in discovery/link-only mode until resolved.
+Prefer APIs, feeds, public structured endpoints, repository files, and search indexes over brittle HTML scraping. Never scrape authenticated/private content. Never bypass access controls. If terms are uncertain, keep the source in discovery/link-only/review mode until resolved.
 
 ## Permanent currentness pathway
 
@@ -192,7 +241,7 @@ A source-specific cadence may be tightened or relaxed based on observed change f
 
 Every changed candidate must be compared against the latest canonical revision.
 
-- identical acoustic fingerprint: update provenance/last-seen metadata only
+- identical acoustic fingerprint: update provenance/last-seen/derived metadata only
 - materially changed acoustic fingerprint in the same tuning lineage: create an immutable new revision
 - clearly separate alternate tuning: create a separate canonical profile
 - source deletion/removal: preserve already-valid historical records where legally appropriate and mark source state rather than silently erasing the EQ
@@ -225,7 +274,7 @@ Qualification must determine:
 - expected update cadence
 - likely data quality/provenance tier
 
-Source lifecycle states:
+Source lifecycle states include:
 
 - `proposed`
 - `reviewing`
@@ -238,7 +287,7 @@ A source can change states automatically for technical health reasons, but licen
 
 ## Source health and freshness metadata
 
-The machine-readable source registry must persist at least:
+The machine-readable source registry/health state must persist at least:
 
 - source ID/type/name
 - current URL/scope
@@ -252,7 +301,7 @@ The machine-readable source registry must persist at least:
 - consecutive failure count
 - source lifecycle state
 - redistribution/attribution status
-- last terms/license review date
+- last terms/license review date where available
 - notes/reason when paused or retired
 
 Catalog publication should expose source freshness internally so stale sources can be diagnosed without deleting otherwise valid EQs.
@@ -275,9 +324,9 @@ No failed source may invalidate the last-known-good canonical catalog.
 Updates are published only after:
 
 1. parse/schema validation
-2. headphone identity validation
+2. canonical headphone identity validation
 3. provenance validation
-4. dedupe/revision classification
+4. acoustic dedupe/revision classification
 5. target classification
 6. source/license policy checks
 7. deterministic catalog generation
@@ -285,29 +334,48 @@ Updates are published only after:
 
 Publication must be atomic. Android clients continue using the previous last-known-good catalog if a new catalog build fails validation.
 
+Staged user submissions are deliberately outside this publication sequence until reviewed into a qualified source candidate.
+
 ## APK independence
 
 Ordinary changes should not require a new Android release. The following should normally be data/pipeline-only updates:
 
 - adding another source that maps to an existing adapter/schema
+- adding another curated community headphone input
 - discovering new EQs
 - adding new community revisions
+- resolving a source-side headphone alias through existing schema
 - changing provenance links/status
 - retiring or pausing a source
 - adding mirrors/secondary references
 
 An APK update is required only when the new source/data requires a genuinely new client schema, interaction model, parser executed on-device, or new export/device capability.
 
-## Initial v0.3 priority
+## v0.3 implementation priority from here
 
-P0: OPRA, AutoEq, canonical data model, dedupe/revisions
+Already established foundation:
 
-P1: oratory1990 as a distinct creator source, Squiglink-compatible structured data where allowed, GitHub/Gist parser
+- OPRA and broad AutoEq canonical ingestion
+- canonical source-agnostic model and acoustic dedupe/revisions
+- source-authentic arbitrary filter/preamp handling
+- reviewed headphone-identity audit/alias/distinct-pair pipeline
+- creator/oratory provenance lane
+- qualified GitHub repository ingestion
+- source registry/currentness/health scaffolding
+- curated multi-forum Edition XS pilot data
+- generalized all-file curated community publisher
+- structured GitHub Issue Form intake staged as review-only
 
-P2: Reddit, Head-Fi, Audio Science Review, HEADPHONE Community, Topping Community candidate discovery
+Next source-expansion work:
 
-P3: public user submission form / GitHub Issue Form, additional device/app communities, new source discovery
+P0: keep CI/currentness green while reducing reviewed headphone-identity duplicates and protecting distinct variants
 
-P4: source-health dashboard data, automated source qualification scaffolding, permanent post-v0.3 currentness jobs, and documented maintenance/recovery procedures
+P1: add qualified community/expert EQ inputs beyond the Edition XS pilot using the generic curated/community pipeline; improve recurring discovery for Reddit/Head-Fi/ASR/HEADPHONE Community without inventing filters from screenshots/curves
 
-The Android app should consume only the validated canonical catalog. Discovery, parsing, terms checks, currentness monitoring, source qualification, and catalog publication remain outside the Android runtime.
+P2: progress Squiglink-compatible sources from discovery to publication only where source-specific rights are verified; expand qualified GitHub/Gist sources
+
+P3: connect reviewed form submissions into the normal candidate qualification/publication tooling while preserving the explicit review gate; broaden new-source discovery and health/freshness reporting
+
+P4: complete Android real-path canonical catalog/identity/revision integration and the signed v0.3 validation candidate
+
+The Android app should consume only the validated canonical catalog. Discovery, parsing, terms checks, currentness monitoring, source qualification, submission review, and catalog publication remain outside the Android runtime.
