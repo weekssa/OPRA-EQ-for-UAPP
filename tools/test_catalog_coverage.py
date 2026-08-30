@@ -107,6 +107,15 @@ class CatalogCoverageTest(unittest.TestCase):
         registry = json.loads((ROOT / "config/source_registry.json").read_text(encoding="utf-8"))
         manifest = json.loads((ROOT / "config/qualified_github_sources.json").read_text(encoding="utf-8"))
         report = build_report(catalog, registry, manifest)
+        inventory = {
+            "profile_count": report["profile_count"],
+            "revision_count": report["revision_count"],
+            "active_publishable_sources": report["active_publishable_sources"],
+            "source_coverage": report["source_coverage"],
+            "autoeq_measurement_source_count": report["autoeq_measurement_source_count"],
+            "autoeq_measurement_sources": sorted(report["autoeq_measurement_sources"]),
+        }
+        print("CATALOG_DATABASE_INVENTORY=" + json.dumps(inventory, sort_keys=True))
         self.assertEqual([], validate_report(report), json.dumps(report, sort_keys=True))
         self.assertTrue(report["complete"])
 
