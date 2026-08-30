@@ -144,7 +144,6 @@ object CanonicalLegacyCatalogAdapter {
         val target = profile.target.name?.takeIf(String::isNotBlank)
         val parts = buildList {
             add(if (revision.isLatest) "Latest" else "Previous revision")
-            if (revision.verificationStatus == VerificationStatus.UNVERIFIED) add("Unverified")
             if (!revision.isLatest) {
                 revisionDisplayDate(revision, primary)?.let { add("Revision: $it") }
             }
