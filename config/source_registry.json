@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "registry_version": "0.3.0-autoeq-corpus-1",
+  "registry_version": "0.3.0-autoeq-corpus-2",
   "sources": [
     {
       "id": "opra",
@@ -23,7 +23,7 @@
       "lifecycle": "active",
       "cadence": "daily",
       "parser": "autoeq-corpus-parametric-text",
-      "parser_version": "3",
+      "parser_version": "4",
       "cursor_strategy": "repository commit plus per-file structured content hash",
       "redistribution": "structured-data-only",
       "attribution_required": true,
