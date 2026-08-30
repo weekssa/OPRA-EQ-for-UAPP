@@ -19,7 +19,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: community-eq-currentness-${{ github.ref }}
+  group: eq-catalog-writer-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -28,9 +28,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - name: Check out repository
+      - name: Check out current branch tip
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          ref: ${{ github.ref_name }}
           fetch-depth: 1
 
       - name: Validate current source registry
@@ -93,6 +94,7 @@ jobs:
       - name: Commit community catalog changes
         if: github.ref_name == 'eq-library-community-v0.3' || github.ref_name == 'main'
         run: |
+          set -euo pipefail
           if git diff --quiet -- catalog/catalog.json; then
             echo "No validated curated community EQ changes."
             exit 0
@@ -101,7 +103,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add catalog/catalog.json
           git commit -m "Refresh curated community EQ catalog"
-          git push
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
 
       - name: Upload community publication reports
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
