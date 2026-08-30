@@ -33,7 +33,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: eq-catalog-currentness
+  group: eq-catalog-writer-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -41,9 +41,10 @@ jobs:
     if: github.event_name != 'push' || github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository
+      - name: Check out current branch tip
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          ref: ${{ github.ref_name }}
           fetch-depth: 1
       - name: Show currentness mode
         run: |
@@ -196,6 +197,7 @@ jobs:
           (github.event_name == 'schedule' && github.ref_name == 'main') ||
           (github.event_name == 'push' && github.ref_name == 'eq-library-community-v0.3')
         run: |
+          set -euo pipefail
           if git diff --quiet -- catalog/catalog.json catalog/source_health.json catalog/discovery/github_candidates.json catalog/discovery/oratory_updates.json catalog/discovery/headphone_identity_audit.json; then
             echo "No persistent currentness changes."
             exit 0
@@ -204,7 +206,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add catalog/catalog.json catalog/source_health.json catalog/discovery/github_candidates.json catalog/discovery/oratory_updates.json catalog/discovery/headphone_identity_audit.json
           git commit -m "Refresh EQ catalog currentness"
-          git push
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
       - name: Upload currentness validation artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
