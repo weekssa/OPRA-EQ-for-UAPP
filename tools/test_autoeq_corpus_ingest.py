@@ -1,4 +1,3 @@
-import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -35,7 +34,7 @@ def registry():
                 "scope": "test",
                 "lifecycle": "active",
                 "cadence": "daily",
-                "parser": "autoeq-parametric-text",
+                "parser": "autoeq-corpus-parametric-text",
                 "parser_version": "3",
                 "cursor_strategy": "repository commit and per-file hash",
                 "redistribution": "structured-data-only",
@@ -121,6 +120,7 @@ class AutoEqCorpusIngestTest(unittest.TestCase):
         self.assertEqual(3, report["candidate_count"])
         self.assertEqual(3, report["merge_outcomes"]["new_profile"])
         self.assertEqual("abc123", updated_health["autoeq"].cursor)
+        self.assertFalse(report["parser_changed"])
         hd650 = [p for p in catalog["profiles"] if p["headphone"]["model"] == "HD 650"]
         self.assertEqual(2, len(hd650))
         self.assertNotEqual(hd650[0]["canonical_profile_id"], hd650[1]["canonical_profile_id"])
@@ -148,6 +148,37 @@ class AutoEqCorpusIngestTest(unittest.TestCase):
         )
         self.assertEqual(before, catalog)
         self.assertEqual("unchanged_cursor", report["outcome"])
+        self.assertFalse(report["parser_changed"])
+        self.assertEqual("same", updated_health["autoeq"].cursor)
+
+    def test_parser_version_change_forces_reparse_with_same_upstream_commit(self):
+        self._preset(
+            "results/oratory1990/over-ear/HIFIMAN Edition XS/HIFIMAN Edition XS ParametricEQ.txt",
+            SAMPLE_A,
+        )
+        health = {
+            "autoeq": SourceHealth(
+                source_id="autoeq",
+                lifecycle="active",
+                parser_version="2",
+                cursor="same",
+                last_content_fingerprint="old",
+            )
+        }
+        catalog, updated_health, report = refresh(
+            autoeq_root=self.root,
+            catalog=empty_catalog(),
+            registry=registry(),
+            health=health,
+            upstream_commit="same",
+            now_iso="2026-08-30T00:00:00Z",
+            now_epoch=1788048000,
+            max_compact_catalog_bytes=10_000_000,
+        )
+        self.assertTrue(report["parser_changed"])
+        self.assertEqual("refreshed", report["outcome"])
+        self.assertEqual(1, len(catalog["profiles"]))
+        self.assertEqual("3", updated_health["autoeq"].parser_version)
         self.assertEqual("same", updated_health["autoeq"].cursor)
 
     def test_unknown_manufacturer_is_bounded_and_reported(self):
