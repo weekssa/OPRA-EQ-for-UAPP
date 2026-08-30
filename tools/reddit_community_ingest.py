@@ -4,6 +4,10 @@
 Only numeric PEQ coefficients are normalized. Surrounding post prose is never copied.
 A post is publication-eligible only when it contains parseable PEQ lines and can be
 matched unambiguously to exactly one headphone already known to the catalog.
+
+For controlled community pilots, --headphone-model narrows discovery and publication
+to one headphone model at a time. This lets us validate quality, provenance, matching,
+and deduplication before expanding community ingestion to additional headphones.
 """
 
 from __future__ import annotations
@@ -42,9 +46,35 @@ def fetch_json(url: str) -> dict[str, Any]:
         return json.loads(response.read().decode("utf-8"))
 
 
-def reddit_listing_urls(subreddit: str, limit: int) -> list[str]:
+def reddit_listing_urls(subreddit: str, limit: int, headphone_model: str | None = None) -> list[str]:
     base = f"https://www.reddit.com/r/{urllib.parse.quote(subreddit)}"
-    urls = [f"{base}/new.json?limit={limit}&raw_json=1"]
+    urls: list[str] = []
+
+    if headphone_model:
+        # A controlled pilot should search for the named headphone directly rather than
+        # depending on it appearing in the newest generic EQ results.
+        targeted_terms = (
+            f'"{headphone_model}" "parametric EQ"',
+            f'"{headphone_model}" PEQ',
+            f'"{headphone_model}" "Filter 1"',
+            f'"{headphone_model}" "Preamp:"',
+            f'"{headphone_model}" EQ',
+        )
+        for term in targeted_terms:
+            query = urllib.parse.urlencode(
+                {
+                    "q": term,
+                    "restrict_sr": "on",
+                    "sort": "relevance",
+                    "t": "all",
+                    "limit": limit,
+                    "raw_json": 1,
+                }
+            )
+            urls.append(f"{base}/search.json?{query}")
+        return urls
+
+    urls.append(f"{base}/new.json?limit={limit}&raw_json=1")
     for term in SEARCH_TERMS:
         query = urllib.parse.urlencode(
             {
@@ -80,14 +110,17 @@ def extract_peq_text(text: str) -> str | None:
     return "\n".join(lines) + "\n"
 
 
-def catalog_headphones(snapshot: dict[str, Any]) -> list[tuple[str, str]]:
+def catalog_headphones(snapshot: dict[str, Any], headphone_model: str | None = None) -> list[tuple[str, str]]:
     seen: set[tuple[str, str]] = set()
     values: list[tuple[str, str]] = []
+    requested_model = normalize(headphone_model or "")
     for profile in snapshot.get("profiles") or []:
         headphone = profile.get("headphone") or {}
         manufacturer = str(headphone.get("manufacturer") or "").strip()
         model = str(headphone.get("model") or "").strip()
         if not manufacturer or not model:
+            continue
+        if requested_model and normalize(model) != requested_model:
             continue
         key = (manufacturer, model)
         if key not in seen:
@@ -119,11 +152,24 @@ def match_headphone(post: dict[str, Any], headphones: list[tuple[str, str]]) -> 
     return best[1], best[2]
 
 
-def discover(snapshot: dict[str, Any], subreddits: list[str], limit: int) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    headphones = catalog_headphones(snapshot)
+def discover(
+    snapshot: dict[str, Any],
+    subreddits: list[str],
+    limit: int,
+    headphone_model: str | None = None,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    headphones = catalog_headphones(snapshot, headphone_model=headphone_model)
+    if headphone_model and not headphones:
+        raise ValueError(f"Requested headphone model is not present in the catalog: {headphone_model}")
+
     candidates: list[dict[str, Any]] = []
     seen_posts: set[str] = set()
     report: dict[str, Any] = {
+        "target_headphone_model": headphone_model,
+        "catalog_headphones_in_scope": [
+            {"manufacturer": manufacturer, "model": model}
+            for manufacturer, model in headphones
+        ],
         "subreddits": subreddits,
         "listings_attempted": 0,
         "posts_seen": 0,
@@ -131,11 +177,12 @@ def discover(snapshot: dict[str, Any], subreddits: list[str], limit: int) -> tup
         "unmatched_headphone": 0,
         "parse_failures": 0,
         "candidates": 0,
+        "candidate_sources": [],
         "errors": [],
     }
 
     for subreddit in subreddits:
-        for url in reddit_listing_urls(subreddit, limit):
+        for url in reddit_listing_urls(subreddit, limit, headphone_model=headphone_model):
             report["listings_attempted"] += 1
             try:
                 payload = fetch_json(url)
@@ -187,6 +234,16 @@ def discover(snapshot: dict[str, Any], subreddits: list[str], limit: int) -> tup
                     discovered_at_epoch_seconds=discovered_at,
                 )
                 candidates.append(candidate)
+                report["candidate_sources"].append(
+                    {
+                        "post_id": post_id,
+                        "creator": creator,
+                        "manufacturer": manufacturer,
+                        "model": model,
+                        "title": title[:160],
+                        "source_url": source_url,
+                    }
+                )
 
     report["candidates"] = len(candidates)
     return candidates, report
@@ -199,11 +256,17 @@ def main() -> int:
     parser.add_argument("--report", type=Path, required=True)
     parser.add_argument("--subreddit", action="append", dest="subreddits")
     parser.add_argument("--limit", type=int, default=100)
+    parser.add_argument("--headphone-model")
     parser.add_argument("--source-registry-version")
     args = parser.parse_args()
 
     snapshot = json.loads(args.catalog.read_text(encoding="utf-8"))
-    candidates, report = discover(snapshot, args.subreddits or list(DEFAULT_SUBREDDITS), args.limit)
+    candidates, report = discover(
+        snapshot,
+        args.subreddits or list(DEFAULT_SUBREDDITS),
+        args.limit,
+        headphone_model=args.headphone_model,
+    )
     if candidates:
         merged, outcomes = merge_candidates(
             snapshot,
