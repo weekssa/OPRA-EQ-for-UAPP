@@ -23,11 +23,11 @@ object OpraCanonicalCatalogAdapter {
             }
             .distinctBy { profile ->
                 val revision = profile.latestRevision
-                listOf(profile.headphone.normalizedKey, revision.acousticFingerprint)
+                listOf(requireNotNull(profile.headphone).normalizedKey, revision.acousticFingerprint)
             }
             .sortedWith(
-                compareBy<CanonicalEqProfile> { it.headphone.manufacturer.lowercase() }
-                    .thenBy { it.headphone.model.lowercase() }
+                compareBy<CanonicalEqProfile> { requireNotNull(it.headphone).manufacturer.lowercase() }
+                    .thenBy { requireNotNull(it.headphone).model.lowercase() }
                     .thenBy { it.creator.orEmpty().lowercase() }
                     .thenBy { it.tuningLabel.orEmpty().lowercase() },
             )
