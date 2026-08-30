@@ -26,6 +26,7 @@ class CatalogCoverageTest(unittest.TestCase):
             "profiles": [
                 {
                     "canonical_profile_id": "one",
+                    "headphone": {"manufacturer": "Sennheiser", "model": "HD 650"},
                     "revisions": [
                         {
                             "revision_id": "r1",
@@ -47,6 +48,51 @@ class CatalogCoverageTest(unittest.TestCase):
         self.assertEqual([], validate_report(report))
         self.assertEqual(1, report["autoeq_measurement_source_count"])
         self.assertEqual(1, report["autoeq_measurement_sources"]["oratory1990"])
+        self.assertEqual(1, report["headphone_identity_count"])
+        self.assertEqual(1, report["manufacturer_count"])
+        self.assertEqual(1, report["source_coverage"]["autoeq"]["headphone_identity_count"])
+
+    def test_reports_headphone_and_manufacturer_breadth(self):
+        registry = {
+            "sources": [
+                {"id": "community", "lifecycle": "active", "redistribution": "structured-data-only"},
+            ]
+        }
+        catalog = {
+            "profiles": [
+                {
+                    "canonical_profile_id": "hd650",
+                    "headphone": {"manufacturer": "Sennheiser", "model": "HD 650"},
+                    "revisions": [
+                        {
+                            "revision_id": "r1",
+                            "source_references": [
+                                {"source_id": "community", "source_record_id": "one"},
+                            ],
+                        }
+                    ],
+                },
+                {
+                    "canonical_profile_id": "edition-xs",
+                    "headphone": {"manufacturer": "HIFIMAN", "model": "Edition XS"},
+                    "revisions": [
+                        {
+                            "revision_id": "r2",
+                            "source_references": [
+                                {"source_id": "community", "source_record_id": "two"},
+                            ],
+                        }
+                    ],
+                },
+            ]
+        }
+
+        report = build_report(catalog, registry)
+
+        self.assertEqual(2, report["headphone_identity_count"])
+        self.assertEqual(2, report["manufacturer_count"])
+        self.assertEqual(2, report["source_coverage"]["community"]["headphone_identity_count"])
+        self.assertEqual(2, report["source_coverage"]["community"]["manufacturer_count"])
 
     def test_missing_active_source_fails(self):
         registry = {
@@ -110,6 +156,8 @@ class CatalogCoverageTest(unittest.TestCase):
         inventory = {
             "profile_count": report["profile_count"],
             "revision_count": report["revision_count"],
+            "headphone_identity_count": report["headphone_identity_count"],
+            "manufacturer_count": report["manufacturer_count"],
             "active_publishable_sources": report["active_publishable_sources"],
             "source_coverage": report["source_coverage"],
             "autoeq_measurement_source_count": report["autoeq_measurement_source_count"],
@@ -118,6 +166,10 @@ class CatalogCoverageTest(unittest.TestCase):
         print("CATALOG_DATABASE_INVENTORY=" + json.dumps(inventory, sort_keys=True))
         self.assertEqual([], validate_report(report), json.dumps(report, sort_keys=True))
         self.assertTrue(report["complete"])
+        self.assertGreater(report["headphone_identity_count"], 1)
+        self.assertGreater(report["manufacturer_count"], 1)
+        self.assertGreater(report["source_coverage"]["autoeq"]["headphone_identity_count"], 1)
+        self.assertGreater(report["source_coverage"]["autoeq"]["manufacturer_count"], 1)
 
 
 if __name__ == "__main__":
