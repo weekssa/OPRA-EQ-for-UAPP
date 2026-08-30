@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "headphone": {
+    "manufacturer": "Sennheiser",
+    "model": "HD 650"
+  },
+  "curation_scope": {
+    "strategy": "headphone-first curated public community discovery",
+    "surfaces_reviewed": [
+      "The HEADPHONE Community / Headphones.com"
+    ],
+    "note": "Initial non-Edition-XS proof of the generic curated-community publication path. Publication requires structured filters, traceable authorship/source, headphone identity confidence, acoustic dedupe, and source-policy checks."
+  },
+  "records": [
+    {
+      "id": "headphones-community-23552-p15-listener-hd650",
+      "surface": "headphones-community",
+      "community": "The HEADPHONE Community / Headphones.com EQ Repository & Request Thread",
+      "creator": "listener",
+      "source_url": "https://forum.headphones.com/t/headphones-com-eq-repository-request-thread/23552/15",
+      "source_date": "2024-06-13",
+      "status": "publish-candidate",
+      "provenance_tier": 3,
+      "lineage": "Structured community EQ authored by listener for Sennheiser HD 650",
+      "target_claim": null,
+      "preamp_db": -11.5,
+      "filters": [
+        {"type":"PK","frequency_hz":20,"gain_db":5.7,"q":1.0},
+        {"type":"LSC","frequency_hz":80,"gain_db":2.0,"q":0.7},
+        {"type":"LSC","frequency_hz":110,"gain_db":4.0,"q":0.7},
+        {"type":"PK","frequency_hz":120,"gain_db":-2.3,"q":0.6},
+        {"type":"PK","frequency_hz":240,"gain_db":-0.9,"q":0.7},
+        {"type":"PK","frequency_hz":615,"gain_db":0.5,"q":1.4},
+        {"type":"PK","frequency_hz":1350,"gain_db":-0.7,"q":1.8},
+        {"type":"PK","frequency_hz":2150,"gain_db":0.8,"q":1.5},
+        {"type":"PK","frequency_hz":3333,"gain_db":-1.5,"q":2.0},
+        {"type":"HSC","frequency_hz":4000,"gain_db":0.0,"q":0.7}
+      ],
+      "review_notes": "Source publishes the PEQ directly and attributes it to listener. Source describes measurement inputs from multiple rigs and warns that HD 650 pad condition/position affects response. No explicit named target is claimed here, so target remains unknown rather than inferred."
+    }
+  ]
+}
