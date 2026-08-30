@@ -103,7 +103,8 @@ def build_candidate(
     identity = "|".join(identity_parts)
     canonical_id = "autoeq-" + hashlib.sha256(identity.lower().encode("utf-8")).hexdigest()[:24]
     revision_id = "rev-" + fingerprint[:24]
-    measurement_label = measurement_source.strip()
+    dataset_name = measurement_source.strip()
+    measurement_label = dataset_name
     if context_name:
         measurement_label += f" / {context_name}"
     return {
@@ -131,6 +132,7 @@ def build_candidate(
                         "source_id": "autoeq",
                         "source_kind": "measurement_derived",
                         "source_record_id": source_record_id,
+                        "source_dataset": dataset_name,
                         "source_vendor_id": manufacturer.strip(),
                         "source_product_id": model.strip(),
                         "url": source_url,
