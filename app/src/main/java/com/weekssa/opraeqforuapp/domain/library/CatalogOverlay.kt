@@ -14,19 +14,14 @@ import java.util.Locale
  * represented in the canonical snapshot remains available. Canonical-only sources and historical
  * revisions are appended with their stable synthetic IDs.
  *
- * Product identity is resolved conservatively: normalized manufacturer/model equality is accepted,
- * and any broader equivalence must be supplied explicitly as a model alias by a qualified source.
- * Alternate product IDs remain resolvable so consolidating duplicate names does not break existing
- * managed-headphone state.
- *
- * The compatibility catalog can also contain multiple records for the exact same acoustic tuning.
- * Those records remain source data, but the app should not make a person choose between acoustically
- * identical rows. The rendered overlay therefore keeps one preferred visible record per exact
- * normalized filter set and strips machine-only labels from the compatibility details.
+ * Product identity is resolved conservatively. Exact normalized manufacturer/model matches are
+ * always safe to collapse. Broader equivalence must come from an explicit catalog/source alias.
+ * Alternate product IDs remain resolvable so cleanup does not break existing managed state.
  */
 fun overlayCanonicalCatalog(
     legacy: OpraCatalog,
     canonical: OpraCatalog,
+    headphoneAliases: List<HeadphoneAliasGroup> = emptyList(),
 ): OpraCatalog {
     val vendors = linkedMapOf<String, OpraVendor>()
     legacy.vendors.forEach { vendors[it.id] = it }
@@ -36,7 +31,12 @@ fun overlayCanonicalCatalog(
     legacy.products.forEach { rawProducts[it.id] = it }
     canonical.products.forEach { rawProducts[it.id] = it }
 
-    val aliasResolution = resolveProductAliases(legacy, canonical, vendors)
+    val aliasResolution = resolveProductAliases(
+        legacy = legacy,
+        canonical = canonical,
+        vendors = vendors,
+        headphoneAliases = headphoneAliases,
+    )
     val visibleProducts = rawProducts.values
         .filter { resolveProductId(it.id, aliasResolution.aliases) == it.id }
         .map { product -> aliasResolution.preferredProducts[product.id] ?: product }
@@ -68,52 +68,103 @@ private fun resolveProductAliases(
     legacy: OpraCatalog,
     canonical: OpraCatalog,
     vendors: Map<String, OpraVendor>,
+    headphoneAliases: List<HeadphoneAliasGroup>,
 ): ProductAliasResolution {
     val aliases = linkedMapOf<String, String>()
     val preferred = linkedMapOf<String, OpraProduct>()
+    val allProducts = (legacy.products + canonical.products).distinctBy(OpraProduct::id)
+    val legacyIds = legacy.products.map(OpraProduct::id).toSet()
 
-    canonical.products.forEach { canonicalProduct ->
-        val canonicalVendor = vendors[canonicalProduct.vendorId]?.name ?: return@forEach
-        val canonicalVendorKey = normalizeIdentityText(canonicalVendor)
-        val canonicalNameKey = normalizeIdentityText(canonicalProduct.name)
-        val acceptedNameKeys = buildSet {
-            add(canonicalNameKey)
-            canonicalProduct.aliases.forEach { add(normalizeIdentityText(it)) }
-        }.filter(String::isNotEmpty).toSet()
-        if (acceptedNameKeys.isEmpty()) return@forEach
+    fun vendorKey(product: OpraProduct): String? =
+        vendors[product.vendorId]?.name?.let(::normalizeIdentityText)?.takeIf(String::isNotEmpty)
 
-        val matchingLegacy = legacy.products.filter { legacyProduct ->
-            val legacyVendor = vendors[legacyProduct.vendorId]?.name ?: return@filter false
-            normalizeIdentityText(legacyVendor) == canonicalVendorKey &&
-                normalizeIdentityText(legacyProduct.name) in acceptedNameKeys
+    fun applyIdentityGroup(
+        manufacturer: String,
+        canonicalModel: String,
+        modelAliases: Collection<String>,
+    ) {
+        val manufacturerKey = normalizeIdentityText(manufacturer)
+        val canonicalKey = normalizeIdentityText(canonicalModel)
+        if (manufacturerKey.isEmpty() || canonicalKey.isEmpty()) return
+        val acceptedKeys = (modelAliases + canonicalModel)
+            .map(::normalizeIdentityText)
+            .filter(String::isNotEmpty)
+            .toSet()
+        val matches = allProducts.filter { product ->
+            vendorKey(product) == manufacturerKey && normalizeIdentityText(product.name) in acceptedKeys
         }
-        if (matchingLegacy.isEmpty()) return@forEach
+        if (matches.isEmpty()) return
 
-        // Prefer an existing product whose normalized display name exactly matches the canonical
-        // model. This preserves a stable legacy ID whenever the catalog already has the best name.
-        val retained = matchingLegacy.firstOrNull {
-            normalizeIdentityText(it.name) == canonicalNameKey
-        } ?: matchingLegacy.first()
-        val retainedId = retained.id
+        val retained = matches.firstOrNull {
+            it.id in legacyIds && normalizeIdentityText(it.name) == canonicalKey
+        } ?: matches.firstOrNull { it.id in legacyIds }
+            ?: matches.firstOrNull { normalizeIdentityText(it.name) == canonicalKey }
+            ?: matches.first()
+        val retainedRoot = resolveProductId(retained.id, aliases)
 
-        matchingLegacy.forEach { product ->
-            if (product.id != retainedId) aliases[product.id] = retainedId
+        matches.forEach { product ->
+            val root = resolveProductId(product.id, aliases)
+            if (root != retainedRoot) aliases[root] = retainedRoot
+            if (product.id != retainedRoot) aliases[product.id] = retainedRoot
         }
-        if (canonicalProduct.id != retainedId) aliases[canonicalProduct.id] = retainedId
 
-        preferred[retainedId] = retained.copy(
-            name = canonicalProduct.name,
+        val retainedProduct = allProducts.firstOrNull { it.id == retainedRoot } ?: retained
+        preferred[retainedRoot] = retainedProduct.copy(
+            name = canonicalModel,
             aliases = (
-                canonicalProduct.aliases +
-                    matchingLegacy.map(OpraProduct::name) +
-                    matchingLegacy.flatMap(OpraProduct::aliases)
+                modelAliases +
+                    matches.map(OpraProduct::name) +
+                    matches.flatMap(OpraProduct::aliases)
                 )
-                .filterNot { normalizeIdentityText(it) == canonicalNameKey }
+                .filterNot { normalizeIdentityText(it) == canonicalKey }
                 .distinctBy(::normalizeIdentityText),
         )
     }
 
-    return ProductAliasResolution(aliases = aliases, preferredProducts = preferred)
+    // Global safe cleanup: punctuation, casing and spacing variants of the same manufacturer/model
+    // are equivalent even when no canonical source happens to touch that headphone yet.
+    allProducts
+        .groupBy { product -> vendorKey(product) to normalizeIdentityText(product.name) }
+        .values
+        .filter { group -> group.size > 1 && group.first().name.isNotBlank() }
+        .forEach { group ->
+            val representative = group.firstOrNull { it.id in legacyIds } ?: group.first()
+            val manufacturer = vendors[representative.vendorId]?.name ?: return@forEach
+            applyIdentityGroup(manufacturer, representative.name, emptyList())
+        }
+
+    // Canonical profiles can carry qualified aliases from their source manifest.
+    canonical.products.forEach { canonicalProduct ->
+        val manufacturer = vendors[canonicalProduct.vendorId]?.name ?: return@forEach
+        applyIdentityGroup(manufacturer, canonicalProduct.name, canonicalProduct.aliases)
+    }
+
+    // Catalog-level aliases let the audit/curation pipeline clean OPRA-only products without an APK
+    // release. These groups are intentionally explicit rather than inferred by fuzzy matching.
+    headphoneAliases.forEach { group ->
+        applyIdentityGroup(group.manufacturer, group.canonicalModel, group.aliases)
+    }
+
+    // A later explicit group can connect roots created by an earlier exact-normalized group. Normalize
+    // both the alias map and preferred display records to their final retained IDs.
+    val flattenedAliases = aliases.keys.associateWith { key -> resolveProductId(key, aliases) }
+        .filterValues { value -> value.isNotBlank() }
+        .filter { (key, value) -> key != value }
+    val normalizedPreferred = linkedMapOf<String, OpraProduct>()
+    preferred.forEach { (id, product) ->
+        val root = resolveProductId(id, flattenedAliases)
+        val rootProduct = allProducts.firstOrNull { it.id == root } ?: product
+        normalizedPreferred[root] = rootProduct.copy(
+            name = product.name,
+            aliases = (rootProduct.aliases + product.aliases)
+                .distinctBy(::normalizeIdentityText),
+        )
+    }
+
+    return ProductAliasResolution(
+        aliases = flattenedAliases,
+        preferredProducts = normalizedPreferred,
+    )
 }
 
 private fun resolveProductId(productId: String, aliases: Map<String, String>): String {
