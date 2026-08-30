@@ -5,6 +5,8 @@ data class CanonicalCatalogFilters(
     val creators: Set<String> = emptySet(),
     val sourceKinds: Set<EqSourceKind> = emptySet(),
     val targets: Set<String> = emptySet(),
+    val scopes: Set<EqProfileScope> = emptySet(),
+    val purposes: Set<EqPresetPurpose> = emptySet(),
     val latestOnly: Boolean = true,
 )
 
@@ -23,6 +25,12 @@ object CanonicalCatalogQuery {
         val normalizedTargets = filters.targets.mapTo(mutableSetOf()) { normalize(it) }
 
         return snapshot.profiles.mapNotNull { profile ->
+            if (filters.scopes.isNotEmpty() && profile.scope !in filters.scopes) {
+                return@mapNotNull null
+            }
+            if (filters.purposes.isNotEmpty() && profile.purpose !in filters.purposes) {
+                return@mapNotNull null
+            }
             if (normalizedCreators.isNotEmpty() && normalize(profile.creator.orEmpty()) !in normalizedCreators) {
                 return@mapNotNull null
             }
@@ -43,9 +51,11 @@ object CanonicalCatalogQuery {
             )
         }.sortedWith(
             compareBy<CanonicalProfileSearchResult>(
-                { normalize(it.profile.headphone.manufacturer) },
-                { normalize(it.profile.headphone.model) },
-                { normalize(it.profile.headphone.variant.orEmpty()) },
+                { it.profile.scope.name },
+                { it.profile.purpose.name },
+                { normalize(it.profile.headphone?.manufacturer.orEmpty()) },
+                { normalize(it.profile.headphone?.model.orEmpty()) },
+                { normalize(it.profile.headphone?.variant.orEmpty()) },
                 { normalize(it.profile.creator.orEmpty()) },
                 { normalize(it.profile.tuningLabel.orEmpty()) },
             ),
@@ -71,12 +81,22 @@ object CanonicalCatalogQuery {
             .map { it.sourceKind }
             .toSet()
 
+    fun availableScopes(snapshot: CatalogSnapshot): Set<EqProfileScope> =
+        snapshot.profiles.mapTo(mutableSetOf()) { it.scope }
+
+    fun availablePurposes(snapshot: CatalogSnapshot): Set<EqPresetPurpose> =
+        snapshot.profiles.mapTo(mutableSetOf()) { it.purpose }
+
     private fun matchesQuery(profile: CanonicalEqProfile, revision: EqRevision, query: String): Boolean {
         val values = buildList {
-            add(profile.headphone.manufacturer)
-            add(profile.headphone.model)
-            profile.headphone.variant?.let { add(it) }
-            profile.headphone.padsOrMode?.let { add(it) }
+            profile.headphone?.let { headphone ->
+                add(headphone.manufacturer)
+                add(headphone.model)
+                headphone.variant?.let { add(it) }
+                headphone.padsOrMode?.let { add(it) }
+            }
+            add(profile.scope.name)
+            add(profile.purpose.name)
             profile.creator?.let { add(it) }
             profile.target.name?.let { add(it) }
             profile.tuningLabel?.let { add(it) }
