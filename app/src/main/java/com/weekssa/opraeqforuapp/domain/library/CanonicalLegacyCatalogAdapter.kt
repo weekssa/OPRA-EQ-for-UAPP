@@ -102,6 +102,7 @@ object CanonicalLegacyCatalogAdapter {
                 )
             },
             eqLibrarySafetyHeadroomDb = revision.eqLibrarySafetyHeadroomDb,
+            isVerified = revision.verificationStatus == VerificationStatus.VERIFIED,
         )
     }
 
@@ -143,6 +144,7 @@ object CanonicalLegacyCatalogAdapter {
         val target = profile.target.name?.takeIf(String::isNotBlank)
         val parts = buildList {
             add(if (revision.isLatest) "Latest" else "Previous revision")
+            if (revision.verificationStatus == VerificationStatus.UNVERIFIED) add("Unverified")
             if (!revision.isLatest) {
                 revisionDisplayDate(revision, primary)?.let { add("Revision: $it") }
             }
@@ -185,7 +187,7 @@ object CanonicalLegacyCatalogAdapter {
         "reddit-audio" -> "Reddit"
         "head-fi" -> "Head-Fi"
         "audio-science-review" -> "Audio Science Review"
-        "headphone-community" -> "The HEADPHONE Community"
+        "headphone-community", "headphones-community" -> "The HEADPHONE Community"
         "topping-community" -> "Topping Community"
         else -> value
             .split('-', '_')
