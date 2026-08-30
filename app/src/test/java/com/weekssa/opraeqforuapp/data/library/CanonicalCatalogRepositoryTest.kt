@@ -4,6 +4,8 @@ import com.weekssa.opraeqforuapp.domain.library.CanonicalEqProfile
 import com.weekssa.opraeqforuapp.domain.library.CatalogSnapshot
 import com.weekssa.opraeqforuapp.domain.library.EqFilter
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
+import com.weekssa.opraeqforuapp.domain.library.EqPresetPurpose
+import com.weekssa.opraeqforuapp.domain.library.EqProfileScope
 import com.weekssa.opraeqforuapp.domain.library.EqRevision
 import com.weekssa.opraeqforuapp.domain.library.EqSourceKind
 import com.weekssa.opraeqforuapp.domain.library.EqSourceReference
@@ -38,6 +40,65 @@ class CanonicalCatalogRepositoryTest {
             val result = repository.refresh()
 
             assertTrue(result is CanonicalCatalogRefreshResult.Success)
+            val ready = repository.state.value as CanonicalCatalogState.Ready
+            assertEquals("rev-1", ready.snapshot.profiles.single().latestRevision.revisionId)
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun generalEffectDownloadIsRetainedWithoutHeadphoneIdentity() = runBlocking {
+        val root = createTempDirectory(prefix = "canonical-catalog-").toFile()
+        try {
+            val snapshot = sampleSnapshot("rev-1").copy(
+                profiles = listOf(sampleGeneralEffect()),
+            )
+            val repository = CanonicalCatalogRepository(
+                root,
+                CanonicalCatalogSource { destination -> destination.writeText(json.encodeToString(snapshot)) },
+                nowMillis = { 1234L },
+            )
+
+            val result = repository.refresh()
+
+            assertTrue(result is CanonicalCatalogRefreshResult.Success)
+            val profile = (repository.state.value as CanonicalCatalogState.Ready).snapshot.profiles.single()
+            assertEquals(EqProfileScope.GENERAL, profile.scope)
+            assertEquals(EqPresetPurpose.EFFECT, profile.purpose)
+            assertEquals(null, profile.headphone)
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun invalidGeneralClassificationCannotReplaceLastKnownGoodSnapshot() = runBlocking {
+        val root = createTempDirectory(prefix = "canonical-catalog-").toFile()
+        try {
+            var invalid = false
+            val source = CanonicalCatalogSource { destination ->
+                val snapshot = if (invalid) {
+                    sampleSnapshot("rev-2").copy(
+                        profiles = listOf(
+                            sampleGeneralEffect().copy(
+                                headphone = HeadphoneIdentity("Example", "Should not be here"),
+                            ),
+                        ),
+                    )
+                } else {
+                    sampleSnapshot("rev-1")
+                }
+                destination.writeText(json.encodeToString(snapshot))
+            }
+            val repository = CanonicalCatalogRepository(root, source, nowMillis = { 1234L })
+            assertTrue(repository.refresh() is CanonicalCatalogRefreshResult.Success)
+
+            invalid = true
+            val failed = repository.refresh() as CanonicalCatalogRefreshResult.Failure
+
+            assertEquals(CanonicalCatalogFailureReason.InvalidCatalog, failed.reason)
+            assertTrue(failed.usingLastKnownGood)
             val ready = repository.state.value as CanonicalCatalogState.Ready
             assertEquals("rev-1", ready.snapshot.profiles.single().latestRevision.revisionId)
         } finally {
@@ -183,22 +244,41 @@ class CanonicalCatalogRepositoryTest {
                         acousticFingerprint = "fingerprint-$revisionId",
                         preampGainDb = -5.0,
                         filters = listOf(EqFilter(EqFilterType.PEAK, 1000.0, -2.0, 1.0)),
-                        sourceReferences = listOf(
-                            EqSourceReference(
-                                sourceId = "test",
-                                sourceKind = EqSourceKind.STRUCTURED_CATALOG,
-                                sourceRecordId = "record-1",
-                                url = "https://example.com/eq",
-                                creator = "Tester",
-                                provenanceTier = ProvenanceTier.AUTHORITATIVE,
-                                redistributionPolicy = RedistributionPolicy.ALLOWED,
-                                isPrimary = true,
-                            ),
-                        ),
+                        sourceReferences = listOf(sampleSource("record-1")),
                         isLatest = true,
                     ),
                 ),
             ),
         ),
+    )
+
+    private fun sampleGeneralEffect() = CanonicalEqProfile(
+        canonicalProfileId = "general-effect:bass-boost",
+        scope = EqProfileScope.GENERAL,
+        purpose = EqPresetPurpose.EFFECT,
+        creator = "Tester",
+        target = EqTarget(null, EqTargetKind.UNKNOWN),
+        tuningLabel = "Bass Boost",
+        revisions = listOf(
+            EqRevision(
+                revisionId = "general-rev-1",
+                acousticFingerprint = "general-fingerprint",
+                preampGainDb = -3.0,
+                filters = listOf(EqFilter(EqFilterType.LOW_SHELF, 100.0, 3.0, 0.7)),
+                sourceReferences = listOf(sampleSource("general-record")),
+                isLatest = true,
+            ),
+        ),
+    )
+
+    private fun sampleSource(recordId: String) = EqSourceReference(
+        sourceId = "test",
+        sourceKind = EqSourceKind.STRUCTURED_CATALOG,
+        sourceRecordId = recordId,
+        url = "https://example.com/eq",
+        creator = "Tester",
+        provenanceTier = ProvenanceTier.AUTHORITATIVE,
+        redistributionPolicy = RedistributionPolicy.ALLOWED,
+        isPrimary = true,
     )
 }
