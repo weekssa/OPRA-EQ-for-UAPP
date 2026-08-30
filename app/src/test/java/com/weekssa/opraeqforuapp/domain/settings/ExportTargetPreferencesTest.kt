@@ -1,10 +1,10 @@
 package com.weekssa.opraeqforuapp.domain.settings
 
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
 
 class ExportTargetPreferencesTest {
     @Test
