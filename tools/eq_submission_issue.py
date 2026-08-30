@@ -94,7 +94,9 @@ def normalize_submission_event(event: dict[str, Any]) -> dict[str, Any]:
     creator = _value(fields, "EQ creator / username")
     original_url = _value(fields, "Original source URL")
     platform = _value(fields, "Source platform")
+    tuning_label = _value(fields, "Preset / tuning name (optional)")
     target = _value(fields, "Target / curve (only if explicitly stated)")
+    sound_impact = _value(fields, "Sound impact / intent (optional)")
     source_date = _value(fields, "Source published / updated date")
     notes = _value(fields, "Notes")
     authorship = fields.get("Authorship", "")
@@ -185,7 +187,9 @@ def normalize_submission_event(event: dict[str, Any]) -> dict[str, Any]:
         "creator": creator,
         "original_source_url": original_url,
         "source_platform": platform,
+        "tuning_label": tuning_label,
         "target": target,
+        "sound_impact": sound_impact,
         "source_date": source_date,
         "submitter_is_creator": checkbox_checked(authorship, "I am the creator of this EQ"),
         "submitted_peq": submitted_peq,
