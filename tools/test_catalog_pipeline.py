@@ -140,6 +140,15 @@ class CatalogPipelineTest(unittest.TestCase):
         errors = validate_snapshot(snapshot)
         self.assertTrue(any("general scope cannot use correction_tuning purpose" in error for error in errors))
 
+    def test_general_profile_cannot_use_personal_community_purpose(self):
+        snapshot = self.valid_snapshot()
+        profile = snapshot["profiles"][0]
+        profile.pop("headphone")
+        profile["scope"] = "general"
+        profile["purpose"] = "personal_community"
+        errors = validate_snapshot(snapshot)
+        self.assertTrue(any("general scope cannot use personal_community purpose" in error for error in errors))
+
     def test_effect_or_genre_cannot_be_headphone_scoped(self):
         for purpose in ("effect", "genre"):
             with self.subTest(purpose=purpose):
