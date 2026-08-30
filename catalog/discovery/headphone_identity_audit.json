@@ -1,0 +1,2519 @@
+{
+  "generated_at": "2026-08-30T03:09:47.150769Z",
+  "opra_source": "https://raw.githubusercontent.com/opra-project/OPRA/main/dist/database_v1.jsonl",
+  "alias_group_count": 60,
+  "reviewed_alias_group_count": 29,
+  "reviewed_distinct_decision_count": 6,
+  "product_count": 6230,
+  "auto_safe_group_count": 113,
+  "auto_safe_groups": [
+    {
+      "manufacturer": "Ploopy",
+      "normalized_model": "headphones",
+      "subtype": "over_the_ear",
+      "reason": "manufacturer token repeated in one model label",
+      "products": [
+        {
+          "id": "ploopy::headphones",
+          "name": "Headphones"
+        },
+        {
+          "id": "ploopy::ploopy_headphones",
+          "name": "Ploopy Headphones"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "hd280pro",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::hd_280_pro",
+          "name": "HD 280 Pro"
+        },
+        {
+          "id": "sennheiser::hd280_pro",
+          "name": "HD280 Pro"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "hd579",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::hd_579",
+          "name": "HD 579"
+        },
+        {
+          "id": "sennheiser::hd579",
+          "name": "HD579"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "ie80s",
+      "subtype": "in_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::ie_80_s",
+          "name": "IE 80 S"
+        },
+        {
+          "id": "sennheiser::ie80s",
+          "name": "IE80S"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "he90orpheus",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::he_90_orpheus",
+          "name": "HE 90 Orpheus"
+        },
+        {
+          "id": "sennheiser::he90_orpheus",
+          "name": "HE90 \"Orpheus\""
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "hd8xx",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::hd_8xx",
+          "name": "HD 8XX"
+        },
+        {
+          "id": "sennheiser::hd8xx",
+          "name": "HD8XX"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "cx300",
+      "subtype": "in_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::cx_300",
+          "name": "CX 3.00"
+        },
+        {
+          "id": "sennheiser::cx300",
+          "name": "CX3.00"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "hd505",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::hd_505",
+          "name": "HD 505"
+        },
+        {
+          "id": "sennheiser::hd505",
+          "name": "HD505"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "hd569",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::hd_569",
+          "name": "HD 569"
+        },
+        {
+          "id": "sennheiser::hd569",
+          "name": "HD569"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "ie300",
+      "subtype": "in_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::ie_300",
+          "name": "IE 300"
+        },
+        {
+          "id": "sennheiser::ie300",
+          "name": "IE300"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "ie400pro",
+      "subtype": "in_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::ie_400_pro",
+          "name": "IE 400 Pro"
+        },
+        {
+          "id": "sennheiser::ie400_pro",
+          "name": "IE400 Pro"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "hd6002020",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::hd_600_2020",
+          "name": "HD 600 (2020)"
+        },
+        {
+          "id": "sennheiser::hd600_2020",
+          "name": "HD600 (2020)"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "hd598cs",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::hd_598_cs",
+          "name": "HD 598 CS"
+        },
+        {
+          "id": "sennheiser::hd598cs",
+          "name": "HD598CS"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "ie800",
+      "subtype": "in_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::ie_800",
+          "name": "IE 800"
+        },
+        {
+          "id": "sennheiser::ie800",
+          "name": "IE800"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "hd600",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::hd_600",
+          "name": "HD 600"
+        },
+        {
+          "id": "sennheiser::hd600",
+          "name": "HD600"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "ie200",
+      "subtype": "in_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::ie_200",
+          "name": "IE 200"
+        },
+        {
+          "id": "sennheiser::ie200",
+          "name": "IE200"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "ie600",
+      "subtype": "in_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::ie_600",
+          "name": "IE 600"
+        },
+        {
+          "id": "sennheiser::ie600",
+          "name": "IE600"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "pc373d",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::pc_373d",
+          "name": "PC 373D"
+        },
+        {
+          "id": "sennheiser::pc373d",
+          "name": "PC373D"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "hd700",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::hd_700",
+          "name": "HD 700"
+        },
+        {
+          "id": "sennheiser::hd700",
+          "name": "HD700"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "ie800s",
+      "subtype": "in_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::ie_800_s",
+          "name": "IE 800 S"
+        },
+        {
+          "id": "sennheiser::ie800s",
+          "name": "IE800S"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "hd599",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::hd_599",
+          "name": "HD 599"
+        },
+        {
+          "id": "sennheiser::hd599",
+          "name": "HD599"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "hd800sdrmod",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::hd_800_sdr_mod",
+          "name": "HD 800 (SDR mod)"
+        },
+        {
+          "id": "sennheiser::hd800_sdr_mod",
+          "name": "HD800 (SDR mod)"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "hd450btnc",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::hd_450_btnc",
+          "name": "HD 4.50 BTNC"
+        },
+        {
+          "id": "sennheiser::hd450_btnc",
+          "name": "HD4.50 BTNC"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "hd490pro",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::hd_490_pro",
+          "name": "HD 490 Pro"
+        },
+        {
+          "id": "sennheiser::hd490_pro",
+          "name": "HD490 Pro"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "hd620s",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::hd_620s",
+          "name": "HD 620S"
+        },
+        {
+          "id": "sennheiser::hd620s",
+          "name": "HD620S"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "hd800s",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::hd_800_s",
+          "name": "HD 800 S"
+        },
+        {
+          "id": "sennheiser::hd800s",
+          "name": "HD800S"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "hd650",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::hd_650",
+          "name": "HD 650"
+        },
+        {
+          "id": "sennheiser::hd650",
+          "name": "HD650"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "hd515",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::hd_515",
+          "name": "HD 515"
+        },
+        {
+          "id": "sennheiser::hd515",
+          "name": "HD515"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "hd550",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::hd_550",
+          "name": "HD 550"
+        },
+        {
+          "id": "sennheiser::hd550",
+          "name": "HD550"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "ie900",
+      "subtype": "in_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::ie_900",
+          "name": "IE 900"
+        },
+        {
+          "id": "sennheiser::ie900",
+          "name": "IE900"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "hd800",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::hd_800",
+          "name": "HD 800"
+        },
+        {
+          "id": "sennheiser::hd800",
+          "name": "HD800"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "hd598",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::hd_598",
+          "name": "HD 598"
+        },
+        {
+          "id": "sennheiser::hd598",
+          "name": "HD598"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "hd660s",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::hd_660_s",
+          "name": "HD 660 S"
+        },
+        {
+          "id": "sennheiser::hd_660s",
+          "name": "HD 660S"
+        },
+        {
+          "id": "sennheiser::hd660s",
+          "name": "HD660S"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "hd251ii",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::hd_25_1_ii",
+          "name": "HD 25-1 II"
+        },
+        {
+          "id": "sennheiser::hd25_1_ii",
+          "name": "HD25-1 II"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "hd58x",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::hd_58x",
+          "name": "HD 58X"
+        },
+        {
+          "id": "sennheiser::hd58x",
+          "name": "HD58X"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "hd820",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::hd_820",
+          "name": "HD 820"
+        },
+        {
+          "id": "sennheiser::hd820",
+          "name": "HD820"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "hd540referenceii",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::hd_540_reference_ii",
+          "name": "HD 540 reference-II"
+        },
+        {
+          "id": "sennheiser::hd540_reference_ii",
+          "name": "HD540 reference-II"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "hd630vb",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::hd_630vb",
+          "name": "HD 630VB"
+        },
+        {
+          "id": "sennheiser::hd630vb",
+          "name": "HD630VB"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "hd560s",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::hd_560s",
+          "name": "HD 560S"
+        },
+        {
+          "id": "sennheiser::hd560s",
+          "name": "HD560S"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "hd660s2",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::hd_660s2",
+          "name": "HD 660S2"
+        },
+        {
+          "id": "sennheiser::hd660s2",
+          "name": "HD660S2"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "hd518",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::hd_518",
+          "name": "HD 518"
+        },
+        {
+          "id": "sennheiser::hd518",
+          "name": "HD518"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "hd580precision",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::hd_580_precision",
+          "name": "HD 580 precision"
+        },
+        {
+          "id": "sennheiser::hd580_precision",
+          "name": "HD580 precision"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "hd450bt",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::hd_450bt",
+          "name": "HD 450BT"
+        },
+        {
+          "id": "sennheiser::hd450bt",
+          "name": "HD450BT"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "ie40pro",
+      "subtype": "in_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::ie_40_pro",
+          "name": "IE 40 Pro"
+        },
+        {
+          "id": "sennheiser::ie40_pro",
+          "name": "IE40 Pro"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "hd555",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::hd_555",
+          "name": "HD 555"
+        },
+        {
+          "id": "sennheiser::hd555",
+          "name": "HD555"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "ie4",
+      "subtype": "in_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::ie_4",
+          "name": "IE 4"
+        },
+        {
+          "id": "sennheiser::ie4",
+          "name": "IE4"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "hd559",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::hd_559",
+          "name": "HD 559"
+        },
+        {
+          "id": "sennheiser::hd559",
+          "name": "HD559"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "hd6xx",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::hd_6xx",
+          "name": "HD 6XX"
+        },
+        {
+          "id": "sennheiser::hd6xx",
+          "name": "HD6XX"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "normalized_model": "cx200",
+      "subtype": "in_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sennheiser::cx_200",
+          "name": "CX 2.00"
+        },
+        {
+          "id": "sennheiser::cx200",
+          "name": "CX2.00"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Koss",
+      "normalized_model": "prodj100",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "koss::pro_dj_100",
+          "name": "PRO DJ 100"
+        },
+        {
+          "id": "koss::pro_dj100",
+          "name": "PRO DJ100"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Koss",
+      "normalized_model": "ur20",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "koss::ur_20",
+          "name": "UR 20"
+        },
+        {
+          "id": "koss::ur20",
+          "name": "UR20"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Apple",
+      "normalized_model": "airpodspro2",
+      "subtype": "in_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "apple::airpods_pro_2",
+          "name": "AirPods Pro 2"
+        },
+        {
+          "id": "apple::airpods_pro2",
+          "name": "AirPods Pro2"
+        }
+      ]
+    },
+    {
+      "manufacturer": "DUNU",
+      "normalized_model": "dk3001bd",
+      "subtype": "in_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "dunu::dk3001_bd",
+          "name": "DK3001 BD"
+        },
+        {
+          "id": "dunu::dk3001bd",
+          "name": "DK3001BD"
+        }
+      ]
+    },
+    {
+      "manufacturer": "DUNU",
+      "normalized_model": "dk3001pro",
+      "subtype": "in_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "dunu::dk_3001_pro",
+          "name": "DK-3001 Pro"
+        },
+        {
+          "id": "dunu::dk3001_pro",
+          "name": "DK3001 Pro"
+        }
+      ]
+    },
+    {
+      "manufacturer": "HIFIMAN",
+      "normalized_model": "he6",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "hifiman::he_6",
+          "name": "HE-6"
+        },
+        {
+          "id": "hifiman::he6",
+          "name": "HE6"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Shozy",
+      "normalized_model": "xaawhibikise",
+      "subtype": "in_ear",
+      "reason": "manufacturer token repeated in one model label",
+      "products": [
+        {
+          "id": "shozy::shozy_x_aaw_hibiki_se",
+          "name": "Shozy x AAW Hibiki SE"
+        },
+        {
+          "id": "shozy::x_aaw_hibiki_se",
+          "name": "x AAW Hibiki SE"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Shozy",
+      "normalized_model": "xaawpola39",
+      "subtype": "in_ear",
+      "reason": "manufacturer token repeated in one model label",
+      "products": [
+        {
+          "id": "shozy::shozy_x_aaw_pola39",
+          "name": "Shozy x AAW POLA39"
+        },
+        {
+          "id": "shozy::x_aaw_pola39",
+          "name": "x AAW POLA39"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Shozy",
+      "normalized_model": "xaawhibiki",
+      "subtype": "in_ear",
+      "reason": "manufacturer token repeated in one model label",
+      "products": [
+        {
+          "id": "shozy::shozy_x_aaw_hibiki",
+          "name": "Shozy x AAW Hibiki"
+        },
+        {
+          "id": "shozy::x_aaw_hibiki",
+          "name": "x AAW Hibiki"
+        }
+      ]
+    },
+    {
+      "manufacturer": "realme",
+      "normalized_model": "budsair6pro",
+      "subtype": "in_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "realme::buds_air_6_pro",
+          "name": "Buds Air 6 Pro"
+        },
+        {
+          "id": "realme::buds_air6_pro",
+          "name": "Buds Air6 Pro"
+        }
+      ]
+    },
+    {
+      "manufacturer": "KZ",
+      "normalized_model": "xcrinaclecrn",
+      "subtype": "in_ear",
+      "reason": "manufacturer token repeated in one model label",
+      "products": [
+        {
+          "id": "kz::kz_x_crinacle_crn",
+          "name": "KZ x Crinacle CRN"
+        },
+        {
+          "id": "kz::x_crinacle_crn",
+          "name": "x Crinacle CRN"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Yamaha",
+      "normalized_model": "rh5ma",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "yamaha::rh_5ma",
+          "name": "RH-5Ma"
+        },
+        {
+          "id": "yamaha::rh5ma",
+          "name": "RH5Ma"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Audio-Technica",
+      "normalized_model": "athm50x",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "audio_technica::ath_m50x",
+          "name": "ATH-M50x"
+        },
+        {
+          "id": "audio_technica::audio_technica_ath_m_50_x",
+          "name": "ATH-M50x"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Audio-Technica",
+      "normalized_model": "athadx3000",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "audio_technica::ath_adx3000",
+          "name": "ATH-ADX3000"
+        },
+        {
+          "id": "audio_technica::audio_technica_ath_adx_3000",
+          "name": "ATH-ADX3000"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Moondrop",
+      "normalized_model": "xcrinacleblessing2dusk",
+      "subtype": "in_ear",
+      "reason": "manufacturer token repeated in one model label",
+      "products": [
+        {
+          "id": "moondrop::moondrop_x_crinacle_blessing2_dusk",
+          "name": "Moondrop x Crinacle Blessing2 Dusk"
+        },
+        {
+          "id": "moondrop::x_crinacle_blessing2_dusk",
+          "name": "x Crinacle Blessing2 Dusk"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Moondrop",
+      "normalized_model": "u2",
+      "subtype": "earbuds",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "moondrop::u_2",
+          "name": "U-2"
+        },
+        {
+          "id": "moondrop::u2",
+          "name": "U2"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Moondrop",
+      "normalized_model": "xcrinacledusk",
+      "subtype": "in_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "moondrop::moondrop_x_crinacle_dusk",
+          "name": "Moondrop x Crinacle DUSK"
+        },
+        {
+          "id": "moondrop::x_crinacle_dusk",
+          "name": "Moondrop x Crinacle DUSK"
+        }
+      ]
+    },
+    {
+      "manufacturer": "HiBy",
+      "normalized_model": "xfaudioprojectace",
+      "subtype": "in_ear",
+      "reason": "manufacturer token repeated in one model label",
+      "products": [
+        {
+          "id": "hiby::hiby_x_faudio_project_ace",
+          "name": "HiBy x FAudio Project Ace"
+        },
+        {
+          "id": "hiby::x_faudio_project_ace",
+          "name": "x FAudio Project Ace"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Beats",
+      "normalized_model": "powerbeats4",
+      "subtype": "in_ear",
+      "reason": "manufacturer token repeated in one model label",
+      "products": [
+        {
+          "id": "beats::beats_powerbeats_4",
+          "name": "Beats Powerbeats 4"
+        },
+        {
+          "id": "beats::powerbeats_4",
+          "name": "Powerbeats 4"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Audeze",
+      "normalized_model": "isine20",
+      "subtype": "in_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "audeze::isine_20",
+          "name": "iSINE 20"
+        },
+        {
+          "id": "audeze::isine20",
+          "name": "iSine20"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Audeze",
+      "normalized_model": "isine10",
+      "subtype": "in_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "audeze::isine_10",
+          "name": "iSINE 10"
+        },
+        {
+          "id": "audeze::isine10",
+          "name": "iSine10"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Creative",
+      "normalized_model": "soundblasterxh6",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "creative::sound_blasterx_h6",
+          "name": "Sound Blasterx H6"
+        },
+        {
+          "id": "creative::soundblasterx_h6",
+          "name": "SoundBlasterx H6"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Creative",
+      "normalized_model": "aurvanalive2",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "creative::aurvana_live_2",
+          "name": "Aurvana Live! 2"
+        },
+        {
+          "id": "creative::aurvana_live2",
+          "name": "Aurvana Live!2"
+        }
+      ]
+    },
+    {
+      "manufacturer": "IKKO",
+      "normalized_model": "oh1",
+      "subtype": "in_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "ikko::oh_1",
+          "name": "OH-1"
+        },
+        {
+          "id": "ikko::oh1",
+          "name": "OH1"
+        }
+      ]
+    },
+    {
+      "manufacturer": "TRUTHEAR",
+      "normalized_model": "xcrinaclezero",
+      "subtype": "in_ear",
+      "reason": "manufacturer token repeated in one model label",
+      "products": [
+        {
+          "id": "truthear::truthear_x_crinacle_zero",
+          "name": "Truthear x Crinacle Zero"
+        },
+        {
+          "id": "truthear::x_crinacle_zero",
+          "name": "x Crinacle Zero"
+        }
+      ]
+    },
+    {
+      "manufacturer": "TRUTHEAR",
+      "normalized_model": "xcrinaclezerored",
+      "subtype": "in_ear",
+      "reason": "manufacturer token repeated in one model label",
+      "products": [
+        {
+          "id": "truthear::truthear_x_crinacle_zero_red",
+          "name": "Truthear x Crinacle Zero RED"
+        },
+        {
+          "id": "truthear::x_crinacle_zero_red",
+          "name": "x Crinacle Zero Red"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Simgot Audio",
+      "normalized_model": "et142",
+      "subtype": "in_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "simgot_audio::et_142",
+          "name": "ET 142"
+        },
+        {
+          "id": "simgot_audio::et142",
+          "name": "ET142"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Astell & Kern",
+      "normalized_model": "t8ie",
+      "subtype": "in_ear",
+      "reason": "manufacturer token repeated in one model label",
+      "products": [
+        {
+          "id": "astell_kern::astellkern_t8ie",
+          "name": "(Astell&Kern) T8iE"
+        },
+        {
+          "id": "astell_kern::t8ie",
+          "name": "T8iE"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Sony",
+      "normalized_model": "wh1000xm6",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "sony::wh_1000_xm_6",
+          "name": "WH-1000XM6"
+        },
+        {
+          "id": "sony::wh_1000xm6",
+          "name": "WH-1000XM6"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Etymotic",
+      "normalized_model": "er2se",
+      "subtype": "in_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "etymotic::er_2se",
+          "name": "ER-2SE"
+        },
+        {
+          "id": "etymotic::er2se",
+          "name": "ER2SE"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Etymotic",
+      "normalized_model": "er4sr",
+      "subtype": "in_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "etymotic::er_4sr",
+          "name": "ER-4SR"
+        },
+        {
+          "id": "etymotic::er4sr",
+          "name": "ER4SR"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Etymotic",
+      "normalized_model": "er4xr",
+      "subtype": "in_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "etymotic::er_4xr",
+          "name": "ER-4XR"
+        },
+        {
+          "id": "etymotic::er4xr",
+          "name": "ER4XR"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Etymotic",
+      "normalized_model": "er3se",
+      "subtype": "in_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "etymotic::er_3se",
+          "name": "ER-3SE"
+        },
+        {
+          "id": "etymotic::er3se",
+          "name": "ER3SE"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Etymotic",
+      "normalized_model": "er2xr",
+      "subtype": "in_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "etymotic::er_2xr",
+          "name": "ER-2XR"
+        },
+        {
+          "id": "etymotic::er2xr",
+          "name": "ER2XR"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Etymotic",
+      "normalized_model": "er3xr",
+      "subtype": "in_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "etymotic::er_3xr",
+          "name": "ER-3XR"
+        },
+        {
+          "id": "etymotic::er3xr",
+          "name": "ER3XR"
+        }
+      ]
+    },
+    {
+      "manufacturer": "SoundPEATS",
+      "normalized_model": "capsule3pro",
+      "subtype": "in_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "soundpeats::capsule_3_pro",
+          "name": "Capsule 3 Pro"
+        },
+        {
+          "id": "soundpeats::capsule3_pro",
+          "name": "Capsule3 Pro+"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Bang & Olufsen",
+      "normalized_model": "beoplayh95",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "bang_olufsen::b&o_beoplay_h_95",
+          "name": "Beoplay H95"
+        },
+        {
+          "id": "bang_olufsen::beoplay_h95",
+          "name": "Beoplay H95"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Westone",
+      "normalized_model": "um10pro",
+      "subtype": "in_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "westone::um_10_pro",
+          "name": "UM 10 Pro"
+        },
+        {
+          "id": "westone::um10_pro",
+          "name": "UM10 Pro"
+        }
+      ]
+    },
+    {
+      "manufacturer": "QKZ",
+      "normalized_model": "xhbbhades",
+      "subtype": "in_ear",
+      "reason": "manufacturer token repeated in one model label",
+      "products": [
+        {
+          "id": "qkz::qkz_x_hbb_hades",
+          "name": "QKZ x HBB Hades"
+        },
+        {
+          "id": "qkz::x_hbb_hades",
+          "name": "x HBB Hades"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Advanced AcousticWerkes",
+      "normalized_model": "ash",
+      "subtype": "in_ear",
+      "reason": "manufacturer token repeated in one model label",
+      "products": [
+        {
+          "id": "aaw::advanced_acousticwerkes_ash",
+          "name": "(Advanced AcousticWerkes) ASH"
+        },
+        {
+          "id": "advanced_acousticwerkes::ash",
+          "name": "ASH"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Advanced AcousticWerkes",
+      "normalized_model": "canary",
+      "subtype": "in_ear",
+      "reason": "manufacturer token repeated in one model label",
+      "products": [
+        {
+          "id": "aaw::advanced_acousticwerkes_canary",
+          "name": "(Advanced AcousticWerkes) Canary"
+        },
+        {
+          "id": "advanced_acousticwerkes::canary",
+          "name": "Canary"
+        }
+      ]
+    },
+    {
+      "manufacturer": "RØDE",
+      "normalized_model": "nth100",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "rde::nth_100",
+          "name": "NTH-100"
+        },
+        {
+          "id": "rode::nth_100",
+          "name": "NTH-100"
+        }
+      ]
+    },
+    {
+      "manufacturer": "RØDE",
+      "normalized_model": "nth100m",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "rde::nth_100m",
+          "name": "NTH-100M"
+        },
+        {
+          "id": "rode::nth_100m",
+          "name": "NTH-100M"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Technics",
+      "normalized_model": "eahaz100",
+      "subtype": "in_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "technics::eah_az100",
+          "name": "EAH-AZ100"
+        },
+        {
+          "id": "technics::eah_az_100",
+          "name": "EAH-AZ100"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Fostex",
+      "normalized_model": "t40rpmk3",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "fostex::t40rp_mk3",
+          "name": "T40RP Mk3"
+        },
+        {
+          "id": "fostex::t40rpmk3",
+          "name": "T40RPmk3"
+        }
+      ]
+    },
+    {
+      "manufacturer": "V-MODA",
+      "normalized_model": "m200",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "v_moda::m_200",
+          "name": "M-200"
+        },
+        {
+          "id": "v_moda::m200",
+          "name": "M200"
+        }
+      ]
+    },
+    {
+      "manufacturer": "STAX",
+      "normalized_model": "sr007mk1",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "stax::sr_007_mk1",
+          "name": "SR-007 mk1"
+        },
+        {
+          "id": "stax::sr_007mk1",
+          "name": "SR-007mk1"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Huawei",
+      "normalized_model": "freebudspro4",
+      "subtype": "in_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "huawei::free_buds_pro_4",
+          "name": "Free Buds Pro 4"
+        },
+        {
+          "id": "huawei::freebuds_pro_4",
+          "name": "FreeBuds Pro 4"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Beyerdynamic",
+      "normalized_model": "mmx300",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "beyerdynamic::mmx_300",
+          "name": "MMX 300"
+        },
+        {
+          "id": "beyerdynamic::mmx300",
+          "name": "MMX300"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Beyerdynamic",
+      "normalized_model": "dt880",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "beyerdynamic::dt_880",
+          "name": "DT 880"
+        },
+        {
+          "id": "beyerdynamic::dt880",
+          "name": "DT880"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Beyerdynamic",
+      "normalized_model": "dt880blackedition",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "beyerdynamic::dt_880_black_edition",
+          "name": "DT 880 Black Edition"
+        },
+        {
+          "id": "beyerdynamic::dt880_black_edition",
+          "name": "DT880 Black Edition"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Beyerdynamic",
+      "normalized_model": "dt250",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "beyerdynamic::dt_250",
+          "name": "DT 250"
+        },
+        {
+          "id": "beyerdynamic::dt250",
+          "name": "DT250"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Beyerdynamic",
+      "normalized_model": "dt700prox",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "beyerdynamic::dt_700_pro_x",
+          "name": "DT 700 Pro X"
+        },
+        {
+          "id": "beyerdynamic::dt700_pro_x",
+          "name": "DT700 Pro X"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Beyerdynamic",
+      "normalized_model": "dt177xgo",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "beyerdynamic::dt_177x_go",
+          "name": "DT 177X Go"
+        },
+        {
+          "id": "beyerdynamic::dt177x_go",
+          "name": "DT177X Go"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Beyerdynamic",
+      "normalized_model": "dt240",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "beyerdynamic::dt_240",
+          "name": "DT 240"
+        },
+        {
+          "id": "beyerdynamic::dt240",
+          "name": "DT240"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Beyerdynamic",
+      "normalized_model": "dt900prox",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "beyerdynamic::dt_900_pro_x",
+          "name": "DT 900 Pro X"
+        },
+        {
+          "id": "beyerdynamic::dt900_pro_x",
+          "name": "DT900 Pro X"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Beyerdynamic",
+      "normalized_model": "dt1770",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "beyerdynamic::dt_1770",
+          "name": "DT 1770"
+        },
+        {
+          "id": "beyerdynamic::dt1770",
+          "name": "DT1770"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Beyerdynamic",
+      "normalized_model": "dt770",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "beyerdynamic::dt_770",
+          "name": "DT 770"
+        },
+        {
+          "id": "beyerdynamic::dt770",
+          "name": "DT770"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Beyerdynamic",
+      "normalized_model": "dt8802003edition",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "beyerdynamic::dt_880_2003_edition",
+          "name": "DT 880 2003 Edition"
+        },
+        {
+          "id": "beyerdynamic::dt880_2003_edition",
+          "name": "DT880 2003 Edition"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Beyerdynamic",
+      "normalized_model": "dt990",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "beyerdynamic::dt_990",
+          "name": "DT 990"
+        },
+        {
+          "id": "beyerdynamic::dt990",
+          "name": "DT990"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Beyerdynamic",
+      "normalized_model": "dt880edition600ohm",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "beyerdynamic::dt_880_edition_600_ohm",
+          "name": "DT 880 Edition (600 Ohm)"
+        },
+        {
+          "id": "beyerdynamic::dt880_edition_600_ohm",
+          "name": "DT880 Edition 600 Ohm"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Beyerdynamic",
+      "normalized_model": "dt770m",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "beyerdynamic::dt_770_m",
+          "name": "DT 770 M"
+        },
+        {
+          "id": "beyerdynamic::dt770m",
+          "name": "DT770M"
+        }
+      ]
+    },
+    {
+      "manufacturer": "Beyerdynamic",
+      "normalized_model": "dt1990",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "beyerdynamic::dt_1990",
+          "name": "DT 1990"
+        },
+        {
+          "id": "beyerdynamic::dt1990",
+          "name": "DT1990"
+        }
+      ]
+    },
+    {
+      "manufacturer": "T+A",
+      "normalized_model": "solitairepse",
+      "subtype": "over_the_ear",
+      "reason": "same normalized manufacturer/model/subtype",
+      "products": [
+        {
+          "id": "ta::solitaire_p_se",
+          "name": "Solitaire P SE"
+        },
+        {
+          "id": "ta::solitaire_pse",
+          "name": "Solitaire PSE"
+        }
+      ]
+    }
+  ],
+  "covered_explicit_alias_pair_count": 38,
+  "covered_explicit_alias_pairs": [
+    {
+      "manufacturer": "DUNU",
+      "left": {
+        "id": "dunu::davinci",
+        "name": "DaVinci"
+      },
+      "right": {
+        "id": "dunu::x_gizaudio_davinci",
+        "name": "x Gizaudio DaVinci"
+      },
+      "canonical_model": "DaVinci",
+      "source": "catalog.headphone_aliases"
+    },
+    {
+      "manufacturer": "Shozy",
+      "left": {
+        "id": "shozy::hibiki",
+        "name": "Hibiki"
+      },
+      "right": {
+        "id": "shozy::shozy_x_aaw_hibiki",
+        "name": "Shozy x AAW Hibiki"
+      },
+      "canonical_model": "Hibiki",
+      "source": "catalog.headphone_aliases"
+    },
+    {
+      "manufacturer": "Shozy",
+      "left": {
+        "id": "shozy::hibiki",
+        "name": "Hibiki"
+      },
+      "right": {
+        "id": "shozy::x_aaw_hibiki",
+        "name": "x AAW Hibiki"
+      },
+      "canonical_model": "Hibiki",
+      "source": "catalog.headphone_aliases"
+    },
+    {
+      "manufacturer": "7Hz",
+      "left": {
+        "id": "7hz::salnotes_zero_2",
+        "name": "Salnotes Zero 2"
+      },
+      "right": {
+        "id": "7hz::x_crinacle_zero_2",
+        "name": "x Crinacle Zero 2"
+      },
+      "canonical_model": "Zero:2",
+      "source": "profile.model_aliases"
+    },
+    {
+      "manufacturer": "7Hz",
+      "left": {
+        "id": "7hz::salnotes_zero_2",
+        "name": "Salnotes Zero 2"
+      },
+      "right": {
+        "id": "7hz::zero_2",
+        "name": "Zero 2"
+      },
+      "canonical_model": "Zero:2",
+      "source": "profile.model_aliases"
+    },
+    {
+      "manufacturer": "7Hz",
+      "left": {
+        "id": "7hz::x_crinacle_zero_2",
+        "name": "x Crinacle Zero 2"
+      },
+      "right": {
+        "id": "7hz::zero_2",
+        "name": "Zero 2"
+      },
+      "canonical_model": "Zero:2",
+      "source": "profile.model_aliases"
+    },
+    {
+      "manufacturer": "KZ",
+      "left": {
+        "id": "kz::pr2",
+        "name": "PR2"
+      },
+      "right": {
+        "id": "kz::x_hbb_pr2",
+        "name": "x HBB PR2"
+      },
+      "canonical_model": "PR2",
+      "source": "catalog.headphone_aliases"
+    },
+    {
+      "manufacturer": "ZiiGaat",
+      "left": {
+        "id": "ziigaat::estrella",
+        "name": "Estrella"
+      },
+      "right": {
+        "id": "ziigaat::x_jays_audio_estrella",
+        "name": "x Jays Audio Estrella"
+      },
+      "canonical_model": "Estrella",
+      "source": "catalog.headphone_aliases"
+    },
+    {
+      "manufacturer": "ZiiGaat",
+      "left": {
+        "id": "ziigaat::jupiter",
+        "name": "Jupiter"
+      },
+      "right": {
+        "id": "ziigaat::x_hbb_jupiter",
+        "name": "x HBB Jupiter"
+      },
+      "canonical_model": "Jupiter",
+      "source": "catalog.headphone_aliases"
+    },
+    {
+      "manufacturer": "Binary Acoustics",
+      "left": {
+        "id": "binary_acoustics::chopin",
+        "name": "Chopin"
+      },
+      "right": {
+        "id": "binary_acoustics::gizaudio_chopin",
+        "name": "Gizaudio Chopin"
+      },
+      "canonical_model": "Chopin",
+      "source": "catalog.headphone_aliases"
+    },
+    {
+      "manufacturer": "Binary Acoustics",
+      "left": {
+        "id": "binary_acoustics::chopin",
+        "name": "Chopin"
+      },
+      "right": {
+        "id": "binary_acoustics::x_gizaudio_chopin",
+        "name": "x Gizaudio Chopin"
+      },
+      "canonical_model": "Chopin",
+      "source": "catalog.headphone_aliases"
+    },
+    {
+      "manufacturer": "Binary Acoustics",
+      "left": {
+        "id": "binary_acoustics::gizaudio_chopin",
+        "name": "Gizaudio Chopin"
+      },
+      "right": {
+        "id": "binary_acoustics::x_gizaudio_chopin",
+        "name": "x Gizaudio Chopin"
+      },
+      "canonical_model": "Chopin",
+      "source": "catalog.headphone_aliases"
+    },
+    {
+      "manufacturer": "Effect Audio",
+      "left": {
+        "id": "effect_audio::gaea",
+        "name": "Gaea"
+      },
+      "right": {
+        "id": "effect_audio::x_elysian_gaea",
+        "name": "x Elysian Gaea"
+      },
+      "canonical_model": "Gaea",
+      "source": "catalog.headphone_aliases"
+    },
+    {
+      "manufacturer": "BLON",
+      "left": {
+        "id": "blon::x_hbb_z300",
+        "name": "x HBB Z300"
+      },
+      "right": {
+        "id": "blon::z300",
+        "name": "Z300"
+      },
+      "canonical_model": "Z300",
+      "source": "catalog.headphone_aliases"
+    },
+    {
+      "manufacturer": "TRUTHEAR",
+      "left": {
+        "id": "truthear::truthear_x_crinacle_zero",
+        "name": "Truthear x Crinacle Zero"
+      },
+      "right": {
+        "id": "truthear::zero",
+        "name": "Zero"
+      },
+      "canonical_model": "Zero",
+      "source": "catalog.headphone_aliases"
+    },
+    {
+      "manufacturer": "TRUTHEAR",
+      "left": {
+        "id": "truthear::truthear_x_crinacle_zero_red",
+        "name": "Truthear x Crinacle Zero RED"
+      },
+      "right": {
+        "id": "truthear::zero_red",
+        "name": "Zero Red"
+      },
+      "canonical_model": "Zero Red",
+      "source": "catalog.headphone_aliases"
+    },
+    {
+      "manufacturer": "TRUTHEAR",
+      "left": {
+        "id": "truthear::x_crinacle_zero",
+        "name": "x Crinacle Zero"
+      },
+      "right": {
+        "id": "truthear::zero",
+        "name": "Zero"
+      },
+      "canonical_model": "Zero",
+      "source": "catalog.headphone_aliases"
+    },
+    {
+      "manufacturer": "TRUTHEAR",
+      "left": {
+        "id": "truthear::x_crinacle_zero_red",
+        "name": "x Crinacle Zero Red"
+      },
+      "right": {
+        "id": "truthear::zero_red",
+        "name": "Zero Red"
+      },
+      "canonical_model": "Zero Red",
+      "source": "catalog.headphone_aliases"
+    },
+    {
+      "manufacturer": "ELISE AUDIO",
+      "left": {
+        "id": "elise_audio::dark_phoenix",
+        "name": "Dark Phoenix"
+      },
+      "right": {
+        "id": "elise_audio::x_kinera_dark_phoenix",
+        "name": "x Kinera Dark Phoenix"
+      },
+      "canonical_model": "Dark Phoenix",
+      "source": "catalog.headphone_aliases"
+    },
+    {
+      "manufacturer": "SteelSeries",
+      "left": {
+        "id": "steelseries::arctis_nova_pro_wireless",
+        "name": "Arctis Nova Pro Wireless"
+      },
+      "right": {
+        "id": "steelseries::nova_pro_wireless",
+        "name": "Nova Pro Wireless"
+      },
+      "canonical_model": "Arctis Nova Pro Wireless",
+      "source": "catalog.headphone_aliases"
+    },
+    {
+      "manufacturer": "Bang & Olufsen",
+      "left": {
+        "id": "bang_olufsen::b&o_beoplay_h_95",
+        "name": "Beoplay H95"
+      },
+      "right": {
+        "id": "bang_olufsen::h95",
+        "name": "H95"
+      },
+      "canonical_model": "Beoplay H95",
+      "source": "catalog.headphone_aliases"
+    },
+    {
+      "manufacturer": "Bang & Olufsen",
+      "left": {
+        "id": "bang_olufsen::beoplay_h9",
+        "name": "Beoplay H9"
+      },
+      "right": {
+        "id": "bang_olufsen::h9",
+        "name": "H9"
+      },
+      "canonical_model": "Beoplay H9",
+      "source": "catalog.headphone_aliases"
+    },
+    {
+      "manufacturer": "Bang & Olufsen",
+      "left": {
+        "id": "bang_olufsen::beoplay_h95",
+        "name": "Beoplay H95"
+      },
+      "right": {
+        "id": "bang_olufsen::h95",
+        "name": "H95"
+      },
+      "canonical_model": "Beoplay H95",
+      "source": "catalog.headphone_aliases"
+    },
+    {
+      "manufacturer": "Bang & Olufsen",
+      "left": {
+        "id": "bang_olufsen::beoplay_h9i",
+        "name": "Beoplay H9i"
+      },
+      "right": {
+        "id": "bang_olufsen::h9i",
+        "name": "H9i"
+      },
+      "canonical_model": "Beoplay H9i",
+      "source": "catalog.headphone_aliases"
+    },
+    {
+      "manufacturer": "Tripowin",
+      "left": {
+        "id": "tripowin::hbb_mele",
+        "name": "HBB Mele"
+      },
+      "right": {
+        "id": "tripowin::x_hbb_mele",
+        "name": "x HBB Mele"
+      },
+      "canonical_model": "Mele",
+      "source": "catalog.headphone_aliases"
+    },
+    {
+      "manufacturer": "HEDD",
+      "left": {
+        "id": "hedd::audio_heddphone_two_gt",
+        "name": "Audio HEDDphone Two GT"
+      },
+      "right": {
+        "id": "hedd::heddphone_two_gt",
+        "name": "Heddphone TWO GT"
+      },
+      "canonical_model": "HEDDphone TWO GT",
+      "source": "catalog.headphone_aliases"
+    },
+    {
+      "manufacturer": "QKZ",
+      "left": {
+        "id": "qkz::hbb",
+        "name": "HBB"
+      },
+      "right": {
+        "id": "qkz::x_hbb",
+        "name": "x HBB"
+      },
+      "canonical_model": "HBB",
+      "source": "catalog.headphone_aliases"
+    },
+    {
+      "manufacturer": "QKZ",
+      "left": {
+        "id": "qkz::khan",
+        "name": "Khan"
+      },
+      "right": {
+        "id": "qkz::x_hbb_khan",
+        "name": "x HBB Khan"
+      },
+      "canonical_model": "Khan",
+      "source": "catalog.headphone_aliases"
+    },
+    {
+      "manufacturer": "Kinera",
+      "left": {
+        "id": "kinera::imperial_nanna",
+        "name": "Imperial Nanna"
+      },
+      "right": {
+        "id": "kinera::nanna",
+        "name": "Nanna"
+      },
+      "canonical_model": "Nanna",
+      "source": "catalog.headphone_aliases"
+    },
+    {
+      "manufacturer": "Kinera",
+      "left": {
+        "id": "kinera::imperial_odin",
+        "name": "Imperial Odin"
+      },
+      "right": {
+        "id": "kinera::odin",
+        "name": "Odin"
+      },
+      "canonical_model": "Odin",
+      "source": "catalog.headphone_aliases"
+    },
+    {
+      "manufacturer": "Philips",
+      "left": {
+        "id": "philips::fidelio_l2",
+        "name": "Fidelio L2"
+      },
+      "right": {
+        "id": "philips::l2",
+        "name": "L2"
+      },
+      "canonical_model": "Fidelio L2",
+      "source": "catalog.headphone_aliases"
+    },
+    {
+      "manufacturer": "Tangzu Audio",
+      "left": {
+        "id": "tangzu::tangzu_x_hbb_zetian_wu_heyday_edition",
+        "name": "TANGZU x HBB Zetian Wu Heyday Edition"
+      },
+      "right": {
+        "id": "tangzu::x_hbb_zetian_wu_heyday_edition",
+        "name": "x HBB Zetian Wu Heyday Edition"
+      },
+      "canonical_model": "Zetian Wu Heyday Edition",
+      "source": "catalog.headphone_aliases"
+    },
+    {
+      "manufacturer": "Tangzu Audio",
+      "left": {
+        "id": "tangzu::tangzu_x_seeaudio_shimin_li_encounter_edition",
+        "name": "TANGZU x SeeAudio Shimin Li Encounter Edition"
+      },
+      "right": {
+        "id": "tangzu::x_seeaudio_shimin_li_encounter_edition",
+        "name": "x SeeAudio Shimin Li Encounter Edition"
+      },
+      "canonical_model": "Shimin Li Encounter Edition",
+      "source": "catalog.headphone_aliases"
+    },
+    {
+      "manufacturer": "Kiwi Ears",
+      "left": {
+        "id": "kiwi_ears::singolo",
+        "name": "Singolo"
+      },
+      "right": {
+        "id": "kiwi_ears::x_crinacle_singolo",
+        "name": "x Crinacle Singolo"
+      },
+      "canonical_model": "Singolo",
+      "source": "catalog.headphone_aliases"
+    },
+    {
+      "manufacturer": "TFZ",
+      "left": {
+        "id": "tfz::athena",
+        "name": "Athena"
+      },
+      "right": {
+        "id": "tfz::x_angelears_athena",
+        "name": "x Angelears Athena"
+      },
+      "canonical_model": "Athena",
+      "source": "catalog.headphone_aliases"
+    },
+    {
+      "manufacturer": "Oriveti",
+      "left": {
+        "id": "oriveti::bleqk_dynabird",
+        "name": "bleqk Dynabird"
+      },
+      "right": {
+        "id": "oriveti::dynabird",
+        "name": "Dynabird"
+      },
+      "canonical_model": "bleqk Dynabird",
+      "source": "catalog.headphone_aliases"
+    },
+    {
+      "manufacturer": "SeeAudio",
+      "left": {
+        "id": "seeaudio::x_crinacle_yume_midnight",
+        "name": "x Crinacle Yume Midnight"
+      },
+      "right": {
+        "id": "seeaudio::yume_midnight",
+        "name": "Yume Midnight"
+      },
+      "canonical_model": "Yume Midnight",
+      "source": "catalog.headphone_aliases"
+    },
+    {
+      "manufacturer": "Linsoul",
+      "left": {
+        "id": "linsoul::mjlnir_mkii",
+        "name": "Mjölnir MKII"
+      },
+      "right": {
+        "id": "linsoul::x_thor_mjlnir_mkii",
+        "name": "x THOR Mjölnir MKII"
+      },
+      "canonical_model": "Mjölnir MKII",
+      "source": "catalog.headphone_aliases"
+    }
+  ],
+  "confirmed_distinct_pair_count": 6,
+  "confirmed_distinct_pairs": [
+    {
+      "manufacturer": "Beats",
+      "left": {
+        "id": "beats::powerbeats_pro",
+        "name": "Powerbeats Pro"
+      },
+      "right": {
+        "id": "beats::pro",
+        "name": "Pro"
+      },
+      "evidence": [
+        "https://www.beatsbydre.com/support/headphones/pro",
+        "https://www.beatsbydre.com/support"
+      ]
+    },
+    {
+      "manufacturer": "Beats",
+      "left": {
+        "id": "beats::pro",
+        "name": "Pro"
+      },
+      "right": {
+        "id": "beats::solo_pro",
+        "name": "Solo Pro"
+      },
+      "evidence": [
+        "https://www.beatsbydre.com/support/headphones/pro",
+        "https://www.beatsbydre.com/support/headphones/solo-pro"
+      ]
+    },
+    {
+      "manufacturer": "Beats",
+      "left": {
+        "id": "beats::pro",
+        "name": "Pro"
+      },
+      "right": {
+        "id": "beats::studio_pro",
+        "name": "Studio Pro"
+      },
+      "evidence": [
+        "https://www.beatsbydre.com/support/headphones/pro",
+        "https://www.beatsbydre.com/headphones/studio-pro-wireless"
+      ]
+    },
+    {
+      "manufacturer": "FatFrequency",
+      "left": {
+        "id": "fatfreq::grand_maestro",
+        "name": "Grand Maestro"
+      },
+      "right": {
+        "id": "fatfreq::maestro",
+        "name": "Maestro"
+      },
+      "evidence": [
+        "https://fatfreq.com/products/maestro",
+        "https://fatfreq.com/collections/maestro-series/products/grand-maestro"
+      ]
+    },
+    {
+      "manufacturer": "Unique Melody",
+      "left": {
+        "id": "unique_melody::mest",
+        "name": "MEST"
+      },
+      "right": {
+        "id": "unique_melody::mini_mest",
+        "name": "Mini MEST"
+      },
+      "evidence": [
+        "https://www.uniquemelody.co/productinfo/256046.html",
+        "https://uniquemelody.co/newsinfo/1675658.html?templateId=1133604"
+      ]
+    },
+    {
+      "manufacturer": "Noble Audio",
+      "left": {
+        "id": "noble_audio::khan",
+        "name": "Khan"
+      },
+      "right": {
+        "id": "noble_audio::kublai_khan",
+        "name": "Kublai Khan"
+      },
+      "evidence": [
+        "https://nobleaudio.com/en-pl/pages/about-noble"
+      ]
+    }
+  ],
+  "review_candidate_count": 8,
+  "review_candidates": [
+    {
+      "manufacturer": "Moondrop",
+      "left": {
+        "id": "moondrop::edge",
+        "name": "Edge"
+      },
+      "right": {
+        "id": "moondrop::x_singer_edge",
+        "name": "x Singer Edge"
+      },
+      "confidence": 0.95,
+      "reason": "leading collaboration credit with identical core model"
+    },
+    {
+      "manufacturer": "1MORE",
+      "left": {
+        "id": "1more::crystal_piston",
+        "name": "Crystal Piston"
+      },
+      "right": {
+        "id": "1more::piston",
+        "name": "Piston"
+      },
+      "confidence": 0.91,
+      "reason": "leading sub-brand/source qualifier with identical core model"
+    },
+    {
+      "manufacturer": "Empire Ears",
+      "left": {
+        "id": "empire_ears::legend_raven",
+        "name": "Legend Raven"
+      },
+      "right": {
+        "id": "empire_ears::raven",
+        "name": "Raven"
+      },
+      "confidence": 0.91,
+      "reason": "leading sub-brand/source qualifier with identical core model"
+    },
+    {
+      "manufacturer": "HiSoundAudio",
+      "left": {
+        "id": "hisoundaudio::crystal",
+        "name": "Crystal"
+      },
+      "right": {
+        "id": "hisoundaudio::golden_crystal",
+        "name": "Golden Crystal"
+      },
+      "confidence": 0.91,
+      "reason": "leading sub-brand/source qualifier with identical core model"
+    },
+    {
+      "manufacturer": "Klipsch",
+      "left": {
+        "id": "klipsch::image_s4",
+        "name": "Image S4"
+      },
+      "right": {
+        "id": "klipsch::s4",
+        "name": "S4"
+      },
+      "confidence": 0.91,
+      "reason": "leading sub-brand/source qualifier with identical core model"
+    },
+    {
+      "manufacturer": "MYER-AUDIO",
+      "left": {
+        "id": "myer_audio::cklvx_sliivo_slt6",
+        "name": "CKLVX SLIIVO SLT6"
+      },
+      "right": {
+        "id": "myer_audio::sliivo_slt6",
+        "name": "SLIIVO SLT6"
+      },
+      "confidence": 0.91,
+      "reason": "leading sub-brand/source qualifier with identical core model"
+    },
+    {
+      "manufacturer": "V-MODA",
+      "left": {
+        "id": "v_moda::crossfade_lp2",
+        "name": "Crossfade LP2"
+      },
+      "right": {
+        "id": "v_moda::lp2",
+        "name": "LP2"
+      },
+      "confidence": 0.91,
+      "reason": "leading sub-brand/source qualifier with identical core model"
+    },
+    {
+      "manufacturer": "Venture Electronics",
+      "left": {
+        "id": "venture_electronics::duke",
+        "name": "Duke"
+      },
+      "right": {
+        "id": "venture_electronics::grand_duke",
+        "name": "Grand Duke"
+      },
+      "confidence": 0.91,
+      "reason": "leading sub-brand/source qualifier with identical core model"
+    }
+  ]
+}

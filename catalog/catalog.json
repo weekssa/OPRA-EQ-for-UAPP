@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-29T23:13:25Z",
+  "generated_at": "2026-08-30T03:09:43Z",
   "headphone_aliases": [
     {
       "aliases": [
@@ -634,9 +634,9 @@
           "source_references": [
             {
               "creator": "MrChillStorm",
-              "discovered_at_epoch_seconds": 1788045205,
+              "discovered_at_epoch_seconds": 1788059383,
               "is_primary": true,
-              "last_verified_at_epoch_seconds": 1788045205,
+              "last_verified_at_epoch_seconds": 1788059383,
               "provenance_tier": "traceable_community",
               "published_at_epoch_seconds": null,
               "redistribution_policy": "structured-data-only",
@@ -658,6 +658,112 @@
         "name": "ISO 226:2023 85 phon (author-defined)"
       },
       "tuning_label": "ISO 226:2023 85 phon"
+    },
+    {
+      "canonical_profile_id": "community-c4c28a8c2722e594de336c29",
+      "creator": "Juraj Fiala",
+      "headphone": {
+        "manufacturer": "Fairphone",
+        "model": "Fairbuds",
+        "model_aliases": [
+          "Fairphone Fairbuds"
+        ],
+        "pads_or_mode": null,
+        "variant": null
+      },
+      "revisions": [
+        {
+          "acoustic_fingerprint": "6a47bfc3b81e6a38a88be86c3c6d9adf2dcdb809ae969cce9ea2974c9f3b44d2",
+          "filters": [
+            {
+              "frequency_hz": 60.0,
+              "gain_db": -1.0,
+              "q": 0.71,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 100.0,
+              "gain_db": 1.0,
+              "q": 0.71,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 230.0,
+              "gain_db": 2.0,
+              "q": 0.71,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 500.0,
+              "gain_db": 3.5,
+              "q": 0.71,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 1100.0,
+              "gain_db": 1.0,
+              "q": 0.71,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 2400.0,
+              "gain_db": -3.0,
+              "q": 0.71,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 5400.0,
+              "gain_db": 1.0,
+              "q": 0.71,
+              "slope": null,
+              "type": "peak"
+            },
+            {
+              "frequency_hz": 12000.0,
+              "gain_db": 1.0,
+              "q": 0.71,
+              "slope": null,
+              "type": "peak"
+            }
+          ],
+          "first_seen_at_epoch_seconds": 1788059383,
+          "is_latest": true,
+          "preamp_gain_db": -7.5,
+          "revision_id": "rev-6a47bfc3b81e6a38a88be86c",
+          "sound_impact_summary": null,
+          "source_references": [
+            {
+              "creator": "Juraj Fiala",
+              "discovered_at_epoch_seconds": 1788059383,
+              "is_primary": true,
+              "last_verified_at_epoch_seconds": 1788059383,
+              "provenance_tier": "traceable_community",
+              "published_at_epoch_seconds": null,
+              "redistribution_policy": "structured-data-only",
+              "source_id": "fairbuds",
+              "source_kind": "repository",
+              "source_product_id": "Fairbuds",
+              "source_record_id": "jurf/fairbuds:presets/main-ish.txt:main-ish",
+              "source_vendor_id": "Fairphone",
+              "updated_at_epoch_seconds": null,
+              "url": "https://github.com/jurf/fairbuds/blob/main/presets/main-ish.txt"
+            }
+          ],
+          "source_updated_at_epoch_seconds": null,
+          "source_version_label": "GitHub blob 52cad02ba3dad4f1d18a1196ca2d6c41a94739f1"
+        }
+      ],
+      "target": {
+        "kind": "unknown",
+        "name": null
+      },
+      "tuning_label": "Main-ish"
     },
     {
       "canonical_profile_id": "hifiman:edition-xs:oratory1990:harman:b99b8966bb250506",
@@ -794,7 +900,7 @@
     }
   ],
   "schema_version": 1,
-  "source_registry_version": "0.3.0-qualified-github-1",
+  "source_registry_version": "0.3.0-qualified-github-2",
   "sources": [
     {
       "consecutive_failures": 0,
