@@ -27,7 +27,9 @@ VALID_LIFECYCLES = {"proposed", "reviewing", "active", "link-only", "paused", "r
 VALID_REDISTRIBUTION = {"allowed", "structured-data-only", "link-only", "review-required"}
 VALID_CADENCES = {"hourly", "daily", "weekly", "monthly", "manual"}
 VALID_PROFILE_SCOPES = {"headphone", "general"}
-VALID_PRESET_PURPOSES = {"correction_tuning", "effect", "genre", "personal_community"}
+HEADPHONE_PRESET_PURPOSES = {"correction_tuning", "personal_community"}
+GENERAL_PRESET_PURPOSES = {"effect", "genre"}
+VALID_PRESET_PURPOSES = HEADPHONE_PRESET_PURPOSES | GENERAL_PRESET_PURPOSES
 
 
 def utc_now() -> str:
@@ -254,13 +256,13 @@ def validate_profile_classification(profile: dict[str, Any], prefix: str) -> lis
             model = str(headphone.get("model") or "").strip()
             if not manufacturer or not model:
                 errors.append(f"{prefix} headphone identity requires manufacturer and model")
-        if purpose in {"effect", "genre"}:
+        if purpose not in HEADPHONE_PRESET_PURPOSES:
             errors.append(f"{prefix} {purpose} presets must use general scope")
     else:
         if headphone not in (None, {}):
             errors.append(f"{prefix} general scope must not require headphone identity")
-        if purpose == "correction_tuning":
-            errors.append(f"{prefix} general scope cannot use correction_tuning purpose")
+        if purpose not in GENERAL_PRESET_PURPOSES:
+            errors.append(f"{prefix} general scope cannot use {purpose} purpose")
 
     return errors
 
