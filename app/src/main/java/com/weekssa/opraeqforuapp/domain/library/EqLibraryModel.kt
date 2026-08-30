@@ -57,6 +57,20 @@ enum class EqTargetKind {
 }
 
 @Serializable
+enum class EqProfileScope {
+    @SerialName("headphone") HEADPHONE,
+    @SerialName("general") GENERAL,
+}
+
+@Serializable
+enum class EqPresetPurpose {
+    @SerialName("correction_tuning") CORRECTION_TUNING,
+    @SerialName("effect") EFFECT,
+    @SerialName("genre") GENRE,
+    @SerialName("personal_community") PERSONAL_COMMUNITY,
+}
+
+@Serializable
 data class HeadphoneIdentity(
     val manufacturer: String,
     val model: String,
@@ -140,7 +154,9 @@ data class EqRevision(
 @Serializable
 data class CanonicalEqProfile(
     @SerialName("canonical_profile_id") val canonicalProfileId: String,
-    val headphone: HeadphoneIdentity,
+    val headphone: HeadphoneIdentity? = null,
+    val scope: EqProfileScope = EqProfileScope.HEADPHONE,
+    val purpose: EqPresetPurpose = EqPresetPurpose.CORRECTION_TUNING,
     val creator: String?,
     val target: EqTarget,
     @SerialName("tuning_label") val tuningLabel: String?,
@@ -153,10 +169,18 @@ data class CanonicalEqProfile(
 
     val latestRevision: EqRevision
         get() = revisions.first(EqRevision::isLatest)
+
+    val isHeadphoneProfile: Boolean
+        get() = scope == EqProfileScope.HEADPHONE && headphone != null
+
+    val isGeneralPreset: Boolean
+        get() = scope == EqProfileScope.GENERAL
 }
 
 data class EqCandidate(
-    val headphone: HeadphoneIdentity,
+    val headphone: HeadphoneIdentity? = null,
+    val scope: EqProfileScope = EqProfileScope.HEADPHONE,
+    val purpose: EqPresetPurpose = EqPresetPurpose.CORRECTION_TUNING,
     val creator: String?,
     val target: EqTarget,
     val tuningLabel: String?,
@@ -167,3 +191,21 @@ data class EqCandidate(
     val soundImpactSummary: String? = null,
     val verificationStatus: VerificationStatus = VerificationStatus.VERIFIED,
 )
+
+fun EqProfileScope.accepts(purpose: EqPresetPurpose): Boolean = when (this) {
+    EqProfileScope.HEADPHONE -> purpose == EqPresetPurpose.CORRECTION_TUNING ||
+        purpose == EqPresetPurpose.PERSONAL_COMMUNITY
+    EqProfileScope.GENERAL -> purpose == EqPresetPurpose.EFFECT || purpose == EqPresetPurpose.GENRE
+}
+
+fun CanonicalEqProfile.hasValidClassification(): Boolean =
+    scope.accepts(purpose) && when (scope) {
+        EqProfileScope.HEADPHONE -> headphone != null
+        EqProfileScope.GENERAL -> headphone == null
+    }
+
+fun EqCandidate.hasValidClassification(): Boolean =
+    scope.accepts(purpose) && when (scope) {
+        EqProfileScope.HEADPHONE -> headphone != null
+        EqProfileScope.GENERAL -> headphone == null
+    }
