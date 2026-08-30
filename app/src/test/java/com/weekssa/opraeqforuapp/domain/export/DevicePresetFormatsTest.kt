@@ -34,15 +34,16 @@ class DevicePresetFormatsTest {
     }
 
     @Test
-    fun blackPearlContainsOnlyPeakFiltersAndNoMoreThanTenBands() {
+    fun blackPearlContainsOnlyPeakFiltersAndHonorsItsCurrentCapabilityLimit() {
         val variants = buildTextDeviceVariants(profile)
         val blackPearl = variants.single { it.device == ExportDevice.BLACK_PEARL }
-        val filterLines = blackPearl.content.lineSequence().filter { it.startsWith("Filter ") }.toList()
+        val filterLines = filterLines(blackPearl.content)
         assertFalse(filterLines.isEmpty())
-        assertTrue(filterLines.size <= 10)
+        assertTrue(filterLines.size <= ExportDevice.BLACK_PEARL.eqCapabilities!!.maxBands!!)
         assertTrue(filterLines.all { it.contains(" ON PK ") })
         assertFalse(blackPearl.content.contains(" LSC "))
         assertFalse(blackPearl.content.contains(" HSC "))
+        assertTrue(blackPearl.transformation.contains("EQ Library optimized conversion"))
     }
 
     @Test
@@ -68,4 +69,81 @@ class DevicePresetFormatsTest {
         assertTrue(ExportDevice.UAPP.validationStatus == null)
         assertTrue(ExportDevice.BLACK_PEARL.validationStatus == null)
     }
+
+    @Test
+    fun deviceBandLimitCanGrowWithoutChangingCanonicalSourceProfile() {
+        val sourceBands = (1..12).map { index ->
+            OpraBand("peak_dip", 100.0 * index, index / 10.0, 1.0, null)
+        }
+        val source = profile.copy(bands = sourceBands)
+        val current = ExportDevice.TOPPING_DX5_II.eqCapabilities!!
+        val futureCapabilities = current.copy(maxBands = 12)
+
+        val currentOutput = formatToppingTunePreset(source, current)!!
+        val futureOutput = formatToppingTunePreset(source, futureCapabilities)!!
+
+        assertEquals(10, filterLines(currentOutput).size)
+        assertEquals(12, filterLines(futureOutput).size)
+        assertEquals(12, source.bands!!.size)
+        assertEquals(sourceBands, source.bands)
+    }
+
+    @Test
+    fun deviceBandLimitCanShrinkWithoutChangingCanonicalSourceProfile() {
+        val sourceBands = (1..8).map { index ->
+            OpraBand("peak_dip", 200.0 * index, -index / 10.0, 1.0, null)
+        }
+        val source = profile.copy(bands = sourceBands)
+        val futureCapabilities = ExportDevice.TOPPING_DX5_II.eqCapabilities!!.copy(maxBands = 6)
+
+        val output = formatToppingTunePreset(source, futureCapabilities)!!
+
+        assertEquals(6, filterLines(output).size)
+        assertEquals(8, source.bands!!.size)
+        assertEquals(sourceBands, source.bands)
+    }
+
+    @Test
+    fun deviceCapabilityRangesDriveOutputClamping() {
+        val source = profile.copy(
+            preampGainDb = -15.0,
+            bands = listOf(OpraBand("peak_dip", 15.0, 15.0, 20.0, null)),
+        )
+        val capabilities = DeviceEqCapabilities(
+            maxBands = 4,
+            supportedBandTypes = setOf("peak_dip"),
+            minFrequencyHz = 30.0,
+            maxFrequencyHz = 18_000.0,
+            minGainDb = -6.0,
+            maxGainDb = 6.0,
+            minQ = 0.2,
+            maxQ = 8.0,
+            minPreampDb = -10.0,
+            maxPreampDb = 6.0,
+        )
+
+        val output = formatToppingTunePreset(source, capabilities)!!
+
+        assertTrue(output.contains("Preamp: -10.00 dB"))
+        assertTrue(output.contains("Fc 30 Hz"))
+        assertTrue(output.contains("Gain 6.00 dB"))
+        assertTrue(output.contains("Q 8.000"))
+    }
+
+    @Test
+    fun deviceCanDeclareNoFixedBandLimit() {
+        val source = profile.copy(
+            bands = (1..14).map { index ->
+                OpraBand("peak_dip", 100.0 * index, 0.5, 1.0, null)
+            },
+        )
+        val capabilities = ExportDevice.TOPPING_DX5_II.eqCapabilities!!.copy(maxBands = null)
+
+        val output = formatToppingTunePreset(source, capabilities)!!
+
+        assertEquals(14, filterLines(output).size)
+    }
+
+    private fun filterLines(content: String): List<String> =
+        content.lineSequence().filter { it.startsWith("Filter ") }.toList()
 }
