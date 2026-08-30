@@ -62,6 +62,19 @@ class HeadphoneIdentityAuditTest(unittest.TestCase):
         self.assertEqual(covered["review_candidate_count"], 0)
         self.assertEqual(covered["covered_explicit_alias_pair_count"], 1)
 
+    def test_reviewed_distinct_pair_is_suppressed_without_merging(self):
+        stream = jsonl(
+            {"type": "vendor", "id": "beats", "data": {"name": "Beats"}},
+            {"type": "product", "id": "a", "data": {"vendor_id": "beats", "name": "Pro", "subtype": "over-ear"}},
+            {"type": "product", "id": "b", "data": {"vendor_id": "beats", "name": "Studio Pro", "subtype": "over-ear"}},
+        )
+        _, products = parse_opra(stream)
+        distinct = {("beats", "pro", "studiopro"): {"evidence": ["https://example.test"]}}
+        report = audit_products(products, [], distinct)
+        self.assertEqual(report["review_candidate_count"], 0)
+        self.assertEqual(report["confirmed_distinct_pair_count"], 1)
+        self.assertEqual(report["auto_safe_group_count"], 0)
+
     def test_trailing_variant_is_not_treated_as_alias_candidate(self):
         stream = jsonl(
             {"type": "vendor", "id": "hifiman", "data": {"name": "HIFIMAN"}},
