@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
-"""Normalize `Submit an EQ source` GitHub Issue Form events into a review queue.
+"""Normalize `Submit an EQ source` GitHub Issue Form events into the submission queue.
 
-The issue form is an intake surface only. This tool never publishes a catalog profile and
-never guesses headphone identity, target, provenance, licensing, or missing EQ values.
-When structured PEQ text is supplied, it is parsed with the same community PEQ parser used
-by the catalog pipeline so arbitrary source filter counts and a missing source preamp are
-preserved exactly. Invalid or incomplete submissions are still staged as ``needs_review``
-with explicit diagnostics rather than being silently discarded.
+This tool performs conservative mechanical validation only. It never guesses headphone
+identity, target, provenance, licensing, or missing EQ values. When structured PEQ text
+is supplied, it is parsed with the same community PEQ parser used by the catalog pipeline
+so arbitrary source filter counts and a missing source preamp are preserved exactly.
+
+A clean structured submission is marked ``ready_for_source_policy`` so an automatic
+publisher can apply the registered source/domain, identity and dedupe policy. This staging
+step alone never publishes a catalog profile. Invalid or incomplete submissions remain
+``needs_review`` with explicit diagnostics rather than being silently discarded.
 """
 from __future__ import annotations
 
@@ -150,13 +153,19 @@ def normalize_submission_event(event: dict[str, Any]) -> dict[str, Any]:
             }
             warnings.append("Submitted PEQ text could not be normalized automatically.")
 
+    mechanically_valid = not errors and peq_parse["status"] == "parsed"
+    candidate_state = "ready_for_source_policy" if mechanically_valid else "needs_review"
+
     issue_user = issue.get("user") or {}
     issue_url = str(issue.get("html_url") or issue.get("url") or "").strip() or None
     body_fingerprint = hashlib.sha256(body.encode("utf-8")).hexdigest()
     return {
         "schema_version": 1,
         "submission_id": f"github-issue-{issue_number}",
-        "candidate_state": "needs_review",
+        "candidate_state": candidate_state,
+        "mechanically_valid": mechanically_valid,
+        "verification_status": "unverified",
+        # Final publication eligibility is assigned only by the source-policy publisher.
         "publication_eligible": False,
         "issue": {
             "number": issue_number,
@@ -205,6 +214,7 @@ def main() -> int:
             {
                 "submission_id": submission["submission_id"],
                 "candidate_state": submission["candidate_state"],
+                "mechanically_valid": submission["mechanically_valid"],
                 "peq_status": submission["parsed_peq"]["status"],
                 "filter_count": len(submission["parsed_peq"]["filters"]),
                 "validation_error_count": len(submission["validation_errors"]),
