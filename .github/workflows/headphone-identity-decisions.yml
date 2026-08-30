@@ -1,0 +1,55 @@
+name: Apply headphone identity decisions
+
+on:
+  push:
+    branches:
+      - eq-library-community-v0.3
+      - main
+    paths:
+      - 'config/headphone_identity_decisions.json'
+      - 'tools/headphone_identity_decisions.py'
+      - 'tools/test_headphone_identity_decisions.py'
+      - '.github/workflows/headphone-identity-decisions.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: headphone-identity-decisions-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out exact branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 1
+      - name: Validate reviewed identity decisions
+        run: python3 tools/headphone_identity_decisions.py validate --decisions config/headphone_identity_decisions.json
+      - name: Apply reviewed aliases to catalog candidate
+        run: >-
+          python3 tools/headphone_identity_decisions.py apply
+          --decisions config/headphone_identity_decisions.json
+          --catalog catalog/catalog.json
+          --output "${RUNNER_TEMP}/catalog.identity.json"
+      - name: Validate candidate with atomic publication rules
+        run: >-
+          python3 tools/catalog_pipeline.py publish
+          --candidate "${RUNNER_TEMP}/catalog.identity.json"
+          --published "${RUNNER_TEMP}/catalog.validated.json"
+          --last-known-good "${RUNNER_TEMP}/catalog.lkg.json"
+      - name: Persist reviewed aliases when catalog changed
+        run: |
+          if cmp -s catalog/catalog.json "${RUNNER_TEMP}/catalog.validated.json"; then
+            echo "No catalog identity changes."
+            exit 0
+          fi
+          cp "${RUNNER_TEMP}/catalog.validated.json" catalog/catalog.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add catalog/catalog.json
+          git commit -m "Apply reviewed headphone identity decisions"
+          git push
