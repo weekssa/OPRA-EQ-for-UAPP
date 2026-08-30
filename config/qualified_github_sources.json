@@ -26,6 +26,30 @@
           "source_record_id": "MrChillStorm/Headphone_Target:README.md:7hz-zero2-iso226-85phon"
         }
       ]
+    },
+    {
+      "id": "fairbuds",
+      "repository": "jurf/fairbuds",
+      "branch": "main",
+      "license_spdx": "MIT",
+      "license_url": "https://github.com/jurf/fairbuds/blob/main/LICENSE",
+      "creator": "Juraj Fiala",
+      "profiles": [
+        {
+          "source_path": "presets/main-ish.txt",
+          "extraction": "whole_file",
+          "manufacturer": "Fairphone",
+          "model": "Fairbuds",
+          "model_aliases": [
+            "Fairphone Fairbuds"
+          ],
+          "variant": null,
+          "tuning_label": "Main-ish",
+          "target": null,
+          "source_url": "https://github.com/jurf/fairbuds/blob/main/presets/main-ish.txt",
+          "source_record_id": "jurf/fairbuds:presets/main-ish.txt:main-ish"
+        }
+      ]
     }
   ]
 }
