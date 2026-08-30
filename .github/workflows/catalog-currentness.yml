@@ -13,6 +13,7 @@ on:
       - 'config/headphone_identity_decisions.json'
       - 'tools/autoeq_currentness.py'
       - 'tools/autoeq_ingest.py'
+      - 'tools/autoeq_corpus_ingest.py'
       - 'tools/catalog_merge.py'
       - 'tools/catalog_pipeline.py'
       - 'tools/currentness_scheduler.py'
@@ -63,17 +64,28 @@ jobs:
           --registry config/source_registry.json
           --state catalog/source_health.json
           > "${RUNNER_TEMP}/currentness-plan.json"
-      - name: Refresh qualified AutoEQ source incrementally
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+      - name: Fetch qualified AutoEq structured corpus
+        run: |
+          AUTOEQ_ROOT="${RUNNER_TEMP}/autoeq-upstream"
+          git clone --depth=1 --filter=blob:none --no-checkout https://github.com/jaakkopasanen/AutoEq.git "${AUTOEQ_ROOT}"
+          git -C "${AUTOEQ_ROOT}" sparse-checkout init --no-cone
+          cat > "${AUTOEQ_ROOT}/.git/info/sparse-checkout" <<'EOF'
+          /dbtools/manufacturers.tsv
+          /results/**/* ParametricEQ.txt
+          EOF
+          git -C "${AUTOEQ_ROOT}" checkout master
+          test -f "${AUTOEQ_ROOT}/dbtools/manufacturers.tsv"
+          test "$(find "${AUTOEQ_ROOT}/results" -type f -name '* ParametricEQ.txt' | wc -l)" -gt 1000
+      - name: Refresh qualified AutoEq corpus incrementally
         run: >-
-          python3 tools/autoeq_currentness.py
+          python3 tools/autoeq_corpus_ingest.py
+          --autoeq-root "${RUNNER_TEMP}/autoeq-upstream"
           --catalog catalog/catalog.json
           --registry config/source_registry.json
           --health catalog/source_health.json
           --catalog-output "${RUNNER_TEMP}/catalog.autoeq.json"
           --health-output "${RUNNER_TEMP}/source_health.autoeq.json"
-          --github-token "${GITHUB_TOKEN}"
+          --report "${RUNNER_TEMP}/autoeq-corpus-report.json"
       - name: Refresh explicitly qualified GitHub sources
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -111,6 +123,23 @@ jobs:
           --candidate "${RUNNER_TEMP}/catalog.candidate.json"
           --published "${RUNNER_TEMP}/validated-catalog.json"
           --last-known-good "${RUNNER_TEMP}/validated-lkg.json"
+      - name: Minify validated catalog for Android transport
+        run: |
+          python3 - <<'PY'
+          import json, os
+          path = os.environ['RUNNER_TEMP'] + '/validated-catalog.json'
+          with open(path, encoding='utf-8') as handle:
+              payload = json.load(handle)
+          rendered = json.dumps(payload, sort_keys=True, separators=(',', ':'), ensure_ascii=False) + '\n'
+          size = len(rendered.encode('utf-8'))
+          limit = 60 * 1024 * 1024
+          if size > limit:
+              raise SystemExit(f'validated catalog exceeds transport safety limit: {size} > {limit}')
+          with open(path, 'w', encoding='utf-8') as handle:
+              handle.write(rendered)
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as summary:
+              summary.write(f'## Catalog transport\n\n- compact bytes: {size}\n- safety limit: {limit}\n')
+          PY
       - name: Audit full OPRA identity against validated candidate
         run: >-
           python3 tools/headphone_identity_audit.py
@@ -176,6 +205,7 @@ jobs:
             ${{ runner.temp }}/validated-catalog.json
             ${{ runner.temp }}/validated-lkg.json
             ${{ runner.temp }}/source_health.candidate.json
+            ${{ runner.temp }}/autoeq-corpus-report.json
             ${{ runner.temp }}/qualified-github-report.json
             ${{ runner.temp }}/github-candidates.json
             ${{ runner.temp }}/headphone-identity-audit.json
