@@ -42,6 +42,29 @@ class CommunityProfileAdapterTest {
     }
 
     @Test
+    fun arbitraryCommunityFilterCountAndMissingPreampRemainSourceAuthentic() {
+        val filters = (1..15).joinToString("\n") { index ->
+            "Filter $index: ON PK Fc ${80 + index * 20} Hz Gain ${index / 10.0} dB Q 1.0"
+        }
+        val profile = CommunityProfileAdapter.adapt(
+            CommunityProfileAdapter.Metadata(
+                sourceId = "headphones-community",
+                sourceRecordId = "post-15-band",
+                sourceUrl = "https://example.com/post/15-band",
+                manufacturer = "HiFiMAN",
+                model = "Edition XS",
+                creator = "example-user",
+            ),
+            filters,
+        )!!
+
+        assertNull(profile.latestRevision.preampGainDb)
+        assertEquals(15, profile.latestRevision.filters.size)
+        assertEquals(100.0, profile.latestRevision.filters.first().frequencyHz, 0.0001)
+        assertEquals(380.0, profile.latestRevision.filters.last().frequencyHz, 0.0001)
+    }
+
+    @Test
     fun explicitTargetIsKeptWithoutGuessing() {
         val profile = CommunityProfileAdapter.adapt(
             CommunityProfileAdapter.Metadata(
