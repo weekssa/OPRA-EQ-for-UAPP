@@ -1,20 +1,24 @@
 #!/usr/bin/env python3
-"""Merge one qualified canonical source candidate into an EQ Library snapshot.
+"""Merge qualified canonical source candidates into an EQ Library snapshot.
 
 A candidate with the same acoustic fingerprint updates provenance/verification metadata
 without creating a cosmetic revision. A materially different fingerprint for the same
 canonical profile becomes the new immutable latest revision and the previous latest is
 retained. Distinct canonical profiles are appended. Review-only candidates are rejected.
-"""
 
+The bulk path indexes the existing catalog once, applies all candidates, sorts once, and
+validates once. The legacy single-candidate API delegates to the same implementation so
+small adapters keep their existing behavior without making large corpus ingestion O(n^2).
+"""
 from __future__ import annotations
 
 import argparse
 import copy
 import json
+from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 
 from catalog_pipeline import validate_snapshot
 
@@ -74,13 +78,7 @@ def _merge_same_revision(existing: dict[str, Any], incoming: dict[str, Any]) -> 
     return result
 
 
-def merge_candidate(
-    snapshot: dict[str, Any],
-    candidate: dict[str, Any],
-    *,
-    generated_at: str | None = None,
-    source_registry_version: str | None = None,
-) -> tuple[dict[str, Any], str]:
+def _validated_candidate(candidate: dict[str, Any]) -> tuple[dict[str, Any], str, dict[str, Any]]:
     if candidate.get("publication_eligible") is False:
         raise ValueError("review-only candidate cannot be merged into the published catalog")
 
@@ -94,16 +92,50 @@ def merge_candidate(
     incoming_fingerprint = str(incoming_revision.get("acoustic_fingerprint") or "").strip()
     if not incoming_fingerprint or not incoming_revision.get("filters"):
         raise ValueError("candidate revision must contain a fingerprint and filters")
+    return clean_candidate, profile_id, incoming_revision
 
+
+def _sort_revisions(revisions: list[dict[str, Any]]) -> None:
+    revisions.sort(
+        key=lambda revision: (
+            not bool(revision.get("is_latest")),
+            -(revision.get("source_updated_at_epoch_seconds") or revision.get("first_seen_at_epoch_seconds") or 0),
+            str(revision.get("revision_id") or ""),
+        )
+    )
+
+
+def merge_candidates(
+    snapshot: dict[str, Any],
+    candidates: Iterable[dict[str, Any]],
+    *,
+    generated_at: str | None = None,
+    source_registry_version: str | None = None,
+) -> tuple[dict[str, Any], dict[str, int]]:
+    """Merge an iterable of publication-qualified candidates with one final validation."""
     result = copy.deepcopy(snapshot)
     profiles = result.setdefault("profiles", [])
-    existing_profile = next((profile for profile in profiles if profile.get("canonical_profile_id") == profile_id), None)
+    profile_by_id = {
+        str(profile.get("canonical_profile_id") or ""): profile
+        for profile in profiles
+        if str(profile.get("canonical_profile_id") or "")
+    }
+    outcomes: Counter[str] = Counter()
+    touched_profile_ids: set[str] = set()
 
-    if existing_profile is None:
-        incoming_revision["is_latest"] = True
-        profiles.append(clean_candidate)
-        outcome = "new_profile"
-    else:
+    for candidate in candidates:
+        clean_candidate, profile_id, incoming_revision = _validated_candidate(candidate)
+        incoming_fingerprint = str(incoming_revision["acoustic_fingerprint"])
+        existing_profile = profile_by_id.get(profile_id)
+
+        if existing_profile is None:
+            incoming_revision["is_latest"] = True
+            profiles.append(clean_candidate)
+            profile_by_id[profile_id] = clean_candidate
+            outcomes["new_profile"] += 1
+            touched_profile_ids.add(profile_id)
+            continue
+
         existing_revisions = existing_profile.setdefault("revisions", [])
         matching = next(
             (revision for revision in existing_revisions if revision.get("acoustic_fingerprint") == incoming_fingerprint),
@@ -115,24 +147,18 @@ def merge_candidate(
         if matching is not None:
             for revision in existing_revisions:
                 revision["is_latest"] = revision is matching
-            merged_revision = _merge_same_revision(matching, incoming_revision)
-            existing_revisions[existing_revisions.index(matching)] = merged_revision
-            outcome = "metadata_update"
+            existing_revisions[existing_revisions.index(matching)] = _merge_same_revision(matching, incoming_revision)
+            outcomes["metadata_update"] += 1
         else:
             for revision in existing_revisions:
                 revision["is_latest"] = False
             incoming_revision["is_latest"] = True
             existing_revisions.append(incoming_revision)
-            outcome = "new_revision"
+            outcomes["new_revision"] += 1
+        touched_profile_ids.add(profile_id)
 
-        existing_revisions.sort(
-            key=lambda revision: (
-                not bool(revision.get("is_latest")),
-                -(revision.get("source_updated_at_epoch_seconds") or revision.get("first_seen_at_epoch_seconds") or 0),
-                str(revision.get("revision_id") or ""),
-            )
-        )
-
+    for profile_id in touched_profile_ids:
+        _sort_revisions(profile_by_id[profile_id].setdefault("revisions", []))
     profiles.sort(key=lambda profile: str(profile.get("canonical_profile_id") or ""))
     result["generated_at"] = generated_at or utc_now()
     if source_registry_version:
@@ -141,7 +167,25 @@ def merge_candidate(
     errors = validate_snapshot(result)
     if errors:
         raise ValueError("merged catalog is invalid: " + "; ".join(errors))
-    return result, outcome
+    return result, dict(sorted(outcomes.items()))
+
+
+def merge_candidate(
+    snapshot: dict[str, Any],
+    candidate: dict[str, Any],
+    *,
+    generated_at: str | None = None,
+    source_registry_version: str | None = None,
+) -> tuple[dict[str, Any], str]:
+    result, outcomes = merge_candidates(
+        snapshot,
+        [candidate],
+        generated_at=generated_at,
+        source_registry_version=source_registry_version,
+    )
+    if sum(outcomes.values()) != 1:
+        raise ValueError("single-candidate merge produced an invalid outcome count")
+    return result, next(iter(outcomes))
 
 
 def main() -> int:
