@@ -1,0 +1,199 @@
+{
+  "schema_version": 1,
+  "aliases": [
+    {
+      "manufacturer": "Binary Acoustics",
+      "canonical_model": "Chopin",
+      "aliases": ["Gizaudio Chopin", "x Gizaudio Chopin"],
+      "evidence": ["https://binary.audio/"]
+    },
+    {
+      "manufacturer": "BLON",
+      "canonical_model": "Z300",
+      "aliases": ["x HBB Z300"],
+      "evidence": ["https://www.linsoul.com/blogs/announcements/blon-x-hbb-z300-new-release-at-linsoul-audio"]
+    },
+    {
+      "manufacturer": "DUNU",
+      "canonical_model": "DaVinci",
+      "aliases": ["x Gizaudio DaVinci"],
+      "evidence": ["https://www.youtube.com/watch?v=M5OmjbTppWw"]
+    },
+    {
+      "manufacturer": "Effect Audio",
+      "canonical_model": "Gaea",
+      "aliases": ["x Elysian Gaea"],
+      "evidence": ["https://www.effectaudio.com/blogs/all-stories/new-iem-drop-gaea-by-effect-audio-x-elysian-acoustic-labs"]
+    },
+    {
+      "manufacturer": "ELISE AUDIO",
+      "canonical_model": "Dark Phoenix",
+      "aliases": ["x Kinera Dark Phoenix"],
+      "evidence": ["https://eliseaudio.com/en-us/products/elise-audio-x-kinera-dark-phoenix"]
+    },
+    {
+      "manufacturer": "Kiwi Ears",
+      "canonical_model": "Singolo",
+      "aliases": ["x Crinacle Singolo"],
+      "evidence": ["https://kiwiears.com/products/kiwi-ears-x-crinacle-singolo"]
+    },
+    {
+      "manufacturer": "KZ",
+      "canonical_model": "PR2",
+      "aliases": ["x HBB PR2"],
+      "evidence": ["https://www.kztws.com/collections/wired-earphones"]
+    },
+    {
+      "manufacturer": "Linsoul",
+      "canonical_model": "Mjölnir MKII",
+      "aliases": ["x THOR Mjölnir MKII"],
+      "evidence": ["https://www.linsoul.com/products/thor-mjolnir-mkii"]
+    },
+    {
+      "manufacturer": "QKZ",
+      "canonical_model": "HBB",
+      "aliases": ["x HBB"],
+      "evidence": ["https://www.linsoulinearmonitor.com/product/linsoul-qkz-x-hbb-10mm-titanium-coated-diaphragm-hifi-in-ear-monitor-earphones-with-semi-open-cavity-detachable-recessed-2pin-silver-plated-cable-noise-canceling-for-audiophilewithout-mic/"]
+    },
+    {
+      "manufacturer": "QKZ",
+      "canonical_model": "Khan",
+      "aliases": ["x HBB Khan"],
+      "evidence": ["https://www.linsoul.com/blogs/announcements/qkz-x-hbb-khan-new-release-at-linsoul-audio"]
+    },
+    {
+      "manufacturer": "SeeAudio",
+      "canonical_model": "Yume Midnight",
+      "aliases": ["x Crinacle Yume Midnight"],
+      "evidence": ["https://hifigo.com/blogs/news/seeaudio-x-crinacle-yume-midnight-announcement"]
+    },
+    {
+      "manufacturer": "Tripowin",
+      "canonical_model": "Mele",
+      "aliases": ["HBB Mele", "x HBB Mele"],
+      "evidence": ["https://tripowin.com/blogs/news/tripowin-x-hbb-mele-in-ear-earphone-launches"]
+    },
+    {
+      "manufacturer": "TRUTHEAR",
+      "canonical_model": "Zero",
+      "aliases": ["Truthear x Crinacle Zero", "x Crinacle Zero"],
+      "evidence": ["https://truthear.com/products/zero"]
+    },
+    {
+      "manufacturer": "TRUTHEAR",
+      "canonical_model": "Zero Red",
+      "aliases": ["Truthear x Crinacle Zero RED", "x Crinacle Zero Red"],
+      "evidence": ["https://truthear.com/products/zero-red"]
+    },
+    {
+      "manufacturer": "ZiiGaat",
+      "canonical_model": "Estrella",
+      "aliases": ["x Jays Audio Estrella"],
+      "evidence": ["https://www.ziigaat.com/products/ziigaat-x-jays-audio-estrella"]
+    },
+    {
+      "manufacturer": "Bang & Olufsen",
+      "canonical_model": "Beoplay H9",
+      "aliases": ["H9"],
+      "evidence": ["https://support.bang-olufsen.com/hc/en-us/articles/360039579851-Beoplay-H9"]
+    },
+    {
+      "manufacturer": "Bang & Olufsen",
+      "canonical_model": "Beoplay H95",
+      "aliases": ["H95"],
+      "evidence": ["https://support.bang-olufsen.com/hc/en-us/articles/360048146712-Beoplay-H95"]
+    },
+    {
+      "manufacturer": "Bang & Olufsen",
+      "canonical_model": "Beoplay H9i",
+      "aliases": ["H9i"],
+      "evidence": ["https://support.bang-olufsen.com/hc/en-us/articles/360039009951-Beoplay-H9i"]
+    },
+    {
+      "manufacturer": "HEDD",
+      "canonical_model": "HEDDphone TWO GT",
+      "aliases": ["Audio HEDDphone Two GT", "Heddphone TWO GT"],
+      "evidence": ["https://hedd.audio/products/heddphone-two-gt"]
+    },
+    {
+      "manufacturer": "Kinera",
+      "canonical_model": "Nanna",
+      "aliases": ["Imperial Nanna"],
+      "evidence": ["https://kinera-imperial.jp/nanna.html", "https://kineraaudio.com/products/nanna"]
+    },
+    {
+      "manufacturer": "Kinera",
+      "canonical_model": "Odin",
+      "aliases": ["Imperial Odin"],
+      "evidence": ["https://kinera-imperial.jp/"]
+    },
+    {
+      "manufacturer": "Oriveti",
+      "canonical_model": "bleqk Dynabird",
+      "aliases": ["Dynabird"],
+      "evidence": ["https://oriveti.com/dynabird/"]
+    },
+    {
+      "manufacturer": "Philips",
+      "canonical_model": "Fidelio L2",
+      "aliases": ["L2"],
+      "evidence": ["https://www.usa.philips.com/c-p/L2BO_00/fidelio-fidelio-headphones-with-mic"]
+    },
+    {
+      "manufacturer": "SteelSeries",
+      "canonical_model": "Arctis Nova Pro Wireless",
+      "aliases": ["Nova Pro Wireless"],
+      "evidence": ["https://steelseries.com/gaming-headsets/arctis-nova-pro"]
+    },
+    {
+      "manufacturer": "Tangzu Audio",
+      "canonical_model": "Zetian Wu Heyday Edition",
+      "aliases": ["TANGZU x HBB Zetian Wu Heyday Edition", "x HBB Zetian Wu Heyday Edition"],
+      "evidence": ["https://www.linsoul.com/blogs/announcements/tangzu-hbb-wuheyday-new-release-on-linsoul-audio"]
+    },
+    {
+      "manufacturer": "Tangzu Audio",
+      "canonical_model": "Shimin Li Encounter Edition",
+      "aliases": ["TANGZU x SeeAudio Shimin Li Encounter Edition", "x SeeAudio Shimin Li Encounter Edition"],
+      "evidence": ["https://linsoul.kr/products/tangzu-x-seeaudio-shimin-li-encounter-edition"]
+    }
+  ],
+  "distinct_pairs": [
+    {
+      "manufacturer": "Beats",
+      "left_model": "Pro",
+      "right_model": "Powerbeats Pro",
+      "evidence": ["https://www.beatsbydre.com/support/headphones/pro", "https://www.beatsbydre.com/support"]
+    },
+    {
+      "manufacturer": "Beats",
+      "left_model": "Pro",
+      "right_model": "Solo Pro",
+      "evidence": ["https://www.beatsbydre.com/support/headphones/pro", "https://www.beatsbydre.com/support/headphones/solo-pro"]
+    },
+    {
+      "manufacturer": "Beats",
+      "left_model": "Pro",
+      "right_model": "Studio Pro",
+      "evidence": ["https://www.beatsbydre.com/support/headphones/pro", "https://www.beatsbydre.com/headphones/studio-pro-wireless"]
+    },
+    {
+      "manufacturer": "FatFrequency",
+      "left_model": "Maestro",
+      "right_model": "Grand Maestro",
+      "evidence": ["https://fatfreq.com/products/maestro", "https://fatfreq.com/collections/maestro-series/products/grand-maestro"]
+    },
+    {
+      "manufacturer": "Noble Audio",
+      "left_model": "Khan",
+      "right_model": "Kublai Khan",
+      "evidence": ["https://nobleaudio.com/en-pl/pages/about-noble"]
+    },
+    {
+      "manufacturer": "Unique Melody",
+      "left_model": "MEST",
+      "right_model": "Mini MEST",
+      "evidence": ["https://www.uniquemelody.co/productinfo/256046.html", "https://uniquemelody.co/newsinfo/1675658.html?templateId=1133604"]
+    }
+  ]
+}
