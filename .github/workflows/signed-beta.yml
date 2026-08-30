@@ -5,7 +5,7 @@ on:
     branches: [eq-library-beta, eq-library-community-v0.3]
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: signed-eq-library-beta-${{ github.ref }}
@@ -103,3 +103,41 @@ jobs:
           path: dist/
           if-no-files-found: error
           retention-days: 14
+
+      - name: Publish stable mobile-test APK link
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_apk="$(find dist -maxdepth 1 -type f -name 'EQ-Library-v*.apk' -print -quit)"
+          test -n "$source_apk"
+
+          publish_dir="$(mktemp -d)"
+          cp "$source_apk" "$publish_dir/EQ-Library-v0.3-mobile-test.apk"
+          sha256sum "$publish_dir/EQ-Library-v0.3-mobile-test.apk" > "$publish_dir/EQ-Library-v0.3-mobile-test.apk.sha256"
+          cat > "$publish_dir/README.md" <<EOF
+          # EQ Library v0.3 mobile test build
+
+          Signed beta generated from commit `${GITHUB_SHA}`.
+
+          Direct Android download:
+          https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/mobile-test-apk/EQ-Library-v0.3-mobile-test.apk
+
+          This branch is only a temporary hands-on testing surface. It is not a public v0.3 release.
+          EOF
+
+          cd "$publish_dir"
+          git init
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b mobile-test-apk
+          git add README.md EQ-Library-v0.3-mobile-test.apk EQ-Library-v0.3-mobile-test.apk.sha256
+          git commit -m "Publish signed v0.3 mobile test APK from ${GITHUB_SHA::7}"
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push --force origin HEAD:mobile-test-apk
+
+          {
+            echo "### Mobile test APK"
+            echo "https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/mobile-test-apk/EQ-Library-v0.3-mobile-test.apk"
+          } >> "$GITHUB_STEP_SUMMARY"
