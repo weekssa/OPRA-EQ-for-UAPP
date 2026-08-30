@@ -50,16 +50,36 @@ class CuratedCommunityInputsTest(unittest.TestCase):
 
                 status = record.get("status")
                 surface = str(record.get("surface") or "")
-                if status in ELIGIBLE_STATUSES and surface in SOURCE_ID:
+                source_filters = record.get("filters")
+
+                if status == "publish-candidate":
+                    # Anything declared ready to publish must already contain structured,
+                    # source-authentic filters. A screenshot/curve-only lead cannot use this
+                    # status because the pipeline must never invent or OCR missing bands.
+                    self.assertTrue(source_filters, record_id)
                     filters = normalized_filters(record)
-                    self.assertEqual(len(record.get("filters") or []), len(filters), record_id)
+                    self.assertEqual(len(source_filters), len(filters), record_id)
                     if len(filters) > 10:
                         saw_more_than_ten_filters = True
+                elif status == "manual-review":
+                    # Manual-review records may either have filters that still need lineage /
+                    # near-duplicate review, or be high-value source leads whose structured
+                    # parameters have not yet been verified. Only the former can progress
+                    # through the publisher's normal candidate path.
+                    if source_filters:
+                        filters = normalized_filters(record)
+                        self.assertEqual(len(source_filters), len(filters), record_id)
+                        if len(filters) > 10:
+                            saw_more_than_ten_filters = True
+                    else:
+                        self.assertIsNone(source_filters, record_id)
                 elif status in REFERENCE_STATUSES:
                     # Mirrors/reposts may be provenance-only. They intentionally attach a
                     # source reference to an existing canonical tuning without inventing or
                     # duplicating filter data.
                     self.assertIn(surface, SOURCE_ID, record_id)
+                elif status in ELIGIBLE_STATUSES:
+                    self.fail(f"unhandled eligible status {status!r} for {record_id}")
 
                 preamp = record.get("preamp_db")
                 if preamp is not None:
