@@ -74,6 +74,10 @@ def _merge_same_revision(existing: dict[str, Any], incoming: dict[str, Any]) -> 
                 result[key] = min(result[key], incoming_value)
             else:
                 result[key] = incoming_value
+    # EQ Library safety headroom is derived metadata, not part of the acoustic fingerprint.
+    # Update or clear it in-place when the source-authentic revision itself is unchanged.
+    if "eq_library_safety_headroom_db" in incoming:
+        result["eq_library_safety_headroom_db"] = incoming.get("eq_library_safety_headroom_db")
     result["is_latest"] = True
     return result
 
