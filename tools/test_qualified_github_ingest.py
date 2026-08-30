@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from qualified_github_ingest import extract_fenced_peq, refresh
+from qualified_github_ingest import extract_fenced_peq, extract_profile_peq, refresh
 
 
 README = """
@@ -25,28 +25,52 @@ Filter 10: ON PK Fc 16000.00 Hz Gain 7.40 dB Q 1.398
 ```
 """
 
+WHOLE_FILE = """Preamp: -7.5 dB
+Filter 1: ON PK Fc 60 Hz Gain -1 dB Q 0.71
+Filter 2: ON PK Fc 100 Hz Gain 1 dB Q 0.71
+Filter 3: ON PK Fc 230 Hz Gain 2 dB Q 0.71
+Filter 4: ON PK Fc 500 Hz Gain 3.5 dB Q 0.71
+Filter 5: ON PK Fc 1100 Hz Gain 1 dB Q 0.71
+Filter 6: ON PK Fc 2400 Hz Gain -3 dB Q 0.71
+Filter 7: ON PK Fc 5400 Hz Gain 1 dB Q 0.71
+Filter 8: ON PK Fc 12000 Hz Gain 1 dB Q 0.71
+"""
+
 
 class QualifiedGithubIngestTest(unittest.TestCase):
-    def _registry(self):
-        return {
-            "schema_version": 1,
-            "registry_version": "test-registry",
-            "sources": [
+    def _registry(self, include_fairbuds=False):
+        sources = [
+            {
+                "id": "mrchillstorm-headphone-target",
+                "kind": "community_repository",
+                "name": "Headphone Target",
+                "scope": "test",
+                "lifecycle": "active",
+                "cadence": "weekly",
+                "parser": "github-qualified-peq",
+                "parser_version": "2",
+                "cursor_strategy": "blob sha",
+                "redistribution": "structured-data-only",
+                "attribution_required": True,
+            }
+        ]
+        if include_fairbuds:
+            sources.append(
                 {
-                    "id": "mrchillstorm-headphone-target",
+                    "id": "fairbuds",
                     "kind": "community_repository",
-                    "name": "Headphone Target",
+                    "name": "Fairbuds by Juraj Fiala",
                     "scope": "test",
                     "lifecycle": "active",
                     "cadence": "weekly",
-                    "parser": "github-qualified-fenced-peq",
-                    "parser_version": "1",
+                    "parser": "github-qualified-peq",
+                    "parser_version": "2",
                     "cursor_strategy": "blob sha",
                     "redistribution": "structured-data-only",
                     "attribution_required": True,
                 }
-            ],
-        }
+            )
+        return {"schema_version": 1, "registry_version": "test-registry", "sources": sources}
 
     def _manifest(self):
         return {
@@ -57,6 +81,7 @@ class QualifiedGithubIngestTest(unittest.TestCase):
                     "repository": "MrChillStorm/Headphone_Target",
                     "branch": "main",
                     "license_spdx": "MIT",
+                    "license_url": "https://github.com/MrChillStorm/Headphone_Target/blob/main/LICENSE",
                     "creator": "MrChillStorm",
                     "profiles": [
                         {
@@ -91,6 +116,11 @@ class QualifiedGithubIngestTest(unittest.TestCase):
         self.assertIn("Filter 10:", block)
         self.assertNotIn("# Target", block)
 
+    def test_whole_file_extraction_uses_only_file_content(self):
+        block = extract_profile_peq(WHOLE_FILE, {"extraction": "whole_file"})
+        self.assertEqual(WHOLE_FILE.strip(), block)
+        self.assertIn("Filter 8:", block)
+
     @patch("qualified_github_ingest.github_contents", return_value=(README, "abc123"))
     def test_qualified_source_adds_publishable_profile(self, _fetch):
         with tempfile.TemporaryDirectory() as tmp:
@@ -119,6 +149,47 @@ class QualifiedGithubIngestTest(unittest.TestCase):
         self.assertEqual("repository", ref["source_kind"])
         self.assertEqual("structured-data-only", ref["redistribution_policy"])
         self.assertEqual("active", next(item for item in health_payload["sources"] if item["source_id"] == ref["source_id"])["lifecycle"])
+
+    @patch("qualified_github_ingest.github_contents", return_value=(WHOLE_FILE, "fairsha"))
+    def test_whole_file_source_adds_authored_fairbuds_profile(self, _fetch):
+        manifest = self._manifest()
+        manifest["sources"] = [{
+            "id": "fairbuds",
+            "repository": "jurf/fairbuds",
+            "branch": "main",
+            "license_spdx": "MIT",
+            "license_url": "https://github.com/jurf/fairbuds/blob/main/LICENSE",
+            "creator": "Juraj Fiala",
+            "profiles": [{
+                "source_path": "presets/main-ish.txt",
+                "extraction": "whole_file",
+                "manufacturer": "Fairphone",
+                "model": "Fairbuds",
+                "model_aliases": [],
+                "variant": None,
+                "tuning_label": "Studio base EQ approximation",
+                "target": None,
+                "source_url": "https://github.com/jurf/fairbuds/blob/main/presets/main-ish.txt",
+                "source_record_id": "jurf/fairbuds:presets/main-ish.txt",
+            }],
+        }]
+        with tempfile.TemporaryDirectory() as tmp:
+            catalog, _, outcomes = refresh(
+                self._catalog(),
+                self._registry(include_fairbuds=True),
+                Path(tmp) / "health.json",
+                manifest,
+                now_epoch=1770000000,
+            )
+        self.assertEqual("ok", outcomes[0]["status"])
+        self.assertEqual(1, len(catalog["profiles"]))
+        profile = catalog["profiles"][0]
+        self.assertEqual("Fairphone", profile["headphone"]["manufacturer"])
+        self.assertEqual("Fairbuds", profile["headphone"]["model"])
+        self.assertEqual("Juraj Fiala", profile["creator"])
+        self.assertEqual("Studio base EQ approximation", profile["tuning_label"])
+        self.assertEqual(8, len(profile["revisions"][0]["filters"]))
+        self.assertEqual("fairbuds", profile["revisions"][0]["source_references"][0]["source_id"])
 
     @patch("qualified_github_ingest.github_contents", return_value=("# no matching block", "badsha"))
     def test_source_failure_preserves_catalog_and_degrades_health(self, _fetch):
