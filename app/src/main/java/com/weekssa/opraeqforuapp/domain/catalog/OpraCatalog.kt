@@ -38,6 +38,12 @@ data class OpraEqProfile(
      * Source-authentic preampGainDb is never overwritten with this value.
      */
     val eqLibrarySafetyHeadroomDb: Double? = null,
+    /**
+     * Publication trust state. Legacy OPRA/v0.2 profiles default to verified so the absence of the
+     * v0.3 field never downgrades existing catalog data. Unverified profiles remain manually
+     * selectable/exportable but are excluded from silent automatic inclusion.
+     */
+    val isVerified: Boolean = true,
 ) {
     fun effectivePlaybackPreampDb(): Double? = preampGainDb ?: eqLibrarySafetyHeadroomDb
 
