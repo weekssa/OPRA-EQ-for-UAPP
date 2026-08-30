@@ -116,6 +116,11 @@ data class EqRevision(
     @SerialName("revision_id") val revisionId: String,
     @SerialName("acoustic_fingerprint") val acousticFingerprint: String,
     @SerialName("preamp_gain_db") val preampGainDb: Double?,
+    /**
+     * Playback headroom calculated by EQ Library only when the source omitted preamp.
+     * This is derived metadata, never a replacement for source-authentic preampGainDb.
+     */
+    @SerialName("eq_library_safety_headroom_db") val eqLibrarySafetyHeadroomDb: Double? = null,
     val filters: List<EqFilter>,
     @SerialName("source_references") val sourceReferences: List<EqSourceReference>,
     @SerialName("source_version_label") val sourceVersionLabel: String? = null,
