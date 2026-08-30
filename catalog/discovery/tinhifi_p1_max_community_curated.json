@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "headphone": {
+    "manufacturer": "TINHIFI",
+    "model": "P1 MAX"
+  },
+  "curation_scope": {
+    "strategy": "headphone-first curated public community discovery",
+    "surfaces_reviewed": [
+      "Head-Fi"
+    ],
+    "note": "Model identity is kept as the manufacturer's P1 MAX name. This initial Head-Fi record publishes only the source's fully active Crinacle Neutral Target alternative; the separately listed adjusted alternative remains out of the catalog until optional/essential per-filter semantics can be retained explicitly."
+  },
+  "records": [
+    {
+      "id": "headfi-962951-bop-p1max-crinacle-neutral",
+      "surface": "head-fi",
+      "community": "Head-Fi TINHIFI P1 MAX Giant Panda thread",
+      "creator": "Bop",
+      "source_url": "https://www.head-fi.org/threads/tinhifi-p1-max-%E2%80%9Cgiant-panda-universal-in-ear-monitor.962951/page-5",
+      "source_date": "2022-06-02",
+      "status": "publish-candidate",
+      "provenance_tier": 3,
+      "lineage": "Community-generated PEQ shared by Bop using Squiglink/Crinacle target data",
+      "tuning_label": "Crinacle Neutral Target",
+      "target": "Crinacle Neutral Target",
+      "target_claim": "Crinacle Neutral Target",
+      "preamp_db": -3.8,
+      "filters": [
+        {"type":"PK","frequency_hz":3300,"gain_db":4.0,"q":1.8},
+        {"type":"PK","frequency_hz":4300,"gain_db":1.2,"q":2.0},
+        {"type":"PK","frequency_hz":4600,"gain_db":-1.3,"q":1.2},
+        {"type":"PK","frequency_hz":6500,"gain_db":3.5,"q":2.0},
+        {"type":"PK","frequency_hz":7900,"gain_db":-10.0,"q":2.0},
+        {"type":"PK","frequency_hz":10000,"gain_db":2.6,"q":2.0},
+        {"type":"PK","frequency_hz":15000,"gain_db":3.6,"q":0.5},
+        {"type":"PK","frequency_hz":16000,"gain_db":-9.1,"q":2.0}
+      ],
+      "review_notes": "Head-Fi post publishes these values directly under the Crinacle Neutral Target heading and attributes the post to Bop. The post says the settings were generated using Squiglink. The source was last edited June 2, 2022."
+    }
+  ]
+}
