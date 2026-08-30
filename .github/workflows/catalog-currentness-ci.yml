@@ -91,9 +91,9 @@ jobs:
           with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as summary:
               summary.write('## Headphone identity audit\n\n')
               summary.write(f"- OPRA products scanned: {report['product_count']}\n")
-              summary.write(f"- exact-normalized groups auto-safe: {report['auto_safe_exact_group_count']}\n")
+              summary.write(f"- auto-safe identity groups: {report['auto_safe_group_count']}\n")
               summary.write(f"- explicit alias pairs already covered: {report['covered_explicit_alias_pair_count']}\n")
-              summary.write(f"- candidates requiring review: {report['review_candidate_count']}\n")
+              summary.write(f"- candidates queued for review: {report['review_candidate_count']}\n")
           PY
       - name: Upload headphone identity audit
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
