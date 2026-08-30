@@ -7,7 +7,9 @@ in the generated sound-impact summary. Publication remains gated by source regis
 redistribution policy and canonical dedupe.
 
 Mirror/reference posts are retained as secondary provenance on the original tuning rather
-than being published as duplicate presets.
+than being published as duplicate presets. Curated input files declare their headphone
+identity explicitly so the same publication path works for the full catalog rather than
+being tied to a pilot model.
 """
 
 from __future__ import annotations
@@ -45,6 +47,16 @@ BANDS = [
 
 def registry_policies(payload: dict[str, Any]) -> dict[str, str]:
     return {str(item.get("id")): str(item.get("redistribution")) for item in payload.get("sources") or []}
+
+
+def curated_headphone_identity(curated: dict[str, Any]) -> tuple[str, str, str | None]:
+    headphone = curated.get("headphone") or {}
+    manufacturer = str(headphone.get("manufacturer") or "").strip()
+    model = str(headphone.get("model") or "").strip()
+    variant = str(headphone.get("variant") or "").strip() or None
+    if not manufacturer or not model:
+        raise ValueError("curated input must declare headphone manufacturer and model")
+    return manufacturer, model, variant
 
 
 def normalized_filters(record: dict[str, Any]) -> list[dict[str, Any]]:
@@ -145,27 +157,53 @@ def shape_rms(a: list[dict[str, Any]], b: list[dict[str, Any]]) -> float:
     return math.sqrt(sum((value - offset) ** 2 for value in diffs) / len(diffs))
 
 
-def edition_xs_revisions(snapshot: dict[str, Any]) -> list[tuple[str, list[dict[str, Any]]]]:
+def profile_matches_headphone(
+    profile: dict[str, Any],
+    manufacturer: str,
+    model: str,
+    variant: str | None = None,
+) -> bool:
+    headphone = profile.get("headphone") or {}
+    if str(headphone.get("manufacturer") or "").strip().casefold() != manufacturer.strip().casefold():
+        return False
+    if str(headphone.get("model") or "").strip().casefold() != model.strip().casefold():
+        return False
+    if variant is None:
+        return not str(headphone.get("variant") or "").strip()
+    return str(headphone.get("variant") or "").strip().casefold() == variant.strip().casefold()
+
+
+def headphone_revisions(
+    snapshot: dict[str, Any],
+    manufacturer: str,
+    model: str,
+    variant: str | None = None,
+) -> list[tuple[str, list[dict[str, Any]]]]:
     result: list[tuple[str, list[dict[str, Any]]]] = []
     for profile in snapshot.get("profiles") or []:
-        hp = profile.get("headphone") or {}
-        if str(hp.get("manufacturer") or "").lower() != "hifiman" or str(hp.get("model") or "").lower() != "edition xs":
+        if not profile_matches_headphone(profile, manufacturer, model, variant):
             continue
-        for rev in profile.get("revisions") or []:
-            filters = rev.get("filters") or []
+        for revision in profile.get("revisions") or []:
+            filters = revision.get("filters") or []
             if filters:
                 result.append((str(profile.get("canonical_profile_id")), filters))
     return result
 
 
-def attach_mirror_reference(snapshot: dict[str, Any], record: dict[str, Any], source_id: str) -> str | None:
+def attach_mirror_reference(
+    snapshot: dict[str, Any],
+    record: dict[str, Any],
+    source_id: str,
+    manufacturer: str,
+    model: str,
+    variant: str | None = None,
+) -> str | None:
     """Attach a forum mirror as secondary provenance without creating a duplicate EQ."""
     lineage = str(record.get("lineage") or "").lower()
     if "oratory1990" not in lineage:
         return None
     for profile in snapshot.get("profiles") or []:
-        hp = profile.get("headphone") or {}
-        if str(hp.get("manufacturer") or "").lower() != "hifiman" or str(hp.get("model") or "").lower() != "edition xs":
+        if not profile_matches_headphone(profile, manufacturer, model, variant):
             continue
         for revision in profile.get("revisions") or []:
             refs = revision.get("source_references") or []
@@ -178,8 +216,8 @@ def attach_mirror_reference(snapshot: dict[str, Any], record: dict[str, Any], so
                 "source_id": source_id,
                 "source_kind": "community",
                 "source_record_id": str(record.get("id") or ""),
-                "source_vendor_id": "HIFIMAN",
-                "source_product_id": "Edition XS",
+                "source_vendor_id": manufacturer,
+                "source_product_id": model,
                 "url": str(record.get("source_url") or ""),
                 "creator": str(record.get("creator") or "Community"),
                 "provenance_tier": "mirror",
@@ -215,8 +253,9 @@ def main() -> int:
     snapshot = json.loads(args.catalog.read_text(encoding="utf-8"))
     curated = json.loads(args.curated.read_text(encoding="utf-8"))
     registry = json.loads(args.registry.read_text(encoding="utf-8"))
+    manufacturer, model, variant = curated_headphone_identity(curated)
     policies = registry_policies(registry)
-    existing = edition_xs_revisions(snapshot)
+    existing = headphone_revisions(snapshot, manufacturer, model, variant)
     candidates: list[dict[str, Any]] = []
     report: dict[str, Any] = {"headphone": curated.get("headphone"), "records": [], "published_candidates": 0, "provenance_references_added": 0}
 
@@ -225,7 +264,14 @@ def main() -> int:
         source_id = SOURCE_ID.get(str(record.get("surface") or ""))
         if record.get("status") in REFERENCE_STATUSES:
             if source_id and policies.get(source_id) == "structured-data-only":
-                profile_id = attach_mirror_reference(snapshot, record, source_id)
+                profile_id = attach_mirror_reference(
+                    snapshot,
+                    record,
+                    source_id,
+                    manufacturer,
+                    model,
+                    variant,
+                )
                 if profile_id:
                     row["decision"] = "attach-secondary-provenance"
                     row["canonical_profile_id"] = profile_id
@@ -279,8 +325,8 @@ def main() -> int:
         label = f"{record.get('creator')} community tuning"
         candidate = build_candidate(
             parsed,
-            manufacturer="HIFIMAN",
-            model="Edition XS",
+            manufacturer=manufacturer,
+            model=model,
             creator=str(record.get("creator") or "Community"),
             tuning_label=label,
             source_id=source_id,
@@ -289,7 +335,7 @@ def main() -> int:
             source_record_id=str(record.get("id")),
             redistribution_policy="structured-data-only",
             target=None,
-            variant=None,
+            variant=variant,
             source_version=str(record.get("source_date") or "") or None,
             discovered_at_epoch_seconds=None,
         )
