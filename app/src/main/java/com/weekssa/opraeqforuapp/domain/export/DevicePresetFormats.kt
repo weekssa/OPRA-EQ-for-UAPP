@@ -83,10 +83,16 @@ enum class ExportDevice(
     ),
 }
 
+enum class DevicePresetFidelity {
+    EXACT,
+    OPTIMIZED,
+}
+
 data class DevicePresetVariant(
     val device: ExportDevice,
     val content: String,
     val transformation: String,
+    val fidelity: DevicePresetFidelity,
 )
 
 fun buildTextDeviceVariant(
@@ -97,10 +103,16 @@ fun buildTextDeviceVariant(
     ExportDevice.BLACK_PEARL -> {
         val capabilities = requireNotNull(device.eqCapabilities)
         formatBlackPearlPreset(profile, capabilities)?.let { content ->
+            val fidelity = determineDeviceFidelity(profile, capabilities)
             DevicePresetVariant(
                 device = device,
                 content = content,
-                transformation = "EQ Library optimized conversion for Black Pearl using the device capability profile (${bandLimitLabel(capabilities)}; peaking filters only).",
+                fidelity = fidelity,
+                transformation = fidelityDescription(
+                    fidelity = fidelity,
+                    exactDescription = "Source EQ preserved within the Black Pearl device capability profile (${bandLimitLabel(capabilities)}).",
+                    optimizedDescription = "EQ Library optimized conversion for Black Pearl using the device capability profile (${bandLimitLabel(capabilities)}; peaking filters only).",
+                ),
             )
         }
     }
@@ -108,10 +120,16 @@ fun buildTextDeviceVariant(
     ExportDevice.TOPPING_DX1_II -> {
         val capabilities = requireNotNull(device.eqCapabilities)
         formatToppingTunePreset(profile, capabilities)?.let { content ->
+            val fidelity = determineDeviceFidelity(profile, capabilities)
             DevicePresetVariant(
                 device = device,
                 content = content,
-                transformation = "Converted to TOPPING Tune / Equalizer APO parameter text using the device capability profile (${bandLimitLabel(capabilities)}).",
+                fidelity = fidelity,
+                transformation = fidelityDescription(
+                    fidelity = fidelity,
+                    exactDescription = "Source EQ preserved; only the file syntax was converted to TOPPING Tune / Equalizer APO parameter text (${bandLimitLabel(capabilities)}).",
+                    optimizedDescription = "EQ Library optimized conversion to TOPPING Tune / Equalizer APO parameter text using the device capability profile (${bandLimitLabel(capabilities)}).",
+                ),
             )
         }
     }
@@ -119,6 +137,41 @@ fun buildTextDeviceVariant(
 
 fun buildTextDeviceVariants(profile: OpraEqProfile): List<DevicePresetVariant> =
     ExportDevice.entries.mapNotNull { device -> buildTextDeviceVariant(profile, device) }
+
+internal fun determineDeviceFidelity(
+    profile: OpraEqProfile,
+    capabilities: DeviceEqCapabilities,
+): DevicePresetFidelity {
+    val bands = profile.bands.orEmpty()
+    val exceedsBandCount = capabilities.maxBands?.let { bands.size > it } ?: false
+    if (bands.isEmpty() || exceedsBandCount) return DevicePresetFidelity.OPTIMIZED
+    if (bands.any { !bandFitsExactly(it, capabilities) }) return DevicePresetFidelity.OPTIMIZED
+    if (!preampFitsExactly(profile.preampGainDb, capabilities)) return DevicePresetFidelity.OPTIMIZED
+    return DevicePresetFidelity.EXACT
+}
+
+private fun bandFitsExactly(
+    band: OpraBand,
+    capabilities: DeviceEqCapabilities,
+): Boolean {
+    if (band.type !in capabilities.supportedBandTypes) return false
+    val frequency = band.frequency?.takeIf(Double::isFinite) ?: return false
+    val gain = band.gainDb?.takeIf(Double::isFinite) ?: return false
+    val bandQ = band.q?.takeIf(Double::isFinite) ?: return false
+    return frequency in capabilities.minFrequencyHz..capabilities.maxFrequencyHz &&
+        gain in capabilities.minGainDb..capabilities.maxGainDb &&
+        bandQ in capabilities.minQ..capabilities.maxQ
+}
+
+private fun preampFitsExactly(
+    sourcePreamp: Double?,
+    capabilities: DeviceEqCapabilities,
+): Boolean {
+    val value = sourcePreamp?.takeIf(Double::isFinite) ?: return false
+    val minPreamp = capabilities.minPreampDb
+    val maxPreamp = capabilities.maxPreampDb
+    return if (minPreamp != null && maxPreamp != null) value in minPreamp..maxPreamp else true
+}
 
 internal fun formatToppingTunePreset(
     profile: OpraEqProfile,
@@ -268,6 +321,15 @@ private fun coercePreamp(
     val minPreamp = capabilities.minPreampDb
     val maxPreamp = capabilities.maxPreampDb
     return if (minPreamp != null && maxPreamp != null) value.coerceIn(minPreamp, maxPreamp) else value
+}
+
+private fun fidelityDescription(
+    fidelity: DevicePresetFidelity,
+    exactDescription: String,
+    optimizedDescription: String,
+): String = when (fidelity) {
+    DevicePresetFidelity.EXACT -> exactDescription
+    DevicePresetFidelity.OPTIMIZED -> optimizedDescription
 }
 
 private fun bandLimitLabel(capabilities: DeviceEqCapabilities): String =
