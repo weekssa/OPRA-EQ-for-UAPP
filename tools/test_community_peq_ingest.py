@@ -36,7 +36,56 @@ class CommunityPeqIngestTest(unittest.TestCase):
         self.assertEqual("repository", source["source_kind"])
         self.assertEqual("traceable_community", source["provenance_tier"])
         self.assertEqual("Diffuse Field", candidate["target"]["name"])
+        self.assertEqual("verified", revision["verification_status"])
+        self.assertEqual(123456, source["last_verified_at_epoch_seconds"])
         self.assertTrue(candidate["publication_eligible"])
+
+    def test_public_forum_tuning_defaults_to_unverified_but_publishable(self):
+        parsed = parse_peq(SAMPLE)
+        candidate = build_candidate(
+            parsed,
+            manufacturer="Example",
+            model="Headphone",
+            variant=None,
+            creator="Forum User",
+            tuning_label="Forum preset",
+            target=None,
+            source_id="reddit-audio",
+            source_kind="community",
+            source_url="https://example.com/post",
+            source_record_id="post-1",
+            redistribution_policy="structured-data-only",
+            source_version=None,
+            discovered_at_epoch_seconds=123456,
+        )
+
+        revision = candidate["revisions"][0]
+        source = revision["source_references"][0]
+        self.assertTrue(candidate["publication_eligible"])
+        self.assertEqual("unverified", revision["verification_status"])
+        self.assertIsNone(source["last_verified_at_epoch_seconds"])
+        self.assertEqual(2, len(revision["filters"]))
+
+    def test_explicit_verification_can_promote_forum_candidate(self):
+        candidate = build_candidate(
+            parse_peq(SAMPLE),
+            manufacturer="Example",
+            model="Headphone",
+            variant=None,
+            creator="Forum User",
+            tuning_label="Forum preset",
+            target=None,
+            source_id="head-fi",
+            source_kind="community",
+            source_url="https://example.com/post",
+            source_record_id="post-1",
+            redistribution_policy="structured-data-only",
+            source_version=None,
+            discovered_at_epoch_seconds=123456,
+            verification_status="verified",
+        )
+        self.assertEqual("verified", candidate["revisions"][0]["verification_status"])
+        self.assertEqual(123456, candidate["revisions"][0]["source_references"][0]["last_verified_at_epoch_seconds"])
 
     def test_link_only_keeps_fingerprint_but_is_not_catalog_publishable(self):
         parsed = parse_peq(SAMPLE)
@@ -60,6 +109,7 @@ class CommunityPeqIngestTest(unittest.TestCase):
         self.assertEqual([], revision["filters"])
         self.assertTrue(revision["acoustic_fingerprint"])
         self.assertEqual("link-only", revision["source_references"][0]["redistribution_policy"])
+        self.assertEqual("unverified", revision["verification_status"])
         self.assertEqual({"name": None, "kind": "unknown"}, candidate["target"])
         self.assertFalse(candidate["publication_eligible"])
 
@@ -80,9 +130,11 @@ class CommunityPeqIngestTest(unittest.TestCase):
             source_version=None,
             discovered_at_epoch_seconds=None,
         )
-        source = candidate["revisions"][0]["source_references"][0]
+        revision = candidate["revisions"][0]
+        source = revision["source_references"][0]
         self.assertEqual("creator", source["source_kind"])
         self.assertEqual("authoritative", source["provenance_tier"])
+        self.assertEqual("verified", revision["verification_status"])
 
     def test_rejects_unspecified_redistribution_policy(self):
         parsed = parse_peq(SAMPLE)
@@ -122,6 +174,26 @@ class CommunityPeqIngestTest(unittest.TestCase):
                 redistribution_policy="link-only",
                 source_version=None,
                 discovered_at_epoch_seconds=None,
+            )
+
+    def test_rejects_invalid_verification_status(self):
+        with self.assertRaisesRegex(ValueError, "verification_status"):
+            build_candidate(
+                parse_peq(SAMPLE),
+                manufacturer="Example",
+                model="Headphone",
+                variant=None,
+                creator="Author",
+                tuning_label="Preset",
+                target=None,
+                source_id="source",
+                source_kind="community",
+                source_url="https://example.com/post",
+                source_record_id="1",
+                redistribution_policy="structured-data-only",
+                source_version=None,
+                discovered_at_epoch_seconds=None,
+                verification_status="maybe",
             )
 
 
