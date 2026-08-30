@@ -58,7 +58,7 @@ fun ManagedHeadphoneDetailScreen(
     onMarkReviewed: suspend (String) -> Unit,
     onExportProduct: (String) -> Unit,
     onMessage: (String) -> Unit,
-    onOpenUrl: (String) -> Unit,
+    onOpenUrl: (String) -> Unit = {},
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
