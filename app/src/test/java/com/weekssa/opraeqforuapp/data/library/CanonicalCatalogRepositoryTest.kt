@@ -9,6 +9,7 @@ import com.weekssa.opraeqforuapp.domain.library.EqSourceKind
 import com.weekssa.opraeqforuapp.domain.library.EqSourceReference
 import com.weekssa.opraeqforuapp.domain.library.EqTarget
 import com.weekssa.opraeqforuapp.domain.library.EqTargetKind
+import com.weekssa.opraeqforuapp.domain.library.HeadphoneAliasGroup
 import com.weekssa.opraeqforuapp.domain.library.HeadphoneIdentity
 import com.weekssa.opraeqforuapp.domain.library.ProvenanceTier
 import com.weekssa.opraeqforuapp.domain.library.RedistributionPolicy
@@ -117,6 +118,43 @@ class CanonicalCatalogRepositoryTest {
             assertTrue(repository.refresh() is CanonicalCatalogRefreshResult.Success)
 
             returnEmpty = true
+            val failed = repository.refresh() as CanonicalCatalogRefreshResult.Failure
+
+            assertEquals(CanonicalCatalogFailureReason.InvalidCatalog, failed.reason)
+            assertTrue(failed.usingLastKnownGood)
+            val ready = repository.state.value as CanonicalCatalogState.Ready
+            assertEquals("rev-1", ready.snapshot.profiles.single().latestRevision.revisionId)
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun malformedRemoteAliasCannotReplaceLastKnownGoodSnapshot() = runBlocking {
+        val root = createTempDirectory(prefix = "canonical-catalog-").toFile()
+        try {
+            var malformed = false
+            val source = CanonicalCatalogSource { destination ->
+                val snapshot = if (malformed) {
+                    sampleSnapshot("rev-2").copy(
+                        headphoneAliases = listOf(
+                            HeadphoneAliasGroup(
+                                manufacturer = "Sennheiser",
+                                canonicalModel = "HD 650",
+                                aliases = listOf(""),
+                                evidence = listOf("qualified-source:test"),
+                            ),
+                        ),
+                    )
+                } else {
+                    sampleSnapshot("rev-1")
+                }
+                destination.writeText(json.encodeToString(snapshot))
+            }
+            val repository = CanonicalCatalogRepository(root, source, nowMillis = { 1234L })
+            assertTrue(repository.refresh() is CanonicalCatalogRefreshResult.Success)
+
+            malformed = true
             val failed = repository.refresh() as CanonicalCatalogRefreshResult.Failure
 
             assertEquals(CanonicalCatalogFailureReason.InvalidCatalog, failed.reason)
