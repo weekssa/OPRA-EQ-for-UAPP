@@ -16,6 +16,7 @@ on:
       - 'tools/catalog_pipeline.py'
       - 'tools/currentness_scheduler.py'
       - 'tools/github_preset_discovery.py'
+      - 'tools/headphone_identity_audit.py'
       - 'tools/qualified_github_ingest.py'
       - 'tools/oratory_provenance.py'
       - 'tools/oratory_update_discovery.py'
@@ -100,6 +101,11 @@ jobs:
           --candidate "${RUNNER_TEMP}/catalog.candidate.json"
           --published "${RUNNER_TEMP}/validated-catalog.json"
           --last-known-good "${RUNNER_TEMP}/validated-lkg.json"
+      - name: Audit full OPRA identity against validated candidate
+        run: >-
+          python3 tools/headphone_identity_audit.py
+          --catalog "${RUNNER_TEMP}/validated-catalog.json"
+          --output "${RUNNER_TEMP}/headphone-identity-audit.json"
       - name: Discover public GitHub structured-EQ candidates
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -133,16 +139,17 @@ jobs:
           mkdir -p catalog/discovery
           cp "${RUNNER_TEMP}/github-candidates.json" catalog/discovery/github_candidates.json
           cp "${RUNNER_TEMP}/oratory-updates.json" catalog/discovery/oratory_updates.json
+          cp "${RUNNER_TEMP}/headphone-identity-audit.json" catalog/discovery/headphone_identity_audit.json
       - name: Commit validated currentness changes
         if: github.event_name == 'schedule' && github.ref_name == 'main'
         run: |
-          if git diff --quiet -- catalog/catalog.json catalog/source_health.json catalog/discovery/github_candidates.json catalog/discovery/oratory_updates.json; then
+          if git diff --quiet -- catalog/catalog.json catalog/source_health.json catalog/discovery/github_candidates.json catalog/discovery/oratory_updates.json catalog/discovery/headphone_identity_audit.json; then
             echo "No persistent currentness changes."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add catalog/catalog.json catalog/source_health.json catalog/discovery/github_candidates.json catalog/discovery/oratory_updates.json
+          git add catalog/catalog.json catalog/source_health.json catalog/discovery/github_candidates.json catalog/discovery/oratory_updates.json catalog/discovery/headphone_identity_audit.json
           git commit -m "Refresh EQ catalog currentness"
           git push
       - name: Upload currentness validation artifacts
@@ -156,6 +163,7 @@ jobs:
             ${{ runner.temp }}/source_health.candidate.json
             ${{ runner.temp }}/qualified-github-report.json
             ${{ runner.temp }}/github-candidates.json
+            ${{ runner.temp }}/headphone-identity-audit.json
             ${{ runner.temp }}/oratory-provenance.json
             ${{ runner.temp }}/oratory-updates.json
           retention-days: 14
