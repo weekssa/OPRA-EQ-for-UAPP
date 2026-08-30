@@ -33,7 +33,17 @@ data class OpraEqProfile(
     val profileType: String?,
     val preampGainDb: Double?,
     val bands: List<OpraBand>?,
-)
+    /**
+     * Derived playback headroom supplied by EQ Library only when the source omitted preamp.
+     * Source-authentic preampGainDb is never overwritten with this value.
+     */
+    val eqLibrarySafetyHeadroomDb: Double? = null,
+) {
+    fun effectivePlaybackPreampDb(): Double? = preampGainDb ?: eqLibrarySafetyHeadroomDb
+
+    fun usesEqLibrarySafetyHeadroom(): Boolean =
+        preampGainDb == null && eqLibrarySafetyHeadroomDb != null
+}
 
 data class OpraProductSearchResult(
     val vendor: OpraVendor,
