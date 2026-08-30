@@ -44,11 +44,17 @@ class EqCatalogBuilder {
                     .thenBy { it.sourceId },
             )
             .mapIndexed { index, reference -> reference.copy(isPrimary = index == 0) }
+        val verificationStatus = if (candidates.any { it.verificationStatus == VerificationStatus.VERIFIED }) {
+            VerificationStatus.VERIFIED
+        } else {
+            VerificationStatus.UNVERIFIED
+        }
 
         return RevisionCluster(
             acousticFingerprint = acousticFingerprint,
             primary = primary,
             sourceReferences = references,
+            verificationStatus = verificationStatus,
         )
     }
 
@@ -76,6 +82,7 @@ class EqCatalogBuilder {
                 sourceReferences = cluster.sourceReferences,
                 sourceVersionLabel = cluster.primary.sourceVersionLabel,
                 soundImpactSummary = cluster.primary.soundImpactSummary,
+                verificationStatus = cluster.verificationStatus,
                 firstSeenAtEpochSeconds = cluster.sourceReferences.mapNotNull(EqSourceReference::discoveredAtEpochSeconds).minOrNull(),
                 sourceUpdatedAtEpochSeconds = cluster.sourceReferences.mapNotNull { it.updatedAtEpochSeconds ?: it.publishedAtEpochSeconds }.maxOrNull(),
                 isLatest = cluster.acousticFingerprint == latestFingerprint,
@@ -138,5 +145,6 @@ class EqCatalogBuilder {
         val acousticFingerprint: String,
         val primary: EqCandidate,
         val sourceReferences: List<EqSourceReference>,
+        val verificationStatus: VerificationStatus,
     )
 }
