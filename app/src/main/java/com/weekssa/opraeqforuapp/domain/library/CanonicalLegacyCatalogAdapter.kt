@@ -18,6 +18,9 @@ import java.util.Locale
  * The latest OPRA-backed revision retains its original OPRA profile ID to preserve existing v0.2
  * managed state. Historical revisions always receive stable synthetic IDs and can therefore be
  * selected/exported explicitly without silently moving a saved selection to a newer revision.
+ *
+ * General Effect/Genre presets deliberately remain in the canonical snapshot and are not projected
+ * into the headphone-only legacy bridge. Their future user-facing surface is a separate UX decision.
  */
 object CanonicalLegacyCatalogAdapter {
     fun adapt(snapshot: CatalogSnapshot): OpraCatalog {
@@ -26,24 +29,26 @@ object CanonicalLegacyCatalogAdapter {
         val profiles = mutableListOf<OpraEqProfile>()
 
         snapshot.profiles
-            .groupBy { it.headphone.normalizedKey }
+            .filter(CanonicalEqProfile::isHeadphoneProfile)
+            .groupBy { requireNotNull(it.headphone).normalizedKey }
             .toSortedMap()
             .values
             .forEach { canonicalProfiles ->
                 val representative = canonicalProfiles.first()
+                val headphone = requireNotNull(representative.headphone)
                 val identity = legacyIdentity(canonicalProfiles)
                 vendors.putIfAbsent(
                     identity.vendorId,
-                    OpraVendor(id = identity.vendorId, name = representative.headphone.manufacturer),
+                    OpraVendor(id = identity.vendorId, name = headphone.manufacturer),
                 )
                 products += OpraProduct(
                     id = identity.productId,
                     vendorId = identity.vendorId,
-                    name = displayProductName(representative.headphone),
+                    name = displayProductName(headphone),
                     type = "headphones",
                     subtype = "",
                     aliases = canonicalProfiles
-                        .flatMap { it.headphone.modelAliases }
+                        .flatMap { requireNotNull(it.headphone).modelAliases }
                         .distinct(),
                 )
                 canonicalProfiles.forEach { canonical ->
@@ -122,7 +127,7 @@ object CanonicalLegacyCatalogAdapter {
             )
         }
 
-        val headphone = profiles.first().headphone
+        val headphone = requireNotNull(profiles.first().headphone)
         return LegacyIdentity(
             vendorId = "eq-library-vendor:${slug(headphone.manufacturer)}",
             productId = "eq-library-product:${headphone.normalizedKey}",
