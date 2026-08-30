@@ -78,6 +78,7 @@ internal fun ProfileSelectionEditor(
     onDeleteSavedFilesForProduct: suspend (String) -> PresetCleanupSummary,
     onExportProduct: (String) -> Unit,
     onMessage: (String) -> Unit,
+    onOpenUrl: (String) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -395,7 +396,7 @@ internal fun ProfileSelectionEditor(
         }
 
         Text(
-            text = "Changing selections never deletes exported files.",
+            text = "Unverified EQs are never added automatically. Changing selections never deletes exported files.",
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -458,6 +459,7 @@ internal fun ProfileSelectionEditor(
                             }
                         }
                     },
+                    onOpenSource = profile.link?.let { sourceUrl -> { onOpenUrl(sourceUrl) } },
                     onExplainIncompatibility = {
                         incompatibilityExplanation = assessment.reason
                             ?: "This EQ profile cannot be converted safely for the selected export target."
@@ -533,6 +535,7 @@ internal fun ProfileSelectionRow(
     isFavorite: Boolean,
     onSelectionChange: (Boolean) -> Unit,
     onToggleFavorite: (() -> Unit)?,
+    onOpenSource: (() -> Unit)?,
     onExplainIncompatibility: () -> Unit,
 ) {
     val compatibility = profile.assessCompatibility()
@@ -570,9 +573,23 @@ internal fun ProfileSelectionRow(
         },
         supportingContent = {
             Column(modifier = Modifier.padding(top = 2.dp, bottom = 4.dp)) {
+                if (!profile.isVerified) {
+                    Text(
+                        text = "Unverified",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.tertiary,
+                    )
+                    Text(
+                        text = "Not independently verified; sound or level changes may be unexpected.",
+                        modifier = Modifier.padding(top = 2.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 displayDetails.metadata?.let {
                     Text(
                         text = it,
+                        modifier = Modifier.padding(top = if (profile.isVerified) 0.dp else 4.dp),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -583,6 +600,11 @@ internal fun ProfileSelectionRow(
                         modifier = Modifier.padding(top = 4.dp),
                         style = MaterialTheme.typography.bodyMedium,
                     )
+                }
+                onOpenSource?.let { openSource ->
+                    TextButton(onClick = openSource) {
+                        Text("Source")
+                    }
                 }
                 when (compatibility.category) {
                     ProfileCompatibility.FullyCompatible -> Unit
