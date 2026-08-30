@@ -1,12 +1,12 @@
 name: Submit an EQ source
-description: Suggest an original or traceable EQ preset/source for catalog review.
+description: Suggest an original or traceable EQ preset/source for the EQ Library.
 title: "[EQ source] "
 labels: []
 body:
   - type: markdown
     attributes:
       value: |
-        Submissions enter the validation, provenance, headphone-identity, deduplication, and revision pipeline. They are never published automatically.
+        Submissions enter the validation, provenance, headphone-identity, deduplication, and revision pipeline. Mechanically valid submissions from approved public community sources may be published automatically as **Unverified**. Ambiguous or incomplete submissions stay in review. Unverified entries keep the original source link so users can investigate the tuning themselves.
   - type: input
     id: manufacturer
     attributes:
@@ -61,10 +61,20 @@ body:
     validations:
       required: true
   - type: input
+    id: tuning_name
+    attributes:
+      label: Preset / tuning name (optional)
+      description: Use the source's own name when it provides one, such as Neutral, Warm, Bass, or a version name. Leave blank rather than inventing a name.
+  - type: input
     id: target
     attributes:
       label: Target / curve (only if explicitly stated)
       description: Leave blank rather than guessing.
+  - type: textarea
+    id: sound_impact
+    attributes:
+      label: Sound impact / intent (optional)
+      description: Briefly preserve how the source describes the tuning, such as warmer, reduced treble, stronger sub-bass, or vocal-forward. Do not add claims the source did not make.
   - type: textarea
     id: filters
     attributes:
