@@ -169,6 +169,16 @@ class MainActivity : ComponentActivity() {
                             appPreferencesRepository.setProfileVisibility(category, visible)
                         }
                     },
+                    onExportTargetChange = { device, enabled ->
+                        lifecycleScope.launch {
+                            appPreferencesRepository.setExportTargetEnabled(device, enabled)
+                        }
+                    },
+                    onShowUnexportablePresetsChange = { show ->
+                        lifecycleScope.launch {
+                            appPreferencesRepository.setShowUnexportablePresets(show)
+                        }
+                    },
                 )
             }
         }
