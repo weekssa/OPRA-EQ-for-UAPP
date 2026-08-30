@@ -64,6 +64,10 @@ fun ManagedHeadphoneDetailScreen(
     var editing by remember(headphone.productId) { mutableStateOf(false) }
     val readyCatalog = catalogState as? CatalogState.Ready
     val product = readyCatalog?.catalog?.product(headphone.productId)
+    val availableProfileCount = readyCatalog?.catalog?.profileCount(headphone.productId)
+    val displayedProfiles = remember(headphone.profiles) {
+        headphone.profiles.filter { it.selected || it.noLongerAvailable }
+    }
 
     LaunchedEffect(headphone.productId) {
         onMarkReviewed(headphone.productId)
@@ -156,7 +160,15 @@ fun ManagedHeadphoneDetailScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            text = "${headphone.selectedProfileCount} selected presets",
+            text = buildString {
+                append(headphone.selectedProfileCount)
+                append(if (headphone.selectedProfileCount == 1) " selected" else " selected")
+                availableProfileCount?.let {
+                    append(" · ")
+                    append(it)
+                    append(" available")
+                }
+            },
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         )
         Text(
@@ -184,16 +196,12 @@ fun ManagedHeadphoneDetailScreen(
         }
 
         LazyColumn(modifier = Modifier.weight(1f)) {
-            items(headphone.profiles, key = ManagedProfileRecord::profileId) { profile ->
+            items(displayedProfiles, key = ManagedProfileRecord::profileId) { profile ->
                 ManagedProfileRow(
                     profile = profile,
-                    onRemove = if (profile.selected || profile.noLongerAvailable) {
-                        {
-                            deleteSavedFiles = false
-                            pendingProfileRemoval = profile
-                        }
-                    } else {
-                        null
+                    onRemove = {
+                        deleteSavedFiles = false
+                        pendingProfileRemoval = profile
                     },
                 )
                 HorizontalDivider()
@@ -287,7 +295,6 @@ private fun RemovalDialog(
             TextButton(onClick = onConfirm) { Text(confirmLabel) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
-        },
+            TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
 }
