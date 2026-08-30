@@ -98,9 +98,71 @@ class CatalogPipelineTest(unittest.TestCase):
             "source_registry_version": "test",
             "profiles": [{
                 "canonical_profile_id": "p1",
+                "headphone": {"manufacturer": "Example", "model": "Headphone"},
                 "revisions": [revision],
             }],
         }
+
+    def test_legacy_headphone_profile_defaults_remain_backward_compatible(self):
+        snapshot = self.valid_snapshot()
+        self.assertEqual(validate_snapshot(snapshot), [])
+
+    def test_general_effect_profile_does_not_require_headphone_identity(self):
+        snapshot = self.valid_snapshot()
+        profile = snapshot["profiles"][0]
+        profile.pop("headphone")
+        profile["scope"] = "general"
+        profile["purpose"] = "effect"
+        self.assertEqual(validate_snapshot(snapshot), [])
+
+    def test_general_genre_profile_does_not_require_headphone_identity(self):
+        snapshot = self.valid_snapshot()
+        profile = snapshot["profiles"][0]
+        profile.pop("headphone")
+        profile["scope"] = "general"
+        profile["purpose"] = "genre"
+        self.assertEqual(validate_snapshot(snapshot), [])
+
+    def test_general_profile_cannot_claim_headphone_identity(self):
+        snapshot = self.valid_snapshot()
+        profile = snapshot["profiles"][0]
+        profile["scope"] = "general"
+        profile["purpose"] = "effect"
+        errors = validate_snapshot(snapshot)
+        self.assertTrue(any("general scope must not require headphone identity" in error for error in errors))
+
+    def test_general_profile_cannot_use_correction_tuning_purpose(self):
+        snapshot = self.valid_snapshot()
+        profile = snapshot["profiles"][0]
+        profile.pop("headphone")
+        profile["scope"] = "general"
+        profile["purpose"] = "correction_tuning"
+        errors = validate_snapshot(snapshot)
+        self.assertTrue(any("general scope cannot use correction_tuning purpose" in error for error in errors))
+
+    def test_effect_or_genre_cannot_be_headphone_scoped(self):
+        for purpose in ("effect", "genre"):
+            with self.subTest(purpose=purpose):
+                snapshot = self.valid_snapshot()
+                snapshot["profiles"][0]["purpose"] = purpose
+                errors = validate_snapshot(snapshot)
+                self.assertTrue(any(f"{purpose} presets must use general scope" in error for error in errors))
+
+    def test_personal_community_tuning_is_valid_for_headphone_scope(self):
+        snapshot = self.valid_snapshot()
+        snapshot["profiles"][0]["purpose"] = "personal_community"
+        self.assertEqual(validate_snapshot(snapshot), [])
+
+    def test_invalid_scope_and_purpose_are_rejected(self):
+        snapshot = self.valid_snapshot()
+        snapshot["profiles"][0]["scope"] = "device"
+        errors = validate_snapshot(snapshot)
+        self.assertTrue(any("scope is invalid" in error for error in errors))
+
+        snapshot = self.valid_snapshot()
+        snapshot["profiles"][0]["purpose"] = "mystery"
+        errors = validate_snapshot(snapshot)
+        self.assertTrue(any("purpose is invalid" in error for error in errors))
 
     def test_valid_evidence_backed_alias_metadata_is_accepted(self):
         snapshot = self.valid_snapshot()
@@ -126,11 +188,12 @@ class CatalogPipelineTest(unittest.TestCase):
 
     def test_invalid_candidate_never_replaces_last_known_good(self):
         valid = self.valid_snapshot()
-        revision = valid["profiles"][0]["revisions"][0]
+        profile = valid["profiles"][0]
+        revision = profile["revisions"][0]
         invalid = {
             **valid,
             "profiles": [{
-                "canonical_profile_id": "p1",
+                **profile,
                 "revisions": [{**revision, "revision_id": "r2", "acoustic_fingerprint": "def", "is_latest": False}],
             }],
         }
