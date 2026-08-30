@@ -62,6 +62,16 @@ class HeadphoneIdentityAuditTest(unittest.TestCase):
         self.assertEqual(covered["review_candidate_count"], 0)
         self.assertEqual(covered["covered_explicit_alias_pair_count"], 1)
 
+    def test_trailing_variant_is_not_treated_as_alias_candidate(self):
+        stream = jsonl(
+            {"type": "vendor", "id": "hifiman", "data": {"name": "HIFIMAN"}},
+            {"type": "product", "id": "a", "data": {"vendor_id": "hifiman", "name": "HE1000"}},
+            {"type": "product", "id": "b", "data": {"vendor_id": "hifiman", "name": "HE1000 Stealth"}},
+        )
+        _, products = parse_opra(stream)
+        report = audit_products(products, [])
+        self.assertEqual(report["review_candidate_count"], 0)
+
     def test_different_model_numbers_are_not_near_duplicate_candidates(self):
         stream = jsonl(
             {"type": "vendor", "id": "sen", "data": {"name": "Sennheiser"}},
