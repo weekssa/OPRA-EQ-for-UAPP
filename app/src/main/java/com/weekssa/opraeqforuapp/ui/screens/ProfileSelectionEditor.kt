@@ -48,12 +48,14 @@ import com.weekssa.opraeqforuapp.domain.catalog.OpraProduct
 import com.weekssa.opraeqforuapp.domain.catalog.assessCompatibility
 import com.weekssa.opraeqforuapp.domain.catalog.isHistoricalRevision
 import com.weekssa.opraeqforuapp.domain.catalog.visibilityCategory
+import com.weekssa.opraeqforuapp.domain.export.isExportableToAny
 import com.weekssa.opraeqforuapp.domain.managed.DEFAULT_AUTO_INCLUDE_NEW_PROFILES
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.managed.defaultStagedSelectedProfileIds
 import com.weekssa.opraeqforuapp.domain.managed.managedSelectionCommitEnabled
 import com.weekssa.opraeqforuapp.domain.managed.selectableProfileIds
 import com.weekssa.opraeqforuapp.domain.model.ProfileCompatibility
+import com.weekssa.opraeqforuapp.domain.settings.ExportTargetPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityPreferences
 import kotlinx.coroutines.launch
 
@@ -69,6 +71,7 @@ internal fun ProfileSelectionEditor(
     catalog: OpraCatalog,
     product: OpraProduct,
     profileVisibility: ProfileVisibilityPreferences,
+    exportTargets: ExportTargetPreferences = ExportTargetPreferences(),
     favoriteProfileIds: Set<String>,
     onToggleFavorite: (suspend (OpraEqProfile, String, String) -> Boolean)?,
     onLoadManagedHeadphone: suspend (String) -> ManagedHeadphoneRecord?,
@@ -430,10 +433,23 @@ internal fun ProfileSelectionEditor(
         LazyColumn(modifier = Modifier.weight(1f)) {
             items(visibleProfiles, key = OpraEqProfile::id) { profile ->
                 val assessment = profile.assessCompatibility()
+                val exportTargetWarning = if (
+                    exportTargets.showUnexportablePresets &&
+                    !profile.isExportableToAny(exportTargets.selectedTargets)
+                ) {
+                    if (exportTargets.selectedTargets.isEmpty()) {
+                        "No export targets selected"
+                    } else {
+                        "Not exportable to your selected devices"
+                    }
+                } else {
+                    null
+                }
                 ProfileSelectionRow(
                     profile = profile,
                     selected = profile.id in stagedSelectedIds,
                     isFavorite = profile.id in favoriteProfileIds,
+                    exportTargetWarning = exportTargetWarning,
                     onSelectionChange = { selected ->
                         stagedSelectedIds = if (selected) {
                             stagedSelectedIds + profile.id
@@ -533,6 +549,7 @@ internal fun ProfileSelectionRow(
     profile: OpraEqProfile,
     selected: Boolean,
     isFavorite: Boolean,
+    exportTargetWarning: String? = null,
     onSelectionChange: (Boolean) -> Unit,
     onToggleFavorite: (() -> Unit)?,
     onOpenSource: (() -> Unit)?,
@@ -586,10 +603,18 @@ internal fun ProfileSelectionRow(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+                exportTargetWarning?.let { warning ->
+                    Text(
+                        text = warning,
+                        modifier = Modifier.padding(top = 4.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.tertiary,
+                    )
+                }
                 displayDetails.metadata?.let {
                     Text(
                         text = it,
-                        modifier = Modifier.padding(top = if (profile.isVerified) 0.dp else 4.dp),
+                        modifier = Modifier.padding(top = if (profile.isVerified && exportTargetWarning == null) 0.dp else 4.dp),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
