@@ -15,6 +15,7 @@ import hashlib
 import json
 import os
 import tempfile
+import unicodedata
 from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -37,6 +38,11 @@ def stable_json(value: Any) -> str:
 
 def sha256_json(value: Any) -> str:
     return hashlib.sha256(stable_json(value).encode("utf-8")).hexdigest()
+
+
+def normalize_identity(value: Any) -> str:
+    text = unicodedata.normalize("NFKC", str(value or "")).casefold()
+    return "".join(ch for ch in text if ch.isalnum())
 
 
 @dataclass(frozen=True)
@@ -179,6 +185,52 @@ def classify_candidate(previous_fingerprints: Iterable[str], new_fingerprint: st
     return "duplicate" if new_fingerprint in previous else ("new_candidate" if not previous else "new_revision")
 
 
+def validate_headphone_aliases(snapshot: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    groups = snapshot.get("headphone_aliases", [])
+    if not isinstance(groups, list):
+        return ["snapshot headphone_aliases must be a list"]
+
+    seen_groups: set[tuple[str, str]] = set()
+    for index, group in enumerate(groups):
+        prefix = f"headphone_aliases[{index}]"
+        if not isinstance(group, dict):
+            errors.append(f"{prefix} must be an object")
+            continue
+        manufacturer = str(group.get("manufacturer") or "").strip()
+        canonical = str(group.get("canonical_model") or "").strip()
+        aliases = group.get("aliases")
+        evidence = group.get("evidence")
+        if not manufacturer or not canonical:
+            errors.append(f"{prefix} requires manufacturer and canonical_model")
+            continue
+        group_key = (normalize_identity(manufacturer), normalize_identity(canonical))
+        if not all(group_key):
+            errors.append(f"{prefix} has an invalid normalized identity")
+        elif group_key in seen_groups:
+            errors.append(f"duplicate headphone alias group: {manufacturer} / {canonical}")
+        seen_groups.add(group_key)
+
+        if not isinstance(aliases, list) or not aliases:
+            errors.append(f"{prefix}.aliases must be a non-empty list")
+        else:
+            alias_keys: list[str] = []
+            for alias in aliases:
+                alias_key = normalize_identity(alias)
+                if not str(alias or "").strip() or not alias_key:
+                    errors.append(f"{prefix}.aliases contains a blank or invalid alias")
+                else:
+                    alias_keys.append(alias_key)
+            if len(alias_keys) != len(set(alias_keys)):
+                errors.append(f"{prefix}.aliases contains normalized duplicates")
+
+        if not isinstance(evidence, list) or not evidence:
+            errors.append(f"{prefix}.evidence must be a non-empty list")
+        elif any(not str(item or "").strip() for item in evidence):
+            errors.append(f"{prefix}.evidence contains a blank value")
+    return errors
+
+
 def validate_snapshot(snapshot: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     if int(snapshot.get("schema_version", 0)) < 1:
@@ -187,6 +239,7 @@ def validate_snapshot(snapshot: dict[str, Any]) -> list[str]:
         errors.append("snapshot generated_at is required")
     if not str(snapshot.get("source_registry_version", "")).strip():
         errors.append("snapshot source_registry_version is required")
+    errors.extend(validate_headphone_aliases(snapshot))
     profiles = snapshot.get("profiles")
     if not isinstance(profiles, list):
         errors.append("snapshot profiles must be a list")
