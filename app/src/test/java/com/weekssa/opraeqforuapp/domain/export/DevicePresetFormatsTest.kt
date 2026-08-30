@@ -74,6 +74,23 @@ class DevicePresetFormatsTest {
     }
 
     @Test
+    fun everyExportTargetDeclaresEqCapabilities() {
+        assertTrue(ExportDevice.entries.all { it.eqCapabilities != null })
+
+        val uapp = ExportDevice.UAPP.eqCapabilities!!
+        assertEquals(10, uapp.maxBands)
+        assertEquals(setOf("peak_dip", "low_shelf", "high_shelf"), uapp.supportedBandTypes)
+        assertEquals(16.0, uapp.minFrequencyHz, 0.0)
+        assertEquals(20_000.0, uapp.maxFrequencyHz, 0.0)
+        assertEquals(-20.0, uapp.minGainDb, 0.0)
+        assertEquals(20.0, uapp.maxGainDb, 0.0)
+        assertEquals(0.1, uapp.minQ, 0.0)
+        assertEquals(10.0, uapp.maxQ, 0.0)
+        assertEquals(-20.0, uapp.minPreampDb!!, 0.0)
+        assertEquals(20.0, uapp.maxPreampDb!!, 0.0)
+    }
+
+    @Test
     fun deviceBandLimitCanGrowWithoutChangingCanonicalSourceProfile() {
         val sourceBands = (1..12).map { index ->
             OpraBand("peak_dip", 100.0 * index, index / 10.0, 1.0, null)
