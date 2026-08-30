@@ -4,6 +4,10 @@ import com.weekssa.opraeqforuapp.data.catalog.AppCatalogRepository
 import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshFailureReason
 import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshResult
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
+import com.weekssa.opraeqforuapp.data.library.CanonicalCatalogFailureReason
+import com.weekssa.opraeqforuapp.data.library.CanonicalCatalogRefreshResult
+import com.weekssa.opraeqforuapp.data.library.CanonicalCatalogRepository
+import com.weekssa.opraeqforuapp.data.library.CanonicalCatalogState
 import com.weekssa.opraeqforuapp.domain.catalog.OpraCatalog
 import com.weekssa.opraeqforuapp.domain.library.CanonicalLegacyCatalogAdapter
 import com.weekssa.opraeqforuapp.domain.library.CatalogSnapshot
@@ -79,7 +83,11 @@ class CanonicalFirstCatalogRepository(
 
         val catalog: OpraCatalog = when {
             legacyReady != null && canonicalCatalog != null ->
-                overlayCanonicalCatalog(legacyReady.catalog, canonicalCatalog)
+                overlayCanonicalCatalog(
+                    legacy = legacyReady.catalog,
+                    canonical = canonicalCatalog,
+                    headphoneAliases = canonicalReady.snapshot.headphoneAliases,
+                )
             canonicalCatalog != null -> canonicalCatalog
             legacyReady != null -> legacyReady.catalog
             else -> {
