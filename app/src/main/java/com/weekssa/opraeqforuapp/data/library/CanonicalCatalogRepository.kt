@@ -217,22 +217,18 @@ class CanonicalCatalogRepository(
             }
             canonicalKey.isNotEmpty() &&
                 aliasKeys.all(String::isNotEmpty) &&
-                canonicalKey !in aliasKeys &&
                 aliasKeys.distinct().size == aliasKeys.size &&
                 groupKeys.add("${normalizeIdentity(manufacturer)}|$canonicalKey")
         }
     }
 
     private fun validHeadphoneAliases(headphone: HeadphoneIdentity): Boolean {
-        val canonicalKey = normalizeIdentity(headphone.model)
-        if (canonicalKey.isEmpty()) return false
+        if (normalizeIdentity(headphone.model).isEmpty()) return false
         val aliasKeys = headphone.modelAliases.map { alias ->
             if (alias.isBlank()) return false
             normalizeIdentity(alias)
         }
-        return aliasKeys.all(String::isNotEmpty) &&
-            canonicalKey !in aliasKeys &&
-            aliasKeys.distinct().size == aliasKeys.size
+        return aliasKeys.all(String::isNotEmpty) && aliasKeys.distinct().size == aliasKeys.size
     }
 
     private fun normalizeIdentity(value: String): String =
