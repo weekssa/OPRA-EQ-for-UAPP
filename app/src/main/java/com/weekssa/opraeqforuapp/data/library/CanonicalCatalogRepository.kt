@@ -2,6 +2,7 @@ package com.weekssa.opraeqforuapp.data.library
 
 import com.weekssa.opraeqforuapp.domain.library.CatalogSnapshot
 import com.weekssa.opraeqforuapp.domain.library.HeadphoneIdentity
+import com.weekssa.opraeqforuapp.domain.library.hasValidClassification
 import java.io.File
 import java.io.IOException
 import java.net.HttpURLConnection
@@ -192,11 +193,14 @@ class CanonicalCatalogRepository(
         return snapshot.profiles.all { profile ->
             profile.canonicalProfileId.isNotBlank() &&
                 profileIds.add(profile.canonicalProfileId) &&
-                validHeadphoneAliases(profile.headphone) &&
+                profile.hasValidClassification() &&
+                profile.headphone?.let(::validHeadphoneAliases) != false &&
                 profile.revisions.isNotEmpty() &&
                 profile.revisions.count { it.isLatest } == 1 &&
                 profile.revisions.all { revision ->
-                    revision.revisionId.isNotBlank() && revision.acousticFingerprint.isNotBlank() && revision.filters.isNotEmpty()
+                    revision.revisionId.isNotBlank() &&
+                        revision.acousticFingerprint.isNotBlank() &&
+                        revision.filters.isNotEmpty()
                 }
         }
     }
@@ -223,6 +227,7 @@ class CanonicalCatalogRepository(
     }
 
     private fun validHeadphoneAliases(headphone: HeadphoneIdentity): Boolean {
+        if (normalizeIdentity(headphone.manufacturer).isEmpty()) return false
         if (normalizeIdentity(headphone.model).isEmpty()) return false
         val aliasKeys = headphone.modelAliases.map { alias ->
             if (alias.isBlank()) return false
