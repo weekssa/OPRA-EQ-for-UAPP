@@ -196,6 +196,18 @@
     },
     {
       "aliases": [
+        "Shozy x AAW Hibiki",
+        "x AAW Hibiki"
+      ],
+      "canonical_model": "Hibiki",
+      "evidence": [
+        "https://www.headfonia.com/review-shozy-aaw-hibiki-wondrous/",
+        "https://www.headfonia.com/review-shozy-hibiki-mk2/"
+      ],
+      "manufacturer": "Shozy"
+    },
+    {
+      "aliases": [
         "Nova Pro Wireless"
       ],
       "canonical_model": "Arctis Nova Pro Wireless",
@@ -225,6 +237,17 @@
         "https://www.linsoul.com/blogs/announcements/tangzu-hbb-wuheyday-new-release-on-linsoul-audio"
       ],
       "manufacturer": "Tangzu Audio"
+    },
+    {
+      "aliases": [
+        "x Angelears Athena"
+      ],
+      "canonical_model": "Athena",
+      "evidence": [
+        "https://www.andesaudio.com/products/angelears-tfz-athena-edition",
+        "https://ichos-reviews.com/tfz-x-angelears-athena-review/"
+      ],
+      "manufacturer": "TFZ"
     },
     {
       "aliases": [
@@ -266,6 +289,16 @@
       "canonical_model": "Estrella",
       "evidence": [
         "https://www.ziigaat.com/products/ziigaat-x-jays-audio-estrella"
+      ],
+      "manufacturer": "ZiiGaat"
+    },
+    {
+      "aliases": [
+        "x HBB Jupiter"
+      ],
+      "canonical_model": "Jupiter",
+      "evidence": [
+        "https://linsoul.kr/products/linsoul-x-hbb-jupiter"
       ],
       "manufacturer": "ZiiGaat"
     }
