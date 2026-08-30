@@ -136,12 +136,16 @@ object CanonicalLegacyCatalogAdapter {
             ?: SoundImpactSummary.fromFilters(revision.filters)
             ?: "Makes small frequency-response adjustments."
         val measurement = measurementSource(profile.tuningLabel)
+        val database = primary?.sourceDataset?.takeIf(String::isNotBlank)
+            ?: measurement?.substringBefore(" / ")?.trim()?.takeIf(String::isNotBlank)
+            ?: primary?.sourceId?.takeIf(String::isNotBlank)?.let(::displaySourceId)
         val target = profile.target.name?.takeIf(String::isNotBlank)
         val parts = buildList {
             add(if (revision.isLatest) "Latest" else "Previous revision")
             if (!revision.isLatest) {
                 revisionDisplayDate(revision, primary)?.let { add("Revision: $it") }
             }
+            database?.let { add("Database: $it") }
             measurement?.let { add("Measurement: $it") }
             target?.let { add("Target: $it") }
             primary?.sourceId?.takeIf(String::isNotBlank)?.let { add("Source: ${displaySourceId(it)}") }
@@ -174,6 +178,7 @@ object CanonicalLegacyCatalogAdapter {
         "autoeq" -> "AutoEQ"
         "oratory1990" -> "oratory1990"
         "mrchillstorm-headphone-target" -> "MrChillStorm"
+        "fairbuds" -> "Fairbuds"
         "github-community" -> "GitHub"
         "squiglink" -> "Squiglink"
         "reddit-audio" -> "Reddit"
