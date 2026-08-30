@@ -58,6 +58,7 @@ fun ManagedHeadphoneDetailScreen(
     onMarkReviewed: suspend (String) -> Unit,
     onExportProduct: (String) -> Unit,
     onMessage: (String) -> Unit,
+    onOpenUrl: (String) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -87,6 +88,7 @@ fun ManagedHeadphoneDetailScreen(
             onDeleteSavedFilesForProduct = onDeleteSavedFilesForProduct,
             onExportProduct = onExportProduct,
             onMessage = onMessage,
+            onOpenUrl = onOpenUrl,
             onBack = { editing = false },
             modifier = modifier,
         )
