@@ -18,6 +18,7 @@ data class PresetExportCandidate(
     val charsetName: String = "ISO-8859-1",
     val deviceName: String = "UAPP",
     val transformation: String = "Exact",
+    val fidelity: DevicePresetFidelity = DevicePresetFidelity.EXACT,
 )
 
 data class PresetExportPlan(
@@ -87,6 +88,7 @@ fun buildEqLibraryExportPlan(
                                 charsetName = Charsets.ISO_8859_1.name(),
                                 deviceName = ExportDevice.UAPP.folderName,
                                 transformation = "Exact ToneBoosters/UAPP conversion",
+                                fidelity = DevicePresetFidelity.EXACT,
                             ),
                         )
                     }
@@ -113,6 +115,7 @@ fun buildEqLibraryExportPlan(
                                 charsetName = charset.name(),
                                 deviceName = variant.device.folderName,
                                 transformation = variant.transformation,
+                                fidelity = variant.fidelity,
                             ),
                         )
                     }
