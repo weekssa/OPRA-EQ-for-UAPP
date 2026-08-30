@@ -3,6 +3,8 @@ package com.weekssa.opraeqforuapp.domain.conversion
 import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.assessCompatibility
+import com.weekssa.opraeqforuapp.domain.catalog.effectivePlaybackPreampDb
+import com.weekssa.opraeqforuapp.domain.catalog.usesEqLibrarySafetyHeadroom
 import com.weekssa.opraeqforuapp.domain.model.ProfileCompatibility
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -47,14 +49,25 @@ object ToneBoostersConverter {
         val compatibility = profile.assessCompatibility()
         if (compatibility.category == ProfileCompatibility.NotCompatible) {
             throw ToneBoostersConversionException(
-                compatibility.reason ?: "This OPRA profile is not compatible with the established conversion.",
+                compatibility.reason ?: "This profile is not compatible with the established conversion.",
             )
         }
-        val gainDb = profile.preampGainDb
-            ?: throw ToneBoostersConversionException("The OPRA profile is missing its overall gain value.")
+        val gainDb = profile.effectivePlaybackPreampDb()
+            ?: throw ToneBoostersConversionException(
+                "This profile has no source preamp and no EQ Library-generated safety headroom.",
+            )
         val bands = profile.bands
-            ?: throw ToneBoostersConversionException("The OPRA profile is missing its parametric EQ band list.")
-        return buildXml(presetName = presetName, gainDb = gainDb, bands = bands)
+            ?: throw ToneBoostersConversionException("This profile is missing its parametric EQ band list.")
+        val converted = buildXml(presetName = presetName, gainDb = gainDb, bands = bands)
+        return if (profile.usesEqLibrarySafetyHeadroom()) {
+            converted.copy(
+                warnings = listOf(
+                    "Source omitted preamp; this export uses EQ Library-generated safety headroom of ${gainDb.toDisplayNumber()} dB.",
+                ) + converted.warnings,
+            )
+        } else {
+            converted
+        }
     }
 
     fun buildXml(
@@ -64,7 +77,7 @@ object ToneBoostersConverter {
     ): ToneBoostersConversionResult {
         val warnings = if (bands.size > MAX_BANDS) {
             listOf(
-                "OPRA has ${bands.size} bands; UAPP supports 10, so only the first 10 priority-sorted bands were used.",
+                "Source has ${bands.size} bands; the current UAPP/ToneBoosters target supports 10, so only the first 10 priority-sorted bands were used.",
             )
         } else {
             emptyList()
