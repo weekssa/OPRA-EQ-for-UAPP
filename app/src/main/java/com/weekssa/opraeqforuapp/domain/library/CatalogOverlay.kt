@@ -65,6 +65,14 @@ private data class ProductAliasResolution(
     val preferredProducts: Map<String, OpraProduct>,
 )
 
+private data class IndexedProduct(
+    val product: OpraProduct,
+    val manufacturer: String,
+    val vendorKey: String,
+    val modelKey: String,
+    val subtypeKey: String,
+)
+
 private fun resolveProductAliases(
     legacy: OpraCatalog,
     canonical: OpraCatalog,
@@ -74,11 +82,31 @@ private fun resolveProductAliases(
     val aliases = linkedMapOf<String, String>()
     val preferred = linkedMapOf<String, OpraProduct>()
     val allProducts = (legacy.products + canonical.products).distinctBy(OpraProduct::id)
+    val productById = allProducts.associateBy(OpraProduct::id)
     val legacyIds = legacy.products.map(OpraProduct::id).toSet()
 
     fun vendorName(product: OpraProduct): String? = vendors[product.vendorId]?.name
-    fun vendorKey(product: OpraProduct): String? =
-        vendorName(product)?.let(::normalizeIdentityText)?.takeIf(String::isNotEmpty)
+
+    // v0.3 can carry thousands of canonical products. Build normalized identity indexes once so
+    // each alias group resolves by hash lookup instead of rescanning every legacy+canonical row.
+    val indexedProducts = allProducts.mapNotNull { product ->
+        val manufacturer = vendorName(product)?.takeIf(String::isNotBlank) ?: return@mapNotNull null
+        val vendorKey = normalizeIdentityText(manufacturer)
+        val modelKey = normalizeIdentityModel(product.name, manufacturer)
+        if (vendorKey.isEmpty() || modelKey.isEmpty()) return@mapNotNull null
+        IndexedProduct(
+            product = product,
+            manufacturer = manufacturer,
+            vendorKey = vendorKey,
+            modelKey = modelKey,
+            subtypeKey = normalizeIdentityText(product.subtype),
+        )
+    }
+    val indexedById = indexedProducts.associateBy { it.product.id }
+    val productsByVendorModel = indexedProducts.groupBy { it.vendorKey to it.modelKey }
+    val safeIdentityGroups = indexedProducts.groupBy {
+        Triple(it.vendorKey, it.modelKey, it.subtypeKey)
+    }.values
 
     fun applyIdentityGroup(
         manufacturer: String,
@@ -94,17 +122,18 @@ private fun resolveProductAliases(
             .filter(String::isNotEmpty)
             .toSet()
         val requiredSubtypeKey = requiredSubtype?.let(::normalizeIdentityText)
-        val matches = allProducts.filter { product ->
-            vendorKey(product) == manufacturerKey &&
-                normalizeIdentityModel(product.name, manufacturer) in acceptedKeys &&
-                (requiredSubtypeKey == null || normalizeIdentityText(product.subtype) == requiredSubtypeKey)
-        }
+        val matches = acceptedKeys.asSequence()
+            .flatMap { modelKey -> productsByVendorModel[manufacturerKey to modelKey].orEmpty().asSequence() }
+            .filter { indexed -> requiredSubtypeKey == null || indexed.subtypeKey == requiredSubtypeKey }
+            .map(IndexedProduct::product)
+            .distinctBy(OpraProduct::id)
+            .toList()
         if (matches.isEmpty()) return
 
         val retained = matches.firstOrNull {
-            it.id in legacyIds && normalizeIdentityModel(it.name, manufacturer) == canonicalKey
+            it.id in legacyIds && indexedById[it.id]?.modelKey == canonicalKey
         } ?: matches.firstOrNull { it.id in legacyIds }
-            ?: matches.firstOrNull { normalizeIdentityModel(it.name, manufacturer) == canonicalKey }
+            ?: matches.firstOrNull { indexedById[it.id]?.modelKey == canonicalKey }
             ?: matches.first()
         val retainedRoot = resolveProductId(retained.id, aliases)
 
@@ -114,7 +143,7 @@ private fun resolveProductAliases(
             if (product.id != retainedRoot) aliases[product.id] = retainedRoot
         }
 
-        val retainedProduct = allProducts.firstOrNull { it.id == retainedRoot } ?: retained
+        val retainedProduct = productById[retainedRoot] ?: retained
         preferred[retainedRoot] = retainedProduct.copy(
             name = canonicalModel,
             aliases = (
@@ -129,20 +158,12 @@ private fun resolveProductAliases(
 
     // Global safe cleanup: punctuation/casing/spacing variants, plus a redundant manufacturer token,
     // collapse even when no canonical source touches that headphone. Subtype remains part of the key.
-    allProducts
-        .groupBy { product ->
-            val manufacturer = vendorName(product).orEmpty()
-            Triple(
-                normalizeIdentityText(manufacturer),
-                normalizeIdentityModel(product.name, manufacturer),
-                normalizeIdentityText(product.subtype),
-            )
-        }
-        .values
-        .filter { group -> group.size > 1 && group.first().name.isNotBlank() }
-        .forEach { group ->
+    safeIdentityGroups
+        .filter { group -> group.size > 1 && group.first().product.name.isNotBlank() }
+        .forEach { indexedGroup ->
+            val group = indexedGroup.map(IndexedProduct::product)
             val representative = group.firstOrNull { it.id in legacyIds } ?: group.first()
-            val manufacturer = vendorName(representative) ?: return@forEach
+            val manufacturer = indexedById[representative.id]?.manufacturer ?: return@forEach
             applyIdentityGroup(
                 manufacturer = manufacturer,
                 canonicalModel = representative.name,
@@ -171,7 +192,7 @@ private fun resolveProductAliases(
     val normalizedPreferred = linkedMapOf<String, OpraProduct>()
     preferred.forEach { (id, product) ->
         val root = resolveProductId(id, flattenedAliases)
-        val rootProduct = allProducts.firstOrNull { it.id == root } ?: product
+        val rootProduct = productById[root] ?: product
         normalizedPreferred[root] = rootProduct.copy(
             name = product.name,
             aliases = (rootProduct.aliases + product.aliases)
