@@ -3,8 +3,10 @@ package com.weekssa.opraeqforuapp.data.managed
 import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ManagedProfileSnapshotCodecTest {
@@ -15,6 +17,36 @@ class ManagedProfileSnapshotCodecTest {
         val profile = sampleProfile(details = "測定 • édition")
 
         assertEquals(profile, codec.decode(codec.encode(profile)))
+    }
+
+    @Test
+    fun snapshotRoundTripPreservesVerificationMetadata() {
+        val unverified = sampleProfile(details = "Community tuning").copy(isVerified = false)
+
+        val restored = codec.decode(codec.encode(unverified))
+
+        assertFalse(restored.isVerified)
+        assertEquals(unverified, restored)
+    }
+
+    @Test
+    fun oldStoredSnapshotWithoutVerificationFieldDefaultsToVerified() {
+        val encoded = """
+            {
+              "id":"legacy",
+              "productId":"product",
+              "author":"Creator",
+              "details":"Target",
+              "link":null,
+              "profileType":"parametric_eq",
+              "preampGainDb":-3.0,
+              "bands":[{"type":"peak_dip","frequency":1000.0,"gainDb":-2.0,"q":1.0,"slope":null}]
+            }
+        """.trimIndent()
+
+        val restored = codec.decode(encoded)
+
+        assertTrue(restored.isVerified)
     }
 
     @Test
@@ -61,6 +93,14 @@ class ManagedProfileSnapshotCodecTest {
 
         assertEquals(codec.fingerprint(original), codec.fingerprint(original.copy()))
         assertNotEquals(codec.fingerprint(original), codec.fingerprint(changed))
+    }
+
+    @Test
+    fun verificationPromotionDoesNotChangeSemanticFingerprint() {
+        val unverified = sampleProfile(details = "Community tuning").copy(isVerified = false)
+        val verified = unverified.copy(isVerified = true)
+
+        assertEquals(codec.fingerprint(unverified), codec.fingerprint(verified))
     }
 
     @Test
