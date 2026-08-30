@@ -156,6 +156,24 @@
       "canonical_model": "Shimin Li Encounter Edition",
       "aliases": ["TANGZU x SeeAudio Shimin Li Encounter Edition", "x SeeAudio Shimin Li Encounter Edition"],
       "evidence": ["https://linsoul.kr/products/tangzu-x-seeaudio-shimin-li-encounter-edition"]
+    },
+    {
+      "manufacturer": "ZiiGaat",
+      "canonical_model": "Jupiter",
+      "aliases": ["x HBB Jupiter"],
+      "evidence": ["https://linsoul.kr/products/linsoul-x-hbb-jupiter"]
+    },
+    {
+      "manufacturer": "Shozy",
+      "canonical_model": "Hibiki",
+      "aliases": ["Shozy x AAW Hibiki", "x AAW Hibiki"],
+      "evidence": ["https://www.headfonia.com/review-shozy-aaw-hibiki-wondrous/", "https://www.headfonia.com/review-shozy-hibiki-mk2/"]
+    },
+    {
+      "manufacturer": "TFZ",
+      "canonical_model": "Athena",
+      "aliases": ["x Angelears Athena"],
+      "evidence": ["https://www.andesaudio.com/products/angelears-tfz-athena-edition", "https://ichos-reviews.com/tfz-x-angelears-athena-review/"]
     }
   ],
   "distinct_pairs": [
