@@ -26,6 +26,10 @@ object EqFingerprint {
         return sha256(canonical)
     }
 
+    /**
+     * Original v0.3 headphone lineage algorithm. Keep this byte-for-byte compatible so existing
+     * headphone correction IDs never change merely because scope/purpose metadata was added.
+     */
     fun lineage(
         headphone: HeadphoneIdentity,
         creator: String?,
@@ -34,6 +38,34 @@ object EqFingerprint {
     ): String {
         val canonical = listOf(
             headphone.normalizedKey,
+            normalizeText(creator),
+            normalizeText(target.name),
+            target.kind.name,
+            normalizeText(tuningLabel),
+        ).joinToString("|")
+        return sha256(canonical)
+    }
+
+    fun lineage(
+        scope: EqProfileScope,
+        purpose: EqPresetPurpose,
+        headphone: HeadphoneIdentity?,
+        creator: String?,
+        target: EqTarget,
+        tuningLabel: String?,
+    ): String {
+        if (
+            scope == EqProfileScope.HEADPHONE &&
+            purpose == EqPresetPurpose.CORRECTION_TUNING &&
+            headphone != null
+        ) {
+            return lineage(headphone, creator, target, tuningLabel)
+        }
+
+        val canonical = listOf(
+            "scope=${scope.name}",
+            "purpose=${purpose.name}",
+            headphone?.normalizedKey.orEmpty(),
             normalizeText(creator),
             normalizeText(target.name),
             target.kind.name,
