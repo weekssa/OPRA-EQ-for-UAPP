@@ -13,10 +13,17 @@ fun OpraEqProfile.assessCompatibility(): ProfileCompatibilityAssessment {
         return notCompatible("This OPRA profile is not a parametric EQ profile.")
     }
 
-    val preamp = preampGainDb
-        ?: return notCompatible("The OPRA profile is missing its overall gain value.")
-    if (preamp !in GAIN_RANGE) {
-        return notCompatible("The OPRA preamp is outside the proven UAPP/ToneBoosters range of -20 dB to +20 dB.")
+    val playbackPreamp = effectivePlaybackPreampDb()
+        ?: return notCompatible(
+            "This profile has no source preamp and no EQ Library-generated safety headroom for UAPP/ToneBoosters playback.",
+        )
+    if (playbackPreamp !in GAIN_RANGE) {
+        val origin = if (usesEqLibrarySafetyHeadroom()) {
+            "EQ Library-generated safety headroom"
+        } else {
+            "source preamp"
+        }
+        return notCompatible("The $origin is outside the proven UAPP/ToneBoosters range of -20 dB to +20 dB.")
     }
 
     val profileBands = bands
@@ -53,7 +60,7 @@ fun OpraEqProfile.assessCompatibility(): ProfileCompatibilityAssessment {
     return if (profileBands.size > MAX_UAPP_BANDS) {
         ProfileCompatibilityAssessment(
             category = ProfileCompatibility.CompatibleWithLimitation,
-            reason = "OPRA has ${profileBands.size} priority-sorted bands. UAPP/ToneBoosters is limited to 10, so only the first 10 priority bands will be used.",
+            reason = "This source has ${profileBands.size} priority-sorted bands. The current UAPP/ToneBoosters target supports 10, so only the first 10 priority bands will be used for that device export.",
         )
     } else {
         ProfileCompatibilityAssessment(ProfileCompatibility.FullyCompatible)
