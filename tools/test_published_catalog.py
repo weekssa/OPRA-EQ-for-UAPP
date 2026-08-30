@@ -6,6 +6,7 @@ from acoustic_fingerprint import acoustic_fingerprint
 
 
 CATALOG = Path(__file__).resolve().parents[1] / "catalog" / "catalog.json"
+EDITION_XS_AUTOEQ_ORATORY_CANONICAL_ID = "autoeq-09f4d8d5d5288ccfdf6ddeeb"
 
 
 class PublishedCatalogTest(unittest.TestCase):
@@ -13,14 +14,17 @@ class PublishedCatalogTest(unittest.TestCase):
     def setUpClass(cls):
         cls.snapshot = json.loads(CATALOG.read_text(encoding="utf-8"))
 
-    def _edition_xs_autoeq(self):
-        return next(
+    def _edition_xs_autoeq_oratory(self):
+        profile = next(
             profile
             for profile in self.snapshot["profiles"]
-            if profile["headphone"]["manufacturer"] == "HIFIMAN"
-            and profile["headphone"]["model"] == "Edition XS"
-            and profile["creator"] == "AutoEq"
+            if profile["canonical_profile_id"] == EDITION_XS_AUTOEQ_ORATORY_CANONICAL_ID
         )
+        self.assertEqual("HIFIMAN", profile["headphone"]["manufacturer"])
+        self.assertEqual("Edition XS", profile["headphone"]["model"])
+        self.assertEqual("AutoEq", profile["creator"])
+        self.assertIn("oratory1990", profile["tuning_label"])
+        return profile
 
     def test_android_snapshot_metadata_is_present(self):
         self.assertGreaterEqual(self.snapshot["schema_version"], 1)
@@ -46,8 +50,11 @@ class PublishedCatalogTest(unittest.TestCase):
             if profile["headphone"]["manufacturer"] == "HIFIMAN"
             and profile["headphone"]["model"] == "Edition XS"
         ]
-        self.assertEqual({"oratory1990", "AutoEq"}, {profile["creator"] for profile in profiles})
-        autoeq = self._edition_xs_autoeq()
+        creators = {profile["creator"] for profile in profiles}
+        self.assertIn("oratory1990", creators)
+        self.assertIn("AutoEq", creators)
+
+        autoeq = self._edition_xs_autoeq_oratory()
         latest = next(revision for revision in autoeq["revisions"] if revision["is_latest"])
         latest_refs = latest["source_references"]
         self.assertEqual("autoeq", next(ref for ref in latest_refs if ref["is_primary"])["source_id"])
@@ -69,7 +76,7 @@ class PublishedCatalogTest(unittest.TestCase):
         )
 
     def test_canary_contains_real_immutable_revision_history(self):
-        autoeq = self._edition_xs_autoeq()
+        autoeq = self._edition_xs_autoeq_oratory()
         revisions = autoeq["revisions"]
         self.assertGreaterEqual(len(revisions), 2)
         self.assertEqual(1, sum(1 for revision in revisions if revision["is_latest"]))
