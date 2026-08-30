@@ -50,11 +50,16 @@ class CuratedCommunityInputsTest(unittest.TestCase):
 
                 status = record.get("status")
                 surface = str(record.get("surface") or "")
-                if status in ELIGIBLE_STATUSES | REFERENCE_STATUSES and surface in SOURCE_ID:
+                if status in ELIGIBLE_STATUSES and surface in SOURCE_ID:
                     filters = normalized_filters(record)
                     self.assertEqual(len(record.get("filters") or []), len(filters), record_id)
                     if len(filters) > 10:
                         saw_more_than_ten_filters = True
+                elif status in REFERENCE_STATUSES:
+                    # Mirrors/reposts may be provenance-only. They intentionally attach a
+                    # source reference to an existing canonical tuning without inventing or
+                    # duplicating filter data.
+                    self.assertIn(surface, SOURCE_ID, record_id)
 
                 preamp = record.get("preamp_db")
                 if preamp is not None:
