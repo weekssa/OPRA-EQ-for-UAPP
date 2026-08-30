@@ -303,20 +303,23 @@ def build_curated_candidate(
     raw_preamp = record.get("preamp_db")
     source_preamp = float(raw_preamp) if raw_preamp is not None else None
     generated_headroom = safety_headroom_db(max_boost) if source_preamp is None else None
+    creator = str(record.get("creator") or "Community").strip() or "Community"
+    tuning_label = str(record.get("tuning_label") or "").strip() or f"{creator} community tuning"
+    target = str(record.get("target") or "").strip() or None
 
     parsed = ParsedPeq(preamp_db=source_preamp, filters=filters)
     candidate = build_candidate(
         parsed,
         manufacturer=manufacturer,
         model=model,
-        creator=str(record.get("creator") or "Community"),
-        tuning_label=f"{record.get('creator')} community tuning",
+        creator=creator,
+        tuning_label=tuning_label,
         source_id=source_id,
         source_kind="community",
         source_url=str(record.get("source_url")),
         source_record_id=str(record.get("id")),
         redistribution_policy="structured-data-only",
-        target=None,
+        target=target,
         variant=variant,
         source_version=str(record.get("source_date") or "") or None,
         discovered_at_epoch_seconds=None,
@@ -334,6 +337,8 @@ def build_curated_candidate(
         "source_preamp_db": source_preamp,
         "eq_library_safety_headroom_db": generated_headroom,
         "preamp_origin": "eq-library-safe-headroom" if generated_headroom is not None else "source",
+        "tuning_label": tuning_label,
+        "target": target,
         "estimated_band_changes_db": {
             key: round(value, 2) for key, value in band_means.items()
         },
