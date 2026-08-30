@@ -14,8 +14,8 @@ class CatalogIdentityCleanupTest {
         val legacy = OpraCatalog(
             vendors = listOf(OpraVendor("sennheiser", "Sennheiser")),
             products = listOf(
-                product("hd650-space", "HD 650"),
-                product("hd650-compact", "HD650"),
+                product("hd650-space", "sennheiser", "HD 650"),
+                product("hd650-compact", "sennheiser", "HD650"),
             ),
             profiles = listOf(
                 profile("a", "hd650-space", 100.0),
@@ -36,9 +36,9 @@ class CatalogIdentityCleanupTest {
         val legacy = OpraCatalog(
             vendors = listOf(OpraVendor("maker", "Example Audio")),
             products = listOf(
-                product("model-standard", "Model 2"),
-                product("model-collab", "x Creator Model 2"),
-                product("different", "Model 3"),
+                product("model-standard", "maker", "Model 2"),
+                product("model-collab", "maker", "x Creator Model 2"),
+                product("different", "maker", "Model 3"),
             ),
             profiles = listOf(
                 profile("standard", "model-standard", 100.0),
@@ -68,8 +68,8 @@ class CatalogIdentityCleanupTest {
             .containsExactly("different-profile")
     }
 
-    private fun product(id: String, name: String) =
-        OpraProduct(id, "sennheiser", name, "headphones", "")
+    private fun product(id: String, vendorId: String, name: String) =
+        OpraProduct(id, vendorId, name, "headphones", "")
 
     private fun profile(id: String, productId: String, frequency: Double) = OpraEqProfile(
         id = id,
