@@ -4,6 +4,7 @@ import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.assessCompatibility
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -47,10 +48,36 @@ class ToneBoostersConverterTest {
         assertEquals(12, result.sourceBandCount)
         assertEquals(10, result.convertedBandCount)
         assertEquals(
-            listOf("OPRA has 12 bands; UAPP supports 10, so only the first 10 priority-sorted bands were used."),
+            listOf(
+                "Source has 12 bands; the current UAPP/ToneBoosters target supports 10, so only the first 10 priority-sorted bands were used.",
+            ),
             result.warnings,
         )
         assertEquals(66, Regex("<Value>").findAll(result.xml).count())
+    }
+
+    @Test
+    fun generatedSafetyHeadroomIsUsedForPlaybackButSourcePreampStaysNull() {
+        val bands = listOf(OpraBand("peak_dip", 1_000.0, 4.0, 1.0, null))
+        val profile = OpraEqProfile(
+            id = "generated-headroom",
+            productId = "product",
+            author = "Creator",
+            details = "Community tuning",
+            link = "https://example.invalid/source",
+            profileType = "parametric_eq",
+            preampGainDb = null,
+            bands = bands,
+            eqLibrarySafetyHeadroomDb = -6.25,
+        )
+
+        val converted = ToneBoostersConverter.convert(profile, "Generated headroom")
+        val expected = ToneBoostersConverter.buildXml("Generated headroom", -6.25, bands)
+
+        assertEquals(expected.xml, converted.xml)
+        assertNull(profile.preampGainDb)
+        assertEquals(-6.25, profile.eqLibrarySafetyHeadroomDb!!, 0.0)
+        assertTrue(converted.warnings.first().contains("EQ Library-generated safety headroom of -6.25 dB"))
     }
 
     @Test
