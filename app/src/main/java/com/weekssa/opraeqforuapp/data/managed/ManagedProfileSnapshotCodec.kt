@@ -37,6 +37,8 @@ private data class StoredProfileSnapshot(
     val bands: List<StoredBandSnapshot>?,
     /** Derived playback metadata; never substitutes for the source-authentic preamp field. */
     val eqLibrarySafetyHeadroomDb: Double? = null,
+    /** Publication trust metadata; old snapshots default to verified for v0.2 compatibility. */
+    val isVerified: Boolean = true,
 )
 
 @Serializable
@@ -67,6 +69,7 @@ private fun OpraEqProfile.toStoredSnapshot() = StoredProfileSnapshot(
     preampGainDb = preampGainDb,
     bands = bands?.map(OpraBand::toStoredSnapshot),
     eqLibrarySafetyHeadroomDb = eqLibrarySafetyHeadroomDb,
+    isVerified = isVerified,
 )
 
 private fun OpraEqProfile.toSemanticFingerprintSnapshot() = StoredProfileFingerprintSnapshot(
@@ -103,4 +106,5 @@ private fun StoredProfileSnapshot.toDomain() = OpraEqProfile(
         )
     },
     eqLibrarySafetyHeadroomDb = eqLibrarySafetyHeadroomDb,
+    isVerified = isVerified,
 )
