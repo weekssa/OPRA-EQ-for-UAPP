@@ -6,20 +6,28 @@ body:
   - type: markdown
     attributes:
       value: |
-        Submissions enter the validation, provenance, deduplication, and revision pipeline. They are not published automatically.
+        Submissions enter the validation, provenance, headphone-identity, deduplication, and revision pipeline. They are never published automatically.
   - type: input
-    id: headphone
+    id: manufacturer
     attributes:
-      label: Headphone / IEM
-      description: Manufacturer and exact model.
-      placeholder: HIFIMAN Edition XS
+      label: Manufacturer
+      description: Use the manufacturer/brand shown by the original source or product maker.
+      placeholder: HIFIMAN
+    validations:
+      required: true
+  - type: input
+    id: model
+    attributes:
+      label: Exact model
+      description: Enter the product model without inventing or removing a real variant.
+      placeholder: Edition XS
     validations:
       required: true
   - type: input
     id: variant
     attributes:
       label: Variant / revision / pads / mode
-      description: Include only when it materially affects the tuning.
+      description: Include only when it materially identifies a different physical/acoustic configuration. Leave blank when not applicable or unknown.
   - type: input
     id: creator
     attributes:
@@ -61,7 +69,7 @@ body:
     id: filters
     attributes:
       label: Parametric EQ / preset data
-      description: Paste structured filter data or provide the exact preset-file link.
+      description: Paste the source-authored structured filter data exactly, or provide the exact preset-file link. Do not reduce the filter count to fit a device.
       render: text
   - type: input
     id: source_date
@@ -78,4 +86,4 @@ body:
     id: notes
     attributes:
       label: Notes
-      description: Optional provenance, measurement, revision, or variant context.
+      description: Optional provenance, measurement, revision, or variant context. Do not paste unrelated forum prose.
