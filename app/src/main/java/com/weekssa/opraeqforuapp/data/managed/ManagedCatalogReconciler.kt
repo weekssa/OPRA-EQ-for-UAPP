@@ -45,9 +45,11 @@ internal fun reconcileManagedProfiles(
     snapshotCodec: ManagedProfileSnapshotCodec,
 ): ReconciledManagedProfiles {
     val existingById = existingProfiles.associateBy(ManagedProfileEntity::profileId)
+    val existingSnapshots = existingProfiles.associateWith { entity ->
+        runCatching { snapshotCodec.decode(entity.snapshotJson) }.getOrNull()
+    }
     val existingWithSignatures = existingProfiles.mapNotNull { entity ->
-        runCatching { snapshotCodec.decode(entity.snapshotJson) }
-            .getOrNull()
+        existingSnapshots[entity]
             ?.legacyAcousticSignature()
             ?.let { signature -> entity to signature }
     }
@@ -77,7 +79,10 @@ internal fun reconcileManagedProfiles(
 
         if (existing == null) {
             newCount += 1
-            val selected = autoIncludeNewProfiles && selectable && !profile.isHistoricalRevision()
+            val selected = autoIncludeNewProfiles &&
+                selectable &&
+                profile.isVerified &&
+                !profile.isHistoricalRevision()
             val generated = if (selected) {
                 generateManagedPreset(productName, profile, fingerprint, nowMillis)
             } else {
@@ -112,14 +117,30 @@ internal fun reconcileManagedProfiles(
             } else {
                 existing.explicitlyExcluded
             }
+            val previousSnapshots = if (migrated) {
+                acousticAliases.mapNotNull(existingSnapshots::get)
+            } else {
+                listOfNotNull(existingSnapshots[existing])
+            }
+            val previouslyVerified = previousSnapshots.any(OpraEqProfile::isVerified)
+            val becameVerified = profile.isVerified && previousSnapshots.isNotEmpty() && !previouslyVerified
             val changed = fingerprint != existing.fingerprint || migrated
             val becameNotCompatible = selectedBeforeMigration && !selectable
             if (changed && selectedBeforeMigration && !migrated) updatedSelectedCount += 1
             if (becameNotCompatible) becameNotCompatibleSelectedCount += 1
 
-            val selected = if (becameNotCompatible) false else selectedBeforeMigration
+            val selected = when {
+                becameNotCompatible -> false
+                selectedBeforeMigration -> true
+                becameVerified &&
+                    autoIncludeNewProfiles &&
+                    selectable &&
+                    !explicitlyExcludedBeforeMigration &&
+                    !profile.isHistoricalRevision() -> true
+                else -> false
+            }
             val shouldRegenerate = selected && selectable &&
-                (changed || existing.generatedXml == null || existing.generatedFromFingerprint != fingerprint)
+                (changed || becameVerified || existing.generatedXml == null || existing.generatedFromFingerprint != fingerprint)
             val generated = if (shouldRegenerate) {
                 generateManagedPreset(productName, profile, fingerprint, nowMillis)
             } else {
