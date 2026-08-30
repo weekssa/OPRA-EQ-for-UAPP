@@ -17,7 +17,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import re
 import subprocess
 from dataclasses import asdict
 from datetime import datetime, timezone
@@ -238,6 +237,13 @@ def build_corpus_candidates(
         yield candidate
 
 
+def _registry_parser_version(registry: dict[str, Any]) -> str:
+    source = next((item for item in registry.get("sources", []) if item.get("id") == "autoeq"), None)
+    if source is None:
+        raise ValueError("AutoEq source missing from registry")
+    return str(source.get("parser_version") or "")
+
+
 def refresh(
     *,
     autoeq_root: Path,
@@ -249,15 +255,20 @@ def refresh(
     now_epoch: int,
     max_compact_catalog_bytes: int,
 ) -> tuple[dict[str, Any], dict[str, SourceHealth], dict[str, Any]]:
+    previous_autoeq = health.get("autoeq")
+    expected_parser_version = _registry_parser_version(registry)
+    parser_changed = previous_autoeq is None or str(previous_autoeq.parser_version or "") != expected_parser_version
     health = reconcile_health(registry, health)
     autoeq_health = health["autoeq"]
     report: dict[str, Any] = {
         "source_id": "autoeq",
         "upstream_commit": upstream_commit,
+        "parser_version": expected_parser_version,
+        "parser_changed": parser_changed,
         "status": "ok",
     }
 
-    if autoeq_health.cursor == upstream_commit:
+    if autoeq_health.cursor == upstream_commit and not parser_changed:
         health["autoeq"] = record_scan_success(
             autoeq_health,
             cursor=upstream_commit,
