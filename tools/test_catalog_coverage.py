@@ -1,6 +1,11 @@
+import json
 import unittest
+from pathlib import Path
 
 from catalog_coverage import build_report, validate_report
+
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 class CatalogCoverageTest(unittest.TestCase):
@@ -96,6 +101,14 @@ class CatalogCoverageTest(unittest.TestCase):
         errors = validate_report(report)
         self.assertFalse(report["complete"])
         self.assertTrue(any("repo:second" in error for error in errors))
+
+    def test_published_catalog_meets_current_qualified_coverage_contract(self):
+        catalog = json.loads((ROOT / "catalog/catalog.json").read_text(encoding="utf-8"))
+        registry = json.loads((ROOT / "config/source_registry.json").read_text(encoding="utf-8"))
+        manifest = json.loads((ROOT / "config/qualified_github_sources.json").read_text(encoding="utf-8"))
+        report = build_report(catalog, registry, manifest)
+        self.assertEqual([], validate_report(report), json.dumps(report, sort_keys=True))
+        self.assertTrue(report["complete"])
 
 
 if __name__ == "__main__":
