@@ -35,7 +35,7 @@ jobs:
       - name: Validate current source registry
         run: python3 tools/catalog_pipeline.py validate-registry --registry config/source_registry.json
 
-      - name: Ingest public Reddit structured PEQ posts
+      - name: Ingest Edition XS public Reddit structured PEQ posts
         run: >-
           python3 tools/reddit_community_ingest.py
           --catalog catalog/catalog.json
@@ -43,6 +43,7 @@ jobs:
           --report "${RUNNER_TEMP}/reddit-community-report.json"
           --subreddit headphones
           --subreddit oratory1990
+          --headphone-model "Edition XS"
           --limit 100
 
       - name: Validate candidate atomically
@@ -72,19 +73,19 @@ jobs:
         if: github.ref_name == 'eq-library-community-v0.3' || github.ref_name == 'main'
         run: |
           if git diff --quiet -- catalog/catalog.json; then
-            echo "No validated community EQ changes."
+            echo "No validated Edition XS community EQ changes."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add catalog/catalog.json
-          git commit -m "Refresh public community EQ catalog"
+          git commit -m "Refresh Edition XS community EQ catalog"
           git push
 
-      - name: Upload community discovery report
+      - name: Upload Edition XS community discovery report
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: community-eq-currentness-${{ github.run_id }}
+          name: edition-xs-community-eq-${{ github.run_id }}
           path: |
             ${{ runner.temp }}/reddit-community-report.json
             ${{ runner.temp }}/validated-community-catalog.json
