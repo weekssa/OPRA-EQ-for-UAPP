@@ -13,6 +13,7 @@ from catalog_pipeline import (
     record_scan_failure,
     record_scan_success,
     validate_registry,
+    validate_snapshot,
 )
 
 
@@ -83,7 +84,7 @@ class CatalogPipelineTest(unittest.TestCase):
         self.assertEqual("duplicate", classify_candidate(["a"], "a"))
         self.assertEqual("new_revision", classify_candidate(["a"], "b"))
 
-    def test_invalid_candidate_never_replaces_last_known_good(self):
+    def valid_snapshot(self):
         revision = {
             "revision_id": "r1",
             "acoustic_fingerprint": "abc",
@@ -91,7 +92,7 @@ class CatalogPipelineTest(unittest.TestCase):
             "filters": [{"type": "peak", "frequency_hz": 1000.0, "gain_db": 1.0, "q": 1.0}],
             "source_references": [{"source_id": "test", "source_kind": "community"}],
         }
-        valid = {
+        return {
             "schema_version": 1,
             "generated_at": "2026-08-29T00:00:00Z",
             "source_registry_version": "test",
@@ -100,11 +101,62 @@ class CatalogPipelineTest(unittest.TestCase):
                 "revisions": [revision],
             }],
         }
+
+    def test_valid_evidence_backed_alias_metadata_is_accepted(self):
+        snapshot = self.valid_snapshot()
+        snapshot["headphone_aliases"] = [{
+            "manufacturer": "Sennheiser",
+            "canonical_model": "HD 650",
+            "aliases": ["HD650"],
+            "evidence": ["https://example.test/hd650"],
+        }]
+        self.assertEqual(validate_snapshot(snapshot), [])
+
+    def test_alias_metadata_requires_evidence_and_unique_aliases(self):
+        snapshot = self.valid_snapshot()
+        snapshot["headphone_aliases"] = [{
+            "manufacturer": "Maker",
+            "canonical_model": "Model",
+            "aliases": ["Model One", "Model-One"],
+            "evidence": [],
+        }]
+        errors = validate_snapshot(snapshot)
+        self.assertTrue(any("normalized duplicates" in error for error in errors))
+        self.assertTrue(any("evidence" in error for error in errors))
+
+    def test_invalid_candidate_never_replaces_last_known_good(self):
+        valid = self.valid_snapshot()
+        revision = valid["profiles"][0]["revisions"][0]
         invalid = {
             **valid,
             "profiles": [{
                 "canonical_profile_id": "p1",
                 "revisions": [{**revision, "revision_id": "r2", "acoustic_fingerprint": "def", "is_latest": False}],
+            }],
+        }
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            published = root / "published.json"
+            good = root / "good.json"
+            candidate = root / "candidate.json"
+            candidate.write_text(json.dumps(valid), encoding="utf-8")
+            publish_snapshot(candidate, published, good)
+            before = good.read_text(encoding="utf-8")
+            candidate.write_text(json.dumps(invalid), encoding="utf-8")
+            with self.assertRaises(RegistryError):
+                publish_snapshot(candidate, published, good)
+            self.assertEqual(before, good.read_text(encoding="utf-8"))
+            self.assertEqual(valid, json.loads(published.read_text(encoding="utf-8")))
+
+    def test_invalid_alias_metadata_never_replaces_last_known_good(self):
+        valid = self.valid_snapshot()
+        invalid = {
+            **valid,
+            "headphone_aliases": [{
+                "manufacturer": "Maker",
+                "canonical_model": "Model",
+                "aliases": ["Alias"],
+                "evidence": [],
             }],
         }
         with tempfile.TemporaryDirectory() as temp:
