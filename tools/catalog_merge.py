@@ -57,6 +57,11 @@ def _merge_sources(existing: list[dict[str, Any]], incoming: list[dict[str, Any]
     return sorted(merged.values(), key=lambda item: (_source_key(item), not bool(item.get("is_primary"))))
 
 
+def _verification_rank(value: Any) -> int:
+    """Higher rank means more independently trusted without changing acoustic identity."""
+    return {"unverified": 0, "verified": 1}.get(str(value or "").strip().lower(), 0)
+
+
 def _merge_same_revision(existing: dict[str, Any], incoming: dict[str, Any]) -> dict[str, Any]:
     result = copy.deepcopy(existing)
     result["source_references"] = _merge_sources(
@@ -75,6 +80,19 @@ def _merge_same_revision(existing: dict[str, Any], incoming: dict[str, Any]) -> 
                 result[key] = min(result[key], incoming_value)
             else:
                 result[key] = incoming_value
+
+    # Verification is publication metadata, not acoustic history. Promotion from
+    # Unverified to Verified updates the same revision in place and never creates a fake
+    # acoustic revision. A later unverified sighting must not demote an already verified
+    # identical tuning.
+    incoming_verification = incoming.get("verification_status")
+    existing_verification = result.get("verification_status", "verified")
+    if incoming_verification is not None:
+        if _verification_rank(incoming_verification) >= _verification_rank(existing_verification):
+            result["verification_status"] = str(incoming_verification).strip().lower()
+        elif "verification_status" not in result:
+            result["verification_status"] = "verified"
+
     # EQ Library safety headroom is derived metadata, not part of the acoustic fingerprint.
     # Update or clear it in-place when the source-authentic revision itself is unchanged.
     if "eq_library_safety_headroom_db" in incoming:
@@ -155,6 +173,9 @@ def _validated_candidate(candidate: dict[str, Any]) -> tuple[dict[str, Any], str
     incoming_fingerprint = str(incoming_revision.get("acoustic_fingerprint") or "").strip()
     if not incoming_fingerprint or not incoming_revision.get("filters"):
         raise ValueError("candidate revision must contain a fingerprint and filters")
+    verification = incoming_revision.get("verification_status")
+    if verification is not None and verification not in {"verified", "unverified"}:
+        raise ValueError("candidate revision verification_status must be verified or unverified")
     return clean_candidate, profile_id, incoming_revision
 
 
