@@ -36,7 +36,9 @@ import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
 import com.weekssa.opraeqforuapp.domain.catalog.OpraCatalog
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.OpraProduct
+import com.weekssa.opraeqforuapp.domain.export.forExportTargetVisibility
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
+import com.weekssa.opraeqforuapp.domain.settings.ExportTargetPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityPreferences
 import com.weekssa.opraeqforuapp.ui.components.OpraAttribution
 
@@ -44,6 +46,7 @@ import com.weekssa.opraeqforuapp.ui.components.OpraAttribution
 fun BrowseOpraScreen(
     catalogState: CatalogState,
     profileVisibility: ProfileVisibilityPreferences,
+    exportTargets: ExportTargetPreferences,
     managedHeadphones: List<ManagedHeadphoneRecord>,
     favoriteProfileIds: Set<String>,
     onToggleFavorite: suspend (OpraEqProfile, String, String) -> Boolean,
@@ -85,7 +88,11 @@ fun BrowseOpraScreen(
             modifier = modifier,
         )
         is CatalogState.Ready -> {
-            val catalog = catalogState.catalog
+            val sourceCatalog = catalogState.catalog
+            val targetVisibility = remember(sourceCatalog, exportTargets) {
+                sourceCatalog.forExportTargetVisibility(exportTargets)
+            }
+            val catalog = targetVisibility.catalog
             val product = selectedProductId?.let(catalog::product)
             val vendor = selectedVendorId?.let(catalog::vendor)
             val managedByProduct = remember(managedHeadphones) {
@@ -124,6 +131,8 @@ fun BrowseOpraScreen(
                     catalog = catalog,
                     managedByProduct = managedByProduct,
                     searchQuery = searchQuery,
+                    hiddenByExportTargets = targetVisibility.hiddenProfileCount,
+                    noExportTargetsSelected = exportTargets.selectedTargets.isEmpty(),
                     onSearchQueryChange = { searchQuery = it },
                     onVendorSelected = { selectedVendorId = it },
                     onProductSelected = { selectedProductId = it.id },
@@ -140,6 +149,8 @@ private fun BrowseRoot(
     catalog: OpraCatalog,
     managedByProduct: Map<String, ManagedHeadphoneRecord>,
     searchQuery: String,
+    hiddenByExportTargets: Int,
+    noExportTargetsSelected: Boolean,
     onSearchQueryChange: (String) -> Unit,
     onVendorSelected: (String) -> Unit,
     onProductSelected: (OpraProduct) -> Unit,
@@ -170,6 +181,19 @@ private fun BrowseRoot(
             },
         )
 
+        if (hiddenByExportTargets > 0) {
+            Text(
+                text = if (noExportTargetsSelected) {
+                    "$hiddenByExportTargets EQ profiles are hidden because no export targets are selected. Choose devices in Settings → Export targets, or enable broader-library visibility."
+                } else {
+                    "$hiddenByExportTargets EQ profiles are hidden because none of your selected devices can export them. Change this in Settings → Export targets."
+                },
+                modifier = Modifier.padding(bottom = 8.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
         if (searchQuery.isBlank()) {
             val vendors = catalog.vendors.sortedBy { it.name.lowercase() }
             LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -186,6 +210,15 @@ private fun BrowseRoot(
                         modifier = Modifier.padding(vertical = 8.dp),
                     )
                     HorizontalDivider()
+                }
+                if (vendors.isEmpty()) {
+                    item(key = "no-exportable-profiles") {
+                        Text(
+                            text = "No headphone EQs match your current export-target visibility settings.",
+                            modifier = Modifier.padding(vertical = 24.dp),
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                    }
                 }
                 items(vendors, key = { it.id }) { vendor ->
                     val modelCount = catalog.productsForVendor(vendor.id).size
@@ -204,7 +237,11 @@ private fun BrowseRoot(
             val results = catalog.searchProducts(searchQuery)
             if (results.isEmpty()) {
                 Text(
-                    text = "No headphones found",
+                    text = if (hiddenByExportTargets > 0) {
+                        "No visible headphones found. Export-target settings may be hiding matching EQ profiles."
+                    } else {
+                        "No headphones found"
+                    },
                     modifier = Modifier.padding(top = 24.dp),
                     style = MaterialTheme.typography.bodyLarge,
                 )
