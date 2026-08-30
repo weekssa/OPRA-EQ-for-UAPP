@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "registry_version": "0.3.0-qualified-github-1",
+  "registry_version": "0.3.0-qualified-github-2",
   "sources": [
     {
       "id": "opra",
@@ -36,12 +36,26 @@
       "scope": "Explicitly MIT-licensed author repository with structured headphone/IEM PEQ examples derived from the author's ISO 226:2023 target framework",
       "lifecycle": "active",
       "cadence": "weekly",
-      "parser": "github-qualified-fenced-peq",
-      "parser_version": "1",
+      "parser": "github-qualified-peq",
+      "parser_version": "2",
       "cursor_strategy": "qualified manifest plus GitHub file blob SHA and acoustic fingerprint",
       "redistribution": "structured-data-only",
       "attribution_required": true,
       "license_notes": "Repository LICENSE is MIT (copyright 2026 MrChillStorm). Only exact profiles enumerated in config/qualified_github_sources.json are publication-eligible. EQ Library presents these as creator/community tunings and does not endorse source claims about target superiority or scientific validity."
+    },
+    {
+      "id": "fairbuds",
+      "kind": "community_repository",
+      "name": "Fairbuds by Juraj Fiala",
+      "scope": "Exact hand-authored Fairphone Fairbuds PEQ records from jurf/fairbuds; third-party-measurement-derived AutoEq outputs in the same repository are excluded",
+      "lifecycle": "active",
+      "cadence": "weekly",
+      "parser": "github-qualified-peq",
+      "parser_version": "2",
+      "cursor_strategy": "qualified manifest plus GitHub file blob SHA and acoustic fingerprint",
+      "redistribution": "structured-data-only",
+      "attribution_required": true,
+      "license_notes": "The public jurf/fairbuds repository is identified by GitHub as MIT licensed. Publication is restricted to explicitly qualified files with repository history supporting author-origin. presets/main-ish.txt was refined by repository author Juraj Fiala by hand (commit 66cf13ae87429315e4c1d709d5c327c39e074e85). Presets generated from RTINGS, SoundGuys, DHRME or other third-party measurement inputs are not qualified by this source entry."
     },
     {
       "id": "oratory1990",
