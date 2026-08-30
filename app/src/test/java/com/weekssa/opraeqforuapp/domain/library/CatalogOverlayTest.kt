@@ -192,6 +192,32 @@ class CatalogOverlayTest {
             .containsExactly("original-zero")
     }
 
+    @Test
+    fun largeCatalogOverlayConsolidatesThousandsOfCanonicalProducts() {
+        val count = 3_000
+        val legacy = OpraCatalog(
+            vendors = listOf(vendor("maker", "Maker")),
+            products = (0 until count).map { index ->
+                product("legacy-$index", "maker", "Model $index")
+            },
+            profiles = emptyList(),
+        )
+        val canonical = OpraCatalog(
+            vendors = listOf(vendor("eq-library-vendor:maker", "Maker")),
+            products = (0 until count).map { index ->
+                product("eq-library-product:$index", "eq-library-vendor:maker", "Model $index")
+            },
+            profiles = emptyList(),
+        )
+
+        val merged = overlayCanonicalCatalog(legacy, canonical)
+
+        assertThat(merged.products).hasSize(count)
+        assertThat(merged.productAliases).hasSize(count)
+        assertThat(merged.product("eq-library-product:2999")?.name).isEqualTo("Model 2999")
+        assertThat(merged.product("legacy-2999")?.name).isEqualTo("Model 2999")
+    }
+
     private fun vendor(id: String, name: String) = OpraVendor(id, name)
 
     private fun product(
