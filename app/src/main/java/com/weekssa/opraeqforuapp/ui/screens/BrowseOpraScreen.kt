@@ -103,6 +103,7 @@ fun BrowseOpraScreen(
                     catalog = catalog,
                     product = product,
                     profileVisibility = profileVisibility,
+                    exportTargets = exportTargets,
                     favoriteProfileIds = favoriteProfileIds,
                     onToggleFavorite = onToggleFavorite,
                     onLoadManagedHeadphone = onLoadManagedHeadphone,
