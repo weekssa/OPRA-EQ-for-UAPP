@@ -61,6 +61,47 @@ class AutoEqIngestTest(unittest.TestCase):
         self.assertEqual("unknown", candidate["target"]["kind"])
         self.assertEqual("AutoEq (oratory1990 measurement)", candidate["tuning_label"])
 
+    def test_preserves_existing_edition_xs_canonical_id_without_context(self):
+        candidate = build_candidate(
+            parse_parametric_eq(SAMPLE),
+            manufacturer="HIFIMAN",
+            model="Edition XS",
+            measurement_source="oratory1990",
+            target=None,
+            source_url="https://github.com/jaakkopasanen/AutoEq",
+            source_record_id="results/oratory1990/over-ear/HIFIMAN Edition XS",
+            source_version="abc123",
+            discovered_at_epoch_seconds=None,
+        )
+        self.assertEqual("autoeq-09f4d8d5d5288ccfdf6ddeeb", candidate["canonical_profile_id"])
+
+    def test_non_generic_measurement_context_creates_distinct_identity(self):
+        base = build_candidate(
+            parse_parametric_eq(SAMPLE),
+            manufacturer="Sennheiser",
+            model="HD 650",
+            measurement_source="crinacle",
+            target=None,
+            source_url="https://github.com/jaakkopasanen/AutoEq",
+            source_record_id="a",
+            source_version="a",
+            discovered_at_epoch_seconds=None,
+        )
+        rig = build_candidate(
+            parse_parametric_eq(SAMPLE),
+            manufacturer="Sennheiser",
+            model="HD 650",
+            measurement_source="crinacle",
+            measurement_context="GRAS 43AG-7 over-ear",
+            target=None,
+            source_url="https://github.com/jaakkopasanen/AutoEq",
+            source_record_id="b",
+            source_version="b",
+            discovered_at_epoch_seconds=None,
+        )
+        self.assertNotEqual(base["canonical_profile_id"], rig["canonical_profile_id"])
+        self.assertIn("GRAS 43AG-7 over-ear", rig["tuning_label"])
+
     def test_rejects_unknown_lines(self):
         with self.assertRaises(ValueError):
             parse_parametric_eq("Preamp: -1 dB\nUnexpected: value\n")
