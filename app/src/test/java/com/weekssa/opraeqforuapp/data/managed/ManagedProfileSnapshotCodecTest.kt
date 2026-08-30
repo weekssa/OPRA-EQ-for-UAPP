@@ -4,6 +4,7 @@ import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class ManagedProfileSnapshotCodecTest {
@@ -14,6 +15,41 @@ class ManagedProfileSnapshotCodecTest {
         val profile = sampleProfile(details = "測定 • édition")
 
         assertEquals(profile, codec.decode(codec.encode(profile)))
+    }
+
+    @Test
+    fun snapshotRoundTripKeepsGeneratedSafetyHeadroomSeparateFromSourcePreamp() {
+        val profile = sampleProfile(details = "Community tuning").copy(
+            preampGainDb = null,
+            eqLibrarySafetyHeadroomDb = -5.75,
+        )
+
+        val restored = codec.decode(codec.encode(profile))
+
+        assertNull(restored.preampGainDb)
+        assertEquals(-5.75, restored.eqLibrarySafetyHeadroomDb!!, 0.0)
+        assertEquals(profile.bands, restored.bands)
+    }
+
+    @Test
+    fun oldStoredSnapshotWithoutSafetyFieldStillDecodes() {
+        val encoded = """
+            {
+              "id":"legacy",
+              "productId":"product",
+              "author":"Creator",
+              "details":"Target",
+              "link":null,
+              "profileType":"parametric_eq",
+              "preampGainDb":-3.0,
+              "bands":[{"type":"peak_dip","frequency":1000.0,"gainDb":-2.0,"q":1.0,"slope":null}]
+            }
+        """.trimIndent()
+
+        val restored = codec.decode(encoded)
+
+        assertEquals(-3.0, restored.preampGainDb!!, 0.0)
+        assertNull(restored.eqLibrarySafetyHeadroomDb)
     }
 
     @Test
