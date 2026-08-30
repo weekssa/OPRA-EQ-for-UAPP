@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "registry_version": "0.3.0-community-active-1",
+  "registry_version": "0.3.0-community-public-2",
   "sources": [
     {
       "id": "opra",
@@ -69,7 +69,7 @@
       "cursor_strategy": "creator update timestamp/source URL plus acoustic fingerprint of the qualified structured carrier",
       "redistribution": "link-only",
       "attribution_required": true,
-      "license_notes": "Direct creator pages/PDFs are used for attribution and update discovery only. EQ Library does not infer blanket redistribution permission from public availability. OPRA-carried structured presets may be enriched with direct creator provenance without duplicating the tuning. AutoEq results derived from oratory1990 measurements remain AutoEq-created results, not oratory-authored presets."
+      "license_notes": "Direct creator pages/PDFs are used for attribution and update discovery only. OPRA-carried structured presets may be enriched with direct creator provenance without duplicating the tuning. AutoEq results derived from oratory1990 measurements remain AutoEq-created results, not oratory-authored presets."
     },
     {
       "id": "squiglink",
@@ -97,7 +97,7 @@
       "cursor_strategy": "post/comment IDs and timestamps",
       "redistribution": "structured-data-only",
       "attribution_required": true,
-      "license_notes": "Only publicly accessible, machine-parseable numeric PEQ coefficients are normalized into the catalog. Post prose is not copied. Every published tuning retains the Reddit author and original permalink. Private/deleted/restricted content is never accessed, and an explicit source restriction overrides publication eligibility."
+      "license_notes": "Public community EQ coefficients are publication-eligible. EQ Library normalizes numeric PEQ data, retains the Reddit author and original permalink, and does not copy unrelated post prose. Private, deleted, or restricted content is not accessed."
     },
     {
       "id": "head-fi",
@@ -107,10 +107,11 @@
       "lifecycle": "active",
       "cadence": "weekly",
       "parser": "community-text-peq",
-      "parser_version": "1",
+      "parser_version": "2",
       "cursor_strategy": "thread/post IDs and timestamps",
-      "redistribution": "link-only",
-      "attribution_required": true
+      "redistribution": "structured-data-only",
+      "attribution_required": true,
+      "license_notes": "Publicly posted community EQ coefficients are publication-eligible. Preserve the author, forum name, original post URL, exact filter structure, and any distinction between source-authored values and EQ Library-generated conversions or safety headroom."
     },
     {
       "id": "audio-science-review",
@@ -120,10 +121,11 @@
       "lifecycle": "active",
       "cadence": "weekly",
       "parser": "community-text-peq",
-      "parser_version": "1",
+      "parser_version": "2",
       "cursor_strategy": "thread/post IDs and timestamps",
-      "redistribution": "link-only",
-      "attribution_required": true
+      "redistribution": "structured-data-only",
+      "attribution_required": true,
+      "license_notes": "Publicly posted community EQ coefficients are publication-eligible with author and original thread/post provenance retained. Reliability and duplicate analysis affect labeling, not basic publication eligibility."
     },
     {
       "id": "headphone-community",
@@ -133,10 +135,25 @@
       "lifecycle": "active",
       "cadence": "weekly",
       "parser": "community-text-peq",
-      "parser_version": "1",
+      "parser_version": "2",
       "cursor_strategy": "topic/post IDs and timestamps",
-      "redistribution": "link-only",
-      "attribution_required": true
+      "redistribution": "structured-data-only",
+      "attribution_required": true,
+      "license_notes": "Publicly posted community EQ coefficients are publication-eligible. Preserve creator attribution, topic/post URL, original filter count, and source-authored values."
+    },
+    {
+      "id": "headphones-community",
+      "kind": "community",
+      "name": "Headphones.com Community",
+      "scope": "Public headphone EQ posts, measurements, and creator/community tuning discussions",
+      "lifecycle": "active",
+      "cadence": "weekly",
+      "parser": "community-text-peq",
+      "parser_version": "1",
+      "cursor_strategy": "topic/post IDs, timestamps, and source content hashes",
+      "redistribution": "structured-data-only",
+      "attribution_required": true,
+      "license_notes": "Publicly posted community EQ coefficients are publication-eligible. Preserve creator/username, community source, original post URL, exact source filter structure, and label any EQ Library-derived conversion separately from the source-authored preset."
     },
     {
       "id": "github-community",
@@ -150,20 +167,21 @@
       "cursor_strategy": "repository commit SHA and file content hash",
       "redistribution": "review-required",
       "attribution_required": true,
-      "license_notes": "Discovery emits review-only candidates. A matching public file is never published until originality, repository/file licensing, creator attribution, headphone identity, parse validity and canonical dedupe are qualified."
+      "license_notes": "Discovery emits review-only candidates. Repository licensing and originality remain separate from public community-forum publication policy."
     },
     {
       "id": "topping-community",
       "kind": "device_community",
       "name": "Topping Community",
-      "scope": "Public official and community tuning resources where terms allow",
+      "scope": "Public official and community tuning resources",
       "lifecycle": "active",
       "cadence": "weekly",
       "parser": "device-community",
-      "parser_version": "1",
+      "parser_version": "2",
       "cursor_strategy": "source IDs/timestamps/content hashes",
-      "redistribution": "review-required",
-      "attribution_required": true
+      "redistribution": "structured-data-only",
+      "attribution_required": true,
+      "license_notes": "Public community-posted EQ coefficients are publication-eligible with source URL and author attribution retained. Device-format conversions must be labeled separately from the original source tuning."
     }
   ]
 }
