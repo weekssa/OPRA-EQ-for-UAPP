@@ -41,15 +41,48 @@ class CanonicalCatalogQueryTest {
     }
 
     @Test
-    fun facetsAreDeduplicatedCaseInsensitively() {
+    fun generalPresetIsSearchableWithoutHeadphoneIdentity() {
+        val general = generalProfile()
+        val snapshot = snapshot().copy(profiles = snapshot().profiles + general)
+
+        assertThat(CanonicalCatalogQuery.search(snapshot, CanonicalCatalogFilters(query = "bass boost")))
+            .extracting { it.profile.canonicalProfileId }
+            .containsExactly("general-bass-boost")
+        assertThat(
+            CanonicalCatalogQuery.search(
+                snapshot,
+                CanonicalCatalogFilters(
+                    scopes = setOf(EqProfileScope.GENERAL),
+                    purposes = setOf(EqPresetPurpose.EFFECT),
+                ),
+            ),
+        ).extracting { it.profile.canonicalProfileId }
+            .containsExactly("general-bass-boost")
+        assertThat(
+            CanonicalCatalogQuery.search(
+                snapshot,
+                CanonicalCatalogFilters(scopes = setOf(EqProfileScope.HEADPHONE)),
+            ),
+        ).extracting { it.profile.canonicalProfileId }
+            .containsExactly("hifiman-edition-xs-oratory-harman")
+    }
+
+    @Test
+    fun facetsIncludeScopeAndPurpose() {
         val base = snapshot().profiles.single()
         val duplicateCase = base.copy(canonicalProfileId = "second", creator = "ORATORY1990")
-        val snapshot = snapshot().copy(profiles = listOf(base, duplicateCase))
+        val general = generalProfile()
+        val snapshot = snapshot().copy(profiles = listOf(base, duplicateCase, general))
 
-        assertThat(CanonicalCatalogQuery.availableCreators(snapshot)).containsExactly("oratory1990")
+        assertThat(CanonicalCatalogQuery.availableCreators(snapshot))
+            .containsExactly("oratory1990", "EQ Library Community")
         assertThat(CanonicalCatalogQuery.availableTargets(snapshot)).containsExactly("Harman 2018")
         assertThat(CanonicalCatalogQuery.availableSourceKinds(snapshot))
-            .containsExactly(EqSourceKind.CREATOR)
+            .containsExactly(EqSourceKind.CREATOR, EqSourceKind.COMMUNITY)
+        assertThat(CanonicalCatalogQuery.availableScopes(snapshot))
+            .containsExactly(EqProfileScope.HEADPHONE, EqProfileScope.GENERAL)
+        assertThat(CanonicalCatalogQuery.availablePurposes(snapshot))
+            .containsExactly(EqPresetPurpose.CORRECTION_TUNING, EqPresetPurpose.EFFECT)
     }
 
     private fun snapshot(): CatalogSnapshot {
@@ -93,6 +126,37 @@ class CanonicalCatalogQueryTest {
                     target = EqTarget("Harman 2018", EqTargetKind.CREATOR_TARGET),
                     tuningLabel = "Default",
                     revisions = listOf(old, latest),
+                ),
+            ),
+        )
+    }
+
+    private fun generalProfile(): CanonicalEqProfile {
+        val source = EqSourceReference(
+            sourceId = "community",
+            sourceKind = EqSourceKind.COMMUNITY,
+            sourceRecordId = "bass-boost",
+            url = "https://example.com/bass-boost",
+            creator = "EQ Library Community",
+            provenanceTier = ProvenanceTier.TRACEABLE_COMMUNITY,
+            redistributionPolicy = RedistributionPolicy.STRUCTURED_DATA_ONLY,
+            isPrimary = true,
+        )
+        return CanonicalEqProfile(
+            canonicalProfileId = "general-bass-boost",
+            scope = EqProfileScope.GENERAL,
+            purpose = EqPresetPurpose.EFFECT,
+            creator = "EQ Library Community",
+            target = EqTarget(null, EqTargetKind.UNKNOWN),
+            tuningLabel = "Bass Boost",
+            revisions = listOf(
+                EqRevision(
+                    revisionId = "general-rev",
+                    acousticFingerprint = "general-fingerprint",
+                    preampGainDb = -3.0,
+                    filters = listOf(EqFilter(EqFilterType.LOW_SHELF, 100.0, 3.0, 0.7)),
+                    sourceReferences = listOf(source),
+                    isLatest = true,
                 ),
             ),
         )
