@@ -27,6 +27,20 @@ class ParametricEqTextParserTest {
     }
 
     @Test
+    fun `preserves arbitrary active filter counts without filling or truncating`() {
+        val text = (1..31).joinToString("\n") { index ->
+            "Filter $index: ON PK Fc ${100 + index} Hz Gain ${index / 10.0} dB Q 1.0"
+        }
+
+        val parsed = ParametricEqTextParser.parse(text)
+
+        assertNull(parsed.preampGainDb)
+        assertEquals(31, parsed.filters.size)
+        assertEquals(101.0, parsed.filters.first().frequencyHz, 0.0001)
+        assertEquals(131.0, parsed.filters.last().frequencyHz, 0.0001)
+    }
+
+    @Test
     fun `rejects malformed gain filters without poisoning valid lines`() {
         val parsed = ParametricEqTextParser.parse(
             """
