@@ -404,6 +404,7 @@ fun OpraEqApp(
                                     headphone = selectedManagedHeadphone,
                                     catalogState = catalogState,
                                     profileVisibility = appPreferences.profileVisibility,
+                                    exportTargets = appPreferences.exportTargets,
                                     favoriteProfileIds = favoriteProfileIds,
                                     onToggleFavorite = onToggleFavorite,
                                     onLoadManagedHeadphone = onLoadManagedHeadphone,
