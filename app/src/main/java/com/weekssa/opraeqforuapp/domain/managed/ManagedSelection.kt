@@ -19,12 +19,21 @@ data class ManagedHeadphoneSelection(
     fun isSelected(profile: OpraEqProfile): Boolean {
         if (!profile.assessCompatibility().category.isSelectable) return false
         val stored = profileSelections[profile.id]
-        return stored?.selected ?: (autoIncludeNewProfiles && !profile.isHistoricalRevision())
+        return stored?.selected ?: (
+            autoIncludeNewProfiles &&
+                profile.isVerified &&
+                !profile.isHistoricalRevision()
+            )
     }
 }
 
+/**
+ * First-use defaults silently select only verified current profiles. Unverified profiles remain
+ * manually selectable, including through an explicit Select all action, but never enter a user's
+ * library merely because the automatic-new-profile setting defaults ON.
+ */
 fun defaultStagedSelectedProfileIds(profiles: List<OpraEqProfile>): Set<String> =
-    selectableProfileIds(profiles, includeHistorical = false)
+    selectableProfileIds(profiles, includeHistorical = false, verifiedOnly = true)
 
 fun managedSelectionCommitEnabled(
     isManaged: Boolean,
@@ -57,7 +66,11 @@ fun selectionUpdatesForSave(
         val selected = selectable && profile.id in stagedSelectedProfileIds
         profile.id to StoredProfileSelection(
             selected = selected,
+            // An Unverified profile is already suppressed from silent inclusion by trust state.
+            // Leaving it unchecked must not become a permanent explicit exclusion merely because
+            // the user saved the headphone before that profile was independently verified.
             explicitlyExcluded = selectable &&
+                profile.isVerified &&
                 autoIncludeNewProfiles &&
                 !profile.isHistoricalRevision() &&
                 !selected,
@@ -68,8 +81,10 @@ fun selectionUpdatesForSave(
 fun selectableProfileIds(
     profiles: List<OpraEqProfile>,
     includeHistorical: Boolean = false,
+    verifiedOnly: Boolean = false,
 ): Set<String> = profiles.asSequence()
     .filter { it.assessCompatibility().category.isSelectable }
     .filter { includeHistorical || !it.isHistoricalRevision() }
+    .filter { !verifiedOnly || it.isVerified }
     .map(OpraEqProfile::id)
     .toSet()
