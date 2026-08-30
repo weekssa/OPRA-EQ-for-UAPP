@@ -94,11 +94,13 @@ def build_candidate(
     target_name = target.strip() if target and target.strip() else None
     context_name = measurement_context.strip() if measurement_context and measurement_context.strip() else None
     identity_target = target_name or "unknown-target"
-    identity_context = context_name or "default-context"
-    identity = (
-        f"{manufacturer.strip()}|{model.strip()}|AutoEq|{measurement_source.strip()}|"
-        f"{identity_context}|{identity_target}"
-    )
+    identity_parts = [manufacturer.strip(), model.strip(), "AutoEq", measurement_source.strip()]
+    # Preserve v0.3 canary IDs exactly when no additional context is required.
+    # Context is inserted only to prevent distinct rigs/configurations from colliding.
+    if context_name:
+        identity_parts.append(context_name)
+    identity_parts.append(identity_target)
+    identity = "|".join(identity_parts)
     canonical_id = "autoeq-" + hashlib.sha256(identity.lower().encode("utf-8")).hexdigest()[:24]
     revision_id = "rev-" + fingerprint[:24]
     measurement_label = measurement_source.strip()
