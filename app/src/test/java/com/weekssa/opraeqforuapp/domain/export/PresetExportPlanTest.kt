@@ -54,7 +54,7 @@ class PresetExportPlanTest {
     }
 
     @Test
-    fun eqLibraryPlanCanTargetExactlyOneDevice() {
+    fun eqLibraryPlanCanTargetExactlyOneDeviceAndCarriesFidelity() {
         val headphone = headphone(
             vendor = "Sennheiser",
             model = "HD 650",
@@ -65,11 +65,36 @@ class PresetExportPlanTest {
         assertEquals(1, uapp.candidates.size)
         assertTrue(uapp.candidates.all { it.deviceName == ExportDevice.UAPP.folderName })
         assertTrue(uapp.candidates.all { it.relativeDirectory.startsWith("UAPP/") })
+        assertTrue(uapp.candidates.all { it.fidelity == DevicePresetFidelity.EXACT })
 
         val blackPearl = buildEqLibraryExportPlan(listOf(headphone), ExportDevice.BLACK_PEARL)
         assertEquals(1, blackPearl.candidates.size)
         assertTrue(blackPearl.candidates.all { it.deviceName == ExportDevice.BLACK_PEARL.folderName })
         assertTrue(blackPearl.candidates.all { it.relativeDirectory.startsWith("TRN Black Pearl/") })
+        assertTrue(blackPearl.candidates.all { it.fidelity == DevicePresetFidelity.EXACT })
+    }
+
+    @Test
+    fun blackPearlShelfConversionIsMarkedOptimizedInExportPlan() {
+        val source = profile("p1", selected = true, presetName = "Shelf").copy(
+            lastKnownProfile = OpraEqProfile(
+                id = "p1",
+                productId = "product",
+                author = "Creator",
+                details = "Shelf target",
+                link = null,
+                profileType = "parametric_eq",
+                preampGainDb = -3.0,
+                bands = listOf(OpraBand("low_shelf", 105.0, 4.0, 0.71, null)),
+            ),
+        )
+        val plan = buildEqLibraryExportPlan(
+            listOf(headphone(profiles = listOf(source))),
+            ExportDevice.BLACK_PEARL,
+        )
+
+        assertEquals(DevicePresetFidelity.OPTIMIZED, plan.candidates.single().fidelity)
+        assertTrue(plan.candidates.single().transformation.contains("EQ Library optimized conversion"))
     }
 
     @Test
