@@ -3,9 +3,12 @@ import unittest
 from pathlib import Path
 
 from acoustic_fingerprint import acoustic_fingerprint
+from headphone_identity_decisions import normalize
 
 
-CATALOG = Path(__file__).resolve().parents[1] / "catalog" / "catalog.json"
+ROOT = Path(__file__).resolve().parents[1]
+CATALOG = ROOT / "catalog" / "catalog.json"
+IDENTITY_DECISIONS = ROOT / "config" / "headphone_identity_decisions.json"
 EDITION_XS_AUTOEQ_ORATORY_CANONICAL_ID = "autoeq-09f4d8d5d5288ccfdf6ddeeb"
 
 
@@ -13,6 +16,7 @@ class PublishedCatalogTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.snapshot = json.loads(CATALOG.read_text(encoding="utf-8"))
+        cls.identity_decisions = json.loads(IDENTITY_DECISIONS.read_text(encoding="utf-8"))
 
     def _edition_xs_autoeq_oratory(self):
         profile = next(
@@ -30,6 +34,20 @@ class PublishedCatalogTest(unittest.TestCase):
         self.assertGreaterEqual(self.snapshot["schema_version"], 1)
         self.assertTrue(self.snapshot["generated_at"])
         self.assertTrue(self.snapshot["source_registry_version"])
+
+    def test_reviewed_headphone_aliases_are_in_android_snapshot(self):
+        published = {
+            (normalize(group["manufacturer"]), normalize(group["canonical_model"])): group
+            for group in self.snapshot.get("headphone_aliases") or []
+        }
+        self.assertTrue(published)
+
+        for decision in self.identity_decisions.get("aliases") or []:
+            key = (normalize(decision["manufacturer"]), normalize(decision["canonical_model"]))
+            self.assertIn(key, published, decision)
+            published_aliases = {normalize(value) for value in published[key].get("aliases") or []}
+            for alias in decision.get("aliases") or []:
+                self.assertIn(normalize(alias), published_aliases, decision)
 
     def test_canary_is_non_empty_and_multisource(self):
         profiles = self.snapshot["profiles"]
