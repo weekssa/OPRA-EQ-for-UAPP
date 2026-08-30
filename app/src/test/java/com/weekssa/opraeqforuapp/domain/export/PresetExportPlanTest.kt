@@ -75,6 +75,35 @@ class PresetExportPlanTest {
     }
 
     @Test
+    fun uappBandReductionIsMarkedOptimizedInExportPlan() {
+        val sourceBands = (1..11).map { index ->
+            OpraBand("peak_dip", 100.0 * index, index / 10.0, 1.0, null)
+        }
+        val source = profile("p1", selected = true, presetName = "Eleven band target").copy(
+            lastKnownProfile = OpraEqProfile(
+                id = "p1",
+                productId = "product",
+                author = "Creator",
+                details = "Eleven band target",
+                link = null,
+                profileType = "parametric_eq",
+                preampGainDb = -3.0,
+                bands = sourceBands,
+            ),
+        )
+
+        val plan = buildEqLibraryExportPlan(
+            listOf(headphone(profiles = listOf(source))),
+            ExportDevice.UAPP,
+        )
+
+        assertEquals(DevicePresetFidelity.OPTIMIZED, plan.candidates.single().fidelity)
+        assertTrue(plan.candidates.single().transformation.contains("EQ Library optimized conversion"))
+        assertEquals(11, source.lastKnownProfile.bands!!.size)
+        assertEquals(sourceBands, source.lastKnownProfile.bands)
+    }
+
+    @Test
     fun blackPearlShelfConversionIsMarkedOptimizedInExportPlan() {
         val source = profile("p1", selected = true, presetName = "Shelf").copy(
             lastKnownProfile = OpraEqProfile(
