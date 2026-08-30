@@ -101,6 +101,7 @@ object CanonicalLegacyCatalogAdapter {
                     slope = filter.slope,
                 )
             },
+            eqLibrarySafetyHeadroomDb = revision.eqLibrarySafetyHeadroomDb,
         )
     }
 
