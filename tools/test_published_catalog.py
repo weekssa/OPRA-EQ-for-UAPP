@@ -13,6 +13,15 @@ class PublishedCatalogTest(unittest.TestCase):
     def setUpClass(cls):
         cls.snapshot = json.loads(CATALOG.read_text(encoding="utf-8"))
 
+    def _edition_xs_autoeq(self):
+        return next(
+            profile
+            for profile in self.snapshot["profiles"]
+            if profile["headphone"]["manufacturer"] == "HIFIMAN"
+            and profile["headphone"]["model"] == "Edition XS"
+            and profile["creator"] == "AutoEq"
+        )
+
     def test_android_snapshot_metadata_is_present(self):
         self.assertGreaterEqual(self.snapshot["schema_version"], 1)
         self.assertTrue(self.snapshot["generated_at"])
@@ -38,24 +47,42 @@ class PublishedCatalogTest(unittest.TestCase):
             and profile["headphone"]["model"] == "Edition XS"
         ]
         self.assertEqual({"oratory1990", "AutoEq"}, {profile["creator"] for profile in profiles})
-        autoeq = next(profile for profile in profiles if profile["creator"] == "AutoEq")
+        autoeq = self._edition_xs_autoeq()
         latest = next(revision for revision in autoeq["revisions"] if revision["is_latest"])
-        refs = latest["source_references"]
-        self.assertEqual("autoeq", next(ref for ref in refs if ref["is_primary"])["source_id"])
-        self.assertTrue(any(ref["provenance_tier"] == "mirror" for ref in refs))
+        latest_refs = latest["source_references"]
+        self.assertEqual("autoeq", next(ref for ref in latest_refs if ref["is_primary"])["source_id"])
+
+        # OPRA mirrors a specific AutoEq acoustic revision. When upstream AutoEq changes,
+        # the mirror must remain on the matching immutable revision rather than being
+        # copied onto a newer, materially different tuning.
+        mirrored_revisions = [
+            revision
+            for revision in autoeq["revisions"]
+            if any(ref["provenance_tier"] == "mirror" for ref in revision["source_references"])
+        ]
+        self.assertTrue(mirrored_revisions)
+        self.assertTrue(
+            any(
+                any(ref["source_id"] == "autoeq" for ref in revision["source_references"])
+                for revision in mirrored_revisions
+            )
+        )
 
     def test_canary_contains_real_immutable_revision_history(self):
-        autoeq = next(profile for profile in self.snapshot["profiles"] if profile["creator"] == "AutoEq")
+        autoeq = self._edition_xs_autoeq()
         revisions = autoeq["revisions"]
         self.assertGreaterEqual(len(revisions), 2)
         self.assertEqual(1, sum(1 for revision in revisions if revision["is_latest"]))
-        previous = next(revision for revision in revisions if not revision["is_latest"])
-        self.assertEqual(
-            "AutoEq commit 853360a1626b387e1d3d87f3f7ad8c7514d30839",
-            previous["source_version_label"],
+        latest = next(revision for revision in revisions if revision["is_latest"])
+        previous = next(
+            revision
+            for revision in revisions
+            if revision["source_version_label"]
+            == "AutoEq commit 853360a1626b387e1d3d87f3f7ad8c7514d30839"
         )
+        self.assertFalse(previous["is_latest"])
         self.assertEqual(1698572942, previous["source_updated_at_epoch_seconds"])
-        self.assertNotEqual(previous["acoustic_fingerprint"], autoeq["revisions"][0]["acoustic_fingerprint"])
+        self.assertNotEqual(previous["acoustic_fingerprint"], latest["acoustic_fingerprint"])
 
     def test_published_fingerprints_match_android_algorithm(self):
         for profile in self.snapshot["profiles"]:
