@@ -73,6 +73,14 @@ fun buildEqLibraryExportPlan(
 
                 if (includeUapp) {
                     profile.generatedXml?.let { xml ->
+                        val capabilities = requireNotNull(ExportDevice.UAPP.eqCapabilities)
+                        val fidelity = determineDeviceFidelity(profile.lastKnownProfile, capabilities)
+                        val transformation = when (fidelity) {
+                            DevicePresetFidelity.EXACT ->
+                                "Source EQ preserved in ToneBoosters/UAPP XML."
+                            DevicePresetFidelity.OPTIMIZED ->
+                                "EQ Library optimized conversion for ToneBoosters/UAPP XML using the current device capability profile."
+                        }
                         add(
                             PresetExportCandidate(
                                 profileId = profile.profileId,
@@ -87,8 +95,8 @@ fun buildEqLibraryExportPlan(
                                 mimeType = ExportDevice.UAPP.mimeType,
                                 charsetName = Charsets.ISO_8859_1.name(),
                                 deviceName = ExportDevice.UAPP.folderName,
-                                transformation = "Exact ToneBoosters/UAPP conversion",
-                                fidelity = DevicePresetFidelity.EXACT,
+                                transformation = transformation,
+                                fidelity = fidelity,
                             ),
                         )
                     }
