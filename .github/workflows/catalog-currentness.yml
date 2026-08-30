@@ -142,7 +142,9 @@ jobs:
             --kind code-search \
             --output "${RUNNER_TEMP}/github-candidates.json"
       - name: Stage validated persistent currentness outputs
-        if: github.event_name == 'schedule' && github.ref_name == 'main'
+        if: >-
+          (github.event_name == 'schedule' && github.ref_name == 'main') ||
+          (github.event_name == 'push' && github.ref_name == 'eq-library-community-v0.3')
         run: |
           cp "${RUNNER_TEMP}/validated-catalog.json" catalog/catalog.json
           cp "${RUNNER_TEMP}/source_health.candidate.json" catalog/source_health.json
@@ -151,7 +153,9 @@ jobs:
           cp "${RUNNER_TEMP}/oratory-updates.json" catalog/discovery/oratory_updates.json
           cp "${RUNNER_TEMP}/headphone-identity-audit.json" catalog/discovery/headphone_identity_audit.json
       - name: Commit validated currentness changes
-        if: github.event_name == 'schedule' && github.ref_name == 'main'
+        if: >-
+          (github.event_name == 'schedule' && github.ref_name == 'main') ||
+          (github.event_name == 'push' && github.ref_name == 'eq-library-community-v0.3')
         run: |
           if git diff --quiet -- catalog/catalog.json catalog/source_health.json catalog/discovery/github_candidates.json catalog/discovery/oratory_updates.json catalog/discovery/headphone_identity_audit.json; then
             echo "No persistent currentness changes."
