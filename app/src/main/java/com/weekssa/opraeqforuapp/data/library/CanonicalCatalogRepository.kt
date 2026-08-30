@@ -1,6 +1,7 @@
 package com.weekssa.opraeqforuapp.data.library
 
 import com.weekssa.opraeqforuapp.domain.library.CatalogSnapshot
+import com.weekssa.opraeqforuapp.domain.library.HeadphoneIdentity
 import java.io.File
 import java.io.IOException
 import java.net.HttpURLConnection
@@ -186,10 +187,12 @@ class CanonicalCatalogRepository(
         if (snapshot.schemaVersion < 1) return false
         if (snapshot.generatedAt.isBlank() || snapshot.sourceRegistryVersion.isBlank()) return false
         if (snapshot.profiles.isEmpty()) return false
+        if (!validAliasGroups(snapshot)) return false
         val profileIds = mutableSetOf<String>()
         return snapshot.profiles.all { profile ->
             profile.canonicalProfileId.isNotBlank() &&
                 profileIds.add(profile.canonicalProfileId) &&
+                validHeadphoneAliases(profile.headphone) &&
                 profile.revisions.isNotEmpty() &&
                 profile.revisions.count { it.isLatest } == 1 &&
                 profile.revisions.all { revision ->
@@ -198,11 +201,52 @@ class CanonicalCatalogRepository(
         }
     }
 
+    private fun validAliasGroups(snapshot: CatalogSnapshot): Boolean {
+        val groupKeys = mutableSetOf<String>()
+        return snapshot.headphoneAliases.all { group ->
+            val manufacturer = group.manufacturer.trim()
+            val canonical = group.canonicalModel.trim()
+            if (manufacturer.isEmpty() || canonical.isEmpty()) return@all false
+            if (group.aliases.isEmpty() || group.evidence.isEmpty()) return@all false
+            if (group.evidence.any { it.isBlank() }) return@all false
+
+            val canonicalKey = normalizeIdentity(canonical)
+            val aliasKeys = group.aliases.map { alias ->
+                if (alias.isBlank()) return@all false
+                normalizeIdentity(alias)
+            }
+            canonicalKey.isNotEmpty() &&
+                aliasKeys.all(String::isNotEmpty) &&
+                canonicalKey !in aliasKeys &&
+                aliasKeys.distinct().size == aliasKeys.size &&
+                groupKeys.add("${normalizeIdentity(manufacturer)}|$canonicalKey")
+        }
+    }
+
+    private fun validHeadphoneAliases(headphone: HeadphoneIdentity): Boolean {
+        val canonicalKey = normalizeIdentity(headphone.model)
+        if (canonicalKey.isEmpty()) return false
+        val aliasKeys = headphone.modelAliases.map { alias ->
+            if (alias.isBlank()) return false
+            normalizeIdentity(alias)
+        }
+        return aliasKeys.all(String::isNotEmpty) &&
+            canonicalKey !in aliasKeys &&
+            aliasKeys.distinct().size == aliasKeys.size
+    }
+
+    private fun normalizeIdentity(value: String): String =
+        value.lowercase().filter(Char::isLetterOrDigit)
+
     private fun fail(
         reason: CanonicalCatalogFailureReason,
         previous: CanonicalCatalogState.Ready?,
     ): CanonicalCatalogRefreshResult.Failure {
-        mutableState.value = previous?.copy(isRefreshing = false) ?: CanonicalCatalogState.Unavailable(reason)
+        if (previous != null) {
+            mutableState.value = previous.copy(isRefreshing = false)
+        } else {
+            mutableState.value = CanonicalCatalogState.Unavailable(reason)
+        }
         return CanonicalCatalogRefreshResult.Failure(reason, usingLastKnownGood = previous != null)
     }
 
