@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+import math
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
@@ -82,6 +83,64 @@ def _merge_same_revision(existing: dict[str, Any], incoming: dict[str, Any]) -> 
     return result
 
 
+def _remove_legacy_generated_preamp_revisions(
+    revisions: list[dict[str, Any]],
+    incoming: dict[str, Any],
+) -> int:
+    """Remove only the known legacy representation bug for generated safety headroom.
+
+    Older curated-community publication briefly stored EQ Library-generated safety
+    headroom in ``preamp_gain_db`` when the source itself omitted preamp. A corrected
+    source-authentic candidate has ``preamp_gain_db`` null and the generated value in
+    ``eq_library_safety_headroom_db``. Because preamp participates in the acoustic
+    fingerprint, leaving the buggy representation in history would manufacture a fake
+    acoustic revision.
+
+    Repair is deliberately narrow: same canonical profile (enforced by the caller), at
+    least one identical source reference key, exact filter list, no existing derived
+    safety field, and the old preamp numerically equal to the corrected generated safety
+    value. Any uncertainty leaves the historical revision untouched.
+    """
+    generated = incoming.get("eq_library_safety_headroom_db")
+    if incoming.get("preamp_gain_db") is not None or not isinstance(generated, (int, float)):
+        return 0
+
+    incoming_filters = incoming.get("filters") or []
+    incoming_sources = {
+        _source_key(source)
+        for source in incoming.get("source_references") or []
+        if any(_source_key(source))
+    }
+    if not incoming_filters or not incoming_sources:
+        return 0
+
+    kept: list[dict[str, Any]] = []
+    removed = 0
+    for revision in revisions:
+        old_preamp = revision.get("preamp_gain_db")
+        old_generated = revision.get("eq_library_safety_headroom_db")
+        revision_sources = {
+            _source_key(source)
+            for source in revision.get("source_references") or []
+            if any(_source_key(source))
+        }
+        is_buggy_legacy_representation = (
+            old_generated is None
+            and isinstance(old_preamp, (int, float))
+            and math.isclose(float(old_preamp), float(generated), rel_tol=0.0, abs_tol=1e-9)
+            and revision.get("filters") == incoming_filters
+            and bool(incoming_sources & revision_sources)
+        )
+        if is_buggy_legacy_representation:
+            removed += 1
+        else:
+            kept.append(revision)
+
+    if removed:
+        revisions[:] = kept
+    return removed
+
+
 def _validated_candidate(candidate: dict[str, Any]) -> tuple[dict[str, Any], str, dict[str, Any]]:
     if candidate.get("publication_eligible") is False:
         raise ValueError("review-only candidate cannot be merged into the published catalog")
@@ -141,6 +200,10 @@ def merge_candidates(
             continue
 
         existing_revisions = existing_profile.setdefault("revisions", [])
+        repaired_legacy_revisions = _remove_legacy_generated_preamp_revisions(
+            existing_revisions,
+            incoming_revision,
+        )
         matching = next(
             (revision for revision in existing_revisions if revision.get("acoustic_fingerprint") == incoming_fingerprint),
             None,
@@ -152,13 +215,13 @@ def merge_candidates(
             for revision in existing_revisions:
                 revision["is_latest"] = revision is matching
             existing_revisions[existing_revisions.index(matching)] = _merge_same_revision(matching, incoming_revision)
-            outcomes["metadata_update"] += 1
+            outcomes["history_repair" if repaired_legacy_revisions else "metadata_update"] += 1
         else:
             for revision in existing_revisions:
                 revision["is_latest"] = False
             incoming_revision["is_latest"] = True
             existing_revisions.append(incoming_revision)
-            outcomes["new_revision"] += 1
+            outcomes["history_repair" if repaired_legacy_revisions else "new_revision"] += 1
         touched_profile_ids.add(profile_id)
 
     for profile_id in touched_profile_ids:
