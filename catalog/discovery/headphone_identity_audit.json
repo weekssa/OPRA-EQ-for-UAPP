@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-08-30T06:56:29.961281Z",
+  "generated_at": "2026-08-30T22:43:13.198196Z",
   "opra_source": "https://raw.githubusercontent.com/opra-project/OPRA/main/dist/database_v1.jsonl",
-  "alias_group_count": 60,
-  "reviewed_alias_group_count": 29,
-  "reviewed_distinct_decision_count": 6,
+  "alias_group_count": 64,
+  "reviewed_alias_group_count": 31,
+  "reviewed_distinct_decision_count": 9,
   "product_count": 6230,
   "auto_safe_group_count": 113,
   "auto_safe_groups": [
@@ -1820,7 +1820,7 @@
       ]
     }
   ],
-  "covered_explicit_alias_pair_count": 38,
+  "covered_explicit_alias_pair_count": 40,
   "covered_explicit_alias_pairs": [
     {
       "manufacturer": "DUNU",
@@ -1937,6 +1937,19 @@
         "name": "x HBB Jupiter"
       },
       "canonical_model": "Jupiter",
+      "source": "catalog.headphone_aliases"
+    },
+    {
+      "manufacturer": "Klipsch",
+      "left": {
+        "id": "klipsch::image_s4",
+        "name": "Image S4"
+      },
+      "right": {
+        "id": "klipsch::s4",
+        "name": "S4"
+      },
+      "canonical_model": "Image S4",
       "source": "catalog.headphone_aliases"
     },
     {
@@ -2291,6 +2304,19 @@
       "source": "catalog.headphone_aliases"
     },
     {
+      "manufacturer": "V-MODA",
+      "left": {
+        "id": "v_moda::crossfade_lp2",
+        "name": "Crossfade LP2"
+      },
+      "right": {
+        "id": "v_moda::lp2",
+        "name": "LP2"
+      },
+      "canonical_model": "Crossfade LP2",
+      "source": "catalog.headphone_aliases"
+    },
+    {
       "manufacturer": "SeeAudio",
       "left": {
         "id": "seeaudio::x_crinacle_yume_midnight",
@@ -2317,8 +2343,36 @@
       "source": "catalog.headphone_aliases"
     }
   ],
-  "confirmed_distinct_pair_count": 6,
+  "confirmed_distinct_pair_count": 9,
   "confirmed_distinct_pairs": [
+    {
+      "manufacturer": "HiSoundAudio",
+      "left": {
+        "id": "hisoundaudio::crystal",
+        "name": "Crystal"
+      },
+      "right": {
+        "id": "hisoundaudio::golden_crystal",
+        "name": "Golden Crystal"
+      },
+      "evidence": [
+        "https://www.head-fi.org/threads/review-hisound-audio%E2%80%99s-battleflag-popo-crystal-paa-1-pro-living.592788/"
+      ]
+    },
+    {
+      "manufacturer": "Moondrop",
+      "left": {
+        "id": "moondrop::edge",
+        "name": "Edge"
+      },
+      "right": {
+        "id": "moondrop::x_singer_edge",
+        "name": "x Singer Edge"
+      },
+      "evidence": [
+        "https://kuulokenurkka.com/en/review-moondrop-x-singer-edge/"
+      ]
+    },
     {
       "manufacturer": "Beats",
       "left": {
@@ -2362,6 +2416,21 @@
       "evidence": [
         "https://www.beatsbydre.com/support/headphones/pro",
         "https://www.beatsbydre.com/headphones/studio-pro-wireless"
+      ]
+    },
+    {
+      "manufacturer": "Venture Electronics",
+      "left": {
+        "id": "venture_electronics::duke",
+        "name": "Duke"
+      },
+      "right": {
+        "id": "venture_electronics::grand_duke",
+        "name": "Grand Duke"
+      },
+      "evidence": [
+        "https://www.head-fi.org/showcase/venture-electronics-ve-the-duke.20914/",
+        "https://www.head-fi.org/showcase/authors/leonarfd.346233/reviews?direction=desc&order=rating"
       ]
     },
     {
@@ -2409,21 +2478,8 @@
       ]
     }
   ],
-  "review_candidate_count": 8,
+  "review_candidate_count": 3,
   "review_candidates": [
-    {
-      "manufacturer": "Moondrop",
-      "left": {
-        "id": "moondrop::edge",
-        "name": "Edge"
-      },
-      "right": {
-        "id": "moondrop::x_singer_edge",
-        "name": "x Singer Edge"
-      },
-      "confidence": 0.95,
-      "reason": "leading collaboration credit with identical core model"
-    },
     {
       "manufacturer": "1MORE",
       "left": {
@@ -2451,32 +2507,6 @@
       "reason": "leading sub-brand/source qualifier with identical core model"
     },
     {
-      "manufacturer": "HiSoundAudio",
-      "left": {
-        "id": "hisoundaudio::crystal",
-        "name": "Crystal"
-      },
-      "right": {
-        "id": "hisoundaudio::golden_crystal",
-        "name": "Golden Crystal"
-      },
-      "confidence": 0.91,
-      "reason": "leading sub-brand/source qualifier with identical core model"
-    },
-    {
-      "manufacturer": "Klipsch",
-      "left": {
-        "id": "klipsch::image_s4",
-        "name": "Image S4"
-      },
-      "right": {
-        "id": "klipsch::s4",
-        "name": "S4"
-      },
-      "confidence": 0.91,
-      "reason": "leading sub-brand/source qualifier with identical core model"
-    },
-    {
       "manufacturer": "MYER-AUDIO",
       "left": {
         "id": "myer_audio::cklvx_sliivo_slt6",
@@ -2485,32 +2515,6 @@
       "right": {
         "id": "myer_audio::sliivo_slt6",
         "name": "SLIIVO SLT6"
-      },
-      "confidence": 0.91,
-      "reason": "leading sub-brand/source qualifier with identical core model"
-    },
-    {
-      "manufacturer": "V-MODA",
-      "left": {
-        "id": "v_moda::crossfade_lp2",
-        "name": "Crossfade LP2"
-      },
-      "right": {
-        "id": "v_moda::lp2",
-        "name": "LP2"
-      },
-      "confidence": 0.91,
-      "reason": "leading sub-brand/source qualifier with identical core model"
-    },
-    {
-      "manufacturer": "Venture Electronics",
-      "left": {
-        "id": "venture_electronics::duke",
-        "name": "Duke"
-      },
-      "right": {
-        "id": "venture_electronics::grand_duke",
-        "name": "Grand Duke"
       },
       "confidence": 0.91,
       "reason": "leading sub-brand/source qualifier with identical core model"
