@@ -28,7 +28,7 @@ class OpraCanonicalCatalogAdapterTest {
         )
 
         assertThat(snapshot.profiles).hasSize(1)
-        assertThat(snapshot.profiles.single().headphone.model).isEqualTo("Edition XS")
+        assertThat(requireNotNull(snapshot.profiles.single().headphone).model).isEqualTo("Edition XS")
         assertThat(snapshot.sources.single().sourceId).isEqualTo("opra")
         assertThat(snapshot.sources.single().lifecycle).isEqualTo(SourceLifecycle.ACTIVE)
     }
