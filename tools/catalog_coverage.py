@@ -5,6 +5,9 @@ A catalog is considered publication-complete only when every active source that 
 eligible to publish structured data is represented by at least one source reference,
 and every explicitly qualified GitHub profile is present. Reviewing/link-only sources
 are reported but are never treated as permission to redistribute their data.
+
+Coverage also reports manufacturer/headphone breadth globally and per source so a
+whole-library publication cannot silently regress into a single pilot headphone.
 """
 from __future__ import annotations
 
@@ -22,13 +25,28 @@ def load_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def headphone_identity(profile: dict[str, Any]) -> tuple[str, str, str, str] | None:
+    headphone = profile.get("headphone") or {}
+    manufacturer = str(headphone.get("manufacturer") or "").strip()
+    model = str(headphone.get("model") or "").strip()
+    if not manufacturer or not model:
+        return None
+    return (
+        manufacturer,
+        model,
+        str(headphone.get("variant") or "").strip(),
+        str(headphone.get("pads_or_mode") or "").strip(),
+    )
+
+
 def iter_source_references(catalog: dict[str, Any]):
     for profile in catalog.get("profiles", []):
         profile_id = str(profile.get("canonical_profile_id") or "")
+        identity = headphone_identity(profile)
         for revision in profile.get("revisions", []):
             revision_id = str(revision.get("revision_id") or "")
             for ref in revision.get("source_references", []):
-                yield profile_id, revision_id, ref
+                yield profile_id, revision_id, identity, ref
 
 
 def autoeq_measurement_source(ref: dict[str, Any]) -> str | None:
@@ -48,15 +66,27 @@ def build_report(
 ) -> dict[str, Any]:
     source_refs: Counter[str] = Counter()
     source_profiles: dict[str, set[str]] = defaultdict(set)
+    source_headphones: dict[str, set[tuple[str, str, str, str]]] = defaultdict(set)
+    source_manufacturers: dict[str, set[str]] = defaultdict(set)
     measurement_sources: Counter[str] = Counter()
     source_record_ids: dict[str, set[str]] = defaultdict(set)
 
-    for profile_id, _revision_id, ref in iter_source_references(catalog):
+    catalog_headphones = {
+        identity
+        for profile in catalog.get("profiles", [])
+        if (identity := headphone_identity(profile)) is not None
+    }
+    catalog_manufacturers = {identity[0] for identity in catalog_headphones}
+
+    for profile_id, _revision_id, identity, ref in iter_source_references(catalog):
         source_id = str(ref.get("source_id") or "")
         if not source_id:
             continue
         source_refs[source_id] += 1
         source_profiles[source_id].add(profile_id)
+        if identity is not None:
+            source_headphones[source_id].add(identity)
+            source_manufacturers[source_id].add(identity[0])
         record_id = str(ref.get("source_record_id") or "")
         if record_id:
             source_record_ids[source_id].add(record_id)
@@ -91,6 +121,8 @@ def build_report(
     report = {
         "profile_count": len(catalog.get("profiles", [])),
         "revision_count": sum(len(profile.get("revisions", [])) for profile in catalog.get("profiles", [])),
+        "headphone_identity_count": len(catalog_headphones),
+        "manufacturer_count": len(catalog_manufacturers),
         "source_reference_count": sum(source_refs.values()),
         "registry_lifecycle_counts": dict(sorted(lifecycle_counts.items())),
         "active_publishable_sources": sorted(str(source.get("id")) for source in active_publishable),
@@ -101,6 +133,8 @@ def build_report(
                 "profile_count": len(source_profiles[source_id]),
                 "reference_count": source_refs[source_id],
                 "record_count": len(source_record_ids[source_id]),
+                "headphone_identity_count": len(source_headphones[source_id]),
+                "manufacturer_count": len(source_manufacturers[source_id]),
             }
             for source_id in sorted(source_refs)
         },
