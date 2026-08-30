@@ -4,9 +4,10 @@
 The audit is intentionally conservative:
 - exact normalized manufacturer + model + subtype duplicates are auto-safe;
 - a repeated manufacturer token in the model name is also auto-safe when the stripped model matches;
-- broader cross-source naming aliases are review candidates only;
-- mode, sample, edition and suffix variants are not inferred as duplicates;
-- explicit alias groups already present in the canonical catalog are marked covered.
+- reviewed alias decisions are treated as covered;
+- reviewed distinct decisions are suppressed from future review noise;
+- broader cross-source naming aliases remain review candidates only;
+- mode, sample, edition and suffix variants are not inferred as duplicates.
 
 The report is designed for CI/currentness use and never mutates source data by itself.
 """
@@ -23,6 +24,13 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TextIO
+
+from headphone_identity_decisions import (
+    alias_groups_from_decisions,
+    distinct_keys_from_decisions,
+    load_decisions,
+    validate_decisions,
+)
 
 DEFAULT_OPRA_URL = "https://raw.githubusercontent.com/opra-project/OPRA/main/dist/database_v1.jsonl"
 
@@ -149,6 +157,11 @@ def pair_is_covered(a: Product, b: Product, alias_sets: list[tuple[str, set[str]
     return None
 
 
+def distinct_key(a: Product, b: Product) -> tuple[str, str, str]:
+    sides = tuple(sorted((normalize(a.name), normalize(b.name))))
+    return normalize(a.vendor_name), sides[0], sides[1]
+
+
 def review_score(a: Product, b: Product) -> tuple[float, str] | None:
     a_key = normalized_model_for_vendor(a.name, a.vendor_name)[0]
     b_key = normalized_model_for_vendor(b.name, b.vendor_name)[0]
@@ -163,8 +176,7 @@ def review_score(a: Product, b: Product) -> tuple[float, str] | None:
         return None
 
     # Cross-source aliases commonly prepend a sub-brand or collaboration credit while leaving the
-    # underlying model tokens unchanged (for example "Salnotes Zero 2" / "Zero 2" or
-    # "x Crinacle Zero 2" / "Zero 2"). Trailing words are much more often real variants/modes.
+    # underlying model tokens unchanged. Trailing words are much more often real variants/modes.
     if tuple(longer[-len(shorter):]) != tuple(shorter):
         return None
     leading = longer[:-len(shorter)]
@@ -175,7 +187,13 @@ def review_score(a: Product, b: Product) -> tuple[float, str] | None:
     return None
 
 
-def audit_products(products: list[Product], alias_groups: list[dict], max_review: int = 500) -> dict:
+def audit_products(
+    products: list[Product],
+    alias_groups: list[dict],
+    distinct_decisions: dict[tuple[str, str, str], dict] | None = None,
+    max_review: int = 500,
+) -> dict:
+    distinct_decisions = distinct_decisions or {}
     safe_groups: dict[tuple[str, str, str], list[Product]] = defaultdict(list)
     by_vendor: dict[str, list[Product]] = defaultdict(list)
     for product in products:
@@ -208,6 +226,7 @@ def audit_products(products: list[Product], alias_groups: list[dict], max_review
 
     alias_sets = alias_keysets(alias_groups)
     covered: list[dict] = []
+    confirmed_distinct: list[dict] = []
     review: list[dict] = []
     seen_pairs: set[tuple[str, str]] = set()
     auto_safe_pairs = {
@@ -231,7 +250,16 @@ def audit_products(products: list[Product], alias_groups: list[dict], max_review
                         "left": {"id": a.product_id, "name": a.name},
                         "right": {"id": b.product_id, "name": b.name},
                         "canonical_model": covered_group["canonical_model"],
-                        "source": covered_group["source"],
+                        "source": covered_group.get("source", "reviewed_identity_decision"),
+                    })
+                    continue
+                reviewed_distinct = distinct_decisions.get(distinct_key(a, b))
+                if reviewed_distinct is not None:
+                    confirmed_distinct.append({
+                        "manufacturer": a.vendor_name,
+                        "left": {"id": a.product_id, "name": a.name},
+                        "right": {"id": b.product_id, "name": b.name},
+                        "evidence": reviewed_distinct.get("evidence") or [],
                     })
                     continue
                 scored = review_score(a, b)
@@ -254,6 +282,8 @@ def audit_products(products: list[Product], alias_groups: list[dict], max_review
         "auto_safe_groups": auto_safe,
         "covered_explicit_alias_pair_count": len(covered),
         "covered_explicit_alias_pairs": covered,
+        "confirmed_distinct_pair_count": len(confirmed_distinct),
+        "confirmed_distinct_pairs": confirmed_distinct,
         "review_candidate_count": len(review),
         "review_candidates": review,
     }
@@ -271,18 +301,34 @@ def main() -> int:
     parser.add_argument("--input", type=Path)
     parser.add_argument("--opra-url", default=DEFAULT_OPRA_URL)
     parser.add_argument("--catalog", type=Path, default=Path("catalog/catalog.json"))
+    parser.add_argument("--decisions", type=Path, default=Path("config/headphone_identity_decisions.json"))
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--max-review", type=int, default=500)
     args = parser.parse_args()
 
     with open_opra(args.input, args.opra_url) as stream:
         _, products = parse_opra(stream)
-    aliases = load_alias_groups(args.catalog)
-    report = audit_products(products, aliases, max_review=max(1, args.max_review))
+    catalog_aliases = load_alias_groups(args.catalog)
+    decisions = load_decisions(args.decisions) if args.decisions.is_file() else {"schema_version": 1, "aliases": [], "distinct_pairs": []}
+    decision_errors = validate_decisions(decisions)
+    if decision_errors:
+        raise ValueError("identity decisions invalid: " + "; ".join(decision_errors))
+    decision_aliases = alias_groups_from_decisions(decisions)
+    for group in decision_aliases:
+        group["source"] = "config.headphone_identity_decisions"
+    aliases = catalog_aliases + decision_aliases
+    report = audit_products(
+        products,
+        aliases,
+        distinct_keys_from_decisions(decisions),
+        max_review=max(1, args.max_review),
+    )
     report = {
         "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "opra_source": str(args.input) if args.input else args.opra_url,
         "alias_group_count": len(aliases),
+        "reviewed_alias_group_count": len(decision_aliases),
+        "reviewed_distinct_decision_count": len(decisions.get("distinct_pairs") or []),
         **report,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -292,6 +338,7 @@ def main() -> int:
         f"{report['product_count']} products; "
         f"{report['auto_safe_group_count']} groups auto-safe; "
         f"{report['covered_explicit_alias_pair_count']} alias pairs covered; "
+        f"{report['confirmed_distinct_pair_count']} pairs confirmed distinct; "
         f"{report['review_candidate_count']} candidates need review"
     )
     return 0
