@@ -1,0 +1,50 @@
+name: Stage EQ source submission
+
+on:
+  issues:
+    types: [opened, edited, reopened]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: eq-source-submission-intake
+  cancel-in-progress: false
+
+jobs:
+  stage-submission:
+    if: startsWith(github.event.issue.title, '[EQ source]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Normalize Issue Form into review queue
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          mkdir -p catalog/submissions
+          python3 tools/eq_submission_issue.py \
+            --event "${GITHUB_EVENT_PATH}" \
+            --output "catalog/submissions/github-issue-${ISSUE_NUMBER}.json"
+
+      - name: Commit staged submission only when changed
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          target="catalog/submissions/github-issue-${ISSUE_NUMBER}.json"
+          if git diff --quiet -- "${target}" && git ls-files --error-unmatch "${target}" >/dev/null 2>&1; then
+            echo "Submission ${ISSUE_NUMBER} is unchanged."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "${target}"
+          git commit -m "Stage EQ source submission #${ISSUE_NUMBER}"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
