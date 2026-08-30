@@ -1,3 +1,4 @@
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -133,7 +134,8 @@ class QualifiedGithubIngestTest(unittest.TestCase):
                 now_epoch=1770000000,
             )
         self.assertEqual("ok", outcomes[0]["status"])
-        self.assertEqual("new_profile", outcomes[0]["outcomes"][0])
+        self.assertTrue(outcomes[0]["source_changed"])
+        self.assertEqual(1, outcomes[0]["outcomes"]["new_profile"])
         self.assertEqual(1, len(catalog["profiles"]))
         profile = catalog["profiles"][0]
         self.assertEqual("7Hz", profile["headphone"]["manufacturer"])
@@ -149,6 +151,24 @@ class QualifiedGithubIngestTest(unittest.TestCase):
         self.assertEqual("repository", ref["source_kind"])
         self.assertEqual("structured-data-only", ref["redistribution_policy"])
         self.assertEqual("active", next(item for item in health_payload["sources"] if item["source_id"] == ref["source_id"])["lifecycle"])
+
+    @patch("qualified_github_ingest.github_contents", return_value=(README, "abc123"))
+    def test_unchanged_source_preserves_provenance_timestamps(self, _fetch):
+        with tempfile.TemporaryDirectory() as tmp:
+            health = Path(tmp) / "health.json"
+            first_catalog, first_health, _ = refresh(
+                self._catalog(), self._registry(), health, self._manifest(), now_epoch=1770000000
+            )
+            health.write_text(json.dumps(first_health), encoding="utf-8")
+            first_ref = first_catalog["profiles"][0]["revisions"][0]["source_references"][0]
+            second_catalog, _, outcomes = refresh(
+                first_catalog, self._registry(), health, self._manifest(), now_epoch=1779999999
+            )
+            second_ref = second_catalog["profiles"][0]["revisions"][0]["source_references"][0]
+        self.assertFalse(outcomes[0]["source_changed"])
+        self.assertEqual(1, outcomes[0]["outcomes"]["metadata_update"])
+        self.assertEqual(first_ref["discovered_at_epoch_seconds"], second_ref["discovered_at_epoch_seconds"])
+        self.assertEqual(first_ref["last_verified_at_epoch_seconds"], second_ref["last_verified_at_epoch_seconds"])
 
     @patch("qualified_github_ingest.github_contents", return_value=(WHOLE_FILE, "fairsha"))
     def test_whole_file_source_adds_authored_fairbuds_profile(self, _fetch):
