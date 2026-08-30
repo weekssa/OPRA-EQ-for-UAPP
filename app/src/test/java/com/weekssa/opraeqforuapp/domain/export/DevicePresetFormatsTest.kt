@@ -31,6 +31,8 @@ class DevicePresetFormatsTest {
         assertTrue(dx5.content.contains("ON LSC"))
         assertTrue(dx5.content.contains("ON PK"))
         assertTrue(dx5.content.contains("ON HSC"))
+        assertEquals(DevicePresetFidelity.EXACT, dx5.fidelity)
+        assertTrue(dx5.transformation.contains("Source EQ preserved"))
     }
 
     @Test
@@ -43,6 +45,7 @@ class DevicePresetFormatsTest {
         assertTrue(filterLines.all { it.contains(" ON PK ") })
         assertFalse(blackPearl.content.contains(" LSC "))
         assertFalse(blackPearl.content.contains(" HSC "))
+        assertEquals(DevicePresetFidelity.OPTIMIZED, blackPearl.fidelity)
         assertTrue(blackPearl.transformation.contains("EQ Library optimized conversion"))
     }
 
@@ -84,6 +87,8 @@ class DevicePresetFormatsTest {
 
         assertEquals(10, filterLines(currentOutput).size)
         assertEquals(12, filterLines(futureOutput).size)
+        assertEquals(DevicePresetFidelity.OPTIMIZED, determineDeviceFidelity(source, current))
+        assertEquals(DevicePresetFidelity.EXACT, determineDeviceFidelity(source, futureCapabilities))
         assertEquals(12, source.bands!!.size)
         assertEquals(sourceBands, source.bands)
     }
@@ -99,12 +104,13 @@ class DevicePresetFormatsTest {
         val output = formatToppingTunePreset(source, futureCapabilities)!!
 
         assertEquals(6, filterLines(output).size)
+        assertEquals(DevicePresetFidelity.OPTIMIZED, determineDeviceFidelity(source, futureCapabilities))
         assertEquals(8, source.bands!!.size)
         assertEquals(sourceBands, source.bands)
     }
 
     @Test
-    fun deviceCapabilityRangesDriveOutputClamping() {
+    fun deviceCapabilityRangesDriveOutputClampingAndOptimizedLabel() {
         val source = profile.copy(
             preampGainDb = -15.0,
             bands = listOf(OpraBand("peak_dip", 15.0, 15.0, 20.0, null)),
@@ -128,6 +134,7 @@ class DevicePresetFormatsTest {
         assertTrue(output.contains("Fc 30 Hz"))
         assertTrue(output.contains("Gain 6.00 dB"))
         assertTrue(output.contains("Q 8.000"))
+        assertEquals(DevicePresetFidelity.OPTIMIZED, determineDeviceFidelity(source, capabilities))
     }
 
     @Test
@@ -142,6 +149,31 @@ class DevicePresetFormatsTest {
         val output = formatToppingTunePreset(source, capabilities)!!
 
         assertEquals(14, filterLines(output).size)
+        assertEquals(DevicePresetFidelity.EXACT, determineDeviceFidelity(source, capabilities))
+    }
+
+    @Test
+    fun missingSourcePreampIsNeverMisrepresentedAsExact() {
+        val source = profile.copy(
+            preampGainDb = null,
+            bands = listOf(OpraBand("peak_dip", 1_000.0, -2.0, 1.0, null)),
+        )
+
+        val variant = buildTextDeviceVariant(source, ExportDevice.TOPPING_DX5_II)!!
+
+        assertEquals(DevicePresetFidelity.OPTIMIZED, variant.fidelity)
+        assertTrue(variant.transformation.contains("EQ Library optimized conversion"))
+    }
+
+    @Test
+    fun unsupportedFilterTypeIsNeverMisrepresentedAsExact() {
+        val source = profile.copy(
+            bands = listOf(OpraBand("low_shelf", 100.0, 3.0, 0.71, null)),
+        )
+
+        val variant = buildTextDeviceVariant(source, ExportDevice.BLACK_PEARL)!!
+
+        assertEquals(DevicePresetFidelity.OPTIMIZED, variant.fidelity)
     }
 
     private fun filterLines(content: String): List<String> =
