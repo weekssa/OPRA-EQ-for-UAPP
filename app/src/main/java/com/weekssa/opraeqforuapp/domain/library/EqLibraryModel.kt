@@ -33,6 +33,12 @@ enum class RedistributionPolicy {
 }
 
 @Serializable
+enum class VerificationStatus {
+    @SerialName("verified") VERIFIED,
+    @SerialName("unverified") UNVERIFIED,
+}
+
+@Serializable
 enum class EqFilterType {
     @SerialName("peak") PEAK,
     @SerialName("low_shelf") LOW_SHELF,
@@ -120,6 +126,7 @@ data class EqRevision(
     @SerialName("source_references") val sourceReferences: List<EqSourceReference>,
     @SerialName("source_version_label") val sourceVersionLabel: String? = null,
     @SerialName("sound_impact_summary") val soundImpactSummary: String? = null,
+    @SerialName("verification_status") val verificationStatus: VerificationStatus = VerificationStatus.VERIFIED,
     @SerialName("first_seen_at_epoch_seconds") val firstSeenAtEpochSeconds: Long? = null,
     @SerialName("source_updated_at_epoch_seconds") val sourceUpdatedAtEpochSeconds: Long? = null,
     @SerialName("is_latest") val isLatest: Boolean = false,
@@ -158,4 +165,5 @@ data class EqCandidate(
     val sourceReference: EqSourceReference,
     val sourceVersionLabel: String? = null,
     val soundImpactSummary: String? = null,
+    val verificationStatus: VerificationStatus = VerificationStatus.VERIFIED,
 )
