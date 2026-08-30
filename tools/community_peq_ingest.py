@@ -6,6 +6,10 @@ and caller-supplied provenance metadata. It never copies surrounding post prose.
 Redistribution policy must be explicitly supplied by the source registry/caller so
 link-only sources remain discovery/provenance candidates but are not publishable
 Android catalog profiles until structured filters may legally be redistributed.
+
+Traceable forum/device-community tunings are publication-eligible as Unverified when
+structured-data redistribution is allowed. Verification is publication metadata and is
+never part of the acoustic fingerprint.
 """
 
 from __future__ import annotations
@@ -53,6 +57,13 @@ PROVENANCE_TIER = {
     "creator": "authoritative",
     "device_community": "traceable_community",
 }
+DEFAULT_VERIFICATION = {
+    "community": "unverified",
+    "device_community": "unverified",
+    "community_repository": "verified",
+    "creator": "verified",
+}
+ALLOWED_VERIFICATION = {"verified", "unverified"}
 
 
 @dataclass(frozen=True)
@@ -112,6 +123,7 @@ def build_candidate(
     variant: str | None,
     source_version: str | None,
     discovered_at_epoch_seconds: int | None,
+    verification_status: str | None = None,
 ) -> dict[str, Any]:
     if source_kind not in ALLOWED_SOURCE_KINDS:
         raise ValueError(f"Unsupported community source kind: {source_kind}")
@@ -124,6 +136,14 @@ def build_candidate(
         raise ValueError("Creator attribution is required for community ingestion")
     if not source_url.startswith(("https://", "http://")):
         raise ValueError("A source URL is required for provenance")
+
+    resolved_verification = (
+        str(verification_status).strip().lower()
+        if verification_status is not None
+        else DEFAULT_VERIFICATION[source_kind]
+    )
+    if resolved_verification not in ALLOWED_VERIFICATION:
+        raise ValueError("verification_status must be verified or unverified")
 
     fingerprint = acoustic_fingerprint(parsed)
     identity = "|".join(
@@ -174,12 +194,13 @@ def build_candidate(
                         "published_at_epoch_seconds": None,
                         "updated_at_epoch_seconds": None,
                         "discovered_at_epoch_seconds": discovered_at_epoch_seconds,
-                        "last_verified_at_epoch_seconds": discovered_at_epoch_seconds,
+                        "last_verified_at_epoch_seconds": discovered_at_epoch_seconds if resolved_verification == "verified" else None,
                         "is_primary": True,
                     }
                 ],
                 "source_version_label": source_version,
                 "sound_impact_summary": None,
+                "verification_status": resolved_verification,
                 "first_seen_at_epoch_seconds": discovered_at_epoch_seconds,
                 "source_updated_at_epoch_seconds": None,
                 "is_latest": True,
@@ -202,6 +223,7 @@ def main() -> int:
     parser.add_argument("--source-url", required=True)
     parser.add_argument("--source-record-id", required=True)
     parser.add_argument("--redistribution-policy", required=True, choices=sorted(ALLOWED_POLICIES))
+    parser.add_argument("--verification-status", choices=sorted(ALLOWED_VERIFICATION))
     parser.add_argument("--source-version")
     parser.add_argument("--discovered-at", type=int)
     parser.add_argument("--output", type=Path)
@@ -223,6 +245,7 @@ def main() -> int:
         redistribution_policy=args.redistribution_policy,
         source_version=args.source_version,
         discovered_at_epoch_seconds=args.discovered_at,
+        verification_status=args.verification_status,
     )
     payload = json.dumps(candidate, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
     if args.output:
