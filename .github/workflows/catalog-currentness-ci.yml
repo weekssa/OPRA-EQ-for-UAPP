@@ -16,6 +16,7 @@ on:
       - 'tools/currentness_scheduler.py'
       - 'tools/autoeq_ingest.py'
       - 'tools/autoeq_currentness.py'
+      - 'tools/autoeq_corpus_ingest.py'
       - 'tools/community_peq_ingest.py'
       - 'tools/github_preset_discovery.py'
       - 'tools/headphone_identity_audit.py'
@@ -41,6 +42,7 @@ on:
       - 'tools/currentness_scheduler.py'
       - 'tools/autoeq_ingest.py'
       - 'tools/autoeq_currentness.py'
+      - 'tools/autoeq_corpus_ingest.py'
       - 'tools/community_peq_ingest.py'
       - 'tools/github_preset_discovery.py'
       - 'tools/headphone_identity_audit.py'
@@ -112,17 +114,39 @@ jobs:
           path: ${{ runner.temp }}/headphone-identity-audit.json
           if-no-files-found: error
           retention-days: 14
-      - name: Exercise live qualified AutoEQ refresh without publishing
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+      - name: Fetch qualified AutoEq structured corpus
+        run: |
+          AUTOEQ_ROOT="${RUNNER_TEMP}/autoeq-upstream"
+          git clone --depth=1 --filter=blob:none --no-checkout https://github.com/jaakkopasanen/AutoEq.git "${AUTOEQ_ROOT}"
+          git -C "${AUTOEQ_ROOT}" sparse-checkout init --no-cone
+          cat > "${AUTOEQ_ROOT}/.git/info/sparse-checkout" <<'EOF'
+          /dbtools/manufacturers.tsv
+          /results/**/* ParametricEQ.txt
+          EOF
+          git -C "${AUTOEQ_ROOT}" checkout master
+          test -f "${AUTOEQ_ROOT}/dbtools/manufacturers.tsv"
+          test "$(find "${AUTOEQ_ROOT}/results" -type f -name '* ParametricEQ.txt' | wc -l)" -gt 1000
+      - name: Exercise live qualified AutoEq corpus without publishing
         run: >-
-          python3 tools/autoeq_currentness.py
+          python3 tools/autoeq_corpus_ingest.py
+          --autoeq-root "${RUNNER_TEMP}/autoeq-upstream"
           --catalog catalog/catalog.json
           --registry config/source_registry.json
           --health catalog/source_health.json
           --catalog-output "${RUNNER_TEMP}/catalog.autoeq.json"
           --health-output "${RUNNER_TEMP}/source_health.autoeq.json"
-          --github-token "${GITHUB_TOKEN}"
+          --report "${RUNNER_TEMP}/autoeq-corpus-report.json"
+      - name: Summarize AutoEq corpus validation
+        run: |
+          python3 - <<'PY'
+          import json, os
+          report = json.load(open(os.environ['RUNNER_TEMP'] + '/autoeq-corpus-report.json', encoding='utf-8'))
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as summary:
+              summary.write('## AutoEq corpus\n\n')
+              for key in ('preset_file_count', 'candidate_count', 'unknown_manufacturer_count', 'parse_failure_count', 'profile_count', 'compact_catalog_bytes', 'pretty_catalog_bytes'):
+                  if key in report:
+                      summary.write(f"- {key}: {report[key]}\n")
+          PY
       - name: Exercise live explicitly qualified GitHub sources
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -162,3 +186,10 @@ jobs:
           --candidate "${RUNNER_TEMP}/catalog.candidate.json"
           --published "${RUNNER_TEMP}/refreshed-published.json"
           --last-known-good "${RUNNER_TEMP}/refreshed-lkg.json"
+      - name: Upload AutoEq corpus validation report
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: autoeq-corpus-report-${{ github.sha }}
+          path: ${{ runner.temp }}/autoeq-corpus-report.json
+          if-no-files-found: error
+          retention-days: 14
