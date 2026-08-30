@@ -42,6 +42,9 @@ import com.weekssa.opraeqforuapp.domain.settings.ExportTargetPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityPreferences
 import com.weekssa.opraeqforuapp.ui.components.OpraAttribution
 
+private const val EQ_SOURCE_SUBMISSION_URL =
+    "https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/new?template=submit_eq_source.yml"
+
 @Composable
 fun BrowseOpraScreen(
     catalogState: CatalogState,
@@ -208,8 +211,14 @@ private fun BrowseRoot(
                     OpraAttribution(
                         onOpenUrl = onOpenUrl,
                         compact = true,
-                        modifier = Modifier.padding(vertical = 8.dp),
+                        modifier = Modifier.padding(top = 8.dp),
                     )
+                    TextButton(
+                        onClick = { onOpenUrl(EQ_SOURCE_SUBMISSION_URL) },
+                        modifier = Modifier.padding(bottom = 4.dp),
+                    ) {
+                        Text("Submit an EQ source")
+                    }
                     HorizontalDivider()
                 }
                 if (vendors.isEmpty()) {
