@@ -33,6 +33,19 @@ data class DeviceEqCapabilities(
     }
 }
 
+private val UAPP_CURRENT_CAPABILITIES = DeviceEqCapabilities(
+    maxBands = 10,
+    supportedBandTypes = setOf("peak_dip", "low_shelf", "high_shelf"),
+    minFrequencyHz = 16.0,
+    maxFrequencyHz = 20_000.0,
+    minGainDb = -20.0,
+    maxGainDb = 20.0,
+    minQ = 0.1,
+    maxQ = 10.0,
+    minPreampDb = -20.0,
+    maxPreampDb = 20.0,
+)
+
 private val TOPPING_CURRENT_CAPABILITIES = DeviceEqCapabilities(
     maxBands = 10,
     supportedBandTypes = setOf("peak_dip", "low_shelf", "high_shelf"),
@@ -60,7 +73,12 @@ enum class ExportDevice(
     val validationStatus: String? = null,
     val eqCapabilities: DeviceEqCapabilities? = null,
 ) {
-    UAPP("UAPP", "xml", "application/xml"),
+    UAPP(
+        "UAPP",
+        "xml",
+        "application/xml",
+        eqCapabilities = UAPP_CURRENT_CAPABILITIES,
+    ),
     BLACK_PEARL(
         "TRN Black Pearl",
         "txt",
