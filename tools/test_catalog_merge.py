@@ -3,8 +3,8 @@ import unittest
 from catalog_merge import merge_candidate
 
 
-def revision(revision_id, fingerprint, frequency, *, latest=True, version=None):
-    return {
+def revision(revision_id, fingerprint, frequency, *, latest=True, version=None, verification=None):
+    result = {
         "revision_id": revision_id,
         "acoustic_fingerprint": fingerprint,
         "preamp_gain_db": -4.0,
@@ -31,6 +31,9 @@ def revision(revision_id, fingerprint, frequency, *, latest=True, version=None):
         "source_updated_at_epoch_seconds": 10,
         "is_latest": latest,
     }
+    if verification is not None:
+        result["verification_status"] = verification
+    return result
 
 
 def profile(revisions):
@@ -74,6 +77,29 @@ class CatalogMergeTest(unittest.TestCase):
         self.assertEqual("new", revisions[0]["source_version_label"])
         self.assertEqual(20, revisions[0]["source_references"][0]["last_verified_at_epoch_seconds"])
         self.assertEqual("new-registry", merged["source_registry_version"])
+
+    def test_same_fingerprint_promotes_unverified_to_verified_without_new_revision(self):
+        existing = revision("unverified-id", "same", 100.0, verification="unverified")
+        incoming = profile([revision("verified-id", "same", 100.0, verification="verified")])
+
+        merged, outcome = merge_candidate(snapshot([existing]), incoming)
+
+        revisions = merged["profiles"][0]["revisions"]
+        self.assertEqual("metadata_update", outcome)
+        self.assertEqual(1, len(revisions))
+        self.assertEqual("unverified-id", revisions[0]["revision_id"])
+        self.assertEqual("verified", revisions[0]["verification_status"])
+
+    def test_same_fingerprint_unverified_sighting_does_not_demote_verified_revision(self):
+        existing = revision("verified-id", "same", 100.0, verification="verified")
+        incoming = profile([revision("unverified-id", "same", 100.0, verification="unverified")])
+
+        merged, outcome = merge_candidate(snapshot([existing]), incoming)
+
+        revisions = merged["profiles"][0]["revisions"]
+        self.assertEqual("metadata_update", outcome)
+        self.assertEqual(1, len(revisions))
+        self.assertEqual("verified", revisions[0]["verification_status"])
 
     def test_same_fingerprint_updates_generated_safety_headroom_in_place(self):
         existing = revision("old-id", "same", 100.0)
@@ -177,6 +203,12 @@ class CatalogMergeTest(unittest.TestCase):
         candidate["publication_eligible"] = False
 
         with self.assertRaisesRegex(ValueError, "review-only"):
+            merge_candidate(snapshot(None), candidate)
+
+    def test_invalid_verification_status_is_rejected(self):
+        candidate = profile([revision("rev-1", "fingerprint", 100.0, verification="maybe")])
+
+        with self.assertRaisesRegex(ValueError, "verification_status"):
             merge_candidate(snapshot(None), candidate)
 
 
