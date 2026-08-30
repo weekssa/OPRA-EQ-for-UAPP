@@ -2,10 +2,9 @@
 """Ingest explicitly qualified GitHub PEQ sources into the canonical catalog.
 
 Only repositories listed in config/qualified_github_sources.json are eligible.
-Each entry must name a recognized license and an exact marker for the structured
-PEQ block. Discovery alone never reaches this adapter.
+Each source must use an explicitly allowed license and each profile must point to
+an exact structured PEQ record. Discovery alone never reaches this adapter.
 """
-
 from __future__ import annotations
 
 import argparse
@@ -26,12 +25,12 @@ from catalog_pipeline import (
     reconcile_health,
     record_scan_failure,
     record_scan_success,
-    write_health,
 )
 from community_peq_ingest import build_candidate, parse_peq
 
 FENCE_RE = re.compile(r"```(?:text|txt)?\s*\n(?P<body>.*?)\n```", re.IGNORECASE | re.DOTALL)
 ALLOWED_LICENSES = {"MIT", "BSD-2-Clause", "BSD-3-Clause", "0BSD", "CC0-1.0", "CC-BY-4.0", "CC-BY-SA-4.0"}
+ALLOWED_EXTRACTIONS = {"fenced_after_marker", "whole_file"}
 
 
 def extract_fenced_peq(text: str, marker: str) -> str:
@@ -43,6 +42,21 @@ def extract_fenced_peq(text: str, marker: str) -> str:
     if not match:
         raise ValueError(f"structured PEQ code block not found after marker: {marker}")
     return match.group("body").strip()
+
+
+def extract_profile_peq(text: str, profile: dict[str, Any]) -> str:
+    extraction = str(profile.get("extraction") or "fenced_after_marker").strip()
+    if extraction == "whole_file":
+        rendered = text.strip()
+        if not rendered:
+            raise ValueError("qualified whole-file PEQ source is empty")
+        return rendered
+    if extraction == "fenced_after_marker":
+        marker = str(profile.get("marker") or "").strip()
+        if not marker:
+            raise ValueError("fenced_after_marker extraction requires marker")
+        return extract_fenced_peq(text, marker)
+    raise ValueError(f"unsupported qualified GitHub extraction: {extraction}")
 
 
 def github_contents(repository: str, path: str, ref: str, token: str | None = None) -> tuple[str, str]:
@@ -67,23 +81,40 @@ def github_contents(repository: str, path: str, ref: str, token: str | None = No
 def validate_manifest(manifest: dict[str, Any]) -> None:
     if manifest.get("schema_version") != 1:
         raise ValueError("qualified GitHub manifest schema_version must be 1")
+    seen_source_ids: set[str] = set()
     for source in manifest.get("sources", []):
         source_id = str(source.get("id") or "").strip()
         if not source_id:
             raise ValueError("qualified GitHub source id is required")
+        if source_id in seen_source_ids:
+            raise ValueError(f"duplicate qualified GitHub source id: {source_id}")
+        seen_source_ids.add(source_id)
         license_spdx = str(source.get("license_spdx") or "").strip()
         if license_spdx not in ALLOWED_LICENSES:
             raise ValueError(f"{source_id}: license is not on the explicit allow-list: {license_spdx}")
+        if not str(source.get("license_url") or "").startswith("https://"):
+            raise ValueError(f"{source_id}: license_url must be https")
+        if not str(source.get("repository") or "").strip() or not str(source.get("creator") or "").strip():
+            raise ValueError(f"{source_id}: repository and creator are required")
         if not source.get("profiles"):
             raise ValueError(f"{source_id}: at least one profile is required")
         for profile in source.get("profiles", []):
+            extraction = str(profile.get("extraction") or "fenced_after_marker").strip()
+            if extraction not in ALLOWED_EXTRACTIONS:
+                raise ValueError(f"{source_id}: unsupported extraction: {extraction}")
+            if extraction == "fenced_after_marker" and not str(profile.get("marker") or "").strip():
+                raise ValueError(f"{source_id}: fenced_after_marker profile requires marker")
+            required = ("source_path", "manufacturer", "model", "tuning_label", "source_url", "source_record_id")
+            missing = [key for key in required if not str(profile.get(key) or "").strip()]
+            if missing:
+                raise ValueError(f"{source_id}: profile missing required fields: {', '.join(missing)}")
             aliases = profile.get("model_aliases") or []
             if not isinstance(aliases, list) or any(not str(alias).strip() for alias in aliases):
                 raise ValueError(f"{source_id}: model_aliases must be a list of non-empty strings")
 
 
 def candidate_from_text(source: dict[str, Any], profile: dict[str, Any], text: str, blob_sha: str, now_epoch: int) -> dict[str, Any]:
-    peq_text = extract_fenced_peq(text, str(profile["marker"]))
+    peq_text = extract_profile_peq(text, profile)
     parsed = parse_peq(peq_text)
     candidate = build_candidate(
         parsed,
