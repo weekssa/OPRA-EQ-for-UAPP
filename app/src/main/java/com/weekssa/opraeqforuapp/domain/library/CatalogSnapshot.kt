@@ -10,6 +10,15 @@ data class CatalogSnapshot(
     @SerialName("source_registry_version") val sourceRegistryVersion: String,
     val profiles: List<CanonicalEqProfile>,
     val sources: List<SourceStatus> = emptyList(),
+    @SerialName("headphone_aliases") val headphoneAliases: List<HeadphoneAliasGroup> = emptyList(),
+)
+
+@Serializable
+data class HeadphoneAliasGroup(
+    val manufacturer: String,
+    @SerialName("canonical_model") val canonicalModel: String,
+    val aliases: List<String> = emptyList(),
+    val evidence: List<String> = emptyList(),
 )
 
 @Serializable
