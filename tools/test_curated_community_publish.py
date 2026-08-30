@@ -2,6 +2,7 @@ import unittest
 
 from curated_community_publish import (
     attach_mirror_reference,
+    build_curated_candidate,
     curated_headphone_identity,
     headphone_revisions,
 )
@@ -55,6 +56,59 @@ class CuratedCommunityPublishTest(unittest.TestCase):
             [("hd650-community", hd650_filters)],
             headphone_revisions(snapshot, "Sennheiser", "HD 650"),
         )
+
+    def test_missing_source_preamp_stays_null_and_safety_headroom_is_separate(self):
+        filters = [
+            {"type": "PK", "frequency_hz": 100.0 + index * 100.0, "gain_db": 2.0, "q": 1.0}
+            for index in range(15)
+        ]
+        candidate, diagnostics = build_curated_candidate(
+            {
+                "id": "hd650-no-preamp",
+                "creator": "example-user",
+                "source_url": "https://example.invalid/no-preamp",
+                "filters": filters,
+                "preamp_db": None,
+            },
+            manufacturer="Sennheiser",
+            model="HD 650",
+            variant=None,
+            source_id="reddit-audio",
+        )
+
+        revision = candidate["revisions"][0]
+        self.assertIsNone(revision["preamp_gain_db"])
+        self.assertEqual(15, len(revision["filters"]))
+        self.assertIsNotNone(revision["eq_library_safety_headroom_db"])
+        self.assertLessEqual(revision["eq_library_safety_headroom_db"], 0.0)
+        self.assertEqual("eq-library-safe-headroom", diagnostics["preamp_origin"])
+        self.assertIsNone(diagnostics["source_preamp_db"])
+        self.assertIn("Source omitted preamp", revision["sound_impact_summary"])
+        self.assertIn("safety headroom separately", revision["sound_impact_summary"])
+
+    def test_explicit_source_preamp_is_preserved_without_generated_headroom(self):
+        candidate, diagnostics = build_curated_candidate(
+            {
+                "id": "hd650-source-preamp",
+                "creator": "example-user",
+                "source_url": "https://example.invalid/source-preamp",
+                "filters": [
+                    {"type": "PK", "frequency_hz": 1000.0, "gain_db": 2.5, "q": 1.0}
+                ],
+                "preamp_db": -4.25,
+            },
+            manufacturer="Sennheiser",
+            model="HD 650",
+            variant=None,
+            source_id="reddit-audio",
+        )
+
+        revision = candidate["revisions"][0]
+        self.assertEqual(-4.25, revision["preamp_gain_db"])
+        self.assertIsNone(revision["eq_library_safety_headroom_db"])
+        self.assertEqual("source", diagnostics["preamp_origin"])
+        self.assertEqual(-4.25, diagnostics["source_preamp_db"])
+        self.assertNotIn("Source omitted preamp", revision["sound_impact_summary"])
 
     def test_mirror_provenance_uses_curated_headphone_identity(self):
         snapshot = {
