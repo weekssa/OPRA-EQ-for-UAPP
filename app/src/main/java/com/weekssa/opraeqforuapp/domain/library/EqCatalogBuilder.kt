@@ -3,21 +3,34 @@ package com.weekssa.opraeqforuapp.domain.library
 class EqCatalogBuilder {
     fun build(candidates: List<EqCandidate>): List<CanonicalEqProfile> {
         if (candidates.isEmpty()) return emptyList()
+        candidates.forEach { candidate ->
+            require(candidate.hasValidClassification()) {
+                "Invalid EQ preset classification: ${candidate.scope}/${candidate.purpose}"
+            }
+        }
 
         return candidates
-            .groupBy { it.headphone.normalizedKey }
+            .groupBy(::candidateContextKey)
             .values
-            .flatMap(::buildForHeadphone)
+            .flatMap(::buildForContext)
             .sortedWith(
-                compareBy<CanonicalEqProfile> { it.headphone.manufacturer.lowercase() }
-                    .thenBy { it.headphone.model.lowercase() }
+                compareBy<CanonicalEqProfile> { it.scope.name }
+                    .thenBy { it.purpose.name }
+                    .thenBy { it.headphone?.manufacturer.orEmpty().lowercase() }
+                    .thenBy { it.headphone?.model.orEmpty().lowercase() }
                     .thenBy { it.creator.orEmpty().lowercase() }
                     .thenBy { it.target.name.orEmpty().lowercase() }
                     .thenBy { it.tuningLabel.orEmpty().lowercase() },
             )
     }
 
-    private fun buildForHeadphone(candidates: List<EqCandidate>): List<CanonicalEqProfile> {
+    private fun candidateContextKey(candidate: EqCandidate): String = listOf(
+        candidate.scope.name,
+        candidate.purpose.name,
+        candidate.headphone?.normalizedKey.orEmpty(),
+    ).joinToString("|")
+
+    private fun buildForContext(candidates: List<EqCandidate>): List<CanonicalEqProfile> {
         val acousticClusters = candidates
             .groupBy { candidate -> EqFingerprint.acoustic(candidate.preampGainDb, candidate.filters) }
             .map { (acousticFingerprint, clusterCandidates) ->
@@ -92,6 +105,8 @@ class EqCatalogBuilder {
         return CanonicalEqProfile(
             canonicalProfileId = lineageFingerprint,
             headphone = profilePrimary.primary.headphone,
+            scope = profilePrimary.primary.scope,
+            purpose = profilePrimary.primary.purpose,
             creator = profilePrimary.primary.creator,
             target = profilePrimary.primary.target,
             tuningLabel = profilePrimary.primary.tuningLabel,
@@ -105,6 +120,8 @@ class EqCatalogBuilder {
             !candidate.tuningLabel.isNullOrBlank()
         if (hasLineageMetadata) {
             return EqFingerprint.lineage(
+                scope = candidate.scope,
+                purpose = candidate.purpose,
                 headphone = candidate.headphone,
                 creator = candidate.creator,
                 target = candidate.target,
@@ -116,6 +133,8 @@ class EqCatalogBuilder {
             ?: candidate.sourceReference.url
             ?: candidate.sourceReference.sourceId
         return EqFingerprint.lineage(
+            scope = candidate.scope,
+            purpose = candidate.purpose,
             headphone = candidate.headphone,
             creator = "unknown:${candidate.sourceReference.sourceId}:$sourceFallback",
             target = candidate.target,
