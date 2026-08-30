@@ -11,9 +11,11 @@ on:
       - 'config/source_registry.json'
       - 'config/qualified_github_sources.json'
       - 'config/headphone_identity_decisions.json'
+      - 'config/immutable_revision_seeds.json'
       - 'tools/autoeq_currentness.py'
       - 'tools/autoeq_ingest.py'
       - 'tools/autoeq_corpus_ingest.py'
+      - 'tools/catalog_history_repair.py'
       - 'tools/catalog_merge.py'
       - 'tools/catalog_pipeline.py'
       - 'tools/currentness_scheduler.py'
@@ -58,6 +60,13 @@ jobs:
             --candidate catalog/catalog.json \
             --published "${RUNNER_TEMP}/baseline-published.json" \
             --last-known-good "${RUNNER_TEMP}/baseline-lkg.json"
+      - name: Restore reviewed immutable catalog history
+        run: >-
+          python3 tools/catalog_history_repair.py
+          --catalog catalog/catalog.json
+          --seeds config/immutable_revision_seeds.json
+          --output "${RUNNER_TEMP}/catalog.history-restored.json"
+          --report "${RUNNER_TEMP}/catalog-history-repair.json"
       - name: Build currentness plan
         run: >-
           python3 tools/currentness_scheduler.py
@@ -80,7 +89,7 @@ jobs:
         run: >-
           python3 tools/autoeq_corpus_ingest.py
           --autoeq-root "${RUNNER_TEMP}/autoeq-upstream"
-          --catalog catalog/catalog.json
+          --catalog "${RUNNER_TEMP}/catalog.history-restored.json"
           --registry config/source_registry.json
           --health catalog/source_health.json
           --catalog-output "${RUNNER_TEMP}/catalog.autoeq.json"
@@ -202,6 +211,7 @@ jobs:
           name: eq-catalog-currentness-${{ github.run_id }}
           path: |
             ${{ runner.temp }}/currentness-plan.json
+            ${{ runner.temp }}/catalog-history-repair.json
             ${{ runner.temp }}/validated-catalog.json
             ${{ runner.temp }}/validated-lkg.json
             ${{ runner.temp }}/source_health.candidate.json

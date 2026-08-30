@@ -10,9 +10,11 @@ on:
       - 'config/source_registry.json'
       - 'config/qualified_github_sources.json'
       - 'config/headphone_identity_decisions.json'
+      - 'config/immutable_revision_seeds.json'
       - 'tools/acoustic_fingerprint.py'
       - 'tools/catalog_pipeline.py'
       - 'tools/catalog_merge.py'
+      - 'tools/catalog_history_repair.py'
       - 'tools/currentness_scheduler.py'
       - 'tools/autoeq_ingest.py'
       - 'tools/autoeq_currentness.py'
@@ -36,9 +38,11 @@ on:
       - 'config/source_registry.json'
       - 'config/qualified_github_sources.json'
       - 'config/headphone_identity_decisions.json'
+      - 'config/immutable_revision_seeds.json'
       - 'tools/acoustic_fingerprint.py'
       - 'tools/catalog_pipeline.py'
       - 'tools/catalog_merge.py'
+      - 'tools/catalog_history_repair.py'
       - 'tools/currentness_scheduler.py'
       - 'tools/autoeq_ingest.py'
       - 'tools/autoeq_currentness.py'
@@ -78,6 +82,14 @@ jobs:
           --candidate catalog/catalog.json
           --published "${RUNNER_TEMP}/published.json"
           --last-known-good "${RUNNER_TEMP}/catalog.last-known-good.json"
+      - name: Restore reviewed immutable catalog history in CI workspace
+        run: |
+          python3 tools/catalog_history_repair.py \
+            --catalog catalog/catalog.json \
+            --seeds config/immutable_revision_seeds.json \
+            --output "${RUNNER_TEMP}/catalog.history-restored.json" \
+            --report "${RUNNER_TEMP}/catalog-history-repair.json"
+          cp "${RUNNER_TEMP}/catalog.history-restored.json" catalog/catalog.json
       - name: Reconcile source-health state in a temporary file
         run: cp catalog/source_health.json "${RUNNER_TEMP}/source_health.json" && python3 tools/catalog_pipeline.py reconcile-health --registry config/source_registry.json --state "${RUNNER_TEMP}/source_health.json"
       - name: Build deterministic currentness plan
