@@ -17,6 +17,7 @@ on:
       - 'tools/autoeq_currentness.py'
       - 'tools/community_peq_ingest.py'
       - 'tools/github_preset_discovery.py'
+      - 'tools/headphone_identity_audit.py'
       - 'tools/qualified_github_ingest.py'
       - 'tools/squiglink_discovery.py'
       - 'tools/oratory_provenance.py'
@@ -38,6 +39,7 @@ on:
       - 'tools/autoeq_currentness.py'
       - 'tools/community_peq_ingest.py'
       - 'tools/github_preset_discovery.py'
+      - 'tools/headphone_identity_audit.py'
       - 'tools/qualified_github_ingest.py'
       - 'tools/squiglink_discovery.py'
       - 'tools/oratory_provenance.py'
@@ -77,6 +79,29 @@ jobs:
           --last-discovery-at 2026-08-20T15:00:00Z
       - name: Run all external catalog unit tests
         run: python3 -m unittest discover -s tools -p 'test_*.py' -v
+      - name: Audit current OPRA headphone identity
+        run: |
+          python3 tools/headphone_identity_audit.py \
+            --catalog catalog/catalog.json \
+            --output "${RUNNER_TEMP}/headphone-identity-audit.json"
+          python3 - <<'PY'
+          import json, os
+          path = os.environ['RUNNER_TEMP'] + '/headphone-identity-audit.json'
+          report = json.load(open(path, encoding='utf-8'))
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as summary:
+              summary.write('## Headphone identity audit\n\n')
+              summary.write(f"- OPRA products scanned: {report['product_count']}\n")
+              summary.write(f"- exact-normalized groups auto-safe: {report['auto_safe_exact_group_count']}\n")
+              summary.write(f"- explicit alias pairs already covered: {report['covered_explicit_alias_pair_count']}\n")
+              summary.write(f"- candidates requiring review: {report['review_candidate_count']}\n")
+          PY
+      - name: Upload headphone identity audit
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: headphone-identity-audit-${{ github.sha }}
+          path: ${{ runner.temp }}/headphone-identity-audit.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Exercise live qualified AutoEQ refresh without publishing
         env:
           GITHUB_TOKEN: ${{ github.token }}
