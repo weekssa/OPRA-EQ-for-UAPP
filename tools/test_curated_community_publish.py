@@ -110,6 +110,70 @@ class CuratedCommunityPublishTest(unittest.TestCase):
         self.assertEqual(-4.25, diagnostics["source_preamp_db"])
         self.assertNotIn("Source omitted preamp", revision["sound_impact_summary"])
 
+    def test_named_tuning_and_explicit_target_keep_same_creator_alternatives_distinct(self):
+        base = {
+            "creator": "Bop",
+            "source_url": "https://example.invalid/head-fi-post",
+            "source_date": "2022-06-02",
+            "preamp_db": -3.8,
+            "filters": [
+                {"type": "PK", "frequency_hz": 3300.0, "gain_db": 4.0, "q": 1.8}
+            ],
+        }
+        neutral, neutral_diagnostics = build_curated_candidate(
+            {
+                **base,
+                "id": "p1max-neutral",
+                "tuning_label": "Crinacle Neutral Target",
+                "target": "Crinacle Neutral Target",
+            },
+            manufacturer="TINHIFI",
+            model="P1 MAX",
+            variant=None,
+            source_id="head-fi",
+        )
+        adjusted, adjusted_diagnostics = build_curated_candidate(
+            {
+                **base,
+                "id": "p1max-adjusted",
+                "tuning_label": "Crinacle Adjusted Target",
+                "target": "Crinacle Adjusted Target",
+            },
+            manufacturer="TINHIFI",
+            model="P1 MAX",
+            variant=None,
+            source_id="head-fi",
+        )
+
+        self.assertNotEqual(neutral["canonical_profile_id"], adjusted["canonical_profile_id"])
+        self.assertEqual("Crinacle Neutral Target", neutral["tuning_label"])
+        self.assertEqual("Crinacle Neutral Target", neutral["target"]["name"])
+        self.assertEqual("explicit_target", neutral["target"]["kind"])
+        self.assertEqual("Crinacle Neutral Target", neutral_diagnostics["tuning_label"])
+        self.assertEqual("Crinacle Adjusted Target", adjusted_diagnostics["target"])
+
+    def test_default_tuning_label_remains_creator_based_when_source_has_no_named_alternative(self):
+        candidate, diagnostics = build_curated_candidate(
+            {
+                "id": "unnamed",
+                "creator": "example-user",
+                "source_url": "https://example.invalid/unnamed",
+                "preamp_db": -1.0,
+                "filters": [
+                    {"type": "PK", "frequency_hz": 1000.0, "gain_db": 1.0, "q": 1.0}
+                ],
+            },
+            manufacturer="Maker",
+            model="Model",
+            variant=None,
+            source_id="reddit-audio",
+        )
+
+        self.assertEqual("example-user community tuning", candidate["tuning_label"])
+        self.assertIsNone(candidate["target"]["name"])
+        self.assertEqual("example-user community tuning", diagnostics["tuning_label"])
+        self.assertIsNone(diagnostics["target"])
+
     def test_mirror_provenance_uses_curated_headphone_identity(self):
         snapshot = {
             "profiles": [
