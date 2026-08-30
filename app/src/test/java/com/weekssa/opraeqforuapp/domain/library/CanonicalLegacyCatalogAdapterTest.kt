@@ -68,6 +68,69 @@ class CanonicalLegacyCatalogAdapterTest {
     }
 
     @Test
+    fun projectsExplicitMeasurementDatabaseSeparatelyFromCarrierSource() {
+        val headphone = HeadphoneIdentity("HIFIMAN", "Edition XS")
+        val source = EqSourceReference(
+            sourceId = "autoeq",
+            sourceKind = EqSourceKind.MEASUREMENT_DERIVED,
+            sourceRecordId = "results/HypetheSonics/over-ear/HIFIMAN Edition XS/HIFIMAN Edition XS ParametricEQ.txt",
+            sourceDataset = "HypetheSonics",
+            url = "https://example.com/autoeq",
+            creator = "AutoEq",
+            provenanceTier = ProvenanceTier.MEASUREMENT_DERIVED,
+            redistributionPolicy = RedistributionPolicy.STRUCTURED_DATA_ONLY,
+            isPrimary = true,
+        )
+        val canonical = CanonicalEqProfile(
+            canonicalProfileId = "edition-xs-autoeq",
+            headphone = headphone,
+            creator = "AutoEq",
+            target = EqTarget(null, EqTargetKind.UNKNOWN),
+            tuningLabel = "AutoEq (HypetheSonics measurement)",
+            revisions = listOf(revision("r1", 100.0, source, isLatest = true)),
+        )
+
+        val legacy = CanonicalLegacyCatalogAdapter.adapt(
+            CatalogSnapshot(1, "2026-08-29T17:00:00Z", "test", listOf(canonical)),
+        )
+
+        assertThat(legacy.profiles.single().details).contains("Database: HypetheSonics")
+        assertThat(legacy.profiles.single().details).contains("Measurement: HypetheSonics")
+        assertThat(legacy.profiles.single().details).contains("Source: AutoEQ")
+    }
+
+    @Test
+    fun recoversMeasurementDatabaseForOlderCatalogRecordsWithoutDatasetField() {
+        val source = EqSourceReference(
+            sourceId = "opra",
+            sourceKind = EqSourceKind.STRUCTURED_CATALOG,
+            sourceRecordId = "legacy-profile",
+            sourceVendorId = "vendor",
+            sourceProductId = "product",
+            url = "https://example.com/opra",
+            creator = "AutoEq",
+            provenanceTier = ProvenanceTier.MEASUREMENT_DERIVED,
+            redistributionPolicy = RedistributionPolicy.STRUCTURED_DATA_ONLY,
+            isPrimary = true,
+        )
+        val canonical = CanonicalEqProfile(
+            canonicalProfileId = "legacy-measurement",
+            headphone = HeadphoneIdentity("Aero", "Test"),
+            creator = "AutoEq",
+            target = EqTarget(null, EqTargetKind.UNKNOWN),
+            tuningLabel = "AutoEq (HypetheSonics / ANC Off measurement)",
+            revisions = listOf(revision("r1", 100.0, source, isLatest = true)),
+        )
+
+        val legacy = CanonicalLegacyCatalogAdapter.adapt(
+            CatalogSnapshot(1, "2026-08-29T17:00:00Z", "test", listOf(canonical)),
+        )
+
+        assertThat(legacy.profiles.single().details).contains("Database: HypetheSonics")
+        assertThat(legacy.profiles.single().details).contains("Source: OPRA")
+    }
+
+    @Test
     fun projectsHistoricalRevisionsAsExplicitSelectableProfiles() {
         val source = EqSourceReference(
             sourceId = "community",
