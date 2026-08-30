@@ -75,6 +75,26 @@ class CatalogMergeTest(unittest.TestCase):
         self.assertEqual(20, revisions[0]["source_references"][0]["last_verified_at_epoch_seconds"])
         self.assertEqual("new-registry", merged["source_registry_version"])
 
+    def test_same_fingerprint_updates_generated_safety_headroom_in_place(self):
+        existing = revision("old-id", "same", 100.0)
+        existing["preamp_gain_db"] = None
+        existing["eq_library_safety_headroom_db"] = -3.0
+        incoming_revision = revision("new-id", "same", 100.0)
+        incoming_revision["preamp_gain_db"] = None
+        incoming_revision["eq_library_safety_headroom_db"] = -4.5
+
+        merged, outcome = merge_candidate(
+            snapshot([existing]),
+            profile([incoming_revision]),
+        )
+
+        revisions = merged["profiles"][0]["revisions"]
+        self.assertEqual("metadata_update", outcome)
+        self.assertEqual(1, len(revisions))
+        self.assertEqual("old-id", revisions[0]["revision_id"])
+        self.assertIsNone(revisions[0]["preamp_gain_db"])
+        self.assertEqual(-4.5, revisions[0]["eq_library_safety_headroom_db"])
+
     def test_changed_fingerprint_creates_new_immutable_revision(self):
         existing = revision("rev-old", "old-fingerprint", 100.0, latest=True)
         incoming = profile([revision("rev-new", "new-fingerprint", 110.0, latest=True)])
