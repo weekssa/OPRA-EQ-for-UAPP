@@ -39,6 +39,72 @@ class ManagedCatalogReconcilerTest {
     }
 
     @Test
+    fun newUnverifiedProfileIsNotSilentlySelectedWhenAutoIncludeIsOn() {
+        val unverified = compatibleProfile("new-unverified").copy(isVerified = false)
+
+        val result = reconcileManagedProfiles(
+            productId = "product",
+            productName = "Headphone",
+            currentProfiles = listOf(unverified),
+            existingProfiles = emptyList(),
+            autoIncludeNewProfiles = true,
+            nowMillis = 100L,
+            snapshotCodec = codec,
+        )
+
+        val reconciled = result.profiles.single()
+        assertFalse(reconciled.selected)
+        assertEquals(null, reconciled.generatedXml)
+        assertTrue(reconciled.isNewUnreviewed)
+        assertEquals(1, result.changes.newProfileCount)
+    }
+
+    @Test
+    fun verificationPromotionAutoSelectsPreviouslyUnselectedProfileWhenAutoIncludeIsOn() {
+        val unverified = compatibleProfile("community").copy(isVerified = false)
+        val existing = existingEntity(unverified, selected = false, generatedXml = null)
+        val verified = unverified.copy(isVerified = true)
+
+        val result = reconcileManagedProfiles(
+            productId = "product",
+            productName = "Headphone",
+            currentProfiles = listOf(verified),
+            existingProfiles = listOf(existing),
+            autoIncludeNewProfiles = true,
+            nowMillis = 200L,
+            snapshotCodec = codec,
+        )
+
+        val reconciled = result.profiles.single()
+        assertTrue(reconciled.selected)
+        assertNotNull(reconciled.generatedXml)
+        assertEquals(codec.fingerprint(unverified), codec.fingerprint(verified))
+        assertEquals(0, result.changes.updatedSelectedProfileCount)
+    }
+
+    @Test
+    fun verificationPromotionDoesNotAutoSelectWhenAutoIncludeIsOff() {
+        val unverified = compatibleProfile("community").copy(isVerified = false)
+        val existing = existingEntity(unverified, selected = false, generatedXml = null)
+        val verified = unverified.copy(isVerified = true)
+
+        val result = reconcileManagedProfiles(
+            productId = "product",
+            productName = "Headphone",
+            currentProfiles = listOf(verified),
+            existingProfiles = listOf(existing),
+            autoIncludeNewProfiles = false,
+            nowMillis = 200L,
+            snapshotCodec = codec,
+        )
+
+        val reconciled = result.profiles.single()
+        assertFalse(reconciled.selected)
+        assertEquals(null, reconciled.generatedXml)
+        assertEquals(0, result.changes.updatedSelectedProfileCount)
+    }
+
+    @Test
     fun newCompatibleProfileRemainsUnselectedWhenAutoIncludeIsOff() {
         val profile = compatibleProfile("new")
 
