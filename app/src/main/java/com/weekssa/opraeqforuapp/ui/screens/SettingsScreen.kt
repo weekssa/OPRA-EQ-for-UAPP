@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.BuildConfig
 import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshFailureReason
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
+import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityCategory
 import com.weekssa.opraeqforuapp.domain.settings.ThemeMode
@@ -44,6 +45,8 @@ fun SettingsScreen(
     onOpenUrl: (String) -> Unit,
     onThemeModeChange: (ThemeMode) -> Unit,
     onProfileVisibilityChange: (ProfileVisibilityCategory, Boolean) -> Unit,
+    onExportTargetChange: (ExportDevice, Boolean) -> Unit,
+    onShowUnexportablePresetsChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -52,21 +55,21 @@ fun SettingsScreen(
             .padding(horizontal = 20.dp, vertical = 16.dp),
     ) {
         SectionTitle("Profile visibility")
-        VisibilityOption(
+        CheckboxOption(
             title = "Fully compatible",
             checked = appPreferences.profileVisibility.showFullyCompatible,
             onCheckedChange = {
                 onProfileVisibilityChange(ProfileVisibilityCategory.FullyCompatible, it)
             },
         )
-        VisibilityOption(
+        CheckboxOption(
             title = "Compatible with limitation",
             checked = appPreferences.profileVisibility.showCompatibleWithLimitation,
             onCheckedChange = {
                 onProfileVisibilityChange(ProfileVisibilityCategory.CompatibleWithLimitation, it)
             },
         )
-        VisibilityOption(
+        CheckboxOption(
             title = "Not compatible",
             checked = appPreferences.profileVisibility.showNotCompatible,
             onCheckedChange = {
@@ -94,7 +97,30 @@ fun SettingsScreen(
         )
 
         SectionDivider()
-        SectionTitle("Exports")
+        SectionTitle("Export targets")
+        Text(
+            text = "Choose the formats or devices you use. These choices only filter what EQ Library shows and offers for export; they never remove EQs from the catalog.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 4.dp),
+        )
+        ExportDevice.entries.forEach { device ->
+            CheckboxOption(
+                title = device.folderName,
+                description = exportTargetDescription(device),
+                checked = appPreferences.exportTargets.isSelected(device),
+                onCheckedChange = { enabled -> onExportTargetChange(device, enabled) },
+            )
+        }
+        CheckboxOption(
+            title = "Show presets that none of my devices can export",
+            description = "On by default. When off, those presets are hidden from normal browsing but remain in the EQ Library and in any existing saved state.",
+            checked = appPreferences.exportTargets.showUnexportablePresets,
+            onCheckedChange = onShowUnexportablePresetsChange,
+        )
+
+        SectionDivider()
+        SectionTitle("Export folder")
         Text("EQ Library root folder")
         Text(
             text = appPreferences.exportTreeLabel ?: "Not chosen yet",
@@ -102,7 +128,7 @@ fun SettingsScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            text = "Suggested location: Documents/EQ Library. Each export creates device-first folders for UAPP, TRN Black Pearl, Topping DX5 II, and Topping DX1 II.",
+            text = "Suggested location: Documents/EQ Library. Exports create device-first folders only for the target you choose.",
             modifier = Modifier.padding(top = 4.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -138,7 +164,7 @@ fun SettingsScreen(
             }
             is CatalogState.Ready -> {
                 Text(
-                    text = if (catalogState.isRefreshing) "Refreshing…" else "Saved OPRA source available",
+                    text = if (catalogState.isRefreshing) "Refreshing…" else "Saved EQ Library catalog available",
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 Text(
@@ -154,7 +180,7 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = "OPRA is the first live source in this beta. Additional canonical/community sources are being added behind the same library model.",
+                    text = "OPRA remains a primary live source. The canonical library can also contain validated AutoEq, creator, repository, and attributed community profiles.",
                     modifier = Modifier.padding(top = 4.dp),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -217,7 +243,7 @@ fun SettingsScreen(
         SectionDivider()
         SectionTitle("Privacy")
         Text(
-            text = "Headphone selections, app settings, generated preset state, and conversion stay on this device. No account is required, and EQ Library contains no analytics or telemetry. This beta uses network access for the OPRA source catalog and public app-release metadata.",
+            text = "Headphone selections, app settings, generated preset state, and conversion stay on this device. No account is required, and EQ Library contains no analytics or telemetry. Network access is used for public EQ catalog sources and public app-release metadata.",
             style = MaterialTheme.typography.bodyMedium,
         )
 
@@ -263,10 +289,11 @@ private fun SectionDivider() {
 }
 
 @Composable
-private fun VisibilityOption(
+private fun CheckboxOption(
     title: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
+    description: String? = null,
 ) {
     Row(
         modifier = Modifier
@@ -280,7 +307,16 @@ private fun VisibilityOption(
             onCheckedChange = onCheckedChange,
         )
         Spacer(Modifier.width(12.dp))
-        Text(title)
+        Column {
+            Text(title)
+            if (description != null) {
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
     }
 }
 
@@ -314,6 +350,13 @@ private fun ThemeOption(
             }
         }
     }
+}
+
+private fun exportTargetDescription(device: ExportDevice): String = when (device) {
+    ExportDevice.UAPP -> "USB Audio Player PRO / ToneBoosters XML"
+    ExportDevice.BLACK_PEARL -> "TRN Black Pearl preset text"
+    ExportDevice.TOPPING_DX5_II -> "TOPPING Tune · DX5 II · hardware validation pending"
+    ExportDevice.TOPPING_DX1_II -> "TOPPING Tune · DX1 II · hardware validation pending"
 }
 
 private fun formatCatalogTime(epochMillis: Long): String =
