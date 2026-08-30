@@ -10,6 +10,7 @@ on:
       - 'catalog/source_health.json'
       - 'config/source_registry.json'
       - 'config/qualified_github_sources.json'
+      - 'config/headphone_identity_decisions.json'
       - 'tools/autoeq_currentness.py'
       - 'tools/autoeq_ingest.py'
       - 'tools/catalog_merge.py'
@@ -17,6 +18,7 @@ on:
       - 'tools/currentness_scheduler.py'
       - 'tools/github_preset_discovery.py'
       - 'tools/headphone_identity_audit.py'
+      - 'tools/headphone_identity_decisions.py'
       - 'tools/qualified_github_ingest.py'
       - 'tools/oratory_provenance.py'
       - 'tools/oratory_update_discovery.py'
@@ -49,6 +51,7 @@ jobs:
       - name: Validate registry and current published snapshot
         run: |
           python3 tools/catalog_pipeline.py validate-registry --registry config/source_registry.json
+          python3 tools/headphone_identity_decisions.py validate --decisions config/headphone_identity_decisions.json
           python3 tools/catalog_pipeline.py publish \
             --candidate catalog/catalog.json \
             --published "${RUNNER_TEMP}/baseline-published.json" \
@@ -87,8 +90,14 @@ jobs:
         run: >-
           python3 tools/oratory_provenance.py
           --catalog "${RUNNER_TEMP}/catalog.github.json"
-          --output "${RUNNER_TEMP}/catalog.candidate.json"
+          --output "${RUNNER_TEMP}/catalog.preidentity.json"
           --report "${RUNNER_TEMP}/oratory-provenance.json"
+      - name: Reapply reviewed headphone identity decisions
+        run: >-
+          python3 tools/headphone_identity_decisions.py apply
+          --decisions config/headphone_identity_decisions.json
+          --catalog "${RUNNER_TEMP}/catalog.preidentity.json"
+          --output "${RUNNER_TEMP}/catalog.candidate.json"
       - name: Discover latest direct oratory update metadata
         run: >-
           python3 tools/oratory_update_discovery.py
@@ -105,6 +114,7 @@ jobs:
         run: >-
           python3 tools/headphone_identity_audit.py
           --catalog "${RUNNER_TEMP}/validated-catalog.json"
+          --decisions config/headphone_identity_decisions.json
           --output "${RUNNER_TEMP}/headphone-identity-audit.json"
       - name: Discover public GitHub structured-EQ candidates
         env:
