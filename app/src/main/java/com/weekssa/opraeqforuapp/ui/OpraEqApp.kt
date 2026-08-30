@@ -128,6 +128,8 @@ fun OpraEqApp(
     onOpenUrl: (String) -> Unit,
     onThemeModeChange: (ThemeMode) -> Unit,
     onProfileVisibilityChange: (ProfileVisibilityCategory, Boolean) -> Unit,
+    onExportTargetChange: (ExportDevice, Boolean) -> Unit,
+    onShowUnexportablePresetsChange: (Boolean) -> Unit,
 ) {
     var selectedDestinationIndex by rememberSaveable { mutableIntStateOf(0) }
     var selectedManagedProductId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -146,6 +148,7 @@ fun OpraEqApp(
             .mapNotNull { it.sourceProfileId }
             .toSet()
     }
+    val selectedExportDevices = ExportDevice.entries.filter(appPreferences.exportTargets::isSelected)
     val catalogBusy = catalogState is CatalogState.Loading ||
         (catalogState as? CatalogState.Ready)?.isRefreshing == true
     val selectedManagedHeadphone = selectedManagedProductId?.let { productId ->
@@ -246,36 +249,40 @@ fun OpraEqApp(
             title = { Text("Export to device") },
             text = {
                 Column {
-                    Text(
-                        text = "Choose one target. Only that device format will be exported.",
-                        modifier = Modifier.padding(bottom = 8.dp),
-                    )
-                    ExportDevice.entries.forEach { device ->
-                        TextButton(
-                            onClick = {
-                                pendingExportScope = null
-                                val request = when (exportScope) {
-                                    ExportScope.AllManaged -> ExportRequest.AllManaged(device)
-                                    is ExportScope.Product -> ExportRequest.Product(exportScope.productId, device)
-                                    is ExportScope.SavedEq -> ExportRequest.SavedEq(exportScope.entryId, device)
-                                }
-                                runExportRequest(request)
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Column(modifier = Modifier.fillMaxWidth()) {
-                                Text(device.folderName, style = MaterialTheme.typography.titleMedium)
-                                Text(
-                                    text = exportDeviceDescription(device),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                                device.validationStatus?.let { status ->
+                    if (selectedExportDevices.isEmpty()) {
+                        Text("No export targets are selected. Choose at least one target in Settings → Export targets.")
+                    } else {
+                        Text(
+                            text = "Choose one of your selected targets. Only that device format will be exported.",
+                            modifier = Modifier.padding(bottom = 8.dp),
+                        )
+                        selectedExportDevices.forEach { device ->
+                            TextButton(
+                                onClick = {
+                                    pendingExportScope = null
+                                    val request = when (exportScope) {
+                                        ExportScope.AllManaged -> ExportRequest.AllManaged(device)
+                                        is ExportScope.Product -> ExportRequest.Product(exportScope.productId, device)
+                                        is ExportScope.SavedEq -> ExportRequest.SavedEq(exportScope.entryId, device)
+                                    }
+                                    runExportRequest(request)
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Column(modifier = Modifier.fillMaxWidth()) {
+                                    Text(device.folderName, style = MaterialTheme.typography.titleMedium)
                                     Text(
-                                        text = "$status · hardware validation pending",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.tertiary,
+                                        text = exportDeviceDescription(device),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
+                                    device.validationStatus?.let { status ->
+                                        Text(
+                                            text = "$status · hardware validation pending",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.tertiary,
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -385,6 +392,8 @@ fun OpraEqApp(
                         onOpenUrl = onOpenUrl,
                         onThemeModeChange = onThemeModeChange,
                         onProfileVisibilityChange = onProfileVisibilityChange,
+                        onExportTargetChange = onExportTargetChange,
+                        onShowUnexportablePresetsChange = onShowUnexportablePresetsChange,
                         modifier = Modifier.fillMaxSize(),
                     )
                 } else {
