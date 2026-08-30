@@ -38,6 +38,7 @@ import com.weekssa.opraeqforuapp.domain.catalog.assessCompatibility
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedProfileRecord
 import com.weekssa.opraeqforuapp.domain.model.ProfileCompatibility
+import com.weekssa.opraeqforuapp.domain.settings.ExportTargetPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityPreferences
 import kotlinx.coroutines.launch
 
@@ -46,6 +47,7 @@ fun ManagedHeadphoneDetailScreen(
     headphone: ManagedHeadphoneRecord,
     catalogState: CatalogState,
     profileVisibility: ProfileVisibilityPreferences,
+    exportTargets: ExportTargetPreferences = ExportTargetPreferences(),
     favoriteProfileIds: Set<String>,
     onToggleFavorite: suspend (OpraEqProfile, String, String) -> Boolean,
     onLoadManagedHeadphone: suspend (String) -> ManagedHeadphoneRecord?,
@@ -79,6 +81,7 @@ fun ManagedHeadphoneDetailScreen(
             catalog = readyCatalog.catalog,
             product = product,
             profileVisibility = profileVisibility,
+            exportTargets = exportTargets,
             favoriteProfileIds = favoriteProfileIds,
             onToggleFavorite = onToggleFavorite,
             onLoadManagedHeadphone = onLoadManagedHeadphone,
@@ -175,9 +178,9 @@ fun ManagedHeadphoneDetailScreen(
         )
         Text(
             text = if (headphone.autoIncludeNewProfiles) {
-                "Automatically include new compatible EQ profiles: On"
+                "Automatically include new compatible verified EQ profiles: On"
             } else {
-                "Automatically include new compatible EQ profiles: Off"
+                "Automatically include new compatible verified EQ profiles: Off"
             },
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
             style = MaterialTheme.typography.bodyMedium,
@@ -201,6 +204,7 @@ fun ManagedHeadphoneDetailScreen(
             items(displayedProfiles, key = ManagedProfileRecord::profileId) { profile ->
                 ManagedProfileRow(
                     profile = profile,
+                    onOpenSource = profile.lastKnownProfile.link?.let { sourceUrl -> { onOpenUrl(sourceUrl) } },
                     onRemove = {
                         deleteSavedFiles = false
                         pendingProfileRemoval = profile
@@ -225,6 +229,7 @@ fun ManagedHeadphoneDetailScreen(
 @Composable
 private fun ManagedProfileRow(
     profile: ManagedProfileRecord,
+    onOpenSource: (() -> Unit)?,
     onRemove: (() -> Unit)?,
 ) {
     val source = profile.lastKnownProfile
@@ -235,7 +240,17 @@ private fun ManagedProfileRow(
         },
         supportingContent = {
             Column {
+                if (!source.isVerified) {
+                    Text(
+                        text = "Unverified · not independently verified",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.tertiary,
+                    )
+                }
                 source.details?.let { Text(it) }
+                onOpenSource?.let { action ->
+                    TextButton(onClick = action) { Text("Source") }
+                }
                 when {
                     profile.noLongerAvailable -> Text("No longer available in EQ Library")
                     compatibility == ProfileCompatibility.NotCompatible -> Text("Not compatible · unavailable for selection")
