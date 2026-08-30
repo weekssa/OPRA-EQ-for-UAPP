@@ -95,6 +95,60 @@ class CatalogMergeTest(unittest.TestCase):
         self.assertIsNone(revisions[0]["preamp_gain_db"])
         self.assertEqual(-4.5, revisions[0]["eq_library_safety_headroom_db"])
 
+    def test_legacy_generated_preamp_revision_is_repaired_not_preserved_as_history(self):
+        legacy = revision("legacy-bug", "legacy-fingerprint", 100.0)
+        legacy["preamp_gain_db"] = -3.0
+        incoming_revision = revision("correct-source", "correct-fingerprint", 100.0)
+        incoming_revision["preamp_gain_db"] = None
+        incoming_revision["eq_library_safety_headroom_db"] = -3.0
+
+        merged, outcome = merge_candidate(
+            snapshot([legacy]),
+            profile([incoming_revision]),
+        )
+
+        revisions = merged["profiles"][0]["revisions"]
+        self.assertEqual("history_repair", outcome)
+        self.assertEqual(1, len(revisions))
+        self.assertEqual("correct-source", revisions[0]["revision_id"])
+        self.assertIsNone(revisions[0]["preamp_gain_db"])
+        self.assertEqual(-3.0, revisions[0]["eq_library_safety_headroom_db"])
+        self.assertTrue(revisions[0]["is_latest"])
+
+    def test_legacy_generated_preamp_repair_requires_identical_source_reference(self):
+        legacy = revision("legacy-bug", "legacy-fingerprint", 100.0)
+        legacy["preamp_gain_db"] = -3.0
+        incoming_revision = revision("correct-source", "correct-fingerprint", 100.0)
+        incoming_revision["preamp_gain_db"] = None
+        incoming_revision["eq_library_safety_headroom_db"] = -3.0
+        incoming_revision["source_references"][0]["source_record_id"] = "different.txt"
+
+        merged, outcome = merge_candidate(
+            snapshot([legacy]),
+            profile([incoming_revision]),
+        )
+
+        revisions = merged["profiles"][0]["revisions"]
+        self.assertEqual("new_revision", outcome)
+        self.assertEqual(2, len(revisions))
+        self.assertEqual({"legacy-bug", "correct-source"}, {item["revision_id"] for item in revisions})
+
+    def test_legacy_generated_preamp_repair_requires_exact_filters(self):
+        legacy = revision("legacy-bug", "legacy-fingerprint", 100.0)
+        legacy["preamp_gain_db"] = -3.0
+        incoming_revision = revision("correct-source", "correct-fingerprint", 101.0)
+        incoming_revision["preamp_gain_db"] = None
+        incoming_revision["eq_library_safety_headroom_db"] = -3.0
+
+        merged, outcome = merge_candidate(
+            snapshot([legacy]),
+            profile([incoming_revision]),
+        )
+
+        revisions = merged["profiles"][0]["revisions"]
+        self.assertEqual("new_revision", outcome)
+        self.assertEqual(2, len(revisions))
+
     def test_changed_fingerprint_creates_new_immutable_revision(self):
         existing = revision("rev-old", "old-fingerprint", 100.0, latest=True)
         incoming = profile([revision("rev-new", "new-fingerprint", 110.0, latest=True)])
