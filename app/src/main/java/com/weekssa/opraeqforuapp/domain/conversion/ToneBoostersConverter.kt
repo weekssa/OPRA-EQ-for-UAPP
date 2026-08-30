@@ -3,8 +3,6 @@ package com.weekssa.opraeqforuapp.domain.conversion
 import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.assessCompatibility
-import com.weekssa.opraeqforuapp.domain.catalog.effectivePlaybackPreampDb
-import com.weekssa.opraeqforuapp.domain.catalog.usesEqLibrarySafetyHeadroom
 import com.weekssa.opraeqforuapp.domain.model.ProfileCompatibility
 import java.math.BigDecimal
 import java.math.RoundingMode
