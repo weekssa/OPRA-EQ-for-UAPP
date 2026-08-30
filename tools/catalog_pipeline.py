@@ -26,6 +26,8 @@ from acoustic_fingerprint import acoustic_fingerprint as canonical_acoustic_fing
 VALID_LIFECYCLES = {"proposed", "reviewing", "active", "link-only", "paused", "retired"}
 VALID_REDISTRIBUTION = {"allowed", "structured-data-only", "link-only", "review-required"}
 VALID_CADENCES = {"hourly", "daily", "weekly", "monthly", "manual"}
+VALID_PROFILE_SCOPES = {"headphone", "general"}
+VALID_PRESET_PURPOSES = {"correction_tuning", "effect", "genre", "personal_community"}
 
 
 def utc_now() -> str:
@@ -231,6 +233,38 @@ def validate_headphone_aliases(snapshot: dict[str, Any]) -> list[str]:
     return errors
 
 
+def validate_profile_classification(profile: dict[str, Any], prefix: str) -> list[str]:
+    """Validate backward-compatible scope/purpose metadata without changing acoustic data."""
+    errors: list[str] = []
+    scope = str(profile.get("scope") or "headphone").strip()
+    purpose = str(profile.get("purpose") or "correction_tuning").strip()
+    if scope not in VALID_PROFILE_SCOPES:
+        errors.append(f"{prefix}.scope is invalid: {scope}")
+        return errors
+    if purpose not in VALID_PRESET_PURPOSES:
+        errors.append(f"{prefix}.purpose is invalid: {purpose}")
+        return errors
+
+    headphone = profile.get("headphone")
+    if scope == "headphone":
+        if not isinstance(headphone, dict):
+            errors.append(f"{prefix} headphone scope requires headphone identity")
+        else:
+            manufacturer = str(headphone.get("manufacturer") or "").strip()
+            model = str(headphone.get("model") or "").strip()
+            if not manufacturer or not model:
+                errors.append(f"{prefix} headphone identity requires manufacturer and model")
+        if purpose in {"effect", "genre"}:
+            errors.append(f"{prefix} {purpose} presets must use general scope")
+    else:
+        if headphone not in (None, {}):
+            errors.append(f"{prefix} general scope must not require headphone identity")
+        if purpose == "correction_tuning":
+            errors.append(f"{prefix} general scope cannot use correction_tuning purpose")
+
+    return errors
+
+
 def validate_snapshot(snapshot: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     if int(snapshot.get("schema_version", 0)) < 1:
@@ -247,11 +281,13 @@ def validate_snapshot(snapshot: dict[str, Any]) -> list[str]:
     ids: set[str] = set()
     for index, profile in enumerate(profiles):
         profile_id = str(profile.get("canonical_profile_id", "")).strip()
+        profile_prefix = f"profiles[{index}]"
         if not profile_id:
-            errors.append(f"profiles[{index}] missing canonical_profile_id")
+            errors.append(f"{profile_prefix} missing canonical_profile_id")
         elif profile_id in ids:
             errors.append(f"duplicate canonical_profile_id: {profile_id}")
         ids.add(profile_id)
+        errors.extend(validate_profile_classification(profile, profile_id or profile_prefix))
         revisions = profile.get("revisions", [])
         if not revisions:
             errors.append(f"{profile_id or index} must have at least one revision")
