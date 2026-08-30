@@ -6,9 +6,12 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.weekssa.opraeqforuapp.data.update.AppReleaseInfo
+import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
+import com.weekssa.opraeqforuapp.domain.settings.ExportTargetPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityCategory
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ThemeMode
@@ -33,12 +36,24 @@ class AppPreferencesRepository(context: Context) {
             }
         }
         .map { preferences ->
+            val storedTargets = preferences[Keys.SelectedExportTargets]
+            val selectedTargets = if (storedTargets == null) {
+                setOf(ExportDevice.UAPP)
+            } else {
+                storedTargets.mapNotNullTo(mutableSetOf()) { storedName ->
+                    ExportDevice.entries.firstOrNull { it.name == storedName }
+                }
+            }
             AppPreferences(
                 themeMode = ThemeMode.fromStorageValue(preferences[Keys.ThemeMode]),
                 profileVisibility = ProfileVisibilityPreferences(
                     showFullyCompatible = preferences[Keys.ShowFullyCompatible] ?: true,
                     showCompatibleWithLimitation = preferences[Keys.ShowCompatibleWithLimitation] ?: true,
                     showNotCompatible = preferences[Keys.ShowNotCompatible] ?: true,
+                ),
+                exportTargets = ExportTargetPreferences(
+                    selectedTargets = selectedTargets,
+                    showUnexportablePresets = preferences[Keys.ShowUnexportablePresets] ?: true,
                 ),
                 exportTreeUri = preferences[Keys.ExportTreeUri],
                 exportTreeLabel = preferences[Keys.ExportTreeLabel],
@@ -69,6 +84,29 @@ class AppPreferencesRepository(context: Context) {
                 ProfileVisibilityCategory.CompatibleWithLimitation -> preferences[Keys.ShowCompatibleWithLimitation] = visible
                 ProfileVisibilityCategory.NotCompatible -> preferences[Keys.ShowNotCompatible] = visible
             }
+        }
+    }
+
+    suspend fun setExportTargetEnabled(device: ExportDevice, enabled: Boolean) {
+        appContext.appPreferencesDataStore.edit { preferences ->
+            val storedTargets = preferences[Keys.SelectedExportTargets]
+            val current = if (storedTargets == null) {
+                mutableSetOf(ExportDevice.UAPP.name)
+            } else {
+                storedTargets.toMutableSet()
+            }
+            if (enabled) {
+                current += device.name
+            } else {
+                current -= device.name
+            }
+            preferences[Keys.SelectedExportTargets] = current
+        }
+    }
+
+    suspend fun setShowUnexportablePresets(show: Boolean) {
+        appContext.appPreferencesDataStore.edit { preferences ->
+            preferences[Keys.ShowUnexportablePresets] = show
         }
     }
 
@@ -127,6 +165,8 @@ class AppPreferencesRepository(context: Context) {
         val ShowFullyCompatible = booleanPreferencesKey("show_fully_compatible")
         val ShowCompatibleWithLimitation = booleanPreferencesKey("show_compatible_with_limitation")
         val ShowNotCompatible = booleanPreferencesKey("show_not_compatible")
+        val SelectedExportTargets = stringSetPreferencesKey("selected_export_targets")
+        val ShowUnexportablePresets = booleanPreferencesKey("show_unexportable_presets")
         val ExportTreeUri = stringPreferencesKey("export_tree_uri")
         val ExportTreeLabel = stringPreferencesKey("export_tree_label")
         val LatestReleaseVersion = stringPreferencesKey("latest_release_version")
