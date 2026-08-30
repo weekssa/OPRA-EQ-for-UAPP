@@ -1,4 +1,4 @@
-name: Stage EQ source submission
+name: Process EQ source submission
 
 on:
   issues:
@@ -12,17 +12,20 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  stage-submission:
+  process-submission:
     if: startsWith(github.event.issue.title, '[EQ source]')
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
 
-      - name: Normalize Issue Form into review queue
+      - name: Validate source registry
+        run: python3 tools/catalog_pipeline.py validate-registry --registry config/source_registry.json
+
+      - name: Normalize Issue Form into submission queue
         env:
           ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
@@ -32,19 +35,64 @@ jobs:
             --event "${GITHUB_EVENT_PATH}" \
             --output "catalog/submissions/github-issue-${ISSUE_NUMBER}.json"
 
-      - name: Commit staged submission only when changed
+      - name: Evaluate safe Unverified auto-publication
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          python3 tools/eq_submission_publish.py \
+            --catalog catalog/catalog.json \
+            --submission "catalog/submissions/github-issue-${ISSUE_NUMBER}.json" \
+            --registry config/source_registry.json \
+            --output "${RUNNER_TEMP}/catalog.submission-candidate.json" \
+            --report "${RUNNER_TEMP}/submission-report.json"
+
+          decision="$(python3 - <<'PY'
+          import json, os
+          with open(os.environ['RUNNER_TEMP'] + '/submission-report.json', encoding='utf-8') as handle:
+              print(json.load(handle).get('decision', ''))
+          PY
+          )"
+          echo "Publication decision: ${decision}"
+          if [[ "${decision}" != "published-unverified" ]]; then
+            exit 0
+          fi
+
+          python3 tools/catalog_pipeline.py publish \
+            --candidate "${RUNNER_TEMP}/catalog.submission-candidate.json" \
+            --published "${RUNNER_TEMP}/validated-submission-catalog.json" \
+            --last-known-good "${RUNNER_TEMP}/validated-submission-lkg.json"
+
+          python3 - <<'PY'
+          import json, os
+          path = os.environ['RUNNER_TEMP'] + '/validated-submission-catalog.json'
+          with open(path, encoding='utf-8') as handle:
+              payload = json.load(handle)
+          with open(path, 'w', encoding='utf-8') as handle:
+              handle.write(json.dumps(payload, sort_keys=True, separators=(',', ':'), ensure_ascii=False) + '\n')
+          PY
+          cp "${RUNNER_TEMP}/validated-submission-catalog.json" catalog/catalog.json
+
+      - name: Commit submission and any validated catalog update
         env:
           ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
           set -euo pipefail
           target="catalog/submissions/github-issue-${ISSUE_NUMBER}.json"
-          if git diff --quiet -- "${target}" && git ls-files --error-unmatch "${target}" >/dev/null 2>&1; then
-            echo "Submission ${ISSUE_NUMBER} is unchanged."
-            exit 0
-          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "${target}"
-          git commit -m "Stage EQ source submission #${ISSUE_NUMBER}"
+          git add "${target}" catalog/catalog.json
+          if git diff --cached --quiet; then
+            echo "Submission ${ISSUE_NUMBER} and catalog are unchanged."
+            exit 0
+          fi
+          git commit -m "Process EQ source submission #${ISSUE_NUMBER}"
           git pull --rebase origin "${GITHUB_REF_NAME}"
           git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Upload submission decision report
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: eq-source-submission-${{ github.event.issue.number }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/submission-report.json
+          retention-days: 14
