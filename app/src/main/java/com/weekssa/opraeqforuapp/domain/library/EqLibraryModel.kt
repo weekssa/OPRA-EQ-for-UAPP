@@ -89,6 +89,15 @@ data class EqSourceReference(
     @SerialName("source_id") val sourceId: String,
     @SerialName("source_kind") val sourceKind: EqSourceKind,
     @SerialName("source_record_id") val sourceRecordId: String?,
+    /**
+     * Upstream dataset/database that supplied the measurement or structured tuning input.
+     *
+     * This is intentionally separate from sourceId. For example, an AutoEq-generated tuning can
+     * have sourceId=autoeq while sourceDataset=HypetheSonics. Keeping both prevents the UI from
+     * incorrectly attributing authorship to a measurement database while still making the full
+     * multi-database catalog visible and filterable.
+     */
+    @SerialName("source_dataset") val sourceDataset: String? = null,
     @SerialName("source_vendor_id") val sourceVendorId: String? = null,
     @SerialName("source_product_id") val sourceProductId: String? = null,
     val url: String?,
