@@ -183,6 +183,25 @@ class DevicePresetFormatsTest {
     }
 
     @Test
+    fun generatedSafetyHeadroomIsUsedButStillClassifiedOptimized() {
+        val source = profile.copy(
+            preampGainDb = null,
+            eqLibrarySafetyHeadroomDb = -6.75,
+            bands = listOf(OpraBand("peak_dip", 1_000.0, -2.0, 1.0, null)),
+        )
+
+        val topping = buildTextDeviceVariant(source, ExportDevice.TOPPING_DX5_II)!!
+        val blackPearl = buildTextDeviceVariant(source, ExportDevice.BLACK_PEARL)!!
+
+        assertTrue(topping.content.contains("Preamp: -6.75 dB"))
+        assertEquals(DevicePresetFidelity.OPTIMIZED, topping.fidelity)
+        assertTrue(topping.transformation.contains("EQ Library optimized conversion"))
+        assertTrue(blackPearl.content.contains("Preamp: -6.75 dB"))
+        assertEquals(DevicePresetFidelity.OPTIMIZED, blackPearl.fidelity)
+        assertEquals(null, source.preampGainDb)
+    }
+
+    @Test
     fun unsupportedFilterTypeIsNeverMisrepresentedAsExact() {
         val source = profile.copy(
             bands = listOf(OpraBand("low_shelf", 100.0, 3.0, 0.71, null)),
