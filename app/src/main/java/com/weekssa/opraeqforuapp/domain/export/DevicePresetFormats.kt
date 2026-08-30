@@ -198,7 +198,7 @@ internal fun formatToppingTunePreset(
     val mapped = profile.bands.orEmpty().mapNotNull { band -> mapToppingBand(band, capabilities) }
     val limited = applyBandLimit(mapped, capabilities.maxBands)
     if (limited.isEmpty()) return null
-    val preamp = coercePreamp(profile.preampGainDb, capabilities)
+    val preamp = coercePreamp(profile.effectivePlaybackPreampDb(), capabilities)
     return buildString {
         appendLine("Preamp: ${db(preamp)} dB")
         limited.forEachIndexed { index, band ->
@@ -316,7 +316,7 @@ internal fun formatBlackPearlPreset(
         candidates.sortedByDescending(BlackPearlCandidate::score),
         capabilities.maxBands,
     ).sortedBy(BlackPearlCandidate::order)
-    val preamp = coercePreamp(profile.preampGainDb, capabilities)
+    val preamp = coercePreamp(profile.effectivePlaybackPreampDb(), capabilities)
 
     return buildString {
         appendLine("Preamp: ${db(preamp)} dB")
@@ -332,10 +332,10 @@ private fun <T> applyBandLimit(items: List<T>, maxBands: Int?): List<T> =
     maxBands?.let(items::take) ?: items
 
 private fun coercePreamp(
-    sourcePreamp: Double?,
+    playbackPreamp: Double?,
     capabilities: DeviceEqCapabilities,
 ): Double {
-    val value = sourcePreamp?.takeIf(Double::isFinite) ?: 0.0
+    val value = playbackPreamp?.takeIf(Double::isFinite) ?: 0.0
     val minPreamp = capabilities.minPreampDb
     val maxPreamp = capabilities.maxPreampDb
     return if (minPreamp != null && maxPreamp != null) value.coerceIn(minPreamp, maxPreamp) else value
