@@ -32,6 +32,26 @@ class ManagedSelectionTest {
     }
 
     @Test
+    fun firstTimeDefaultsDoNotSilentlySelectUnverifiedProfiles() {
+        val verified = compatibleProfile("verified")
+        val unverified = compatibleProfile("unverified").copy(isVerified = false)
+
+        val selected = defaultStagedSelectedProfileIds(listOf(verified, unverified))
+
+        assertTrue("verified" in selected)
+        assertFalse("unverified" in selected)
+    }
+
+    @Test
+    fun explicitSelectAllCanStillIncludeUnverifiedProfiles() {
+        val unverified = compatibleProfile("unverified").copy(isVerified = false)
+
+        val selected = selectableProfileIds(listOf(unverified))
+
+        assertTrue("unverified" in selected)
+    }
+
+    @Test
     fun historyCanStillBeSelectedExplicitly() {
         val current = compatibleProfile("current")
         val historical = compatibleProfile("historical").copy(
@@ -100,6 +120,17 @@ class ManagedSelectionTest {
     }
 
     @Test
+    fun autoIncludeDoesNotSelectFutureUnverifiedProfile() {
+        val state = ManagedHeadphoneSelection(
+            productId = "product",
+            autoIncludeNewProfiles = true,
+            profileSelections = emptyMap(),
+        )
+
+        assertFalse(state.isSelected(compatibleProfile("new").copy(isVerified = false)))
+    }
+
+    @Test
     fun autoIncludeDoesNotSelectFutureHistoricalRevision() {
         val state = ManagedHeadphoneSelection(
             productId = "product",
@@ -162,6 +193,19 @@ class ManagedSelectionTest {
         assertFalse(updates.getValue("selected").explicitlyExcluded)
         assertFalse(updates.getValue("excluded").selected)
         assertTrue(updates.getValue("excluded").explicitlyExcluded)
+    }
+
+    @Test
+    fun uncheckedUnverifiedProfileDoesNotBecomePermanentExplicitExclusion() {
+        val unverified = compatibleProfile("unverified").copy(isVerified = false)
+        val updates = selectionUpdatesForSave(
+            profiles = listOf(unverified),
+            stagedSelectedProfileIds = emptySet(),
+            autoIncludeNewProfiles = true,
+        )
+
+        assertFalse(updates.getValue("unverified").selected)
+        assertFalse(updates.getValue("unverified").explicitlyExcluded)
     }
 
     @Test
