@@ -58,7 +58,7 @@ import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityPreferences
 import kotlinx.coroutines.launch
 
 private enum class ProfileFilterDimension(val label: String) {
-    Source("Source"),
+    Database("Database"),
     Creator("Creator"),
     Target("Target"),
 }
@@ -88,8 +88,10 @@ internal fun ProfileSelectionEditor(
     }
     val hiddenCompatibilityCount = profiles.size - compatibilityVisibleProfiles.size
     val historicalProfileCount = compatibilityVisibleProfiles.count(OpraEqProfile::isHistoricalRevision)
-    val sourceOptions = remember(profiles) {
-        profiles.mapNotNull { it.detailMetadata("Source") }
+    val databaseOptions = remember(profiles) {
+        profiles.mapNotNull { profile ->
+            profile.detailMetadata("Database") ?: profile.detailMetadata("Source")
+        }
             .distinct()
             .sortedWith(String.CASE_INSENSITIVE_ORDER)
     }
@@ -105,14 +107,14 @@ internal fun ProfileSelectionEditor(
     }
     val scope = rememberCoroutineScope()
 
-    var sourceFilter by rememberSaveable(product.id) { mutableStateOf<String?>(null) }
+    var databaseFilter by rememberSaveable(product.id) { mutableStateOf<String?>(null) }
     var creatorFilter by rememberSaveable(product.id) { mutableStateOf<String?>(null) }
     var targetFilter by rememberSaveable(product.id) { mutableStateOf<String?>(null) }
     var showHistoricalRevisions by rememberSaveable(product.id) { mutableStateOf(false) }
     var filterDialog by remember { mutableStateOf<ProfileFilterDimension?>(null) }
 
-    LaunchedEffect(sourceOptions, creatorOptions, targetOptions) {
-        if (sourceFilter != null && sourceFilter !in sourceOptions) sourceFilter = null
+    LaunchedEffect(databaseOptions, creatorOptions, targetOptions) {
+        if (databaseFilter != null && databaseFilter !in databaseOptions) databaseFilter = null
         if (creatorFilter != null && creatorFilter !in creatorOptions) creatorFilter = null
         if (targetFilter != null && targetFilter !in targetOptions) targetFilter = null
     }
@@ -123,7 +125,8 @@ internal fun ProfileSelectionEditor(
         compatibilityVisibleProfiles.filterNot(OpraEqProfile::isHistoricalRevision)
     }
     val visibleProfiles = revisionVisibleProfiles.filter { profile ->
-        (sourceFilter == null || profile.detailMetadata("Source") == sourceFilter) &&
+        val database = profile.detailMetadata("Database") ?: profile.detailMetadata("Source")
+        (databaseFilter == null || database == databaseFilter) &&
             (creatorFilter == null || profile.author?.trim() == creatorFilter) &&
             (targetFilter == null || profile.detailMetadata("Target") == targetFilter)
     }
@@ -229,12 +232,12 @@ internal fun ProfileSelectionEditor(
 
     filterDialog?.let { dimension ->
         val options = when (dimension) {
-            ProfileFilterDimension.Source -> sourceOptions
+            ProfileFilterDimension.Database -> databaseOptions
             ProfileFilterDimension.Creator -> creatorOptions
             ProfileFilterDimension.Target -> targetOptions
         }
         val selected = when (dimension) {
-            ProfileFilterDimension.Source -> sourceFilter
+            ProfileFilterDimension.Database -> databaseFilter
             ProfileFilterDimension.Creator -> creatorFilter
             ProfileFilterDimension.Target -> targetFilter
         }
@@ -244,7 +247,7 @@ internal fun ProfileSelectionEditor(
             selected = selected,
             onSelect = { value ->
                 when (dimension) {
-                    ProfileFilterDimension.Source -> sourceFilter = value
+                    ProfileFilterDimension.Database -> databaseFilter = value
                     ProfileFilterDimension.Creator -> creatorFilter = value
                     ProfileFilterDimension.Target -> targetFilter = value
                 }
@@ -283,11 +286,11 @@ internal fun ProfileSelectionEditor(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             OutlinedButton(
-                onClick = { filterDialog = ProfileFilterDimension.Source },
-                enabled = sourceOptions.isNotEmpty(),
+                onClick = { filterDialog = ProfileFilterDimension.Database },
+                enabled = databaseOptions.isNotEmpty(),
                 modifier = Modifier.weight(1f),
             ) {
-                Text(if (sourceFilter == null) "Source" else "Source ✓")
+                Text(if (databaseFilter == null) "Database" else "Database ✓")
             }
             OutlinedButton(
                 onClick = { filterDialog = ProfileFilterDimension.Creator },
@@ -306,7 +309,7 @@ internal fun ProfileSelectionEditor(
         }
 
         val activeFilters = listOfNotNull(
-            sourceFilter?.let { "Source: $it" },
+            databaseFilter?.let { "Database: $it" },
             creatorFilter?.let { "Creator: $it" },
             targetFilter?.let { "Target: $it" },
         )
@@ -325,7 +328,7 @@ internal fun ProfileSelectionEditor(
                 )
                 TextButton(
                     onClick = {
-                        sourceFilter = null
+                        databaseFilter = null
                         creatorFilter = null
                         targetFilter = null
                     },
@@ -408,7 +411,7 @@ internal fun ProfileSelectionEditor(
         }
         if (filteredOutCount > 0) {
             Text(
-                text = "$filteredOutCount EQ profiles hidden by Source / Creator / Target filters.",
+                text = "$filteredOutCount EQ profiles hidden by Database / Creator / Target filters.",
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -423,22 +426,7 @@ internal fun ProfileSelectionEditor(
             )
         }
 
-        Button(
-            onClick = { completeSave(exportAfterSave = false) },
-            enabled = commitEnabled,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-        ) {
-            Text(if (managedRecord == null) "Add to My Headphones" else "Save selection")
-        }
-        OutlinedButton(
-            onClick = ::requestExport,
-            enabled = stagedSelectedIds.isNotEmpty(),
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-        ) {
-            Text("Export selected presets")
-        }
-
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(modifier = Modifier.weight(1f)) {
             items(visibleProfiles, key = OpraEqProfile::id) { profile ->
                 val assessment = profile.assessCompatibility()
                 ProfileSelectionRow(
@@ -476,6 +464,29 @@ internal fun ProfileSelectionEditor(
                     },
                 )
                 HorizontalDivider()
+            }
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Button(
+                onClick = { completeSave(exportAfterSave = false) },
+                enabled = commitEnabled,
+                modifier = Modifier.weight(1f),
+            ) {
+                val label = if (managedRecord == null) "Add" else "Save"
+                Text("$label (${stagedSelectedIds.size})")
+            }
+            OutlinedButton(
+                onClick = ::requestExport,
+                enabled = stagedSelectedIds.isNotEmpty(),
+                modifier = Modifier.weight(1f),
+            ) {
+                Text("Export (${stagedSelectedIds.size})")
             }
         }
     }
