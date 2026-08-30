@@ -7,7 +7,6 @@ README files. The caller is responsible for selecting an AutoEq result path and
 supplying measurement/source metadata. Target metadata is optional because some
 precomputed AutoEq result files do not identify the target inside the preset itself.
 """
-
 from __future__ import annotations
 
 import argparse
@@ -89,13 +88,22 @@ def build_candidate(
     source_record_id: str,
     source_version: str | None,
     discovered_at_epoch_seconds: int | None,
+    measurement_context: str | None = None,
 ) -> dict[str, Any]:
     fingerprint = acoustic_fingerprint(parsed)
     target_name = target.strip() if target and target.strip() else None
+    context_name = measurement_context.strip() if measurement_context and measurement_context.strip() else None
     identity_target = target_name or "unknown-target"
-    identity = f"{manufacturer.strip()}|{model.strip()}|AutoEq|{measurement_source.strip()}|{identity_target}"
+    identity_context = context_name or "default-context"
+    identity = (
+        f"{manufacturer.strip()}|{model.strip()}|AutoEq|{measurement_source.strip()}|"
+        f"{identity_context}|{identity_target}"
+    )
     canonical_id = "autoeq-" + hashlib.sha256(identity.lower().encode("utf-8")).hexdigest()[:24]
     revision_id = "rev-" + fingerprint[:24]
+    measurement_label = measurement_source.strip()
+    if context_name:
+        measurement_label += f" / {context_name}"
     return {
         "canonical_profile_id": canonical_id,
         "headphone": {
@@ -109,7 +117,7 @@ def build_candidate(
             "name": target_name,
             "kind": "explicit_target" if target_name else "unknown",
         },
-        "tuning_label": f"AutoEq ({measurement_source.strip()} measurement)",
+        "tuning_label": f"AutoEq ({measurement_label} measurement)",
         "revisions": [
             {
                 "revision_id": revision_id,
@@ -150,6 +158,7 @@ def main() -> int:
     parser.add_argument("--manufacturer", required=True)
     parser.add_argument("--model", required=True)
     parser.add_argument("--measurement-source", required=True)
+    parser.add_argument("--measurement-context")
     parser.add_argument("--target")
     parser.add_argument("--source-url", required=True)
     parser.add_argument("--source-record-id", required=True)
@@ -164,6 +173,7 @@ def main() -> int:
         manufacturer=args.manufacturer,
         model=args.model,
         measurement_source=args.measurement_source,
+        measurement_context=args.measurement_context,
         target=args.target,
         source_url=args.source_url,
         source_record_id=args.source_record_id,
