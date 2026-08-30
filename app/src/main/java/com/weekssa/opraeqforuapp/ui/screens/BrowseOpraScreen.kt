@@ -105,6 +105,7 @@ fun BrowseOpraScreen(
                     onDeleteSavedFilesForProduct = onDeleteSavedFilesForProduct,
                     onExportProduct = onExportProduct,
                     onMessage = onMessage,
+                    onOpenUrl = onOpenUrl,
                     onBack = { selectedProductId = null },
                     modifier = modifier,
                 )
