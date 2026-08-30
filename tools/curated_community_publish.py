@@ -5,6 +5,9 @@ This importer never invents missing filters. When a source omits preamp, it calc
 conservative playback headroom from the combined biquad response and records that fact
 in the generated sound-impact summary. Publication remains gated by source registry
 redistribution policy and canonical dedupe.
+
+Mirror/reference posts are retained as secondary provenance on the original tuning rather
+than being published as duplicate presets.
 """
 
 from __future__ import annotations
@@ -20,8 +23,15 @@ from catalog_merge import merge_candidates
 from community_peq_ingest import ParsedPeq, build_candidate
 
 TYPE_MAP = {"PK": "peak", "PEQ": "peak", "LSC": "low_shelf", "LS": "low_shelf", "HSC": "high_shelf", "HS": "high_shelf"}
-SOURCE_ID = {"reddit": "reddit-audio", "head-fi": "head-fi", "headphones-community": "headphone-community", "audio-science-review": "audio-science-review"}
+SOURCE_ID = {
+    "reddit": "reddit-audio",
+    "head-fi": "head-fi",
+    "headphones-community": "headphones-community",
+    "audio-science-review": "audio-science-review",
+    "topping-community": "topping-community",
+}
 ELIGIBLE_STATUSES = {"publish-candidate", "manual-review"}
+REFERENCE_STATUSES = {"duplicate-reference"}
 BANDS = [
     ("sub-bass", 20.0, 80.0),
     ("bass", 80.0, 250.0),
@@ -148,6 +158,50 @@ def edition_xs_revisions(snapshot: dict[str, Any]) -> list[tuple[str, list[dict[
     return result
 
 
+def attach_mirror_reference(snapshot: dict[str, Any], record: dict[str, Any], source_id: str) -> str | None:
+    """Attach a forum mirror as secondary provenance without creating a duplicate EQ."""
+    lineage = str(record.get("lineage") or "").lower()
+    if "oratory1990" not in lineage:
+        return None
+    for profile in snapshot.get("profiles") or []:
+        hp = profile.get("headphone") or {}
+        if str(hp.get("manufacturer") or "").lower() != "hifiman" or str(hp.get("model") or "").lower() != "edition xs":
+            continue
+        for revision in profile.get("revisions") or []:
+            refs = revision.get("source_references") or []
+            if not any(str(ref.get("source_id") or "") == "oratory1990" for ref in refs):
+                continue
+            key = (source_id, str(record.get("id") or ""), str(record.get("source_url") or ""))
+            if any((str(ref.get("source_id") or ""), str(ref.get("source_record_id") or ""), str(ref.get("url") or "")) == key for ref in refs):
+                return str(profile.get("canonical_profile_id") or "")
+            refs.append({
+                "source_id": source_id,
+                "source_kind": "community",
+                "source_record_id": str(record.get("id") or ""),
+                "source_vendor_id": "HIFIMAN",
+                "source_product_id": "Edition XS",
+                "url": str(record.get("source_url") or ""),
+                "creator": str(record.get("creator") or "Community"),
+                "provenance_tier": "mirror",
+                "redistribution_policy": "structured-data-only",
+                "published_at_epoch_seconds": None,
+                "updated_at_epoch_seconds": None,
+                "discovered_at_epoch_seconds": None,
+                "last_verified_at_epoch_seconds": None,
+                "is_primary": False,
+            })
+            revision["source_references"] = sorted(
+                refs,
+                key=lambda item: (
+                    str(item.get("source_id") or ""),
+                    str(item.get("source_record_id") or ""),
+                    str(item.get("url") or ""),
+                ),
+            )
+            return str(profile.get("canonical_profile_id") or "")
+    return None
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--catalog", type=Path, required=True)
@@ -164,11 +218,26 @@ def main() -> int:
     policies = registry_policies(registry)
     existing = edition_xs_revisions(snapshot)
     candidates: list[dict[str, Any]] = []
-    report: dict[str, Any] = {"headphone": curated.get("headphone"), "records": [], "published_candidates": 0}
+    report: dict[str, Any] = {"headphone": curated.get("headphone"), "records": [], "published_candidates": 0, "provenance_references_added": 0}
 
     for record in curated.get("records") or []:
         row: dict[str, Any] = {"id": record.get("id"), "creator": record.get("creator"), "surface": record.get("surface"), "input_status": record.get("status")}
         source_id = SOURCE_ID.get(str(record.get("surface") or ""))
+        if record.get("status") in REFERENCE_STATUSES:
+            if source_id and policies.get(source_id) == "structured-data-only":
+                profile_id = attach_mirror_reference(snapshot, record, source_id)
+                if profile_id:
+                    row["decision"] = "attach-secondary-provenance"
+                    row["canonical_profile_id"] = profile_id
+                    report["provenance_references_added"] += 1
+                else:
+                    row["decision"] = "skip-reference-no-canonical-match"
+            else:
+                row["decision"] = "hold-source-policy"
+                row["source_id"] = source_id
+                row["policy"] = policies.get(source_id)
+            report["records"].append(row)
+            continue
         if record.get("status") not in ELIGIBLE_STATUSES:
             row["decision"] = "skip-status"
             report["records"].append(row)
