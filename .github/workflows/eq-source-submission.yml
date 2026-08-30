@@ -8,7 +8,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: eq-source-submission-intake
+  group: eq-catalog-writer-${{ github.event.repository.default_branch }}
   cancel-in-progress: false
 
 jobs:
@@ -16,11 +16,14 @@ jobs:
     if: startsWith(github.event.issue.title, '[EQ source]')
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
     steps:
-      - name: Check out repository
+      - name: Check out current default branch tip
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          fetch-depth: 0
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 1
 
       - name: Validate source registry
         run: python3 tools/catalog_pipeline.py validate-registry --registry config/source_registry.json
@@ -87,8 +90,8 @@ jobs:
             exit 0
           fi
           git commit -m "Process EQ source submission #${ISSUE_NUMBER}"
-          git pull --rebase origin "${GITHUB_REF_NAME}"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
+          git pull --rebase origin "${DEFAULT_BRANCH}"
+          git push origin "HEAD:${DEFAULT_BRANCH}"
 
       - name: Upload submission decision report
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
