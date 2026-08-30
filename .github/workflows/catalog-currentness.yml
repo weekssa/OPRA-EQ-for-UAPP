@@ -35,6 +35,7 @@ concurrency:
 
 jobs:
   refresh:
+    if: github.event_name != 'push' || github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
