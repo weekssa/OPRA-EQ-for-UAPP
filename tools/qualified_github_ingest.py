@@ -18,7 +18,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-from catalog_merge import merge_candidate
+from catalog_merge import merge_candidates
 from catalog_pipeline import (
     load_health,
     load_json,
@@ -113,7 +113,13 @@ def validate_manifest(manifest: dict[str, Any]) -> None:
                 raise ValueError(f"{source_id}: model_aliases must be a list of non-empty strings")
 
 
-def candidate_from_text(source: dict[str, Any], profile: dict[str, Any], text: str, blob_sha: str, now_epoch: int) -> dict[str, Any]:
+def candidate_from_text(
+    source: dict[str, Any],
+    profile: dict[str, Any],
+    text: str,
+    blob_sha: str,
+    discovered_at_epoch_seconds: int | None,
+) -> dict[str, Any]:
     peq_text = extract_profile_peq(text, profile)
     parsed = parse_peq(peq_text)
     candidate = build_candidate(
@@ -130,7 +136,7 @@ def candidate_from_text(source: dict[str, Any], profile: dict[str, Any], text: s
         source_record_id=str(profile["source_record_id"]),
         redistribution_policy="structured-data-only",
         source_version=f"GitHub blob {blob_sha}",
-        discovered_at_epoch_seconds=now_epoch,
+        discovered_at_epoch_seconds=discovered_at_epoch_seconds,
     )
     aliases = [str(alias).strip() for alias in profile.get("model_aliases") or [] if str(alias).strip()]
     if aliases:
@@ -163,27 +169,55 @@ def refresh(
             raise ValueError(f"qualified GitHub source is not active/structured-data-only: {source_id}")
         try:
             file_cache: dict[str, tuple[str, str]] = {}
-            source_outcomes: list[str] = []
             cursor_parts: list[str] = []
-            fingerprints: list[str] = []
+            prepared: list[tuple[dict[str, Any], str, str]] = []
             for profile in source.get("profiles", []):
                 path = str(profile["source_path"])
                 if path not in file_cache:
-                    file_cache[path] = github_contents(str(source["repository"]), path, str(source.get("branch") or "main"), github_token)
+                    file_cache[path] = github_contents(
+                        str(source["repository"]),
+                        path,
+                        str(source.get("branch") or "main"),
+                        github_token,
+                    )
                 text, blob_sha = file_cache[path]
                 cursor_parts.append(f"{path}:{blob_sha}")
-                candidate = candidate_from_text(source, profile, text, blob_sha, now_epoch)
-                fingerprints.append(candidate["revisions"][0]["acoustic_fingerprint"])
-                result_catalog, outcome = merge_candidate(
-                    result_catalog,
-                    candidate,
-                    source_registry_version=str(registry.get("registry_version") or ""),
-                )
-                source_outcomes.append(outcome)
+                prepared.append((profile, text, blob_sha))
+
             cursor = hashlib.sha256("|".join(sorted(cursor_parts)).encode("utf-8")).hexdigest()
+            source_changed = health[source_id].cursor != cursor
+            candidates: list[dict[str, Any]] = []
+            fingerprints: list[str] = []
+            for profile, text, blob_sha in prepared:
+                candidate = candidate_from_text(
+                    source,
+                    profile,
+                    text,
+                    blob_sha,
+                    now_epoch if source_changed else None,
+                )
+                candidates.append(candidate)
+                fingerprints.append(candidate["revisions"][0]["acoustic_fingerprint"])
+
+            result_catalog, merge_outcomes = merge_candidates(
+                result_catalog,
+                candidates,
+                source_registry_version=str(registry.get("registry_version") or ""),
+            )
             content_fingerprint = hashlib.sha256("|".join(sorted(fingerprints)).encode("utf-8")).hexdigest()
-            health[source_id] = record_scan_success(health[source_id], cursor=cursor, content_fingerprint=content_fingerprint)
-            outcomes.append({"source_id": source_id, "status": "ok", "outcomes": source_outcomes})
+            health[source_id] = record_scan_success(
+                health[source_id],
+                cursor=cursor,
+                content_fingerprint=content_fingerprint,
+            )
+            outcomes.append(
+                {
+                    "source_id": source_id,
+                    "status": "ok",
+                    "source_changed": source_changed,
+                    "outcomes": merge_outcomes,
+                }
+            )
         except Exception as exc:  # source degradation must preserve the last-known-good catalog
             health[source_id] = record_scan_failure(health[source_id], str(exc))
             outcomes.append({"source_id": source_id, "status": "degraded", "error": str(exc)[:500]})
@@ -218,7 +252,11 @@ def main() -> int:
         github_token=args.github_token,
     )
     args.catalog_output.parent.mkdir(parents=True, exist_ok=True)
-    args.catalog_output.write_text(json.dumps(refreshed, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    # Large catalogs stay compact through the rest of the pipeline.
+    args.catalog_output.write_text(
+        json.dumps(refreshed, separators=(",", ":"), sort_keys=True, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
     args.health_output.parent.mkdir(parents=True, exist_ok=True)
     args.health_output.write_text(json.dumps(health_payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     if args.report:
