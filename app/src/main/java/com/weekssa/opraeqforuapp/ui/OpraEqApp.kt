@@ -416,6 +416,7 @@ fun OpraEqApp(
                                     onMarkReviewed = onMarkReviewed,
                                     onExportProduct = requestExportProduct,
                                     onMessage = ::showMessage,
+                                    onOpenUrl = onOpenUrl,
                                     onBack = { selectedManagedProductId = null },
                                     modifier = Modifier.fillMaxSize(),
                                 )
@@ -436,6 +437,7 @@ fun OpraEqApp(
                         TopLevelDestination.BrowseEqs -> BrowseOpraScreen(
                             catalogState = catalogState,
                             profileVisibility = appPreferences.profileVisibility,
+                            exportTargets = appPreferences.exportTargets,
                             managedHeadphones = managedHeadphones,
                             favoriteProfileIds = favoriteProfileIds,
                             onToggleFavorite = onToggleFavorite,
