@@ -14,9 +14,10 @@ import java.util.Locale
  * represented in the canonical snapshot remains available. Canonical-only sources and historical
  * revisions are appended with their stable synthetic IDs.
  *
- * Product identity is resolved conservatively. Exact normalized manufacturer/model matches are
- * always safe to collapse. Broader equivalence must come from an explicit catalog/source alias.
- * Alternate product IDs remain resolvable so cleanup does not break existing managed state.
+ * Product identity is resolved conservatively. Exact normalized manufacturer/model/subtype matches
+ * are always safe to collapse, including redundant manufacturer text in a model label. Broader
+ * equivalence must come from an explicit catalog/source alias. Alternate product IDs remain
+ * resolvable so cleanup does not break existing managed state.
  */
 fun overlayCanonicalCatalog(
     legacy: OpraCatalog,
@@ -75,30 +76,35 @@ private fun resolveProductAliases(
     val allProducts = (legacy.products + canonical.products).distinctBy(OpraProduct::id)
     val legacyIds = legacy.products.map(OpraProduct::id).toSet()
 
+    fun vendorName(product: OpraProduct): String? = vendors[product.vendorId]?.name
     fun vendorKey(product: OpraProduct): String? =
-        vendors[product.vendorId]?.name?.let(::normalizeIdentityText)?.takeIf(String::isNotEmpty)
+        vendorName(product)?.let(::normalizeIdentityText)?.takeIf(String::isNotEmpty)
 
     fun applyIdentityGroup(
         manufacturer: String,
         canonicalModel: String,
         modelAliases: Collection<String>,
+        requiredSubtype: String? = null,
     ) {
         val manufacturerKey = normalizeIdentityText(manufacturer)
-        val canonicalKey = normalizeIdentityText(canonicalModel)
+        val canonicalKey = normalizeIdentityModel(canonicalModel, manufacturer)
         if (manufacturerKey.isEmpty() || canonicalKey.isEmpty()) return
         val acceptedKeys = (modelAliases + canonicalModel)
-            .map(::normalizeIdentityText)
+            .map { normalizeIdentityModel(it, manufacturer) }
             .filter(String::isNotEmpty)
             .toSet()
+        val requiredSubtypeKey = requiredSubtype?.let(::normalizeIdentityText)
         val matches = allProducts.filter { product ->
-            vendorKey(product) == manufacturerKey && normalizeIdentityText(product.name) in acceptedKeys
+            vendorKey(product) == manufacturerKey &&
+                normalizeIdentityModel(product.name, manufacturer) in acceptedKeys &&
+                (requiredSubtypeKey == null || normalizeIdentityText(product.subtype) == requiredSubtypeKey)
         }
         if (matches.isEmpty()) return
 
         val retained = matches.firstOrNull {
-            it.id in legacyIds && normalizeIdentityText(it.name) == canonicalKey
+            it.id in legacyIds && normalizeIdentityModel(it.name, manufacturer) == canonicalKey
         } ?: matches.firstOrNull { it.id in legacyIds }
-            ?: matches.firstOrNull { normalizeIdentityText(it.name) == canonicalKey }
+            ?: matches.firstOrNull { normalizeIdentityModel(it.name, manufacturer) == canonicalKey }
             ?: matches.first()
         val retainedRoot = resolveProductId(retained.id, aliases)
 
@@ -116,26 +122,38 @@ private fun resolveProductAliases(
                     matches.map(OpraProduct::name) +
                     matches.flatMap(OpraProduct::aliases)
                 )
-                .filterNot { normalizeIdentityText(it) == canonicalKey }
+                .filterNot { normalizeIdentityModel(it, manufacturer) == canonicalKey }
                 .distinctBy(::normalizeIdentityText),
         )
     }
 
-    // Global safe cleanup: punctuation, casing and spacing variants of the same manufacturer/model
-    // are equivalent even when no canonical source happens to touch that headphone yet.
+    // Global safe cleanup: punctuation/casing/spacing variants, plus a redundant manufacturer token,
+    // collapse even when no canonical source touches that headphone. Subtype remains part of the key.
     allProducts
-        .groupBy { product -> vendorKey(product) to normalizeIdentityText(product.name) }
+        .groupBy { product ->
+            val manufacturer = vendorName(product).orEmpty()
+            Triple(
+                normalizeIdentityText(manufacturer),
+                normalizeIdentityModel(product.name, manufacturer),
+                normalizeIdentityText(product.subtype),
+            )
+        }
         .values
         .filter { group -> group.size > 1 && group.first().name.isNotBlank() }
         .forEach { group ->
             val representative = group.firstOrNull { it.id in legacyIds } ?: group.first()
-            val manufacturer = vendors[representative.vendorId]?.name ?: return@forEach
-            applyIdentityGroup(manufacturer, representative.name, emptyList())
+            val manufacturer = vendorName(representative) ?: return@forEach
+            applyIdentityGroup(
+                manufacturer = manufacturer,
+                canonicalModel = representative.name,
+                modelAliases = emptyList(),
+                requiredSubtype = representative.subtype,
+            )
         }
 
     // Canonical profiles can carry qualified aliases from their source manifest.
     canonical.products.forEach { canonicalProduct ->
-        val manufacturer = vendors[canonicalProduct.vendorId]?.name ?: return@forEach
+        val manufacturer = vendorName(canonicalProduct) ?: return@forEach
         applyIdentityGroup(manufacturer, canonicalProduct.name, canonicalProduct.aliases)
     }
 
@@ -180,6 +198,19 @@ private fun resolveProductId(productId: String, aliases: Map<String, String>): S
 
 private fun normalizeIdentityText(value: String): String =
     value.lowercase(Locale.ROOT).filter(Char::isLetterOrDigit)
+
+private fun normalizeIdentityModel(value: String, manufacturer: String): String {
+    val modelKey = normalizeIdentityText(value)
+    val manufacturerKey = normalizeIdentityText(manufacturer)
+    if (modelKey.isEmpty() || manufacturerKey.isEmpty()) return modelKey
+    return when {
+        modelKey.startsWith(manufacturerKey) && modelKey.length >= manufacturerKey.length + 3 ->
+            modelKey.removePrefix(manufacturerKey)
+        modelKey.endsWith(manufacturerKey) && modelKey.length >= manufacturerKey.length + 3 ->
+            modelKey.removeSuffix(manufacturerKey)
+        else -> modelKey
+    }
+}
 
 private fun deduplicateAcoustically(profiles: List<OpraEqProfile>): List<OpraEqProfile> {
     val retained = linkedMapOf<String, OpraEqProfile>()
