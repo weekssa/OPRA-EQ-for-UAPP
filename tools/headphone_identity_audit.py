@@ -4,7 +4,8 @@
 The audit is intentionally conservative:
 - exact normalized manufacturer + model + subtype duplicates are auto-safe;
 - a repeated manufacturer token in the model name is also auto-safe when the stripped model matches;
-- broader near-matches are review candidates only;
+- broader cross-source naming aliases are review candidates only;
+- mode, sample, edition and suffix variants are not inferred as duplicates;
 - explicit alias groups already present in the canonical catalog are marked covered.
 
 The report is designed for CI/currentness use and never mutates source data by itself.
@@ -20,7 +21,6 @@ import urllib.request
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from difflib import SequenceMatcher
 from pathlib import Path
 from typing import TextIO
 
@@ -39,6 +39,11 @@ class Product:
 def normalize(value: str) -> str:
     value = unicodedata.normalize("NFKC", value).casefold()
     return "".join(ch for ch in value if ch.isalnum())
+
+
+def words(value: str) -> tuple[str, ...]:
+    value = unicodedata.normalize("NFKC", value).casefold()
+    return tuple(re.findall(r"[^\W_]+", value, flags=re.UNICODE))
 
 
 def normalized_model_for_vendor(model: str, vendor_name: str) -> tuple[str, bool]:
@@ -149,19 +154,24 @@ def review_score(a: Product, b: Product) -> tuple[float, str] | None:
     b_key = normalized_model_for_vendor(b.name, b.vendor_name)[0]
     if not a_key or not b_key or a_key == b_key:
         return None
-    a_digits, b_digits = digits(a.name), digits(b.name)
-    if a_digits != b_digits:
+    if digits(a.name) != digits(b.name):
         return None
 
-    ratio = SequenceMatcher(None, a_key, b_key).ratio()
-    shorter, longer = sorted((a_key, b_key), key=len)
-    containment = len(shorter) >= 4 and shorter in longer
-    if containment and a_digits:
-        extra = abs(len(a_key) - len(b_key))
-        score = max(0.90, 0.98 - min(extra, 16) * 0.005)
-        return score, "one normalized model name contains the other with matching numbers"
-    if ratio >= 0.90:
-        return ratio, "high normalized-name similarity with matching numbers"
+    a_words, b_words = words(a.name), words(b.name)
+    shorter, longer = (a_words, b_words) if len(a_words) <= len(b_words) else (b_words, a_words)
+    if not shorter or len(longer) <= len(shorter):
+        return None
+
+    # Cross-source aliases commonly prepend a sub-brand or collaboration credit while leaving the
+    # underlying model tokens unchanged (for example "Salnotes Zero 2" / "Zero 2" or
+    # "x Crinacle Zero 2" / "Zero 2"). Trailing words are much more often real variants/modes.
+    if tuple(longer[-len(shorter):]) != tuple(shorter):
+        return None
+    leading = longer[:-len(shorter)]
+    if "x" in leading:
+        return 0.95, "leading collaboration credit with identical core model"
+    if len(leading) == 1 and len(leading[0]) >= 4:
+        return 0.91, "leading sub-brand/source qualifier with identical core model"
     return None
 
 
@@ -176,7 +186,7 @@ def audit_products(products: list[Product], alias_groups: list[dict], max_review
         by_vendor[vendor_key].append(product)
 
     auto_safe = []
-    for (_, model_key, subtype_key), group in safe_groups.items():
+    for (_, model_key, _), group in safe_groups.items():
         if not model_key or len(group) <= 1:
             continue
         raw_keys = {normalize(item.name) for item in group}
