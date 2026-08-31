@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Clear
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -32,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -48,6 +50,7 @@ import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.settings.ExportTargetPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityPreferences
 import com.weekssa.opraeqforuapp.ui.components.OpraAttribution
+import kotlinx.coroutines.launch
 
 private const val EQ_SOURCE_SUBMISSION_URL =
     "https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/new?template=submit_eq_source.yml"
@@ -71,7 +74,9 @@ fun BrowseOpraScreen(
     exportTargets: ExportTargetPreferences,
     managedHeadphones: List<ManagedHeadphoneRecord>,
     favoriteProfileIds: Set<String>,
+    savedGeneralPresetIds: Set<String> = emptySet(),
     onToggleFavorite: suspend (OpraEqProfile, String, String) -> Boolean,
+    onToggleGeneralPreset: suspend (GeneralEqPreset) -> Boolean = { false },
     onLoadManagedHeadphone: suspend (String) -> ManagedHeadphoneRecord?,
     onSaveSelection: suspend (String, Set<String>, Boolean) -> Unit,
     onRemoveHeadphone: suspend (String) -> Unit,
@@ -190,8 +195,11 @@ fun BrowseOpraScreen(
                         catalog = catalog,
                         searchQuery = searchQuery,
                         selectedFilterIndex = selectedGeneralFilterIndex,
+                        savedPresetIds = savedGeneralPresetIds,
                         onSearchQueryChange = { searchQuery = it },
                         onFilterSelected = { selectedGeneralFilterIndex = it },
+                        onTogglePreset = onToggleGeneralPreset,
+                        onMessage = onMessage,
                         onOpenUrl = onOpenUrl,
                         modifier = Modifier.weight(1f),
                     )
@@ -310,11 +318,15 @@ private fun GeneralEqBrowse(
     catalog: OpraCatalog,
     searchQuery: String,
     selectedFilterIndex: Int,
+    savedPresetIds: Set<String>,
     onSearchQueryChange: (String) -> Unit,
     onFilterSelected: (Int) -> Unit,
+    onTogglePreset: suspend (GeneralEqPreset) -> Boolean,
+    onMessage: (String) -> Unit,
     onOpenUrl: (String) -> Unit,
     modifier: Modifier,
 ) {
+    val scope = rememberCoroutineScope()
     val selectedFilter = GeneralFilter.entries[selectedFilterIndex]
     val matching = remember(catalog.generalPresets, searchQuery, selectedFilter) {
         catalog.searchGeneralPresets(searchQuery)
@@ -365,6 +377,7 @@ private fun GeneralEqBrowse(
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(matching, key = GeneralEqPreset::id) { preset ->
+                    val selected = preset.id in savedPresetIds
                     ListItem(
                         headlineContent = { Text(preset.displayName) },
                         supportingContent = {
@@ -381,14 +394,29 @@ private fun GeneralEqBrowse(
                                         color = MaterialTheme.colorScheme.tertiary,
                                     )
                                 }
-                            }
-                        },
-                        trailingContent = preset.sourceUrl?.let { sourceUrl ->
-                            {
-                                TextButton(onClick = { onOpenUrl(sourceUrl) }) {
-                                    Text("Source")
+                                preset.sourceUrl?.let { sourceUrl ->
+                                    TextButton(onClick = { onOpenUrl(sourceUrl) }) {
+                                        Text("Source")
+                                    }
                                 }
                             }
+                        },
+                        trailingContent = {
+                            Checkbox(
+                                checked = selected,
+                                onCheckedChange = {
+                                    scope.launch {
+                                        val nowSelected = onTogglePreset(preset)
+                                        onMessage(
+                                            if (nowSelected) {
+                                                "${preset.displayName} added to My EQs for this output."
+                                            } else {
+                                                "${preset.displayName} removed from My EQs for this output."
+                                            },
+                                        )
+                                    }
+                                },
+                            )
                         },
                     )
                     HorizontalDivider()
