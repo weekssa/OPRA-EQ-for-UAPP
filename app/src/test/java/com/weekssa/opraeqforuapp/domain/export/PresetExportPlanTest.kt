@@ -128,7 +128,7 @@ class PresetExportPlanTest {
     }
 
     @Test
-    fun blackPearlNonzeroPreampIsNotExportedRatherThanChangingGlobalVolume() {
+    fun blackPearlFileExportPreservesNonzeroSourcePreamp() {
         val source = profile("p1", selected = true, presetName = "Needs preamp").copy(
             lastKnownProfile = OpraEqProfile(
                 id = "p1",
@@ -147,7 +147,35 @@ class PresetExportPlanTest {
             ExportDevice.BLACK_PEARL,
         )
 
-        assertTrue(plan.candidates.isEmpty())
+        assertEquals(1, plan.candidates.size)
+        assertEquals(DevicePresetFidelity.EXACT, plan.candidates.single().fidelity)
+        assertTrue(plan.candidates.single().xml.contains("Preamp: -3.00 dB"))
+    }
+
+    @Test
+    fun blackPearlFileExportPreservesGeneratedSafetyHeadroomAsOptimizedMetadata() {
+        val source = profile("p1", selected = true, presetName = "Needs headroom").copy(
+            lastKnownProfile = OpraEqProfile(
+                id = "p1",
+                productId = "product",
+                author = "Creator",
+                details = "Needs headroom",
+                link = null,
+                profileType = "parametric_eq",
+                preampGainDb = null,
+                bands = listOf(OpraBand("peak_dip", 1_000.0, 4.6, 1.0, null)),
+                eqLibrarySafetyHeadroomDb = -4.6,
+            ),
+        )
+
+        val plan = buildEqLibraryExportPlan(
+            listOf(headphone(profiles = listOf(source))),
+            ExportDevice.BLACK_PEARL,
+        )
+
+        assertEquals(1, plan.candidates.size)
+        assertEquals(DevicePresetFidelity.OPTIMIZED, plan.candidates.single().fidelity)
+        assertTrue(plan.candidates.single().xml.contains("Preamp: -4.60 dB"))
     }
 
     @Test
