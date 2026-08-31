@@ -228,7 +228,7 @@ fun EqLibraryApp(
             scope.launch { snackbarHostState.showSnackbar(activeOutputRefreshMessage(onRefreshCatalog())) }
         }
     }
-    val requestUpdateCheck = {
+    val requestUpdateCheck: () -> Unit = {
         scope.launch {
             val message = when (val result = onCheckForUpdates()) {
                 is AppUpdateCheckResult.UpdateAvailable -> "Version ${result.release.version} is available."
