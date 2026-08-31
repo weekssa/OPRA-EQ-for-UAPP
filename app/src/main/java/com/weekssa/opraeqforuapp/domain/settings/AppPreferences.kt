@@ -17,16 +17,19 @@ enum class ProfileVisibilityCategory {
     NotCompatible,
 }
 
+/**
+ * Legacy v0.2 compatibility-filter preference retained only for storage/API migration.
+ *
+ * v0.3 output context never hides canonical library curves, so persisted compatibility toggles no
+ * longer affect presentation. Device-specific capability is shown as information at export time.
+ */
 data class ProfileVisibilityPreferences(
     val showFullyCompatible: Boolean = true,
     val showCompatibleWithLimitation: Boolean = true,
     val showNotCompatible: Boolean = true,
 ) {
-    fun isVisible(category: ProfileVisibilityCategory): Boolean = when (category) {
-        ProfileVisibilityCategory.FullyCompatible -> showFullyCompatible
-        ProfileVisibilityCategory.CompatibleWithLimitation -> showCompatibleWithLimitation
-        ProfileVisibilityCategory.NotCompatible -> showNotCompatible
-    }
+    @Suppress("UNUSED_PARAMETER")
+    fun isVisible(category: ProfileVisibilityCategory): Boolean = true
 
     fun withVisibility(category: ProfileVisibilityCategory, visible: Boolean): ProfileVisibilityPreferences =
         when (category) {
