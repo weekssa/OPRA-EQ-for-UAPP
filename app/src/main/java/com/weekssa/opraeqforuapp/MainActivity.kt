@@ -242,6 +242,9 @@ class MainActivity : ComponentActivity() {
                     onExportProduct = { uri, productId, device ->
                         exportManagedProduct(uri, productId, device, activeOutputId)
                     },
+                    onExportManagedProfile = { uri, productId, profileId, device ->
+                        exportManagedProfile(uri, productId, profileId, device, activeOutputId)
+                    },
                     onExportSavedEq = ::exportSavedEq,
                     onExportGeneralEq = { uri, presetId, device ->
                         exportGeneralEq(uri, presetId, device, activeOutputId)
@@ -375,6 +378,24 @@ class MainActivity : ComponentActivity() {
         return exportRepository.exportSelected(
             treeUri = treeUri,
             headphones = listOf(managed),
+            device = device,
+        )
+    }
+
+    private suspend fun exportManagedProfile(
+        treeUri: Uri,
+        productId: String,
+        profileId: String,
+        device: ExportDevice,
+        outputId: String,
+    ): PresetExportSummary {
+        val managed = managedHeadphonesRepository.getHeadphone(productId, outputId)
+            ?: return PresetExportSummary(results = emptyList())
+        val profile = managed.profiles.firstOrNull { it.profileId == profileId && it.selected }
+            ?: return PresetExportSummary(results = emptyList())
+        return exportRepository.exportSelected(
+            treeUri = treeUri,
+            headphones = listOf(managed.copy(profiles = listOf(profile))),
             device = device,
         )
     }
