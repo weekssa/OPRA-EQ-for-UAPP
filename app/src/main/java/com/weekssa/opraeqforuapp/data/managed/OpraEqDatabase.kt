@@ -8,8 +8,11 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.weekssa.opraeqforuapp.data.export.ExportOwnershipDao
 import com.weekssa.opraeqforuapp.data.export.ExportOwnershipEntity
+import com.weekssa.opraeqforuapp.data.library.OutputGeneralEqEntity
 import com.weekssa.opraeqforuapp.data.library.SavedEqDao
 import com.weekssa.opraeqforuapp.data.library.SavedEqEntity
+import com.weekssa.opraeqforuapp.data.library.SavedGeneralEqDao
+import com.weekssa.opraeqforuapp.data.library.SavedGeneralEqEntity
 
 @Database(
     entities = [
@@ -19,14 +22,17 @@ import com.weekssa.opraeqforuapp.data.library.SavedEqEntity
         OutputManagedProfileEntity::class,
         ExportOwnershipEntity::class,
         SavedEqEntity::class,
+        SavedGeneralEqEntity::class,
+        OutputGeneralEqEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = false,
 )
 abstract class OpraEqDatabase : RoomDatabase() {
     abstract fun managedHeadphonesDao(): ManagedHeadphonesDao
     abstract fun exportOwnershipDao(): ExportOwnershipDao
     abstract fun savedEqDao(): SavedEqDao
+    abstract fun savedGeneralEqDao(): SavedGeneralEqDao
 
     companion object {
         private val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -79,11 +85,7 @@ abstract class OpraEqDatabase : RoomDatabase() {
             }
         }
 
-        /**
-         * Moves the pre-output-context saved selection into UAPP so upgrades preserve exactly what
-         * the user already had. Other outputs intentionally start empty until the user saves EQs
-         * while that output is active.
-         */
+        /** Existing v0.2/v0.3 saved selections become UAPP selections on upgrade. */
         internal val MIGRATION_3_4 = object : Migration(3, 4) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
@@ -143,13 +145,42 @@ abstract class OpraEqDatabase : RoomDatabase() {
             }
         }
 
+        internal val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS saved_general_eqs (
+                        presetId TEXT NOT NULL PRIMARY KEY,
+                        displayName TEXT NOT NULL,
+                        category TEXT NOT NULL,
+                        profileJson TEXT NOT NULL,
+                        createdAtMillis INTEGER NOT NULL,
+                        updatedAtMillis INTEGER NOT NULL
+                    )
+                    """.trimIndent(),
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_saved_general_eqs_category ON saved_general_eqs(category)")
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS output_general_eqs (
+                        outputId TEXT NOT NULL,
+                        presetId TEXT NOT NULL,
+                        selectedAtMillis INTEGER NOT NULL,
+                        PRIMARY KEY(outputId, presetId)
+                    )
+                    """.trimIndent(),
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_output_general_eqs_presetId ON output_general_eqs(presetId)")
+            }
+        }
+
         fun create(context: Context): OpraEqDatabase =
             Room.databaseBuilder(
                 context.applicationContext,
                 OpraEqDatabase::class.java,
                 "opra_eq_for_uapp.db",
             )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                 .build()
     }
 }
