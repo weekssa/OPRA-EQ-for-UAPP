@@ -46,10 +46,23 @@ class DeviceExportabilityTest {
     }
 
     @Test
-    fun `Black Pearl nonzero preamp is not representable without touching global volume`() {
+    fun `Black Pearl file export preserves a nonzero source preamp`() {
         assertEquals(
-            DeviceExportability.NOT_REPRESENTABLE,
+            DeviceExportability.EXACT,
             assessDeviceExportability(profile(), ExportDevice.BLACK_PEARL),
+        )
+    }
+
+    @Test
+    fun `Black Pearl file export can preserve generated safety headroom`() {
+        val source = profile().copy(
+            preampGainDb = null,
+            eqLibrarySafetyHeadroomDb = -4.6,
+        )
+
+        assertEquals(
+            DeviceExportability.OPTIMIZED,
+            assessDeviceExportability(source, ExportDevice.BLACK_PEARL),
         )
     }
 
