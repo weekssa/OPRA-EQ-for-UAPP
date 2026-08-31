@@ -36,8 +36,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
+import com.weekssa.opraeqforuapp.data.export.ExportCurrentness
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqCategory
+import com.weekssa.opraeqforuapp.domain.export.DeviceExportability
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
+import com.weekssa.opraeqforuapp.domain.export.assessDeviceExportability
 import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
 import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
@@ -64,6 +67,7 @@ fun MyEqsHomeScreen(
     savedEqs: List<SavedEqRecord>,
     savedGeneralEqs: List<SavedGeneralEqRecord>,
     activeOutput: ExportDevice,
+    exportCurrentness: ExportCurrentness,
     directBlackPearlFlashEnabled: Boolean,
     blackPearlConnectionState: BlackPearlConnectionState,
     onConnectBlackPearl: () -> Unit,
@@ -89,7 +93,6 @@ fun MyEqsHomeScreen(
     var importOpen by remember { mutableStateOf(false) }
     var pendingFlash by remember { mutableStateOf<PendingBlackPearlFlash?>(null) }
     val selectedHeadphoneCount = managedHeadphones.sumOf(ManagedHeadphoneRecord::selectedProfileCount)
-    val totalExportableItems = selectedHeadphoneCount + savedEqs.size + savedGeneralEqs.size
     val headphoneSavedEqs = remember(savedEqs) { savedEqs.toList() }
     val blackPearlConnected = blackPearlConnectionState is BlackPearlConnectionState.Connected
     val flashActionsEnabled = activeOutput == ExportDevice.BLACK_PEARL &&
@@ -153,12 +156,11 @@ fun MyEqsHomeScreen(
                     )
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(
-                        onClick = onExportAll,
-                        enabled = totalExportableItems > 0,
-                    ) {
-                        Icon(Icons.Outlined.FileUpload, contentDescription = null)
-                        Text("Export all", modifier = Modifier.padding(start = 6.dp))
+                    if (exportCurrentness.hasPendingExport) {
+                        Button(onClick = onExportAll) {
+                            Icon(Icons.Outlined.FileUpload, contentDescription = null)
+                            Text("Export all", modifier = Modifier.padding(start = 6.dp))
+                        }
                     }
                     OutlinedButton(onClick = { importOpen = true }) {
                         Icon(Icons.Outlined.Add, contentDescription = null)
@@ -166,8 +168,20 @@ fun MyEqsHomeScreen(
                     }
                 }
                 Text(
-                    text = "${outputTitle(activeOutput)} · $selectedHeadphoneCount headphone EQs · ${savedGeneralEqs.size} General EQs",
+                    text = when {
+                        exportCurrentness.hasPendingExport ->
+                            "${exportCurrentness.needsExportItems.size} exportable EQs need export for ${outputTitle(activeOutput)}."
+                        exportCurrentness.hasAnythingToExport ->
+                            "All exportable EQs are current for ${outputTitle(activeOutput)}."
+                        else -> "No saved EQs are exportable to ${outputTitle(activeOutput)}."
+                    },
                     modifier = Modifier.padding(top = 8.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = "$selectedHeadphoneCount headphone EQs · ${savedGeneralEqs.size} General EQs",
+                    modifier = Modifier.padding(top = 2.dp),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -199,9 +213,20 @@ fun MyEqsHomeScreen(
                         items = headphones.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.productName }),
                         key = { "managed:${it.productId}" },
                     ) { headphone ->
+                        val pendingCount = headphone.profiles.count { profile ->
+                            profile.selected && exportCurrentness.needsExport(headphone.productId, profile.profileId)
+                        }
                         ListItem(
                             headlineContent = { Text(headphone.productName) },
-                            supportingContent = { Text("${headphone.selectedProfileCount} selected profiles") },
+                            supportingContent = {
+                                Text(
+                                    if (pendingCount > 0) {
+                                        "${headphone.selectedProfileCount} selected · $pendingCount need export"
+                                    } else {
+                                        "${headphone.selectedProfileCount} selected profiles"
+                                    },
+                                )
+                            },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable { onOpenHeadphone(headphone.productId) },
@@ -220,6 +245,11 @@ fun MyEqsHomeScreen(
                     )
                 }
                 items(headphoneSavedEqs, key = { "saved:${it.entryId}" }) { record ->
+                    val needsExport = exportCurrentness.needsExport(record.productId, record.profile.id)
+                    val blackPearlRepresentable = assessDeviceExportability(
+                        record.profile,
+                        ExportDevice.BLACK_PEARL,
+                    ) != DeviceExportability.NOT_REPRESENTABLE
                     ListItem(
                         leadingContent = if (record.kind == SavedEqKind.Favorite) {
                             { Icon(Icons.Outlined.Star, contentDescription = null) }
@@ -230,12 +260,14 @@ fun MyEqsHomeScreen(
                         supportingContent = { Text("${record.manufacturer} · ${record.model}") },
                         trailingContent = {
                             Row {
-                                IconButton(onClick = { onExportSavedEq(record.entryId) }) {
-                                    Icon(Icons.Outlined.FileUpload, contentDescription = "Export ${record.displayName}")
+                                if (needsExport) {
+                                    IconButton(onClick = { onExportSavedEq(record.entryId) }) {
+                                        Icon(Icons.Outlined.FileUpload, contentDescription = "Export ${record.displayName}")
+                                    }
                                 }
                                 if (activeOutput == ExportDevice.BLACK_PEARL) {
                                     TextButton(
-                                        enabled = flashActionsEnabled,
+                                        enabled = flashActionsEnabled && blackPearlRepresentable,
                                         onClick = {
                                             pendingFlash = PendingBlackPearlFlash.SavedEq(
                                                 entryId = record.entryId,
@@ -271,6 +303,11 @@ fun MyEqsHomeScreen(
             }
         } else {
             items(savedGeneralEqs, key = { "general:${it.presetId}" }) { record ->
+                val needsExport = exportCurrentness.needsExport(generalExportProductId(record.presetId), record.presetId)
+                val blackPearlRepresentable = assessDeviceExportability(
+                    record.profile,
+                    ExportDevice.BLACK_PEARL,
+                ) != DeviceExportability.NOT_REPRESENTABLE
                 ListItem(
                     headlineContent = { Text(record.displayName) },
                     supportingContent = {
@@ -281,12 +318,14 @@ fun MyEqsHomeScreen(
                     },
                     trailingContent = {
                         Row {
-                            IconButton(onClick = { onExportGeneralEq(record.presetId) }) {
-                                Icon(Icons.Outlined.FileUpload, contentDescription = "Export ${record.displayName}")
+                            if (needsExport) {
+                                IconButton(onClick = { onExportGeneralEq(record.presetId) }) {
+                                    Icon(Icons.Outlined.FileUpload, contentDescription = "Export ${record.displayName}")
+                                }
                             }
                             if (activeOutput == ExportDevice.BLACK_PEARL) {
                                 TextButton(
-                                    enabled = flashActionsEnabled,
+                                    enabled = flashActionsEnabled && blackPearlRepresentable,
                                     onClick = {
                                         pendingFlash = PendingBlackPearlFlash.GeneralEq(
                                             presetId = record.presetId,
@@ -465,6 +504,8 @@ private fun generalCategoryLabel(category: GeneralEqCategory): String = when (ca
     GeneralEqCategory.GENRE -> "Genre"
     GeneralEqCategory.UTILITY -> "Utility"
 }
+
+private fun generalExportProductId(presetId: String): String = "general-export:$presetId"
 
 private fun outputTitle(device: ExportDevice): String = when (device) {
     ExportDevice.UAPP -> "USB Audio Player PRO / ToneBoosters"
