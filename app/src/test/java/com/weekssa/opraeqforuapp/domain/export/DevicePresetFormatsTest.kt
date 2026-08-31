@@ -3,7 +3,7 @@ package com.weekssa.opraeqforuapp.domain.export
 import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -23,6 +23,8 @@ class DevicePresetFormatsTest {
         ),
     )
 
+    private val blackPearlProfile = profile.copy(preampGainDb = 0.0)
+
     @Test
     fun toppingPreservesSupportedShelfAndPeakTypes() {
         val variants = buildTextDeviceVariants(profile)
@@ -36,22 +38,62 @@ class DevicePresetFormatsTest {
     }
 
     @Test
-    fun blackPearlContainsOnlyPeakFiltersAndHonorsItsCurrentCapabilityLimit() {
-        val variants = buildTextDeviceVariants(profile)
-        val blackPearl = variants.single { it.device == ExportDevice.BLACK_PEARL }
+    fun blackPearlPreservesNativeShelfAndPeakTypes() {
+        val blackPearl = buildTextDeviceVariant(blackPearlProfile, ExportDevice.BLACK_PEARL)!!
         val filterLines = filterLines(blackPearl.content)
-        assertFalse(filterLines.isEmpty())
-        assertTrue(filterLines.size <= ExportDevice.BLACK_PEARL.eqCapabilities!!.maxBands!!)
-        assertTrue(filterLines.all { it.contains(" ON PK ") })
-        assertFalse(blackPearl.content.contains(" LSC "))
-        assertFalse(blackPearl.content.contains(" HSC "))
-        assertEquals(DevicePresetFidelity.OPTIMIZED, blackPearl.fidelity)
-        assertTrue(blackPearl.transformation.contains("EQ Library optimized conversion"))
+
+        assertEquals(3, filterLines.size)
+        assertTrue(blackPearl.content.contains("Preamp: 0.00 dB"))
+        assertTrue(blackPearl.content.contains("ON LSC"))
+        assertTrue(blackPearl.content.contains("ON PK"))
+        assertTrue(blackPearl.content.contains("ON HSC"))
+        assertEquals(DevicePresetFidelity.EXACT, blackPearl.fidelity)
+        assertTrue(blackPearl.transformation.contains("Source EQ bands are preserved"))
     }
 
     @Test
-    fun oneSourceProfileProducesAllSupportedTextDeviceVariants() {
-        val variants = buildTextDeviceVariants(profile)
+    fun blackPearlUsesFirstTenSourcePriorityBandsWithoutMutatingSource() {
+        val sourceBands = (1..12).map { index ->
+            OpraBand(
+                type = when (index % 3) {
+                    1 -> "low_shelf"
+                    2 -> "peak_dip"
+                    else -> "high_shelf"
+                },
+                frequency = 100.0 * index,
+                gainDb = (index - 6) / 2.0,
+                q = 1.0,
+                slope = null,
+            )
+        }
+        val source = blackPearlProfile.copy(bands = sourceBands)
+
+        val variant = buildTextDeviceVariant(source, ExportDevice.BLACK_PEARL)!!
+
+        assertEquals(10, filterLines(variant.content).size)
+        assertEquals(DevicePresetFidelity.OPTIMIZED, variant.fidelity)
+        assertTrue(variant.transformation.contains("first source-priority bands"))
+        assertEquals(12, source.bands!!.size)
+        assertEquals(sourceBands, source.bands)
+    }
+
+    @Test
+    fun blackPearlDoesNotClampOutOfRangeSourceValues() {
+        val source = blackPearlProfile.copy(
+            bands = listOf(OpraBand("peak_dip", 1_000.0, 12.0, 1.0, null)),
+        )
+
+        assertNull(buildTextDeviceVariant(source, ExportDevice.BLACK_PEARL))
+    }
+
+    @Test
+    fun blackPearlRejectsNonzeroPreampInsteadOfChangingGlobalVolume() {
+        assertNull(buildTextDeviceVariant(profile, ExportDevice.BLACK_PEARL))
+    }
+
+    @Test
+    fun oneSourceProfileProducesAllSupportedTextDeviceVariantsWhenBlackPearlHeadroomIsRepresentable() {
+        val variants = buildTextDeviceVariants(blackPearlProfile)
         assertEquals(
             setOf(
                 ExportDevice.BLACK_PEARL,
@@ -67,9 +109,9 @@ class DevicePresetFormatsTest {
 
     @Test
     fun singleDeviceFormatterReturnsOnlyTheRequestedTarget() {
-        val blackPearl = buildTextDeviceVariant(profile, ExportDevice.BLACK_PEARL)
+        val blackPearl = buildTextDeviceVariant(blackPearlProfile, ExportDevice.BLACK_PEARL)
         assertEquals(ExportDevice.BLACK_PEARL, blackPearl?.device)
-        assertTrue(buildTextDeviceVariant(profile, ExportDevice.UAPP) == null)
+        assertTrue(buildTextDeviceVariant(blackPearlProfile, ExportDevice.UAPP) == null)
     }
 
     @Test
@@ -101,6 +143,14 @@ class DevicePresetFormatsTest {
         assertEquals(10.0, uapp.maxQ, 0.0)
         assertEquals(-20.0, uapp.minPreampDb!!, 0.0)
         assertEquals(20.0, uapp.maxPreampDb!!, 0.0)
+
+        val blackPearl = ExportDevice.BLACK_PEARL.eqCapabilities!!
+        assertEquals(10, blackPearl.maxBands)
+        assertEquals(setOf("peak_dip", "low_shelf", "high_shelf"), blackPearl.supportedBandTypes)
+        assertEquals(-10.0, blackPearl.minGainDb, 0.0)
+        assertEquals(10.0, blackPearl.maxGainDb, 0.0)
+        assertEquals(0.1, blackPearl.minQ, 0.0)
+        assertEquals(10.0, blackPearl.maxQ, 0.0)
     }
 
     @Test
@@ -196,7 +246,7 @@ class DevicePresetFormatsTest {
     }
 
     @Test
-    fun generatedSafetyHeadroomIsUsedButStillClassifiedOptimized() {
+    fun generatedSafetyHeadroomIsUsedForTargetsThatSupportIndependentPreamp() {
         val source = profile.copy(
             preampGainDb = null,
             eqLibrarySafetyHeadroomDb = -6.75,
@@ -204,25 +254,25 @@ class DevicePresetFormatsTest {
         )
 
         val topping = buildTextDeviceVariant(source, ExportDevice.TOPPING_DX5_II)!!
-        val blackPearl = buildTextDeviceVariant(source, ExportDevice.BLACK_PEARL)!!
 
         assertTrue(topping.content.contains("Preamp: -6.75 dB"))
         assertEquals(DevicePresetFidelity.OPTIMIZED, topping.fidelity)
         assertTrue(topping.transformation.contains("EQ Library optimized conversion"))
-        assertTrue(blackPearl.content.contains("Preamp: -6.75 dB"))
-        assertEquals(DevicePresetFidelity.OPTIMIZED, blackPearl.fidelity)
+        assertNull(buildTextDeviceVariant(source, ExportDevice.BLACK_PEARL))
         assertEquals(null, source.preampGainDb)
     }
 
     @Test
-    fun unsupportedFilterTypeIsNeverMisrepresentedAsExact() {
-        val source = profile.copy(
-            bands = listOf(OpraBand("low_shelf", 100.0, 3.0, 0.71, null)),
+    fun generatedZeroSafetyHeadroomCanProduceBlackPearlOutputButIsStillOptimizedMetadata() {
+        val source = blackPearlProfile.copy(
+            preampGainDb = null,
+            eqLibrarySafetyHeadroomDb = 0.0,
         )
 
-        val variant = buildTextDeviceVariant(source, ExportDevice.BLACK_PEARL)!!
+        val blackPearl = buildTextDeviceVariant(source, ExportDevice.BLACK_PEARL)!!
 
-        assertEquals(DevicePresetFidelity.OPTIMIZED, variant.fidelity)
+        assertTrue(blackPearl.content.contains("Preamp: 0.00 dB"))
+        assertEquals(DevicePresetFidelity.OPTIMIZED, blackPearl.fidelity)
     }
 
     private fun filterLines(content: String): List<String> =
