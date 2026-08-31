@@ -46,6 +46,7 @@ import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshResult
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.data.export.ExportCurrentness
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
+import com.weekssa.opraeqforuapp.data.export.PresetExportItemResult
 import com.weekssa.opraeqforuapp.data.export.PresetExportSummary
 import com.weekssa.opraeqforuapp.data.sync.CatalogSyncOutcome
 import com.weekssa.opraeqforuapp.data.update.AppUpdateCheckResult
@@ -385,6 +386,7 @@ fun EqLibraryApp(
                                 favoriteProfileIds = favoriteProfileIds,
                                 directBlackPearlFlashEnabled = appPreferences.directBlackPearlFlashEnabled,
                                 blackPearlConnectionState = blackPearlConnectionState,
+                                onConnectBlackPearl = onConnectBlackPearl,
                                 onFlashManagedProfile = { profileId ->
                                     onFlashManagedProfile(selectedManagedHeadphone.productId, profileId)
                                 },
@@ -492,11 +494,30 @@ private fun outputTitle(device: ExportDevice): String = when (device) {
 }
 
 private fun activeOutputExportMessage(summary: PresetExportSummary): String {
+    val reviewResults = summary.results.filter {
+        it is PresetExportItemResult.Conflict || it is PresetExportItemResult.Failed
+    }
+    val firstReviewReason = reviewResults.firstOrNull()?.let { result ->
+        when (result) {
+            is PresetExportItemResult.Conflict -> result.reason
+            is PresetExportItemResult.Failed -> result.reason
+            else -> null
+        }
+    }
+    val reviewCount = summary.conflictCount + summary.failedCount
     val message = when {
         summary.accessLost -> "Export folder access was lost. Choose the folder again."
         summary.results.isEmpty() -> "No selected presets are ready to export."
-        summary.conflictCount > 0 || summary.failedCount > 0 ->
-            "${summary.successfulCount} presets saved/current · ${summary.conflictCount + summary.failedCount} need review."
+        reviewCount > 0 -> buildString {
+            append(summary.successfulCount)
+            append(if (summary.successfulCount == 1) " preset saved/current · " else " presets saved/current · ")
+            append(reviewCount)
+            append(if (reviewCount == 1) " needs review" else " need review")
+            firstReviewReason?.let { reason ->
+                append(": ")
+                append(reason)
+            }
+        }
         summary.createdCount > 0 || summary.updatedCount > 0 ->
             "${summary.createdCount} new · ${summary.updatedCount} updated · ${summary.currentCount} already current."
         else -> "All ${summary.currentCount} selected presets are already current."
