@@ -45,3 +45,39 @@ data class ManagedProfileEntity(
     val generatedFromFingerprint: String?,
     val generatedAtMillis: Long?,
 )
+
+/**
+ * Output-scoped saved-headphone state.
+ *
+ * The legacy managed_headphones/managed_profiles tables continue to own the local source snapshot
+ * and generated UAPP cache. These rows say which headphones and selection policy belong to each
+ * playback/output context without duplicating canonical EQ data.
+ */
+@Entity(
+    tableName = "output_managed_headphones",
+    primaryKeys = ["outputId", "productId"],
+    indices = [Index("productId")],
+)
+data class OutputManagedHeadphoneEntity(
+    val outputId: String,
+    val productId: String,
+    val autoIncludeNewProfiles: Boolean,
+    val createdAtMillis: Long,
+    val updatedAtMillis: Long,
+)
+
+@Entity(
+    tableName = "output_managed_profiles",
+    primaryKeys = ["outputId", "profileId"],
+    indices = [
+        Index("productId"),
+        Index(value = ["outputId", "productId"]),
+    ],
+)
+data class OutputManagedProfileEntity(
+    val outputId: String,
+    val productId: String,
+    val profileId: String,
+    val selected: Boolean,
+    val explicitlyExcluded: Boolean,
+)
