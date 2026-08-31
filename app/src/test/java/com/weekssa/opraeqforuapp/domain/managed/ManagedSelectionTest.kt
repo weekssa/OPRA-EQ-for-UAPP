@@ -8,26 +8,28 @@ import org.junit.Test
 
 class ManagedSelectionTest {
     @Test
-    fun firstTimeDefaultsSelectAllCurrentSelectableProfiles() {
-        val fullyCompatible = compatibleProfile("fully")
-        val limited = compatibleProfile("limited").copy(
+    fun firstTimeDefaultsSelectAllCurrentUsableVerifiedProfiles() {
+        val uappCompatible = compatibleProfile("fully")
+        val overTenBands = compatibleProfile("limited").copy(
             bands = (1..11).map { index ->
                 OpraBand("peak_dip", 100.0 * index, 0.0, 1.0, null)
             },
         )
-        val blocked = unsupportedProfile("blocked")
+        val uappUnsupportedButUsable = uappUnsupportedProfile("uapp-unsupported")
+        val unusable = unusableProfile("unusable")
         val historical = compatibleProfile("historical").copy(
             details = "Previous revision · Revision: 2023-10-29 · Source: AutoEQ",
         )
 
         val selected = defaultStagedSelectedProfileIds(
-            listOf(fullyCompatible, limited, blocked, historical),
+            listOf(uappCompatible, overTenBands, uappUnsupportedButUsable, unusable, historical),
         )
 
         assertTrue(DEFAULT_AUTO_INCLUDE_NEW_PROFILES)
         assertTrue("fully" in selected)
         assertTrue("limited" in selected)
-        assertFalse("blocked" in selected)
+        assertTrue("uapp-unsupported" in selected)
+        assertFalse("unusable" in selected)
         assertFalse("historical" in selected)
     }
 
@@ -49,6 +51,15 @@ class ManagedSelectionTest {
         val selected = selectableProfileIds(listOf(unverified))
 
         assertTrue("unverified" in selected)
+    }
+
+    @Test
+    fun explicitSelectAllCanIncludeOutputUnsupportedButUsableProfile() {
+        val source = uappUnsupportedProfile("uapp-unsupported")
+
+        val selected = selectableProfileIds(listOf(source))
+
+        assertTrue("uapp-unsupported" in selected)
     }
 
     @Test
@@ -109,7 +120,7 @@ class ManagedSelectionTest {
     }
 
     @Test
-    fun autoIncludeSelectsFutureCompatibleProfile() {
+    fun autoIncludeSelectsFutureUsableVerifiedProfile() {
         val state = ManagedHeadphoneSelection(
             productId = "product",
             autoIncludeNewProfiles = true,
@@ -117,6 +128,17 @@ class ManagedSelectionTest {
         )
 
         assertTrue(state.isSelected(compatibleProfile("new")))
+    }
+
+    @Test
+    fun autoIncludeAlsoSelectsFutureOutputUnsupportedButUsableProfile() {
+        val state = ManagedHeadphoneSelection(
+            productId = "product",
+            autoIncludeNewProfiles = true,
+            profileSelections = emptyMap(),
+        )
+
+        assertTrue(state.isSelected(uappUnsupportedProfile("new")))
     }
 
     @Test
@@ -170,18 +192,18 @@ class ManagedSelectionTest {
     }
 
     @Test
-    fun notCompatibleProfileIsNeverSelectedAutomatically() {
+    fun unusableSourceIsNeverSelectedAutomatically() {
         val state = ManagedHeadphoneSelection(
             productId = "product",
             autoIncludeNewProfiles = true,
             profileSelections = emptyMap(),
         )
 
-        assertFalse(state.isSelected(unsupportedProfile("blocked")))
+        assertFalse(state.isSelected(unusableProfile("blocked")))
     }
 
     @Test
-    fun savingWithAutoIncludePersistsUncheckedProfilesAsExplicitExclusions() {
+    fun savingWithAutoIncludePersistsUncheckedVerifiedProfilesAsExplicitExclusions() {
         val profiles = listOf(compatibleProfile("selected"), compatibleProfile("excluded"))
         val updates = selectionUpdatesForSave(
             profiles = profiles,
@@ -236,10 +258,23 @@ class ManagedSelectionTest {
         assertFalse(updates.getValue("not-selected").explicitlyExcluded)
     }
 
+    @Test
+    fun savingCanSelectOutputUnsupportedButUsableProfile() {
+        val source = uappUnsupportedProfile("saved")
+
+        val updates = selectionUpdatesForSave(
+            profiles = listOf(source),
+            stagedSelectedProfileIds = setOf(source.id),
+            autoIncludeNewProfiles = false,
+        )
+
+        assertTrue(updates.getValue(source.id).selected)
+    }
+
     @Test(expected = IllegalArgumentException::class)
-    fun savingCannotSelectNotCompatibleProfile() {
+    fun savingCannotSelectUnusableSourceProfile() {
         selectionUpdatesForSave(
-            profiles = listOf(unsupportedProfile("blocked")),
+            profiles = listOf(unusableProfile("blocked")),
             stagedSelectedProfileIds = setOf("blocked"),
             autoIncludeNewProfiles = true,
         )
@@ -264,7 +299,7 @@ class ManagedSelectionTest {
         ),
     )
 
-    private fun unsupportedProfile(id: String) = compatibleProfile(id).copy(
+    private fun uappUnsupportedProfile(id: String) = compatibleProfile(id).copy(
         bands = listOf(
             OpraBand(
                 type = "low_pass",
@@ -274,5 +309,9 @@ class ManagedSelectionTest {
                 slope = 12.0,
             ),
         ),
+    )
+
+    private fun unusableProfile(id: String) = compatibleProfile(id).copy(
+        profileType = "graphic_eq",
     )
 }
