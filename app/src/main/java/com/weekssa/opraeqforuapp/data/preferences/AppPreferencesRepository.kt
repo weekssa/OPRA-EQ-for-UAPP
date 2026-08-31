@@ -94,7 +94,7 @@ class AppPreferencesRepository(context: Context) {
         appContext.appPreferencesDataStore.edit { preferences ->
             val current = outputPreferences(preferences[Keys.SelectedExportTargets], preferences[Keys.ActiveExportTarget])
             val next = current.withTarget(device, enabled)
-            preferences[Keys.SelectedExportTargets] = next.selectedTargets.mapTo(mutableSetOf())(ExportDevice::name)
+            preferences[Keys.SelectedExportTargets] = next.selectedTargets.mapTo(mutableSetOf()) { it.name }
             preferences[Keys.ActiveExportTarget] = next.activeTarget.name
         }
     }
@@ -104,7 +104,7 @@ class AppPreferencesRepository(context: Context) {
         appContext.appPreferencesDataStore.edit { preferences ->
             val current = outputPreferences(preferences[Keys.SelectedExportTargets], preferences[Keys.ActiveExportTarget])
             val next = current.withActiveTarget(device)
-            preferences[Keys.SelectedExportTargets] = next.selectedTargets.mapTo(mutableSetOf())(ExportDevice::name)
+            preferences[Keys.SelectedExportTargets] = next.selectedTargets.mapTo(mutableSetOf()) { it.name }
             preferences[Keys.ActiveExportTarget] = next.activeTarget.name
         }
     }
