@@ -20,7 +20,7 @@
       "creator": "sovran",
       "source_url": "https://forum.hifiguides.com/t/iem-discussion-thread-part-2/40657?page=91",
       "source_date": "2024-06-11",
-      "status": "source-review",
+      "status": "publish-candidate",
       "provenance_tier": 3,
       "lineage": "Community PEQ explicitly labeled for Sony WF-1000XM5 without ANC",
       "tuning_label": "Without ANC",
@@ -40,7 +40,7 @@
         {"type":"PK","frequency_hz":9100,"gain_db":-6.0,"q":1.2},
         {"type":"PK","frequency_hz":15000,"gain_db":2.4,"q":0.6}
       ],
-      "review_notes": "Twelve source filters are retained canonically. Hold only until HiFiGuides is added as a qualified source lane; device exporters decide how to represent >10 bands."
+      "review_notes": "Twelve source filters are retained canonically; device exporters decide how to represent outputs with fewer bands."
     }
   ]
 }
