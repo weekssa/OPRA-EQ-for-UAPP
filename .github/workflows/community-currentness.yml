@@ -6,6 +6,7 @@ on:
       - eq-library-community-v0.3
     paths:
       - '.github/workflows/community-currentness.yml'
+      - 'tools/community_publish_entry.py'
       - 'tools/curated_community_publish.py'
       - 'tools/community_peq_ingest.py'
       - 'tools/catalog_merge.py'
@@ -57,7 +58,7 @@ jobs:
             next="${RUNNER_TEMP}/catalog.community.next.json"
             report="${RUNNER_TEMP}/community-reports/${base}-report.json"
             echo "Publishing ${curated}"
-            python3 tools/curated_community_publish.py \
+            python3 tools/community_publish_entry.py \
               --catalog "${RUNNER_TEMP}/catalog.community.current.json" \
               --curated "${curated}" \
               --registry config/source_registry.json \
