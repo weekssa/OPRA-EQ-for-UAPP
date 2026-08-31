@@ -112,10 +112,12 @@ class MainActivity : ComponentActivity() {
             val appPreferences = appPreferencesRepository.preferences.collectAsStateWithLifecycle(
                 initialValue = AppPreferences(),
             ).value
+            val activeOutputId = appPreferences.exportTargets.activeTarget.name
             val catalogState = catalogRepository.state.collectAsStateWithLifecycle().value
-            val managedHeadphones = managedHeadphonesRepository.observeHeadphones().collectAsStateWithLifecycle(
-                initialValue = emptyList<ManagedHeadphoneRecord>(),
-            ).value
+            val managedHeadphones = managedHeadphonesRepository
+                .observeHeadphones(activeOutputId)
+                .collectAsStateWithLifecycle(initialValue = emptyList<ManagedHeadphoneRecord>())
+                .value
             val savedEqs = savedEqRepository.observeAll().collectAsStateWithLifecycle(
                 initialValue = emptyList<SavedEqRecord>(),
             ).value
@@ -127,7 +129,9 @@ class MainActivity : ComponentActivity() {
                     managedHeadphones = managedHeadphones,
                     savedEqs = savedEqs,
                     onRefreshCatalog = syncCoordinator::refresh,
-                    onLoadManagedHeadphone = managedHeadphonesRepository::getHeadphone,
+                    onLoadManagedHeadphone = { productId ->
+                        managedHeadphonesRepository.getHeadphone(productId, activeOutputId)
+                    },
                     onSaveSelection = { productId, selectedIds, autoInclude ->
                         val ready = catalogRepository.state.value as? CatalogState.Ready
                         if (ready != null) {
@@ -136,12 +140,28 @@ class MainActivity : ComponentActivity() {
                                 productId = productId,
                                 stagedSelectedProfileIds = selectedIds,
                                 autoIncludeNewProfiles = autoInclude,
+                                outputId = activeOutputId,
                             )
                         }
                     },
-                    onRemoveHeadphone = managedHeadphonesRepository::removeHeadphone,
-                    onRemoveManagedProfile = ::removeManagedProfile,
-                    onRemoveManagedHeadphone = ::removeManagedHeadphone,
+                    onRemoveHeadphone = { productId ->
+                        managedHeadphonesRepository.removeHeadphone(productId, activeOutputId)
+                    },
+                    onRemoveManagedProfile = { productId, profileId, deleteSavedFiles ->
+                        removeManagedProfile(
+                            productId = productId,
+                            profileId = profileId,
+                            deleteSavedFiles = deleteSavedFiles,
+                            outputId = activeOutputId,
+                        )
+                    },
+                    onRemoveManagedHeadphone = { productId, deleteSavedFiles ->
+                        removeManagedHeadphone(
+                            productId = productId,
+                            deleteSavedFiles = deleteSavedFiles,
+                            outputId = activeOutputId,
+                        )
+                    },
                     onDeleteSavedFilesForProfiles = cleanupRepository::deleteForProfiles,
                     onDeleteSavedFilesForProduct = cleanupRepository::deleteForProduct,
                     onMarkReviewed = managedHeadphonesRepository::markReviewed,
@@ -156,7 +176,9 @@ class MainActivity : ComponentActivity() {
                             device = device,
                         )
                     },
-                    onExportProduct = ::exportManagedProduct,
+                    onExportProduct = { uri, productId, device ->
+                        exportManagedProduct(uri, productId, device, activeOutputId)
+                    },
                     onExportSavedEq = ::exportSavedEq,
                     onCheckForUpdates = updateCoordinator::checkNow,
                     onDismissUpdate = appPreferencesRepository::dismissUpdate,
@@ -224,8 +246,9 @@ class MainActivity : ComponentActivity() {
         treeUri: Uri,
         productId: String,
         device: ExportDevice,
+        outputId: String,
     ): PresetExportSummary {
-        val managed = managedHeadphonesRepository.getHeadphone(productId)
+        val managed = managedHeadphonesRepository.getHeadphone(productId, outputId)
             ?: return PresetExportSummary(results = emptyList())
         return exportRepository.exportSelected(
             treeUri = treeUri,
@@ -252,8 +275,9 @@ class MainActivity : ComponentActivity() {
         productId: String,
         profileId: String,
         deleteSavedFiles: Boolean,
+        outputId: String,
     ): PresetCleanupSummary? {
-        val managed = managedHeadphonesRepository.getHeadphone(productId) ?: return null
+        val managed = managedHeadphonesRepository.getHeadphone(productId, outputId) ?: return null
         val record = managed.profiles.firstOrNull { it.profileId == profileId } ?: return null
         val cleanup = if (deleteSavedFiles) {
             cleanupRepository.deleteForProfiles(setOf(profileId))
@@ -265,7 +289,7 @@ class MainActivity : ComponentActivity() {
         val currentProfile = currentProfiles.firstOrNull { it.id == profileId }
 
         if (record.noLongerAvailable || currentProfile == null || ready == null) {
-            managedHeadphonesRepository.removeUnavailableProfile(productId, profileId)
+            managedHeadphonesRepository.removeUnavailableProfile(productId, profileId, outputId)
         } else {
             val selectionState = managed.toSelectionState()
             val remainingCurrentSelected = currentProfiles
@@ -276,13 +300,14 @@ class MainActivity : ComponentActivity() {
                 it.profileId != profileId && it.selected && it.noLongerAvailable
             }
             if (remainingCurrentSelected.isEmpty() && !retainedSelectedRemain) {
-                managedHeadphonesRepository.removeHeadphone(productId)
+                managedHeadphonesRepository.removeHeadphone(productId, outputId)
             } else {
                 managedHeadphonesRepository.saveSelection(
                     catalog = ready.catalog,
                     productId = productId,
                     stagedSelectedProfileIds = remainingCurrentSelected,
                     autoIncludeNewProfiles = managed.autoIncludeNewProfiles,
+                    outputId = outputId,
                 )
             }
         }
@@ -293,13 +318,14 @@ class MainActivity : ComponentActivity() {
     private suspend fun removeManagedHeadphone(
         productId: String,
         deleteSavedFiles: Boolean,
+        outputId: String,
     ): PresetCleanupSummary? {
         val cleanup = if (deleteSavedFiles) {
             cleanupRepository.deleteForProduct(productId)
         } else {
             null
         }
-        managedHeadphonesRepository.removeHeadphone(productId)
+        managedHeadphonesRepository.removeHeadphone(productId, outputId)
         return cleanup
     }
 
