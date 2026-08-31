@@ -71,7 +71,7 @@ A never-added headphone starts with:
 - **zero EQ profiles selected**;
 - **Automatically include new EQs** OFF.
 
-Every usable canonical parametric EQ is represented as a selectable checkbox unless the active output cannot export/flash it; output capability is presented as Exact, Optimized, or Not exportable without deleting/hiding the canonical source curve.
+Every usable canonical parametric EQ is represented as a selectable checkbox. Active-output capability is presented separately as Exact, Optimized, or Not exportable; a valid canonical EQ remains visible and selectable/savable even when the active output cannot represent it. Output capability must never become a catalog-visibility or canonical-selection filter.
 
 Provide Select all and Select none.
 
