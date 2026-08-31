@@ -136,7 +136,7 @@ class MainActivity : ComponentActivity() {
                 .observeHeadphones(activeOutputId)
                 .collectAsStateWithLifecycle(initialValue = emptyList<ManagedHeadphoneRecord>())
                 .value
-            val savedEqs = savedEqRepository.observeAll().collectAsStateWithLifecycle(
+            val savedEqs = savedEqRepository.observeForOutput(activeOutputId).collectAsStateWithLifecycle(
                 initialValue = emptyList<SavedEqRecord>(),
             ).value
             val savedGeneralEqs = savedGeneralEqRepository
@@ -166,7 +166,7 @@ class MainActivity : ComponentActivity() {
                     onFlashManagedProfile = { productId, profileId ->
                         flashManagedProfile(productId, profileId, activeOutputId)
                     },
-                    onFlashSavedEq = ::flashSavedEq,
+                    onFlashSavedEq = { entryId -> flashSavedEq(entryId, activeOutputId) },
                     onFlashGeneralEq = { presetId -> flashGeneralEq(presetId, activeOutputId) },
                     onRefreshCatalog = syncCoordinator::refresh,
                     onLoadManagedHeadphone = { productId ->
@@ -205,12 +205,18 @@ class MainActivity : ComponentActivity() {
                     onDeleteSavedFilesForProfiles = cleanupRepository::deleteForProfiles,
                     onDeleteSavedFilesForProduct = cleanupRepository::deleteForProduct,
                     onMarkReviewed = managedHeadphonesRepository::markReviewed,
-                    onToggleFavorite = savedEqRepository::toggleFavorite,
+                    onToggleFavorite = { profile, manufacturer, model ->
+                        savedEqRepository.toggleFavorite(activeOutputId, profile, manufacturer, model)
+                    },
                     onToggleGeneralPreset = { preset ->
                         savedGeneralEqRepository.toggleForOutput(activeOutputId, preset)
                     },
-                    onImportPersonal = ::importPersonalEq,
-                    onDeleteSavedEq = savedEqRepository::delete,
+                    onImportPersonal = { manufacturer, model, displayName, target, peqText ->
+                        importPersonalEq(activeOutputId, manufacturer, model, displayName, target, peqText)
+                    },
+                    onDeleteSavedEq = { entryId ->
+                        savedEqRepository.removeFromOutput(activeOutputId, entryId)
+                    },
                     onRemoveGeneralEq = { presetId ->
                         savedGeneralEqRepository.removeFromOutput(activeOutputId, presetId)
                     },
@@ -245,7 +251,9 @@ class MainActivity : ComponentActivity() {
                     onExportManagedProfile = { uri, productId, profileId, device ->
                         exportManagedProfile(uri, productId, profileId, device, activeOutputId)
                     },
-                    onExportSavedEq = ::exportSavedEq,
+                    onExportSavedEq = { uri, entryId, device ->
+                        exportSavedEq(uri, entryId, device, activeOutputId)
+                    },
                     onExportGeneralEq = { uri, presetId, device ->
                         exportGeneralEq(uri, presetId, device, activeOutputId)
                     },
@@ -300,6 +308,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private suspend fun importPersonalEq(
+        outputId: String,
         manufacturer: String,
         model: String,
         displayName: String,
@@ -307,6 +316,7 @@ class MainActivity : ComponentActivity() {
         peqText: String,
     ): String? = runCatching {
         savedEqRepository.importPersonal(
+            outputId = outputId,
             manufacturer = manufacturer,
             model = model,
             displayName = displayName,
@@ -330,9 +340,9 @@ class MainActivity : ComponentActivity() {
         return flashBlackPearlProfile(profile.lastKnownProfile)
     }
 
-    private suspend fun flashSavedEq(entryId: String): String {
-        val record = savedEqRepository.get(entryId)
-            ?: return "That EQ is no longer saved in My EQs."
+    private suspend fun flashSavedEq(entryId: String, outputId: String): String {
+        val record = savedEqRepository.getForOutput(outputId, entryId)
+            ?: return "That EQ is no longer saved for this output."
         return flashBlackPearlProfile(record.profile)
     }
 
@@ -404,8 +414,9 @@ class MainActivity : ComponentActivity() {
         treeUri: Uri,
         entryId: String,
         device: ExportDevice,
+        outputId: String,
     ): PresetExportSummary {
-        val record = savedEqRepository.get(entryId)
+        val record = savedEqRepository.getForOutput(outputId, entryId)
             ?: return PresetExportSummary(results = emptyList())
         return exportRepository.exportSelected(
             treeUri = treeUri,
