@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "headphone": {
+    "manufacturer": "SIMGOT",
+    "model": "EW300",
+    "variant": "Red filter ring"
+  },
+  "curation_scope": {
+    "strategy": "priority-headphone public community discovery",
+    "surfaces_reviewed": [
+      "Reddit r/iems"
+    ],
+    "note": "The source explicitly identifies the red filter ring, so this PEQ is preserved under that stated acoustic configuration rather than collapsed into generic EW300."
+  },
+  "records": [
+    {
+      "id": "reddit-iems-1mf18sr-bikefitadvice-ew300-red-filter",
+      "surface": "reddit",
+      "community": "r/iems",
+      "creator": "Bikefitadvice",
+      "source_url": "https://www.reddit.com/r/iems/comments/1mf18sr/simgot_ew300_too_sibilantharsh/",
+      "source_date": "2025",
+      "status": "publish-candidate",
+      "provenance_tier": 3,
+      "lineage": "Community tuning shared specifically for SIMGOT EW300 with the red filter ring",
+      "tuning_label": "Red filter ring community tuning",
+      "target_claim": null,
+      "preamp_db": -1.4,
+      "filters": [
+        {"type":"PK","frequency_hz":20,"gain_db":-0.7,"q":0.700},
+        {"type":"PK","frequency_hz":162,"gain_db":-1.9,"q":1.100},
+        {"type":"PK","frequency_hz":380,"gain_db":1.0,"q":1.200},
+        {"type":"PK","frequency_hz":700,"gain_db":1.2,"q":1.000},
+        {"type":"PK","frequency_hz":1795,"gain_db":-0.8,"q":1.400},
+        {"type":"PK","frequency_hz":3215,"gain_db":1.0,"q":2.000},
+        {"type":"PK","frequency_hz":4600,"gain_db":-2.5,"q":2.000},
+        {"type":"PK","frequency_hz":7670,"gain_db":-1.8,"q":2.000},
+        {"type":"PK","frequency_hz":11000,"gain_db":-0.8,"q":2.000},
+        {"type":"PK","frequency_hz":14525,"gain_db":-1.4,"q":2.000}
+      ],
+      "review_notes": "Source explicitly says red filter ring. No other unstated configuration is inferred."
+    }
+  ]
+}
