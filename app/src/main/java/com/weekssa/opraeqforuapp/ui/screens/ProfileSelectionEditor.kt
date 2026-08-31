@@ -107,6 +107,7 @@ internal fun ProfileSelectionEditor(
             .sortedWith(String.CASE_INSENSITIVE_ORDER)
     }
     val scope = rememberCoroutineScope()
+    val selectionContextKey = "${product.id}:${exportTargets.activeTarget.name}"
 
     var databaseFilter by rememberSaveable(product.id) { mutableStateOf<String?>(null) }
     var creatorFilter by rememberSaveable(product.id) { mutableStateOf<String?>(null) }
@@ -133,16 +134,16 @@ internal fun ProfileSelectionEditor(
     }
     val filteredOutCount = revisionVisibleProfiles.size - visibleProfiles.size
 
-    var initialized by remember(product.id) { mutableStateOf(false) }
-    var managedRecord by remember(product.id) { mutableStateOf<ManagedHeadphoneRecord?>(null) }
-    var stagedSelectedIds by remember(product.id) { mutableStateOf<Set<String>>(emptySet()) }
-    var baselineSelectedIds by remember(product.id) { mutableStateOf<Set<String>>(emptySet()) }
-    var autoInclude by remember(product.id) { mutableStateOf(DEFAULT_AUTO_INCLUDE_NEW_PROFILES) }
-    var baselineAutoInclude by remember(product.id) { mutableStateOf(DEFAULT_AUTO_INCLUDE_NEW_PROFILES) }
-    var showDiscardDialog by remember(product.id) { mutableStateOf(false) }
-    var sourceProblemExplanation by remember(product.id) { mutableStateOf<String?>(null) }
+    var initialized by remember(selectionContextKey) { mutableStateOf(false) }
+    var managedRecord by remember(selectionContextKey) { mutableStateOf<ManagedHeadphoneRecord?>(null) }
+    var stagedSelectedIds by remember(selectionContextKey) { mutableStateOf<Set<String>>(emptySet()) }
+    var baselineSelectedIds by remember(selectionContextKey) { mutableStateOf<Set<String>>(emptySet()) }
+    var autoInclude by remember(selectionContextKey) { mutableStateOf(DEFAULT_AUTO_INCLUDE_NEW_PROFILES) }
+    var baselineAutoInclude by remember(selectionContextKey) { mutableStateOf(DEFAULT_AUTO_INCLUDE_NEW_PROFILES) }
+    var showDiscardDialog by remember(selectionContextKey) { mutableStateOf(false) }
+    var sourceProblemExplanation by remember(selectionContextKey) { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(product.id) {
+    LaunchedEffect(selectionContextKey) {
         val managed = onLoadManagedHeadphone(product.id)
         managedRecord = managed
         val selected = if (managed == null) {
