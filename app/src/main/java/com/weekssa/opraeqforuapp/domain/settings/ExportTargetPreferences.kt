@@ -31,7 +31,7 @@ data class ExportTargetPreferences(
             activeTarget: ExportDevice?,
         ): ExportTargetPreferences {
             val enabled = selectedTargets
-                .filterTo(linkedSetOf())(ExportDevice::selectableInV03)
+                .filterTo(linkedSetOf()) { it.selectableInV03 }
                 .ifEmpty { linkedSetOf(ExportDevice.UAPP) }
             val active = activeTarget?.takeIf { it in enabled } ?: ordered(enabled).first()
             return ExportTargetPreferences(enabled, active, showUnexportablePresets = true)
