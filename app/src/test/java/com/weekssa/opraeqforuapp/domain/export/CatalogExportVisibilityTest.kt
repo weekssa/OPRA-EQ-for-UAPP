@@ -8,12 +8,11 @@ import com.weekssa.opraeqforuapp.domain.catalog.OpraVendor
 import com.weekssa.opraeqforuapp.domain.settings.ExportTargetPreferences
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CatalogExportVisibilityTest {
     @Test
-    fun defaultBroaderLibraryVisibilityReturnsOriginalCatalog() {
+    fun defaultOutputContextReturnsOriginalCatalog() {
         val catalog = sampleCatalog()
 
         val result = catalog.forExportTargetVisibility(ExportTargetPreferences())
@@ -24,7 +23,7 @@ class CatalogExportVisibilityTest {
     }
 
     @Test
-    fun hidingUnexportableProfilesRemovesOnlyUnsupportedProfilesAndEmptyProducts() {
+    fun legacyHideUnsupportedPreferenceCannotFilterLibraryAnymore() {
         val catalog = sampleCatalog()
         val preferences = ExportTargetPreferences(
             selectedTargets = setOf(ExportDevice.UAPP),
@@ -33,35 +32,13 @@ class CatalogExportVisibilityTest {
 
         val result = catalog.forExportTargetVisibility(preferences)
 
-        assertEquals(listOf("exportable"), result.catalog.profiles.map(OpraEqProfile::id))
-        assertEquals(listOf("supported-product"), result.catalog.products.map(OpraProduct::id))
-        assertEquals(listOf("vendor"), result.catalog.vendors.map(OpraVendor::id))
-        assertEquals(1, result.hiddenProfileCount)
-        assertEquals(2, catalog.profiles.size)
-    }
-
-    @Test
-    fun optimizedProfileRemainsVisibleForSelectedTarget() {
-        val optimized = exportableProfile("optimized", "supported-product").copy(
-            bands = (1..14).map { index ->
-                OpraBand("peak_dip", 100.0 + index * 100.0, 1.0, 1.0, null)
-            },
-        )
-        val catalog = sampleCatalog().copy(profiles = listOf(optimized))
-        val preferences = ExportTargetPreferences(
-            selectedTargets = setOf(ExportDevice.UAPP),
-            showUnexportablePresets = false,
-        )
-
-        val result = catalog.forExportTargetVisibility(preferences)
-
-        assertEquals(listOf("optimized"), result.catalog.profiles.map(OpraEqProfile::id))
+        assertSame(catalog, result.catalog)
+        assertEquals(listOf("exportable", "unsupported"), result.catalog.profiles.map(OpraEqProfile::id))
         assertEquals(0, result.hiddenProfileCount)
-        assertEquals(DeviceExportability.OPTIMIZED, assessDeviceExportability(optimized, ExportDevice.UAPP))
     }
 
     @Test
-    fun noSelectedTargetsAndFilteringEnabledProducesEmptyBrowseViewWithoutMutatingSource() {
+    fun emptyOutputSetCannotEmptyLibraryView() {
         val catalog = sampleCatalog()
         val preferences = ExportTargetPreferences(
             selectedTargets = emptySet(),
@@ -70,12 +47,10 @@ class CatalogExportVisibilityTest {
 
         val result = catalog.forExportTargetVisibility(preferences)
 
-        assertTrue(result.catalog.vendors.isEmpty())
-        assertTrue(result.catalog.products.isEmpty())
-        assertTrue(result.catalog.profiles.isEmpty())
-        assertEquals(2, result.hiddenProfileCount)
-        assertEquals(2, catalog.products.size)
-        assertEquals(2, catalog.profiles.size)
+        assertSame(catalog, result.catalog)
+        assertEquals(2, result.catalog.products.size)
+        assertEquals(2, result.catalog.profiles.size)
+        assertEquals(0, result.hiddenProfileCount)
     }
 
     private fun sampleCatalog() = OpraCatalog(
