@@ -104,7 +104,7 @@ fun buildEqLibraryExportPlan(
 
                 requestedTextDevices
                     .mapNotNull { requestedDevice ->
-                        buildTextDeviceVariant(profile.lastKnownProfile, requestedDevice)
+                        buildFileExportDeviceVariant(profile.lastKnownProfile, requestedDevice)
                     }
                     .forEach { variant ->
                         val charset = Charsets.UTF_8
