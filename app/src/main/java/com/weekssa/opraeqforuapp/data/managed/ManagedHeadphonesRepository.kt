@@ -2,8 +2,8 @@ package com.weekssa.opraeqforuapp.data.managed
 
 import androidx.room.withTransaction
 import com.weekssa.opraeqforuapp.domain.catalog.OpraCatalog
-import com.weekssa.opraeqforuapp.domain.catalog.assessCompatibility
 import com.weekssa.opraeqforuapp.domain.catalog.isHistoricalRevision
+import com.weekssa.opraeqforuapp.domain.catalog.isUsableParametricSource
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneSelection
 import com.weekssa.opraeqforuapp.domain.managed.ManagedProfileRecord
@@ -243,9 +243,9 @@ class ManagedHeadphonesRepository(
             .associateBy(OutputManagedProfileEntity::profileId)
         val updates = currentProfiles.map { profile ->
             val existing = existingById[profile.id]
-            val selectable = profile.assessCompatibility().category.isSelectable
+            val sourceUsable = profile.isUsableParametricSource()
             val selected = when {
-                !selectable -> false
+                !sourceUsable -> false
                 existing?.selected == true -> true
                 existing == null -> output.autoIncludeNewProfiles && profile.isVerified && !profile.isHistoricalRevision()
                 output.autoIncludeNewProfiles &&
