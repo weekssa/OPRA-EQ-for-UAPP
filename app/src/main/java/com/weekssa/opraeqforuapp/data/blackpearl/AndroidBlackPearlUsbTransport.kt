@@ -184,7 +184,9 @@ class AndroidBlackPearlUsbTransport(
         }
     }
 
-    private fun findDevice(): UsbDevice? = usbManager.deviceList.values.firstOrNull(UsbDevice::isBlackPearl)
+    private fun findDevice(): UsbDevice? = usbManager.deviceList.values.firstOrNull { device ->
+        device.isBlackPearl()
+    }
 
     private fun findControlInterface(device: UsbDevice): UsbInterface? {
         val interfaces = (0 until device.interfaceCount).map(device::getInterface)
