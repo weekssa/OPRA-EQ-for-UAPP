@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-08-31T01:45:00Z",
+  "purpose": "Machine-readable coverage ledger for the first focused EQ Library discovery queue. A searched source with zero usable results is distinct from a source that has not yet been searched.",
+  "priority_headphones": [
+    {
+      "manufacturer": "HIFIMAN",
+      "model": "Edition XS",
+      "status": "active-coverage",
+      "sources": [
+        {"source_id":"reddit-audio","state":"searched","candidates_found":5,"publishable_or_published":4,"duplicates":1,"held":0,"note":"Multiple structured community PEQs retained in edition_xs_community_curated.json, including >10-band source data."},
+        {"source_id":"head-fi","state":"searched","candidates_found":2,"publishable_or_published":2,"duplicates":0,"held":0,"note":"Structured user-authored PEQ records retained in Edition XS curated coverage."},
+        {"source_id":"headphones-community","state":"searched","candidates_found":1,"publishable_or_published":1,"duplicates":0,"held":0,"note":"Structured Headphones.com community EQ located during focused coverage."},
+        {"source_id":"audio-science-review","state":"searched","candidates_found":0,"publishable_or_published":0,"duplicates":0,"held":0,"note":"No additional source-authentic structured candidate required for the current focused set."}
+      ]
+    },
+    {
+      "manufacturer": "AFUL",
+      "model": "Explorer",
+      "status": "active-coverage",
+      "sources": [
+        {"source_id":"reddit-audio","state":"searched","candidates_found":1,"publishable_or_published":1,"duplicates":0,"held":0,"note":"LoboNautics Basshead tuning; generic Explorer because the EQ source does not state a material configuration."},
+        {"source_id":"hifiguides","state":"source-qualification","candidates_found":1,"publishable_or_published":0,"duplicates":0,"held":1,"note":"Jaytiss structured PEQ staged; publish after HiFiGuides source lane qualification."},
+        {"source_id":"head-fi","state":"not_yet_searched","candidates_found":0,"publishable_or_published":0,"duplicates":0,"held":0},
+        {"source_id":"audio-science-review","state":"not_yet_searched","candidates_found":0,"publishable_or_published":0,"duplicates":0,"held":0},
+        {"source_id":"headphones-community","state":"not_yet_searched","candidates_found":0,"publishable_or_published":0,"duplicates":0,"held":0}
+      ]
+    },
+    {
+      "manufacturer": "SIMGOT",
+      "model": "EW300",
+      "status": "active-coverage",
+      "sources": [
+        {"source_id":"reddit-audio","state":"searched","candidates_found":2,"publishable_or_published":1,"duplicates":0,"held":1,"note":"Bikefitadvice tuning explicitly states Red filter ring and is staged as that variant. A second generic-source PEQ awaits creator attribution before publication."},
+        {"source_id":"head-fi","state":"not_yet_searched","candidates_found":0,"publishable_or_published":0,"duplicates":0,"held":0},
+        {"source_id":"audio-science-review","state":"not_yet_searched","candidates_found":0,"publishable_or_published":0,"duplicates":0,"held":0},
+        {"source_id":"headphones-community","state":"not_yet_searched","candidates_found":0,"publishable_or_published":0,"duplicates":0,"held":0}
+      ]
+    },
+    {
+      "manufacturer": "Sennheiser",
+      "model": "HD 650",
+      "status": "active-coverage",
+      "sources": [
+        {"source_id":"headphones-community","state":"searched","candidates_found":1,"publishable_or_published":1,"duplicates":0,"held":0,"note":"listener structured EQ retained in sennheiser_hd650_community_curated.json."},
+        {"source_id":"reddit-audio","state":"not_yet_searched","candidates_found":0,"publishable_or_published":0,"duplicates":0,"held":0},
+        {"source_id":"head-fi","state":"not_yet_searched","candidates_found":0,"publishable_or_published":0,"duplicates":0,"held":0},
+        {"source_id":"audio-science-review","state":"not_yet_searched","candidates_found":0,"publishable_or_published":0,"duplicates":0,"held":0}
+      ]
+    },
+    {
+      "manufacturer": "Sony",
+      "model": "MDR-V6",
+      "status": "hard-to-find-review",
+      "sources": [
+        {"source_id":"head-fi","state":"searched","candidates_found":1,"publishable_or_published":0,"duplicates":0,"held":1,"note":"Older structured-looking EQ located, but creator attribution and one Q value are ambiguous. Hold rather than guess."},
+        {"source_id":"reddit-audio","state":"not_yet_searched","candidates_found":0,"publishable_or_published":0,"duplicates":0,"held":0},
+        {"source_id":"audio-science-review","state":"not_yet_searched","candidates_found":0,"publishable_or_published":0,"duplicates":0,"held":0},
+        {"source_id":"headphones-community","state":"not_yet_searched","candidates_found":0,"publishable_or_published":0,"duplicates":0,"held":0}
+      ]
+    },
+    {
+      "manufacturer": "Sony",
+      "model": "WH-1000XM4",
+      "status": "active-coverage",
+      "sources": [
+        {"source_id":"reddit-audio","state":"searched","candidates_found":1,"publishable_or_published":0,"duplicates":1,"held":0,"note":"Structured Reddit result identifies itself as AutoEq/oratory-derived; keep as reference rather than duplicate community tuning."},
+        {"source_id":"head-fi","state":"not_yet_searched","candidates_found":0,"publishable_or_published":0,"duplicates":0,"held":0},
+        {"source_id":"audio-science-review","state":"not_yet_searched","candidates_found":0,"publishable_or_published":0,"duplicates":0,"held":0},
+        {"source_id":"headphones-community","state":"not_yet_searched","candidates_found":0,"publishable_or_published":0,"duplicates":0,"held":0}
+      ]
+    },
+    {
+      "manufacturer": "Sony",
+      "model": "WF-1000XM5",
+      "status": "active-coverage",
+      "sources": [
+        {"source_id":"hifiguides","state":"source-qualification","candidates_found":2,"publishable_or_published":0,"duplicates":0,"held":2,"note":"sovran published separate 12-filter PEQs for ANC off and ANC on. Both are staged with explicit acoustic-mode variants pending HiFiGuides qualification."},
+        {"source_id":"reddit-audio","state":"searched","candidates_found":1,"publishable_or_published":0,"duplicates":1,"held":0,"note":"Prominent community result points to AutoEq rather than a distinct source-authored tuning."},
+        {"source_id":"head-fi","state":"not_yet_searched","candidates_found":0,"publishable_or_published":0,"duplicates":0,"held":0},
+        {"source_id":"audio-science-review","state":"not_yet_searched","candidates_found":0,"publishable_or_published":0,"duplicates":0,"held":0},
+        {"source_id":"headphones-community","state":"not_yet_searched","candidates_found":0,"publishable_or_published":0,"duplicates":0,"held":0}
+      ]
+    },
+    {
+      "manufacturer": "Sony",
+      "model": "MDR-7506",
+      "status": "active-coverage",
+      "sources": [
+        {"source_id":"reddit-audio","state":"searched","candidates_found":1,"publishable_or_published":0,"duplicates":0,"held":1,"note":"Four-filter Optimum Hi-Fi curve located, but the retrieved index did not establish the comment author. Keep held until attribution is resolved."},
+        {"source_id":"head-fi","state":"not_yet_searched","candidates_found":0,"publishable_or_published":0,"duplicates":0,"held":0},
+        {"source_id":"audio-science-review","state":"not_yet_searched","candidates_found":0,"publishable_or_published":0,"duplicates":0,"held":0},
+        {"source_id":"headphones-community","state":"not_yet_searched","candidates_found":0,"publishable_or_published":0,"duplicates":0,"held":0}
+      ]
+    }
+  ]
+}
