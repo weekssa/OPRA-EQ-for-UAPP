@@ -8,6 +8,7 @@ on:
       - 'config/source_registry.json'
       - 'tools/priority_coverage.py'
       - 'tools/test_priority_coverage.py'
+      - 'tools/community_publish_entry.py'
       - 'tools/curated_community_publish.py'
       - 'tools/test_curated_community_publish.py'
       - '.github/workflows/priority-community-ci.yml'
@@ -20,6 +21,7 @@ on:
       - 'config/source_registry.json'
       - 'tools/priority_coverage.py'
       - 'tools/test_priority_coverage.py'
+      - 'tools/community_publish_entry.py'
       - 'tools/curated_community_publish.py'
       - 'tools/test_curated_community_publish.py'
       - '.github/workflows/priority-community-ci.yml'
@@ -65,7 +67,7 @@ jobs:
           for curated in "${curated_files[@]}"; do
             base="$(basename "${curated}" .json)"
             next="${RUNNER_TEMP}/catalog.priority.next.json"
-            python3 tools/curated_community_publish.py \
+            python3 tools/community_publish_entry.py \
               --catalog "${RUNNER_TEMP}/catalog.priority.current.json" \
               --curated "${curated}" \
               --registry config/source_registry.json \
