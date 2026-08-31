@@ -1,15 +1,18 @@
 package com.weekssa.opraeqforuapp.data.managed
 
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
-import com.weekssa.opraeqforuapp.domain.catalog.assessCompatibility
+import com.weekssa.opraeqforuapp.domain.catalog.assessUappCompatibility
 import com.weekssa.opraeqforuapp.domain.catalog.isHistoricalRevision
+import com.weekssa.opraeqforuapp.domain.catalog.isUsableParametricSource
 import com.weekssa.opraeqforuapp.domain.conversion.ToneBoostersConverter
 import com.weekssa.opraeqforuapp.domain.library.legacyAcousticSignature
+import com.weekssa.opraeqforuapp.domain.model.ProfileCompatibility
 
 data class ManagedCatalogChangeSummary(
     val newProfileCount: Int = 0,
     val updatedSelectedProfileCount: Int = 0,
     val removedSelectedProfileCount: Int = 0,
+    /** Legacy field name retained for compatibility; now means the source row became unusable. */
     val becameNotCompatibleSelectedProfileCount: Int = 0,
     val affectedProductIds: Set<String> = emptySet(),
 ) {
@@ -58,7 +61,7 @@ internal fun reconcileManagedProfiles(
     var newCount = 0
     var updatedSelectedCount = 0
     var removedSelectedCount = 0
-    var becameNotCompatibleSelectedCount = 0
+    var becameUnusableSelectedCount = 0
 
     val reconciledCurrent = currentProfiles.map { profile ->
         val signature = profile.legacyAcousticSignature()
@@ -75,12 +78,12 @@ internal fun reconcileManagedProfiles(
         val exactExisting = existingById[profile.id]
         val existing = exactExisting ?: acousticAliases.preferredMigrationSource()
         val fingerprint = snapshotCodec.fingerprint(profile)
-        val selectable = profile.assessCompatibility().category.isSelectable
+        val sourceUsable = profile.isUsableParametricSource()
 
         if (existing == null) {
             newCount += 1
             val selected = autoIncludeNewProfiles &&
-                selectable &&
+                sourceUsable &&
                 profile.isVerified &&
                 !profile.isHistoricalRevision()
             val generated = if (selected) {
@@ -125,22 +128,30 @@ internal fun reconcileManagedProfiles(
             val previouslyVerified = previousSnapshots.any(OpraEqProfile::isVerified)
             val becameVerified = profile.isVerified && previousSnapshots.isNotEmpty() && !previouslyVerified
             val changed = fingerprint != existing.fingerprint || migrated
-            val becameNotCompatible = selectedBeforeMigration && !selectable
+            val becameUnusable = selectedBeforeMigration && !sourceUsable
             if (changed && selectedBeforeMigration && !migrated) updatedSelectedCount += 1
-            if (becameNotCompatible) becameNotCompatibleSelectedCount += 1
+            if (becameUnusable) becameUnusableSelectedCount += 1
 
             val selected = when {
-                becameNotCompatible -> false
+                becameUnusable -> false
                 selectedBeforeMigration -> true
                 becameVerified &&
                     autoIncludeNewProfiles &&
-                    selectable &&
+                    sourceUsable &&
                     !explicitlyExcludedBeforeMigration &&
                     !profile.isHistoricalRevision() -> true
                 else -> false
             }
-            val shouldRegenerate = selected && selectable &&
-                (changed || becameVerified || existing.generatedXml == null || existing.generatedFromFingerprint != fingerprint)
+
+            val uappNowRepresentable =
+                profile.assessUappCompatibility().category != ProfileCompatibility.NotCompatible
+            val shouldRegenerate = selected && sourceUsable && (
+                changed ||
+                    becameVerified ||
+                    existing.generatedPresetName == null ||
+                    existing.generatedFromFingerprint != fingerprint ||
+                    (uappNowRepresentable && existing.generatedXml == null)
+                )
             val generated = if (shouldRegenerate) {
                 generateManagedPreset(productName, profile, fingerprint, nowMillis)
             } else {
@@ -168,7 +179,9 @@ internal fun reconcileManagedProfiles(
                 },
                 noLongerAvailable = false,
                 generatedPresetName = generated?.presetName ?: existing.generatedPresetName,
-                generatedXml = generated?.xml ?: existing.generatedXml,
+                // A changed current source that is no longer UAPP-representable must not keep a stale
+                // XML artifact. Removed source rows are handled separately and keep their last output.
+                generatedXml = if (generated != null) generated.xml else existing.generatedXml,
                 generatedFromFingerprint = generated?.fingerprint ?: existing.generatedFromFingerprint,
                 generatedAtMillis = generated?.generatedAtMillis ?: existing.generatedAtMillis,
             )
@@ -188,9 +201,9 @@ internal fun reconcileManagedProfiles(
         newProfileCount = newCount,
         updatedSelectedProfileCount = updatedSelectedCount,
         removedSelectedProfileCount = removedSelectedCount,
-        becameNotCompatibleSelectedProfileCount = becameNotCompatibleSelectedCount,
+        becameNotCompatibleSelectedProfileCount = becameUnusableSelectedCount,
         affectedProductIds = if (
-            newCount > 0 || updatedSelectedCount > 0 || removedSelectedCount > 0 || becameNotCompatibleSelectedCount > 0
+            newCount > 0 || updatedSelectedCount > 0 || removedSelectedCount > 0 || becameUnusableSelectedCount > 0
         ) {
             setOf(productId)
         } else {
@@ -215,11 +228,16 @@ private fun List<ManagedProfileEntity>.preferredMigrationSource(): ManagedProfil
 
 internal data class GeneratedManagedPreset(
     val presetName: String,
-    val xml: String,
+    val xml: String?,
     val fingerprint: String,
     val generatedAtMillis: Long,
 )
 
+/**
+ * Builds stable naming/fingerprint metadata for every usable selected source. UAPP XML is optional:
+ * if the source cannot be represented by the established ToneBoosters converter, the canonical
+ * source remains saved and selectable while generatedXml stays null.
+ */
 internal fun generateManagedPreset(
     productName: String,
     profile: OpraEqProfile,
@@ -231,10 +249,10 @@ internal fun generateManagedPreset(
         creator = profile.author,
         details = profile.details,
     )
-    val result = ToneBoostersConverter.convert(profile, presetName)
+    val result = runCatching { ToneBoostersConverter.convert(profile, presetName) }.getOrNull()
     return GeneratedManagedPreset(
-        presetName = result.presetName,
-        xml = result.xml,
+        presetName = result?.presetName ?: presetName,
+        xml = result?.xml,
         fingerprint = fingerprint,
         generatedAtMillis = nowMillis,
     )
