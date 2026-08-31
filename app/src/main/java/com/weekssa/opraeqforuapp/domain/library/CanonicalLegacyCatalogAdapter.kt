@@ -1,5 +1,7 @@
 package com.weekssa.opraeqforuapp.domain.library
 
+import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqCategory
+import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqPreset
 import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraCatalog
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
@@ -11,16 +13,12 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /**
- * Compatibility bridge for the v0.2 managed-headphone/export engine.
+ * Compatibility bridge for the v0.2 managed-headphone/export engine plus the v0.3 General EQ UI.
  *
- * Canonical revisions are projected as selectable legacy profiles so the stable v0.2 selection
- * and export engine can support v0.3 revision-aware behavior without a second export path.
- * The latest OPRA-backed revision retains its original OPRA profile ID to preserve existing v0.2
- * managed state. Historical revisions always receive stable synthetic IDs and can therefore be
- * selected/exported explicitly without silently moving a saved selection to a newer revision.
- *
- * General Effect/Genre presets deliberately remain in the canonical snapshot and are not projected
- * into the headphone-only legacy bridge. Their future user-facing surface is a separate UX decision.
+ * Canonical headphone revisions are projected as selectable legacy profiles so the stable v0.2
+ * selection/export engine can support revision-aware behavior. General presets are projected into
+ * a separate collection with no headphone/product identity; this prevents Effect/Genre presets
+ * from being represented as fake headphones while still keeping one canonical catalog snapshot.
  */
 object CanonicalLegacyCatalogAdapter {
     fun adapt(snapshot: CatalogSnapshot): OpraCatalog {
@@ -56,10 +54,21 @@ object CanonicalLegacyCatalogAdapter {
                 }
             }
 
+        val generalPresets = snapshot.profiles
+            .filter(CanonicalEqProfile::isGeneralPreset)
+            .flatMap(::generalRevisionPresets)
+            .distinctBy(GeneralEqPreset::id)
+            .sortedWith(
+                compareBy<GeneralEqPreset> { it.category.ordinal }
+                    .thenBy(String.CASE_INSENSITIVE_ORDER) { it.displayName }
+                    .thenBy { it.id },
+            )
+
         return OpraCatalog(
             vendors = vendors.values.toList(),
             products = products.distinctBy(OpraProduct::id),
             profiles = profiles.distinctBy(OpraEqProfile::id),
+            generalPresets = generalPresets,
         )
     }
 
@@ -72,6 +81,68 @@ object CanonicalLegacyCatalogAdapter {
                     },
             )
             .map { revision -> revisionProfile(profile, revision, productId) }
+
+    private fun generalRevisionPresets(profile: CanonicalEqProfile): List<GeneralEqPreset> =
+        profile.revisions
+            .sortedWith(
+                compareByDescending<EqRevision> { it.isLatest }
+                    .thenByDescending {
+                        it.sourceUpdatedAtEpochSeconds ?: it.firstSeenAtEpochSeconds ?: Long.MIN_VALUE
+                    },
+            )
+            .map { revision ->
+                val primary = revision.sourceReferences.firstOrNull { it.isPrimary }
+                    ?: revision.sourceReferences.firstOrNull()
+                val baseName = profile.tuningLabel?.takeIf(String::isNotBlank)
+                    ?: profile.target.name?.takeIf(String::isNotBlank)
+                    ?: when (profile.purpose) {
+                        EqPresetPurpose.GENRE -> "Genre EQ"
+                        else -> "Sound EQ"
+                    }
+                val displayName = if (revision.isLatest) {
+                    baseName
+                } else {
+                    "$baseName · Previous revision${revisionDisplayDate(revision, primary)?.let { " · $it" }.orEmpty()}"
+                }
+                GeneralEqPreset(
+                    id = "eq-library-general:${profile.canonicalProfileId}@${revision.revisionId}",
+                    displayName = displayName,
+                    category = generalCategory(profile, revision),
+                    creator = profile.creator ?: primary?.creator,
+                    soundImpactSummary = revision.soundImpactSummary,
+                    sourceUrl = primary?.url,
+                    preampGainDb = revision.preampGainDb,
+                    bands = revision.filters.map { filter ->
+                        OpraBand(
+                            type = filter.type.toLegacyType(),
+                            frequency = filter.frequencyHz,
+                            gainDb = filter.gainDb,
+                            q = filter.q,
+                            slope = filter.slope,
+                        )
+                    },
+                    eqLibrarySafetyHeadroomDb = revision.eqLibrarySafetyHeadroomDb,
+                    isVerified = revision.verificationStatus == VerificationStatus.VERIFIED,
+                    isLatestRevision = revision.isLatest,
+                )
+            }
+
+    private fun generalCategory(
+        profile: CanonicalEqProfile,
+        revision: EqRevision,
+    ): GeneralEqCategory {
+        if (profile.purpose == EqPresetPurpose.GENRE) return GeneralEqCategory.GENRE
+        val searchable = listOfNotNull(
+            profile.tuningLabel,
+            profile.target.name,
+            revision.soundImpactSummary,
+        ).joinToString(" ").lowercase(Locale.ROOT)
+        return if (UTILITY_TERMS.any(searchable::contains)) {
+            GeneralEqCategory.UTILITY
+        } else {
+            GeneralEqCategory.SOUND
+        }
+    }
 
     private fun revisionProfile(
         profile: CanonicalEqProfile,
@@ -206,12 +277,6 @@ object CanonicalLegacyCatalogAdapter {
         headphone.padsOrMode?.takeIf(String::isNotBlank)?.let(::add)
     }.joinToString(" · ")
 
-    /**
-     * Keep the v0.2 engine's internal OPRA filter names here. Device-specific PK/LS/HS formatting
-     * happens later in the exporter; using device abbreviations at this bridge would make an
-     * otherwise compatible canonical profile fail v0.2 compatibility checks and saved-selection
-     * migration.
-     */
     private fun EqFilterType.toLegacyType(): String = when (this) {
         EqFilterType.PEAK -> "peak_dip"
         EqFilterType.LOW_SHELF -> "low_shelf"
@@ -233,4 +298,15 @@ object CanonicalLegacyCatalogAdapter {
 
     private val REVISION_DATE_FORMATTER: DateTimeFormatter =
         DateTimeFormatter.ISO_LOCAL_DATE.withZone(ZoneOffset.UTC)
+
+    private val UTILITY_TERMS = listOf(
+        "loudness",
+        "low volume",
+        "low-volume",
+        "speech",
+        "podcast",
+        "dialog",
+        "dialogue",
+        "voice",
+    )
 }
