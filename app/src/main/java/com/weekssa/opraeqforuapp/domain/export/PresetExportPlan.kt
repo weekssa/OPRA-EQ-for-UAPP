@@ -56,7 +56,7 @@ fun buildEqLibraryExportPlan(
     device: ExportDevice? = null,
 ): PresetExportPlan {
     val requestedTextDevices = when (device) {
-        null -> ExportDevice.entries.filterNot { it == ExportDevice.UAPP }
+        null -> ExportDevice.selectableOutputs.filterNot { it == ExportDevice.UAPP }
         ExportDevice.UAPP -> emptyList()
         else -> listOf(device)
     }
