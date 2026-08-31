@@ -32,24 +32,19 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqCategory
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
+import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import kotlinx.coroutines.launch
 
-/**
- * Output-context home for the approved My EQs navigation model.
- *
- * Headphone selections are projected by the repository for the active output, so switching the
- * output changes this collection without changing the canonical EQ Library. General EQ rows are
- * added from the canonical general-preset bridge; until that bridge has a saved row, the explicit
- * empty state keeps the information architecture stable rather than inventing fake headphones.
- */
 @Composable
 fun MyEqsHomeScreen(
     managedHeadphones: List<ManagedHeadphoneRecord>,
     savedEqs: List<SavedEqRecord>,
+    savedGeneralEqs: List<SavedGeneralEqRecord>,
     activeOutput: ExportDevice,
     onExportAll: () -> Unit,
     onOpenHeadphone: (String) -> Unit,
@@ -62,12 +57,15 @@ fun MyEqsHomeScreen(
     ) -> String?,
     onDeleteSavedEq: suspend (String) -> Unit,
     onExportSavedEq: (String) -> Unit,
+    onRemoveGeneralEq: suspend (String) -> Unit,
+    onExportGeneralEq: (String) -> Unit,
     onMessage: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
     var importOpen by remember { mutableStateOf(false) }
-    val totalSelected = managedHeadphones.sumOf(ManagedHeadphoneRecord::selectedProfileCount)
+    val selectedHeadphoneCount = managedHeadphones.sumOf(ManagedHeadphoneRecord::selectedProfileCount)
+    val totalExportableItems = selectedHeadphoneCount + savedGeneralEqs.size
     val headphoneSavedEqs = remember(savedEqs) { savedEqs.toList() }
 
     if (importOpen) {
@@ -93,7 +91,7 @@ fun MyEqsHomeScreen(
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
                         onClick = onExportAll,
-                        enabled = totalSelected > 0,
+                        enabled = totalExportableItems > 0,
                     ) {
                         Icon(Icons.Outlined.FileUpload, contentDescription = null)
                         Text("Export all", modifier = Modifier.padding(start = 6.dp))
@@ -104,7 +102,7 @@ fun MyEqsHomeScreen(
                     }
                 }
                 Text(
-                    text = "${outputTitle(activeOutput)} · $totalSelected selected headphone EQs",
+                    text = "${outputTitle(activeOutput)} · $selectedHeadphoneCount headphone EQs · ${savedGeneralEqs.size} General EQs",
                     modifier = Modifier.padding(top = 8.dp),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -139,9 +137,7 @@ fun MyEqsHomeScreen(
                     ) { headphone ->
                         ListItem(
                             headlineContent = { Text(headphone.productName) },
-                            supportingContent = {
-                                Text("${headphone.selectedProfileCount} selected profiles")
-                            },
+                            supportingContent = { Text("${headphone.selectedProfileCount} selected profiles") },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable { onOpenHeadphone(headphone.productId) },
@@ -194,8 +190,40 @@ fun MyEqsHomeScreen(
         item(key = "general-heading") {
             SectionHeading("General EQs")
         }
-        item(key = "general-empty") {
-            EmptyMessage("No General EQs saved for this output yet.")
+        if (savedGeneralEqs.isEmpty()) {
+            item(key = "general-empty") {
+                EmptyMessage("No General EQs saved for this output yet. Add them from EQ Library → General EQs.")
+            }
+        } else {
+            items(savedGeneralEqs, key = { "general:${it.presetId}" }) { record ->
+                ListItem(
+                    headlineContent = { Text(record.displayName) },
+                    supportingContent = {
+                        Column {
+                            Text(generalCategoryLabel(record.category))
+                            record.profile.details?.takeIf(String::isNotBlank)?.let { Text(it) }
+                        }
+                    },
+                    trailingContent = {
+                        Row {
+                            IconButton(onClick = { onExportGeneralEq(record.presetId) }) {
+                                Icon(Icons.Outlined.FileUpload, contentDescription = "Export ${record.displayName}")
+                            }
+                            IconButton(
+                                onClick = {
+                                    scope.launch {
+                                        onRemoveGeneralEq(record.presetId)
+                                        onMessage("${record.displayName} removed from this output. Existing exported files were kept.")
+                                    }
+                                },
+                            ) {
+                                Icon(Icons.Outlined.Delete, contentDescription = "Remove ${record.displayName}")
+                            }
+                        }
+                    },
+                )
+                HorizontalDivider()
+            }
         }
     }
 }
@@ -294,6 +322,12 @@ private fun PersonalEqDialog(
             OutlinedButton(onClick = onDismiss) { Text("Cancel") }
         },
     )
+}
+
+private fun generalCategoryLabel(category: GeneralEqCategory): String = when (category) {
+    GeneralEqCategory.SOUND -> "Sound"
+    GeneralEqCategory.GENRE -> "Genre"
+    GeneralEqCategory.UTILITY -> "Utility"
 }
 
 private fun outputTitle(device: ExportDevice): String = when (device) {
