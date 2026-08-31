@@ -1,6 +1,7 @@
 package com.weekssa.opraeqforuapp.data.catalog
 
 import com.weekssa.opraeqforuapp.domain.catalog.assessCompatibility
+import com.weekssa.opraeqforuapp.domain.catalog.assessUappCompatibility
 import com.weekssa.opraeqforuapp.domain.model.ProfileCompatibility
 import java.io.BufferedReader
 import java.io.StringReader
@@ -44,25 +45,35 @@ class OpraCatalogParserTest {
     }
 
     @Test
-    fun unsupportedFilterStaysDiscoverableButNotCompatible() {
+    fun outputUnsupportedFilterRemainsSelectableCanonicalSource() {
         val catalog = parser.parse(sampleCatalog(filterType = "band_stop").reader())
+        val profile = catalog.profiles.single()
 
         assertEquals(
+            ProfileCompatibility.FullyCompatible,
+            profile.assessCompatibility().category,
+        )
+        assertEquals(
             ProfileCompatibility.NotCompatible,
-            catalog.profiles.single().assessCompatibility().category,
+            profile.assessUappCompatibility().category,
         )
     }
 
     @Test
-    fun moreThanTenPriorityBandsIsCompatibleWithLimitation() {
+    fun moreThanTenPriorityBandsRemainCanonicalWhileUappReportsLimitation() {
         val bands = (1..11).joinToString(",") { index ->
             "{\"type\":\"peak_dip\",\"frequency\":${100 + index},\"gain_db\":0.0,\"q\":1.0}"
         }
         val catalog = parser.parse(sampleCatalog(rawBands = bands).reader())
+        val profile = catalog.profiles.single()
 
         assertEquals(
+            ProfileCompatibility.FullyCompatible,
+            profile.assessCompatibility().category,
+        )
+        assertEquals(
             ProfileCompatibility.CompatibleWithLimitation,
-            catalog.profiles.single().assessCompatibility().category,
+            profile.assessUappCompatibility().category,
         )
     }
 
