@@ -215,6 +215,18 @@ class MainActivity : ComponentActivity() {
                         savedGeneralEqRepository.removeFromOutput(activeOutputId, presetId)
                     },
                     onPersistExportTree = ::persistExportTree,
+                    onEvaluateExportCurrentness = { treeUri ->
+                        val allRecords = buildList {
+                            addAll(managedHeadphones)
+                            addAll(savedEqs.map(savedEqRepository::toManagedHeadphone))
+                            addAll(savedGeneralEqs.map(savedGeneralEqRepository::toExportRecord))
+                        }
+                        exportRepository.evaluateCurrentness(
+                            treeUri = treeUri,
+                            headphones = allRecords,
+                            device = appPreferences.exportTargets.activeTarget,
+                        )
+                    },
                     onExportSelected = { uri, device ->
                         val allRecords = buildList {
                             addAll(managedHeadphones)
