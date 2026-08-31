@@ -4,7 +4,7 @@ import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.isHistoricalRevision
 import com.weekssa.opraeqforuapp.domain.catalog.isUsableParametricSource
 
-const val DEFAULT_AUTO_INCLUDE_NEW_PROFILES = true
+const val DEFAULT_AUTO_INCLUDE_NEW_PROFILES = false
 
 data class StoredProfileSelection(
     val selected: Boolean,
@@ -28,13 +28,12 @@ data class ManagedHeadphoneSelection(
 }
 
 /**
- * First-use defaults silently select only verified current usable canonical PEQ sources.
- * Unverified profiles remain manually selectable, including through an explicit Select all action,
- * but never enter a user's library merely because the automatic-new-profile setting defaults ON.
- * Output capability is deliberately not a selection gate.
+ * A never-managed headphone starts empty. EQ Library is intentionally selective: the user chooses
+ * the current profiles they want, and automatic future-profile inclusion starts OFF. Output
+ * capability is deliberately not a selection gate.
  */
-fun defaultStagedSelectedProfileIds(profiles: List<OpraEqProfile>): Set<String> =
-    selectableProfileIds(profiles, includeHistorical = false, verifiedOnly = true)
+fun defaultStagedSelectedProfileIds(@Suppress("UNUSED_PARAMETER") profiles: List<OpraEqProfile>): Set<String> =
+    emptySet()
 
 fun managedSelectionCommitEnabled(
     isManaged: Boolean,
