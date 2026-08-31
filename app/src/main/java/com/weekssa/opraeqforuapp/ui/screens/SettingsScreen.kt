@@ -73,7 +73,7 @@ fun SettingsScreen(
             SectionTitle("Black Pearl")
             CheckboxOption(
                 title = "Enable direct Flash",
-                description = "Allow EQ Library to connect to the TRN Black Pearl and write EQ presets from My EQs. Other DAC settings are not managed.",
+                description = "Allow EQ Library to connect to the TRN Black Pearl and write EQ presets from My EQs. Flash may adjust global playback gain when required by a preset's preamp/headroom; the confirmation shows the exact adjustment. Other DAC controls are not managed.",
                 checked = appPreferences.directBlackPearlFlashEnabled,
                 onCheckedChange = onDirectBlackPearlFlashEnabledChange,
             )
@@ -134,7 +134,7 @@ fun SettingsScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            text = "Suggested location: Documents/EQ Library. Android's system folder picker lets you choose the actual location.",
+            text = "Selected headphone presets are exported automatically when you Add or Save them. If a managed file is later missing or stale, My EQs exposes recovery Export actions. Suggested location: Documents/EQ Library.",
             modifier = Modifier.padding(top = 4.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -328,7 +328,7 @@ private fun outputTitle(device: ExportDevice): String = when (device) {
 
 private fun outputDescription(device: ExportDevice): String = when (device) {
     ExportDevice.UAPP -> "ToneBoosters XML for USB Audio Player PRO"
-    ExportDevice.BLACK_PEARL -> "Preset export plus optional direct EQ Flash from My EQs"
+    ExportDevice.BLACK_PEARL -> "Preset file export plus optional direct Flash from My EQs"
     ExportDevice.UNIVERSAL_PARAMETRIC -> "Portable AutoEq / Equalizer APO-style parametric text"
     ExportDevice.POWERAMP -> "AutoEq parametric text supported by Poweramp and Poweramp Equalizer"
     ExportDevice.WAVELET -> "Wavelet 127-point GraphicEQ import"
