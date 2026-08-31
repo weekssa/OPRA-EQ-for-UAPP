@@ -14,8 +14,8 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Device-independent canonical source usability plus active-output **Exact**, **Optimized**, and **Not exportable** status. A valid canonical curve remains visible/selectable even when the active output cannot represent it.
 - Multi-source canonical catalog foundation for OPRA, AutoEq, qualified creator/repository data, public community EQ submissions, immutable acoustic revisions, provenance, verification state, and general presets.
 - **Unverified** community EQ presentation with original source links and manual selection while excluding Unverified profiles from silent automatic future-profile inclusion.
-- Conditional **Export all** and per-item **Export** actions based on the current active-output candidate, app-owned SAF ownership metadata, generated fingerprint/content hash, and the actual exported document when available.
-- Optional TRN Black Pearl **Direct Flash** from My EQs, including DAC connection state, current-slot discovery, confirmation, EQ-only transfer, and success/error reporting.
+- Conditional **Export all** and per-item **Export** recovery actions based on the current active-output candidate, app-owned SAF ownership metadata, generated fingerprint/content hash, and the actual exported document when available.
+- Optional TRN Black Pearl **Direct Flash** from My EQs, including DAC connection state, current-slot discovery, confirmation, source-preamp/headroom playback-gain adjustment through the observed global-gain command, PEQ transfer, and success/error reporting.
 - Independent Black Pearl EQ protocol implementation for native Peak, Low Shelf, and High Shelf filters with a 10-band hardware limit and explicit unused-band flattening.
 - Output-scoped Room association tables and non-destructive migrations for managed headphone selections, General EQs, and favorites/personal imports.
 
@@ -23,11 +23,13 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 - Output selection is now an operating context rather than a catalog filter. Choosing a device/app changes conversion, export, Flash availability, capability status, and the My EQs collection, but never hides valid library curves.
 - The obsolete prototype setting **Show presets that none of my devices can export** is ignored/removed from user-facing behavior.
+- New headphones start with no EQ profiles selected and automatic future-profile inclusion off; users explicitly choose the presets they want before Add.
+- Add/Save persists the selected EQs and initiates their export for the active output. Normal Export/Export all controls stay hidden while the expected app-managed files are present and current, and reappear only for recovery when files are missing or stale.
 - Selection, Select all/none, and automatic future-profile behavior are based on canonical source usability and trust/history state, not UAPP compatibility.
 - UAPP/ToneBoosters compatibility is enforced only at the UAPP conversion/export boundary. UAPP XML is optional generated state rather than a prerequisite for saving a canonical EQ.
 - Personal PEQ imports preserve a missing source preamp as null rather than silently inventing `0 dB`.
 - TRN Black Pearl conversion/Flash preserves corroborated native shelf/peak filter types instead of approximating shelves with synthetic peaking filters.
-- Black Pearl refuses profiles that require nonzero preamp/headroom because the observed EQ protocol has no independently verified per-EQ preamp field; EQ Library does not change global DAC volume to compensate.
+- Black Pearl direct Flash applies the selected profile's required preamp/headroom through the observed `0x03` global playback-gain command in 1/256 dB units. It reads the current gain, replaces the previous EQ Library-applied adjustment instead of stacking reductions, allows a later 0 dB preset to restore that prior adjustment, and fails rather than clamping if the requested absolute gain is outside the validated device range.
 - Black Pearl profiles over 10 bands use the first 10 source-priority bands only with an explicit Optimized warning; canonical source data remains complete and unchanged.
 - Navigation and terminology now use **My EQs**, **EQ Library**, and **Settings** instead of the earlier My Headphones/Browse OPRA framing.
 
