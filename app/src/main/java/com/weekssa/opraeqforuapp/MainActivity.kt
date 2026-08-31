@@ -91,6 +91,8 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    private var lastForegroundRefreshAttemptMillis: Long = 0L
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -103,6 +105,7 @@ class MainActivity : ComponentActivity() {
             if (ready != null) {
                 managedHeadphonesRepository.reconcileCatalog(ready.catalog)
             }
+            refreshCatalogIfDue()
         }
 
         setContent {
@@ -174,14 +177,28 @@ class MainActivity : ComponentActivity() {
                             appPreferencesRepository.setExportTargetEnabled(device, enabled)
                         }
                     },
-                    onShowUnexportablePresetsChange = { show ->
+                    onDirectBlackPearlFlashEnabledChange = { enabled ->
                         lifecycleScope.launch {
-                            appPreferencesRepository.setShowUnexportablePresets(show)
+                            appPreferencesRepository.setDirectBlackPearlFlashEnabled(enabled)
                         }
                     },
                 )
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        lifecycleScope.launch { refreshCatalogIfDue() }
+    }
+
+    private suspend fun refreshCatalogIfDue() {
+        val ready = catalogRepository.state.value as? CatalogState.Ready ?: return
+        val now = System.currentTimeMillis()
+        if (now - ready.lastSuccessfulRefreshMillis < FOREGROUND_REFRESH_INTERVAL_MILLIS) return
+        if (now - lastForegroundRefreshAttemptMillis < FOREGROUND_RETRY_THROTTLE_MILLIS) return
+        lastForegroundRefreshAttemptMillis = now
+        syncCoordinator.refresh()
     }
 
     private suspend fun importPersonalEq(
@@ -307,5 +324,10 @@ class MainActivity : ComponentActivity() {
         runCatching {
             startActivity(Intent(Intent.ACTION_VIEW, uri))
         }
+    }
+
+    companion object {
+        private const val FOREGROUND_REFRESH_INTERVAL_MILLIS = 24L * 60L * 60L * 1000L
+        private const val FOREGROUND_RETRY_THROTTLE_MILLIS = 15L * 60L * 1000L
     }
 }
