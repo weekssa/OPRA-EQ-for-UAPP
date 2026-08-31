@@ -45,9 +45,10 @@ class CanonicalCatalogQueryTest {
         val general = generalProfile()
         val snapshot = snapshot().copy(profiles = snapshot().profiles + general)
 
-        assertThat(CanonicalCatalogQuery.search(snapshot, CanonicalCatalogFilters(query = "bass boost")))
-            .extracting { it.profile.canonicalProfileId }
-            .containsExactly("general-bass-boost")
+        assertThat(
+            CanonicalCatalogQuery.search(snapshot, CanonicalCatalogFilters(query = "bass boost"))
+                .map { it.profile.canonicalProfileId },
+        ).containsExactly("general-bass-boost")
         assertThat(
             CanonicalCatalogQuery.search(
                 snapshot,
@@ -55,16 +56,14 @@ class CanonicalCatalogQueryTest {
                     scopes = setOf(EqProfileScope.GENERAL),
                     purposes = setOf(EqPresetPurpose.EFFECT),
                 ),
-            ),
-        ).extracting { it.profile.canonicalProfileId }
-            .containsExactly("general-bass-boost")
+            ).map { it.profile.canonicalProfileId },
+        ).containsExactly("general-bass-boost")
         assertThat(
             CanonicalCatalogQuery.search(
                 snapshot,
                 CanonicalCatalogFilters(scopes = setOf(EqProfileScope.HEADPHONE)),
-            ),
-        ).extracting { it.profile.canonicalProfileId }
-            .containsExactly("hifiman-edition-xs-oratory-harman")
+            ).map { it.profile.canonicalProfileId },
+        ).containsExactly("hifiman-edition-xs-oratory-harman")
     }
 
     @Test
