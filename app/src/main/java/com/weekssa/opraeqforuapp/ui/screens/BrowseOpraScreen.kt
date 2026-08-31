@@ -2,7 +2,9 @@ package com.weekssa.opraeqforuapp.ui.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -14,16 +16,20 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Clear
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -33,10 +39,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
+import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqCategory
+import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqPreset
 import com.weekssa.opraeqforuapp.domain.catalog.OpraCatalog
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.OpraProduct
-import com.weekssa.opraeqforuapp.domain.export.forExportTargetVisibility
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.settings.ExportTargetPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityPreferences
@@ -44,6 +51,18 @@ import com.weekssa.opraeqforuapp.ui.components.OpraAttribution
 
 private const val EQ_SOURCE_SUBMISSION_URL =
     "https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/new?template=submit_eq_source.yml"
+
+private enum class LibrarySection(val label: String) {
+    HEADPHONES("Headphones"),
+    GENERAL("General EQs"),
+}
+
+private enum class GeneralFilter(val label: String, val category: GeneralEqCategory?) {
+    ALL("All", null),
+    SOUND("Sound", GeneralEqCategory.SOUND),
+    GENRE("Genre", GeneralEqCategory.GENRE),
+    UTILITY("Utility", GeneralEqCategory.UTILITY),
+}
 
 @Composable
 fun BrowseOpraScreen(
@@ -67,6 +86,9 @@ fun BrowseOpraScreen(
     var searchQuery by rememberSaveable { mutableStateOf("") }
     var selectedVendorId by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedProductId by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedSectionIndex by rememberSaveable { mutableIntStateOf(0) }
+    var selectedGeneralFilterIndex by rememberSaveable { mutableIntStateOf(0) }
+    val selectedSection = LibrarySection.entries[selectedSectionIndex]
 
     BackHandler(
         enabled = selectedProductId != null || selectedVendorId != null || searchQuery.isNotBlank(),
@@ -91,70 +113,99 @@ fun BrowseOpraScreen(
             modifier = modifier,
         )
         is CatalogState.Ready -> {
-            val sourceCatalog = catalogState.catalog
-            val targetVisibility = remember(sourceCatalog, exportTargets) {
-                sourceCatalog.forExportTargetVisibility(exportTargets)
+            val catalog = catalogState.catalog
+            val product = if (selectedSection == LibrarySection.HEADPHONES) {
+                selectedProductId?.let(catalog::product)
+            } else {
+                null
             }
-            val catalog = targetVisibility.catalog
-            val product = selectedProductId?.let(catalog::product)
-            val vendor = selectedVendorId?.let(catalog::vendor)
+            val vendor = if (selectedSection == LibrarySection.HEADPHONES) {
+                selectedVendorId?.let(catalog::vendor)
+            } else {
+                null
+            }
             val managedByProduct = remember(managedHeadphones) {
                 managedHeadphones.associateBy(ManagedHeadphoneRecord::productId)
             }
-            when {
-                product != null -> ProfileSelectionEditor(
-                    catalog = catalog,
-                    product = product,
-                    profileVisibility = profileVisibility,
-                    exportTargets = exportTargets,
-                    favoriteProfileIds = favoriteProfileIds,
-                    onToggleFavorite = onToggleFavorite,
-                    onLoadManagedHeadphone = onLoadManagedHeadphone,
-                    onSaveSelection = onSaveSelection,
-                    onRemoveHeadphone = onRemoveHeadphone,
-                    onDeleteSavedFilesForProfiles = onDeleteSavedFilesForProfiles,
-                    onDeleteSavedFilesForProduct = onDeleteSavedFilesForProduct,
-                    onExportProduct = onExportProduct,
-                    onMessage = onMessage,
-                    onOpenUrl = onOpenUrl,
-                    onBack = { selectedProductId = null },
-                    modifier = modifier,
-                )
-                vendor != null -> VendorProducts(
-                    catalog = catalog,
-                    vendorId = vendor.id,
-                    managedByProduct = managedByProduct,
-                    onProductSelected = { selectedProductId = it.id },
-                    onBack = {
-                        selectedVendorId = null
-                        selectedProductId = null
-                    },
-                    modifier = modifier,
-                )
-                else -> BrowseRoot(
-                    catalog = catalog,
-                    managedByProduct = managedByProduct,
-                    searchQuery = searchQuery,
-                    hiddenByExportTargets = targetVisibility.hiddenProfileCount,
-                    noExportTargetsSelected = exportTargets.selectedTargets.isEmpty(),
-                    onSearchQueryChange = { searchQuery = it },
-                    onVendorSelected = { selectedVendorId = it },
-                    onProductSelected = { selectedProductId = it.id },
-                    onOpenUrl = onOpenUrl,
-                    modifier = modifier,
-                )
+
+            Column(modifier = modifier.fillMaxSize()) {
+                if (product == null && vendor == null) {
+                    TabRow(selectedTabIndex = selectedSectionIndex) {
+                        LibrarySection.entries.forEachIndexed { index, section ->
+                            Tab(
+                                selected = selectedSectionIndex == index,
+                                onClick = {
+                                    selectedSectionIndex = index
+                                    selectedVendorId = null
+                                    selectedProductId = null
+                                    searchQuery = ""
+                                },
+                                text = { Text(section.label) },
+                            )
+                        }
+                    }
+                }
+
+                when {
+                    product != null -> ProfileSelectionEditor(
+                        catalog = catalog,
+                        product = product,
+                        profileVisibility = profileVisibility,
+                        exportTargets = exportTargets,
+                        favoriteProfileIds = favoriteProfileIds,
+                        onToggleFavorite = onToggleFavorite,
+                        onLoadManagedHeadphone = onLoadManagedHeadphone,
+                        onSaveSelection = onSaveSelection,
+                        onRemoveHeadphone = onRemoveHeadphone,
+                        onDeleteSavedFilesForProfiles = onDeleteSavedFilesForProfiles,
+                        onDeleteSavedFilesForProduct = onDeleteSavedFilesForProduct,
+                        onExportProduct = onExportProduct,
+                        onMessage = onMessage,
+                        onOpenUrl = onOpenUrl,
+                        onBack = { selectedProductId = null },
+                        modifier = Modifier.weight(1f),
+                    )
+                    vendor != null -> VendorProducts(
+                        catalog = catalog,
+                        vendorId = vendor.id,
+                        managedByProduct = managedByProduct,
+                        onProductSelected = { selectedProductId = it.id },
+                        onBack = {
+                            selectedVendorId = null
+                            selectedProductId = null
+                        },
+                        modifier = Modifier.weight(1f),
+                    )
+                    selectedSection == LibrarySection.HEADPHONES -> HeadphoneBrowseRoot(
+                        catalog = catalog,
+                        managedByProduct = managedByProduct,
+                        searchQuery = searchQuery,
+                        onSearchQueryChange = { searchQuery = it },
+                        onVendorSelected = { selectedVendorId = it },
+                        onProductSelected = { selectedProductId = it.id },
+                        onOpenUrl = onOpenUrl,
+                        modifier = Modifier.weight(1f),
+                    )
+                    else -> GeneralEqBrowse(
+                        catalog = catalog,
+                        searchQuery = searchQuery,
+                        selectedFilterIndex = selectedGeneralFilterIndex,
+                        onSearchQueryChange = { searchQuery = it },
+                        onFilterSelected = { selectedGeneralFilterIndex = it },
+                        onOpenUrl = onOpenUrl,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun BrowseRoot(
+private fun HeadphoneBrowseRoot(
     catalog: OpraCatalog,
     managedByProduct: Map<String, ManagedHeadphoneRecord>,
     searchQuery: String,
-    hiddenByExportTargets: Int,
-    noExportTargetsSelected: Boolean,
     onSearchQueryChange: (String) -> Unit,
     onVendorSelected: (String) -> Unit,
     onProductSelected: (OpraProduct) -> Unit,
@@ -166,44 +217,18 @@ private fun BrowseRoot(
             .fillMaxSize()
             .padding(horizontal = 16.dp),
     ) {
-        OutlinedTextField(
+        SearchField(
             value = searchQuery,
             onValueChange = onSearchQueryChange,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp),
-            singleLine = true,
-            label = { Text("Search headphones…") },
-            trailingIcon = if (searchQuery.isNotEmpty()) {
-                {
-                    IconButton(onClick = { onSearchQueryChange("") }) {
-                        Icon(Icons.Outlined.Clear, contentDescription = "Clear search")
-                    }
-                }
-            } else {
-                null
-            },
+            label = "Search headphones…",
         )
-
-        if (hiddenByExportTargets > 0) {
-            Text(
-                text = if (noExportTargetsSelected) {
-                    "$hiddenByExportTargets EQ profiles are hidden because no export targets are selected. Choose devices in Settings → Export targets, or enable broader-library visibility."
-                } else {
-                    "$hiddenByExportTargets EQ profiles are hidden because none of your selected devices can export them. Change this in Settings → Export targets."
-                },
-                modifier = Modifier.padding(bottom = 8.dp),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
 
         if (searchQuery.isBlank()) {
             val vendors = catalog.vendors.sortedBy { it.name.lowercase() }
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 item(key = "source-attribution") {
                     Text(
-                        text = "EQ Library combines supported EQ sources. Profile details identify the creator, target, source, provenance, and revision status.",
+                        text = "EQ Library combines supported sources. Selecting an output changes compatibility and export behavior, never which valid library curves are visible.",
                         modifier = Modifier.padding(top = 8.dp),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -222,9 +247,9 @@ private fun BrowseRoot(
                     HorizontalDivider()
                 }
                 if (vendors.isEmpty()) {
-                    item(key = "no-exportable-profiles") {
+                    item(key = "no-headphones") {
                         Text(
-                            text = "No headphone EQs match your current export-target visibility settings.",
+                            text = "No headphone EQs are available in the saved catalog.",
                             modifier = Modifier.padding(vertical = 24.dp),
                             style = MaterialTheme.typography.bodyLarge,
                         )
@@ -247,11 +272,7 @@ private fun BrowseRoot(
             val results = catalog.searchProducts(searchQuery)
             if (results.isEmpty()) {
                 Text(
-                    text = if (hiddenByExportTargets > 0) {
-                        "No visible headphones found. Export-target settings may be hiding matching EQ profiles."
-                    } else {
-                        "No headphones found"
-                    },
+                    text = "No headphones found",
                     modifier = Modifier.padding(top = 24.dp),
                     style = MaterialTheme.typography.bodyLarge,
                 )
@@ -282,6 +303,125 @@ private fun BrowseRoot(
             }
         }
     }
+}
+
+@Composable
+private fun GeneralEqBrowse(
+    catalog: OpraCatalog,
+    searchQuery: String,
+    selectedFilterIndex: Int,
+    onSearchQueryChange: (String) -> Unit,
+    onFilterSelected: (Int) -> Unit,
+    onOpenUrl: (String) -> Unit,
+    modifier: Modifier,
+) {
+    val selectedFilter = GeneralFilter.entries[selectedFilterIndex]
+    val matching = remember(catalog.generalPresets, searchQuery, selectedFilter) {
+        catalog.searchGeneralPresets(searchQuery)
+            .filter { preset -> selectedFilter.category == null || preset.category == selectedFilter.category }
+    }
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
+    ) {
+        SearchField(
+            value = searchQuery,
+            onValueChange = onSearchQueryChange,
+            label = "Search General EQs…",
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            GeneralFilter.entries.forEachIndexed { index, filter ->
+                FilterChip(
+                    selected = selectedFilterIndex == index,
+                    onClick = { onFilterSelected(index) },
+                    label = { Text(filter.label) },
+                )
+            }
+        }
+        Text(
+            text = "General EQs are standalone presets; v0.3 does not layer them on top of headphone correction EQs.",
+            modifier = Modifier.padding(bottom = 8.dp),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        if (matching.isEmpty()) {
+            Text(
+                text = if (catalog.generalPresets.isEmpty()) {
+                    "No General EQs are published in the current saved catalog yet."
+                } else {
+                    "No General EQs match this search and filter."
+                },
+                modifier = Modifier.padding(top = 16.dp),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+        } else {
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                items(matching, key = GeneralEqPreset::id) { preset ->
+                    ListItem(
+                        headlineContent = { Text(preset.displayName) },
+                        supportingContent = {
+                            Column {
+                                Text(
+                                    listOfNotNull(
+                                        preset.creator?.takeIf(String::isNotBlank),
+                                        preset.soundImpactSummary?.takeIf(String::isNotBlank),
+                                    ).joinToString(" · ").ifBlank { "General parametric EQ" },
+                                )
+                                if (!preset.isVerified) {
+                                    Text(
+                                        "Community submission — not independently verified.",
+                                        color = MaterialTheme.colorScheme.tertiary,
+                                    )
+                                }
+                            }
+                        },
+                        trailingContent = preset.sourceUrl?.let { sourceUrl ->
+                            {
+                                TextButton(onClick = { onOpenUrl(sourceUrl) }) {
+                                    Text("Source")
+                                }
+                            }
+                        },
+                    )
+                    HorizontalDivider()
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SearchField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 12.dp, bottom = 8.dp),
+        singleLine = true,
+        label = { Text(label) },
+        trailingIcon = if (value.isNotEmpty()) {
+            {
+                IconButton(onClick = { onValueChange("") }) {
+                    Icon(Icons.Outlined.Clear, contentDescription = "Clear search")
+                }
+            }
+        } else {
+            null
+        },
+    )
 }
 
 @Composable
