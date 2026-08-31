@@ -22,7 +22,41 @@ class BlackPearlProtocolTest {
     }
 
     @Test
-    fun activeSlotComesFromBandResponseWithoutReadingOtherDacSettings() {
+    fun globalGainReadAndWriteUseObservedCommandAndSignedLittleEndianRawValue() {
+        val read = BlackPearlProtocol.readGlobalGainReport()
+        assertEquals(0x4B, read[0].u8())
+        assertEquals(0x80, read[1].u8())
+        assertEquals(0x03, read[2].u8())
+
+        val write = BlackPearlProtocol.writeGlobalGainReport(-2_560)
+        assertEquals(0x4B, write[0].u8())
+        assertEquals(0x01, write[1].u8())
+        assertEquals(0x03, write[2].u8())
+        assertEquals(0x03, write[3].u8())
+        assertEquals(-2_560, ByteBuffer.wrap(write, 4, 2).order(ByteOrder.LITTLE_ENDIAN).short.toInt())
+
+        val response = read.copyOf().apply {
+            ByteBuffer.wrap(this).order(ByteOrder.LITTLE_ENDIAN).putShort(4, (-2_560).toShort())
+        }
+        assertEquals(-2_560, BlackPearlProtocol.globalGainRawFromResponse(response))
+        assertEquals(-4.5, BlackPearlProtocol.rawDeltaToGainDb(BlackPearlProtocol.gainDbToRawDelta(-4.5)), 0.0)
+    }
+
+    @Test
+    fun globalGainWriteRejectsValuesOutsideValidatedHardwareRange() {
+        val below = runCatching {
+            BlackPearlProtocol.writeGlobalGainReport(BlackPearlProtocol.GLOBAL_GAIN_MIN_RAW - 1)
+        }.exceptionOrNull()
+        val above = runCatching {
+            BlackPearlProtocol.writeGlobalGainReport(BlackPearlProtocol.GLOBAL_GAIN_MAX_RAW + 1)
+        }.exceptionOrNull()
+
+        assertTrue(below is IllegalArgumentException)
+        assertTrue(above is IllegalArgumentException)
+    }
+
+    @Test
+    fun activeSlotComesFromBandResponse() {
         val response = BlackPearlProtocol.readBandReport(0).apply {
             this[1] = 0x80.toByte()
             this[36] = 0x07
@@ -79,7 +113,7 @@ class BlackPearlProtocolTest {
     }
 
     @Test
-    fun completeFlashSequenceAlwaysOverwritesTenBandsThenLatchesAndFlashes() {
+    fun completePeqSequenceAlwaysOverwritesTenBandsThenLatchesAndFlashes() {
         val sequence = BlackPearlProtocol.flashSequence(
             bands = listOf(BlackPearlProtocol.Band("peak_dip", 1_000.0, 2.0, 1.0)),
             activeSlot = 0x04,
@@ -93,8 +127,7 @@ class BlackPearlProtocolTest {
         }
         assertEquals(0x0A, sequence[10][2].u8())
         assertEquals(0x01, sequence[11][2].u8())
-
-        // 0x03 is the observed global-volume command. EQ Library direct Flash must never send it.
+        // Global gain is intentionally orchestrated separately by BlackPearlFlasher.
         assertTrue(sequence.none { report -> report[2].u8() == 0x03 })
     }
 
