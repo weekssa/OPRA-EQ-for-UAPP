@@ -35,7 +35,8 @@ import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.data.export.ExportCurrentness
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
-import com.weekssa.opraeqforuapp.domain.blackpearl.isBlackPearlDirectFlashable
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlashPlan
+import com.weekssa.opraeqforuapp.domain.blackpearl.buildBlackPearlFlashPlan
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.export.DeviceExportability
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
@@ -56,6 +57,7 @@ fun ManagedHeadphoneDetailScreen(
     favoriteProfileIds: Set<String>,
     directBlackPearlFlashEnabled: Boolean,
     blackPearlConnectionState: BlackPearlConnectionState,
+    onConnectBlackPearl: () -> Unit,
     onFlashManagedProfile: suspend (String) -> String,
     onToggleFavorite: suspend (OpraEqProfile, String, String) -> Boolean,
     onLoadManagedHeadphone: suspend (String) -> ManagedHeadphoneRecord?,
@@ -228,17 +230,12 @@ fun ManagedHeadphoneDetailScreen(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
             style = MaterialTheme.typography.bodyMedium,
         )
-        if (isBlackPearlOutput && !flashEnabled) {
-            Text(
-                text = when {
-                    !directBlackPearlFlashEnabled -> "Direct Flash is disabled in Settings."
-                    blackPearlConnectionState !is BlackPearlConnectionState.Connected ->
-                        "Connect to the Black Pearl from the top of My EQs to enable Flash."
-                    else -> "Direct Flash is unavailable."
-                },
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+        if (isBlackPearlOutput) {
+            BlackPearlConnectionControl(
+                enabled = directBlackPearlFlashEnabled,
+                state = blackPearlConnectionState,
+                onConnect = onConnectBlackPearl,
+                modifier = Modifier.padding(horizontal = 16.dp, top = 8.dp),
             )
         }
         if (product != null) {
@@ -259,7 +256,15 @@ fun ManagedHeadphoneDetailScreen(
         LazyColumn(modifier = Modifier.weight(1f)) {
             items(displayedProfiles, key = ManagedProfileRecord::profileId) { profile ->
                 val outputStatus = assessDeviceExportability(profile.lastKnownProfile, activeOutput)
-                val directFlashable = profile.lastKnownProfile.isBlackPearlDirectFlashable()
+                val directFlashPlan = if (isBlackPearlOutput) {
+                    buildBlackPearlFlashPlan(profile.lastKnownProfile, activeSlot = 0x00)
+                } else {
+                    null
+                }
+                val directFlashable = directFlashPlan is BlackPearlFlashPlan.Ready
+                val directFlashUnavailableReason = (directFlashPlan as? BlackPearlFlashPlan.NotRepresentable)
+                    ?.reason
+                    ?.takeIf { profile.selected }
                 ManagedProfileRow(
                     profile = profile,
                     activeOutput = activeOutput,
@@ -269,6 +274,7 @@ fun ManagedHeadphoneDetailScreen(
                     onExport = { onExportProfile(profile.profileId) },
                     showFlash = isBlackPearlOutput,
                     flashEnabled = flashEnabled && profile.selected && directFlashable,
+                    flashUnavailableReason = directFlashUnavailableReason,
                     onFlash = { pendingProfileFlash = profile },
                     onOpenSource = profile.lastKnownProfile.link?.let { sourceUrl -> { onOpenUrl(sourceUrl) } },
                     onRemove = {
@@ -301,6 +307,7 @@ private fun ManagedProfileRow(
     onExport: () -> Unit,
     showFlash: Boolean,
     flashEnabled: Boolean,
+    flashUnavailableReason: String?,
     onFlash: () -> Unit,
     onOpenSource: (() -> Unit)?,
     onRemove: (() -> Unit)?,
@@ -338,6 +345,14 @@ private fun ManagedProfileRow(
                         DeviceExportability.NOT_REPRESENTABLE -> MaterialTheme.colorScheme.error
                     },
                 )
+                if (showFlash && flashUnavailableReason != null) {
+                    Text(
+                        text = "Direct Flash unavailable: $flashUnavailableReason",
+                        modifier = Modifier.padding(top = 4.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
             }
         },
         trailingContent = {
