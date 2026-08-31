@@ -175,24 +175,17 @@ internal fun ProfileSelectionEditor(
         it.isHistoricalRevision() && it.id in stagedSelectedIds
     }
 
-    fun completeSave(exportAfterSave: Boolean) {
+    fun completeSave() {
         scope.launch {
             onSaveSelection(product.id, stagedSelectedIds, autoInclude)
             baselineSelectedIds = stagedSelectedIds
             baselineAutoInclude = autoInclude
             managedRecord = onLoadManagedHeadphone(product.id)
-            if (exportAfterSave && stagedSelectedIds.isNotEmpty()) {
+            if (stagedSelectedIds.isNotEmpty()) {
                 onExportProduct(product.id)
+            } else {
+                onBack()
             }
-        }
-    }
-
-    fun requestExport() {
-        if (stagedSelectedIds.isEmpty()) return
-        if (managedRecord == null || dirty) {
-            completeSave(exportAfterSave = true)
-        } else {
-            onExportProduct(product.id)
         }
     }
 
@@ -397,7 +390,7 @@ internal fun ProfileSelectionEditor(
         }
 
         Text(
-            text = "Unverified EQs are never added automatically. Output compatibility never hides or silently removes a saved source curve.",
+            text = "New headphones start with no EQs selected. Unverified EQs are never added automatically. Output compatibility never hides or silently removes a saved source curve.",
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -464,27 +457,15 @@ internal fun ProfileSelectionEditor(
             }
         }
 
-        Row(
+        Button(
+            onClick = ::completeSave,
+            enabled = commitEnabled,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Button(
-                onClick = { completeSave(exportAfterSave = false) },
-                enabled = commitEnabled,
-                modifier = Modifier.weight(1f),
-            ) {
-                val label = if (managedRecord == null) "Add" else "Save"
-                Text("$label (${stagedSelectedIds.size})")
-            }
-            OutlinedButton(
-                onClick = ::requestExport,
-                enabled = stagedSelectedIds.isNotEmpty(),
-                modifier = Modifier.weight(1f),
-            ) {
-                Text("Export (${stagedSelectedIds.size})")
-            }
+            val label = if (managedRecord == null) "Add" else "Save"
+            Text("$label (${stagedSelectedIds.size})")
         }
     }
 }
