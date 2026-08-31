@@ -8,40 +8,37 @@ import org.junit.Test
 
 class ManagedSelectionTest {
     @Test
-    fun firstTimeDefaultsSelectAllCurrentUsableVerifiedProfiles() {
-        val uappCompatible = compatibleProfile("fully")
-        val overTenBands = compatibleProfile("limited").copy(
-            bands = (1..11).map { index ->
-                OpraBand("peak_dip", 100.0 * index, 0.0, 1.0, null)
-            },
-        )
-        val uappUnsupportedButUsable = uappUnsupportedProfile("uapp-unsupported")
-        val unusable = unusableProfile("unusable")
-        val historical = compatibleProfile("historical").copy(
-            details = "Previous revision · Revision: 2023-10-29 · Source: AutoEQ",
+    fun firstTimeDefaultsStartEmptyAndAutomaticInclusionOff() {
+        val profiles = listOf(
+            compatibleProfile("fully"),
+            compatibleProfile("limited").copy(
+                bands = (1..11).map { index ->
+                    OpraBand("peak_dip", 100.0 * index, 0.0, 1.0, null)
+                },
+            ),
+            uappUnsupportedProfile("uapp-unsupported"),
+            unusableProfile("unusable"),
+            compatibleProfile("historical").copy(
+                details = "Previous revision · Revision: 2023-10-29 · Source: AutoEQ",
+            ),
+            compatibleProfile("unverified").copy(isVerified = false),
         )
 
-        val selected = defaultStagedSelectedProfileIds(
-            listOf(uappCompatible, overTenBands, uappUnsupportedButUsable, unusable, historical),
-        )
+        val selected = defaultStagedSelectedProfileIds(profiles)
 
-        assertTrue(DEFAULT_AUTO_INCLUDE_NEW_PROFILES)
-        assertTrue("fully" in selected)
-        assertTrue("limited" in selected)
-        assertTrue("uapp-unsupported" in selected)
-        assertFalse("unusable" in selected)
-        assertFalse("historical" in selected)
+        assertFalse(DEFAULT_AUTO_INCLUDE_NEW_PROFILES)
+        assertTrue(selected.isEmpty())
     }
 
     @Test
-    fun firstTimeDefaultsDoNotSilentlySelectUnverifiedProfiles() {
+    fun explicitSelectAllCanStillIncludeVerifiedAndUnverifiedUsableProfiles() {
         val verified = compatibleProfile("verified")
         val unverified = compatibleProfile("unverified").copy(isVerified = false)
 
-        val selected = defaultStagedSelectedProfileIds(listOf(verified, unverified))
+        val selected = selectableProfileIds(listOf(verified, unverified))
 
         assertTrue("verified" in selected)
-        assertFalse("unverified" in selected)
+        assertTrue("unverified" in selected)
     }
 
     @Test
@@ -79,16 +76,16 @@ class ManagedSelectionTest {
     }
 
     @Test
-    fun neverManagedHeadphoneCanBeAddedWithoutArtificialSelectionChange() {
+    fun neverManagedHeadphoneCanBeAddedAfterExplicitSelection() {
         val selected = setOf("profile")
 
         assertTrue(
             managedSelectionCommitEnabled(
                 isManaged = false,
                 stagedSelectedProfileIds = selected,
-                baselineSelectedProfileIds = selected,
-                autoIncludeNewProfiles = true,
-                baselineAutoIncludeNewProfiles = true,
+                baselineSelectedProfileIds = emptySet(),
+                autoIncludeNewProfiles = false,
+                baselineAutoIncludeNewProfiles = false,
             ),
         )
     }
@@ -100,8 +97,8 @@ class ManagedSelectionTest {
                 isManaged = false,
                 stagedSelectedProfileIds = emptySet(),
                 baselineSelectedProfileIds = emptySet(),
-                autoIncludeNewProfiles = true,
-                baselineAutoIncludeNewProfiles = true,
+                autoIncludeNewProfiles = false,
+                baselineAutoIncludeNewProfiles = false,
             ),
         )
     }
@@ -120,7 +117,7 @@ class ManagedSelectionTest {
     }
 
     @Test
-    fun autoIncludeSelectsFutureUsableVerifiedProfile() {
+    fun autoIncludeSelectsFutureUsableVerifiedProfileWhenUserTurnsItOn() {
         val state = ManagedHeadphoneSelection(
             productId = "product",
             autoIncludeNewProfiles = true,
