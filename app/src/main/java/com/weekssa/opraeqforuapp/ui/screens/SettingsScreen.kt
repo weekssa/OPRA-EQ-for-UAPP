@@ -25,7 +25,6 @@ import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshFailureReason
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
-import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityCategory
 import com.weekssa.opraeqforuapp.domain.settings.ThemeMode
 import com.weekssa.opraeqforuapp.domain.update.SemVer
 import com.weekssa.opraeqforuapp.ui.components.OPRA_DATA_LICENSE_URL
@@ -44,9 +43,8 @@ fun SettingsScreen(
     onGetUpdate: () -> Unit,
     onOpenUrl: (String) -> Unit,
     onThemeModeChange: (ThemeMode) -> Unit,
-    onProfileVisibilityChange: (ProfileVisibilityCategory, Boolean) -> Unit,
     onExportTargetChange: (ExportDevice, Boolean) -> Unit,
-    onShowUnexportablePresetsChange: (Boolean) -> Unit,
+    onDirectBlackPearlFlashEnabledChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -54,28 +52,103 @@ fun SettingsScreen(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 16.dp),
     ) {
-        SectionTitle("Profile visibility")
-        CheckboxOption(
-            title = "Fully compatible",
-            checked = appPreferences.profileVisibility.showFullyCompatible,
-            onCheckedChange = {
-                onProfileVisibilityChange(ProfileVisibilityCategory.FullyCompatible, it)
-            },
+        SectionTitle("Outputs")
+        Text(
+            text = "Choose which devices and apps appear in the output selector. The active output changes conversion, export, and My EQs context; it never hides curves from EQ Library.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 4.dp),
         )
-        CheckboxOption(
-            title = "Compatible with limitation",
-            checked = appPreferences.profileVisibility.showCompatibleWithLimitation,
-            onCheckedChange = {
-                onProfileVisibilityChange(ProfileVisibilityCategory.CompatibleWithLimitation, it)
-            },
+        ExportDevice.selectableOutputs.forEach { device ->
+            CheckboxOption(
+                title = outputTitle(device),
+                description = outputDescription(device),
+                checked = appPreferences.exportTargets.isSelected(device),
+                onCheckedChange = { enabled -> onExportTargetChange(device, enabled) },
+            )
+        }
+
+        if (appPreferences.exportTargets.isSelected(ExportDevice.BLACK_PEARL)) {
+            SectionDivider()
+            SectionTitle("Black Pearl")
+            CheckboxOption(
+                title = "Enable direct Flash",
+                description = "Allow EQ Library to connect to the TRN Black Pearl and write EQ presets from My EQs. Other DAC settings are not managed.",
+                checked = appPreferences.directBlackPearlFlashEnabled,
+                onCheckedChange = onDirectBlackPearlFlashEnabledChange,
+            )
+        }
+
+        SectionDivider()
+        SectionTitle("Library")
+        when (catalogState) {
+            CatalogState.Loading -> Text(
+                text = "Loading your saved EQ Library and checking available catalog state…",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            is CatalogState.Unavailable -> {
+                Text(
+                    text = eqLibraryCatalogFailureMessage(catalogState.reason),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                TextButton(onClick = onRefreshCatalog) { Text("Try refresh") }
+            }
+            is CatalogState.Ready -> {
+                Text(
+                    text = if (catalogState.isRefreshing) "Refreshing EQ Library…" else "Saved EQ Library available",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Text(
+                    text = "${catalogState.catalog.vendors.size} manufacturers · ${catalogState.catalog.products.size} headphones · ${catalogState.catalog.profiles.size} EQ profiles",
+                    modifier = Modifier.padding(top = 4.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = "Last successful refresh ${formatCatalogTime(catalogState.lastSuccessfulRefreshMillis)}",
+                    modifier = Modifier.padding(top = 4.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = "EQ Library uses saved data immediately and opportunistically refreshes when the last successful refresh is about a day old. If you're offline, the saved library remains available.",
+                    modifier = Modifier.padding(top = 4.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                TextButton(
+                    onClick = onRefreshCatalog,
+                    enabled = !catalogState.isRefreshing,
+                ) { Text("Refresh now") }
+            }
+        }
+
+        SectionDivider()
+        SectionTitle("Export folder")
+        Text("EQ Library root folder")
+        Text(
+            text = appPreferences.exportTreeLabel ?: "Not chosen yet",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        CheckboxOption(
-            title = "Not compatible",
-            checked = appPreferences.profileVisibility.showNotCompatible,
-            onCheckedChange = {
-                onProfileVisibilityChange(ProfileVisibilityCategory.NotCompatible, it)
-            },
+        Text(
+            text = "Suggested location: Documents/EQ Library. Android's system folder picker lets you choose the actual location.",
+            modifier = Modifier.padding(top = 4.dp),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        TextButton(onClick = onChangeExportFolder) {
+            Text(if (appPreferences.exportTreeUri == null) "Choose root folder" else "Change root folder")
+        }
+        if (appPreferences.exportTreeUri != null) {
+            Text(
+                text = "Changing the root affects future exports only. Existing files are not moved or deleted.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
 
         SectionDivider()
         SectionTitle("Appearance")
@@ -97,105 +170,7 @@ fun SettingsScreen(
         )
 
         SectionDivider()
-        SectionTitle("Export targets")
-        Text(
-            text = "Choose the formats or devices you use. These choices only filter what EQ Library shows and offers for export; they never remove EQs from the catalog.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 4.dp),
-        )
-        ExportDevice.entries.forEach { device ->
-            CheckboxOption(
-                title = device.folderName,
-                description = exportTargetDescription(device),
-                checked = appPreferences.exportTargets.isSelected(device),
-                onCheckedChange = { enabled -> onExportTargetChange(device, enabled) },
-            )
-        }
-        CheckboxOption(
-            title = "Show presets that none of my devices can export",
-            description = "On by default. When off, those presets are hidden from normal browsing but remain in the EQ Library and in any existing saved state.",
-            checked = appPreferences.exportTargets.showUnexportablePresets,
-            onCheckedChange = onShowUnexportablePresetsChange,
-        )
-
-        SectionDivider()
-        SectionTitle("Export folder")
-        Text("EQ Library root folder")
-        Text(
-            text = appPreferences.exportTreeLabel ?: "Not chosen yet",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = "Suggested location: Documents/EQ Library. Exports create device-first folders only for the target you choose.",
-            modifier = Modifier.padding(top = 4.dp),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        TextButton(onClick = onChangeExportFolder) {
-            Text(if (appPreferences.exportTreeUri == null) "Choose root folder" else "Change root folder")
-        }
-        if (appPreferences.exportTreeUri != null) {
-            Text(
-                text = "Changing the root affects future exports only. Existing files are not moved or deleted.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-
-        SectionDivider()
-        SectionTitle("OPRA source")
-        when (catalogState) {
-            CatalogState.Loading -> Text(
-                text = "Downloading OPRA catalog…",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            is CatalogState.Unavailable -> {
-                Text(
-                    text = eqLibraryCatalogFailureMessage(catalogState.reason),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                TextButton(onClick = onRefreshCatalog) {
-                    Text("Try refresh")
-                }
-            }
-            is CatalogState.Ready -> {
-                Text(
-                    text = if (catalogState.isRefreshing) "Refreshing…" else "Saved EQ Library catalog available",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                Text(
-                    text = "${catalogState.catalog.vendors.size} manufacturers · ${catalogState.catalog.products.size} headphones · ${catalogState.catalog.profiles.size} EQ profiles",
-                    modifier = Modifier.padding(top = 4.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    text = "Last refreshed ${formatCatalogTime(catalogState.lastSuccessfulRefreshMillis)}",
-                    modifier = Modifier.padding(top = 4.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    text = "OPRA remains a primary live source. The canonical library can also contain validated AutoEq, creator, repository, and attributed community profiles.",
-                    modifier = Modifier.padding(top = 4.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                TextButton(
-                    onClick = onRefreshCatalog,
-                    enabled = !catalogState.isRefreshing,
-                ) {
-                    Text("Refresh now")
-                }
-            }
-        }
-
-        SectionDivider()
-        SectionTitle("About & updates")
+        SectionTitle("Updates")
         Text("EQ Library")
         Text(
             text = "Installed version ${BuildConfig.VERSION_NAME}",
@@ -241,31 +216,26 @@ fun SettingsScreen(
         )
 
         SectionDivider()
-        SectionTitle("Privacy")
+        SectionTitle("About")
         Text(
-            text = "Headphone selections, app settings, generated preset state, and conversion stay on this device. No account is required, and EQ Library contains no analytics or telemetry. Network access is used for public EQ catalog sources and public app-release metadata.",
+            text = "Headphone selections, app settings, generated preset state, and conversion stay on this device. No account is required, and EQ Library contains no analytics or telemetry.",
             style = MaterialTheme.typography.bodyMedium,
         )
-
-        SectionDivider()
-        SectionTitle("Credits & licenses")
-        OpraAttribution(onOpenUrl = onOpenUrl)
+        OpraAttribution(onOpenUrl = onOpenUrl, modifier = Modifier.padding(top = 12.dp))
         Text(
-            text = "OPRA manufacturer, product, and EQ data is provided under CC BY-SA 4.0. EQ Library preserves individual EQ creator/source information from OPRA where provided.",
+            text = "OPRA is one source inside EQ Library. The library can also contain attributed AutoEq, creator, repository, and public community EQ profiles. Individual source and creator information is preserved with each profile when available.",
             modifier = Modifier.padding(top = 8.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        TextButton(onClick = { onOpenUrl(OPRA_DATA_LICENSE_URL) }) {
-            Text("CC BY-SA 4.0 license")
-        }
+        TextButton(onClick = { onOpenUrl(OPRA_DATA_LICENSE_URL) }) { Text("OPRA data license") }
         Text(
-            text = "EQ Library source code is Apache-2.0. The ToneBoosters/UAPP conversion mapping is based in part on SiliconExarch/EqConverter (Apache-2.0); provenance is documented in the project NOTICE. AndroidX, Kotlin, and kotlinx libraries retain their respective open-source licenses.",
+            text = "EQ Library source code is Apache-2.0. Black Pearl protocol references are studied for observable device behavior only; GPL implementation code is not copied into this project.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            text = "EQ Library is not affiliated with or endorsed by OPRA, Roon Labs, USB Audio Player PRO/UAPP, ToneBoosters, TRN, TOPPING, or headphone manufacturers.",
+            text = "EQ Library is not affiliated with or endorsed by OPRA, Roon Labs, USB Audio Player PRO/UAPP, ToneBoosters, TRN, Poweramp, Wavelet, or headphone manufacturers.",
             modifier = Modifier.padding(top = 8.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -302,10 +272,7 @@ private fun CheckboxOption(
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Checkbox(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-        )
+        Checkbox(checked = checked, onCheckedChange = onCheckedChange)
         Spacer(Modifier.width(12.dp))
         Column {
             Text(title)
@@ -334,10 +301,7 @@ private fun ThemeOption(
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        RadioButton(
-            selected = selected,
-            onClick = onSelected,
-        )
+        RadioButton(selected = selected, onClick = onSelected)
         Spacer(Modifier.width(12.dp))
         Column {
             Text(title)
@@ -352,18 +316,31 @@ private fun ThemeOption(
     }
 }
 
-private fun exportTargetDescription(device: ExportDevice): String = when (device) {
-    ExportDevice.UAPP -> "USB Audio Player PRO / ToneBoosters XML"
-    ExportDevice.BLACK_PEARL -> "TRN Black Pearl preset text"
-    ExportDevice.TOPPING_DX5_II -> "TOPPING Tune · DX5 II · hardware validation pending"
-    ExportDevice.TOPPING_DX1_II -> "TOPPING Tune · DX1 II · hardware validation pending"
+private fun outputTitle(device: ExportDevice): String = when (device) {
+    ExportDevice.UAPP -> "USB Audio Player PRO / ToneBoosters"
+    ExportDevice.BLACK_PEARL -> "TRN Black Pearl"
+    ExportDevice.UNIVERSAL_PARAMETRIC -> "Universal Parametric EQ"
+    ExportDevice.POWERAMP -> "Poweramp / Poweramp Equalizer"
+    ExportDevice.WAVELET -> "Wavelet"
+    ExportDevice.TOPPING_DX5_II -> "TOPPING DX5 II"
+    ExportDevice.TOPPING_DX1_II -> "TOPPING DX1 II"
+}
+
+private fun outputDescription(device: ExportDevice): String = when (device) {
+    ExportDevice.UAPP -> "ToneBoosters XML for USB Audio Player PRO"
+    ExportDevice.BLACK_PEARL -> "Preset export plus optional direct EQ Flash from My EQs"
+    ExportDevice.UNIVERSAL_PARAMETRIC -> "Portable AutoEq / Equalizer APO-style parametric text"
+    ExportDevice.POWERAMP -> "AutoEq parametric text supported by Poweramp and Poweramp Equalizer"
+    ExportDevice.WAVELET -> "Wavelet 127-point GraphicEQ import"
+    ExportDevice.TOPPING_DX5_II,
+    ExportDevice.TOPPING_DX1_II -> "Hardware validation pending"
 }
 
 private fun formatCatalogTime(epochMillis: Long): String =
     DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(epochMillis))
 
 private fun eqLibraryCatalogFailureMessage(reason: CatalogRefreshFailureReason): String = when (reason) {
-    CatalogRefreshFailureReason.Network -> "Couldn’t download the OPRA source. Check your connection and try refresh."
-    CatalogRefreshFailureReason.InvalidCatalog -> "The downloaded OPRA source could not be processed. Try refresh again later."
-    CatalogRefreshFailureReason.Storage -> "EQ Library couldn’t save the OPRA source on this device."
+    CatalogRefreshFailureReason.Network -> "Couldn’t refresh EQ Library. Check your connection; if you have a saved library, it remains available."
+    CatalogRefreshFailureReason.InvalidCatalog -> "The downloaded EQ Library catalog could not be validated. Your last known-good library remains unchanged."
+    CatalogRefreshFailureReason.Storage -> "EQ Library couldn’t save the refreshed catalog on this device."
 }
