@@ -92,7 +92,7 @@ class ToneBoostersConverterTest {
     }
 
     @Test
-    fun profileCompatibilityBlocksUnsupportedConversion() {
+    fun deviceIndependentSelectionDoesNotBypassUappConversionGate() {
         val profile = OpraEqProfile(
             id = "blocked",
             productId = "product",
@@ -104,8 +104,28 @@ class ToneBoostersConverterTest {
             bands = listOf(OpraBand("band_stop", 1_000.0, 0.0, 1.0, null)),
         )
 
+        assertTrue(profile.assessCompatibility().category.isSelectable)
         assertThrows(ToneBoostersConversionException::class.java) {
             ToneBoostersConverter.convert(profile, "Blocked")
+        }
+    }
+
+    @Test
+    fun missingPreampCanRemainSelectableButCannotProduceUappXmlWithoutHeadroom() {
+        val profile = OpraEqProfile(
+            id = "missing-preamp",
+            productId = "product",
+            author = "Creator",
+            details = null,
+            link = null,
+            profileType = "parametric_eq",
+            preampGainDb = null,
+            bands = listOf(OpraBand("peak_dip", 1_000.0, -2.0, 1.0, null)),
+        )
+
+        assertTrue(profile.assessCompatibility().category.isSelectable)
+        assertThrows(ToneBoostersConversionException::class.java) {
+            ToneBoostersConverter.convert(profile, "Missing preamp")
         }
     }
 
