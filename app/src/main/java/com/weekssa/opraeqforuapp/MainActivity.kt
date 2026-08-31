@@ -9,6 +9,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import com.weekssa.opraeqforuapp.data.blackpearl.AndroidBlackPearlUsbTransport
+import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.data.catalog.HttpOpraCatalogSource
 import com.weekssa.opraeqforuapp.data.catalog.OpraCatalogRepository
@@ -27,6 +29,9 @@ import com.weekssa.opraeqforuapp.data.preferences.AppPreferencesRepository
 import com.weekssa.opraeqforuapp.data.sync.BackgroundSyncScheduler
 import com.weekssa.opraeqforuapp.data.sync.CatalogSyncCoordinator
 import com.weekssa.opraeqforuapp.data.update.AppUpdateCoordinator
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlashResult
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlasher
+import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
 import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
@@ -96,6 +101,14 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    private val blackPearlTransportDelegate = lazy {
+        AndroidBlackPearlUsbTransport(applicationContext)
+    }
+    private val blackPearlTransport by blackPearlTransportDelegate
+    private val blackPearlFlasher by lazy {
+        BlackPearlFlasher(blackPearlTransport)
+    }
+
     private var lastForegroundRefreshAttemptMillis: Long = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -130,6 +143,9 @@ class MainActivity : ComponentActivity() {
                 .observeForOutput(activeOutputId)
                 .collectAsStateWithLifecycle(initialValue = emptyList<SavedGeneralEqRecord>())
                 .value
+            val blackPearlConnectionState = blackPearlTransport.state.collectAsStateWithLifecycle(
+                initialValue = BlackPearlConnectionState.Disconnected,
+            ).value
 
             OpraEqTheme(themeMode = appPreferences.themeMode) {
                 EqLibraryApp(
@@ -138,6 +154,20 @@ class MainActivity : ComponentActivity() {
                     managedHeadphones = managedHeadphones,
                     savedEqs = savedEqs,
                     savedGeneralEqs = savedGeneralEqs,
+                    blackPearlConnectionState = blackPearlConnectionState,
+                    onConnectBlackPearl = {
+                        if (
+                            appPreferences.directBlackPearlFlashEnabled &&
+                            appPreferences.exportTargets.activeTarget == ExportDevice.BLACK_PEARL
+                        ) {
+                            blackPearlTransport.connect()
+                        }
+                    },
+                    onFlashManagedProfile = { productId, profileId ->
+                        flashManagedProfile(productId, profileId, activeOutputId)
+                    },
+                    onFlashSavedEq = ::flashSavedEq,
+                    onFlashGeneralEq = { presetId -> flashGeneralEq(presetId, activeOutputId) },
                     onRefreshCatalog = syncCoordinator::refresh,
                     onLoadManagedHeadphone = { productId ->
                         managedHeadphonesRepository.getHeadphone(productId, activeOutputId)
@@ -238,6 +268,13 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch { refreshCatalogIfDue() }
     }
 
+    override fun onDestroy() {
+        if (blackPearlTransportDelegate.isInitialized()) {
+            blackPearlTransport.close()
+        }
+        super.onDestroy()
+    }
+
     private suspend fun refreshCatalogIfDue() {
         val ready = catalogRepository.state.value as? CatalogState.Ready ?: return
         val now = System.currentTimeMillis()
@@ -265,6 +302,55 @@ class MainActivity : ComponentActivity() {
         onSuccess = { null },
         onFailure = { error -> error.message ?: "Couldn’t import that PEQ." },
     )
+
+    private suspend fun flashManagedProfile(
+        productId: String,
+        profileId: String,
+        outputId: String,
+    ): String {
+        val managed = managedHeadphonesRepository.getHeadphone(productId, outputId)
+            ?: return "That headphone is no longer saved for this output."
+        val profile = managed.profiles.firstOrNull { it.profileId == profileId && it.selected }
+            ?: return "That EQ is no longer selected for this output."
+        return flashBlackPearlProfile(profile.lastKnownProfile)
+    }
+
+    private suspend fun flashSavedEq(entryId: String): String {
+        val record = savedEqRepository.get(entryId)
+            ?: return "That EQ is no longer saved in My EQs."
+        return flashBlackPearlProfile(record.profile)
+    }
+
+    private suspend fun flashGeneralEq(
+        presetId: String,
+        outputId: String,
+    ): String {
+        val record = savedGeneralEqRepository.getForOutput(outputId, presetId)
+            ?: return "That General EQ is no longer saved for this output."
+        return flashBlackPearlProfile(record.profile)
+    }
+
+    private suspend fun flashBlackPearlProfile(profile: OpraEqProfile): String {
+        val preferences = appPreferencesRepository.snapshot()
+        if (preferences.exportTargets.activeTarget != ExportDevice.BLACK_PEARL) {
+            return "Select Black Pearl as the active output before using direct Flash."
+        }
+        if (!preferences.directBlackPearlFlashEnabled) {
+            return "Enable direct Flash in Settings → Black Pearl before flashing."
+        }
+        if (blackPearlTransport.state.value !is BlackPearlConnectionState.Connected) {
+            return "Connect to the Black Pearl from My EQs before flashing."
+        }
+
+        return when (val result = blackPearlFlasher.flash(profile)) {
+            is BlackPearlFlashResult.Success -> result.warning?.let { warning ->
+                "Flash successful · $warning"
+            } ?: "Flash successful"
+            is BlackPearlFlashResult.NotRepresentable -> "Not flashable · ${result.reason}"
+            is BlackPearlFlashResult.DeviceUnavailable -> result.reason
+            is BlackPearlFlashResult.TransferFailed -> result.reason
+        }
+    }
 
     private suspend fun exportManagedProduct(
         treeUri: Uri,
