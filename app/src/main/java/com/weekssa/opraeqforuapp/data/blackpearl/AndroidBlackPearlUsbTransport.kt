@@ -57,10 +57,15 @@ class AndroidBlackPearlUsbTransport(
             if (!device.isBlackPearl()) return
             when (intent.action) {
                 permissionAction -> {
-                    if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
+                    // The receiver is exported because USB attach/detach and permission results are
+                    // system broadcasts. Never trust the broadcast's boolean alone: re-check the
+                    // actual UsbManager permission before opening the device.
+                    if (usbManager.hasPermission(device)) {
                         openAsync(device)
                     } else {
-                        mutableState.value = BlackPearlConnectionState.Error("USB permission was not granted for the Black Pearl.")
+                        mutableState.value = BlackPearlConnectionState.Error(
+                            "USB permission was not granted for the Black Pearl.",
+                        )
                     }
                 }
                 UsbManager.ACTION_USB_DEVICE_DETACHED -> {
@@ -83,7 +88,9 @@ class AndroidBlackPearlUsbTransport(
     fun connect() {
         val device = findDevice()
         if (device == null) {
-            mutableState.value = BlackPearlConnectionState.Error("TRN Black Pearl not detected. Connect the DAC by USB and try again.")
+            mutableState.value = BlackPearlConnectionState.Error(
+                "TRN Black Pearl not detected. Connect the DAC by USB and try again.",
+            )
             return
         }
         if (session != null) {
@@ -95,13 +102,19 @@ class AndroidBlackPearlUsbTransport(
         if (usbManager.hasPermission(device)) {
             openAsync(device)
         } else {
+            val mutabilityFlag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                PendingIntent.FLAG_MUTABLE
+            } else {
+                0
+            }
             val permissionIntent = PendingIntent.getBroadcast(
                 appContext,
                 0,
                 Intent(permissionAction).setPackage(appContext.packageName),
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                PendingIntent.FLAG_UPDATE_CURRENT or mutabilityFlag,
             )
             usbManager.requestPermission(device, permissionIntent)
+            startPermissionFallback()
         }
     }
 
@@ -162,24 +175,47 @@ class AndroidBlackPearlUsbTransport(
                 closeSessionLocked()
                 val connection = usbManager.openDevice(device)
                 if (connection == null) {
-                    mutableState.value = BlackPearlConnectionState.Error("Android could not open the Black Pearl USB device.")
+                    mutableState.value = BlackPearlConnectionState.Error(
+                        "Android could not open the Black Pearl USB device.",
+                    )
                     return@withLock
                 }
                 val usbInterface = findControlInterface(device)
                 if (usbInterface == null || !connection.claimInterface(usbInterface, true)) {
                     connection.close()
-                    mutableState.value = BlackPearlConnectionState.Error("Android could not claim the Black Pearl EQ interface.")
+                    mutableState.value = BlackPearlConnectionState.Error(
+                        "Android could not claim the Black Pearl EQ interface.",
+                    )
                     return@withLock
                 }
                 val endpointIn = findInterruptInEndpoint(usbInterface)
                 if (endpointIn == null) {
                     connection.releaseInterface(usbInterface)
                     connection.close()
-                    mutableState.value = BlackPearlConnectionState.Error("Black Pearl EQ response endpoint was not found.")
+                    mutableState.value = BlackPearlConnectionState.Error(
+                        "Black Pearl EQ response endpoint was not found.",
+                    )
                     return@withLock
                 }
                 session = UsbSession(connection, usbInterface, endpointIn)
                 mutableState.value = BlackPearlConnectionState.Connected
+            }
+        }
+    }
+
+    private fun startPermissionFallback() {
+        scope.launch {
+            delay(PERMISSION_RESPONSE_TIMEOUT_MILLIS)
+            if (mutableState.value !is BlackPearlConnectionState.Connecting) return@launch
+            val device = findDevice()
+            when {
+                device == null -> mutableState.value = BlackPearlConnectionState.Error(
+                    "TRN Black Pearl disconnected while Android was requesting USB permission.",
+                )
+                usbManager.hasPermission(device) -> openAsync(device)
+                else -> mutableState.value = BlackPearlConnectionState.Error(
+                    "USB permission request timed out. Disconnect and reconnect the Black Pearl, then try again.",
+                )
             }
         }
     }
@@ -215,7 +251,7 @@ class AndroidBlackPearlUsbTransport(
             appContext,
             receiver,
             filter,
-            ContextCompat.RECEIVER_NOT_EXPORTED,
+            ContextCompat.RECEIVER_EXPORTED,
         )
         receiverRegistered = true
     }
@@ -269,5 +305,6 @@ class AndroidBlackPearlUsbTransport(
         private const val PEQ_WRITE_SETTLE_MILLIS = 100L
         private const val FLASH_SETTLE_MILLIS = 300L
         private const val COMMAND_SETTLE_MILLIS = 20L
+        private const val PERMISSION_RESPONSE_TIMEOUT_MILLIS = 10_000L
     }
 }
