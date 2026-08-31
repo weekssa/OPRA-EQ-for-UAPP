@@ -34,7 +34,7 @@ sealed interface BlackPearlConnectionState {
     data class Error(val message: String) : BlackPearlConnectionState
 }
 
-/** Android USB-host transport for the EQ-only Black Pearl protocol. */
+/** Android USB-host transport for the narrowly scoped Black Pearl Flash protocol. */
 class AndroidBlackPearlUsbTransport(
     context: Context,
 ) : BlackPearlTransport, Closeable {
@@ -57,9 +57,6 @@ class AndroidBlackPearlUsbTransport(
             if (!device.isBlackPearl()) return
             when (intent.action) {
                 permissionAction -> {
-                    // The receiver is exported because USB attach/detach and permission results are
-                    // system broadcasts. Never trust the broadcast's boolean alone: re-check the
-                    // actual UsbManager permission before opening the device.
                     if (usbManager.hasPermission(device)) {
                         openAsync(device)
                     } else {
@@ -118,12 +115,23 @@ class AndroidBlackPearlUsbTransport(
         }
     }
 
-    override suspend fun readActiveSlot(): Byte? = usbMutex.withLock {
+    override suspend fun readActiveSlot(): Byte? = readParsedResponse(
+        request = BlackPearlProtocol.readBandReport(0),
+        parser = BlackPearlProtocol::activeSlotFromBandResponse,
+    )
+
+    override suspend fun readGlobalGainRaw(): Int? = readParsedResponse(
+        request = BlackPearlProtocol.readGlobalGainReport(),
+        parser = BlackPearlProtocol::globalGainRawFromResponse,
+    )
+
+    private suspend fun <T> readParsedResponse(
+        request: ByteArray,
+        parser: (ByteArray) -> T?,
+    ): T? = usbMutex.withLock {
         val current = session ?: return@withLock null
         val endpoint = current.endpointIn ?: return@withLock null
-        val request = BlackPearlProtocol.readBandReport(0)
 
-        // Drain stale interrupt responses before issuing the targeted read.
         val drain = ByteArray(BlackPearlProtocol.REPORT_SIZE)
         repeat(8) {
             if (current.connection.bulkTransfer(endpoint, drain, drain.size, 2) <= 0) return@repeat
@@ -135,7 +143,7 @@ class AndroidBlackPearlUsbTransport(
         while (System.currentTimeMillis() < deadline) {
             val read = current.connection.bulkTransfer(endpoint, response, response.size, READ_POLL_MILLIS)
             if (read > 0) {
-                BlackPearlProtocol.activeSlotFromBandResponse(response)?.let { return@withLock it }
+                parser(response)?.let { return@withLock it }
             }
             delay(READ_RETRY_DELAY_MILLIS)
         }
