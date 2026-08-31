@@ -104,7 +104,7 @@ class PresetExportPlanTest {
     }
 
     @Test
-    fun blackPearlShelfConversionIsMarkedOptimizedInExportPlan() {
+    fun blackPearlNativeShelfIsExactWhenPreampIsZero() {
         val source = profile("p1", selected = true, presetName = "Shelf").copy(
             lastKnownProfile = OpraEqProfile(
                 id = "p1",
@@ -113,7 +113,7 @@ class PresetExportPlanTest {
                 details = "Shelf target",
                 link = null,
                 profileType = "parametric_eq",
-                preampGainDb = -3.0,
+                preampGainDb = 0.0,
                 bands = listOf(OpraBand("low_shelf", 105.0, 4.0, 0.71, null)),
             ),
         )
@@ -122,8 +122,32 @@ class PresetExportPlanTest {
             ExportDevice.BLACK_PEARL,
         )
 
-        assertEquals(DevicePresetFidelity.OPTIMIZED, plan.candidates.single().fidelity)
-        assertTrue(plan.candidates.single().transformation.contains("EQ Library optimized conversion"))
+        assertEquals(1, plan.candidates.size)
+        assertEquals(DevicePresetFidelity.EXACT, plan.candidates.single().fidelity)
+        assertTrue(plan.candidates.single().transformation.contains("preserved"))
+    }
+
+    @Test
+    fun blackPearlNonzeroPreampIsNotExportedRatherThanChangingGlobalVolume() {
+        val source = profile("p1", selected = true, presetName = "Needs preamp").copy(
+            lastKnownProfile = OpraEqProfile(
+                id = "p1",
+                productId = "product",
+                author = "Creator",
+                details = "Needs preamp",
+                link = null,
+                profileType = "parametric_eq",
+                preampGainDb = -3.0,
+                bands = listOf(OpraBand("peak_dip", 1_000.0, -2.0, 1.0, null)),
+            ),
+        )
+
+        val plan = buildEqLibraryExportPlan(
+            listOf(headphone(profiles = listOf(source))),
+            ExportDevice.BLACK_PEARL,
+        )
+
+        assertTrue(plan.candidates.isEmpty())
     }
 
     @Test
