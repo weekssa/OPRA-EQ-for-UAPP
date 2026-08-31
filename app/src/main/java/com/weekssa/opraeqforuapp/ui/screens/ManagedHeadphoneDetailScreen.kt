@@ -35,11 +35,11 @@ import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
-import com.weekssa.opraeqforuapp.domain.catalog.assessCompatibility
+import com.weekssa.opraeqforuapp.domain.export.DeviceExportability
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
+import com.weekssa.opraeqforuapp.domain.export.assessDeviceExportability
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedProfileRecord
-import com.weekssa.opraeqforuapp.domain.model.ProfileCompatibility
 import com.weekssa.opraeqforuapp.domain.settings.ExportTargetPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityPreferences
 import kotlinx.coroutines.launch
@@ -76,7 +76,8 @@ fun ManagedHeadphoneDetailScreen(
     val displayedProfiles = remember(headphone.profiles) {
         headphone.profiles.filter { it.selected || it.noLongerAvailable }
     }
-    val isBlackPearlOutput = exportTargets.activeTarget == ExportDevice.BLACK_PEARL
+    val activeOutput = exportTargets.activeTarget
+    val isBlackPearlOutput = activeOutput == ExportDevice.BLACK_PEARL
     val flashEnabled = isBlackPearlOutput &&
         directBlackPearlFlashEnabled &&
         blackPearlConnectionState is BlackPearlConnectionState.Connected
@@ -216,9 +217,9 @@ fun ManagedHeadphoneDetailScreen(
         )
         Text(
             text = if (headphone.autoIncludeNewProfiles) {
-                "Automatically include new compatible verified EQ profiles: On"
+                "Automatically include new verified EQ profiles: On"
             } else {
-                "Automatically include new compatible verified EQ profiles: Off"
+                "Automatically include new verified EQ profiles: Off"
             },
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
             style = MaterialTheme.typography.bodyMedium,
@@ -253,10 +254,14 @@ fun ManagedHeadphoneDetailScreen(
 
         LazyColumn(modifier = Modifier.weight(1f)) {
             items(displayedProfiles, key = ManagedProfileRecord::profileId) { profile ->
+                val outputStatus = assessDeviceExportability(profile.lastKnownProfile, activeOutput)
                 ManagedProfileRow(
                     profile = profile,
+                    activeOutput = activeOutput,
+                    outputStatus = outputStatus,
                     showFlash = isBlackPearlOutput,
-                    flashEnabled = flashEnabled && profile.selected,
+                    flashEnabled = flashEnabled && profile.selected &&
+                        outputStatus != DeviceExportability.NOT_REPRESENTABLE,
                     onFlash = { pendingProfileFlash = profile },
                     onOpenSource = profile.lastKnownProfile.link?.let { sourceUrl -> { onOpenUrl(sourceUrl) } },
                     onRemove = {
@@ -283,6 +288,8 @@ fun ManagedHeadphoneDetailScreen(
 @Composable
 private fun ManagedProfileRow(
     profile: ManagedProfileRecord,
+    activeOutput: ExportDevice,
+    outputStatus: DeviceExportability,
     showFlash: Boolean,
     flashEnabled: Boolean,
     onFlash: () -> Unit,
@@ -290,7 +297,6 @@ private fun ManagedProfileRow(
     onRemove: (() -> Unit)?,
 ) {
     val source = profile.lastKnownProfile
-    val compatibility = source.assessCompatibility().category
     ListItem(
         headlineContent = {
             Text(source.author?.takeIf { it.isNotBlank() } ?: "Creator information missing")
@@ -299,7 +305,7 @@ private fun ManagedProfileRow(
             Column {
                 if (!source.isVerified) {
                     Text(
-                        text = "Unverified · not independently verified",
+                        text = "Community submission — not independently verified. Review the source before use.",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.tertiary,
                     )
@@ -310,12 +316,19 @@ private fun ManagedProfileRow(
                 }
                 when {
                     profile.noLongerAvailable -> Text("No longer available in EQ Library")
-                    compatibility == ProfileCompatibility.NotCompatible -> Text("Not compatible with legacy UAPP conversion")
-                    compatibility == ProfileCompatibility.CompatibleWithLimitation -> Text("Legacy UAPP conversion has a limitation")
                     profile.selected -> Text("Selected")
                     profile.explicitlyExcluded -> Text("Not selected · excluded from automatic inclusion")
                     else -> Text("Not selected")
                 }
+                Text(
+                    text = "${outputShortName(activeOutput)}: ${outputStatusLabel(outputStatus)}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = when (outputStatus) {
+                        DeviceExportability.EXACT -> MaterialTheme.colorScheme.onSurfaceVariant
+                        DeviceExportability.OPTIMIZED -> MaterialTheme.colorScheme.tertiary
+                        DeviceExportability.NOT_REPRESENTABLE -> MaterialTheme.colorScheme.error
+                    },
+                )
             }
         },
         trailingContent = {
@@ -332,6 +345,22 @@ private fun ManagedProfileRow(
             }
         },
     )
+}
+
+private fun outputStatusLabel(status: DeviceExportability): String = when (status) {
+    DeviceExportability.EXACT -> "Exact"
+    DeviceExportability.OPTIMIZED -> "Optimized"
+    DeviceExportability.NOT_REPRESENTABLE -> "Not exportable"
+}
+
+private fun outputShortName(device: ExportDevice): String = when (device) {
+    ExportDevice.UAPP -> "UAPP / ToneBoosters"
+    ExportDevice.BLACK_PEARL -> "Black Pearl"
+    ExportDevice.UNIVERSAL_PARAMETRIC -> "Universal PEQ"
+    ExportDevice.POWERAMP -> "Poweramp"
+    ExportDevice.WAVELET -> "Wavelet"
+    ExportDevice.TOPPING_DX5_II -> "TOPPING DX5 II"
+    ExportDevice.TOPPING_DX1_II -> "TOPPING DX1 II"
 }
 
 @Composable
