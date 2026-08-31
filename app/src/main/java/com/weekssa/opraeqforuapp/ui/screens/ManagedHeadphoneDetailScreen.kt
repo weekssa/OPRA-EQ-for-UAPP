@@ -35,6 +35,7 @@ import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.data.export.ExportCurrentness
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
+import com.weekssa.opraeqforuapp.domain.blackpearl.isBlackPearlDirectFlashable
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.export.DeviceExportability
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
@@ -258,6 +259,7 @@ fun ManagedHeadphoneDetailScreen(
         LazyColumn(modifier = Modifier.weight(1f)) {
             items(displayedProfiles, key = ManagedProfileRecord::profileId) { profile ->
                 val outputStatus = assessDeviceExportability(profile.lastKnownProfile, activeOutput)
+                val directFlashable = profile.lastKnownProfile.isBlackPearlDirectFlashable()
                 ManagedProfileRow(
                     profile = profile,
                     activeOutput = activeOutput,
@@ -266,8 +268,7 @@ fun ManagedHeadphoneDetailScreen(
                         exportCurrentness.needsExport(headphone.productId, profile.profileId),
                     onExport = { onExportProfile(profile.profileId) },
                     showFlash = isBlackPearlOutput,
-                    flashEnabled = flashEnabled && profile.selected &&
-                        outputStatus != DeviceExportability.NOT_REPRESENTABLE,
+                    flashEnabled = flashEnabled && profile.selected && directFlashable,
                     onFlash = { pendingProfileFlash = profile },
                     onOpenSource = profile.lastKnownProfile.link?.let { sourceUrl -> { onOpenUrl(sourceUrl) } },
                     onRemove = {
