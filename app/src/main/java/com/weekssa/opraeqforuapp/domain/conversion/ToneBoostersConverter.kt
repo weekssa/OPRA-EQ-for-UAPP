@@ -2,7 +2,7 @@ package com.weekssa.opraeqforuapp.domain.conversion
 
 import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
-import com.weekssa.opraeqforuapp.domain.catalog.assessCompatibility
+import com.weekssa.opraeqforuapp.domain.catalog.assessUappCompatibility
 import com.weekssa.opraeqforuapp.domain.model.ProfileCompatibility
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -44,10 +44,10 @@ object ToneBoostersConverter {
     )
 
     fun convert(profile: OpraEqProfile, presetName: String): ToneBoostersConversionResult {
-        val compatibility = profile.assessCompatibility()
+        val compatibility = profile.assessUappCompatibility()
         if (compatibility.category == ProfileCompatibility.NotCompatible) {
             throw ToneBoostersConversionException(
-                compatibility.reason ?: "This profile is not compatible with the established conversion.",
+                compatibility.reason ?: "This profile is not compatible with the established UAPP/ToneBoosters conversion.",
             )
         }
         val gainDb = profile.effectivePlaybackPreampDb()
