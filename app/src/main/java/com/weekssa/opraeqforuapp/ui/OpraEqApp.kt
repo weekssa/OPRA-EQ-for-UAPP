@@ -17,19 +17,16 @@ import androidx.compose.material.icons.outlined.Headphones
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Star
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -41,7 +38,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.BuildConfig
 import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshFailureReason
 import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshResult
@@ -75,28 +71,12 @@ private enum class TopLevelDestination(val label: String) {
     MyEqs("My EQs"),
 }
 
-private sealed interface ExportScope {
-    data object AllManaged : ExportScope
-    data class Product(val productId: String) : ExportScope
-    data class SavedEq(val entryId: String) : ExportScope
-}
-
 private sealed interface ExportRequest {
     val device: ExportDevice
 
-    data class AllManaged(
-        override val device: ExportDevice,
-    ) : ExportRequest
-
-    data class Product(
-        val productId: String,
-        override val device: ExportDevice,
-    ) : ExportRequest
-
-    data class SavedEq(
-        val entryId: String,
-        override val device: ExportDevice,
-    ) : ExportRequest
+    data class AllManaged(override val device: ExportDevice) : ExportRequest
+    data class Product(val productId: String, override val device: ExportDevice) : ExportRequest
+    data class SavedEq(val entryId: String, override val device: ExportDevice) : ExportRequest
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -129,13 +109,12 @@ fun OpraEqApp(
     onThemeModeChange: (ThemeMode) -> Unit,
     onProfileVisibilityChange: (ProfileVisibilityCategory, Boolean) -> Unit,
     onExportTargetChange: (ExportDevice, Boolean) -> Unit,
-    onShowUnexportablePresetsChange: (Boolean) -> Unit,
+    onDirectBlackPearlFlashEnabledChange: (Boolean) -> Unit,
 ) {
     var selectedDestinationIndex by rememberSaveable { mutableIntStateOf(0) }
     var selectedManagedProductId by rememberSaveable { mutableStateOf<String?>(null) }
     var settingsOpen by rememberSaveable { mutableStateOf(false) }
     var pendingExportRequest by remember { mutableStateOf<ExportRequest?>(null) }
-    var pendingExportScope by remember { mutableStateOf<ExportScope?>(null) }
     var whatsNewVersion by remember { mutableStateOf<String?>(null) }
     var whatsNewNotes by remember { mutableStateOf("") }
     val destinations = remember { TopLevelDestination.entries }
@@ -148,7 +127,7 @@ fun OpraEqApp(
             .mapNotNull { it.sourceProfileId }
             .toSet()
     }
-    val selectedExportDevices = ExportDevice.entries.filter(appPreferences.exportTargets::isSelected)
+    val activeExportDevice = appPreferences.exportTargets.activeTarget
     val catalogBusy = catalogState is CatalogState.Loading ||
         (catalogState as? CatalogState.Ready)?.isRefreshing == true
     val selectedManagedHeadphone = selectedManagedProductId?.let { productId ->
@@ -222,9 +201,15 @@ fun OpraEqApp(
         }
     }
 
-    val requestExportAll: () -> Unit = { pendingExportScope = ExportScope.AllManaged }
-    val requestExportProduct: (String) -> Unit = { pendingExportScope = ExportScope.Product(it) }
-    val requestExportSavedEq: (String) -> Unit = { pendingExportScope = ExportScope.SavedEq(it) }
+    val requestExportAll: () -> Unit = {
+        runExportRequest(ExportRequest.AllManaged(activeExportDevice))
+    }
+    val requestExportProduct: (String) -> Unit = { productId ->
+        runExportRequest(ExportRequest.Product(productId, activeExportDevice))
+    }
+    val requestExportSavedEq: (String) -> Unit = { entryId ->
+        runExportRequest(ExportRequest.SavedEq(entryId, activeExportDevice))
+    }
 
     val requestUpdateCheck: () -> Unit = {
         scope.launch {
@@ -241,59 +226,6 @@ fun OpraEqApp(
         if (!catalogBusy) {
             scope.launch { snackbarHostState.showSnackbar(refreshMessage(onRefreshCatalog())) }
         }
-    }
-
-    pendingExportScope?.let { exportScope ->
-        AlertDialog(
-            onDismissRequest = { pendingExportScope = null },
-            title = { Text("Export to device") },
-            text = {
-                Column {
-                    if (selectedExportDevices.isEmpty()) {
-                        Text("No export targets are selected. Choose at least one target in Settings → Export targets.")
-                    } else {
-                        Text(
-                            text = "Choose one of your selected targets. Only that device format will be exported.",
-                            modifier = Modifier.padding(bottom = 8.dp),
-                        )
-                        selectedExportDevices.forEach { device ->
-                            TextButton(
-                                onClick = {
-                                    pendingExportScope = null
-                                    val request = when (exportScope) {
-                                        ExportScope.AllManaged -> ExportRequest.AllManaged(device)
-                                        is ExportScope.Product -> ExportRequest.Product(exportScope.productId, device)
-                                        is ExportScope.SavedEq -> ExportRequest.SavedEq(exportScope.entryId, device)
-                                    }
-                                    runExportRequest(request)
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                            ) {
-                                Column(modifier = Modifier.fillMaxWidth()) {
-                                    Text(device.folderName, style = MaterialTheme.typography.titleMedium)
-                                    Text(
-                                        text = exportDeviceDescription(device),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                    device.validationStatus?.let { status ->
-                                        Text(
-                                            text = "$status · hardware validation pending",
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = MaterialTheme.colorScheme.tertiary,
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {},
-            dismissButton = {
-                TextButton(onClick = { pendingExportScope = null }) { Text("Cancel") }
-            },
-        )
     }
 
     BackHandler(enabled = settingsOpen) { settingsOpen = false }
@@ -316,7 +248,7 @@ fun OpraEqApp(
                         if (selectedDestination != TopLevelDestination.MyEqs) {
                             IconButton(onClick = requestCatalogRefresh, enabled = !catalogBusy) {
                                 if (catalogBusy) {
-                                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                                    CircularProgressIndicator(modifier = Modifier.size(androidx.compose.ui.unit.Dp(24f)), strokeWidth = androidx.compose.ui.unit.Dp(2f))
                                 } else {
                                     Icon(Icons.Outlined.Refresh, contentDescription = "Refresh EQ Library catalog")
                                 }
@@ -391,9 +323,8 @@ fun OpraEqApp(
                         onGetUpdate = { appPreferences.updates.releaseUrl?.let(onOpenUrl) },
                         onOpenUrl = onOpenUrl,
                         onThemeModeChange = onThemeModeChange,
-                        onProfileVisibilityChange = onProfileVisibilityChange,
                         onExportTargetChange = onExportTargetChange,
-                        onShowUnexportablePresetsChange = onShowUnexportablePresetsChange,
+                        onDirectBlackPearlFlashEnabledChange = onDirectBlackPearlFlashEnabledChange,
                         modifier = Modifier.fillMaxSize(),
                     )
                 } else {
@@ -477,13 +408,6 @@ fun OpraEqApp(
             },
         )
     }
-}
-
-private fun exportDeviceDescription(device: ExportDevice): String = when (device) {
-    ExportDevice.UAPP -> "UAPP / ToneBoosters XML"
-    ExportDevice.BLACK_PEARL -> "10-band Black Pearl-compatible PK text"
-    ExportDevice.TOPPING_DX5_II -> "TOPPING Tune text for DX5 II"
-    ExportDevice.TOPPING_DX1_II -> "TOPPING Tune text for DX1 II"
 }
 
 private fun exportMessage(summary: PresetExportSummary): String {
