@@ -16,6 +16,7 @@ import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -24,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -31,7 +33,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqCategory
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
@@ -40,12 +44,29 @@ import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import kotlinx.coroutines.launch
 
+private sealed interface PendingBlackPearlFlash {
+    val displayName: String
+
+    data class SavedEq(
+        val entryId: String,
+        override val displayName: String,
+    ) : PendingBlackPearlFlash
+
+    data class GeneralEq(
+        val presetId: String,
+        override val displayName: String,
+    ) : PendingBlackPearlFlash
+}
+
 @Composable
 fun MyEqsHomeScreen(
     managedHeadphones: List<ManagedHeadphoneRecord>,
     savedEqs: List<SavedEqRecord>,
     savedGeneralEqs: List<SavedGeneralEqRecord>,
     activeOutput: ExportDevice,
+    directBlackPearlFlashEnabled: Boolean,
+    blackPearlConnectionState: BlackPearlConnectionState,
+    onConnectBlackPearl: () -> Unit,
     onExportAll: () -> Unit,
     onOpenHeadphone: (String) -> Unit,
     onImportPersonal: suspend (
@@ -57,16 +78,22 @@ fun MyEqsHomeScreen(
     ) -> String?,
     onDeleteSavedEq: suspend (String) -> Unit,
     onExportSavedEq: (String) -> Unit,
+    onFlashSavedEq: suspend (String) -> String,
     onRemoveGeneralEq: suspend (String) -> Unit,
     onExportGeneralEq: (String) -> Unit,
+    onFlashGeneralEq: suspend (String) -> String,
     onMessage: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
     var importOpen by remember { mutableStateOf(false) }
+    var pendingFlash by remember { mutableStateOf<PendingBlackPearlFlash?>(null) }
     val selectedHeadphoneCount = managedHeadphones.sumOf(ManagedHeadphoneRecord::selectedProfileCount)
-    val totalExportableItems = selectedHeadphoneCount + savedGeneralEqs.size
+    val totalExportableItems = selectedHeadphoneCount + savedEqs.size + savedGeneralEqs.size
     val headphoneSavedEqs = remember(savedEqs) { savedEqs.toList() }
+    val blackPearlConnected = blackPearlConnectionState is BlackPearlConnectionState.Connected
+    val flashActionsEnabled = activeOutput == ExportDevice.BLACK_PEARL &&
+        directBlackPearlFlashEnabled && blackPearlConnected
 
     if (importOpen) {
         PersonalEqDialog(
@@ -85,9 +112,46 @@ fun MyEqsHomeScreen(
         )
     }
 
+    pendingFlash?.let { pending ->
+        AlertDialog(
+            onDismissRequest = { pendingFlash = null },
+            title = { Text("Flash to Black Pearl?") },
+            text = {
+                Text(
+                    "Flash ${pending.displayName} to the Black Pearl's current EQ slot? " +
+                        "This overwrites that EQ slot. Other DAC settings, including global volume, are not changed.",
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        pendingFlash = null
+                        scope.launch {
+                            val message = when (pending) {
+                                is PendingBlackPearlFlash.SavedEq -> onFlashSavedEq(pending.entryId)
+                                is PendingBlackPearlFlash.GeneralEq -> onFlashGeneralEq(pending.presetId)
+                            }
+                            onMessage(message)
+                        }
+                    },
+                ) { Text("Flash") }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingFlash = null }) { Text("Cancel") }
+            },
+        )
+    }
+
     LazyColumn(modifier = modifier.fillMaxSize()) {
         item(key = "my-eqs-actions") {
             Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                if (activeOutput == ExportDevice.BLACK_PEARL) {
+                    BlackPearlConnectionControl(
+                        enabled = directBlackPearlFlashEnabled,
+                        state = blackPearlConnectionState,
+                        onConnect = onConnectBlackPearl,
+                    )
+                }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
                         onClick = onExportAll,
@@ -169,6 +233,17 @@ fun MyEqsHomeScreen(
                                 IconButton(onClick = { onExportSavedEq(record.entryId) }) {
                                     Icon(Icons.Outlined.FileUpload, contentDescription = "Export ${record.displayName}")
                                 }
+                                if (activeOutput == ExportDevice.BLACK_PEARL) {
+                                    TextButton(
+                                        enabled = flashActionsEnabled,
+                                        onClick = {
+                                            pendingFlash = PendingBlackPearlFlash.SavedEq(
+                                                entryId = record.entryId,
+                                                displayName = record.displayName,
+                                            )
+                                        },
+                                    ) { Text("Flash") }
+                                }
                                 IconButton(
                                     onClick = {
                                         scope.launch {
@@ -209,6 +284,17 @@ fun MyEqsHomeScreen(
                             IconButton(onClick = { onExportGeneralEq(record.presetId) }) {
                                 Icon(Icons.Outlined.FileUpload, contentDescription = "Export ${record.displayName}")
                             }
+                            if (activeOutput == ExportDevice.BLACK_PEARL) {
+                                TextButton(
+                                    enabled = flashActionsEnabled,
+                                    onClick = {
+                                        pendingFlash = PendingBlackPearlFlash.GeneralEq(
+                                            presetId = record.presetId,
+                                            displayName = record.displayName,
+                                        )
+                                    },
+                                ) { Text("Flash") }
+                            }
                             IconButton(
                                 onClick = {
                                     scope.launch {
@@ -224,6 +310,56 @@ fun MyEqsHomeScreen(
                 )
                 HorizontalDivider()
             }
+        }
+    }
+}
+
+@Composable
+private fun BlackPearlConnectionControl(
+    enabled: Boolean,
+    state: BlackPearlConnectionState,
+    onConnect: () -> Unit,
+) {
+    Column(modifier = Modifier.padding(bottom = 12.dp)) {
+        if (!enabled) {
+            OutlinedButton(onClick = {}, enabled = false) { Text("Direct Flash disabled") }
+            Text(
+                text = "Enable direct Flash in Settings → Black Pearl before connecting to the DAC.",
+                modifier = Modifier.padding(top = 4.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            return@Column
+        }
+
+        val connected = state is BlackPearlConnectionState.Connected
+        val connecting = state is BlackPearlConnectionState.Connecting
+        val containerColor = if (connected) CONNECTED_GREEN else MaterialTheme.colorScheme.error
+        Button(
+            onClick = onConnect,
+            enabled = !connected && !connecting,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = containerColor,
+                contentColor = Color.White,
+                disabledContainerColor = if (connected) CONNECTED_GREEN else MaterialTheme.colorScheme.surfaceVariant,
+                disabledContentColor = if (connected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+            ),
+        ) {
+            Text(
+                when {
+                    connected -> "Connected"
+                    connecting -> "Connecting…"
+                    else -> "Connect to DAC"
+                },
+            )
+        }
+        if (state is BlackPearlConnectionState.Error) {
+            Text(
+                text = state.message,
+                modifier = Modifier.padding(top = 4.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
         }
     }
 }
@@ -339,3 +475,5 @@ private fun outputTitle(device: ExportDevice): String = when (device) {
     ExportDevice.TOPPING_DX5_II -> "TOPPING DX5 II"
     ExportDevice.TOPPING_DX1_II -> "TOPPING DX1 II"
 }
+
+private val CONNECTED_GREEN = Color(0xFF2E7D32)
