@@ -44,6 +44,7 @@ import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshFailureReason
 import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshResult
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
+import com.weekssa.opraeqforuapp.data.export.ExportCurrentness
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
 import com.weekssa.opraeqforuapp.data.export.PresetExportSummary
 import com.weekssa.opraeqforuapp.data.sync.CatalogSyncOutcome
@@ -110,6 +111,7 @@ fun EqLibraryApp(
     onDeleteSavedEq: suspend (String) -> Unit,
     onRemoveGeneralEq: suspend (String) -> Unit,
     onPersistExportTree: suspend (Uri) -> Boolean,
+    onEvaluateExportCurrentness: suspend (Uri?) -> ExportCurrentness,
     onExportSelected: suspend (Uri, ExportDevice) -> PresetExportSummary,
     onExportProduct: suspend (Uri, String, ExportDevice) -> PresetExportSummary,
     onExportSavedEq: suspend (Uri, String, ExportDevice) -> PresetExportSummary,
@@ -133,6 +135,7 @@ fun EqLibraryApp(
     val destinations = remember { EqLibraryDestination.entries }
     val selectedDestination = destinations[selectedDestinationIndex]
     val activeOutput = appPreferences.exportTargets.activeTarget
+    var exportCurrentness by remember(activeOutput) { mutableStateOf(ExportCurrentness()) }
     val enabledOutputs = remember(appPreferences.exportTargets) {
         ExportDevice.selectableOutputs.filter(appPreferences.exportTargets::isSelected)
     }
@@ -159,6 +162,16 @@ fun EqLibraryApp(
         }
     }
 
+    LaunchedEffect(
+        activeOutput,
+        appPreferences.exportTreeUri,
+        managedHeadphones,
+        savedEqs,
+        savedGeneralEqs,
+    ) {
+        exportCurrentness = onEvaluateExportCurrentness(appPreferences.exportTreeUri?.let(Uri::parse))
+    }
+
     val latestVersion = appPreferences.updates.latestVersion
     val updateAvailable = latestVersion != null &&
         SemVer.parse(latestVersion)?.let { latest ->
@@ -180,12 +193,21 @@ fun EqLibraryApp(
         whatsNewNotes = notes.orEmpty()
     }
 
-    suspend fun executeExport(uri: Uri, request: ActiveOutputExportRequest?): PresetExportSummary? = when (request) {
-        is ActiveOutputExportRequest.AllManaged -> onExportSelected(uri, request.device)
-        is ActiveOutputExportRequest.Product -> onExportProduct(uri, request.productId, request.device)
-        is ActiveOutputExportRequest.SavedEq -> onExportSavedEq(uri, request.entryId, request.device)
-        is ActiveOutputExportRequest.GeneralEq -> onExportGeneralEq(uri, request.presetId, request.device)
-        null -> null
+    suspend fun executeExport(
+        uri: Uri,
+        request: ActiveOutputExportRequest?,
+    ): PresetExportSummary? {
+        val summary = when (request) {
+            is ActiveOutputExportRequest.AllManaged -> onExportSelected(uri, request.device)
+            is ActiveOutputExportRequest.Product -> onExportProduct(uri, request.productId, request.device)
+            is ActiveOutputExportRequest.SavedEq -> onExportSavedEq(uri, request.entryId, request.device)
+            is ActiveOutputExportRequest.GeneralEq -> onExportGeneralEq(uri, request.presetId, request.device)
+            null -> null
+        }
+        if (summary != null) {
+            exportCurrentness = onEvaluateExportCurrentness(uri)
+        }
+        return summary
     }
 
     val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
@@ -371,6 +393,7 @@ fun EqLibraryApp(
                                 savedEqs = savedEqs,
                                 savedGeneralEqs = savedGeneralEqs,
                                 activeOutput = activeOutput,
+                                exportCurrentness = exportCurrentness,
                                 directBlackPearlFlashEnabled = appPreferences.directBlackPearlFlashEnabled,
                                 blackPearlConnectionState = blackPearlConnectionState,
                                 onConnectBlackPearl = onConnectBlackPearl,
