@@ -189,6 +189,44 @@ def _sort_revisions(revisions: list[dict[str, Any]]) -> None:
     )
 
 
+def _classification(profile: dict[str, Any]) -> tuple[str, str]:
+    """Return backward-compatible effective lineage classification."""
+    return (
+        str(profile.get("scope") or "headphone").strip(),
+        str(profile.get("purpose") or "correction_tuning").strip(),
+    )
+
+
+def _merge_profile_metadata(
+    existing_profile: dict[str, Any],
+    incoming_profile: dict[str, Any],
+    profile_id: str,
+) -> None:
+    """Merge mutable display metadata while keeping scope/purpose lineage immutable.
+
+    Old headphone catalogs predate explicit scope/purpose fields, so their effective
+    defaults are headphone/correction_tuning. A newer candidate may backfill those same
+    explicit values. A different effective classification for the same canonical profile
+    ID is rejected because Effect, Genre, Personal/community and Correction are separate
+    lineages even when their coefficients happen to match.
+    """
+    existing_classification = _classification(existing_profile)
+    incoming_classification = _classification(incoming_profile)
+    if incoming_classification != existing_classification:
+        raise ValueError(
+            "canonical profile classification cannot change for "
+            f"{profile_id}: {existing_classification[0]}/{existing_classification[1]} -> "
+            f"{incoming_classification[0]}/{incoming_classification[1]}"
+        )
+
+    for key in ("scope", "purpose"):
+        if key in incoming_profile:
+            existing_profile[key] = copy.deepcopy(incoming_profile[key])
+    for key in ("headphone", "creator", "target", "tuning_label"):
+        if key in incoming_profile:
+            existing_profile[key] = copy.deepcopy(incoming_profile[key])
+
+
 def merge_candidates(
     snapshot: dict[str, Any],
     candidates: Iterable[dict[str, Any]],
@@ -220,6 +258,7 @@ def merge_candidates(
             touched_profile_ids.add(profile_id)
             continue
 
+        _merge_profile_metadata(existing_profile, clean_candidate, profile_id)
         existing_revisions = existing_profile.setdefault("revisions", [])
         repaired_legacy_revisions = _remove_legacy_generated_preamp_revisions(
             existing_revisions,
@@ -229,9 +268,6 @@ def merge_candidates(
             (revision for revision in existing_revisions if revision.get("acoustic_fingerprint") == incoming_fingerprint),
             None,
         )
-        for key in ("headphone", "creator", "target", "tuning_label"):
-            if key in clean_candidate:
-                existing_profile[key] = clean_candidate[key]
         if matching is not None:
             for revision in existing_revisions:
                 revision["is_latest"] = revision is matching
