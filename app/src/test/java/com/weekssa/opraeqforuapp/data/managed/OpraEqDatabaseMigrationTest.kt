@@ -93,6 +93,29 @@ class OpraEqDatabaseMigrationTest {
         assertNoDestructiveSql(executedSql)
     }
 
+    @Test
+    fun migration5To6ScopesExistingSavedEqsToUappWithoutDeletingSourceRecords() {
+        val migration = OpraEqDatabase.MIGRATION_5_6
+        assertEquals(5, migration.startVersion)
+        assertEquals(6, migration.endVersion)
+
+        val executedSql = recordMigration(migration)
+
+        assertEquals(3, executedSql.size)
+        val outputTable = executedSql[0].replace(Regex("\\s+"), " ").trim()
+        val seed = executedSql[2].replace(Regex("\\s+"), " ").trim()
+        assertTrue(outputTable.contains("CREATE TABLE IF NOT EXISTS output_saved_eqs"))
+        assertTrue(outputTable.contains("PRIMARY KEY(outputId, entryId)"))
+        assertEquals(
+            "CREATE INDEX IF NOT EXISTS index_output_saved_eqs_entryId ON output_saved_eqs(entryId)",
+            executedSql[1],
+        )
+        assertTrue(seed.contains("INSERT OR IGNORE INTO output_saved_eqs(outputId, entryId, selectedAtMillis)"))
+        assertTrue(seed.contains("SELECT 'UAPP', entryId, updatedAtMillis"))
+        assertTrue(seed.contains("FROM saved_eqs"))
+        assertNoDestructiveSql(executedSql)
+    }
+
     private fun recordMigration(migration: androidx.room.migration.Migration): List<String> {
         val executedSql = mutableListOf<String>()
         val recordingDatabase = Proxy.newProxyInstance(
