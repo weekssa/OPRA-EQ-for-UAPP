@@ -79,6 +79,11 @@ private sealed interface ActiveOutputExportRequest {
 
     data class AllManaged(override val device: ExportDevice) : ActiveOutputExportRequest
     data class Product(val productId: String, override val device: ExportDevice) : ActiveOutputExportRequest
+    data class ManagedProfile(
+        val productId: String,
+        val profileId: String,
+        override val device: ExportDevice,
+    ) : ActiveOutputExportRequest
     data class SavedEq(val entryId: String, override val device: ExportDevice) : ActiveOutputExportRequest
     data class GeneralEq(val presetId: String, override val device: ExportDevice) : ActiveOutputExportRequest
 }
@@ -114,6 +119,7 @@ fun EqLibraryApp(
     onEvaluateExportCurrentness: suspend (Uri?) -> ExportCurrentness,
     onExportSelected: suspend (Uri, ExportDevice) -> PresetExportSummary,
     onExportProduct: suspend (Uri, String, ExportDevice) -> PresetExportSummary,
+    onExportManagedProfile: suspend (Uri, String, String, ExportDevice) -> PresetExportSummary,
     onExportSavedEq: suspend (Uri, String, ExportDevice) -> PresetExportSummary,
     onExportGeneralEq: suspend (Uri, String, ExportDevice) -> PresetExportSummary,
     onCheckForUpdates: suspend () -> AppUpdateCheckResult,
@@ -200,6 +206,12 @@ fun EqLibraryApp(
         val summary = when (request) {
             is ActiveOutputExportRequest.AllManaged -> onExportSelected(uri, request.device)
             is ActiveOutputExportRequest.Product -> onExportProduct(uri, request.productId, request.device)
+            is ActiveOutputExportRequest.ManagedProfile -> onExportManagedProfile(
+                uri,
+                request.productId,
+                request.profileId,
+                request.device,
+            )
             is ActiveOutputExportRequest.SavedEq -> onExportSavedEq(uri, request.entryId, request.device)
             is ActiveOutputExportRequest.GeneralEq -> onExportGeneralEq(uri, request.presetId, request.device)
             null -> null
@@ -244,6 +256,9 @@ fun EqLibraryApp(
     }
     val requestExportProduct: (String) -> Unit = { productId ->
         runExportRequest(ActiveOutputExportRequest.Product(productId, activeOutput))
+    }
+    val requestExportManagedProfile: (String, String) -> Unit = { productId, profileId ->
+        runExportRequest(ActiveOutputExportRequest.ManagedProfile(productId, profileId, activeOutput))
     }
     val requestExportSavedEq: (String) -> Unit = { entryId ->
         runExportRequest(ActiveOutputExportRequest.SavedEq(entryId, activeOutput))
@@ -366,6 +381,7 @@ fun EqLibraryApp(
                                 catalogState = catalogState,
                                 profileVisibility = appPreferences.profileVisibility,
                                 exportTargets = appPreferences.exportTargets,
+                                exportCurrentness = exportCurrentness,
                                 favoriteProfileIds = favoriteProfileIds,
                                 directBlackPearlFlashEnabled = appPreferences.directBlackPearlFlashEnabled,
                                 blackPearlConnectionState = blackPearlConnectionState,
@@ -382,6 +398,9 @@ fun EqLibraryApp(
                                 onDeleteSavedFilesForProduct = onDeleteSavedFilesForProduct,
                                 onMarkReviewed = onMarkReviewed,
                                 onExportProduct = requestExportProduct,
+                                onExportProfile = { profileId ->
+                                    requestExportManagedProfile(selectedManagedHeadphone.productId, profileId)
+                                },
                                 onMessage = ::showMessage,
                                 onOpenUrl = onOpenUrl,
                                 onBack = { selectedManagedProductId = null },
