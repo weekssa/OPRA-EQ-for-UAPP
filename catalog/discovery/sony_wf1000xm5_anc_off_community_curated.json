@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "headphone": {
+    "manufacturer": "Sony",
+    "model": "WF-1000XM5",
+    "variant": "ANC off"
+  },
+  "curation_scope": {
+    "strategy": "priority-headphone public community discovery",
+    "surfaces_reviewed": [
+      "HiFiGuides Forums"
+    ],
+    "note": "Source explicitly publishes separate PEQ settings without ANC and with ANC. This record preserves the without-ANC configuration as a distinct acoustic variant."
+  },
+  "records": [
+    {
+      "id": "hifiguides-iem-discussion-part2-p91-sovran-wf1000xm5-no-anc",
+      "surface": "hifiguides",
+      "community": "HiFiGuides Forums IEM Discussion Thread Part 2",
+      "creator": "sovran",
+      "source_url": "https://forum.hifiguides.com/t/iem-discussion-thread-part-2/40657?page=91",
+      "source_date": "2024-06-11",
+      "status": "source-review",
+      "provenance_tier": 3,
+      "lineage": "Community PEQ explicitly labeled for Sony WF-1000XM5 without ANC",
+      "tuning_label": "Without ANC",
+      "target_claim": null,
+      "preamp_db": -2.6,
+      "filters": [
+        {"type":"PK","frequency_hz":26,"gain_db":-8.1,"q":0.6},
+        {"type":"PK","frequency_hz":28,"gain_db":1.7,"q":2.0},
+        {"type":"PK","frequency_hz":80,"gain_db":-2.8,"q":0.4},
+        {"type":"PK","frequency_hz":140,"gain_db":0.8,"q":1.3},
+        {"type":"PK","frequency_hz":860,"gain_db":0.2,"q":1.7},
+        {"type":"PK","frequency_hz":1500,"gain_db":-1.3,"q":0.9},
+        {"type":"PK","frequency_hz":1900,"gain_db":-2.4,"q":1.8},
+        {"type":"PK","frequency_hz":3400,"gain_db":4.4,"q":1.3},
+        {"type":"PK","frequency_hz":4200,"gain_db":-1.9,"q":2.0},
+        {"type":"PK","frequency_hz":7600,"gain_db":0.8,"q":0.5},
+        {"type":"PK","frequency_hz":9100,"gain_db":-6.0,"q":1.2},
+        {"type":"PK","frequency_hz":15000,"gain_db":2.4,"q":0.6}
+      ],
+      "review_notes": "Twelve source filters are retained canonically. Hold only until HiFiGuides is added as a qualified source lane; device exporters decide how to represent >10 bands."
+    }
+  ]
+}
