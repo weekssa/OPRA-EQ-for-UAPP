@@ -64,13 +64,13 @@ class PresetExportPlanTest {
         val uapp = buildEqLibraryExportPlan(listOf(headphone), ExportDevice.UAPP)
         assertEquals(1, uapp.candidates.size)
         assertTrue(uapp.candidates.all { it.deviceName == ExportDevice.UAPP.folderName })
-        assertTrue(uapp.candidates.all { it.relativeDirectory.startsWith("UAPP/") })
+        assertTrue(uapp.candidates.all { it.relativeDirectory.startsWith("${ExportDevice.UAPP.folderName}/") })
         assertTrue(uapp.candidates.all { it.fidelity == DevicePresetFidelity.EXACT })
 
         val blackPearl = buildEqLibraryExportPlan(listOf(headphone), ExportDevice.BLACK_PEARL)
         assertEquals(1, blackPearl.candidates.size)
         assertTrue(blackPearl.candidates.all { it.deviceName == ExportDevice.BLACK_PEARL.folderName })
-        assertTrue(blackPearl.candidates.all { it.relativeDirectory.startsWith("TRN Black Pearl/") })
+        assertTrue(blackPearl.candidates.all { it.relativeDirectory.startsWith("${ExportDevice.BLACK_PEARL.folderName}/") })
         assertTrue(blackPearl.candidates.all { it.fidelity == DevicePresetFidelity.EXACT })
     }
 
@@ -143,7 +143,10 @@ class PresetExportPlanTest {
         assertEquals(1, plan.candidates.size)
         assertEquals(historicalId, plan.candidates.single().profileId)
         assertEquals(ExportDevice.UAPP.folderName, plan.candidates.single().deviceName)
-        assertTrue(plan.candidates.single().relativeDirectory.startsWith("UAPP/HIFIMAN/Edition XS"))
+        assertTrue(
+            plan.candidates.single().relativeDirectory
+                .startsWith("${ExportDevice.UAPP.folderName}/HIFIMAN/Edition XS"),
+        )
     }
 
     @Test
