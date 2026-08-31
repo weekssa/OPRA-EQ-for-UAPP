@@ -20,15 +20,16 @@ import com.weekssa.opraeqforuapp.data.library.CanonicalCatalogRepository
 import com.weekssa.opraeqforuapp.data.library.CanonicalFirstCatalogRepository
 import com.weekssa.opraeqforuapp.data.library.HttpCanonicalCatalogSource
 import com.weekssa.opraeqforuapp.data.library.SavedEqRepository
+import com.weekssa.opraeqforuapp.data.library.SavedGeneralEqRepository
 import com.weekssa.opraeqforuapp.data.managed.ManagedHeadphonesRepository
 import com.weekssa.opraeqforuapp.data.managed.OpraEqDatabase
 import com.weekssa.opraeqforuapp.data.preferences.AppPreferencesRepository
 import com.weekssa.opraeqforuapp.data.sync.BackgroundSyncScheduler
 import com.weekssa.opraeqforuapp.data.sync.CatalogSyncCoordinator
 import com.weekssa.opraeqforuapp.data.update.AppUpdateCoordinator
-import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
+import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
 import com.weekssa.opraeqforuapp.ui.EqLibraryApp
@@ -67,6 +68,10 @@ class MainActivity : ComponentActivity() {
 
     private val savedEqRepository by lazy {
         SavedEqRepository(database)
+    }
+
+    private val savedGeneralEqRepository by lazy {
+        SavedGeneralEqRepository(database)
     }
 
     private val exportRepository by lazy {
@@ -121,6 +126,10 @@ class MainActivity : ComponentActivity() {
             val savedEqs = savedEqRepository.observeAll().collectAsStateWithLifecycle(
                 initialValue = emptyList<SavedEqRecord>(),
             ).value
+            val savedGeneralEqs = savedGeneralEqRepository
+                .observeForOutput(activeOutputId)
+                .collectAsStateWithLifecycle(initialValue = emptyList<SavedGeneralEqRecord>())
+                .value
 
             OpraEqTheme(themeMode = appPreferences.themeMode) {
                 EqLibraryApp(
@@ -128,6 +137,7 @@ class MainActivity : ComponentActivity() {
                     catalogState = catalogState,
                     managedHeadphones = managedHeadphones,
                     savedEqs = savedEqs,
+                    savedGeneralEqs = savedGeneralEqs,
                     onRefreshCatalog = syncCoordinator::refresh,
                     onLoadManagedHeadphone = { productId ->
                         managedHeadphonesRepository.getHeadphone(productId, activeOutputId)
@@ -166,13 +176,24 @@ class MainActivity : ComponentActivity() {
                     onDeleteSavedFilesForProduct = cleanupRepository::deleteForProduct,
                     onMarkReviewed = managedHeadphonesRepository::markReviewed,
                     onToggleFavorite = savedEqRepository::toggleFavorite,
+                    onToggleGeneralPreset = { preset ->
+                        savedGeneralEqRepository.toggleForOutput(activeOutputId, preset)
+                    },
                     onImportPersonal = ::importPersonalEq,
                     onDeleteSavedEq = savedEqRepository::delete,
+                    onRemoveGeneralEq = { presetId ->
+                        savedGeneralEqRepository.removeFromOutput(activeOutputId, presetId)
+                    },
                     onPersistExportTree = ::persistExportTree,
                     onExportSelected = { uri, device ->
+                        val allRecords = buildList {
+                            addAll(managedHeadphones)
+                            addAll(savedEqs.map(savedEqRepository::toManagedHeadphone))
+                            addAll(savedGeneralEqs.map(savedGeneralEqRepository::toExportRecord))
+                        }
                         exportRepository.exportSelected(
                             treeUri = uri,
-                            headphones = managedHeadphones,
+                            headphones = allRecords,
                             device = device,
                         )
                     },
@@ -180,6 +201,9 @@ class MainActivity : ComponentActivity() {
                         exportManagedProduct(uri, productId, device, activeOutputId)
                     },
                     onExportSavedEq = ::exportSavedEq,
+                    onExportGeneralEq = { uri, presetId, device ->
+                        exportGeneralEq(uri, presetId, device, activeOutputId)
+                    },
                     onCheckForUpdates = updateCoordinator::checkNow,
                     onDismissUpdate = appPreferencesRepository::dismissUpdate,
                     onDismissPostUpdate = appPreferencesRepository::dismissPostUpdateCard,
@@ -267,6 +291,21 @@ class MainActivity : ComponentActivity() {
         return exportRepository.exportSelected(
             treeUri = treeUri,
             headphones = listOf(savedEqRepository.toManagedHeadphone(record)),
+            device = device,
+        )
+    }
+
+    private suspend fun exportGeneralEq(
+        treeUri: Uri,
+        presetId: String,
+        device: ExportDevice,
+        outputId: String,
+    ): PresetExportSummary {
+        val record = savedGeneralEqRepository.getForOutput(outputId, presetId)
+            ?: return PresetExportSummary(results = emptyList())
+        return exportRepository.exportSelected(
+            treeUri = treeUri,
+            headphones = listOf(savedGeneralEqRepository.toExportRecord(record)),
             device = device,
         )
     }
