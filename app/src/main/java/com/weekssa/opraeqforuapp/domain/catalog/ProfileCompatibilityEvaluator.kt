@@ -11,8 +11,9 @@ data class ProfileCompatibilityAssessment(
 /**
  * Device-independent gate for whether a catalog row is a usable parametric-EQ source record.
  *
- * This deliberately does not apply UAPP frequency/gain/Q/filter-count limits. A valid canonical
- * curve stays selectable and visible even when the active output later reports Not representable.
+ * This deliberately does not apply any output's frequency/gain/Q/filter-count/preamp limits.
+ * A valid canonical curve stays selectable and visible even when the active output later reports
+ * Not representable.
  */
 fun OpraEqProfile.isUsableParametricSource(): Boolean {
     if (profileType != "parametric_eq") return false
@@ -27,8 +28,23 @@ fun OpraEqProfile.isUsableParametricSource(): Boolean {
     }
 }
 
-/** UAPP/ToneBoosters-specific compatibility retained for that device's export details. */
-fun OpraEqProfile.assessCompatibility(): ProfileCompatibilityAssessment {
+/**
+ * Generic catalog/source usability. This is the assessment used by Browse/My EQ selection logic.
+ *
+ * Output-specific fidelity belongs in assessDeviceExportability; choosing an output must never hide
+ * or make an otherwise usable canonical curve unselectable.
+ */
+fun OpraEqProfile.assessCompatibility(): ProfileCompatibilityAssessment =
+    if (isUsableParametricSource()) {
+        ProfileCompatibilityAssessment(ProfileCompatibility.FullyCompatible)
+    } else {
+        notCompatible(
+            "This catalog row is not a usable parametric EQ source. EQ Library keeps the source visible but cannot select it until the source data is valid.",
+        )
+    }
+
+/** UAPP/ToneBoosters-specific compatibility retained only for that output's export details. */
+fun OpraEqProfile.assessUappCompatibility(): ProfileCompatibilityAssessment {
     if (profileType != "parametric_eq") {
         return notCompatible("This profile is not a parametric EQ profile.")
     }
