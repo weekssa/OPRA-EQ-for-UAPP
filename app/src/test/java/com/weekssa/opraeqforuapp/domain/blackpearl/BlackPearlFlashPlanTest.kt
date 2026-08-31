@@ -9,7 +9,7 @@ import org.junit.Test
 
 class BlackPearlFlashPlanTest {
     @Test
-    fun zeroPreampPeakAndShelvesProduceExactEqOnlyFlashPlan() {
+    fun zeroPreampPeakAndShelvesProduceExactEqPlan() {
         val profile = profile(
             preamp = 0.0,
             bands = listOf(
@@ -23,29 +23,39 @@ class BlackPearlFlashPlanTest {
         assertTrue(plan is BlackPearlFlashPlan.Ready)
         plan as BlackPearlFlashPlan.Ready
         assertEquals(DevicePresetFidelity.EXACT, plan.fidelity)
+        assertEquals(0.0, plan.requiredPlaybackGainDb, 0.0)
         assertEquals(0, plan.omittedBandCount)
         assertEquals(12, plan.reports.size)
         assertTrue(plan.reports.none { it[2].u8() == 0x03 })
     }
 
     @Test
-    fun nonzeroSourcePreampIsRejectedRatherThanChangingGlobalVolume() {
+    fun nonzeroSourcePreampIsCarriedIntoFlashPlan() {
         val plan = buildBlackPearlFlashPlan(profile(preamp = -6.0), activeSlot = 0x00)
 
-        assertTrue(plan is BlackPearlFlashPlan.NotRepresentable)
-        val reason = (plan as BlackPearlFlashPlan.NotRepresentable).reason
-        assertTrue(reason.contains("will not change global DAC volume"))
+        assertTrue(plan is BlackPearlFlashPlan.Ready)
+        assertEquals(-6.0, (plan as BlackPearlFlashPlan.Ready).requiredPlaybackGainDb, 0.0)
     }
 
     @Test
-    fun generatedSafetyHeadroomIsAlsoRejectedForDirectFlash() {
+    fun generatedSafetyHeadroomIsCarriedSeparatelyIntoFlashPlan() {
         val source = profile(preamp = null).copy(eqLibrarySafetyHeadroomDb = -4.5)
         val plan = buildBlackPearlFlashPlan(source, activeSlot = 0x00)
 
-        assertTrue(plan is BlackPearlFlashPlan.NotRepresentable)
-        assertTrue((plan as BlackPearlFlashPlan.NotRepresentable).reason.contains("preamp/headroom"))
+        assertTrue(plan is BlackPearlFlashPlan.Ready)
+        assertEquals(-4.5, (plan as BlackPearlFlashPlan.Ready).requiredPlaybackGainDb, 0.0)
         assertEquals(null, source.preampGainDb)
         assertEquals(-4.5, source.eqLibrarySafetyHeadroomDb!!, 0.0)
+    }
+
+    @Test
+    fun missingBothSourcePreampAndGeneratedHeadroomIsRejected() {
+        val source = profile(preamp = null).copy(eqLibrarySafetyHeadroomDb = null)
+
+        val plan = buildBlackPearlFlashPlan(source, activeSlot = 0x00)
+
+        assertTrue(plan is BlackPearlFlashPlan.NotRepresentable)
+        assertTrue((plan as BlackPearlFlashPlan.NotRepresentable).reason.contains("cannot determine"))
     }
 
     @Test
