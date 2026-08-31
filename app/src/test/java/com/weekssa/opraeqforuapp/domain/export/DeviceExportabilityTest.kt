@@ -24,9 +24,9 @@ class DeviceExportabilityTest {
     }
 
     @Test
-    fun `unsupported source can be not representable for every selected target`() {
+    fun `output unsupported source can remain saved but not representable for selected targets`() {
         val source = profile().copy(
-            bands = listOf(OpraBand("low_pass", 8_000.0, 0.0, 0.7, null)),
+            bands = listOf(OpraBand("low_pass", 8_000.0, 0.0, 0.7, 12.0)),
         )
 
         assertEquals(DeviceExportability.NOT_REPRESENTABLE, assessDeviceExportability(source, ExportDevice.UAPP))
@@ -35,13 +35,22 @@ class DeviceExportabilityTest {
     }
 
     @Test
-    fun `one usable selected target keeps a profile exportable`() {
+    fun `Black Pearl native shelf is exact when preamp is zero`() {
         val source = profile().copy(
+            preampGainDb = 0.0,
             bands = listOf(OpraBand("low_shelf", 105.0, 3.0, 0.71, null)),
         )
 
-        assertEquals(DeviceExportability.OPTIMIZED, assessDeviceExportability(source, ExportDevice.BLACK_PEARL))
+        assertEquals(DeviceExportability.EXACT, assessDeviceExportability(source, ExportDevice.BLACK_PEARL))
         assertTrue(source.isExportableToAny(setOf(ExportDevice.BLACK_PEARL)))
+    }
+
+    @Test
+    fun `Black Pearl nonzero preamp is not representable without touching global volume`() {
+        assertEquals(
+            DeviceExportability.NOT_REPRESENTABLE,
+            assessDeviceExportability(profile(), ExportDevice.BLACK_PEARL),
+        )
     }
 
     private fun profile() = OpraEqProfile(
