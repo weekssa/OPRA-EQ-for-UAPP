@@ -5,6 +5,8 @@ import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 data class ExportTargetPreferences(
     val selectedTargets: Set<ExportDevice> = setOf(ExportDevice.UAPP),
     val activeTarget: ExportDevice = ExportDevice.UAPP,
+    /** Legacy bridge only: v0.3 output context never hides canonical library curves. */
+    val showUnexportablePresets: Boolean = true,
 ) {
     fun isSelected(device: ExportDevice): Boolean = device in selectedTargets
 
@@ -13,12 +15,12 @@ data class ExportTargetPreferences(
         val next = if (enabled) selectedTargets + device else selectedTargets - device
         if (next.isEmpty()) return this
         val nextActive = if (activeTarget in next) activeTarget else ordered(next).first()
-        return copy(selectedTargets = next, activeTarget = nextActive)
+        return copy(selectedTargets = next, activeTarget = nextActive, showUnexportablePresets = true)
     }
 
     fun withActiveTarget(device: ExportDevice): ExportTargetPreferences =
         if (device.selectableInV03) {
-            copy(selectedTargets = selectedTargets + device, activeTarget = device)
+            copy(selectedTargets = selectedTargets + device, activeTarget = device, showUnexportablePresets = true)
         } else {
             this
         }
@@ -32,7 +34,7 @@ data class ExportTargetPreferences(
                 .filterTo(linkedSetOf())(ExportDevice::selectableInV03)
                 .ifEmpty { linkedSetOf(ExportDevice.UAPP) }
             val active = activeTarget?.takeIf { it in enabled } ?: ordered(enabled).first()
-            return ExportTargetPreferences(enabled, active)
+            return ExportTargetPreferences(enabled, active, showUnexportablePresets = true)
         }
 
         private fun ordered(devices: Set<ExportDevice>): List<ExportDevice> =
