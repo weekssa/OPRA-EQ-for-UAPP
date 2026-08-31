@@ -1,7 +1,7 @@
 package com.weekssa.opraeqforuapp.domain.export
 
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
-import com.weekssa.opraeqforuapp.domain.catalog.assessCompatibility
+import com.weekssa.opraeqforuapp.domain.catalog.assessUappCompatibility
 import com.weekssa.opraeqforuapp.domain.model.ProfileCompatibility
 
 enum class DeviceExportability {
@@ -15,7 +15,7 @@ fun assessDeviceExportability(
     device: ExportDevice,
 ): DeviceExportability = when (device) {
     ExportDevice.UAPP -> {
-        val compatibility = profile.assessCompatibility().category
+        val compatibility = profile.assessUappCompatibility().category
         if (compatibility == ProfileCompatibility.NotCompatible) {
             DeviceExportability.NOT_REPRESENTABLE
         } else {
