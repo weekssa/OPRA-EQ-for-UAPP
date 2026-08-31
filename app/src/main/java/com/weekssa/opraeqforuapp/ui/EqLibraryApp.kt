@@ -40,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.BuildConfig
+import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshFailureReason
 import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshResult
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
@@ -89,6 +90,11 @@ fun EqLibraryApp(
     managedHeadphones: List<ManagedHeadphoneRecord>,
     savedEqs: List<SavedEqRecord>,
     savedGeneralEqs: List<SavedGeneralEqRecord>,
+    blackPearlConnectionState: BlackPearlConnectionState,
+    onConnectBlackPearl: () -> Unit,
+    onFlashManagedProfile: suspend (String, String) -> String,
+    onFlashSavedEq: suspend (String) -> String,
+    onFlashGeneralEq: suspend (String) -> String,
     onRefreshCatalog: suspend () -> CatalogSyncOutcome,
     onLoadManagedHeadphone: suspend (String) -> ManagedHeadphoneRecord?,
     onSaveSelection: suspend (String, Set<String>, Boolean) -> Unit,
@@ -339,6 +345,11 @@ fun EqLibraryApp(
                                 profileVisibility = appPreferences.profileVisibility,
                                 exportTargets = appPreferences.exportTargets,
                                 favoriteProfileIds = favoriteProfileIds,
+                                directBlackPearlFlashEnabled = appPreferences.directBlackPearlFlashEnabled,
+                                blackPearlConnectionState = blackPearlConnectionState,
+                                onFlashManagedProfile = { profileId ->
+                                    onFlashManagedProfile(selectedManagedHeadphone.productId, profileId)
+                                },
                                 onToggleFavorite = onToggleFavorite,
                                 onLoadManagedHeadphone = onLoadManagedHeadphone,
                                 onSaveSelection = onSaveSelection,
@@ -360,13 +371,18 @@ fun EqLibraryApp(
                                 savedEqs = savedEqs,
                                 savedGeneralEqs = savedGeneralEqs,
                                 activeOutput = activeOutput,
+                                directBlackPearlFlashEnabled = appPreferences.directBlackPearlFlashEnabled,
+                                blackPearlConnectionState = blackPearlConnectionState,
+                                onConnectBlackPearl = onConnectBlackPearl,
                                 onExportAll = requestExportAll,
                                 onOpenHeadphone = { selectedManagedProductId = it },
                                 onImportPersonal = onImportPersonal,
                                 onDeleteSavedEq = onDeleteSavedEq,
                                 onExportSavedEq = requestExportSavedEq,
+                                onFlashSavedEq = onFlashSavedEq,
                                 onRemoveGeneralEq = onRemoveGeneralEq,
                                 onExportGeneralEq = requestExportGeneralEq,
+                                onFlashGeneralEq = onFlashGeneralEq,
                                 onMessage = ::showMessage,
                                 modifier = Modifier.fillMaxSize(),
                             )
