@@ -18,58 +18,70 @@ import com.weekssa.opraeqforuapp.domain.settings.ThemeMode
 import com.weekssa.opraeqforuapp.domain.settings.UpdatePreferences
 import java.io.IOException
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 
 private val Context.appPreferencesDataStore by preferencesDataStore(name = "app_preferences")
 
 class AppPreferencesRepository(context: Context) {
     private val appContext = context.applicationContext
+    /**
+     * Session overlay for the global output context.
+     *
+     * DataStore remains the durable source of truth, but a selector tap must affect every composed
+     * screen immediately instead of waiting for the asynchronous disk-backed flow to round-trip.
+     */
+    private val activeTargetOverride = MutableStateFlow<ExportDevice?>(null)
 
-    val preferences: Flow<AppPreferences> = appContext.appPreferencesDataStore.data
-        .catch { exception ->
+    val preferences: Flow<AppPreferences> = combine(
+        appContext.appPreferencesDataStore.data.catch { exception ->
             if (exception is IOException) {
                 emit(emptyPreferences())
             } else {
                 throw exception
             }
-        }
-        .map { preferences ->
-            val storedTargets = preferences[Keys.SelectedExportTargets]
-            val selectedTargets = if (storedTargets == null) {
-                setOf(ExportDevice.UAPP)
-            } else {
-                storedTargets.mapNotNullTo(mutableSetOf()) { storedName ->
-                    ExportDevice.entries.firstOrNull { it.name == storedName }
-                }
+        },
+        activeTargetOverride,
+    ) { preferences, sessionActiveTarget ->
+        val storedTargets = preferences[Keys.SelectedExportTargets]
+        val selectedTargets = if (storedTargets == null) {
+            setOf(ExportDevice.UAPP)
+        } else {
+            storedTargets.mapNotNullTo(mutableSetOf()) { storedName ->
+                ExportDevice.entries.firstOrNull { it.name == storedName }
             }
-            val storedActive = preferences[Keys.ActiveExportTarget]
-                ?.let { storedName -> ExportDevice.entries.firstOrNull { it.name == storedName } }
-            val outputPreferences = ExportTargetPreferences.normalize(selectedTargets, storedActive)
-
-            AppPreferences(
-                themeMode = ThemeMode.fromStorageValue(preferences[Keys.ThemeMode]),
-                profileVisibility = ProfileVisibilityPreferences(
-                    showFullyCompatible = preferences[Keys.ShowFullyCompatible] ?: true,
-                    showCompatibleWithLimitation = preferences[Keys.ShowCompatibleWithLimitation] ?: true,
-                    showNotCompatible = preferences[Keys.ShowNotCompatible] ?: true,
-                ),
-                exportTargets = outputPreferences,
-                directBlackPearlFlashEnabled = preferences[Keys.DirectBlackPearlFlashEnabled] ?: false,
-                exportTreeUri = preferences[Keys.ExportTreeUri],
-                exportTreeLabel = preferences[Keys.ExportTreeLabel],
-                updates = UpdatePreferences(
-                    latestVersion = preferences[Keys.LatestReleaseVersion],
-                    releaseUrl = preferences[Keys.LatestReleaseUrl],
-                    releaseNotes = preferences[Keys.LatestReleaseNotes],
-                    lastCheckAttemptMillis = preferences[Keys.LastUpdateCheckAttemptMillis],
-                    dismissedVersion = preferences[Keys.DismissedUpdateVersion],
-                    lastSeenInstalledVersion = preferences[Keys.LastSeenInstalledVersion],
-                    postUpdateVersionToShow = preferences[Keys.PostUpdateVersionToShow],
-                ),
-            )
         }
+        val storedActive = preferences[Keys.ActiveExportTarget]
+            ?.let { storedName -> ExportDevice.entries.firstOrNull { it.name == storedName } }
+        val outputPreferences = ExportTargetPreferences.normalize(
+            selectedTargets,
+            sessionActiveTarget ?: storedActive,
+        )
+
+        AppPreferences(
+            themeMode = ThemeMode.fromStorageValue(preferences[Keys.ThemeMode]),
+            profileVisibility = ProfileVisibilityPreferences(
+                showFullyCompatible = preferences[Keys.ShowFullyCompatible] ?: true,
+                showCompatibleWithLimitation = preferences[Keys.ShowCompatibleWithLimitation] ?: true,
+                showNotCompatible = preferences[Keys.ShowNotCompatible] ?: true,
+            ),
+            exportTargets = outputPreferences,
+            directBlackPearlFlashEnabled = preferences[Keys.DirectBlackPearlFlashEnabled] ?: false,
+            exportTreeUri = preferences[Keys.ExportTreeUri],
+            exportTreeLabel = preferences[Keys.ExportTreeLabel],
+            updates = UpdatePreferences(
+                latestVersion = preferences[Keys.LatestReleaseVersion],
+                releaseUrl = preferences[Keys.LatestReleaseUrl],
+                releaseNotes = preferences[Keys.LatestReleaseNotes],
+                lastCheckAttemptMillis = preferences[Keys.LastUpdateCheckAttemptMillis],
+                dismissedVersion = preferences[Keys.DismissedUpdateVersion],
+                lastSeenInstalledVersion = preferences[Keys.LastSeenInstalledVersion],
+                postUpdateVersionToShow = preferences[Keys.PostUpdateVersionToShow],
+            ),
+        )
+    }
 
     suspend fun snapshot(): AppPreferences = preferences.first()
 
@@ -91,16 +103,21 @@ class AppPreferencesRepository(context: Context) {
 
     suspend fun setExportTargetEnabled(device: ExportDevice, enabled: Boolean) {
         if (!device.selectableInV03) return
+        var nextActive: ExportDevice? = null
         appContext.appPreferencesDataStore.edit { preferences ->
             val current = outputPreferences(preferences[Keys.SelectedExportTargets], preferences[Keys.ActiveExportTarget])
             val next = current.withTarget(device, enabled)
             preferences[Keys.SelectedExportTargets] = next.selectedTargets.mapTo(mutableSetOf()) { it.name }
             preferences[Keys.ActiveExportTarget] = next.activeTarget.name
+            nextActive = next.activeTarget
         }
+        nextActive?.let { activeTargetOverride.value = it }
     }
 
     suspend fun setActiveExportTarget(device: ExportDevice) {
         if (!device.selectableInV03) return
+        // Publish first so My EQs, EQ Library, and every callback switch operating context together.
+        activeTargetOverride.value = device
         appContext.appPreferencesDataStore.edit { preferences ->
             val current = outputPreferences(preferences[Keys.SelectedExportTargets], preferences[Keys.ActiveExportTarget])
             val next = current.withActiveTarget(device)
