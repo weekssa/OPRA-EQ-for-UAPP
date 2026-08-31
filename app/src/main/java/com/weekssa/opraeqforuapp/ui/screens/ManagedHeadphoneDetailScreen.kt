@@ -126,13 +126,16 @@ fun ManagedHeadphoneDetailScreen(
         val displayName = source.details?.takeIf(String::isNotBlank)
             ?: source.author?.takeIf(String::isNotBlank)
             ?: "this EQ"
+        val flashPlan = buildBlackPearlFlashPlan(source, activeSlot = 0x00) as? BlackPearlFlashPlan.Ready
         AlertDialog(
             onDismissRequest = { pendingProfileFlash = null },
             title = { Text("Flash to Black Pearl?") },
             text = {
                 Text(
-                    "Flash $displayName to the Black Pearl's current EQ slot? " +
-                        "This overwrites that EQ slot. Other DAC settings, including global volume, are not changed.",
+                    blackPearlFlashConfirmation(
+                        displayName = displayName,
+                        gainAdjustmentDb = flashPlan?.requiredPlaybackGainDb ?: 0.0,
+                    ),
                 )
             },
             confirmButton = {
@@ -419,16 +422,10 @@ private fun RemovalDialog(
                 ) {
                     Checkbox(checked = deleteSavedFiles, onCheckedChange = null)
                     Text(
-                        text = "Also delete exported files created by EQ Library for this item.",
+                        text = "Also delete exported preset files created by EQ Library",
                         modifier = Modifier.padding(start = 8.dp),
                     )
                 }
-                Text(
-                    text = "Files not owned by EQ Library are never deleted.",
-                    modifier = Modifier.padding(top = 8.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
             }
         },
         confirmButton = {
