@@ -9,7 +9,7 @@ For current implementation-time decisions and execution order, also read:
 - `docs/AUTONOMOUS_V0.3_PLAN.md`
 - `docs/V0.3_LOCKED_EXECUTION_PLAN.md`
 
-`docs/V0.3_LOCKED_EXECUTION_PLAN.md` contains the latest approved v0.3 product direction and supersedes older OPRA-only or export-target-visibility assumptions where they conflict.
+`docs/V0.3_LOCKED_EXECUTION_PLAN.md` contains the latest approved v0.3 product direction and supersedes older OPRA-only or export-target-visibility assumptions where they conflict. `docs/PHASE1_DECISIONS.md` records later approved refinements, including the 2026-08-31 zero-selection default, Add-triggered initial export, recovery-only Export UI, and confirmed Black Pearl gain-adjustment behavior.
 
 ## Android baseline
 
@@ -62,7 +62,7 @@ Canonical source records are never rewritten to fit an output device. Preserve a
 - SAF export ownership/cleanup;
 - public GitHub release metadata;
 - Preferences DataStore;
-- Black Pearl USB integration behind a narrow device coordinator when implemented.
+- Black Pearl USB integration behind a narrow device coordinator.
 
 Source discovery, crawling, terms/provenance checks, candidate qualification, and catalog publication stay outside the Android runtime.
 
@@ -174,15 +174,17 @@ Each profile is evaluated against the active output as:
 
 Changing output changes conversion/export/flash context and My EQs saved collection; it does not delete or hide canonical profiles.
 
-## My EQs
+## My EQs and Add workflow
 
 My EQs is output-specific and may contain different saved profiles for different outputs without duplicating canonical source data.
 
 Saved content is grouped into Headphones and General EQs.
 
-Export state is output-specific. `Export all` is relevant when one or more current-output saved EQs need first export or regeneration/re-export after source/output changes. Per-row Export may disappear after success and reappear when generated output changes.
+For a newly managed headphone, no EQ profiles are selected by default and automatic future-profile inclusion starts OFF. The user explicitly chooses the EQs they want.
 
-Remove remains explicit and affects only local saved state plus optional app-owned exported-file cleanup.
+`Add` is the normal completion action: save the active-output selection and immediately create/update the initial exported file for each selected exportable EQ. When the output requires SAF export and no retained folder exists yet, Add requests the folder once and then completes the initial export. Add never automatically flashes hardware.
+
+Export state remains output-specific but is recovery/currentness-oriented. When every expected app-owned file exists and matches the current generated output, My EQs shows no Export controls or routine export-status text. `Export all`, per-row Export, and a concise affected count appear only when files are missing/stale, generated output changed, or folder access needs repair. Remove remains explicit. Removing the final selected EQ removes that headphone from My EQs for the active output.
 
 ## Conversion and target capabilities
 
@@ -198,41 +200,43 @@ Golden fixtures protect parity for normalization, preamp, filters, deterministic
 
 ## TRN Black Pearl architecture
 
-Black Pearl direct Flash is EQ-only and exists only from My EQs when Black Pearl is active and direct Flash is enabled.
+Black Pearl direct Flash is EQ-focused and exists only from My EQs when Black Pearl is active and direct Flash is enabled.
 
 Reference implementations are GPL-licensed and may be studied for observable protocol behavior only; do not copy GPL implementation code into this Apache-2.0 project.
 
-Known reference behavior to independently validate includes:
+Known independently corroborated protocol behavior includes:
 
 - USB VID `0x3302`, PID `0x43E8`;
 - HID report `0x4B`;
+- global playback gain command `0x03`;
 - PEQ values command `0x09`;
 - flash/save command `0x01`;
-- 10-band reference implementation;
-- active-slot value included in writes;
-- peak-biquad generation in the reference Android app;
-- AutoEq-style text importer for Preamp/Filter/Fc/Gain/Q.
+- 10 hardware PEQ bands;
+- active-slot value included in PEQ writes;
+- native peak, low-shelf, and high-shelf type codes in the device protocol.
 
-Do not expose unrelated DAC settings (volume, reconstruction filter, gain, amplifier topology, balance, microphone controls).
+Direct Flash may adjust global playback gain when that is required to faithfully apply source preamp or separately generated safety headroom. This behavior is explicitly user-approved. Implement the device's actual raw/dB mapping rather than the reference app's approximate percentage importer mapping.
 
-Do not change global DAC playback volume during Flash unless hardware investigation proves this is the only faithful way to apply source preamp/headroom and the user explicitly approves that behavior.
+The Flash sequence must read current hardware gain, replace any prior EQ Library-applied attenuation rather than accumulating it, apply the required new attenuation only when representable, write/pad the EQ bands, latch, and persist. Confirmation must disclose the required playback-gain adjustment. Fail rather than silently clamp an unrepresentable gain. Do not change DAC reconstruction filter, gain mode, amplifier topology, balance, microphone controls, or other unrelated settings.
 
 Hardware-independent packet/conversion behavior must be unit-tested; final USB/flash behavior remains a hands-on validation checkpoint.
 
 ## Export architecture
 
-Export remains explicit and user-driven through Android Storage Access Framework.
+Export remains explicit at the storage-permission boundary and automatic after Add once access exists.
 
-- active output drives normal export; no redundant target chooser is required;
-- first folder export uses the system picker and persisted supported directory access;
+- active output drives generated file format; no redundant target chooser is required;
+- first needed folder export uses the system picker and persisted supported directory access;
+- Add completes the initial export after folder access is available;
 - no broad storage permission or writes into another app's private storage;
 - app-created file ownership is tracked;
 - unknown same-name external files are conflicts and are not silently overwritten/renamed;
-- app-owned files may be updated on later explicit Export;
-- per-file failures do not roll back independent successes;
-- optional cleanup deletes only app-owned tracked files.
+- app-owned files may be updated during Add or later explicit recovery Export;
+- per-file failures do not roll back independent successes or local My EQs membership;
+- optional cleanup deletes only app-owned tracked files;
+- Export controls are hidden while expected files are present/current and surface only for recovery/currentness needs.
 
-Black Pearl Flash is independent of file Export.
+Black Pearl Flash remains independent of file Export.
 
 ## App updates, attribution, privacy
 
@@ -256,10 +260,13 @@ Before hands-on v0.3 testing, validate at least:
 - active-output persistence/migration;
 - no active-output library hiding;
 - output-specific My EQs;
+- zero-selection/auto-include-off defaults;
+- Add-triggered initial export and recovery-only Export visibility;
+- removal of empty managed headphones;
 - export-state behavior;
 - launch/resume due/not-due/offline refresh;
 - UAPP regression/parity;
-- Black Pearl target conversion and hardware-independent USB protocol behavior;
+- Black Pearl target conversion, exact global-gain adjustment, replacement-not-cumulative attenuation, and hardware-independent USB protocol behavior;
 - Room/DataStore migration from installed release state;
 - signed candidate upgrade integrity.
 
