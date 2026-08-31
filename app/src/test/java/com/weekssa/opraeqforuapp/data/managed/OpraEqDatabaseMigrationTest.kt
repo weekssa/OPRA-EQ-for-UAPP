@@ -66,6 +66,33 @@ class OpraEqDatabaseMigrationTest {
         assertNoDestructiveSql(executedSql)
     }
 
+    @Test
+    fun migration4To5AddsGeneralEqsWithoutTouchingHeadphoneSelections() {
+        val migration = OpraEqDatabase.MIGRATION_4_5
+        assertEquals(4, migration.startVersion)
+        assertEquals(5, migration.endVersion)
+
+        val executedSql = recordMigration(migration)
+
+        assertEquals(4, executedSql.size)
+        val savedTable = executedSql[0].replace(Regex("\\s+"), " ").trim()
+        val outputTable = executedSql[2].replace(Regex("\\s+"), " ").trim()
+        assertTrue(savedTable.contains("CREATE TABLE IF NOT EXISTS saved_general_eqs"))
+        assertTrue(savedTable.contains("presetId TEXT NOT NULL PRIMARY KEY"))
+        assertTrue(savedTable.contains("profileJson TEXT NOT NULL"))
+        assertTrue(outputTable.contains("CREATE TABLE IF NOT EXISTS output_general_eqs"))
+        assertTrue(outputTable.contains("PRIMARY KEY(outputId, presetId)"))
+        assertEquals(
+            "CREATE INDEX IF NOT EXISTS index_saved_general_eqs_category ON saved_general_eqs(category)",
+            executedSql[1],
+        )
+        assertEquals(
+            "CREATE INDEX IF NOT EXISTS index_output_general_eqs_presetId ON output_general_eqs(presetId)",
+            executedSql[3],
+        )
+        assertNoDestructiveSql(executedSql)
+    }
+
     private fun recordMigration(migration: androidx.room.migration.Migration): List<String> {
         val executedSql = mutableListOf<String>()
         val recordingDatabase = Proxy.newProxyInstance(
