@@ -44,6 +44,25 @@ data class PresetExportSummary(
         .mapTo(linkedSetOf()) { it.candidate.deviceName }
 }
 
+data class ExportItemKey(
+    val productId: String,
+    val profileId: String,
+)
+
+data class ExportCurrentness(
+    val exportableItems: Set<ExportItemKey> = emptySet(),
+    val needsExportItems: Set<ExportItemKey> = emptySet(),
+) {
+    val hasAnythingToExport: Boolean get() = exportableItems.isNotEmpty()
+    val hasPendingExport: Boolean get() = needsExportItems.isNotEmpty()
+
+    fun isExportable(productId: String, profileId: String): Boolean =
+        ExportItemKey(productId, profileId) in exportableItems
+
+    fun needsExport(productId: String, profileId: String): Boolean =
+        ExportItemKey(productId, profileId) in needsExportItems
+}
+
 class PresetExportRepository(
     context: Context,
     database: OpraEqDatabase,
@@ -52,6 +71,47 @@ class PresetExportRepository(
     private val appContext = context.applicationContext
     private val resolver = appContext.contentResolver
     private val ownershipDao = database.exportOwnershipDao()
+
+    /**
+     * Evaluates the active output against the app-owned SAF document, not just historical metadata.
+     * A missing, externally changed, stale-fingerprint, or never-exported candidate needs export.
+     * Non-representable profiles have no candidate and therefore do not create a misleading Export
+     * button; their device status is surfaced separately by the UI.
+     */
+    suspend fun evaluateCurrentness(
+        treeUri: Uri?,
+        headphones: List<ManagedHeadphoneRecord>,
+        device: ExportDevice,
+    ): ExportCurrentness = withContext(Dispatchers.IO) {
+        val plan = buildEqLibraryExportPlan(headphones, device)
+        val allCandidates = (plan.candidates + plan.duplicateConflicts).distinctBy {
+            Triple(it.productId, it.profileId, it.generatedFingerprint)
+        }
+        val exportable = allCandidates.mapTo(linkedSetOf()) { candidate ->
+            ExportItemKey(candidate.productId, candidate.profileId)
+        }
+        if (treeUri == null) {
+            return@withContext ExportCurrentness(exportableItems = exportable, needsExportItems = exportable)
+        }
+
+        val tree = treeUri.toString()
+        val needs = linkedSetOf<ExportItemKey>()
+        for (candidate in allCandidates) {
+            val key = ExportItemKey(candidate.productId, candidate.profileId)
+            val ownership = ownershipDao.getForProfile(candidate.profileId).firstOrNull { owned ->
+                owned.productId == candidate.productId &&
+                    owned.treeUri == tree &&
+                    owned.relativeDirectory == candidate.relativeDirectory &&
+                    owned.fileName == candidate.fileName &&
+                    owned.exportedFingerprint == candidate.generatedFingerprint &&
+                    owned.exportedContentHash == candidate.contentHash
+            }
+            if (ownership == null || !ownedDocumentIsCurrent(ownership, candidate)) {
+                needs += key
+            }
+        }
+        ExportCurrentness(exportableItems = exportable, needsExportItems = needs)
+    }
 
     suspend fun exportSelected(
         treeUri: Uri,
@@ -84,6 +144,16 @@ class PresetExportRepository(
         }
 
         PresetExportSummary(results = results)
+    }
+
+    private fun ownedDocumentIsCurrent(
+        ownership: ExportOwnershipEntity,
+        candidate: PresetExportCandidate,
+    ): Boolean {
+        val uri = runCatching { Uri.parse(ownership.documentUri) }.getOrNull() ?: return false
+        val document = runCatching { DocumentFile.fromSingleUri(appContext, uri) }.getOrNull() ?: return false
+        if (!document.exists() || !document.isFile) return false
+        return readContentHash(uri) == candidate.contentHash
     }
 
     private suspend fun exportOne(
