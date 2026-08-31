@@ -1,0 +1,79 @@
+name: Priority community coverage CI
+
+on:
+  pull_request:
+    paths:
+      - 'catalog/discovery/*_community_curated.json'
+      - 'catalog/discovery/priority_headphone_coverage.json'
+      - 'config/source_registry.json'
+      - 'tools/priority_coverage.py'
+      - 'tools/test_priority_coverage.py'
+      - 'tools/curated_community_publish.py'
+      - 'tools/test_curated_community_publish.py'
+      - '.github/workflows/priority-community-ci.yml'
+  push:
+    branches:
+      - eq-library-community-v0.3
+    paths:
+      - 'catalog/discovery/*_community_curated.json'
+      - 'catalog/discovery/priority_headphone_coverage.json'
+      - 'config/source_registry.json'
+      - 'tools/priority_coverage.py'
+      - 'tools/test_priority_coverage.py'
+      - 'tools/curated_community_publish.py'
+      - 'tools/test_curated_community_publish.py'
+      - '.github/workflows/priority-community-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: priority-community-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-priority-community:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Validate source registry
+        run: python3 tools/catalog_pipeline.py validate-registry --registry config/source_registry.json
+
+      - name: Validate priority coverage ledger
+        run: python3 tools/priority_coverage.py --coverage catalog/discovery/priority_headphone_coverage.json
+
+      - name: Run focused ingestion tests
+        working-directory: tools
+        run: python3 -m unittest -v test_priority_coverage.py test_curated_community_publish.py test_community_peq_ingest.py
+
+      - name: Dry-run all curated community inputs
+        run: |
+          set -euo pipefail
+          cp catalog/catalog.json "${RUNNER_TEMP}/catalog.priority.current.json"
+          mapfile -t curated_files < <(
+            find catalog/discovery -maxdepth 1 -type f -name '*_community_curated.json' -print | sort
+          )
+          if (( ${#curated_files[@]} == 0 )); then
+            echo "No curated community files found."
+            exit 1
+          fi
+          mkdir -p "${RUNNER_TEMP}/priority-reports"
+          for curated in "${curated_files[@]}"; do
+            base="$(basename "${curated}" .json)"
+            next="${RUNNER_TEMP}/catalog.priority.next.json"
+            python3 tools/curated_community_publish.py \
+              --catalog "${RUNNER_TEMP}/catalog.priority.current.json" \
+              --curated "${curated}" \
+              --registry config/source_registry.json \
+              --output "${next}" \
+              --report "${RUNNER_TEMP}/priority-reports/${base}.json"
+            mv "${next}" "${RUNNER_TEMP}/catalog.priority.current.json"
+          done
+          python3 tools/catalog_pipeline.py publish \
+            --candidate "${RUNNER_TEMP}/catalog.priority.current.json" \
+            --published "${RUNNER_TEMP}/catalog.priority.validated.json" \
+            --last-known-good "${RUNNER_TEMP}/catalog.priority.lkg.json"
