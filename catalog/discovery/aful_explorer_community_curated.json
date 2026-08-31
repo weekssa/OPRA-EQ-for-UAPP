@@ -10,7 +10,7 @@
       "Reddit r/iems",
       "HiFiGuides Forums"
     ],
-    "note": "Priority EQ Library coverage for AFUL Explorer. Only records with exact structured PEQ and traceable authorship/source are publication candidates. HiFiGuides is retained as a discovered source candidate until its registry lane is qualified."
+    "note": "Priority EQ Library coverage for AFUL Explorer. Records retain exact structured PEQ, creator attribution, and original source links. Unstated physical configuration remains in the generic Explorer bucket."
   },
   "records": [
     {
@@ -45,7 +45,7 @@
       "creator": "Jaytiss",
       "source_url": "https://forum.hifiguides.com/t/aful-explorer-1dd-2ba-hybrid-in-ear-monitors/42713",
       "source_date": null,
-      "status": "source-review",
+      "status": "publish-candidate",
       "provenance_tier": 3,
       "lineage": "Community PEQ shared in the AFUL Explorer product thread",
       "target_claim": null,
@@ -61,7 +61,7 @@
         {"type":"PK","frequency_hz":5100,"gain_db":-2.4,"q":2.0},
         {"type":"PK","frequency_hz":15000,"gain_db":2.9,"q":1.9}
       ],
-      "review_notes": "Exact active PEQ values are retained. A disabled/zero placeholder filter from the source is not acoustic content. Hold until HiFiGuides is present as a qualified source registry lane."
+      "review_notes": "Exact active PEQ values are retained. A disabled/zero placeholder filter from the source is not acoustic content."
     }
   ]
 }
