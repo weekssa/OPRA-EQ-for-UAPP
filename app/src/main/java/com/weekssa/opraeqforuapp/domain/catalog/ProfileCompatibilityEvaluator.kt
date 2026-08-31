@@ -8,9 +8,29 @@ data class ProfileCompatibilityAssessment(
     val reason: String? = null,
 )
 
+/**
+ * Device-independent gate for whether a catalog row is a usable parametric-EQ source record.
+ *
+ * This deliberately does not apply UAPP frequency/gain/Q/filter-count limits. A valid canonical
+ * curve stays selectable and visible even when the active output later reports Not representable.
+ */
+fun OpraEqProfile.isUsableParametricSource(): Boolean {
+    if (profileType != "parametric_eq") return false
+    val sourceBands = bands ?: return false
+    if (sourceBands.isEmpty()) return false
+    return sourceBands.all { band ->
+        !band.type.isNullOrBlank() &&
+            band.frequency?.let { it.isFinite() && it > 0.0 } == true &&
+            band.gainDb?.isFinite() != false &&
+            band.q?.isFinite() != false &&
+            band.slope?.isFinite() != false
+    }
+}
+
+/** UAPP/ToneBoosters-specific compatibility retained for that device's export details. */
 fun OpraEqProfile.assessCompatibility(): ProfileCompatibilityAssessment {
     if (profileType != "parametric_eq") {
-        return notCompatible("This OPRA profile is not a parametric EQ profile.")
+        return notCompatible("This profile is not a parametric EQ profile.")
     }
 
     val playbackPreamp = effectivePlaybackPreampDb()
@@ -27,7 +47,7 @@ fun OpraEqProfile.assessCompatibility(): ProfileCompatibilityAssessment {
     }
 
     val profileBands = bands
-        ?: return notCompatible("The OPRA profile is missing its parametric EQ band list.")
+        ?: return notCompatible("The profile is missing its parametric EQ band list.")
 
     profileBands.forEachIndexed { index, band ->
         val bandNumber = index + 1
