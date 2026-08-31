@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-08-31T01:45:00Z",
+  "updated_at": "2026-08-31T02:05:00Z",
   "purpose": "Machine-readable coverage ledger for the first focused EQ Library discovery queue. A searched source with zero usable results is distinct from a source that has not yet been searched.",
   "priority_headphones": [
     {
@@ -20,7 +20,7 @@
       "status": "active-coverage",
       "sources": [
         {"source_id":"reddit-audio","state":"searched","candidates_found":1,"publishable_or_published":1,"duplicates":0,"held":0,"note":"LoboNautics Basshead tuning; generic Explorer because the EQ source does not state a material configuration."},
-        {"source_id":"hifiguides","state":"source-qualification","candidates_found":1,"publishable_or_published":0,"duplicates":0,"held":1,"note":"Jaytiss structured PEQ staged; publish after HiFiGuides source lane qualification."},
+        {"source_id":"hifiguides","state":"searched","candidates_found":1,"publishable_or_published":1,"duplicates":0,"held":0,"note":"Jaytiss structured PEQ qualified with the HiFiGuides public community source lane."},
         {"source_id":"head-fi","state":"not_yet_searched","candidates_found":0,"publishable_or_published":0,"duplicates":0,"held":0},
         {"source_id":"audio-science-review","state":"not_yet_searched","candidates_found":0,"publishable_or_published":0,"duplicates":0,"held":0},
         {"source_id":"headphones-community","state":"not_yet_searched","candidates_found":0,"publishable_or_published":0,"duplicates":0,"held":0}
@@ -75,7 +75,7 @@
       "model": "WF-1000XM5",
       "status": "active-coverage",
       "sources": [
-        {"source_id":"hifiguides","state":"source-qualification","candidates_found":2,"publishable_or_published":0,"duplicates":0,"held":2,"note":"sovran published separate 12-filter PEQs for ANC off and ANC on. Both are staged with explicit acoustic-mode variants pending HiFiGuides qualification."},
+        {"source_id":"hifiguides","state":"searched","candidates_found":2,"publishable_or_published":2,"duplicates":0,"held":0,"note":"sovran published separate 12-filter PEQs for ANC off and ANC on. Both are preserved as explicit acoustic-mode variants."},
         {"source_id":"reddit-audio","state":"searched","candidates_found":1,"publishable_or_published":0,"duplicates":1,"held":0,"note":"Prominent community result points to AutoEq rather than a distinct source-authored tuning."},
         {"source_id":"head-fi","state":"not_yet_searched","candidates_found":0,"publishable_or_published":0,"duplicates":0,"held":0},
         {"source_id":"audio-science-review","state":"not_yet_searched","candidates_found":0,"publishable_or_published":0,"duplicates":0,"held":0},
