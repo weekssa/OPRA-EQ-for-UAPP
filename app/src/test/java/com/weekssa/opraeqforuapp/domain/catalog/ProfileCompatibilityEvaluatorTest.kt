@@ -7,13 +7,26 @@ import org.junit.Test
 
 class ProfileCompatibilityEvaluatorTest {
     @Test
-    fun generatedSafetyHeadroomAllowsTargetCompatibilityWithoutReplacingSourcePreamp() {
+    fun sourceUsabilityDoesNotDependOnOutputPreampSupport() {
+        val profile = profile(
+            sourcePreamp = null,
+            safetyHeadroom = null,
+        )
+
+        val assessment = profile.assessCompatibility()
+
+        assertEquals(ProfileCompatibility.FullyCompatible, assessment.category)
+        assertTrue(profile.isUsableParametricSource())
+    }
+
+    @Test
+    fun uappCompatibilityCanUseGeneratedSafetyHeadroomWithoutReplacingSourcePreamp() {
         val profile = profile(
             sourcePreamp = null,
             safetyHeadroom = -4.5,
         )
 
-        val assessment = profile.assessCompatibility()
+        val assessment = profile.assessUappCompatibility()
 
         assertEquals(ProfileCompatibility.FullyCompatible, assessment.category)
         assertEquals(null, profile.preampGainDb)
@@ -23,15 +36,43 @@ class ProfileCompatibilityEvaluatorTest {
     }
 
     @Test
-    fun missingSourcePreampAndMissingSafetyHeadroomRemainNotCompatible() {
-        val assessment = profile(
+    fun missingPreampIsUappSpecificNotAReasonToHideSourceCurve() {
+        val profile = profile(
             sourcePreamp = null,
             safetyHeadroom = null,
-        ).assessCompatibility()
+        )
 
-        assertEquals(ProfileCompatibility.NotCompatible, assessment.category)
-        assertTrue(assessment.reason.orEmpty().contains("no source preamp"))
-        assertTrue(assessment.reason.orEmpty().contains("no EQ Library-generated safety headroom"))
+        assertEquals(ProfileCompatibility.FullyCompatible, profile.assessCompatibility().category)
+
+        val uapp = profile.assessUappCompatibility()
+        assertEquals(ProfileCompatibility.NotCompatible, uapp.category)
+        assertTrue(uapp.reason.orEmpty().contains("no source preamp"))
+        assertTrue(uapp.reason.orEmpty().contains("no EQ Library-generated safety headroom"))
+    }
+
+    @Test
+    fun outputUnsupportedFilterCanRemainAUsableCanonicalSource() {
+        val profile = profile(
+            sourcePreamp = -3.0,
+            safetyHeadroom = null,
+        ).copy(
+            bands = listOf(OpraBand("low_pass", 8_000.0, 0.0, 0.7, 12.0)),
+        )
+
+        assertTrue(profile.isUsableParametricSource())
+        assertEquals(ProfileCompatibility.FullyCompatible, profile.assessCompatibility().category)
+        assertEquals(ProfileCompatibility.NotCompatible, profile.assessUappCompatibility().category)
+    }
+
+    @Test
+    fun nonParametricRowRemainsUnusableForSelection() {
+        val profile = profile(
+            sourcePreamp = -3.0,
+            safetyHeadroom = null,
+        ).copy(profileType = "graphic_eq")
+
+        assertTrue(!profile.isUsableParametricSource())
+        assertEquals(ProfileCompatibility.NotCompatible, profile.assessCompatibility().category)
     }
 
     @Test
