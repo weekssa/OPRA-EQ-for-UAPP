@@ -33,6 +33,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
+import com.weekssa.opraeqforuapp.data.export.ExportCurrentness
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.export.DeviceExportability
@@ -50,6 +51,7 @@ fun ManagedHeadphoneDetailScreen(
     catalogState: CatalogState,
     profileVisibility: ProfileVisibilityPreferences,
     exportTargets: ExportTargetPreferences = ExportTargetPreferences(),
+    exportCurrentness: ExportCurrentness,
     favoriteProfileIds: Set<String>,
     directBlackPearlFlashEnabled: Boolean,
     blackPearlConnectionState: BlackPearlConnectionState,
@@ -64,6 +66,7 @@ fun ManagedHeadphoneDetailScreen(
     onDeleteSavedFilesForProduct: suspend (String) -> PresetCleanupSummary,
     onMarkReviewed: suspend (String) -> Unit,
     onExportProduct: (String) -> Unit,
+    onExportProfile: (String) -> Unit,
     onMessage: (String) -> Unit,
     onOpenUrl: (String) -> Unit = {},
     onBack: () -> Unit,
@@ -259,6 +262,9 @@ fun ManagedHeadphoneDetailScreen(
                     profile = profile,
                     activeOutput = activeOutput,
                     outputStatus = outputStatus,
+                    showExport = profile.selected &&
+                        exportCurrentness.needsExport(headphone.productId, profile.profileId),
+                    onExport = { onExportProfile(profile.profileId) },
                     showFlash = isBlackPearlOutput,
                     flashEnabled = flashEnabled && profile.selected &&
                         outputStatus != DeviceExportability.NOT_REPRESENTABLE,
@@ -290,6 +296,8 @@ private fun ManagedProfileRow(
     profile: ManagedProfileRecord,
     activeOutput: ExportDevice,
     outputStatus: DeviceExportability,
+    showExport: Boolean,
+    onExport: () -> Unit,
     showFlash: Boolean,
     flashEnabled: Boolean,
     onFlash: () -> Unit,
@@ -333,6 +341,9 @@ private fun ManagedProfileRow(
         },
         trailingContent = {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                if (showExport) {
+                    TextButton(onClick = onExport) { Text("Export") }
+                }
                 if (showFlash) {
                     TextButton(
                         enabled = flashEnabled,
