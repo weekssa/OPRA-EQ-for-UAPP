@@ -9,11 +9,9 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 /**
- * Independently implemented, EQ-only packet codec for the observable TRN Black Pearl HID protocol.
- *
- * This layer intentionally contains no commands for global volume, DAC filters, gain mode,
- * amplifier topology, balance, or microphone controls. Direct Flash in EQ Library must not mutate
- * those settings.
+ * Independently implemented packet codec for the observable TRN Black Pearl HID protocol used by
+ * EQ Library. Besides PEQ data, direct Flash may use the device's global playback-gain command when
+ * required to represent source preamp/headroom. No other DAC-control commands belong here.
  */
 object BlackPearlProtocol {
     const val VENDOR_ID: Int = 0x3302
@@ -21,11 +19,16 @@ object BlackPearlProtocol {
     const val REPORT_SIZE: Int = 64
     const val BAND_COUNT: Int = 10
 
+    const val GLOBAL_GAIN_MIN_RAW: Int = -9472
+    const val GLOBAL_GAIN_MAX_RAW: Int = 6440
+    const val GLOBAL_GAIN_RAW_PER_DB: Int = 256
+
     private const val REPORT_ID: Int = 0x4B
     private const val WRITE: Int = 0x01
     private const val READ: Int = 0x80
     private const val END: Int = 0x00
     private const val CMD_FLASH_EQ: Int = 0x01
+    private const val CMD_GLOBAL_GAIN: Int = 0x03
     private const val CMD_PEQ_VALUES: Int = 0x09
     private const val CMD_LATCH: Int = 0x0A
     private const val TYPE_PEAK: Int = 0x02
@@ -39,6 +42,50 @@ object BlackPearlProtocol {
         val gainDb: Double,
         val q: Double,
     )
+
+    fun readGlobalGainReport(): ByteArray = ByteArray(REPORT_SIZE).apply {
+        this[0] = REPORT_ID.toByte()
+        this[1] = READ.toByte()
+        this[2] = CMD_GLOBAL_GAIN.toByte()
+        this[3] = END.toByte()
+        this[4] = 0x00
+        this[5] = 0x00
+        this[6] = END.toByte()
+    }
+
+    fun globalGainRawFromResponse(report: ByteArray): Int? {
+        if (report.size < 6) return null
+        if (report[0].u8() != REPORT_ID || report[1].u8() != READ || report[2].u8() != CMD_GLOBAL_GAIN) {
+            return null
+        }
+        val raw = ByteBuffer.wrap(report, 4, 2)
+            .order(ByteOrder.LITTLE_ENDIAN)
+            .short
+            .toInt()
+        return raw.takeIf { it in GLOBAL_GAIN_MIN_RAW..GLOBAL_GAIN_MAX_RAW }
+    }
+
+    fun writeGlobalGainReport(rawGain: Int): ByteArray {
+        require(rawGain in GLOBAL_GAIN_MIN_RAW..GLOBAL_GAIN_MAX_RAW) {
+            "Black Pearl global gain is outside the validated hardware range."
+        }
+        return ByteArray(REPORT_SIZE).apply {
+            this[0] = REPORT_ID.toByte()
+            this[1] = WRITE.toByte()
+            this[2] = CMD_GLOBAL_GAIN.toByte()
+            this[3] = 0x03
+            this[4] = (rawGain and 0xFF).toByte()
+            this[5] = ((rawGain shr 8) and 0xFF).toByte()
+            this[6] = END.toByte()
+        }
+    }
+
+    fun gainDbToRawDelta(gainDb: Double): Int {
+        require(gainDb.isFinite()) { "Black Pearl playback-gain adjustment must be finite." }
+        return (gainDb * GLOBAL_GAIN_RAW_PER_DB).roundToInt()
+    }
+
+    fun rawDeltaToGainDb(rawDelta: Int): Double = rawDelta.toDouble() / GLOBAL_GAIN_RAW_PER_DB
 
     fun readBandReport(index: Int): ByteArray {
         require(index in 0 until BAND_COUNT) { "Black Pearl band index must be 0..9." }
@@ -110,8 +157,8 @@ object BlackPearlProtocol {
     }
 
     /**
-     * Produces a complete EQ-only write sequence. Unused hardware bands are explicitly flattened so
-     * a shorter preset cannot leave stale EQ bands from a previous preset active.
+     * Produces a complete PEQ write sequence. Unused hardware bands are explicitly flattened so a
+     * shorter preset cannot leave stale EQ bands from a previous preset active.
      */
     fun flashSequence(bands: List<Band>, activeSlot: Byte): List<ByteArray> {
         require(bands.size <= BAND_COUNT) { "Black Pearl supports at most 10 hardware EQ bands." }
