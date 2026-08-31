@@ -47,8 +47,9 @@ import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.OpraProduct
 import com.weekssa.opraeqforuapp.domain.catalog.assessCompatibility
 import com.weekssa.opraeqforuapp.domain.catalog.isHistoricalRevision
-import com.weekssa.opraeqforuapp.domain.catalog.visibilityCategory
-import com.weekssa.opraeqforuapp.domain.export.isExportableToAny
+import com.weekssa.opraeqforuapp.domain.export.DeviceExportability
+import com.weekssa.opraeqforuapp.domain.export.ExportDevice
+import com.weekssa.opraeqforuapp.domain.export.assessDeviceExportability
 import com.weekssa.opraeqforuapp.domain.managed.DEFAULT_AUTO_INCLUDE_NEW_PROFILES
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.managed.defaultStagedSelectedProfileIds
@@ -87,11 +88,7 @@ internal fun ProfileSelectionEditor(
 ) {
     val vendor = catalog.vendor(product.vendorId)
     val profiles = catalog.profilesForProduct(product.id)
-    val compatibilityVisibleProfiles = profiles.filter { profile ->
-        profileVisibility.isVisible(profile.assessCompatibility().category.visibilityCategory())
-    }
-    val hiddenCompatibilityCount = profiles.size - compatibilityVisibleProfiles.size
-    val historicalProfileCount = compatibilityVisibleProfiles.count(OpraEqProfile::isHistoricalRevision)
+    val historicalProfileCount = profiles.count(OpraEqProfile::isHistoricalRevision)
     val databaseOptions = remember(profiles) {
         profiles.mapNotNull { profile ->
             profile.detailMetadata("Database") ?: profile.detailMetadata("Source")
@@ -124,9 +121,9 @@ internal fun ProfileSelectionEditor(
     }
 
     val revisionVisibleProfiles = if (showHistoricalRevisions) {
-        compatibilityVisibleProfiles
+        profiles
     } else {
-        compatibilityVisibleProfiles.filterNot(OpraEqProfile::isHistoricalRevision)
+        profiles.filterNot(OpraEqProfile::isHistoricalRevision)
     }
     val visibleProfiles = revisionVisibleProfiles.filter { profile ->
         val database = profile.detailMetadata("Database") ?: profile.detailMetadata("Source")
@@ -143,7 +140,7 @@ internal fun ProfileSelectionEditor(
     var autoInclude by remember(product.id) { mutableStateOf(DEFAULT_AUTO_INCLUDE_NEW_PROFILES) }
     var baselineAutoInclude by remember(product.id) { mutableStateOf(DEFAULT_AUTO_INCLUDE_NEW_PROFILES) }
     var showDiscardDialog by remember(product.id) { mutableStateOf(false) }
-    var incompatibilityExplanation by remember(product.id) { mutableStateOf<String?>(null) }
+    var sourceProblemExplanation by remember(product.id) { mutableStateOf<String?>(null) }
 
     LaunchedEffect(product.id) {
         val managed = onLoadManagedHeadphone(product.id)
@@ -173,7 +170,7 @@ internal fun ProfileSelectionEditor(
     val retainedSelectedUnavailable = managedRecord?.profiles.orEmpty().count {
         it.selected && it.noLongerAvailable
     }
-    val selectedHistoricalCount = compatibilityVisibleProfiles.count {
+    val selectedHistoricalCount = profiles.count {
         it.isHistoricalRevision() && it.id in stagedSelectedIds
     }
 
@@ -223,13 +220,13 @@ internal fun ProfileSelectionEditor(
         )
     }
 
-    incompatibilityExplanation?.let { explanation ->
+    sourceProblemExplanation?.let { explanation ->
         AlertDialog(
-            onDismissRequest = { incompatibilityExplanation = null },
-            title = { Text("Not compatible") },
+            onDismissRequest = { sourceProblemExplanation = null },
+            title = { Text("Source data unavailable") },
             text = { Text(explanation) },
             confirmButton = {
-                TextButton(onClick = { incompatibilityExplanation = null }) { Text("OK") }
+                TextButton(onClick = { sourceProblemExplanation = null }) { Text("OK") }
             },
         )
     }
@@ -399,20 +396,11 @@ internal fun ProfileSelectionEditor(
         }
 
         Text(
-            text = "Unverified EQs are never added automatically. Changing selections never deletes exported files.",
+            text = "Unverified EQs are never added automatically. Output compatibility never hides or silently removes a saved source curve.",
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-
-        if (hiddenCompatibilityCount > 0) {
-            Text(
-                text = "$hiddenCompatibilityCount EQ profiles hidden by your compatibility filter.",
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
         if (filteredOutCount > 0) {
             Text(
                 text = "$filteredOutCount EQ profiles hidden by Database / Creator / Target filters.",
@@ -423,7 +411,7 @@ internal fun ProfileSelectionEditor(
         }
         if (retainedSelectedUnavailable > 0) {
             Text(
-                text = "$retainedSelectedUnavailable selected presets are retained because they are no longer available in the current EQ Library catalog. Manage them from My Headphones.",
+                text = "$retainedSelectedUnavailable selected presets are retained because they are no longer available in the current EQ Library catalog. Manage them from My EQs.",
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -432,24 +420,14 @@ internal fun ProfileSelectionEditor(
 
         LazyColumn(modifier = Modifier.weight(1f)) {
             items(visibleProfiles, key = OpraEqProfile::id) { profile ->
-                val assessment = profile.assessCompatibility()
-                val exportTargetWarning = if (
-                    exportTargets.showUnexportablePresets &&
-                    !profile.isExportableToAny(exportTargets.selectedTargets)
-                ) {
-                    if (exportTargets.selectedTargets.isEmpty()) {
-                        "No export targets selected"
-                    } else {
-                        "Not exportable to your selected devices"
-                    }
-                } else {
-                    null
-                }
+                val sourceAssessment = profile.assessCompatibility()
+                val outputStatus = assessDeviceExportability(profile, exportTargets.activeTarget)
                 ProfileSelectionRow(
                     profile = profile,
                     selected = profile.id in stagedSelectedIds,
                     isFavorite = profile.id in favoriteProfileIds,
-                    exportTargetWarning = exportTargetWarning,
+                    outputStatus = "${outputShortName(exportTargets.activeTarget)}: ${outputStatusLabel(outputStatus)}",
+                    outputStatusCategory = outputStatus,
                     onSelectionChange = { selected ->
                         stagedSelectedIds = if (selected) {
                             stagedSelectedIds + profile.id
@@ -476,9 +454,9 @@ internal fun ProfileSelectionEditor(
                         }
                     },
                     onOpenSource = profile.link?.let { sourceUrl -> { onOpenUrl(sourceUrl) } },
-                    onExplainIncompatibility = {
-                        incompatibilityExplanation = assessment.reason
-                            ?: "This EQ profile cannot be converted safely for the selected export target."
+                    onExplainSourceProblem = {
+                        sourceProblemExplanation = sourceAssessment.reason
+                            ?: "This catalog row is not a usable parametric EQ source."
                     },
                 )
                 HorizontalDivider()
@@ -549,11 +527,12 @@ internal fun ProfileSelectionRow(
     profile: OpraEqProfile,
     selected: Boolean,
     isFavorite: Boolean,
-    exportTargetWarning: String? = null,
+    outputStatus: String,
+    outputStatusCategory: DeviceExportability,
     onSelectionChange: (Boolean) -> Unit,
     onToggleFavorite: (() -> Unit)?,
     onOpenSource: (() -> Unit)?,
-    onExplainIncompatibility: () -> Unit,
+    onExplainSourceProblem: () -> Unit,
 ) {
     val compatibility = profile.assessCompatibility()
     val selectable = compatibility.category.isSelectable
@@ -571,7 +550,7 @@ internal fun ProfileSelectionRow(
         Modifier
             .fillMaxWidth()
             .heightIn(min = 56.dp)
-            .clickable(onClick = onExplainIncompatibility)
+            .clickable(onClick = onExplainSourceProblem)
     }
 
     ListItem(
@@ -592,29 +571,25 @@ internal fun ProfileSelectionRow(
             Column(modifier = Modifier.padding(top = 2.dp, bottom = 4.dp)) {
                 if (!profile.isVerified) {
                     Text(
-                        text = "Unverified",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.tertiary,
-                    )
-                    Text(
-                        text = "Not independently verified; sound or level changes may be unexpected.",
-                        modifier = Modifier.padding(top = 2.dp),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                exportTargetWarning?.let { warning ->
-                    Text(
-                        text = warning,
-                        modifier = Modifier.padding(top = 4.dp),
+                        text = "Community submission — not independently verified. Review the source before use.",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.tertiary,
                     )
                 }
+                Text(
+                    text = outputStatus,
+                    modifier = Modifier.padding(top = if (profile.isVerified) 0.dp else 4.dp),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = when (outputStatusCategory) {
+                        DeviceExportability.EXACT -> MaterialTheme.colorScheme.onSurfaceVariant
+                        DeviceExportability.OPTIMIZED -> MaterialTheme.colorScheme.tertiary
+                        DeviceExportability.NOT_REPRESENTABLE -> MaterialTheme.colorScheme.error
+                    },
+                )
                 displayDetails.metadata?.let {
                     Text(
                         text = it,
-                        modifier = Modifier.padding(top = if (profile.isVerified && exportTargetWarning == null) 0.dp else 4.dp),
+                        modifier = Modifier.padding(top = 4.dp),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -631,26 +606,14 @@ internal fun ProfileSelectionRow(
                         Text("Source")
                     }
                 }
-                when (compatibility.category) {
-                    ProfileCompatibility.FullyCompatible -> Unit
-                    ProfileCompatibility.CompatibleWithLimitation -> {
-                        Text(
-                            text = "Compatible with limitation",
-                            modifier = Modifier.padding(top = 4.dp),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.tertiary,
-                        )
-                        compatibility.reason?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-                    }
-                    ProfileCompatibility.NotCompatible -> {
-                        Text(
-                            text = "Not compatible · unavailable for selection",
-                            modifier = Modifier.padding(top = 4.dp),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                        compatibility.reason?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-                    }
+                if (compatibility.category == ProfileCompatibility.NotCompatible) {
+                    Text(
+                        text = "Source data unavailable for selection",
+                        modifier = Modifier.padding(top = 4.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                    compatibility.reason?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                 }
             }
         },
@@ -666,6 +629,22 @@ internal fun ProfileSelectionRow(
         },
         modifier = rowModifier,
     )
+}
+
+private fun outputStatusLabel(status: DeviceExportability): String = when (status) {
+    DeviceExportability.EXACT -> "Exact"
+    DeviceExportability.OPTIMIZED -> "Optimized"
+    DeviceExportability.NOT_REPRESENTABLE -> "Not exportable"
+}
+
+private fun outputShortName(device: ExportDevice): String = when (device) {
+    ExportDevice.UAPP -> "UAPP / ToneBoosters"
+    ExportDevice.BLACK_PEARL -> "Black Pearl"
+    ExportDevice.UNIVERSAL_PARAMETRIC -> "Universal PEQ"
+    ExportDevice.POWERAMP -> "Poweramp"
+    ExportDevice.WAVELET -> "Wavelet"
+    ExportDevice.TOPPING_DX5_II -> "TOPPING DX5 II"
+    ExportDevice.TOPPING_DX1_II -> "TOPPING DX1 II"
 }
 
 private data class ProfileDisplayDetails(
