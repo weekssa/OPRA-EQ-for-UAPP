@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.export.ExportCurrentness
+import com.weekssa.opraeqforuapp.domain.blackpearl.blackPearlRequiredPlaybackGainDb
 import com.weekssa.opraeqforuapp.domain.blackpearl.isBlackPearlDirectFlashable
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqCategory
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
@@ -44,19 +45,23 @@ import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
 import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
+import java.util.Locale
 import kotlinx.coroutines.launch
 
 private sealed interface PendingBlackPearlFlash {
     val displayName: String
+    val gainAdjustmentDb: Double
 
     data class SavedEq(
         val entryId: String,
         override val displayName: String,
+        override val gainAdjustmentDb: Double,
     ) : PendingBlackPearlFlash
 
     data class GeneralEq(
         val presetId: String,
         override val displayName: String,
+        override val gainAdjustmentDb: Double,
     ) : PendingBlackPearlFlash
 }
 
@@ -118,12 +123,7 @@ fun MyEqsHomeScreen(
         AlertDialog(
             onDismissRequest = { pendingFlash = null },
             title = { Text("Flash to Black Pearl?") },
-            text = {
-                Text(
-                    "Flash ${pending.displayName} to the Black Pearl's current EQ slot? " +
-                        "This overwrites that EQ slot. Other DAC settings, including global volume, are not changed.",
-                )
-            },
+            text = { Text(blackPearlFlashConfirmation(pending.displayName, pending.gainAdjustmentDb)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -166,12 +166,14 @@ fun MyEqsHomeScreen(
                         Text("Import PEQ", modifier = Modifier.padding(start = 6.dp))
                     }
                 }
-                Text(
-                    text = exportStatusText(exportCurrentness, activeOutput),
-                    modifier = Modifier.padding(top = 8.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                if (exportCurrentness.hasPendingExport) {
+                    Text(
+                        text = exportStatusText(exportCurrentness),
+                        modifier = Modifier.padding(top = 8.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 Text(
                     text = "$selectedHeadphoneCount headphone EQs · ${savedGeneralEqs.size} General EQs",
                     modifier = Modifier.padding(top = 2.dp),
@@ -214,7 +216,7 @@ fun MyEqsHomeScreen(
                             supportingContent = {
                                 Text(
                                     if (pendingCount > 0) {
-                                        "${headphone.selectedProfileCount} selected · $pendingCount file ${if (pendingCount == 1) "export" else "exports"} pending"
+                                        "${headphone.selectedProfileCount} selected · $pendingCount ${if (pendingCount == 1) "preset needs" else "presets need"} export"
                                     } else {
                                         "${headphone.selectedProfileCount} selected profiles"
                                     },
@@ -240,6 +242,7 @@ fun MyEqsHomeScreen(
                 items(headphoneSavedEqs, key = { "saved:${it.entryId}" }) { record ->
                     val needsExport = exportCurrentness.needsExport(record.productId, record.profile.id)
                     val blackPearlFlashable = record.profile.isBlackPearlDirectFlashable()
+                    val gainAdjustmentDb = record.profile.blackPearlRequiredPlaybackGainDb()
                     ListItem(
                         leadingContent = if (record.kind == SavedEqKind.Favorite) {
                             { Icon(Icons.Outlined.Star, contentDescription = null) }
@@ -262,6 +265,7 @@ fun MyEqsHomeScreen(
                                             pendingFlash = PendingBlackPearlFlash.SavedEq(
                                                 entryId = record.entryId,
                                                 displayName = record.displayName,
+                                                gainAdjustmentDb = gainAdjustmentDb ?: 0.0,
                                             )
                                         },
                                     ) { Text("Flash") }
@@ -295,6 +299,7 @@ fun MyEqsHomeScreen(
             items(savedGeneralEqs, key = { "general:${it.presetId}" }) { record ->
                 val needsExport = exportCurrentness.needsExport(generalExportProductId(record.presetId), record.presetId)
                 val blackPearlFlashable = record.profile.isBlackPearlDirectFlashable()
+                val gainAdjustmentDb = record.profile.blackPearlRequiredPlaybackGainDb()
                 ListItem(
                     headlineContent = { Text(record.displayName) },
                     supportingContent = {
@@ -317,6 +322,7 @@ fun MyEqsHomeScreen(
                                         pendingFlash = PendingBlackPearlFlash.GeneralEq(
                                             presetId = record.presetId,
                                             displayName = record.displayName,
+                                            gainAdjustmentDb = gainAdjustmentDb ?: 0.0,
                                         )
                                     },
                                 ) { Text("Flash") }
@@ -487,29 +493,19 @@ private fun PersonalEqDialog(
     )
 }
 
-private fun exportStatusText(
-    exportCurrentness: ExportCurrentness,
-    activeOutput: ExportDevice,
-): String {
+private fun exportStatusText(exportCurrentness: ExportCurrentness): String {
     val pendingCount = exportCurrentness.needsExportItems.size
-    return when {
-        exportCurrentness.hasPendingExport -> {
-            val noun = if (pendingCount == 1) "EQ file" else "EQ files"
-            if (activeOutput == ExportDevice.BLACK_PEARL) {
-                "$pendingCount selected $noun still need${if (pendingCount == 1) "s" else ""} export for ${outputTitle(activeOutput)}. File export is separate from direct Flash."
-            } else {
-                "$pendingCount selected $noun still need${if (pendingCount == 1) "s" else ""} export for ${outputTitle(activeOutput)}."
-            }
-        }
-        exportCurrentness.hasAnythingToExport -> {
-            if (activeOutput == ExportDevice.BLACK_PEARL) {
-                "All exported Black Pearl preset files are current. File export is separate from direct Flash."
-            } else {
-                "All exportable EQ files are current for ${outputTitle(activeOutput)}."
-            }
-        }
-        else -> "No saved EQs are exportable to ${outputTitle(activeOutput)}."
+    return "$pendingCount ${if (pendingCount == 1) "preset needs" else "presets need"} export."
+}
+
+internal fun blackPearlFlashConfirmation(displayName: String, gainAdjustmentDb: Double): String {
+    val gainText = String.format(Locale.US, "%+.2f", gainAdjustmentDb)
+    val gainSentence = if (kotlin.math.abs(gainAdjustmentDb) < 0.000_001) {
+        "No playback-gain adjustment is required."
+    } else {
+        "EQ Library will adjust the Black Pearl global playback gain by $gainText dB to apply this preset's preamp/headroom. This changes listening volume."
     }
+    return "Flash $displayName to the Black Pearl's current EQ slot? This overwrites that EQ slot. $gainSentence Other DAC settings are not changed."
 }
 
 private fun generalCategoryLabel(category: GeneralEqCategory): String = when (category) {
@@ -519,15 +515,5 @@ private fun generalCategoryLabel(category: GeneralEqCategory): String = when (ca
 }
 
 private fun generalExportProductId(presetId: String): String = "general-export:$presetId"
-
-private fun outputTitle(device: ExportDevice): String = when (device) {
-    ExportDevice.UAPP -> "USB Audio Player PRO / ToneBoosters"
-    ExportDevice.BLACK_PEARL -> "TRN Black Pearl"
-    ExportDevice.UNIVERSAL_PARAMETRIC -> "Universal Parametric EQ"
-    ExportDevice.POWERAMP -> "Poweramp / Poweramp Equalizer"
-    ExportDevice.WAVELET -> "Wavelet"
-    ExportDevice.TOPPING_DX5_II -> "TOPPING DX5 II"
-    ExportDevice.TOPPING_DX1_II -> "TOPPING DX1 II"
-}
 
 private val CONNECTED_GREEN = Color(0xFF2E7D32)
