@@ -31,7 +31,7 @@ import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
-import com.weekssa.opraeqforuapp.ui.OpraEqApp
+import com.weekssa.opraeqforuapp.ui.EqLibraryApp
 import com.weekssa.opraeqforuapp.ui.theme.OpraEqTheme
 import kotlinx.coroutines.launch
 
@@ -123,7 +123,7 @@ class MainActivity : ComponentActivity() {
             ).value
 
             OpraEqTheme(themeMode = appPreferences.themeMode) {
-                OpraEqApp(
+                EqLibraryApp(
                     appPreferences = appPreferences,
                     catalogState = catalogState,
                     managedHeadphones = managedHeadphones,
@@ -189,14 +189,14 @@ class MainActivity : ComponentActivity() {
                             appPreferencesRepository.setThemeMode(themeMode)
                         }
                     },
-                    onProfileVisibilityChange = { category, visible ->
-                        lifecycleScope.launch {
-                            appPreferencesRepository.setProfileVisibility(category, visible)
-                        }
-                    },
                     onExportTargetChange = { device, enabled ->
                         lifecycleScope.launch {
                             appPreferencesRepository.setExportTargetEnabled(device, enabled)
+                        }
+                    },
+                    onActiveExportTargetChange = { device ->
+                        lifecycleScope.launch {
+                            appPreferencesRepository.setActiveExportTarget(device)
                         }
                     },
                     onDirectBlackPearlFlashEnabledChange = { enabled ->
