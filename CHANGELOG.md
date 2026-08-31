@@ -4,6 +4,45 @@ All notable changes to **OPRA EQ for UAPP / EQ Library** will be documented in t
 
 The project uses Semantic Versioning. Development releases remain in the `0.x` series until the first stable `v1.0.0` release.
 
+## [0.3.0] - Unreleased
+
+### Added
+
+- Global active-output context across **My EQs** and **EQ Library**, with locally enabled outputs in Settings. Initial selectable outputs are UAPP/ToneBoosters, TRN Black Pearl, Universal Parametric EQ, Poweramp/Poweramp Equalizer, and Wavelet.
+- Output-specific **My EQs** collections for managed headphone selections, General EQs, favorites/saved snapshots, and personal imports. Existing pre-output-context saved state migrates to UAPP/ToneBoosters.
+- **Headphones** and **General EQs** library sections, with General EQ filters for **All**, **Sound**, **Genre**, and **Utility**.
+- Device-independent canonical source usability plus active-output **Exact**, **Optimized**, and **Not exportable** status. A valid canonical curve remains visible/selectable even when the active output cannot represent it.
+- Multi-source canonical catalog foundation for OPRA, AutoEq, qualified creator/repository data, public community EQ submissions, immutable acoustic revisions, provenance, verification state, and general presets.
+- **Unverified** community EQ presentation with original source links and manual selection while excluding Unverified profiles from silent automatic future-profile inclusion.
+- Conditional **Export all** and per-item **Export** actions based on the current active-output candidate, app-owned SAF ownership metadata, generated fingerprint/content hash, and the actual exported document when available.
+- Optional TRN Black Pearl **Direct Flash** from My EQs, including DAC connection state, current-slot discovery, confirmation, EQ-only transfer, and success/error reporting.
+- Independent Black Pearl EQ protocol implementation for native Peak, Low Shelf, and High Shelf filters with a 10-band hardware limit and explicit unused-band flattening.
+- Output-scoped Room association tables and non-destructive migrations for managed headphone selections, General EQs, and favorites/personal imports.
+
+### Changed
+
+- Output selection is now an operating context rather than a catalog filter. Choosing a device/app changes conversion, export, Flash availability, capability status, and the My EQs collection, but never hides valid library curves.
+- The obsolete prototype setting **Show presets that none of my devices can export** is ignored/removed from user-facing behavior.
+- Selection, Select all/none, and automatic future-profile behavior are based on canonical source usability and trust/history state, not UAPP compatibility.
+- UAPP/ToneBoosters compatibility is enforced only at the UAPP conversion/export boundary. UAPP XML is optional generated state rather than a prerequisite for saving a canonical EQ.
+- Personal PEQ imports preserve a missing source preamp as null rather than silently inventing `0 dB`.
+- TRN Black Pearl conversion/Flash preserves corroborated native shelf/peak filter types instead of approximating shelves with synthetic peaking filters.
+- Black Pearl refuses profiles that require nonzero preamp/headroom because the observed EQ protocol has no independently verified per-EQ preamp field; EQ Library does not change global DAC volume to compensate.
+- Black Pearl profiles over 10 bands use the first 10 source-priority bands only with an explicit Optimized warning; canonical source data remains complete and unchanged.
+- Navigation and terminology now use **My EQs**, **EQ Library**, and **Settings** instead of the earlier My Headphones/Browse OPRA framing.
+
+### Fixed
+
+- Export status no longer stays permanently available after an output file is current; it is recalculated after export and when the active output, folder, or saved collection changes.
+- Removing a favorite/personal EQ from one output no longer implicitly removes it from another output where it is still selected.
+- A valid canonical profile that is unsupported by UAPP no longer becomes unselectable or silently excluded from automatic selection solely because of UAPP limits.
+- ToneBoosters conversion now explicitly rechecks UAPP-specific compatibility so device-independent selection cannot bypass the established UAPP filter/range/preamp safety gate.
+- Removed the superseded duplicate app shell that caused stale Black Pearl call signatures to break Android CI.
+
+### Validation
+
+- Final exact-head Android CI, CodeQL, APK artifact, and Pixel 9 / Black Pearl hands-on validation are required before this version may be promoted or PR #3 may be merged.
+
 ## [0.2.0] - 2026-08-28
 
 ### Added
