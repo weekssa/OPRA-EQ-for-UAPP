@@ -155,11 +155,11 @@ class BlackPearlFlasherTest {
             return succeeds
         }
     }
-
-    private fun gainRaw(report: ByteArray): Int = ByteBuffer.wrap(report, 4, 2)
-        .order(ByteOrder.LITTLE_ENDIAN)
-        .short
-        .toInt()
-
-    private fun Byte.u8(): Int = toInt() and 0xFF
 }
+
+private fun gainRaw(report: ByteArray): Int = ByteBuffer.wrap(report, 4, 2)
+    .order(ByteOrder.LITTLE_ENDIAN)
+    .short
+    .toInt()
+
+private fun Byte.u8(): Int = toInt() and 0xFF
