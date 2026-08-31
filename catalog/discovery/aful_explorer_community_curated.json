@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "headphone": {
+    "manufacturer": "AFUL",
+    "model": "Explorer"
+  },
+  "curation_scope": {
+    "strategy": "priority-headphone public community discovery",
+    "surfaces_reviewed": [
+      "Reddit r/iems",
+      "HiFiGuides Forums"
+    ],
+    "note": "Priority EQ Library coverage for AFUL Explorer. Only records with exact structured PEQ and traceable authorship/source are publication candidates. HiFiGuides is retained as a discovered source candidate until its registry lane is qualified."
+  },
+  "records": [
+    {
+      "id": "reddit-iems-1pi6g5d-lobonautics-explorer-basshead",
+      "surface": "reddit",
+      "community": "r/iems",
+      "creator": "LoboNautics",
+      "source_url": "https://www.reddit.com/r/iems/comments/1pi6g5d/aful_explorer_basshead_tuning/",
+      "source_date": "2025-12-09",
+      "status": "publish-candidate",
+      "provenance_tier": 3,
+      "lineage": "Original community tuning shared for AFUL Explorer",
+      "tuning_label": "Basshead tuning",
+      "target_claim": "Creator-described basshead tuning",
+      "preamp_db": -3.7,
+      "filters": [
+        {"type":"LSC","frequency_hz":20,"gain_db":2.0,"q":0.300},
+        {"type":"LSC","frequency_hz":90,"gain_db":3.0,"q":0.300},
+        {"type":"PK","frequency_hz":200,"gain_db":-1.0,"q":1.300},
+        {"type":"PK","frequency_hz":1500,"gain_db":-0.6,"q":1.200},
+        {"type":"PK","frequency_hz":2700,"gain_db":1.0,"q":2.000},
+        {"type":"PK","frequency_hz":3500,"gain_db":3.7,"q":1.100},
+        {"type":"PK","frequency_hz":3800,"gain_db":-2.0,"q":1.200},
+        {"type":"PK","frequency_hz":8000,"gain_db":1.5,"q":0.300}
+      ],
+      "review_notes": "The EQ post does not declare a nozzle, pad, or other material acoustic configuration, so it belongs to the generic Explorer bucket under the approved unspecified-configuration rule."
+    },
+    {
+      "id": "hifiguides-aful-explorer-jaytiss",
+      "surface": "hifiguides",
+      "community": "HiFiGuides Forums AFUL Explorer thread",
+      "creator": "Jaytiss",
+      "source_url": "https://forum.hifiguides.com/t/aful-explorer-1dd-2ba-hybrid-in-ear-monitors/42713",
+      "source_date": null,
+      "status": "source-review",
+      "provenance_tier": 3,
+      "lineage": "Community PEQ shared in the AFUL Explorer product thread",
+      "target_claim": null,
+      "preamp_db": -3.9,
+      "filters": [
+        {"type":"PK","frequency_hz":20,"gain_db":0.8,"q":0.9},
+        {"type":"PK","frequency_hz":42,"gain_db":0.9,"q":1.5},
+        {"type":"PK","frequency_hz":93,"gain_db":-0.7,"q":2.0},
+        {"type":"PK","frequency_hz":220,"gain_db":-1.4,"q":1.2},
+        {"type":"PK","frequency_hz":1300,"gain_db":-1.4,"q":1.9},
+        {"type":"PK","frequency_hz":2500,"gain_db":3.6,"q":2.0},
+        {"type":"PK","frequency_hz":4000,"gain_db":3.3,"q":2.0},
+        {"type":"PK","frequency_hz":5100,"gain_db":-2.4,"q":2.0},
+        {"type":"PK","frequency_hz":15000,"gain_db":2.9,"q":1.9}
+      ],
+      "review_notes": "Exact active PEQ values are retained. A disabled/zero placeholder filter from the source is not acoustic content. Hold until HiFiGuides is present as a qualified source registry lane."
+    }
+  ]
+}
