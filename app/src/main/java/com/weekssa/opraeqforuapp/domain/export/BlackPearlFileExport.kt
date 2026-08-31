@@ -7,10 +7,9 @@ import java.util.Locale
 /**
  * Builds the file representation for an external Black Pearl preset importer.
  *
- * File export is intentionally separate from EQ Library's direct USB Flash policy. The exported
- * text may preserve non-zero source preamp / EQ Library safety headroom because it is metadata for
- * the user's chosen external import workflow. Direct Flash still refuses any non-zero preamp so EQ
- * Library itself never changes the DAC's global volume.
+ * File export and direct USB Flash remain independent delivery paths. Both preserve the effective
+ * source preamp / EQ Library safety headroom; direct Flash applies that value through the approved
+ * Black Pearl playback-gain command while file export preserves it as a Preamp line.
  */
 internal fun buildFileExportDeviceVariant(
     profile: OpraEqProfile,
@@ -47,9 +46,9 @@ private fun buildBlackPearlFileExportVariant(profile: OpraEqProfile): DevicePres
 
     val transformation = when (fidelity) {
         DevicePresetFidelity.EXACT ->
-            "Source EQ bands and source preamp are preserved in Black Pearl import text. Direct USB Flash has a separate no-global-volume safety rule."
+            "Source EQ bands and source preamp are preserved in Black Pearl import text."
         DevicePresetFidelity.OPTIMIZED ->
-            "EQ Library optimized Black Pearl file export: effective playback headroom is preserved in the Preamp line and only the first ${capabilities.maxBands ?: mapped.size} source-priority bands are included when required by the device limit. Direct USB Flash has a separate no-global-volume safety rule."
+            "EQ Library optimized Black Pearl file export: effective playback headroom is preserved in the Preamp line and only the first ${capabilities.maxBands ?: mapped.size} source-priority bands are included when required by the device limit."
     }
 
     return DevicePresetVariant(
