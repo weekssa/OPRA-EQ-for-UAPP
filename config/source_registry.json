@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "registry_version": "0.3.0-community-public-3",
+  "registry_version": "0.3.0-community-public-4",
   "sources": [
     {
       "id": "opra",
@@ -140,6 +140,20 @@
       "redistribution": "structured-data-only",
       "attribution_required": true,
       "license_notes": "Publicly posted community EQ coefficients are publication-eligible. This is the single canonical registry identity for forum.headphones.com; preserve creator/username, topic/post URL, exact source filter structure, and label any EQ Library-derived conversion separately from the source-authored preset."
+    },
+    {
+      "id": "hifiguides",
+      "kind": "community",
+      "name": "HiFiGuides Forums",
+      "scope": "Public headphone and IEM discussion threads containing original structured PEQ settings",
+      "lifecycle": "active",
+      "cadence": "weekly",
+      "parser": "community-text-peq",
+      "parser_version": "1",
+      "cursor_strategy": "topic/post IDs, timestamps, and source content hashes",
+      "redistribution": "structured-data-only",
+      "attribution_required": true,
+      "license_notes": "Public numeric EQ coefficients are publication-eligible for this project when creator/username and original forum URL are preserved. EQ Library stores the structured coefficients and minimal tuning context, not unrelated forum prose, and does not access private or restricted content."
     },
     {
       "id": "github-community",
