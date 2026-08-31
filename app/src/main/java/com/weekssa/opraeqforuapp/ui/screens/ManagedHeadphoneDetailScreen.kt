@@ -31,10 +31,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.assessCompatibility
+import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedProfileRecord
 import com.weekssa.opraeqforuapp.domain.model.ProfileCompatibility
@@ -49,6 +51,9 @@ fun ManagedHeadphoneDetailScreen(
     profileVisibility: ProfileVisibilityPreferences,
     exportTargets: ExportTargetPreferences = ExportTargetPreferences(),
     favoriteProfileIds: Set<String>,
+    directBlackPearlFlashEnabled: Boolean,
+    blackPearlConnectionState: BlackPearlConnectionState,
+    onFlashManagedProfile: suspend (String) -> String,
     onToggleFavorite: suspend (OpraEqProfile, String, String) -> Boolean,
     onLoadManagedHeadphone: suspend (String) -> ManagedHeadphoneRecord?,
     onSaveSelection: suspend (String, Set<String>, Boolean) -> Unit,
@@ -71,6 +76,10 @@ fun ManagedHeadphoneDetailScreen(
     val displayedProfiles = remember(headphone.profiles) {
         headphone.profiles.filter { it.selected || it.noLongerAvailable }
     }
+    val isBlackPearlOutput = exportTargets.activeTarget == ExportDevice.BLACK_PEARL
+    val flashEnabled = isBlackPearlOutput &&
+        directBlackPearlFlashEnabled &&
+        blackPearlConnectionState is BlackPearlConnectionState.Connected
 
     LaunchedEffect(headphone.productId) {
         onMarkReviewed(headphone.productId)
@@ -100,14 +109,43 @@ fun ManagedHeadphoneDetailScreen(
 
     BackHandler(onBack = onBack)
     var pendingProfileRemoval by remember { mutableStateOf<ManagedProfileRecord?>(null) }
+    var pendingProfileFlash by remember { mutableStateOf<ManagedProfileRecord?>(null) }
     var showHeadphoneRemoval by remember { mutableStateOf(false) }
     var deleteSavedFiles by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
+    pendingProfileFlash?.let { profile ->
+        val source = profile.lastKnownProfile
+        val displayName = source.details?.takeIf(String::isNotBlank)
+            ?: source.author?.takeIf(String::isNotBlank)
+            ?: "this EQ"
+        AlertDialog(
+            onDismissRequest = { pendingProfileFlash = null },
+            title = { Text("Flash to Black Pearl?") },
+            text = {
+                Text(
+                    "Flash $displayName to the Black Pearl's current EQ slot? " +
+                        "This overwrites that EQ slot. Other DAC settings, including global volume, are not changed.",
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        pendingProfileFlash = null
+                        scope.launch { onMessage(onFlashManagedProfile(profile.profileId)) }
+                    },
+                ) { Text("Flash") }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingProfileFlash = null }) { Text("Cancel") }
+            },
+        )
+    }
+
     pendingProfileRemoval?.let { profile ->
         RemovalDialog(
             title = "Remove preset?",
-            body = "This preset will be removed from this headphone.",
+            body = "This preset will be removed from this headphone in My EQs.",
             deleteSavedFiles = deleteSavedFiles,
             onDeleteSavedFilesChange = { deleteSavedFiles = it },
             confirmLabel = "Remove preset",
@@ -131,7 +169,7 @@ fun ManagedHeadphoneDetailScreen(
     if (showHeadphoneRemoval) {
         RemovalDialog(
             title = "Remove headphone?",
-            body = "${headphone.productName} will be removed from My Headphones.",
+            body = "${headphone.productName} will be removed from My EQs for this output.",
             deleteSavedFiles = deleteSavedFiles,
             onDeleteSavedFilesChange = { deleteSavedFiles = it },
             confirmLabel = "Remove headphone",
@@ -152,7 +190,7 @@ fun ManagedHeadphoneDetailScreen(
     Column(modifier = modifier.fillMaxSize()) {
         TextButton(onClick = onBack, modifier = Modifier.padding(horizontal = 8.dp)) {
             Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = null)
-            Text("My Headphones", modifier = Modifier.padding(start = 4.dp))
+            Text("My EQs", modifier = Modifier.padding(start = 4.dp))
         }
         Text(
             text = headphone.productName,
@@ -167,7 +205,7 @@ fun ManagedHeadphoneDetailScreen(
         Text(
             text = buildString {
                 append(headphone.selectedProfileCount)
-                append(if (headphone.selectedProfileCount == 1) " selected" else " selected")
+                append(" selected")
                 availableProfileCount?.let {
                     append(" · ")
                     append(it)
@@ -185,6 +223,19 @@ fun ManagedHeadphoneDetailScreen(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
             style = MaterialTheme.typography.bodyMedium,
         )
+        if (isBlackPearlOutput && !flashEnabled) {
+            Text(
+                text = when {
+                    !directBlackPearlFlashEnabled -> "Direct Flash is disabled in Settings."
+                    blackPearlConnectionState !is BlackPearlConnectionState.Connected ->
+                        "Connect to the Black Pearl from the top of My EQs to enable Flash."
+                    else -> "Direct Flash is unavailable."
+                },
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         if (product != null) {
             Button(
                 onClick = { editing = true },
@@ -204,6 +255,9 @@ fun ManagedHeadphoneDetailScreen(
             items(displayedProfiles, key = ManagedProfileRecord::profileId) { profile ->
                 ManagedProfileRow(
                     profile = profile,
+                    showFlash = isBlackPearlOutput,
+                    flashEnabled = flashEnabled && profile.selected,
+                    onFlash = { pendingProfileFlash = profile },
                     onOpenSource = profile.lastKnownProfile.link?.let { sourceUrl -> { onOpenUrl(sourceUrl) } },
                     onRemove = {
                         deleteSavedFiles = false
@@ -229,6 +283,9 @@ fun ManagedHeadphoneDetailScreen(
 @Composable
 private fun ManagedProfileRow(
     profile: ManagedProfileRecord,
+    showFlash: Boolean,
+    flashEnabled: Boolean,
+    onFlash: () -> Unit,
     onOpenSource: (() -> Unit)?,
     onRemove: (() -> Unit)?,
 ) {
@@ -253,16 +310,26 @@ private fun ManagedProfileRow(
                 }
                 when {
                     profile.noLongerAvailable -> Text("No longer available in EQ Library")
-                    compatibility == ProfileCompatibility.NotCompatible -> Text("Not compatible · unavailable for selection")
-                    compatibility == ProfileCompatibility.CompatibleWithLimitation -> Text("Compatible with limitation")
+                    compatibility == ProfileCompatibility.NotCompatible -> Text("Not compatible with legacy UAPP conversion")
+                    compatibility == ProfileCompatibility.CompatibleWithLimitation -> Text("Legacy UAPP conversion has a limitation")
                     profile.selected -> Text("Selected")
                     profile.explicitlyExcluded -> Text("Not selected · excluded from automatic inclusion")
                     else -> Text("Not selected")
                 }
             }
         },
-        trailingContent = onRemove?.let { action ->
-            { TextButton(onClick = action) { Text("Remove") } }
+        trailingContent = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (showFlash) {
+                    TextButton(
+                        enabled = flashEnabled,
+                        onClick = onFlash,
+                    ) { Text("Flash") }
+                }
+                onRemove?.let { action ->
+                    TextButton(onClick = action) { Text("Remove") }
+                }
+            }
         },
     )
 }
@@ -312,6 +379,7 @@ private fun RemovalDialog(
             TextButton(onClick = onConfirm) { Text(confirmLabel) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") } }
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
     )
 }
