@@ -11,6 +11,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.weekssa.opraeqforuapp.data.blackpearl.AndroidBlackPearlUsbTransport
 import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
+import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlGainStatePreferences
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.data.catalog.HttpOpraCatalogSource
 import com.weekssa.opraeqforuapp.data.catalog.OpraCatalogRepository
@@ -39,6 +40,7 @@ import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
 import com.weekssa.opraeqforuapp.ui.EqLibraryApp
 import com.weekssa.opraeqforuapp.ui.theme.OpraEqTheme
+import java.util.Locale
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -105,8 +107,11 @@ class MainActivity : ComponentActivity() {
         AndroidBlackPearlUsbTransport(applicationContext)
     }
     private val blackPearlTransport by blackPearlTransportDelegate
+    private val blackPearlGainStateStore by lazy {
+        BlackPearlGainStatePreferences(applicationContext)
+    }
     private val blackPearlFlasher by lazy {
-        BlackPearlFlasher(blackPearlTransport)
+        BlackPearlFlasher(blackPearlTransport, blackPearlGainStateStore)
     }
 
     private var lastForegroundRefreshAttemptMillis: Long = 0L
@@ -175,13 +180,17 @@ class MainActivity : ComponentActivity() {
                     onSaveSelection = { productId, selectedIds, autoInclude ->
                         val ready = catalogRepository.state.value as? CatalogState.Ready
                         if (ready != null) {
-                            managedHeadphonesRepository.saveSelection(
-                                catalog = ready.catalog,
-                                productId = productId,
-                                stagedSelectedProfileIds = selectedIds,
-                                autoIncludeNewProfiles = autoInclude,
-                                outputId = activeOutputId,
-                            )
+                            if (selectedIds.isEmpty()) {
+                                managedHeadphonesRepository.removeHeadphone(productId, activeOutputId)
+                            } else {
+                                managedHeadphonesRepository.saveSelection(
+                                    catalog = ready.catalog,
+                                    productId = productId,
+                                    stagedSelectedProfileIds = selectedIds,
+                                    autoIncludeNewProfiles = autoInclude,
+                                    outputId = activeOutputId,
+                                )
+                            }
                         }
                     },
                     onRemoveHeadphone = { productId ->
@@ -368,9 +377,12 @@ class MainActivity : ComponentActivity() {
         }
 
         return when (val result = blackPearlFlasher.flash(profile)) {
-            is BlackPearlFlashResult.Success -> result.warning?.let { warning ->
-                "Flash successful · $warning"
-            } ?: "Flash successful"
+            is BlackPearlFlashResult.Success -> {
+                val gain = String.format(Locale.US, "%+.2f", result.appliedPlaybackGainDb)
+                result.warning?.let { warning ->
+                    "Flash successful · playback gain $gain dB · $warning"
+                } ?: "Flash successful · playback gain $gain dB"
+            }
             is BlackPearlFlashResult.NotRepresentable -> "Not flashable · ${result.reason}"
             is BlackPearlFlashResult.DeviceUnavailable -> result.reason
             is BlackPearlFlashResult.TransferFailed -> result.reason
@@ -459,6 +471,10 @@ class MainActivity : ComponentActivity() {
 
         if (record.noLongerAvailable || currentProfile == null || ready == null) {
             managedHeadphonesRepository.removeUnavailableProfile(productId, profileId, outputId)
+            val remaining = managedHeadphonesRepository.getHeadphone(productId, outputId)
+            if (remaining?.profiles?.none { it.selected || it.noLongerAvailable } != false) {
+                managedHeadphonesRepository.removeHeadphone(productId, outputId)
+            }
         } else {
             val selectionState = managed.toSelectionState()
             val remainingCurrentSelected = currentProfiles
