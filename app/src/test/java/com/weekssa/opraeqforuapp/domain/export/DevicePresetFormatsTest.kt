@@ -50,10 +50,17 @@ class DevicePresetFormatsTest {
     }
 
     @Test
-    fun oneSourceProfileProducesThreeTextDeviceVariants() {
+    fun oneSourceProfileProducesAllSupportedTextDeviceVariants() {
         val variants = buildTextDeviceVariants(profile)
         assertEquals(
-            setOf(ExportDevice.BLACK_PEARL, ExportDevice.TOPPING_DX5_II, ExportDevice.TOPPING_DX1_II),
+            setOf(
+                ExportDevice.BLACK_PEARL,
+                ExportDevice.UNIVERSAL_PARAMETRIC,
+                ExportDevice.POWERAMP,
+                ExportDevice.WAVELET,
+                ExportDevice.TOPPING_DX5_II,
+                ExportDevice.TOPPING_DX1_II,
+            ),
             variants.mapTo(mutableSetOf()) { it.device },
         )
     }
@@ -74,8 +81,14 @@ class DevicePresetFormatsTest {
     }
 
     @Test
-    fun everyExportTargetDeclaresEqCapabilities() {
-        assertTrue(ExportDevice.entries.all { it.eqCapabilities != null })
+    fun parametricTargetsDeclareCapabilitiesWhileWaveletDeclaresGraphicEqTransformation() {
+        val parametricTargets = ExportDevice.entries.filterNot { it == ExportDevice.WAVELET }
+        assertTrue(parametricTargets.all { it.eqCapabilities != null })
+        assertEquals(null, ExportDevice.WAVELET.eqCapabilities)
+
+        val wavelet = buildTextDeviceVariant(profile, ExportDevice.WAVELET)!!
+        assertEquals(DevicePresetFidelity.OPTIMIZED, wavelet.fidelity)
+        assertTrue(wavelet.transformation.contains("127-point GraphicEQ"))
 
         val uapp = ExportDevice.UAPP.eqCapabilities!!
         assertEquals(10, uapp.maxBands)
