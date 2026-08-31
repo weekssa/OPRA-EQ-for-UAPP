@@ -1,8 +1,8 @@
 package com.weekssa.opraeqforuapp.domain.managed
 
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
-import com.weekssa.opraeqforuapp.domain.catalog.assessCompatibility
 import com.weekssa.opraeqforuapp.domain.catalog.isHistoricalRevision
+import com.weekssa.opraeqforuapp.domain.catalog.isUsableParametricSource
 
 const val DEFAULT_AUTO_INCLUDE_NEW_PROFILES = true
 
@@ -17,7 +17,7 @@ data class ManagedHeadphoneSelection(
     val profileSelections: Map<String, StoredProfileSelection>,
 ) {
     fun isSelected(profile: OpraEqProfile): Boolean {
-        if (!profile.assessCompatibility().category.isSelectable) return false
+        if (!profile.isUsableParametricSource()) return false
         val stored = profileSelections[profile.id]
         return stored?.selected ?: (
             autoIncludeNewProfiles &&
@@ -28,9 +28,10 @@ data class ManagedHeadphoneSelection(
 }
 
 /**
- * First-use defaults silently select only verified current profiles. Unverified profiles remain
- * manually selectable, including through an explicit Select all action, but never enter a user's
- * library merely because the automatic-new-profile setting defaults ON.
+ * First-use defaults silently select only verified current usable canonical PEQ sources.
+ * Unverified profiles remain manually selectable, including through an explicit Select all action,
+ * but never enter a user's library merely because the automatic-new-profile setting defaults ON.
+ * Output capability is deliberately not a selection gate.
  */
 fun defaultStagedSelectedProfileIds(profiles: List<OpraEqProfile>): Set<String> =
     selectableProfileIds(profiles, includeHistorical = false, verifiedOnly = true)
@@ -55,14 +56,14 @@ fun selectionUpdatesForSave(
     val profileById = profiles.associateBy(OpraEqProfile::id)
     val invalidSelectedIds = stagedSelectedProfileIds.filter { profileId ->
         val profile = profileById[profileId]
-        profile == null || !profile.assessCompatibility().category.isSelectable
+        profile == null || !profile.isUsableParametricSource()
     }
     require(invalidSelectedIds.isEmpty()) {
-        "Selection contains unknown or Not-compatible profile IDs: ${invalidSelectedIds.joinToString()}"
+        "Selection contains unknown or unusable source profile IDs: ${invalidSelectedIds.joinToString()}"
     }
 
     return profiles.associate { profile ->
-        val selectable = profile.assessCompatibility().category.isSelectable
+        val selectable = profile.isUsableParametricSource()
         val selected = selectable && profile.id in stagedSelectedProfileIds
         profile.id to StoredProfileSelection(
             selected = selected,
@@ -83,7 +84,7 @@ fun selectableProfileIds(
     includeHistorical: Boolean = false,
     verifiedOnly: Boolean = false,
 ): Set<String> = profiles.asSequence()
-    .filter { it.assessCompatibility().category.isSelectable }
+    .filter(OpraEqProfile::isUsableParametricSource)
     .filter { includeHistorical || !it.isHistoricalRevision() }
     .filter { !verifiedOnly || it.isVerified }
     .map(OpraEqProfile::id)
