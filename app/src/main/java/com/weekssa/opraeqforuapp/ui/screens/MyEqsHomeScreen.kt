@@ -37,10 +37,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.export.ExportCurrentness
+import com.weekssa.opraeqforuapp.domain.blackpearl.isBlackPearlDirectFlashable
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqCategory
-import com.weekssa.opraeqforuapp.domain.export.DeviceExportability
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
-import com.weekssa.opraeqforuapp.domain.export.assessDeviceExportability
 import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
 import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
@@ -246,10 +245,7 @@ fun MyEqsHomeScreen(
                 }
                 items(headphoneSavedEqs, key = { "saved:${it.entryId}" }) { record ->
                     val needsExport = exportCurrentness.needsExport(record.productId, record.profile.id)
-                    val blackPearlRepresentable = assessDeviceExportability(
-                        record.profile,
-                        ExportDevice.BLACK_PEARL,
-                    ) != DeviceExportability.NOT_REPRESENTABLE
+                    val blackPearlFlashable = record.profile.isBlackPearlDirectFlashable()
                     ListItem(
                         leadingContent = if (record.kind == SavedEqKind.Favorite) {
                             { Icon(Icons.Outlined.Star, contentDescription = null) }
@@ -267,7 +263,7 @@ fun MyEqsHomeScreen(
                                 }
                                 if (activeOutput == ExportDevice.BLACK_PEARL) {
                                     TextButton(
-                                        enabled = flashActionsEnabled && blackPearlRepresentable,
+                                        enabled = flashActionsEnabled && blackPearlFlashable,
                                         onClick = {
                                             pendingFlash = PendingBlackPearlFlash.SavedEq(
                                                 entryId = record.entryId,
@@ -304,10 +300,7 @@ fun MyEqsHomeScreen(
         } else {
             items(savedGeneralEqs, key = { "general:${it.presetId}" }) { record ->
                 val needsExport = exportCurrentness.needsExport(generalExportProductId(record.presetId), record.presetId)
-                val blackPearlRepresentable = assessDeviceExportability(
-                    record.profile,
-                    ExportDevice.BLACK_PEARL,
-                ) != DeviceExportability.NOT_REPRESENTABLE
+                val blackPearlFlashable = record.profile.isBlackPearlDirectFlashable()
                 ListItem(
                     headlineContent = { Text(record.displayName) },
                     supportingContent = {
@@ -325,7 +318,7 @@ fun MyEqsHomeScreen(
                             }
                             if (activeOutput == ExportDevice.BLACK_PEARL) {
                                 TextButton(
-                                    enabled = flashActionsEnabled && blackPearlRepresentable,
+                                    enabled = flashActionsEnabled && blackPearlFlashable,
                                     onClick = {
                                         pendingFlash = PendingBlackPearlFlash.GeneralEq(
                                             presetId = record.presetId,
