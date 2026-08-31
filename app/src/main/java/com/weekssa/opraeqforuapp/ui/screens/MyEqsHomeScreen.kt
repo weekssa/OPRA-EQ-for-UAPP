@@ -167,13 +167,7 @@ fun MyEqsHomeScreen(
                     }
                 }
                 Text(
-                    text = when {
-                        exportCurrentness.hasPendingExport ->
-                            "${exportCurrentness.needsExportItems.size} exportable EQs need export for ${outputTitle(activeOutput)}."
-                        exportCurrentness.hasAnythingToExport ->
-                            "All exportable EQs are current for ${outputTitle(activeOutput)}."
-                        else -> "No saved EQs are exportable to ${outputTitle(activeOutput)}."
-                    },
+                    text = exportStatusText(exportCurrentness, activeOutput),
                     modifier = Modifier.padding(top = 8.dp),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -220,7 +214,7 @@ fun MyEqsHomeScreen(
                             supportingContent = {
                                 Text(
                                     if (pendingCount > 0) {
-                                        "${headphone.selectedProfileCount} selected · $pendingCount need export"
+                                        "${headphone.selectedProfileCount} selected · $pendingCount file ${if (pendingCount == 1) "export" else "exports"} pending"
                                     } else {
                                         "${headphone.selectedProfileCount} selected profiles"
                                     },
@@ -347,12 +341,13 @@ fun MyEqsHomeScreen(
 }
 
 @Composable
-private fun BlackPearlConnectionControl(
+fun BlackPearlConnectionControl(
     enabled: Boolean,
     state: BlackPearlConnectionState,
     onConnect: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    Column(modifier = Modifier.padding(bottom = 12.dp)) {
+    Column(modifier = modifier.padding(bottom = 12.dp)) {
         if (!enabled) {
             OutlinedButton(onClick = {}, enabled = false) { Text("Direct Flash disabled") }
             Text(
@@ -490,6 +485,31 @@ private fun PersonalEqDialog(
             OutlinedButton(onClick = onDismiss) { Text("Cancel") }
         },
     )
+}
+
+private fun exportStatusText(
+    exportCurrentness: ExportCurrentness,
+    activeOutput: ExportDevice,
+): String {
+    val pendingCount = exportCurrentness.needsExportItems.size
+    return when {
+        exportCurrentness.hasPendingExport -> {
+            val noun = if (pendingCount == 1) "EQ file" else "EQ files"
+            if (activeOutput == ExportDevice.BLACK_PEARL) {
+                "$pendingCount selected $noun still need${if (pendingCount == 1) "s" else ""} export for ${outputTitle(activeOutput)}. File export is separate from direct Flash."
+            } else {
+                "$pendingCount selected $noun still need${if (pendingCount == 1) "s" else ""} export for ${outputTitle(activeOutput)}."
+            }
+        }
+        exportCurrentness.hasAnythingToExport -> {
+            if (activeOutput == ExportDevice.BLACK_PEARL) {
+                "All exported Black Pearl preset files are current. File export is separate from direct Flash."
+            } else {
+                "All exportable EQ files are current for ${outputTitle(activeOutput)}."
+            }
+        }
+        else -> "No saved EQs are exportable to ${outputTitle(activeOutput)}."
+    }
 }
 
 private fun generalCategoryLabel(category: GeneralEqCategory): String = when (category) {
