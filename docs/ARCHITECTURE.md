@@ -1,222 +1,266 @@
-# OPRA EQ for UAPP — Architecture
+# EQ Library — Architecture
 
 This document supplements `docs/CHATGPT_PROJECT_RUNBOOK.md`. The runbook remains authoritative for product and UX decisions.
 
-For implementation-time product decisions approved after Phase 0, also read:
+For current implementation-time decisions and execution order, also read:
 
 - `docs/PHASE1_DECISIONS.md`
+- `docs/SOURCE_INGESTION_STRATEGY.md`
+- `docs/AUTONOMOUS_V0.3_PLAN.md`
+- `docs/V0.3_LOCKED_EXECUTION_PLAN.md`
+
+`docs/V0.3_LOCKED_EXECUTION_PLAN.md` contains the latest approved v0.3 product direction and supersedes older OPRA-only or export-target-visibility assumptions where they conflict.
 
 ## Android baseline
 
 The application is a single native Android module using Kotlin and Jetpack Compose.
 
 - application ID / namespace: `com.weekssa.opraeqforuapp`
+- user-facing product name: **EQ Library**
 - minSdk: 26
-- compileSdk / targetSdk: 36 (Android 16 stable baseline)
+- compileSdk / targetSdk: 36
 - Java target: 17
 - Android Gradle Plugin: 9.2.0
 - Kotlin / Compose compiler plugin: 2.3.21
 - Compose BOM: 2026.06.00
-- Room: durable app-owned managed-headphone/export state
-- Preferences DataStore: local appearance, compatibility visibility, export-tree, and update presentation preferences
-- WorkManager: approximately daily catalog reconciliation
+- Room: durable app-owned saved-EQ/export state
+- Preferences DataStore: local appearance, active output, enabled outputs, export-tree, refresh/update presentation preferences
+- WorkManager: approximately daily catalog reconciliation backup
 - Storage Access Framework / DocumentFile: explicit user-folder export and app-owned file cleanup
 
-The app deliberately targets the stable API 36 platform rather than a preview SDK. Dependency and toolchain changes must be checked against current official compatibility guidance and validated in CI.
+Do not casually bump build/dependency versions without checking current compatibility guidance and validating CI.
+
+## Product model
+
+EQ Library is a source-agnostic canonical EQ library. OPRA is one source. UAPP/ToneBoosters and TRN Black Pearl are output/device contexts.
+
+Canonical flow:
+
+`many sources -> discovery/intake -> source-authentic parse -> headphone/general identity -> provenance -> acoustic dedupe/revisions -> canonical library -> target-specific conversion/export/flash`
+
+Canonical source records are never rewritten to fit an output device. Preserve arbitrary source filter counts, supported source filter types, frequency, gain, Q, creator, target/intent, details, provenance, and source preamp. Missing source preamp remains null. Any generated safety headroom is separate derived metadata.
 
 ## Package and responsibility boundaries
 
 `com.weekssa.opraeqforuapp.ui`
 
-- Compose screens, app shell, navigation, dialogs, accessibility semantics, appearance, update banners, and user interaction.
-- UI must not parse OPRA JSON or implement ToneBoosters normalization.
+- Compose screens, app shell, navigation, dialogs, accessibility semantics, appearance, update banners, active-output selector, EQ Library/My EQs/Settings interaction.
+- UI must not parse source catalogs or implement device DSP conversion.
 
 `com.weekssa.opraeqforuapp.domain`
 
-- platform-independent product rules: compatibility, selection semantics, deterministic naming, conversion, export planning, SemVer/update comparison, and managed-state decisions.
-- Critical rules are unit-testable without Android framework dependencies.
+- canonical EQ models, identity, compatibility/fidelity classification, selection/saved-state semantics, deterministic naming, target conversion, export planning, SemVer/update comparison.
+- Critical rules remain unit-testable without Android framework dependencies.
 
 `com.weekssa.opraeqforuapp.data`
 
-- runtime catalog acquisition and last-known-good cache;
+- canonical catalog acquisition and last-known-good cache;
 - Room entities/DAOs/repositories;
-- managed-profile snapshots and fingerprints;
+- saved profile snapshots/fingerprints/revisions;
 - catalog reconciliation;
-- WorkManager scheduling/worker coordination;
-- SAF export ownership and cleanup;
-- GitHub public-release metadata client;
-- Preferences DataStore repository.
+- WorkManager scheduling;
+- SAF export ownership/cleanup;
+- public GitHub release metadata;
+- Preferences DataStore;
+- Black Pearl USB integration behind a narrow device coordinator when implemented.
 
-Platform integrations stay behind narrow repositories/coordinators rather than leaking into conversion/domain logic.
+Source discovery, crawling, terms/provenance checks, candidate qualification, and catalog publication stay outside the Android runtime.
 
-## Runtime OPRA catalog
+## Runtime canonical catalog
 
-Normal runtime source is exactly:
+The Android runtime consumes only a validated published canonical catalog. It must not scrape GitHub/forums during normal operation.
 
-`https://opra.roonlabs.net/database_v1.jsonl`
+OPRA runtime source remains `https://opra.roonlabs.net/database_v1.jsonl` as one upstream feed to the catalog-building pipeline.
 
-The app ships with zero headphone/EQ records and does not scrape GitHub during normal catalog operation.
+Requirements:
 
-`HttpOpraCatalogSource` downloads a bounded JSONL candidate to app-private storage. `OpraCatalogParser` parses vendor/product/EQ entries and validates IDs plus vendor/product/EQ relationships. A candidate must parse and validate completely before it can replace the current cache. Failed, partial, malformed, or invalid candidates are discarded without replacing known-good data.
+- candidate catalog is fully parsed/validated before promotion;
+- last-known-good cache remains usable during refresh and offline;
+- malformed/partial candidates never replace good state;
+- source failures never invalidate existing catalog data;
+- catalog comparison/update behavior is deterministic;
+- ordinary source/catalog updates do not require a new APK when schema stays compatible.
 
-A fresh saved catalog loads immediately and supports Browse/Search offline. Manual Refresh and approximately daily WorkManager checks share the same safe acquisition/reconciliation behavior. Network failures leave cached/local state usable.
+## Foreground refresh/currentness
 
-Foreground and WorkManager refreshes are serialized across repository instances so they cannot race over the shared candidate cache file. The first periodic worker run is delayed by roughly 24 hours so fresh-install foreground catalog acquisition owns initial synchronization.
+On app launch/resume, use cached data immediately. If the **last successful** catalog refresh is approximately 24 hours old or older, start an opportunistic foreground refresh. A failed attempt does not advance the last-success timestamp.
 
-## Browse and local search
+No network must never block or empty the app. Keep cached data and show concise non-blocking status such as `Couldn't refresh EQ Library — using your saved library`.
 
-Browse uses the current in-memory model parsed from the last-known-good catalog:
+Approximately-daily WorkManager remains a backup path, and Settings retains manual Refresh now.
 
-- Manufacturer → Model hierarchy from OPRA source names only;
-- no invented variants/path meaning;
-- manufacturer/model-only local search;
-- case-insensitive and ordinary spacing/punctuation-tolerant matching;
-- no network-per-keystroke or remote fallback;
-- managed selected counts shown where useful;
-- official OPRA attribution at the catalog-browser root.
+## Canonical identity
 
-## Compatibility and conversion
+Headphone identity cleanup is part of ingestion.
 
-Catalog validity and UAPP/ToneBoosters compatibility are independent.
+- safe spelling/punctuation/casing/redundant-manufacturer differences may normalize automatically when equivalence is clear;
+- reviewed aliases collapse proven alternate labels while preserving source names;
+- reviewed distinct pairs prevent over-merging;
+- ambiguous identity may remain queued without blocking unrelated publication.
 
-Current proven conversion supports:
+Community configuration rule:
 
-- `peak_dip`;
-- `low_shelf`;
-- `high_shelf`.
+- explicitly stated nozzle/pad/revision/ANC/acoustic mode is retained as a labeled configuration identity;
+- if a source does not state a configuration, use the generic/base model bucket rather than blocking publication or inventing a variant;
+- SIMGOT EW300 explicitly follows this rule: named nozzle -> preserve nozzle; unstated -> generic EW300.
 
-Established safe ranges remain:
+Saved-state migration follows canonical aliases so users do not lose selections when identity improves.
 
-- frequency: 16 Hz–20 kHz;
-- gain/preamp: -20 dB–+20 dB;
-- Q: 0.1–10.
+## Canonical acoustic dedupe and revisions
 
-Unsupported filter mappings, missing required acoustic data, and out-of-range acoustic values classify as **Not compatible**. Those profiles remain discoverable but are never selectable/exportable. No acoustic value is guessed, clamped, or silently dropped.
+After identity resolution:
 
-Profiles above 10 bands classify as **Compatible with limitation** and preserve OPRA priority/order by converting only the first 10 bands with an explicit warning.
+- equivalent acoustic fingerprints merge into one canonical tuning with multiple source references;
+- original/authoritative provenance becomes primary where known;
+- mirrors/reposts become secondary provenance;
+- materially changed same-lineage tuning becomes an immutable new revision;
+- clearly separate alternatives remain separate profiles;
+- formatting/provenance-only changes do not manufacture acoustic revisions.
 
-The Kotlin converter ports the established Python reference behavior:
+Verified/Unverified promotion is metadata-only when acoustic fingerprint is unchanged.
 
-- linear gain/preamp normalization;
-- cube-root frequency and Q normalization;
-- proven ToneBoosters filter-type constants;
-- disabled placeholder filters to fill the 10-band structure;
-- deterministic 66-value ToneBoosters XML;
-- deterministic headphone-first names;
-- ISO-8859-1-safe exported XML/name while full Unicode source metadata stays local.
+## Community and source ingestion
 
-Golden fixtures and parity-oriented unit tests protect this behavior.
+Primary public-community surfaces:
 
-Missing creator/author data does not change acoustic compatibility. A safely convertible profile remains selectable/exportable and uses the literal label **Creator information missing** in the creator slot while the stored OPRA author remains null/missing.
+- Reddit audio communities
+- Head-Fi
+- Audio Science Review
+- The HEADPHONE Community / Headphones.com
+- qualified public GitHub repositories/Gists
+- additional communities qualified over time
 
-## Managed state and selection
+Use high-signal structured discovery rather than indiscriminate scraping. Preserve coefficients and provenance, not unrelated forum prose. Do not access private/restricted/authenticated content or bypass controls.
 
-Room stores managed headphone identity and per-profile state including:
+A mechanically valid, source-traceable community EQ may publish as **Unverified** when identity/provenance/dedupe checks are safe. Ambiguous/malformed records remain quarantined without blocking unrelated catalog growth.
 
-- selected state;
-- explicit exclusion state;
-- auto-include-new-profiles mode;
-- full last-known OPRA profile snapshot with Unicode metadata;
-- semantic fingerprint;
-- first/last-seen timestamps;
-- unreviewed New/Updated flags;
-- No-longer-available state;
-- generated preset name/XML/source fingerprint/time;
-- external app-owned export records.
+The repository Submit an EQ Issue Form remains an optional contribution route, not the primary population strategy.
 
-A never-managed headphone starts with auto-inclusion ON and all currently selectable profiles checked. Not-compatible profiles are excluded from this default and from Select all/automatic inclusion. These first-use defaults are staged UI state rather than an already-persisted baseline: if at least one selectable profile exists, the screen must immediately allow **Add to My Headphones** without forcing an artificial checkbox change.
+Focused discovery begins with the priority queue defined in `docs/V0.3_LOCKED_EXECUTION_PLAN.md` while recurring discovery expands coverage in parallel.
 
-With auto-inclusion ON, unchecking a selectable profile becomes an explicit exclusion; future unrelated compatible profiles are included. With auto-inclusion OFF, the saved selection is fixed exact state.
+## General EQs
 
-A headphone is keyed by OPRA product identity in Room. Explicit Add/Save and per-headphone XML export both create or update that same record rather than creating parallel/duplicate library state.
+Canonical classification separates scope/purpose from headphone identity.
 
-## Catalog reconciliation and review
+Supported user-facing General EQ groups:
 
-Manual and background refresh share deterministic managed-state reconciliation.
+- Sound
+- Genre
+- Utility
 
-- New profiles are stored and marked New; compatible ones auto-select only when the headphone's auto-inclusion rule allows it.
-- Changed selected compatible profiles regenerate local deterministic XML and become Updated.
-- Removed profiles retain last-known OPRA metadata and generated XML and become **No longer available in OPRA**; they are never silently deleted.
-- A selected profile that changes and becomes Not compatible is unselected/disabled while the last successfully generated preset state is retained for explicit review/cleanup.
-- Source-link-only provenance changes do not count as acoustic/profile semantic changes.
-- Re-refreshing does not clear unreviewed New/Updated state.
-- Opening the managed-headphone review clears persisted transient New/Updated markers while the opened review surface preserves enough local presentation context to inspect the changes; No-longer-available state persists until explicit removal/upstream return.
+General presets remain standalone in v0.3. Do not silently layer/combine them with headphone-specific EQs.
+
+Do not invent genre/intent from filter shape. Classification must follow explicit source context.
+
+## Output/device context
+
+The current output/device is global operating context, not a library filter.
+
+Initial contexts:
+
+- USB Audio Player PRO / ToneBoosters
+- TRN Black Pearl
+- Universal Parametric EQ
+- Poweramp / Poweramp Equalizer
+- Wavelet
+
+The canonical library remains complete regardless of active output.
+
+Each profile is evaluated against the active output as:
+
+- Exact / preserved
+- Optimized
+- Not exportable / not faithfully representable
+
+Changing output changes conversion/export/flash context and My EQs saved collection; it does not delete or hide canonical profiles.
+
+## My EQs
+
+My EQs is output-specific and may contain different saved profiles for different outputs without duplicating canonical source data.
+
+Saved content is grouped into Headphones and General EQs.
+
+Export state is output-specific. `Export all` is relevant when one or more current-output saved EQs need first export or regeneration/re-export after source/output changes. Per-row Export may disappear after success and reappear when generated output changes.
+
+Remove remains explicit and affects only local saved state plus optional app-owned exported-file cleanup.
+
+## Conversion and target capabilities
+
+Every output implements declared capabilities rather than altering canonical ingestion.
+
+A `DeviceEqCapabilities`-style domain model includes supported filter types/ranges, preamp/headroom behavior, format restrictions, and nullable/unlimited `maxBands` where appropriate.
+
+UAPP/ToneBoosters currently uses the proven 10-band representation. Preserve source priority/order and first 10 in generated output with an explicit limitation warning; retain all source bands canonically.
+
+Kotlin ToneBoosters conversion preserves the established reference behavior and deterministic XML. ToneBoosters XML remains ISO-8859-1-safe while full Unicode source metadata stays local.
+
+Golden fixtures protect parity for normalization, preamp, filters, deterministic output, >10-band handling, unsupported filters, naming/encoding, and export behavior.
+
+## TRN Black Pearl architecture
+
+Black Pearl direct Flash is EQ-only and exists only from My EQs when Black Pearl is active and direct Flash is enabled.
+
+Reference implementations are GPL-licensed and may be studied for observable protocol behavior only; do not copy GPL implementation code into this Apache-2.0 project.
+
+Known reference behavior to independently validate includes:
+
+- USB VID `0x3302`, PID `0x43E8`;
+- HID report `0x4B`;
+- PEQ values command `0x09`;
+- flash/save command `0x01`;
+- 10-band reference implementation;
+- active-slot value included in writes;
+- peak-biquad generation in the reference Android app;
+- AutoEq-style text importer for Preamp/Filter/Fc/Gain/Q.
+
+Do not expose unrelated DAC settings (volume, reconstruction filter, gain, amplifier topology, balance, microphone controls).
+
+Do not change global DAC playback volume during Flash unless hardware investigation proves this is the only faithful way to apply source preamp/headroom and the user explicitly approves that behavior.
+
+Hardware-independent packet/conversion behavior must be unit-tested; final USB/flash behavior remains a hands-on validation checkpoint.
 
 ## Export architecture
 
-Export is explicit and user-driven through Android's Storage Access Framework.
+Export remains explicit and user-driven through Android Storage Access Framework.
 
-- Bulk **Export presets** from My Headphones exports the selected presets across the managed library.
-- Per-headphone **Export XMLs** is available from the headphone profile editor. If that headphone is new or has staged changes, the staged selection/future-profile setting is persisted first; export then reloads the durable Room record by OPRA product ID and writes only that headphone's selected generated presets. This guarantees that any headphone explicitly exported from Browse is also present/updated in My Headphones.
-- First Export opens the system directory picker; the UI suggests `Documents/OPRA EQ for UAPP/Presets` but the user chooses.
-- Supported tree access is persisted in DataStore and via Android persistable URI permission.
-- No broad storage permission or writes into another app's private storage.
-- Folder hierarchy begins Manufacturer/Model; deeper folders are only allowed for verified OPRA distinctions.
-- Selected generated profiles become deterministic filename candidates.
-- `ExportOwnershipEntity` records documents created by this app.
-- Existing unknown same-name files are conflicts: never overwrite and never rename to `(2)`.
-- App-owned files can be updated on later explicit Export.
-- Content hashes distinguish current/modified copies.
-- Per-file failures do not roll back independent successful files.
-- Optional removal cleanup deletes only ownership-tracked app-created files; local state removal succeeds even if external cleanup fails.
+- active output drives normal export; no redundant target chooser is required;
+- first folder export uses the system picker and persisted supported directory access;
+- no broad storage permission or writes into another app's private storage;
+- app-created file ownership is tracked;
+- unknown same-name external files are conflicts and are not silently overwritten/renamed;
+- app-owned files may be updated on later explicit Export;
+- per-file failures do not roll back independent successes;
+- optional cleanup deletes only app-owned tracked files.
 
-Room schema version 2 adds generated-preset state and export ownership with an explicit v1→v2 migration.
+Black Pearl Flash is independent of file Export.
 
-Cleanup uses the retained SAF tree permission and attempts external owned-file deletion before local managed-state removal. Files orphaned by an uninstall are deliberately treated as untracked and must not be deleted merely because their names match.
+## App updates, attribution, privacy
 
-## App updates
+The app checks public GitHub Release metadata without credentials at a modest cadence. A newer version may show a nonblocking banner and What's new/Get update actions. No silent APK download/self-install/install-unknown-apps permission.
 
-The app checks the repository's latest GitHub Release metadata without user credentials at a modest cadence. SemVer comparison uses the normal release channel only; prereleases are not normal update candidates.
+Source attribution is retained for OPRA, AutoEq, community creators, and other qualified sources. Do not imply endorsement by OPRA, Roon Labs, UAPP, ToneBoosters, TRN, Sony, or headphone manufacturers.
 
-A newer version can surface a nonblocking banner and Settings → About & updates actions. What’s new displays release notes; Get update opens the release page in the browser. There is no silent APK download, self-install, install-unknown-apps permission, or forced update.
-
-The source repository is public and `v0.1.0` is published. Public unauthenticated latest-release metadata is live and has been verified on an installed `v0.1.0` build, which reports **You're up to date** when the installed version is current.
-
-## Attribution, privacy, and licenses
-
-The app bundles the official OPRA logo solely for source attribution and does not download OPRA headphone artwork at runtime. Browse and Settings credit OPRA, link to the OPRA project, preserve individual profile creator/source metadata where available, and disclose CC BY-SA 4.0 data licensing.
-
-Root `NOTICE` documents converter/software provenance and `DATA_LICENSE.md` documents OPRA-derived data licensing. `PRIVACY.md` is the public privacy statement and matches the app's in-product disclosure. The UI states that the app is not affiliated with or endorsed by OPRA, Roon Labs, USB Audio Player PRO/UAPP, ToneBoosters, or headphone manufacturers.
-
-Selections, settings, generated preset state, and conversion remain local; there is no account, analytics, or telemetry.
-
-## Launcher icon
-
-The approved **Equalizer Headphones** direction is implemented as original Android adaptive launcher assets: headphone/earcup geometry around three EQ slider controls, plus round and monochrome/themed-icon treatment. No OPRA/UAPP/ToneBoosters brand mark is incorporated.
+Selections/settings/generated preset state remain local. No account, analytics, telemetry, or cloud backend is required for end users.
 
 ## Validation and CI
 
-Android CI is the automated gate and runs:
+Android CI remains the automated gate and must include applicable unit tests, lint, debug/release assembly, catalog/schema validation, and security checks.
 
-- `:app:testDebugUnitTest`
-- `:app:lintDebug`
-- `:app:assembleDebug`
-- `:app:assembleRelease`
+Before hands-on v0.3 testing, validate at least:
 
-The normal CI workflow does not publish development APK artifacts. Signed installable binaries are reserved for deliberate GitHub Releases.
+- multi-source real Android catalog path;
+- canonical identity migration/dedupe/revisions;
+- arbitrary source filter counts and missing-preamp behavior;
+- community recurring discovery and coverage state;
+- General EQ classification;
+- active-output persistence/migration;
+- no active-output library hiding;
+- output-specific My EQs;
+- export-state behavior;
+- launch/resume due/not-due/offline refresh;
+- UAPP regression/parity;
+- Black Pearl target conversion and hardware-independent USB protocol behavior;
+- Room/DataStore migration from installed release state;
+- signed candidate upgrade integrity.
 
-Same-branch obsolete runs are cancelled so validation tracks the newest `main` state. Tests cover catalog parsing/cache safety, startup retry/concurrent refresh safety, search, compatibility, selection defaults/exclusions, first-add action eligibility, snapshot/fingerprint semantics, native conversion/golden XML, reconciliation, export planning/conflicts, SemVer, and other deterministic domain rules.
-
-The primary Pixel 9 hands-on validation gate **passed on 2026-08-15**. It covered first launch/fresh catalog acquisition, offline reuse, Browse/Search, My Headphones management, selection persistence, SAF export and owned-file cleanup, successful UAPP/ToneBoosters XML import, appearance, large text, TalkBack, themed icon presentation, privacy, and attribution. See `docs/DEVICE_TEST_PLAN.md`.
-
-A future signed release build still requires a short release-build smoke test because signing/build-type differences are not covered by the completed debug-device pass.
-
-## Phase 1 / public release status
-
-Implemented and validated product slices:
-
-1. Foundation Android/Compose app and local settings.
-2. Runtime OPRA client, validation, last-known-good cache, Browse/Search.
-3. Room managed state and selection semantics.
-4. Native Kotlin ToneBoosters conversion with golden parity fixtures.
-5. Managed change reconciliation plus approximately daily WorkManager checks.
-6. SAF export, ownership/conflict tracking, persisted folder access, and optional app-created-file cleanup.
-7. Public GitHub Release metadata/update UX.
-8. OPRA attribution/privacy/license surfaces and production adaptive icon assets.
-9. Accessibility/release hardening and Pixel 9/UAPP hands-on validation.
-10. Public-repository documentation, privacy, contribution/security guidance, and release checklist.
-11. Public source-repository publication and CI validation of both debug and unsigned release builds.
-12. Permanent GitHub release-signing identity, fingerprint verification, signed-candidate Pixel 9 smoke test, and public `v0.1.0` GitHub Release with APK/checksum/signature-verification assets.
-13. Live installed-app update-metadata validation against the public `releases/latest` endpoint.
-
-The app implementation, primary device-validation gate, public-source publication, stable release-signing setup, signed release-build smoke test, and first public GitHub binary release `v0.1.0` are complete. Normal post-release maintenance now applies: preserve the release-signing identity, increment `versionCode` for every installable release, update `CHANGELOG.md`, and repeat the candidate/device/publish gates for future releases. Google Play work remains intentionally deferred.
+The v0.3 branch/PR stays unmerged until the signed candidate passes hands-on testing.
