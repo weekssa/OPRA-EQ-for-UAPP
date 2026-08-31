@@ -1,5 +1,6 @@
 package com.weekssa.opraeqforuapp.data.library
 
+import androidx.room.withTransaction
 import com.weekssa.opraeqforuapp.data.managed.ManagedProfileSnapshotCodec
 import com.weekssa.opraeqforuapp.data.managed.OpraEqDatabase
 import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
@@ -14,34 +15,54 @@ import com.weekssa.opraeqforuapp.domain.managed.ManagedProfileRecord
 import java.security.MessageDigest
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 
 class SavedEqRepository(
-    database: OpraEqDatabase,
+    private val database: OpraEqDatabase,
     private val snapshotCodec: ManagedProfileSnapshotCodec = ManagedProfileSnapshotCodec(),
     private val nowMillis: () -> Long = System::currentTimeMillis,
 ) {
     private val dao = database.savedEqDao()
 
-    fun observeAll(): Flow<List<SavedEqRecord>> =
-        dao.observeAll().map { entities -> entities.map(::toDomain) }
+    fun observeForOutput(outputId: String): Flow<List<SavedEqRecord>> =
+        combine(
+            dao.observeAll(),
+            dao.observeOutputSelections(outputId),
+        ) { saved, selections ->
+            val selectionById = selections.associateBy(OutputSavedEqEntity::entryId)
+            saved.asSequence()
+                .filter { it.entryId in selectionById }
+                .map(::toDomain)
+                .sortedWith(
+                    compareByDescending<SavedEqRecord> { selectionById[it.entryId]?.selectedAtMillis ?: 0L }
+                        .thenBy { it.entryId },
+                )
+                .toList()
+        }
 
-    suspend fun get(entryId: String): SavedEqRecord? = dao.get(entryId)?.let(::toDomain)
+    suspend fun getForOutput(outputId: String, entryId: String): SavedEqRecord? {
+        if (dao.getSelection(outputId, entryId) == null) return null
+        return dao.get(entryId)?.let(::toDomain)
+    }
 
     suspend fun toggleFavorite(
+        outputId: String,
         profile: OpraEqProfile,
         manufacturer: String,
         model: String,
-    ): Boolean {
-        val existing = dao.getFavorite(profile.id)
-        if (existing != null) {
-            dao.deleteFavorite(profile.id)
-            return false
+    ): Boolean = database.withTransaction {
+        val entryId = favoriteEntryId(profile.id)
+        if (dao.getSelection(outputId, entryId) != null) {
+            dao.deleteSelection(outputId, entryId)
+            if (dao.selectionCount(entryId) == 0) dao.delete(entryId)
+            return@withTransaction false
         }
+
+        val existing = dao.get(entryId)
         val now = nowMillis()
         dao.upsert(
             SavedEqEntity(
-                entryId = favoriteEntryId(profile.id),
+                entryId = entryId,
                 kind = KIND_FAVORITE,
                 sourceProfileId = profile.id,
                 productId = profile.productId,
@@ -49,14 +70,22 @@ class SavedEqRepository(
                 model = model,
                 displayName = favoriteDisplayName(profile),
                 profileJson = snapshotCodec.encode(profile),
-                createdAtMillis = now,
+                createdAtMillis = existing?.createdAtMillis ?: now,
                 updatedAtMillis = now,
             ),
         )
-        return true
+        dao.upsertSelection(
+            OutputSavedEqEntity(
+                outputId = outputId,
+                entryId = entryId,
+                selectedAtMillis = now,
+            ),
+        )
+        true
     }
 
     suspend fun importPersonal(
+        outputId: String,
         manufacturer: String,
         model: String,
         displayName: String,
@@ -91,7 +120,7 @@ class SavedEqRepository(
             details = details,
             link = null,
             profileType = "parametric_eq",
-            preampGainDb = parsed.preampGainDb ?: 0.0,
+            preampGainDb = parsed.preampGainDb,
             bands = parsed.filters.map { filter ->
                 OpraBand(
                     type = when (filter.type) {
@@ -120,12 +149,24 @@ class SavedEqRepository(
             createdAtMillis = now,
             updatedAtMillis = now,
         )
-        dao.upsert(entity)
+        database.withTransaction {
+            dao.upsert(entity)
+            dao.upsertSelection(
+                OutputSavedEqEntity(
+                    outputId = outputId,
+                    entryId = entity.entryId,
+                    selectedAtMillis = now,
+                ),
+            )
+        }
         return toDomain(entity)
     }
 
-    suspend fun delete(entryId: String) {
-        dao.delete(entryId)
+    suspend fun removeFromOutput(outputId: String, entryId: String) {
+        database.withTransaction {
+            dao.deleteSelection(outputId, entryId)
+            if (dao.selectionCount(entryId) == 0) dao.delete(entryId)
+        }
     }
 
     fun toManagedHeadphone(record: SavedEqRecord): ManagedHeadphoneRecord {
