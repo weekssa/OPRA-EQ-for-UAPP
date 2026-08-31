@@ -51,6 +51,30 @@ data class OpraEqProfile(
         preampGainDb == null && eqLibrarySafetyHeadroomDb != null
 }
 
+enum class GeneralEqCategory {
+    SOUND,
+    GENRE,
+    UTILITY,
+}
+
+/**
+ * User-facing projection of a canonical general preset. It deliberately has no headphone/product
+ * identity, preventing Effect/Genre presets from being smuggled through the headphone hierarchy.
+ */
+data class GeneralEqPreset(
+    val id: String,
+    val displayName: String,
+    val category: GeneralEqCategory,
+    val creator: String?,
+    val soundImpactSummary: String?,
+    val sourceUrl: String?,
+    val preampGainDb: Double?,
+    val bands: List<OpraBand>,
+    val eqLibrarySafetyHeadroomDb: Double? = null,
+    val isVerified: Boolean = true,
+    val isLatestRevision: Boolean = true,
+)
+
 data class OpraProductSearchResult(
     val vendor: OpraVendor,
     val product: OpraProduct,
@@ -69,6 +93,7 @@ data class OpraCatalog(
      * breaking managed-headphone records that still reference an older product ID.
      */
     val productAliases: Map<String, String> = emptyMap(),
+    val generalPresets: List<GeneralEqPreset> = emptyList(),
 ) {
     private val vendorById = vendors.associateBy(OpraVendor::id)
     private val productById = products.associateBy(OpraProduct::id)
@@ -135,6 +160,26 @@ data class OpraCatalog(
                 .thenBy { it.vendor.name.lowercase(Locale.ROOT) }
                 .thenBy { it.product.id },
         )
+    }
+
+    fun searchGeneralPresets(query: String): List<GeneralEqPreset> {
+        val tokens = query
+            .lowercase(Locale.ROOT)
+            .split(SEARCH_SEPARATOR)
+            .map(::normalizeSearchText)
+            .filter(String::isNotEmpty)
+        if (tokens.isEmpty()) return generalPresets
+        return generalPresets.filter { preset ->
+            val haystack = normalizeSearchText(
+                listOfNotNull(
+                    preset.displayName,
+                    preset.creator,
+                    preset.soundImpactSummary,
+                    preset.category.name,
+                ).joinToString(" "),
+            )
+            tokens.all(haystack::contains)
+        }
     }
 
     private fun resolveProductId(productId: String): String {
