@@ -9,6 +9,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.weekssa.opraeqforuapp.data.export.ExportOwnershipDao
 import com.weekssa.opraeqforuapp.data.export.ExportOwnershipEntity
 import com.weekssa.opraeqforuapp.data.library.OutputGeneralEqEntity
+import com.weekssa.opraeqforuapp.data.library.OutputSavedEqEntity
 import com.weekssa.opraeqforuapp.data.library.SavedEqDao
 import com.weekssa.opraeqforuapp.data.library.SavedEqEntity
 import com.weekssa.opraeqforuapp.data.library.SavedGeneralEqDao
@@ -22,10 +23,11 @@ import com.weekssa.opraeqforuapp.data.library.SavedGeneralEqEntity
         OutputManagedProfileEntity::class,
         ExportOwnershipEntity::class,
         SavedEqEntity::class,
+        OutputSavedEqEntity::class,
         SavedGeneralEqEntity::class,
         OutputGeneralEqEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = false,
 )
 abstract class OpraEqDatabase : RoomDatabase() {
@@ -174,13 +176,43 @@ abstract class OpraEqDatabase : RoomDatabase() {
             }
         }
 
+        /** Existing favorites/personal imports become UAPP My EQs selections on upgrade. */
+        internal val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS output_saved_eqs (
+                        outputId TEXT NOT NULL,
+                        entryId TEXT NOT NULL,
+                        selectedAtMillis INTEGER NOT NULL,
+                        PRIMARY KEY(outputId, entryId)
+                    )
+                    """.trimIndent(),
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_output_saved_eqs_entryId ON output_saved_eqs(entryId)")
+                db.execSQL(
+                    """
+                    INSERT OR IGNORE INTO output_saved_eqs(outputId, entryId, selectedAtMillis)
+                    SELECT 'UAPP', entryId, updatedAtMillis
+                    FROM saved_eqs
+                    """.trimIndent(),
+                )
+            }
+        }
+
         fun create(context: Context): OpraEqDatabase =
             Room.databaseBuilder(
                 context.applicationContext,
                 OpraEqDatabase::class.java,
                 "opra_eq_for_uapp.db",
             )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                .addMigrations(
+                    MIGRATION_1_2,
+                    MIGRATION_2_3,
+                    MIGRATION_3_4,
+                    MIGRATION_4_5,
+                    MIGRATION_5_6,
+                )
                 .build()
     }
 }
