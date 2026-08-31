@@ -44,6 +44,10 @@ class AppPreferencesRepository(context: Context) {
                     ExportDevice.entries.firstOrNull { it.name == storedName }
                 }
             }
+            val storedActive = preferences[Keys.ActiveExportTarget]
+                ?.let { storedName -> ExportDevice.entries.firstOrNull { it.name == storedName } }
+            val outputPreferences = ExportTargetPreferences.normalize(selectedTargets, storedActive)
+
             AppPreferences(
                 themeMode = ThemeMode.fromStorageValue(preferences[Keys.ThemeMode]),
                 profileVisibility = ProfileVisibilityPreferences(
@@ -51,10 +55,8 @@ class AppPreferencesRepository(context: Context) {
                     showCompatibleWithLimitation = preferences[Keys.ShowCompatibleWithLimitation] ?: true,
                     showNotCompatible = preferences[Keys.ShowNotCompatible] ?: true,
                 ),
-                exportTargets = ExportTargetPreferences(
-                    selectedTargets = selectedTargets,
-                    showUnexportablePresets = preferences[Keys.ShowUnexportablePresets] ?: true,
-                ),
+                exportTargets = outputPreferences,
+                directBlackPearlFlashEnabled = preferences[Keys.DirectBlackPearlFlashEnabled] ?: false,
                 exportTreeUri = preferences[Keys.ExportTreeUri],
                 exportTreeLabel = preferences[Keys.ExportTreeLabel],
                 updates = UpdatePreferences(
@@ -88,25 +90,28 @@ class AppPreferencesRepository(context: Context) {
     }
 
     suspend fun setExportTargetEnabled(device: ExportDevice, enabled: Boolean) {
+        if (!device.selectableInV03) return
         appContext.appPreferencesDataStore.edit { preferences ->
-            val storedTargets = preferences[Keys.SelectedExportTargets]
-            val current = if (storedTargets == null) {
-                mutableSetOf(ExportDevice.UAPP.name)
-            } else {
-                storedTargets.toMutableSet()
-            }
-            if (enabled) {
-                current += device.name
-            } else {
-                current -= device.name
-            }
-            preferences[Keys.SelectedExportTargets] = current
+            val current = outputPreferences(preferences[Keys.SelectedExportTargets], preferences[Keys.ActiveExportTarget])
+            val next = current.withTarget(device, enabled)
+            preferences[Keys.SelectedExportTargets] = next.selectedTargets.mapTo(mutableSetOf())(ExportDevice::name)
+            preferences[Keys.ActiveExportTarget] = next.activeTarget.name
         }
     }
 
-    suspend fun setShowUnexportablePresets(show: Boolean) {
+    suspend fun setActiveExportTarget(device: ExportDevice) {
+        if (!device.selectableInV03) return
         appContext.appPreferencesDataStore.edit { preferences ->
-            preferences[Keys.ShowUnexportablePresets] = show
+            val current = outputPreferences(preferences[Keys.SelectedExportTargets], preferences[Keys.ActiveExportTarget])
+            val next = current.withActiveTarget(device)
+            preferences[Keys.SelectedExportTargets] = next.selectedTargets.mapTo(mutableSetOf())(ExportDevice::name)
+            preferences[Keys.ActiveExportTarget] = next.activeTarget.name
+        }
+    }
+
+    suspend fun setDirectBlackPearlFlashEnabled(enabled: Boolean) {
+        appContext.appPreferencesDataStore.edit { preferences ->
+            preferences[Keys.DirectBlackPearlFlashEnabled] = enabled
         }
     }
 
@@ -160,12 +165,31 @@ class AppPreferencesRepository(context: Context) {
         }
     }
 
+    private fun outputPreferences(
+        storedTargets: Set<String>?,
+        storedActive: String?,
+    ): ExportTargetPreferences {
+        val selected = if (storedTargets == null) {
+            setOf(ExportDevice.UAPP)
+        } else {
+            storedTargets.mapNotNullTo(mutableSetOf()) { storedName ->
+                ExportDevice.entries.firstOrNull { it.name == storedName }
+            }
+        }
+        val active = storedActive?.let { name -> ExportDevice.entries.firstOrNull { it.name == name } }
+        return ExportTargetPreferences.normalize(selected, active)
+    }
+
     private object Keys {
         val ThemeMode = stringPreferencesKey("theme_mode")
         val ShowFullyCompatible = booleanPreferencesKey("show_fully_compatible")
         val ShowCompatibleWithLimitation = booleanPreferencesKey("show_compatible_with_limitation")
         val ShowNotCompatible = booleanPreferencesKey("show_not_compatible")
         val SelectedExportTargets = stringSetPreferencesKey("selected_export_targets")
+        val ActiveExportTarget = stringPreferencesKey("active_export_target")
+        val DirectBlackPearlFlashEnabled = booleanPreferencesKey("direct_black_pearl_flash_enabled")
+        // Legacy v0.3 preview key intentionally left unread. Output selection no longer hides library curves.
+        @Suppress("unused")
         val ShowUnexportablePresets = booleanPreferencesKey("show_unexportable_presets")
         val ExportTreeUri = stringPreferencesKey("export_tree_uri")
         val ExportTreeLabel = stringPreferencesKey("export_tree_label")
