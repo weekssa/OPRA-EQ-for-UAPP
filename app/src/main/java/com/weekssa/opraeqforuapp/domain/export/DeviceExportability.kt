@@ -25,7 +25,7 @@ fun assessDeviceExportability(
             }
         }
     }
-    else -> buildTextDeviceVariant(profile, device)?.let { variant ->
+    else -> buildFileExportDeviceVariant(profile, device)?.let { variant ->
         when (variant.fidelity) {
             DevicePresetFidelity.EXACT -> DeviceExportability.EXACT
             DevicePresetFidelity.OPTIMIZED -> DeviceExportability.OPTIMIZED
