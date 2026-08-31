@@ -4,12 +4,8 @@ import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import java.util.Locale
 import kotlin.math.PI
-import kotlin.math.abs
-import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.ln
-import kotlin.math.max
-import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.math.sqrt
@@ -81,7 +77,7 @@ private val TOPPING_CURRENT_CAPABILITIES = DeviceEqCapabilities(
 
 private val BLACK_PEARL_CURRENT_CAPABILITIES = DeviceEqCapabilities(
     maxBands = 10,
-    supportedBandTypes = setOf("peak_dip"),
+    supportedBandTypes = setOf("peak_dip", "low_shelf", "high_shelf"),
     minGainDb = -10.0,
     maxGainDb = 10.0,
     minQ = 0.1,
@@ -174,8 +170,8 @@ fun buildTextDeviceVariant(
                 fidelity = fidelity,
                 transformation = fidelityDescription(
                     fidelity = fidelity,
-                    exactDescription = "Source EQ preserved within the validated Black Pearl capability profile (${bandLimitLabel(capabilities)}).",
-                    optimizedDescription = "EQ Library optimized conversion for Black Pearl using the current device capability profile (${bandLimitLabel(capabilities)}; peaking-filter output).",
+                    exactDescription = "Source EQ bands are preserved within the validated Black Pearl PEQ capability profile (${bandLimitLabel(capabilities)}).",
+                    optimizedDescription = "Black Pearl supports ${capabilities.maxBands ?: "the current"} PEQ bands. EQ Library preserves source filter types and the first source-priority bands that fit the device; source preamp/headroom must resolve to 0 dB.",
                 ),
             )
         }
@@ -349,13 +345,6 @@ private fun mapParametricBand(
     return TextBand(type, frequency, gain, bandQ)
 }
 
-private fun parametricType(type: String): String? = when (type) {
-    "peak_dip" -> "PK"
-    "low_shelf" -> "LSC"
-    "high_shelf" -> "HSC"
-    else -> null
-}
-
 private fun renderParametricText(preamp: Double, bands: List<TextBand>): String = buildString {
     appendLine("Preamp: ${db(preamp)} dB")
     bands.forEachIndexed { index, band ->
@@ -365,94 +354,24 @@ private fun renderParametricText(preamp: Double, bands: List<TextBand>): String 
     }
 }.trimEnd()
 
-private data class BlackPearlCandidate(
-    val order: Int,
-    val frequency: Double,
-    val gainDb: Double,
-    val q: Double,
-    val score: Double,
-)
-
 internal fun formatBlackPearlPreset(
     profile: OpraEqProfile,
     capabilities: DeviceEqCapabilities,
 ): String? {
+    val effectivePreamp = profile.effectivePlaybackPreampDb()
+        ?.takeIf(Double::isFinite)
+        ?: return null
+    if (kotlin.math.abs(effectivePreamp) > BLACK_PEARL_PREAMP_ZERO_TOLERANCE_DB) return null
+
     val sourceBands = profile.bands.orEmpty()
     if (sourceBands.isEmpty()) return null
-    if (sourceBands.any { it.type !in setOf("peak_dip", "low_shelf", "high_shelf") }) return null
-
-    val candidates = mutableListOf<BlackPearlCandidate>()
-    sourceBands.forEachIndexed { index, source ->
-        val frequency = source.frequency
-            ?.takeIf(Double::isFinite)
-            ?.coerceIn(capabilities.minFrequencyHz, capabilities.maxFrequencyHz)
-            ?: return null
-        val gain = source.gainDb
-            ?.takeIf(Double::isFinite)
-            ?.coerceIn(capabilities.minGainDb, capabilities.maxGainDb)
-            ?: return null
-        val bandQ = source.q
-            ?.takeIf(Double::isFinite)
-            ?.coerceIn(capabilities.minQ, capabilities.maxQ)
-            ?: return null
-        when (source.type) {
-            "peak_dip" -> candidates += BlackPearlCandidate(
-                order = index * 10,
-                frequency = frequency,
-                gainDb = gain,
-                q = bandQ,
-                score = abs(gain) * 1.25,
-            )
-            "low_shelf" -> {
-                candidates += BlackPearlCandidate(
-                    order = index * 10,
-                    frequency = max(capabilities.minFrequencyHz, frequency / 3.0),
-                    gainDb = (gain * 0.85).coerceIn(capabilities.minGainDb, capabilities.maxGainDb),
-                    q = 0.35.coerceIn(capabilities.minQ, capabilities.maxQ),
-                    score = abs(gain) * 0.95,
-                )
-                candidates += BlackPearlCandidate(
-                    order = index * 10 + 1,
-                    frequency = max(capabilities.minFrequencyHz, frequency / 1.35),
-                    gainDb = (gain * 0.55).coerceIn(capabilities.minGainDb, capabilities.maxGainDb),
-                    q = 0.55.coerceIn(capabilities.minQ, capabilities.maxQ),
-                    score = abs(gain) * 0.7,
-                )
-            }
-            "high_shelf" -> {
-                candidates += BlackPearlCandidate(
-                    order = index * 10,
-                    frequency = min(capabilities.maxFrequencyHz, frequency * 1.35),
-                    gainDb = (gain * 0.55).coerceIn(capabilities.minGainDb, capabilities.maxGainDb),
-                    q = 0.55.coerceIn(capabilities.minQ, capabilities.maxQ),
-                    score = abs(gain) * 0.7,
-                )
-                candidates += BlackPearlCandidate(
-                    order = index * 10 + 1,
-                    frequency = min(capabilities.maxFrequencyHz, frequency * 3.0),
-                    gainDb = (gain * 0.85).coerceIn(capabilities.minGainDb, capabilities.maxGainDb),
-                    q = 0.35.coerceIn(capabilities.minQ, capabilities.maxQ),
-                    score = abs(gain) * 0.95,
-                )
-            }
-        }
+    val selectedBands = applyBandLimit(sourceBands, capabilities.maxBands)
+    val mapped = selectedBands.map { band ->
+        if (band.type !in capabilities.supportedBandTypes) return null
+        mapParametricBandExact(band, capabilities) ?: return null
     }
-    if (candidates.isEmpty()) return null
-
-    val chosen = applyBandLimit(
-        candidates.sortedByDescending(BlackPearlCandidate::score),
-        capabilities.maxBands,
-    ).sortedBy(BlackPearlCandidate::order)
-    val preamp = coercePreamp(profile.effectivePlaybackPreampDb(), capabilities)
-
-    return buildString {
-        appendLine("Preamp: ${db(preamp)} dB")
-        chosen.forEachIndexed { index, band ->
-            appendLine(
-                "Filter ${index + 1}: ON PK Fc ${hz(band.frequency)} Hz Gain ${db(band.gainDb)} dB Q ${q(band.q)}",
-            )
-        }
-    }.trimEnd()
+    if (mapped.isEmpty()) return null
+    return renderParametricText(0.0, mapped)
 }
 
 internal fun formatWaveletGraphicEq(profile: OpraEqProfile): String? {
@@ -592,6 +511,8 @@ private fun hz(value: Double): String =
 private fun db(value: Double): String = String.format(Locale.US, "%.2f", value)
 private fun q(value: Double): String = String.format(Locale.US, "%.3f", value)
 private fun graphicDb(value: Double): String = String.format(Locale.US, "%.2f", value)
+
+private const val BLACK_PEARL_PREAMP_ZERO_TOLERANCE_DB = 0.000_001
 
 private val WAVELET_FREQUENCIES = listOf(
     20, 21, 22, 23, 24, 26, 27, 29, 30, 32, 34, 36, 38, 40, 43, 45, 48, 50, 53, 56, 59, 63,
