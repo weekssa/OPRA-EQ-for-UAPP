@@ -47,10 +47,12 @@ import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
 import com.weekssa.opraeqforuapp.data.export.PresetExportSummary
 import com.weekssa.opraeqforuapp.data.sync.CatalogSyncOutcome
 import com.weekssa.opraeqforuapp.data.update.AppUpdateCheckResult
+import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqPreset
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
+import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ThemeMode
@@ -76,6 +78,7 @@ private sealed interface ActiveOutputExportRequest {
     data class AllManaged(override val device: ExportDevice) : ActiveOutputExportRequest
     data class Product(val productId: String, override val device: ExportDevice) : ActiveOutputExportRequest
     data class SavedEq(val entryId: String, override val device: ExportDevice) : ActiveOutputExportRequest
+    data class GeneralEq(val presetId: String, override val device: ExportDevice) : ActiveOutputExportRequest
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -85,6 +88,7 @@ fun EqLibraryApp(
     catalogState: CatalogState,
     managedHeadphones: List<ManagedHeadphoneRecord>,
     savedEqs: List<SavedEqRecord>,
+    savedGeneralEqs: List<SavedGeneralEqRecord>,
     onRefreshCatalog: suspend () -> CatalogSyncOutcome,
     onLoadManagedHeadphone: suspend (String) -> ManagedHeadphoneRecord?,
     onSaveSelection: suspend (String, Set<String>, Boolean) -> Unit,
@@ -95,12 +99,15 @@ fun EqLibraryApp(
     onDeleteSavedFilesForProduct: suspend (String) -> PresetCleanupSummary,
     onMarkReviewed: suspend (String) -> Unit,
     onToggleFavorite: suspend (OpraEqProfile, String, String) -> Boolean,
+    onToggleGeneralPreset: suspend (GeneralEqPreset) -> Boolean,
     onImportPersonal: suspend (String, String, String, String?, String) -> String?,
     onDeleteSavedEq: suspend (String) -> Unit,
+    onRemoveGeneralEq: suspend (String) -> Unit,
     onPersistExportTree: suspend (Uri) -> Boolean,
     onExportSelected: suspend (Uri, ExportDevice) -> PresetExportSummary,
     onExportProduct: suspend (Uri, String, ExportDevice) -> PresetExportSummary,
     onExportSavedEq: suspend (Uri, String, ExportDevice) -> PresetExportSummary,
+    onExportGeneralEq: suspend (Uri, String, ExportDevice) -> PresetExportSummary,
     onCheckForUpdates: suspend () -> AppUpdateCheckResult,
     onDismissUpdate: suspend (String) -> Unit,
     onDismissPostUpdate: suspend () -> Unit,
@@ -130,6 +137,9 @@ fun EqLibraryApp(
             .filter { it.kind == SavedEqKind.Favorite }
             .mapNotNull { it.sourceProfileId }
             .toSet()
+    }
+    val savedGeneralPresetIds = remember(savedGeneralEqs) {
+        savedGeneralEqs.mapTo(mutableSetOf(), SavedGeneralEqRecord::presetId)
     }
     val catalogBusy = catalogState is CatalogState.Loading ||
         (catalogState as? CatalogState.Ready)?.isRefreshing == true
@@ -164,6 +174,14 @@ fun EqLibraryApp(
         whatsNewNotes = notes.orEmpty()
     }
 
+    suspend fun executeExport(uri: Uri, request: ActiveOutputExportRequest?): PresetExportSummary? = when (request) {
+        is ActiveOutputExportRequest.AllManaged -> onExportSelected(uri, request.device)
+        is ActiveOutputExportRequest.Product -> onExportProduct(uri, request.productId, request.device)
+        is ActiveOutputExportRequest.SavedEq -> onExportSavedEq(uri, request.entryId, request.device)
+        is ActiveOutputExportRequest.GeneralEq -> onExportGeneralEq(uri, request.presetId, request.device)
+        null -> null
+    }
+
     val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         val request = pendingExportRequest
         pendingExportRequest = null
@@ -172,13 +190,7 @@ fun EqLibraryApp(
             if (!onPersistExportTree(uri)) {
                 snackbarHostState.showSnackbar("Couldn’t retain access to that folder. Choose another folder.")
             } else {
-                val summary = when (request) {
-                    is ActiveOutputExportRequest.AllManaged -> onExportSelected(uri, request.device)
-                    is ActiveOutputExportRequest.Product -> onExportProduct(uri, request.productId, request.device)
-                    is ActiveOutputExportRequest.SavedEq -> onExportSavedEq(uri, request.entryId, request.device)
-                    null -> null
-                }
-                summary?.let { snackbarHostState.showSnackbar(activeOutputExportMessage(it)) }
+                executeExport(uri, request)?.let { snackbarHostState.showSnackbar(activeOutputExportMessage(it)) }
             }
         }
     }
@@ -194,12 +206,7 @@ fun EqLibraryApp(
             chooseExportFolder(request)
         } else {
             scope.launch {
-                val summary = when (request) {
-                    is ActiveOutputExportRequest.AllManaged -> onExportSelected(storedUri, request.device)
-                    is ActiveOutputExportRequest.Product -> onExportProduct(storedUri, request.productId, request.device)
-                    is ActiveOutputExportRequest.SavedEq -> onExportSavedEq(storedUri, request.entryId, request.device)
-                }
-                snackbarHostState.showSnackbar(activeOutputExportMessage(summary))
+                executeExport(storedUri, request)?.let { snackbarHostState.showSnackbar(activeOutputExportMessage(it)) }
             }
         }
     }
@@ -212,6 +219,9 @@ fun EqLibraryApp(
     }
     val requestExportSavedEq: (String) -> Unit = { entryId ->
         runExportRequest(ActiveOutputExportRequest.SavedEq(entryId, activeOutput))
+    }
+    val requestExportGeneralEq: (String) -> Unit = { presetId ->
+        runExportRequest(ActiveOutputExportRequest.GeneralEq(presetId, activeOutput))
     }
     val requestCatalogRefresh = {
         if (!catalogBusy) {
@@ -348,12 +358,15 @@ fun EqLibraryApp(
                             MyEqsHomeScreen(
                                 managedHeadphones = managedHeadphones,
                                 savedEqs = savedEqs,
+                                savedGeneralEqs = savedGeneralEqs,
                                 activeOutput = activeOutput,
                                 onExportAll = requestExportAll,
                                 onOpenHeadphone = { selectedManagedProductId = it },
                                 onImportPersonal = onImportPersonal,
                                 onDeleteSavedEq = onDeleteSavedEq,
                                 onExportSavedEq = requestExportSavedEq,
+                                onRemoveGeneralEq = onRemoveGeneralEq,
+                                onExportGeneralEq = requestExportGeneralEq,
                                 onMessage = ::showMessage,
                                 modifier = Modifier.fillMaxSize(),
                             )
@@ -365,7 +378,9 @@ fun EqLibraryApp(
                         exportTargets = appPreferences.exportTargets,
                         managedHeadphones = managedHeadphones,
                         favoriteProfileIds = favoriteProfileIds,
+                        savedGeneralPresetIds = savedGeneralPresetIds,
                         onToggleFavorite = onToggleFavorite,
+                        onToggleGeneralPreset = onToggleGeneralPreset,
                         onLoadManagedHeadphone = onLoadManagedHeadphone,
                         onSaveSelection = onSaveSelection,
                         onRemoveHeadphone = onRemoveHeadphone,
