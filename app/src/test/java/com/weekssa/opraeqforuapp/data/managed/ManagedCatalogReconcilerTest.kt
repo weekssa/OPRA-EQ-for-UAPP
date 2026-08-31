@@ -6,6 +6,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -13,28 +14,29 @@ class ManagedCatalogReconcilerTest {
     private val codec = ManagedProfileSnapshotCodec()
 
     @Test
-    fun newProfilesRespectAutoIncludeAndCompatibility() {
-        val compatible = compatibleProfile("new-compatible")
-        val blocked = compatibleProfile("new-blocked").copy(
+    fun newProfilesAutoIncludeUsableSourcesEvenWhenUappCannotRepresentOne() {
+        val uappCompatible = compatibleProfile("new-compatible")
+        val uappUnsupportedButUsable = compatibleProfile("new-uapp-unsupported").copy(
             bands = listOf(OpraBand("low_pass", 1_000.0, 0.0, 1.0, 12.0)),
         )
 
         val result = reconcileManagedProfiles(
             productId = "product",
             productName = "Headphone",
-            currentProfiles = listOf(compatible, blocked),
+            currentProfiles = listOf(uappCompatible, uappUnsupportedButUsable),
             existingProfiles = emptyList(),
             autoIncludeNewProfiles = true,
             nowMillis = 100L,
             snapshotCodec = codec,
         )
 
-        val compatibleResult = result.profiles.first { it.profileId == compatible.id }
-        val blockedResult = result.profiles.first { it.profileId == blocked.id }
+        val compatibleResult = result.profiles.first { it.profileId == uappCompatible.id }
+        val unsupportedResult = result.profiles.first { it.profileId == uappUnsupportedButUsable.id }
         assertTrue(compatibleResult.selected)
         assertNotNull(compatibleResult.generatedXml)
-        assertFalse(blockedResult.selected)
-        assertEquals(null, blockedResult.generatedXml)
+        assertTrue(unsupportedResult.selected)
+        assertNotNull(unsupportedResult.generatedPresetName)
+        assertNull(unsupportedResult.generatedXml)
         assertEquals(2, result.changes.newProfileCount)
     }
 
@@ -151,17 +153,42 @@ class ManagedCatalogReconcilerTest {
     }
 
     @Test
-    fun selectedProfileBecomingNotCompatibleIsUnselectedButKeepsLastGeneratedPreset() {
+    fun selectedProfileBecomingUappUnsupportedStaysSelectedButClearsStaleUappArtifact() {
         val oldProfile = compatibleProfile("profile")
-        val existing = existingEntity(oldProfile, selected = true, generatedXml = "last good xml")
-        val incompatible = oldProfile.copy(
+        val existing = existingEntity(oldProfile, selected = true, generatedXml = "last UAPP xml")
+        val uappUnsupported = oldProfile.copy(
             bands = listOf(OpraBand("band_stop", 1_000.0, 0.0, 1.0, null)),
         )
 
         val result = reconcileManagedProfiles(
             productId = "product",
             productName = "Headphone",
-            currentProfiles = listOf(incompatible),
+            currentProfiles = listOf(uappUnsupported),
+            existingProfiles = listOf(existing),
+            autoIncludeNewProfiles = true,
+            nowMillis = 200L,
+            snapshotCodec = codec,
+        )
+
+        val reconciled = result.profiles.single()
+        assertTrue(reconciled.selected)
+        assertTrue(reconciled.isUpdatedUnreviewed)
+        assertNull(reconciled.generatedXml)
+        assertEquals(codec.fingerprint(uappUnsupported), reconciled.generatedFromFingerprint)
+        assertEquals(0, result.changes.becameNotCompatibleSelectedProfileCount)
+        assertEquals(1, result.changes.updatedSelectedProfileCount)
+    }
+
+    @Test
+    fun selectedProfileBecomingSourceUnusableIsUnselectedAndKeepsLastGoodArtifact() {
+        val oldProfile = compatibleProfile("profile")
+        val existing = existingEntity(oldProfile, selected = true, generatedXml = "last good xml")
+        val unusable = oldProfile.copy(profileType = "graphic_eq")
+
+        val result = reconcileManagedProfiles(
+            productId = "product",
+            productName = "Headphone",
+            currentProfiles = listOf(unusable),
             existingProfiles = listOf(existing),
             autoIncludeNewProfiles = true,
             nowMillis = 200L,
