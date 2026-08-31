@@ -3,9 +3,16 @@ package com.weekssa.opraeqforuapp.domain.export
 import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import java.util.Locale
+import kotlin.math.PI
 import kotlin.math.abs
+import kotlin.math.ceil
+import kotlin.math.cos
+import kotlin.math.ln
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.pow
+import kotlin.math.sin
+import kotlin.math.sqrt
 
 data class DeviceEqCapabilities(
     val maxBands: Int?,
@@ -46,6 +53,21 @@ private val UAPP_CURRENT_CAPABILITIES = DeviceEqCapabilities(
     maxPreampDb = 20.0,
 )
 
+private val GENERIC_PARAMETRIC_CAPABILITIES = DeviceEqCapabilities(
+    maxBands = null,
+    supportedBandTypes = setOf("peak_dip", "low_shelf", "high_shelf"),
+    minFrequencyHz = 10.0,
+    maxFrequencyHz = 40_000.0,
+    minGainDb = -60.0,
+    maxGainDb = 60.0,
+    minQ = 0.01,
+    maxQ = 100.0,
+    minPreampDb = -60.0,
+    maxPreampDb = 24.0,
+)
+
+private val POWERAMP_CURRENT_CAPABILITIES = GENERIC_PARAMETRIC_CAPABILITIES.copy(maxBands = 64)
+
 private val TOPPING_CURRENT_CAPABILITIES = DeviceEqCapabilities(
     maxBands = 10,
     supportedBandTypes = setOf("peak_dip", "low_shelf", "high_shelf"),
@@ -72,9 +94,10 @@ enum class ExportDevice(
     val mimeType: String,
     val validationStatus: String? = null,
     val eqCapabilities: DeviceEqCapabilities? = null,
+    val selectableInV03: Boolean = true,
 ) {
     UAPP(
-        "UAPP",
+        "USB Audio Player PRO - ToneBoosters",
         "xml",
         "application/xml",
         eqCapabilities = UAPP_CURRENT_CAPABILITIES,
@@ -85,12 +108,30 @@ enum class ExportDevice(
         "text/plain",
         eqCapabilities = BLACK_PEARL_CURRENT_CAPABILITIES,
     ),
+    UNIVERSAL_PARAMETRIC(
+        "Universal Parametric EQ",
+        "txt",
+        "text/plain",
+        eqCapabilities = GENERIC_PARAMETRIC_CAPABILITIES,
+    ),
+    POWERAMP(
+        "Poweramp - Poweramp Equalizer",
+        "txt",
+        "text/plain",
+        eqCapabilities = POWERAMP_CURRENT_CAPABILITIES,
+    ),
+    WAVELET(
+        "Wavelet",
+        "txt",
+        "text/plain",
+    ),
     TOPPING_DX5_II(
         "Topping DX5 II",
         "txt",
         "text/plain",
         validationStatus = "Untested",
         eqCapabilities = TOPPING_CURRENT_CAPABILITIES,
+        selectableInV03 = false,
     ),
     TOPPING_DX1_II(
         "Topping DX1 II",
@@ -98,7 +139,12 @@ enum class ExportDevice(
         "text/plain",
         validationStatus = "Untested",
         eqCapabilities = TOPPING_CURRENT_CAPABILITIES,
-    ),
+        selectableInV03 = false,
+    );
+
+    companion object {
+        val selectableOutputs: List<ExportDevice> = entries.filter(ExportDevice::selectableInV03)
+    }
 }
 
 enum class DevicePresetFidelity {
@@ -128,11 +174,51 @@ fun buildTextDeviceVariant(
                 fidelity = fidelity,
                 transformation = fidelityDescription(
                     fidelity = fidelity,
-                    exactDescription = "Source EQ preserved within the Black Pearl device capability profile (${bandLimitLabel(capabilities)}).",
-                    optimizedDescription = "EQ Library optimized conversion for Black Pearl using the device capability profile (${bandLimitLabel(capabilities)}; peaking filters only).",
+                    exactDescription = "Source EQ preserved within the validated Black Pearl capability profile (${bandLimitLabel(capabilities)}).",
+                    optimizedDescription = "EQ Library optimized conversion for Black Pearl using the current device capability profile (${bandLimitLabel(capabilities)}; peaking-filter output).",
                 ),
             )
         }
+    }
+    ExportDevice.UNIVERSAL_PARAMETRIC -> {
+        val capabilities = requireNotNull(device.eqCapabilities)
+        formatParametricText(profile, capabilities)?.let { content ->
+            val fidelity = determineDeviceFidelity(profile, capabilities)
+            DevicePresetVariant(
+                device = device,
+                content = content,
+                fidelity = fidelity,
+                transformation = fidelityDescription(
+                    fidelity,
+                    "Source parametric EQ preserved in standard AutoEq/Equalizer APO-style text.",
+                    "EQ Library normalized the source to the universal parametric text capability profile.",
+                ),
+            )
+        }
+    }
+    ExportDevice.POWERAMP -> {
+        val capabilities = requireNotNull(device.eqCapabilities)
+        formatParametricText(profile, capabilities)?.let { content ->
+            val fidelity = determineDeviceFidelity(profile, capabilities)
+            DevicePresetVariant(
+                device = device,
+                content = content,
+                fidelity = fidelity,
+                transformation = fidelityDescription(
+                    fidelity,
+                    "Source parametric EQ preserved in AutoEq parametric text accepted by Poweramp/Poweramp Equalizer.",
+                    "EQ Library optimized the source to the Poweramp AutoEq parametric import capability profile.",
+                ),
+            )
+        }
+    }
+    ExportDevice.WAVELET -> formatWaveletGraphicEq(profile)?.let { content ->
+        DevicePresetVariant(
+            device = device,
+            content = content,
+            fidelity = DevicePresetFidelity.OPTIMIZED,
+            transformation = "EQ Library rendered the parametric source response to Wavelet's fixed 127-point GraphicEQ import grid. Wavelet normalizes imported GraphicEQ data, so source preamp is not represented as an independent control.",
+        )
     }
     ExportDevice.TOPPING_DX5_II,
     ExportDevice.TOPPING_DX1_II -> {
@@ -195,18 +281,31 @@ internal fun formatToppingTunePreset(
     profile: OpraEqProfile,
     capabilities: DeviceEqCapabilities,
 ): String? {
-    val mapped = profile.bands.orEmpty().mapNotNull { band -> mapToppingBand(band, capabilities) }
+    val bands = profile.bands.orEmpty()
+    if (bands.isEmpty() || bands.any { it.type !in capabilities.supportedBandTypes }) return null
+    val mapped = bands.map { band -> mapParametricBand(band, capabilities) ?: return null }
     val limited = applyBandLimit(mapped, capabilities.maxBands)
     if (limited.isEmpty()) return null
     val preamp = coercePreamp(profile.effectivePlaybackPreampDb(), capabilities)
-    return buildString {
-        appendLine("Preamp: ${db(preamp)} dB")
-        limited.forEachIndexed { index, band ->
-            appendLine(
-                "Filter ${index + 1}: ON ${band.type} Fc ${hz(band.frequency)} Hz Gain ${db(band.gainDb)} dB Q ${q(band.q)}",
-            )
-        }
-    }.trimEnd()
+    return renderParametricText(preamp, limited)
+}
+
+internal fun formatParametricText(
+    profile: OpraEqProfile,
+    capabilities: DeviceEqCapabilities,
+): String? {
+    val sourceBands = profile.bands.orEmpty()
+    if (sourceBands.isEmpty()) return null
+    if (capabilities.maxBands?.let { sourceBands.size > it } == true) return null
+    val mapped = sourceBands.map { band ->
+        if (band.type !in capabilities.supportedBandTypes) return null
+        mapParametricBandExact(band, capabilities) ?: return null
+    }
+    val preamp = profile.effectivePlaybackPreampDb()?.takeIf(Double::isFinite) ?: 0.0
+    val minPreamp = capabilities.minPreampDb
+    val maxPreamp = capabilities.maxPreampDb
+    if (minPreamp != null && maxPreamp != null && preamp !in minPreamp..maxPreamp) return null
+    return renderParametricText(preamp, mapped)
 }
 
 private data class TextBand(
@@ -216,17 +315,25 @@ private data class TextBand(
     val q: Double,
 )
 
-private fun mapToppingBand(
+private fun mapParametricBandExact(
     band: OpraBand,
     capabilities: DeviceEqCapabilities,
 ): TextBand? {
-    if (band.type !in capabilities.supportedBandTypes) return null
-    val type = when (band.type) {
-        "peak_dip" -> "PK"
-        "low_shelf" -> "LSC"
-        "high_shelf" -> "HSC"
-        else -> return null
-    }
+    val type = parametricType(band.type) ?: return null
+    val frequency = band.frequency?.takeIf(Double::isFinite) ?: return null
+    val gain = band.gainDb?.takeIf(Double::isFinite) ?: return null
+    val bandQ = band.q?.takeIf(Double::isFinite) ?: return null
+    if (frequency !in capabilities.minFrequencyHz..capabilities.maxFrequencyHz) return null
+    if (gain !in capabilities.minGainDb..capabilities.maxGainDb) return null
+    if (bandQ !in capabilities.minQ..capabilities.maxQ) return null
+    return TextBand(type, frequency, gain, bandQ)
+}
+
+private fun mapParametricBand(
+    band: OpraBand,
+    capabilities: DeviceEqCapabilities,
+): TextBand? {
+    val type = parametricType(band.type) ?: return null
     val frequency = band.frequency
         ?.takeIf(Double::isFinite)
         ?.coerceIn(capabilities.minFrequencyHz, capabilities.maxFrequencyHz)
@@ -238,9 +345,25 @@ private fun mapToppingBand(
     val bandQ = band.q
         ?.takeIf(Double::isFinite)
         ?.coerceIn(capabilities.minQ, capabilities.maxQ)
-        ?: 0.707.coerceIn(capabilities.minQ, capabilities.maxQ)
+        ?: return null
     return TextBand(type, frequency, gain, bandQ)
 }
+
+private fun parametricType(type: String): String? = when (type) {
+    "peak_dip" -> "PK"
+    "low_shelf" -> "LSC"
+    "high_shelf" -> "HSC"
+    else -> null
+}
+
+private fun renderParametricText(preamp: Double, bands: List<TextBand>): String = buildString {
+    appendLine("Preamp: ${db(preamp)} dB")
+    bands.forEachIndexed { index, band ->
+        appendLine(
+            "Filter ${index + 1}: ON ${band.type} Fc ${hz(band.frequency)} Hz Gain ${db(band.gainDb)} dB Q ${q(band.q)}",
+        )
+    }
+}.trimEnd()
 
 private data class BlackPearlCandidate(
     val order: Int,
@@ -254,20 +377,24 @@ internal fun formatBlackPearlPreset(
     profile: OpraEqProfile,
     capabilities: DeviceEqCapabilities,
 ): String? {
+    val sourceBands = profile.bands.orEmpty()
+    if (sourceBands.isEmpty()) return null
+    if (sourceBands.any { it.type !in setOf("peak_dip", "low_shelf", "high_shelf") }) return null
+
     val candidates = mutableListOf<BlackPearlCandidate>()
-    profile.bands.orEmpty().forEachIndexed { index, source ->
+    sourceBands.forEachIndexed { index, source ->
         val frequency = source.frequency
             ?.takeIf(Double::isFinite)
             ?.coerceIn(capabilities.minFrequencyHz, capabilities.maxFrequencyHz)
-            ?: return@forEachIndexed
+            ?: return null
         val gain = source.gainDb
             ?.takeIf(Double::isFinite)
             ?.coerceIn(capabilities.minGainDb, capabilities.maxGainDb)
-            ?: return@forEachIndexed
+            ?: return null
         val bandQ = source.q
             ?.takeIf(Double::isFinite)
             ?.coerceIn(capabilities.minQ, capabilities.maxQ)
-            ?: 0.707.coerceIn(capabilities.minQ, capabilities.maxQ)
+            ?: return null
         when (source.type) {
             "peak_dip" -> candidates += BlackPearlCandidate(
                 order = index * 10,
@@ -328,6 +455,112 @@ internal fun formatBlackPearlPreset(
     }.trimEnd()
 }
 
+internal fun formatWaveletGraphicEq(profile: OpraEqProfile): String? {
+    val bands = profile.bands.orEmpty()
+    if (bands.isEmpty()) return null
+    if (bands.any { it.type !in setOf("peak_dip", "low_shelf", "high_shelf") }) return null
+    if (bands.any { it.frequency?.isFinite() != true || it.gainDb?.isFinite() != true || it.q?.isFinite() != true }) {
+        return null
+    }
+    val samples = WAVELET_FREQUENCIES.map { frequency ->
+        val gain = responseDb(bands, frequency) ?: return null
+        "$frequency ${graphicDb(gain)}"
+    }
+    return "GraphicEQ: ${samples.joinToString("; ")}"
+}
+
+private data class Biquad(
+    val b0: Double,
+    val b1: Double,
+    val b2: Double,
+    val a1: Double,
+    val a2: Double,
+)
+
+private fun responseDb(bands: List<OpraBand>, frequency: Int, sampleRate: Double = 96_000.0): Double? {
+    val omega = 2.0 * PI * frequency / sampleRate
+    val c1 = cos(omega)
+    val s1 = sin(omega)
+    val c2 = cos(2.0 * omega)
+    val s2 = sin(2.0 * omega)
+    var real = 1.0
+    var imag = 0.0
+    for (band in bands) {
+        val biquad = rbjBiquad(band, sampleRate) ?: return null
+        val numeratorReal = biquad.b0 + biquad.b1 * c1 + biquad.b2 * c2
+        val numeratorImag = -(biquad.b1 * s1 + biquad.b2 * s2)
+        val denominatorReal = 1.0 + biquad.a1 * c1 + biquad.a2 * c2
+        val denominatorImag = -(biquad.a1 * s1 + biquad.a2 * s2)
+        val denom = denominatorReal * denominatorReal + denominatorImag * denominatorImag
+        if (denom <= 0.0 || !denom.isFinite()) return null
+        val hReal = (numeratorReal * denominatorReal + numeratorImag * denominatorImag) / denom
+        val hImag = (numeratorImag * denominatorReal - numeratorReal * denominatorImag) / denom
+        val nextReal = real * hReal - imag * hImag
+        val nextImag = real * hImag + imag * hReal
+        real = nextReal
+        imag = nextImag
+    }
+    val magnitudeSquared = real * real + imag * imag
+    if (magnitudeSquared <= 0.0 || !magnitudeSquared.isFinite()) return null
+    return 10.0 * ln(magnitudeSquared) / ln(10.0)
+}
+
+private fun rbjBiquad(band: OpraBand, sampleRate: Double): Biquad? {
+    val frequency = band.frequency?.takeIf(Double::isFinite) ?: return null
+    val gain = band.gainDb?.takeIf(Double::isFinite) ?: return null
+    val q = band.q?.takeIf(Double::isFinite)?.takeIf { it > 0.0 } ?: return null
+    if (frequency <= 0.0 || frequency >= sampleRate / 2.0) return null
+
+    val a = 10.0.pow(gain / 40.0)
+    val w0 = 2.0 * PI * frequency / sampleRate
+    val cw = cos(w0)
+    val sw = sin(w0)
+    val alpha = sw / (2.0 * q)
+
+    val values = when (band.type) {
+        "peak_dip" -> doubleArrayOf(
+            1.0 + alpha * a,
+            -2.0 * cw,
+            1.0 - alpha * a,
+            1.0 + alpha / a,
+            -2.0 * cw,
+            1.0 - alpha / a,
+        )
+        "low_shelf" -> {
+            val shelf = 2.0 * sqrt(a) * alpha
+            doubleArrayOf(
+                a * ((a + 1.0) - (a - 1.0) * cw + shelf),
+                2.0 * a * ((a - 1.0) - (a + 1.0) * cw),
+                a * ((a + 1.0) - (a - 1.0) * cw - shelf),
+                (a + 1.0) + (a - 1.0) * cw + shelf,
+                -2.0 * ((a - 1.0) + (a + 1.0) * cw),
+                (a + 1.0) + (a - 1.0) * cw - shelf,
+            )
+        }
+        "high_shelf" -> {
+            val shelf = 2.0 * sqrt(a) * alpha
+            doubleArrayOf(
+                a * ((a + 1.0) + (a - 1.0) * cw + shelf),
+                -2.0 * a * ((a - 1.0) + (a + 1.0) * cw),
+                a * ((a + 1.0) + (a - 1.0) * cw - shelf),
+                (a + 1.0) - (a - 1.0) * cw + shelf,
+                2.0 * ((a - 1.0) - (a + 1.0) * cw),
+                (a + 1.0) - (a - 1.0) * cw - shelf,
+            )
+        }
+        else -> return null
+    }
+    val a0 = values[3]
+    if (a0 == 0.0 || !a0.isFinite()) return null
+    return Biquad(
+        b0 = values[0] / a0,
+        b1 = values[1] / a0,
+        b2 = values[2] / a0,
+        a1 = values[4] / a0,
+        a2 = values[5] / a0,
+    )
+}
+
 private fun <T> applyBandLimit(items: List<T>, maxBands: Int?): List<T> =
     maxBands?.let(items::take) ?: items
 
@@ -358,3 +591,15 @@ private fun hz(value: Double): String =
 
 private fun db(value: Double): String = String.format(Locale.US, "%.2f", value)
 private fun q(value: Double): String = String.format(Locale.US, "%.3f", value)
+private fun graphicDb(value: Double): String = String.format(Locale.US, "%.2f", value)
+
+private val WAVELET_FREQUENCIES = listOf(
+    20, 21, 22, 23, 24, 26, 27, 29, 30, 32, 34, 36, 38, 40, 43, 45, 48, 50, 53, 56, 59, 63,
+    66, 70, 74, 78, 83, 87, 92, 97, 103, 109, 115, 121, 128, 136, 143, 151, 160, 169, 178, 188,
+    199, 210, 222, 235, 248, 262, 277, 292, 309, 326, 345, 364, 385, 406, 429, 453, 479, 506, 534,
+    565, 596, 630, 665, 703, 743, 784, 829, 875, 924, 977, 1032, 1090, 1151, 1216, 1284, 1357, 1433,
+    1514, 1599, 1689, 1784, 1885, 1991, 2103, 2221, 2347, 2479, 2618, 2766, 2921, 3086, 3260, 3443,
+    3637, 3842, 4058, 4287, 4528, 4783, 5052, 5337, 5637, 5955, 6290, 6644, 7018, 7414, 7831, 8272,
+    8738, 9230, 9749, 10298, 10878, 11490, 12137, 12821, 13543, 14305, 15110, 15961, 16860, 17809,
+    18812, 19871,
+)
