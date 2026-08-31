@@ -9,34 +9,15 @@ data class CatalogExportVisibility(
 )
 
 /**
- * Builds a presentation-only catalog view for the user's selected export targets.
+ * Legacy presentation bridge retained for migration/test compatibility.
  *
- * The source catalog is never mutated. When broader-library visibility is enabled (the default),
- * every canonical/runtime profile remains visible. When it is disabled, only profiles that can be
- * exported exactly or through an approved target-specific optimization remain in normal Browse.
+ * v0.3 output context never filters the canonical EQ Library. Device capability is informational
+ * and affects export/Flash actions only, so this function always returns the original catalog.
  */
+@Suppress("UNUSED_PARAMETER")
 fun OpraCatalog.forExportTargetVisibility(
     preferences: ExportTargetPreferences,
-): CatalogExportVisibility {
-    if (preferences.showUnexportablePresets) {
-        return CatalogExportVisibility(catalog = this, hiddenProfileCount = 0)
-    }
-
-    val visibleProfiles = profiles.filter { profile ->
-        profile.isExportableToAny(preferences.selectedTargets)
-    }
-    val visibleProductIds = visibleProfiles
-        .mapTo(mutableSetOf()) { profile -> canonicalProductId(profile.productId) }
-    val visibleProducts = products.filter { product -> canonicalProductId(product.id) in visibleProductIds }
-    val visibleVendorIds = visibleProducts.mapTo(mutableSetOf()) { it.vendorId }
-    val visibleVendors = vendors.filter { it.id in visibleVendorIds }
-
-    return CatalogExportVisibility(
-        catalog = copy(
-            vendors = visibleVendors,
-            products = visibleProducts,
-            profiles = visibleProfiles,
-        ),
-        hiddenProfileCount = profiles.size - visibleProfiles.size,
-    )
-}
+): CatalogExportVisibility = CatalogExportVisibility(
+    catalog = this,
+    hiddenProfileCount = 0,
+)
