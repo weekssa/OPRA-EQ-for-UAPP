@@ -200,14 +200,33 @@ jobs:
           set -euo pipefail
           if git diff --quiet -- catalog/catalog.json catalog/source_health.json catalog/discovery/github_candidates.json catalog/discovery/oratory_updates.json catalog/discovery/headphone_identity_audit.json; then
             echo "No persistent currentness changes."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add catalog/catalog.json catalog/source_health.json catalog/discovery/github_candidates.json catalog/discovery/oratory_updates.json catalog/discovery/headphone_identity_audit.json
+            git commit -m "Refresh EQ catalog currentness"
+            git pull --rebase origin "${GITHUB_REF_NAME}"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
+      - name: Publish validated catalog to stable Android branch
+        if: github.ref_name == 'main'
+        shell: bash
+        run: |
+          set -euo pipefail
+          publish_dir="$(mktemp -d)"
+          git fetch origin catalog-live
+          git worktree add --detach "$publish_dir" origin/catalog-live
+          cp "${RUNNER_TEMP}/validated-catalog.json" "$publish_dir/catalog/catalog.json"
+          cd "$publish_dir"
+          if git diff --quiet -- catalog/catalog.json; then
+            echo "Stable live catalog already current."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add catalog/catalog.json catalog/source_health.json catalog/discovery/github_candidates.json catalog/discovery/oratory_updates.json catalog/discovery/headphone_identity_audit.json
-          git commit -m "Refresh EQ catalog currentness"
-          git pull --rebase origin "${GITHUB_REF_NAME}"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
+          git add catalog/catalog.json
+          git commit -m "Publish validated canonical catalog"
+          git push origin HEAD:catalog-live
       - name: Upload currentness validation artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
