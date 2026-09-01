@@ -12,11 +12,12 @@ At the start of substantive work, read this file and then the current detailed s
 - `docs/PHASE1_DECISIONS.md`
 - `docs/SOURCE_INGESTION_STRATEGY.md`
 - `docs/V0.3_LOCKED_EXECUTION_PLAN.md`
+- `docs/V0.3_RELEASE_POLISH_PLAN.md` for PR #4 / final v0.3.0 work
 - `docs/BLACK_PEARL_PROTOCOL_NOTES.md` when Black Pearl behavior is involved
 - `docs/V0.3_HANDS_ON_CHECKLIST.md` before producing or validating a v0.3 device-test APK
 - `CHANGELOG.md`
 
-`docs/AUTONOMOUS_V0.3_PLAN.md` records the implementation plan that led into the locked plan. Where wording differs, the later locked plan and explicit later decisions are authoritative.
+`docs/AUTONOMOUS_V0.3_PLAN.md` records the implementation plan that led into the locked plan. Where wording differs, the later locked plan, `docs/V0.3_RELEASE_POLISH_PLAN.md`, and explicit later decisions are authoritative.
 
 ## 2. Repository boundary
 
@@ -67,6 +68,12 @@ Android Back follows the in-app hierarchy before leaving the activity: selection
 Favorites are manageable from both EQ Library and My EQs. A managed-profile row in My EQs exposes the same filled/outlined star state as EQ Library; toggling the star changes only the active-output Favorite membership and must not change headphone selection, export currentness, or Flash state. Favorite snapshot rows use the filled star as the remove-from-favorites action; personal imports retain their explicit remove action.
 
 EQ Library contains headphone EQs and General EQs. The initial qualified General EQ seed is sourced from the MIT-licensed ParaEQ built-in preset definitions and includes Sound, Utility, and source-authored Genre examples; the canonical catalog keeps exact source coefficients/preamp state and separate EQ Library-generated safety headroom when the source omits preamp. Headphone browse starts Manufacturer → Model and may include deeper verified source segments only when the source genuinely requires them. Never invent variants or meanings from IDs, filenames, or path fragments.
+
+EQ Library is also a **living archive**. Once a genuine canonical EQ or genuine acoustic revision has been validly published, it remains represented in the current canonical catalog even if its source moves, goes offline, is removed, pauses, or is retired. Provenance/source-availability metadata may change, but source disappearance is never an instruction to delete archived acoustic history.
+
+Users may locally **Hide** canonical headphone or General EQ profiles without deleting or mutating the archive. Hidden state is global local visibility state keyed by stable canonical profile identity, survives restart/refresh, and does not remove an already-saved My EQs entry, export state/file, favorite, or Flash state. Settings exposes **Hidden EQs** with batch Select all/none and Unhide selected. General EQ review provides none-selected-by-default batch controls for **Save selected** and **Hide selected**.
+
+Personal PEQ import is a canonical-ingestion path, not a separate output converter. The compact **+ Import** action belongs with the Saved snapshots & personal imports section rather than as a large button competing with Black Pearl Connect. The v0.3 import surface supports pasted or chosen-file **Equalizer APO / AutoEq text**, parses contents rather than trusting file extension, previews the exact canonical interpretation before Save, blocks malformed/unsupported active filters instead of silently producing a partial EQ, preserves omitted preamp as null, and performs initial active-output export after a successful save when exportable. Import never automatically flashes hardware.
 
 ### New headphone selection defaults — approved v0.3 behavior
 
@@ -120,12 +127,15 @@ Changed selected profile:
 - make the expected output eligible for automatic Add/Save generation or recovery export according to current v0.3 export-currentness rules;
 - do not silently corrupt or overwrite unowned external files.
 
-Removed upstream profile:
+Source moved/unavailable/retired:
 
-- retain last generated output/state;
-- mark **No longer available in OPRA**;
-- never silently delete it;
-- let the user remove it explicitly.
+- keep the genuine canonical EQ and every genuine archived revision in the current published catalog;
+- update a source URL only when the new location is confidently identified;
+- otherwise mark source availability/lifecycle appropriately while retaining the archived record and provenance;
+- retain any selected/saved local state and generated/exported state according to the normal My EQs/currentness rules;
+- never treat source disappearance as permission to delete canonical acoustic history.
+
+Catalog publication/currentness validation must fail when a candidate would silently remove a previously published genuine canonical profile or revision. Safe identity remaps may change routing/presentation only when the archived acoustic lineage is preserved.
 
 ## 6. Canonical EQ and conversion rules
 
@@ -198,7 +208,9 @@ Treat the Python converter as behavioral reference and keep deterministic/golden
 - naming/encoding;
 - selection modes and future-profile behavior;
 - output-specific selections;
-- catalog updates/removals;
+- catalog updates/removals plus living-archive preservation of previously published canonical profiles/revisions;
+- local Hide/Unhide persistence, browse/search filtering, future-revision behavior, and preservation of already-saved My EQs/export state;
+- Equalizer APO / AutoEq personal-import exactness, null-preamp preservation, strict malformed/unsupported-filter rejection, content-based format recognition independent of filename extension, parsed preview, and initial export;
 - export/currentness/ownership, including provider-adjusted SAF names, stable same-name disambiguation, unowned-name collisions, exact-URI updates, and safe cleanup;
 - Black Pearl protocol encoding, active slot, filter mapping, playback-gain read/write, non-cumulative replacement, 0 dB restoration, transfer failure, hard out-of-range rejection, and protocol-encodable-but-outside-validated filter-gain cautions without clamping.
 
@@ -265,4 +277,6 @@ The v0.3 implementation from PR #3 has been fast-forward merged to `main` after 
 
 The approved behavior includes output-specific My EQs, canonical multi-source EQ handling, zero-selected/auto-OFF new-headphone defaults, Add/Save-triggered initial export with recovery-only Export actions, SAF export ownership anchored to the actual app-created document URI rather than exact provider filename spelling, and Black Pearl Direct Flash with non-cumulative playback-gain adjustment plus explicit caution for protocol-encodable per-band gains outside the generally validated ±10 dB range. The specific Edition XS `-11.9 dB` test case passed physical hardware validation, but the caution remains for the broader outside-±10 range.
 
-v0.3.0 is in final release-polish validation on branch `v0.3-release-polish`. The approved final polish adds hierarchical Android Back behavior, Favorite-star controls in My EQs, and the first populated qualified General EQ catalog. Because Android UI code changed after the prior hardware-tested merge, a fresh signed candidate and focused Pixel 9 Back/Favorite/General-EQ regression pass are required before public publication; Black Pearl protocol requalification is not required unless the final diff unexpectedly touches device/DSP behavior.
+v0.3.0 is in final release-polish work on branch `v0.3-release-polish` / PR #4. The approved final scope now includes hierarchical Android Back behavior, Favorite-star controls in My EQs, the first populated qualified General EQ catalog, living-archive preservation gates, reversible Hide/Unhide with Settings management, and a redesigned personal PEQ import flow using strict previewed Equalizer APO / AutoEq canonical ingestion plus initial export. `docs/V0.3_RELEASE_POLISH_PLAN.md` is the controlling checklist for this work.
+
+Because Android UI/data behavior changes after the prior hardware-tested merge, a fresh exact-head signed candidate and focused Pixel 9 Back/Favorite/General-EQ/Hide-Unhide/personal-import regression pass are required before public publication. Black Pearl protocol requalification is not required unless the final diff unexpectedly touches device/DSP behavior.
