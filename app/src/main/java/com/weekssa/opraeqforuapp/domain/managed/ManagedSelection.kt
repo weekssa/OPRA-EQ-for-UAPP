@@ -78,3 +78,20 @@ fun selectableProfileIds(
     .filter { !verifiedOnly || it.isVerified }
     .map(OpraEqProfile::id)
     .toSet()
+
+fun ManagedHeadphoneRecord.reviewableNewEqProfiles(
+    hiddenCanonicalProfileIds: Set<String>,
+): List<ManagedProfileRecord> = profiles.filter { profile ->
+    profile.isNewUnreviewed &&
+        !profile.noLongerAvailable &&
+        profile.lastKnownProfile.canonicalProfileId !in hiddenCanonicalProfileIds
+}
+
+fun ManagedHeadphoneRecord.reviewableUpdatedEqProfiles(
+    hiddenCanonicalProfileIds: Set<String>,
+): List<ManagedProfileRecord> = profiles.filter { profile ->
+    profile.isUpdatedUnreviewed &&
+        !profile.isNewUnreviewed &&
+        !profile.noLongerAvailable &&
+        profile.lastKnownProfile.canonicalProfileId !in hiddenCanonicalProfileIds
+}
