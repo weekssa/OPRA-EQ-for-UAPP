@@ -41,13 +41,15 @@ The Windows/Python reference exposes and writes distinct protocol type codes for
 
 The Android reference currently writes only peak filters, so its peak-only UI is not evidence that the hardware protocol itself is peak-only. The independently implemented EQ Library protocol codec preserves all three corroborated types while keeping final behavior gated by hardware validation.
 
-Observed parameter bounds used by the references are approximately:
+Observed parameter ranges used by the references are approximately:
 
 - frequency: 20 Hz to 20 kHz
 - gain: -10 dB to +10 dB
 - Q: 0.1 to 10
 
-The packet stores frequency as a little-endian 16-bit integer, and Q/gain metadata in 1/256 units. Five normalized biquad coefficients are written as little-endian 32-bit floats. The coefficient sample rate used by both references is 48 kHz.
+The frequency and Q ranges remain hard validation limits until evidence establishes a wider safe/working device range. The observed **-10 dB to +10 dB filter-gain range is treated differently**: it is the range currently validated/recommended by the reference behavior, but it is not the wire-format limit. The PEQ packet stores band gain as a signed little-endian 16-bit value in 1/256 dB units, so values such as `-11.9 dB` are protocol-encodable without clamping. For a finite protocol-encodable band gain outside ±10 dB, EQ Library preserves the exact value, allows file export, and allows confirmed Direct Flash only after an explicit caution that physical-hardware behavior outside the validated range still needs verification. Unsupported filter types, non-finite values, out-of-range frequency/Q, or gain values that cannot fit the signed protocol field remain hard failures.
+
+The packet stores frequency as a little-endian 16-bit integer, Q/gain metadata in 1/256 units, and five normalized biquad coefficients as little-endian 32-bit floats. The coefficient sample rate used by both references is 48 kHz.
 
 ## Global playback gain
 
@@ -59,6 +61,8 @@ EQ Library independently uses the protocol's raw 1/256 dB scale:
 - convert the required source preamp / generated safety headroom directly to a raw delta at 256 units per dB;
 - validate the resulting absolute raw gain against the corroborated hardware range;
 - fail clearly rather than clamp when the requested adjustment cannot fit.
+
+The global playback-gain range remains a hard representability limit. It is separate from the per-filter ±10 dB validated/caution range described above.
 
 ## Direct-Flash transaction
 
@@ -74,7 +78,7 @@ Transaction behavior:
 6. Send the temporary/latch command.
 7. Send the flash/save command.
 
-The confirmation dialog discloses the exact required playback-gain offset before this transaction begins.
+The confirmation dialog discloses the exact required playback-gain offset before this transaction begins. If a selected source-priority band is protocol-encodable but outside the currently validated ±10 dB filter-gain range, the same confirmation also identifies the affected band/value, states that it will be sent unchanged and not clamped, and requires the explicit **Flash anyway** action. Cancel performs no write.
 
 Direct Flash must not send commands for:
 
@@ -88,9 +92,9 @@ Direct Flash must not send commands for:
 
 The selected profile's source preamp is preferred when present. When the source omits preamp and EQ Library has calculated separate safety headroom, that derived value is used as the required playback-gain adjustment without rewriting the canonical source preamp.
 
-A profile remains not flashable if it lacks both source preamp and generated safety headroom, has unsupported/out-of-range filter data, or would require an absolute global gain outside the validated hardware range.
+A profile remains not flashable if it lacks both source preamp and generated safety headroom, has unsupported or truly unrepresentable filter data, or would require an absolute global gain outside the validated hardware range. A per-band gain outside ±10 dB alone is not classified as unrepresentable when the signed protocol field can encode the exact value; it is a caution pending hardware validation.
 
-File export remains independent and preserves the effective playback preamp as a `Preamp:` line for external import workflows.
+File export remains independent and preserves the effective playback preamp as a `Preamp:` line. Finite source band gains are likewise preserved exactly in Black Pearl import text rather than being rejected or clamped merely because they are outside the currently validated ±10 dB Flash range.
 
 ## Validation still required on physical hardware
 
@@ -103,8 +107,9 @@ Before direct Flash is considered release-ready, confirm on the user's TRN Black
 - a 0 dB profile restoring a prior EQ Library-applied attenuation
 - Peak, Low Shelf, and High Shelf type behavior
 - ten-band overwrite and zero-gain padding
+- a real protocol-encodable filter outside the previously validated ±10 dB range (current Edition XS test case: `-11.9 dB`) is presented with a caution, can be cancelled without a write, and after **Flash anyway** is accepted/applied by the physical DAC without silent clamping
 - latch then flash persistence across reconnect/power cycle
 - no change to DAC reconstruction filter, gain mode, amplifier topology, balance, microphone settings, or other unrelated controls
 - graceful handling of detach/failure during a transaction
 
-A successful protocol unit test is necessary but not sufficient for release readiness.
+A successful protocol unit test is necessary but not sufficient for release readiness. Until the physical out-of-range test passes, EQ Library must describe those values as protocol-encodable but outside the currently validated hardware range, not as proven safe/working hardware behavior.
