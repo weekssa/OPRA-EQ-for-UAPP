@@ -49,3 +49,5 @@ jobs:
           git commit -m "Implement v0.3 release polish"
           git pull --rebase origin v0.3-release-polish
           git push origin HEAD:v0.3-release-polish
+
+# Contents-API trigger for the approved release-polish workstream.
