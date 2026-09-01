@@ -8,8 +8,10 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ### Added
 
+- A per-headphone **Notify me about new EQs** review preference in My EQs. It starts ON for newly managed headphones, can surface newly published verified or unverified EQs and changed selected tunings for explicit review, and never silently selects a profile.
+- A none-selected-by-default new-EQ review flow: **Add selected** adds only explicitly checked new profiles, **Dismiss** marks the current batch reviewed without adding/hiding/deleting unchosen profiles, and Back leaves the batch pending.
 - A **living canonical archive** regression gate that rejects candidate catalog publication if a previously published genuine canonical profile/revision disappears or an archived revision's acoustic fingerprint changes in place.
-- Reversible global local **Hide/Unhide** for headphone and General EQ lineages, with Hide in EQ Library, batch General Hide, persisted stable canonical IDs, and **Settings → Hidden EQs** batch Unhide without deleting archive/My EQs/export state.
+- Reversible global local **Hide/Unhide** for headphone and General EQ lineages, with Hide in EQ Library, batch General Hide, persisted stable canonical IDs, and **Settings → Hidden EQs** batch Unhide without deleting archive/My EQs/export state. Hidden lineages are also suppressed from new-EQ review attention while hidden.
 - A dedicated personal-EQ import surface with compact **+ Import**, explicit clipboard Paste and Android Choose file actions, **Equalizer APO / AutoEq text** content recognition, authoritative preamp/filter preview, and strict malformed/unsupported active-filter validation.
 - Initial populated **General EQ** catalog from the qualified MIT-licensed ParaEQ built-in presets: Bass Boost, Vocal Clarity, Treble Boost, Loudness, Podcast, Electronic, and Rock, with source-authored Genre classification only where explicitly provided.
 - Managed preset rows in **My EQs** now expose the same Favorite star state/action as EQ Library.
@@ -18,7 +20,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - **Headphones** and **General EQs** library sections, with General EQ filters for **All**, **Sound**, **Genre**, and **Utility**.
 - Device-independent canonical source usability plus active-output **Exact**, **Optimized**, and **Not exportable** status. A valid canonical curve remains visible/selectable even when the active output cannot represent it.
 - Multi-source canonical catalog foundation for OPRA, AutoEq, qualified creator/repository data, public community EQ submissions, immutable acoustic revisions, provenance, verification state, and general presets.
-- **Unverified** community EQ presentation with original source links and manual selection while excluding Unverified profiles from silent automatic future-profile inclusion.
+- **Unverified** community EQ presentation with original source links and manual selection. Unverified profiles may appear in explicit new-EQ review but are never silently selected.
 - Conditional **Export all** and per-item **Export** recovery actions based on the current active-output candidate, app-owned SAF ownership metadata, generated fingerprint/content hash, and the actual exported document when available.
 - Optional TRN Black Pearl **Direct Flash** from My EQs, including DAC connection state, current-slot discovery, confirmation, source-preamp/headroom playback-gain adjustment through the observed global-gain command, PEQ transfer, and success/error reporting.
 - Independent Black Pearl EQ protocol implementation for native Peak, Low Shelf, and High Shelf filters with a 10-band hardware limit and explicit unused-band flattening.
@@ -27,6 +29,8 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ### Changed
 
+- The earlier automatic-future-selection model is superseded for final v0.3: a never-added headphone starts with no EQ profiles selected; future EQs are never silently selected; newly managed headphones instead default **Notify me about new EQs** ON as an attention-only preference.
+- The legacy persisted/domain field name `autoIncludeNewProfiles` is retained through the v0.3 migration boundary for compatibility, but its final meaning is notification/review only and it no longer authorizes automatic selection.
 - General EQ review now uses none-selected-by-default batch controls with **Select all**, **Select none**, **Save selected**, and **Hide selected**; batch Save initiates the normal active-output initial export.
 - Personal EQ import now normalizes supported file/paste contents into the device-independent canonical PEQ before output conversion. Filename extension does not select the converter, missing preamp remains null, full supported filter count is retained canonically, and successful Save initiates active-output export without automatically flashing hardware.
 - Android Back now follows the in-app hierarchy and returns root EQ Library/Settings to My EQs; only Back from the My EQs root exits the app. Clean and dirty preset-selection editor states both handle system Back naturally.
@@ -34,11 +38,10 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - General presets with no source preamp keep preamp null while EQ Library stores conservative generated playback headroom separately.
 - Output selection is now an operating context rather than a catalog filter. Choosing a device/app changes conversion, export, Flash availability, capability status, and the My EQs collection, but never hides valid library curves.
 - The obsolete prototype setting **Show presets that none of my devices can export** is ignored/removed from user-facing behavior.
-- New headphones start with no EQ profiles selected and automatic future-profile inclusion off; users explicitly choose the presets they want before Add.
 - Add/Save persists the selected EQs and initiates their export for the active output. Normal Export/Export all controls stay hidden while the expected app-managed files are present and current, and reappear only for recovery when files are missing or stale.
 - Export ownership/currentness now follows stable output/product/profile identity and the exact SAF document URI returned for an app-created file instead of requiring the provider to preserve the originally requested display name byte-for-byte.
 - Internal same-name presets receive stable identity-derived filenames, and a same-name unowned external file is preserved while EQ Library creates a separately named app-owned fallback instead of leaving the preset in a permanent retry conflict.
-- Selection, Select all/none, and automatic future-profile behavior are based on canonical source usability and trust/history state, not UAPP compatibility.
+- Selection and Select all/none are based on canonical source usability and trust/history state, not UAPP compatibility; notification state never changes selection.
 - UAPP/ToneBoosters compatibility is enforced only at the UAPP conversion/export boundary. UAPP XML is optional generated state rather than a prerequisite for saving a canonical EQ.
 - Personal PEQ imports preserve a missing source preamp as null rather than silently inventing `0 dB`.
 - TRN Black Pearl conversion/Flash preserves corroborated native shelf/peak filter types instead of approximating shelves with synthetic peaking filters.
@@ -49,6 +52,8 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ### Fixed
 
+- Newly discovered EQs no longer become selected automatically under any notification setting.
+- Hidden canonical lineages no longer produce persistent new/updated-EQ review attention while hidden; suppression is presentation-only and preserves already-selected My EQs/export/Favorite/Flash state.
 - Personal import no longer accepts a valid subset while silently dropping a malformed or unsupported active Filter line; the strict import layer blocks Save and identifies the parse problem.
 - System Back no longer falls through and exits the activity from clean nested management screens or secondary top-level destinations.
 - Favorites no longer require returning to EQ Library merely to star/unstar a managed preset.
@@ -58,17 +63,17 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Same-name unowned files no longer create an unrecoverable export loop; EQ Library leaves the external file untouched and creates a stable separately owned fallback file.
 - Two app-managed presets that resolve to the same preferred human-readable filename no longer block each other; stable identity-derived suffixes keep both exportable.
 - Removing a favorite/personal EQ from one output no longer implicitly removes it from another output where it is still selected.
-- A valid canonical profile that is unsupported by UAPP no longer becomes unselectable or silently excluded from automatic selection solely because of UAPP limits.
+- A valid canonical profile that is unsupported by UAPP no longer becomes unselectable solely because of UAPP limits.
 - ToneBoosters conversion now explicitly rechecks UAPP-specific compatibility so device-independent selection cannot bypass the established UAPP filter/range/preamp safety gate.
 - Removed the superseded duplicate app shell that caused stale Black Pearl call signatures to break Android CI.
 
 ### Validation
 
-- Pre-documentation release-polish implementation head `63e054ffd4c0b351cc469bc435b8d949bf6dca49` passed Android unit tests, lint, debug/release assembly, catalog living-archive/currentness validation, priority-community coverage, CodeQL, signed-beta alignment/signature verification, artifact upload, and mobile-test publication. The final documentation/source head must repeat the exact-head gates before hands-on testing.
-- Final release-polish changes are isolated from Black Pearl protocol/DSP code but require a fresh signed v0.3.0 candidate and focused Pixel 9 Back/Favorite/General-EQ regression pass before public publication.
-- Exact candidate `c70c523e1f530b8b197ebbccc41dfb4af1e27fc4` passed Android unit tests, lint, debug/release assembly, catalog/currentness validation, priority-community validation, CodeQL, signed-beta alignment/signature verification, and artifact generation.
-- Pixel 9 / TRN Black Pearl hands-on validation passed on 2026-08-31, including provider-adjusted SAF filename/collision recovery, playback-gain replacement/non-stacking behavior, and the Edition XS Altruistic-Farmer275 `13,500 Hz / -11.9 dB / Q 4.0` file-export/caution/Flash-anyway test without app-side clamping.
-- PR #3 was then fast-forward merged to `main`, preserving the tested candidate as the merge commit; release-preparation documentation and catalog-only automation may advance `main` afterward and must pass the final release gate before publication.
+- The final new-EQ review behavior adds regression coverage for empty first-time selection, notification-only future discovery, exact stored selection, hidden-lineage review suppression, and preservation of selected source state.
+- All interim PR #4 signed candidates produced before the final notification/review/documentation sync are superseded. The final synchronized exact head must repeat Android unit/lint/debug/release assembly, catalog/currentness, priority-community, CodeQL, dependency submission, signed-beta alignment/signature verification, and focused Pixel 9 validation before public publication.
+- Final release-polish changes remain isolated from Black Pearl protocol/DSP code, so the focused Pixel pass needs only an ordinary Black Pearl regression smoke unless a later diff touches device/DSP behavior.
+- Exact candidate `c70c523e1f530b8b197ebbccc41dfb4af1e27fc4` passed the earlier full Android/software/signing gates and Pixel 9 / TRN Black Pearl foundation qualification on 2026-08-31, including provider-adjusted SAF filename/collision recovery, playback-gain replacement/non-stacking behavior, and the Edition XS Altruistic-Farmer275 `13,500 Hz / -11.9 dB / Q 4.0` file-export/caution/Flash-anyway test without app-side clamping.
+- PR #3 was then fast-forward merged to `main`, preserving that tested candidate as the merge commit; PR #4 remains draft/unmerged until its fresh exact-head focused hands-on PASS.
 
 ## [0.2.0] - 2026-08-28
 
