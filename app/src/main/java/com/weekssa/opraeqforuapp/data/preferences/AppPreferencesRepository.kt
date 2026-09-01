@@ -69,6 +69,7 @@ class AppPreferencesRepository(context: Context) {
             ),
             exportTargets = outputPreferences,
             directBlackPearlFlashEnabled = preferences[Keys.DirectBlackPearlFlashEnabled] ?: false,
+            hiddenCanonicalProfileIds = preferences[Keys.HiddenCanonicalProfileIds].orEmpty(),
             exportTreeUri = preferences[Keys.ExportTreeUri],
             exportTreeLabel = preferences[Keys.ExportTreeLabel],
             updates = UpdatePreferences(
@@ -129,6 +130,27 @@ class AppPreferencesRepository(context: Context) {
     suspend fun setDirectBlackPearlFlashEnabled(enabled: Boolean) {
         appContext.appPreferencesDataStore.edit { preferences ->
             preferences[Keys.DirectBlackPearlFlashEnabled] = enabled
+        }
+    }
+
+    suspend fun hideCanonicalProfiles(canonicalProfileIds: Set<String>) {
+        val cleanIds = canonicalProfileIds.filterTo(mutableSetOf()) { it.isNotBlank() }
+        if (cleanIds.isEmpty()) return
+        appContext.appPreferencesDataStore.edit { preferences ->
+            preferences[Keys.HiddenCanonicalProfileIds] =
+                preferences[Keys.HiddenCanonicalProfileIds].orEmpty() + cleanIds
+        }
+    }
+
+    suspend fun unhideCanonicalProfiles(canonicalProfileIds: Set<String>) {
+        if (canonicalProfileIds.isEmpty()) return
+        appContext.appPreferencesDataStore.edit { preferences ->
+            val remaining = preferences[Keys.HiddenCanonicalProfileIds].orEmpty() - canonicalProfileIds
+            if (remaining.isEmpty()) {
+                preferences.remove(Keys.HiddenCanonicalProfileIds)
+            } else {
+                preferences[Keys.HiddenCanonicalProfileIds] = remaining
+            }
         }
     }
 
@@ -205,6 +227,7 @@ class AppPreferencesRepository(context: Context) {
         val SelectedExportTargets = stringSetPreferencesKey("selected_export_targets")
         val ActiveExportTarget = stringPreferencesKey("active_export_target")
         val DirectBlackPearlFlashEnabled = booleanPreferencesKey("direct_black_pearl_flash_enabled")
+        val HiddenCanonicalProfileIds = stringSetPreferencesKey("hidden_canonical_profile_ids")
         // Legacy v0.3 preview key intentionally left unread. Output selection no longer hides library curves.
         @Suppress("unused")
         val ShowUnexportablePresets = booleanPreferencesKey("show_unexportable_presets")

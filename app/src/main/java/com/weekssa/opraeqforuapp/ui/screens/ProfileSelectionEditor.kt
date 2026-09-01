@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.StarBorder
+import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
@@ -75,6 +76,7 @@ internal fun ProfileSelectionEditor(
     exportTargets: ExportTargetPreferences = ExportTargetPreferences(),
     favoriteProfileIds: Set<String>,
     onToggleFavorite: (suspend (OpraEqProfile, String, String) -> Boolean)?,
+    onHideCanonicalProfile: suspend (String) -> Unit,
     onLoadManagedHeadphone: suspend (String) -> ManagedHeadphoneRecord?,
     onSaveSelection: suspend (String, Set<String>, Boolean) -> Unit,
     onRemoveHeadphone: suspend (String) -> Unit,
@@ -447,6 +449,15 @@ internal fun ProfileSelectionEditor(
                             }
                         }
                     },
+                    onHide = {
+                        scope.launch {
+                            if (profile.id !in baselineSelectedIds) {
+                                stagedSelectedIds = stagedSelectedIds - profile.id
+                            }
+                            onHideCanonicalProfile(profile.canonicalProfileId)
+                            onMessage("EQ hidden from EQ Library. Restore it in Settings → Hidden EQs.")
+                        }
+                    },
                     onOpenSource = profile.link?.let { sourceUrl -> { onOpenUrl(sourceUrl) } },
                     onExplainSourceProblem = {
                         sourceProblemExplanation = sourceAssessment.reason
@@ -513,6 +524,7 @@ internal fun ProfileSelectionRow(
     outputStatusCategory: DeviceExportability,
     onSelectionChange: (Boolean) -> Unit,
     onToggleFavorite: (() -> Unit)?,
+    onHide: () -> Unit,
     onOpenSource: (() -> Unit)?,
     onExplainSourceProblem: () -> Unit,
 ) {
@@ -599,13 +611,18 @@ internal fun ProfileSelectionRow(
                 }
             }
         },
-        trailingContent = onToggleFavorite?.let { action ->
-            {
-                IconButton(onClick = action) {
-                    Icon(
-                        imageVector = if (isFavorite) Icons.Outlined.Star else Icons.Outlined.StarBorder,
-                        contentDescription = if (isFavorite) "Remove favorite" else "Add favorite",
-                    )
+        trailingContent = {
+            Row {
+                IconButton(onClick = onHide) {
+                    Icon(Icons.Outlined.VisibilityOff, contentDescription = "Hide from EQ Library")
+                }
+                onToggleFavorite?.let { action ->
+                    IconButton(onClick = action) {
+                        Icon(
+                            imageVector = if (isFavorite) Icons.Outlined.Star else Icons.Outlined.StarBorder,
+                            contentDescription = if (isFavorite) "Remove favorite" else "Add favorite",
+                        )
+                    }
                 }
             }
         },

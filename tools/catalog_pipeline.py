@@ -314,6 +314,45 @@ def validate_snapshot(snapshot: dict[str, Any]) -> list[str]:
     return errors
 
 
+def archive_regression_errors(baseline: dict[str, Any], candidate: dict[str, Any]) -> list[str]:
+    """Reject loss or in-place acoustic mutation of already-published canonical history."""
+    errors: list[str] = []
+    candidate_profiles = {
+        str(profile.get("canonical_profile_id") or ""): profile
+        for profile in candidate.get("profiles", [])
+        if str(profile.get("canonical_profile_id") or "").strip()
+    }
+    for baseline_profile in baseline.get("profiles", []):
+        profile_id = str(baseline_profile.get("canonical_profile_id") or "").strip()
+        if not profile_id:
+            continue
+        candidate_profile = candidate_profiles.get(profile_id)
+        if candidate_profile is None:
+            errors.append(f"archived canonical profile disappeared: {profile_id}")
+            continue
+        candidate_revisions = {
+            str(revision.get("revision_id") or ""): revision
+            for revision in candidate_profile.get("revisions", [])
+            if str(revision.get("revision_id") or "").strip()
+        }
+        for baseline_revision in baseline_profile.get("revisions", []):
+            revision_id = str(baseline_revision.get("revision_id") or "").strip()
+            if not revision_id:
+                continue
+            candidate_revision = candidate_revisions.get(revision_id)
+            if candidate_revision is None:
+                errors.append(f"archived revision disappeared: {profile_id}/{revision_id}")
+                continue
+            old_fingerprint = str(baseline_revision.get("acoustic_fingerprint") or "").strip()
+            new_fingerprint = str(candidate_revision.get("acoustic_fingerprint") or "").strip()
+            if old_fingerprint and new_fingerprint != old_fingerprint:
+                errors.append(
+                    f"archived revision acoustic fingerprint changed in place: "
+                    f"{profile_id}/{revision_id}"
+                )
+    return errors
+
+
 def atomic_write_json(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=path.parent, delete=False) as handle:
@@ -323,11 +362,24 @@ def atomic_write_json(path: Path, payload: Any) -> None:
     os.replace(temp_name, path)
 
 
-def publish_snapshot(candidate: Path, published: Path, last_known_good: Path) -> str:
+def publish_snapshot(
+    candidate: Path,
+    published: Path,
+    last_known_good: Path,
+    baseline: Path | None = None,
+) -> str:
     snapshot = load_json(candidate)
     errors = validate_snapshot(snapshot)
     if errors:
         raise RegistryError("candidate snapshot rejected: " + "; ".join(errors))
+    if baseline is not None and baseline.exists() and baseline.resolve() != candidate.resolve():
+        baseline_snapshot = load_json(baseline)
+        baseline_errors = validate_snapshot(baseline_snapshot)
+        if baseline_errors:
+            raise RegistryError("archive baseline rejected: " + "; ".join(baseline_errors))
+        archive_errors = archive_regression_errors(baseline_snapshot, snapshot)
+        if archive_errors:
+            raise RegistryError("living archive regression: " + "; ".join(archive_errors))
     snapshot_hash = sha256_json(snapshot)
     if published.exists():
         old = load_json(published)
@@ -362,7 +414,13 @@ def command_reconcile(args: argparse.Namespace) -> int:
 
 
 def command_publish(args: argparse.Namespace) -> int:
-    digest = publish_snapshot(Path(args.candidate), Path(args.published), Path(args.last_known_good))
+    candidate = Path(args.candidate)
+    if args.baseline:
+        baseline: Path | None = Path(args.baseline)
+    else:
+        default_baseline = Path("catalog/catalog.json")
+        baseline = default_baseline if default_baseline.exists() else None
+    digest = publish_snapshot(candidate, Path(args.published), Path(args.last_known_good), baseline=baseline)
     print(f"published validated snapshot sha256={digest}")
     return 0
 
@@ -384,6 +442,7 @@ def build_parser() -> argparse.ArgumentParser:
     publish.add_argument("--candidate", required=True)
     publish.add_argument("--published", default="catalog/catalog.json")
     publish.add_argument("--last-known-good", default="catalog/catalog.last-known-good.json")
+    publish.add_argument("--baseline", help="Prior published catalog to enforce living-archive preservation; defaults to catalog/catalog.json when present.")
     publish.set_defaults(func=command_publish)
     return parser
 

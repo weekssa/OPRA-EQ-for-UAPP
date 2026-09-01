@@ -1,15 +1,22 @@
 package com.weekssa.opraeqforuapp.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -17,12 +24,21 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.BuildConfig
 import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshFailureReason
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
+import com.weekssa.opraeqforuapp.domain.catalog.OpraCatalog
+import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
+import com.weekssa.opraeqforuapp.domain.catalog.isHistoricalRevision
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ThemeMode
@@ -31,6 +47,7 @@ import com.weekssa.opraeqforuapp.ui.components.OPRA_DATA_LICENSE_URL
 import com.weekssa.opraeqforuapp.ui.components.OpraAttribution
 import java.text.DateFormat
 import java.util.Date
+import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsScreen(
@@ -45,8 +62,24 @@ fun SettingsScreen(
     onThemeModeChange: (ThemeMode) -> Unit,
     onExportTargetChange: (ExportDevice, Boolean) -> Unit,
     onDirectBlackPearlFlashEnabledChange: (Boolean) -> Unit,
+    hiddenCanonicalProfileIds: Set<String>,
+    onUnhideCanonicalProfiles: suspend (Set<String>) -> Unit,
+    onMessage: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var hiddenEqScreenOpen by rememberSaveable { mutableStateOf(false) }
+    if (hiddenEqScreenOpen) {
+        HiddenEqSettingsScreen(
+            catalogState = catalogState,
+            hiddenCanonicalProfileIds = hiddenCanonicalProfileIds,
+            onUnhideCanonicalProfiles = onUnhideCanonicalProfiles,
+            onMessage = onMessage,
+            onBack = { hiddenEqScreenOpen = false },
+            modifier = modifier,
+        )
+        return
+    }
+
     Column(
         modifier = modifier
             .verticalScroll(rememberScrollState())
@@ -124,6 +157,14 @@ fun SettingsScreen(
                 ) { Text("Refresh now") }
             }
         }
+        TextButton(onClick = { hiddenEqScreenOpen = true }) {
+            Text("Hidden EQs · ${hiddenCanonicalProfileIds.size}")
+        }
+        Text(
+            text = "Hidden EQs remain in the living archive and in any existing My EQs collection; this setting changes ordinary library visibility only.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
 
         SectionDivider()
         SectionTitle("Export folder")
@@ -242,6 +283,166 @@ fun SettingsScreen(
         )
         Spacer(Modifier.height(24.dp))
     }
+}
+
+private data class HiddenEqRow(
+    val canonicalProfileId: String,
+    val title: String,
+    val subtitle: String,
+)
+
+@Composable
+private fun HiddenEqSettingsScreen(
+    catalogState: CatalogState,
+    hiddenCanonicalProfileIds: Set<String>,
+    onUnhideCanonicalProfiles: suspend (Set<String>) -> Unit,
+    onMessage: (String) -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier,
+) {
+    BackHandler(onBack = onBack)
+    val scope = rememberCoroutineScope()
+    var selectedIds by remember(hiddenCanonicalProfileIds) { mutableStateOf<Set<String>>(emptySet()) }
+    val rows = remember(catalogState, hiddenCanonicalProfileIds) {
+        hiddenEqRows(catalogState, hiddenCanonicalProfileIds)
+    }
+
+    Column(modifier = modifier.fillMaxSize()) {
+        TextButton(onClick = onBack, modifier = Modifier.padding(horizontal = 8.dp)) {
+            androidx.compose.material3.Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = null)
+            Text("Settings", modifier = Modifier.padding(start = 4.dp))
+        }
+        Text(
+            "Hidden EQs",
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            style = MaterialTheme.typography.headlineSmall,
+        )
+        Text(
+            "Hidden items are still archived. No rows are selected by default; choose the EQs you want to make visible again.",
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp),
+        ) {
+            TextButton(onClick = { selectedIds = rows.mapTo(mutableSetOf(), HiddenEqRow::canonicalProfileId) }) {
+                Text("Select all")
+            }
+            TextButton(onClick = { selectedIds = emptySet() }) { Text("Select none") }
+        }
+        Button(
+            onClick = {
+                val toUnhide = selectedIds
+                scope.launch {
+                    onUnhideCanonicalProfiles(toUnhide)
+                    selectedIds = emptySet()
+                    onMessage("${toUnhide.size} ${if (toUnhide.size == 1) "EQ" else "EQs"} unhidden.")
+                }
+            },
+            enabled = selectedIds.isNotEmpty(),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+        ) { Text("Unhide selected (${selectedIds.size})") }
+
+        if (rows.isEmpty()) {
+            Text(
+                "No EQs are hidden.",
+                modifier = Modifier.padding(16.dp),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+        } else {
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                items(rows, key = HiddenEqRow::canonicalProfileId) { row ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                selectedIds = if (row.canonicalProfileId in selectedIds) {
+                                    selectedIds - row.canonicalProfileId
+                                } else {
+                                    selectedIds + row.canonicalProfileId
+                                }
+                            }
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Checkbox(
+                            checked = row.canonicalProfileId in selectedIds,
+                            onCheckedChange = { checked ->
+                                selectedIds = if (checked) selectedIds + row.canonicalProfileId
+                                else selectedIds - row.canonicalProfileId
+                            },
+                        )
+                        Column(modifier = Modifier.padding(start = 8.dp)) {
+                            Text(row.title)
+                            Text(
+                                row.subtitle,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    HorizontalDivider()
+                }
+            }
+        }
+    }
+}
+
+private fun hiddenEqRows(
+    catalogState: CatalogState,
+    hiddenCanonicalProfileIds: Set<String>,
+): List<HiddenEqRow> {
+    if (hiddenCanonicalProfileIds.isEmpty()) return emptyList()
+    val catalog = (catalogState as? CatalogState.Ready)?.catalog
+    if (catalog == null) {
+        return hiddenCanonicalProfileIds.sorted().map { id ->
+            HiddenEqRow(id, "Archived EQ", "Catalog details unavailable · $id")
+        }
+    }
+
+    val rows = mutableListOf<HiddenEqRow>()
+    val found = mutableSetOf<String>()
+    catalog.profiles
+        .filter { it.canonicalProfileId in hiddenCanonicalProfileIds }
+        .groupBy(OpraEqProfile::canonicalProfileId)
+        .forEach { (canonicalId, revisions) ->
+            val profile = revisions.firstOrNull { !it.isHistoricalRevision() } ?: revisions.first()
+            val product = catalog.product(profile.productId)
+            val vendor = product?.let { catalog.vendor(it.vendorId) }
+            rows += HiddenEqRow(
+                canonicalProfileId = canonicalId,
+                title = product?.name ?: "Headphone EQ",
+                subtitle = listOfNotNull(
+                    vendor?.name,
+                    profile.author?.takeIf(String::isNotBlank),
+                    profile.details?.takeIf(String::isNotBlank),
+                ).joinToString(" · ").ifBlank { canonicalId },
+            )
+            found += canonicalId
+        }
+    catalog.generalPresets
+        .filter { it.canonicalProfileId in hiddenCanonicalProfileIds }
+        .groupBy { it.canonicalProfileId }
+        .forEach { (canonicalId, revisions) ->
+            val preset = revisions.firstOrNull { it.isLatestRevision } ?: revisions.first()
+            rows += HiddenEqRow(
+                canonicalProfileId = canonicalId,
+                title = preset.displayName,
+                subtitle = listOfNotNull(
+                    "General EQ",
+                    preset.creator?.takeIf(String::isNotBlank),
+                    preset.category.name.lowercase().replaceFirstChar(Char::titlecase),
+                ).joinToString(" · "),
+            )
+            found += canonicalId
+        }
+    (hiddenCanonicalProfileIds - found).forEach { id ->
+        rows += HiddenEqRow(id, "Archived EQ", "Catalog details unavailable · $id")
+    }
+    return rows.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.title })
 }
 
 @Composable

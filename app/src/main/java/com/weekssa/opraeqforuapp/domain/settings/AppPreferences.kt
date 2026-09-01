@@ -54,6 +54,7 @@ data class AppPreferences(
     val profileVisibility: ProfileVisibilityPreferences = ProfileVisibilityPreferences(),
     val exportTargets: ExportTargetPreferences = ExportTargetPreferences(),
     val directBlackPearlFlashEnabled: Boolean = false,
+    val hiddenCanonicalProfileIds: Set<String> = emptySet(),
     val exportTreeUri: String? = null,
     val exportTreeLabel: String? = null,
     val updates: UpdatePreferences = UpdatePreferences(),

@@ -87,7 +87,7 @@ fun MyEqsHomeScreen(
         displayName: String,
         target: String?,
         peqText: String,
-    ) -> String?,
+    ) -> SavedEqRecord,
     onDeleteSavedEq: suspend (String) -> Unit,
     onExportSavedEq: (String) -> Unit,
     onFlashSavedEq: suspend (String) -> String,
@@ -107,20 +107,18 @@ fun MyEqsHomeScreen(
         directBlackPearlFlashEnabled && blackPearlConnected
 
     if (importOpen) {
-        PersonalEqDialog(
-            onDismiss = { importOpen = false },
-            onImport = { manufacturer, model, displayName, target, peqText ->
-                scope.launch {
-                    val error = onImportPersonal(manufacturer, model, displayName, target, peqText)
-                    if (error == null) {
-                        importOpen = false
-                        onMessage("Personal EQ saved to My EQs.")
-                    } else {
-                        onMessage(error)
-                    }
-                }
+        PersonalEqImportScreen(
+            onBack = { importOpen = false },
+            onSave = onImportPersonal,
+            onSaved = { record ->
+                importOpen = false
+                onMessage("Personal EQ saved to My EQs.")
+                onExportSavedEq(record.entryId)
             },
+            onMessage = onMessage,
+            modifier = modifier,
         )
+        return
     }
 
     pendingFlash?.let { pending ->
@@ -166,16 +164,10 @@ fun MyEqsHomeScreen(
                         onConnect = onConnectBlackPearl,
                     )
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (exportCurrentness.hasPendingExport) {
-                        Button(onClick = onExportAll) {
-                            Icon(Icons.Outlined.FileUpload, contentDescription = null)
-                            Text("Export all", modifier = Modifier.padding(start = 6.dp))
-                        }
-                    }
-                    OutlinedButton(onClick = { importOpen = true }) {
-                        Icon(Icons.Outlined.Add, contentDescription = null)
-                        Text("Import PEQ", modifier = Modifier.padding(start = 6.dp))
+                if (exportCurrentness.hasPendingExport) {
+                    Button(onClick = onExportAll) {
+                        Icon(Icons.Outlined.FileUpload, contentDescription = null)
+                        Text("Export all", modifier = Modifier.padding(start = 6.dp))
                     }
                 }
                 if (exportCurrentness.hasPendingExport) {
@@ -244,12 +236,7 @@ fun MyEqsHomeScreen(
 
             if (headphoneSavedEqs.isNotEmpty()) {
                 item(key = "saved-headphone-heading") {
-                    Text(
-                        text = "Saved snapshots & personal imports",
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    SavedImportsHeading(onImport = { importOpen = true })
                 }
                 items(headphoneSavedEqs, key = { "saved:${it.entryId}" }) { record ->
                     val needsExport = exportCurrentness.needsExport(record.productId, record.profile.id)
@@ -310,6 +297,12 @@ fun MyEqsHomeScreen(
                     )
                     HorizontalDivider()
                 }
+            }
+        }
+
+        if (headphoneSavedEqs.isEmpty()) {
+            item(key = "saved-headphone-heading-empty") {
+                SavedImportsHeading(onImport = { importOpen = true })
             }
         }
 
@@ -444,80 +437,24 @@ private fun EmptyMessage(message: String) {
 }
 
 @Composable
-private fun PersonalEqDialog(
-    onDismiss: () -> Unit,
-    onImport: (String, String, String, String?, String) -> Unit,
-) {
-    var manufacturer by remember { mutableStateOf("") }
-    var model by remember { mutableStateOf("") }
-    var displayName by remember { mutableStateOf("") }
-    var target by remember { mutableStateOf("") }
-    var peqText by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Import personal PEQ") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = manufacturer,
-                    onValueChange = { manufacturer = it },
-                    label = { Text("Manufacturer") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                OutlinedTextField(
-                    value = model,
-                    onValueChange = { model = it },
-                    label = { Text("Headphone model") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                OutlinedTextField(
-                    value = displayName,
-                    onValueChange = { displayName = it },
-                    label = { Text("EQ name") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                OutlinedTextField(
-                    value = target,
-                    onValueChange = { target = it },
-                    label = { Text("Target / note (optional)") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                OutlinedTextField(
-                    value = peqText,
-                    onValueChange = { peqText = it },
-                    label = { Text("Parametric EQ text") },
-                    minLines = 5,
-                    maxLines = 10,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    onImport(
-                        manufacturer,
-                        model,
-                        displayName,
-                        target.takeIf(String::isNotBlank),
-                        peqText,
-                    )
-                },
-                enabled = manufacturer.isNotBlank() && model.isNotBlank() &&
-                    displayName.isNotBlank() && peqText.isNotBlank(),
-            ) {
-                Text("Save")
-            }
-        },
-        dismissButton = {
-            OutlinedButton(onClick = onDismiss) { Text("Cancel") }
-        },
-    )
+private fun SavedImportsHeading(onImport: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+    ) {
+        Text(
+            text = "Saved snapshots & personal imports",
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        TextButton(onClick = onImport) {
+            Icon(Icons.Outlined.Add, contentDescription = null)
+            Text("Import", modifier = Modifier.padding(start = 4.dp))
+        }
+    }
 }
 
 private fun exportStatusText(exportCurrentness: ExportCurrentness): String {

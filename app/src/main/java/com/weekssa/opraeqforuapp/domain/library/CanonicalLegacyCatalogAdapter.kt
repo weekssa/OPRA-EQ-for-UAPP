@@ -107,6 +107,7 @@ object CanonicalLegacyCatalogAdapter {
                 GeneralEqPreset(
                     id = "eq-library-general:${profile.canonicalProfileId}@${revision.revisionId}",
                     displayName = displayName,
+                    canonicalProfileId = profile.canonicalProfileId,
                     category = generalCategory(profile, revision),
                     creator = profile.creator ?: primary?.creator,
                     soundImpactSummary = revision.soundImpactSummary
@@ -165,6 +166,7 @@ object CanonicalLegacyCatalogAdapter {
         return OpraEqProfile(
             id = legacyProfileId,
             productId = productId,
+            canonicalProfileId = profile.canonicalProfileId,
             author = profile.creator,
             details = legacyDetails(profile, revision, primary),
             link = primary?.url,

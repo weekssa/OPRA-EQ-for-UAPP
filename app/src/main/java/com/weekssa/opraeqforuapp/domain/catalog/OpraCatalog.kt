@@ -43,6 +43,8 @@ data class OpraEqProfile(
      * v0.3 field never downgrades existing catalog data. Unverified profiles remain manually
      * selectable/exportable but are excluded from silent automatic inclusion.
      */
+    /** Stable canonical tuning lineage identity used by local Hide/Unhide. */
+    val canonicalProfileId: String = id,
     val isVerified: Boolean = true,
 ) {
     fun effectivePlaybackPreampDb(): Double? = preampGainDb ?: eqLibrarySafetyHeadroomDb
@@ -71,6 +73,8 @@ data class GeneralEqPreset(
     val preampGainDb: Double?,
     val bands: List<OpraBand>,
     val eqLibrarySafetyHeadroomDb: Double? = null,
+    /** Stable canonical tuning lineage identity used by local Hide/Unhide. */
+    val canonicalProfileId: String = id,
     val isVerified: Boolean = true,
     val isLatestRevision: Boolean = true,
 )
@@ -180,6 +184,31 @@ data class OpraCatalog(
             )
             tokens.all(haystack::contains)
         }
+    }
+
+    /**
+     * Returns the ordinary browse/search projection after applying the user's global local Hide
+     * preferences. Canonical data is never removed; callers that manage My EQs keep the original
+     * unfiltered catalog. Hiding one lineage hides all of its genuine revisions.
+     */
+    fun excludingHiddenCanonicalProfiles(hiddenCanonicalProfileIds: Set<String>): OpraCatalog {
+        if (hiddenCanonicalProfileIds.isEmpty()) return this
+
+        val visibleProfiles = profiles.filterNot { it.canonicalProfileId in hiddenCanonicalProfileIds }
+        val visibleGeneralPresets = generalPresets.filterNot {
+            it.canonicalProfileId in hiddenCanonicalProfileIds
+        }
+        val visibleProductIds = visibleProfiles
+            .mapTo(mutableSetOf()) { canonicalProductId(it.productId) }
+        val visibleProducts = products.filter { canonicalProductId(it.id) in visibleProductIds }
+        val visibleVendorIds = visibleProducts.mapTo(mutableSetOf(), OpraProduct::vendorId)
+
+        return copy(
+            vendors = vendors.filter { it.id in visibleVendorIds },
+            products = visibleProducts,
+            profiles = visibleProfiles,
+            generalPresets = visibleGeneralPresets,
+        )
     }
 
     private fun resolveProductId(productId: String): String {

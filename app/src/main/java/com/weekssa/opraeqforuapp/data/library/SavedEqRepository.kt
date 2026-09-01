@@ -99,7 +99,9 @@ class SavedEqRepository(
         require(headphoneModel.isNotEmpty()) { "Model is required." }
         require(name.isNotEmpty()) { "EQ name is required." }
 
-        val parsed = ParametricEqTextParser.parse(peqText)
+        val strict = ParametricEqTextParser.parseStrictPersonal(peqText)
+        require(strict.errors.isEmpty()) { strict.errors.joinToString(" ") }
+        val parsed = strict.parsedEq
         require(parsed.filters.isNotEmpty()) { "No supported enabled PEQ filters were found." }
         require(parsed.filters.all { it.type in SUPPORTED_PERSONAL_TYPES }) {
             "The import contains a filter type that EQ Library cannot export safely yet."

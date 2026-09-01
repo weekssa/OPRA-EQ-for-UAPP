@@ -217,11 +217,20 @@ class MainActivity : ComponentActivity() {
                     onToggleFavorite = { profile, manufacturer, model ->
                         savedEqRepository.toggleFavorite(activeOutputId, profile, manufacturer, model)
                     },
-                    onToggleGeneralPreset = { preset ->
-                        savedGeneralEqRepository.toggleForOutput(activeOutputId, preset)
+                    onSaveGeneralPreset = { preset ->
+                        savedGeneralEqRepository.saveForOutput(activeOutputId, preset)
                     },
+                    onHideCanonicalProfiles = appPreferencesRepository::hideCanonicalProfiles,
+                    onUnhideCanonicalProfiles = appPreferencesRepository::unhideCanonicalProfiles,
                     onImportPersonal = { manufacturer, model, displayName, target, peqText ->
-                        importPersonalEq(activeOutputId, manufacturer, model, displayName, target, peqText)
+                        savedEqRepository.importPersonal(
+                            outputId = activeOutputId,
+                            manufacturer = manufacturer,
+                            model = model,
+                            displayName = displayName,
+                            target = target,
+                            peqText = peqText,
+                        )
                     },
                     onDeleteSavedEq = { entryId ->
                         savedEqRepository.removeFromOutput(activeOutputId, entryId)
@@ -265,6 +274,9 @@ class MainActivity : ComponentActivity() {
                     },
                     onExportGeneralEq = { uri, presetId, device ->
                         exportGeneralEq(uri, presetId, device, activeOutputId)
+                    },
+                    onExportGeneralEqs = { uri, presetIds, device ->
+                        exportGeneralEqs(uri, presetIds, device, activeOutputId)
                     },
                     onCheckForUpdates = updateCoordinator::checkNow,
                     onDismissUpdate = appPreferencesRepository::dismissUpdate,
@@ -336,6 +348,22 @@ class MainActivity : ComponentActivity() {
         onSuccess = { null },
         onFailure = { error -> error.message ?: "Couldn’t import that PEQ." },
     )
+
+    private suspend fun exportGeneralEqs(
+        treeUri: Uri,
+        presetIds: Set<String>,
+        device: ExportDevice,
+        outputId: String,
+    ): PresetExportSummary {
+        val records = presetIds.sorted().mapNotNull { presetId ->
+            savedGeneralEqRepository.getForOutput(outputId, presetId)
+        }
+        return exportRepository.exportSelected(
+            treeUri = treeUri,
+            headphones = records.map(savedGeneralEqRepository::toExportRecord),
+            device = device,
+        )
+    }
 
     private suspend fun flashManagedProfile(
         productId: String,

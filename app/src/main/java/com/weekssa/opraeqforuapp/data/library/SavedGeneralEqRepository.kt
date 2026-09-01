@@ -42,6 +42,33 @@ class SavedGeneralEqRepository(
         return dao.get(presetId)?.let(::toDomain)
     }
 
+    suspend fun saveForOutput(outputId: String, preset: GeneralEqPreset): Boolean =
+        database.withTransaction {
+            val existingSelection = dao.getSelection(outputId, preset.id)
+            val now = nowMillis()
+            val existing = dao.get(preset.id)
+            dao.upsert(
+                SavedGeneralEqEntity(
+                    presetId = preset.id,
+                    displayName = preset.displayName,
+                    category = preset.category.name,
+                    profileJson = snapshotCodec.encode(preset.toExportProfile()),
+                    createdAtMillis = existing?.createdAtMillis ?: now,
+                    updatedAtMillis = now,
+                ),
+            )
+            if (existingSelection == null) {
+                dao.upsertSelection(
+                    OutputGeneralEqEntity(
+                        outputId = outputId,
+                        presetId = preset.id,
+                        selectedAtMillis = now,
+                    ),
+                )
+            }
+            existingSelection == null
+        }
+
     suspend fun toggleForOutput(outputId: String, preset: GeneralEqPreset): Boolean =
         database.withTransaction {
             if (dao.getSelection(outputId, preset.id) != null) {
@@ -128,6 +155,7 @@ class SavedGeneralEqRepository(
     private fun GeneralEqPreset.toExportProfile(): OpraEqProfile = OpraEqProfile(
         id = id,
         productId = INTERNAL_GENERAL_PRODUCT_ID,
+        canonicalProfileId = canonicalProfileId,
         author = creator,
         details = soundImpactSummary,
         link = sourceUrl,

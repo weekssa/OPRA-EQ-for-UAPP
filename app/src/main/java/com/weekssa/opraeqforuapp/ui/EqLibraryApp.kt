@@ -88,6 +88,7 @@ private sealed interface ActiveOutputExportRequest {
     ) : ActiveOutputExportRequest
     data class SavedEq(val entryId: String, override val device: ExportDevice) : ActiveOutputExportRequest
     data class GeneralEq(val presetId: String, override val device: ExportDevice) : ActiveOutputExportRequest
+    data class GeneralEqBatch(val presetIds: Set<String>, override val device: ExportDevice) : ActiveOutputExportRequest
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -113,8 +114,10 @@ fun EqLibraryApp(
     onDeleteSavedFilesForProduct: suspend (String) -> PresetCleanupSummary,
     onMarkReviewed: suspend (String) -> Unit,
     onToggleFavorite: suspend (OpraEqProfile, String, String) -> Boolean,
-    onToggleGeneralPreset: suspend (GeneralEqPreset) -> Boolean,
-    onImportPersonal: suspend (String, String, String, String?, String) -> String?,
+    onSaveGeneralPreset: suspend (GeneralEqPreset) -> Boolean,
+    onHideCanonicalProfiles: suspend (Set<String>) -> Unit,
+    onUnhideCanonicalProfiles: suspend (Set<String>) -> Unit,
+    onImportPersonal: suspend (String, String, String, String?, String) -> SavedEqRecord,
     onDeleteSavedEq: suspend (String) -> Unit,
     onRemoveGeneralEq: suspend (String) -> Unit,
     onPersistExportTree: suspend (Uri) -> Boolean,
@@ -124,6 +127,7 @@ fun EqLibraryApp(
     onExportManagedProfile: suspend (Uri, String, String, ExportDevice) -> PresetExportSummary,
     onExportSavedEq: suspend (Uri, String, ExportDevice) -> PresetExportSummary,
     onExportGeneralEq: suspend (Uri, String, ExportDevice) -> PresetExportSummary,
+    onExportGeneralEqs: suspend (Uri, Set<String>, ExportDevice) -> PresetExportSummary,
     onCheckForUpdates: suspend () -> AppUpdateCheckResult,
     onDismissUpdate: suspend (String) -> Unit,
     onDismissPostUpdate: suspend () -> Unit,
@@ -216,6 +220,7 @@ fun EqLibraryApp(
             )
             is ActiveOutputExportRequest.SavedEq -> onExportSavedEq(uri, request.entryId, request.device)
             is ActiveOutputExportRequest.GeneralEq -> onExportGeneralEq(uri, request.presetId, request.device)
+            is ActiveOutputExportRequest.GeneralEqBatch -> onExportGeneralEqs(uri, request.presetIds, request.device)
             null -> null
         }
         if (summary != null) {
@@ -267,6 +272,9 @@ fun EqLibraryApp(
     }
     val requestExportGeneralEq: (String) -> Unit = { presetId ->
         runExportRequest(ActiveOutputExportRequest.GeneralEq(presetId, activeOutput))
+    }
+    val requestExportGeneralEqs: (Set<String>) -> Unit = { presetIds ->
+        runExportRequest(ActiveOutputExportRequest.GeneralEqBatch(presetIds, activeOutput))
     }
     val requestCatalogRefresh = {
         if (!catalogBusy) {
@@ -445,12 +453,15 @@ fun EqLibraryApp(
                         managedHeadphones = managedHeadphones,
                         favoriteProfileIds = favoriteProfileIds,
                         savedGeneralPresetIds = savedGeneralPresetIds,
+                        hiddenCanonicalProfileIds = appPreferences.hiddenCanonicalProfileIds,
                         onToggleFavorite = onToggleFavorite,
-                        onToggleGeneralPreset = { preset ->
-                            val selected = onToggleGeneralPreset(preset)
-                            if (selected) requestExportGeneralEq(preset.id)
-                            selected
+                        onSaveGeneralPresets = { presets ->
+                            val presetIds = presets.mapTo(mutableSetOf(), GeneralEqPreset::id)
+                            presets.forEach { preset -> onSaveGeneralPreset(preset) }
+                            if (presetIds.isNotEmpty()) requestExportGeneralEqs(presetIds)
+                            presetIds.size
                         },
+                        onHideCanonicalProfiles = onHideCanonicalProfiles,
                         onLoadManagedHeadphone = onLoadManagedHeadphone,
                         onSaveSelection = onSaveSelection,
                         onRemoveHeadphone = onRemoveHeadphone,
@@ -478,6 +489,9 @@ fun EqLibraryApp(
                         onThemeModeChange = onThemeModeChange,
                         onExportTargetChange = onExportTargetChange,
                         onDirectBlackPearlFlashEnabledChange = onDirectBlackPearlFlashEnabledChange,
+                        hiddenCanonicalProfileIds = appPreferences.hiddenCanonicalProfileIds,
+                        onUnhideCanonicalProfiles = onUnhideCanonicalProfiles,
+                        onMessage = ::showMessage,
                         modifier = Modifier.fillMaxSize(),
                     )
                 }

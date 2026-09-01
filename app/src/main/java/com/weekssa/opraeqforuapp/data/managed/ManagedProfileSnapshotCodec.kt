@@ -29,6 +29,7 @@ class ManagedProfileSnapshotCodec(
 private data class StoredProfileSnapshot(
     val id: String,
     val productId: String,
+    val canonicalProfileId: String? = null,
     val author: String?,
     val details: String?,
     val link: String?,
@@ -62,6 +63,7 @@ private data class StoredBandSnapshot(
 private fun OpraEqProfile.toStoredSnapshot() = StoredProfileSnapshot(
     id = id,
     productId = productId,
+    canonicalProfileId = canonicalProfileId,
     author = author,
     details = details,
     link = link,
@@ -91,6 +93,7 @@ private fun OpraBand.toStoredSnapshot() = StoredBandSnapshot(
 private fun StoredProfileSnapshot.toDomain() = OpraEqProfile(
     id = id,
     productId = productId,
+    canonicalProfileId = canonicalProfileId ?: id,
     author = author,
     details = details,
     link = link,

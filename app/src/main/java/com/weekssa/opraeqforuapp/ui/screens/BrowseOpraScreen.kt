@@ -23,6 +23,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -75,8 +76,10 @@ fun BrowseOpraScreen(
     managedHeadphones: List<ManagedHeadphoneRecord>,
     favoriteProfileIds: Set<String>,
     savedGeneralPresetIds: Set<String> = emptySet(),
+    hiddenCanonicalProfileIds: Set<String> = emptySet(),
     onToggleFavorite: suspend (OpraEqProfile, String, String) -> Boolean,
-    onToggleGeneralPreset: suspend (GeneralEqPreset) -> Boolean = { false },
+    onSaveGeneralPresets: suspend (List<GeneralEqPreset>) -> Int = { 0 },
+    onHideCanonicalProfiles: suspend (Set<String>) -> Unit = {},
     onLoadManagedHeadphone: suspend (String) -> ManagedHeadphoneRecord?,
     onSaveSelection: suspend (String, Set<String>, Boolean) -> Unit,
     onRemoveHeadphone: suspend (String) -> Unit,
@@ -118,7 +121,10 @@ fun BrowseOpraScreen(
             modifier = modifier,
         )
         is CatalogState.Ready -> {
-            val catalog = catalogState.catalog
+            val fullCatalog = catalogState.catalog
+            val catalog = remember(fullCatalog, hiddenCanonicalProfileIds) {
+                fullCatalog.excludingHiddenCanonicalProfiles(hiddenCanonicalProfileIds)
+            }
             val product = if (selectedSection == LibrarySection.HEADPHONES) {
                 selectedProductId?.let(catalog::product)
             } else {
@@ -159,6 +165,9 @@ fun BrowseOpraScreen(
                         exportTargets = exportTargets,
                         favoriteProfileIds = favoriteProfileIds,
                         onToggleFavorite = onToggleFavorite,
+                        onHideCanonicalProfile = { canonicalProfileId ->
+                            onHideCanonicalProfiles(setOf(canonicalProfileId))
+                        },
                         onLoadManagedHeadphone = onLoadManagedHeadphone,
                         onSaveSelection = onSaveSelection,
                         onRemoveHeadphone = onRemoveHeadphone,
@@ -198,7 +207,8 @@ fun BrowseOpraScreen(
                         savedPresetIds = savedGeneralPresetIds,
                         onSearchQueryChange = { searchQuery = it },
                         onFilterSelected = { selectedGeneralFilterIndex = it },
-                        onTogglePreset = onToggleGeneralPreset,
+                        onSavePresets = onSaveGeneralPresets,
+                        onHideCanonicalProfiles = onHideCanonicalProfiles,
                         onMessage = onMessage,
                         onOpenUrl = onOpenUrl,
                         modifier = Modifier.weight(1f),
@@ -321,17 +331,20 @@ private fun GeneralEqBrowse(
     savedPresetIds: Set<String>,
     onSearchQueryChange: (String) -> Unit,
     onFilterSelected: (Int) -> Unit,
-    onTogglePreset: suspend (GeneralEqPreset) -> Boolean,
+    onSavePresets: suspend (List<GeneralEqPreset>) -> Int,
+    onHideCanonicalProfiles: suspend (Set<String>) -> Unit,
     onMessage: (String) -> Unit,
     onOpenUrl: (String) -> Unit,
     modifier: Modifier,
 ) {
     val scope = rememberCoroutineScope()
     val selectedFilter = GeneralFilter.entries[selectedFilterIndex]
+    var batchSelectedIds by remember(catalog) { mutableStateOf<Set<String>>(emptySet()) }
     val matching = remember(catalog.generalPresets, searchQuery, selectedFilter) {
         catalog.searchGeneralPresets(searchQuery)
             .filter { preset -> selectedFilter.category == null || preset.category == selectedFilter.category }
     }
+    val selectedPresets = catalog.generalPresets.filter { it.id in batchSelectedIds }
 
     Column(
         modifier = modifier
@@ -359,15 +372,57 @@ private fun GeneralEqBrowse(
         }
         Text(
             text = "General EQs are standalone presets; v0.3 does not layer them on top of headphone correction EQs.",
-            modifier = Modifier.padding(bottom = 8.dp),
+            modifier = Modifier.padding(bottom = 4.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            TextButton(
+                onClick = { batchSelectedIds = batchSelectedIds + matching.map(GeneralEqPreset::id) },
+                enabled = matching.isNotEmpty(),
+            ) { Text("Select all") }
+            TextButton(
+                onClick = { batchSelectedIds = batchSelectedIds - matching.map(GeneralEqPreset::id).toSet() },
+                enabled = matching.isNotEmpty(),
+            ) { Text("Select none") }
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Button(
+                onClick = {
+                    val toSave = selectedPresets.toList()
+                    scope.launch {
+                        val count = onSavePresets(toSave)
+                        batchSelectedIds = emptySet()
+                        onMessage("$count ${if (count == 1) "General EQ" else "General EQs"} saved to My EQs. Initial export started.")
+                    }
+                },
+                enabled = selectedPresets.isNotEmpty(),
+            ) { Text("Save selected (${selectedPresets.size})") }
+            OutlinedButton(
+                onClick = {
+                    val canonicalIds = selectedPresets.mapTo(mutableSetOf(), GeneralEqPreset::canonicalProfileId)
+                    scope.launch {
+                        onHideCanonicalProfiles(canonicalIds)
+                        batchSelectedIds = emptySet()
+                        onMessage("${canonicalIds.size} ${if (canonicalIds.size == 1) "EQ" else "EQs"} hidden. Restore them in Settings → Hidden EQs.")
+                    }
+                },
+                enabled = selectedPresets.isNotEmpty(),
+            ) { Text("Hide selected") }
+        }
 
         if (matching.isEmpty()) {
             Text(
                 text = if (catalog.generalPresets.isEmpty()) {
-                    "No General EQs are published in the current saved catalog yet."
+                    "No visible General EQs are available. Hidden EQs can be restored from Settings → Hidden EQs."
                 } else {
                     "No General EQs match this search and filter."
                 },
@@ -377,7 +432,6 @@ private fun GeneralEqBrowse(
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(matching, key = GeneralEqPreset::id) { preset ->
-                    val selected = preset.id in savedPresetIds
                     ListItem(
                         headlineContent = { Text(preset.displayName) },
                         supportingContent = {
@@ -388,6 +442,13 @@ private fun GeneralEqBrowse(
                                         preset.soundImpactSummary?.takeIf(String::isNotBlank),
                                     ).joinToString(" · ").ifBlank { "General parametric EQ" },
                                 )
+                                if (preset.id in savedPresetIds) {
+                                    Text(
+                                        "Saved in My EQs for this output",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
+                                }
                                 if (!preset.isVerified) {
                                     Text(
                                         "Community submission — not independently verified.",
@@ -403,17 +464,12 @@ private fun GeneralEqBrowse(
                         },
                         trailingContent = {
                             Checkbox(
-                                checked = selected,
-                                onCheckedChange = {
-                                    scope.launch {
-                                        val nowSelected = onTogglePreset(preset)
-                                        onMessage(
-                                            if (nowSelected) {
-                                                "${preset.displayName} added to My EQs for this output."
-                                            } else {
-                                                "${preset.displayName} removed from My EQs for this output."
-                                            },
-                                        )
+                                checked = preset.id in batchSelectedIds,
+                                onCheckedChange = { checked ->
+                                    batchSelectedIds = if (checked) {
+                                        batchSelectedIds + preset.id
+                                    } else {
+                                        batchSelectedIds - preset.id
                                     }
                                 },
                             )
