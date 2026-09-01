@@ -2,7 +2,7 @@ name: Signed EQ Library Beta Candidate
 
 on:
   push:
-    branches: [eq-library-beta, eq-library-community-v0.3]
+    branches: [eq-library-beta, eq-library-community-v0.3, 'v0.3-*']
 
 permissions:
   contents: write
