@@ -71,19 +71,22 @@ jobs:
           --published "${RUNNER_TEMP}/validated-general-catalog.json"
           --last-known-good "${RUNNER_TEMP}/validated-general-lkg.json"
 
-      - name: Minify Android transport catalog
+      - name: Prepare Android transport and readable repository catalogs
         run: |
           python3 - <<'PY'
           import json, os
-          path = os.environ['RUNNER_TEMP'] + '/validated-general-catalog.json'
-          with open(path, encoding='utf-8') as handle:
+          transport = os.environ['RUNNER_TEMP'] + '/validated-general-catalog.json'
+          repository = os.environ['RUNNER_TEMP'] + '/repository-general-catalog.json'
+          with open(transport, encoding='utf-8') as handle:
               payload = json.load(handle)
-          with open(path, 'w', encoding='utf-8') as handle:
+          with open(transport, 'w', encoding='utf-8') as handle:
               handle.write(json.dumps(payload, sort_keys=True, separators=(',', ':'), ensure_ascii=False) + '\n')
+          with open(repository, 'w', encoding='utf-8') as handle:
+              handle.write(json.dumps(payload, sort_keys=True, indent=2, ensure_ascii=False) + '\n')
           PY
 
       - name: Stage validated General EQ catalog
-        run: cp "${RUNNER_TEMP}/validated-general-catalog.json" catalog/catalog.json
+        run: cp "${RUNNER_TEMP}/repository-general-catalog.json" catalog/catalog.json
 
       - name: Commit General EQ catalog changes
         run: |
