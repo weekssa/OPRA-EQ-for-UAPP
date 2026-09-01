@@ -17,7 +17,7 @@ At the start of substantive work, read this file and then the current detailed s
 - `docs/V0.3_HANDS_ON_CHECKLIST.md` before producing or validating a v0.3 device-test APK
 - `CHANGELOG.md`
 
-`docs/AUTONOMOUS_V0.3_PLAN.md` records the implementation plan that led into the locked plan. Where wording differs, the later locked plan, `docs/V0.3_RELEASE_POLISH_PLAN.md`, and explicit later decisions are authoritative.
+`docs/AUTONOMOUS_V0.3_PLAN.md` records the implementation plan that led into the locked plan. Where wording differs, the later locked plan, `docs/V0.3_RELEASE_POLISH_PLAN.md`, this runbook, and explicit later decisions are authoritative.
 
 ## 2. Repository boundary
 
@@ -38,7 +38,7 @@ Use it as the proven OPRA → UAPP/ToneBoosters behavioral reference. Never modi
 - OPRA upstream: `https://github.com/opra-project/OPRA`
 - Runtime OPRA catalog: `https://opra.roonlabs.net/database_v1.jsonl`
 
-Normal app runtime consumes the runtime catalog. Do not scrape GitHub during normal app operation.
+Normal app runtime consumes the validated published EQ Library catalog built from OPRA and other qualified sources. Do not scrape GitHub during normal app operation.
 
 ## 3. Product identity, privacy, and Android baseline
 
@@ -75,25 +75,30 @@ Users may locally **Hide** canonical headphone or General EQ profiles without de
 
 Personal PEQ import is a canonical-ingestion path, not a separate output converter. The compact **+ Import** action belongs with the Saved snapshots & personal imports section rather than as a large button competing with Black Pearl Connect. The v0.3 import surface supports pasted or chosen-file **Equalizer APO / AutoEq text**, parses contents rather than trusting file extension, previews the exact canonical interpretation before Save, blocks malformed/unsupported active filters instead of silently producing a partial EQ, preserves omitted preamp as null, and performs initial active-output export after a successful save when exportable. Import never automatically flashes hardware.
 
-### New headphone selection defaults — approved v0.3 behavior
+### New headphone selection and new-EQ review — final approved v0.3 behavior
 
-A never-added headphone starts with:
+A never-added headphone starts with **zero EQ profiles selected**. The user explicitly selects the profiles they want; no current or future EQ is ever silently selected merely because it is verified, newly published, or covered by a notification preference.
 
-- **zero EQ profiles selected**;
-- **Automatically include new EQs** OFF.
+Every usable canonical parametric EQ is represented as a selectable checkbox. Active-output capability is presented separately as Exact, Optimized, or Not exportable; a valid canonical EQ remains visible and selectable/savable even when the active output cannot represent it. Output capability must never become a catalog-visibility or canonical-selection filter. Provide Select all and Select none as explicit selection actions.
 
-Every usable canonical parametric EQ is represented as a selectable checkbox. Active-output capability is presented separately as Exact, Optimized, or Not exportable; a valid canonical EQ remains visible and selectable/savable even when the active output cannot represent it. Output capability must never become a catalog-visibility or canonical-selection filter.
+Once a headphone is saved in My EQs, it has a per-headphone **Notify me about new EQs** preference. For newly managed headphones this notification preference starts **ON**. It is a review/attention preference only and never changes the saved selection by itself.
 
-Provide Select all and Select none.
+When notification is ON:
 
-Automatic-future behavior:
+- newly published verified or unverified usable EQs for that headphone may create a pending in-app review;
+- a materially changed selected tuning may also create a pending review;
+- the review starts with no new EQ rows selected;
+- **Add selected** adds only the explicitly checked new EQs to that output-specific My EQs selection and starts their normal initial export where representable;
+- **Dismiss** marks the current batch reviewed without selecting, hiding, deleting, or exporting the unchosen EQs;
+- Android/visible **Back** leaves the batch pending rather than silently dismissing it.
 
-- ON + all current eligible profiles selected: follow all current/future eligible profiles.
-- ON + some current profiles unchecked: preserve those exact exclusions and automatically include future unrelated eligible profiles.
-- OFF: fixed exact selection; future profiles may appear but are not silently selected.
-- Unverified community profiles are never silently auto-included; they require explicit manual selection.
+When notification is OFF, future EQ arrivals remain available in EQ Library but do not create the per-headphone new-EQ review prompt. Turning the preference off clears the currently pending attention state for that headphone without changing its saved EQ selection.
 
-Selections are output-specific. A selection under one output does not silently become selected under another output.
+A locally hidden canonical lineage must not generate new-EQ review badges/prompts while it is hidden, including future revisions of that lineage. Hiding an already-selected EQ still preserves its My EQs membership, exported files/currentness, favorite state, and Flash availability. Unrelated new EQ lineages remain visible and reviewable normally.
+
+The legacy Room/domain storage field name `autoIncludeNewProfiles` is retained through the v0.3 migration boundary for compatibility, but its v0.3-final meaning is **Notify me about new EQs** only. It must not be used to auto-select future profiles. Older automatic-inclusion rules in pre-final planning text are superseded by this section.
+
+Selections remain output-specific. A selection under one output does not silently become selected under another output.
 
 ### Add/Save and export — approved v0.3 behavior
 
@@ -111,7 +116,7 @@ Human-readable deterministic names remain the preferred requested export names, 
 
 Normal operation:
 
-1. Download `database_v1.jsonl`.
+1. Download the validated published EQ Library catalog.
 2. Validate the candidate before promotion.
 3. Keep a last-known-good local cache.
 4. Work offline after initial successful sync.
@@ -206,7 +211,8 @@ Treat the Python converter as behavioral reference and keep deterministic/golden
 - deterministic XML;
 - 10-band handling;
 - naming/encoding;
-- selection modes and future-profile behavior;
+- explicit zero-default selection and notification-only new-EQ behavior, including no silent verified/unverified selection;
+- new-EQ review Add selected / Dismiss / Back semantics and hidden-lineage prompt suppression;
 - output-specific selections;
 - catalog updates/removals plus living-archive preservation of previously published canonical profiles/revisions;
 - local Hide/Unhide persistence, browse/search filtering, future-revision behavior, and preservation of already-saved My EQs/export state;
@@ -275,8 +281,8 @@ For substantive work:
 
 The v0.3 implementation from PR #3 has been fast-forward merged to `main` after the exact signed candidate `c70c523e1f530b8b197ebbccc41dfb4af1e27fc4` passed the Pixel 9 / TRN Black Pearl hands-on checklist on 2026-08-31.
 
-The approved behavior includes output-specific My EQs, canonical multi-source EQ handling, zero-selected/auto-OFF new-headphone defaults, Add/Save-triggered initial export with recovery-only Export actions, SAF export ownership anchored to the actual app-created document URI rather than exact provider filename spelling, and Black Pearl Direct Flash with non-cumulative playback-gain adjustment plus explicit caution for protocol-encodable per-band gains outside the generally validated ±10 dB range. The specific Edition XS `-11.9 dB` test case passed physical hardware validation, but the caution remains for the broader outside-±10 range.
+The approved behavior includes output-specific My EQs, canonical multi-source EQ handling, zero-selected new-headphone defaults, per-headphone notification/review for newly arriving EQs without any silent future selection, Add/Save-triggered initial export with recovery-only Export actions, SAF export ownership anchored to the actual app-created document URI rather than exact provider filename spelling, and Black Pearl Direct Flash with non-cumulative playback-gain adjustment plus explicit caution for protocol-encodable per-band gains outside the generally validated ±10 dB range. The specific Edition XS `-11.9 dB` test case passed physical hardware validation, but the caution remains for the broader outside-±10 range.
 
-v0.3.0 is in final release-polish validation on branch `v0.3-release-polish` / PR #4. The approved final scope includes hierarchical Android Back behavior, Favorite-star controls in My EQs, the first populated qualified General EQ catalog, living-archive preservation gates, reversible Hide/Unhide with Settings management, and a redesigned personal PEQ import flow using strict previewed Equalizer APO / AutoEq canonical ingestion plus initial export. `docs/V0.3_RELEASE_POLISH_PLAN.md` is the controlling checklist. The implementation is present; preliminary exact-head automation passed before this documentation sync, so the remaining software gate is to validate the final documentation/source head and signed candidate.
+v0.3.0 is in final release-polish validation on branch `v0.3-release-polish` / PR #4. The approved final scope includes hierarchical Android Back behavior, Favorite-star controls in My EQs, the first populated qualified General EQ catalog, living-archive preservation gates, reversible Hide/Unhide with Settings management, the explicit per-headphone new-EQ notification/review flow, and a redesigned personal PEQ import flow using strict previewed Equalizer APO / AutoEq canonical ingestion plus initial export. `docs/V0.3_RELEASE_POLISH_PLAN.md` is the controlling checklist. The implementation is present; the remaining software gate is to validate the final synchronized source/documentation head and signed candidate.
 
-Because Android UI/data behavior changed after the prior hardware-tested merge, the fresh final exact-head signed candidate must pass the focused Pixel 9 Back/Favorite/General-EQ/Hide-Unhide/personal-import checklist before public publication. Black Pearl protocol requalification is not required because this polish did not touch Black Pearl protocol/DSP code; repeat it only if a later diff does. `docs/FUTURE_SOURCE_AUTOMATION_PLAN.md` records the post-v0.3 work to finish real scheduled adapters/currentness enforcement for every active source and monthly discovery of additional sources; do not silently treat that deferred automation as already complete.
+Because Android UI/data behavior changed after the prior hardware-tested merge, the fresh final exact-head signed candidate must pass the focused Pixel 9 Back/Favorite/General-EQ/Hide-Unhide/new-EQ-review/personal-import checklist before public publication. Black Pearl protocol requalification is not required because this polish did not touch Black Pearl protocol/DSP code; repeat it only if a later diff does. `docs/FUTURE_SOURCE_AUTOMATION_PLAN.md` records the post-v0.3 work to finish real scheduled adapters/currentness enforcement for every active source and monthly discovery of additional sources; do not silently treat that deferred automation as already complete.
