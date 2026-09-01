@@ -1,76 +1,79 @@
-# Public release checklist — OPRA EQ for UAPP
+# Public release checklist — EQ Library
 
-This checklist covers public GitHub distribution only. Google Play work is intentionally out of scope until a later product decision.
+This checklist covers public GitHub distribution. Google Play remains intentionally out of scope until a later product decision.
 
 ## Source repository readiness
 
 - [x] Apache-2.0 software license present.
 - [x] Software provenance documented in `NOTICE`.
-- [x] OPRA-derived data licensing documented separately in `DATA_LICENSE.md`.
-- [x] Public-facing README reflects implemented behavior and current validation status.
+- [x] Source/data licensing and attribution documented separately in `DATA_LICENSE.md` and `NOTICE`.
 - [x] Standalone privacy policy present in `PRIVACY.md`.
 - [x] Contribution and security-reporting guidance present.
 - [x] `.gitignore` excludes Android keystores, APK/AAB outputs, local configuration, Google Services configuration, IDE state, and build artifacts.
-- [x] Current-tree search found no committed credential/token/key material.
-- [x] Android manifest requests only `android.permission.INTERNET`.
-- [x] Pixel 9 functional/accessibility/UAPP import validation passed and is recorded in `docs/DEVICE_TEST_PLAN.md`.
-- [x] Repository visibility changed from private to public.
-- [x] Normal Android CI validates unit tests, Android lint, debug assembly, and unsigned release assembly without publishing development APK artifacts.
-- [x] Public-repository Actions permissions are read-only by default and external-contributor workflows require approval.
-- [x] GitHub Actions dependencies are pinned to full commit SHAs.
-- [x] Secret Protection / push protection, Dependabot security features, and automatic dependency submission are enabled.
-- [x] Advanced Kotlin CodeQL analysis passes with 0 open code-scanning alerts.
-- [x] `main` ruleset prevents branch deletion and force pushes without blocking normal maintenance.
-- [x] Dependabot reports 0 open runtime-scope vulnerabilities; current open alerts are development/build-tool scope.
+- [x] Android manifest requests only the network permission required by the app's public catalog/update checks.
+- [x] Repository visibility is public.
+- [x] Normal Android CI validates unit tests, Android lint, debug assembly, and unsigned release assembly without publishing development APKs.
+- [x] GitHub Actions dependencies are pinned and repository security/dependency checks are enabled.
+- [x] One permanent Android release-signing identity is established and its public certificate fingerprint is pinned in `release-signing-cert.sha256`.
+- [x] Candidate signing is separate from public publication, and publish mode requires an explicit controlled release action.
+- [x] The repository front page describes the current **EQ Library** product rather than the original OPRA-only v0.1 workflow.
 
-## Stable Android release signing
+## Continuing release invariants
 
-Do not publish a public installable release until one permanent signing identity is established.
+These apply to every installable GitHub release:
 
-- [x] Document one fixed release-key profile and local generation procedure in `docs/RELEASE_SIGNING.md`.
-- [x] Provide local Windows and macOS helpers that create the key outside the repository and never store its password.
-- [x] Generate one dedicated Android release keystore outside the repository.
-- [x] Back up the keystore securely in at least two controlled locations.
-- [x] Record the key alias and signing-certificate SHA-256 fingerprint in a non-secret release record.
-- [x] Store the Base64 keystore/password/alias only in GitHub Actions secrets or other approved secure stores; never commit them.
-- [x] Configure a manually dispatched signed-release workflow whose signing secrets are supplied externally and scoped only to signing steps.
-- [x] Candidate mode produces a signed, fingerprint-verified short-lived Actions artifact without creating a public release.
-- [x] Publish mode is separate, requires explicit `PUBLISH` confirmation, refuses to replace an existing tag/release, and creates the version tag only after the signed build passes.
-- [x] Confirm the published release build is signed by the same pinned permanent identity used for the tested candidate.
+- Keep application ID `com.weekssa.opraeqforuapp` unchanged.
+- Keep the permanent release-signing identity unchanged.
+- Increment Android `versionCode` for every installable release.
+- Use SemVer `0.x` during development; reserve `v1.0.0` for the first stable release.
+- Update `CHANGELOG.md` and curated release notes for every release.
+- Build/test/sign from the exact intended source commit.
+- Never replace an already-published APK with a differently signed or different-content file under the same version/tag.
+- Never commit signing keys, passwords, tokens, or credentials.
 
-The signing identity is effectively part of the app's long-term update identity. Losing it can prevent users of a GitHub-distributed build from receiving normal in-place updates.
+## v0.3.0 release gate
 
-## First GitHub binary release — v0.1.0
+### Product/source state
 
-- [x] Keep Android package ID `com.weekssa.opraeqforuapp` unchanged.
-- [x] `versionName` is `0.1.0` and `versionCode` is `1`.
-- [x] Curated `docs/releases/v0.1.0.md` release notes are prepared.
-- [x] Add the generated public signing-certificate SHA-256 fingerprint as `release-signing-cert.sha256`.
-- [x] Finalize the `0.1.0` changelog date before building the signed candidate.
-- [x] Run the full automated gate on the exact finalized `main` release commit.
-- [x] Run **Signed GitHub Release** in `candidate` mode for `v0.1.0` from that exact commit.
-- [x] Download the signed candidate APK and install it on the Pixel 9.
-- [x] Perform the short release-build smoke test: launch, first catalog sync, Browse/Search, add one headphone, export XML, import one preset into UAPP/ToneBoosters, Settings/About.
-- [x] Verify the signed release contains no debug-only labeling or unintended permissions.
-- [x] Confirm no source change is needed after the signed candidate passes.
-- [x] Run **Signed GitHub Release** in `publish` mode for `v0.1.0` with confirmation `PUBLISH` from the same finalized `main` commit.
-- [x] Verify that the workflow created tag `v0.1.0` at exact commit `7bc0f687aece6f58f3431a71b5bb32794c0b7ffa` and published the signed APK, APK SHA-256 checksum, and public signature-verification output.
-- [x] Verify the public non-draft release and latest-release metadata endpoint expose `v0.1.0` and its downloadable assets.
-- [x] On the installed `v0.1.0` release build after publication, manually run **Check for update** and confirm it reads the live public release metadata and reports **You're up to date**.
+- [x] `versionName` is `0.3.0` and `versionCode` is `3`.
+- [x] Application ID remains `com.weekssa.opraeqforuapp`.
+- [x] `CHANGELOG.md` contains the v0.3.0 feature/change/fix record.
+- [x] Curated `docs/releases/v0.3.0.md` release notes are prepared.
+- [x] README/front-page copy is updated for the source-agnostic EQ Library product, current output model, catalog/privacy behavior, personal import, and Black Pearl Direct Flash.
+- [x] The permanent Android signing identity remains pinned and unchanged.
 
-## After publishing
+### Automated and hands-on qualification
 
-These are continuing release invariants rather than one-time `v0.1.0` gates.
+- [x] The earlier v0.3 foundation passed Android/software/signing gates plus Pixel 9 / TRN Black Pearl hardware qualification, including the explicit outside-validated-range `-11.9 dB` no-clamp caution/Flash-anyway case.
+- [x] PR #4 release-polish Android code at `3b95d384fb772514081383f801cf22b5b3aa8cbf` passed the focused Pixel 9 release-polish regression on 2026-09-01, including the compact managed-headphone action row and immediate new-EQ review-attention clearing.
+- [x] The final release-polish diff after that device pass is restricted to release/front-page documentation and catalog-currentness synchronization unless a new Android/device/DSP change is explicitly introduced.
+- [ ] Synchronize PR #4 with the latest validated `main` catalog/currentness state without losing PR #4 living-archive/General-EQ data.
+- [ ] Run the full automated/currentness/security/signing gate on the resulting exact PR #4 head.
+- [ ] Confirm the exact-head signed beta uses the pinned permanent signing certificate.
 
-- [ ] Keep the release-signing identity unchanged for subsequent GitHub releases.
-- [ ] Increment `versionCode` for every installable Android release.
-- [ ] Use SemVer `0.x` while the project is in development; reserve `v1.0.0` for the first stable release.
-- [ ] Update `CHANGELOG.md` for every release.
-- [ ] Never replace an already-published APK with a differently signed file under the same version/tag.
+### Merge and final release source
+
+- [ ] Mark PR #4 ready only after the synchronized exact head is green.
+- [ ] Merge PR #4 to `main` without bypassing validation.
+- [ ] Confirm the merged/final `main` release source passes the applicable release checks; catalog-only automation may advance `main` without invalidating the prior hardware pass.
+- [ ] Confirm tag `v0.3.0` and a public `v0.3.0` release do not already exist.
+- [ ] Run the controlled public release workflow only after explicit final publish authorization.
+- [ ] Verify the published release tag points at the intended finalized source commit and contains the signed APK, checksum, and signature-verification output.
+- [ ] Verify GitHub's latest-release metadata exposes v0.3.0 and the in-app public update check can see it.
+
+## Previously published releases
+
+### v0.1.0
+
+The first GitHub binary release established the permanent application/signing identity and completed its signed Pixel 9/UAPP smoke gate before publication.
+
+### v0.2.0
+
+The second GitHub release preserved the same application/signing identity, introduced the visible **EQ Library** rebrand and device-targeted export foundation, and passed its automated/signing plus hands-on upgrade/export validation before publication.
 
 ## Explicitly deferred
 
-The following are not required to publish GitHub development releases:
+The following are not required for GitHub development releases:
 
 - Google Play Console setup;
 - Play App Signing;

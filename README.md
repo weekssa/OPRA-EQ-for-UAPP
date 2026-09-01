@@ -1,112 +1,135 @@
-# OPRA EQ for UAPP
+# EQ Library
 
-**OPRA EQ for UAPP** is a standalone native Android app that converts user-selected [OPRA](https://github.com/opra-project/OPRA) parametric EQ profiles into USB Audio Player PRO / ToneBoosters XML presets locally on the device.
+**EQ Library** is a standalone native Android app for finding, saving, converting, exporting, and—where supported—directly applying parametric EQ presets.
 
-The app ships with **zero headphone profiles bundled in the APK**. It downloads the supported OPRA runtime catalog, validates and caches it locally, and works offline after the first successful sync.
+The project began as **OPRA EQ for UAPP**, and the repository keeps that historical name and the Android application ID `com.weekssa.opraeqforuapp` so existing installs continue to upgrade normally. The product itself is now source-agnostic: **OPRA is one attributed EQ source, not the product identity.**
+
+EQ Library ships with **zero headphone/EQ profiles bundled in the APK**. It downloads a validated canonical catalog, keeps a last-known-good local cache, and remains usable offline after the first successful sync.
 
 ## Download
 
-Latest public development release: **v0.1.0**
+Public Android builds are distributed through [GitHub Releases](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/latest).
 
-- [Download OPRA EQ for UAPP v0.1.0 from GitHub Releases](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.1.0)
-- Signed APK: `OPRA-EQ-for-UAPP-v0.1.0.apk`
-- APK SHA-256: `5bc6f4cf22e5b2c67df6c932ef3372d6f4956ea3590e8cf7df77cd0093aa8f64`
+- Android 8.0 / API 26 or newer
+- Signed with one permanent project release identity for in-place upgrades
+- No Google Play account, EQ Library account, or cloud account required
 
-Android may ask you to allow installation from the browser or file manager used to open the APK because this development release is distributed directly from GitHub rather than an app store. OPRA EQ for UAPP itself does not request package-install permission and does not silently install updates.
+Android may ask you to allow installation from the browser or file manager used to open the APK because GitHub releases are installed outside an app store. EQ Library itself does not request package-install permission and never silently installs updates.
 
-## Status
+## What EQ Library does
 
-Current development version: **0.1.0**
+### Find and manage EQs
 
-The first signed public GitHub release is published. The Android implementation passed its automated unit/lint/build gate, the primary Pixel 9 device-validation gate, and an additional smoke test of the permanently signed `v0.1.0` release build. End-to-end testing covered first launch, offline catalog reuse, Browse/Search, managed headphone selections, XML export through Android's Storage Access Framework, app-owned preset cleanup, accessibility/appearance checks, and successful preset import into USB Audio Player PRO/ToneBoosters.
+- Browse headphone EQs by **Manufacturer → Model**, with deeper identity only when a source genuinely verifies it.
+- Search the canonical library without filtering valid curves just because the current output cannot represent them.
+- Browse standalone **General EQs** in Sound, Genre, and Utility groups when the source itself supports that classification.
+- Keep separate **My EQs** collections for each output.
+- Favorite saved EQs directly from My EQs or EQ Library.
+- Hide canonical EQ lineages locally without deleting them from the public archive or disturbing already-saved presets.
+- Review new or changed EQs explicitly. **Notify me about new EQs** is attention-only: it never silently selects a profile.
 
-The `v0.1.0` APK is signed with the project's permanent GitHub-distribution Android signing identity. The public signing-certificate fingerprint is recorded in [`release-signing-cert.sha256`](release-signing-cert.sha256). Future installable releases must keep that signing identity and increment Android `versionCode`.
+### Canonical multi-source catalog
 
-## What it does
+EQ Library uses a source-agnostic canonical catalog with provenance, verification state, acoustic deduplication, and immutable revisions. Current source lanes include OPRA, AutoEq, qualified creator/repository sources, public community EQs, and qualified General-EQ sources such as the MIT-licensed ParaEQ built-ins.
 
-- Downloads the OPRA `database_v1.jsonl` runtime catalog from `https://opra.roonlabs.net/database_v1.jsonl`.
-- Caches a last-known-good catalog locally and supports offline Browse/Search after the first sync.
-- Lets you manage selected OPRA profiles under **My Headphones**.
-- Supports per-headphone future-profile behavior, exact exclusions, and compatibility filtering.
-- Converts supported OPRA parametric EQ profiles to deterministic UAPP/ToneBoosters XML entirely on-device.
-- Preserves OPRA preamp, frequency, gain, Q, priority/order, creator, details, source metadata, and attribution.
-- Preserves the first 10 OPRA-priority bands when a profile exceeds ToneBoosters' 10-band limit and shows an explicit limitation warning.
-- Exports through Android's system folder picker without broad storage permission.
-- Tracks only files created by this app and never silently overwrites unknown same-name files.
-- Checks for OPRA catalog changes approximately daily without requesting notification permission.
-- Can check public GitHub Release metadata for app updates; it never silently downloads or installs APKs.
+The published catalog is treated as a **living archive**: once a genuine canonical EQ or genuine acoustic revision has been validly published, ordinary source movement, disappearance, pausing, or retirement does not erase that acoustic history.
 
-## Supported conversion filters
+Normal Android runtime does **not** scrape GitHub, Reddit, forums, or other community sites. Source discovery and catalog publication happen upstream; the app downloads only the validated published catalog.
 
-The currently proven ToneBoosters mapping supports:
+### Output contexts
 
-- `peak_dip`
-- `low_shelf`
-- `high_shelf`
+The active output is an operating context, not a library filter. Initial v0.3 output choices are:
 
-OPRA filter types without a proven faithful mapping remain visible as **Not compatible** and are never silently approximated or dropped.
+- **USB Audio Player PRO / ToneBoosters**
+- **TRN Black Pearl**
+- **Universal Parametric EQ**
+- **Poweramp / Poweramp Equalizer**
+- **Wavelet**
 
-## Privacy
+Each canonical EQ is evaluated for the active output as **Exact**, **Optimized**, or **Not exportable**. Canonical source data remains intact even when an output has tighter limits.
 
-No account is required. The app contains no analytics or telemetry.
+### Add, export, and file ownership
 
-Headphone selections, settings, generated-preset state, and conversion remain on the device. Network access is used for:
+For file-based outputs, **Add/Save performs the initial export**. Normal Export / Export all controls are recovery actions and stay out of the way while app-managed files are current.
 
-1. the OPRA runtime catalog; and
-2. public GitHub Release metadata used by the optional update check.
+Exports use Android's Storage Access Framework/system folder picker. EQ Library does not request broad storage access and does not write into another app's private storage.
+
+Export ownership follows stable preset identity plus the exact document URI returned by Android. Provider-adjusted filenames are tracked safely, unknown same-name files are never overwritten or deleted, and cleanup is limited to files the app can prove it created.
+
+### UAPP / ToneBoosters
+
+The native Kotlin UAPP/ToneBoosters converter preserves source preamp, frequency, gain, Q, filter order/priority, creator/details, and attribution. ToneBoosters output is limited to 10 bands, so profiles above that limit use the first 10 source-priority bands and are reported as Optimized while the complete canonical source remains local.
+
+ToneBoosters XML is generated deterministically and kept ISO-8859-1-safe while full Unicode source metadata remains stored locally.
+
+### TRN Black Pearl Direct Flash
+
+EQ Library includes optional **Direct Flash** for the TRN Black Pearl when that output is active and Direct Flash is enabled in Settings.
+
+The independently implemented EQ path reads the current device state, writes the selected EQ to the active slot, preserves native Peak/Low Shelf/High Shelf behavior, handles the Black Pearl's 10 hardware bands, and applies required source preamp/generated headroom through the validated global playback-gain command when representable.
+
+Flash always requires confirmation before writing. EQ Library replaces its prior playback-gain adjustment rather than stacking repeated attenuation. Protocol-encodable filter gains outside the currently validated approximately ±10 dB range are never silently clamped; they require an explicit exact-value caution and **Flash anyway** confirmation. Unrelated DAC settings are outside the Flash path.
+
+### Personal PEQ import
+
+My EQs includes a compact **+ Import** flow for explicit paste or Android file selection of **Equalizer APO / AutoEq parametric text**.
+
+The importer recognizes contents rather than trusting the filename extension, previews the canonical interpretation, preserves an omitted preamp as null, keeps the complete supported filter set, and blocks malformed or unsupported active filters rather than silently importing a partial EQ. Successful Save & export never automatically flashes hardware.
+
+## Offline behavior and privacy
+
+No account is required. EQ Library contains **no analytics or telemetry**.
+
+Selections, settings, generated-preset state, favorites, hidden-EQ preferences, and conversion remain local on the device. Runtime network access is limited to the validated EQ Library catalog and public GitHub Release metadata used for update checks.
+
+The app uses its last-known-good cached catalog when offline or when a refresh fails. Manual **Refresh now** remains available, with approximately daily background/currentness checks as a backup.
 
 See [PRIVACY.md](PRIVACY.md) for the full privacy statement.
 
-## Android and build requirements
+## Current development status
 
+The current source line is **v0.3.0**. The v0.3 foundation and release-polish behavior have passed automated validation plus Pixel 9 hands-on testing, including UAPP export/import and TRN Black Pearl hardware checks. Final release-source synchronization and publication gates are tracked in the repository release documentation before the public v0.3.0 GitHub Release is created.
+
+The application ID remains `com.weekssa.opraeqforuapp`, and installable releases must keep the pinned permanent signing identity recorded in [`release-signing-cert.sha256`](release-signing-cert.sha256).
+
+## Android and build baseline
+
+- Native Kotlin + Jetpack Compose
 - Application ID: `com.weekssa.opraeqforuapp`
-- Minimum Android version: API 26
-- Compile/target SDK: API 36
+- minSdk: 26
+- compileSdk / targetSdk: 36
 - Java: 17
-- Kotlin + Jetpack Compose
-- Room for app-owned managed state
-- WorkManager for approximately daily catalog reconciliation
-- Android Storage Access Framework for export
+- Room for durable app-owned saved/export state
+- Preferences DataStore for local settings/visibility state
+- WorkManager for approximately daily catalog reconciliation backup
+- Android Storage Access Framework for file export
 
-The repository's Android CI runs:
-
-```text
-:app:testDebugUnitTest
-:app:lintDebug
-:app:assembleDebug
-:app:assembleRelease
-```
-
-Normal CI does not publish development APKs. Public APKs are produced only by the dedicated signed GitHub Release workflow.
+Normal Android CI covers unit tests, Android lint, debug assembly, and unsigned release assembly. Separate release workflows build and verify permanently signed candidate/public APKs.
 
 ## Data, attribution, and trademarks
 
-OPRA manufacturer, product, and EQ data is provided under **CC BY-SA 4.0**. The app preserves individual creator/source information where OPRA provides it. See [DATA_LICENSE.md](DATA_LICENSE.md).
+EQ Library preserves creator/source provenance whenever available. OPRA-derived data is attributed and licensed separately; see [DATA_LICENSE.md](DATA_LICENSE.md). Software and third-party provenance are documented in [NOTICE](NOTICE).
 
-Software provenance and third-party attribution are documented in [NOTICE](NOTICE).
-
-USB Audio Player PRO (UAPP), ToneBoosters, OPRA, Roon Labs, manufacturer names, and headphone/product names are used only for compatibility, attribution, or source identification. **OPRA EQ for UAPP is not affiliated with or endorsed by OPRA, Roon Labs, USB Audio Player PRO/UAPP, ToneBoosters, or headphone manufacturers.**
+USB Audio Player PRO/UAPP, ToneBoosters, OPRA, Roon Labs, TRN, Poweramp, Wavelet, AutoEq, ParaEQ, manufacturer names, and headphone/product names are used only for compatibility, attribution, or source identification. **EQ Library is an independent project and is not affiliated with or endorsed by those projects, companies, applications, or manufacturers.**
 
 ## License
 
-The application source code, tests, and project documentation are licensed under the **Apache License 2.0**. See [LICENSE](LICENSE).
-
-OPRA-derived data is separately licensed; see [DATA_LICENSE.md](DATA_LICENSE.md).
+The application source code, tests, and project documentation are licensed under the **Apache License 2.0**. See [LICENSE](LICENSE). Third-party/source data may have separate terms documented in [DATA_LICENSE.md](DATA_LICENSE.md) and [NOTICE](NOTICE).
 
 ## Project documentation
 
 - [CHANGELOG.md](CHANGELOG.md) — release history and notable changes
+- [docs/releases/v0.3.0.md](docs/releases/v0.3.0.md) — prepared v0.3.0 release notes
 - [PRIVACY.md](PRIVACY.md) — public privacy policy
 - [CONTRIBUTING.md](CONTRIBUTING.md) — contribution and validation expectations
 - [SECURITY.md](SECURITY.md) — security-reporting guidance
-- [docs/PUBLIC_RELEASE_CHECKLIST.md](docs/PUBLIC_RELEASE_CHECKLIST.md) — GitHub public-release checklist
-- [docs/RELEASE_SIGNING.md](docs/RELEASE_SIGNING.md) — permanent GitHub APK signing process
-- [docs/DEVICE_TEST_PLAN.md](docs/DEVICE_TEST_PLAN.md) — completed Pixel 9 validation record
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — implementation architecture and invariants
+- [docs/PUBLIC_RELEASE_CHECKLIST.md](docs/PUBLIC_RELEASE_CHECKLIST.md) — GitHub release gates
+- [docs/RELEASE_SIGNING.md](docs/RELEASE_SIGNING.md) — permanent APK signing process
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — architecture and invariants
 - [docs/CHATGPT_PROJECT_RUNBOOK.md](docs/CHATGPT_PROJECT_RUNBOOK.md) — maintained product/UX source of truth
 
-## Issues and contributions
+## Feedback and contributions
 
-GitHub Issues can be used for reproducible bugs and feature requests. See [CONTRIBUTING.md](CONTRIBUTING.md).
+Use [GitHub Issues](https://github.com/weekssa/OPRA-EQ-for-UAPP/issues) to report a problem, suggest an improvement, or submit an EQ source. See [CONTRIBUTING.md](CONTRIBUTING.md) for project expectations.
 
-Please do not post credentials, signing keys, tokens, private files, or other sensitive information in an issue. Security-sensitive reports should follow [SECURITY.md](SECURITY.md).
+Do not post credentials, signing keys, tokens, private files, or other sensitive information in an issue. Security-sensitive reports should follow [SECURITY.md](SECURITY.md).

@@ -1,0 +1,297 @@
+name: Finalize PR4 main synchronization
+
+on:
+  push:
+    branches:
+      - v0.3-release-polish
+    paths:
+      - '.github/workflows/pr4-finalize-sync.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pr4-finalize-sync
+  cancel-in-progress: false
+
+jobs:
+  synchronize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out release-polish branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: v0.3-release-polish
+          fetch-depth: 0
+
+      - name: Fetch latest main and capture both catalogs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git branch --show-current)" = "v0.3-release-polish"
+          git fetch origin main
+          git show HEAD:catalog/catalog.json > "${RUNNER_TEMP}/catalog.branch.json"
+          git show origin/main:catalog/catalog.json > "${RUNNER_TEMP}/catalog.main.json"
+          git show origin/main:catalog/source_health.json > "${RUNNER_TEMP}/source_health.main.json"
+          git show origin/main:catalog/discovery/github_candidates.json > "${RUNNER_TEMP}/github_candidates.main.json"
+          echo "branch_before=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          echo "main_synced=$(git rev-parse origin/main)" >> "$GITHUB_ENV"
+
+      - name: Start merge and restrict conflicts to catalog currentness
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          set +e
+          git merge --no-commit --no-ff origin/main
+          merge_rc=$?
+          set -e
+          mapfile -t unresolved < <(git diff --name-only --diff-filter=U)
+          allowed=(
+            "catalog/catalog.json"
+            "catalog/discovery/github_candidates.json"
+            "catalog/discovery/headphone_identity_audit.json"
+            "catalog/source_health.json"
+          )
+          for path in "${unresolved[@]}"; do
+            ok=false
+            for candidate in "${allowed[@]}"; do
+              if [[ "$path" == "$candidate" ]]; then ok=true; break; fi
+            done
+            if [[ "$ok" != true ]]; then
+              echo "Unexpected merge conflict outside catalog currentness: $path" >&2
+              exit 1
+            fi
+          done
+          if (( merge_rc != 0 )) && (( ${#unresolved[@]} == 0 )); then
+            echo "git merge failed without a resolvable content conflict" >&2
+            exit 1
+          fi
+
+      - name: Union branch and main canonical archives
+        shell: bash
+        env:
+          PYTHONPATH: tools
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import copy
+          import json
+          import os
+          from pathlib import Path
+
+          from catalog_merge import merge_candidates
+          from catalog_pipeline import validate_snapshot
+
+          temp = Path(os.environ['RUNNER_TEMP'])
+          branch = json.loads((temp / 'catalog.branch.json').read_text(encoding='utf-8'))
+          main = json.loads((temp / 'catalog.main.json').read_text(encoding='utf-8'))
+
+          branch_profiles = {
+              str(profile.get('canonical_profile_id') or ''): profile
+              for profile in branch.get('profiles', [])
+          }
+          branch_latest = {}
+          branch_fingerprints = {}
+          for profile_id, profile in branch_profiles.items():
+              revisions = profile.get('revisions') or []
+              branch_fingerprints[profile_id] = {
+                  str(revision.get('acoustic_fingerprint') or '') for revision in revisions
+              }
+              latest = next((r for r in revisions if r.get('is_latest') is True), None)
+              branch_latest[profile_id] = str((latest or {}).get('acoustic_fingerprint') or '')
+
+          candidates = []
+          main_latest = {}
+          for profile in main.get('profiles', []):
+              profile_id = str(profile.get('canonical_profile_id') or '')
+              revisions = list(profile.get('revisions') or [])
+              latest = next((r for r in revisions if r.get('is_latest') is True), None)
+              main_latest[profile_id] = str((latest or {}).get('acoustic_fingerprint') or '')
+              revisions.sort(
+                  key=lambda r: (
+                      bool(r.get('is_latest') is True),
+                      int(r.get('source_updated_at_epoch_seconds') or r.get('first_seen_at_epoch_seconds') or 0),
+                      str(r.get('revision_id') or ''),
+                  )
+              )
+              profile_metadata = {k: copy.deepcopy(v) for k, v in profile.items() if k != 'revisions'}
+              for revision in revisions:
+                  candidate = copy.deepcopy(profile_metadata)
+                  candidate['revisions'] = [copy.deepcopy(revision)]
+                  candidates.append(candidate)
+
+          merged, outcomes = merge_candidates(
+              branch,
+              candidates,
+              source_registry_version=str(branch.get('source_registry_version') or main.get('source_registry_version') or ''),
+          )
+
+          # PR #4 remains authoritative for an already-known lineage unless main's newer
+          # currentness snapshot contains a genuinely new latest acoustic fingerprint.
+          # This preserves release-polish archive state while still admitting new main data.
+          for profile in merged.get('profiles', []):
+              profile_id = str(profile.get('canonical_profile_id') or '')
+              branch_latest_fp = branch_latest.get(profile_id, '')
+              main_latest_fp = main_latest.get(profile_id, '')
+              branch_fps = branch_fingerprints.get(profile_id, set())
+              preferred = main_latest_fp if main_latest_fp and main_latest_fp not in branch_fps else branch_latest_fp
+              if not preferred:
+                  preferred = main_latest_fp
+              if preferred:
+                  matches = 0
+                  for revision in profile.get('revisions') or []:
+                      is_preferred = str(revision.get('acoustic_fingerprint') or '') == preferred
+                      revision['is_latest'] = is_preferred
+                      matches += int(is_preferred)
+                  if matches != 1:
+                      raise SystemExit(f'cannot resolve one latest revision for {profile_id}')
+
+          errors = validate_snapshot(merged)
+          if errors:
+              raise SystemExit('union catalog invalid: ' + '; '.join(errors))
+          (temp / 'catalog.union.json').write_text(
+              json.dumps(merged, sort_keys=True, indent=2, ensure_ascii=False) + '\n',
+              encoding='utf-8',
+          )
+          (temp / 'catalog-union-outcomes.json').write_text(
+              json.dumps(outcomes, sort_keys=True, indent=2) + '\n', encoding='utf-8'
+          )
+          PY
+
+      - name: Reapply PR4 qualified General and curated community inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp "${RUNNER_TEMP}/catalog.union.json" "${RUNNER_TEMP}/catalog.release.current.json"
+          mkdir -p "${RUNNER_TEMP}/release-sync-reports"
+
+          mapfile -t general_manifests < <(find catalog/discovery -maxdepth 1 -type f -name '*_general_presets.json' -print | sort)
+          for manifest in "${general_manifests[@]}"; do
+            base="$(basename "$manifest" .json)"
+            python3 tools/general_preset_publish.py \
+              --catalog "${RUNNER_TEMP}/catalog.release.current.json" \
+              --manifest "$manifest" \
+              --registry config/source_registry.json \
+              --output "${RUNNER_TEMP}/catalog.release.next.json" \
+              --report "${RUNNER_TEMP}/release-sync-reports/${base}.json"
+            mv "${RUNNER_TEMP}/catalog.release.next.json" "${RUNNER_TEMP}/catalog.release.current.json"
+          done
+
+          mapfile -t community_inputs < <(find catalog/discovery -maxdepth 1 -type f -name '*_community_curated.json' -print | sort)
+          for curated in "${community_inputs[@]}"; do
+            base="$(basename "$curated" .json)"
+            python3 tools/community_publish_entry.py \
+              --catalog "${RUNNER_TEMP}/catalog.release.current.json" \
+              --curated "$curated" \
+              --registry config/source_registry.json \
+              --output "${RUNNER_TEMP}/catalog.release.next.json" \
+              --report "${RUNNER_TEMP}/release-sync-reports/${base}.json"
+            mv "${RUNNER_TEMP}/catalog.release.next.json" "${RUNNER_TEMP}/catalog.release.current.json"
+          done
+
+          python3 tools/catalog_pipeline.py publish \
+            --candidate "${RUNNER_TEMP}/catalog.release.current.json" \
+            --published "${RUNNER_TEMP}/catalog.final.validated.json" \
+            --last-known-good "${RUNNER_TEMP}/catalog.final.lkg.json"
+
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          temp = Path(os.environ['RUNNER_TEMP'])
+          path = temp / 'catalog.final.validated.json'
+          payload = json.loads(path.read_text(encoding='utf-8'))
+          path.write_text(json.dumps(payload, sort_keys=True, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+          PY
+
+      - name: Prove both published archives survive synchronization
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+
+          temp = Path(os.environ['RUNNER_TEMP'])
+          branch = json.loads((temp / 'catalog.branch.json').read_text(encoding='utf-8'))
+          main = json.loads((temp / 'catalog.main.json').read_text(encoding='utf-8'))
+          final = json.loads((temp / 'catalog.final.validated.json').read_text(encoding='utf-8'))
+
+          def acoustic_records(snapshot):
+              records = set()
+              for profile in snapshot.get('profiles', []):
+                  profile_id = str(profile.get('canonical_profile_id') or '')
+                  for revision in profile.get('revisions') or []:
+                      fingerprint = str(revision.get('acoustic_fingerprint') or '')
+                      if profile_id and fingerprint:
+                          records.add((profile_id, fingerprint))
+              return records
+
+          branch_records = acoustic_records(branch)
+          main_records = acoustic_records(main)
+          final_records = acoustic_records(final)
+          missing_branch = sorted(branch_records - final_records)
+          missing_main = sorted(main_records - final_records)
+          if missing_branch or missing_main:
+              raise SystemExit(
+                  f'archive preservation failure: missing branch={len(missing_branch)} main={len(missing_main)}'
+              )
+
+          summary = Path(os.environ['GITHUB_STEP_SUMMARY'])
+          with summary.open('a', encoding='utf-8') as handle:
+              handle.write('## PR #4 catalog synchronization\n\n')
+              handle.write(f'- branch archive records preserved: {len(branch_records)}\n')
+              handle.write(f'- main archive records preserved: {len(main_records)}\n')
+              handle.write(f'- final archive records: {len(final_records)}\n')
+              handle.write(f'- final profiles: {len(final.get("profiles", []))}\n')
+          PY
+
+      - name: Resolve currentness files and regenerate identity audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp "${RUNNER_TEMP}/catalog.final.validated.json" catalog/catalog.json
+          cp "${RUNNER_TEMP}/source_health.main.json" catalog/source_health.json
+          cp "${RUNNER_TEMP}/github_candidates.main.json" catalog/discovery/github_candidates.json
+          python3 tools/headphone_identity_audit.py \
+            --catalog catalog/catalog.json \
+            --decisions config/headphone_identity_decisions.json \
+            --output catalog/discovery/headphone_identity_audit.json
+
+          git add catalog/catalog.json \
+            catalog/source_health.json \
+            catalog/discovery/github_candidates.json \
+            catalog/discovery/headphone_identity_audit.json
+
+          if [[ -n "$(git diff --name-only --diff-filter=U)" ]]; then
+            echo "Unresolved paths remain after catalog resolution:" >&2
+            git diff --name-only --diff-filter=U >&2
+            exit 1
+          fi
+
+      - name: Commit synchronized branch and remove one-use workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm .github/workflows/pr4-finalize-sync.yml
+          git add -A
+          if [[ ! -f .git/MERGE_HEAD ]]; then
+            echo "Expected a two-parent merge state but MERGE_HEAD is missing" >&2
+            exit 1
+          fi
+          git commit -m "Sync v0.3 release polish with main"
+          final_sha="$(git rev-parse HEAD)"
+          parent_count="$(git rev-list --parents -n1 HEAD | awk '{print NF-1}')"
+          if [[ "$parent_count" != "2" ]]; then
+            echo "Expected synchronization commit to have two parents, found $parent_count" >&2
+            exit 1
+          fi
+          git push origin HEAD:v0.3-release-polish
+          {
+            echo "- synchronized main: ${main_synced}"
+            echo "- release-polish before sync: ${branch_before}"
+            echo "- synchronized branch head: ${final_sha}"
+          } >> "$GITHUB_STEP_SUMMARY"
