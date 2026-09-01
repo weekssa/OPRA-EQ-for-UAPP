@@ -72,6 +72,8 @@ Require repository/license review before redistribution. When redistribution is 
 
 Explicitly qualified repositories/files are publication inputs; broad GitHub/Gist discovery remains review-only until originality and licensing are established.
 
+Initial qualified General-EQ repository source: `wabsto1/ParaEQ`. Its built-in preset definitions are MIT licensed and source-authored in `Sources/Models.swift`; EQ Library pins the reviewed commit, republishes only exact structured EQ parameters/labels with attribution, and uses the generic `*_general_presets.json` publication lane. Missing source preamp stays null and generated safety headroom remains separate derived metadata.
+
 ### E. Manufacturer/device community ecosystems
 
 Treat device ecosystems as both discovery sources and export-validation references.

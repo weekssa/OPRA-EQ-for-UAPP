@@ -150,6 +150,8 @@ Supported user-facing General EQ groups:
 
 General presets remain standalone in v0.3. Do not silently layer/combine them with headphone-specific EQs.
 
+The initial populated General EQ source is the MIT-licensed `wabsto1/ParaEQ` built-in preset set at a pinned source commit. EQ Library publishes exact source-authored filter parameters and labels through the generic General-preset pipeline; `Electronic` and `Rock` are Genre only because the source explicitly names them that way. A missing source preamp remains null and conservative playback safety headroom is stored only in `eq_library_safety_headroom_db`.
+
 Do not invent genre/intent from filter shape. Classification must follow explicit source context.
 
 ## Output/device context
@@ -177,6 +179,8 @@ Changing output changes conversion/export/flash context and My EQs saved collect
 ## My EQs and Add workflow
 
 My EQs is output-specific and may contain different saved profiles for different outputs without duplicating canonical source data.
+
+Android Back uses My EQs as the start destination: nested management/detail states unwind first; root EQ Library and Settings return to My EQs; only Back at the My EQs root exits. Favorite membership is editable from managed My EQs rows as well as EQ Library using the same star state, without mutating selection/export/Flash state.
 
 Saved content is grouped into Headphones and General EQs.
 

@@ -109,7 +109,9 @@ object CanonicalLegacyCatalogAdapter {
                     displayName = displayName,
                     category = generalCategory(profile, revision),
                     creator = profile.creator ?: primary?.creator,
-                    soundImpactSummary = revision.soundImpactSummary,
+                    soundImpactSummary = revision.soundImpactSummary
+                        ?: SoundImpactSummary.fromFilters(revision.filters)
+                            ?.let { "EQ Library summary: $it" },
                     sourceUrl = primary?.url,
                     preampGainDb = revision.preampGainDb,
                     bands = revision.filters.map { filter ->

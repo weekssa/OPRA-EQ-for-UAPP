@@ -27,6 +27,8 @@ from community_peq_ingest import (
     parse_peq,
 )
 
+from curated_community_publish import safety_headroom_db, signature
+
 ALLOWED_PURPOSES = {"effect", "genre"}
 
 
@@ -96,6 +98,10 @@ def build_candidate(
 
     fingerprint = acoustic_fingerprint(parsed)
     publication_eligible = redistribution_policy == "structured-data-only"
+    generated_headroom_db = None
+    if publication_eligible and parsed.preamp_db is None:
+        _, max_boost_db, _ = signature(parsed.filters)
+        generated_headroom_db = safety_headroom_db(max_boost_db)
     return {
         "canonical_profile_id": canonical_profile_id(
             purpose=resolved_purpose,
@@ -114,6 +120,7 @@ def build_candidate(
                 "revision_id": "rev-" + fingerprint[:24],
                 "acoustic_fingerprint": fingerprint,
                 "preamp_gain_db": parsed.preamp_db,
+                "eq_library_safety_headroom_db": generated_headroom_db,
                 "filters": parsed.filters if publication_eligible else [],
                 "source_references": [
                     {

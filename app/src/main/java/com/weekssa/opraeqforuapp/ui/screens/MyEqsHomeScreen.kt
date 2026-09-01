@@ -257,11 +257,6 @@ fun MyEqsHomeScreen(
                     val gainAdjustmentDb = record.profile.blackPearlRequiredPlaybackGainDb()
                     val flashWarning = record.profile.blackPearlFlashWarning()
                     ListItem(
-                        leadingContent = if (record.kind == SavedEqKind.Favorite) {
-                            { Icon(Icons.Outlined.Star, contentDescription = null) }
-                        } else {
-                            null
-                        },
                         headlineContent = { Text(record.displayName) },
                         supportingContent = { Text("${record.manufacturer} · ${record.model}") },
                         trailingContent = {
@@ -284,15 +279,31 @@ fun MyEqsHomeScreen(
                                         },
                                     ) { Text("Flash") }
                                 }
-                                IconButton(
-                                    onClick = {
-                                        scope.launch {
-                                            onDeleteSavedEq(record.entryId)
-                                            onMessage("EQ removed from My EQs. Existing exported files were kept.")
-                                        }
-                                    },
-                                ) {
-                                    Icon(Icons.Outlined.Delete, contentDescription = "Remove ${record.displayName}")
+                                if (record.kind == SavedEqKind.Favorite) {
+                                    IconButton(
+                                        onClick = {
+                                            scope.launch {
+                                                onDeleteSavedEq(record.entryId)
+                                                onMessage("Removed from My EQs favorites. Existing exported files were kept.")
+                                            }
+                                        },
+                                    ) {
+                                        Icon(
+                                            Icons.Outlined.Star,
+                                            contentDescription = "Remove ${record.displayName} from favorites",
+                                        )
+                                    }
+                                } else {
+                                    IconButton(
+                                        onClick = {
+                                            scope.launch {
+                                                onDeleteSavedEq(record.entryId)
+                                                onMessage("EQ removed from My EQs. Existing exported files were kept.")
+                                            }
+                                        },
+                                    ) {
+                                        Icon(Icons.Outlined.Delete, contentDescription = "Remove ${record.displayName}")
+                                    }
                                 }
                             }
                         },

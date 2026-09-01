@@ -43,7 +43,10 @@ class GeneralPresetIngestTest(unittest.TestCase):
 
     def test_missing_source_preamp_remains_null(self):
         candidate = self.candidate(include_preamp=False)
-        self.assertIsNone(candidate["revisions"][0]["preamp_gain_db"])
+        revision = candidate["revisions"][0]
+        self.assertIsNone(revision["preamp_gain_db"])
+        self.assertIsNotNone(revision["eq_library_safety_headroom_db"])
+        self.assertLessEqual(revision["eq_library_safety_headroom_db"], 0.0)
 
     def test_effect_and_genre_ids_are_distinct_even_with_same_creator_and_label(self):
         effect_id = canonical_profile_id(

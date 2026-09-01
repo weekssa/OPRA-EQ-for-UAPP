@@ -86,6 +86,7 @@ fun BrowseOpraScreen(
     onMessage: (String) -> Unit,
     onRefreshCatalog: () -> Unit,
     onOpenUrl: (String) -> Unit,
+    onBackFromRoot: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var searchQuery by rememberSaveable { mutableStateOf("") }
@@ -95,13 +96,12 @@ fun BrowseOpraScreen(
     var selectedGeneralFilterIndex by rememberSaveable { mutableIntStateOf(0) }
     val selectedSection = LibrarySection.entries[selectedSectionIndex]
 
-    BackHandler(
-        enabled = selectedProductId != null || selectedVendorId != null || searchQuery.isNotBlank(),
-    ) {
+    BackHandler {
         when {
             selectedProductId != null -> selectedProductId = null
             selectedVendorId != null -> selectedVendorId = null
-            else -> searchQuery = ""
+            searchQuery.isNotBlank() -> searchQuery = ""
+            else -> onBackFromRoot()
         }
     }
 

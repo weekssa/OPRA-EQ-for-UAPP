@@ -62,7 +62,11 @@ The active v0.3 top-level destinations are:
 
 The active output is an **operating context**, not a catalog filter. Changing output changes conversion/export/Flash capability and the output-specific My EQs collection, but does not hide otherwise valid canonical curves from EQ Library.
 
-EQ Library contains headphone EQs and, where populated, General EQs. Headphone browse starts Manufacturer → Model and may include deeper verified source segments only when the source genuinely requires them. Never invent variants or meanings from IDs, filenames, or path fragments.
+Android Back follows the in-app hierarchy before leaving the activity: selection editor → headphone detail → My EQs, EQ Library model → manufacturer/search → EQ Library root, and root EQ Library/Settings → My EQs. Only Back from the My EQs root exits the app. Visible back arrows and the Android Back gesture/button must agree.
+
+Favorites are manageable from both EQ Library and My EQs. A managed-profile row in My EQs exposes the same filled/outlined star state as EQ Library; toggling the star changes only the active-output Favorite membership and must not change headphone selection, export currentness, or Flash state. Favorite snapshot rows use the filled star as the remove-from-favorites action; personal imports retain their explicit remove action.
+
+EQ Library contains headphone EQs and General EQs. The initial qualified General EQ seed is sourced from the MIT-licensed ParaEQ built-in preset definitions and includes Sound, Utility, and source-authored Genre examples; the canonical catalog keeps exact source coefficients/preamp state and separate EQ Library-generated safety headroom when the source omits preamp. Headphone browse starts Manufacturer → Model and may include deeper verified source segments only when the source genuinely requires them. Never invent variants or meanings from IDs, filenames, or path fragments.
 
 ### New headphone selection defaults — approved v0.3 behavior
 
@@ -261,4 +265,4 @@ The v0.3 implementation from PR #3 has been fast-forward merged to `main` after 
 
 The approved behavior includes output-specific My EQs, canonical multi-source EQ handling, zero-selected/auto-OFF new-headphone defaults, Add/Save-triggered initial export with recovery-only Export actions, SAF export ownership anchored to the actual app-created document URI rather than exact provider filename spelling, and Black Pearl Direct Flash with non-cumulative playback-gain adjustment plus explicit caution for protocol-encodable per-band gains outside the generally validated ±10 dB range. The specific Edition XS `-11.9 dB` test case passed physical hardware validation, but the caution remains for the broader outside-±10 range.
 
-v0.3.0 is in GitHub release preparation. `docs/releases/v0.3.0.md` and the dated changelog are prepared. The final release head may contain documentation or catalog-only commits after the hardware-tested merge; it must pass the signed release workflow and pinned-signing verification before public publication. Any subsequent code/DSP/device-behavior change requires renewed validation rather than inheriting the prior hardware pass automatically.
+v0.3.0 is in final release-polish validation on branch `v0.3-release-polish`. The approved final polish adds hierarchical Android Back behavior, Favorite-star controls in My EQs, and the first populated qualified General EQ catalog. Because Android UI code changed after the prior hardware-tested merge, a fresh signed candidate and focused Pixel 9 Back/Favorite/General-EQ regression pass are required before public publication; Black Pearl protocol requalification is not required unless the final diff unexpectedly touches device/DSP behavior.

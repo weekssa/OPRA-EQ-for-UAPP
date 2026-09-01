@@ -11,11 +11,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -271,6 +274,7 @@ fun ManagedHeadphoneDetailScreen(
                     ?.takeIf { profile.selected }
                 ManagedProfileRow(
                     profile = profile,
+                    isFavorite = profile.profileId in favoriteProfileIds,
                     activeOutput = activeOutput,
                     outputStatus = outputStatus,
                     showExport = profile.selected &&
@@ -281,6 +285,22 @@ fun ManagedHeadphoneDetailScreen(
                     flashUnavailableReason = directFlashUnavailableReason,
                     onFlash = { pendingProfileFlash = profile },
                     onOpenSource = profile.lastKnownProfile.link?.let { sourceUrl -> { onOpenUrl(sourceUrl) } },
+                    onToggleFavorite = {
+                        scope.launch {
+                            val favorited = onToggleFavorite(
+                                profile.lastKnownProfile,
+                                headphone.vendorName,
+                                headphone.productName,
+                            )
+                            onMessage(
+                                if (favorited) {
+                                    "Saved to My EQs favorites."
+                                } else {
+                                    "Removed from My EQs favorites."
+                                },
+                            )
+                        }
+                    },
                     onRemove = {
                         deleteSavedFiles = false
                         pendingProfileRemoval = profile
@@ -305,6 +325,7 @@ fun ManagedHeadphoneDetailScreen(
 @Composable
 private fun ManagedProfileRow(
     profile: ManagedProfileRecord,
+    isFavorite: Boolean,
     activeOutput: ExportDevice,
     outputStatus: DeviceExportability,
     showExport: Boolean,
@@ -314,6 +335,7 @@ private fun ManagedProfileRow(
     flashUnavailableReason: String?,
     onFlash: () -> Unit,
     onOpenSource: (() -> Unit)?,
+    onToggleFavorite: () -> Unit,
     onRemove: (() -> Unit)?,
 ) {
     val source = profile.lastKnownProfile
@@ -361,6 +383,12 @@ private fun ManagedProfileRow(
         },
         trailingContent = {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onToggleFavorite) {
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Outlined.Star else Icons.Outlined.StarBorder,
+                        contentDescription = if (isFavorite) "Remove favorite" else "Add favorite",
+                    )
+                }
                 if (showExport) {
                     TextButton(onClick = onExport) { Text("Export") }
                 }

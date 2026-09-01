@@ -193,7 +193,7 @@ internal fun ProfileSelectionEditor(
         if (dirty) showDiscardDialog = true else onBack()
     }
 
-    BackHandler(enabled = dirty) { showDiscardDialog = true }
+    BackHandler { requestBack() }
 
     if (showDiscardDialog) {
         AlertDialog(

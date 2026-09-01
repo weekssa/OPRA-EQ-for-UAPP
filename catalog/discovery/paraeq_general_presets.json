@@ -1,0 +1,59 @@
+{
+  "catalog_generated_at": "2026-09-01T03:00:00Z",
+  "creator": "wabsto1",
+  "discovered_at_epoch_seconds": 1788220800,
+  "presets": [
+    {
+      "peq_text": "Filter 1: ON LS Fc 31 Hz Gain 6 dB Q 1.41\nFilter 2: ON PK Fc 63 Hz Gain 4.5 dB Q 1.41\nFilter 3: ON PK Fc 125 Hz Gain 2 dB Q 1.41\nFilter 4: ON PK Fc 250 Hz Gain 0 dB Q 1.41\nFilter 5: ON PK Fc 500 Hz Gain 0 dB Q 1.41\nFilter 6: ON PK Fc 1000 Hz Gain 0 dB Q 1.41\nFilter 7: ON PK Fc 2000 Hz Gain 0 dB Q 1.41\nFilter 8: ON PK Fc 4000 Hz Gain 0 dB Q 1.41\nFilter 9: ON PK Fc 8000 Hz Gain 0 dB Q 1.41\nFilter 10: ON HS Fc 16000 Hz Gain 0 dB Q 1.41",
+      "purpose": "effect",
+      "source_record_id": "EQPreset.bassBoost",
+      "tuning_label": "Bass Boost"
+    },
+    {
+      "peq_text": "Filter 1: ON LS Fc 31 Hz Gain -2 dB Q 1.41\nFilter 2: ON PK Fc 63 Hz Gain -1.5 dB Q 1.41\nFilter 3: ON PK Fc 125 Hz Gain 0 dB Q 1.41\nFilter 4: ON PK Fc 250 Hz Gain 2 dB Q 1.41\nFilter 5: ON PK Fc 500 Hz Gain 3 dB Q 1.41\nFilter 6: ON PK Fc 1000 Hz Gain 3.5 dB Q 1.41\nFilter 7: ON PK Fc 2000 Hz Gain 2 dB Q 1.41\nFilter 8: ON PK Fc 4000 Hz Gain 0 dB Q 1.41\nFilter 9: ON PK Fc 8000 Hz Gain 0 dB Q 1.41\nFilter 10: ON HS Fc 16000 Hz Gain 0 dB Q 1.41",
+      "purpose": "effect",
+      "source_record_id": "EQPreset.vocalClarity",
+      "tuning_label": "Vocal Clarity"
+    },
+    {
+      "peq_text": "Filter 1: ON LS Fc 31 Hz Gain 0 dB Q 1.41\nFilter 2: ON PK Fc 63 Hz Gain 0 dB Q 1.41\nFilter 3: ON PK Fc 125 Hz Gain 0 dB Q 1.41\nFilter 4: ON PK Fc 250 Hz Gain 0 dB Q 1.41\nFilter 5: ON PK Fc 500 Hz Gain 0 dB Q 1.41\nFilter 6: ON PK Fc 1000 Hz Gain 0 dB Q 1.41\nFilter 7: ON PK Fc 2000 Hz Gain 0 dB Q 1.41\nFilter 8: ON PK Fc 4000 Hz Gain 3 dB Q 1.41\nFilter 9: ON PK Fc 8000 Hz Gain 4.5 dB Q 1.41\nFilter 10: ON HS Fc 16000 Hz Gain 5 dB Q 1.41",
+      "purpose": "effect",
+      "source_record_id": "EQPreset.trebleBoost",
+      "tuning_label": "Treble Boost"
+    },
+    {
+      "peq_text": "Filter 1: ON LS Fc 31 Hz Gain 5 dB Q 1.41\nFilter 2: ON PK Fc 63 Hz Gain 4 dB Q 1.41\nFilter 3: ON PK Fc 125 Hz Gain 2 dB Q 1.41\nFilter 4: ON PK Fc 250 Hz Gain 0 dB Q 1.41\nFilter 5: ON PK Fc 500 Hz Gain -1 dB Q 1.41\nFilter 6: ON PK Fc 1000 Hz Gain -1 dB Q 1.41\nFilter 7: ON PK Fc 2000 Hz Gain 0 dB Q 1.41\nFilter 8: ON PK Fc 4000 Hz Gain 1.5 dB Q 1.41\nFilter 9: ON PK Fc 8000 Hz Gain 3 dB Q 1.41\nFilter 10: ON HS Fc 16000 Hz Gain 3.5 dB Q 1.41",
+      "purpose": "effect",
+      "sound_impact_summary": "Equal-loudness compensation for low listening levels (mild V shape).",
+      "source_record_id": "EQPreset.loudness",
+      "tuning_label": "Loudness"
+    },
+    {
+      "peq_text": "Filter 1: ON LS Fc 31 Hz Gain -8 dB Q 1.41\nFilter 2: ON PK Fc 63 Hz Gain -4 dB Q 1.41\nFilter 3: ON PK Fc 125 Hz Gain 0 dB Q 1.41\nFilter 4: ON PK Fc 250 Hz Gain 1 dB Q 1.41\nFilter 5: ON PK Fc 500 Hz Gain 2 dB Q 1.41\nFilter 6: ON PK Fc 1000 Hz Gain 3 dB Q 1.41\nFilter 7: ON PK Fc 2000 Hz Gain 3 dB Q 1.41\nFilter 8: ON PK Fc 4000 Hz Gain 2 dB Q 1.41\nFilter 9: ON PK Fc 8000 Hz Gain 0.5 dB Q 1.41\nFilter 10: ON HS Fc 16000 Hz Gain -1 dB Q 1.41",
+      "purpose": "effect",
+      "sound_impact_summary": "Spoken word: cut rumble, lift presence and articulation.",
+      "source_record_id": "EQPreset.podcast",
+      "tuning_label": "Podcast"
+    },
+    {
+      "peq_text": "Filter 1: ON LS Fc 31 Hz Gain 4.5 dB Q 1.41\nFilter 2: ON PK Fc 63 Hz Gain 3.5 dB Q 1.41\nFilter 3: ON PK Fc 125 Hz Gain 1 dB Q 1.41\nFilter 4: ON PK Fc 250 Hz Gain 0 dB Q 1.41\nFilter 5: ON PK Fc 500 Hz Gain -0.5 dB Q 1.41\nFilter 6: ON PK Fc 1000 Hz Gain 0 dB Q 1.41\nFilter 7: ON PK Fc 2000 Hz Gain 0.5 dB Q 1.41\nFilter 8: ON PK Fc 4000 Hz Gain 1 dB Q 1.41\nFilter 9: ON PK Fc 8000 Hz Gain 2.5 dB Q 1.41\nFilter 10: ON HS Fc 16000 Hz Gain 3.5 dB Q 1.41",
+      "purpose": "genre",
+      "sound_impact_summary": "Sub-bass weight plus air, mids untouched.",
+      "source_record_id": "EQPreset.electronic",
+      "tuning_label": "Electronic"
+    },
+    {
+      "peq_text": "Filter 1: ON LS Fc 31 Hz Gain 3 dB Q 1.41\nFilter 2: ON PK Fc 63 Hz Gain 2 dB Q 1.41\nFilter 3: ON PK Fc 125 Hz Gain 0.5 dB Q 1.41\nFilter 4: ON PK Fc 250 Hz Gain -0.5 dB Q 1.41\nFilter 5: ON PK Fc 500 Hz Gain -1 dB Q 1.41\nFilter 6: ON PK Fc 1000 Hz Gain 0.5 dB Q 1.41\nFilter 7: ON PK Fc 2000 Hz Gain 2 dB Q 1.41\nFilter 8: ON PK Fc 4000 Hz Gain 2.5 dB Q 1.41\nFilter 9: ON PK Fc 8000 Hz Gain 2 dB Q 1.41\nFilter 10: ON HS Fc 16000 Hz Gain 1 dB Q 1.41",
+      "purpose": "genre",
+      "sound_impact_summary": "Gentle V with guitar presence around 2–4 kHz.",
+      "source_record_id": "EQPreset.rock",
+      "tuning_label": "Rock"
+    }
+  ],
+  "schema_version": 1,
+  "source_id": "paraeq",
+  "source_kind": "community_repository",
+  "source_url": "https://github.com/wabsto1/ParaEQ/blob/51d6f6d29aef607a3a2e26b829549f9c8d7fec6e/Sources/Models.swift",
+  "source_version": "51d6f6d29aef607a3a2e26b829549f9c8d7fec6e",
+  "verification_status": "verified"
+}

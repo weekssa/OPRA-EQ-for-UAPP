@@ -2,6 +2,27 @@
 
 This document records implementation-time product decisions that refine the approved Phase 0 behavior. `docs/CHATGPT_PROJECT_RUNBOOK.md` remains authoritative, and `docs/V0.3_LOCKED_EXECUTION_PLAN.md` is the controlling v0.3 execution plan. Where an older prototype decision conflicts with this file or the locked plan, the locked v0.3 behavior below wins.
 
+## Final v0.3 Android Back behavior — approved 2026-08-31
+
+- Back must unwind in-app hierarchy before exiting: Manage preset selection → headphone detail → My EQs; EQ Library model → manufacturer/search/root; root EQ Library or Settings → My EQs.
+- Only Back from the My EQs root exits the app.
+- Unsaved selection edits keep the existing Discard changes / Keep editing gate before navigation.
+- Visible back arrows and the Android system Back gesture/button must produce the same destination.
+
+## Favorite access from My EQs — approved 2026-08-31
+
+- Managed headphone preset rows in My EQs expose the same filled/outlined Favorite star state used in EQ Library.
+- Toggling Favorite changes only Favorite membership for the active output; it does not select/deselect the managed preset, change export currentness, or trigger/alter Black Pearl Flash.
+- Favorite snapshot rows use the filled star as the remove-from-favorites action; personal imports keep their explicit remove action.
+
+## Initial populated General EQ catalog — approved 2026-08-31
+
+- Seed General EQs from qualified, source-authored presets rather than inventing unlabeled curves.
+- The first source is the MIT-licensed ParaEQ built-in preset set (`wabsto1/ParaEQ`, pinned source commit), publishing Bass Boost, Vocal Clarity, Treble Boost, Loudness, Podcast, Electronic, and Rock.
+- Electronic and Rock are Genre only because ParaEQ explicitly provides those genre names; no genre label is inferred from filter shape.
+- Source preamp remains null when absent. EQ Library-generated clipping-safety headroom is stored separately as derived metadata.
+- Selecting a General EQ adds it to the active output and initiates its initial export under the same Add/Save rule as other exportable saved EQs.
+
 ## Selection defaults — updated and locked 2026-08-31
 
 When a headphone has never been saved for the current output:

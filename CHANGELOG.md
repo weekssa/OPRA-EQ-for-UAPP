@@ -8,6 +8,8 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ### Added
 
+- Initial populated **General EQ** catalog from the qualified MIT-licensed ParaEQ built-in presets: Bass Boost, Vocal Clarity, Treble Boost, Loudness, Podcast, Electronic, and Rock, with source-authored Genre classification only where explicitly provided.
+- Managed preset rows in **My EQs** now expose the same Favorite star state/action as EQ Library.
 - Global active-output context across **My EQs** and **EQ Library**, with locally enabled outputs in Settings. Initial selectable outputs are UAPP/ToneBoosters, TRN Black Pearl, Universal Parametric EQ, Poweramp/Poweramp Equalizer, and Wavelet.
 - Output-specific **My EQs** collections for managed headphone selections, General EQs, favorites/saved snapshots, and personal imports. Existing pre-output-context saved state migrates to UAPP/ToneBoosters.
 - **Headphones** and **General EQs** library sections, with General EQ filters for **All**, **Sound**, **Genre**, and **Utility**.
@@ -22,6 +24,9 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ### Changed
 
+- Android Back now follows the in-app hierarchy and returns root EQ Library/Settings to My EQs; only Back from the My EQs root exits the app. Clean and dirty preset-selection editor states both handle system Back naturally.
+- General EQ selection now initiates its initial active-output export when added, matching the established Add/Save workflow.
+- General presets with no source preamp keep preamp null while EQ Library stores conservative generated playback headroom separately.
 - Output selection is now an operating context rather than a catalog filter. Choosing a device/app changes conversion, export, Flash availability, capability status, and the My EQs collection, but never hides valid library curves.
 - The obsolete prototype setting **Show presets that none of my devices can export** is ignored/removed from user-facing behavior.
 - New headphones start with no EQ profiles selected and automatic future-profile inclusion off; users explicitly choose the presets they want before Add.
@@ -39,6 +44,9 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ### Fixed
 
+- System Back no longer falls through and exits the activity from clean nested management screens or secondary top-level destinations.
+- Favorites no longer require returning to EQ Library merely to star/unstar a managed preset.
+- The previously empty General EQ user-facing area now has qualified source-backed Sound, Genre, and Utility content.
 - Export status no longer stays permanently available after an output file is current; it is recalculated after export and when the active output, folder, or saved collection changes.
 - SAF providers that normalize or alter the requested filename no longer cause EQ Library to delete a successfully created preset and leave it permanently stuck in **needs export / needs review**. The provider-returned URI/name is retained and used for later currentness, updates, and cleanup.
 - Same-name unowned files no longer create an unrecoverable export loop; EQ Library leaves the external file untouched and creates a stable separately owned fallback file.
@@ -50,6 +58,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ### Validation
 
+- Final release-polish changes are isolated from Black Pearl protocol/DSP code but require a fresh signed v0.3.0 candidate and focused Pixel 9 Back/Favorite/General-EQ regression pass before public publication.
 - Exact candidate `c70c523e1f530b8b197ebbccc41dfb4af1e27fc4` passed Android unit tests, lint, debug/release assembly, catalog/currentness validation, priority-community validation, CodeQL, signed-beta alignment/signature verification, and artifact generation.
 - Pixel 9 / TRN Black Pearl hands-on validation passed on 2026-08-31, including provider-adjusted SAF filename/collision recovery, playback-gain replacement/non-stacking behavior, and the Edition XS Altruistic-Farmer275 `13,500 Hz / -11.9 dB / Q 4.0` file-export/caution/Flash-anyway test without app-side clamping.
 - PR #3 was then fast-forward merged to `main`, preserving the tested candidate as the merge commit; release-preparation documentation and catalog-only automation may advance `main` afterward and must pass the final release gate before publication.

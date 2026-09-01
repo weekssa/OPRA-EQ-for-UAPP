@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "registry_version": "0.3.0-community-public-4",
+  "registry_version": "0.3.0-community-public-5",
   "sources": [
     {
       "id": "opra",
@@ -182,6 +182,20 @@
       "redistribution": "structured-data-only",
       "attribution_required": true,
       "license_notes": "Public community-posted EQ coefficients are publication-eligible with source URL and author attribution retained. The lane remains discovery/reviewing until an exact structured coefficient set is captured; screenshots or curve-only views are not converted into invented filters. Device-format conversions must be labeled separately from the original source tuning."
+    },
+    {
+      "id": "paraeq",
+      "kind": "community_repository",
+      "name": "ParaEQ built-in General EQ presets",
+      "scope": "MIT-licensed source-authored device-independent tonal, utility, and genre presets from wabsto1/ParaEQ",
+      "lifecycle": "active",
+      "cadence": "manual",
+      "parser": "general-preset-qualified-peq",
+      "parser_version": "1",
+      "cursor_strategy": "pinned repository commit plus source-record acoustic fingerprint",
+      "redistribution": "structured-data-only",
+      "attribution_required": true,
+      "license_notes": "ParaEQ is MIT licensed (copyright 2026 wabsto1). EQ Library publishes only the exact built-in preset filter parameters explicitly represented in Sources/Models.swift at pinned commit 51d6f6d29aef607a3a2e26b829549f9c8d7fec6e, retains creator/source provenance, keeps missing source preamp null, and stores any EQ Library-generated safety headroom separately."
     }
   ]
 }

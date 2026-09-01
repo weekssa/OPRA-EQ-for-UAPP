@@ -1,6 +1,7 @@
 package com.weekssa.opraeqforuapp.ui
 
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
@@ -283,6 +284,11 @@ fun EqLibraryApp(
         }
     }
 
+    BackHandler(enabled = selectedDestination == EqLibraryDestination.Settings) {
+        selectedManagedProductId = null
+        selectedDestinationIndex = EqLibraryDestination.MyEqs.ordinal
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -440,7 +446,11 @@ fun EqLibraryApp(
                         favoriteProfileIds = favoriteProfileIds,
                         savedGeneralPresetIds = savedGeneralPresetIds,
                         onToggleFavorite = onToggleFavorite,
-                        onToggleGeneralPreset = onToggleGeneralPreset,
+                        onToggleGeneralPreset = { preset ->
+                            val selected = onToggleGeneralPreset(preset)
+                            if (selected) requestExportGeneralEq(preset.id)
+                            selected
+                        },
                         onLoadManagedHeadphone = onLoadManagedHeadphone,
                         onSaveSelection = onSaveSelection,
                         onRemoveHeadphone = onRemoveHeadphone,
@@ -450,6 +460,10 @@ fun EqLibraryApp(
                         onMessage = ::showMessage,
                         onRefreshCatalog = requestCatalogRefresh,
                         onOpenUrl = onOpenUrl,
+                        onBackFromRoot = {
+                            selectedManagedProductId = null
+                            selectedDestinationIndex = EqLibraryDestination.MyEqs.ordinal
+                        },
                         modifier = Modifier.fillMaxSize(),
                     )
                     EqLibraryDestination.Settings -> SettingsScreen(

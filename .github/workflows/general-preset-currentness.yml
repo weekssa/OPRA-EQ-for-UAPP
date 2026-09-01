@@ -1,0 +1,109 @@
+name: General EQ catalog publication
+
+on:
+  push:
+    branches:
+      - main
+      - 'v0.3-*'
+    paths:
+      - '.github/workflows/general-preset-currentness.yml'
+      - 'tools/general_preset_publish.py'
+      - 'tools/general_preset_ingest.py'
+      - 'tools/curated_community_publish.py'
+      - 'tools/catalog_merge.py'
+      - 'catalog/discovery/*_general_presets.json'
+      - 'config/source_registry.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: eq-catalog-writer-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish-general:
+    if: github.event_name != 'push' || github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out current branch tip
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 1
+
+      - name: Validate source registry
+        run: python3 tools/catalog_pipeline.py validate-registry --registry config/source_registry.json
+
+      - name: Test General EQ ingestion
+        run: PYTHONPATH=tools python3 -m unittest tools/test_general_preset_ingest.py tools/test_general_preset_publish.py
+
+      - name: Publish qualified General EQ manifests
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/general-reports"
+          cp catalog/catalog.json "${RUNNER_TEMP}/catalog.general.current.json"
+          mapfile -t manifests < <(find catalog/discovery -maxdepth 1 -type f -name '*_general_presets.json' -print | sort)
+          if (( ${#manifests[@]} == 0 )); then
+            echo "No General EQ manifests found."
+            exit 1
+          fi
+          for manifest in "${manifests[@]}"; do
+            base="$(basename "${manifest}" .json)"
+            next="${RUNNER_TEMP}/catalog.general.next.json"
+            report="${RUNNER_TEMP}/general-reports/${base}-report.json"
+            python3 tools/general_preset_publish.py \
+              --catalog "${RUNNER_TEMP}/catalog.general.current.json" \
+              --manifest "${manifest}" \
+              --registry config/source_registry.json \
+              --output "${next}" \
+              --report "${report}"
+            mv "${next}" "${RUNNER_TEMP}/catalog.general.current.json"
+          done
+
+      - name: Validate candidate atomically
+        run: >-
+          python3 tools/catalog_pipeline.py publish
+          --candidate "${RUNNER_TEMP}/catalog.general.current.json"
+          --published "${RUNNER_TEMP}/validated-general-catalog.json"
+          --last-known-good "${RUNNER_TEMP}/validated-general-lkg.json"
+
+      - name: Minify Android transport catalog
+        run: |
+          python3 - <<'PY'
+          import json, os
+          path = os.environ['RUNNER_TEMP'] + '/validated-general-catalog.json'
+          with open(path, encoding='utf-8') as handle:
+              payload = json.load(handle)
+          with open(path, 'w', encoding='utf-8') as handle:
+              handle.write(json.dumps(payload, sort_keys=True, separators=(',', ':'), ensure_ascii=False) + '\n')
+          PY
+
+      - name: Stage validated General EQ catalog
+        run: cp "${RUNNER_TEMP}/validated-general-catalog.json" catalog/catalog.json
+
+      - name: Commit General EQ catalog changes
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- catalog/catalog.json; then
+            echo "General EQ catalog already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add catalog/catalog.json
+          git commit -m "Refresh General EQ catalog"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Upload General EQ publication reports
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: general-eq-publication-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/general-reports/
+            ${{ runner.temp }}/validated-general-catalog.json
+          retention-days: 14
