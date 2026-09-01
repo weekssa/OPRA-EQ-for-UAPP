@@ -23,7 +23,7 @@ jobs:
           ref: ${{ github.ref_name }}
           fetch-depth: 1
       - name: Synchronize release-polish documentation
-        run: python3 tools/sync_v03_release_polish_docs.py
+        run: python3 tools/run_v03_docs_sync_retry.py
       - name: Validate documentation diff
         run: git diff --check
       - name: Commit documentation sync
