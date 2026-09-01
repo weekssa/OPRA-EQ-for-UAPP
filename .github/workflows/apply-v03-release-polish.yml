@@ -1,0 +1,51 @@
+name: Apply v0.3 release polish
+
+on:
+  push:
+    branches:
+      - v0.3-release-polish
+    paths:
+      - 'tools/apply_v03_release_polish.py'
+      - '.github/workflows/apply-v03-release-polish.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: v03-release-polish-implementation
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out release-polish branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: v0.3-release-polish
+          fetch-depth: 1
+
+      - name: Apply release polish
+        run: python3 tools/apply_v03_release_polish.py
+
+      - name: Run General EQ tests
+        run: python3 -m unittest tools/test_general_preset_ingest.py tools/test_general_preset_publish.py
+
+      - name: Validate source registry
+        run: python3 tools/catalog_pipeline.py validate-registry --registry config/source_registry.json
+
+      - name: Check diff
+        run: git diff --check
+
+      - name: Commit release polish
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Implement v0.3 release polish"
+          git pull --rebase origin v0.3-release-polish
+          git push origin HEAD:v0.3-release-polish
