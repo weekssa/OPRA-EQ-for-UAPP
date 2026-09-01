@@ -1,8 +1,8 @@
-name: Signed EQ Library Beta Candidate
+name: Review Clear QA APK
 
 on:
   push:
-    branches: [eq-library-beta, eq-library-community-v0.3, 'v0.3-*']
+    branches: [v0.3-review-clear-qa]
 
 permissions:
   contents: write
@@ -18,7 +18,7 @@ jobs:
     timeout-minutes: 40
 
     steps:
-      - name: Check out exact source
+      - name: Check out exact QA source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Set up JDK 17
@@ -62,22 +62,20 @@ jobs:
           printf '%s' "$OPRA_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/eq-library-release.p12"
           chmod 600 "$RUNNER_TEMP/eq-library-release.p12"
 
-      - name: Run beta gate and build release APK
+      - name: Run QA gate and build release APK
         run: gradle :app:testDebugUnitTest :app:lintDebug :app:assembleRelease --stacktrace
 
-      - name: Align sign and verify beta APK
+      - name: Align sign and verify QA APK
         env:
           OPRA_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.OPRA_RELEASE_KEYSTORE_PASSWORD }}
           OPRA_RELEASE_KEY_ALIAS: ${{ secrets.OPRA_RELEASE_KEY_ALIAS }}
         shell: bash
         run: |
           set -euo pipefail
-          version_name="$(sed -n 's/^[[:space:]]*versionName = "\([^"]*\)".*/\1/p' app/build.gradle.kts | head -n 1)"
-          test -n "$version_name"
           unsigned_apk="app/build/outputs/apk/release/app-release-unsigned.apk"
-          aligned_apk="$RUNNER_TEMP/eq-library-beta-aligned.apk"
+          aligned_apk="$RUNNER_TEMP/eq-library-qa-aligned.apk"
           mkdir -p dist
-          output_apk="dist/EQ-Library-v${version_name}-beta-${GITHUB_SHA::7}.apk"
+          output_apk="dist/EQ-Library-QA-review-clear-${GITHUB_SHA::7}.apk"
           build_tools="$ANDROID_HOME/build-tools/36.0.0"
 
           "$build_tools/zipalign" -p -f 4 "$unsigned_apk" "$aligned_apk"
@@ -96,48 +94,51 @@ jobs:
           test "$actual_fingerprint" = "$expected_fingerprint"
           sha256sum "$output_apk" > "${output_apk}.sha256"
 
-      - name: Upload signed beta candidate
+      - name: Upload QA artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: EQ-Library-signed-beta-${{ github.sha }}
+          name: EQ-Library-review-clear-QA-${{ github.sha }}
           path: dist/
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 7
 
-      - name: Publish stable mobile-test APK link
+      - name: Publish isolated QA APK link
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          source_apk="$(find dist -maxdepth 1 -type f -name 'EQ-Library-v*.apk' -print -quit)"
+          source_apk="$(find dist -maxdepth 1 -type f -name 'EQ-Library-QA-review-clear-*.apk' -print -quit)"
           test -n "$source_apk"
 
           publish_dir="$(mktemp -d)"
-          cp "$source_apk" "$publish_dir/EQ-Library-v0.3-mobile-test.apk"
-          sha256sum "$publish_dir/EQ-Library-v0.3-mobile-test.apk" > "$publish_dir/EQ-Library-v0.3-mobile-test.apk.sha256"
+          cp "$source_apk" "$publish_dir/EQ-Library-QA-review-clear.apk"
+          sha256sum "$publish_dir/EQ-Library-QA-review-clear.apk" > "$publish_dir/EQ-Library-QA-review-clear.apk.sha256"
           cat > "$publish_dir/README.md" <<EOF
-          # EQ Library v0.3 mobile test build
+          # EQ Library review-clear QA build
 
-          Signed beta generated from commit `${GITHUB_SHA}`.
+          Temporary QA app generated from commit ${GITHUB_SHA}.
+
+          Package: com.weekssa.opraeqforuapp.reviewclearqa
+          App label: EQ Library QA
 
           Direct Android download:
-          https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/mobile-test-apk/EQ-Library-v0.3-mobile-test.apk
+          https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/review-clear-qa-apk/EQ-Library-QA-review-clear.apk
 
-          This branch is only a temporary hands-on testing surface. It is not a public v0.3 release.
+          This app installs beside EQ Library and uses separate Android app data. It contains one synthetic review fixture and must never be merged or released publicly.
           EOF
 
           cd "$publish_dir"
           git init
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -b mobile-test-apk
-          git add README.md EQ-Library-v0.3-mobile-test.apk EQ-Library-v0.3-mobile-test.apk.sha256
-          git commit -m "Publish signed v0.3 mobile test APK from ${GITHUB_SHA::7}"
+          git checkout -b review-clear-qa-apk
+          git add README.md EQ-Library-QA-review-clear.apk EQ-Library-QA-review-clear.apk.sha256
+          git commit -m "Publish isolated review-clear QA APK from ${GITHUB_SHA::7}"
           git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          git push --force origin HEAD:mobile-test-apk
+          git push --force origin HEAD:review-clear-qa-apk
 
           {
-            echo "### Mobile test APK"
-            echo "https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/mobile-test-apk/EQ-Library-v0.3-mobile-test.apk"
+            echo "### Review-clear QA APK"
+            echo "https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/review-clear-qa-apk/EQ-Library-QA-review-clear.apk"
           } >> "$GITHUB_STEP_SUMMARY"
