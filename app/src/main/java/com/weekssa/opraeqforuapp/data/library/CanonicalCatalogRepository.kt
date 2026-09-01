@@ -97,7 +97,7 @@ class HttpCanonicalCatalogSource(
 
     companion object {
         const val DEFAULT_CATALOG_URL =
-            "https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/eq-library-community-v0.3/catalog/catalog.json"
+            "https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/catalog-live/catalog/catalog.json"
         private const val CONNECT_TIMEOUT_MILLIS = 20_000
         private const val READ_TIMEOUT_MILLIS = 60_000
         private const val MAX_CATALOG_BYTES = 64L * 1024L * 1024L
