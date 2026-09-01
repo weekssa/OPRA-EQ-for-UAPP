@@ -193,10 +193,18 @@ jobs:
             mv "${RUNNER_TEMP}/catalog.release.next.json" "${RUNNER_TEMP}/catalog.release.current.json"
           done
 
+          # Validate the synchronized result against both previously published archives.
+          # Explicit baselines avoid the unresolved merge-worktree catalog by design.
           python3 tools/catalog_pipeline.py publish \
             --candidate "${RUNNER_TEMP}/catalog.release.current.json" \
+            --published "${RUNNER_TEMP}/catalog.branch-validated.json" \
+            --last-known-good "${RUNNER_TEMP}/catalog.branch-lkg.json" \
+            --baseline "${RUNNER_TEMP}/catalog.branch.json"
+          python3 tools/catalog_pipeline.py publish \
+            --candidate "${RUNNER_TEMP}/catalog.branch-validated.json" \
             --published "${RUNNER_TEMP}/catalog.final.validated.json" \
-            --last-known-good "${RUNNER_TEMP}/catalog.final.lkg.json"
+            --last-known-good "${RUNNER_TEMP}/catalog.final.lkg.json" \
+            --baseline "${RUNNER_TEMP}/catalog.main.json"
 
           python3 - <<'PY'
           import json, os
