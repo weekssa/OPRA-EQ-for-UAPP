@@ -116,18 +116,13 @@ class PublishedCatalogTest(unittest.TestCase):
                 self.assertEqual(
                     revision["acoustic_fingerprint"],
                     acoustic_fingerprint(revision["preamp_gain_db"], revision["filters"]),
-                    (profile["canonical_profile_id"], revision["revision_id"]),
+                    profile["canonical_profile_id"],
                 )
 
     def test_active_sources_are_reported(self):
-        source_ids = {
-            source["source_id"]
-            for profile in self.snapshot["profiles"]
-            for revision in profile["revisions"]
-            for source in revision["source_references"]
-        }
-        self.assertIn("opra", source_ids)
-        self.assertIn("autoeq", source_ids)
+        statuses = {status["source_id"]: status for status in self.snapshot["sources"]}
+        self.assertEqual("active", statuses["opra"]["lifecycle"])
+        self.assertEqual("active", statuses["autoeq"]["lifecycle"])
 
 
 if __name__ == "__main__":
