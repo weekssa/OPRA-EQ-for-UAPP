@@ -12,44 +12,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  apply-new-eq-review:
-    runs-on: ubuntu-latest
-    outputs:
-      changed: ${{ steps.detect.outputs.changed }}
-    steps:
-      - name: Check out exact source
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          fetch-depth: 2
-
-      - name: Detect temporary implementation payload
-        id: detect
-        shell: bash
-        run: |
-          if [[ -f tools/tmp_new_eq_review_patch.py ]]; then
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Apply approved new-EQ review patch
-        if: steps.detect.outputs.changed == 'true'
-        run: python3 tools/tmp_new_eq_review_patch.py
-
-      - name: Commit implementation
-        if: steps.detect.outputs.changed == 'true'
-        shell: bash
-        run: |
-          git rm tools/tmp_new_eq_review_patch.py
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add app
-          git commit -m "Replace automatic EQ inclusion with review notifications"
-          git push origin HEAD:v0.3-release-polish
-
   build-signed-beta:
-    needs: apply-new-eq-review
-    if: needs.apply-new-eq-review.outputs.changed != 'true' && github.repository == 'weekssa/OPRA-EQ-for-UAPP'
+    if: github.repository == 'weekssa/OPRA-EQ-for-UAPP'
     runs-on: ubuntu-latest
     timeout-minutes: 40
 
