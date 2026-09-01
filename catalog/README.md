@@ -10,4 +10,4 @@ A catalog candidate is publishable only after the normal schema, identity, prove
 
 The Android client validates a downloaded candidate before atomically promoting it to its private last-known-good cache. Failed downloads or invalid candidates never replace the last-known-good local catalog.
 
-The `catalog-live` branch is a distribution surface, not an Android backend and not a runtime scraping mechanism. Source discovery/ingestion remains repository/GitHub-Actions tooling outside the app. Future automated catalog publication must update `catalog-live` only after the same validation gates pass.
+The `catalog-live` branch is a distribution surface, not an Android backend and not a runtime scraping mechanism. Source discovery/ingestion remains repository/GitHub-Actions tooling outside the app. The validated General-EQ publisher and scheduled canonical-currentness publisher update `catalog-live` from `main` only after the same publication gates pass; versioned development branches do not become the runtime feed.
