@@ -10,3 +10,8 @@ fun OpraEqProfile.isBlackPearlDirectFlashable(): Boolean =
 fun OpraEqProfile.blackPearlRequiredPlaybackGainDb(): Double? =
     (buildBlackPearlFlashPlan(this, activeSlot = 0x00) as? BlackPearlFlashPlan.Ready)
         ?.requiredPlaybackGainDb
+
+/** Caution shown before Flash when the plan is representable but outside a validated device range. */
+fun OpraEqProfile.blackPearlFlashWarning(): String? =
+    (buildBlackPearlFlashPlan(this, activeSlot = 0x00) as? BlackPearlFlashPlan.Ready)
+        ?.warning
