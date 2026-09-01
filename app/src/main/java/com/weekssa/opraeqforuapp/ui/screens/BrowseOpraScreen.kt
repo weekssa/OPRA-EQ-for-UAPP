@@ -50,11 +50,7 @@ import com.weekssa.opraeqforuapp.domain.catalog.OpraProduct
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.settings.ExportTargetPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityPreferences
-import com.weekssa.opraeqforuapp.ui.components.OpraAttribution
 import kotlinx.coroutines.launch
-
-private const val EQ_SOURCE_SUBMISSION_URL =
-    "https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/new?template=submit_eq_source.yml"
 
 private enum class LibrarySection(val label: String) {
     HEADPHONES("Headphones"),
@@ -197,7 +193,6 @@ fun BrowseOpraScreen(
                         onSearchQueryChange = { searchQuery = it },
                         onVendorSelected = { selectedVendorId = it },
                         onProductSelected = { selectedProductId = it.id },
-                        onOpenUrl = onOpenUrl,
                         modifier = Modifier.weight(1f),
                     )
                     else -> GeneralEqBrowse(
@@ -227,7 +222,6 @@ private fun HeadphoneBrowseRoot(
     onSearchQueryChange: (String) -> Unit,
     onVendorSelected: (String) -> Unit,
     onProductSelected: (OpraProduct) -> Unit,
-    onOpenUrl: (String) -> Unit,
     modifier: Modifier,
 ) {
     Column(
@@ -244,26 +238,6 @@ private fun HeadphoneBrowseRoot(
         if (searchQuery.isBlank()) {
             val vendors = catalog.vendors.sortedBy { it.name.lowercase() }
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                item(key = "source-attribution") {
-                    Text(
-                        text = "EQ Library combines supported sources. Selecting an output changes compatibility and export behavior, never which valid library curves are visible.",
-                        modifier = Modifier.padding(top = 8.dp),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    OpraAttribution(
-                        onOpenUrl = onOpenUrl,
-                        compact = true,
-                        modifier = Modifier.padding(top = 8.dp),
-                    )
-                    TextButton(
-                        onClick = { onOpenUrl(EQ_SOURCE_SUBMISSION_URL) },
-                        modifier = Modifier.padding(bottom = 4.dp),
-                    ) {
-                        Text("Submit an EQ source")
-                    }
-                    HorizontalDivider()
-                }
                 if (vendors.isEmpty()) {
                     item(key = "no-headphones") {
                         Text(
