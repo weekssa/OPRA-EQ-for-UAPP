@@ -58,6 +58,7 @@ import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
 import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
+import com.weekssa.opraeqforuapp.domain.managed.withHiddenReviewPromptsSuppressed
 import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ThemeMode
 import com.weekssa.opraeqforuapp.domain.update.SemVer
@@ -164,8 +165,13 @@ fun EqLibraryApp(
     }
     val catalogBusy = catalogState is CatalogState.Loading ||
         (catalogState as? CatalogState.Ready)?.isRefreshing == true
+    val managedHeadphonesForUi = remember(managedHeadphones, appPreferences.hiddenCanonicalProfileIds) {
+        managedHeadphones.map { headphone ->
+            headphone.withHiddenReviewPromptsSuppressed(appPreferences.hiddenCanonicalProfileIds)
+        }
+    }
     val selectedManagedHeadphone = selectedManagedProductId?.let { productId ->
-        managedHeadphones.firstOrNull { it.productId == productId }
+        managedHeadphonesForUi.firstOrNull { it.productId == productId }
     }
 
     LaunchedEffect(selectedManagedProductId, selectedManagedHeadphone, activeOutput) {
@@ -427,7 +433,7 @@ fun EqLibraryApp(
                             )
                         } else {
                             MyEqsHomeScreen(
-                                managedHeadphones = managedHeadphones,
+                                managedHeadphones = managedHeadphonesForUi,
                                 savedEqs = savedEqs,
                                 savedGeneralEqs = savedGeneralEqs,
                                 activeOutput = activeOutput,
@@ -453,7 +459,7 @@ fun EqLibraryApp(
                         catalogState = catalogState,
                         profileVisibility = appPreferences.profileVisibility,
                         exportTargets = appPreferences.exportTargets,
-                        managedHeadphones = managedHeadphones,
+                        managedHeadphones = managedHeadphonesForUi,
                         favoriteProfileIds = favoriteProfileIds,
                         savedGeneralPresetIds = savedGeneralPresetIds,
                         hiddenCanonicalProfileIds = appPreferences.hiddenCanonicalProfileIds,
