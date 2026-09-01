@@ -27,10 +27,12 @@ class ManagedHeadphonesRepository(
     fun observeHeadphones(outputId: String = DEFAULT_OUTPUT_ID): Flow<List<ManagedHeadphoneRecord>> =
         combine(
             dao.observeHeadphones(),
+            dao.observeAllProfiles(),
             dao.observeOutputHeadphones(outputId),
             dao.observeOutputProfiles(outputId),
-        ) { headphones, outputHeadphones, outputProfiles ->
+        ) { headphones, profiles, outputHeadphones, outputProfiles ->
             val outputByProduct = outputHeadphones.associateBy(OutputManagedHeadphoneEntity::productId)
+            val profilesByProduct = profiles.groupBy(ManagedProfileEntity::productId)
             val outputProfilesByProduct = outputProfiles.groupBy(OutputManagedProfileEntity::productId)
             headphones.mapNotNull { headphone ->
                 val output = outputByProduct[headphone.productId] ?: return@mapNotNull null
@@ -38,7 +40,7 @@ class ManagedHeadphonesRepository(
                     .orEmpty()
                     .associateBy(OutputManagedProfileEntity::profileId)
                 headphone.toDomain(
-                    profiles = dao.getProfiles(headphone.productId),
+                    profiles = profilesByProduct[headphone.productId].orEmpty(),
                     snapshotCodec = snapshotCodec,
                     output = output,
                     outputSelections = selectionById,

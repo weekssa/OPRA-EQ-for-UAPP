@@ -1,6 +1,7 @@
 package com.weekssa.opraeqforuapp.ui.screens
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -101,6 +102,12 @@ fun ManagedHeadphoneDetailScreen(
     val pendingUpdatedCount = headphone.profiles.count {
         it.isUpdatedUnreviewed && !it.noLongerAvailable && !it.isNewUnreviewed
     }
+    val hasPendingReview = headphone.autoIncludeNewProfiles &&
+        (pendingNewCount > 0 || pendingUpdatedCount > 0)
+    val pendingReviewLabel = buildList {
+        if (pendingNewCount > 0) add("$pendingNewCount new")
+        if (pendingUpdatedCount > 0) add("$pendingUpdatedCount updated")
+    }.joinToString(" · ")
 
     if (reviewingNewEqs) {
         NewEqReviewScreen(
@@ -250,18 +257,35 @@ fun ManagedHeadphoneDetailScreen(
             modifier = Modifier.padding(horizontal = 16.dp),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Text(
-            text = buildString {
-                append(headphone.selectedProfileCount)
-                append(" selected")
-                availableProfileCount?.let {
-                    append(" · ")
-                    append(it)
-                    append(" available")
-                }
-            },
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = buildString {
+                    append(headphone.selectedProfileCount)
+                    append(" selected")
+                    availableProfileCount?.let {
+                        append(" · ")
+                        append(it)
+                        append(" available")
+                    }
+                },
+                modifier = Modifier.padding(vertical = 8.dp),
+            )
+            if (hasPendingReview) {
+                Text(" · ", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    text = "$pendingReviewLabel ›",
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .clickable(role = Role.Button) { reviewingNewEqs = true }
+                        .padding(horizontal = 4.dp, vertical = 12.dp),
+                )
+            }
+        }
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -290,19 +314,6 @@ fun ManagedHeadphoneDetailScreen(
                     }
                 },
             )
-        }
-        if (headphone.autoIncludeNewProfiles && (pendingNewCount > 0 || pendingUpdatedCount > 0)) {
-            Button(
-                onClick = { reviewingNewEqs = true },
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-            ) {
-                Text(
-                    buildList {
-                        if (pendingNewCount > 0) add("$pendingNewCount new")
-                        if (pendingUpdatedCount > 0) add("$pendingUpdatedCount updated")
-                    }.joinToString(" · ") + " — Review",
-                )
-            }
         }
         if (isBlackPearlOutput || product != null) {
             Row(

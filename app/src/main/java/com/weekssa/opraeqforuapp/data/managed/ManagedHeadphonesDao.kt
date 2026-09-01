@@ -2,7 +2,6 @@ package com.weekssa.opraeqforuapp.data.managed
 
 import androidx.room.Dao
 import androidx.room.Query
-import androidx.room.Transaction
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 
@@ -21,6 +20,9 @@ interface ManagedHeadphonesDao {
 
     @Query("SELECT * FROM managed_profiles WHERE productId = :productId ORDER BY profileId")
     fun observeProfiles(productId: String): Flow<List<ManagedProfileEntity>>
+
+    @Query("SELECT * FROM managed_profiles ORDER BY productId, profileId")
+    fun observeAllProfiles(): Flow<List<ManagedProfileEntity>>
 
     @Query(
         """
@@ -109,14 +111,5 @@ interface ManagedHeadphonesDao {
     suspend fun deleteOutputHeadphone(outputId: String, productId: String)
 
     @Query("UPDATE managed_profiles SET isNewUnreviewed = 0, isUpdatedUnreviewed = 0 WHERE productId = :productId")
-    suspend fun clearReviewFlags(productId: String)
-
-    @Query("UPDATE managed_headphones SET updatedAtMillis = :updatedAtMillis WHERE productId = :productId")
-    suspend fun touchHeadphone(productId: String, updatedAtMillis: Long)
-
-    @Transaction
-    suspend fun markReviewed(productId: String) {
-        clearReviewFlags(productId)
-        touchHeadphone(productId, System.currentTimeMillis())
-    }
+    suspend fun markReviewed(productId: String)
 }

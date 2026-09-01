@@ -50,10 +50,11 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Black Pearl profiles over 10 bands use the first 10 source-priority bands only with an explicit Optimized warning; canonical source data remains complete and unchanged.
 - Navigation and terminology now use **My EQs**, **EQ Library**, and **Settings** instead of the earlier My Headphones/Browse OPRA framing.
 - EQ Library browse and Settings now use a source-agnostic task-first information hierarchy: OPRA/source attribution and feedback/submission links no longer occupy primary browse real estate and remain available in Settings.
-- Managed-headphone detail now uses one compact side-by-side **Connect/Connected** + **Manage presets** action row when Black Pearl is active, preserving accessible touch targets and existing connection/error behavior while reclaiming vertical space.
+- Managed-headphone detail now uses one compact side-by-side **Connect/Connected** + **Manage presets** action row when Black Pearl is active, and pending `new` / `updated` review attention is shown as an inline tappable status beside the selected/available counts instead of a separate full-width review button.
 
 ### Fixed
 
+- Completing a new/updated-EQ review now clears its attention status immediately on the managed-headphone detail screen; managed profile review flags are observed reactively instead of waiting for an unrelated UI refresh.
 - Newly discovered EQs no longer become selected automatically under any notification setting.
 - Hidden canonical lineages no longer produce persistent new/updated-EQ review attention while hidden; suppression is presentation-only and preserves already-selected My EQs/export/Favorite/Flash state.
 - Personal import no longer accepts a valid subset while silently dropping a malformed or unsupported active Filter line; the strict import layer blocks Save and identifies the parse problem.
