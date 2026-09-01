@@ -26,7 +26,7 @@ jobs:
         id: detect
         shell: bash
         run: |
-          if [[ -f .github/workflows/v0.3-new-eq-review-patch.yml ]]; then
+          if [[ -f tools/tmp_new_eq_review_patch.py ]]; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
@@ -34,31 +34,17 @@ jobs:
 
       - name: Apply approved new-EQ review patch
         if: steps.detect.outputs.changed == 'true'
-        shell: bash
-        run: |
-          python3 <<'PY'
-          from pathlib import Path
-          source = Path('.github/workflows/v0.3-new-eq-review-patch.yml').read_text()
-          marker = "          python3 <<'PY'\n"
-          start = source.index(marker) + len(marker)
-          end = source.index("\n          PY\n", start)
-          block = source[start:end]
-          lines = []
-          for line in block.splitlines():
-              lines.append(line[10:] if line.startswith('          ') else line)
-          Path('/tmp/apply_new_eq_review.py').write_text('\n'.join(lines) + '\n')
-          PY
-          python3 /tmp/apply_new_eq_review.py
+        run: python3 tools/tmp_new_eq_review_patch.py
 
       - name: Commit implementation and restore release workflow
         if: steps.detect.outputs.changed == 'true'
         shell: bash
         run: |
-          git rm .github/workflows/v0.3-new-eq-review-patch.yml .github/workflows/v0.3-new-eq-review-trigger.yml
+          git rm tools/tmp_new_eq_review_patch.py .github/workflows/v0.3-new-eq-review-patch.yml .github/workflows/v0.3-new-eq-review-trigger.yml
           git checkout HEAD^ -- .github/workflows/signed-beta.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add app docs CHANGELOG.md .github/workflows/signed-beta.yml
+          git add app .github/workflows/signed-beta.yml
           git commit -m "Replace automatic EQ inclusion with review notifications"
           git push origin HEAD:v0.3-release-polish
 
