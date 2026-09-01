@@ -133,20 +133,23 @@ jobs:
           --candidate "${RUNNER_TEMP}/catalog.candidate.json"
           --published "${RUNNER_TEMP}/validated-catalog.json"
           --last-known-good "${RUNNER_TEMP}/validated-lkg.json"
-      - name: Minify validated catalog for Android transport
+      - name: Prepare Android transport and readable repository catalogs
         run: |
           python3 - <<'PY'
           import json, os
-          path = os.environ['RUNNER_TEMP'] + '/validated-catalog.json'
-          with open(path, encoding='utf-8') as handle:
+          transport = os.environ['RUNNER_TEMP'] + '/validated-catalog.json'
+          repository = os.environ['RUNNER_TEMP'] + '/repository-catalog.json'
+          with open(transport, encoding='utf-8') as handle:
               payload = json.load(handle)
-          rendered = json.dumps(payload, sort_keys=True, separators=(',', ':'), ensure_ascii=False) + '\n'
-          size = len(rendered.encode('utf-8'))
+          compact = json.dumps(payload, sort_keys=True, separators=(',', ':'), ensure_ascii=False) + '\n'
+          size = len(compact.encode('utf-8'))
           limit = 60 * 1024 * 1024
           if size > limit:
               raise SystemExit(f'validated catalog exceeds transport safety limit: {size} > {limit}')
-          with open(path, 'w', encoding='utf-8') as handle:
-              handle.write(rendered)
+          with open(transport, 'w', encoding='utf-8') as handle:
+              handle.write(compact)
+          with open(repository, 'w', encoding='utf-8') as handle:
+              handle.write(json.dumps(payload, sort_keys=True, indent=2, ensure_ascii=False) + '\n')
           with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as summary:
               summary.write(f'## Catalog transport\n\n- compact bytes: {size}\n- safety limit: {limit}\n')
           PY
@@ -186,7 +189,7 @@ jobs:
           (github.event_name == 'schedule' && github.ref_name == 'main') ||
           (github.event_name == 'push' && github.ref_name == 'eq-library-community-v0.3')
         run: |
-          cp "${RUNNER_TEMP}/validated-catalog.json" catalog/catalog.json
+          cp "${RUNNER_TEMP}/repository-catalog.json" catalog/catalog.json
           cp "${RUNNER_TEMP}/source_health.candidate.json" catalog/source_health.json
           mkdir -p catalog/discovery
           cp "${RUNNER_TEMP}/github-candidates.json" catalog/discovery/github_candidates.json
