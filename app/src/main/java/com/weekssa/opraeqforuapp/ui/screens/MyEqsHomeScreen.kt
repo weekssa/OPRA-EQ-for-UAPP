@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.export.ExportCurrentness
+import com.weekssa.opraeqforuapp.domain.blackpearl.blackPearlFlashWarning
 import com.weekssa.opraeqforuapp.domain.blackpearl.blackPearlRequiredPlaybackGainDb
 import com.weekssa.opraeqforuapp.domain.blackpearl.isBlackPearlDirectFlashable
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqCategory
@@ -51,17 +52,20 @@ import kotlinx.coroutines.launch
 private sealed interface PendingBlackPearlFlash {
     val displayName: String
     val gainAdjustmentDb: Double
+    val warning: String?
 
     data class SavedEq(
         val entryId: String,
         override val displayName: String,
         override val gainAdjustmentDb: Double,
+        override val warning: String?,
     ) : PendingBlackPearlFlash
 
     data class GeneralEq(
         val presetId: String,
         override val displayName: String,
         override val gainAdjustmentDb: Double,
+        override val warning: String?,
     ) : PendingBlackPearlFlash
 }
 
@@ -123,7 +127,15 @@ fun MyEqsHomeScreen(
         AlertDialog(
             onDismissRequest = { pendingFlash = null },
             title = { Text("Flash to Black Pearl?") },
-            text = { Text(blackPearlFlashConfirmation(pending.displayName, pending.gainAdjustmentDb)) },
+            text = {
+                Text(
+                    blackPearlFlashConfirmation(
+                        pending.displayName,
+                        pending.gainAdjustmentDb,
+                        pending.warning,
+                    ),
+                )
+            },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -136,7 +148,7 @@ fun MyEqsHomeScreen(
                             onMessage(message)
                         }
                     },
-                ) { Text("Flash") }
+                ) { Text(if (pending.warning.isNullOrBlank()) "Flash" else "Flash anyway") }
             },
             dismissButton = {
                 TextButton(onClick = { pendingFlash = null }) { Text("Cancel") }
@@ -243,6 +255,7 @@ fun MyEqsHomeScreen(
                     val needsExport = exportCurrentness.needsExport(record.productId, record.profile.id)
                     val blackPearlFlashable = record.profile.isBlackPearlDirectFlashable()
                     val gainAdjustmentDb = record.profile.blackPearlRequiredPlaybackGainDb()
+                    val flashWarning = record.profile.blackPearlFlashWarning()
                     ListItem(
                         leadingContent = if (record.kind == SavedEqKind.Favorite) {
                             { Icon(Icons.Outlined.Star, contentDescription = null) }
@@ -266,6 +279,7 @@ fun MyEqsHomeScreen(
                                                 entryId = record.entryId,
                                                 displayName = record.displayName,
                                                 gainAdjustmentDb = gainAdjustmentDb ?: 0.0,
+                                                warning = flashWarning,
                                             )
                                         },
                                     ) { Text("Flash") }
@@ -300,6 +314,7 @@ fun MyEqsHomeScreen(
                 val needsExport = exportCurrentness.needsExport(generalExportProductId(record.presetId), record.presetId)
                 val blackPearlFlashable = record.profile.isBlackPearlDirectFlashable()
                 val gainAdjustmentDb = record.profile.blackPearlRequiredPlaybackGainDb()
+                val flashWarning = record.profile.blackPearlFlashWarning()
                 ListItem(
                     headlineContent = { Text(record.displayName) },
                     supportingContent = {
@@ -323,6 +338,7 @@ fun MyEqsHomeScreen(
                                             presetId = record.presetId,
                                             displayName = record.displayName,
                                             gainAdjustmentDb = gainAdjustmentDb ?: 0.0,
+                                            warning = flashWarning,
                                         )
                                     },
                                 ) { Text("Flash") }
