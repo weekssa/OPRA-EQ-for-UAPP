@@ -12,8 +12,37 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  apply-release-polish-fix:
+    if: github.repository == 'weekssa/OPRA-EQ-for-UAPP' && contains(github.event.head_commit.message, '[apply-v03-fix]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out current branch tip
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 1
+      - name: Apply release-polish correction
+        run: python3 tools/fix_v03_release_polish_compile.py
+      - name: Validate patch whitespace
+        run: git diff --check
+      - name: Commit correction
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No correction changes were produced."
+            exit 1
+          fi
+          git commit -m "Correct Hide callback wiring and BOM-safe import"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
   build-signed-beta:
-    if: github.repository == 'weekssa/OPRA-EQ-for-UAPP'
+    if: github.repository == 'weekssa/OPRA-EQ-for-UAPP' && !contains(github.event.head_commit.message, '[apply-v03-fix]')
     runs-on: ubuntu-latest
     timeout-minutes: 40
 
