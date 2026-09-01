@@ -4,7 +4,7 @@ All notable changes to **OPRA EQ for UAPP / EQ Library** will be documented in t
 
 The project uses Semantic Versioning. Development releases remain in the `0.x` series until the first stable `v1.0.0` release.
 
-## [0.3.0] - Unreleased
+## [0.3.0] - 2026-08-31
 
 ### Added
 
@@ -50,33 +50,50 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ### Validation
 
-- Final exact-head Android CI, CodeQL, APK artifact, and Pixel 9 / Black Pearl hands-on validation are required before this version may be promoted or PR #3 may be merged.
-- The focused hands-on regression now includes provider-adjusted SAF filenames/collision recovery and the Edition XS `-11.9 dB` Black Pearl filter caution/physical-hardware acceptance check.
+- Exact candidate `c70c523e1f530b8b197ebbccc41dfb4af1e27fc4` passed Android unit tests, lint, debug/release assembly, catalog/currentness validation, priority-community validation, CodeQL, signed-beta alignment/signature verification, and artifact generation.
+- Pixel 9 / TRN Black Pearl hands-on validation passed on 2026-08-31, including provider-adjusted SAF filename/collision recovery, playback-gain replacement/non-stacking behavior, and the Edition XS Altruistic-Farmer275 `13,500 Hz / -11.9 dB / Q 4.0` file-export/caution/Flash-anyway test without app-side clamping.
+- PR #3 was then fast-forward merged to `main`, preserving the tested candidate as the merge commit; release-preparation documentation and catalog-only automation may advance `main` afterward and must pass the final release gate before publication.
 
 ## [0.2.0] - 2026-08-28
 
 ### Added
 
-- Visible product rebrand to **EQ Library** while preserving application ID `com.weekssa.opraeqforuapp` and the permanent Android release-signing identity for in-place upgrades.
-- Explicit one-device-at-a-time export chooser for UAPP / ToneBoosters, TRN Black Pearl, Topping DX5 II, and Topping DX1 II.
-- Device-first root-folder layout: device → manufacturer → headphone → exported preset.
-- TRN Black Pearl text conversion constrained to a maximum of 10 PK filters to avoid passing unsupported/broken shelf filters through directly.
-- Topping Tune text output for DX5 II and DX1 II, marked hardware-validation pending until physical devices are available.
-- Full saved-library cleanup in addition to existing single-preset and single-headphone cleanup.
+- Visible product rebrand to **EQ Library** while preserving application ID `com.weekssa.opraeqforuapp` and the permanent release-signing identity for normal in-place upgrades.
+- Adds explicit device-targeted export. Selecting EQ profiles no longer writes files automatically; Export now asks for exactly one target device.
+- Adds export targets for **UAPP / ToneBoosters**, **TRN Black Pearl**, **Topping DX5 II**, and **Topping DX1 II**.
+- Keeps device files organized beneath the selected EQ Library root by device → manufacturer → headphone.
+- Adds Black Pearl conversion to a maximum of 10 PK filters so unsupported/broken shelf handling is not passed through directly.
+- Adds Topping Tune text output for DX5 II and DX1 II. These outputs are included as **hardware validation pending** until physical devices are available for testing.
+- Preserves deterministic naming, app-owned file tracking, same-name conflict protection, and Storage Access Framework safety behavior.
 
-### Changed
+## Selection and cleanup improvements
 
-- Selecting or deselecting EQ profiles is now a library-management action only; it does not automatically export or delete files.
-- New-headphone preset selection is non-destructive and no longer warns that unselected default profiles will be removed.
-- Export now requires an explicit target-device choice and writes only that target format.
-- Cleanup actions are separated from ordinary selection and can optionally remove only ownership-tracked files created by EQ Library.
+- Adding a new headphone is now non-destructive: choosing only the presets you want no longer triggers a misleading warning that other default presets will be removed.
+- Editing a headphone's selected presets changes the saved selection without deleting previously exported files.
+- Destructive cleanup is now separate and explicit.
+- Individual saved presets can be removed independently.
+- Individual headphones can be removed independently, with an optional app-owned exported-file cleanup.
+- The entire saved headphone library can be cleared, with a separate option to also delete all ownership-tracked files created by EQ Library.
+- EQ Library never intentionally deletes unknown files that it does not own/track.
 
-### Validation
+## Device validation status
 
-- Android CI and CodeQL passed on the exact beta commit promoted to release.
-- The permanently signed beta candidate passed test/lint/release assembly, APK alignment, pinned signing-certificate fingerprint verification, and SHA-256 generation.
-- Hands-on testing passed for in-place upgrade, OPRA browsing/selection, revised selection behavior, device-targeted export, app-owned file cleanup, UAPP import, and TRN Black Pearl import.
-- DX5 II and DX1 II export formats remain implemented but hardware-untested.
+- **UAPP / ToneBoosters:** validated.
+- **TRN Black Pearl:** validated through the current file import/export workflow.
+- **Topping DX5 II:** exporter implemented; hardware validation pending.
+- **Topping DX1 II:** exporter implemented; hardware validation pending.
+
+## Install / upgrade
+
+Download the signed `EQ-Library-v0.2.0.apk` asset from this GitHub Release and install it on Android 8.0 / API 26 or newer.
+
+The application ID remains `com.weekssa.opraeqforuapp`, and this release uses the same pinned Android signing identity as v0.1.0, so an existing v0.1.0 installation can be upgraded in place without uninstalling or clearing app data.
+
+## Validation
+
+The v0.2.0 beta branch passed Android unit tests, lint, release assembly, CodeQL, APK alignment, signing-certificate fingerprint verification, and SHA-256 generation. The signed candidate was then hands-on tested for upgrade behavior, normal OPRA browsing/selection, the revised non-destructive selection flow, device-targeted export, app-owned file cleanup, UAPP export/import, and TRN Black Pearl export/import before promotion to the public release path.
+
+This release establishes the export and library-management foundation for the upcoming multi-source EQ catalog, community revision history, deduplication, provenance, and continuous discovery work.
 
 ## [0.1.0] - 2026-08-16
 
@@ -87,7 +104,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Runtime OPRA `database_v1.jsonl` download with full-candidate validation, last-known-good local cache, offline Browse/Search after first sync, manual Refresh, and approximately daily WorkManager checks.
 - Manufacturer → Model browsing and local manufacturer/model search without runtime GitHub scraping or bundled headphone data.
 - Room-backed managed-headphone state with exact selections, explicit exclusions, automatic future-profile inclusion, review state, retained removed profiles, generated XML, and app-owned export records.
-- Native Kotlin OPRA → UAPP/ToneBoosters conversion with golden/reference parity tests, deterministic XML, OPRA preamp/frequency/gain/Q preservation, supported `peak_dip` / `low_shelf` / `high_shelf` mappings, first-10 priority handling for ToneBoosters' 10-band limit, deterministic naming, and ISO-8859-1-safe exported XML/name handling while full Unicode metadata remains local.
+- Native Kotlin OPRA → UAPP/ToneBoosters conversion with golden/reference parity tests, deterministic XML, OPRA preamp/frequency/gain/Q preservation, supported `peak_dip` / `low_shelf` / `high_shelf` mappings, first-10 priority handling for ToneBoosters' 10-band limit, deterministic naming, and ISO-8859-1-safe exported XML/name handling while full Unicode metadata stays local.
 - Explicit **Not compatible** handling for unsupported or unsafe OPRA profiles; no silent approximation, clamping, dropping, or invented creator metadata.
 - `Creator information missing` handling for otherwise safely convertible profiles with missing OPRA creator data.
 - Deterministic reconciliation for new, changed, removed, and newly incompatible managed profiles, including retention of last-good generated state where required.
