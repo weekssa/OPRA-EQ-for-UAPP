@@ -122,7 +122,7 @@ jobs:
           unsigned_apk="app/build/outputs/apk/release/app-release-unsigned.apk"
           aligned_apk="$RUNNER_TEMP/opra-eq-release-aligned.apk"
           output_directory="dist"
-          output_apk="$output_directory/OPRA-EQ-for-UAPP-${RELEASE_TAG}.apk"
+          output_apk="$output_directory/EQ-Library-${RELEASE_TAG}.apk"
           build_tools="$ANDROID_HOME/build-tools/36.0.0"
 
           test -f "$unsigned_apk"
@@ -151,7 +151,7 @@ jobs:
       - name: Upload signed candidate artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: OPRA-EQ-for-UAPP-${{ inputs.tag }}-signed-${{ github.sha }}
+          name: EQ-Library-${{ inputs.tag }}-signed-${{ github.sha }}
           path: dist/
           if-no-files-found: error
           retention-days: 7
@@ -171,7 +171,7 @@ jobs:
       - name: Download verified signed artifact
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
-          name: OPRA-EQ-for-UAPP-${{ inputs.tag }}-signed-${{ github.sha }}
+          name: EQ-Library-${{ inputs.tag }}-signed-${{ github.sha }}
           path: dist
 
       - name: Confirm publication and ensure tag is new
@@ -202,7 +202,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          output_apk="dist/OPRA-EQ-for-UAPP-${RELEASE_TAG}.apk"
+          output_apk="dist/EQ-Library-${RELEASE_TAG}.apk"
           test -f "$output_apk"
           test -f "${output_apk}.sha256"
           gh release create "$RELEASE_TAG" \
@@ -211,5 +211,5 @@ jobs:
             "dist/apksigner-verification.txt" \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
-            --title "OPRA EQ for UAPP ${RELEASE_TAG}" \
+            --title "EQ Library ${RELEASE_TAG}" \
             --notes-file "docs/releases/${RELEASE_TAG}.md"
