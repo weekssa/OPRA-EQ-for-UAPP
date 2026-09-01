@@ -10,7 +10,7 @@ For current implementation-time decisions and execution order, also read:
 - `docs/V0.3_LOCKED_EXECUTION_PLAN.md`
 - `docs/V0.3_RELEASE_POLISH_PLAN.md`
 
-`docs/V0.3_RELEASE_POLISH_PLAN.md` controls the final PR #4 archive/visibility/import scope. `docs/V0.3_LOCKED_EXECUTION_PLAN.md` contains the earlier v0.3 product direction and supersedes older OPRA-only or export-target-visibility assumptions where they conflict. `docs/PHASE1_DECISIONS.md` records later approved refinements, including the 2026-08-31 zero-selection default, Add-triggered initial export, recovery-only Export UI, provider-resilient SAF ownership, and confirmed Black Pearl gain-adjustment/caution behavior.
+`docs/V0.3_RELEASE_POLISH_PLAN.md` controls the final PR #4 archive/visibility/import/new-EQ-review scope. `docs/V0.3_LOCKED_EXECUTION_PLAN.md` contains the earlier v0.3 product direction and supersedes older OPRA-only or export-target-visibility assumptions where they conflict. The final notification-only new-EQ behavior in the runbook/release-polish plan supersedes earlier automatic-future-selection wording in older planning text.
 
 ## Android baseline
 
@@ -24,7 +24,7 @@ The application is a single native Android module using Kotlin and Jetpack Compo
 - Android Gradle Plugin: 9.2.0
 - Kotlin / Compose compiler plugin: 2.3.21
 - Compose BOM: 2026.06.00
-- Room: durable app-owned saved-EQ/export state
+- Room: durable app-owned saved-EQ/export state, including the legacy per-headphone notification boolean field retained through the v0.3 migration boundary
 - Preferences DataStore: local appearance, active output, enabled outputs, global hidden canonical-profile IDs, export-tree, refresh/update presentation preferences
 - WorkManager: approximately daily catalog reconciliation backup
 - Storage Access Framework / DocumentFile: explicit user-folder export and app-owned file cleanup
@@ -46,11 +46,12 @@ Canonical source records are never rewritten to fit an output device. Preserve a
 `com.weekssa.opraeqforuapp.ui`
 
 - Compose screens, app shell, navigation, dialogs, accessibility semantics, appearance, update banners, active-output selector, EQ Library/My EQs/Settings interaction.
+- UI applies local hidden-lineage presentation and review-attention projections without deleting or mutating canonical/Room selection data.
 - UI must not parse source catalogs or implement device DSP conversion.
 
 `com.weekssa.opraeqforuapp.domain`
 
-- canonical EQ models, identity, compatibility/fidelity classification, selection/saved-state semantics, deterministic naming, target conversion, export planning, SemVer/update comparison.
+- canonical EQ models, identity, compatibility/fidelity classification, explicit selection semantics, notification/review semantics, saved-state semantics, deterministic naming, target conversion, export planning, SemVer/update comparison.
 - Critical rules remain unit-testable without Android framework dependencies.
 
 `com.weekssa.opraeqforuapp.data`
@@ -124,7 +125,7 @@ Verified/Unverified promotion is metadata-only when acoustic fingerprint is unch
 
 The canonical catalog is an append/preserve archive of genuine acoustic history, not a disposable mirror of whatever source pages are reachable today. Publication validates against the prior published catalog and rejects disappearance of an already-published canonical profile/revision or an in-place acoustic-fingerprint mutation of an archived revision. Source availability and URLs are provenance/lifecycle metadata; they do not delete archived acoustic data.
 
-Android keeps the complete validated catalog/cache. Global Hide/Unhide is a Preferences DataStore set of stable canonical profile-lineage IDs applied only when building ordinary browse/search projections. A hidden lineage therefore stays available to existing Room-backed My EQs records and export/Flash state and can be unhidden without redownload/reconstruction.
+Android keeps the complete validated catalog/cache. Global Hide/Unhide is a Preferences DataStore set of stable canonical profile-lineage IDs applied only when building ordinary browse/search and review-attention projections. A hidden lineage therefore stays available to existing Room-backed My EQs records and export/Flash state and can be unhidden without redownload/reconstruction. Hidden review suppression is presentation-only: it does not clear selection, remove the archived/source snapshot, delete output files, or change Favorite/Flash state.
 
 ## Community and source ingestion
 
@@ -191,7 +192,7 @@ Each profile is evaluated against the active output as:
 
 Changing output changes conversion/export/flash context and My EQs saved collection; it does not delete or hide canonical profiles.
 
-## My EQs and Add workflow
+## My EQs, explicit selection, new-EQ review, and Add workflow
 
 My EQs is output-specific and may contain different saved profiles for different outputs without duplicating canonical source data.
 
@@ -199,7 +200,11 @@ Android Back uses My EQs as the start destination: nested management/detail stat
 
 Saved content is grouped into Headphones and General EQs.
 
-For a newly managed headphone, no EQ profiles are selected by default and automatic future-profile inclusion starts OFF. The user explicitly chooses the EQs they want.
+For a never-managed headphone, **no EQ profiles are selected by default**. The user explicitly chooses the EQs they want. There is no automatic-future-selection behavior in the final v0.3 selection editor.
+
+Once a headphone is managed, **Notify me about new EQs** starts ON. This preference is attention-only and never changes the stored selection. Reconciliation creates newly discovered profiles as unselected. When notifications are enabled, eligible new profiles and materially changed selected tunings can be surfaced for review; new rows start unselected, Add selected adds only checked rows, Dismiss marks the batch reviewed without adding, and Back keeps it pending. Turning notifications off clears pending review attention without altering saved selections. The persisted/domain name `autoIncludeNewProfiles` remains a v0.3 compatibility artifact only; it must not drive automatic selection.
+
+Hidden canonical lineages are removed from review-attention projections while hidden. The underlying managed profile, selected state, archived source snapshot, export/currentness state, Favorite state, and Flash state remain untouched.
 
 `Add` is the normal completion action: save the active-output selection and immediately create/update the initial exported file for each selected exportable EQ. When the output requires SAF export and no retained folder exists yet, Add requests the folder once and then completes the initial export. Add never automatically flashes hardware.
 
@@ -289,7 +294,8 @@ Before hands-on v0.3 testing, validate at least:
 - active-output persistence/migration;
 - no active-output library hiding;
 - output-specific My EQs;
-- zero-selection/auto-include-off defaults;
+- zero-selection defaults with no silent future selection;
+- notification-only new-EQ reconciliation/review, including verified/unverified arrivals, Add selected/Dismiss/Back semantics, and hidden-lineage prompt suppression without state deletion;
 - Add-triggered initial export and recovery-only Export visibility;
 - removal of empty managed headphones;
 - export-state behavior, including provider-adjusted names, stable internal collisions, unowned-name fallback, tracked-URI updates, and cleanup safety;
