@@ -175,7 +175,7 @@ Black Pearl playback-gain handling uses the observed global-gain protocol docume
 - if the requested absolute gain is outside the validated representable device range, fail clearly rather than clamping;
 - record a successful gain write before later PEQ writes so a retry cannot accidentally stack the same attenuation after a later transfer failure.
 
-The Black Pearl's observed/recommended **per-filter gain** range of `-10 dB..+10 dB` is not treated as the same thing as the hard global-gain range. Because the PEQ packet stores band gain as a signed 16-bit 1/256 dB value, a finite source value outside ±10 dB that still fits that protocol field is preserved exactly for Black Pearl file export and may be Direct-Flashed only behind an explicit caution. The confirmation must identify the affected band/value, say that the exact value will be sent unchanged and not clamped, and provide **Cancel** / **Flash anyway**. Until physical hardware validation confirms the wider value, describe it as protocol-encodable but outside the currently validated Black Pearl filter-gain range. Unsupported filter types, non-finite/unencodable gain, and currently validated frequency/Q hard limits remain blocking. The global playback-gain representability range remains a hard limit.
+The Black Pearl's observed/recommended **per-filter gain** range of `-10 dB..+10 dB` is not treated as the same thing as the hard global-gain range. Because the PEQ packet stores band gain as a signed 16-bit 1/256 dB value, a finite source value outside ±10 dB that still fits that protocol field is preserved exactly for Black Pearl file export and may be Direct-Flashed only behind an explicit caution. The confirmation must identify the affected band/value, say that the exact value will be sent unchanged and not clamped, and provide **Cancel** / **Flash anyway**. The physical Pixel 9 / TRN Black Pearl test passed for the Edition XS Altruistic-Farmer275 `13,500 Hz / -11.9 dB / Q 4.0` case, including Cancel-without-write and Flash-anyway without app-side clamping. That one successful value does not establish every possible gain outside ±10 dB as validated, so the general caution remains. Unsupported filter types, non-finite/unencodable gain, and currently validated frequency/Q hard limits remain blocking. The global playback-gain representability range remains a hard limit.
 
 The Flash confirmation must disclose the listening-volume/playback-gain change when nonzero and combine it with any 10-band or out-of-validated-range caution that applies.
 
@@ -198,7 +198,7 @@ Treat the Python converter as behavioral reference and keep deterministic/golden
 - export/currentness/ownership, including provider-adjusted SAF names, stable same-name disambiguation, unowned-name collisions, exact-URI updates, and safe cleanup;
 - Black Pearl protocol encoding, active slot, filter mapping, playback-gain read/write, non-cumulative replacement, 0 dB restoration, transfer failure, hard out-of-range rejection, and protocol-encodable-but-outside-validated filter-gain cautions without clamping.
 
-Before a v0.3 hardware-test APK is handed to the user, the exact source head must pass:
+Before a hardware-test APK is handed to the user, the exact source head must pass:
 
 - Android unit tests;
 - Android lint;
@@ -209,16 +209,16 @@ Before a v0.3 hardware-test APK is handed to the user, the exact source head mus
 - CodeQL;
 - signed-beta workflow including pinned signing-certificate verification.
 
-Then use `docs/V0.3_HANDS_ON_CHECKLIST.md` on Pixel 9 / TRN Black Pearl. PR #3 stays draft and unmerged until the applicable hands-on checklist passes.
+The v0.3 signed candidate at `c70c523e1f530b8b197ebbccc41dfb4af1e27fc4` passed those gates and then passed `docs/V0.3_HANDS_ON_CHECKLIST.md` on Pixel 9 / TRN Black Pearl on 2026-08-31. PR #3 was subsequently fast-forward merged to `main`, preserving that tested commit as the merge commit. Release-preparation documentation or catalog-only automation may advance `main`; any final public-release source head still must pass the release workflow before publication. Code/DSP/device-behavior changes after the hardware-tested candidate require renewed hands-on validation as appropriate.
 
-The most important Black Pearl hardware checks are:
+The most important Black Pearl hardware checks that passed include:
 
 - real playback gain changes by the disclosed amount for a negative-preamp/headroom profile;
 - a second Flash replaces rather than accumulates the prior EQ Library adjustment;
 - a 0 dB Flash removes the prior EQ Library attenuation;
-- Peak/Low Shelf/High Shelf and active-slot behavior remain correct;
-- a protocol-encodable source band outside the previously validated ±10 dB range shows the caution, can be cancelled without writing, and after **Flash anyway** is verified on the physical DAC without silent clamping;
-- unrelated DAC settings remain unchanged.
+- Peak/Low Shelf/High Shelf and active-slot behavior;
+- the `-11.9 dB` Edition XS case showing the caution, cancelling without a write, and then flashing without app-side clamping;
+- unrelated DAC settings remaining unchanged.
 
 ## 8. Releases, signing, updates, and changelog
 
@@ -252,13 +252,13 @@ For substantive work:
 6. Do not reinterpret old Phase 0 text as overriding later approved v0.3 behavior.
 7. Make focused changes and validate them without weakening checks.
 8. After changes, state exactly what changed and whether validation passed.
-9. Keep PR #3 draft/unmerged until the signed candidate passes hands-on validation.
+9. Keep hardware-gated feature PRs unmerged until the applicable signed candidate passes hands-on validation; PR #3 satisfied that gate before its v0.3 merge.
 10. Update this runbook and the relevant detailed decision/architecture documents whenever the maintained source of truth changes.
 
 ## 11. Current v0.3 status
 
-v0.3 implementation is active on PR #3 / branch `eq-library-community-v0.3`.
+The v0.3 implementation from PR #3 has been fast-forward merged to `main` after the exact signed candidate `c70c523e1f530b8b197ebbccc41dfb4af1e27fc4` passed the Pixel 9 / TRN Black Pearl hands-on checklist on 2026-08-31.
 
-The current approved behavior includes output-specific My EQs, canonical multi-source EQ handling, zero-selected/auto-OFF new-headphone defaults, Add/Save-triggered initial export with recovery-only Export actions, SAF export ownership anchored to the actual app-created document URI rather than exact provider filename spelling, and Black Pearl Direct Flash with non-cumulative playback-gain adjustment plus explicit caution for protocol-encodable per-band gains outside the currently validated ±10 dB range.
+The approved behavior includes output-specific My EQs, canonical multi-source EQ handling, zero-selected/auto-OFF new-headphone defaults, Add/Save-triggered initial export with recovery-only Export actions, SAF export ownership anchored to the actual app-created document URI rather than exact provider filename spelling, and Black Pearl Direct Flash with non-cumulative playback-gain adjustment plus explicit caution for protocol-encodable per-band gains outside the generally validated ±10 dB range. The specific Edition XS `-11.9 dB` test case passed physical hardware validation, but the caution remains for the broader outside-±10 range.
 
-Automated validation and signed-beta generation must be rerun on the exact final source head after any additional source/documentation correction. The PR must remain draft and unmerged until the Pixel 9 / Black Pearl hands-on gate passes.
+v0.3.0 is in GitHub release preparation. `docs/releases/v0.3.0.md` and the dated changelog are prepared. The final release head may contain documentation or catalog-only commits after the hardware-tested merge; it must pass the signed release workflow and pinned-signing verification before public publication. Any subsequent code/DSP/device-behavior change requires renewed validation rather than inheriting the prior hardware pass automatically.
