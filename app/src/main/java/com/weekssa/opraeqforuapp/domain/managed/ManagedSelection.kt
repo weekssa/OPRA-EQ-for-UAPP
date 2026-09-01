@@ -95,3 +95,22 @@ fun ManagedHeadphoneRecord.reviewableUpdatedEqProfiles(
         !profile.noLongerAvailable &&
         profile.lastKnownProfile.canonicalProfileId !in hiddenCanonicalProfileIds
 }
+
+/**
+ * UI-only projection used by My EQs. Hidden canonical lineages remain fully present and selected,
+ * but their pending-review flags are suppressed so a deliberate Hide choice cannot generate a nag.
+ */
+fun ManagedHeadphoneRecord.withHiddenReviewPromptsSuppressed(
+    hiddenCanonicalProfileIds: Set<String>,
+): ManagedHeadphoneRecord {
+    if (hiddenCanonicalProfileIds.isEmpty()) return this
+    return copy(
+        profiles = profiles.map { profile ->
+            if (profile.lastKnownProfile.canonicalProfileId in hiddenCanonicalProfileIds) {
+                profile.copy(isNewUnreviewed = false, isUpdatedUnreviewed = false)
+            } else {
+                profile
+            }
+        },
+    )
+}
