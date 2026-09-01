@@ -114,6 +114,32 @@ class ManagedSelectionTest {
         )
     }
 
+    @Test
+    fun hiddenReviewProjectionSuppressesNagWithoutChangingSelectionOrStoredProfile() {
+        val hiddenProfile = managedProfile(
+            profile = compatibleProfile("hidden-selected").copy(canonicalProfileId = "lineage-hidden"),
+            selected = true,
+            isNewUnreviewed = true,
+            isUpdatedUnreviewed = true,
+        )
+        val visibleProfile = managedProfile(
+            profile = compatibleProfile("visible-new").copy(canonicalProfileId = "lineage-visible"),
+            selected = false,
+            isNewUnreviewed = true,
+        )
+        val headphone = managedHeadphone(listOf(hiddenProfile, visibleProfile))
+
+        val projected = headphone.withHiddenReviewPromptsSuppressed(setOf("lineage-hidden"))
+        val projectedHidden = projected.profiles.first { it.profileId == "hidden-selected" }
+        val projectedVisible = projected.profiles.first { it.profileId == "visible-new" }
+
+        assertTrue(projectedHidden.selected)
+        assertFalse(projectedHidden.isNewUnreviewed)
+        assertFalse(projectedHidden.isUpdatedUnreviewed)
+        assertEquals(hiddenProfile.lastKnownProfile, projectedHidden.lastKnownProfile)
+        assertTrue(projectedVisible.isNewUnreviewed)
+    }
+
     private fun managedHeadphone(profiles: List<ManagedProfileRecord>) = ManagedHeadphoneRecord(
         productId = "product",
         vendorId = "vendor",
