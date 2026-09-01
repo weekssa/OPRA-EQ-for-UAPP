@@ -133,19 +133,74 @@ fun buildEqLibraryExportPlan(
     return finalizePlan(candidates)
 }
 
+/**
+ * Human-readable names remain the preferred export names. If two app-managed presets would resolve
+ * to the same name in the same directory, disambiguate them up front with a stable identity suffix
+ * rather than turning the collision into a permanent recovery conflict.
+ */
 private fun finalizePlan(candidates: List<PresetExportCandidate>): PresetExportPlan {
-    val duplicates = candidates
+    val finalized = candidates
         .groupBy { it.relativeDirectory to it.fileName }
         .values
-        .filter { it.size > 1 }
-        .flatten()
-        .toSet()
+        .flatMap { group ->
+            if (group.size == 1) {
+                group
+            } else {
+                group.map { candidate ->
+                    candidate.copy(
+                        fileName = disambiguatedExportFileName(
+                            candidate.fileName,
+                            stableExportId(candidate.productId, candidate.profileId),
+                        ),
+                    )
+                }
+            }
+        }
+        .sortedWith(compareBy({ it.relativeDirectory }, { it.fileName }, { it.profileId }))
+
+    // A SHA-derived suffix makes a second collision extraordinarily unlikely. Use the full stable
+    // identity hash if one nevertheless occurs so the plan never leaves an internal naming conflict
+    // for the user to retry forever.
+    val secondPass = finalized
+        .groupBy { it.relativeDirectory to it.fileName }
+        .values
+        .flatMap { group ->
+            if (group.size == 1) {
+                group
+            } else {
+                group.map { candidate ->
+                    candidate.copy(
+                        fileName = disambiguatedExportFileName(
+                            candidate.fileName,
+                            stableExportIdentityHash(candidate.productId, candidate.profileId),
+                        ),
+                    )
+                }
+            }
+        }
+        .sortedWith(compareBy({ it.relativeDirectory }, { it.fileName }, { it.profileId }))
 
     return PresetExportPlan(
-        candidates = candidates.filterNot(duplicates::contains),
-        duplicateConflicts = duplicates.sortedWith(compareBy({ it.relativeDirectory }, { it.fileName }, { it.profileId })),
+        candidates = secondPass,
+        duplicateConflicts = emptyList(),
     )
 }
+
+internal fun stableExportId(productId: String, profileId: String): String =
+    stableExportIdentityHash(productId, profileId).take(STABLE_EXPORT_ID_LENGTH)
+
+internal fun disambiguatedExportFileName(fileName: String, stableId: String): String {
+    require(stableId.isNotBlank()) { "Stable export ID must not be blank." }
+    val dot = fileName.lastIndexOf('.')
+    return if (dot > 0 && dot < fileName.lastIndex) {
+        "${fileName.substring(0, dot)} [$stableId]${fileName.substring(dot)}"
+    } else {
+        "$fileName [$stableId]"
+    }
+}
+
+private fun stableExportIdentityHash(productId: String, profileId: String): String =
+    sha256("$productId\u0000$profileId".toByteArray(Charsets.UTF_8))
 
 fun presetBytes(candidate: PresetExportCandidate): ByteArray =
     candidate.xml.toByteArray(Charset.forName(candidate.charsetName))
@@ -164,3 +219,5 @@ private fun sha256(bytes: ByteArray): String =
     MessageDigest.getInstance("SHA-256")
         .digest(bytes)
         .joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
+
+private const val STABLE_EXPORT_ID_LENGTH = 12
