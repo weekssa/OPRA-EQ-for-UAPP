@@ -14,7 +14,7 @@ class ManagedCatalogReconcilerTest {
     private val codec = ManagedProfileSnapshotCodec()
 
     @Test
-    fun newProfilesAutoIncludeUsableSourcesEvenWhenUappCannotRepresentOne() {
+    fun newProfilesBecomeReviewableWithoutSilentSelectionWhenNotificationsAreOn() {
         val uappCompatible = compatibleProfile("new-compatible")
         val uappUnsupportedButUsable = compatibleProfile("new-uapp-unsupported").copy(
             bands = listOf(OpraBand("low_pass", 1_000.0, 0.0, 1.0, 12.0)),
@@ -30,13 +30,11 @@ class ManagedCatalogReconcilerTest {
             snapshotCodec = codec,
         )
 
-        val compatibleResult = result.profiles.first { it.profileId == uappCompatible.id }
-        val unsupportedResult = result.profiles.first { it.profileId == uappUnsupportedButUsable.id }
-        assertTrue(compatibleResult.selected)
-        assertNotNull(compatibleResult.generatedXml)
-        assertTrue(unsupportedResult.selected)
-        assertNotNull(unsupportedResult.generatedPresetName)
-        assertNull(unsupportedResult.generatedXml)
+        result.profiles.forEach { profile ->
+            assertFalse(profile.selected)
+            assertTrue(profile.isNewUnreviewed)
+            assertNull(profile.generatedXml)
+        }
         assertEquals(2, result.changes.newProfileCount)
     }
 
@@ -62,7 +60,7 @@ class ManagedCatalogReconcilerTest {
     }
 
     @Test
-    fun verificationPromotionAutoSelectsPreviouslyUnselectedProfileWhenAutoIncludeIsOn() {
+    fun verificationPromotionNeverSilentlySelectsPreviouslyUnselectedProfile() {
         val unverified = compatibleProfile("community").copy(isVerified = false)
         val existing = existingEntity(unverified, selected = false, generatedXml = null)
         val verified = unverified.copy(isVerified = true)
@@ -78,9 +76,8 @@ class ManagedCatalogReconcilerTest {
         )
 
         val reconciled = result.profiles.single()
-        assertTrue(reconciled.selected)
-        assertNotNull(reconciled.generatedXml)
-        assertEquals(codec.fingerprint(unverified), codec.fingerprint(verified))
+        assertFalse(reconciled.selected)
+        assertNull(reconciled.generatedXml)
         assertEquals(0, result.changes.updatedSelectedProfileCount)
     }
 

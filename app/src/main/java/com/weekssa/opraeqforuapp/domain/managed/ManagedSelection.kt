@@ -4,7 +4,15 @@ import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.isHistoricalRevision
 import com.weekssa.opraeqforuapp.domain.catalog.isUsableParametricSource
 
-const val DEFAULT_AUTO_INCLUDE_NEW_PROFILES = false
+/** New managed headphones notify about newly discovered EQs by default. */
+const val DEFAULT_NOTIFY_NEW_PROFILES = true
+
+/**
+ * Legacy source/storage name retained through v0.3 migrations. It no longer means silent
+ * selection; it is the per-headphone "Notify me about new EQs" preference.
+ */
+@Deprecated("Use DEFAULT_NOTIFY_NEW_PROFILES")
+const val DEFAULT_AUTO_INCLUDE_NEW_PROFILES = DEFAULT_NOTIFY_NEW_PROFILES
 
 data class StoredProfileSelection(
     val selected: Boolean,
@@ -18,20 +26,11 @@ data class ManagedHeadphoneSelection(
 ) {
     fun isSelected(profile: OpraEqProfile): Boolean {
         if (!profile.isUsableParametricSource()) return false
-        val stored = profileSelections[profile.id]
-        return stored?.selected ?: (
-            autoIncludeNewProfiles &&
-                profile.isVerified &&
-                !profile.isHistoricalRevision()
-            )
+        return profileSelections[profile.id]?.selected == true
     }
 }
 
-/**
- * A never-managed headphone starts empty. EQ Library is intentionally selective: the user chooses
- * the current profiles they want, and automatic future-profile inclusion starts OFF. Output
- * capability is deliberately not a selection gate.
- */
+/** A never-managed headphone starts with an explicit empty selection. */
 fun defaultStagedSelectedProfileIds(@Suppress("UNUSED_PARAMETER") profiles: List<OpraEqProfile>): Set<String> =
     emptySet()
 
@@ -39,18 +38,17 @@ fun managedSelectionCommitEnabled(
     isManaged: Boolean,
     stagedSelectedProfileIds: Set<String>,
     baselineSelectedProfileIds: Set<String>,
-    autoIncludeNewProfiles: Boolean,
-    baselineAutoIncludeNewProfiles: Boolean,
+    @Suppress("UNUSED_PARAMETER") autoIncludeNewProfiles: Boolean,
+    @Suppress("UNUSED_PARAMETER") baselineAutoIncludeNewProfiles: Boolean,
 ): Boolean {
     if (!isManaged) return stagedSelectedProfileIds.isNotEmpty()
-    return stagedSelectedProfileIds != baselineSelectedProfileIds ||
-        autoIncludeNewProfiles != baselineAutoIncludeNewProfiles
+    return stagedSelectedProfileIds != baselineSelectedProfileIds
 }
 
 fun selectionUpdatesForSave(
     profiles: List<OpraEqProfile>,
     stagedSelectedProfileIds: Set<String>,
-    autoIncludeNewProfiles: Boolean,
+    @Suppress("UNUSED_PARAMETER") autoIncludeNewProfiles: Boolean,
 ): Map<String, StoredProfileSelection> {
     val profileById = profiles.associateBy(OpraEqProfile::id)
     val invalidSelectedIds = stagedSelectedProfileIds.filter { profileId ->
@@ -62,18 +60,10 @@ fun selectionUpdatesForSave(
     }
 
     return profiles.associate { profile ->
-        val selectable = profile.isUsableParametricSource()
-        val selected = selectable && profile.id in stagedSelectedProfileIds
+        val selected = profile.isUsableParametricSource() && profile.id in stagedSelectedProfileIds
         profile.id to StoredProfileSelection(
             selected = selected,
-            // An Unverified profile is already suppressed from silent inclusion by trust state.
-            // Leaving it unchecked must not become a permanent explicit exclusion merely because
-            // the user saved the headphone before that profile was independently verified.
-            explicitlyExcluded = selectable &&
-                profile.isVerified &&
-                autoIncludeNewProfiles &&
-                !profile.isHistoricalRevision() &&
-                !selected,
+            explicitlyExcluded = false,
         )
     }
 }

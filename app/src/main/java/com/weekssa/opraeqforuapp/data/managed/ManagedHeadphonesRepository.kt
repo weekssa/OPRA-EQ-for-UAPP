@@ -21,8 +21,8 @@ class ManagedHeadphonesRepository(
 
     /**
      * Returns only the headphones saved for one output context. Canonical/local source snapshots
-     * remain shared, while selected/excluded flags and automatic-new-profile policy are projected
-     * from the output-scoped tables.
+     * remain shared, while selected flags are projected from the output-scoped tables. The legacy
+     * autoIncludeNewProfiles field is the headphone-level new-EQ review preference.
      */
     fun observeHeadphones(outputId: String = DEFAULT_OUTPUT_ID): Flow<List<ManagedHeadphoneRecord>> =
         combine(
@@ -127,9 +127,9 @@ class ManagedHeadphonesRepository(
                     vendorId = vendor.id,
                     vendorName = vendor.name,
                     productName = product.name,
-                    // Legacy/shared field is retained for migration compatibility only. OR keeps it
-                    // conservative while output-specific rows are the actual source of truth.
-                    autoIncludeNewProfiles = (existingHeadphone?.autoIncludeNewProfiles ?: false) || autoIncludeNewProfiles,
+                    // Legacy column name retained for migration compatibility. It now stores the
+                    // headphone-level "Notify me about new EQs" preference.
+                    autoIncludeNewProfiles = autoIncludeNewProfiles,
                     createdAtMillis = existingHeadphone?.createdAtMillis ?: now,
                     updatedAtMillis = now,
                 ),
@@ -203,8 +203,8 @@ class ManagedHeadphonesRepository(
                     productName = product?.name ?: headphone.productName,
                     currentProfiles = currentProfiles,
                     existingProfiles = dao.getProfiles(headphone.productId),
-                    // Shared state only tracks the union. Output-scoped policy is reconciled below.
-                    autoIncludeNewProfiles = false,
+                    // Legacy parameter name: controls whether new/changed profiles become review items.
+                    autoIncludeNewProfiles = headphone.autoIncludeNewProfiles,
                     nowMillis = now,
                     snapshotCodec = snapshotCodec,
                 )
@@ -243,23 +243,13 @@ class ManagedHeadphonesRepository(
             .associateBy(OutputManagedProfileEntity::profileId)
         val updates = currentProfiles.map { profile ->
             val existing = existingById[profile.id]
-            val sourceUsable = profile.isUsableParametricSource()
-            val selected = when {
-                !sourceUsable -> false
-                existing?.selected == true -> true
-                existing == null -> output.autoIncludeNewProfiles && profile.isVerified && !profile.isHistoricalRevision()
-                output.autoIncludeNewProfiles &&
-                    profile.isVerified &&
-                    !existing.explicitlyExcluded &&
-                    !profile.isHistoricalRevision() -> true
-                else -> false
-            }
+            val selected = profile.isUsableParametricSource() && existing?.selected == true
             OutputManagedProfileEntity(
                 outputId = output.outputId,
                 productId = output.productId,
                 profileId = profile.id,
                 selected = selected,
-                explicitlyExcluded = existing?.explicitlyExcluded ?: false,
+                explicitlyExcluded = false,
             )
         }
         if (updates.isNotEmpty()) dao.upsertOutputProfiles(updates)
@@ -401,7 +391,7 @@ private fun ManagedHeadphoneEntity.toDomain(
     vendorId = vendorId,
     vendorName = vendorName,
     productName = productName,
-    autoIncludeNewProfiles = output.autoIncludeNewProfiles,
+    autoIncludeNewProfiles = autoIncludeNewProfiles,
     createdAtMillis = output.createdAtMillis,
     updatedAtMillis = output.updatedAtMillis,
     profiles = profiles.map { profile ->

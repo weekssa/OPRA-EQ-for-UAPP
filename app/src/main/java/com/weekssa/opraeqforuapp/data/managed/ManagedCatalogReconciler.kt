@@ -82,15 +82,8 @@ internal fun reconcileManagedProfiles(
 
         if (existing == null) {
             newCount += 1
-            val selected = autoIncludeNewProfiles &&
-                sourceUsable &&
-                profile.isVerified &&
-                !profile.isHistoricalRevision()
-            val generated = if (selected) {
-                generateManagedPreset(productName, profile, fingerprint, nowMillis)
-            } else {
-                null
-            }
+            val selected = false
+            val generated = null
             ManagedProfileEntity(
                 profileId = profile.id,
                 productId = productId,
@@ -100,7 +93,7 @@ internal fun reconcileManagedProfiles(
                 fingerprint = fingerprint,
                 firstSeenAtMillis = nowMillis,
                 lastSeenAtMillis = nowMillis,
-                isNewUnreviewed = true,
+                isNewUnreviewed = autoIncludeNewProfiles,
                 isUpdatedUnreviewed = false,
                 noLongerAvailable = false,
                 generatedPresetName = generated?.presetName,
@@ -135,11 +128,6 @@ internal fun reconcileManagedProfiles(
             val selected = when {
                 becameUnusable -> false
                 selectedBeforeMigration -> true
-                becameVerified &&
-                    autoIncludeNewProfiles &&
-                    sourceUsable &&
-                    !explicitlyExcludedBeforeMigration &&
-                    !profile.isHistoricalRevision() -> true
                 else -> false
             }
 
@@ -175,7 +163,8 @@ internal fun reconcileManagedProfiles(
                 isUpdatedUnreviewed = if (migrated) {
                     acousticAliases.any { it.isUpdatedUnreviewed }
                 } else {
-                    existing.isUpdatedUnreviewed || (changed && selectedBeforeMigration)
+                    existing.isUpdatedUnreviewed ||
+                        (autoIncludeNewProfiles && changed && selectedBeforeMigration)
                 },
                 noLongerAvailable = false,
                 generatedPresetName = generated?.presetName ?: existing.generatedPresetName,

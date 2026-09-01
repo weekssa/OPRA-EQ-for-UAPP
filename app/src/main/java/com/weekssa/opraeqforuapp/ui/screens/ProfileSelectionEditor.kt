@@ -27,7 +27,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -161,8 +160,7 @@ internal fun ProfileSelectionEditor(
         initialized = true
     }
 
-    val dirty = initialized &&
-        (stagedSelectedIds != baselineSelectedIds || autoInclude != baselineAutoInclude)
+    val dirty = initialized && stagedSelectedIds != baselineSelectedIds
     val commitEnabled = initialized && managedSelectionCommitEnabled(
         isManaged = managedRecord != null,
         stagedSelectedProfileIds = stagedSelectedIds,
@@ -376,23 +374,8 @@ internal fun ProfileSelectionEditor(
             }
         }
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 2.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(
-                text = "Automatically include new EQs",
-                modifier = Modifier.weight(1f).padding(end = 12.dp),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            Switch(checked = autoInclude, onCheckedChange = { autoInclude = it })
-        }
-
         Text(
-            text = "New headphones start with no EQs selected. Unverified EQs are never added automatically. Output compatibility never hides or silently removes a saved source curve.",
+            text = "New headphones start with no EQs selected. New profiles always appear in EQ Library; saved selections change only when you choose them. My EQs can notify you when new verified or unverified profiles arrive.",
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,

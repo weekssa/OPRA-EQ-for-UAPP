@@ -218,13 +218,22 @@ fun MyEqsHomeScreen(
                         ListItem(
                             headlineContent = { Text(headphone.productName) },
                             supportingContent = {
-                                Text(
-                                    if (pendingCount > 0) {
-                                        "${headphone.selectedProfileCount} selected · $pendingCount ${if (pendingCount == 1) "preset needs" else "presets need"} export"
-                                    } else {
-                                        "${headphone.selectedProfileCount} selected profiles"
-                                    },
-                                )
+                                Column {
+                                    Text(
+                                        if (pendingCount > 0) {
+                                            "${headphone.selectedProfileCount} selected · $pendingCount ${if (pendingCount == 1) "preset needs" else "presets need"} export"
+                                        } else {
+                                            "${headphone.selectedProfileCount} selected profiles"
+                                        },
+                                    )
+                                    newEqAttentionText(headphone)?.let { attention ->
+                                        Text(
+                                            attention,
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.tertiary,
+                                        )
+                                    }
+                                }
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -364,6 +373,18 @@ fun MyEqsHomeScreen(
             }
         }
     }
+}
+
+private fun newEqAttentionText(headphone: ManagedHeadphoneRecord): String? {
+    if (!headphone.autoIncludeNewProfiles) return null
+    val newCount = headphone.profiles.count { it.isNewUnreviewed && !it.noLongerAvailable }
+    val updatedCount = headphone.profiles.count {
+        it.isUpdatedUnreviewed && !it.noLongerAvailable && !it.isNewUnreviewed
+    }
+    return buildList {
+        if (newCount > 0) add("$newCount new ${if (newCount == 1) "EQ" else "EQs"}")
+        if (updatedCount > 0) add("$updatedCount ${if (updatedCount == 1) "EQ updated" else "EQs updated"}")
+    }.takeIf { it.isNotEmpty() }?.joinToString(" · ")
 }
 
 @Composable

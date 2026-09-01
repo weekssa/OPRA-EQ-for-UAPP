@@ -22,9 +22,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.Switch
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -80,6 +80,7 @@ fun ManagedHeadphoneDetailScreen(
     modifier: Modifier = Modifier,
 ) {
     var editing by remember(headphone.productId) { mutableStateOf(false) }
+    var reviewingNewEqs by remember(headphone.productId) { mutableStateOf(false) }
     val readyCatalog = catalogState as? CatalogState.Ready
     val product = readyCatalog?.catalog?.product(headphone.productId)
     val availableProfileCount = readyCatalog?.catalog?.profileCount(headphone.productId)
@@ -92,8 +93,35 @@ fun ManagedHeadphoneDetailScreen(
         directBlackPearlFlashEnabled &&
         blackPearlConnectionState is BlackPearlConnectionState.Connected
 
-    LaunchedEffect(headphone.productId) {
-        onMarkReviewed(headphone.productId)
+    val pendingNewCount = headphone.profiles.count { it.isNewUnreviewed && !it.noLongerAvailable }
+    val pendingUpdatedCount = headphone.profiles.count {
+        it.isUpdatedUnreviewed && !it.noLongerAvailable && !it.isNewUnreviewed
+    }
+
+    if (reviewingNewEqs) {
+        NewEqReviewScreen(
+            headphone = headphone,
+            activeOutput = activeOutput,
+            onAddSelected = { selectedNewIds ->
+                val selectedIds = headphone.profiles
+                    .filter(ManagedProfileRecord::selected)
+                    .mapTo(mutableSetOf(), ManagedProfileRecord::profileId) + selectedNewIds
+                onSaveSelection(headphone.productId, selectedIds, headphone.autoIncludeNewProfiles)
+                onMarkReviewed(headphone.productId)
+                if (selectedNewIds.isNotEmpty()) onExportProduct(headphone.productId)
+                reviewingNewEqs = false
+                onMessage("New EQ review completed.")
+            },
+            onDismissBatch = {
+                onMarkReviewed(headphone.productId)
+                reviewingNewEqs = false
+                onMessage("New EQs marked reviewed. They remain available in EQ Library.")
+            },
+            onOpenUrl = onOpenUrl,
+            onBack = { reviewingNewEqs = false },
+            modifier = modifier,
+        )
+        return
     }
 
     if (editing && readyCatalog != null && product != null) {
@@ -230,15 +258,48 @@ fun ManagedHeadphoneDetailScreen(
             },
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         )
-        Text(
-            text = if (headphone.autoIncludeNewProfiles) {
-                "Automatically include new verified EQ profiles: On"
-            } else {
-                "Automatically include new verified EQ profiles: Off"
-            },
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-            style = MaterialTheme.typography.bodyMedium,
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                Text("Notify me about new EQs", style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    "Show an in-app review when new verified or unverified EQs, or a changed selected tuning, arrive for this headphone.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Switch(
+                checked = headphone.autoIncludeNewProfiles,
+                onCheckedChange = { enabled ->
+                    scope.launch {
+                        val selectedIds = headphone.profiles
+                            .filter(ManagedProfileRecord::selected)
+                            .mapTo(mutableSetOf(), ManagedProfileRecord::profileId)
+                        onSaveSelection(headphone.productId, selectedIds, enabled)
+                        if (!enabled) onMarkReviewed(headphone.productId)
+                        onMessage(
+                            if (enabled) "New-EQ reviews enabled for ${headphone.productName}."
+                            else "New-EQ reviews disabled for ${headphone.productName}.",
+                        )
+                    }
+                },
+            )
+        }
+        if (headphone.autoIncludeNewProfiles && (pendingNewCount > 0 || pendingUpdatedCount > 0)) {
+            Button(
+                onClick = { reviewingNewEqs = true },
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            ) {
+                Text(
+                    buildList {
+                        if (pendingNewCount > 0) add("$pendingNewCount new")
+                        if (pendingUpdatedCount > 0) add("$pendingUpdatedCount updated")
+                    }.joinToString(" · ") + " — Review",
+                )
+            }
+        }
         if (isBlackPearlOutput) {
             BlackPearlConnectionControl(
                 enabled = directBlackPearlFlashEnabled,
@@ -361,7 +422,6 @@ private fun ManagedProfileRow(
                 when {
                     profile.noLongerAvailable -> Text("No longer available in EQ Library")
                     profile.selected -> Text("Selected")
-                    profile.explicitlyExcluded -> Text("Not selected · excluded from automatic inclusion")
                     else -> Text("Not selected")
                 }
                 Text(
