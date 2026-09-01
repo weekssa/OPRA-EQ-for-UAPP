@@ -9,7 +9,7 @@ For current implementation-time decisions and execution order, also read:
 - `docs/AUTONOMOUS_V0.3_PLAN.md`
 - `docs/V0.3_LOCKED_EXECUTION_PLAN.md`
 
-`docs/V0.3_LOCKED_EXECUTION_PLAN.md` contains the latest approved v0.3 product direction and supersedes older OPRA-only or export-target-visibility assumptions where they conflict. `docs/PHASE1_DECISIONS.md` records later approved refinements, including the 2026-08-31 zero-selection default, Add-triggered initial export, recovery-only Export UI, and confirmed Black Pearl gain-adjustment behavior.
+`docs/V0.3_LOCKED_EXECUTION_PLAN.md` contains the latest approved v0.3 product direction and supersedes older OPRA-only or export-target-visibility assumptions where they conflict. `docs/PHASE1_DECISIONS.md` records later approved refinements, including the 2026-08-31 zero-selection default, Add-triggered initial export, recovery-only Export UI, provider-resilient SAF ownership, and confirmed Black Pearl gain-adjustment/caution behavior.
 
 ## Android baseline
 
@@ -219,6 +219,8 @@ Direct Flash may adjust global playback gain when that is required to faithfully
 
 The Flash sequence must read current hardware gain, replace any prior EQ Library-applied attenuation rather than accumulating it, apply the required new attenuation only when representable, write/pad the EQ bands, latch, and persist. Confirmation must disclose the required playback-gain adjustment. Fail rather than silently clamp an unrepresentable gain. Do not change DAC reconstruction filter, gain mode, amplifier topology, balance, microphone controls, or other unrelated settings.
 
+The reference applications' approximately `-10 dB..+10 dB` **per-filter gain range** is maintained as the currently validated/recommended Black Pearl range, not misclassified as the signed packet's encoding limit. A finite band gain outside ±10 dB that still fits the signed 1/256 dB protocol field remains source-preserving/Exact at the conversion boundary and may be flashed only after a caution that identifies the affected value and requires **Flash anyway**. No clamp or target-specific acoustic mutation is allowed. Frequency/Q limits, unsupported filter types, non-finite or wire-unencodable gain, and absolute global playback-gain limits remain hard failures until independently validated evidence changes them.
+
 Hardware-independent packet/conversion behavior must be unit-tested; final USB/flash behavior remains a hands-on validation checkpoint.
 
 ## Export architecture
@@ -229,12 +231,20 @@ Export remains explicit at the storage-permission boundary and automatic after A
 - first needed folder export uses the system picker and persisted supported directory access;
 - Add completes the initial export after folder access is available;
 - no broad storage permission or writes into another app's private storage;
-- app-created file ownership is tracked;
-- unknown same-name external files are conflicts and are not silently overwritten/renamed;
+- preferred human-readable deterministic filenames are generated in the domain layer;
+- stable export identity is output/path + product/profile identity, not exact provider filename spelling;
+- the data layer records the exact new SAF document URI returned by the provider, the provider-returned actual display name, generated fingerprint, and content hash;
+- provider normalization/extension changes on a newly created document are accepted and tracked rather than causing the successful file to be deleted;
+- internal same-name candidates receive stable identity-derived suffixes before export;
+- an unknown same-name external file is never overwritten or deleted; EQ Library requests a stable disambiguated fallback name and tracks the new URI the provider creates;
+- if a provider ever returns the exact URI of a pre-existing unowned file instead of creating a new child, treat that as unsafe provider behavior and do not write;
+- app-owned files are updated by their tracked URI even if their physical display name differs from the current preferred candidate name;
 - app-owned files may be updated during Add or later explicit recovery Export;
 - per-file failures do not roll back independent successes or local My EQs membership;
-- optional cleanup deletes only app-owned tracked files;
+- optional cleanup deletes only app-owned tracked files, with the exact tracked URI as the primary identity;
 - Export controls are hidden while expected files are present/current and surface only for recovery/currentness needs.
+
+Existing app-owned files are not renamed merely because naming logic changes. Their tracked URI remains authoritative while they exist.
 
 Black Pearl Flash remains independent of file Export.
 
@@ -263,10 +273,10 @@ Before hands-on v0.3 testing, validate at least:
 - zero-selection/auto-include-off defaults;
 - Add-triggered initial export and recovery-only Export visibility;
 - removal of empty managed headphones;
-- export-state behavior;
+- export-state behavior, including provider-adjusted names, stable internal collisions, unowned-name fallback, tracked-URI updates, and cleanup safety;
 - launch/resume due/not-due/offline refresh;
 - UAPP regression/parity;
-- Black Pearl target conversion, exact global-gain adjustment, replacement-not-cumulative attenuation, and hardware-independent USB protocol behavior;
+- Black Pearl target conversion, exact global-gain adjustment, replacement-not-cumulative attenuation, protocol-encodable out-of-validated-range filter-gain caution/no-clamp behavior, and hardware-independent USB protocol behavior;
 - Room/DataStore migration from installed release state;
 - signed candidate upgrade integrity.
 
