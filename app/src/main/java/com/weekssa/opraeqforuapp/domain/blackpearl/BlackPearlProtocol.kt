@@ -23,6 +23,10 @@ object BlackPearlProtocol {
     const val GLOBAL_GAIN_MAX_RAW: Int = 6440
     const val GLOBAL_GAIN_RAW_PER_DB: Int = 256
 
+    /** Range corroborated by the reference applications and validated by EQ Library so far. */
+    const val VALIDATED_BAND_GAIN_MIN_DB: Double = -10.0
+    const val VALIDATED_BAND_GAIN_MAX_DB: Double = 10.0
+
     private const val REPORT_ID: Int = 0x4B
     private const val WRITE: Int = 0x01
     private const val READ: Int = 0x80
@@ -35,6 +39,7 @@ object BlackPearlProtocol {
     private const val TYPE_LOW_SHELF: Int = 0x03
     private const val TYPE_HIGH_SHELF: Int = 0x04
     private const val SAMPLE_RATE_HZ: Double = 48_000.0
+    private const val BAND_PARAMETER_RAW_PER_UNIT: Double = 256.0
 
     data class Band(
         val type: String,
@@ -87,6 +92,21 @@ object BlackPearlProtocol {
 
     fun rawDeltaToGainDb(rawDelta: Int): Double = rawDelta.toDouble() / GLOBAL_GAIN_RAW_PER_DB
 
+    fun isBandGainWithinValidatedRange(gainDb: Double): Boolean =
+        gainDb.isFinite() && gainDb in VALIDATED_BAND_GAIN_MIN_DB..VALIDATED_BAND_GAIN_MAX_DB
+
+    /**
+     * The PEQ packet stores band gain as a signed little-endian 16-bit value in 1/256 dB units.
+     * Values outside the currently validated +/-10 dB range can therefore still be protocol-
+     * encodable. They are surfaced as a caution by the Flash planner instead of being clamped.
+     */
+    fun isBandGainProtocolEncodable(gainDb: Double): Boolean {
+        if (!gainDb.isFinite()) return false
+        val scaled = gainDb * BAND_PARAMETER_RAW_PER_UNIT
+        if (!scaled.isFinite()) return false
+        return scaled.roundToInt() in Short.MIN_VALUE.toInt()..Short.MAX_VALUE.toInt()
+    }
+
     fun readBandReport(index: Int): ByteArray {
         require(index in 0 until BAND_COUNT) { "Black Pearl band index must be 0..9." }
         return ByteArray(REPORT_SIZE).apply {
@@ -111,6 +131,7 @@ object BlackPearlProtocol {
     fun writeBandReport(index: Int, band: Band, activeSlot: Byte): ByteArray {
         require(index in 0 until BAND_COUNT) { "Black Pearl band index must be 0..9." }
         validateBand(band)
+        val gainRaw = bandGainRaw(band.gainDb)
         val coefficients = coefficients(band)
         val report = ByteArray(REPORT_SIZE)
         report[0] = REPORT_ID.toByte()
@@ -126,8 +147,8 @@ object BlackPearlProtocol {
             position(8)
             coefficients.forEach { putFloat(it.toFloat()) }
             putShort(band.frequencyHz.roundToInt().toShort())
-            putShort((band.q * 256.0).roundToInt().toShort())
-            putShort((band.gainDb * 256.0).roundToInt().toShort())
+            putShort((band.q * BAND_PARAMETER_RAW_PER_UNIT).roundToInt().toShort())
+            putShort(gainRaw.toShort())
             put(typeCode(band.type).toByte())
             put(0x00)
             put(activeSlot)
@@ -175,12 +196,19 @@ object BlackPearlProtocol {
         require(band.frequencyHz.isFinite() && band.frequencyHz in 20.0..20_000.0) {
             "Black Pearl frequency must be within 20 Hz..20 kHz."
         }
-        require(band.gainDb.isFinite() && band.gainDb in -10.0..10.0) {
-            "Black Pearl gain must be within -10 dB..+10 dB."
+        require(isBandGainProtocolEncodable(band.gainDb)) {
+            "Black Pearl gain cannot be represented by the signed 1/256 dB protocol field."
         }
         require(band.q.isFinite() && band.q in 0.1..10.0) {
             "Black Pearl Q must be within 0.1..10.0."
         }
+    }
+
+    private fun bandGainRaw(gainDb: Double): Int {
+        require(isBandGainProtocolEncodable(gainDb)) {
+            "Black Pearl gain cannot be represented by the signed 1/256 dB protocol field."
+        }
+        return (gainDb * BAND_PARAMETER_RAW_PER_UNIT).roundToInt()
     }
 
     private fun coefficients(band: Band): DoubleArray {
