@@ -6,6 +6,7 @@ on:
       - v0.3-release-polish
     paths:
       - 'tools/apply_v03_release_polish.py'
+      - 'tools/fix_apply_v03_release_polish.py'
       - '.github/workflows/apply-v03-release-polish.yml'
 
 permissions:
@@ -26,6 +27,9 @@ jobs:
         with:
           ref: v0.3-release-polish
           fetch-depth: 1
+
+      - name: Repair one-shot patch anchors
+        run: python3 tools/fix_apply_v03_release_polish.py
 
       - name: Apply release polish
         run: python3 tools/apply_v03_release_polish.py
@@ -49,5 +53,3 @@ jobs:
           git commit -m "Implement v0.3 release polish"
           git pull --rebase origin v0.3-release-polish
           git push origin HEAD:v0.3-release-polish
-
-# Contents-API trigger for the approved release-polish workstream.
