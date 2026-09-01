@@ -35,7 +35,7 @@ jobs:
         run: python3 tools/apply_v03_release_polish.py
 
       - name: Run General EQ tests
-        run: python3 -m unittest tools/test_general_preset_ingest.py tools/test_general_preset_publish.py
+        run: PYTHONPATH=tools python3 -m unittest tools/test_general_preset_ingest.py tools/test_general_preset_publish.py
 
       - name: Validate source registry
         run: python3 tools/catalog_pipeline.py validate-registry --registry config/source_registry.json
