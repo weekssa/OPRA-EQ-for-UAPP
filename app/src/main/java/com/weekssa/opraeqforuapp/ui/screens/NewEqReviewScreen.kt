@@ -43,7 +43,7 @@ import kotlinx.coroutines.launch
 internal fun NewEqReviewScreen(
     headphone: ManagedHeadphoneRecord,
     activeOutput: ExportDevice,
-    hiddenCanonicalProfileIds: Set<String>,
+    hiddenCanonicalProfileIds: Set<String> = emptySet(),
     onAddSelected: suspend (Set<String>) -> Unit,
     onDismissBatch: suspend () -> Unit,
     onOpenUrl: (String) -> Unit,
