@@ -35,23 +35,26 @@ import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.export.assessDeviceExportability
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedProfileRecord
+import com.weekssa.opraeqforuapp.domain.managed.reviewableNewEqProfiles
+import com.weekssa.opraeqforuapp.domain.managed.reviewableUpdatedEqProfiles
 import kotlinx.coroutines.launch
 
 @Composable
 internal fun NewEqReviewScreen(
     headphone: ManagedHeadphoneRecord,
     activeOutput: ExportDevice,
+    hiddenCanonicalProfileIds: Set<String>,
     onAddSelected: suspend (Set<String>) -> Unit,
     onDismissBatch: suspend () -> Unit,
     onOpenUrl: (String) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val newProfiles = remember(headphone.profiles) {
-        headphone.profiles.filter { it.isNewUnreviewed && !it.noLongerAvailable }
+    val newProfiles = remember(headphone.profiles, hiddenCanonicalProfileIds) {
+        headphone.reviewableNewEqProfiles(hiddenCanonicalProfileIds)
     }
-    val updatedProfiles = remember(headphone.profiles) {
-        headphone.profiles.filter { it.isUpdatedUnreviewed && !it.noLongerAvailable && !it.isNewUnreviewed }
+    val updatedProfiles = remember(headphone.profiles, hiddenCanonicalProfileIds) {
+        headphone.reviewableUpdatedEqProfiles(hiddenCanonicalProfileIds)
     }
     var selectedIds by remember(headphone.productId, newProfiles.map { it.profileId }) {
         mutableStateOf<Set<String>>(emptySet())
@@ -79,7 +82,7 @@ internal fun NewEqReviewScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            text = "Choose any new EQs you want to add. Dismiss marks this batch reviewed without hiding or deleting anything. Back leaves the review pending.",
+            text = "Choose any new EQs you want to add. Dismiss marks this batch reviewed without hiding or deleting anything. Back leaves the review pending. EQs you have hidden stay out of this review.",
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
