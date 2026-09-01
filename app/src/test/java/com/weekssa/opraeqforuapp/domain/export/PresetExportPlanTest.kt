@@ -5,6 +5,7 @@ import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedProfileRecord
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -38,7 +39,7 @@ class PresetExportPlanTest {
     }
 
     @Test
-    fun deterministicNameCollisionIsConflictRatherThanRenamed() {
+    fun deterministicNameCollisionGetsStableDistinctNamesInsteadOfPermanentConflict() {
         val headphone = headphone(
             profiles = listOf(
                 profile("p1", selected = true, presetName = "Same Name"),
@@ -46,11 +47,26 @@ class PresetExportPlanTest {
             ),
         )
 
-        val plan = buildPresetExportPlan(listOf(headphone))
+        val firstPlan = buildPresetExportPlan(listOf(headphone))
+        val reversedPlan = buildPresetExportPlan(listOf(headphone.copy(profiles = headphone.profiles.reversed())))
 
-        assertTrue(plan.candidates.isEmpty())
-        assertEquals(setOf("p1", "p2"), plan.duplicateConflicts.map { it.profileId }.toSet())
-        assertTrue(plan.duplicateConflicts.all { it.fileName == "Same Name.xml" })
+        assertEquals(2, firstPlan.candidates.size)
+        assertTrue(firstPlan.duplicateConflicts.isEmpty())
+        assertNotEquals(firstPlan.candidates[0].fileName, firstPlan.candidates[1].fileName)
+        assertTrue(firstPlan.candidates.all { it.fileName.startsWith("Same Name [") && it.fileName.endsWith("].xml") })
+        assertEquals(
+            firstPlan.candidates.associate { it.profileId to it.fileName },
+            reversedPlan.candidates.associate { it.profileId to it.fileName },
+        )
+    }
+
+    @Test
+    fun stableFallbackFilenameInsertsIdentityBeforeExtension() {
+        val stableId = stableExportId("product", "profile")
+        val name = disambiguatedExportFileName("Edition XS - Creator - Target.txt", stableId)
+
+        assertEquals("Edition XS - Creator - Target [$stableId].txt", name)
+        assertEquals(name, disambiguatedExportFileName("Edition XS - Creator - Target.txt", stableId))
     }
 
     @Test
@@ -150,6 +166,33 @@ class PresetExportPlanTest {
         assertEquals(1, plan.candidates.size)
         assertEquals(DevicePresetFidelity.EXACT, plan.candidates.single().fidelity)
         assertTrue(plan.candidates.single().xml.contains("Preamp: -3.00 dB"))
+    }
+
+    @Test
+    fun blackPearlFileExportPreservesGainOutsideValidatedRangeUnchanged() {
+        val source = profile("p1", selected = true, presetName = "Wide gain").copy(
+            lastKnownProfile = OpraEqProfile(
+                id = "p1",
+                productId = "product",
+                author = "Creator",
+                details = "Wide gain",
+                link = null,
+                profileType = "parametric_eq",
+                preampGainDb = -3.9,
+                bands = listOf(OpraBand("peak_dip", 13_500.0, -11.9, 4.0, null)),
+            ),
+        )
+
+        val plan = buildEqLibraryExportPlan(
+            listOf(headphone(profiles = listOf(source))),
+            ExportDevice.BLACK_PEARL,
+        )
+
+        assertEquals(1, plan.candidates.size)
+        assertEquals(DevicePresetFidelity.EXACT, plan.candidates.single().fidelity)
+        assertTrue(plan.candidates.single().xml.contains("Gain -11.90 dB"))
+        assertTrue(plan.candidates.single().transformation.contains("outside the currently validated"))
+        assertTrue(plan.candidates.single().transformation.contains("not clamped"))
     }
 
     @Test
