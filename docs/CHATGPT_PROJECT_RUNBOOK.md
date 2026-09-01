@@ -248,7 +248,7 @@ Use SemVer; development remains `0.x`; first stable release is `v1.0.0`.
 
 Initial distribution is through GitHub Releases. Maintain `CHANGELOG.md` from the beginning and keep release notes aligned with it.
 
-The app may check latest public release metadata and show a nonblocking banner, What's new, and a Get update link. No notification permission or APK-install permission in v1.
+The app may check latest public release metadata and show an in-app update banner, What's new, and a Get update link. No notification permission or APK-install permission in v1.
 
 Never commit signing keys, passwords, tokens, credentials, or secrets. Use one stable release-signing identity once release signing is intentionally introduced. Signed beta/release workflows must verify the pinned public signing identity.
 
@@ -279,7 +279,7 @@ For substantive work:
 
 ## 11. Current v0.3 status
 
-**v0.3.0 is publicly released.** The controlled **Signed GitHub Release** workflow published it on 2026-09-01 from exact source commit `ddda2acf9c573d42283ab8ca50d276c179631b88`. The immutable version tag `v0.3.0` points to that commit. The workflow rebuilt and tested the exact release source, signed the APK with the permanent release identity, verified the pinned signing certificate, and published `EQ-Library-v0.3.0.apk` together with its SHA-256 file and `apksigner` verification output.
+**v0.3.0 is publicly released.** The controlled **Signed GitHub Release** workflow published it on 2026-09-01 from exact source commit `ddda2acf9c573d42283ab8ca50d276c179631b88`. The version tag `v0.3.0` points to that commit. The workflow rebuilt and tested the exact release source, signed the APK with the permanent release identity, verified the pinned signing certificate, and published `EQ-Library-v0.3.0.apk` together with its SHA-256 file and `apksigner` verification output.
 
 PR #4 was fast-forward merged before publication after its final automated gates and focused Pixel 9 PASS. The focused Android release-polish code was physically validated at `3b95d384fb772514081383f801cf22b5b3aa8cbf`; subsequent commits through release source `ddda2acf9c573d42283ab8ca50d276c179631b88` changed only release documentation/catalog-currentness/release-tooling and did not change Android/device/DSP behavior, so no additional phone or Black Pearl pass was required.
 
