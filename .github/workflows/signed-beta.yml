@@ -12,8 +12,37 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  sync-release-polish-docs:
+    if: github.repository == 'weekssa/OPRA-EQ-for-UAPP' && contains(github.event.head_commit.message, '[sync-v03-docs]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out current branch tip
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 1
+      - name: Synchronize release-polish documentation
+        run: python3 tools/sync_v03_release_polish_docs.py
+      - name: Validate documentation diff
+        run: git diff --check
+      - name: Commit documentation sync
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No documentation changes were produced."
+            exit 1
+          fi
+          git commit -m "Synchronize v0.3 release-polish documentation"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
   build-signed-beta:
-    if: github.repository == 'weekssa/OPRA-EQ-for-UAPP'
+    if: github.repository == 'weekssa/OPRA-EQ-for-UAPP' && !contains(github.event.head_commit.message, '[sync-v03-docs]')
     runs-on: ubuntu-latest
     timeout-minutes: 40
 
