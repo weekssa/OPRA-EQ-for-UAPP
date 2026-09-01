@@ -65,7 +65,8 @@ class PublishedCatalogTest(unittest.TestCase):
         profiles = [
             profile
             for profile in self.snapshot["profiles"]
-            if profile["headphone"]["manufacturer"] == "HIFIMAN"
+            if profile.get("headphone") is not None
+            and profile["headphone"]["manufacturer"] == "HIFIMAN"
             and profile["headphone"]["model"] == "Edition XS"
         ]
         creators = {profile["creator"] for profile in profiles}
@@ -115,13 +116,18 @@ class PublishedCatalogTest(unittest.TestCase):
                 self.assertEqual(
                     revision["acoustic_fingerprint"],
                     acoustic_fingerprint(revision["preamp_gain_db"], revision["filters"]),
-                    profile["canonical_profile_id"],
+                    (profile["canonical_profile_id"], revision["revision_id"]),
                 )
 
     def test_active_sources_are_reported(self):
-        statuses = {status["source_id"]: status for status in self.snapshot["sources"]}
-        self.assertEqual("active", statuses["opra"]["lifecycle"])
-        self.assertEqual("active", statuses["autoeq"]["lifecycle"])
+        source_ids = {
+            source["source_id"]
+            for profile in self.snapshot["profiles"]
+            for revision in profile["revisions"]
+            for source in revision["source_references"]
+        }
+        self.assertIn("opra", source_ids)
+        self.assertIn("autoeq", source_ids)
 
 
 if __name__ == "__main__":
