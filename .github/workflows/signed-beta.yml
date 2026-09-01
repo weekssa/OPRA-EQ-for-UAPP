@@ -36,15 +36,14 @@ jobs:
         if: steps.detect.outputs.changed == 'true'
         run: python3 tools/tmp_new_eq_review_patch.py
 
-      - name: Commit implementation and restore release workflow
+      - name: Commit implementation
         if: steps.detect.outputs.changed == 'true'
         shell: bash
         run: |
-          git rm tools/tmp_new_eq_review_patch.py .github/workflows/v0.3-new-eq-review-patch.yml .github/workflows/v0.3-new-eq-review-trigger.yml
-          git checkout HEAD^ -- .github/workflows/signed-beta.yml
+          git rm tools/tmp_new_eq_review_patch.py
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add app .github/workflows/signed-beta.yml
+          git add app
           git commit -m "Replace automatic EQ inclusion with review notifications"
           git push origin HEAD:v0.3-release-polish
 
