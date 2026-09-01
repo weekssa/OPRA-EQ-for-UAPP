@@ -2,6 +2,7 @@ package com.weekssa.opraeqforuapp.domain.blackpearl
 
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
+import java.util.Locale
 
 sealed interface BlackPearlFlashPlan {
     data class Ready(
@@ -55,22 +56,41 @@ fun buildBlackPearlFlashPlan(
             }.exceptionOrNull()
             if (failure != null) {
                 return BlackPearlFlashPlan.NotRepresentable(
-                    failure.message ?: "Band ${index + 1} is outside the validated Black Pearl EQ capability profile.",
+                    failure.message ?: "Band ${index + 1} is outside the representable Black Pearl EQ capability profile.",
                 )
             }
         }
     }
 
     val omitted = (sourceBands.size - prepared.size).coerceAtLeast(0)
+    val warnings = buildList {
+        if (omitted > 0) {
+            add(
+                "Black Pearl supports 10 EQ bands. The first 10 source-priority bands will be flashed; " +
+                    "$omitted lower-priority ${if (omitted == 1) "band" else "bands"} will be omitted.",
+            )
+        }
+
+        val outsideValidatedGainRange = prepared.mapIndexedNotNull { index, band ->
+            band.gainDb.takeUnless(BlackPearlProtocol::isBandGainWithinValidatedRange)?.let { gain ->
+                "Band ${index + 1} ${String.format(Locale.US, "%+.2f", gain)} dB"
+            }
+        }
+        if (outsideValidatedGainRange.isNotEmpty()) {
+            add(
+                "Caution: ${outsideValidatedGainRange.joinToString()} is outside EQ Library's currently validated " +
+                    "Black Pearl filter-gain range of -10 dB..+10 dB. The exact ${if (outsideValidatedGainRange.size == 1) "value" else "values"} " +
+                    "will be sent unchanged and will not be clamped. The protocol can encode ${if (outsideValidatedGainRange.size == 1) "this value" else "these values"}, " +
+                    "but physical-hardware behavior outside the validated range has not yet been confirmed.",
+            )
+        }
+    }
+
     return BlackPearlFlashPlan.Ready(
         reports = BlackPearlProtocol.flashSequence(prepared, activeSlot),
         requiredPlaybackGainDb = playbackGainDb,
         fidelity = if (omitted == 0) DevicePresetFidelity.EXACT else DevicePresetFidelity.OPTIMIZED,
         omittedBandCount = omitted,
-        warning = if (omitted > 0) {
-            "Black Pearl supports 10 EQ bands. The first 10 source-priority bands will be flashed; $omitted lower-priority ${if (omitted == 1) "band" else "bands"} will be omitted."
-        } else {
-            null
-        },
+        warning = warnings.takeIf(List<String>::isNotEmpty)?.joinToString("\n\n"),
     )
 }
