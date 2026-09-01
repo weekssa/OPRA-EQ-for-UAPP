@@ -94,6 +94,8 @@ If the user removes the final selected EQ for a headphone under the active outpu
 
 Use Android's Storage Access Framework/system picker. Suggest a sensible Documents location but let the user choose. Persist supported directory access. Do not request broad storage permission and do not write to another app's private storage. Manage/delete only files the app can prove it created.
 
+Human-readable deterministic names remain the preferred requested export names, but **a physical filename is not the preset's ownership identity**. Export/currentness/cleanup must follow the stable output + product + profile identity and the exact SAF document URI actually returned for the app-created file, together with generated fingerprint/content hash. If a document provider normalizes or adjusts the requested display name, keep and track the successful newly created document instead of deleting it merely because its name changed. Store the provider-returned actual display name for fallback traversal/cleanup. If the preferred name is already occupied by an unowned file, never overwrite or delete that file; request a stable EQ-Library-disambiguated fallback name and accept a safe provider-created unique name if the provider further normalizes it. Internal same-name app presets must likewise receive stable identity-derived names rather than becoming permanent retry conflicts. Existing tracked app-owned files do not need to be renamed solely because naming logic improves.
+
 ## 5. Catalog, cache, refresh, and upstream changes
 
 Normal operation:
@@ -173,7 +175,9 @@ Black Pearl playback-gain handling uses the observed global-gain protocol docume
 - if the requested absolute gain is outside the validated representable device range, fail clearly rather than clamping;
 - record a successful gain write before later PEQ writes so a retry cannot accidentally stack the same attenuation after a later transfer failure.
 
-The Flash confirmation must disclose the listening-volume/playback-gain change when nonzero.
+The Black Pearl's observed/recommended **per-filter gain** range of `-10 dB..+10 dB` is not treated as the same thing as the hard global-gain range. Because the PEQ packet stores band gain as a signed 16-bit 1/256 dB value, a finite source value outside ±10 dB that still fits that protocol field is preserved exactly for Black Pearl file export and may be Direct-Flashed only behind an explicit caution. The confirmation must identify the affected band/value, say that the exact value will be sent unchanged and not clamped, and provide **Cancel** / **Flash anyway**. Until physical hardware validation confirms the wider value, describe it as protocol-encodable but outside the currently validated Black Pearl filter-gain range. Unsupported filter types, non-finite/unencodable gain, and currently validated frequency/Q hard limits remain blocking. The global playback-gain representability range remains a hard limit.
+
+The Flash confirmation must disclose the listening-volume/playback-gain change when nonzero and combine it with any 10-band or out-of-validated-range caution that applies.
 
 Unrelated Black Pearl settings remain outside the Flash path.
 
@@ -191,8 +195,8 @@ Treat the Python converter as behavioral reference and keep deterministic/golden
 - selection modes and future-profile behavior;
 - output-specific selections;
 - catalog updates/removals;
-- export/currentness/ownership;
-- Black Pearl protocol encoding, active slot, filter mapping, playback-gain read/write, non-cumulative replacement, 0 dB restoration, transfer failure, and out-of-range rejection.
+- export/currentness/ownership, including provider-adjusted SAF names, stable same-name disambiguation, unowned-name collisions, exact-URI updates, and safe cleanup;
+- Black Pearl protocol encoding, active slot, filter mapping, playback-gain read/write, non-cumulative replacement, 0 dB restoration, transfer failure, hard out-of-range rejection, and protocol-encodable-but-outside-validated filter-gain cautions without clamping.
 
 Before a v0.3 hardware-test APK is handed to the user, the exact source head must pass:
 
@@ -213,6 +217,7 @@ The most important Black Pearl hardware checks are:
 - a second Flash replaces rather than accumulates the prior EQ Library adjustment;
 - a 0 dB Flash removes the prior EQ Library attenuation;
 - Peak/Low Shelf/High Shelf and active-slot behavior remain correct;
+- a protocol-encodable source band outside the previously validated ±10 dB range shows the caution, can be cancelled without writing, and after **Flash anyway** is verified on the physical DAC without silent clamping;
 - unrelated DAC settings remain unchanged.
 
 ## 8. Releases, signing, updates, and changelog
@@ -254,6 +259,6 @@ For substantive work:
 
 v0.3 implementation is active on PR #3 / branch `eq-library-community-v0.3`.
 
-The current approved behavior includes output-specific My EQs, canonical multi-source EQ handling, zero-selected/auto-OFF new-headphone defaults, Add/Save-triggered initial export with recovery-only Export actions, and Black Pearl Direct Flash with non-cumulative playback-gain adjustment.
+The current approved behavior includes output-specific My EQs, canonical multi-source EQ handling, zero-selected/auto-OFF new-headphone defaults, Add/Save-triggered initial export with recovery-only Export actions, SAF export ownership anchored to the actual app-created document URI rather than exact provider filename spelling, and Black Pearl Direct Flash with non-cumulative playback-gain adjustment plus explicit caution for protocol-encodable per-band gains outside the currently validated ±10 dB range.
 
 Automated validation and signed-beta generation must be rerun on the exact final source head after any additional source/documentation correction. The PR must remain draft and unmerged until the Pixel 9 / Black Pearl hands-on gate passes.
