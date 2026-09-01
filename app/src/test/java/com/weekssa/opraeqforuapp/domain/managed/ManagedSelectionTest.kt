@@ -2,6 +2,7 @@ package com.weekssa.opraeqforuapp.domain.managed
 
 import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -73,6 +74,79 @@ class ManagedSelectionTest {
             ),
         )
     }
+
+    @Test
+    fun hiddenLineagesAreExcludedFromNewAndUpdatedReviewQueues() {
+        val visibleNew = managedProfile(
+            profile = compatibleProfile("new-visible").copy(canonicalProfileId = "lineage-visible-new"),
+            isNewUnreviewed = true,
+        )
+        val hiddenNew = managedProfile(
+            profile = compatibleProfile("new-hidden").copy(canonicalProfileId = "lineage-hidden"),
+            isNewUnreviewed = true,
+        )
+        val visibleUpdated = managedProfile(
+            profile = compatibleProfile("updated-visible").copy(canonicalProfileId = "lineage-visible-updated"),
+            isUpdatedUnreviewed = true,
+            selected = true,
+        )
+        val hiddenUpdated = managedProfile(
+            profile = compatibleProfile("updated-hidden").copy(canonicalProfileId = "lineage-hidden"),
+            isUpdatedUnreviewed = true,
+            selected = true,
+        )
+        val unavailable = managedProfile(
+            profile = compatibleProfile("unavailable").copy(canonicalProfileId = "lineage-unavailable"),
+            isNewUnreviewed = true,
+            noLongerAvailable = true,
+        )
+        val headphone = managedHeadphone(
+            listOf(visibleNew, hiddenNew, visibleUpdated, hiddenUpdated, unavailable),
+        )
+
+        assertEquals(
+            listOf("new-visible"),
+            headphone.reviewableNewEqProfiles(setOf("lineage-hidden")).map(ManagedProfileRecord::profileId),
+        )
+        assertEquals(
+            listOf("updated-visible"),
+            headphone.reviewableUpdatedEqProfiles(setOf("lineage-hidden")).map(ManagedProfileRecord::profileId),
+        )
+    }
+
+    private fun managedHeadphone(profiles: List<ManagedProfileRecord>) = ManagedHeadphoneRecord(
+        productId = "product",
+        vendorId = "vendor",
+        vendorName = "Vendor",
+        productName = "Product",
+        autoIncludeNewProfiles = true,
+        createdAtMillis = 1L,
+        updatedAtMillis = 2L,
+        profiles = profiles,
+    )
+
+    private fun managedProfile(
+        profile: OpraEqProfile,
+        selected: Boolean = false,
+        isNewUnreviewed: Boolean = false,
+        isUpdatedUnreviewed: Boolean = false,
+        noLongerAvailable: Boolean = false,
+    ) = ManagedProfileRecord(
+        profileId = profile.id,
+        selected = selected,
+        explicitlyExcluded = false,
+        lastKnownProfile = profile,
+        fingerprint = "fingerprint:${profile.id}",
+        firstSeenAtMillis = 1L,
+        lastSeenAtMillis = 2L,
+        isNewUnreviewed = isNewUnreviewed,
+        isUpdatedUnreviewed = isUpdatedUnreviewed,
+        noLongerAvailable = noLongerAvailable,
+        generatedPresetName = null,
+        generatedXml = null,
+        generatedFromFingerprint = null,
+        generatedAtMillis = null,
+    )
 
     private fun compatibleProfile(id: String) = OpraEqProfile(
         id = id,
