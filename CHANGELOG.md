@@ -17,6 +17,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Conditional **Export all** and per-item **Export** recovery actions based on the current active-output candidate, app-owned SAF ownership metadata, generated fingerprint/content hash, and the actual exported document when available.
 - Optional TRN Black Pearl **Direct Flash** from My EQs, including DAC connection state, current-slot discovery, confirmation, source-preamp/headroom playback-gain adjustment through the observed global-gain command, PEQ transfer, and success/error reporting.
 - Independent Black Pearl EQ protocol implementation for native Peak, Low Shelf, and High Shelf filters with a 10-band hardware limit and explicit unused-band flattening.
+- Black Pearl Flash cautions for protocol-encodable per-filter gains outside the currently validated `-10 dB..+10 dB` range, with exact-value/no-clamp disclosure and explicit **Flash anyway** confirmation while keeping hard protocol/global-gain limits blocking.
 - Output-scoped Room association tables and non-destructive migrations for managed headphone selections, General EQs, and favorites/personal imports.
 
 ### Changed
@@ -25,17 +26,23 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - The obsolete prototype setting **Show presets that none of my devices can export** is ignored/removed from user-facing behavior.
 - New headphones start with no EQ profiles selected and automatic future-profile inclusion off; users explicitly choose the presets they want before Add.
 - Add/Save persists the selected EQs and initiates their export for the active output. Normal Export/Export all controls stay hidden while the expected app-managed files are present and current, and reappear only for recovery when files are missing or stale.
+- Export ownership/currentness now follows stable output/product/profile identity and the exact SAF document URI returned for an app-created file instead of requiring the provider to preserve the originally requested display name byte-for-byte.
+- Internal same-name presets receive stable identity-derived filenames, and a same-name unowned external file is preserved while EQ Library creates a separately named app-owned fallback instead of leaving the preset in a permanent retry conflict.
 - Selection, Select all/none, and automatic future-profile behavior are based on canonical source usability and trust/history state, not UAPP compatibility.
 - UAPP/ToneBoosters compatibility is enforced only at the UAPP conversion/export boundary. UAPP XML is optional generated state rather than a prerequisite for saving a canonical EQ.
 - Personal PEQ imports preserve a missing source preamp as null rather than silently inventing `0 dB`.
 - TRN Black Pearl conversion/Flash preserves corroborated native shelf/peak filter types instead of approximating shelves with synthetic peaking filters.
 - Black Pearl direct Flash applies the selected profile's required preamp/headroom through the observed `0x03` global playback-gain command in 1/256 dB units. It reads the current gain, replaces the previous EQ Library-applied adjustment instead of stacking reductions, allows a later 0 dB preset to restore that prior adjustment, and fails rather than clamping if the requested absolute gain is outside the validated device range.
+- Black Pearl file export preserves finite source filter gain exactly even when it is outside the currently validated ±10 dB Direct-Flash range; Direct Flash sends the exact protocol-encodable value only after the explicit caution rather than rejecting or clamping it.
 - Black Pearl profiles over 10 bands use the first 10 source-priority bands only with an explicit Optimized warning; canonical source data remains complete and unchanged.
 - Navigation and terminology now use **My EQs**, **EQ Library**, and **Settings** instead of the earlier My Headphones/Browse OPRA framing.
 
 ### Fixed
 
 - Export status no longer stays permanently available after an output file is current; it is recalculated after export and when the active output, folder, or saved collection changes.
+- SAF providers that normalize or alter the requested filename no longer cause EQ Library to delete a successfully created preset and leave it permanently stuck in **needs export / needs review**. The provider-returned URI/name is retained and used for later currentness, updates, and cleanup.
+- Same-name unowned files no longer create an unrecoverable export loop; EQ Library leaves the external file untouched and creates a stable separately owned fallback file.
+- Two app-managed presets that resolve to the same preferred human-readable filename no longer block each other; stable identity-derived suffixes keep both exportable.
 - Removing a favorite/personal EQ from one output no longer implicitly removes it from another output where it is still selected.
 - A valid canonical profile that is unsupported by UAPP no longer becomes unselectable or silently excluded from automatic selection solely because of UAPP limits.
 - ToneBoosters conversion now explicitly rechecks UAPP-specific compatibility so device-independent selection cannot bypass the established UAPP filter/range/preamp safety gate.
@@ -44,6 +51,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 ### Validation
 
 - Final exact-head Android CI, CodeQL, APK artifact, and Pixel 9 / Black Pearl hands-on validation are required before this version may be promoted or PR #3 may be merged.
+- The focused hands-on regression now includes provider-adjusted SAF filenames/collision recovery and the Edition XS `-11.9 dB` Black Pearl filter caution/physical-hardware acceptance check.
 
 ## [0.2.0] - 2026-08-28
 
