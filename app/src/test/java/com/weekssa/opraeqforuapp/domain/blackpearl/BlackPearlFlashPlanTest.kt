@@ -25,6 +25,7 @@ class BlackPearlFlashPlanTest {
         assertEquals(DevicePresetFidelity.EXACT, plan.fidelity)
         assertEquals(0.0, plan.requiredPlaybackGainDb, 0.0)
         assertEquals(0, plan.omittedBandCount)
+        assertEquals(null, plan.warning)
         assertEquals(12, plan.reports.size)
         assertTrue(plan.reports.none { it[2].u8() == 0x03 })
     }
@@ -75,18 +76,36 @@ class BlackPearlFlashPlanTest {
     }
 
     @Test
-    fun unsupportedOrOutOfRangeBandIsNotSilentlyAltered() {
+    fun protocolEncodableGainOutsideValidatedRangeIsReadyWithExplicitCaution() {
+        val source = profile(
+            preamp = -3.9,
+            bands = listOf(OpraBand("peak_dip", 13_500.0, -11.9, 4.0, null)),
+        )
+
+        val plan = buildBlackPearlFlashPlan(source, activeSlot = 0x00)
+
+        assertTrue(plan is BlackPearlFlashPlan.Ready)
+        plan as BlackPearlFlashPlan.Ready
+        assertEquals(DevicePresetFidelity.EXACT, plan.fidelity)
+        assertTrue(plan.warning.orEmpty().contains("Band 1 -11.90 dB"))
+        assertTrue(plan.warning.orEmpty().contains("outside EQ Library's currently validated"))
+        assertTrue(plan.warning.orEmpty().contains("sent unchanged"))
+        assertTrue(plan.warning.orEmpty().contains("not be clamped"))
+    }
+
+    @Test
+    fun unsupportedOrTrulyUnrepresentableBandIsStillRejected() {
         val unsupported = buildBlackPearlFlashPlan(
             profile(preamp = 0.0, bands = listOf(OpraBand("low_pass", 1_000.0, 0.0, 1.0, null))),
             activeSlot = 0x00,
         )
-        val outOfRange = buildBlackPearlFlashPlan(
-            profile(preamp = 0.0, bands = listOf(OpraBand("peak_dip", 1_000.0, 12.0, 1.0, null))),
+        val unencodableGain = buildBlackPearlFlashPlan(
+            profile(preamp = 0.0, bands = listOf(OpraBand("peak_dip", 1_000.0, 200.0, 1.0, null))),
             activeSlot = 0x00,
         )
 
         assertTrue(unsupported is BlackPearlFlashPlan.NotRepresentable)
-        assertTrue(outOfRange is BlackPearlFlashPlan.NotRepresentable)
+        assertTrue(unencodableGain is BlackPearlFlashPlan.NotRepresentable)
     }
 
     private fun profile(
