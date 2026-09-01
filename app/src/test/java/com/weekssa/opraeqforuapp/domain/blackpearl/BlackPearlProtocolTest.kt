@@ -2,8 +2,10 @@ package com.weekssa.opraeqforuapp.domain.blackpearl
 
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import kotlin.math.roundToInt
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -113,6 +115,22 @@ class BlackPearlProtocolTest {
     }
 
     @Test
+    fun protocolEncodableGainOutsideValidatedRangeIsPreservedWithoutClamping() {
+        val gainDb = -11.9
+        assertFalse(BlackPearlProtocol.isBandGainWithinValidatedRange(gainDb))
+        assertTrue(BlackPearlProtocol.isBandGainProtocolEncodable(gainDb))
+
+        val report = BlackPearlProtocol.writeBandReport(
+            9,
+            BlackPearlProtocol.Band("peak_dip", 13_500.0, gainDb, 4.0),
+            activeSlot = 0x01,
+        )
+        val rawGain = ByteBuffer.wrap(report).order(ByteOrder.LITTLE_ENDIAN).getShort(32).toInt()
+
+        assertEquals((gainDb * 256.0).roundToInt(), rawGain)
+    }
+
+    @Test
     fun completePeqSequenceAlwaysOverwritesTenBandsThenLatchesAndFlashes() {
         val sequence = BlackPearlProtocol.flashSequence(
             bands = listOf(BlackPearlProtocol.Band("peak_dip", 1_000.0, 2.0, 1.0)),
@@ -142,11 +160,11 @@ class BlackPearlProtocolTest {
     }
 
     @Test
-    fun invalidHardwareValuesAreRejectedInsteadOfSilentlyClamped() {
+    fun trulyUnrepresentableHardwareValuesAreRejectedInsteadOfSilentlyClamped() {
         val badBands = listOf(
             BlackPearlProtocol.Band("other", 1_000.0, 0.0, 1.0),
             BlackPearlProtocol.Band("peak_dip", 10.0, 0.0, 1.0),
-            BlackPearlProtocol.Band("peak_dip", 1_000.0, 11.0, 1.0),
+            BlackPearlProtocol.Band("peak_dip", 1_000.0, 200.0, 1.0),
             BlackPearlProtocol.Band("peak_dip", 1_000.0, 0.0, 11.0),
         )
 
