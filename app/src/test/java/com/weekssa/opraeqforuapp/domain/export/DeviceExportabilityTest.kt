@@ -54,6 +54,17 @@ class DeviceExportabilityTest {
     }
 
     @Test
+    fun `Black Pearl file export keeps finite gain outside currently validated range`() {
+        val source = profile().copy(
+            preampGainDb = -3.9,
+            bands = listOf(OpraBand("peak_dip", 13_500.0, -11.9, 4.0, null)),
+        )
+
+        assertEquals(DeviceExportability.EXACT, assessDeviceExportability(source, ExportDevice.BLACK_PEARL))
+        assertTrue(source.isExportableToAny(setOf(ExportDevice.BLACK_PEARL)))
+    }
+
+    @Test
     fun `Black Pearl file export can preserve generated safety headroom`() {
         val source = profile().copy(
             preampGainDb = null,
