@@ -271,8 +271,9 @@ private fun readTextDocument(context: Context, uri: Uri): Pair<String, String> {
         }
         ?.takeIf(String::isNotBlank)
         ?: "Selected file"
-    val text = context.contentResolver.openInputStream(uri)?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }
-        ?: error("Couldn't open that file.")
+    val text = context.contentResolver.openInputStream(uri)?.bufferedReader(Charsets.UTF_8)?.use {
+        it.readText().removePrefix("\uFEFF")
+    } ?: error("Couldn't open that file.")
     require(text.length <= MAX_IMPORT_CHARACTERS) { "That file is too large to be a PEQ text preset." }
     return name to text
 }

@@ -405,6 +405,9 @@ fun EqLibraryApp(
                                     onFlashManagedProfile(selectedManagedHeadphone.productId, profileId)
                                 },
                                 onToggleFavorite = onToggleFavorite,
+                                onHideCanonicalProfile = { canonicalProfileId ->
+                                    onHideCanonicalProfiles(setOf(canonicalProfileId))
+                                },
                                 onLoadManagedHeadphone = onLoadManagedHeadphone,
                                 onSaveSelection = onSaveSelection,
                                 onRemoveHeadphone = onRemoveHeadphone,
