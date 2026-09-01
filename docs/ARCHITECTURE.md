@@ -8,8 +8,9 @@ For current implementation-time decisions and execution order, also read:
 - `docs/SOURCE_INGESTION_STRATEGY.md`
 - `docs/AUTONOMOUS_V0.3_PLAN.md`
 - `docs/V0.3_LOCKED_EXECUTION_PLAN.md`
+- `docs/V0.3_RELEASE_POLISH_PLAN.md`
 
-`docs/V0.3_LOCKED_EXECUTION_PLAN.md` contains the latest approved v0.3 product direction and supersedes older OPRA-only or export-target-visibility assumptions where they conflict. `docs/PHASE1_DECISIONS.md` records later approved refinements, including the 2026-08-31 zero-selection default, Add-triggered initial export, recovery-only Export UI, provider-resilient SAF ownership, and confirmed Black Pearl gain-adjustment/caution behavior.
+`docs/V0.3_RELEASE_POLISH_PLAN.md` controls the final PR #4 archive/visibility/import scope. `docs/V0.3_LOCKED_EXECUTION_PLAN.md` contains the earlier v0.3 product direction and supersedes older OPRA-only or export-target-visibility assumptions where they conflict. `docs/PHASE1_DECISIONS.md` records later approved refinements, including the 2026-08-31 zero-selection default, Add-triggered initial export, recovery-only Export UI, provider-resilient SAF ownership, and confirmed Black Pearl gain-adjustment/caution behavior.
 
 ## Android baseline
 
@@ -24,7 +25,7 @@ The application is a single native Android module using Kotlin and Jetpack Compo
 - Kotlin / Compose compiler plugin: 2.3.21
 - Compose BOM: 2026.06.00
 - Room: durable app-owned saved-EQ/export state
-- Preferences DataStore: local appearance, active output, enabled outputs, export-tree, refresh/update presentation preferences
+- Preferences DataStore: local appearance, active output, enabled outputs, global hidden canonical-profile IDs, export-tree, refresh/update presentation preferences
 - WorkManager: approximately daily catalog reconciliation backup
 - Storage Access Framework / DocumentFile: explicit user-folder export and app-owned file cleanup
 
@@ -119,6 +120,12 @@ After identity resolution:
 
 Verified/Unverified promotion is metadata-only when acoustic fingerprint is unchanged.
 
+## Living archive and local visibility
+
+The canonical catalog is an append/preserve archive of genuine acoustic history, not a disposable mirror of whatever source pages are reachable today. Publication validates against the prior published catalog and rejects disappearance of an already-published canonical profile/revision or an in-place acoustic-fingerprint mutation of an archived revision. Source availability and URLs are provenance/lifecycle metadata; they do not delete archived acoustic data.
+
+Android keeps the complete validated catalog/cache. Global Hide/Unhide is a Preferences DataStore set of stable canonical profile-lineage IDs applied only when building ordinary browse/search projections. A hidden lineage therefore stays available to existing Room-backed My EQs records and export/Flash state and can be unhidden without redownload/reconstruction.
+
 ## Community and source ingestion
 
 Primary public-community surfaces:
@@ -153,6 +160,14 @@ General presets remain standalone in v0.3. Do not silently layer/combine them wi
 The initial populated General EQ source is the MIT-licensed `wabsto1/ParaEQ` built-in preset set at a pinned source commit. EQ Library publishes exact source-authored filter parameters and labels through the generic General-preset pipeline; `Electronic` and `Rock` are Genre only because the source explicitly names them that way. A missing source preamp remains null and conservative playback safety headroom is stored only in `eq_library_safety_headroom_db`.
 
 Do not invent genre/intent from filter shape. Classification must follow explicit source context.
+
+## Personal PEQ import
+
+Personal import is another canonical-ingestion front end, not an output-specific converter. The v0.3 path is:
+
+`explicit paste / Android document picker -> strict Equalizer APO / AutoEq parser -> authoritative preview -> canonical local EQ -> active-output conversion/export`
+
+The document filename/extension is not a format selector. The current adapter recognizes supported Equalizer APO / AutoEq text from contents; future XML/JSON/CSV/Peace/device adapters must normalize into the same canonical model before output conversion. The strict personal-import layer blocks malformed filter-looking lines and unsupported active filters so tolerant discovery parsing can never silently create a partial user import. Missing source preamp remains null and canonical filter count is not truncated to a device limit.
 
 ## Output/device context
 

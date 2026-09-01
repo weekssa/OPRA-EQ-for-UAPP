@@ -23,6 +23,25 @@ This document records implementation-time product decisions that refine the appr
 - Source preamp remains null when absent. EQ Library-generated clipping-safety headroom is stored separately as derived metadata.
 - Selecting a General EQ adds it to the active output and initiates its initial export under the same Add/Save rule as other exportable saved EQs.
 
+## Living archive and reversible Hide/Unhide — approved 2026-08-31
+
+- The published canonical catalog is a living archive. Once a genuine canonical EQ or genuine acoustic revision is validly published, source movement, disappearance, pausing, retirement, or URL loss must not remove that acoustic record from the current archive.
+- Publication/currentness regression validation must fail if a candidate silently drops a previously published canonical profile/revision or mutates an archived revision's acoustic fingerprint in place. Git history alone is not sufficient preservation.
+- Hide is global local visibility state, not deletion and not output membership. Store stable canonical profile-lineage IDs in Preferences DataStore.
+- Hiding a lineage hides its genuine revisions from normal EQ Library browse/search but never removes the canonical catalog/cache record, Room/My EQs state, favorite membership, export ownership/currentness, or Black Pearl Flash state.
+- General EQ review uses none-selected-by-default batch checkboxes with Select all / Select none, Save selected, and Hide selected.
+- Settings exposes Hidden EQs with a count, none selected by default, Select all / Select none, and Unhide selected. There is no Delete action.
+- Hidden state survives restart and catalog refresh. Future genuine revisions of the same canonical lineage remain hidden; unrelated new profiles remain visible by default.
+
+## Personal PEQ import redesign — approved 2026-08-31
+
+- The large top-area Import PEQ button is replaced by compact **+ Import** beside **Saved snapshots & personal imports** in My EQs. It must not visually compete with Black Pearl Connect/Connected.
+- Import opens a dedicated screen/sheet with explicit **Paste PEQ text** and Android system **Choose file** actions, required manufacturer/model/EQ name, optional target/note, and an authoritative parsed preview before Save. Clipboard content is read only after the user taps Paste.
+- The initial user-facing input format is **Equalizer APO / AutoEq text**. Filename extension does not choose conversion; contents are parsed into the canonical PEQ first. Valid supported text may import regardless of extension, while unsupported contents fail clearly without changing saved state.
+- User-facing import validation is stricter than tolerant source discovery: blank/comment lines and explicitly OFF filters may be ignored, but malformed filter-looking lines and unsupported active filters block Save. Never silently import a partial EQ, clamp, truncate, invent, or substitute filters.
+- Missing source preamp remains null. Preserve the complete supported canonical filter count; active-output device limits are applied only at conversion/export.
+- Successful personal Save initiates initial active-output export when representable. Import never automatically flashes Black Pearl. Manual filter-by-filter editing and additional XML/JSON/CSV/Peace input adapters remain outside v0.3.
+
 ## Selection defaults — updated and locked 2026-08-31
 
 When a headphone has never been saved for the current output:
@@ -93,11 +112,12 @@ If an already-selected profile changes upstream:
 - do not automatically delete an already exported app-owned file merely because the newly current source can no longer be represented by that output;
 - never reuse a stale generated artifact as though it represented a changed current source.
 
-If a profile is removed upstream entirely:
+If an original source later moves or becomes unavailable:
 
-- keep the last known local source snapshot and last generated/exported artifact;
-- mark it **No longer available in EQ Library**;
-- let the user remove it explicitly.
+- keep the canonical profile and every genuine published revision in the living archive;
+- preserve the last known local source snapshot and last generated/exported artifact for My EQs;
+- update/mark source availability and provenance rather than deleting acoustic history;
+- let the user remove local My EQs membership/files explicitly without deleting the public canonical archive.
 
 ## My EQs membership and output-specific collections — updated and locked 2026-08-31
 

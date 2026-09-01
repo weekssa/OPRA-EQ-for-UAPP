@@ -8,6 +8,9 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ### Added
 
+- A **living canonical archive** regression gate that rejects candidate catalog publication if a previously published genuine canonical profile/revision disappears or an archived revision's acoustic fingerprint changes in place.
+- Reversible global local **Hide/Unhide** for headphone and General EQ lineages, with Hide in EQ Library, batch General Hide, persisted stable canonical IDs, and **Settings → Hidden EQs** batch Unhide without deleting archive/My EQs/export state.
+- A dedicated personal-EQ import surface with compact **+ Import**, explicit clipboard Paste and Android Choose file actions, **Equalizer APO / AutoEq text** content recognition, authoritative preamp/filter preview, and strict malformed/unsupported active-filter validation.
 - Initial populated **General EQ** catalog from the qualified MIT-licensed ParaEQ built-in presets: Bass Boost, Vocal Clarity, Treble Boost, Loudness, Podcast, Electronic, and Rock, with source-authored Genre classification only where explicitly provided.
 - Managed preset rows in **My EQs** now expose the same Favorite star state/action as EQ Library.
 - Global active-output context across **My EQs** and **EQ Library**, with locally enabled outputs in Settings. Initial selectable outputs are UAPP/ToneBoosters, TRN Black Pearl, Universal Parametric EQ, Poweramp/Poweramp Equalizer, and Wavelet.
@@ -24,6 +27,8 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ### Changed
 
+- General EQ review now uses none-selected-by-default batch controls with **Select all**, **Select none**, **Save selected**, and **Hide selected**; batch Save initiates the normal active-output initial export.
+- Personal EQ import now normalizes supported file/paste contents into the device-independent canonical PEQ before output conversion. Filename extension does not select the converter, missing preamp remains null, full supported filter count is retained canonically, and successful Save initiates active-output export without automatically flashing hardware.
 - Android Back now follows the in-app hierarchy and returns root EQ Library/Settings to My EQs; only Back from the My EQs root exits the app. Clean and dirty preset-selection editor states both handle system Back naturally.
 - General EQ selection now initiates its initial active-output export when added, matching the established Add/Save workflow.
 - General presets with no source preamp keep preamp null while EQ Library stores conservative generated playback headroom separately.
@@ -44,6 +49,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ### Fixed
 
+- Personal import no longer accepts a valid subset while silently dropping a malformed or unsupported active Filter line; the strict import layer blocks Save and identifies the parse problem.
 - System Back no longer falls through and exits the activity from clean nested management screens or secondary top-level destinations.
 - Favorites no longer require returning to EQ Library merely to star/unstar a managed preset.
 - The previously empty General EQ user-facing area now has qualified source-backed Sound, Genre, and Utility content.
@@ -58,6 +64,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ### Validation
 
+- Pre-documentation release-polish implementation head `63e054ffd4c0b351cc469bc435b8d949bf6dca49` passed Android unit tests, lint, debug/release assembly, catalog living-archive/currentness validation, priority-community coverage, CodeQL, signed-beta alignment/signature verification, artifact upload, and mobile-test publication. The final documentation/source head must repeat the exact-head gates before hands-on testing.
 - Final release-polish changes are isolated from Black Pearl protocol/DSP code but require a fresh signed v0.3.0 candidate and focused Pixel 9 Back/Favorite/General-EQ regression pass before public publication.
 - Exact candidate `c70c523e1f530b8b197ebbccc41dfb4af1e27fc4` passed Android unit tests, lint, debug/release assembly, catalog/currentness validation, priority-community validation, CodeQL, signed-beta alignment/signature verification, and artifact generation.
 - Pixel 9 / TRN Black Pearl hands-on validation passed on 2026-08-31, including provider-adjusted SAF filename/collision recovery, playback-gain replacement/non-stacking behavior, and the Edition XS Altruistic-Farmer275 `13,500 Hz / -11.9 dB / Q 4.0` file-export/caution/Flash-anyway test without app-side clamping.

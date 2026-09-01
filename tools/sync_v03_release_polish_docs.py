@@ -97,8 +97,8 @@ replace_once(
 )
 replace_once(
     "docs/SOURCE_INGESTION_STRATEGY.md",
-    """8. regression validation against the prior catalog\n\nPublication must be atomic.\n""",
-    """8. regression validation against the prior catalog, including a hard living-archive check that previously published canonical profiles/revisions have not disappeared or changed acoustically in place\n\nPublication must be atomic.\n""",
+    """8. regression validation against the prior catalog\n""",
+    """8. regression validation against the prior catalog, including a hard living-archive check that previously published canonical profiles/revisions have not disappeared or changed acoustically in place\n""",
 )
 
 # Earlier locked plan now explicitly redirects final work to PR #4 instead of sounding like PR #3 is open.

@@ -14,6 +14,7 @@ These rules apply to every lane below.
 - Ambiguous identity/provenance/rights candidates remain review-only.
 - Mirrors/reposts become secondary provenance when they carry an already-canonical acoustic tuning.
 - Genuine changed tunings become immutable revisions; application-modeling corrections must not create fake acoustic history.
+- Once a genuine canonical EQ/revision is validly published, retain it in the current living archive even if the original source later moves, disappears, pauses, or retires. Source status/provenance may change; ordinary source lifecycle events do not delete archived acoustic history.
 
 ## Ingestion lanes
 
@@ -246,7 +247,7 @@ Every changed candidate must be compared against the latest canonical revision.
 - identical acoustic fingerprint: update provenance/last-seen/derived metadata only
 - materially changed acoustic fingerprint in the same tuning lineage: create an immutable new revision
 - clearly separate alternate tuning: create a separate canonical profile
-- source deletion/removal: preserve already-valid historical records where legally appropriate and mark source state rather than silently erasing the EQ
+- source deletion/removal: retain every already-published genuine canonical EQ/revision in the living archive and mark/update source state/provenance rather than erasing acoustic history
 
 Users who pin/favorite an older revision must never be silently moved to a newer revision.
 
@@ -316,10 +317,12 @@ Ordinary source failures should not require user intervention.
 - repeated source failure -> mark degraded/paused while retaining last-known-good catalog data
 - parser break due to format change -> quarantine new candidates from that source until parser validation passes
 - moved URL -> update registry if confidently resolved
-- removed source -> preserve provenance/history where appropriate and mark source removed/retired
+- removed source -> retain archived canonical EQs/revisions, preserve provenance, and mark source removed/retired
 - changed terms/license -> stop redistribution for newly affected data until reviewed
 
 No failed source may invalidate the last-known-good canonical catalog.
+
+The current v0.3 repository has scaffolding plus several real currentness lanes, but not every registered forum/community yet has a fully autonomous live scanner. Completion of scheduled adapters, overdue-source enforcement, and monthly discovery of additional sources is intentionally tracked in `docs/FUTURE_SOURCE_AUTOMATION_PLAN.md` rather than hidden as an assumed v0.3 capability. Production source automation runs through GitHub Actions/repository tooling, not ChatGPT or the Android client.
 
 ## Catalog publication discipline
 
@@ -332,7 +335,7 @@ Updates are published only after:
 5. target classification
 6. source/license policy checks
 7. deterministic catalog generation
-8. regression validation against the prior catalog
+8. regression validation against the prior catalog, including a hard living-archive check that previously published canonical profiles/revisions have not disappeared or changed acoustically in place
 
 Publication must be atomic. Android clients continue using the previous last-known-good catalog if a new catalog build fails validation.
 
