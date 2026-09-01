@@ -44,10 +44,22 @@ import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ThemeMode
 import com.weekssa.opraeqforuapp.domain.update.SemVer
 import com.weekssa.opraeqforuapp.ui.components.OPRA_DATA_LICENSE_URL
-import com.weekssa.opraeqforuapp.ui.components.OpraAttribution
+import com.weekssa.opraeqforuapp.ui.components.OPRA_PROJECT_URL
 import java.text.DateFormat
 import java.util.Date
 import kotlinx.coroutines.launch
+
+private const val EQ_LIBRARY_PROJECT_URL = "https://github.com/weekssa/OPRA-EQ-for-UAPP"
+private const val EQ_LIBRARY_PRIVACY_URL = "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/main/PRIVACY.md"
+private const val EQ_LIBRARY_FEEDBACK_URL = "https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/new/choose"
+private const val PARAEQ_PROJECT_URL = "https://github.com/wabsto1/ParaEQ"
+
+private enum class SettingsPage {
+    ROOT,
+    HIDDEN_EQS,
+    ABOUT,
+    DATA_SOURCES,
+}
 
 @Composable
 fun SettingsScreen(
@@ -67,17 +79,39 @@ fun SettingsScreen(
     onMessage: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var hiddenEqScreenOpen by rememberSaveable { mutableStateOf(false) }
-    if (hiddenEqScreenOpen) {
-        HiddenEqSettingsScreen(
-            catalogState = catalogState,
-            hiddenCanonicalProfileIds = hiddenCanonicalProfileIds,
-            onUnhideCanonicalProfiles = onUnhideCanonicalProfiles,
-            onMessage = onMessage,
-            onBack = { hiddenEqScreenOpen = false },
-            modifier = modifier,
-        )
-        return
+    var pageName by rememberSaveable { mutableStateOf(SettingsPage.ROOT.name) }
+    val page = runCatching { SettingsPage.valueOf(pageName) }.getOrDefault(SettingsPage.ROOT)
+    val returnToRoot = { pageName = SettingsPage.ROOT.name }
+
+    when (page) {
+        SettingsPage.HIDDEN_EQS -> {
+            HiddenEqSettingsScreen(
+                catalogState = catalogState,
+                hiddenCanonicalProfileIds = hiddenCanonicalProfileIds,
+                onUnhideCanonicalProfiles = onUnhideCanonicalProfiles,
+                onMessage = onMessage,
+                onBack = returnToRoot,
+                modifier = modifier,
+            )
+            return
+        }
+        SettingsPage.ABOUT -> {
+            AboutEqLibraryScreen(
+                onOpenUrl = onOpenUrl,
+                onBack = returnToRoot,
+                modifier = modifier,
+            )
+            return
+        }
+        SettingsPage.DATA_SOURCES -> {
+            DataSourcesSettingsScreen(
+                onOpenUrl = onOpenUrl,
+                onBack = returnToRoot,
+                modifier = modifier,
+            )
+            return
+        }
+        SettingsPage.ROOT -> Unit
     }
 
     Column(
@@ -157,7 +191,7 @@ fun SettingsScreen(
                 ) { Text("Refresh now") }
             }
         }
-        TextButton(onClick = { hiddenEqScreenOpen = true }) {
+        TextButton(onClick = { pageName = SettingsPage.HIDDEN_EQS.name }) {
             Text("Hidden EQs · ${hiddenCanonicalProfileIds.size}")
         }
         Text(
@@ -257,19 +291,59 @@ fun SettingsScreen(
         )
 
         SectionDivider()
+        SectionTitle("Help & contribute")
+        SettingsLinkRow(
+            title = "Feedback & EQ submissions",
+            description = "Report a problem, suggest an improvement, or submit an EQ source.",
+            onClick = { onOpenUrl(EQ_LIBRARY_FEEDBACK_URL) },
+        )
+
+        SectionDivider()
         SectionTitle("About")
+        SettingsLinkRow(
+            title = "About EQ Library",
+            description = "Version, privacy, source code, licensing, and independence.",
+            onClick = { pageName = SettingsPage.ABOUT.name },
+        )
+        SettingsLinkRow(
+            title = "Data sources & attribution",
+            description = "OPRA, AutoEq, ParaEQ, creators, repositories, and public communities.",
+            onClick = { pageName = SettingsPage.DATA_SOURCES.name },
+        )
+        Spacer(Modifier.height(24.dp))
+    }
+}
+
+@Composable
+private fun AboutEqLibraryScreen(
+    onOpenUrl: (String) -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier,
+) {
+    BackHandler(onBack = onBack)
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp, vertical = 8.dp),
+    ) {
+        SettingsSubpageHeader(title = "About EQ Library", onBack = onBack)
+        Text(
+            text = "Version ${BuildConfig.VERSION_NAME}",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(top = 8.dp),
+        )
         Text(
             text = "Headphone selections, app settings, generated preset state, and conversion stay on this device. No account is required, and EQ Library contains no analytics or telemetry.",
             style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(top = 12.dp),
         )
-        OpraAttribution(onOpenUrl = onOpenUrl, modifier = Modifier.padding(top = 12.dp))
-        Text(
-            text = "OPRA is one source inside EQ Library. The library can also contain attributed AutoEq, creator, repository, and public community EQ profiles. Individual source and creator information is preserved with each profile when available.",
-            modifier = Modifier.padding(top = 8.dp),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        TextButton(onClick = { onOpenUrl(OPRA_DATA_LICENSE_URL) }) { Text("OPRA data license") }
+        Row(modifier = Modifier.padding(top = 4.dp)) {
+            TextButton(onClick = { onOpenUrl(EQ_LIBRARY_PROJECT_URL) }) { Text("Source code") }
+            TextButton(onClick = { onOpenUrl(EQ_LIBRARY_PRIVACY_URL) }) { Text("Privacy") }
+        }
+        SectionDivider()
+        SectionTitle("Open source & independence")
         Text(
             text = "EQ Library source code is Apache-2.0. Black Pearl protocol references are studied for observable device behavior only; GPL implementation code is not copied into this project.",
             style = MaterialTheme.typography.bodySmall,
@@ -277,11 +351,101 @@ fun SettingsScreen(
         )
         Text(
             text = "EQ Library is not affiliated with or endorsed by OPRA, Roon Labs, USB Audio Player PRO/UAPP, ToneBoosters, TRN, Poweramp, Wavelet, or headphone manufacturers.",
-            modifier = Modifier.padding(top = 8.dp),
+            modifier = Modifier.padding(top = 12.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(24.dp))
+    }
+}
+
+@Composable
+private fun DataSourcesSettingsScreen(
+    onOpenUrl: (String) -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier,
+) {
+    BackHandler(onBack = onBack)
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp, vertical = 8.dp),
+    ) {
+        SettingsSubpageHeader(title = "Data sources & attribution", onBack = onBack)
+        Text(
+            text = "EQ Library combines attributed EQ data from OPRA and other qualified public sources. Creator and original-source information is preserved with each EQ whenever available.",
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(top = 8.dp),
+        )
+
+        SectionDivider()
+        SectionTitle("OPRA")
+        Text(
+            text = "OPRA is an open community-maintained headphone database and one source used by EQ Library. OPRA-sourced profile creators and source details remain attributed with their EQs where provided.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Row(modifier = Modifier.padding(top = 4.dp)) {
+            TextButton(onClick = { onOpenUrl(OPRA_PROJECT_URL) }) { Text("Open OPRA project") }
+            TextButton(onClick = { onOpenUrl(OPRA_DATA_LICENSE_URL) }) { Text("Data license") }
+        }
+
+        SectionDivider()
+        SectionTitle("ParaEQ")
+        Text(
+            text = "The initial General EQ presets are sourced from the MIT-licensed ParaEQ built-in preset definitions. EQ Library preserves the source-authored preset labels and coefficients and keeps generated safety headroom separate from source preamp metadata.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        TextButton(onClick = { onOpenUrl(PARAEQ_PROJECT_URL) }) { Text("Open ParaEQ project") }
+
+        SectionDivider()
+        SectionTitle("Other attributed sources")
+        Text(
+            text = "The library can also contain attributed AutoEq, creator, repository, and public community EQ profiles. Each profile carries its available creator and source provenance so source-specific details remain inspectable without making any one source the app's identity.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(24.dp))
+    }
+}
+
+@Composable
+private fun SettingsSubpageHeader(
+    title: String,
+    onBack: () -> Unit,
+) {
+    TextButton(onClick = onBack) {
+        androidx.compose.material3.Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = null)
+        Text("Settings", modifier = Modifier.padding(start = 4.dp))
+    }
+    Text(
+        text = title,
+        style = MaterialTheme.typography.headlineSmall,
+        modifier = Modifier.padding(top = 4.dp),
+    )
+}
+
+@Composable
+private fun SettingsLinkRow(
+    title: String,
+    description: String,
+    onClick: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp),
+    ) {
+        Text(text = title, style = MaterialTheme.typography.bodyLarge)
+        Text(
+            text = description,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 2.dp),
+        )
     }
 }
 
