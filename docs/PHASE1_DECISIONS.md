@@ -26,13 +26,26 @@ For a headphone/profile selection in EQ Library, **Add** is the normal completio
 - Add saves the selected EQ membership to the active output's My EQs collection and performs the initial file export for every selected profile that the active output can export.
 - If no export folder has been authorized yet and the active output needs file export, Add invokes Android's system folder picker once, retains supported directory access, and completes the export after access is granted.
 - Add never silently flashes connected hardware. Black Pearl Flash remains an explicit, separately confirmed action.
-- If initial export fails or a same-name unowned file conflicts, the local My EQs selection remains saved and the app reports the specific export/recovery problem.
+- If initial export genuinely fails, the local My EQs selection remains saved and the app reports the specific export/recovery problem.
 - Export and Export all are **recovery/currentness actions**, not routine second-step workflow controls.
-- My EQs checks the deterministic active-output candidate, ownership metadata, fingerprint/content hash, and actual app-owned SAF document when access is available.
+- My EQs checks the active-output candidate, stable product/profile export identity, retained app-owned SAF document URI, fingerprint/content hash, and actual document content when access is available.
 - If every expected app-owned file exists and is current, no Export button, Export all button, or routine export-status message is shown.
 - If one or more files are missing/stale, folder access was lost, or generated output changed, show a concise recovery count such as **2 presets need export** and expose Export only for affected rows plus Export all for the affected set.
 - Successful recovery hides the Export controls again once currentness checks pass.
 - If the user removes the last selected EQ for a headphone in the active output, remove that headphone from My EQs entirely for that output. Other outputs' memberships remain untouched.
+
+### SAF filename and ownership behavior — approved 2026-08-31 follow-up
+
+Human-readable deterministic names are preferred request names, not the sole identity of an exported preset.
+
+- A successfully created SAF document is owned/referenced by its exact returned document URI plus stable output/product/profile identity, generated fingerprint, and content hash.
+- Store the actual display name returned by the document provider. A provider-normalized or provider-adjusted name does **not** make a newly created file invalid and must not cause the app to delete an otherwise successful export.
+- Later currentness checks and updates follow the tracked document URI even when its display name differs from the current preferred filename.
+- Existing app-owned files do not need to be renamed merely because naming logic improves.
+- If two EQ Library candidates would otherwise share one preferred name, derive stable identity-based suffixes so both remain exportable.
+- If the preferred name is already occupied by an unowned external file, never overwrite/delete it and do not leave the EQ in a permanent retry loop. Request a stable EQ-Library-disambiguated fallback name and track the newly created URI/name returned by the provider.
+- If a provider ever returns the exact URI of a pre-existing unowned file instead of creating a new child document, treat that provider behavior as unsafe and do not write.
+- Cleanup continues to delete only exact documents the app can prove it created.
 
 ## Missing creator/author — approved 2026-08-15
 
@@ -89,12 +102,12 @@ Export is driven by the active output and app-owned file state.
 - Initial export happens as part of Add for exportable selected profiles.
 - **Export all** appears only when at least one exportable EQ in the current My EQs collection needs recovery because it was never successfully exported, its generated output changed, its app-owned exported file is missing/stale, or retained folder access is no longer usable.
 - A per-item **Export** action follows the same recovery rule and is hidden while that exact output file is current.
-- Export status is checked against the deterministic active-output candidate, retained ownership metadata, fingerprint/content hash, and the actual app-owned SAF document when folder access is available.
+- Export status is checked against stable output/product/profile identity, retained exact SAF ownership URI, generated fingerprint/content hash, and actual document content; exact filename spelling is not required once the app owns the returned URI.
 - A source that is **Not exportable** to the active output remains saved/visible but does not falsely appear as an exportable pending file.
 - No routine export count/status is shown when all expected files are current.
 - When recovery is needed, show the actual affected count and reason rather than treating export as an ongoing normal step.
 - Export remains independent of direct hardware Flash.
-- EQ Library only replaces or removes files it can identify as created/owned by this app; same-name unowned files remain conflicts.
+- EQ Library only replaces or removes files it can identify as created/owned by this app; same-name unowned files are preserved while the app creates a stable, separately owned fallback file.
 
 ## Community EQ auto-publication and Unverified status — approved 2026-08-30
 
@@ -200,7 +213,7 @@ Direct Flash is an optional My EQs action for the Black Pearl output only.
 
 - Settings exposes **Enable direct Flash**, OFF by default, only in the Black Pearl context/when that output is enabled.
 - My EQs shows **Connect to DAC** in red while disconnected and a green connected state after successful connection.
-- Flash remains visible for Black Pearl rows but is disabled while disconnected or when the source cannot be represented within Black Pearl filter/band/range limits.
+- Flash remains visible for Black Pearl rows but is disabled while disconnected or when the source is truly unrepresentable within the currently hard Black Pearl filter/band/protocol limits.
 - Flash requires confirmation and writes to the DAC's currently active EQ slot discovered from the device rather than inventing a slot-selection UI.
 - A successful operation reports **Flash successful**; the row subsequently returns to its normal Flash action.
 - Export remains available independently of connection state and is normally completed during Add.
@@ -210,7 +223,9 @@ Direct Flash is an optional My EQs action for the Black Pearl output only.
 - The Flash confirmation must disclose the exact required playback-gain adjustment before writing.
 - Use the Black Pearl's actual dB/raw gain protocol rather than the reference app's approximate percentage mapping.
 - EQ Library must read current hardware gain and track the EQ-related attenuation it applied so flashing another preset replaces the prior EQ-related adjustment instead of cumulatively reducing volume.
-- If the required gain cannot be represented safely within the hardware range, Flash fails clearly rather than silently clamping.
+- If the required **absolute global playback gain** cannot be represented safely within the known hardware range, Flash fails clearly rather than silently clamping.
+- The reference applications' approximately `-10 dB..+10 dB` **per-filter gain range** is treated as currently validated/recommended, not as the signed PEQ packet's encoding limit. A finite source band outside ±10 dB that fits the signed 1/256 dB field remains exactly exportable and Direct Flash remains available behind a caution. The confirmation identifies the affected band/value, says it will be sent unchanged/not clamped, and uses **Cancel** / **Flash anyway**. Until physical validation passes, do not claim those wider values are proven hardware-safe/working.
+- Unsupported filter types, non-finite or wire-unencodable gain, currently validated frequency/Q hard limits, and global playback-gain limits remain blocking rather than silently altered.
 - A 0 dB requirement should remove a prior EQ Library-applied attenuation when it can be safely identified from tracked/read-back state.
 - Flash must not alter DAC reconstruction filter, gain mode, amplifier topology, balance, microphone settings, or other unrelated controls.
 - GPL reference projects may be studied for observable protocol behavior, but their implementation code is not copied into this Apache-2.0 project.
