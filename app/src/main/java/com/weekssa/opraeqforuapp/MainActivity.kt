@@ -119,13 +119,14 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        BackgroundSyncScheduler.ensureScheduled(applicationContext)
+        val reviewClearQa = application is QaReviewApplication
+        if (!reviewClearQa) BackgroundSyncScheduler.ensureScheduled(applicationContext)
 
         lifecycleScope.launch { updateCoordinator.initialize() }
         lifecycleScope.launch {
             catalogRepository.initialize()
             val ready = catalogRepository.state.value as? CatalogState.Ready
-            if (ready != null) {
+            if (!reviewClearQa && ready != null) {
                 managedHeadphonesRepository.reconcileCatalog(ready.catalog)
             }
             refreshCatalogIfDue()
@@ -320,6 +321,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private suspend fun refreshCatalogIfDue() {
+        if (application is QaReviewApplication) return
         val ready = catalogRepository.state.value as? CatalogState.Ready ?: return
         val now = System.currentTimeMillis()
         if (now - ready.lastSuccessfulRefreshMillis < FOREGROUND_REFRESH_INTERVAL_MILLIS) return
