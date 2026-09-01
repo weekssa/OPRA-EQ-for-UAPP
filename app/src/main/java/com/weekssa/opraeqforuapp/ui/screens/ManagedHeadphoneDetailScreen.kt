@@ -1,10 +1,12 @@
 package com.weekssa.opraeqforuapp.ui.screens
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,14 +17,15 @@ import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -32,6 +35,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
@@ -300,22 +304,51 @@ fun ManagedHeadphoneDetailScreen(
                 )
             }
         }
-        if (isBlackPearlOutput) {
-            BlackPearlConnectionControl(
-                enabled = directBlackPearlFlashEnabled,
-                state = blackPearlConnectionState,
-                onConnect = onConnectBlackPearl,
-                modifier = Modifier.padding(start = 16.dp, top = 8.dp, end = 16.dp),
+        if (isBlackPearlOutput || product != null) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (isBlackPearlOutput) {
+                    CompactBlackPearlConnectionAction(
+                        enabled = directBlackPearlFlashEnabled,
+                        state = blackPearlConnectionState,
+                        onConnect = onConnectBlackPearl,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                if (product != null) {
+                    Button(
+                        onClick = { editing = true },
+                        modifier = Modifier
+                            .weight(1f)
+                            .heightIn(min = 48.dp),
+                    ) {
+                        Text("Manage presets")
+                    }
+                }
+            }
+        }
+        if (isBlackPearlOutput && !directBlackPearlFlashEnabled) {
+            Text(
+                text = "Enable direct Flash in Settings → Black Pearl before connecting to the DAC.",
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        if (product != null) {
-            Button(
-                onClick = { editing = true },
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            ) {
-                Text("Manage preset selection")
-            }
-        } else {
+        if (isBlackPearlOutput && blackPearlConnectionState is BlackPearlConnectionState.Error) {
+            Text(
+                text = blackPearlConnectionState.message,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
+        if (product == null) {
             Text(
                 text = "This headphone is no longer present in the current EQ Library catalog. Retained presets remain available until you remove them.",
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
@@ -382,6 +415,40 @@ fun ManagedHeadphoneDetailScreen(
         ) {
             Text("Remove headphone")
         }
+    }
+}
+
+@Composable
+private fun CompactBlackPearlConnectionAction(
+    enabled: Boolean,
+    state: BlackPearlConnectionState,
+    onConnect: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val connected = state is BlackPearlConnectionState.Connected
+    val connecting = state is BlackPearlConnectionState.Connecting
+    val containerColor = if (connected) MANAGED_DETAIL_CONNECTED_GREEN else MaterialTheme.colorScheme.error
+    Button(
+        onClick = onConnect,
+        enabled = enabled && !connected && !connecting,
+        modifier = modifier.heightIn(min = 48.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = containerColor,
+            contentColor = Color.White,
+            disabledContainerColor = when {
+                connected -> MANAGED_DETAIL_CONNECTED_GREEN
+                else -> MaterialTheme.colorScheme.surfaceVariant
+            },
+            disabledContentColor = if (connected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+        ),
+    ) {
+        Text(
+            when {
+                connected -> "Connected"
+                connecting -> "Connecting…"
+                else -> "Connect"
+            },
+        )
     }
 }
 
@@ -527,3 +594,5 @@ private fun RemovalDialog(
         },
     )
 }
+
+private val MANAGED_DETAIL_CONNECTED_GREEN = Color(0xFF2E7D32)
