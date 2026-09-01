@@ -24,6 +24,10 @@ misc.xml
 deploymentTargetDropDown.xml
 render.experimental.xml
 
+# Python tooling caches
+__pycache__/
+*.py[cod]
+
 # Keystore files
 *.jks
 *.keystore
