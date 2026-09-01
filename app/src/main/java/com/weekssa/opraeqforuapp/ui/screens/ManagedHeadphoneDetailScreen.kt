@@ -135,6 +135,7 @@ fun ManagedHeadphoneDetailScreen(
                     blackPearlFlashConfirmation(
                         displayName = displayName,
                         gainAdjustmentDb = flashPlan?.requiredPlaybackGainDb ?: 0.0,
+                        warning = flashPlan?.warning,
                     ),
                 )
             },
@@ -144,7 +145,7 @@ fun ManagedHeadphoneDetailScreen(
                         pendingProfileFlash = null
                         scope.launch { onMessage(onFlashManagedProfile(profile.profileId)) }
                     },
-                ) { Text("Flash") }
+                ) { Text(if (flashPlan?.warning.isNullOrBlank()) "Flash" else "Flash anyway") }
             },
             dismissButton = {
                 TextButton(onClick = { pendingProfileFlash = null }) { Text("Cancel") }
