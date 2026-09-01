@@ -141,3 +141,35 @@ jobs:
             echo "### Mobile test APK"
             echo "https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/mobile-test-apk/EQ-Library-v0.3-mobile-test.apk"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      # BEGIN TEMP RELEASE-POLISH CATALOG FORMAT CLEANUP
+      - name: Restore readable catalog formatting and remove temporary workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          catalog = Path('catalog/catalog.json')
+          payload = json.loads(catalog.read_text(encoding='utf-8'))
+          catalog.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+
+          workflow = Path('.github/workflows/signed-beta.yml')
+          text = workflow.read_text(encoding='utf-8')
+          marker = '      # BEGIN TEMP RELEASE-POLISH CATALOG FORMAT CLEANUP\n'
+          if marker not in text:
+              raise SystemExit('temporary cleanup marker missing')
+          workflow.write_text(text.split(marker, 1)[0], encoding='utf-8')
+          PY
+          rm -f .github/workflows/pretty-catalog-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No cleanup changes needed."
+            exit 0
+          fi
+          git commit -m "Restore readable catalog formatting"
+          git pull --rebase origin v0.3-release-polish
+          git push origin HEAD:v0.3-release-polish
