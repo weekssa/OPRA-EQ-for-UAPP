@@ -10,7 +10,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.weekssa.opraeqforuapp"
+        applicationId = "com.weekssa.opraeqforuapp.reviewclearqa"
         minSdk = 26
         targetSdk = 36
         versionCode = 3
