@@ -177,6 +177,8 @@ private fun outputShortName(device: ExportDevice): String = when (device) {
     ExportDevice.UNIVERSAL_PARAMETRIC -> "Universal PEQ"
     ExportDevice.POWERAMP -> "Poweramp"
     ExportDevice.WAVELET -> "Wavelet"
+    ExportDevice.TOPPING_DX5_II -> "Topping DX5 II"
+    ExportDevice.TOPPING_DX1_II -> "Topping DX1 II"
 }
 
 private fun outputStatusLabel(status: DeviceExportability): String = when (status) {
