@@ -48,6 +48,8 @@ Each registry source has one currentness owner:
 - **review** — discovery/qualification-only lane that cannot publish merely because a search ran;
 - **paused** — live access is intentionally disabled while already-published archive data remains preserved.
 
+An active manual intake lane may explicitly set `catalog_presence_required: false` while it has no qualified exact record in the current catalog. This is a narrow no-placeholder rule: it prevents activation from forcing a fabricated profile or source reference merely to satisfy coverage accounting. The exemption is valid only for `manual` currentness; scheduled/runtime publication contracts and every explicitly qualified manifest record remain strict. Once a genuine profile/revision is published, the normal living-archive validation continues to preserve it even if the source later moves, pauses, or becomes unavailable.
+
 The next adapter-expansion priorities remain a compliant public Reddit access path and robust live adapters for Head-Fi and Audio Science Review. Squiglink-compatible and Topping Community are active manual lanes: exact traceable public PEQ may publish through the normal Unverified community path, while measurement/curve/device-state material remains excluded unless exact source-authored PEQ is actually provided. Topping automation additionally requires an authorized public API/feed or explicit permission because the current service agreement prohibits unauthorized scraping/bulk retrieval/interface reverse engineering. These are future automation improvements, not hidden claims that the manual sources are autonomously scanned.
 
 ## 4. Cadence policy
