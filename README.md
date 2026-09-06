@@ -38,7 +38,7 @@ Normal Android runtime does **not** scrape GitHub, Reddit, forums, or other comm
 
 ### Output contexts
 
-The active output is an operating context, not a library filter. Initial v0.3 output choices are:
+The active output is an operating context, not a library filter. Current output choices include:
 
 - **USB Audio Player PRO / ToneBoosters**
 - **TRN Black Pearl**
@@ -70,6 +70,8 @@ The independently implemented EQ path reads the current device state, writes the
 
 Flash always requires confirmation before writing. EQ Library replaces its prior playback-gain adjustment rather than stacking repeated attenuation. Protocol-encodable filter gains outside the currently validated approximately ±10 dB range are never silently clamped; they require an explicit exact-value caution and **Flash anyway** confirmation. Unrelated DAC settings are outside the Flash path.
 
+Starting with v0.4.0, My EQs also provides **Reset EQ to flat** beside the Black Pearl connection control. The confirmed reset operates on the DAC's current EQ slot, writes all 10 bands flat, latches/saves the slot, and then removes only the playback-gain adjustment previously tracked as applied by EQ Library. The fail-safe ordering keeps the prior attenuation in place until the slot is confirmed flat, and unrelated DAC settings remain outside the reset path.
+
 ### Personal PEQ import
 
 My EQs includes a compact **+ Import** flow for explicit paste or Android file selection of **Equalizer APO / AutoEq parametric text**.
@@ -88,7 +90,7 @@ See [PRIVACY.md](PRIVACY.md) for the full privacy statement.
 
 ## Current development status
 
-The current source line is **v0.3.0**. The v0.3 foundation and release-polish behavior have passed automated validation plus Pixel 9 hands-on testing, including UAPP export/import and TRN Black Pearl hardware checks. Final release-source synchronization and publication gates are tracked in the repository release documentation before the public v0.3.0 GitHub Release is created.
+The current source line is **v0.4.0**. Its incremental feature is the hardware-qualified TRN Black Pearl **Reset EQ to flat** action, built on the already released v0.3 EQ Library foundation. The reset device/DSP implementation passed its signed Pixel 9 / TRN Black Pearl focused qualification on 2026-09-06; release-preparation changes after that tested commit are limited to version and release/documentation metadata and must still pass the exact final automated/signing release gate before publication.
 
 The application ID remains `com.weekssa.opraeqforuapp`, and installable releases must keep the pinned permanent signing identity recorded in [`release-signing-cert.sha256`](release-signing-cert.sha256).
 
@@ -119,7 +121,8 @@ The application source code, tests, and project documentation are licensed under
 ## Project documentation
 
 - [CHANGELOG.md](CHANGELOG.md) — release history and notable changes
-- [docs/releases/v0.3.0.md](docs/releases/v0.3.0.md) — prepared v0.3.0 release notes
+- [docs/releases/v0.4.0.md](docs/releases/v0.4.0.md) — prepared v0.4.0 release notes
+- [docs/releases/v0.3.0.md](docs/releases/v0.3.0.md) — v0.3.0 release notes
 - [PRIVACY.md](PRIVACY.md) — public privacy policy
 - [CONTRIBUTING.md](CONTRIBUTING.md) — contribution and validation expectations
 - [SECURITY.md](SECURITY.md) — security-reporting guidance
