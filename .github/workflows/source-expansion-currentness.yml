@@ -48,7 +48,7 @@ jobs:
       - name: Validate source-expansion inputs
         run: |
           python3 tools/catalog_pipeline.py validate-registry --registry config/source_registry.json
-          PYTHONPATH=tools python3 -m unittest tools/test_source_expansion.py -v
+          PYTHONPATH=tools python3 -m unittest discover -s tools -p 'test_source_expansion.py' -v
 
       - name: Initialize candidate and source-health state
         run: |
