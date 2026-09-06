@@ -15,7 +15,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 ### Changed
 
 - `github-community` is a daily scheduled source with source-health ownership. Public exact structured community PEQ uses the established Unverified community policy while specific source restrictions remain binding.
-- Squiglink-compatible and Topping community lanes are active/manual for exact traceable source-authored PEQ. Measurement-only, curve-only, screenshot, or device-state data without exact frequency/gain/Q/filter type remains non-publishable rather than being synthesized.
+- Squiglink-compatible and Topping community sources remain review/manual until an exact traceable source-authored PEQ is actually captured. Exact PEQ is eligible for the normal Unverified community path; measurement-only, curve-only, screenshot, or device-state data without exact frequency/gain/Q/filter type remains non-publishable rather than being synthesized.
 - Reddit remains paused; no anonymous Reddit scanning or workaround was re-enabled.
 
 ### Validation
