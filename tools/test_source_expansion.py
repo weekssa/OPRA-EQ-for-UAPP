@@ -124,6 +124,30 @@ class DiscourseCommunityIngestTest(unittest.TestCase):
         self.assertIn("Preamp: -2 dB", text)
         self.assertIn("Filter 1:", text)
 
+    def test_multiple_peq_blocks_are_quarantined_instead_of_concatenated(self):
+        text = "\n".join(
+            [
+                "Preamp: -3 dB",
+                "Filter 1: ON PK Fc 100 Hz Gain 2 dB Q 1",
+                "Filter 2: ON PK Fc 1000 Hz Gain -2 dB Q 1",
+                "Preamp: -6 dB",
+                "Filter 1: ON PK Fc 200 Hz Gain 3 dB Q 1",
+                "Filter 2: ON PK Fc 2000 Hz Gain -3 dB Q 1",
+            ]
+        )
+        peq, reason = discourse_community_ingest.single_peq_text(text)
+        self.assertIsNone(peq)
+        self.assertIsNotNone(reason)
+
+    def test_headphone_match_requires_one_unambiguous_identity(self):
+        headphones = [("Sony", "WH-1000XM4"), ("Sennheiser", "HD 650")]
+        matched = discourse_community_ingest.unique_headphone_match(
+            "Comparison and EQ",
+            "Sony WH-1000XM4 and Sennheiser HD 650 both discussed here",
+            headphones,
+        )
+        self.assertIsNone(matched)
+
 
 class GeneralGithubDiscoveryTest(unittest.TestCase):
     def test_general_candidate_is_review_only_and_does_not_require_headphone_identity(self):
