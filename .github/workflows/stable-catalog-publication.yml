@@ -1,0 +1,78 @@
+name: Stable catalog publication
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'catalog/catalog.json'
+      - 'tools/live_catalog_transport.py'
+      - 'tools/test_live_catalog_transport.py'
+      - '.github/workflows/stable-catalog-publication.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '41 */6 * * *'
+
+permissions:
+  contents: write
+
+# Share the main catalog-writer lock with source publication workflows. A source workflow
+# may have captured a run-start candidate before another writer advanced main. This sync
+# therefore runs only after the active main writer finishes, then republishes the latest
+# authoritative main catalog rather than any older workflow artifact.
+concurrency:
+  group: eq-catalog-writer-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish-stable:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out latest main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Validate transport renderer
+        run: PYTHONPATH=tools python3 -m unittest tools/test_live_catalog_transport.py -v
+
+      - name: Re-fetch authoritative main catalog
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git show origin/main:catalog/catalog.json > "${RUNNER_TEMP}/latest-main-catalog.json"
+          PYTHONPATH=tools python3 tools/live_catalog_transport.py \
+            --input "${RUNNER_TEMP}/latest-main-catalog.json" \
+            --output "${RUNNER_TEMP}/latest-main-transport.json"
+
+      - name: Publish latest validated main catalog to stable Android branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          publish_dir="$(mktemp -d)"
+          git fetch origin catalog-live
+          git worktree add --detach "$publish_dir" origin/catalog-live
+          cp "${RUNNER_TEMP}/latest-main-transport.json" "$publish_dir/catalog/catalog.json"
+          cd "$publish_dir"
+          if git diff --quiet -- catalog/catalog.json; then
+            echo "Stable live catalog already matches latest main."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add catalog/catalog.json
+          git commit -m "Sync stable catalog from latest main"
+          git push origin HEAD:catalog-live
+
+      - name: Upload stable publication input
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: stable-catalog-publication-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/latest-main-catalog.json
+            ${{ runner.temp }}/latest-main-transport.json
+          if-no-files-found: error
+          retention-days: 14
