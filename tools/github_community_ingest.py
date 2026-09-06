@@ -313,14 +313,11 @@ def ingest_candidates(
         if not duplicate_profile_id:
             dedupe_snapshot.setdefault("profiles", []).append(copy.deepcopy(canonical))
 
-    if publish_candidates:
-        merged, outcomes = merge_candidates(
-            snapshot,
-            publish_candidates,
-            source_registry_version=str(registry.get("registry_version") or "") or None,
-        )
-    else:
-        merged, outcomes = snapshot, {}
+    merged, outcomes = merge_candidates(
+        snapshot,
+        publish_candidates,
+        source_registry_version=str(registry.get("registry_version") or "") or None,
+    )
     report["publishable"] = len(publish_candidates)
     report["merge_outcomes"] = outcomes
 
