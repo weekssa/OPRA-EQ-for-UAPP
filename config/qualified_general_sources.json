@@ -2,6 +2,16 @@
   "schema_version": 1,
   "sources": [
     {
+      "source_id": "paraeq",
+      "repository": "wabsto1/ParaEQ",
+      "path": "Sources/Models.swift",
+      "qualified_commit": "51d6f6d29aef607a3a2e26b829549f9c8d7fec6e",
+      "qualified_blob_sha": "ab2cbf127470a8b44811d30eada84f2a86094223",
+      "manifest": "catalog/discovery/paraeq_general_presets.json",
+      "license": "MIT",
+      "change_policy": "review-before-manifest-update"
+    },
+    {
       "source_id": "milciossq-eq-general",
       "repository": "MilcioSSQ/eq",
       "path": "index.html",
