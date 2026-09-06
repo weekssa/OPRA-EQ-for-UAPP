@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Discover direct oratory1990 EQ-list updates without redistributing presets.
+"""Maintain direct oratory1990 update provenance without redistributing presets.
 
 The creator source is link-only unless explicit redistribution permission exists.
-This adapter watches public update posts and records provenance/currentness only.
-It never downloads PDF contents or turns creator-hosted filter values into a
-publishable catalog entry.
+Local/public listing fixtures can still be parsed deterministically, but anonymous
+Reddit JSON polling is intentionally not attempted while that public access path
+returns HTTP 403 Blocked from GitHub-hosted automation.
 """
 
 from __future__ import annotations
@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import urllib.parse
 import urllib.request
 from pathlib import Path
 from typing import Any
@@ -57,12 +58,38 @@ def discover_from_listing(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def manual_result() -> dict[str, Any]:
+    return {
+        "source_id": "oratory1990",
+        "source_kind": "creator",
+        "redistribution_policy": "link-only",
+        "publication_eligible": False,
+        "status": "manual",
+        "note": (
+            "Direct creator provenance remains available, but anonymous Reddit update polling "
+            "is not scheduled while the public JSON path returns HTTP 403 Blocked. Review "
+            "creator updates manually or through a future compliant public adapter."
+        ),
+        "latest": None,
+        "matched_update_posts": 0,
+    }
+
+
+def is_paused_reddit_url(url: str) -> bool:
+    try:
+        parsed = urllib.parse.urlparse(url)
+    except ValueError:
+        return False
+    host = (parsed.hostname or "").casefold()
+    return host in {"reddit.com", "www.reddit.com", "old.reddit.com"}
+
+
 def fetch_listing(url: str, timeout: int = 30) -> dict[str, Any]:
     request = urllib.request.Request(
         url,
         headers={
             "Accept": "application/json",
-            "User-Agent": "EQ-Library-currentness/0.3 (+https://github.com/weekssa/OPRA-EQ-for-UAPP)",
+            "User-Agent": "EQ-Library-currentness/0.4 (+https://github.com/weekssa/OPRA-EQ-for-UAPP)",
         },
     )
     with urllib.request.urlopen(request, timeout=timeout) as response:
@@ -74,16 +101,23 @@ def main() -> int:
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--listing", type=Path)
     source.add_argument("--fetch-url", default=None)
+    source.add_argument("--manual", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--allow-degraded", action="store_true")
     args = parser.parse_args()
 
     try:
-        if args.listing:
+        if args.manual:
+            result = manual_result()
+        elif args.listing:
             payload = json.loads(args.listing.read_text(encoding="utf-8"))
+            result = discover_from_listing(payload)
         else:
-            payload = fetch_listing(args.fetch_url or DEFAULT_URL)
-        result = discover_from_listing(payload)
+            url = args.fetch_url or DEFAULT_URL
+            if is_paused_reddit_url(url):
+                result = manual_result()
+            else:
+                result = discover_from_listing(fetch_listing(url))
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         if not args.allow_degraded:
             raise
