@@ -4,13 +4,14 @@
     {
       "candidate_id": "github-general-d10f9a84c0be9724a8212bf8",
       "content_sha": "bd76ed3166b82eff0d95aaad695a01f99cf575ba",
-      "creator": "Psysonic",
+      "creator": null,
+      "creator_is_explicit": false,
       "license_review_required": false,
       "path": "src/store/eqStore.ts",
       "platform": "github_code",
       "publication_eligible": false,
       "qualification_required": [
-        "creator_attribution",
+        "source_provenance",
         "explicit_general_eq_intent_and_category",
         "structured_parametric_eq_parse",
         "canonical_dedupe"
@@ -18,6 +19,7 @@
       "redistribution": "structured-data-only",
       "repository": "Psysonic/psysonic",
       "scope_hint": "general",
+      "source_account": "Psysonic",
       "source_id": "github-community",
       "source_kind": "community_repository",
       "source_record_id": "Psysonic/psysonic:src/store/eqStore.ts:bd76ed3166b82eff0d95aaad695a01f99cf575ba",
@@ -27,13 +29,14 @@
     {
       "candidate_id": "github-general-90902e40d9317c277646be44",
       "content_sha": "74c113a0bfb64759dc41f040a10449c267d109b0",
-      "creator": "rbouteiller",
+      "creator": null,
+      "creator_is_explicit": false,
       "license_review_required": false,
       "path": "data/www/eq.html",
       "platform": "github_code",
       "publication_eligible": false,
       "qualification_required": [
-        "creator_attribution",
+        "source_provenance",
         "explicit_general_eq_intent_and_category",
         "structured_parametric_eq_parse",
         "canonical_dedupe"
@@ -41,6 +44,7 @@
       "redistribution": "structured-data-only",
       "repository": "rbouteiller/airplay-esp32",
       "scope_hint": "general",
+      "source_account": "rbouteiller",
       "source_id": "github-community",
       "source_kind": "community_repository",
       "source_record_id": "rbouteiller/airplay-esp32:data/www/eq.html:74c113a0bfb64759dc41f040a10449c267d109b0",
@@ -50,13 +54,14 @@
     {
       "candidate_id": "github-general-ac2c67035d63fbf17fa87e7a",
       "content_sha": "436a13e45fbf89910c7e880ea1034b46a12b7679",
-      "creator": "zxcloli666",
+      "creator": null,
+      "creator_is_explicit": false,
       "license_review_required": false,
       "path": "App/src/player/eq-presets.ts",
       "platform": "github_code",
       "publication_eligible": false,
       "qualification_required": [
-        "creator_attribution",
+        "source_provenance",
         "explicit_general_eq_intent_and_category",
         "structured_parametric_eq_parse",
         "canonical_dedupe"
@@ -64,6 +69,7 @@
       "redistribution": "structured-data-only",
       "repository": "zxcloli666/SoundCloud-Desktop",
       "scope_hint": "general",
+      "source_account": "zxcloli666",
       "source_id": "github-community",
       "source_kind": "community_repository",
       "source_record_id": "zxcloli666/SoundCloud-Desktop:App/src/player/eq-presets.ts:436a13e45fbf89910c7e880ea1034b46a12b7679",
