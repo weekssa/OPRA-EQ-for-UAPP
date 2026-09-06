@@ -1,6 +1,6 @@
 # TRN Black Pearl Flash protocol notes
 
-Status: implementation and physical validation evidence for v0.3 direct Flash. This document records observable protocol behavior only. It is not a copy of any reference implementation.
+Status: implementation and physical validation evidence for v0.3 direct Flash, plus post-v0.3 flat-reset behavior awaiting renewed hardware validation. This document records observable protocol behavior only. It is not a copy of any reference implementation.
 
 ## Licensing boundary
 
@@ -88,6 +88,24 @@ Direct Flash must not send commands for:
 - balance
 - microphone gain
 
+## Reset EQ to flat — approved post-v0.3 behavior
+
+When TRN Black Pearl is the active output and Direct Flash is enabled, My EQs exposes **Connected / Connect** and **Reset EQ to flat** as a compact side-by-side control row. Reset is enabled only while the DAC is connected. It is a device action, not a canonical/library EQ: it is not stored in EQ Library, My EQs, General EQs, Favorites, or exported as a preset.
+
+Reset requires confirmation. The confirmation states that the current hardware EQ slot will be overwritten, any playback-gain adjustment previously applied by EQ Library will be removed, listening volume may change, and unrelated DAC settings will not be changed.
+
+The fail-safe reset transaction is:
+
+1. Read the current active EQ slot.
+2. Read the current global playback gain and the prior EQ Library-applied gain delta.
+3. Calculate the underlying baseline gain as `current gain - tracked EQ Library delta` and reject the reset before any write if that baseline would be outside the validated global-gain range.
+4. Write all ten hardware bands as zero-gain flat bands for the active slot.
+5. Latch and persist the flat EQ slot.
+6. Only after the slot is confirmed written flat, restore the underlying baseline playback gain if it differs from the current gain.
+7. Clear EQ Library's tracked applied-gain delta only after both the flat slot and the baseline gain are successfully established.
+
+The ordering is intentionally different from ordinary profile Flash. Reset flattens and persists the PEQ slot **before** removing EQ Library attenuation so a mid-transfer USB failure cannot leave an old/partially reset boosted EQ playing at a newly increased volume. If PEQ transfer fails, playback gain and tracked delta remain unchanged. If the final gain-restore write fails after the slot is already flat, the tracked delta is retained so a retry can finish safely without guessing or double-restoring gain.
+
 ## Preamp/headroom rule
 
 The selected profile's source preamp is preferred when present. When the source omits preamp and EQ Library has calculated separate safety headroom, that derived value is used as the required playback-gain adjustment without rewriting the canonical source preamp.
@@ -113,3 +131,5 @@ The signed v0.3 candidate at `c70c523e1f530b8b197ebbccc41dfb4af1e27fc4` passed t
 - normal graceful behavior across the tested connection/transaction flows
 
 This pass makes the v0.3 Direct Flash path release-eligible subject to the final signed release build/gate. It does **not** turn every possible protocol-encodable value outside ±10 dB into a generally validated hardware range; those values continue to use the caution path unless further physical evidence establishes broader limits.
+
+The post-v0.3 **Reset EQ to flat** transaction changes device/DSP write behavior and was not part of the v0.3 hardware pass above. Before a release containing it is promoted, its exact candidate requires renewed Pixel 9 / TRN Black Pearl hands-on validation covering confirmation/cancel, all-ten-band flattening, active-slot preservation, tracked-gain restoration, no-gain-adjustment reset, and graceful failure/retry behavior where practical.
