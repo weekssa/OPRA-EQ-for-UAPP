@@ -106,7 +106,7 @@ def _headphone_matches(
     matches: list[tuple[str, str]] = []
     for manufacturer, model in headphones:
         normalized_model = normalize(model)
-        if len(normalized_model) < 3 or f" {normalized_model} " not in haystack:
+        if len(normalized_model) < 2 or f" {normalized_model} " not in haystack:
             continue
         normalized_manufacturer = normalize(manufacturer)
         manufacturer_present = bool(
