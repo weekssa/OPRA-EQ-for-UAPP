@@ -41,7 +41,7 @@
       "consecutive_failures": 0,
       "cursor": "0ec6103ee4c9ad055da7c5009e1d727e97ebe49cb37f5ebde731275eebc63902",
       "last_attempt_at": "2026-09-06T22:31:13Z",
-      "last_content_fingerprint": "ad7bcbd756d7b623d9e3d6797efd0e623e003f845620df32b81c488380e8b7e7",
+      "last_content_fingerprint": "ad7bcbd756d7b623e003f845620df32b81c488380e8b7e7",
       "last_error": null,
       "last_successful_scan_at": "2026-09-06T22:31:13Z",
       "last_terms_review_at": "2026-08-29T19:35:00Z",
@@ -164,8 +164,8 @@
       "last_content_fingerprint": null,
       "last_error": null,
       "last_successful_scan_at": null,
-      "last_terms_review_at": "2026-08-29T19:35:00Z",
-      "lifecycle": "reviewing",
+      "last_terms_review_at": "2026-09-06T23:18:42Z",
+      "lifecycle": "active",
       "parser_version": "3",
       "source_id": "squiglink"
     },
@@ -176,11 +176,11 @@
       "last_content_fingerprint": null,
       "last_error": null,
       "last_successful_scan_at": null,
-      "last_terms_review_at": "2026-08-29T19:35:00Z",
-      "lifecycle": "reviewing",
+      "last_terms_review_at": "2026-09-06T23:18:42Z",
+      "lifecycle": "active",
       "parser_version": "4",
       "source_id": "topping-community"
     }
   ],
-  "updated_at": "2026-09-06T22:31:14Z"
+  "updated_at": "2026-09-06T23:18:42Z"
 }
