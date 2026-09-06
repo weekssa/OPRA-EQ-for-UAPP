@@ -69,13 +69,23 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if python3 - "${RUNNER_TEMP}/community-source-plan.json" github-community <<'PY'
+          run_scan=false
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]] || \
+             [[ "${GITHUB_EVENT_NAME}" == "push" && "${GITHUB_REF_NAME}" == "main" ]]; then
+            # A manual validation run and the production-activation merge must execute
+            # the adapter even if a feature-branch health timestamp is still fresh.
+            run_scan=true
+          elif python3 - "${RUNNER_TEMP}/community-source-plan.json" github-community <<'PY'
           import json, sys
           plan = json.load(open(sys.argv[1], encoding='utf-8'))
           due = {item['source_id'] for item in plan.get('known_source_scans', [])}
           raise SystemExit(0 if sys.argv[2] in due else 1)
           PY
           then
+            run_scan=true
+          fi
+
+          if [[ "$run_scan" == true ]]; then
             python3 tools/github_community_ingest.py \
               --catalog "${RUNNER_TEMP}/catalog.community.current.json" \
               --discovery catalog/discovery/github_candidates.json \
