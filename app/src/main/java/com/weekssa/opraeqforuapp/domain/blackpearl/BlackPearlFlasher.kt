@@ -103,25 +103,28 @@ class BlackPearlFlasher(
             )
         }
 
-        if (baselineGainRaw != currentGainRaw) {
-            if (!transport.sendReport(BlackPearlProtocol.writeGlobalGainReport(baselineGainRaw))) {
-                return BlackPearlFlatResetResult.TransferFailed(
-                    "Black Pearl did not accept the playback-gain reset. No EQ bands were written.",
-                )
-            }
-        }
-        // The hardware is now back at the baseline gain. Record that immediately so a retry after a
-        // later PEQ transfer failure cannot restore the same EQ Library adjustment twice.
-        gainStateStore.writeAppliedGainDeltaRaw(0)
-
+        // Flatten, latch, and persist the EQ slot before removing EQ Library's playback attenuation.
+        // If USB transfer fails, the device keeps the safer pre-reset playback gain instead of
+        // exposing a partially reset/old boosted EQ at a louder level.
         val reports = BlackPearlProtocol.flashSequence(emptyList(), activeSlot)
         reports.forEachIndexed { index, report ->
             if (!transport.sendReport(report)) {
                 return BlackPearlFlatResetResult.TransferFailed(
-                    "Black Pearl stopped accepting the flat-EQ reset at step ${index + 1} of ${reports.size}. The playback-gain reset is retained so a retry will not apply it twice.",
+                    "Black Pearl stopped accepting the flat-EQ reset at step ${index + 1} of ${reports.size}. Playback gain was not restored; reconnect and try again.",
                 )
             }
         }
+
+        if (baselineGainRaw != currentGainRaw) {
+            if (!transport.sendReport(BlackPearlProtocol.writeGlobalGainReport(baselineGainRaw))) {
+                return BlackPearlFlatResetResult.TransferFailed(
+                    "The Black Pearl EQ slot is flat, but its playback gain could not be restored. The previous EQ Library gain adjustment is still tracked so a retry can finish safely.",
+                )
+            }
+        }
+        // Clear the tracked delta only after the slot is flat and the hardware gain is confirmed at
+        // baseline. A failed gain write therefore remains safely retryable without losing state.
+        gainStateStore.writeAppliedGainDeltaRaw(0)
 
         return BlackPearlFlatResetResult.Success(
             restoredPlaybackGainDb = BlackPearlProtocol.rawDeltaToGainDb(baselineGainRaw - currentGainRaw),
