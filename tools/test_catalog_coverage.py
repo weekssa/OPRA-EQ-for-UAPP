@@ -148,6 +148,45 @@ class CatalogCoverageTest(unittest.TestCase):
         self.assertFalse(report["complete"])
         self.assertTrue(any("repo:second" in error for error in errors))
 
+    def test_active_manual_source_can_be_explicitly_unrepresented_without_fake_catalog_reference(self):
+        registry = {
+            "sources": [
+                {
+                    "id": "manual-community",
+                    "lifecycle": "active",
+                    "redistribution": "structured-data-only",
+                    "currentness_mode": "manual",
+                    "catalog_presence_required": False,
+                }
+            ]
+        }
+        report = build_report({"profiles": []}, registry)
+
+        self.assertTrue(report["complete"])
+        self.assertEqual([], validate_report(report))
+        self.assertEqual(["manual-community"], report["unrepresented_active_manual_sources"])
+        self.assertEqual([], report["catalog_presence_required_sources"])
+
+    def test_non_manual_source_cannot_opt_out_of_catalog_presence(self):
+        registry = {
+            "sources": [
+                {
+                    "id": "scheduled-community",
+                    "lifecycle": "active",
+                    "redistribution": "structured-data-only",
+                    "currentness_mode": "scheduled",
+                    "catalog_presence_required": False,
+                }
+            ]
+        }
+        report = build_report({"profiles": []}, registry)
+        errors = validate_report(report)
+
+        self.assertFalse(report["complete"])
+        self.assertEqual(["scheduled-community"], report["invalid_catalog_presence_exemptions"])
+        self.assertEqual(["scheduled-community"], report["missing_active_publishable_sources"])
+        self.assertTrue(any("requires manual currentness" in error for error in errors))
+
     def test_published_catalog_meets_current_qualified_coverage_contract(self):
         catalog = json.loads((ROOT / "catalog/catalog.json").read_text(encoding="utf-8"))
         registry = json.loads((ROOT / "config/source_registry.json").read_text(encoding="utf-8"))
