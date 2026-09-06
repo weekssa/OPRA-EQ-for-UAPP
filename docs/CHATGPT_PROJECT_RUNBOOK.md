@@ -200,6 +200,16 @@ The Flash confirmation must disclose the listening-volume/playback-gain change w
 
 Unrelated Black Pearl settings remain outside the Flash path.
 
+### TRN Black Pearl Reset EQ to flat — approved post-v0.3 behavior
+
+**Reset EQ to flat** is a Black Pearl device action, not a canonical or saved EQ. In My EQs, when Black Pearl is the active output and Direct Flash is enabled, **Connect/Connected** and outlined **Reset EQ to flat** share one compact side-by-side row. Reset is enabled only while the DAC is connected and always requires confirmation.
+
+The confirmation states that the current EQ slot will be overwritten with flat settings, all ten bands will be reset, any playback-gain adjustment previously applied by EQ Library will be removed, listening volume may change, and unrelated DAC settings will not be changed. The action never creates a catalog entry, General EQ, Favorite, saved My EQs record, or export file.
+
+Reset uses the current active slot and the tracked EQ Library gain delta. It must validate the underlying baseline gain before any write, then write/latch/save all ten bands flat **before** restoring playback gain. Only after the slot is confirmed flat may it restore the underlying baseline gain and clear the tracked EQ Library gain delta. If PEQ transfer fails, leave playback gain and the tracked delta unchanged. If the final gain restore fails after the slot is flat, retain the tracked delta so a retry can finish safely. Detailed packet/transaction behavior is maintained in `docs/BLACK_PEARL_PROTOCOL_NOTES.md`.
+
+Because this changes device/DSP write behavior after the v0.3 hardware-qualified candidate, an exact release candidate containing Reset EQ to flat requires renewed Pixel 9 / TRN Black Pearl hands-on validation before merge/release qualification.
+
 ## 7. Testing and validation
 
 Never weaken validation merely to get green.
@@ -218,7 +228,8 @@ Treat the Python converter as behavioral reference and keep deterministic/golden
 - local Hide/Unhide persistence, browse/search filtering, future-revision behavior, and preservation of already-saved My EQs/export state;
 - Equalizer APO / AutoEq personal-import exactness, null-preamp preservation, strict malformed/unsupported-filter rejection, content-based format recognition independent of filename extension, parsed preview, and initial export;
 - export/currentness/ownership, including provider-adjusted SAF names, stable same-name disambiguation, unowned-name collisions, exact-URI updates, and safe cleanup;
-- Black Pearl protocol encoding, active slot, filter mapping, playback-gain read/write, non-cumulative replacement, 0 dB restoration, transfer failure, hard out-of-range rejection, and protocol-encodable-but-outside-validated filter-gain cautions without clamping.
+- Black Pearl protocol encoding, active slot, filter mapping, playback-gain read/write, non-cumulative replacement, 0 dB restoration, transfer failure, hard out-of-range rejection, and protocol-encodable-but-outside-validated filter-gain cautions without clamping;
+- Black Pearl flat reset active-slot preservation, ten-band zero-gain overwrite/latch/save, fail-safe flatten-before-gain-restore ordering, baseline-range rejection, tracked-gain clearing only after success, and retry-safe PEQ/gain-write failures.
 
 Before a hardware-test APK is handed to the user, the exact source head must pass:
 
@@ -284,5 +295,7 @@ For substantive work:
 PR #4 was fast-forward merged before publication after its final automated gates and focused Pixel 9 PASS. The focused Android release-polish code was physically validated at `3b95d384fb772514081383f801cf22b5b3aa8cbf`; subsequent commits through release source `ddda2acf9c573d42283ab8ca50d276c179631b88` changed only release documentation/catalog-currentness/release-tooling and did not change Android/device/DSP behavior, so no additional phone or Black Pearl pass was required.
 
 The approved behavior includes output-specific My EQs, canonical multi-source EQ handling, zero-selected new-headphone defaults, per-headphone notification/review for newly arriving EQs without any silent future selection, Add/Save-triggered initial export with recovery-only Export actions, SAF export ownership anchored to the actual app-created document URI rather than exact provider filename spelling, hierarchical Android Back behavior, Favorite controls in My EQs, populated qualified General EQs, living-archive preservation, reversible Hide/Unhide, strict previewed Equalizer APO / AutoEq personal import, and Black Pearl Direct Flash with non-cumulative playback-gain adjustment plus explicit caution for protocol-encodable per-band gains outside the generally validated ±10 dB range. The specific Edition XS `-11.9 dB` test case passed physical hardware validation, but the caution remains for the broader outside-±10 range.
+
+Post-v0.3, **Reset EQ to flat** for Black Pearl is approved as a separate hardware action with the compact side-by-side My EQs control and fail-safe flatten-before-gain-restore transaction described above. It is not part of the published v0.3.0 behavior and must not be called hardware-validated or release-qualified until the exact candidate passes the renewed automated/signing gates and Pixel 9 / TRN Black Pearl hands-on validation.
 
 `docs/V0.3_RELEASE_POLISH_PLAN.md` and `docs/V0.3_HANDS_ON_CHECKLIST.md` remain the record of the final v0.3 validation scope. `docs/FUTURE_SOURCE_AUTOMATION_PLAN.md` records the post-v0.3 work to finish real scheduled adapters/currentness enforcement for every active source and monthly discovery of additional sources; do not silently treat that deferred automation as already complete.
