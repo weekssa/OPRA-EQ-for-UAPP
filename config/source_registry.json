@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "registry_version": "0.4.0-source-automation-6",
+  "registry_version": "0.4.0-source-automation-7",
   "sources": [
     {
       "id": "opra",
@@ -66,32 +66,31 @@
       "id": "oratory1990",
       "kind": "creator",
       "name": "oratory1990",
-      "scope": "Direct creator provenance for author-created EQ presets; structured filter values continue to arrive through separately qualified sources such as OPRA unless redistribution permission is explicit",
+      "scope": "Direct creator provenance for author-created EQ presets; structured filter values continue to arrive through separately automated qualified carriers such as OPRA",
       "lifecycle": "link-only",
       "cadence": "manual",
-      "currentness_mode": "manual",
+      "currentness_mode": "paused",
       "parser": "creator-oratory1990-provenance",
       "parser_version": "2",
-      "cursor_strategy": "creator update timestamp/source URL plus acoustic fingerprint of the qualified structured carrier",
+      "cursor_strategy": "creator source URL plus acoustic fingerprint of an automated qualified structured carrier",
       "redistribution": "link-only",
       "attribution_required": true,
-      "license_notes": "Direct creator pages/PDFs are used for attribution and manual update review only. OPRA-carried structured presets may be enriched with direct creator provenance without duplicating the tuning. AutoEq results derived from oratory1990 measurements remain AutoEq-created results, not oratory-authored presets. Anonymous Reddit update polling is not scheduled while that public path returns HTTP 403 Blocked."
+      "license_notes": "Direct Reddit-hosted creator currentness is paused while Reddit access is unavailable. OPRA-carried structured presets may retain direct creator provenance without duplicating the tuning, and AutoEq results derived from oratory1990 measurements remain AutoEq-created results rather than oratory-authored presets. No recurring manual input is required for this direct provenance lane; it resumes only through a compliant automated access path."
     },
     {
       "id": "squiglink",
       "kind": "structured_measurement",
       "name": "Squiglink-compatible sources",
-      "scope": "Public Squiglink/CrinGraph-compatible measurement provenance plus exact public PEQ explicitly shared by creators or community authors",
+      "scope": "Public Squiglink/CrinGraph-compatible measurement ecosystem and provenance used by automated structured carriers such as AutoEq",
       "lifecycle": "active",
-      "cadence": "manual",
-      "currentness_mode": "manual",
-      "parser": "squiglink-metadata-discovery",
-      "parser_version": "3",
-      "cursor_strategy": "dataset/source revision and content hash for measurement discovery; source URL plus acoustic fingerprint for exact published PEQ",
-      "redistribution": "structured-data-only",
-      "catalog_presence_required": false,
+      "cadence": "weekly",
+      "currentness_mode": "scheduled",
+      "parser": "squiglink-ecosystem-currentness",
+      "parser_version": "4",
+      "cursor_strategy": "public squigsites registry fingerprint plus separately preserved carrier provenance",
+      "redistribution": "review-required",
       "attribution_required": true,
-      "license_notes": "This is an active manual source/provenance lane. Exact public creator/community PEQ that explicitly identifies its Squiglink-compatible measurement/target provenance may proceed through the normal Unverified community pipeline with the actual PEQ author and publication URL preserved. Ordinary phone-book/data records remain measurements only and are never converted into canonical PEQ by inference. The public Squiglink frontend can generate/export AutoEQ results interactively, but EQ Library does not treat a measurement curve or locally generated browser result as a source-authored preset and does not invent target intent, Q, filter type, or creator metadata. No stable public server-side feed of independently published Squiglink PEQ presets has been validated for scheduled ingestion."
+      "license_notes": "EQ Library automatically monitors the public Squiglink site registry for ecosystem currentness. Squiglink phone-book and frequency-response records are measurement/provenance data rather than source-authored PEQ, so this source does not fabricate canonical filters from curves or browser-generated AutoEQ. Exact PEQ derived from Squig measurements continues to arrive through separately qualified automated carriers such as AutoEq with measurement-source provenance retained."
     },
     {
       "id": "reddit-audio",
@@ -106,37 +105,37 @@
       "cursor_strategy": "post/comment IDs, timestamps, and deterministic scan fingerprints",
       "redistribution": "structured-data-only",
       "attribution_required": true,
-      "license_notes": "Public community EQ coefficients are publication-eligible. EQ Library normalizes numeric PEQ data, retains the Reddit author and original permalink, and does not copy unrelated post prose. Private, deleted, or restricted content is not accessed. As of 2026-09-06, GitHub-hosted unauthenticated Reddit JSON listing/search requests returned HTTP 403 Blocked across all configured r/headphones and r/oratory1990 probes. Live scanning is paused until a compliant public access path is validated; existing archived and curated Reddit EQs remain preserved."
+      "license_notes": "Public community EQ coefficients are publication-eligible, but GitHub-hosted unauthenticated Reddit JSON requests returned HTTP 403 Blocked and Reddit requires an approved access path. Live scanning remains paused; no manual-input substitute, scraping, or circumvention is used. Existing archived and curated Reddit EQs remain preserved."
     },
     {
       "id": "head-fi",
       "kind": "community",
       "name": "Head-Fi",
-      "scope": "Public headphone/model EQ discussions containing structured PEQ settings",
+      "scope": "Recently active public full-size headphone and portable/IEM threads containing exact structured PEQ settings",
       "lifecycle": "active",
-      "cadence": "manual",
-      "currentness_mode": "manual",
-      "parser": "community-text-peq",
-      "parser_version": "2",
-      "cursor_strategy": "thread/post IDs and timestamps",
+      "cadence": "weekly",
+      "currentness_mode": "scheduled",
+      "parser": "xenforo-rss-community-peq",
+      "parser_version": "3",
+      "cursor_strategy": "public forum RSS entry IDs plus public post IDs and acoustic fingerprints",
       "redistribution": "structured-data-only",
       "attribution_required": true,
-      "license_notes": "Publicly posted community EQ coefficients are publication-eligible. Preserve the author, forum name, original post URL, exact filter structure, and any distinction between source-authored values and EQ Library-generated conversions or safety headroom. The current publication lane is curated/manual; no autonomous live-site scanner is claimed until a robust public adapter is validated."
+      "license_notes": "A bounded public RSS/thread adapter checks recently active headphone/IEM threads without logging in or crawling arbitrary pagination. Exact coherent PEQ may publish Unverified with author and original post provenance; ambiguous identities, multi-profile posts, screenshots, curves, and malformed filters are quarantined. If the public feed/thread path becomes unavailable, the source degrades without deleting archive data."
     },
     {
       "id": "audio-science-review",
       "kind": "community",
       "name": "Audio Science Review",
-      "scope": "Public headphone/IEM threads with structured PEQ settings and traceable mirrors of expert presets",
+      "scope": "Recently active public Headphone & IEM Reviews & Discussions threads containing exact structured PEQ settings and traceable mirrors",
       "lifecycle": "active",
-      "cadence": "manual",
-      "currentness_mode": "manual",
-      "parser": "community-text-peq",
-      "parser_version": "3",
-      "cursor_strategy": "thread/post IDs and timestamps",
+      "cadence": "weekly",
+      "currentness_mode": "scheduled",
+      "parser": "xenforo-rss-community-peq",
+      "parser_version": "4",
+      "cursor_strategy": "public forum RSS entry IDs plus public post IDs and acoustic fingerprints",
       "redistribution": "structured-data-only",
       "attribution_required": true,
-      "license_notes": "Publicly posted community EQ coefficients are publication-eligible with author and original thread/post provenance retained. When an ASR post is a mirror of an already-canonical expert preset, it is retained as secondary provenance instead of creating a duplicate EQ. The current publication lane is curated/manual; no autonomous live-site scanner is claimed until a robust public adapter is validated."
+      "license_notes": "A bounded public RSS/thread adapter checks the public Headphone & IEM forum without logging in or crawling arbitrary pagination. Exact coherent PEQ may publish Unverified with author and post provenance; mirrors deduplicate acoustically and ambiguous/malformed data is quarantined. Public-path failure preserves the last-known-good archive."
     },
     {
       "id": "headphones-community",
@@ -181,23 +180,22 @@
       "cursor_strategy": "discovery queue plus immutable source blob SHA and acoustic fingerprint",
       "redistribution": "structured-data-only",
       "attribution_required": true,
-      "license_notes": "Public source-authored numeric EQ coefficients are handled through the same Unverified community policy as public forum EQs: preserve repository owner/creator and commit-specific source URL, parse exact values only, deduplicate mirrors by acoustic fingerprint, and quarantine ambiguous identity or malformed/unsupported data without blocking unrelated candidates. Public source code visibility alone never permits inventing missing filter parameters."
+      "license_notes": "Public source-authored numeric EQ coefficients are handled through the same Unverified community policy as public forum EQs: preserve repository owner/creator and commit-specific source URL, parse exact values only, deduplicate mirrors by acoustic fingerprint, and quarantine ambiguous identity or malformed/unsupported data without blocking unrelated candidates."
     },
     {
       "id": "topping-community",
       "kind": "device_community",
       "name": "Topping Community",
       "scope": "Public official and fan-made PEQ presets exposed through TOPPING Home community/configuration-center sharing",
-      "lifecycle": "active",
-      "cadence": "manual",
-      "currentness_mode": "manual",
+      "lifecycle": "paused",
+      "cadence": "weekly",
+      "currentness_mode": "paused",
       "parser": "device-community",
-      "parser_version": "4",
-      "cursor_strategy": "public preset/share identity plus source URL and acoustic fingerprint when manually qualified",
+      "parser_version": "5",
+      "cursor_strategy": "authorized public preset/share identity plus acoustic fingerprint when an API/feed is available",
       "redistribution": "structured-data-only",
-      "catalog_presence_required": false,
       "attribution_required": true,
-      "license_notes": "This is an active manual community lane. TOPPING Home publicly exposes official and community PEQ browsing/search/share functionality, and its published terms describe public presets as content that other users may view, search, download, use, and forward. The same terms prohibit unauthorized scraping, bulk downloading, interface reverse engineering, or bypassing authentication. EQ Library therefore accepts exact presets obtained through ordinary public UI/share/export flows with creator/source attribution and the normal Unverified/dedupe/archive checks, but it does not run an autonomous TOPPING crawler or reverse-engineer private interfaces. A scheduled adapter requires an explicit authorized public API/feed or equivalent permission. Screenshots, response curves, and device UI state without exact filter type/frequency/gain/Q remain non-publishable."
+      "license_notes": "TOPPING Home exposes public community PEQ, but its published terms prohibit unauthorized scraping, bulk downloading, interface reverse engineering, and authentication bypass. To honor the automation-first policy, this source is paused instead of depending on recurring manual capture. It can become scheduled only when TOPPING provides an authorized public API/feed or explicit permission; archived data is preserved."
     },
     {
       "id": "paraeq",
@@ -205,14 +203,14 @@
       "name": "ParaEQ built-in General EQ presets",
       "scope": "MIT-licensed source-authored device-independent tonal, utility, and genre presets from wabsto1/ParaEQ",
       "lifecycle": "active",
-      "cadence": "manual",
-      "currentness_mode": "manual",
+      "cadence": "weekly",
+      "currentness_mode": "scheduled",
       "parser": "general-preset-qualified-peq",
-      "parser_version": "1",
-      "cursor_strategy": "pinned repository commit plus source-record acoustic fingerprint",
+      "parser_version": "2",
+      "cursor_strategy": "qualified source file blob SHA with upstream-change review gate",
       "redistribution": "structured-data-only",
       "attribution_required": true,
-      "license_notes": "ParaEQ is MIT licensed (copyright 2026 wabsto1). EQ Library publishes only the exact built-in preset filter parameters explicitly represented in Sources/Models.swift at pinned commit 51d6f6d29aef607a3a2e26b829549f9c8d7fec6e, retains creator/source provenance, keeps missing source preamp null, and stores any EQ Library-generated safety headroom separately."
+      "license_notes": "ParaEQ is MIT licensed (copyright 2026 wabsto1). Its qualified Models.swift source is now probed automatically each week. Published General presets remain pinned to the reviewed exact source structure; upstream changes are detected automatically and cannot silently reinterpret classification or mutate acoustic history."
     },
     {
       "id": "milciossq-eq-general",
@@ -227,7 +225,7 @@
       "cursor_strategy": "pinned source file blob SHA plus source-record acoustic fingerprint; upstream changes are review-gated before replacing the qualified manifest",
       "redistribution": "structured-data-only",
       "attribution_required": true,
-      "license_notes": "MilcioSSQ/eq is MIT licensed (copyright 2026 MilcioSSQ). EQ Library publishes exact source-authored gains at the source's declared 60/250/1000/4000/16000 Hz low-shelf/peaking/peaking/peaking/high-shelf bands with source-declared Q=1, keeps missing preamp null, and stores generated safety headroom separately. The qualified snapshot is pinned to commit 5e294b506ea13be1489310fcd67f397739d38eb0. Genre classification is used only for clearly source-named genre/style labels; ambiguous labels such as Classic and Piano are not included."
+      "license_notes": "MilcioSSQ/eq is MIT licensed (copyright 2026 MilcioSSQ). EQ Library publishes exact source-authored gains at the source's declared 60/250/1000/4000/16000 Hz low-shelf/peaking/peaking/peaking/high-shelf bands with source-declared Q=1, keeps missing preamp null, and stores generated safety headroom separately."
     }
   ]
 }
