@@ -10,6 +10,11 @@ Exact acoustic duplicates for the same headphone attach GitHub provenance to the
 existing canonical revision instead of creating another tuning. Unparseable,
 non-headphone, ambiguous-identity, or inaccessible candidates are quarantined with an
 explicit reason and never block unrelated valid candidates.
+
+A GitHub repository/Gist owner is source-account provenance, not proof of EQ authorship.
+The canonical creator therefore remains null unless a candidate explicitly marks creator
+metadata as authorship evidence. The immutable source URL/record still preserves where
+the preset was discovered.
 """
 
 from __future__ import annotations
@@ -51,12 +56,29 @@ def _source(registry: dict[str, Any]) -> dict[str, Any]:
     raise ValueError(f"source registry is missing {SOURCE_ID}")
 
 
-def _repo_owner(candidate: dict[str, Any]) -> str | None:
-    creator = str(candidate.get("creator") or "").strip()
-    if creator:
-        return creator
+def _source_account(candidate: dict[str, Any]) -> str | None:
+    explicit = str(candidate.get("source_account") or "").strip()
+    if explicit:
+        return explicit
     repository = str(candidate.get("repository") or "").strip()
-    return repository.split("/", 1)[0].strip() if "/" in repository else None
+    if "/" in repository:
+        owner = repository.split("/", 1)[0].strip()
+        if owner:
+            return owner
+    # Backward compatibility for discovery queues written before source_account existed:
+    # those queues populated `creator` directly from repository/Gist ownership. Retain
+    # that value only as source-account provenance, never as canonical creator metadata.
+    if candidate.get("creator_is_explicit") is not True:
+        legacy_owner = str(candidate.get("creator") or "").strip()
+        return legacy_owner or None
+    return None
+
+
+def _explicit_creator(candidate: dict[str, Any]) -> str | None:
+    if candidate.get("creator_is_explicit") is not True:
+        return None
+    value = str(candidate.get("creator") or "").strip()
+    return value or None
 
 
 def _candidate_blob_url(candidate: dict[str, Any]) -> str | None:
@@ -242,11 +264,15 @@ def ingest_candidates(
     for item in candidates:
         if not isinstance(item, dict):
             continue
+        source_account = _source_account(item)
+        creator = _explicit_creator(item)
         row = {
             "candidate_id": item.get("candidate_id"),
             "repository": item.get("repository"),
             "path": item.get("path"),
             "url": item.get("url"),
+            "source_account": source_account,
+            "creator": creator,
         }
         try:
             text = fetcher(item, github_token)
@@ -269,10 +295,6 @@ def ingest_candidates(
             row["detail"] = str(exc)[:240]
             continue
 
-        creator = _repo_owner(item)
-        if not creator:
-            quarantine(row, "creator_missing")
-            continue
         manufacturer, model = matched
         try:
             canonical = build_candidate(
@@ -291,6 +313,7 @@ def ingest_candidates(
                 source_version=str(item.get("content_sha") or "") or None,
                 discovered_at_epoch_seconds=None,
                 verification_status="unverified",
+                allow_missing_creator=True,
             )
         except ValueError as exc:
             quarantine(row, "canonical_candidate_invalid")
@@ -304,9 +327,9 @@ def ingest_candidates(
             row["canonical_profile_id"] = duplicate_profile_id
         else:
             row["decision"] = "publish_unverified"
+            row["canonical_profile_id"] = canonical["canonical_profile_id"]
         row["manufacturer"] = manufacturer
         row["model"] = model
-        row["creator"] = creator
         row["filter_count"] = len(parsed.filters)
         report["records"].append(row)
         publish_candidates.append(canonical)
