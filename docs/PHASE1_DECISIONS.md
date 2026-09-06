@@ -270,3 +270,18 @@ Direct Flash is an optional My EQs action for the Black Pearl output only.
 - A 0 dB requirement should remove a prior EQ Library-applied attenuation when it can be safely identified from tracked/read-back state.
 - Flash must not alter DAC reconstruction filter, gain mode, amplifier topology, balance, microphone settings, or other unrelated controls.
 - GPL reference projects may be studied for observable protocol behavior, but their implementation code is not copied into this Apache-2.0 project.
+
+## TRN Black Pearl Reset EQ to flat — approved 2026-09-06
+
+Reset EQ to flat is a Black Pearl **device action**, not a catalog or saved EQ.
+
+- When Black Pearl is the active output and Direct Flash is enabled, My EQs places **Connect/Connected** and outlined **Reset EQ to flat** side by side to avoid consuming another full-width row.
+- Reset is enabled only while the DAC is connected.
+- Tapping Reset opens a confirmation before any write. The confirmation states that the current hardware EQ slot will be overwritten with flat settings, any playback-gain adjustment previously applied by EQ Library will be removed, listening volume may change, and unrelated DAC settings are not changed.
+- Reset never appears in EQ Library, General EQs, Favorites, or saved My EQs entries, and it never creates an export file.
+- The action uses the device's currently active EQ slot. It overwrites all 10 PEQ bands as zero-gain flat bands and performs the normal latch/save sequence.
+- Before writing, calculate the underlying baseline playback gain from current hardware gain minus the EQ Library-tracked gain delta. If that baseline would be outside the validated global-gain range, fail before any write rather than clamp.
+- For fail-safe ordering, flatten/latch/save the current EQ slot **before** removing EQ Library's playback-gain attenuation. A PEQ transfer failure therefore leaves the previous playback gain/tracked delta in place instead of risking a partially reset or boosted EQ at a newly louder level.
+- After the slot is confirmed flat, restore the underlying baseline gain if needed. Clear the tracked EQ Library gain delta only after the gain restoration succeeds (or no restoration write is needed).
+- If the final gain-restoration write fails after the slot is already flat, retain the tracked delta so a retry can finish safely without guessing or applying the restoration twice.
+- This post-v0.3 device/DSP behavior requires renewed Pixel 9 / TRN Black Pearl hands-on validation on the exact release candidate before merge/release qualification.
