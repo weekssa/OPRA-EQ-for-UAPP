@@ -11,7 +11,10 @@ on:
       - 'catalog/discovery/github_candidates.json'
       - 'catalog/discovery/general_github_candidates.json'
       - 'tools/github_community_ingest.py'
+      - 'tools/github_preset_discovery.py'
+      - 'tools/general_github_discovery.py'
       - 'tools/general_github_candidate_audit.py'
+      - 'tools/test_github_preset_discovery.py'
       - 'tools/test_source_github_community_ingest.py'
       - 'tools/test_source_general_github_audit.py'
       - 'tools/community_peq_ingest.py'
@@ -45,6 +48,7 @@ jobs:
         run: |
           python3 tools/catalog_pipeline.py validate-registry --registry config/source_registry.json
           PYTHONPATH=tools python3 -m unittest discover -s tools -p 'test_source_*.py' -v
+          PYTHONPATH=tools python3 -m unittest tools/test_github_preset_discovery.py -v
 
       - name: Initialize candidate and health state
         run: |
