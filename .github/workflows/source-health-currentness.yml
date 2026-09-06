@@ -14,6 +14,18 @@ on:
       - 'tools/source_health_audit.py'
       - 'tools/test_currentness_scheduler.py'
       - 'tools/test_source_health_audit.py'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/source-health-currentness.yml'
+      - 'config/source_registry.json'
+      - 'catalog/source_health.json'
+      - 'tools/catalog_pipeline.py'
+      - 'tools/currentness_scheduler.py'
+      - 'tools/source_health_audit.py'
+      - 'tools/test_currentness_scheduler.py'
+      - 'tools/test_source_health_audit.py'
   workflow_dispatch:
   schedule:
     # Runs after the established 09:17 catalog-currentness and 11:23 source-expansion jobs.
@@ -30,13 +42,14 @@ jobs:
       - name: Check out current branch tip
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ github.head_ref || github.ref_name }}
           fetch-depth: 1
 
       - name: Validate registry and currentness contracts
         run: |
           python3 tools/catalog_pipeline.py validate-registry --registry config/source_registry.json
-          PYTHONPATH=tools python3 -m unittest tools/test_currentness_scheduler.py tools/test_source_health_audit.py -v
+          PYTHONPATH=tools python3 -m unittest discover -s tools -p 'test_currentness_scheduler.py' -v
+          PYTHONPATH=tools python3 -m unittest discover -s tools -p 'test_source_health_audit.py' -v
 
       - name: Enforce scheduled source health SLA
         run: |
