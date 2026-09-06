@@ -28,7 +28,8 @@ The post-v0.4 source-expansion/currentness work now contains:
 - **Public GitHub repositories/Gists:** the discovery lane is now a scheduled **community-ingestion** source rather than a review-only dead end. Every discovered candidate is retrieved from its exact public blob/raw URL and processed through strict PEQ parsing, canonical headphone identity, source/creator provenance, acoustic dedupe, living-archive validation, and Unverified community publication. Invalid or ambiguous records are quarantined individually and do not block unrelated valid records.
 - **Initial GitHub community ingestion batch:** all 50 current headphone candidates were fetched; 39 were exact supported PEQ, 28 became new Unverified community profiles, 11 exact acoustic duplicates attached GitHub provenance to existing profiles instead of duplicating them, and 11 candidates were quarantined because headphone identity was unmatched or ambiguous. No candidate was partially imported.
 - **General GitHub discovery:** all current broad General candidates are actively processed rather than left in an indefinite review queue. The initial three candidates were all fixed/graphic-EQ source structures without exact parametric Q/filter-type data, so all three were classified `no_exact_parametric_structure` and none was published. A future exact PEQ still requires source-authored General intent/category; EQ Library never infers Sound/Genre/Utility from filter shape.
-- **Squiglink-compatible and Topping community data:** these lanes are active/manual community sources for exact public source-authored PEQ. Measurement-only records, curve-only views, screenshots, or device UI state without exact frequency/gain/Q/filter type remain non-publishable because converting them would invent acoustic data. Such structural insufficiency is a data limitation, not a generic permission/review hold.
+- **Squiglink-compatible sources:** the registry lane is now **active/manual** for exact public PEQ that a creator/community author actually publishes with Squiglink-compatible measurement/target provenance. Existing `phone_book`/measurement discovery remains metadata-only because those records are frequency-response measurements, not independently published EQ presets. The public Squiglink frontend can generate/export AutoEQ interactively, but EQ Library does not silently turn measurement curves into canonical source-authored profiles, choose a target on the creator's behalf, or invent missing target/creator/filter metadata. No stable public server-side feed of independently published Squiglink PEQ presets has been validated, so no scheduled Squiglink PEQ scanner is claimed.
+- **Topping Community:** the registry lane is now **active/manual**. TOPPING Home publicly exposes official and community PEQ browsing/search/share functionality at `https://home.toppingaudio.com/peqs`. The TOPPING Home Web user agreement dated 2026-05-21 describes public community PEQ as content that other users may view, search, download, use, and forward, while also expressly prohibiting unauthorized scraping, bulk download, interface reverse engineering, or bypassing authentication. EQ Library therefore accepts exact presets obtained through ordinary public UI/share/export flows with creator/source attribution and the normal Unverified/dedupe/archive checks, but it does not automate TOPPING retrieval unless an authorized public API/feed or explicit permission becomes available.
 - **General EQs:** the generic General-preset publication lane includes the qualified MIT-licensed ParaEQ presets and the second qualified MIT-licensed source `MilcioSSQ/eq`, which contributes 20 additional source-authored presets. Clearly named genre/style presets are Genre; Podcast/Spoken Word map through the existing Utility presentation; ambiguous labels are deliberately excluded rather than guessed.
 - **General-source currentness:** qualified GitHub-backed General sources have a scheduled blob/source-health probe. Upstream file changes are surfaced as `changed_needs_review`; a source-code change never silently rewrites a qualified General manifest or existing canonical acoustic history.
 - **Explicit currentness ownership:** the source registry distinguishes `scheduled`, `runtime`, `manual`, `review`, and `paused` currentness modes so a source cannot appear overdue merely because it is intentionally maintained outside repository scheduling.
@@ -47,7 +48,7 @@ Each registry source has one currentness owner:
 - **review** — discovery/qualification-only lane that cannot publish merely because a search ran;
 - **paused** — live access is intentionally disabled while already-published archive data remains preserved.
 
-The next adapter-expansion priorities remain a compliant public Reddit access path and robust live adapters for Head-Fi and Audio Science Review. Squiglink-compatible and Topping community sources may publish exact traceable public PEQ through the normal Unverified community path; broader measurement/curve/device-state material remains excluded unless exact source-authored PEQ is actually provided. These are future coverage improvements, not hidden claims that those manual sources are already autonomously scanned.
+The next adapter-expansion priorities remain a compliant public Reddit access path and robust live adapters for Head-Fi and Audio Science Review. Squiglink-compatible and Topping Community are active manual lanes: exact traceable public PEQ may publish through the normal Unverified community path, while measurement/curve/device-state material remains excluded unless exact source-authored PEQ is actually provided. Topping automation additionally requires an authorized public API/feed or explicit permission because the current service agreement prohibits unauthorized scraping/bulk retrieval/interface reverse engineering. These are future automation improvements, not hidden claims that the manual sources are autonomously scanned.
 
 ## 4. Cadence policy
 
@@ -69,11 +70,11 @@ Build or complete source-specific targeted discovery for registered public commu
 - Audio Science Review;
 - The HEADPHONE Community / Headphones.com;
 - HiFiGuides;
-- qualified device/manufacturer communities such as Topping where structured public EQ data is available.
+- qualified device/manufacturer communities such as Topping where an authorized structured public retrieval path is available.
 
 Do not indiscriminately crawl whole sites. Prefer APIs, public feeds, structured endpoints, search indexes, or narrow high-signal retrieval using markers such as `Preamp:`, `Filter 1:`, `ON PK`, `Fc`, `Gain`, `Q`, `parametric EQ`, `PEQ`, and supported preset attachments.
 
-Never access authenticated/private/restricted content or bypass controls.
+Never access authenticated/private/restricted content, bypass controls, or automate a source in a way its published terms prohibit. An active manual source is still a legitimate catalog source; `active` does not imply permission for automated crawling.
 
 ## 6. Source health and overdue enforcement
 
@@ -145,7 +146,7 @@ Every automated publication lane feeds the same deterministic canonical pipeline
 
 `discover -> retrieve -> parse -> provenance -> identity -> acoustic dedupe/revision -> archive preservation -> validate -> publish`
 
-Publication remains atomic. A malformed source, parser regression, temporary outage, or ambiguous candidate must be isolated/quarantined without replacing the last-known-good catalog.
+Manual active lanes use the same pipeline after a specific exact preset has been obtained through a permitted public/manual route. Publication remains atomic. A malformed source, parser regression, temporary outage, ambiguous candidate, or source-access restriction must be isolated/quarantined without replacing the last-known-good catalog.
 
 Ordinary source additions and new EQ/revision publication remain data/pipeline changes and should not require a new Android APK while the client schema stays compatible.
 
