@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "registry_version": "0.4.0-source-automation-5",
+  "registry_version": "0.4.0-source-automation-6",
   "sources": [
     {
       "id": "opra",
@@ -81,16 +81,17 @@
       "id": "squiglink",
       "kind": "structured_measurement",
       "name": "Squiglink-compatible sources",
-      "scope": "Public Squiglink/CrinGraph-compatible records and exact public PEQ where a source exposes it",
-      "lifecycle": "reviewing",
+      "scope": "Public Squiglink/CrinGraph-compatible measurement provenance plus exact public PEQ explicitly shared by creators or community authors",
+      "lifecycle": "active",
       "cadence": "manual",
-      "currentness_mode": "review",
+      "currentness_mode": "manual",
       "parser": "squiglink-metadata-discovery",
       "parser_version": "3",
-      "cursor_strategy": "dataset revision and content hash",
+      "cursor_strategy": "dataset/source revision and content hash for measurement discovery; source URL plus acoustic fingerprint for exact published PEQ",
       "redistribution": "structured-data-only",
+      "catalog_presence_required": false,
       "attribution_required": true,
-      "license_notes": "Exact public source-authored PEQ coefficients are eligible for the normal Unverified community process with creator/source attribution. The currently discovered Squiglink phone-book records are measurements, not PEQ presets, so this source remains reviewing until an exact structured PEQ record is actually captured. EQ Library never invents filters from a curve or assumes Q/filter types that the source did not provide."
+      "license_notes": "This is an active manual source/provenance lane. Exact public creator/community PEQ that explicitly identifies its Squiglink-compatible measurement/target provenance may proceed through the normal Unverified community pipeline with the actual PEQ author and publication URL preserved. Ordinary phone-book/data records remain measurements only and are never converted into canonical PEQ by inference. The public Squiglink frontend can generate/export AutoEQ results interactively, but EQ Library does not treat a measurement curve or locally generated browser result as a source-authored preset and does not invent target intent, Q, filter type, or creator metadata. No stable public server-side feed of independently published Squiglink PEQ presets has been validated for scheduled ingestion."
     },
     {
       "id": "reddit-audio",
@@ -186,16 +187,17 @@
       "id": "topping-community",
       "kind": "device_community",
       "name": "Topping Community",
-      "scope": "Public official and fan-made tuning resources exposed through Topping's community tooling",
-      "lifecycle": "reviewing",
+      "scope": "Public official and fan-made PEQ presets exposed through TOPPING Home community/configuration-center sharing",
+      "lifecycle": "active",
       "cadence": "manual",
-      "currentness_mode": "review",
+      "currentness_mode": "manual",
       "parser": "device-community",
       "parser_version": "4",
-      "cursor_strategy": "source IDs/timestamps/content hashes",
+      "cursor_strategy": "public preset/share identity plus source URL and acoustic fingerprint when manually qualified",
       "redistribution": "structured-data-only",
+      "catalog_presence_required": false,
       "attribution_required": true,
-      "license_notes": "Exact public community-posted EQ coefficients are eligible to publish as Unverified with source URL and author attribution through the normal community path. The currently known Topping material does not yet provide a captured exact frequency/gain/Q/filter-type set, so this source remains reviewing rather than falsely claiming published coverage. Screenshots, curve-only views, and device UI state are not converted into invented filters."
+      "license_notes": "This is an active manual community lane. TOPPING Home publicly exposes official and community PEQ browsing/search/share functionality, and its published terms describe public presets as content that other users may view, search, download, use, and forward. The same terms prohibit unauthorized scraping, bulk downloading, interface reverse engineering, or bypassing authentication. EQ Library therefore accepts exact presets obtained through ordinary public UI/share/export flows with creator/source attribution and the normal Unverified/dedupe/archive checks, but it does not run an autonomous TOPPING crawler or reverse-engineer private interfaces. A scheduled adapter requires an explicit authorized public API/feed or equivalent permission. Screenshots, response curves, and device UI state without exact filter type/frequency/gain/Q remain non-publishable."
     },
     {
       "id": "paraeq",

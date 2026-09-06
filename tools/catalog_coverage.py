@@ -2,9 +2,13 @@
 """Measure and enforce publication coverage for the EQ Library catalog.
 
 A catalog is considered publication-complete only when every active source that is
-eligible to publish structured data is represented by at least one source reference,
-and every explicitly qualified GitHub profile is present. Reviewing/link-only sources
-are reported but are never treated as permission to redistribute their data.
+eligible to publish structured data and requires current catalog presence is represented
+by at least one source reference, and every explicitly qualified GitHub profile is
+present. Active manual intake lanes may explicitly set ``catalog_presence_required``
+to false before their first publishable record exists; this keeps the lane active without
+manufacturing a placeholder profile or fake provenance. That exemption is valid only for
+manual currentness. Reviewing/link-only sources are reported but are never treated as
+permission to redistribute their data.
 
 Coverage also reports manufacturer/headphone breadth globally and per source so a
 whole-library publication cannot silently regress into a single pilot headphone.
@@ -59,6 +63,13 @@ def autoeq_measurement_source(ref: dict[str, Any]) -> str | None:
     return None
 
 
+def manual_presence_exemption(source: dict[str, Any]) -> bool:
+    return (
+        source.get("catalog_presence_required") is False
+        and source.get("currentness_mode") == "manual"
+    )
+
+
 def build_report(
     catalog: dict[str, Any],
     registry: dict[str, Any],
@@ -100,10 +111,25 @@ def build_report(
         if source.get("lifecycle") == "active"
         and source.get("redistribution") in PUBLICATION_POLICIES
     ]
-    missing_active_sources = sorted(
+    invalid_presence_exemptions = sorted(
         str(source.get("id"))
         for source in active_publishable
+        if source.get("catalog_presence_required") is False
+        and source.get("currentness_mode") != "manual"
+    )
+    catalog_presence_required = [
+        source for source in active_publishable if not manual_presence_exemption(source)
+    ]
+    missing_active_sources = sorted(
+        str(source.get("id"))
+        for source in catalog_presence_required
         if source_refs[str(source.get("id"))] == 0
+    )
+    unrepresented_active_manual_sources = sorted(
+        str(source.get("id"))
+        for source in active_publishable
+        if manual_presence_exemption(source)
+        and source_refs[str(source.get("id"))] == 0
     )
 
     qualified_missing: list[dict[str, str]] = []
@@ -126,7 +152,10 @@ def build_report(
         "source_reference_count": sum(source_refs.values()),
         "registry_lifecycle_counts": dict(sorted(lifecycle_counts.items())),
         "active_publishable_sources": sorted(str(source.get("id")) for source in active_publishable),
+        "catalog_presence_required_sources": sorted(str(source.get("id")) for source in catalog_presence_required),
         "missing_active_publishable_sources": missing_active_sources,
+        "unrepresented_active_manual_sources": unrepresented_active_manual_sources,
+        "invalid_catalog_presence_exemptions": invalid_presence_exemptions,
         "qualified_manifest_missing_records": qualified_missing,
         "source_coverage": {
             source_id: {
@@ -141,12 +170,22 @@ def build_report(
         "autoeq_measurement_sources": dict(sorted(measurement_sources.items())),
         "autoeq_measurement_source_count": len(measurement_sources),
     }
-    report["complete"] = not missing_active_sources and not qualified_missing
+    report["complete"] = (
+        not missing_active_sources
+        and not qualified_missing
+        and not invalid_presence_exemptions
+    )
     return report
 
 
 def validate_report(report: dict[str, Any]) -> list[str]:
     errors: list[str] = []
+    invalid_exemptions = report.get("invalid_catalog_presence_exemptions", [])
+    if invalid_exemptions:
+        errors.append(
+            "catalog presence exemption requires manual currentness: "
+            + ", ".join(invalid_exemptions)
+        )
     missing_sources = report.get("missing_active_publishable_sources", [])
     if missing_sources:
         errors.append("active publishable sources missing from catalog: " + ", ".join(missing_sources))

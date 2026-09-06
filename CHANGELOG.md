@@ -15,7 +15,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 ### Changed
 
 - `github-community` is a daily scheduled source with source-health ownership. Public exact structured community PEQ uses the established Unverified community policy while specific source restrictions remain binding.
-- Squiglink-compatible and Topping community sources remain review/manual until an exact traceable source-authored PEQ is actually captured. Exact PEQ is eligible for the normal Unverified community path; measurement-only, curve-only, screenshot, or device-state data without exact frequency/gain/Q/filter type remains non-publishable rather than being synthesized.
+- Squiglink-compatible sources and Topping Community are now active/manual source lanes for exact traceable public PEQ. Squiglink measurement-only `phone_book` records remain metadata-only; TOPPING presets are accepted only through ordinary permitted public UI/share/export flows. No autonomous TOPPING scraping, bulk retrieval, interface reverse engineering, or authentication bypass is performed; scheduled Topping ingestion requires an authorized public API/feed or explicit permission.
 - Reddit remains paused; no anonymous Reddit scanning or workaround was re-enabled.
 
 ### Validation
@@ -23,6 +23,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Initial GitHub community ingestion fetched all 50 current headphone candidates: 39 parsed as exact supported PEQ, producing 28 new Unverified profiles and 11 exact-duplicate provenance merges; 11 unmatched/ambiguous headphone identities were quarantined. Atomic living-archive validation passed before the candidate catalog was committed.
 - All three current broad General GitHub candidates were processed and classified `no_exact_parametric_structure`; none was published with invented Q/filter types.
 - Added regression coverage for valid Unverified publication, missing-preamp preservation, exact-duplicate provenance merging, short model identity with manufacturer context, target-folder handling, malformed/unsupported PEQ quarantine, unknown headphone quarantine, and General graphic-EQ rejection.
+- Source registry/currentness ownership now treats Squiglink-compatible and Topping Community as active/manual without inventing scan-success timestamps; the strict freshness SLA remains limited to genuinely scheduled sources.
 
 ## [0.4.0] - 2026-09-06
 
