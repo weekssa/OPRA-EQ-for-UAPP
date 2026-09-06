@@ -3,8 +3,11 @@
 
 The adapter uses only public Discourse JSON endpoints, extracts numeric PEQ lines,
 retains username/original-post provenance, and requires an unambiguous match to one
-headphone already present in the canonical catalog. It never reads authenticated or
-private content and never turns prose, screenshots, or curves into invented filters.
+headphone already present in the canonical catalog. A post is auto-publication eligible
+only when it contains exactly one structurally coherent PEQ block: no repeated preamp,
+no repeated Filter numbers, and contiguous Filter 1..N numbering. Multi-profile posts,
+partial copied blocks, screenshots, curves, and ambiguous headphone identity are
+quarantined rather than flattened into invented tunings.
 """
 
 from __future__ import annotations
@@ -30,11 +33,13 @@ from catalog_pipeline import (
     write_health,
 )
 from community_peq_ingest import build_candidate, parse_peq
-from reddit_community_ingest import catalog_headphones, extract_peq_text, match_headphone
+from reddit_community_ingest import catalog_headphones, normalize
 
 SEARCH_TERMS = ("parametric EQ", "PEQ", '"Filter 1"', '"Preamp:"')
 TAG_RE = re.compile(r"<[^>]+>")
 BREAK_RE = re.compile(r"(?i)<(?:br\s*/?|/p|/div|/li)>")
+PEQ_LINE_RE = re.compile(r"^(?:Preamp:|Filter\s+\d+:)", re.IGNORECASE)
+FILTER_NUMBER_RE = re.compile(r"^Filter\s+(\d+):", re.IGNORECASE)
 
 
 def fetch_json(url: str) -> dict[str, Any]:
@@ -56,6 +61,57 @@ def plain_post_text(post: dict[str, Any]) -> str:
     cooked = str(post.get("cooked") or post.get("blurb") or "")
     cooked = BREAK_RE.sub("\n", cooked)
     return html.unescape(TAG_RE.sub(" ", cooked))
+
+
+def single_peq_text(text: str) -> tuple[str | None, str | None]:
+    lines: list[str] = []
+    filter_numbers: list[int] = []
+    preamp_count = 0
+    for raw in text.splitlines():
+        line = raw.strip().strip("`> ")
+        if not PEQ_LINE_RE.match(line):
+            continue
+        lines.append(line)
+        if line.lower().startswith("preamp:"):
+            preamp_count += 1
+            continue
+        match = FILTER_NUMBER_RE.match(line)
+        if match:
+            filter_numbers.append(int(match.group(1)))
+
+    if not filter_numbers:
+        return None, None
+    if preamp_count > 1:
+        return None, "multiple_preamp_lines"
+    expected = list(range(1, len(filter_numbers) + 1))
+    if filter_numbers != expected:
+        return None, "non_contiguous_or_repeated_filter_numbers"
+    return "\n".join(lines) + "\n", None
+
+
+def unique_headphone_match(
+    title: str,
+    text: str,
+    headphones: list[tuple[str, str]],
+) -> tuple[str, str] | None:
+    normalized_title = normalize(title)
+    normalized_text = normalize(text)
+    title_haystack = f" {normalized_title} "
+    full_haystack = f" {normalized_title} {normalized_text} "
+    matches: list[tuple[str, str]] = []
+    for manufacturer, model in headphones:
+        normalized_model = normalize(model)
+        if len(normalized_model) < 4 or f" {normalized_model} " not in full_haystack:
+            continue
+        normalized_manufacturer = normalize(manufacturer)
+        manufacturer_present = bool(
+            normalized_manufacturer and f" {normalized_manufacturer} " in full_haystack
+        )
+        model_in_topic_title = f" {normalized_model} " in title_haystack
+        if manufacturer_present or model_in_topic_title:
+            matches.append((manufacturer, model))
+    distinct = list(dict.fromkeys(matches))
+    return distinct[0] if len(distinct) == 1 else None
 
 
 def search_url(base_url: str, term: str) -> str:
@@ -100,7 +156,8 @@ def discover(
         "searches_succeeded": 0,
         "posts_seen": 0,
         "posts_with_peq": 0,
-        "unmatched_headphone": 0,
+        "ambiguous_peq_blocks": 0,
+        "unmatched_or_ambiguous_headphone": 0,
         "parse_failures": 0,
         "candidates": 0,
         "candidate_sources": [],
@@ -137,16 +194,19 @@ def discover(
                 continue
 
             text = plain_post_text(full_post)
-            peq_text = extract_peq_text(text)
+            peq_text, peq_rejection = single_peq_text(text)
+            if peq_rejection:
+                report["ambiguous_peq_blocks"] += 1
+                continue
             if peq_text is None:
                 continue
             report["posts_with_peq"] += 1
             topic_id = int(full_post.get("topic_id") or hit.get("topic_id") or 0)
             topic = topics.get(topic_id, {})
             title = str(topic.get("title") or hit.get("topic_title") or "")
-            matched = match_headphone({"title": title, "selftext": text}, headphones)
+            matched = unique_headphone_match(title, text, headphones)
             if matched is None:
-                report["unmatched_headphone"] += 1
+                report["unmatched_or_ambiguous_headphone"] += 1
                 continue
             try:
                 parsed = parse_peq(peq_text)
@@ -184,6 +244,7 @@ def discover(
                     "model": model,
                     "title": title[:160],
                     "source_url": source_url,
+                    "filter_count": len(parsed.filters),
                 }
             )
 
