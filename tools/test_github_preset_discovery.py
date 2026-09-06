@@ -10,7 +10,7 @@ class GitHubPresetDiscoveryTest(unittest.TestCase):
         self.assertFalse(is_structured_eq_path("README.txt"))
         self.assertFalse(is_structured_eq_path("preset.png"))
 
-    def test_code_search_results_become_review_candidates(self):
+    def test_code_search_results_enter_community_processing_queue(self):
         payload = {
             "items": [
                 {
@@ -41,12 +41,13 @@ class GitHubPresetDiscoveryTest(unittest.TestCase):
         self.assertEqual("community_repository", candidate["source_kind"])
         self.assertEqual("example/eq", candidate["repository"])
         self.assertEqual("example", candidate["creator"])
-        self.assertEqual("review-required", candidate["redistribution"])
+        self.assertEqual("structured-data-only", candidate["redistribution"])
         self.assertFalse(candidate["publication_eligible"])
-        self.assertTrue(candidate["license_review_required"])
+        self.assertFalse(candidate["license_review_required"])
         self.assertIn("canonical_dedupe", candidate["qualification_required"])
+        self.assertIn("structured_eq_parse", candidate["qualification_required"])
 
-    def test_gist_files_are_discovered_without_auto_publication(self):
+    def test_gist_files_are_discovered_for_same_processing_path(self):
         payload = [
             {
                 "id": "gist123",
@@ -70,6 +71,7 @@ class GitHubPresetDiscoveryTest(unittest.TestCase):
         self.assertEqual("tester", candidate["creator"])
         self.assertEqual("gist:gist123:Edition XS PEQ.txt", candidate["source_record_id"])
         self.assertEqual("2026-08-29T12:00:00Z", candidate["source_updated_at"])
+        self.assertEqual("structured-data-only", candidate["redistribution"])
         self.assertFalse(candidate["publication_eligible"])
 
     def test_duplicate_search_results_collapse_to_one_candidate(self):
