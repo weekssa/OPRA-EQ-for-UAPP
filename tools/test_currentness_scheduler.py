@@ -16,8 +16,9 @@ def source(
     *,
     lifecycle: str = "active",
     cadence: str = "daily",
+    currentness_mode: str | None = None,
 ) -> dict:
-    return {
+    item = {
         "id": source_id,
         "kind": "community",
         "name": source_id,
@@ -30,6 +31,9 @@ def source(
         "redistribution": "link-only",
         "attribution_required": True,
     }
+    if currentness_mode is not None:
+        item["currentness_mode"] = currentness_mode
+    return item
 
 
 class CurrentnessSchedulerTest(unittest.TestCase):
@@ -50,11 +54,15 @@ class CurrentnessSchedulerTest(unittest.TestCase):
         )
         self.assertFalse(is_source_due(item, health, self.now))
 
-    def test_paused_and_manual_sources_are_never_scheduled(self):
+    def test_paused_manual_runtime_and_review_sources_are_never_scheduled(self):
         paused = source("paused", lifecycle="paused")
         manual = source("manual", cadence="manual")
+        runtime = source("runtime", currentness_mode="runtime")
+        review = source("review", lifecycle="reviewing", currentness_mode="review")
         self.assertFalse(is_source_due(paused, SourceHealth("paused", "paused"), self.now))
         self.assertFalse(is_source_due(manual, SourceHealth("manual", "active"), self.now))
+        self.assertFalse(is_source_due(runtime, SourceHealth("runtime", "active"), self.now))
+        self.assertFalse(is_source_due(review, SourceHealth("review", "reviewing"), self.now))
 
     def test_plan_preserves_cursor_and_parser_version(self):
         registry = {
@@ -86,6 +94,22 @@ class CurrentnessSchedulerTest(unittest.TestCase):
         warnings = source_health_warnings(registry, health, now=self.now)
         self.assertEqual({"repeated_failures", "stale"}, {warning.kind for warning in warnings})
 
+    def test_non_scheduled_modes_do_not_generate_health_warnings(self):
+        registry = {
+            "schema_version": 1,
+            "registry_version": "1",
+            "sources": [source("runtime", currentness_mode="runtime")],
+        }
+        health = {
+            "runtime": SourceHealth(
+                "runtime",
+                "active",
+                last_successful_scan_at="2020-01-01T00:00:00Z",
+                consecutive_failures=99,
+            )
+        }
+        self.assertEqual([], source_health_warnings(registry, health, now=self.now))
+
     def test_discovery_loop_is_weekly(self):
         self.assertFalse(discovery_due("2026-08-28T15:00:00Z", now=self.now))
         self.assertTrue(discovery_due("2026-08-20T15:00:00Z", now=self.now))
@@ -95,7 +119,11 @@ class CurrentnessSchedulerTest(unittest.TestCase):
         registry = {
             "schema_version": 1,
             "registry_version": "1",
-            "sources": [source("active"), source("paused", lifecycle="paused")],
+            "sources": [
+                source("active"),
+                source("runtime", currentness_mode="runtime"),
+                source("paused", lifecycle="paused"),
+            ],
         }
         plan = build_currentness_plan(
             registry,
