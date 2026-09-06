@@ -95,8 +95,10 @@ class XenforoRssCommunityIngestTest(unittest.TestCase):
         self.assertEqual("Sennheiser", candidate["headphone"]["manufacturer"])
         self.assertEqual("HD 650", candidate["headphone"]["model"])
         self.assertEqual("Alice", candidate["creator"])
-        self.assertEqual("head-fi", candidate["source"]["source_id"])
-        self.assertEqual(2, len(candidate["filters"]))
+        revision = candidate["revisions"][0]
+        self.assertEqual("unverified", revision["verification_status"])
+        self.assertEqual("head-fi", revision["source_references"][0]["source_id"])
+        self.assertEqual(2, len(revision["filters"]))
         self.assertEqual(1, report["candidates"])
 
     def test_multiple_filter_blocks_are_quarantined(self):
