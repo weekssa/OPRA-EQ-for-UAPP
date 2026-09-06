@@ -4,6 +4,26 @@ All notable changes to **OPRA EQ for UAPP / EQ Library** will be documented in t
 
 The project uses Semantic Versioning. Development releases remain in the `0.x` series until the first stable `v1.0.0` release.
 
+## [Unreleased]
+
+### Added
+
+- Scheduled public GitHub/Gist community ingestion now takes discovered headphone PEQ through exact source retrieval, strict PEQ parsing, canonical headphone identity, creator/source provenance, acoustic dedupe, living-archive validation, and Unverified publication instead of leaving mechanically valid community data indefinitely review-only.
+- Community-ingestion reports record fetched/parsed/published/deduplicated/quarantined counts and machine-readable quarantine reasons; one malformed or ambiguous record cannot block unrelated valid candidates.
+- Broad General GitHub discovery is actively audited for exact parametric structure. Fixed/graphic-EQ data without source-provided Q/filter types is rejected rather than converted by invention.
+
+### Changed
+
+- `github-community` is a daily scheduled source with source-health ownership. Public exact structured community PEQ uses the established Unverified community policy while specific source restrictions remain binding.
+- Squiglink-compatible and Topping community sources remain review/manual until an exact traceable source-authored PEQ is actually captured. Exact PEQ is eligible for the normal Unverified community path; measurement-only, curve-only, screenshot, or device-state data without exact frequency/gain/Q/filter type remains non-publishable rather than being synthesized.
+- Reddit remains paused; no anonymous Reddit scanning or workaround was re-enabled.
+
+### Validation
+
+- Initial GitHub community ingestion fetched all 50 current headphone candidates: 39 parsed as exact supported PEQ, producing 28 new Unverified profiles and 11 exact-duplicate provenance merges; 11 unmatched/ambiguous headphone identities were quarantined. Atomic living-archive validation passed before the candidate catalog was committed.
+- All three current broad General GitHub candidates were processed and classified `no_exact_parametric_structure`; none was published with invented Q/filter types.
+- Added regression coverage for valid Unverified publication, missing-preamp preservation, exact-duplicate provenance merging, short model identity with manufacturer context, target-folder handling, malformed/unsupported PEQ quarantine, unknown headphone quarantine, and General graphic-EQ rejection.
+
 ## [0.4.0] - 2026-09-06
 
 ### Added

@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
-"""Normalize public GitHub code-search results into review-only General EQ candidates.
+"""Normalize public GitHub code-search results into General EQ processing candidates.
 
-This is discovery, not publication. Results are deliberately broad enough to find source
-code and structured preset files, but every candidate remains blocked on originality,
-license/redistribution, creator attribution, explicit General EQ intent/category,
-structured filter parsing, and canonical deduplication.
+Broad discovery finds source code, graphic-EQ tables, and possible PEQ records. Public
+numeric EQ coefficients use the same community policy as forum EQs, so a separate
+license-review gate is not required. Candidates still cannot enter the canonical catalog
+until exact parametric structure and explicit source-authored General intent/category are
+present; missing Q/filter type/category is never invented.
+
+Repository ownership is retained as source-account provenance and is not treated as
+proof that the account authored a discovered EQ.
 """
 
 from __future__ import annotations
@@ -45,7 +49,7 @@ def discover(payloads: list[dict[str, Any]]) -> list[dict[str, Any]]:
             repository = item.get("repository") if isinstance(item.get("repository"), dict) else {}
             repo_name = str(repository.get("full_name") or "").strip() or None
             owner = repository.get("owner") if isinstance(repository.get("owner"), dict) else {}
-            creator = str(owner.get("login") or "").strip() or None
+            source_account = str(owner.get("login") or "").strip() or None
             sha = str(item.get("sha") or "").strip() or None
             record_id = f"{repo_name or 'unknown'}:{path}:{sha or 'unknown'}"
             result = {
@@ -57,19 +61,19 @@ def discover(payloads: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "repository": repo_name,
                 "path": path,
                 "url": url,
-                "creator": creator,
+                "source_account": source_account,
+                "creator": None,
+                "creator_is_explicit": False,
                 "source_record_id": record_id,
                 "content_sha": sha,
                 "status": "new_candidate",
-                "redistribution": "review-required",
+                "redistribution": "structured-data-only",
                 "publication_eligible": False,
-                "license_review_required": True,
+                "license_review_required": False,
                 "qualification_required": [
-                    "originality",
-                    "license_or_redistribution_terms",
-                    "creator_attribution",
+                    "source_provenance",
                     "explicit_general_eq_intent_and_category",
-                    "structured_eq_parse",
+                    "structured_parametric_eq_parse",
                     "canonical_dedupe",
                 ],
             }

@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
-"""Normalize public GitHub code-search/Gist results into EQ source candidates.
+"""Normalize public GitHub code-search/Gist results into EQ community candidates.
 
-Discovery is deliberately separate from ingestion and publication. A matching public
-file is only a candidate until its origin, license/redistribution terms, headphone
-identity and creator attribution are qualified. This tool performs no network calls;
-a scheduled job can feed authenticated GitHub API responses into it deterministically.
+Discovery remains separate from publication so broad search results cannot bypass exact
+PEQ parsing, headphone identity, attribution, or canonical dedupe. Public numeric EQ
+coefficients are no longer held behind a separate repository-license review gate: the
+production community adapter processes every candidate and publishes valid traceable
+PEQ as Unverified while quarantining malformed or ambiguous records.
+
+Repository/Gist ownership is source-account provenance, not evidence that the account
+created the EQ. Discovery therefore records the owner as ``source_account`` and leaves
+``creator`` null unless a future adapter has explicit authorship evidence.
 """
 
 from __future__ import annotations
@@ -45,7 +50,7 @@ def _candidate(
     *,
     url: str,
     raw_url: str | None,
-    creator: str | None,
+    source_account: str | None,
     repository: str | None,
     path: str,
     record_id: str,
@@ -62,18 +67,18 @@ def _candidate(
         "path": path,
         "url": url,
         "raw_url": raw_url,
-        "creator": creator,
+        "source_account": source_account,
+        "creator": None,
+        "creator_is_explicit": False,
         "source_record_id": record_id,
         "content_sha": content_sha,
         "source_updated_at": updated_at,
         "status": "new_candidate",
-        "redistribution": "review-required",
+        "redistribution": "structured-data-only",
         "publication_eligible": False,
-        "license_review_required": True,
+        "license_review_required": False,
         "qualification_required": [
-            "originality",
-            "license_or_redistribution_terms",
-            "creator_attribution",
+            "source_provenance",
             "headphone_identity",
             "structured_eq_parse",
             "canonical_dedupe",
@@ -93,13 +98,13 @@ def discover_code_search(payload: dict[str, Any]) -> list[dict[str, Any]]:
         repository = item.get("repository") if isinstance(item.get("repository"), dict) else {}
         repo_name = str(repository.get("full_name") or "").strip() or None
         owner = repository.get("owner") if isinstance(repository.get("owner"), dict) else {}
-        creator = str(owner.get("login") or "").strip() or None
+        source_account = str(owner.get("login") or "").strip() or None
         sha = str(item.get("sha") or "").strip() or None
         record_id = f"{repo_name or 'unknown'}:{path}:{sha or 'unknown'}"
         candidate = _candidate(
             url=url,
             raw_url=None,
-            creator=creator,
+            source_account=source_account,
             repository=repo_name,
             path=path,
             record_id=record_id,
@@ -121,7 +126,7 @@ def discover_gists(payload: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
         if not gist_url or not gist_id:
             continue
         owner = gist.get("owner") if isinstance(gist.get("owner"), dict) else {}
-        creator = str(owner.get("login") or "").strip() or None
+        source_account = str(owner.get("login") or "").strip() or None
         updated_at = str(gist.get("updated_at") or "").strip() or None
         files = gist.get("files") if isinstance(gist.get("files"), dict) else {}
         for filename, file_info in files.items():
@@ -133,7 +138,7 @@ def discover_gists(payload: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
             candidate = _candidate(
                 url=file_url,
                 raw_url=raw_url,
-                creator=creator,
+                source_account=source_account,
                 repository=None,
                 path=str(filename),
                 record_id=record_id,
@@ -142,7 +147,7 @@ def discover_gists(payload: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
                 platform="github_gist",
             )
             candidates[candidate["candidate_id"]] = candidate
-    return sorted(candidates.values(), key=lambda item: (item["creator"] or "", item["path"], item["url"]))
+    return sorted(candidates.values(), key=lambda item: (item["source_account"] or "", item["path"], item["url"]))
 
 
 def main() -> int:

@@ -112,7 +112,7 @@ def build_candidate(
     *,
     manufacturer: str,
     model: str,
-    creator: str,
+    creator: str | None,
     tuning_label: str,
     source_id: str,
     source_kind: str,
@@ -124,6 +124,7 @@ def build_candidate(
     source_version: str | None,
     discovered_at_epoch_seconds: int | None,
     verification_status: str | None = None,
+    allow_missing_creator: bool = False,
 ) -> dict[str, Any]:
     if source_kind not in ALLOWED_SOURCE_KINDS:
         raise ValueError(f"Unsupported community source kind: {source_kind}")
@@ -132,7 +133,8 @@ def build_candidate(
             "Community ingestion requires an explicit safe redistribution policy: "
             "link-only or structured-data-only"
         )
-    if not creator.strip():
+    creator_name = str(creator or "").strip()
+    if not creator_name and not allow_missing_creator:
         raise ValueError("Creator attribution is required for community ingestion")
     if not source_url.startswith(("https://", "http://")):
         raise ValueError("A source URL is required for provenance")
@@ -146,12 +148,19 @@ def build_candidate(
         raise ValueError("verification_status must be verified or unverified")
 
     fingerprint = acoustic_fingerprint(parsed)
+    # Most community lanes know the author/creator explicitly. Broad GitHub discovery is
+    # different: repository/Gist ownership proves source-account provenance but does not
+    # prove authorship of a preset stored there. When that lane deliberately allows a
+    # missing creator, use immutable source identity only as the ID discriminator while
+    # keeping creator null in canonical metadata. This prevents both invented authorship
+    # and collisions between unrelated repositories that use the same preset filename.
+    identity_creator = creator_name or f"source:{source_id}:{source_record_id}"
     identity = "|".join(
         [
             manufacturer.strip(),
             model.strip(),
             variant.strip() if variant else "",
-            creator.strip(),
+            identity_creator,
             tuning_label.strip(),
         ]
     )
@@ -167,7 +176,7 @@ def build_candidate(
             "variant": variant.strip() if variant else None,
             "pads_or_mode": None,
         },
-        "creator": creator.strip(),
+        "creator": creator_name or None,
         "target": {
             "name": target_name,
             "kind": "explicit_target" if target_name else "unknown",
@@ -188,7 +197,7 @@ def build_candidate(
                         "source_vendor_id": manufacturer.strip(),
                         "source_product_id": model.strip(),
                         "url": source_url,
-                        "creator": creator.strip(),
+                        "creator": creator_name or None,
                         "provenance_tier": PROVENANCE_TIER[source_kind],
                         "redistribution_policy": redistribution_policy,
                         "published_at_epoch_seconds": None,

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "registry_version": "0.4.0-source-automation-3",
+  "registry_version": "0.4.0-source-automation-5",
   "sources": [
     {
       "id": "opra",
@@ -81,16 +81,16 @@
       "id": "squiglink",
       "kind": "structured_measurement",
       "name": "Squiglink-compatible sources",
-      "scope": "Public structured measurement/target data where source terms permit use",
+      "scope": "Public Squiglink/CrinGraph-compatible records and exact public PEQ where a source exposes it",
       "lifecycle": "reviewing",
       "cadence": "manual",
       "currentness_mode": "review",
       "parser": "squiglink-metadata-discovery",
-      "parser_version": "2",
+      "parser_version": "3",
       "cursor_strategy": "dataset revision and content hash",
-      "redistribution": "review-required",
+      "redistribution": "structured-data-only",
       "attribution_required": true,
-      "license_notes": "Squiglink server/tooling is permissively licensed, but hosted measurement/database rights can be creator-specific. The adapter is qualification-only and never makes measurement records publication-eligible until source-specific rights and attribution are qualified."
+      "license_notes": "Exact public source-authored PEQ coefficients are eligible for the normal Unverified community process with creator/source attribution. The currently discovered Squiglink phone-book records are measurements, not PEQ presets, so this source remains reviewing until an exact structured PEQ record is actually captured. EQ Library never invents filters from a curve or assumes Q/filter types that the source did not provide."
     },
     {
       "id": "reddit-audio",
@@ -171,16 +171,16 @@
       "id": "github-community",
       "kind": "community_repository",
       "name": "Public GitHub repositories and Gists",
-      "scope": "Licensed structured EQ datasets and original preset repositories, including headphone-specific and General EQ candidates",
-      "lifecycle": "reviewing",
-      "cadence": "manual",
-      "currentness_mode": "review",
-      "parser": "github-structured-eq-discovery",
-      "parser_version": "3",
-      "cursor_strategy": "repository commit SHA and file content hash",
-      "redistribution": "review-required",
+      "scope": "Public structured headphone-specific and General EQ community presets discovered in GitHub repositories and Gists",
+      "lifecycle": "active",
+      "cadence": "daily",
+      "currentness_mode": "scheduled",
+      "parser": "github-community-peq",
+      "parser_version": "4",
+      "cursor_strategy": "discovery queue plus immutable source blob SHA and acoustic fingerprint",
+      "redistribution": "structured-data-only",
       "attribution_required": true,
-      "license_notes": "Scheduled broad code discovery emits review-only candidates, but this registry lane is not a publication-currentness SLA. Repository licensing, originality, headphone identity, and General EQ purpose/category qualification remain separate from public community-forum publication policy."
+      "license_notes": "Public source-authored numeric EQ coefficients are handled through the same Unverified community policy as public forum EQs: preserve repository owner/creator and commit-specific source URL, parse exact values only, deduplicate mirrors by acoustic fingerprint, and quarantine ambiguous identity or malformed/unsupported data without blocking unrelated candidates. Public source code visibility alone never permits inventing missing filter parameters."
     },
     {
       "id": "topping-community",
@@ -191,11 +191,11 @@
       "cadence": "manual",
       "currentness_mode": "review",
       "parser": "device-community",
-      "parser_version": "3",
+      "parser_version": "4",
       "cursor_strategy": "source IDs/timestamps/content hashes",
       "redistribution": "structured-data-only",
       "attribution_required": true,
-      "license_notes": "Public community-posted EQ coefficients are publication-eligible with source URL and author attribution retained. The lane remains discovery/reviewing until an exact structured coefficient set is captured; screenshots or curve-only views are not converted into invented filters. Device-format conversions must be labeled separately from the original source tuning."
+      "license_notes": "Exact public community-posted EQ coefficients are eligible to publish as Unverified with source URL and author attribution through the normal community path. The currently known Topping material does not yet provide a captured exact frequency/gain/Q/filter-type set, so this source remains reviewing rather than falsely claiming published coverage. Screenshots, curve-only views, and device UI state are not converted into invented filters."
     },
     {
       "id": "paraeq",
