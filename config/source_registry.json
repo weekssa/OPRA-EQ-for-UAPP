@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "registry_version": "0.4.0-source-automation-4",
+  "registry_version": "0.4.0-source-automation-5",
   "sources": [
     {
       "id": "opra",
@@ -82,15 +82,15 @@
       "kind": "structured_measurement",
       "name": "Squiglink-compatible sources",
       "scope": "Public Squiglink/CrinGraph-compatible records and exact public PEQ where a source exposes it",
-      "lifecycle": "active",
+      "lifecycle": "reviewing",
       "cadence": "manual",
-      "currentness_mode": "manual",
+      "currentness_mode": "review",
       "parser": "squiglink-metadata-discovery",
       "parser_version": "3",
       "cursor_strategy": "dataset revision and content hash",
       "redistribution": "structured-data-only",
       "attribution_required": true,
-      "license_notes": "Exact public source-authored PEQ coefficients may flow through the normal Unverified community process with creator/source attribution. Squiglink phone-book and measurement records are measurements, not PEQ presets: EQ Library never invents filters from a curve or assumes Q/filter types that the source did not provide. Measurement-only records therefore remain non-publishable unless the source also exposes exact structured PEQ."
+      "license_notes": "Exact public source-authored PEQ coefficients are eligible for the normal Unverified community process with creator/source attribution. The currently discovered Squiglink phone-book records are measurements, not PEQ presets, so this source remains reviewing until an exact structured PEQ record is actually captured. EQ Library never invents filters from a curve or assumes Q/filter types that the source did not provide."
     },
     {
       "id": "reddit-audio",
@@ -187,15 +187,15 @@
       "kind": "device_community",
       "name": "Topping Community",
       "scope": "Public official and fan-made tuning resources exposed through Topping's community tooling",
-      "lifecycle": "active",
+      "lifecycle": "reviewing",
       "cadence": "manual",
-      "currentness_mode": "manual",
+      "currentness_mode": "review",
       "parser": "device-community",
       "parser_version": "4",
       "cursor_strategy": "source IDs/timestamps/content hashes",
       "redistribution": "structured-data-only",
       "attribution_required": true,
-      "license_notes": "Exact public community-posted EQ coefficients may publish as Unverified with source URL and author attribution through the normal community path. Screenshots, curve-only views, and device UI state without exact frequency/gain/Q/filter-type data are not converted into invented filters. Device-format conversions must be labeled separately from the original source tuning."
+      "license_notes": "Exact public community-posted EQ coefficients are eligible to publish as Unverified with source URL and author attribution through the normal community path. The currently known Topping material does not yet provide a captured exact frequency/gain/Q/filter-type set, so this source remains reviewing rather than falsely claiming published coverage. Screenshots, curve-only views, and device UI state are not converted into invented filters."
     },
     {
       "id": "paraeq",
