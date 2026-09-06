@@ -46,7 +46,7 @@
       "last_successful_scan_at": null,
       "last_terms_review_at": "2026-08-29T19:35:00Z",
       "lifecycle": "reviewing",
-      "parser_version": "2",
+      "parser_version": "3",
       "source_id": "github-community"
     },
     {
@@ -63,27 +63,39 @@
     },
     {
       "consecutive_failures": 0,
-      "cursor": null,
-      "last_attempt_at": null,
-      "last_content_fingerprint": null,
+      "cursor": "a5adb52c06fcbf92920be12fdbb2a0fe59cf5dbeb909e5d0473f04c84185cea4",
+      "last_attempt_at": "2026-09-06T19:37:58Z",
+      "last_content_fingerprint": "664509265d6bd53bb89a3608183e4e8bb507555df65ba35a7317cbc991e627fe",
       "last_error": null,
-      "last_successful_scan_at": null,
+      "last_successful_scan_at": "2026-09-06T19:37:58Z",
       "last_terms_review_at": null,
       "lifecycle": "active",
-      "parser_version": "2",
+      "parser_version": "3",
       "source_id": "headphones-community"
     },
     {
       "consecutive_failures": 0,
-      "cursor": null,
-      "last_attempt_at": null,
-      "last_content_fingerprint": null,
+      "cursor": "64d067b0a9a9e5ee71f90e02c13f840411c40ca6830947e60882f3fc74299412",
+      "last_attempt_at": "2026-09-06T19:38:11Z",
+      "last_content_fingerprint": "7cd6c395c3333baa12ff54523dbd57e29dde147bf8021780f87fa00a2df5866c",
       "last_error": null,
-      "last_successful_scan_at": null,
+      "last_successful_scan_at": "2026-09-06T19:38:11Z",
+      "last_terms_review_at": null,
+      "lifecycle": "active",
+      "parser_version": "2",
+      "source_id": "hifiguides"
+    },
+    {
+      "consecutive_failures": 0,
+      "cursor": "2f65db277774f0be170efb79233b73f3e94f13ab",
+      "last_attempt_at": "2026-09-06T19:38:12Z",
+      "last_content_fingerprint": "2f65db277774f0be170efb79233b73f3e94f13ab",
+      "last_error": null,
+      "last_successful_scan_at": "2026-09-06T19:38:12Z",
       "last_terms_review_at": null,
       "lifecycle": "active",
       "parser_version": "1",
-      "source_id": "hifiguides"
+      "source_id": "milciossq-eq-general"
     },
     {
       "consecutive_failures": 0,
@@ -134,15 +146,15 @@
       "source_id": "paraeq"
     },
     {
-      "consecutive_failures": 0,
+      "consecutive_failures": 1,
       "cursor": null,
-      "last_attempt_at": null,
+      "last_attempt_at": "2026-09-06T19:37:16Z",
       "last_content_fingerprint": null,
-      "last_error": null,
+      "last_error": "all Reddit discovery requests failed",
       "last_successful_scan_at": null,
       "last_terms_review_at": "2026-08-29T19:35:00Z",
       "lifecycle": "active",
-      "parser_version": "2",
+      "parser_version": "3",
       "source_id": "reddit-audio"
     },
     {
@@ -169,5 +181,6 @@
       "parser_version": "3",
       "source_id": "topping-community"
     }
-  ]
+  ],
+  "updated_at": "2026-09-06T19:38:12Z"
 }

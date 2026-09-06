@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "registry_version": "0.3.0-community-public-5",
+  "registry_version": "0.4.0-source-automation-1",
   "sources": [
     {
       "id": "opra",
@@ -93,8 +93,8 @@
       "lifecycle": "active",
       "cadence": "daily",
       "parser": "community-text-peq",
-      "parser_version": "2",
-      "cursor_strategy": "post/comment IDs and timestamps",
+      "parser_version": "3",
+      "cursor_strategy": "post/comment IDs, timestamps, and deterministic scan fingerprints",
       "redistribution": "structured-data-only",
       "attribution_required": true,
       "license_notes": "Public community EQ coefficients are publication-eligible. EQ Library normalizes numeric PEQ data, retains the Reddit author and original permalink, and does not copy unrelated post prose. Private, deleted, or restricted content is not accessed."
@@ -134,8 +134,8 @@
       "scope": "Public creator/community EQ posts, measurements, and tuning discussions hosted at forum.headphones.com",
       "lifecycle": "active",
       "cadence": "weekly",
-      "parser": "community-text-peq",
-      "parser_version": "2",
+      "parser": "discourse-community-peq",
+      "parser_version": "3",
       "cursor_strategy": "topic/post IDs, timestamps, and source content hashes",
       "redistribution": "structured-data-only",
       "attribution_required": true,
@@ -148,8 +148,8 @@
       "scope": "Public headphone and IEM discussion threads containing original structured PEQ settings",
       "lifecycle": "active",
       "cadence": "weekly",
-      "parser": "community-text-peq",
-      "parser_version": "1",
+      "parser": "discourse-community-peq",
+      "parser_version": "2",
       "cursor_strategy": "topic/post IDs, timestamps, and source content hashes",
       "redistribution": "structured-data-only",
       "attribution_required": true,
@@ -159,15 +159,15 @@
       "id": "github-community",
       "kind": "community_repository",
       "name": "Public GitHub repositories and Gists",
-      "scope": "Licensed structured EQ datasets and original preset repositories",
+      "scope": "Licensed structured EQ datasets and original preset repositories, including headphone-specific and General EQ candidates",
       "lifecycle": "reviewing",
       "cadence": "daily",
       "parser": "github-structured-eq-discovery",
-      "parser_version": "2",
+      "parser_version": "3",
       "cursor_strategy": "repository commit SHA and file content hash",
       "redistribution": "review-required",
       "attribution_required": true,
-      "license_notes": "Discovery emits review-only candidates. Repository licensing and originality remain separate from public community-forum publication policy."
+      "license_notes": "Discovery emits review-only candidates. Repository licensing, originality, headphone identity, and General EQ purpose/category qualification remain separate from public community-forum publication policy."
     },
     {
       "id": "topping-community",
@@ -196,6 +196,20 @@
       "redistribution": "structured-data-only",
       "attribution_required": true,
       "license_notes": "ParaEQ is MIT licensed (copyright 2026 wabsto1). EQ Library publishes only the exact built-in preset filter parameters explicitly represented in Sources/Models.swift at pinned commit 51d6f6d29aef607a3a2e26b829549f9c8d7fec6e, retains creator/source provenance, keeps missing source preamp null, and stores any EQ Library-generated safety headroom separately."
+    },
+    {
+      "id": "milciossq-eq-general",
+      "kind": "community_repository",
+      "name": "MilcioSSQ EQ built-in General presets",
+      "scope": "MIT-licensed source-authored five-band General EQ presets from MilcioSSQ/eq, excluding Flat and ambiguous labels that do not safely establish Sound/Genre/Utility intent",
+      "lifecycle": "active",
+      "cadence": "weekly",
+      "parser": "general-preset-qualified-peq",
+      "parser_version": "1",
+      "cursor_strategy": "pinned source file blob SHA plus source-record acoustic fingerprint; upstream changes are review-gated before replacing the qualified manifest",
+      "redistribution": "structured-data-only",
+      "attribution_required": true,
+      "license_notes": "MilcioSSQ/eq is MIT licensed (copyright 2026 MilcioSSQ). EQ Library publishes exact source-authored gains at the source's declared 60/250/1000/4000/16000 Hz low-shelf/peaking/peaking/peaking/high-shelf bands with source-declared Q=1, keeps missing preamp null, and stores generated safety headroom separately. The qualified snapshot is pinned to commit 5e294b506ea13be1489310fcd67f397739d38eb0. Genre classification is used only for clearly source-named genre/style labels; ambiguous labels such as Classic and Piano are not included."
     }
   ]
 }

@@ -1,0 +1,309 @@
+name: Source expansion currentness
+
+on:
+  push:
+    branches:
+      - main
+      - 'source-automation-*'
+    paths:
+      - '.github/workflows/source-expansion-currentness.yml'
+      - 'config/source_registry.json'
+      - 'config/qualified_general_sources.json'
+      - 'catalog/discovery/*_general_presets.json'
+      - 'tools/catalog_pipeline.py'
+      - 'tools/catalog_merge.py'
+      - 'tools/community_peq_ingest.py'
+      - 'tools/reddit_community_ingest.py'
+      - 'tools/reddit_currentness.py'
+      - 'tools/discourse_community_ingest.py'
+      - 'tools/general_preset_ingest.py'
+      - 'tools/general_preset_publish.py'
+      - 'tools/general_github_discovery.py'
+      - 'tools/qualified_general_source_probe.py'
+      - 'tools/currentness_scheduler.py'
+      - 'tools/test_source_expansion.py'
+  workflow_dispatch:
+  schedule:
+    - cron: '23 11 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: eq-catalog-writer-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  expand-sources:
+    if: github.event_name != 'push' || github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out current branch tip
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 1
+
+      - name: Validate source-expansion inputs
+        run: |
+          python3 tools/catalog_pipeline.py validate-registry --registry config/source_registry.json
+          PYTHONPATH=tools python3 -m unittest discover -s tools -p 'test_source_expansion.py' -v
+
+      - name: Initialize candidate and source-health state
+        run: |
+          cp catalog/catalog.json "${RUNNER_TEMP}/catalog.expansion.current.json"
+          cp catalog/source_health.json "${RUNNER_TEMP}/source_health.expansion.current.json"
+          mkdir -p "${RUNNER_TEMP}/source-expansion-reports"
+
+      - name: Publish every qualified General EQ manifest into the candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t manifests < <(find catalog/discovery -maxdepth 1 -type f -name '*_general_presets.json' -print | sort)
+          if (( ${#manifests[@]} == 0 )); then
+            echo "No General EQ manifests found." >&2
+            exit 1
+          fi
+          for manifest in "${manifests[@]}"; do
+            base="$(basename "${manifest}" .json)"
+            next="${RUNNER_TEMP}/catalog.expansion.next.json"
+            python3 tools/general_preset_publish.py \
+              --catalog "${RUNNER_TEMP}/catalog.expansion.current.json" \
+              --manifest "${manifest}" \
+              --registry config/source_registry.json \
+              --output "${next}" \
+              --report "${RUNNER_TEMP}/source-expansion-reports/${base}-report.json"
+            mv "${next}" "${RUNNER_TEMP}/catalog.expansion.current.json"
+          done
+
+      - name: Build cadence-aware source plan
+        run: >-
+          python3 tools/currentness_scheduler.py
+          --registry config/source_registry.json
+          --state "${RUNNER_TEMP}/source_health.expansion.current.json"
+          > "${RUNNER_TEMP}/source-expansion-plan.json"
+
+      - name: Refresh whole-library Reddit community EQs when due
+        shell: bash
+        run: |
+          set -euo pipefail
+          if python3 - "${RUNNER_TEMP}/source-expansion-plan.json" reddit-audio <<'PY'
+          import json, sys
+          plan = json.load(open(sys.argv[1], encoding='utf-8'))
+          due = {item['source_id'] for item in plan.get('known_source_scans', [])}
+          raise SystemExit(0 if sys.argv[2] in due else 1)
+          PY
+          then
+            python3 tools/reddit_currentness.py \
+              --catalog "${RUNNER_TEMP}/catalog.expansion.current.json" \
+              --registry config/source_registry.json \
+              --health "${RUNNER_TEMP}/source_health.expansion.current.json" \
+              --catalog-output "${RUNNER_TEMP}/catalog.expansion.next.json" \
+              --health-output "${RUNNER_TEMP}/source_health.expansion.next.json" \
+              --report "${RUNNER_TEMP}/source-expansion-reports/reddit-audio.json" \
+              --allow-degraded
+            mv "${RUNNER_TEMP}/catalog.expansion.next.json" "${RUNNER_TEMP}/catalog.expansion.current.json"
+            mv "${RUNNER_TEMP}/source_health.expansion.next.json" "${RUNNER_TEMP}/source_health.expansion.current.json"
+          else
+            echo "Reddit community source is not due."
+          fi
+
+      - name: Refresh public Discourse communities when due
+        shell: bash
+        run: |
+          set -euo pipefail
+          scan_discourse() {
+            local source_id="$1"
+            local base_url="$2"
+            if python3 - "${RUNNER_TEMP}/source-expansion-plan.json" "${source_id}" <<'PY'
+          import json, sys
+          plan = json.load(open(sys.argv[1], encoding='utf-8'))
+          due = {item['source_id'] for item in plan.get('known_source_scans', [])}
+          raise SystemExit(0 if sys.argv[2] in due else 1)
+          PY
+            then
+              python3 tools/discourse_community_ingest.py \
+                --catalog "${RUNNER_TEMP}/catalog.expansion.current.json" \
+                --registry config/source_registry.json \
+                --health "${RUNNER_TEMP}/source_health.expansion.current.json" \
+                --catalog-output "${RUNNER_TEMP}/catalog.expansion.next.json" \
+                --health-output "${RUNNER_TEMP}/source_health.expansion.next.json" \
+                --report "${RUNNER_TEMP}/source-expansion-reports/${source_id}.json" \
+                --source-id "${source_id}" \
+                --base-url "${base_url}" \
+                --allow-degraded
+              mv "${RUNNER_TEMP}/catalog.expansion.next.json" "${RUNNER_TEMP}/catalog.expansion.current.json"
+              mv "${RUNNER_TEMP}/source_health.expansion.next.json" "${RUNNER_TEMP}/source_health.expansion.current.json"
+            else
+              echo "${source_id} is not due."
+            fi
+          }
+          scan_discourse headphones-community https://forum.headphones.com
+          scan_discourse hifiguides https://forum.hifiguides.com
+
+      - name: Probe qualified General EQ sources when due
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if python3 - "${RUNNER_TEMP}/source-expansion-plan.json" milciossq-eq-general <<'PY'
+          import json, sys
+          plan = json.load(open(sys.argv[1], encoding='utf-8'))
+          due = {item['source_id'] for item in plan.get('known_source_scans', [])}
+          raise SystemExit(0 if sys.argv[2] in due else 1)
+          PY
+          then
+            python3 tools/qualified_general_source_probe.py \
+              --registry config/source_registry.json \
+              --sources config/qualified_general_sources.json \
+              --health "${RUNNER_TEMP}/source_health.expansion.current.json" \
+              --health-output "${RUNNER_TEMP}/source_health.expansion.next.json" \
+              --report "${RUNNER_TEMP}/source-expansion-reports/qualified-general-sources.json" \
+              --github-token "${GITHUB_TOKEN}" \
+              --allow-degraded
+            mv "${RUNNER_TEMP}/source_health.expansion.next.json" "${RUNNER_TEMP}/source_health.expansion.current.json"
+          else
+            echo "Qualified General EQ source probes are not due."
+          fi
+
+      - name: Discover new public GitHub General EQ sources
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          discovery_status=0
+          python3 - <<'PY' || discovery_status=$?
+          import json, os, pathlib, time, urllib.error, urllib.parse, urllib.request
+
+          queries = [
+              '"Bass Boost" "Treble Boost" in:file',
+              '"Podcast" "EQ" "preset" in:file',
+              '"Rock" "Electronic" "preset" in:file',
+          ]
+          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'general-github-search'
+          root.mkdir(parents=True, exist_ok=True)
+          for index, query_text in enumerate(queries, 1):
+              query = urllib.parse.urlencode({'q': query_text, 'per_page': 50})
+              request = urllib.request.Request(
+                  'https://api.github.com/search/code?' + query,
+                  headers={
+                      'Accept': 'application/vnd.github+json',
+                      'Authorization': 'Bearer ' + os.environ['GITHUB_TOKEN'],
+                      'User-Agent': 'EQ-Library-general-discovery/0.4',
+                      'X-GitHub-Api-Version': '2022-11-28',
+                  },
+              )
+              for attempt in range(1, 4):
+                  try:
+                      with urllib.request.urlopen(request, timeout=30) as response:
+                          payload = json.loads(response.read().decode('utf-8'))
+                      (root / f'query-{index}.json').write_text(json.dumps(payload), encoding='utf-8')
+                      break
+                  except urllib.error.HTTPError as exc:
+                      body = exc.read().decode('utf-8', errors='replace')
+                      rate_limited = exc.code in (403, 429) and 'rate limit' in body.lower()
+                      if attempt == 3 or not rate_limited:
+                          raise
+                      time.sleep(5 * attempt)
+          PY
+          if [[ "${discovery_status}" -eq 0 ]]; then
+            python3 tools/general_github_discovery.py \
+              "${RUNNER_TEMP}"/general-github-search/query-*.json \
+              --output "${RUNNER_TEMP}/general-github-candidates.json"
+          elif [[ -f catalog/discovery/general_github_candidates.json ]]; then
+            cp catalog/discovery/general_github_candidates.json "${RUNNER_TEMP}/general-github-candidates.json"
+            echo "General GitHub discovery degraded; retained prior review queue." >> "${GITHUB_STEP_SUMMARY}"
+          else
+            echo "General GitHub discovery degraded before a prior review queue existed." >> "${GITHUB_STEP_SUMMARY}"
+          fi
+
+      - name: Validate expanded candidate atomically against living archive
+        run: >-
+          python3 tools/catalog_pipeline.py publish
+          --candidate "${RUNNER_TEMP}/catalog.expansion.current.json"
+          --published "${RUNNER_TEMP}/validated-source-expansion-catalog.json"
+          --last-known-good "${RUNNER_TEMP}/validated-source-expansion-lkg.json"
+          --baseline catalog/catalog.json
+
+      - name: Prepare repository and Android transport catalogs
+        run: |
+          python3 - <<'PY'
+          import json, os
+          source = os.environ['RUNNER_TEMP'] + '/validated-source-expansion-catalog.json'
+          repository = os.environ['RUNNER_TEMP'] + '/repository-source-expansion-catalog.json'
+          with open(source, encoding='utf-8') as handle:
+              payload = json.load(handle)
+          with open(repository, 'w', encoding='utf-8') as handle:
+              handle.write(json.dumps(payload, sort_keys=True, indent=2, ensure_ascii=False) + '\n')
+          with open(source, 'w', encoding='utf-8') as handle:
+              handle.write(json.dumps(payload, sort_keys=True, separators=(',', ':'), ensure_ascii=False) + '\n')
+          PY
+
+      - name: Stage persistent source-expansion state
+        if: >-
+          github.ref_name == 'main' ||
+          startsWith(github.ref_name, 'source-automation-')
+        shell: bash
+        run: |
+          cp "${RUNNER_TEMP}/repository-source-expansion-catalog.json" catalog/catalog.json
+          cp "${RUNNER_TEMP}/source_health.expansion.current.json" catalog/source_health.json
+          if [[ -f "${RUNNER_TEMP}/general-github-candidates.json" ]]; then
+            cp "${RUNNER_TEMP}/general-github-candidates.json" catalog/discovery/general_github_candidates.json
+          fi
+
+      - name: Commit validated source expansion
+        if: >-
+          github.ref_name == 'main' ||
+          startsWith(github.ref_name, 'source-automation-')
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add catalog/catalog.json catalog/source_health.json
+          if [[ -f catalog/discovery/general_github_candidates.json ]]; then
+            git add catalog/discovery/general_github_candidates.json
+          fi
+          if git diff --cached --quiet; then
+            echo "No validated source-expansion changes."
+            exit 0
+          fi
+          git commit -m "Refresh community and General EQ sources"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Publish validated expanded catalog to stable Android branch
+        if: github.ref_name == 'main'
+        shell: bash
+        run: |
+          set -euo pipefail
+          publish_dir="$(mktemp -d)"
+          git fetch origin catalog-live
+          git worktree add --detach "$publish_dir" origin/catalog-live
+          cp "${RUNNER_TEMP}/validated-source-expansion-catalog.json" "$publish_dir/catalog/catalog.json"
+          cd "$publish_dir"
+          if git diff --quiet -- catalog/catalog.json; then
+            echo "Stable live catalog already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add catalog/catalog.json
+          git commit -m "Publish expanded canonical catalog"
+          git push origin HEAD:catalog-live
+
+      - name: Upload source-expansion reports
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: source-expansion-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/source-expansion-plan.json
+            ${{ runner.temp }}/source-expansion-reports/
+            ${{ runner.temp }}/general-github-candidates.json
+            ${{ runner.temp }}/validated-source-expansion-catalog.json
+            ${{ runner.temp }}/source_health.expansion.current.json
+          if-no-files-found: warn
+          retention-days: 14
