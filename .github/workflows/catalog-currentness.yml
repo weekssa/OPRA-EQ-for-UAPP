@@ -163,8 +163,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          python3 - <<'PY'
-          import json, os, urllib.parse, urllib.request
+          discovery_status=0
+          python3 - <<'PY' || discovery_status=$?
+          import json, os, sys, time, urllib.error, urllib.parse, urllib.request
+
           query = urllib.parse.urlencode({'q': 'ParametricEQ.txt in:path', 'per_page': 50})
           request = urllib.request.Request(
               'https://api.github.com/search/code?' + query,
@@ -175,15 +177,65 @@ jobs:
                   'X-GitHub-Api-Version': '2022-11-28',
               },
           )
-          with urllib.request.urlopen(request, timeout=30) as response:
-              payload = json.loads(response.read().decode('utf-8'))
-          with open(os.environ['RUNNER_TEMP'] + '/github-code-search.json', 'w', encoding='utf-8') as handle:
-              json.dump(payload, handle)
+          output = os.environ['RUNNER_TEMP'] + '/github-code-search.json'
+          for attempt in range(1, 4):
+              try:
+                  with urllib.request.urlopen(request, timeout=30) as response:
+                      payload = json.loads(response.read().decode('utf-8'))
+                  with open(output, 'w', encoding='utf-8') as handle:
+                      json.dump(payload, handle)
+                  raise SystemExit(0)
+              except urllib.error.HTTPError as exc:
+                  headers = exc.headers or {}
+                  retry_after = headers.get('Retry-After')
+                  remaining = headers.get('X-RateLimit-Remaining')
+                  body = exc.read().decode('utf-8', errors='replace')
+                  rate_limited = exc.code == 429 or (
+                      exc.code == 403 and (
+                          remaining == '0'
+                          or retry_after is not None
+                          or 'rate limit' in body.lower()
+                      )
+                  )
+                  if not rate_limited:
+                      print(f'GitHub code search failed with HTTP {exc.code}: {body}', file=sys.stderr)
+                      raise
+                  if attempt == 3:
+                      print(
+                          f'GitHub code search remained rate-limited after {attempt} attempts; '
+                          'using the persisted review-only candidate snapshot.',
+                          file=sys.stderr,
+                      )
+                      raise SystemExit(75)
+                  try:
+                      delay = int(retry_after) if retry_after else 5 * attempt
+                  except (TypeError, ValueError):
+                      delay = 5 * attempt
+                  delay = max(1, min(delay, 30))
+                  print(
+                      f'GitHub code search rate-limited (HTTP {exc.code}); '
+                      f'retrying in {delay}s (attempt {attempt + 1}/3).',
+                      file=sys.stderr,
+                  )
+                  time.sleep(delay)
           PY
-          python3 tools/github_preset_discovery.py \
-            "${RUNNER_TEMP}/github-code-search.json" \
-            --kind code-search \
-            --output "${RUNNER_TEMP}/github-candidates.json"
+          if [[ "${discovery_status}" -eq 0 ]]; then
+            python3 tools/github_preset_discovery.py \
+              "${RUNNER_TEMP}/github-code-search.json" \
+              --kind code-search \
+              --output "${RUNNER_TEMP}/github-candidates.json"
+          elif [[ "${discovery_status}" -eq 75 && -f catalog/discovery/github_candidates.json ]]; then
+            cp catalog/discovery/github_candidates.json "${RUNNER_TEMP}/github-candidates.json"
+            {
+              echo "## GitHub structured-EQ discovery"
+              echo
+              echo "GitHub code search was rate-limited after bounded retries."
+              echo "Reused the last persisted review-only candidate snapshot; canonical catalog validation and publication remained strict."
+            } >> "${GITHUB_STEP_SUMMARY}"
+          else
+            exit "${discovery_status}"
+          fi
+          test -s "${RUNNER_TEMP}/github-candidates.json"
       - name: Stage validated persistent currentness outputs
         if: >-
           (github.event_name == 'schedule' && github.ref_name == 'main') ||
