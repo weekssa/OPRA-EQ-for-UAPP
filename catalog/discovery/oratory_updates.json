@@ -1,10 +1,10 @@
 {
-  "error": "HTTP Error 403: Blocked",
   "latest": null,
   "matched_update_posts": 0,
+  "note": "Direct creator provenance remains available, but anonymous Reddit update polling is not scheduled while the public JSON path returns HTTP 403 Blocked. Review creator updates manually or through a future compliant public adapter.",
   "publication_eligible": false,
   "redistribution_policy": "link-only",
   "source_id": "oratory1990",
   "source_kind": "creator",
-  "status": "degraded"
+  "status": "manual"
 }

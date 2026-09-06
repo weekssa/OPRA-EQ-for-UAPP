@@ -1,0 +1,71 @@
+name: Source health currentness
+
+on:
+  push:
+    branches:
+      - main
+      - 'source-health-*'
+    paths:
+      - '.github/workflows/source-health-currentness.yml'
+      - 'config/source_registry.json'
+      - 'catalog/source_health.json'
+      - 'tools/catalog_pipeline.py'
+      - 'tools/currentness_scheduler.py'
+      - 'tools/source_health_audit.py'
+      - 'tools/test_currentness_scheduler.py'
+      - 'tools/test_source_health_audit.py'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/source-health-currentness.yml'
+      - 'config/source_registry.json'
+      - 'catalog/source_health.json'
+      - 'tools/catalog_pipeline.py'
+      - 'tools/currentness_scheduler.py'
+      - 'tools/source_health_audit.py'
+      - 'tools/test_currentness_scheduler.py'
+      - 'tools/test_source_health_audit.py'
+  workflow_dispatch:
+  schedule:
+    # Runs after the established 09:17 catalog-currentness and 11:23 source-expansion jobs.
+    - cron: '47 13 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out current branch tip
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          fetch-depth: 1
+
+      - name: Validate registry and currentness contracts
+        run: |
+          python3 tools/catalog_pipeline.py validate-registry --registry config/source_registry.json
+          PYTHONPATH=tools python3 -m unittest discover -s tools -p 'test_currentness_scheduler.py' -v
+          PYTHONPATH=tools python3 -m unittest discover -s tools -p 'test_source_health_audit.py' -v
+
+      - name: Enforce scheduled source health SLA
+        run: |
+          python3 tools/source_health_audit.py \
+            --registry config/source_registry.json \
+            --state catalog/source_health.json \
+            --output "${RUNNER_TEMP}/source-health-audit.json" \
+            --summary "${RUNNER_TEMP}/source-health-summary.md" \
+            --strict
+          cat "${RUNNER_TEMP}/source-health-summary.md" >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Upload source health audit
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: source-health-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/source-health-audit.json
+            ${{ runner.temp }}/source-health-summary.md
+          retention-days: 30

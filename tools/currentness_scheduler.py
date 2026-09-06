@@ -52,6 +52,18 @@ def utc_iso(value: datetime) -> str:
     return value.astimezone(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
+def source_currentness_mode(source: dict[str, Any]) -> str:
+    """Return how currentness is maintained, with backward-compatible inference."""
+    explicit = str(source.get("currentness_mode") or "").strip()
+    if explicit:
+        return explicit
+    if source.get("lifecycle") == "paused":
+        return "paused"
+    if source.get("cadence") == "manual":
+        return "manual"
+    return "scheduled"
+
+
 @dataclass(frozen=True)
 class ScanPlanItem:
     source_id: str
@@ -71,6 +83,8 @@ class HealthWarning:
 
 
 def is_source_due(source: dict[str, Any], health: SourceHealth, now: datetime) -> bool:
+    if source_currentness_mode(source) != "scheduled":
+        return False
     if source.get("lifecycle") not in SCANNABLE_LIFECYCLES:
         return False
     cadence = source.get("cadence")
@@ -126,6 +140,8 @@ def source_health_warnings(
     source_by_id = {source["id"]: source for source in registry["sources"]}
     for source_id, state in sorted(reconciled.items()):
         source = source_by_id[source_id]
+        if source_currentness_mode(source) != "scheduled":
+            continue
         if source["lifecycle"] not in SCANNABLE_LIFECYCLES:
             continue
         if state.consecutive_failures >= failure_threshold:

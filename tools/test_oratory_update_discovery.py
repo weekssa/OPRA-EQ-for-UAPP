@@ -1,6 +1,6 @@
 import unittest
 
-from oratory_update_discovery import discover_from_listing
+from oratory_update_discovery import discover_from_listing, is_paused_reddit_url, manual_result
 
 
 class OratoryUpdateDiscoveryTest(unittest.TestCase):
@@ -41,6 +41,19 @@ class OratoryUpdateDiscoveryTest(unittest.TestCase):
         self.assertEqual("no_update_post_found", result["status"])
         self.assertIsNone(result["latest"])
         self.assertFalse(result["publication_eligible"])
+
+    def test_reddit_fetch_urls_are_classified_as_paused(self):
+        self.assertTrue(is_paused_reddit_url("https://www.reddit.com/r/oratory1990/new.json?limit=100"))
+        self.assertTrue(is_paused_reddit_url("https://old.reddit.com/r/oratory1990/new.json"))
+        self.assertFalse(is_paused_reddit_url("https://example.test/listing.json"))
+
+    def test_manual_result_preserves_link_only_provenance_without_claiming_scan_success(self):
+        result = manual_result()
+        self.assertEqual("manual", result["status"])
+        self.assertEqual("link-only", result["redistribution_policy"])
+        self.assertFalse(result["publication_eligible"])
+        self.assertIsNone(result["latest"])
+        self.assertIn("HTTP 403", result["note"])
 
 
 if __name__ == "__main__":
