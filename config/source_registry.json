@@ -89,6 +89,7 @@
       "parser_version": "3",
       "cursor_strategy": "dataset/source revision and content hash for measurement discovery; source URL plus acoustic fingerprint for exact published PEQ",
       "redistribution": "structured-data-only",
+      "catalog_presence_required": false,
       "attribution_required": true,
       "license_notes": "This is an active manual source/provenance lane. Exact public creator/community PEQ that explicitly identifies its Squiglink-compatible measurement/target provenance may proceed through the normal Unverified community pipeline with the actual PEQ author and publication URL preserved. Ordinary phone-book/data records remain measurements only and are never converted into canonical PEQ by inference. The public Squiglink frontend can generate/export AutoEQ results interactively, but EQ Library does not treat a measurement curve or locally generated browser result as a source-authored preset and does not invent target intent, Q, filter type, or creator metadata. No stable public server-side feed of independently published Squiglink PEQ presets has been validated for scheduled ingestion."
     },
@@ -194,6 +195,7 @@
       "parser_version": "4",
       "cursor_strategy": "public preset/share identity plus source URL and acoustic fingerprint when manually qualified",
       "redistribution": "structured-data-only",
+      "catalog_presence_required": false,
       "attribution_required": true,
       "license_notes": "This is an active manual community lane. TOPPING Home publicly exposes official and community PEQ browsing/search/share functionality, and its published terms describe public presets as content that other users may view, search, download, use, and forward. The same terms prohibit unauthorized scraping, bulk downloading, interface reverse engineering, or bypassing authentication. EQ Library therefore accepts exact presets obtained through ordinary public UI/share/export flows with creator/source attribution and the normal Unverified/dedupe/archive checks, but it does not run an autonomous TOPPING crawler or reverse-engineer private interfaces. A scheduled adapter requires an explicit authorized public API/feed or equivalent permission. Screenshots, response curves, and device UI state without exact filter type/frequency/gain/Q remain non-publishable."
     },
