@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "sources": [
+    {
+      "source_id": "milciossq-eq-general",
+      "repository": "MilcioSSQ/eq",
+      "path": "index.html",
+      "qualified_commit": "5e294b506ea13be1489310fcd67f397739d38eb0",
+      "qualified_blob_sha": "2f65db277774f0be170efb79233b73f3e94f13ab",
+      "manifest": "catalog/discovery/milciossq_eq_general_presets.json",
+      "license": "MIT",
+      "change_policy": "review-before-manifest-update"
+    }
+  ]
+}
