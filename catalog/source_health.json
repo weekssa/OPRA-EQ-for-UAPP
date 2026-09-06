@@ -153,7 +153,7 @@
       "last_error": "all Reddit discovery requests failed",
       "last_successful_scan_at": null,
       "last_terms_review_at": "2026-08-29T19:35:00Z",
-      "lifecycle": "active",
+      "lifecycle": "paused",
       "parser_version": "3",
       "source_id": "reddit-audio"
     },

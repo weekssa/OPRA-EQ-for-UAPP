@@ -19,16 +19,16 @@ Production source maintenance must run outside the Android app:
 
 The first post-v0.4 source-expansion milestone is now implemented on the source-automation workstream:
 
-- **Reddit audio communities:** whole-library targeted discovery runs without a priority-headphone allowlist. It searches high-signal public structured-PEQ posts, matches only unambiguous headphone identities already known to the canonical catalog, publishes through the normal dedupe/revision pipeline, and records durable source-health state.
+- **Reddit audio communities:** the whole-library targeted adapter is implemented and preserves failure isolation, but live GitHub-hosted anonymous JSON scanning is currently **paused** after every configured `r/headphones` and `r/oratory1990` listing/search probe returned HTTP 403 `Blocked` on 2026-09-06. Existing curated and archived Reddit EQs remain valid and preserved. Do not describe Reddit as autonomously scanned until a compliant public access path is validated.
 - **The HEADPHONE Community / Headphones.com:** a reusable public Discourse JSON adapter performs targeted structured-PEQ discovery, preserves username/topic/post provenance, and records source health.
 - **HiFiGuides:** the same public Discourse adapter provides scheduled targeted structured-PEQ discovery and source-health tracking.
-- **Head-Fi and Audio Science Review:** their already-qualified curated publication lanes remain valid, but they do not yet have a sufficiently robust direct live-site adapter in this milestone. Do not describe them as autonomously scanned until that exists; their curated inputs continue to feed the same generic community publisher.
+- **Head-Fi and Audio Science Review:** their already-qualified curated publication lanes remain valid and are explicitly registered with **manual** cadence. They do not yet have a sufficiently robust direct live-site adapter in this milestone. Do not describe them as autonomously scanned until that exists; their curated inputs continue to feed the same generic community publisher.
 - **General EQs:** the generic General-preset publication lane now has a second qualified MIT-licensed source (`MilcioSSQ/eq`) with 20 additional source-authored presets. Clearly named genre/style presets are Genre; Podcast/Spoken Word map through the existing Utility presentation; ambiguous labels are deliberately excluded rather than guessed.
 - **General-source currentness:** qualified GitHub-backed General sources have a scheduled blob/source-health probe. Upstream file changes are surfaced as `changed_needs_review`; a source-code change never silently rewrites a qualified General manifest or existing canonical acoustic history.
 - **General-source discovery:** scheduled GitHub code discovery now maintains a separate review-only General-EQ candidate queue. Discovery is intentionally broader than publication; candidates remain blocked on originality, license/redistribution, creator attribution, explicit General EQ intent/category, structured parseability, and canonical dedupe.
 - **Failure isolation:** forum/API degradation preserves the current candidate/catalog and records source-health failure state. Every changed catalog candidate still passes atomic validation and the living-archive baseline check before publication.
 
-This moves community expansion beyond the original launch queue and expands General EQ population without changing Android runtime behavior or requiring users to connect accounts.
+This moves community expansion beyond the original launch queue and expands General EQ population without changing Android runtime behavior or requiring users to connect accounts. Public Discourse and qualified General-source automation are live; Reddit remains safely paused until compliant public access is available.
 
 ## 3. Remaining coverage gap to close
 
@@ -42,7 +42,7 @@ Future work must distinguish clearly between:
 - **paused/degraded**;
 - **retired/unavailable but archived**.
 
-An `active` source must not silently remain with no successful scan history indefinitely. The next forum-adapter priority is Head-Fi and Audio Science Review, using only stable public access paths that do not require authentication, bypass controls, or brittle whole-site crawling.
+An `active` scheduled source must not silently remain with no successful scan history indefinitely. The next forum-adapter priorities are a compliant public Reddit access path and robust live adapters for Head-Fi and Audio Science Review, using only stable public access paths that do not require authentication, bypass controls, or brittle whole-site crawling.
 
 ## 4. Cadence policy
 
@@ -172,7 +172,7 @@ The milestone is complete when:
 7. source failures cannot erase archived EQs or replace last-known-good publication;
 8. normal production operation remains independent of ChatGPT and independent of Android forum scraping;
 9. tests cover cadence/overdue behavior, failure isolation, source movement/removal, dedupe/revision behavior, General source change review gating, and living-archive preservation;
-10. Head-Fi and Audio Science Review are either backed by robust live adapters or explicitly represented as curated/manual rather than silently appearing fully automated.
+10. Reddit live scanning is either restored through a compliant public access path or remains explicitly paused, and Head-Fi / Audio Science Review are either backed by robust live adapters or explicitly represented as curated/manual rather than silently appearing fully automated.
 
 ## 12. Release boundary
 

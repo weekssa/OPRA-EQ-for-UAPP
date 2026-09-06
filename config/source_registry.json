@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "registry_version": "0.4.0-source-automation-1",
+  "registry_version": "0.4.0-source-automation-2",
   "sources": [
     {
       "id": "opra",
@@ -90,14 +90,14 @@
       "kind": "community",
       "name": "Reddit audio communities",
       "scope": "Public structured PEQ posts and original preset links",
-      "lifecycle": "active",
+      "lifecycle": "paused",
       "cadence": "daily",
       "parser": "community-text-peq",
       "parser_version": "3",
       "cursor_strategy": "post/comment IDs, timestamps, and deterministic scan fingerprints",
       "redistribution": "structured-data-only",
       "attribution_required": true,
-      "license_notes": "Public community EQ coefficients are publication-eligible. EQ Library normalizes numeric PEQ data, retains the Reddit author and original permalink, and does not copy unrelated post prose. Private, deleted, or restricted content is not accessed."
+      "license_notes": "Public community EQ coefficients are publication-eligible. EQ Library normalizes numeric PEQ data, retains the Reddit author and original permalink, and does not copy unrelated post prose. Private, deleted, or restricted content is not accessed. As of 2026-09-06, GitHub-hosted unauthenticated Reddit JSON listing/search requests returned HTTP 403 Blocked across all configured r/headphones and r/oratory1990 probes. Live scanning is paused until a compliant public access path is validated; existing archived and curated Reddit EQs remain preserved."
     },
     {
       "id": "head-fi",
@@ -105,13 +105,13 @@
       "name": "Head-Fi",
       "scope": "Public headphone/model EQ discussions containing structured PEQ settings",
       "lifecycle": "active",
-      "cadence": "weekly",
+      "cadence": "manual",
       "parser": "community-text-peq",
       "parser_version": "2",
       "cursor_strategy": "thread/post IDs and timestamps",
       "redistribution": "structured-data-only",
       "attribution_required": true,
-      "license_notes": "Publicly posted community EQ coefficients are publication-eligible. Preserve the author, forum name, original post URL, exact filter structure, and any distinction between source-authored values and EQ Library-generated conversions or safety headroom."
+      "license_notes": "Publicly posted community EQ coefficients are publication-eligible. Preserve the author, forum name, original post URL, exact filter structure, and any distinction between source-authored values and EQ Library-generated conversions or safety headroom. The current publication lane is curated/manual; no autonomous live-site scanner is claimed until a robust public adapter is validated."
     },
     {
       "id": "audio-science-review",
@@ -119,13 +119,13 @@
       "name": "Audio Science Review",
       "scope": "Public headphone/IEM threads with structured PEQ settings and traceable mirrors of expert presets",
       "lifecycle": "active",
-      "cadence": "weekly",
+      "cadence": "manual",
       "parser": "community-text-peq",
       "parser_version": "3",
       "cursor_strategy": "thread/post IDs and timestamps",
       "redistribution": "structured-data-only",
       "attribution_required": true,
-      "license_notes": "Publicly posted community EQ coefficients are publication-eligible with author and original thread/post provenance retained. When an ASR post is a mirror of an already-canonical expert preset, it is retained as secondary provenance instead of creating a duplicate EQ."
+      "license_notes": "Publicly posted community EQ coefficients are publication-eligible with author and original thread/post provenance retained. When an ASR post is a mirror of an already-canonical expert preset, it is retained as secondary provenance instead of creating a duplicate EQ. The current publication lane is curated/manual; no autonomous live-site scanner is claimed until a robust public adapter is validated."
     },
     {
       "id": "headphones-community",
