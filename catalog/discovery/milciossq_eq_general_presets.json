@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "source_id": "milciossq-eq-general",
+  "source_kind": "community_repository",
+  "creator": "MilcioSSQ",
+  "source_url": "https://github.com/MilcioSSQ/eq/blob/5e294b506ea13be1489310fcd67f397739d38eb0/index.html",
+  "source_version": "5e294b506ea13be1489310fcd67f397739d38eb0",
+  "verification_status": "verified",
+  "catalog_generated_at": "2026-09-07T00:00:00Z",
+  "discovered_at_epoch_seconds": 1788739200,
+  "presets": [
+    {
+      "peq_text": "Filter 1: ON LS Fc 60 Hz Gain 0 dB Q 1\nFilter 2: ON PK Fc 250 Hz Gain 1 dB Q 1\nFilter 3: ON PK Fc 1000 Hz Gain 0 dB Q 1\nFilter 4: ON PK Fc 4000 Hz Gain -1 dB Q 1\nFilter 5: ON HS Fc 16000 Hz Gain 0 dB Q 1",
+      "purpose": "effect",
+      "source_record_id": "PRESETS.natural",
+      "tuning_label": "Natural"
+    },
+    {
+      "peq_text": "Filter 1: ON LS Fc 60 Hz Gain 8 dB Q 1\nFilter 2: ON PK Fc 250 Hz Gain 5 dB Q 1\nFilter 3: ON PK Fc 1000 Hz Gain 0 dB Q 1\nFilter 4: ON PK Fc 4000 Hz Gain -1 dB Q 1\nFilter 5: ON HS Fc 16000 Hz Gain -1 dB Q 1",
+      "purpose": "effect",
+      "source_record_id": "PRESETS.bass-boost",
+      "tuning_label": "Bass Boost"
+    },
+    {
+      "peq_text": "Filter 1: ON LS Fc 60 Hz Gain -6 dB Q 1\nFilter 2: ON PK Fc 250 Hz Gain -4 dB Q 1\nFilter 3: ON PK Fc 1000 Hz Gain 0 dB Q 1\nFilter 4: ON PK Fc 4000 Hz Gain 1 dB Q 1\nFilter 5: ON HS Fc 16000 Hz Gain 1 dB Q 1",
+      "purpose": "effect",
+      "source_record_id": "PRESETS.bass-reducer",
+      "tuning_label": "Bass Reducer"
+    },
+    {
+      "peq_text": "Filter 1: ON LS Fc 60 Hz Gain 4 dB Q 1\nFilter 2: ON PK Fc 250 Hz Gain 3 dB Q 1\nFilter 3: ON PK Fc 1000 Hz Gain 2 dB Q 1\nFilter 4: ON PK Fc 4000 Hz Gain -2 dB Q 1\nFilter 5: ON HS Fc 16000 Hz Gain -4 dB Q 1",
+      "purpose": "effect",
+      "source_record_id": "PRESETS.deep",
+      "tuning_label": "Deep"
+    },
+    {
+      "peq_text": "Filter 1: ON LS Fc 60 Hz Gain 4 dB Q 1\nFilter 2: ON PK Fc 250 Hz Gain 3 dB Q 1\nFilter 3: ON PK Fc 1000 Hz Gain 0 dB Q 1\nFilter 4: ON PK Fc 4000 Hz Gain 4 dB Q 1\nFilter 5: ON HS Fc 16000 Hz Gain 5 dB Q 1",
+      "purpose": "effect",
+      "source_record_id": "PRESETS.gaming",
+      "tuning_label": "Gaming"
+    },
+    {
+      "peq_text": "Filter 1: ON LS Fc 60 Hz Gain 4 dB Q 1\nFilter 2: ON PK Fc 250 Hz Gain 2 dB Q 1\nFilter 3: ON PK Fc 1000 Hz Gain 2 dB Q 1\nFilter 4: ON PK Fc 4000 Hz Gain 3 dB Q 1\nFilter 5: ON HS Fc 16000 Hz Gain 5 dB Q 1",
+      "purpose": "effect",
+      "source_record_id": "PRESETS.small-speakers",
+      "tuning_label": "Small Speakers"
+    },
+    {
+      "peq_text": "Filter 1: ON LS Fc 60 Hz Gain -2 dB Q 1\nFilter 2: ON PK Fc 250 Hz Gain -1 dB Q 1\nFilter 3: ON PK Fc 1000 Hz Gain 0 dB Q 1\nFilter 4: ON PK Fc 4000 Hz Gain 5 dB Q 1\nFilter 5: ON HS Fc 16000 Hz Gain 8 dB Q 1",
+      "purpose": "effect",
+      "source_record_id": "PRESETS.treble-boost",
+      "tuning_label": "Treble Boost"
+    },
+    {
+      "peq_text": "Filter 1: ON LS Fc 60 Hz Gain 1 dB Q 1\nFilter 2: ON PK Fc 250 Hz Gain 0 dB Q 1\nFilter 3: ON PK Fc 1000 Hz Gain 0 dB Q 1\nFilter 4: ON PK Fc 4000 Hz Gain -4 dB Q 1\nFilter 5: ON HS Fc 16000 Hz Gain -6 dB Q 1",
+      "purpose": "effect",
+      "source_record_id": "PRESETS.treble-reducer",
+      "tuning_label": "Treble Reducer"
+    },
+    {
+      "peq_text": "Filter 1: ON LS Fc 60 Hz Gain -3 dB Q 1\nFilter 2: ON PK Fc 250 Hz Gain -2 dB Q 1\nFilter 3: ON PK Fc 1000 Hz Gain 4 dB Q 1\nFilter 4: ON PK Fc 4000 Hz Gain 4 dB Q 1\nFilter 5: ON HS Fc 16000 Hz Gain 2 dB Q 1",
+      "purpose": "effect",
+      "source_record_id": "PRESETS.vocal-boost",
+      "tuning_label": "Vocal Boost"
+    },
+    {
+      "peq_text": "Filter 1: ON LS Fc 60 Hz Gain -2 dB Q 1\nFilter 2: ON PK Fc 250 Hz Gain -1 dB Q 1\nFilter 3: ON PK Fc 1000 Hz Gain 4 dB Q 1\nFilter 4: ON PK Fc 4000 Hz Gain 5 dB Q 1\nFilter 5: ON HS Fc 16000 Hz Gain 2 dB Q 1",
+      "purpose": "effect",
+      "source_record_id": "PRESETS.spoken-word",
+      "tuning_label": "Spoken Word"
+    },
+    {
+      "peq_text": "Filter 1: ON LS Fc 60 Hz Gain -4 dB Q 1\nFilter 2: ON PK Fc 250 Hz Gain -3 dB Q 1\nFilter 3: ON PK Fc 1000 Hz Gain 5 dB Q 1\nFilter 4: ON PK Fc 4000 Hz Gain 3 dB Q 1\nFilter 5: ON HS Fc 16000 Hz Gain -1 dB Q 1",
+      "purpose": "effect",
+      "source_record_id": "PRESETS.podcast",
+      "tuning_label": "Podcast"
+    },
+    {
+      "peq_text": "Filter 1: ON LS Fc 60 Hz Gain 5 dB Q 1\nFilter 2: ON PK Fc 250 Hz Gain 3 dB Q 1\nFilter 3: ON PK Fc 1000 Hz Gain 0 dB Q 1\nFilter 4: ON PK Fc 4000 Hz Gain 3 dB Q 1\nFilter 5: ON HS Fc 16000 Hz Gain 4 dB Q 1",
+      "purpose": "genre",
+      "source_record_id": "PRESETS.dance",
+      "tuning_label": "Dance"
+    },
+    {
+      "peq_text": "Filter 1: ON LS Fc 60 Hz Gain 4 dB Q 1\nFilter 2: ON PK Fc 250 Hz Gain 3 dB Q 1\nFilter 3: ON PK Fc 1000 Hz Gain 0 dB Q 1\nFilter 4: ON PK Fc 4000 Hz Gain 3 dB Q 1\nFilter 5: ON HS Fc 16000 Hz Gain 5 dB Q 1",
+      "purpose": "genre",
+      "source_record_id": "PRESETS.electronic",
+      "tuning_label": "Electronic"
+    },
+    {
+      "peq_text": "Filter 1: ON LS Fc 60 Hz Gain 5 dB Q 1\nFilter 2: ON PK Fc 250 Hz Gain 4 dB Q 1\nFilter 3: ON PK Fc 1000 Hz Gain 1 dB Q 1\nFilter 4: ON PK Fc 4000 Hz Gain -1 dB Q 1\nFilter 5: ON HS Fc 16000 Hz Gain 2 dB Q 1",
+      "purpose": "genre",
+      "source_record_id": "PRESETS.hip-hop",
+      "tuning_label": "Hip-Hop"
+    },
+    {
+      "peq_text": "Filter 1: ON LS Fc 60 Hz Gain 3 dB Q 1\nFilter 2: ON PK Fc 250 Hz Gain 2 dB Q 1\nFilter 3: ON PK Fc 1000 Hz Gain 0 dB Q 1\nFilter 4: ON PK Fc 4000 Hz Gain 2 dB Q 1\nFilter 5: ON HS Fc 16000 Hz Gain 4 dB Q 1",
+      "purpose": "genre",
+      "source_record_id": "PRESETS.jazz",
+      "tuning_label": "Jazz"
+    },
+    {
+      "peq_text": "Filter 1: ON LS Fc 60 Hz Gain 3 dB Q 1\nFilter 2: ON PK Fc 250 Hz Gain 1 dB Q 1\nFilter 3: ON PK Fc 1000 Hz Gain -1 dB Q 1\nFilter 4: ON PK Fc 4000 Hz Gain 1 dB Q 1\nFilter 5: ON HS Fc 16000 Hz Gain 4 dB Q 1",
+      "purpose": "genre",
+      "source_record_id": "PRESETS.latin",
+      "tuning_label": "Latin"
+    },
+    {
+      "peq_text": "Filter 1: ON LS Fc 60 Hz Gain -2 dB Q 1\nFilter 2: ON PK Fc 250 Hz Gain -1 dB Q 1\nFilter 3: ON PK Fc 1000 Hz Gain 3 dB Q 1\nFilter 4: ON PK Fc 4000 Hz Gain 2 dB Q 1\nFilter 5: ON HS Fc 16000 Hz Gain 4 dB Q 1",
+      "purpose": "genre",
+      "source_record_id": "PRESETS.lounge",
+      "tuning_label": "Lounge"
+    },
+    {
+      "peq_text": "Filter 1: ON LS Fc 60 Hz Gain -2 dB Q 1\nFilter 2: ON PK Fc 250 Hz Gain -1 dB Q 1\nFilter 3: ON PK Fc 1000 Hz Gain 3 dB Q 1\nFilter 4: ON PK Fc 4000 Hz Gain 2 dB Q 1\nFilter 5: ON HS Fc 16000 Hz Gain -1 dB Q 1",
+      "purpose": "genre",
+      "source_record_id": "PRESETS.pop",
+      "tuning_label": "Pop"
+    },
+    {
+      "peq_text": "Filter 1: ON LS Fc 60 Hz Gain 3 dB Q 1\nFilter 2: ON PK Fc 250 Hz Gain 2 dB Q 1\nFilter 3: ON PK Fc 1000 Hz Gain -2 dB Q 1\nFilter 4: ON PK Fc 4000 Hz Gain 2 dB Q 1\nFilter 5: ON HS Fc 16000 Hz Gain 4 dB Q 1",
+      "purpose": "genre",
+      "source_record_id": "PRESETS.rnb",
+      "tuning_label": "RnB"
+    },
+    {
+      "peq_text": "Filter 1: ON LS Fc 60 Hz Gain 4 dB Q 1\nFilter 2: ON PK Fc 250 Hz Gain 2 dB Q 1\nFilter 3: ON PK Fc 1000 Hz Gain -1 dB Q 1\nFilter 4: ON PK Fc 4000 Hz Gain 2 dB Q 1\nFilter 5: ON HS Fc 16000 Hz Gain 5 dB Q 1",
+      "purpose": "genre",
+      "source_record_id": "PRESETS.rock",
+      "tuning_label": "Rock"
+    }
+  ]
+}
