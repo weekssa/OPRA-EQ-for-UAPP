@@ -2,12 +2,10 @@
 """Discover and merge structured public Reddit PEQ posts into the canonical catalog.
 
 Only numeric PEQ coefficients are normalized. Surrounding post prose is never copied.
-A post is publication-eligible only when it contains parseable PEQ lines and can be
-matched unambiguously to exactly one headphone already known to the catalog.
-
-For controlled community pilots, --headphone-model narrows discovery and publication
-to one headphone model at a time. This lets us validate quality, provenance, matching,
-and deduplication before expanding community ingestion to additional headphones.
+A post is publication-eligible only when it contains one structurally coherent PEQ block
+and can be matched unambiguously to exactly one headphone already known to the catalog.
+Repeated preamps/filter numbers, partial blocks, multi-headphone ambiguity, screenshots,
+and curves are quarantined rather than flattened into a tuning.
 """
 
 from __future__ import annotations
@@ -27,6 +25,7 @@ from community_peq_ingest import build_candidate, parse_peq
 DEFAULT_SUBREDDITS = ("headphones", "oratory1990")
 SEARCH_TERMS = ("parametric EQ", "PEQ", '"Filter 1"', '"Preamp:"')
 PEQ_LINE_RE = re.compile(r"^(?:Preamp:|Filter\s+\d+:)", re.IGNORECASE)
+FILTER_NUMBER_RE = re.compile(r"^Filter\s+(\d+):", re.IGNORECASE)
 NON_ALNUM_RE = re.compile(r"[^a-z0-9]+")
 
 
@@ -38,7 +37,7 @@ def fetch_json(url: str) -> dict[str, Any]:
     request = urllib.request.Request(
         url,
         headers={
-            "User-Agent": "EQ-Library-currentness/0.3 (public structured PEQ discovery)",
+            "User-Agent": "EQ-Library-currentness/0.4 (public structured PEQ discovery)",
             "Accept": "application/json",
         },
     )
@@ -49,10 +48,7 @@ def fetch_json(url: str) -> dict[str, Any]:
 def reddit_listing_urls(subreddit: str, limit: int, headphone_model: str | None = None) -> list[str]:
     base = f"https://www.reddit.com/r/{urllib.parse.quote(subreddit)}"
     urls: list[str] = []
-
     if headphone_model:
-        # A controlled pilot should search for the named headphone directly rather than
-        # depending on it appearing in the newest generic EQ results.
         targeted_terms = (
             f'"{headphone_model}" "parametric EQ"',
             f'"{headphone_model}" PEQ',
@@ -101,11 +97,23 @@ def extract_posts(payload: dict[str, Any]) -> list[dict[str, Any]]:
 
 def extract_peq_text(text: str) -> str | None:
     lines: list[str] = []
+    filter_numbers: list[int] = []
+    preamp_count = 0
     for raw in text.splitlines():
         line = raw.strip().strip("`> ")
-        if PEQ_LINE_RE.match(line):
-            lines.append(line)
-    if not any(line.lower().startswith("filter") for line in lines):
+        if not PEQ_LINE_RE.match(line):
+            continue
+        lines.append(line)
+        if line.lower().startswith("preamp:"):
+            preamp_count += 1
+            continue
+        match = FILTER_NUMBER_RE.match(line)
+        if match:
+            filter_numbers.append(int(match.group(1)))
+
+    if not filter_numbers or preamp_count > 1:
+        return None
+    if filter_numbers != list(range(1, len(filter_numbers) + 1)):
         return None
     return "\n".join(lines) + "\n"
 
@@ -132,24 +140,22 @@ def catalog_headphones(snapshot: dict[str, Any], headphone_model: str | None = N
 def match_headphone(post: dict[str, Any], headphones: list[tuple[str, str]]) -> tuple[str, str] | None:
     title = normalize(str(post.get("title") or ""))
     body = normalize(str(post.get("selftext") or ""))
-    haystack = f" {title} {body} "
-    matches: list[tuple[int, str, str]] = []
+    title_haystack = f" {title} "
+    full_haystack = f" {title} {body} "
+    matches: list[tuple[str, str]] = []
     for manufacturer, model in headphones:
         normalized_model = normalize(model)
-        if len(normalized_model) < 4 or f" {normalized_model} " not in haystack:
+        if len(normalized_model) < 4 or f" {normalized_model} " not in full_haystack:
             continue
         normalized_manufacturer = normalize(manufacturer)
-        score = len(normalized_model)
-        if normalized_manufacturer and f" {normalized_manufacturer} " in haystack:
-            score += len(normalized_manufacturer) + 1000
-        matches.append((score, manufacturer, model))
-    if not matches:
-        return None
-    matches.sort(reverse=True)
-    best = matches[0]
-    if len(matches) > 1 and matches[1][0] == best[0] and matches[1][1:] != best[1:]:
-        return None
-    return best[1], best[2]
+        manufacturer_present = bool(
+            normalized_manufacturer and f" {normalized_manufacturer} " in full_haystack
+        )
+        model_in_title = f" {normalized_model} " in title_haystack
+        if manufacturer_present or model_in_title:
+            matches.append((manufacturer, model))
+    distinct = list(dict.fromkeys(matches))
+    return distinct[0] if len(distinct) == 1 else None
 
 
 def discover(
@@ -186,7 +192,7 @@ def discover(
             report["listings_attempted"] += 1
             try:
                 payload = fetch_json(url)
-            except Exception as exc:  # network degradation must not invalidate last-known-good
+            except Exception as exc:
                 report["errors"].append({"url": url, "error": str(exc)})
                 continue
             for post in extract_posts(payload):
@@ -242,6 +248,7 @@ def discover(
                         "model": model,
                         "title": title[:160],
                         "source_url": source_url,
+                        "filter_count": len(parsed.filters),
                     }
                 )
 
