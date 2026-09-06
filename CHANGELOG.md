@@ -15,7 +15,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 ### Changed
 
 - `github-community` is a daily scheduled source with source-health ownership. Public exact structured community PEQ uses the established Unverified community policy while specific source restrictions remain binding.
-- Squiglink-compatible and Topping community sources remain review/manual until an exact traceable source-authored PEQ is actually captured. Exact PEQ is eligible for the normal Unverified community path; measurement-only, curve-only, screenshot, or device-state data without exact frequency/gain/Q/filter type remains non-publishable rather than being synthesized.
+- Squiglink-compatible sources and Topping Community are now active/manual source lanes for exact traceable public PEQ. Squiglink measurement-only `phone_book` records remain metadata-only; TOPPING presets are accepted only through ordinary permitted public UI/share/export flows. No autonomous TOPPING scraping, bulk retrieval, interface reverse engineering, or authentication bypass is performed; scheduled Topping ingestion requires an authorized public API/feed or explicit permission.
 - Reddit remains paused; no anonymous Reddit scanning or workaround was re-enabled.
 
 ### Validation
@@ -23,6 +23,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Initial GitHub community ingestion fetched all 50 current headphone candidates: 39 parsed as exact supported PEQ, producing 28 new Unverified profiles and 11 exact-duplicate provenance merges; 11 unmatched/ambiguous headphone identities were quarantined. Atomic living-archive validation passed before the candidate catalog was committed.
 - All three current broad General GitHub candidates were processed and classified `no_exact_parametric_structure`; none was published with invented Q/filter types.
 - Added regression coverage for valid Unverified publication, missing-preamp preservation, exact-duplicate provenance merging, short model identity with manufacturer context, target-folder handling, malformed/unsupported PEQ quarantine, unknown headphone quarantine, and General graphic-EQ rejection.
+- Source registry/currentness ownership now treats Squiglink-compatible and Topping Community as active/manual without inventing scan-success timestamps; the strict freshness SLA remains limited to genuinely scheduled sources.
 
 ## [0.4.0] - 2026-09-06
 
@@ -70,7 +71,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - The earlier automatic-future-selection model is superseded for final v0.3: a never-added headphone starts with no EQ profiles selected; future EQs are never silently selected; newly managed headphones instead default **Notify me about new EQs** ON as an attention-only preference.
 - The legacy persisted/domain field name `autoIncludeNewProfiles` is retained through the v0.3 migration boundary for compatibility, but its final meaning is notification/review only and it no longer authorizes automatic selection.
 - General EQ review now uses none-selected-by-default batch controls with **Select all**, **Select none**, **Save selected**, and **Hide selected**; batch Save initiates the normal active-output initial export.
-- Personal EQ import now normalizes supported file/paste contents into the device-independent canonical PEQ before output conversion. Filename extension does not select the converter, missing preamp remains null, full supported filter count is retained canonically, and successful Save initiates active-output export without automatically flashing hardware.
+- Personal EQ import now normalizes supported file/paste contents into the device-independent canonical PEQ before output conversion. Filename extension does not select the converter, missing preamp remains null, full canonical filter count is retained, and successful Save initiates active-output export without automatically flashing hardware.
 - Android Back now follows the in-app hierarchy and returns root EQ Library/Settings to My EQs; only Back from the My EQs root exits the app. Clean and dirty preset-selection editor states both handle system Back naturally.
 - General EQ selection now initiates its initial active-output export when added, matching the established Add/Save workflow.
 - General presets with no source preamp keep preamp null while EQ Library stores conservative generated playback headroom separately.
@@ -83,7 +84,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - UAPP/ToneBoosters compatibility is enforced only at the UAPP conversion/export boundary. UAPP XML is optional generated state rather than a prerequisite for saving a canonical EQ.
 - Personal PEQ imports preserve a missing source preamp as null rather than silently inventing `0 dB`.
 - TRN Black Pearl conversion/Flash preserves corroborated native shelf/peak filter types instead of approximating shelves with synthetic peaking filters.
-- Black Pearl direct Flash applies the selected profile's required preamp/headroom through the observed `0x03` global playback-gain command in 1/256 dB units. It reads the current gain, replaces the previous EQ Library-applied adjustment instead of stacking reductions, allows a later 0 dB preset to restore that prior adjustment, and fails rather than clamping if the requested absolute gain is outside the validated device range.
+- Black Pearl direct Flash applies the selected profile's required preamp/headroom through the observed `0x03` global playback-gain command in 1/256 dB units. It reads the current gain, replaces the previous EQ Library-applied adjustment instead of stacking reductions, allows a later 0 dB profile to remove the prior EQ Library-applied attenuation and restore the underlying baseline, subject to independent user volume changes; if the requested absolute gain is outside the validated representable device range, it fails clearly rather than clamping.
 - Black Pearl file export preserves finite source filter gain exactly even when it is outside the currently validated ±10 dB Direct-Flash range; Direct Flash sends the exact protocol-encodable value only after the explicit caution rather than rejecting or clamping it.
 - Black Pearl profiles over 10 bands use the first 10 source-priority bands only with an explicit Optimized warning; canonical source data remains complete and unchanged.
 - Navigation and terminology now use **My EQs**, **EQ Library**, and **Settings** instead of the earlier My Headphones/Browse OPRA framing.
