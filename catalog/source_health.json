@@ -39,14 +39,14 @@
     },
     {
       "consecutive_failures": 0,
-      "cursor": null,
-      "last_attempt_at": null,
-      "last_content_fingerprint": null,
+      "cursor": "0ec6103ee4c9ad055da7c5009e1d727e97ebe49cb37f5ebde731275eebc63902",
+      "last_attempt_at": "2026-09-06T21:46:47Z",
+      "last_content_fingerprint": "21dc9081aa052060bef33854609a1a5c696f5255fa8af0f11a424354c624ce03",
       "last_error": null,
-      "last_successful_scan_at": null,
+      "last_successful_scan_at": "2026-09-06T21:46:47Z",
       "last_terms_review_at": "2026-08-29T19:35:00Z",
-      "lifecycle": "reviewing",
-      "parser_version": "3",
+      "lifecycle": "active",
+      "parser_version": "4",
       "source_id": "github-community"
     },
     {
@@ -165,8 +165,8 @@
       "last_error": null,
       "last_successful_scan_at": null,
       "last_terms_review_at": "2026-08-29T19:35:00Z",
-      "lifecycle": "reviewing",
-      "parser_version": "2",
+      "lifecycle": "active",
+      "parser_version": "3",
       "source_id": "squiglink"
     },
     {
@@ -177,10 +177,10 @@
       "last_error": null,
       "last_successful_scan_at": null,
       "last_terms_review_at": "2026-08-29T19:35:00Z",
-      "lifecycle": "reviewing",
-      "parser_version": "3",
+      "lifecycle": "active",
+      "parser_version": "4",
       "source_id": "topping-community"
     }
   ],
-  "updated_at": "2026-09-06T19:48:19Z"
+  "updated_at": "2026-09-06T21:46:48Z"
 }
