@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - 'catalog-live-*'
     paths:
       - 'catalog/catalog.json'
       - 'tools/live_catalog_transport.py'
@@ -29,10 +30,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Check out latest main
+      - name: Check out workflow branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: main
+          ref: ${{ github.ref_name }}
           fetch-depth: 1
 
       - name: Validate transport renderer
@@ -49,6 +50,7 @@ jobs:
             --output "${RUNNER_TEMP}/latest-main-transport.json"
 
       - name: Publish latest validated main catalog to stable Android branch
+        if: github.ref_name == 'main'
         shell: bash
         run: |
           set -euo pipefail
