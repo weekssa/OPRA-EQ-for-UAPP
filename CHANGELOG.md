@@ -4,6 +4,22 @@ All notable changes to **OPRA EQ for UAPP / EQ Library** will be documented in t
 
 The project uses Semantic Versioning. Development releases remain in the `0.x` series until the first stable `v1.0.0` release.
 
+## [Unreleased]
+
+### Added
+
+- TRN Black Pearl **Reset EQ to flat** from My EQs. When Black Pearl is the active output and Direct Flash is enabled, the compact Black Pearl control row places **Connect/Connected** beside an outlined reset action; Reset is enabled only while connected and requires confirmation.
+- Reset uses the DAC's current EQ slot, overwrites all 10 hardware bands with zero-gain flat bands, latches/saves the slot, and removes only the playback-gain delta previously tracked as applied by EQ Library. It is a hardware action, not a catalog/General/Favorite/My EQs preset and does not create an export file.
+
+### Changed
+
+- Black Pearl flat reset uses fail-safe ordering: validate the recoverable baseline gain first, flatten/latch/save the EQ slot before restoring playback gain, and clear the tracked EQ Library gain delta only after the gain restoration succeeds. A PEQ failure therefore leaves the prior playback gain/tracked state intact; a final gain-write failure retains the tracked delta for safe retry.
+
+### Validation
+
+- Added domain regression coverage for active-slot preservation, all-ten-band zero-gain reset, no-op gain restoration, unsafe baseline rejection, PEQ-transfer failure, final gain-restore failure, and retry-safe tracked-gain behavior.
+- Because Reset EQ to flat changes Black Pearl device/DSP write behavior after the v0.3 hardware-qualified candidate, an exact release candidate containing it still requires the full automated/signing gate followed by renewed Pixel 9 / TRN Black Pearl hands-on validation before merge/release qualification.
+
 ## [0.3.0] - 2026-08-31
 
 ### Added
