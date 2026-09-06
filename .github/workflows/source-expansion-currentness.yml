@@ -243,7 +243,9 @@ jobs:
           PY
 
       - name: Stage persistent source-expansion state
-        if: github.ref_name == 'main'
+        if: >-
+          github.ref_name == 'main' ||
+          startsWith(github.ref_name, 'source-automation-')
         shell: bash
         run: |
           cp "${RUNNER_TEMP}/repository-source-expansion-catalog.json" catalog/catalog.json
@@ -253,7 +255,9 @@ jobs:
           fi
 
       - name: Commit validated source expansion
-        if: github.ref_name == 'main'
+        if: >-
+          github.ref_name == 'main' ||
+          startsWith(github.ref_name, 'source-automation-')
         shell: bash
         run: |
           set -euo pipefail
