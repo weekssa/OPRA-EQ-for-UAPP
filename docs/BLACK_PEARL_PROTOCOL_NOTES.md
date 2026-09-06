@@ -1,6 +1,6 @@
 # TRN Black Pearl Flash protocol notes
 
-Status: implementation and physical validation evidence for v0.3 direct Flash, plus post-v0.3 flat-reset behavior awaiting renewed hardware validation. This document records observable protocol behavior only. It is not a copy of any reference implementation.
+Status: implementation and physical validation evidence for v0.3 Direct Flash plus the v0.4.0 **Reset EQ to flat** hardware qualification. This document records observable protocol behavior only. It is not a copy of any reference implementation.
 
 ## Licensing boundary
 
@@ -88,7 +88,7 @@ Direct Flash must not send commands for:
 - balance
 - microphone gain
 
-## Reset EQ to flat — approved post-v0.3 behavior
+## Reset EQ to flat — v0.4.0 behavior
 
 When TRN Black Pearl is the active output and Direct Flash is enabled, My EQs exposes **Connected / Connect** and **Reset EQ to flat** as a compact side-by-side control row. Reset is enabled only while the DAC is connected. It is a device action, not a canonical/library EQ: it is not stored in EQ Library, My EQs, General EQs, Favorites, or exported as a preset.
 
@@ -132,4 +132,4 @@ The signed v0.3 candidate at `c70c523e1f530b8b197ebbccc41dfb4af1e27fc4` passed t
 
 This pass makes the v0.3 Direct Flash path release-eligible subject to the final signed release build/gate. It does **not** turn every possible protocol-encodable value outside ±10 dB into a generally validated hardware range; those values continue to use the caution path unless further physical evidence establishes broader limits.
 
-The post-v0.3 **Reset EQ to flat** transaction changes device/DSP write behavior and was not part of the v0.3 hardware pass above. Before a release containing it is promoted, its exact candidate requires renewed Pixel 9 / TRN Black Pearl hands-on validation covering confirmation/cancel, all-ten-band flattening, active-slot preservation, tracked-gain restoration, no-gain-adjustment reset, and graceful failure/retry behavior where practical.
+The **Reset EQ to flat** implementation was then qualified separately on 2026-09-06 using the exact signed candidate at `15f220bd055a2aec49c0cb97c16acbd43ac588da` on Pixel 9 / TRN Black Pearl. The candidate had already passed Android unit tests, lint, debug/release assembly, CodeQL, signed-beta alignment/signature verification, and the pinned release-signing certificate check. The focused hardware pass covered disconnected/connected control state, confirmation and Cancel, all-ten-band flattening in the current slot, persistence, restoration of the tracked EQ Library playback-gain adjustment, the no-tracked-gain case, preservation of a later independent user volume change, and unchanged unrelated DAC settings. Controlled mid-transfer failure injection was not exercised on hardware; automated domain tests cover PEQ-transfer and final gain-write failure ordering plus retry-safe state retention. This result qualifies the reset device behavior for v0.4.0, subject to the final exact release-source automated/signing gate.
