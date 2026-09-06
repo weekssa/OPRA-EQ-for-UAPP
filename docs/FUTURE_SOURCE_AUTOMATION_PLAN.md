@@ -18,16 +18,19 @@ Production source maintenance uses the path appropriate to each source:
 
 ## 2. Implementation checkpoint — 2026-09-07
 
-The first post-v0.4 source-expansion/currentness milestone now contains:
+The post-v0.4 source-expansion/currentness work now contains:
 
-- **Reddit audio communities:** the whole-library targeted adapter is implemented and preserves failure isolation, but live GitHub-hosted anonymous JSON scanning is **paused** after every configured `r/headphones` and `r/oratory1990` listing/search probe returned HTTP 403 `Blocked` on 2026-09-06. Existing curated and archived Reddit EQs remain valid and preserved. Do not describe Reddit as autonomously scanned until a compliant public access path is validated.
+- **Reddit audio communities:** the whole-library targeted adapter is implemented and preserves failure isolation, but live GitHub-hosted anonymous JSON scanning remains **paused** after every configured `r/headphones` and `r/oratory1990` listing/search probe returned HTTP 403 `Blocked` on 2026-09-06. Existing curated and archived Reddit EQs remain valid and preserved. Do not describe Reddit as autonomously scanned until a compliant public access path is validated.
 - **oratory1990 direct update discovery:** direct creator provenance remains link-only/manual while anonymous Reddit access is blocked. The parser remains available for explicit/local listing inputs, but repository automation does not attempt the blocked Reddit JSON path.
 - **The HEADPHONE Community / Headphones.com:** a reusable public Discourse JSON adapter performs targeted structured-PEQ discovery, preserves username/topic/post provenance, and records source health.
 - **HiFiGuides:** the same public Discourse adapter provides scheduled targeted structured-PEQ discovery and source-health tracking.
-- **Head-Fi and Audio Science Review:** their already-qualified curated publication lanes remain valid and are explicitly registered as **manual** currentness. They do not yet have sufficiently robust direct live-site adapters; curated inputs continue to feed the same generic community publisher.
-- **General EQs:** the generic General-preset publication lane has a second qualified MIT-licensed source (`MilcioSSQ/eq`) with 20 additional source-authored presets. Clearly named genre/style presets are Genre; Podcast/Spoken Word map through the existing Utility presentation; ambiguous labels are deliberately excluded rather than guessed.
+- **Head-Fi and Audio Science Review:** their qualified curated publication lanes remain valid and are explicitly registered as **manual** currentness. They do not yet have sufficiently robust direct live-site adapters; curated inputs continue to feed the same generic community publisher.
+- **Public GitHub repositories/Gists:** the discovery lane is now a scheduled **community-ingestion** source rather than a review-only dead end. Every discovered candidate is retrieved from its exact public blob/raw URL and processed through strict PEQ parsing, canonical headphone identity, source/creator provenance, acoustic dedupe, living-archive validation, and Unverified community publication. Invalid or ambiguous records are quarantined individually and do not block unrelated valid records.
+- **Initial GitHub community ingestion batch:** all 50 current headphone candidates were fetched; 39 were exact supported PEQ, 28 became new Unverified community profiles, 11 exact acoustic duplicates attached GitHub provenance to existing profiles instead of duplicating them, and 11 candidates were quarantined because headphone identity was unmatched or ambiguous. No candidate was partially imported.
+- **General GitHub discovery:** all current broad General candidates are actively processed rather than left in an indefinite review queue. The initial three candidates were all fixed/graphic-EQ source structures without exact parametric Q/filter-type data, so all three were classified `no_exact_parametric_structure` and none was published. A future exact PEQ still requires source-authored General intent/category; EQ Library never infers Sound/Genre/Utility from filter shape.
+- **Squiglink-compatible and Topping community data:** these lanes are active/manual community sources for exact public source-authored PEQ. Measurement-only records, curve-only views, screenshots, or device UI state without exact frequency/gain/Q/filter type remain non-publishable because converting them would invent acoustic data. Such structural insufficiency is a data limitation, not a generic permission/review hold.
+- **General EQs:** the generic General-preset publication lane includes the qualified MIT-licensed ParaEQ presets and the second qualified MIT-licensed source `MilcioSSQ/eq`, which contributes 20 additional source-authored presets. Clearly named genre/style presets are Genre; Podcast/Spoken Word map through the existing Utility presentation; ambiguous labels are deliberately excluded rather than guessed.
 - **General-source currentness:** qualified GitHub-backed General sources have a scheduled blob/source-health probe. Upstream file changes are surfaced as `changed_needs_review`; a source-code change never silently rewrites a qualified General manifest or existing canonical acoustic history.
-- **General-source discovery:** scheduled GitHub code discovery maintains a separate review-only General-EQ candidate queue. Discovery is intentionally broader than publication; candidates remain blocked on originality, license/redistribution, creator attribution, explicit General EQ intent/category, structured parseability, and canonical dedupe.
 - **Explicit currentness ownership:** the source registry distinguishes `scheduled`, `runtime`, `manual`, `review`, and `paused` currentness modes so a source cannot appear overdue merely because it is intentionally maintained outside repository scheduling.
 - **Strict source-health SLA:** `Source health currentness` runs on relevant pull requests/pushes and daily after the established catalog/source-expansion jobs. A genuinely scheduled source blocks the audit when it has never recorded a successful scan, when its last success exceeds two configured cadence intervals, or when it reaches three consecutive failures. One or two recent failures within the freshness window are warnings rather than false catalog failures.
 - **Failure isolation:** forum/API degradation preserves the current candidate/catalog and records source-health failure state. Every changed catalog candidate still passes atomic validation and the living-archive baseline check before publication.
@@ -44,7 +47,7 @@ Each registry source has one currentness owner:
 - **review** — discovery/qualification-only lane that cannot publish merely because a search ran;
 - **paused** — live access is intentionally disabled while already-published archive data remains preserved.
 
-The next adapter-expansion priorities remain a compliant public Reddit access path and robust live adapters for Head-Fi and Audio Science Review. Topping/Squiglink and other review-only sources may advance only when stable public access, provenance, rights, and exact structured data are qualified. These are future coverage improvements, not hidden claims that those sources are already autonomously scanned.
+The next adapter-expansion priorities remain a compliant public Reddit access path and robust live adapters for Head-Fi and Audio Science Review. Squiglink-compatible and Topping community sources may publish exact traceable public PEQ through the normal Unverified community path; broader measurement/curve/device-state material remains excluded unless exact source-authored PEQ is actually provided. These are future coverage improvements, not hidden claims that those manual sources are already autonomously scanned.
 
 ## 4. Cadence policy
 
@@ -53,7 +56,7 @@ Default cadence targets:
 - high-change structured catalogs and active high-volume communities: **daily** where technically appropriate;
 - slower creator pages, forums, qualified repositories, and device communities: **weekly** where appropriate;
 - source-health audit: **daily**, after the normal source-refresh windows;
-- broad search for entirely new sources/communities/repositories/databases: **monthly review** by default, with narrower review-only discovery allowed more frequently when rate limits and source terms permit.
+- broad search for entirely new sources/communities/repositories/databases: **monthly review** by default, with narrower discovery allowed more frequently when rate limits and source terms permit.
 
 The source registry remains authoritative for source-specific cadence and currentness mode. A cadence may be tightened or relaxed based on observed change rate, rate limits, reliability, API/feed availability, and source terms.
 
@@ -110,9 +113,9 @@ At least monthly, review beyond the existing registry for newly useful public so
 - public structured APIs/feeds;
 - source-authored General EQ/effect/utility/genre preset collections.
 
-Newly discovered sources enter a qualification queue and do not become publication-active automatically.
+Discovery is a retrieval/triage stage, not a reason to hold ordinary public community PEQ indefinitely. Candidates from an already-qualified active community lane may proceed directly through deterministic candidate qualification and publish as **Unverified** when all required facts are present: exact supported PEQ structure, safe headphone identity or explicit source-authored General category, creator/source attribution, public source URL, and canonical dedupe/revision checks. Failures are quarantined with a machine-readable reason.
 
-Qualification records must cover:
+A genuinely new source class or source with a specific contrary restriction still enters source-level qualification before it becomes an active publication lane. Source qualification records must cover as applicable:
 
 - originality vs mirror/repackaged data;
 - structured parseability;
@@ -120,7 +123,7 @@ Qualification records must cover:
 - attribution/provenance quality;
 - source stability/reliability;
 - expected update cadence;
-- redistribution/permission status;
+- any specific redistribution/permission restriction presented by the source;
 - likely provenance tier;
 - for General EQs, explicit source intent/category rather than category inferred from filter shape.
 
@@ -158,7 +161,7 @@ Repository data/CI should let a maintainer answer without forensic work:
 - Which General EQ source files changed and are waiting for requalification?
 - When was broad new-source discovery last reviewed?
 
-The daily source-health artifact/step summary is the first maintained observability surface. A separate UI/dashboard is optional and not required for production correctness.
+The daily source-health artifact/step summary and community-ingestion report artifacts are the maintained observability surfaces. A separate UI/dashboard is optional and not required for production correctness.
 
 ## 11. Acceptance criteria for the source-automation milestone
 
@@ -168,14 +171,14 @@ The milestone is complete when:
 2. every `scheduled` source is backed by a real adapter and its configured cadence is exercised by GitHub Actions;
 3. overdue/never-successful/repeated-failure scheduled-source health is automatically surfaced and can fail the health gate;
 4. scheduled source-health timestamps/cursors come from real adapter runs rather than invented success;
-5. recurring review-only discovery covers new headphone-specific and General EQ candidates without auto-publishing unqualified sources;
+5. recurring discovery processes active community candidates through deterministic publish/dedupe/quarantine decisions instead of leaving valid public PEQ indefinitely review-only;
 6. all publication candidates flow through canonical provenance/dedupe/revision/archive validation;
 7. source failures cannot erase archived EQs or replace last-known-good publication;
 8. normal production operation remains independent of ChatGPT and independent of Android forum scraping;
-9. tests cover cadence/currentness ownership/overdue behavior, failure isolation, source movement/removal, dedupe/revision behavior, General source change review gating, and living-archive preservation;
+9. tests cover cadence/currentness ownership/overdue behavior, failure isolation, source movement/removal, dedupe/revision behavior, General source change gating, community candidate quarantine, and living-archive preservation;
 10. Reddit live scanning is either restored through a compliant public access path or remains explicitly paused, and Head-Fi / Audio Science Review remain accurately manual until robust live adapters exist.
 
-The implementation listed in section 2 is designed to satisfy these criteria once its PR and post-merge `main` validation are green.
+The implementation described above satisfies these criteria when its PR and post-merge `main` validation are green.
 
 ## 12. Release boundary
 
