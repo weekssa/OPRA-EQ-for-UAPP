@@ -69,9 +69,11 @@ Search public GitHub repositories/Gists for structured preset files and maintain
 - device-specific preset repositories that preserve source attribution
 - maintained personal/community EQ collections
 
-Require repository/license review before redistribution. When redistribution is not clearly permitted, store/link provenance and ingest only data that can legally be normalized/published.
+Public GitHub/Gist files containing exact, source-traceable PEQ coefficients are handled through the same **Unverified community** process as other public community EQs once the GitHub community lane itself is qualified and registered. Individual exact PEQ files do not require a separate manual approval simply because discovery found them. Preserve repository owner, file path, immutable commit/blob provenance, and the original public URL; do not republish unrelated repository prose or code.
 
-Explicitly qualified repositories/files are publication inputs; broad GitHub/Gist discovery remains review-only until originality and licensing are established.
+A discovered GitHub/Gist headphone PEQ may publish automatically as Unverified after exact parsing, safe headphone identity resolution, creator/provenance retention, acoustic dedupe/revision classification, applicable source-policy checks, and living-archive validation. Exact duplicates attach provenance instead of creating another tuning. Inaccessible files, malformed/unsupported PEQ, ambiguous or unmatched headphone identity, obvious repost ambiguity, or a specific contrary source restriction remain quarantined without blocking unrelated candidates.
+
+This candidate-level community rule does **not** eliminate source qualification. A genuinely new repository ecosystem/domain or adapter that is not already covered by a qualified lane still enters the source qualification process before it becomes an active scheduled source. General-EQ publication also remains stricter: a candidate must provide exact parametric structure and explicit source-authored General intent/category rather than having intent or missing filter parameters inferred.
 
 Initial qualified General-EQ repository source: `wabsto1/ParaEQ`. Its built-in preset definitions are MIT licensed and source-authored in `Sources/Models.swift`; EQ Library pins the reviewed commit, republishes only exact structured EQ parameters/labels with attribution, and uses the generic `*_general_presets.json` publication lane. Missing source preamp stays null and generated safety headroom remains separate derived metadata.
 
@@ -88,6 +90,8 @@ Initial candidates:
 - RME/device forums for creator/user PEQ presets
 
 Do not duplicate AutoEq simply because another app bundles or mirrors AutoEq results. Attach the mirror as provenance only when useful.
+
+Exact structured PEQ files from a qualified public device/community lane may use the normal Unverified community publication path. Measurement curves, screenshots, graphic-EQ-only data, or any source missing the exact frequency/gain/Q/filter-type information required by the canonical PEQ schema must not be converted into invented parametric filters.
 
 ### F. User submissions / forms
 
@@ -144,7 +148,7 @@ Store these as `My EQs`. A user may later explicitly submit provenance for publi
 
 ### H. Search/discovery fallback
 
-Use targeted web discovery to find new source communities and one-off original presets that are not in known registries. Newly discovered domains remain disabled or `needs_review` until their access/terms/provenance strategy is documented.
+Use targeted web discovery to find new source communities and one-off original presets that are not in known registries. Individual candidates reached through an already-qualified community lane may proceed through that lane's normal validation/publication rules; a newly discovered source/domain or unsupported adapter remains disabled or `needs_review` until its access/provenance strategy is documented and the source is qualified.
 
 ## Canonical headphone identity across lanes
 
@@ -213,7 +217,7 @@ For every registered source, record:
 - redistribution status: `allowed`, `structured-data-only`, `link-only`, `review-required/unknown`
 - required attribution
 
-Prefer APIs, feeds, public structured endpoints, repository files, and search indexes over brittle HTML scraping. Never scrape authenticated/private content. Never bypass access controls. If terms are uncertain, keep the source in discovery/link-only/review mode until resolved.
+Prefer APIs, feeds, public structured endpoints, repository files, and search indexes over brittle HTML scraping. Never scrape authenticated/private content. Never bypass access controls. If a source or lane presents a specific contrary restriction or its access/redistribution status is genuinely uncertain, keep that source in discovery/link-only/review mode until resolved. This source-level qualification rule is separate from repeatedly re-reviewing individual exact PEQ candidates that arrive through an already-qualified community lane.
 
 ## Permanent currentness pathway
 
@@ -264,14 +268,14 @@ Periodically search beyond the existing source registry for newly launched or ne
 - public APIs/feeds
 - maintained preset projects
 
-Newly discovered sources enter a qualification queue rather than becoming active automatically.
+Newly discovered **sources/lane types** enter a qualification queue rather than becoming active automatically. This source-level gate is distinct from individual exact PEQ candidates discovered inside an already-qualified public community lane; those candidates may proceed automatically through the lane's parse, identity, provenance, dedupe/revision, and archive-validation checks.
 
 Qualification must determine:
 
-- originality vs mirror/repackaged AutoEq data
+- originality vs mirror/repackaged AutoEq data at the source/lane level
 - structured parseability
 - public accessibility
-- licensing/redistribution status
+- licensing/redistribution status or absence of a specific contrary restriction under the approved community-coefficient policy
 - attribution requirements
 - source reliability/stability
 - expected update cadence
@@ -286,7 +290,7 @@ Source lifecycle states include:
 - `paused`
 - `retired`
 
-A source can change states automatically for technical health reasons, but licensing/redistribution changes that require product judgment remain a user stop condition.
+A source can change states automatically for technical health reasons, but a newly discovered specific source restriction or licensing/redistribution change that requires product judgment remains a user stop condition.
 
 ## Source health and freshness metadata
 
@@ -322,7 +326,7 @@ Ordinary source failures should not require user intervention.
 
 No failed source may invalidate the last-known-good canonical catalog.
 
-The current v0.3 repository has scaffolding plus several real currentness lanes, but not every registered forum/community yet has a fully autonomous live scanner. Completion of scheduled adapters, overdue-source enforcement, and monthly discovery of additional sources is intentionally tracked in `docs/FUTURE_SOURCE_AUTOMATION_PLAN.md` rather than hidden as an assumed v0.3 capability. Production source automation runs through GitHub Actions/repository tooling, not ChatGPT or the Android client.
+The current repository has real scheduled/currentness lanes plus intentionally manual/paused sources. Production source automation runs through GitHub Actions/repository tooling, not ChatGPT or the Android client. The maintained current state and remaining coverage improvements are tracked in `docs/FUTURE_SOURCE_AUTOMATION_PLAN.md`.
 
 ## Catalog publication discipline
 
@@ -333,7 +337,7 @@ Updates are published only after:
 3. provenance validation
 4. acoustic dedupe/revision classification
 5. target classification
-6. source/license policy checks
+6. source-policy checks
 7. deterministic catalog generation
 8. regression validation against the prior catalog, including a hard living-archive check that previously published canonical profiles/revisions have not disappeared or changed acoustically in place
 
@@ -347,7 +351,7 @@ Ordinary changes should not require a new Android release. The following should 
 
 - adding another source that maps to an existing adapter/schema
 - adding another curated community headphone input
-- discovering new EQs
+- discovering new EQs through a qualified community lane
 - adding new community revisions
 - resolving a source-side headphone alias through existing schema
 - changing provenance links/status
@@ -370,17 +374,18 @@ Already established foundation:
 - curated multi-forum Edition XS pilot data
 - generalized all-file curated community publisher
 - structured GitHub Issue Form intake staged as review-only
+- scheduled GitHub/Gist community discovery ingestion for exact headphone PEQ candidates, with Unverified publication, provenance-only exact-deduplication, quarantine, source health, and living-archive validation
 
 Next source-expansion work:
 
 P0: keep CI/currentness green while reducing reviewed headphone-identity duplicates and protecting distinct variants
 
-P1: add qualified community/expert EQ inputs beyond the Edition XS pilot using the generic curated/community pipeline; improve recurring discovery for Reddit/Head-Fi/ASR/HEADPHONE Community without inventing filters from screenshots/curves
+P1: continue qualified community/expert EQ coverage and improve recurring discovery for accessible registered sources without inventing filters from screenshots/measurement curves
 
-P2: progress Squiglink-compatible sources from discovery to publication only where source-specific rights are verified; expand qualified GitHub/Gist sources
+P2: progress Squiglink-compatible/device-community inputs through the normal community lane when exact structured PEQ is available; never synthesize missing Q/filter types from measurement-only data
 
 P3: connect reviewed form submissions into the normal candidate qualification/publication tooling while preserving the explicit review gate; broaden new-source discovery and health/freshness reporting
 
-P4: complete Android real-path canonical catalog/identity/revision integration and the signed v0.3 validation candidate
+P4: keep Android real-path canonical catalog/identity/revision integration compatible with ordinary catalog-only updates
 
 The Android app should consume only the validated canonical catalog. Discovery, parsing, terms checks, currentness monitoring, source qualification, submission review, and catalog publication remain outside the Android runtime.
