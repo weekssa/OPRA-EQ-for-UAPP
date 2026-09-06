@@ -40,12 +40,15 @@ class GitHubPresetDiscoveryTest(unittest.TestCase):
         self.assertEqual("github-community", candidate["source_id"])
         self.assertEqual("community_repository", candidate["source_kind"])
         self.assertEqual("example/eq", candidate["repository"])
-        self.assertEqual("example", candidate["creator"])
+        self.assertEqual("example", candidate["source_account"])
+        self.assertIsNone(candidate["creator"])
+        self.assertFalse(candidate["creator_is_explicit"])
         self.assertEqual("structured-data-only", candidate["redistribution"])
         self.assertFalse(candidate["publication_eligible"])
         self.assertFalse(candidate["license_review_required"])
         self.assertIn("canonical_dedupe", candidate["qualification_required"])
         self.assertIn("structured_eq_parse", candidate["qualification_required"])
+        self.assertIn("source_provenance", candidate["qualification_required"])
 
     def test_gist_files_are_discovered_for_same_processing_path(self):
         payload = [
@@ -68,7 +71,9 @@ class GitHubPresetDiscoveryTest(unittest.TestCase):
         self.assertEqual(1, len(candidates))
         candidate = candidates[0]
         self.assertEqual("github_gist", candidate["platform"])
-        self.assertEqual("tester", candidate["creator"])
+        self.assertEqual("tester", candidate["source_account"])
+        self.assertIsNone(candidate["creator"])
+        self.assertFalse(candidate["creator_is_explicit"])
         self.assertEqual("gist:gist123:Edition XS PEQ.txt", candidate["source_record_id"])
         self.assertEqual("2026-08-29T12:00:00Z", candidate["source_updated_at"])
         self.assertEqual("structured-data-only", candidate["redistribution"])
