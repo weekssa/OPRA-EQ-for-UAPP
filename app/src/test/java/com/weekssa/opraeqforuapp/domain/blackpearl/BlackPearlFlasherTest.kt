@@ -73,11 +73,91 @@ class BlackPearlFlasherTest {
     }
 
     @Test
+    fun flatResetRestoresTrackedGainAndOverwritesAllTenBandsInActiveSlot() = runBlocking {
+        val transport = FakeTransport(activeSlot = 0x05, globalGainRaw = -3_024)
+        val store = FakeGainStore(appliedRaw = -1_024)
+
+        val result = BlackPearlFlasher(transport, store).resetToFlat()
+
+        assertTrue(result is BlackPearlFlatResetResult.Success)
+        result as BlackPearlFlatResetResult.Success
+        assertEquals(4.0, result.restoredPlaybackGainDb, 0.0)
+        assertEquals(0, store.appliedRaw)
+        assertEquals(-2_000, transport.globalGainRaw)
+        assertEquals(13, transport.sent.size)
+        assertEquals(0x03, transport.sent.first()[2].u8())
+        assertEquals(-2_000, gainRaw(transport.sent.first()))
+        transport.sent.drop(1).take(10).forEachIndexed { index, report ->
+            assertEquals(0x09, report[2].u8())
+            assertEquals(index, report[5].u8())
+            assertEquals(0, bandGainRaw(report))
+            assertEquals(0x05, report[36].u8())
+        }
+        assertEquals(0x0A, transport.sent[11][2].u8())
+        assertEquals(0x01, transport.sent[12][2].u8())
+    }
+
+    @Test
+    fun flatResetWithoutTrackedGainSkipsGlobalGainWriteButStillClearsEqBands() = runBlocking {
+        val transport = FakeTransport(activeSlot = 0x03, globalGainRaw = -2_000)
+        val store = FakeGainStore()
+
+        val result = BlackPearlFlasher(transport, store).resetToFlat()
+
+        assertTrue(result is BlackPearlFlatResetResult.Success)
+        assertEquals(12, transport.sent.size)
+        assertTrue(transport.sent.none { it[2].u8() == 0x03 })
+        assertTrue(transport.sent.take(10).all { bandGainRaw(it) == 0 && it[36].u8() == 0x03 })
+        assertEquals(0, store.appliedRaw)
+    }
+
+    @Test
+    fun flatResetRejectsUnsafeBaselineRestorationWithoutWrites() = runBlocking {
+        val transport = FakeTransport(
+            activeSlot = 0x00,
+            globalGainRaw = BlackPearlProtocol.GLOBAL_GAIN_MAX_RAW - 100,
+        )
+        val store = FakeGainStore(appliedRaw = -500)
+
+        val result = BlackPearlFlasher(transport, store).resetToFlat()
+
+        assertTrue(result is BlackPearlFlatResetResult.NotRepresentable)
+        assertTrue(transport.sent.isEmpty())
+        assertEquals(-500, store.appliedRaw)
+    }
+
+    @Test
+    fun flatResetTransferFailureAfterGainRestoreKeepsGainStateClearedForSafeRetry() = runBlocking {
+        val transport = FakeTransport(
+            activeSlot = 0x01,
+            globalGainRaw = -3_024,
+            failAtSend = 3,
+        )
+        val store = FakeGainStore(appliedRaw = -1_024)
+
+        val result = BlackPearlFlasher(transport, store).resetToFlat()
+
+        assertTrue(result is BlackPearlFlatResetResult.TransferFailed)
+        assertEquals(-2_000, transport.globalGainRaw)
+        assertEquals(0, store.appliedRaw)
+        assertEquals(3, transport.sent.size)
+    }
+
+    @Test
     fun missingActiveSlotFailsBeforeAnyWrite() = runBlocking {
         val transport = FakeTransport(activeSlot = null, globalGainRaw = -2_000)
         val result = BlackPearlFlasher(transport, FakeGainStore()).flash(profile(preamp = 0.0))
 
         assertTrue(result is BlackPearlFlashResult.DeviceUnavailable)
+        assertTrue(transport.sent.isEmpty())
+    }
+
+    @Test
+    fun flatResetMissingActiveSlotFailsBeforeAnyWrite() = runBlocking {
+        val transport = FakeTransport(activeSlot = null, globalGainRaw = -2_000)
+        val result = BlackPearlFlasher(transport, FakeGainStore()).resetToFlat()
+
+        assertTrue(result is BlackPearlFlatResetResult.DeviceUnavailable)
         assertTrue(transport.sent.isEmpty())
     }
 
@@ -158,6 +238,11 @@ class BlackPearlFlasherTest {
 }
 
 private fun gainRaw(report: ByteArray): Int = ByteBuffer.wrap(report, 4, 2)
+    .order(ByteOrder.LITTLE_ENDIAN)
+    .short
+    .toInt()
+
+private fun bandGainRaw(report: ByteArray): Int = ByteBuffer.wrap(report, 32, 2)
     .order(ByteOrder.LITTLE_ENDIAN)
     .short
     .toInt()
