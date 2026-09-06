@@ -1,0 +1,200 @@
+name: Community discovery ingestion
+
+on:
+  push:
+    branches:
+      - main
+      - 'source-automation-*'
+    paths:
+      - '.github/workflows/community-discovery-ingestion.yml'
+      - 'config/source_registry.json'
+      - 'catalog/discovery/github_candidates.json'
+      - 'catalog/discovery/general_github_candidates.json'
+      - 'tools/github_community_ingest.py'
+      - 'tools/general_github_candidate_audit.py'
+      - 'tools/test_source_github_community_ingest.py'
+      - 'tools/test_source_general_github_audit.py'
+      - 'tools/community_peq_ingest.py'
+      - 'tools/catalog_merge.py'
+      - 'tools/catalog_pipeline.py'
+      - 'tools/currentness_scheduler.py'
+  workflow_dispatch:
+  schedule:
+    - cron: '3 12 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: eq-catalog-writer-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  ingest-discovery:
+    if: github.event_name != 'push' || github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out current branch tip
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 1
+
+      - name: Validate community ingestion inputs
+        run: |
+          python3 tools/catalog_pipeline.py validate-registry --registry config/source_registry.json
+          PYTHONPATH=tools python3 -m unittest discover -s tools -p 'test_source_*.py' -v
+
+      - name: Initialize candidate and health state
+        run: |
+          cp catalog/catalog.json "${RUNNER_TEMP}/catalog.community.current.json"
+          cp catalog/source_health.json "${RUNNER_TEMP}/source_health.community.current.json"
+          mkdir -p "${RUNNER_TEMP}/community-ingestion-reports"
+
+      - name: Build cadence-aware source plan
+        run: >-
+          python3 tools/currentness_scheduler.py
+          --registry config/source_registry.json
+          --state "${RUNNER_TEMP}/source_health.community.current.json"
+          > "${RUNNER_TEMP}/community-source-plan.json"
+
+      - name: Ingest discovered public GitHub headphone PEQs when due
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if python3 - "${RUNNER_TEMP}/community-source-plan.json" github-community <<'PY'
+          import json, sys
+          plan = json.load(open(sys.argv[1], encoding='utf-8'))
+          due = {item['source_id'] for item in plan.get('known_source_scans', [])}
+          raise SystemExit(0 if sys.argv[2] in due else 1)
+          PY
+          then
+            python3 tools/github_community_ingest.py \
+              --catalog "${RUNNER_TEMP}/catalog.community.current.json" \
+              --discovery catalog/discovery/github_candidates.json \
+              --registry config/source_registry.json \
+              --health "${RUNNER_TEMP}/source_health.community.current.json" \
+              --catalog-output "${RUNNER_TEMP}/catalog.community.next.json" \
+              --health-output "${RUNNER_TEMP}/source_health.community.next.json" \
+              --report "${RUNNER_TEMP}/community-ingestion-reports/github-community.json" \
+              --github-token "${GITHUB_TOKEN}" \
+              --allow-degraded
+            mv "${RUNNER_TEMP}/catalog.community.next.json" "${RUNNER_TEMP}/catalog.community.current.json"
+            mv "${RUNNER_TEMP}/source_health.community.next.json" "${RUNNER_TEMP}/source_health.community.current.json"
+          else
+            echo "GitHub community ingestion is not due."
+          fi
+
+      - name: Process broad GitHub General EQ candidates without inventing filters
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: >-
+          python3 tools/general_github_candidate_audit.py
+          --discovery catalog/discovery/general_github_candidates.json
+          --report "${RUNNER_TEMP}/community-ingestion-reports/general-github-candidates.json"
+          --github-token "${GITHUB_TOKEN}"
+
+      - name: Validate candidate atomically against living archive
+        run: >-
+          python3 tools/catalog_pipeline.py publish
+          --candidate "${RUNNER_TEMP}/catalog.community.current.json"
+          --published "${RUNNER_TEMP}/validated-community-catalog.json"
+          --last-known-good "${RUNNER_TEMP}/validated-community-lkg.json"
+          --baseline catalog/catalog.json
+
+      - name: Prepare repository and Android transport catalogs
+        run: |
+          python3 - <<'PY'
+          import json, os
+          source = os.environ['RUNNER_TEMP'] + '/validated-community-catalog.json'
+          repository = os.environ['RUNNER_TEMP'] + '/repository-community-catalog.json'
+          with open(source, encoding='utf-8') as handle:
+              payload = json.load(handle)
+          with open(repository, 'w', encoding='utf-8') as handle:
+              handle.write(json.dumps(payload, sort_keys=True, indent=2, ensure_ascii=False) + '\n')
+          with open(source, 'w', encoding='utf-8') as handle:
+              handle.write(json.dumps(payload, sort_keys=True, separators=(',', ':'), ensure_ascii=False) + '\n')
+          PY
+
+      - name: Stage persistent community state
+        if: >-
+          github.ref_name == 'main' ||
+          startsWith(github.ref_name, 'source-automation-')
+        run: |
+          cp "${RUNNER_TEMP}/repository-community-catalog.json" catalog/catalog.json
+          cp "${RUNNER_TEMP}/source_health.community.current.json" catalog/source_health.json
+
+      - name: Commit validated community ingestion
+        if: >-
+          github.ref_name == 'main' ||
+          startsWith(github.ref_name, 'source-automation-')
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add catalog/catalog.json catalog/source_health.json
+          if git diff --cached --quiet; then
+            echo "No validated community-ingestion changes."
+            exit 0
+          fi
+          git commit -m "Ingest discovered community EQs"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Publish validated catalog to stable Android branch
+        if: github.ref_name == 'main'
+        shell: bash
+        run: |
+          set -euo pipefail
+          publish_dir="$(mktemp -d)"
+          git fetch origin catalog-live
+          git worktree add --detach "$publish_dir" origin/catalog-live
+          cp "${RUNNER_TEMP}/validated-community-catalog.json" "$publish_dir/catalog/catalog.json"
+          cd "$publish_dir"
+          if git diff --quiet -- catalog/catalog.json; then
+            echo "Stable live catalog already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add catalog/catalog.json
+          git commit -m "Publish discovered community EQs"
+          git push origin HEAD:catalog-live
+
+      - name: Write ingestion summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## Community discovery ingestion'
+            echo
+            for report in "${RUNNER_TEMP}"/community-ingestion-reports/*.json; do
+              [[ -f "$report" ]] || continue
+              echo "### $(basename "$report")"
+              echo '```json'
+              python3 - "$report" <<'PY'
+          import json, sys
+          payload = json.load(open(sys.argv[1], encoding='utf-8'))
+          keys = ('source_id','status','discovered','fetched','parsed','publishable','exact_duplicates','quarantined','quarantine_reasons','processed','decision_counts','merge_outcomes')
+          print(json.dumps({k: payload[k] for k in keys if k in payload}, indent=2, sort_keys=True))
+          PY
+              echo '```'
+            done
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Upload community ingestion reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: community-ingestion-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/community-source-plan.json
+            ${{ runner.temp }}/community-ingestion-reports/
+            ${{ runner.temp }}/validated-community-catalog.json
+            ${{ runner.temp }}/source_health.community.current.json
+          if-no-files-found: warn
+          retention-days: 14
