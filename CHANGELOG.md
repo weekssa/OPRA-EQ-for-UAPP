@@ -4,6 +4,24 @@ All notable changes to **OPRA EQ for UAPP / EQ Library** will be documented in t
 
 The project uses Semantic Versioning. Development releases remain in the `0.x` series until the first stable `v1.0.0` release.
 
+## [0.4.0] - 2026-09-06
+
+### Added
+
+- TRN Black Pearl **Reset EQ to flat** from My EQs. When Black Pearl is the active output and Direct Flash is enabled, the compact Black Pearl control row places **Connect/Connected** beside an outlined reset action; Reset is enabled only while connected and requires confirmation.
+- Reset uses the DAC's current EQ slot, overwrites all 10 hardware bands with zero-gain flat bands, latches/saves the slot, and removes only the playback-gain delta previously tracked as applied by EQ Library. It is a hardware action, not a catalog/General/Favorite/My EQs preset and does not create an export file.
+
+### Changed
+
+- Black Pearl flat reset uses fail-safe ordering: validate the recoverable baseline gain first, flatten/latch/save the EQ slot before restoring playback gain, and clear the tracked EQ Library gain delta only after the gain restoration succeeds. A PEQ failure therefore leaves the prior playback gain/tracked state intact; a final gain-write failure retains the tracked delta for safe retry.
+
+### Validation
+
+- Added domain regression coverage for active-slot preservation, all-ten-band zero-gain reset, no-op gain restoration, unsafe baseline rejection, PEQ-transfer failure, final gain-restore failure, and retry-safe tracked-gain behavior.
+- Exact hardware candidate `15f220bd055a2aec49c0cb97c16acbd43ac588da` passed Android unit tests, lint, debug/release assembly, CodeQL, signed-beta alignment/signature verification, and the pinned release-certificate check. The signed candidate SHA-256 was `96d9ea12caf8c7944ecd059f7fdda533d1c936c5ed9583910a3d3ab01168c3cf`.
+- The same signed candidate passed the focused Pixel 9 / TRN Black Pearl Reset EQ to flat hands-on qualification on 2026-09-06. Sections 1–7 of the focused checklist passed; controlled mid-transfer failure injection was not required on hardware because the retry/failure ordering is covered by automated domain tests.
+- The final v0.4.0 release-preparation head changes only version/release/documentation metadata after the hardware-qualified device/DSP commit, so it must repeat automated/release signing gates but does not require another Black Pearl hands-on pass unless Android/device/DSP behavior changes again.
+
 ## [0.3.0] - 2026-08-31
 
 ### Added

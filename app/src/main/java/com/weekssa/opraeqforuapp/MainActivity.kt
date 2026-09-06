@@ -31,6 +31,7 @@ import com.weekssa.opraeqforuapp.data.sync.BackgroundSyncScheduler
 import com.weekssa.opraeqforuapp.data.sync.CatalogSyncCoordinator
 import com.weekssa.opraeqforuapp.data.update.AppUpdateCoordinator
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlashResult
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlatResetResult
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlasher
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
@@ -168,6 +169,7 @@ class MainActivity : ComponentActivity() {
                             blackPearlTransport.connect()
                         }
                     },
+                    onResetBlackPearl = ::resetBlackPearlToFlat,
                     onFlashManagedProfile = { productId, profileId ->
                         flashManagedProfile(productId, profileId, activeOutputId)
                     },
@@ -390,6 +392,33 @@ class MainActivity : ComponentActivity() {
         val record = savedGeneralEqRepository.getForOutput(outputId, presetId)
             ?: return "That General EQ is no longer saved for this output."
         return flashBlackPearlProfile(record.profile)
+    }
+
+    private suspend fun resetBlackPearlToFlat(): String {
+        val preferences = appPreferencesRepository.snapshot()
+        if (preferences.exportTargets.activeTarget != ExportDevice.BLACK_PEARL) {
+            return "Select Black Pearl as the active output before resetting its EQ."
+        }
+        if (!preferences.directBlackPearlFlashEnabled) {
+            return "Enable direct Flash in Settings → Black Pearl before resetting its EQ."
+        }
+        if (blackPearlTransport.state.value !is BlackPearlConnectionState.Connected) {
+            return "Connect to the Black Pearl from My EQs before resetting its EQ."
+        }
+
+        return when (val result = blackPearlFlasher.resetToFlat()) {
+            is BlackPearlFlatResetResult.Success -> {
+                if (kotlin.math.abs(result.restoredPlaybackGainDb) < 0.000_001) {
+                    "Current Black Pearl EQ slot reset to flat."
+                } else {
+                    val restored = String.format(Locale.US, "%+.2f", result.restoredPlaybackGainDb)
+                    "Current Black Pearl EQ slot reset to flat · playback gain restored $restored dB"
+                }
+            }
+            is BlackPearlFlatResetResult.NotRepresentable -> "Couldn’t reset to flat · ${result.reason}"
+            is BlackPearlFlatResetResult.DeviceUnavailable -> result.reason
+            is BlackPearlFlatResetResult.TransferFailed -> result.reason
+        }
     }
 
     private suspend fun flashBlackPearlProfile(profile: OpraEqProfile): String {

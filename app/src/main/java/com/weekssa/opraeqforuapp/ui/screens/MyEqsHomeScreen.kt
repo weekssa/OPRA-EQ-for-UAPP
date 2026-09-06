@@ -79,6 +79,7 @@ fun MyEqsHomeScreen(
     directBlackPearlFlashEnabled: Boolean,
     blackPearlConnectionState: BlackPearlConnectionState,
     onConnectBlackPearl: () -> Unit,
+    onResetBlackPearl: suspend () -> String,
     onExportAll: () -> Unit,
     onOpenHeadphone: (String) -> Unit,
     onImportPersonal: suspend (
@@ -100,6 +101,7 @@ fun MyEqsHomeScreen(
     val scope = rememberCoroutineScope()
     var importOpen by remember { mutableStateOf(false) }
     var pendingFlash by remember { mutableStateOf<PendingBlackPearlFlash?>(null) }
+    var flatResetConfirmationOpen by remember { mutableStateOf(false) }
     val selectedHeadphoneCount = managedHeadphones.sumOf(ManagedHeadphoneRecord::selectedProfileCount)
     val headphoneSavedEqs = remember(savedEqs) { savedEqs.toList() }
     val blackPearlConnected = blackPearlConnectionState is BlackPearlConnectionState.Connected
@@ -154,6 +156,29 @@ fun MyEqsHomeScreen(
         )
     }
 
+    if (flatResetConfirmationOpen) {
+        AlertDialog(
+            onDismissRequest = { flatResetConfirmationOpen = false },
+            title = { Text("Reset EQ to flat?") },
+            text = {
+                Text(
+                    "This will overwrite all 10 EQ bands in the Black Pearl's current EQ slot with flat settings and remove any playback-gain adjustment previously applied by EQ Library. This may change listening volume. Other DAC settings will not be changed.",
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        flatResetConfirmationOpen = false
+                        scope.launch { onMessage(onResetBlackPearl()) }
+                    },
+                ) { Text("Reset to flat") }
+            },
+            dismissButton = {
+                TextButton(onClick = { flatResetConfirmationOpen = false }) { Text("Cancel") }
+            },
+        )
+    }
+
     LazyColumn(modifier = modifier.fillMaxSize()) {
         item(key = "my-eqs-actions") {
             Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
@@ -162,6 +187,7 @@ fun MyEqsHomeScreen(
                         enabled = directBlackPearlFlashEnabled,
                         state = blackPearlConnectionState,
                         onConnect = onConnectBlackPearl,
+                        onReset = { flatResetConfirmationOpen = true },
                     )
                 }
                 if (exportCurrentness.hasPendingExport) {
@@ -392,6 +418,7 @@ fun BlackPearlConnectionControl(
     enabled: Boolean,
     state: BlackPearlConnectionState,
     onConnect: () -> Unit,
+    onReset: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.padding(bottom = 12.dp)) {
@@ -409,23 +436,36 @@ fun BlackPearlConnectionControl(
         val connected = state is BlackPearlConnectionState.Connected
         val connecting = state is BlackPearlConnectionState.Connecting
         val containerColor = if (connected) CONNECTED_GREEN else MaterialTheme.colorScheme.error
-        Button(
-            onClick = onConnect,
-            enabled = !connected && !connecting,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = containerColor,
-                contentColor = Color.White,
-                disabledContainerColor = if (connected) CONNECTED_GREEN else MaterialTheme.colorScheme.surfaceVariant,
-                disabledContentColor = if (connected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-            ),
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(
-                when {
-                    connected -> "Connected"
-                    connecting -> "Connecting…"
-                    else -> "Connect to DAC"
-                },
-            )
+            Button(
+                onClick = onConnect,
+                enabled = !connected && !connecting,
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = containerColor,
+                    contentColor = Color.White,
+                    disabledContainerColor = if (connected) CONNECTED_GREEN else MaterialTheme.colorScheme.surfaceVariant,
+                    disabledContentColor = if (connected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
+            ) {
+                Text(
+                    when {
+                        connected -> "Connected"
+                        connecting -> "Connecting…"
+                        else -> "Connect"
+                    },
+                )
+            }
+            OutlinedButton(
+                onClick = onReset,
+                enabled = connected,
+                modifier = Modifier.weight(1.25f),
+            ) {
+                Text("Reset EQ to flat")
+            }
         }
         if (state is BlackPearlConnectionState.Error) {
             Text(
