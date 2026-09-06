@@ -73,7 +73,7 @@ class BlackPearlFlasherTest {
     }
 
     @Test
-    fun flatResetRestoresTrackedGainAndOverwritesAllTenBandsInActiveSlot() = runBlocking {
+    fun flatResetFlattensActiveSlotBeforeRestoringTrackedGain() = runBlocking {
         val transport = FakeTransport(activeSlot = 0x05, globalGainRaw = -3_024)
         val store = FakeGainStore(appliedRaw = -1_024)
 
@@ -85,16 +85,17 @@ class BlackPearlFlasherTest {
         assertEquals(0, store.appliedRaw)
         assertEquals(-2_000, transport.globalGainRaw)
         assertEquals(13, transport.sent.size)
-        assertEquals(0x03, transport.sent.first()[2].u8())
-        assertEquals(-2_000, gainRaw(transport.sent.first()))
-        transport.sent.drop(1).take(10).forEachIndexed { index, report ->
+        transport.sent.take(10).forEachIndexed { index, report ->
             assertEquals(0x09, report[2].u8())
             assertEquals(index, report[5].u8())
             assertEquals(0, bandGainRaw(report))
             assertEquals(0x05, report[36].u8())
         }
-        assertEquals(0x0A, transport.sent[11][2].u8())
-        assertEquals(0x01, transport.sent[12][2].u8())
+        assertEquals(0x0A, transport.sent[10][2].u8())
+        assertEquals(0x01, transport.sent[11][2].u8())
+        assertEquals(0x03, transport.sent[12][2].u8())
+        assertEquals(-2_000, gainRaw(transport.sent[12]))
+        assertTrue(transport.sent.take(12).none { it[2].u8() == 0x03 })
     }
 
     @Test
@@ -127,7 +128,7 @@ class BlackPearlFlasherTest {
     }
 
     @Test
-    fun flatResetTransferFailureAfterGainRestoreKeepsGainStateClearedForSafeRetry() = runBlocking {
+    fun flatResetPeqFailureLeavesPlaybackGainAndTrackedDeltaUnchanged() = runBlocking {
         val transport = FakeTransport(
             activeSlot = 0x01,
             globalGainRaw = -3_024,
@@ -138,9 +139,29 @@ class BlackPearlFlasherTest {
         val result = BlackPearlFlasher(transport, store).resetToFlat()
 
         assertTrue(result is BlackPearlFlatResetResult.TransferFailed)
-        assertEquals(-2_000, transport.globalGainRaw)
-        assertEquals(0, store.appliedRaw)
+        assertEquals(-3_024, transport.globalGainRaw)
+        assertEquals(-1_024, store.appliedRaw)
         assertEquals(3, transport.sent.size)
+        assertTrue(transport.sent.none { it[2].u8() == 0x03 })
+    }
+
+    @Test
+    fun flatResetGainRestoreFailureKeepsTrackedDeltaForSafeRetry() = runBlocking {
+        val transport = FakeTransport(
+            activeSlot = 0x01,
+            globalGainRaw = -3_024,
+            failAtSend = 13,
+        )
+        val store = FakeGainStore(appliedRaw = -1_024)
+
+        val result = BlackPearlFlasher(transport, store).resetToFlat()
+
+        assertTrue(result is BlackPearlFlatResetResult.TransferFailed)
+        assertEquals(-3_024, transport.globalGainRaw)
+        assertEquals(-1_024, store.appliedRaw)
+        assertEquals(13, transport.sent.size)
+        assertEquals(0x03, transport.sent.last()[2].u8())
+        assertTrue(transport.sent.take(10).all { bandGainRaw(it) == 0 })
     }
 
     @Test
