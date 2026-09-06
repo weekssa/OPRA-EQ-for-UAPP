@@ -21,6 +21,16 @@ sealed interface BlackPearlFlashResult {
     data class TransferFailed(val reason: String) : BlackPearlFlashResult
 }
 
+sealed interface BlackPearlFlatResetResult {
+    data class Success(
+        val restoredPlaybackGainDb: Double,
+    ) : BlackPearlFlatResetResult
+
+    data class NotRepresentable(val reason: String) : BlackPearlFlatResetResult
+    data class DeviceUnavailable(val reason: String) : BlackPearlFlatResetResult
+    data class TransferFailed(val reason: String) : BlackPearlFlatResetResult
+}
+
 class BlackPearlFlasher(
     private val transport: BlackPearlTransport,
     private val gainStateStore: BlackPearlGainStateStore,
@@ -72,6 +82,49 @@ class BlackPearlFlasher(
             fidelity = plan.fidelity,
             appliedPlaybackGainDb = BlackPearlProtocol.rawDeltaToGainDb(requestedDeltaRaw),
             warning = plan.warning,
+        )
+    }
+
+    suspend fun resetToFlat(): BlackPearlFlatResetResult {
+        val activeSlot = transport.readActiveSlot()
+            ?: return BlackPearlFlatResetResult.DeviceUnavailable(
+                "Couldn’t read the Black Pearl active EQ slot. Reconnect the DAC and try again.",
+            )
+        val currentGainRaw = transport.readGlobalGainRaw()
+            ?: return BlackPearlFlatResetResult.DeviceUnavailable(
+                "Couldn’t read the Black Pearl playback gain. Reconnect the DAC and try again.",
+            )
+
+        val previousEqDeltaRaw = gainStateStore.readAppliedGainDeltaRaw()
+        val baselineGainRaw = currentGainRaw - previousEqDeltaRaw
+        if (baselineGainRaw !in BlackPearlProtocol.GLOBAL_GAIN_MIN_RAW..BlackPearlProtocol.GLOBAL_GAIN_MAX_RAW) {
+            return BlackPearlFlatResetResult.NotRepresentable(
+                "Restoring the playback gain that existed before EQ Library's adjustment would exceed the Black Pearl's validated volume range. Adjust the DAC volume and try again.",
+            )
+        }
+
+        if (baselineGainRaw != currentGainRaw) {
+            if (!transport.sendReport(BlackPearlProtocol.writeGlobalGainReport(baselineGainRaw))) {
+                return BlackPearlFlatResetResult.TransferFailed(
+                    "Black Pearl did not accept the playback-gain reset. No EQ bands were written.",
+                )
+            }
+        }
+        // The hardware is now back at the baseline gain. Record that immediately so a retry after a
+        // later PEQ transfer failure cannot restore the same EQ Library adjustment twice.
+        gainStateStore.writeAppliedGainDeltaRaw(0)
+
+        val reports = BlackPearlProtocol.flashSequence(emptyList(), activeSlot)
+        reports.forEachIndexed { index, report ->
+            if (!transport.sendReport(report)) {
+                return BlackPearlFlatResetResult.TransferFailed(
+                    "Black Pearl stopped accepting the flat-EQ reset at step ${index + 1} of ${reports.size}. The playback-gain reset is retained so a retry will not apply it twice.",
+                )
+            }
+        }
+
+        return BlackPearlFlatResetResult.Success(
+            restoredPlaybackGainDb = BlackPearlProtocol.rawDeltaToGainDb(baselineGainRaw - currentGainRaw),
         )
     }
 }
