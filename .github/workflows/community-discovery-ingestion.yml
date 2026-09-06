@@ -133,18 +133,17 @@ jobs:
               handle.write(json.dumps(payload, sort_keys=True, separators=(',', ':'), ensure_ascii=False) + '\n')
           PY
 
-      # Main is the normal persistent publication path. PR #11 temporarily materializes
-      # its already-validated activation batch on its own branch so the catalog coverage
-      # gate can validate the exact catalog that will merge; this branch-only condition
-      # is removed again before merge.
+      # Feature branches exercise the complete production calculation above but remain
+      # read-only. This keeps PR checks on a maintainer-authored head instead of having
+      # github-actions[bot] continuously move the PR tip and invalidate its checks.
       - name: Stage persistent community state
-        if: github.ref_name == 'main' || github.ref_name == 'source-automation-community-ingestion'
+        if: github.ref_name == 'main'
         run: |
           cp "${RUNNER_TEMP}/repository-community-catalog.json" catalog/catalog.json
           cp "${RUNNER_TEMP}/source_health.community.current.json" catalog/source_health.json
 
       - name: Commit validated community ingestion
-        if: github.ref_name == 'main' || github.ref_name == 'source-automation-community-ingestion'
+        if: github.ref_name == 'main'
         shell: bash
         run: |
           set -euo pipefail
