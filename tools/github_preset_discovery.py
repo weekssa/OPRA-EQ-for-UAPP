@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Normalize public GitHub code-search/Gist results into EQ source candidates.
+"""Normalize public GitHub code-search/Gist results into EQ community candidates.
 
-Discovery is deliberately separate from ingestion and publication. A matching public
-file is only a candidate until its origin, license/redistribution terms, headphone
-identity and creator attribution are qualified. This tool performs no network calls;
-a scheduled job can feed authenticated GitHub API responses into it deterministically.
+Discovery remains separate from publication so broad search results cannot bypass exact
+PEQ parsing, headphone identity, attribution, or canonical dedupe. Public numeric EQ
+coefficients are no longer held behind a separate repository-license review gate: the
+production community adapter processes every candidate and publishes valid traceable
+PEQ as Unverified while quarantining malformed or ambiguous records.
 """
 
 from __future__ import annotations
@@ -67,12 +68,10 @@ def _candidate(
         "content_sha": content_sha,
         "source_updated_at": updated_at,
         "status": "new_candidate",
-        "redistribution": "review-required",
+        "redistribution": "structured-data-only",
         "publication_eligible": False,
-        "license_review_required": True,
+        "license_review_required": False,
         "qualification_required": [
-            "originality",
-            "license_or_redistribution_terms",
             "creator_attribution",
             "headphone_identity",
             "structured_eq_parse",
