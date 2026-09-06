@@ -6,6 +6,9 @@ numeric EQ coefficients use the same community policy as forum EQs, so a separat
 license-review gate is not required. Candidates still cannot enter the canonical catalog
 until exact parametric structure and explicit source-authored General intent/category are
 present; missing Q/filter type/category is never invented.
+
+Repository ownership is retained as source-account provenance and is not treated as
+proof that the account authored a discovered EQ.
 """
 
 from __future__ import annotations
@@ -46,7 +49,7 @@ def discover(payloads: list[dict[str, Any]]) -> list[dict[str, Any]]:
             repository = item.get("repository") if isinstance(item.get("repository"), dict) else {}
             repo_name = str(repository.get("full_name") or "").strip() or None
             owner = repository.get("owner") if isinstance(repository.get("owner"), dict) else {}
-            creator = str(owner.get("login") or "").strip() or None
+            source_account = str(owner.get("login") or "").strip() or None
             sha = str(item.get("sha") or "").strip() or None
             record_id = f"{repo_name or 'unknown'}:{path}:{sha or 'unknown'}"
             result = {
@@ -58,7 +61,9 @@ def discover(payloads: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "repository": repo_name,
                 "path": path,
                 "url": url,
-                "creator": creator,
+                "source_account": source_account,
+                "creator": None,
+                "creator_is_explicit": False,
                 "source_record_id": record_id,
                 "content_sha": sha,
                 "status": "new_candidate",
@@ -66,7 +71,7 @@ def discover(payloads: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "publication_eligible": False,
                 "license_review_required": False,
                 "qualification_required": [
-                    "creator_attribution",
+                    "source_provenance",
                     "explicit_general_eq_intent_and_category",
                     "structured_parametric_eq_parse",
                     "canonical_dedupe",
