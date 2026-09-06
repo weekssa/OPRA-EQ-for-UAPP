@@ -1,6 +1,6 @@
 # OPRA EQ for UAPP / EQ Library — ChatGPT Project Runbook
 
-This document is the maintained operational source of truth for work on **OPRA EQ for UAPP / EQ Library**. It intentionally summarizes the current product rules and points to the detailed v0.3 design/architecture documents. Older Phase 0 behavior that has been explicitly superseded by later approved v0.3 decisions must not be restored.
+This document is the maintained operational source of truth for work on **OPRA EQ for UAPP / EQ Library**. It summarizes the current product rules and points to the detailed v0.3 foundation documents plus later approved release-specific decisions. Older behavior that has been explicitly superseded by later approved decisions must not be restored.
 
 If a later explicit user decision conflicts with this file, the later user decision wins and this runbook must be updated in the same workstream.
 
@@ -12,12 +12,13 @@ At the start of substantive work, read this file and then the current detailed s
 - `docs/PHASE1_DECISIONS.md`
 - `docs/SOURCE_INGESTION_STRATEGY.md`
 - `docs/V0.3_LOCKED_EXECUTION_PLAN.md`
-- `docs/V0.3_RELEASE_POLISH_PLAN.md` for PR #4 / final v0.3.0 work
+- `docs/V0.3_RELEASE_POLISH_PLAN.md` for the final v0.3.0 foundation/release-polish record
 - `docs/BLACK_PEARL_PROTOCOL_NOTES.md` when Black Pearl behavior is involved
-- `docs/V0.3_HANDS_ON_CHECKLIST.md` before producing or validating a v0.3 device-test APK
+- `docs/V0.3_HANDS_ON_CHECKLIST.md` for the v0.3 device qualification record
+- `docs/BLACK_PEARL_FLAT_RESET_HANDS_ON_CHECKLIST.md` for the v0.4.0 Reset EQ to flat qualification record
 - `CHANGELOG.md`
 
-`docs/AUTONOMOUS_V0.3_PLAN.md` records the implementation plan that led into the locked plan. Where wording differs, the later locked plan, `docs/V0.3_RELEASE_POLISH_PLAN.md`, this runbook, and explicit later decisions are authoritative.
+`docs/AUTONOMOUS_V0.3_PLAN.md` records the implementation plan that led into the locked plan. Where wording differs, the later locked plan, release-polish plan, this runbook, and explicit later decisions are authoritative.
 
 ## 2. Repository boundary
 
@@ -53,9 +54,9 @@ The app ships with **zero bundled headphones/EQs**. End users need no login, clo
 
 Normal runtime network use is limited to the catalog and public app-release metadata/update links. Do not download OPRA artwork by default in v1.
 
-## 4. Current v0.3 information architecture and UX
+## 4. Current information architecture and UX
 
-The active v0.3 top-level destinations are:
+The active top-level destinations are:
 
 - **My EQs**
 - **EQ Library**
@@ -200,7 +201,7 @@ The Flash confirmation must disclose the listening-volume/playback-gain change w
 
 Unrelated Black Pearl settings remain outside the Flash path.
 
-### TRN Black Pearl Reset EQ to flat — approved post-v0.3 behavior
+### TRN Black Pearl Reset EQ to flat — v0.4.0 behavior
 
 **Reset EQ to flat** is a Black Pearl device action, not a canonical or saved EQ. In My EQs, when Black Pearl is the active output and Direct Flash is enabled, **Connect/Connected** and outlined **Reset EQ to flat** share one compact side-by-side row. Reset is enabled only while the DAC is connected and always requires confirmation.
 
@@ -208,7 +209,7 @@ The confirmation states that the current EQ slot will be overwritten with flat s
 
 Reset uses the current active slot and the tracked EQ Library gain delta. It must validate the underlying baseline gain before any write, then write/latch/save all ten bands flat **before** restoring playback gain. Only after the slot is confirmed flat may it restore the underlying baseline gain and clear the tracked EQ Library gain delta. If PEQ transfer fails, leave playback gain and the tracked delta unchanged. If the final gain restore fails after the slot is flat, retain the tracked delta so a retry can finish safely. Detailed packet/transaction behavior is maintained in `docs/BLACK_PEARL_PROTOCOL_NOTES.md`.
 
-Because this changes device/DSP write behavior after the v0.3 hardware-qualified candidate, an exact release candidate containing Reset EQ to flat requires renewed Pixel 9 / TRN Black Pearl hands-on validation before merge/release qualification.
+The exact signed device/DSP candidate at `15f220bd055a2aec49c0cb97c16acbd43ac588da` passed Android unit/lint/debug/release assembly, CodeQL, signed-beta alignment/signature verification, the pinned signing-certificate check, and the focused Pixel 9 / TRN Black Pearl hands-on qualification on 2026-09-06. Sections 1–7 of `docs/BLACK_PEARL_FLAT_RESET_HANDS_ON_CHECKLIST.md` passed; unsafe controlled mid-transfer failure injection was not required because automated domain tests cover PEQ-transfer/final-gain-write failure ordering and retry-safe state retention. Release-preparation changes after that commit may advance version/release/documentation metadata without another hardware pass, but any further Android/device/DSP behavior change requires renewed hands-on validation.
 
 ## 7. Testing and validation
 
@@ -242,7 +243,7 @@ Before a hardware-test APK is handed to the user, the exact source head must pas
 - CodeQL;
 - signed-beta workflow including pinned signing-certificate verification.
 
-The v0.3 signed candidate at `c70c523e1f530b8b197ebbccc41dfb4af1e27fc4` passed those gates and then passed `docs/V0.3_HANDS_ON_CHECKLIST.md` on Pixel 9 / TRN Black Pearl on 2026-08-31. PR #3 was subsequently fast-forward merged to `main`, preserving that tested commit as the merge commit. Release-preparation documentation or catalog-only automation may advance `main`; any final public-release source head still must pass the release workflow before publication. Code/DSP/device-behavior changes after the hardware-tested candidate require renewed hands-on validation as appropriate.
+The v0.3 signed candidate at `c70c523e1f530b8b197ebbccc41dfb4af1e27fc4` passed those gates and then passed `docs/V0.3_HANDS_ON_CHECKLIST.md` on Pixel 9 / TRN Black Pearl on 2026-08-31. PR #3 was subsequently fast-forward merged to `main`, preserving that tested commit as the merge commit. Release-preparation documentation or catalog-only automation may advance `main`; any final public-release source head still must pass the release workflow before publication. Code/DSP/device-behavior changes after a hardware-tested candidate require renewed hands-on validation as appropriate.
 
 The most important Black Pearl hardware checks that passed include:
 
@@ -251,6 +252,7 @@ The most important Black Pearl hardware checks that passed include:
 - a 0 dB Flash removes the prior EQ Library attenuation;
 - Peak/Low Shelf/High Shelf and active-slot behavior;
 - the `-11.9 dB` Edition XS case showing the caution, cancelling without a write, and then flashing without app-side clamping;
+- Reset EQ to flat confirmation/cancel, all-ten-band flattening/current-slot persistence, tracked-gain restoration, zero-tracked-gain behavior, preservation of later user volume changes, and unrelated-setting preservation on the v0.4.0 hardware candidate;
 - unrelated DAC settings remaining unchanged.
 
 ## 8. Releases, signing, updates, and changelog
@@ -282,20 +284,20 @@ For substantive work:
 3. Keep `weekssa/opra-uapp-converter` read-only unless explicitly told otherwise.
 4. Use connected GitHub tools directly whenever possible; manual Git/Terminal steps are a last resort.
 5. Do not implement a major user-facing feature without first explaining its UX/behavior and receiving approval.
-6. Do not reinterpret old Phase 0 text as overriding later approved v0.3 behavior.
+6. Do not reinterpret older Phase 0/v0.3 planning text as overriding later approved behavior.
 7. Make focused changes and validate them without weakening checks.
 8. After changes, state exactly what changed and whether validation passed.
-9. Keep hardware-gated feature PRs unmerged until the applicable signed candidate passes hands-on validation; PR #3 satisfied that gate before its v0.3 merge.
+9. Keep hardware-gated feature PRs unmerged until the applicable signed candidate passes hands-on validation.
 10. Update this runbook and the relevant detailed decision/architecture documents whenever the maintained source of truth changes.
 
-## 11. Current v0.3 status
+## 11. Current release status
 
 **v0.3.0 is publicly released.** The controlled **Signed GitHub Release** workflow published it on 2026-09-01 from exact source commit `ddda2acf9c573d42283ab8ca50d276c179631b88`. The version tag `v0.3.0` points to that commit. The workflow rebuilt and tested the exact release source, signed the APK with the permanent release identity, verified the pinned signing certificate, and published `EQ-Library-v0.3.0.apk` together with its SHA-256 file and `apksigner` verification output.
 
 PR #4 was fast-forward merged before publication after its final automated gates and focused Pixel 9 PASS. The focused Android release-polish code was physically validated at `3b95d384fb772514081383f801cf22b5b3aa8cbf`; subsequent commits through release source `ddda2acf9c573d42283ab8ca50d276c179631b88` changed only release documentation/catalog-currentness/release-tooling and did not change Android/device/DSP behavior, so no additional phone or Black Pearl pass was required.
 
-The approved behavior includes output-specific My EQs, canonical multi-source EQ handling, zero-selected new-headphone defaults, per-headphone notification/review for newly arriving EQs without any silent future selection, Add/Save-triggered initial export with recovery-only Export actions, SAF export ownership anchored to the actual app-created document URI rather than exact provider filename spelling, hierarchical Android Back behavior, Favorite controls in My EQs, populated qualified General EQs, living-archive preservation, reversible Hide/Unhide, strict previewed Equalizer APO / AutoEq personal import, and Black Pearl Direct Flash with non-cumulative playback-gain adjustment plus explicit caution for protocol-encodable per-band gains outside the generally validated ±10 dB range. The specific Edition XS `-11.9 dB` test case passed physical hardware validation, but the caution remains for the broader outside-±10 range.
+The v0.3 foundation includes output-specific My EQs, canonical multi-source EQ handling, zero-selected new-headphone defaults, per-headphone notification/review for newly arriving EQs without any silent future selection, Add/Save-triggered initial export with recovery-only Export actions, SAF export ownership anchored to the actual app-created document URI rather than exact provider filename spelling, hierarchical Android Back behavior, Favorite controls in My EQs, populated qualified General EQs, living-archive preservation, reversible Hide/Unhide, strict previewed Equalizer APO / AutoEq personal import, and Black Pearl Direct Flash with non-cumulative playback-gain adjustment plus explicit caution for protocol-encodable per-band gains outside the generally validated ±10 dB range. The specific Edition XS `-11.9 dB` test case passed physical hardware validation, but the caution remains for the broader outside-±10 range.
 
-Post-v0.3, **Reset EQ to flat** for Black Pearl is approved as a separate hardware action with the compact side-by-side My EQs control and fail-safe flatten-before-gain-restore transaction described above. It is not part of the published v0.3.0 behavior and must not be called hardware-validated or release-qualified until the exact candidate passes the renewed automated/signing gates and Pixel 9 / TRN Black Pearl hands-on validation.
+**v0.4.0 is the current release candidate.** It adds the separate Black Pearl **Reset EQ to flat** hardware action with the compact side-by-side My EQs control and fail-safe flatten-before-gain-restore transaction described above. The exact device/DSP candidate `15f220bd055a2aec49c0cb97c16acbd43ac588da` passed the required signed automated gates and focused Pixel 9 / TRN Black Pearl hardware qualification on 2026-09-06. The remaining release-preparation changes are limited to `versionName`/`versionCode` and release/documentation metadata. The final exact `main` source must pass the automated/security/release-signing workflow before the immutable `v0.4.0` tag and GitHub Release are published.
 
-`docs/V0.3_RELEASE_POLISH_PLAN.md` and `docs/V0.3_HANDS_ON_CHECKLIST.md` remain the record of the final v0.3 validation scope. `docs/FUTURE_SOURCE_AUTOMATION_PLAN.md` records the post-v0.3 work to finish real scheduled adapters/currentness enforcement for every active source and monthly discovery of additional sources; do not silently treat that deferred automation as already complete.
+`docs/V0.3_RELEASE_POLISH_PLAN.md` and `docs/V0.3_HANDS_ON_CHECKLIST.md` remain the record of the final v0.3 validation scope. `docs/BLACK_PEARL_FLAT_RESET_HANDS_ON_CHECKLIST.md` records the v0.4.0 hardware qualification. `docs/FUTURE_SOURCE_AUTOMATION_PLAN.md` records the post-v0.3 work to finish real scheduled adapters/currentness enforcement for every active source and monthly discovery of additional sources; do not silently treat that deferred automation as already complete.
