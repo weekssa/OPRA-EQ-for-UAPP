@@ -123,18 +123,17 @@ jobs:
               handle.write(json.dumps(payload, sort_keys=True, separators=(',', ':'), ensure_ascii=False) + '\n')
           PY
 
+      # Feature branches exercise the complete production calculation above but remain
+      # read-only. This keeps PR checks on a maintainer-authored head instead of having
+      # github-actions[bot] continuously move the PR tip and invalidate its checks.
       - name: Stage persistent community state
-        if: >-
-          github.ref_name == 'main' ||
-          startsWith(github.ref_name, 'source-automation-')
+        if: github.ref_name == 'main'
         run: |
           cp "${RUNNER_TEMP}/repository-community-catalog.json" catalog/catalog.json
           cp "${RUNNER_TEMP}/source_health.community.current.json" catalog/source_health.json
 
       - name: Commit validated community ingestion
-        if: >-
-          github.ref_name == 'main' ||
-          startsWith(github.ref_name, 'source-automation-')
+        if: github.ref_name == 'main'
         shell: bash
         run: |
           set -euo pipefail
