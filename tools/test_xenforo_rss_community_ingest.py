@@ -9,6 +9,17 @@ RSS = """<?xml version="1.0" encoding="UTF-8"?>
 </channel></rss>
 """
 
+RSS_WITH_CONTENT = """<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel><title>Headphones</title>
+<item>
+<title>Sennheiser HD 650 impressions</title>
+<link>https://forum.example/threads/hd650.1/</link>
+<guid>thread-1</guid><author>Alice</author>
+<description><![CDATA[<p>My settings:</p><p>Preamp: -4.0 dB<br>Filter 1: ON PK Fc 100 Hz Gain 3.0 dB Q 1.00<br>Filter 2: ON PK Fc 2500 Hz Gain -2.0 dB Q 2.00</p>]]></description>
+</item>
+</channel></rss>
+"""
+
 THREAD = """<!doctype html><html><body>
 <article class="message message--post" data-author="Alice" data-content="post-123">
   <div class="message-body"><div class="bbWrapper">
@@ -100,6 +111,24 @@ class XenforoRssCommunityIngestTest(unittest.TestCase):
         self.assertEqual("head-fi", revision["source_references"][0]["source_id"])
         self.assertEqual(2, len(revision["filters"]))
         self.assertEqual(1, report["candidates"])
+
+    def test_public_rss_content_is_usable_when_thread_markup_is_not(self):
+        def fetcher(url):
+            if url.endswith("index.rss"):
+                return RSS_WITH_CONTENT
+            return "<html><body>public page with nonstandard markup</body></html>"
+
+        merged, health, report, success = refresh(
+            snapshot(), registry(), {}, source_id="head-fi", source_config=source_config(), fetcher=fetcher
+        )
+        self.assertTrue(success)
+        self.assertEqual("ok", report["status"])
+        self.assertEqual(1, report["feed_entries_with_content"])
+        self.assertEqual(1, report["feed_content_peq_candidates"])
+        self.assertEqual(0, report["posts_parsed"])
+        self.assertEqual(1, report["candidates"])
+        self.assertIsNotNone(health["head-fi"].last_successful_scan_at)
+        self.assertGreater(len(merged["profiles"]), len(snapshot()["profiles"]))
 
     def test_multiple_filter_blocks_are_quarantined(self):
         thread = THREAD.replace(
