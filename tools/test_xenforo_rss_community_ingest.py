@@ -1,5 +1,6 @@
 import unittest
 
+from community_peq_ingest import build_candidate, parse_peq
 from xenforo_rss_community_ingest import discover, parse_feed, parse_thread_posts, refresh
 
 
@@ -34,16 +35,23 @@ THREAD = """<!doctype html><html><body>
 
 
 def snapshot():
-    return {
-        "schema_version": 1,
-        "profiles": [
-            {
-                "canonical_profile_id": "existing-hd650",
-                "headphone": {"manufacturer": "Sennheiser", "model": "HD 650"},
-                "revisions": [],
-            }
-        ],
-    }
+    seed = build_candidate(
+        parse_peq("Preamp: -1.0 dB\nFilter 1: ON PK Fc 1000 Hz Gain -1.0 dB Q 1.00"),
+        manufacturer="Sennheiser",
+        model="HD 650",
+        creator="Fixture",
+        tuning_label="Fixture PEQ",
+        source_id="head-fi",
+        source_kind="community",
+        source_url="https://forum.example/threads/fixture.0/#post-1",
+        source_record_id="post-1",
+        redistribution_policy="structured-data-only",
+        target=None,
+        variant=None,
+        source_version=None,
+        discovered_at_epoch_seconds=None,
+    )
+    return {"schema_version": 1, "profiles": [seed]}
 
 
 def source_config():
@@ -151,11 +159,12 @@ class XenforoRssCommunityIngestTest(unittest.TestCase):
                 return RSS
             raise OSError("blocked")
 
+        base = snapshot()
         merged, health, report, success = refresh(
-            snapshot(), registry(), {}, source_id="head-fi", source_config=source_config(), fetcher=fetcher
+            base, registry(), {}, source_id="head-fi", source_config=source_config(), fetcher=fetcher
         )
         self.assertFalse(success)
-        self.assertEqual(snapshot(), merged)
+        self.assertEqual(base, merged)
         self.assertEqual("degraded", report["status"])
         self.assertEqual(1, health["head-fi"].consecutive_failures)
         self.assertIsNone(health["head-fi"].last_successful_scan_at)
