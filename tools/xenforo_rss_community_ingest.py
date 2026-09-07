@@ -2,10 +2,10 @@
 """Discover exact public PEQ from bounded XenForo RSS/thread surfaces.
 
 This adapter is intentionally narrow. It polls configured public RSS feeds for recently
-active headphone/IEM threads, fetches only those public thread pages, extracts individual
-post bodies with author/post provenance, and publishes only one coherent exact PEQ block
-per post. It never logs in, bypasses access controls, crawls arbitrary pagination, or
-turns screenshots/curves into invented filters.
+active headphone/IEM threads, uses exact PEQ included in the public feed when available,
+and fetches only those public thread pages for additional post-level discovery. It never
+logs in, bypasses access controls, crawls arbitrary pagination, or turns screenshots or
+curves into invented filters.
 """
 
 from __future__ import annotations
@@ -15,7 +15,6 @@ import hashlib
 import html
 import json
 import re
-import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 from html.parser import HTMLParser
@@ -39,6 +38,8 @@ from reddit_community_ingest import catalog_headphones
 
 USER_AGENT = "EQ-Library-currentness/0.4 (bounded public RSS PEQ discovery)"
 POST_ID_RE = re.compile(r"(?:js-)?post[-_](\d+)$", re.IGNORECASE)
+BREAK_RE = re.compile(r"(?i)<(?:br\s*/?|/p|/div|/li|/pre)\s*>")
+TAG_RE = re.compile(r"<[^>]+>")
 
 
 def fetch_text(url: str) -> str:
@@ -61,6 +62,14 @@ def _node_text(node: ET.Element | None) -> str:
     if node is None:
         return ""
     return "".join(node.itertext()).strip()
+
+
+def html_fragment_text(value: str) -> str:
+    value = html.unescape(value or "")
+    value = BREAK_RE.sub("\n", value)
+    value = TAG_RE.sub(" ", value)
+    value = html.unescape(value)
+    return "\n".join(line.strip() for line in value.splitlines() if line.strip())
 
 
 def parse_feed(payload: str) -> list[dict[str, str]]:
@@ -99,14 +108,14 @@ def parse_feed(payload: str) -> list[dict[str, str]]:
                 "link": html.unescape(link),
                 "guid": values.get("guid") or values.get("id") or link,
                 "author": html.unescape(values.get("author", "")).strip(),
-                "content": html.unescape("\n".join(content_parts)).strip(),
+                "content": html_fragment_text("\n".join(content_parts)),
             }
         )
     return entries
 
 
 class XenforoPostParser(HTMLParser):
-    """Extract XenForo message articles without depending on site-specific JS."""
+    """Extract conventional XenForo message articles without site-specific JS."""
 
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
@@ -208,6 +217,67 @@ def _post_source_url(thread_url: str, post_id: str) -> str:
     return clean + (f"#post-{post_id}" if post_id else "")
 
 
+def _candidate_from_text(
+    text: str,
+    *,
+    title: str,
+    creator: str,
+    source_id: str,
+    source_url: str,
+    source_record_id: str,
+    headphones: list[tuple[str, str]],
+    report: dict[str, Any],
+) -> dict[str, Any] | None:
+    peq_text, peq_rejection = single_peq_text(text)
+    if peq_rejection:
+        report["ambiguous_peq_blocks"] += 1
+        return None
+    if peq_text is None:
+        return None
+    report["posts_with_peq"] += 1
+    matched = unique_headphone_match(title, text, headphones)
+    if matched is None:
+        report["unmatched_or_ambiguous_headphone"] += 1
+        return None
+    try:
+        parsed = parse_peq(peq_text)
+    except ValueError:
+        report["parse_failures"] += 1
+        return None
+    if not creator.strip():
+        report["errors"].append({"url": source_url, "error": "PEQ record missing public author"})
+        return None
+    manufacturer, model = matched
+    candidate = build_candidate(
+        parsed,
+        manufacturer=manufacturer,
+        model=model,
+        creator=creator,
+        tuning_label=(title or "Community PEQ")[:160],
+        source_id=source_id,
+        source_kind="community",
+        source_url=source_url,
+        source_record_id=source_record_id,
+        redistribution_policy="structured-data-only",
+        target=None,
+        variant=None,
+        source_version=None,
+        discovered_at_epoch_seconds=None,
+    )
+    report["candidate_sources"].append(
+        {
+            "creator": creator,
+            "manufacturer": manufacturer,
+            "model": model,
+            "title": (title or "")[:160],
+            "source_url": source_url,
+            "filter_count": len(parsed.filters),
+            "source_record_id": source_record_id,
+        }
+    )
+    return candidate
+
+
 def discover(
     snapshot: dict[str, Any],
     *,
@@ -226,6 +296,8 @@ def discover(
         "feeds_attempted": 0,
         "feeds_succeeded": 0,
         "feed_entries_seen": 0,
+        "feed_entries_with_content": 0,
+        "feed_content_peq_candidates": 0,
         "thread_pages_attempted": 0,
         "thread_pages_succeeded": 0,
         "posts_parsed": 0,
@@ -235,6 +307,7 @@ def discover(
         "parse_failures": 0,
         "candidates": 0,
         "candidate_sources": [],
+        "thread_markup_counts": {"message--post": 0, "data-author": 0, "bbWrapper": 0, "message-body": 0},
         "errors": [],
     }
 
@@ -242,24 +315,48 @@ def discover(
     for feed_url in feeds:
         report["feeds_attempted"] += 1
         try:
-            parsed = parse_feed(fetcher(feed_url))
+            parsed_entries = parse_feed(fetcher(feed_url))
             report["feeds_succeeded"] += 1
-            report["feed_entries_seen"] += len(parsed)
-            for entry in parsed:
+            report["feed_entries_seen"] += len(parsed_entries)
+            report["feed_entries_with_content"] += sum(1 for entry in parsed_entries if entry.get("content"))
+            for entry in parsed_entries:
                 entries_by_link.setdefault(entry["link"], entry)
         except Exception as exc:
             report["errors"].append({"url": feed_url, "error": str(exc)})
 
     candidates: list[dict[str, Any]] = []
-    seen_posts: set[str] = set()
+    seen_records: set[str] = set()
     feed_cursor_items: list[str] = []
     for entry in list(entries_by_link.values())[:max_threads]:
         thread_url = entry["link"]
-        feed_cursor_items.append(str(entry.get("guid") or thread_url))
+        guid = str(entry.get("guid") or thread_url)
+        feed_cursor_items.append(guid)
+
+        feed_content = str(entry.get("content") or "")
+        feed_author = str(entry.get("author") or "").strip()
+        if feed_content and feed_author:
+            feed_record = "feed-" + hashlib.sha256(guid.encode("utf-8")).hexdigest()[:24]
+            candidate = _candidate_from_text(
+                feed_content,
+                title=entry.get("title", ""),
+                creator=feed_author,
+                source_id=source_id,
+                source_url=thread_url,
+                source_record_id=feed_record,
+                headphones=headphones,
+                report=report,
+            )
+            if candidate is not None:
+                candidates.append(candidate)
+                seen_records.add(feed_record)
+                report["feed_content_peq_candidates"] += 1
+
         report["thread_pages_attempted"] += 1
         try:
             page = fetcher(thread_url)
             report["thread_pages_succeeded"] += 1
+            for marker in report["thread_markup_counts"]:
+                report["thread_markup_counts"][marker] += page.count(marker)
             posts = parse_thread_posts(page)
         except Exception as exc:
             report["errors"].append({"url": thread_url, "error": str(exc)})
@@ -270,59 +367,23 @@ def discover(
             dedupe_key = post_id or hashlib.sha256(
                 (thread_url + "\n" + post.get("author", "") + "\n" + post.get("text", "")).encode("utf-8")
             ).hexdigest()
-            if dedupe_key in seen_posts:
+            record_id = f"post-{post_id}" if post_id else f"thread-{dedupe_key[:24]}"
+            if record_id in seen_records:
                 continue
-            seen_posts.add(dedupe_key)
-            peq_text, peq_rejection = single_peq_text(post.get("text", ""))
-            if peq_rejection:
-                report["ambiguous_peq_blocks"] += 1
-                continue
-            if peq_text is None:
-                continue
-            report["posts_with_peq"] += 1
-            matched = unique_headphone_match(entry.get("title", ""), post.get("text", ""), headphones)
-            if matched is None:
-                report["unmatched_or_ambiguous_headphone"] += 1
-                continue
-            try:
-                parsed = parse_peq(peq_text)
-            except ValueError:
-                report["parse_failures"] += 1
-                continue
-            creator = str(post.get("author") or "").strip()
-            if not creator:
-                report["errors"].append({"url": thread_url, "error": "PEQ post missing public author"})
-                continue
-            manufacturer, model = matched
+            seen_records.add(record_id)
             source_url = _post_source_url(thread_url, post_id)
-            candidate = build_candidate(
-                parsed,
-                manufacturer=manufacturer,
-                model=model,
-                creator=creator,
-                tuning_label=(entry.get("title") or "Community PEQ")[:160],
+            candidate = _candidate_from_text(
+                post.get("text", ""),
+                title=entry.get("title", ""),
+                creator=str(post.get("author") or "").strip(),
                 source_id=source_id,
-                source_kind="community",
                 source_url=source_url,
-                source_record_id=f"post-{post_id}" if post_id else f"thread-{dedupe_key[:24]}",
-                redistribution_policy="structured-data-only",
-                target=None,
-                variant=None,
-                source_version=None,
-                discovered_at_epoch_seconds=None,
+                source_record_id=record_id,
+                headphones=headphones,
+                report=report,
             )
-            candidates.append(candidate)
-            report["candidate_sources"].append(
-                {
-                    "post_id": post_id or None,
-                    "creator": creator,
-                    "manufacturer": manufacturer,
-                    "model": model,
-                    "title": (entry.get("title") or "")[:160],
-                    "source_url": source_url,
-                    "filter_count": len(parsed.filters),
-                }
-            )
+            if candidate is not None:
+                candidates.append(candidate)
 
     report["candidates"] = len(candidates)
     report["feed_cursor_items"] = sorted(feed_cursor_items)
@@ -357,11 +418,14 @@ def refresh(
         fetcher=fetcher,
     )
 
-    unusable = int(report.get("feeds_succeeded") or 0) == 0
-    if report.get("thread_pages_attempted") and int(report.get("thread_pages_succeeded") or 0) == 0:
-        unusable = True
-    if report.get("thread_pages_succeeded") and int(report.get("posts_parsed") or 0) == 0:
-        unusable = True
+    feeds_usable = int(report.get("feeds_succeeded") or 0) > 0
+    feed_content_usable = int(report.get("feed_entries_with_content") or 0) > 0
+    thread_parser_usable = int(report.get("posts_parsed") or 0) > 0
+    thread_requests_usable = (
+        not report.get("thread_pages_attempted")
+        or int(report.get("thread_pages_succeeded") or 0) > 0
+    )
+    unusable = not feeds_usable or not thread_requests_usable or not (feed_content_usable or thread_parser_usable)
     if unusable:
         health[source_id] = record_scan_failure(health[source_id], "public XenForo feed/thread retrieval was not usable")
         report["status"] = "degraded"
