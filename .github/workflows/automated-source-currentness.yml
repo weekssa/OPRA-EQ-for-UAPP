@@ -1,0 +1,227 @@
+name: Automated source currentness
+
+on:
+  push:
+    branches:
+      - main
+      - 'source-automation-*'
+    paths:
+      - '.github/workflows/automated-source-currentness.yml'
+      - 'config/source_registry.json'
+      - 'config/xenforo_community_sources.json'
+      - 'config/qualified_general_sources.json'
+      - 'catalog/source_health.json'
+      - 'tools/xenforo_rss_community_ingest.py'
+      - 'tools/squiglink_currentness.py'
+      - 'tools/qualified_general_source_probe.py'
+      - 'tools/currentness_scheduler.py'
+      - 'tools/test_xenforo_rss_community_ingest.py'
+      - 'tools/test_squiglink_currentness.py'
+      - 'tools/test_source_automation_contract.py'
+  workflow_dispatch:
+  schedule:
+    - cron: '43 12 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: eq-catalog-writer-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  refresh-remaining-sources:
+    if: github.event_name != 'push' || github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out current branch tip
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 1
+
+      - name: Validate automation contract and adapters
+        run: |
+          python3 tools/catalog_pipeline.py validate-registry --registry config/source_registry.json
+          PYTHONPATH=tools python3 -m unittest \
+            tools.test_xenforo_rss_community_ingest \
+            tools.test_squiglink_currentness \
+            tools.test_source_automation_contract -v
+
+      - name: Initialize candidate and source-health state
+        run: |
+          cp catalog/catalog.json "${RUNNER_TEMP}/catalog.automated.current.json"
+          cp catalog/source_health.json "${RUNNER_TEMP}/source_health.automated.current.json"
+          mkdir -p "${RUNNER_TEMP}/automated-source-reports"
+
+      - name: Build cadence-aware source plan
+        run: >-
+          python3 tools/currentness_scheduler.py
+          --registry config/source_registry.json
+          --state "${RUNNER_TEMP}/source_health.automated.current.json"
+          > "${RUNNER_TEMP}/automated-source-plan.json"
+
+      - name: Refresh public XenForo communities when due
+        shell: bash
+        run: |
+          set -euo pipefail
+          due() {
+            python3 - "${RUNNER_TEMP}/automated-source-plan.json" "$1" <<'PY'
+          import json, sys
+          plan = json.load(open(sys.argv[1], encoding='utf-8'))
+          due_ids = {item['source_id'] for item in plan.get('known_source_scans', [])}
+          raise SystemExit(0 if sys.argv[2] in due_ids else 1)
+          PY
+          }
+          for source_id in head-fi audio-science-review; do
+            if due "${source_id}"; then
+              python3 tools/xenforo_rss_community_ingest.py \
+                --catalog "${RUNNER_TEMP}/catalog.automated.current.json" \
+                --registry config/source_registry.json \
+                --health "${RUNNER_TEMP}/source_health.automated.current.json" \
+                --source-config config/xenforo_community_sources.json \
+                --source-id "${source_id}" \
+                --catalog-output "${RUNNER_TEMP}/catalog.automated.next.json" \
+                --health-output "${RUNNER_TEMP}/source_health.automated.next.json" \
+                --report "${RUNNER_TEMP}/automated-source-reports/${source_id}.json" \
+                --allow-degraded
+              mv "${RUNNER_TEMP}/catalog.automated.next.json" "${RUNNER_TEMP}/catalog.automated.current.json"
+              mv "${RUNNER_TEMP}/source_health.automated.next.json" "${RUNNER_TEMP}/source_health.automated.current.json"
+            else
+              echo "${source_id} is not due."
+            fi
+          done
+
+      - name: Refresh Squiglink ecosystem currentness when due
+        shell: bash
+        run: |
+          set -euo pipefail
+          if python3 - "${RUNNER_TEMP}/automated-source-plan.json" <<'PY'
+          import json, sys
+          plan = json.load(open(sys.argv[1], encoding='utf-8'))
+          due_ids = {item['source_id'] for item in plan.get('known_source_scans', [])}
+          raise SystemExit(0 if 'squiglink' in due_ids else 1)
+          PY
+          then
+            python3 tools/squiglink_currentness.py \
+              --registry config/source_registry.json \
+              --health "${RUNNER_TEMP}/source_health.automated.current.json" \
+              --health-output "${RUNNER_TEMP}/source_health.automated.next.json" \
+              --report "${RUNNER_TEMP}/automated-source-reports/squiglink.json" \
+              --allow-degraded
+            mv "${RUNNER_TEMP}/source_health.automated.next.json" "${RUNNER_TEMP}/source_health.automated.current.json"
+          else
+            echo "squiglink is not due."
+          fi
+
+      - name: Probe qualified General sources that are due
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - "${RUNNER_TEMP}/automated-source-plan.json" config/qualified_general_sources.json "${RUNNER_TEMP}/qualified-general-due.json" <<'PY'
+          import json, sys
+          plan = json.load(open(sys.argv[1], encoding='utf-8'))
+          manifest = json.load(open(sys.argv[2], encoding='utf-8'))
+          due_ids = {item['source_id'] for item in plan.get('known_source_scans', [])}
+          selected = [item for item in manifest.get('sources', []) if item.get('source_id') in due_ids]
+          with open(sys.argv[3], 'w', encoding='utf-8') as handle:
+              json.dump({'schema_version': 1, 'sources': selected}, handle, indent=2)
+              handle.write('\n')
+          PY
+          if python3 - "${RUNNER_TEMP}/qualified-general-due.json" <<'PY'
+          import json, sys
+          payload = json.load(open(sys.argv[1], encoding='utf-8'))
+          raise SystemExit(0 if payload.get('sources') else 1)
+          PY
+          then
+            python3 tools/qualified_general_source_probe.py \
+              --registry config/source_registry.json \
+              --sources "${RUNNER_TEMP}/qualified-general-due.json" \
+              --health "${RUNNER_TEMP}/source_health.automated.current.json" \
+              --health-output "${RUNNER_TEMP}/source_health.automated.next.json" \
+              --report "${RUNNER_TEMP}/automated-source-reports/qualified-general.json" \
+              --github-token "${GITHUB_TOKEN}" \
+              --allow-degraded
+            mv "${RUNNER_TEMP}/source_health.automated.next.json" "${RUNNER_TEMP}/source_health.automated.current.json"
+          else
+            echo "No qualified General source is due."
+          fi
+
+      - name: Validate candidate atomically against living archive
+        run: >-
+          python3 tools/catalog_pipeline.py publish
+          --candidate "${RUNNER_TEMP}/catalog.automated.current.json"
+          --published "${RUNNER_TEMP}/validated-automated-catalog.json"
+          --last-known-good "${RUNNER_TEMP}/validated-automated-lkg.json"
+          --baseline catalog/catalog.json
+
+      - name: Prepare repository and Android transport catalogs
+        run: |
+          python3 - <<'PY'
+          import json, os
+          source = os.environ['RUNNER_TEMP'] + '/validated-automated-catalog.json'
+          repository = os.environ['RUNNER_TEMP'] + '/repository-automated-catalog.json'
+          with open(source, encoding='utf-8') as handle:
+              payload = json.load(handle)
+          with open(repository, 'w', encoding='utf-8') as handle:
+              handle.write(json.dumps(payload, sort_keys=True, indent=2, ensure_ascii=False) + '\n')
+          with open(source, 'w', encoding='utf-8') as handle:
+              handle.write(json.dumps(payload, sort_keys=True, separators=(',', ':'), ensure_ascii=False) + '\n')
+          PY
+
+      - name: Stage persistent automated-source state
+        if: github.ref_name == 'main' || startsWith(github.ref_name, 'source-automation-')
+        run: |
+          cp "${RUNNER_TEMP}/repository-automated-catalog.json" catalog/catalog.json
+          cp "${RUNNER_TEMP}/source_health.automated.current.json" catalog/source_health.json
+
+      - name: Commit validated automated-source state
+        if: github.ref_name == 'main' || startsWith(github.ref_name, 'source-automation-')
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add catalog/catalog.json catalog/source_health.json
+          if git diff --cached --quiet; then
+            echo "No validated automated-source changes."
+            exit 0
+          fi
+          git commit -m "Refresh automated source currentness"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Publish validated catalog to stable Android branch
+        if: github.ref_name == 'main'
+        shell: bash
+        run: |
+          set -euo pipefail
+          publish_dir="$(mktemp -d)"
+          git fetch origin catalog-live
+          git worktree add --detach "$publish_dir" origin/catalog-live
+          cp "${RUNNER_TEMP}/validated-automated-catalog.json" "$publish_dir/catalog/catalog.json"
+          cd "$publish_dir"
+          if git diff --quiet -- catalog/catalog.json; then
+            echo "Stable live catalog already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add catalog/catalog.json
+          git commit -m "Publish automated source catalog"
+          git push origin HEAD:catalog-live
+
+      - name: Upload automated-source reports
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: automated-sources-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/automated-source-plan.json
+            ${{ runner.temp }}/automated-source-reports/
+            ${{ runner.temp }}/validated-automated-catalog.json
+            ${{ runner.temp }}/source_health.automated.current.json
+          if-no-files-found: warn
+          retention-days: 14

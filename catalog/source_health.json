@@ -3,14 +3,14 @@
   "sources": [
     {
       "consecutive_failures": 0,
-      "cursor": null,
-      "last_attempt_at": null,
-      "last_content_fingerprint": null,
+      "cursor": "b909a26a1e5de37757906da1cdbeef0cc5fc622746f55b324232890207d254ed",
+      "last_attempt_at": "2026-09-07T00:00:23Z",
+      "last_content_fingerprint": "a63cfb31d0aa7bb299b153d9cd48ac1becc5096096289c910dfeed520e93fd77",
       "last_error": null,
-      "last_successful_scan_at": null,
+      "last_successful_scan_at": "2026-09-07T00:00:23Z",
       "last_terms_review_at": "2026-08-29T19:35:00Z",
       "lifecycle": "active",
-      "parser_version": "3",
+      "parser_version": "4",
       "source_id": "audio-science-review"
     },
     {
@@ -51,14 +51,14 @@
     },
     {
       "consecutive_failures": 0,
-      "cursor": null,
-      "last_attempt_at": null,
-      "last_content_fingerprint": null,
+      "cursor": "60243ccfb892adfa6d0d0fd639cda2c0e4c316f55f62fd54d4e20d6451b49077",
+      "last_attempt_at": "2026-09-07T00:04:51Z",
+      "last_content_fingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
       "last_error": null,
-      "last_successful_scan_at": null,
+      "last_successful_scan_at": "2026-09-07T00:04:51Z",
       "last_terms_review_at": "2026-08-29T19:35:00Z",
       "lifecycle": "active",
-      "parser_version": "2",
+      "parser_version": "3",
       "source_id": "head-fi"
     },
     {
@@ -135,14 +135,14 @@
     },
     {
       "consecutive_failures": 0,
-      "cursor": null,
-      "last_attempt_at": null,
-      "last_content_fingerprint": null,
+      "cursor": "ab2cbf127470a8b44811d30eada84f2a86094223",
+      "last_attempt_at": "2026-09-07T00:00:25Z",
+      "last_content_fingerprint": "ab2cbf127470a8b44811d30eada84f2a86094223",
       "last_error": null,
-      "last_successful_scan_at": null,
+      "last_successful_scan_at": "2026-09-07T00:00:25Z",
       "last_terms_review_at": null,
       "lifecycle": "active",
-      "parser_version": "1",
+      "parser_version": "2",
       "source_id": "paraeq"
     },
     {
@@ -159,14 +159,14 @@
     },
     {
       "consecutive_failures": 0,
-      "cursor": null,
-      "last_attempt_at": null,
-      "last_content_fingerprint": null,
+      "cursor": "c0612c776eb907ed7633c31582306e7711f195d9bdb59257ee59b5759f6c6b0a",
+      "last_attempt_at": "2026-09-07T00:00:25Z",
+      "last_content_fingerprint": "c0612c776eb907ed7633c31582306e7711f195d9bdb59257ee59b5759f6c6b0a",
       "last_error": null,
-      "last_successful_scan_at": null,
+      "last_successful_scan_at": "2026-09-07T00:00:25Z",
       "last_terms_review_at": "2026-09-06T23:18:42Z",
       "lifecycle": "active",
-      "parser_version": "3",
+      "parser_version": "4",
       "source_id": "squiglink"
     },
     {
@@ -177,10 +177,10 @@
       "last_error": null,
       "last_successful_scan_at": null,
       "last_terms_review_at": "2026-09-06T23:18:42Z",
-      "lifecycle": "active",
-      "parser_version": "4",
+      "lifecycle": "paused",
+      "parser_version": "5",
       "source_id": "topping-community"
     }
   ],
-  "updated_at": "2026-09-06T23:18:42Z"
+  "updated_at": "2026-09-07T00:04:52Z"
 }

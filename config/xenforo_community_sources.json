@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "sources": [
+    {
+      "source_id": "head-fi",
+      "base_url": "https://www.head-fi.org",
+      "feeds": [
+        "https://www.head-fi.org/forums/headphones-full-size.4/index.rss",
+        "https://www.head-fi.org/forums/portable-headphones-earphones-and-in-ear-monitors.103/index.rss"
+      ],
+      "max_threads_per_scan": 40
+    },
+    {
+      "source_id": "audio-science-review",
+      "base_url": "https://www.audiosciencereview.com",
+      "feeds": [
+        "https://www.audiosciencereview.com/forum/index.php?forums/headphone-iem-reviews-discussions.58/index.rss"
+      ],
+      "max_threads_per_scan": 30
+    }
+  ]
+}

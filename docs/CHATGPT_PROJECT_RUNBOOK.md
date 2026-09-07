@@ -11,6 +11,7 @@ At the start of substantive work, read this file and then the current detailed s
 - `docs/ARCHITECTURE.md`
 - `docs/PHASE1_DECISIONS.md`
 - `docs/SOURCE_INGESTION_STRATEGY.md`
+- `docs/FUTURE_SOURCE_AUTOMATION_PLAN.md` for the current source-expansion/currentness operating model and closeout criteria
 - `docs/V0.3_LOCKED_EXECUTION_PLAN.md`
 - `docs/V0.3_RELEASE_POLISH_PLAN.md` for the final v0.3.0 foundation/release-polish record
 - `docs/BLACK_PEARL_PROTOCOL_NOTES.md` when Black Pearl behavior is involved
@@ -18,7 +19,7 @@ At the start of substantive work, read this file and then the current detailed s
 - `docs/BLACK_PEARL_FLAT_RESET_HANDS_ON_CHECKLIST.md` for the v0.4.0 Reset EQ to flat qualification record
 - `CHANGELOG.md`
 
-`docs/AUTONOMOUS_V0.3_PLAN.md` records the implementation plan that led into the locked plan. Where wording differs, the later locked plan, release-polish plan, this runbook, and explicit later decisions are authoritative.
+`docs/AUTONOMOUS_V0.3_PLAN.md` records the implementation plan that led into the locked plan. Where wording differs, the later locked plan, release-polish plan, this runbook, the maintained source-automation plan, and explicit later decisions are authoritative.
 
 ## 2. Repository boundary
 
@@ -142,6 +143,24 @@ Source moved/unavailable/retired:
 - never treat source disappearance as permission to delete canonical acoustic history.
 
 Catalog publication/currentness validation must fail when a candidate would silently remove a previously published genuine canonical profile or revision. Safe identity remaps may change routing/presentation only when the archived acoustic lineage is preserved.
+
+### Source expansion/currentness — automation-first policy
+
+Repository-side source maintenance follows the final automation-first model in `docs/FUTURE_SOURCE_AUTOMATION_PLAN.md`:
+
+- automate every registered source that has a legitimate stable public retrieval path;
+- keep OPRA runtime-managed by the Android app against the official feed;
+- do not maintain a recurring manual-currentness queue merely because a source is inconvenient to automate;
+- if required automated access is unavailable or prohibited, mark the source explicitly paused while preserving archive/provenance;
+- one-off quarantine/identity/policy review is allowed, but routine source currentness must not depend on manual data entry or ChatGPT;
+- scheduled adapters must record real source-health timestamps/cursors and are subject to overdue/never-successful/repeated-failure gates;
+- source failures must preserve the last-known-good catalog and every published canonical profile/revision;
+- measurement curves such as Squiglink frequency-response data are not silently converted into invented source-authored PEQ;
+- Reddit/oratory direct currentness remains paused until a compliant Reddit access path exists;
+- Topping Community remains paused until an authorized API/feed or explicit permission supports automation;
+- ordinary source/catalog publication remains independent of APK releases while the client schema and Android/device/DSP behavior are unchanged.
+
+The source-automation milestone is closed only after its final PR is green/merged and at least one post-merge `main` production run successfully validates/publishes the resulting catalog to `catalog-live`.
 
 ## 6. Canonical EQ and conversion rules
 
@@ -289,15 +308,14 @@ For substantive work:
 8. After changes, state exactly what changed and whether validation passed.
 9. Keep hardware-gated feature PRs unmerged until the applicable signed candidate passes hands-on validation.
 10. Update this runbook and the relevant detailed decision/architecture documents whenever the maintained source of truth changes.
+11. For source maintenance, prefer scheduled/runtime automation; do not create a recurring manual-currentness dependency when a source lacks an authorized automation path—pause it explicitly and preserve archived data instead.
 
-## 11. Current release status
+## 11. Current release and source-infrastructure status
 
-**v0.3.0 is publicly released.** The controlled **Signed GitHub Release** workflow published it on 2026-09-01 from exact source commit `ddda2acf9c573d42283ab8ca50d276c179631b88`. The version tag `v0.3.0` points to that commit. The workflow rebuilt and tested the exact release source, signed the APK with the permanent release identity, verified the pinned signing certificate, and published `EQ-Library-v0.3.0.apk` together with its SHA-256 file and `apksigner` verification output.
+**v0.4.0 is the current public release.** The controlled GitHub Release was published on 2026-09-06 from target commit `eaa7bcf326cdbc6967d477d28b97c54dc862bc72`. It includes the separately hardware-qualified Black Pearl **Reset EQ to flat** behavior and uses the same permanent Android signing identity/application ID for in-place upgrades. The exact device/DSP candidate `15f220bd055a2aec49c0cb97c16acbd43ac588da` passed the required signed automated gates and focused Pixel 9 / TRN Black Pearl hardware qualification before release.
 
-PR #4 was fast-forward merged before publication after its final automated gates and focused Pixel 9 PASS. The focused Android release-polish code was physically validated at `3b95d384fb772514081383f801cf22b5b3aa8cbf`; subsequent commits through release source `ddda2acf9c573d42283ab8ca50d276c179631b88` changed only release documentation/catalog-currentness/release-tooling and did not change Android/device/DSP behavior, so no additional phone or Black Pearl pass was required.
+The v0.3 foundation remains in force: output-specific My EQs, canonical multi-source EQ handling, zero-selected new-headphone defaults, per-headphone notification/review for newly arriving EQs without silent selection, Add/Save-triggered initial export with recovery-only Export actions, SAF ownership anchored to the actual app-created document URI, hierarchical Android Back behavior, Favorite controls in My EQs, qualified General EQs, living-archive preservation, reversible Hide/Unhide, strict previewed Equalizer APO / AutoEq personal import, and Black Pearl Direct Flash with non-cumulative playback-gain adjustment plus explicit caution for protocol-encodable per-band gains outside the generally validated ±10 dB range.
 
-The v0.3 foundation includes output-specific My EQs, canonical multi-source EQ handling, zero-selected new-headphone defaults, per-headphone notification/review for newly arriving EQs without any silent future selection, Add/Save-triggered initial export with recovery-only Export actions, SAF export ownership anchored to the actual app-created document URI rather than exact provider filename spelling, hierarchical Android Back behavior, Favorite controls in My EQs, populated qualified General EQs, living-archive preservation, reversible Hide/Unhide, strict previewed Equalizer APO / AutoEq personal import, and Black Pearl Direct Flash with non-cumulative playback-gain adjustment plus explicit caution for protocol-encodable per-band gains outside the generally validated ±10 dB range. The specific Edition XS `-11.9 dB` test case passed physical hardware validation, but the caution remains for the broader outside-±10 range.
+Post-v0.4 source expansion is repository/catalog infrastructure and is governed by `docs/FUTURE_SOURCE_AUTOMATION_PLAN.md`. The final operating target has no recurring manual-currentness owners: automatable sources are scheduled, OPRA is runtime-managed, and inaccessible/restricted ecosystems are explicitly paused. Source/catalog changes remain independent of APK releases while the client schema and Android/device/DSP behavior stay compatible.
 
-**v0.4.0 is the current release candidate.** It adds the separate Black Pearl **Reset EQ to flat** hardware action with the compact side-by-side My EQs control and fail-safe flatten-before-gain-restore transaction described above. The exact device/DSP candidate `15f220bd055a2aec49c0cb97c16acbd43ac588da` passed the required signed automated gates and focused Pixel 9 / TRN Black Pearl hardware qualification on 2026-09-06. The remaining release-preparation changes are limited to `versionName`/`versionCode` and release/documentation metadata. The final exact `main` source must pass the automated/security/release-signing workflow before the immutable `v0.4.0` tag and GitHub Release are published.
-
-`docs/V0.3_RELEASE_POLISH_PLAN.md` and `docs/V0.3_HANDS_ON_CHECKLIST.md` remain the record of the final v0.3 validation scope. `docs/BLACK_PEARL_FLAT_RESET_HANDS_ON_CHECKLIST.md` records the v0.4.0 hardware qualification. `docs/FUTURE_SOURCE_AUTOMATION_PLAN.md` records the post-v0.3 work to finish real scheduled adapters/currentness enforcement for every active source and monthly discovery of additional sources; do not silently treat that deferred automation as already complete.
+`docs/V0.3_RELEASE_POLISH_PLAN.md` and `docs/V0.3_HANDS_ON_CHECKLIST.md` remain the record of the final v0.3 validation scope. `docs/BLACK_PEARL_FLAT_RESET_HANDS_ON_CHECKLIST.md` records the v0.4.0 hardware qualification. `docs/FUTURE_SOURCE_AUTOMATION_PLAN.md` records the final source-automation operating model, blocked-source policy, and milestone closeout criteria.
