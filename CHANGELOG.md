@@ -11,19 +11,29 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Scheduled public GitHub/Gist community ingestion now takes discovered headphone PEQ through exact source retrieval, strict PEQ parsing, canonical headphone identity, creator/source provenance, acoustic dedupe, living-archive validation, and Unverified publication instead of leaving mechanically valid community data indefinitely review-only.
 - Community-ingestion reports record fetched/parsed/published/deduplicated/quarantined counts and machine-readable quarantine reasons; one malformed or ambiguous record cannot block unrelated valid candidates.
 - Broad General GitHub discovery is actively audited for exact parametric structure. Fixed/graphic-EQ data without source-provided Q/filter types is rejected rather than converted by invention.
+- Added bounded public RSS/thread automation for Head-Fi and Audio Science Review, with exact-PEQ parsing, provenance retention, identity resolution, quarantine/failure isolation, source-health state, and living-archive-safe publication.
+- Added automated Squiglink ecosystem currentness using the public Squiglink-compatible site registry without turning measurement curves into invented source-authored PEQ.
+- Added the unified `Automated source currentness` GitHub Actions lane for cadence-aware Head-Fi/ASR refresh, Squiglink currentness, qualified General-source probing, atomic archive validation, persistent source-health state, and `catalog-live` publication from `main`.
+- Added an automation contract regression test that requires zero recurring `manual` currentness owners in the registered-source set.
 
 ### Changed
 
 - `github-community` is a daily scheduled source with source-health ownership. Public exact structured community PEQ uses the established Unverified community policy while specific source restrictions remain binding.
-- Squiglink-compatible sources and Topping Community are now active/manual source lanes for exact traceable public PEQ. Squiglink measurement-only `phone_book` records remain metadata-only; TOPPING presets are accepted only through ordinary permitted public UI/share/export flows. No autonomous TOPPING scraping, bulk retrieval, interface reverse engineering, or authentication bypass is performed; scheduled Topping ingestion requires an authorized public API/feed or explicit permission.
-- Reddit remains paused; no anonymous Reddit scanning or workaround was re-enabled.
+- Source maintenance is now automation-first: every registered source with a legitimate stable public retrieval path is scheduled or runtime-managed; sources that cannot currently be automated safely are explicitly paused rather than depending on recurring manual input.
+- Head-Fi and Audio Science Review moved from manual/curated currentness to weekly scheduled public adapters.
+- Squiglink-compatible sources moved from manual intake to weekly scheduled ecosystem-currentness/provenance monitoring. Measurement-only `phone_book`/frequency-response data remains non-PEQ and is never converted into fabricated source-authored filters.
+- ParaEQ General presets moved to weekly scheduled qualified-source currentness probing; upstream source changes remain review-gated rather than silently mutating qualified preset classification or acoustic history.
+- Topping Community is paused instead of relying on recurring manual capture. It can become scheduled only when TOPPING provides an authorized public API/feed or explicit permission for the required automated retrieval.
+- oratory1990 direct Reddit currentness is paused while Reddit access is unavailable; structured values may continue to arrive through separately automated qualified carriers such as OPRA.
+- Reddit remains paused; no anonymous Reddit scanning, scraping, circumvention, or manual-currentness substitute was introduced.
 
 ### Validation
 
 - Initial GitHub community ingestion fetched all 50 current headphone candidates: 39 parsed as exact supported PEQ, producing 28 new Unverified profiles and 11 exact-duplicate provenance merges; 11 unmatched/ambiguous headphone identities were quarantined. Atomic living-archive validation passed before the candidate catalog was committed.
 - All three current broad General GitHub candidates were processed and classified `no_exact_parametric_structure`; none was published with invented Q/filter types.
 - Added regression coverage for valid Unverified publication, missing-preamp preservation, exact-duplicate provenance merging, short model identity with manufacturer context, target-folder handling, malformed/unsupported PEQ quarantine, unknown headphone quarantine, and General graphic-EQ rejection.
-- Source registry/currentness ownership now treats Squiglink-compatible and Topping Community as active/manual without inventing scan-success timestamps; the strict freshness SLA remains limited to genuinely scheduled sources.
+- Live branch automation recorded successful source-health scans for Head-Fi, Audio Science Review, Squiglink ecosystem currentness, and ParaEQ, with zero consecutive failures for those newly automated lanes.
+- The unified automated-source workflow passed its adapter/automation-contract tests and atomic living-archive validation on the feature branch before final PR closeout.
 
 ## [0.4.0] - 2026-09-06
 
