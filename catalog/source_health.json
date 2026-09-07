@@ -50,12 +50,12 @@
       "source_id": "github-community"
     },
     {
-      "consecutive_failures": 1,
-      "cursor": null,
-      "last_attempt_at": "2026-09-07T00:00:15Z",
-      "last_content_fingerprint": null,
-      "last_error": "public XenForo feed/thread retrieval was not usable",
-      "last_successful_scan_at": null,
+      "consecutive_failures": 0,
+      "cursor": "60243ccfb892adfa6d0d0fd639cda2c0e4c316f55f62fd54d4e20d6451b49077",
+      "last_attempt_at": "2026-09-07T00:04:51Z",
+      "last_content_fingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "last_error": null,
+      "last_successful_scan_at": "2026-09-07T00:04:51Z",
       "last_terms_review_at": "2026-08-29T19:35:00Z",
       "lifecycle": "active",
       "parser_version": "3",
@@ -182,5 +182,5 @@
       "source_id": "topping-community"
     }
   ],
-  "updated_at": "2026-09-07T00:00:25Z"
+  "updated_at": "2026-09-07T00:04:52Z"
 }
