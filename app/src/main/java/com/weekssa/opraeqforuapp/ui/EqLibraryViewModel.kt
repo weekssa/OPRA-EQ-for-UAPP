@@ -42,6 +42,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
@@ -479,8 +480,7 @@ class EqLibraryViewModel(
     suspend fun setExportTree(uri: String, label: String) = preferencesRepository.setExportTree(uri, label)
 
     suspend fun exportSelected(treeUri: String, device: ExportDevice): PresetExportSummary {
-        val library = libraryData.value
-        if (library.outputId != device.name) return PresetExportSummary(emptyList())
+        val library = loadLibraryData(device.name)
         val records = withContext(computationDispatcher) { library.toExportRecords() }
         return exportWithInvalidation {
             exportRepository.exportSelected(treeUri, records, device)
@@ -492,7 +492,7 @@ class EqLibraryViewModel(
         productId: String,
         device: ExportDevice,
     ): PresetExportSummary {
-        val managed = managedHeadphonesRepository.getHeadphone(productId, activeOutputId())
+        val managed = managedHeadphonesRepository.getHeadphone(productId, device.name)
             ?: return PresetExportSummary(emptyList())
         return exportWithInvalidation {
             exportRepository.exportSelected(treeUri, listOf(managed), device)
@@ -505,7 +505,7 @@ class EqLibraryViewModel(
         profileId: String,
         device: ExportDevice,
     ): PresetExportSummary {
-        val managed = managedHeadphonesRepository.getHeadphone(productId, activeOutputId())
+        val managed = managedHeadphonesRepository.getHeadphone(productId, device.name)
             ?: return PresetExportSummary(emptyList())
         val profile = managed.profiles.firstOrNull { it.profileId == profileId && it.selected }
             ?: return PresetExportSummary(emptyList())
@@ -523,7 +523,7 @@ class EqLibraryViewModel(
         entryId: String,
         device: ExportDevice,
     ): PresetExportSummary {
-        val record = savedEqRepository.getForOutput(activeOutputId(), entryId)
+        val record = savedEqRepository.getForOutput(device.name, entryId)
             ?: return PresetExportSummary(emptyList())
         val exportRecord = withContext(computationDispatcher) {
             savedEqRepository.toManagedHeadphone(record)
@@ -538,7 +538,7 @@ class EqLibraryViewModel(
         presetId: String,
         device: ExportDevice,
     ): PresetExportSummary {
-        val record = savedGeneralEqRepository.getForOutput(activeOutputId(), presetId)
+        val record = savedGeneralEqRepository.getForOutput(device.name, presetId)
             ?: return PresetExportSummary(emptyList())
         val exportRecord = withContext(computationDispatcher) {
             savedGeneralEqRepository.toExportRecord(record)
@@ -553,9 +553,8 @@ class EqLibraryViewModel(
         presetIds: Set<String>,
         device: ExportDevice,
     ): PresetExportSummary {
-        val outputId = activeOutputId()
         val records = presetIds.sorted().mapNotNull { presetId ->
-            savedGeneralEqRepository.getForOutput(outputId, presetId)
+            savedGeneralEqRepository.getForOutput(device.name, presetId)
         }
         val exportRecords = withContext(computationDispatcher) {
             records.map(savedGeneralEqRepository::toExportRecord)
@@ -693,6 +692,19 @@ class EqLibraryViewModel(
                 resource(R.string.jm12_flash_verification_failed, result.reason)
         }
     }
+
+    private suspend fun loadLibraryData(outputId: String): LibraryDataState = combine(
+        managedHeadphonesRepository.observeHeadphones(outputId),
+        savedEqRepository.observeForOutput(outputId),
+        savedGeneralEqRepository.observeForOutput(outputId),
+    ) { managedHeadphones, savedEqs, savedGeneralEqs ->
+        LibraryDataState(
+            outputId = outputId,
+            managedHeadphones = managedHeadphones,
+            savedEqs = savedEqs,
+            savedGeneralEqs = savedGeneralEqs,
+        )
+    }.first()
 
     private fun LibraryDataState.toExportRecords(): List<ManagedHeadphoneRecord> = buildList {
         addAll(managedHeadphones)
