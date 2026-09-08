@@ -405,7 +405,7 @@ internal fun ProfileSelectionEditor(
                     profile = profile,
                     selected = profile.id in stagedSelectedIds,
                     isFavorite = profile.id in favoriteProfileIds,
-                    outputStatus = "${outputShortName(exportTargets.activeTarget)}: ${outputStatusLabel(outputStatus)}",
+                    outputStatus = "${outputShortName(exportTargets.activeTarget)}: ${outputStatusLabel(outputStatus, exportTargets.activeTarget)}",
                     outputStatusCategory = outputStatus,
                     onSelectionChange = { selected ->
                         stagedSelectedIds = if (selected) {
@@ -613,15 +613,17 @@ internal fun ProfileSelectionRow(
     )
 }
 
-private fun outputStatusLabel(status: DeviceExportability): String = when (status) {
+private fun outputStatusLabel(status: DeviceExportability, device: ExportDevice): String = when (status) {
     DeviceExportability.EXACT -> "Exact"
     DeviceExportability.OPTIMIZED -> "Optimized"
-    DeviceExportability.NOT_REPRESENTABLE -> "Not exportable"
+    DeviceExportability.NOT_REPRESENTABLE -> if (device in FIVE_BAND_SELECTION_OUTPUTS) "Not suitable" else "Not exportable"
 }
 
 private fun outputShortName(device: ExportDevice): String = when (device) {
     ExportDevice.UAPP -> "UAPP / ToneBoosters"
     ExportDevice.BLACK_PEARL -> "Black Pearl"
+    ExportDevice.FIIO_JA11 -> "FiiO JA11"
+    ExportDevice.JCALLY_JM12 -> "JCALLY JM12"
     ExportDevice.UNIVERSAL_PARAMETRIC -> "Universal PEQ"
     ExportDevice.POWERAMP -> "Poweramp"
     ExportDevice.WAVELET -> "Wavelet"
@@ -667,3 +669,5 @@ private fun OpraEqProfile.detailMetadata(label: String): String? = details
     ?.substringAfter(':')
     ?.trim()
     ?.takeIf(String::isNotEmpty)
+
+private val FIVE_BAND_SELECTION_OUTPUTS = setOf(ExportDevice.FIIO_JA11, ExportDevice.JCALLY_JM12)
