@@ -143,9 +143,9 @@ fun EqLibraryApp(
     var selectedDestinationIndex by rememberSaveable { mutableIntStateOf(0) }
     var selectedManagedProductId by rememberSaveable { mutableStateOf<String?>(null) }
     var outputMenuExpanded by remember { mutableStateOf(false) }
-    var pendingExportRequest by remember { mutableStateOf<ActiveOutputExportRequest?>(null) }
-    var whatsNewVersion by remember { mutableStateOf<String?>(null) }
-    var whatsNewNotes by remember { mutableStateOf("") }
+    var pendingExportRequestState by rememberSaveable { mutableStateOf<ArrayList<String>?>(null) }
+    var whatsNewVersion by rememberSaveable { mutableStateOf<String?>(null) }
+    var whatsNewNotes by rememberSaveable { mutableStateOf("") }
 
     val destinations = remember { EqLibraryDestination.entries }
     val selectedDestination = destinations[selectedDestinationIndex]
@@ -225,8 +225,8 @@ fun EqLibraryApp(
     }
 
     val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
-        val request = pendingExportRequest
-        pendingExportRequest = null
+        val request = restoreActiveOutputExportRequest(pendingExportRequestState)
+        pendingExportRequestState = null
         if (uri == null) return@rememberLauncherForActivityResult
         scope.launch {
             if (!onPersistExportTree(uri)) {
@@ -240,7 +240,7 @@ fun EqLibraryApp(
     }
 
     val chooseExportFolder: (ActiveOutputExportRequest?) -> Unit = { request ->
-        pendingExportRequest = request
+        pendingExportRequestState = request?.toSaveableState()
         folderPicker.launch(appPreferences.exportTreeUri?.let(Uri::parse))
     }
 
@@ -542,3 +542,57 @@ fun EqLibraryApp(
 }
 
 private fun outputTitle(device: ExportDevice): String = device.displayName
+
+private fun ActiveOutputExportRequest.toSaveableState(): ArrayList<String> = when (this) {
+    is ActiveOutputExportRequest.AllManaged -> arrayListOf(EXPORT_REQUEST_ALL_MANAGED, device.name)
+    is ActiveOutputExportRequest.Product -> arrayListOf(EXPORT_REQUEST_PRODUCT, device.name, productId)
+    is ActiveOutputExportRequest.ManagedProfile -> arrayListOf(
+        EXPORT_REQUEST_MANAGED_PROFILE,
+        device.name,
+        productId,
+        profileId,
+    )
+    is ActiveOutputExportRequest.SavedEq -> arrayListOf(EXPORT_REQUEST_SAVED_EQ, device.name, entryId)
+    is ActiveOutputExportRequest.GeneralEq -> arrayListOf(EXPORT_REQUEST_GENERAL_EQ, device.name, presetId)
+    is ActiveOutputExportRequest.GeneralEqBatch -> arrayListOf(
+        EXPORT_REQUEST_GENERAL_EQ_BATCH,
+        device.name,
+    ).apply { addAll(presetIds.sorted()) }
+}
+
+private fun restoreActiveOutputExportRequest(state: List<String>?): ActiveOutputExportRequest? {
+    val requestType = state?.getOrNull(0) ?: return null
+    val device = state.getOrNull(1)?.let { deviceName ->
+        runCatching { ExportDevice.valueOf(deviceName) }.getOrNull()
+    } ?: return null
+
+    return when (requestType) {
+        EXPORT_REQUEST_ALL_MANAGED -> ActiveOutputExportRequest.AllManaged(device)
+        EXPORT_REQUEST_PRODUCT -> state.getOrNull(2)?.let { productId ->
+            ActiveOutputExportRequest.Product(productId, device)
+        }
+        EXPORT_REQUEST_MANAGED_PROFILE -> {
+            val productId = state.getOrNull(2) ?: return null
+            val profileId = state.getOrNull(3) ?: return null
+            ActiveOutputExportRequest.ManagedProfile(productId, profileId, device)
+        }
+        EXPORT_REQUEST_SAVED_EQ -> state.getOrNull(2)?.let { entryId ->
+            ActiveOutputExportRequest.SavedEq(entryId, device)
+        }
+        EXPORT_REQUEST_GENERAL_EQ -> state.getOrNull(2)?.let { presetId ->
+            ActiveOutputExportRequest.GeneralEq(presetId, device)
+        }
+        EXPORT_REQUEST_GENERAL_EQ_BATCH -> ActiveOutputExportRequest.GeneralEqBatch(
+            presetIds = state.drop(2).toSet(),
+            device = device,
+        )
+        else -> null
+    }
+}
+
+private const val EXPORT_REQUEST_ALL_MANAGED = "all-managed"
+private const val EXPORT_REQUEST_PRODUCT = "product"
+private const val EXPORT_REQUEST_MANAGED_PROFILE = "managed-profile"
+private const val EXPORT_REQUEST_SAVED_EQ = "saved-eq"
+private const val EXPORT_REQUEST_GENERAL_EQ = "general-eq"
+private const val EXPORT_REQUEST_GENERAL_EQ_BATCH = "general-eq-batch"
