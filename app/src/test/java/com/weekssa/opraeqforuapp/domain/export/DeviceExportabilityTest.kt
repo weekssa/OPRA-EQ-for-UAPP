@@ -35,10 +35,10 @@ class DeviceExportabilityTest {
     }
 
     @Test
-    fun `Black Pearl native shelf is exact when preamp is zero`() {
+    fun `Black Pearl native shelf is exact when parameters are at device quantization`() {
         val source = profile().copy(
             preampGainDb = 0.0,
-            bands = listOf(OpraBand("low_shelf", 105.0, 3.0, 0.71, null)),
+            bands = listOf(OpraBand("low_shelf", 105.0, 3.0, 0.75, null)),
         )
 
         assertEquals(DeviceExportability.EXACT, assessDeviceExportability(source, ExportDevice.BLACK_PEARL))
@@ -54,10 +54,10 @@ class DeviceExportabilityTest {
     }
 
     @Test
-    fun `Black Pearl file export keeps finite gain outside currently validated range`() {
+    fun `Black Pearl file export keeps exact protocol gain outside currently validated range`() {
         val source = profile().copy(
-            preampGainDb = -3.9,
-            bands = listOf(OpraBand("peak_dip", 13_500.0, -11.9, 4.0, null)),
+            preampGainDb = -4.0,
+            bands = listOf(OpraBand("peak_dip", 13_500.0, -12.0, 4.0, null)),
         )
 
         assertEquals(DeviceExportability.EXACT, assessDeviceExportability(source, ExportDevice.BLACK_PEARL))
@@ -65,16 +65,27 @@ class DeviceExportabilityTest {
     }
 
     @Test
-    fun `Black Pearl file export can preserve generated safety headroom`() {
+    fun `Black Pearl derives missing playback headroom from target response`() {
         val source = profile().copy(
             preampGainDb = null,
-            eqLibrarySafetyHeadroomDb = -4.6,
+            eqLibrarySafetyHeadroomDb = -9.0,
+            bands = listOf(OpraBand("peak_dip", 1_000.0, 4.0, 1.0, null)),
         )
 
         assertEquals(
-            DeviceExportability.OPTIMIZED,
+            DeviceExportability.EXACT,
             assessDeviceExportability(source, ExportDevice.BLACK_PEARL),
         )
+        assertEquals(null, source.preampGainDb)
+        assertEquals(-9.0, source.eqLibrarySafetyHeadroomDb!!, 0.0)
+    }
+
+    @Test
+    fun `new registry outputs expose representability through the same API`() {
+        val source = profile()
+        assertTrue(assessDeviceExportability(source, ExportDevice.EASY_EFFECTS) != DeviceExportability.NOT_REPRESENTABLE)
+        assertTrue(assessDeviceExportability(source, ExportDevice.EQUALIZER_APO) != DeviceExportability.NOT_REPRESENTABLE)
+        assertTrue(assessDeviceExportability(source, ExportDevice.UNIVERSAL_GRAPHIC_EQ) != DeviceExportability.NOT_REPRESENTABLE)
     }
 
     private fun profile() = OpraEqProfile(
