@@ -44,6 +44,19 @@
     <string name="update_available_message">Version %1$s is available.</string>
     <string name="update_up_to_date_message">EQ Library is up to date.</string>
     <string name="update_check_unavailable_message">Couldn’t check for updates right now. Try again later.</string>
+    <string name="update_banner_available">EQ Library v%1$s is available</string>
+    <string name="update_banner_dismiss_content_description">Dismiss update banner</string>
+    <string name="update_whats_new">What’s new</string>
+    <string name="update_get_update">Get update</string>
+    <string name="update_banner_installed">Updated to v%1$s</string>
+    <string name="action_dismiss">Dismiss</string>
+    <string name="whats_new_title">What’s new in v%1$s</string>
+    <string name="whats_new_notes_unavailable">Release notes are not available for this version.</string>
+    <string name="action_close">Close</string>
+
+    <string name="opra_logo_content_description">OPRA — Open Headphone Database</string>
+    <string name="opra_attribution_text">Headphone and EQ data comes from OPRA, the open community-maintained headphone database. Individual profile creators and source details are preserved from OPRA where provided.</string>
+    <string name="opra_open_project">Open OPRA project</string>
 
     <string name="error_headphone_not_saved">That headphone is no longer saved for this output.</string>
     <string name="error_eq_not_selected">That EQ is no longer selected for this output.</string>
