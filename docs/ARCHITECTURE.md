@@ -13,7 +13,7 @@ EQ Library is a single native Android application using Kotlin and Jetpack Compo
 - Room: durable app-owned My EQs / selection / revision / generated-output / export ownership state
 - Preferences DataStore: appearance, enabled outputs, active output, Direct Flash toggles, hidden canonical IDs, export-tree preference, update presentation state
 - WorkManager: background catalog/currentness scheduling
-- Storage Access Framework / DocumentFile: explicit user-folder file export and app-owned cleanup
+- Storage Access Framework / `ContentResolver` + `DocumentsContract`: explicit user-folder file export and app-owned cleanup
 - Android USB host/HID integration: hardware Direct Flash transports behind narrow device-specific coordinators
 
 Do not bundle Python in the APK. Do not casually change Android/dependency baselines without compatibility review and CI.
@@ -77,7 +77,7 @@ The top-level Android runtime follows a manual dependency-injection / unidirecti
 - `EqLibraryViewModel` owns screen-level orchestration and exposes one immutable `StateFlow<EqLibraryUiState>`. It receives repositories/coordinators through constructor dependencies and never receives an Android `Context`.
 - `EqLibraryActions` is the stable event surface from Compose into the ViewModel/platform boundary. Compose should not depend on repository-specific result types merely to format operation messages.
 - `EqLibraryDependencyFactory` is the manual composition root. Application `Context` may be consumed there to construct Android data sources, Room, DataStore access, USB transports, and other platform adapters; repositories/ViewModels receive those narrower dependencies instead of retaining `Context`.
-- `ExportDocumentStore` is the repository-facing SAF contract. `AndroidSafDocumentStore` is the Android implementation. SAF lookup semantics explicitly distinguish **Found**, **Missing**, and **Unavailable** so cleanup may forget ownership only after confirmed absence, never after a permission/provider query failure.
+- `ExportDocumentStore` is the repository-facing SAF contract. `AndroidSafDocumentStore` is the Android implementation and queries providers directly through `ContentResolver`/`DocumentsContract` rather than relying on wrappers that collapse query failures into absence. SAF lookup semantics explicitly distinguish **Found**, **Missing**, and **Unavailable** so cleanup may forget ownership only after confirmed absence, never after a permission/provider query failure.
 - Room/DataStore remain the durable sources of truth. Transient editing/navigation state that should survive activity recreation uses Bundle-safe `rememberSaveable`; large/durable business state is not copied into Compose saved-state bundles.
 - Hardware USB sessions are owned by the ViewModel-scoped `HardwareEqRepository`, so configuration changes do not replace a live session. The repository closes all transports when the ViewModel is actually cleared.
 - Repository filesystem/database/network work uses explicit IO dispatcher boundaries. CPU-heavy export-record derivation/currentness preparation may use an injected computation dispatcher. Compose/UI callbacks remain nonblocking.
