@@ -47,6 +47,7 @@ import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiveBandOptimizationResult
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20DeviceSpecs
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FiveBandOptimizer
+import com.weekssa.opraeqforuapp.domain.kt02h20.adaptationSummary
 import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
 import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
@@ -58,6 +59,7 @@ private data class HardwareFlashPreview(
     val device: ExportDevice,
     val fidelity: DevicePresetFidelity,
     val playbackGainDb: Double,
+    val adaptationSummary: String,
     val warning: String? = null,
 )
 
@@ -453,6 +455,7 @@ private fun hardwareFlashPreview(profile: OpraEqProfile, device: ExportDevice): 
             device = device,
             fidelity = plan.fidelity,
             playbackGainDb = plan.requiredPlaybackGainDb,
+            adaptationSummary = plan.adaptationSummary,
             warning = plan.warning,
         )
     }
@@ -471,6 +474,7 @@ private fun fiveBandFlashPreview(
         device = device,
         fidelity = result.representation.fidelity,
         playbackGainDb = result.representation.playbackGainDb,
+        adaptationSummary = result.representation.adaptationSummary(),
     )
 }
 
@@ -479,13 +483,15 @@ private fun hardwareFlashConfirmation(displayName: String, preview: HardwareFlas
         return blackPearlFlashConfirmation(
             displayName = displayName,
             gainAdjustmentDb = preview.playbackGainDb,
+            fidelity = preview.fidelity,
+            adaptationSummary = preview.adaptationSummary,
             warning = preview.warning,
         )
     }
 
     val fidelity = when (preview.fidelity) {
-        DevicePresetFidelity.EXACT -> "Exact"
-        DevicePresetFidelity.OPTIMIZED -> "Optimized — adapted to the device’s 5-band PEQ to closely match the original EQ response"
+        DevicePresetFidelity.EXACT -> "Exact · ${preview.adaptationSummary}"
+        DevicePresetFidelity.OPTIMIZED -> "Optimized · ${preview.adaptationSummary}"
     }
     val gain = String.format(Locale.US, "%+.2f", preview.playbackGainDb)
     val gainSentence = if (kotlin.math.abs(preview.playbackGainDb) < 0.000_001) {
