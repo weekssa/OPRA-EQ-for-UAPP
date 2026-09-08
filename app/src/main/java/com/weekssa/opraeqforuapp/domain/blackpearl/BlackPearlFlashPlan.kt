@@ -5,6 +5,7 @@ import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
 import com.weekssa.opraeqforuapp.domain.hardware.HardwareEqDeviceSpecs
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiveBandOptimizationResult
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FiveBandOptimizer
+import com.weekssa.opraeqforuapp.domain.kt02h20.adaptationSummary
 import java.util.Locale
 
 sealed interface BlackPearlFlashPlan {
@@ -64,11 +65,12 @@ fun buildBlackPearlFlashPlan(
 
     val warnings = buildList {
         if (representation.fidelity == DevicePresetFidelity.OPTIMIZED) {
-            add(
-                "Black Pearl has 10 hardware PEQ bands. EQ Library fitted the complete source response " +
-                    "to the device instead of truncating it (RMS ${formatMetric(representation.rmsErrorDb)} dB, " +
-                    "max ${formatMetric(representation.maxAbsoluteErrorDb)} dB).",
-            )
+            val metrics = if (representation.usedResponseFit) {
+                " RMS ${formatMetric(representation.rmsErrorDb)} dB, max ${formatMetric(representation.maxAbsoluteErrorDb)} dB."
+            } else {
+                ""
+            }
+            add("Black Pearl: Optimized · ${representation.adaptationSummary()}.$metrics".trim())
         }
 
         val outsideValidatedGainRange = prepared.mapIndexedNotNull { index, band ->
