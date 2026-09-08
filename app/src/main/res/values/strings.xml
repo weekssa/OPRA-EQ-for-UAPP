@@ -2,7 +2,49 @@
 <resources>
     <string name="app_name">EQ Library</string>
 
+    <string name="nav_my_eqs">My EQs</string>
+    <string name="nav_eq_library">EQ Library</string>
+    <string name="nav_settings">Settings</string>
+    <string name="output_selector_format">%1$s ▾</string>
+    <string name="refresh_eq_library_content_description">Refresh EQ Library</string>
+
     <string name="selected_folder_fallback">Selected folder</string>
+    <string name="export_folder_permission_failed">Couldn’t retain access to that folder. Choose another folder.</string>
+    <string name="export_folder_access_lost">Export folder access was lost. Choose the folder again.</string>
+    <string name="export_none_ready">No selected presets are ready to export.</string>
+    <plurals name="export_saved_current_count">
+        <item quantity="one">%1$d preset saved/current</item>
+        <item quantity="other">%1$d presets saved/current</item>
+    </plurals>
+    <plurals name="export_review_count">
+        <item quantity="one">%1$d needs review</item>
+        <item quantity="other">%1$d need review</item>
+    </plurals>
+    <string name="export_review_summary">%1$s · %2$s</string>
+    <string name="export_review_summary_with_reason">%1$s · %2$s: %3$s</string>
+    <string name="export_write_summary">%1$d new · %2$d updated · %3$d already current.</string>
+    <plurals name="export_all_current">
+        <item quantity="one">All %1$d selected preset is already current.</item>
+        <item quantity="other">All %1$d selected presets are already current.</item>
+    </plurals>
+    <string name="device_prefixed_message">%1$s · %2$s</string>
+
+    <string name="catalog_up_to_date">EQ Library catalog is up to date.</string>
+    <plurals name="catalog_saved_headphones_changed">
+        <item quantity="one">%1$d saved headphone has changes.</item>
+        <item quantity="other">%1$d saved headphones have changes.</item>
+    </plurals>
+    <string name="catalog_refresh_failed_saved">Couldn’t refresh EQ Library. Using your saved catalog.</string>
+    <string name="catalog_download_failed">Couldn’t download the EQ Library catalog.</string>
+    <string name="catalog_invalid_saved">Couldn’t use the new EQ Library catalog. Your previous saved catalog is still available.</string>
+    <string name="catalog_invalid_download">The downloaded EQ Library catalog couldn’t be processed.</string>
+    <string name="catalog_storage_failed_saved">Couldn’t save the new EQ Library catalog. Using your previous saved catalog.</string>
+    <string name="catalog_storage_failed">Couldn’t save the EQ Library catalog on this device.</string>
+
+    <string name="update_available_message">Version %1$s is available.</string>
+    <string name="update_up_to_date_message">EQ Library is up to date.</string>
+    <string name="update_check_unavailable_message">Couldn’t check for updates right now. Try again later.</string>
+
     <string name="error_headphone_not_saved">That headphone is no longer saved for this output.</string>
     <string name="error_eq_not_selected">That EQ is no longer selected for this output.</string>
     <string name="error_eq_not_saved">That EQ is no longer saved for this output.</string>
