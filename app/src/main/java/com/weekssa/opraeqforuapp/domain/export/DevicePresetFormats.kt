@@ -84,6 +84,32 @@ private val BLACK_PEARL_CURRENT_CAPABILITIES = DeviceEqCapabilities(
     maxQ = 10.0,
 )
 
+private val FIIO_JA11_CURRENT_CAPABILITIES = DeviceEqCapabilities(
+    maxBands = 5,
+    supportedBandTypes = setOf("peak_dip", "low_shelf", "high_shelf"),
+    minFrequencyHz = 20.0,
+    maxFrequencyHz = 20_000.0,
+    minGainDb = -24.0,
+    maxGainDb = 12.0,
+    minQ = 0.1,
+    maxQ = 10.0,
+    minPreampDb = -12.0,
+    maxPreampDb = 12.0,
+)
+
+private val JCALLY_JM12_CURRENT_CAPABILITIES = DeviceEqCapabilities(
+    maxBands = 5,
+    supportedBandTypes = setOf("peak_dip", "low_shelf", "high_shelf"),
+    minFrequencyHz = 20.0,
+    maxFrequencyHz = 20_000.0,
+    minGainDb = -30.0,
+    maxGainDb = 30.0,
+    minQ = 0.1,
+    maxQ = 20.0,
+    minPreampDb = -24.0,
+    maxPreampDb = 12.0,
+)
+
 enum class ExportDevice(
     val folderName: String,
     val extension: String,
@@ -91,6 +117,7 @@ enum class ExportDevice(
     val validationStatus: String? = null,
     val eqCapabilities: DeviceEqCapabilities? = null,
     val selectableInV03: Boolean = true,
+    val supportsFileExport: Boolean = true,
 ) {
     UAPP(
         "USB Audio Player PRO - ToneBoosters",
@@ -103,6 +130,22 @@ enum class ExportDevice(
         "txt",
         "text/plain",
         eqCapabilities = BLACK_PEARL_CURRENT_CAPABILITIES,
+    ),
+    FIIO_JA11(
+        "FiiO JA11",
+        "txt",
+        "text/plain",
+        validationStatus = "Hardware validation pending",
+        eqCapabilities = FIIO_JA11_CURRENT_CAPABILITIES,
+        supportsFileExport = false,
+    ),
+    JCALLY_JM12(
+        "JCALLY JM12",
+        "txt",
+        "text/plain",
+        validationStatus = "Hardware validation pending",
+        eqCapabilities = JCALLY_JM12_CURRENT_CAPABILITIES,
+        supportsFileExport = false,
     ),
     UNIVERSAL_PARAMETRIC(
         "Universal Parametric EQ",
@@ -159,7 +202,9 @@ fun buildTextDeviceVariant(
     profile: OpraEqProfile,
     device: ExportDevice,
 ): DevicePresetVariant? = when (device) {
-    ExportDevice.UAPP -> null
+    ExportDevice.UAPP,
+    ExportDevice.FIIO_JA11,
+    ExportDevice.JCALLY_JM12 -> null
     ExportDevice.BLACK_PEARL -> {
         val capabilities = requireNotNull(device.eqCapabilities)
         formatBlackPearlPreset(profile, capabilities)?.let { content ->
