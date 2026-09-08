@@ -121,12 +121,17 @@ object JcallyJm12Protocol {
      * `targetSteps` contains one value for single-DAC models and two for stereo models.
      */
     fun withDigitalGainSteps(registerValue: Int, protocolFlags: Int, targetSteps: IntArray): Int {
-        val expected = if (isSingleDac(protocolFlags)) 1 else 2
+        val singleDac = isSingleDac(protocolFlags)
+        val expected = if (singleDac) 1 else 2
         require(targetSteps.size == expected)
         targetSteps.forEach { require(it in -128..127) }
-        var result = registerValue and 0xFFFF0000.toInt()
+        var result = if (singleDac) {
+            registerValue and 0xFFFFFF00.toInt()
+        } else {
+            registerValue and 0xFFFF0000.toInt()
+        }
         result = result or (targetSteps[0] and 0xFF)
-        if (!isSingleDac(protocolFlags)) result = result or ((targetSteps[1] and 0xFF) shl 8)
+        if (!singleDac) result = result or ((targetSteps[1] and 0xFF) shl 8)
         return result
     }
 
