@@ -2,6 +2,10 @@ package com.weekssa.opraeqforuapp.domain.export
 
 import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
+import com.weekssa.opraeqforuapp.domain.kt02h20.FiveBandDeviceSpec
+import com.weekssa.opraeqforuapp.domain.kt02h20.FiveBandOptimizationResult
+import com.weekssa.opraeqforuapp.domain.kt02h20.FiveBandQuantization
+import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FiveBandOptimizer
 import java.util.Locale
 import kotlin.math.PI
 import kotlin.math.cos
@@ -36,6 +40,20 @@ data class DeviceEqCapabilities(
     }
 }
 
+enum class OutputCategory(val sortOrder: Int, val heading: String) {
+    HARDWARE_DAC(0, "Hardware DACs"),
+    APP(1, "Apps"),
+    UNIVERSAL_FORMAT(2, "Universal formats"),
+}
+
+enum class OutputFormatKind {
+    HARDWARE_ONLY,
+    BLACK_PEARL_TEXT,
+    TONEBOOSTERS_XML,
+    PARAMETRIC_TEXT,
+    GRAPHIC_EQ_127,
+}
+
 private val UAPP_CURRENT_CAPABILITIES = DeviceEqCapabilities(
     maxBands = 10,
     supportedBandTypes = setOf("peak_dip", "low_shelf", "high_shelf"),
@@ -62,6 +80,7 @@ private val GENERIC_PARAMETRIC_CAPABILITIES = DeviceEqCapabilities(
     maxPreampDb = 24.0,
 )
 
+private val EASY_EFFECTS_CURRENT_CAPABILITIES = GENERIC_PARAMETRIC_CAPABILITIES.copy(maxBands = 32)
 private val POWERAMP_CURRENT_CAPABILITIES = GENERIC_PARAMETRIC_CAPABILITIES.copy(maxBands = 64)
 
 private val TOPPING_CURRENT_CAPABILITIES = DeviceEqCapabilities(
@@ -78,8 +97,10 @@ private val TOPPING_CURRENT_CAPABILITIES = DeviceEqCapabilities(
 private val BLACK_PEARL_CURRENT_CAPABILITIES = DeviceEqCapabilities(
     maxBands = 10,
     supportedBandTypes = setOf("peak_dip", "low_shelf", "high_shelf"),
-    minGainDb = -10.0,
-    maxGainDb = 10.0,
+    minFrequencyHz = 20.0,
+    maxFrequencyHz = 20_000.0,
+    minGainDb = -128.0,
+    maxGainDb = 127.99609375,
     minQ = 0.1,
     maxQ = 10.0,
 )
@@ -110,79 +131,159 @@ private val JCALLY_JM12_CURRENT_CAPABILITIES = DeviceEqCapabilities(
     maxPreampDb = 12.0,
 )
 
+/**
+ * One registry drives Settings, the output selector, format generation, capability checks, and
+ * expansion. Existing enum names are intentionally stable because they are persisted in DataStore.
+ */
 enum class ExportDevice(
     val folderName: String,
     val extension: String,
     val mimeType: String,
+    val displayName: String,
+    val category: OutputCategory,
+    val settingsSubtitle: String,
+    val formatKind: OutputFormatKind,
     val validationStatus: String? = null,
     val eqCapabilities: DeviceEqCapabilities? = null,
     val selectableInV03: Boolean = true,
     val supportsFileExport: Boolean = true,
 ) {
     UAPP(
-        "USB Audio Player PRO - ToneBoosters",
-        "xml",
-        "application/xml",
+        folderName = "USB Audio Player PRO - ToneBoosters",
+        extension = "xml",
+        mimeType = "application/xml",
+        displayName = "USB Audio Player PRO / ToneBoosters",
+        category = OutputCategory.APP,
+        settingsSubtitle = ".xml · ToneBoosters preset · 10 bands",
+        formatKind = OutputFormatKind.TONEBOOSTERS_XML,
         eqCapabilities = UAPP_CURRENT_CAPABILITIES,
     ),
     BLACK_PEARL(
-        "TRN Black Pearl",
-        "txt",
-        "text/plain",
+        folderName = "TRN Black Pearl",
+        extension = "txt",
+        mimeType = "text/plain",
+        displayName = "TRN Black Pearl",
+        category = OutputCategory.HARDWARE_DAC,
+        settingsSubtitle = ".txt · Black Pearl preset · 10-band hardware PEQ",
+        formatKind = OutputFormatKind.BLACK_PEARL_TEXT,
         eqCapabilities = BLACK_PEARL_CURRENT_CAPABILITIES,
     ),
     FIIO_JA11(
-        "FiiO JA11",
-        "txt",
-        "text/plain",
+        folderName = "FiiO JA11",
+        extension = "txt",
+        mimeType = "text/plain",
+        displayName = "FiiO JA11",
+        category = OutputCategory.HARDWARE_DAC,
+        settingsSubtitle = "5-band hardware PEQ · No file",
+        formatKind = OutputFormatKind.HARDWARE_ONLY,
         validationStatus = "Hardware validation pending",
         eqCapabilities = FIIO_JA11_CURRENT_CAPABILITIES,
         supportsFileExport = false,
     ),
     JCALLY_JM12(
-        "JCALLY JM12",
-        "txt",
-        "text/plain",
+        folderName = "JCALLY JM12",
+        extension = "txt",
+        mimeType = "text/plain",
+        displayName = "JCALLY JM12",
+        category = OutputCategory.HARDWARE_DAC,
+        settingsSubtitle = "5-band hardware PEQ · No file",
+        formatKind = OutputFormatKind.HARDWARE_ONLY,
         validationStatus = "Hardware validation pending",
         eqCapabilities = JCALLY_JM12_CURRENT_CAPABILITIES,
         supportsFileExport = false,
     ),
     UNIVERSAL_PARAMETRIC(
-        "Universal Parametric EQ",
-        "txt",
-        "text/plain",
+        folderName = "AutoEq - Equalizer APO Parametric",
+        extension = "txt",
+        mimeType = "text/plain",
+        displayName = "AutoEq / Equalizer APO Parametric",
+        category = OutputCategory.UNIVERSAL_FORMAT,
+        settingsSubtitle = ".txt · Portable parametric EQ",
+        formatKind = OutputFormatKind.PARAMETRIC_TEXT,
         eqCapabilities = GENERIC_PARAMETRIC_CAPABILITIES,
     ),
     POWERAMP(
-        "Poweramp - Poweramp Equalizer",
-        "txt",
-        "text/plain",
+        folderName = "Poweramp - Poweramp Equalizer",
+        extension = "txt",
+        mimeType = "text/plain",
+        displayName = "Poweramp / Poweramp Equalizer",
+        category = OutputCategory.APP,
+        settingsSubtitle = ".txt · AutoEq parametric · up to 64 bands",
+        formatKind = OutputFormatKind.PARAMETRIC_TEXT,
         eqCapabilities = POWERAMP_CURRENT_CAPABILITIES,
     ),
     WAVELET(
-        "Wavelet",
-        "txt",
-        "text/plain",
+        folderName = "Wavelet",
+        extension = "txt",
+        mimeType = "text/plain",
+        displayName = "Wavelet",
+        category = OutputCategory.APP,
+        settingsSubtitle = ".txt · GraphicEQ · 127 points",
+        formatKind = OutputFormatKind.GRAPHIC_EQ_127,
+    ),
+    EASY_EFFECTS(
+        folderName = "EasyEffects",
+        extension = "txt",
+        mimeType = "text/plain",
+        displayName = "EasyEffects",
+        category = OutputCategory.APP,
+        settingsSubtitle = ".txt · Equalizer APO parametric · up to 32 bands",
+        formatKind = OutputFormatKind.PARAMETRIC_TEXT,
+        eqCapabilities = EASY_EFFECTS_CURRENT_CAPABILITIES,
+    ),
+    EQUALIZER_APO(
+        folderName = "Equalizer APO",
+        extension = "txt",
+        mimeType = "text/plain",
+        displayName = "Equalizer APO",
+        category = OutputCategory.APP,
+        settingsSubtitle = ".txt · Parametric EQ",
+        formatKind = OutputFormatKind.PARAMETRIC_TEXT,
+        eqCapabilities = GENERIC_PARAMETRIC_CAPABILITIES,
+    ),
+    UNIVERSAL_GRAPHIC_EQ(
+        folderName = "AutoEq GraphicEQ",
+        extension = "txt",
+        mimeType = "text/plain",
+        displayName = "AutoEq GraphicEQ",
+        category = OutputCategory.UNIVERSAL_FORMAT,
+        settingsSubtitle = ".txt · Portable 127-point GraphicEQ",
+        formatKind = OutputFormatKind.GRAPHIC_EQ_127,
     ),
     TOPPING_DX5_II(
-        "Topping DX5 II",
-        "txt",
-        "text/plain",
+        folderName = "Topping DX5 II",
+        extension = "txt",
+        mimeType = "text/plain",
+        displayName = "TOPPING DX5 II",
+        category = OutputCategory.HARDWARE_DAC,
+        settingsSubtitle = "Hardware validation pending",
+        formatKind = OutputFormatKind.PARAMETRIC_TEXT,
         validationStatus = "Untested",
         eqCapabilities = TOPPING_CURRENT_CAPABILITIES,
         selectableInV03 = false,
     ),
     TOPPING_DX1_II(
-        "Topping DX1 II",
-        "txt",
-        "text/plain",
+        folderName = "Topping DX1 II",
+        extension = "txt",
+        mimeType = "text/plain",
+        displayName = "TOPPING DX1 II",
+        category = OutputCategory.HARDWARE_DAC,
+        settingsSubtitle = "Hardware validation pending",
+        formatKind = OutputFormatKind.PARAMETRIC_TEXT,
         validationStatus = "Untested",
         eqCapabilities = TOPPING_CURRENT_CAPABILITIES,
         selectableInV03 = false,
     );
 
+    val isHardwareOutput: Boolean get() = category == OutputCategory.HARDWARE_DAC
+
     companion object {
-        val selectableOutputs: List<ExportDevice> = entries.filter(ExportDevice::selectableInV03)
+        val selectableOutputs: List<ExportDevice> = entries
+            .filter(ExportDevice::selectableInV03)
+            .sortedWith(
+                compareBy<ExportDevice> { it.category.sortOrder }
+                    .thenBy(String.CASE_INSENSITIVE_ORDER) { it.displayName },
+            )
     }
 }
 
@@ -196,6 +297,7 @@ data class DevicePresetVariant(
     val content: String,
     val transformation: String,
     val fidelity: DevicePresetFidelity,
+    val representationVersion: Int = 1,
 )
 
 fun buildTextDeviceVariant(
@@ -203,56 +305,16 @@ fun buildTextDeviceVariant(
     device: ExportDevice,
 ): DevicePresetVariant? = when (device) {
     ExportDevice.UAPP,
+    ExportDevice.BLACK_PEARL,
     ExportDevice.FIIO_JA11,
     ExportDevice.JCALLY_JM12 -> null
-    ExportDevice.BLACK_PEARL -> {
-        val capabilities = requireNotNull(device.eqCapabilities)
-        formatBlackPearlPreset(profile, capabilities)?.let { content ->
-            val fidelity = determineDeviceFidelity(profile, capabilities)
-            DevicePresetVariant(
-                device = device,
-                content = content,
-                fidelity = fidelity,
-                transformation = fidelityDescription(
-                    fidelity = fidelity,
-                    exactDescription = "Source EQ bands are preserved within the validated Black Pearl PEQ capability profile (${bandLimitLabel(capabilities)}).",
-                    optimizedDescription = "Black Pearl supports ${capabilities.maxBands ?: "the current"} PEQ bands. EQ Library preserves source filter types and the first source-priority bands that fit the device; source preamp/headroom must resolve to 0 dB.",
-                ),
-            )
-        }
-    }
-    ExportDevice.UNIVERSAL_PARAMETRIC -> {
-        val capabilities = requireNotNull(device.eqCapabilities)
-        formatParametricText(profile, capabilities)?.let { content ->
-            val fidelity = determineDeviceFidelity(profile, capabilities)
-            DevicePresetVariant(
-                device = device,
-                content = content,
-                fidelity = fidelity,
-                transformation = fidelityDescription(
-                    fidelity,
-                    "Source parametric EQ preserved in standard AutoEq/Equalizer APO-style text.",
-                    "EQ Library normalized the source to the universal parametric text capability profile.",
-                ),
-            )
-        }
-    }
-    ExportDevice.POWERAMP -> {
-        val capabilities = requireNotNull(device.eqCapabilities)
-        formatParametricText(profile, capabilities)?.let { content ->
-            val fidelity = determineDeviceFidelity(profile, capabilities)
-            DevicePresetVariant(
-                device = device,
-                content = content,
-                fidelity = fidelity,
-                transformation = fidelityDescription(
-                    fidelity,
-                    "Source parametric EQ preserved in AutoEq parametric text accepted by Poweramp/Poweramp Equalizer.",
-                    "EQ Library optimized the source to the Poweramp AutoEq parametric import capability profile.",
-                ),
-            )
-        }
-    }
+
+    ExportDevice.UNIVERSAL_PARAMETRIC,
+    ExportDevice.EQUALIZER_APO -> buildParametricVariant(profile, device)
+
+    ExportDevice.POWERAMP,
+    ExportDevice.EASY_EFFECTS -> buildLimitedParametricVariant(profile, device)
+
     ExportDevice.WAVELET -> formatWaveletGraphicEq(profile)?.let { content ->
         DevicePresetVariant(
             device = device,
@@ -261,6 +323,16 @@ fun buildTextDeviceVariant(
             transformation = "EQ Library rendered the parametric source response to Wavelet's fixed 127-point GraphicEQ import grid. Wavelet normalizes imported GraphicEQ data, so source preamp is not represented as an independent control.",
         )
     }
+
+    ExportDevice.UNIVERSAL_GRAPHIC_EQ -> formatWaveletGraphicEq(profile)?.let { content ->
+        DevicePresetVariant(
+            device = device,
+            content = content,
+            fidelity = DevicePresetFidelity.OPTIMIZED,
+            transformation = "EQ Library rendered the complete parametric response to the portable 127-point AutoEq GraphicEQ text grid.",
+        )
+    }
+
     ExportDevice.TOPPING_DX5_II,
     ExportDevice.TOPPING_DX1_II -> {
         val capabilities = requireNotNull(device.eqCapabilities)
@@ -278,6 +350,77 @@ fun buildTextDeviceVariant(
             )
         }
     }
+}
+
+private fun buildParametricVariant(
+    profile: OpraEqProfile,
+    device: ExportDevice,
+): DevicePresetVariant? {
+    val capabilities = requireNotNull(device.eqCapabilities)
+    return formatParametricText(profile, capabilities)?.let { content ->
+        val fidelity = determineDeviceFidelity(profile, capabilities)
+        val exactDescription = when (device) {
+            ExportDevice.EQUALIZER_APO -> "Source parametric EQ preserved in Equalizer APO configuration text."
+            else -> "Source parametric EQ preserved in standard AutoEq/Equalizer APO-style text."
+        }
+        DevicePresetVariant(
+            device = device,
+            content = content,
+            fidelity = fidelity,
+            transformation = fidelityDescription(
+                fidelity,
+                exactDescription,
+                "EQ Library normalized the source to ${device.displayName}'s parametric text capability profile.",
+            ),
+        )
+    }
+}
+
+private fun buildLimitedParametricVariant(
+    profile: OpraEqProfile,
+    device: ExportDevice,
+): DevicePresetVariant? {
+    val capabilities = requireNotNull(device.eqCapabilities)
+    val maxBands = requireNotNull(capabilities.maxBands)
+    val spec = FiveBandDeviceSpec(
+        stableId = "app-${device.name.lowercase(Locale.US)}",
+        displayName = device.displayName,
+        capabilities = capabilities,
+        quantization = FiveBandQuantization(
+            frequencyStepHz = 0.1,
+            gainStepDb = 0.01,
+            qStep = 0.001,
+            preampStepDb = 0.01,
+        ),
+        representationVersion = 1,
+    )
+    val representation = when (val result = Kt02h20FiveBandOptimizer.optimize(profile, spec)) {
+        is FiveBandOptimizationResult.NotSuitable -> return null
+        is FiveBandOptimizationResult.Ready -> result.representation
+    }
+    val bands = representation.bands.map { band ->
+        TextBand(
+            type = parametricType(band.type) ?: return null,
+            frequency = band.frequencyHz,
+            gainDb = band.gainDb,
+            q = band.q,
+        )
+    }
+    val content = renderParametricText(representation.playbackGainDb, bands)
+    val exactText = when (device) {
+        ExportDevice.EASY_EFFECTS -> "Source EQ is directly representable in EasyEffects' Equalizer APO parametric import profile."
+        ExportDevice.POWERAMP -> "Source EQ is directly representable in AutoEq parametric text accepted by Poweramp/Poweramp Equalizer."
+        else -> "Source EQ is directly representable in ${device.displayName}."
+    }
+    val optimizedText =
+        "EQ Library fitted the complete source response to ${device.displayName}'s $maxBands-band target (RMS ${metricDb(representation.rmsErrorDb)} dB, max ${metricDb(representation.maxAbsoluteErrorDb)} dB); no source bands were silently truncated."
+    return DevicePresetVariant(
+        device = device,
+        content = content,
+        fidelity = representation.fidelity,
+        transformation = fidelityDescription(representation.fidelity, exactText, optimizedText),
+        representationVersion = representation.representationVersion,
+    )
 }
 
 fun buildTextDeviceVariants(profile: OpraEqProfile): List<DevicePresetVariant> =
@@ -556,6 +699,7 @@ private fun hz(value: Double): String =
 private fun db(value: Double): String = String.format(Locale.US, "%.2f", value)
 private fun q(value: Double): String = String.format(Locale.US, "%.3f", value)
 private fun graphicDb(value: Double): String = String.format(Locale.US, "%.2f", value)
+private fun metricDb(value: Double): String = String.format(Locale.US, "%.2f", value)
 
 private const val BLACK_PEARL_PREAMP_ZERO_TOLERANCE_DB = 0.000_001
 
