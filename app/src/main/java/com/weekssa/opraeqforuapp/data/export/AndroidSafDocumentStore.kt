@@ -1,9 +1,11 @@
 package com.weekssa.opraeqforuapp.data.export
 
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.database.Cursor
 import android.net.Uri
 import android.provider.DocumentsContract
-import androidx.documentfile.provider.DocumentFile
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.security.MessageDigest
@@ -13,28 +15,42 @@ class AndroidSafDocumentStore(context: Context) : ExportDocumentStore {
     private val resolver = appContext.contentResolver
 
     override fun openWritableTree(treeUri: String): ExportDirectoryHandle? {
-        val uri = treeUri.toUriOrNull() ?: return null
-        return runCatching {
-            DocumentFile.fromTreeUri(appContext, uri)
-                ?.takeIf { document ->
-                    document.exists() && document.isDirectory && document.canWrite()
-                }
-                ?.let(::AndroidDirectoryHandle)
-        }.getOrNull()
+        val tree = treeUri.toUriOrNull() ?: return null
+        return try {
+            val rootUri = DocumentsContract.buildDocumentUriUsingTree(
+                tree,
+                DocumentsContract.getTreeDocumentId(tree),
+            )
+            when (val lookup = queryDocument(rootUri)) {
+                is ExportLookup.Found -> lookup.value
+                    .takeIf { row -> row.isDirectory && row.canWrite() }
+                    ?.let { AndroidDirectoryHandle(rootUri) }
+                ExportLookup.Missing,
+                ExportLookup.Unavailable,
+                -> null
+            }
+        } catch (_: Exception) {
+            null
+        }
     }
 
     override fun openDocument(documentUri: String): ExportLookup<ExportDocumentHandle> {
         val uri = documentUri.toUriOrNull() ?: return ExportLookup.Unavailable
-        return try {
-            val document = DocumentFile.fromSingleUri(appContext, uri)
-                ?: return ExportLookup.Unavailable
-            when {
-                !document.exists() -> ExportLookup.Missing
-                !document.isFile -> ExportLookup.Unavailable
-                else -> ExportLookup.Found(AndroidDocumentHandle(document))
+        return when (val lookup = queryDocument(uri)) {
+            is ExportLookup.Found -> {
+                if (lookup.value.isDirectory) {
+                    ExportLookup.Unavailable
+                } else {
+                    ExportLookup.Found(
+                        AndroidDocumentHandle(
+                            uri = uri,
+                            name = lookup.value.name,
+                        ),
+                    )
+                }
             }
-        } catch (_: Exception) {
-            ExportLookup.Unavailable
+            ExportLookup.Missing -> ExportLookup.Missing
+            ExportLookup.Unavailable -> ExportLookup.Unavailable
         }
     }
 
@@ -42,43 +58,57 @@ class AndroidSafDocumentStore(context: Context) : ExportDocumentStore {
         parent: ExportDirectoryHandle,
         name: String,
     ): ExportLookup<ExportDirectoryHandle> {
-        val directory = parent.androidDirectoryOrNull() ?: return ExportLookup.Unavailable
-        return try {
-            val child = directory.findFile(name) ?: return ExportLookup.Missing
-            if (!child.isDirectory) {
-                ExportLookup.Unavailable
-            } else {
-                ExportLookup.Found(AndroidDirectoryHandle(child))
+        val parentUri = parent.androidDirectoryUriOrNull() ?: return ExportLookup.Unavailable
+        return when (val lookup = findChild(parentUri, name)) {
+            is ExportLookup.Found -> {
+                if (!lookup.value.isDirectory) {
+                    ExportLookup.Unavailable
+                } else {
+                    ExportLookup.Found(AndroidDirectoryHandle(lookup.value.uri))
+                }
             }
-        } catch (_: Exception) {
-            ExportLookup.Unavailable
+            ExportLookup.Missing -> ExportLookup.Missing
+            ExportLookup.Unavailable -> ExportLookup.Unavailable
         }
     }
 
     override fun createDirectory(
         parent: ExportDirectoryHandle,
         name: String,
-    ): ExportDirectoryHandle? = runCatching {
-        parent.androidDirectoryOrNull()
-            ?.createDirectory(name)
-            ?.takeIf(DocumentFile::isDirectory)
-            ?.let(::AndroidDirectoryHandle)
-    }.getOrNull()
+    ): ExportDirectoryHandle? {
+        val parentUri = parent.androidDirectoryUriOrNull() ?: return null
+        return try {
+            DocumentsContract.createDocument(
+                resolver,
+                parentUri,
+                DocumentsContract.Document.MIME_TYPE_DIR,
+                name,
+            )?.let(::AndroidDirectoryHandle)
+        } catch (_: Exception) {
+            null
+        }
+    }
 
     override fun findFile(
         parent: ExportDirectoryHandle,
         name: String,
     ): ExportLookup<ExportDocumentHandle> {
-        val directory = parent.androidDirectoryOrNull() ?: return ExportLookup.Unavailable
-        return try {
-            val child = directory.findFile(name) ?: return ExportLookup.Missing
-            if (!child.isFile) {
-                ExportLookup.Unavailable
-            } else {
-                ExportLookup.Found(AndroidDocumentHandle(child))
+        val parentUri = parent.androidDirectoryUriOrNull() ?: return ExportLookup.Unavailable
+        return when (val lookup = findChild(parentUri, name)) {
+            is ExportLookup.Found -> {
+                if (lookup.value.isDirectory) {
+                    ExportLookup.Unavailable
+                } else {
+                    ExportLookup.Found(
+                        AndroidDocumentHandle(
+                            uri = lookup.value.uri,
+                            name = lookup.value.name,
+                        ),
+                    )
+                }
             }
-        } catch (_: Exception) {
-            ExportLookup.Unavailable
+            ExportLookup.Missing -> ExportLookup.Missing
+            ExportLookup.Unavailable -> ExportLookup.Unavailable
         }
     }
 
@@ -86,15 +116,25 @@ class AndroidSafDocumentStore(context: Context) : ExportDocumentStore {
         parent: ExportDirectoryHandle,
         mimeType: String,
         displayName: String,
-    ): ExportDocumentHandle? = runCatching {
-        parent.androidDirectoryOrNull()
-            ?.createFile(mimeType, displayName)
-            ?.takeIf(DocumentFile::isFile)
-            ?.let(::AndroidDocumentHandle)
-    }.getOrNull()
+    ): ExportDocumentHandle? {
+        val parentUri = parent.androidDirectoryUriOrNull() ?: return null
+        val createdUri = try {
+            DocumentsContract.createDocument(resolver, parentUri, mimeType, displayName)
+        } catch (_: Exception) {
+            null
+        } ?: return null
+
+        val actualName = when (val lookup = queryDocument(createdUri)) {
+            is ExportLookup.Found -> lookup.value.name
+            ExportLookup.Missing,
+            ExportLookup.Unavailable,
+            -> null
+        }
+        return AndroidDocumentHandle(createdUri, actualName)
+    }
 
     override fun contentHash(document: ExportDocumentHandle): String? {
-        val uri = document.androidDocumentOrNull()?.uri ?: return null
+        val uri = document.androidDocumentUriOrNull() ?: return null
         return try {
             resolver.openInputStream(uri)?.use { input ->
                 val digest = MessageDigest.getInstance("SHA-256")
@@ -112,7 +152,7 @@ class AndroidSafDocumentStore(context: Context) : ExportDocumentStore {
     }
 
     override fun readBytes(document: ExportDocumentHandle, maxBytes: Int): ByteArray? {
-        val uri = document.androidDocumentOrNull()?.uri ?: return null
+        val uri = document.androidDocumentUriOrNull() ?: return null
         return try {
             resolver.openInputStream(uri)?.use { input ->
                 val output = ByteArrayOutputStream(minOf(maxBytes, DEFAULT_BUFFER_SIZE))
@@ -133,7 +173,7 @@ class AndroidSafDocumentStore(context: Context) : ExportDocumentStore {
     }
 
     override fun writeBytes(document: ExportDocumentHandle, bytes: ByteArray): Boolean {
-        val uri = document.androidDocumentOrNull()?.uri ?: return false
+        val uri = document.androidDocumentUriOrNull() ?: return false
         return try {
             resolver.openOutputStream(uri, "wt")?.use { output ->
                 output.write(bytes)
@@ -146,34 +186,147 @@ class AndroidSafDocumentStore(context: Context) : ExportDocumentStore {
         }
     }
 
-    override fun delete(document: ExportDocumentHandle): Boolean =
-        runCatching { document.androidDocumentOrNull()?.delete() == true }.getOrDefault(false)
+    override fun delete(document: ExportDocumentHandle): Boolean {
+        val uri = document.androidDocumentUriOrNull() ?: return false
+        return deleteUri(uri)
+    }
 
     override fun deleteByUri(documentUri: String): Boolean {
         val uri = documentUri.toUriOrNull() ?: return false
-        return try {
-            DocumentsContract.deleteDocument(resolver, uri)
-        } catch (_: SecurityException) {
-            false
+        return deleteUri(uri)
+    }
+
+    private fun findChild(parentUri: Uri, name: String): ExportLookup<DocumentRow> {
+        val childrenUri = try {
+            DocumentsContract.buildChildDocumentsUriUsingTree(
+                parentUri,
+                DocumentsContract.getDocumentId(parentUri),
+            )
         } catch (_: Exception) {
-            false
+            return ExportLookup.Unavailable
+        }
+
+        return try {
+            resolver.query(childrenUri, CHILD_PROJECTION, null, null, null)?.use { cursor ->
+                val idIndex = cursor.requireColumn(DocumentsContract.Document.COLUMN_DOCUMENT_ID)
+                    ?: return@use ExportLookup.Unavailable
+                val nameIndex = cursor.requireColumn(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
+                    ?: return@use ExportLookup.Unavailable
+                val mimeIndex = cursor.requireColumn(DocumentsContract.Document.COLUMN_MIME_TYPE)
+                    ?: return@use ExportLookup.Unavailable
+                val flagsIndex = cursor.getColumnIndex(DocumentsContract.Document.COLUMN_FLAGS)
+
+                var match: DocumentRow? = null
+                while (cursor.moveToNext()) {
+                    if (cursor.getString(nameIndex) != name) continue
+                    if (match != null) return@use ExportLookup.Unavailable
+                    val documentId = cursor.getString(idIndex) ?: return@use ExportLookup.Unavailable
+                    val childUri = DocumentsContract.buildDocumentUriUsingTree(parentUri, documentId)
+                    match = DocumentRow(
+                        uri = childUri,
+                        name = cursor.getString(nameIndex),
+                        mimeType = cursor.getString(mimeIndex),
+                        flags = cursor.longOrZero(flagsIndex),
+                    )
+                }
+                match?.let(ExportLookup::Found) ?: ExportLookup.Missing
+            } ?: ExportLookup.Unavailable
+        } catch (_: Exception) {
+            ExportLookup.Unavailable
         }
     }
 
-    private fun ExportDirectoryHandle.androidDirectoryOrNull(): DocumentFile? =
-        (this as? AndroidDirectoryHandle)?.document
+    private fun queryDocument(uri: Uri): ExportLookup<DocumentRow> = try {
+        resolver.query(uri, DOCUMENT_PROJECTION, null, null, null)?.use { cursor ->
+            if (!cursor.moveToFirst()) return@use ExportLookup.Missing
+            val nameIndex = cursor.requireColumn(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
+                ?: return@use ExportLookup.Unavailable
+            val mimeIndex = cursor.requireColumn(DocumentsContract.Document.COLUMN_MIME_TYPE)
+                ?: return@use ExportLookup.Unavailable
+            val flagsIndex = cursor.getColumnIndex(DocumentsContract.Document.COLUMN_FLAGS)
+            ExportLookup.Found(
+                DocumentRow(
+                    uri = uri,
+                    name = cursor.getString(nameIndex),
+                    mimeType = cursor.getString(mimeIndex),
+                    flags = cursor.longOrZero(flagsIndex),
+                ),
+            )
+        } ?: ExportLookup.Unavailable
+    } catch (_: Exception) {
+        ExportLookup.Unavailable
+    }
 
-    private fun ExportDocumentHandle.androidDocumentOrNull(): DocumentFile? =
-        (this as? AndroidDocumentHandle)?.document
+    private fun DocumentRow.canWrite(): Boolean {
+        if (
+            appContext.checkCallingOrSelfUriPermission(
+                uri,
+                Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return false
+        }
+        if (mimeType.isNullOrBlank()) return false
+        if ((flags and DocumentsContract.Document.FLAG_SUPPORTS_DELETE.toLong()) != 0L) return true
+        return if (isDirectory) {
+            (flags and DocumentsContract.Document.FLAG_DIR_SUPPORTS_CREATE.toLong()) != 0L
+        } else {
+            (flags and DocumentsContract.Document.FLAG_SUPPORTS_WRITE.toLong()) != 0L
+        }
+    }
+
+    private fun deleteUri(uri: Uri): Boolean = try {
+        DocumentsContract.deleteDocument(resolver, uri)
+    } catch (_: Exception) {
+        false
+    }
+
+    private fun Cursor.requireColumn(name: String): Int? =
+        getColumnIndex(name).takeIf { it >= 0 }
+
+    private fun Cursor.longOrZero(index: Int): Long =
+        if (index >= 0 && !isNull(index)) getLong(index) else 0L
+
+    private fun ExportDirectoryHandle.androidDirectoryUriOrNull(): Uri? =
+        (this as? AndroidDirectoryHandle)?.androidUri
+
+    private fun ExportDocumentHandle.androidDocumentUriOrNull(): Uri? =
+        (this as? AndroidDocumentHandle)?.androidUri
 
     private fun String.toUriOrNull(): Uri? = runCatching(Uri::parse).getOrNull()
 
-    private class AndroidDirectoryHandle(val document: DocumentFile) : ExportDirectoryHandle {
-        override val uri: String = document.uri.toString()
+    private data class DocumentRow(
+        val uri: Uri,
+        val name: String?,
+        val mimeType: String?,
+        val flags: Long,
+    ) {
+        val isDirectory: Boolean
+            get() = mimeType == DocumentsContract.Document.MIME_TYPE_DIR
     }
 
-    private class AndroidDocumentHandle(val document: DocumentFile) : ExportDocumentHandle {
-        override val uri: String = document.uri.toString()
-        override val name: String? = document.name
+    private class AndroidDirectoryHandle(val androidUri: Uri) : ExportDirectoryHandle {
+        override val uri: String = androidUri.toString()
+    }
+
+    private class AndroidDocumentHandle(
+        val androidUri: Uri,
+        override val name: String?,
+    ) : ExportDocumentHandle {
+        override val uri: String = androidUri.toString()
+    }
+
+    companion object {
+        private val DOCUMENT_PROJECTION = arrayOf(
+            DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+            DocumentsContract.Document.COLUMN_MIME_TYPE,
+            DocumentsContract.Document.COLUMN_FLAGS,
+        )
+        private val CHILD_PROJECTION = arrayOf(
+            DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+            DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+            DocumentsContract.Document.COLUMN_MIME_TYPE,
+            DocumentsContract.Document.COLUMN_FLAGS,
+        )
     }
 }
