@@ -2,6 +2,9 @@ package com.weekssa.opraeqforuapp.domain.blackpearl
 
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
+import com.weekssa.opraeqforuapp.domain.hardware.HardwareEqDeviceSpecs
+import com.weekssa.opraeqforuapp.domain.kt02h20.FiveBandOptimizationResult
+import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FiveBandOptimizer
 import java.util.Locale
 
 sealed interface BlackPearlFlashPlan {
@@ -9,17 +12,22 @@ sealed interface BlackPearlFlashPlan {
         val reports: List<ByteArray>,
         val requiredPlaybackGainDb: Double,
         val fidelity: DevicePresetFidelity,
+        /** Legacy diagnostic count; optimized profiles are response-fitted, not first-N truncated. */
         val omittedBandCount: Int,
         val warning: String? = null,
+        val representationVersion: Int = 1,
+        val rmsErrorDb: Double = 0.0,
+        val maxAbsoluteErrorDb: Double = 0.0,
     ) : BlackPearlFlashPlan
 
     data class NotRepresentable(val reason: String) : BlackPearlFlashPlan
 }
 
 /**
- * Builds the Black Pearl PEQ portion of a direct-Flash transaction. Global playback-gain
- * application is handled by [BlackPearlFlasher] after it reads the current hardware state, because
- * representability depends on the current gain and the previous EQ Library-applied adjustment.
+ * Builds the Black Pearl PEQ portion of a direct-Flash transaction from the shared hardware
+ * adaptation plan. Global playback-gain application is handled by [BlackPearlFlasher] after it reads
+ * current hardware state, because final absolute representability depends on that baseline and the
+ * previous EQ Library-applied adjustment.
  */
 fun buildBlackPearlFlashPlan(
     profile: OpraEqProfile,
@@ -29,28 +37,20 @@ fun buildBlackPearlFlashPlan(
         return BlackPearlFlashPlan.NotRepresentable("Direct Flash requires a parametric EQ profile.")
     }
 
-    val playbackGainDb = profile.effectivePlaybackPreampDb()
-        ?.takeIf(Double::isFinite)
-        ?: return BlackPearlFlashPlan.NotRepresentable(
-            "This EQ has no source preamp or generated safety headroom, so direct Flash cannot determine a safe playback-gain adjustment.",
-        )
-
-    val sourceBands = profile.bands.orEmpty()
-    if (sourceBands.isEmpty()) {
-        return BlackPearlFlashPlan.NotRepresentable("This EQ has no flashable parametric bands.")
+    val representation = when (
+        val result = Kt02h20FiveBandOptimizer.optimize(profile, HardwareEqDeviceSpecs.TRN_BLACK_PEARL)
+    ) {
+        is FiveBandOptimizationResult.NotSuitable -> return BlackPearlFlashPlan.NotRepresentable(result.reason)
+        is FiveBandOptimizationResult.Ready -> result.representation
     }
 
-    val selectedBands = sourceBands.take(BlackPearlProtocol.BAND_COUNT)
-    val prepared = selectedBands.mapIndexed { index, band ->
-        val type = band.type
-            ?: return BlackPearlFlashPlan.NotRepresentable("Band ${index + 1} is missing its filter type.")
-        val frequency = band.frequency
-            ?: return BlackPearlFlashPlan.NotRepresentable("Band ${index + 1} is missing its frequency.")
-        val gain = band.gainDb
-            ?: return BlackPearlFlashPlan.NotRepresentable("Band ${index + 1} is missing its gain.")
-        val q = band.q
-            ?: return BlackPearlFlashPlan.NotRepresentable("Band ${index + 1} is missing its Q value.")
-        BlackPearlProtocol.Band(type, frequency, gain, q).also { preparedBand ->
+    val prepared = representation.bands.mapIndexed { index, band ->
+        BlackPearlProtocol.Band(
+            type = band.type,
+            frequencyHz = band.frequencyHz,
+            gainDb = band.gainDb,
+            q = band.q,
+        ).also { preparedBand ->
             val failure = runCatching {
                 BlackPearlProtocol.writeBandReport(index, preparedBand, activeSlot)
             }.exceptionOrNull()
@@ -62,12 +62,12 @@ fun buildBlackPearlFlashPlan(
         }
     }
 
-    val omitted = (sourceBands.size - prepared.size).coerceAtLeast(0)
     val warnings = buildList {
-        if (omitted > 0) {
+        if (representation.fidelity == DevicePresetFidelity.OPTIMIZED) {
             add(
-                "Black Pearl supports 10 EQ bands. The first 10 source-priority bands will be flashed; " +
-                    "$omitted lower-priority ${if (omitted == 1) "band" else "bands"} will be omitted.",
+                "Black Pearl has 10 hardware PEQ bands. EQ Library fitted the complete source response " +
+                    "to the device instead of truncating it (RMS ${formatMetric(representation.rmsErrorDb)} dB, " +
+                    "max ${formatMetric(representation.maxAbsoluteErrorDb)} dB).",
             )
         }
 
@@ -88,9 +88,14 @@ fun buildBlackPearlFlashPlan(
 
     return BlackPearlFlashPlan.Ready(
         reports = BlackPearlProtocol.flashSequence(prepared, activeSlot),
-        requiredPlaybackGainDb = playbackGainDb,
-        fidelity = if (omitted == 0) DevicePresetFidelity.EXACT else DevicePresetFidelity.OPTIMIZED,
-        omittedBandCount = omitted,
+        requiredPlaybackGainDb = representation.playbackGainDb,
+        fidelity = representation.fidelity,
+        omittedBandCount = (profile.bands.orEmpty().size - prepared.size).coerceAtLeast(0),
         warning = warnings.takeIf(List<String>::isNotEmpty)?.joinToString("\n\n"),
+        representationVersion = representation.representationVersion,
+        rmsErrorDb = representation.rmsErrorDb,
+        maxAbsoluteErrorDb = representation.maxAbsoluteErrorDb,
     )
 }
+
+private fun formatMetric(value: Double): String = String.format(Locale.US, "%.2f", value)
