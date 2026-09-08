@@ -86,7 +86,40 @@ data class FiveBandRepresentation(
     val maxAbsoluteErrorDb: Double,
     val usesGeneratedHeadroom: Boolean,
     val representationVersion: Int = 1,
+    val sourceBandCount: Int = bands.size,
+    val usedResponseFit: Boolean = false,
+    val usesNativeQuantization: Boolean = false,
 )
+
+/** Concise user-facing reason for Exact/Optimized finite-target fidelity. */
+fun FiveBandRepresentation.adaptationSummary(): String {
+    if (fidelity == DevicePresetFidelity.EXACT) return "source values preserved"
+    val reasons = buildList {
+        if (usedResponseFit) {
+            add(
+                if (sourceBandCount != bands.size) {
+                    "$sourceBandCount → ${bands.size} bands · full-response fit"
+                } else {
+                    "full-response fit"
+                },
+            )
+        } else if (usesNativeQuantization) {
+            add(if (usesGeneratedHeadroom) "native hardware rounding" else "native hardware rounding only")
+        }
+        if (usesGeneratedHeadroom) {
+            add("generated headroom ${formatSummaryDb(playbackGainDb)} dB")
+        }
+        if (isEmpty()) add("target-specific adaptation")
+    }
+    return reasons.joinToString(" · ")
+}
+
+private fun formatSummaryDb(value: Double): String {
+    val formatted = String.format(java.util.Locale.US, "%.2f", value)
+        .removeSuffix("0")
+        .replace('-', '−')
+    return if (value > 0.0) "+$formatted" else formatted
+}
 
 sealed interface FiveBandOptimizationResult {
     data class Ready(val representation: FiveBandRepresentation) : FiveBandOptimizationResult
@@ -97,14 +130,16 @@ sealed interface FiveBandOptimizationResult {
  * Deterministically adapts a complete canonical parametric response to a finite hardware PEQ budget.
  *
  * Exact source filters pass through only when they are natively representable at the target's actual
- * storage resolution. Otherwise the full source response is fitted to the available device bands and
- * the quantized result is measured against fixed RMS/max-error gates. Unsupported source filter types
- * fail rather than being silently ignored.
+ * storage resolution. A source that fits the target structurally but needs only native parameter
+ * rounding keeps the same bands and is reported Optimized without invoking the response fitter.
+ * Otherwise the full source response is fitted to the available device bands and the quantized result
+ * is measured against fixed RMS/max-error gates. Unsupported source filter types fail rather than
+ * being silently ignored.
  *
  * Source-authored preamp is preserved subject to native device quantization. When the source omitted
  * preamp, safety headroom is derived from the final quantized device response rather than copied from
- * a different representation. This keeps the policy consistent while allowing a 5-band and 10-band
- * target to require slightly different safe attenuation.
+ * a different representation. Generated headroom is always target-side adaptation and therefore
+ * cannot be labeled Exact.
  */
 object Kt02h20FiveBandOptimizer {
     private const val SAMPLE_RATE_HZ = 48_000.0
@@ -150,25 +185,51 @@ object Kt02h20FiveBandOptimizer {
         val exactBandFit = exactBands.size <= maxBands && exactBands.all { it.fitsExactly(capabilities) }
         val exactQuantizedBands = if (exactBandFit) exactBands.map { quantizeBand(it, spec) } else emptyList()
         val bandQuantizationExact = exactBandFit && exactBands.zip(exactQuantizedBands).all { (a, b) -> a.nearlyEquals(b) }
-        if (bandQuantizationExact) {
+        if (exactBandFit) {
             val playback = playbackGainFor(profile, exactQuantizedBands, spec)
-                ?: return FiveBandOptimizationResult.NotSuitable(
+            if (playback != null) {
+                val sourcePreamp = profile.preampGainDb?.takeIf(Double::isFinite)
+                val sourcePreampExact = sourcePreamp != null && abs(playback.valueDb - sourcePreamp) <= EPSILON
+                if (bandQuantizationExact && sourcePreampExact && !playback.generated) {
+                    return FiveBandOptimizationResult.Ready(
+                        FiveBandRepresentation(
+                            bands = exactQuantizedBands,
+                            playbackGainDb = playback.valueDb,
+                            fidelity = DevicePresetFidelity.EXACT,
+                            rmsErrorDb = 0.0,
+                            maxAbsoluteErrorDb = 0.0,
+                            usesGeneratedHeadroom = false,
+                            representationVersion = spec.representationVersion,
+                            sourceBandCount = sourceBands.size,
+                        ),
+                    )
+                }
+
+                val directMetrics = responseError(sourceResponse, exactQuantizedBands)
+                if (
+                    directMetrics != null &&
+                    directMetrics.rmsDb <= spec.maxRmsErrorDb &&
+                    directMetrics.maxAbsDb <= spec.maxAbsoluteErrorDb
+                ) {
+                    return FiveBandOptimizationResult.Ready(
+                        FiveBandRepresentation(
+                            bands = exactQuantizedBands,
+                            playbackGainDb = playback.valueDb,
+                            fidelity = DevicePresetFidelity.OPTIMIZED,
+                            rmsErrorDb = directMetrics.rmsDb,
+                            maxAbsoluteErrorDb = directMetrics.maxAbsDb,
+                            usesGeneratedHeadroom = playback.generated,
+                            representationVersion = spec.representationVersion,
+                            sourceBandCount = sourceBands.size,
+                            usedResponseFit = false,
+                            usesNativeQuantization = !bandQuantizationExact ||
+                                (sourcePreamp != null && abs(playback.valueDb - sourcePreamp) > EPSILON),
+                        ),
+                    )
+                }
+            } else if (profile.preampGainDb?.takeIf(Double::isFinite) != null) {
+                return FiveBandOptimizationResult.NotSuitable(
                     "The required playback gain is outside ${spec.displayName}'s current capability profile.",
-                )
-            val sourcePreampExact = profile.preampGainDb?.takeIf(Double::isFinite)?.let { sourcePreamp ->
-                abs(playback.valueDb - sourcePreamp) <= EPSILON
-            } ?: true
-            if (sourcePreampExact) {
-                return FiveBandOptimizationResult.Ready(
-                    FiveBandRepresentation(
-                        bands = exactQuantizedBands,
-                        playbackGainDb = playback.valueDb,
-                        fidelity = DevicePresetFidelity.EXACT,
-                        rmsErrorDb = 0.0,
-                        maxAbsoluteErrorDb = 0.0,
-                        usesGeneratedHeadroom = playback.generated,
-                        representationVersion = spec.representationVersion,
-                    ),
                 )
             }
         }
@@ -206,6 +267,9 @@ object Kt02h20FiveBandOptimizer {
                 maxAbsoluteErrorDb = metrics.maxAbsDb,
                 usesGeneratedHeadroom = playback.generated,
                 representationVersion = spec.representationVersion,
+                sourceBandCount = sourceBands.size,
+                usedResponseFit = true,
+                usesNativeQuantization = false,
             ),
         )
     }
