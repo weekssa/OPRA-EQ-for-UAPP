@@ -35,7 +35,7 @@ object HardwareEqDeviceSpecs {
             // here and let the protocol layer perform the exact wire conversion.
             preampStepDb = null,
         ),
-        representationVersion = 2,
+        representationVersion = 3,
     )
 
     val JCALLY_JM12_STOCK = FiveBandDeviceSpec(
@@ -59,7 +59,7 @@ object HardwareEqDeviceSpecs {
             qStep = 0.001,
             preampStepDb = 0.5,
         ),
-        representationVersion = 2,
+        representationVersion = 3,
     )
 
     val TRN_BLACK_PEARL = FiveBandDeviceSpec(
@@ -91,6 +91,6 @@ object HardwareEqDeviceSpecs {
         // per-filter gain range. Wider exact source values are preserved, never clamped.
         optimizerMinGainDb = -10.0,
         optimizerMaxGainDb = 10.0,
-        representationVersion = 2,
+        representationVersion = 3,
     )
 }
