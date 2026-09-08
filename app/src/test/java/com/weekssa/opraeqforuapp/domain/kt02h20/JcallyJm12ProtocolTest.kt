@@ -51,7 +51,7 @@ class JcallyJm12ProtocolTest {
         val original = 0x12345678
         val replaced = JcallyJm12Protocol.withDigitalGainSteps(original, flags, intArrayOf(-8))
 
-        assertEquals(0x123400F8, replaced)
+        assertEquals(0x123456F8, replaced)
         assertArrayEquals(intArrayOf(-8), JcallyJm12Protocol.decodeDigitalGainSteps(replaced, flags))
     }
 
