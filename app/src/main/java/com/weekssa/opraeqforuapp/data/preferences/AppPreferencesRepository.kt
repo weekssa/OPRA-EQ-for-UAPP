@@ -1,13 +1,14 @@
 package com.weekssa.opraeqforuapp.data.preferences
 
-import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.MutablePreferences
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
 import com.weekssa.opraeqforuapp.data.update.AppReleaseInfo
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
@@ -17,16 +18,20 @@ import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ThemeMode
 import com.weekssa.opraeqforuapp.domain.settings.UpdatePreferences
 import java.io.IOException
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.withContext
 
-private val Context.appPreferencesDataStore by preferencesDataStore(name = "app_preferences")
-
-class AppPreferencesRepository(context: Context) {
-    private val appContext = context.applicationContext
+class AppPreferencesRepository(
+    private val dataStore: DataStore<Preferences>,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+) {
     /**
      * Session overlay for the global output context.
      *
@@ -36,7 +41,7 @@ class AppPreferencesRepository(context: Context) {
     private val activeTargetOverride = MutableStateFlow<ExportDevice?>(null)
 
     val preferences: Flow<AppPreferences> = combine(
-        appContext.appPreferencesDataStore.data.catch { exception ->
+        dataStore.data.catch { exception ->
             if (exception is IOException) {
                 emit(emptyPreferences())
             } else {
@@ -84,31 +89,31 @@ class AppPreferencesRepository(context: Context) {
                 postUpdateVersionToShow = preferences[Keys.PostUpdateVersionToShow],
             ),
         )
-    }
+    }.flowOn(ioDispatcher)
 
     suspend fun snapshot(): AppPreferences = preferences.first()
 
-    suspend fun setThemeMode(themeMode: ThemeMode) {
-        appContext.appPreferencesDataStore.edit { preferences ->
-            preferences[Keys.ThemeMode] = themeMode.storageValue
-        }
+    suspend fun setThemeMode(themeMode: ThemeMode) = updatePreferences { preferences ->
+        preferences[Keys.ThemeMode] = themeMode.storageValue
     }
 
-    suspend fun setProfileVisibility(category: ProfileVisibilityCategory, visible: Boolean) {
-        appContext.appPreferencesDataStore.edit { preferences ->
+    suspend fun setProfileVisibility(category: ProfileVisibilityCategory, visible: Boolean) =
+        updatePreferences { preferences ->
             when (category) {
                 ProfileVisibilityCategory.FullyCompatible -> preferences[Keys.ShowFullyCompatible] = visible
                 ProfileVisibilityCategory.CompatibleWithLimitation -> preferences[Keys.ShowCompatibleWithLimitation] = visible
                 ProfileVisibilityCategory.NotCompatible -> preferences[Keys.ShowNotCompatible] = visible
             }
         }
-    }
 
     suspend fun setExportTargetEnabled(device: ExportDevice, enabled: Boolean) {
         if (!device.selectableInV03) return
         var nextActive: ExportDevice? = null
-        appContext.appPreferencesDataStore.edit { preferences ->
-            val current = outputPreferences(preferences[Keys.SelectedExportTargets], preferences[Keys.ActiveExportTarget])
+        updatePreferences { preferences ->
+            val current = outputPreferences(
+                preferences[Keys.SelectedExportTargets],
+                preferences[Keys.ActiveExportTarget],
+            )
             val next = current.withTarget(device, enabled)
             preferences[Keys.SelectedExportTargets] = next.selectedTargets.mapTo(mutableSetOf()) { it.name }
             preferences[Keys.ActiveExportTarget] = next.activeTarget.name
@@ -121,36 +126,33 @@ class AppPreferencesRepository(context: Context) {
         if (!device.selectableInV03) return
         // Publish first so My EQs, EQ Library, and every callback switch operating context together.
         activeTargetOverride.value = device
-        appContext.appPreferencesDataStore.edit { preferences ->
-            val current = outputPreferences(preferences[Keys.SelectedExportTargets], preferences[Keys.ActiveExportTarget])
+        updatePreferences { preferences ->
+            val current = outputPreferences(
+                preferences[Keys.SelectedExportTargets],
+                preferences[Keys.ActiveExportTarget],
+            )
             val next = current.withActiveTarget(device)
             preferences[Keys.SelectedExportTargets] = next.selectedTargets.mapTo(mutableSetOf()) { it.name }
             preferences[Keys.ActiveExportTarget] = next.activeTarget.name
         }
     }
 
-    suspend fun setDirectBlackPearlFlashEnabled(enabled: Boolean) {
-        appContext.appPreferencesDataStore.edit { preferences ->
-            preferences[Keys.DirectBlackPearlFlashEnabled] = enabled
-        }
+    suspend fun setDirectBlackPearlFlashEnabled(enabled: Boolean) = updatePreferences { preferences ->
+        preferences[Keys.DirectBlackPearlFlashEnabled] = enabled
     }
 
-    suspend fun setDirectFiioJa11FlashEnabled(enabled: Boolean) {
-        appContext.appPreferencesDataStore.edit { preferences ->
-            preferences[Keys.DirectFiioJa11FlashEnabled] = enabled
-        }
+    suspend fun setDirectFiioJa11FlashEnabled(enabled: Boolean) = updatePreferences { preferences ->
+        preferences[Keys.DirectFiioJa11FlashEnabled] = enabled
     }
 
-    suspend fun setDirectJcallyJm12FlashEnabled(enabled: Boolean) {
-        appContext.appPreferencesDataStore.edit { preferences ->
-            preferences[Keys.DirectJcallyJm12FlashEnabled] = enabled
-        }
+    suspend fun setDirectJcallyJm12FlashEnabled(enabled: Boolean) = updatePreferences { preferences ->
+        preferences[Keys.DirectJcallyJm12FlashEnabled] = enabled
     }
 
     suspend fun hideCanonicalProfiles(canonicalProfileIds: Set<String>) {
         val cleanIds = canonicalProfileIds.filterTo(mutableSetOf()) { it.isNotBlank() }
         if (cleanIds.isEmpty()) return
-        appContext.appPreferencesDataStore.edit { preferences ->
+        updatePreferences { preferences ->
             preferences[Keys.HiddenCanonicalProfileIds] =
                 preferences[Keys.HiddenCanonicalProfileIds].orEmpty() + cleanIds
         }
@@ -158,7 +160,7 @@ class AppPreferencesRepository(context: Context) {
 
     suspend fun unhideCanonicalProfiles(canonicalProfileIds: Set<String>) {
         if (canonicalProfileIds.isEmpty()) return
-        appContext.appPreferencesDataStore.edit { preferences ->
+        updatePreferences { preferences ->
             val remaining = preferences[Keys.HiddenCanonicalProfileIds].orEmpty() - canonicalProfileIds
             if (remaining.isEmpty()) {
                 preferences.remove(Keys.HiddenCanonicalProfileIds)
@@ -168,53 +170,48 @@ class AppPreferencesRepository(context: Context) {
         }
     }
 
-    suspend fun setExportTree(uri: String, label: String) {
-        appContext.appPreferencesDataStore.edit { preferences ->
-            preferences[Keys.ExportTreeUri] = uri
-            preferences[Keys.ExportTreeLabel] = label
-        }
+    suspend fun setExportTree(uri: String, label: String) = updatePreferences { preferences ->
+        preferences[Keys.ExportTreeUri] = uri
+        preferences[Keys.ExportTreeLabel] = label
     }
 
-    suspend fun initializeInstalledVersion(currentVersion: String) {
-        appContext.appPreferencesDataStore.edit { preferences ->
-            val previous = preferences[Keys.LastSeenInstalledVersion]
-            when {
-                previous == null -> {
-                    preferences[Keys.LastSeenInstalledVersion] = currentVersion
-                    preferences.remove(Keys.PostUpdateVersionToShow)
-                }
-                previous != currentVersion -> {
-                    preferences[Keys.LastSeenInstalledVersion] = currentVersion
-                    preferences[Keys.PostUpdateVersionToShow] = currentVersion
-                }
+    suspend fun initializeInstalledVersion(currentVersion: String) = updatePreferences { preferences ->
+        val previous = preferences[Keys.LastSeenInstalledVersion]
+        when {
+            previous == null -> {
+                preferences[Keys.LastSeenInstalledVersion] = currentVersion
+                preferences.remove(Keys.PostUpdateVersionToShow)
+            }
+            previous != currentVersion -> {
+                preferences[Keys.LastSeenInstalledVersion] = currentVersion
+                preferences[Keys.PostUpdateVersionToShow] = currentVersion
             }
         }
     }
 
-    suspend fun markUpdateCheckAttempt(atMillis: Long) {
-        appContext.appPreferencesDataStore.edit { preferences ->
-            preferences[Keys.LastUpdateCheckAttemptMillis] = atMillis
-        }
+    suspend fun markUpdateCheckAttempt(atMillis: Long) = updatePreferences { preferences ->
+        preferences[Keys.LastUpdateCheckAttemptMillis] = atMillis
     }
 
-    suspend fun storeLatestRelease(release: AppReleaseInfo, checkedAtMillis: Long) {
-        appContext.appPreferencesDataStore.edit { preferences ->
+    suspend fun storeLatestRelease(release: AppReleaseInfo, checkedAtMillis: Long) =
+        updatePreferences { preferences ->
             preferences[Keys.LastUpdateCheckAttemptMillis] = checkedAtMillis
             preferences[Keys.LatestReleaseVersion] = release.version
             preferences[Keys.LatestReleaseUrl] = release.releaseUrl
             preferences[Keys.LatestReleaseNotes] = release.notes
         }
+
+    suspend fun dismissUpdate(version: String) = updatePreferences { preferences ->
+        preferences[Keys.DismissedUpdateVersion] = version
     }
 
-    suspend fun dismissUpdate(version: String) {
-        appContext.appPreferencesDataStore.edit { preferences ->
-            preferences[Keys.DismissedUpdateVersion] = version
-        }
+    suspend fun dismissPostUpdateCard() = updatePreferences { preferences ->
+        preferences.remove(Keys.PostUpdateVersionToShow)
     }
 
-    suspend fun dismissPostUpdateCard() {
-        appContext.appPreferencesDataStore.edit { preferences ->
-            preferences.remove(Keys.PostUpdateVersionToShow)
+    private suspend fun updatePreferences(block: (MutablePreferences) -> Unit) {
+        withContext(ioDispatcher) {
+            dataStore.edit { preferences -> block(preferences) }
         }
     }
 
@@ -244,7 +241,6 @@ class AppPreferencesRepository(context: Context) {
         val DirectFiioJa11FlashEnabled = booleanPreferencesKey("direct_fiio_ja11_flash_enabled")
         val DirectJcallyJm12FlashEnabled = booleanPreferencesKey("direct_jcally_jm12_flash_enabled")
         val HiddenCanonicalProfileIds = stringSetPreferencesKey("hidden_canonical_profile_ids")
-        // Legacy v0.3 preview key intentionally left unread. Output selection no longer hides library curves.
         @Suppress("unused")
         val ShowUnexportablePresets = booleanPreferencesKey("show_unexportable_presets")
         val ExportTreeUri = stringPreferencesKey("export_tree_uri")
