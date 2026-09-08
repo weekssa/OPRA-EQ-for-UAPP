@@ -17,6 +17,12 @@ EQ Library supports the **JCALLY JM12 on stock firmware** as its own hardware ou
 
 It must not update firmware, enter bootloader mode, alter USB identity, cross-flash FiiO firmware, manipulate ADC EQ/DRC/reconstruction controls, or expose unrelated DAC settings.
 
+## File interchange status
+
+The v0.5 investigation did **not** establish a sufficiently verified stock-JM12 external preset-file interchange contract that EQ Library can safely generate and claim as importable. Stock JM12 therefore remains a hardware-only Direct Flash output in v0.5.
+
+This does not remove Direct Flash. If a real repeatable stock-JM12 file format is independently verified later, file export may be added **alongside** Direct Flash. Do not invent a `.txt`, JSON, binary, or other preset format merely to make the device file-capable.
+
 ## Clean-room / licensing boundary
 
 The Kotlin implementation is independently written from observable protocol facts. Copyleft/public reverse-engineering projects may be used to corroborate wire behavior, but their source implementation is not copied into this Apache-2.0 repository.
@@ -103,7 +109,7 @@ Current provisional stock-JM12 fitting profile pending physical qualification:
 - Q: 0.1 .. 20.0
 - playback-gain adjustment used by EQ Library: -24 dB .. +12 dB
 
-Source values are never silently clamped in canonical data. The shared deterministic five-band fitter may generate an Optimized representation only if the complete source response meets its error thresholds.
+Source values are never silently clamped in canonical data. If a source fits the five-band structure but needs only native stock-JM12 rounding, keep the source filter structure and report **Optimized · native hardware rounding only** rather than unnecessarily fitting a different curve. When direct representation is impossible, the shared deterministic five-band fitter may generate an Optimized complete-response approximation only if error thresholds pass. Missing source preamp uses generated target headroom and is Optimized. Canonical source data remains unchanged.
 
 ## Digital playback gain and tracked delta
 
@@ -136,6 +142,8 @@ If a band/register transfer fails after EQ has been bypassed, the implementation
 **No independently corroborated stock-firmware run-mode “save EQ to flash” command has been established for this protocol.** The implementation therefore does not invent one and does not claim persistence merely because live register writes succeed.
 
 The UI and result messages state that **power-cycle persistence is hardware-validation pending**. The hands-on checklist explicitly tests unplug/reconnect/full power-cycle behavior. If stock firmware does persist the registers automatically, that fact can be documented after a physical PASS. If it does not, v0.5 must continue to describe Direct Flash as a verified live write rather than persistent save.
+
+The absence of an explicit Save command is independent from the absence of a verified external preset-file format. Neither uncertainty is a reason to remove the working Direct Flash implementation.
 
 ## Reset to flat
 
