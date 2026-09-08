@@ -13,6 +13,7 @@ Before substantive work, read this file and the current documents relevant to th
 - `docs/V0.3_LOCKED_EXECUTION_PLAN.md`
 - `docs/V0.3_RELEASE_POLISH_PLAN.md`
 - `docs/V0.5_KT02H20_IMPLEMENTATION_PLAN.md` for the current output registry, shared hardware response adapter, FiiO JA11, and stock JCALLY JM12 work
+- `docs/V0.5_IMPORT_COMPATIBILITY_NOTES.md` when file-import/export compatibility, TOPPING Tune, Black Pearl text import, or output-fidelity wording is involved
 - `docs/BLACK_PEARL_PROTOCOL_NOTES.md` when Black Pearl behavior is involved
 - `docs/FIIO_JA11_PROTOCOL_NOTES.md` and `docs/FIIO_JA11_HANDS_ON_CHECKLIST.md` when JA11 behavior is involved
 - `docs/JCALLY_JM12_PROTOCOL_NOTES.md` and `docs/JCALLY_JM12_HANDS_ON_CHECKLIST.md` when JM12 behavior is involved
@@ -138,8 +139,17 @@ Hardware-only outputs do not invent export files. Their deterministic derived re
 Use fidelity states consistently:
 
 - **Exact** — source is natively representable at the target's actual limits/quantization without target-side acoustic alteration or generated headroom.
-- **Optimized** — EQ Library deterministically derives a faithful target representation and it passes that target's quality/safety gates.
+- **Optimized** — EQ Library deterministically derives a faithful target representation and it passes that target's quality/safety gates. Native target rounding, complete-response fitting, and EQ Library-generated target headroom are all Optimized rather than Exact.
 - **Not suitable / Not exportable** — a safe/faithful representation cannot be produced.
+
+For finite hardware, show a concise reason separate from source/catalog description text. Prefer wording such as:
+
+- `Exact · source values preserved`
+- `Optimized · native hardware rounding only`
+- `Optimized · 14 → 10 bands · full-response fit`
+- `Optimized · generated headroom −3.0 dB`
+
+Do not force redundant `N → N bands` wording when no band-budget change occurred. If a source fits the target band structure and needs only native rounding, preserve that structure rather than unnecessarily invoking the response fitter.
 
 Changing output capability code must not mutate canonical data.
 
@@ -170,12 +180,13 @@ Rules:
 
 - complete canonical source remains unchanged;
 - unsupported source filter types fail rather than being ignored;
-- exact native values pass only when target range and target quantization truly preserve them;
+- exact native values pass only when target range and target quantization truly preserve them and the source provides an exactly representable preamp;
+- if the source fits the available band structure but needs only native target rounding, preserve the same filter structure and report Optimized/native rounding rather than fitting a different curve;
 - otherwise fit the **complete source response** to the available target bands;
 - never silently take the first N bands for these hardware targets;
 - quantize only at the device boundary;
 - require fixed RMS/max-error gates for Optimized output;
-- generate missing-preamp safety headroom from the final quantized target response without mutating canonical preamp/headroom metadata;
+- generate missing-preamp safety headroom from the final quantized target response without mutating canonical preamp/headroom metadata, and always classify that generated target headroom as Optimized;
 - version derived representation semantics so output currentness changes when the adapter contract changes.
 
 Historical internal class names containing `Kt02h20` or `FiveBand` are implementation-compatibility names only; do not infer a product limitation from those names.
@@ -193,6 +204,8 @@ v0.5 changes **derived DSP adaptation**, not the qualified Black Pearl USB ident
 - unsupported/non-finite/unencodable filters and absolute global-gain limits remain blocking;
 - UI Flash preview must consume the same `BlackPearlFlashPlan` as the transaction so fidelity/gain/warnings cannot disagree.
 
+Black Pearl file export is standard AutoEq-style text specialized for the verified pyBlackPearl importer. Use `PK / LS / HS` for Peak / Low Shelf / High Shelf in this serializer; do not reuse generic `LSC / HSC` shelf tokens here. pyBlackPearl limits imported preamp to approximately `-16 dB..+6 dB`; EQ Library still exports the true derived preamp unchanged and warns about importer-side adjustment rather than clamping or disabling an otherwise importable file. File-import limitations never remove valid Direct Flash functionality. Do not imply that every third-party Black Pearl controller handles shelves correctly.
+
 Global playback gain uses the observed `0x03` command in 1/256 dB units. Replace the previous EQ Library-applied tracked delta rather than stacking attenuation. Preserve unrelated DAC settings.
 
 Because v0.5 changes Black Pearl response derivation, require a focused Black Pearl regression smoke on the exact release candidate even though the transport protocol itself was previously qualified.
@@ -205,6 +218,8 @@ Strict identity/protocol facts are maintained in `docs/FIIO_JA11_PROTOCOL_NOTES.
 
 Direct Flash toggle defaults OFF. The app must build/validate the entire target before writes, write all five slots including validated flat padding, apply, read back, save, and verify as required. Do not report success early. Reset returns all five bands and global EQ gain to flat/0 dB, verifies, saves, and verifies again.
 
+No sufficiently verified JA11 local preset-file interchange format has been established for v0.5. Keep Direct Flash intact and do not invent a file. A future verified file format may be added alongside Direct Flash.
+
 No firmware/bootloader/cross-flash or unrelated-control commands.
 
 ## 13. Stock JCALLY JM12 Direct Flash
@@ -216,6 +231,8 @@ Strict identity/protocol facts are maintained in `docs/JCALLY_JM12_PROTOCOL_NOTE
 The implementation preserves unrelated register bytes and tracks only EQ Library's relative playback-gain delta so later Flash/Reset can replace/remove the app-applied adjustment.
 
 There is **no independently corroborated explicit stock-JM12 Save command**. Never claim persistence across a full power cycle until physical testing proves it. If the device resets EQ/gain on power loss, app-side tracked-gain state must be made robust against stale hardware state before qualification.
+
+No sufficiently verified stock-JM12 local preset-file interchange format has been established for v0.5. Keep Direct Flash intact and do not invent a file. A future verified file format may be added alongside Direct Flash.
 
 No JA11 firmware is required or suggested. No firmware/bootloader/cross-flash or unrelated-control commands.
 
@@ -233,9 +250,18 @@ Major user-facing features require UX/behavior approval before implementation. F
 
 Final hardware support requires the exact-candidate Pixel 9 hands-on gate. Do not remove **Hardware validation pending** or make stable-release qualification claims before the applicable checklist passes.
 
-## 15. Export and storage
+## 15. Export, import targets, and storage
+
+Use terminology consistently:
+
+- **Add to My EQs / Save** stores output-specific local membership;
+- **Export** writes a verified external preset/import file;
+- **Direct Flash** writes a supported DAC over USB only after explicit confirmation;
+- **saved to device / persists** is used only when hardware persistence is established.
 
 For file-capable outputs, Add/Save initiates normal initial export once Storage Access Framework access exists. Export/Export all are recovery/currentness actions and stay hidden when expected app-owned files are current.
+
+**TOPPING Tune** is a selectable Apps output using `.txt · AutoEq parametric · 10 bands`. Official TOPPING material documents AutoEq import, up to ten bands, ±12 dB preamp and filter gain, Q 0.1..15, supported Peak/Low Shelf/High Shelf filters, and direct numeric entry. Use the shared complete-response finite-target path when adaptation is required; never first-10 truncate. TOPPING's public documentation does not establish downstream device storage quantization, so do not invent hardware precision or claim Exact downstream fidelity. Until that precision is independently qualified, product-facing TOPPING Tune exports are conservatively reported Optimized even when source values are preserved at deterministic AutoEq text precision.
 
 Use Android's system folder/document picker and persisted supported access. Suggest a sensible Documents location but let the user choose. Never request broad storage access or write to another app's private storage.
 
@@ -254,13 +280,17 @@ For v0.5 also require coverage for:
 - output-registry categories/file-vs-hardware semantics;
 - target capability/fidelity classification;
 - exact hardware quantization;
+- native hardware rounding without unnecessary response fitting;
 - deterministic complete-response fitting;
-- target-derived generated headroom without canonical mutation;
+- target-derived generated headroom without canonical mutation and never labeled Exact;
 - protocol golden vectors/readback ordering/failure handling;
 - wrong-device/permission/disconnect behavior;
 - Direct Flash default-OFF behavior;
 - reset behavior;
 - Black Pearl file/Flash plan parity;
+- Black Pearl pyBlackPearl `PK / LS / HS` syntax and importer-side preamp warning without app-side clamp;
+- TOPPING Tune standard AutoEq syntax, complete-response 10-band adaptation, no source-preamp clamp, and conservative precision-pending fidelity;
+- JA11/JM12 fileless behavior while Direct Flash remains intact;
 - versioned derived-representation fingerprints/currentness.
 
 Before physical qualification, require the exact candidate to pass applicable Android unit tests, lint, debug/release assembly, catalog/currentness gates, priority-community coverage, CodeQL, dependency submission, signed-beta build/alignment/signature/certificate checks, and mobile-test publication.
@@ -273,7 +303,7 @@ Use SemVer. Development remains `0.x`; first stable is `v1.0.0`. Maintain `CHANG
 
 Public distribution initially uses GitHub Releases and one stable release-signing identity. The app may check latest public release metadata and show a nonblocking update banner, What's new, and Get update link. No notification permission, silent APK download/install, or unknown-app install permission in v1.
 
-Preserve OPRA and individual creator/source attribution. Do not imply endorsement by OPRA, Roon Labs, UAPP, ToneBoosters, TRN, FiiO, JCALLY, output-app vendors, or headphone manufacturers.
+Preserve OPRA and individual creator/source attribution. Do not imply endorsement by OPRA, Roon Labs, UAPP, ToneBoosters, TRN, FiiO, JCALLY, TOPPING, output-app vendors, or headphone manufacturers.
 
 ## 18. Communication and execution discipline
 
