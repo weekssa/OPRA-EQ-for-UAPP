@@ -88,31 +88,41 @@ class Kt02h20FiveBandOptimizerTest {
     }
 
     @Test
-    fun missingPreampAndMissingGeneratedHeadroomIsNotSuitable() {
+    fun missingSourcePreampGeneratesSafeHeadroomFromFinalTargetResponse() {
         val source = profile(
             preamp = null,
             bands = listOf(band("peak_dip", 1_000.0, 2.0, 1.0)),
         )
 
         val result = Kt02h20FiveBandOptimizer.optimize(source, Kt02h20DeviceSpecs.FIIO_JA11)
+            as FiveBandOptimizationResult.Ready
 
-        assertTrue(result is FiveBandOptimizationResult.NotSuitable)
-        assertTrue((result as FiveBandOptimizationResult.NotSuitable).reason.contains("no source preamp"))
+        assertTrue(result.representation.usesGeneratedHeadroom)
+        assertTrue(result.representation.playbackGainDb <= -1.9)
+        assertTrue(result.representation.playbackGainDb >= -2.1)
+        assertEquals(null, source.preampGainDb)
+        assertEquals(null, source.eqLibrarySafetyHeadroomDb)
     }
 
     @Test
-    fun generatedHeadroomRemainsSeparateFromCanonicalSourcePreamp() {
-        val source = profile(
+    fun generatedHeadroomIgnoresStoredCanonicalHintAndLeavesCanonicalMetadataUntouched() {
+        val withoutHint = profile(
             preamp = null,
             bands = listOf(band("peak_dip", 1_000.0, 2.0, 1.0)),
-        ).copy(eqLibrarySafetyHeadroomDb = -2.5)
+        )
+        val withStaleHint = withoutHint.copy(eqLibrarySafetyHeadroomDb = -9.5)
 
-        val result = Kt02h20FiveBandOptimizer.optimize(source, Kt02h20DeviceSpecs.FIIO_JA11)
+        Kt02h20FiveBandOptimizer.clearCache()
+        val first = Kt02h20FiveBandOptimizer.optimize(withoutHint, Kt02h20DeviceSpecs.FIIO_JA11)
+            as FiveBandOptimizationResult.Ready
+        Kt02h20FiveBandOptimizer.clearCache()
+        val second = Kt02h20FiveBandOptimizer.optimize(withStaleHint, Kt02h20DeviceSpecs.FIIO_JA11)
             as FiveBandOptimizationResult.Ready
 
-        assertEquals(-2.5, result.representation.playbackGainDb, 0.0)
-        assertTrue(result.representation.usesGeneratedHeadroom)
-        assertEquals(null, source.preampGainDb)
+        assertEquals(first.representation.playbackGainDb, second.representation.playbackGainDb, 0.0)
+        assertTrue(second.representation.usesGeneratedHeadroom)
+        assertEquals(null, withStaleHint.preampGainDb)
+        assertEquals(-9.5, withStaleHint.eqLibrarySafetyHeadroomDb!!, 0.0)
     }
 
     private fun profile(preamp: Double?, bands: List<OpraBand>): OpraEqProfile = OpraEqProfile(
