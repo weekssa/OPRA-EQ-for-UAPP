@@ -74,6 +74,8 @@ fun SettingsScreen(
     onThemeModeChange: (ThemeMode) -> Unit,
     onExportTargetChange: (ExportDevice, Boolean) -> Unit,
     onDirectBlackPearlFlashEnabledChange: (Boolean) -> Unit,
+    onDirectFiioJa11FlashEnabledChange: (Boolean) -> Unit,
+    onDirectJcallyJm12FlashEnabledChange: (Boolean) -> Unit,
     hiddenCanonicalProfileIds: Set<String>,
     onUnhideCanonicalProfiles: suspend (Set<String>) -> Unit,
     onMessage: (String) -> Unit,
@@ -146,6 +148,30 @@ fun SettingsScreen(
             )
         }
 
+        if (appPreferences.exportTargets.isSelected(ExportDevice.FIIO_JA11)) {
+            SectionDivider()
+            SectionTitle("FiiO JA11")
+            CheckboxOption(
+                title = "Enable direct Flash",
+                description = "Allow EQ Library to connect to the FiiO JA11 and write 5-band PEQ presets from My EQs. EQs using more than 5 filters are fitted to the JA11's 5-band response when a reliable approximation is possible. Firmware and unrelated DAC controls are never managed.",
+                checked = appPreferences.directFiioJa11FlashEnabled,
+                onCheckedChange = onDirectFiioJa11FlashEnabledChange,
+            )
+            HardwareValidationPendingText()
+        }
+
+        if (appPreferences.exportTargets.isSelected(ExportDevice.JCALLY_JM12)) {
+            SectionDivider()
+            SectionTitle("JCALLY JM12")
+            CheckboxOption(
+                title = "Enable direct Flash",
+                description = "Allow EQ Library to connect to a stock-firmware JCALLY JM12 and write 5-band PEQ presets from My EQs. EQs using more than 5 filters are fitted to the JM12's 5-band response when a reliable approximation is possible. JA11 firmware, firmware flashing, and unrelated DSP controls are never required or managed.",
+                checked = appPreferences.directJcallyJm12FlashEnabled,
+                onCheckedChange = onDirectJcallyJm12FlashEnabledChange,
+            )
+            HardwareValidationPendingText()
+        }
+
         SectionDivider()
         SectionTitle("Library")
         when (catalogState) {
@@ -209,7 +235,7 @@ fun SettingsScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            text = "Selected headphone presets are exported automatically when you Add or Save them. If a managed file is later missing or stale, My EQs exposes recovery Export actions. Suggested location: Documents/EQ Library.",
+            text = "Selected presets are exported automatically on Add/Save only for outputs that use files. Direct-hardware outputs such as JA11 and JM12 keep their generated representation locally and write it only when you explicitly tap Flash. Suggested file location: Documents/EQ Library.",
             modifier = Modifier.padding(top = 4.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -315,6 +341,16 @@ fun SettingsScreen(
 }
 
 @Composable
+private fun HardwareValidationPendingText() {
+    Text(
+        text = "Hardware validation pending",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = 48.dp, bottom = 4.dp),
+    )
+}
+
+@Composable
 private fun AboutEqLibraryScreen(
     onOpenUrl: (String) -> Unit,
     onBack: () -> Unit,
@@ -345,12 +381,12 @@ private fun AboutEqLibraryScreen(
         SectionDivider()
         SectionTitle("Open source & independence")
         Text(
-            text = "EQ Library source code is Apache-2.0. Black Pearl protocol references are studied for observable device behavior only; GPL implementation code is not copied into this project.",
+            text = "EQ Library source code is Apache-2.0. External Black Pearl, FiiO JA11, and JCALLY JM12 tools are studied only for observable device/protocol behavior; copyleft implementation code is not copied into this project.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            text = "EQ Library is not affiliated with or endorsed by OPRA, Roon Labs, USB Audio Player PRO/UAPP, ToneBoosters, TRN, Poweramp, Wavelet, or headphone manufacturers.",
+            text = "EQ Library is not affiliated with or endorsed by OPRA, Roon Labs, USB Audio Player PRO/UAPP, ToneBoosters, TRN, FiiO, JCALLY, Poweramp, Wavelet, or headphone manufacturers.",
             modifier = Modifier.padding(top = 12.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -684,6 +720,8 @@ private fun ThemeOption(
 private fun outputTitle(device: ExportDevice): String = when (device) {
     ExportDevice.UAPP -> "USB Audio Player PRO / ToneBoosters"
     ExportDevice.BLACK_PEARL -> "TRN Black Pearl"
+    ExportDevice.FIIO_JA11 -> "FiiO JA11"
+    ExportDevice.JCALLY_JM12 -> "JCALLY JM12"
     ExportDevice.UNIVERSAL_PARAMETRIC -> "Universal Parametric EQ"
     ExportDevice.POWERAMP -> "Poweramp / Poweramp Equalizer"
     ExportDevice.WAVELET -> "Wavelet"
@@ -694,6 +732,8 @@ private fun outputTitle(device: ExportDevice): String = when (device) {
 private fun outputDescription(device: ExportDevice): String = when (device) {
     ExportDevice.UAPP -> "ToneBoosters XML for USB Audio Player PRO"
     ExportDevice.BLACK_PEARL -> "Preset file export plus optional direct Flash from My EQs"
+    ExportDevice.FIIO_JA11 -> "5-band PEQ with optional direct Flash from My EQs"
+    ExportDevice.JCALLY_JM12 -> "5-band PEQ with optional direct Flash from My EQs"
     ExportDevice.UNIVERSAL_PARAMETRIC -> "Portable AutoEq / Equalizer APO-style parametric text"
     ExportDevice.POWERAMP -> "AutoEq parametric text supported by Poweramp and Poweramp Equalizer"
     ExportDevice.WAVELET -> "Wavelet 127-point GraphicEQ import"
