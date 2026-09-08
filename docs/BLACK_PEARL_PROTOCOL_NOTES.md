@@ -1,6 +1,6 @@
 # TRN Black Pearl Flash protocol notes
 
-Status: implementation and physical validation evidence for v0.3 Direct Flash plus the v0.4.0 **Reset EQ to flat** hardware qualification. This document records observable protocol behavior only. It is not a copy of any reference implementation.
+Status: implementation and physical validation evidence for v0.3 Direct Flash plus the v0.4.0 **Reset EQ to flat** hardware qualification. v0.5 changes target derivation/file compatibility and therefore requires a focused Black Pearl regression on the new exact candidate. This document records observable protocol/import behavior only. It is not a copy of any reference implementation.
 
 ## Licensing boundary
 
@@ -10,7 +10,7 @@ EQ Library is Apache-2.0. The public Black Pearl reference projects reviewed dur
 - `cheesyserg/pyBlackPearl`
 - `DisYaBoiRalph/BlackPearlControl`
 
-Their source code must not be copied into EQ Library. We may independently implement the externally observable USB/HID protocol behavior and standard biquad mathematics, with our own structure, naming, tests, and UX.
+Their source code must not be copied into EQ Library. We may independently implement externally observable USB/HID/import behavior and standard biquad mathematics, with our own structure, naming, tests, and UX.
 
 ## Corroborated device identity and HID envelope
 
@@ -51,6 +51,17 @@ The frequency and Q ranges remain hard validation limits until evidence establis
 
 The packet stores frequency as a little-endian 16-bit integer, Q/gain metadata in 1/256 units, and five normalized biquad coefficients as little-endian 32-bit floats. The coefficient sample rate used by both references is 48 kHz.
 
+## v0.5 target derivation and fidelity
+
+Black Pearl v0.5 file export and Direct Flash consume the same shared ten-band device representation. Canonical source data remains unchanged.
+
+- Source values already on the Black Pearl native grid with an exactly representable source-authored preamp may be **Exact**.
+- A source that fits the same band structure but requires only Black Pearl native rounding remains structurally unchanged and is **Optimized · native hardware rounding only**; it is not unnecessarily curve-fitted.
+- If the source cannot fit directly, the complete source response is deterministically fitted to at most ten target bands and measured after target quantization. Never silently take the first ten source bands for Black Pearl v0.5.
+- If the source omits preamp, conservative headroom is derived from the final target response and the representation is **Optimized** even if every filter itself is natively exact. Generated headroom is derived target metadata, never source authorship.
+
+This v0.5 derivation change invalidates the old software candidate for final hardware qualification and requires a focused Black Pearl regression on the new exact signed candidate.
+
 ## Global playback gain
 
 The Black Pearl global playback gain is observable through command `0x03`. The reviewed Android controller uses raw range `-9472..6440` and derives gain/headroom in 1/256 dB units. Its AutoEq importer uses a convenience percentage approximation for negative preamp; EQ Library does **not** copy that approximation.
@@ -66,7 +77,7 @@ The global playback-gain range remains a hard representability limit. It is sepa
 
 ## Direct-Flash transaction
 
-Approved direct Flash may adjust global playback gain only when required to faithfully apply the selected EQ's preamp/headroom. It still does not expose or alter unrelated Black Pearl controls.
+Approved Direct Flash may adjust global playback gain only when required to faithfully apply the selected EQ's preamp/headroom. It still does not expose or alter unrelated Black Pearl controls.
 
 Transaction behavior:
 
@@ -78,7 +89,7 @@ Transaction behavior:
 6. Send the temporary/latch command.
 7. Send the flash/save command.
 
-The confirmation dialog discloses the exact required playback-gain offset before this transaction begins. If a selected source-priority band is protocol-encodable but outside the generally validated ±10 dB filter-gain range, the same confirmation also identifies the affected band/value, states that it will be sent unchanged and not clamped, and requires the explicit **Flash anyway** action. Cancel performs no write.
+The confirmation dialog discloses the exact required playback-gain offset before this transaction begins. If a selected source/derived target band is protocol-encodable but outside the generally validated ±10 dB filter-gain range, the same confirmation identifies the affected band/value, states that it will be sent unchanged and not clamped, and requires the explicit **Flash anyway** action. Cancel performs no write.
 
 Direct Flash must not send commands for:
 
@@ -87,6 +98,31 @@ Direct Flash must not send commands for:
 - amplifier topology
 - balance
 - microphone gain
+
+## Black Pearl AutoEq file import contract
+
+Black Pearl file export is independent from USB Flash but uses the **same derived filters and playback gain** as the Direct Flash plan.
+
+The verified file-import compatibility target is `cheesyserg/pyBlackPearl`, which imports text files containing `Preamp:` plus up to ten AutoEq-style filters. Its parser recognizes shelf tokens as `LS` and `HS`; therefore the Black Pearl-specific EQ Library serializer uses:
+
+- Peak → `PK`
+- Low Shelf → `LS`
+- High Shelf → `HS`
+
+Example:
+
+```text
+Preamp: -6.00 dB
+Filter 1: ON LS Fc 105 Hz Gain 4.00 dB Q 0.750
+Filter 2: ON PK Fc 1000 Hz Gain -2.50 dB Q 1.250
+Filter 3: ON HS Fc 8000 Hz Gain -1.50 dB Q 0.750
+```
+
+Do **not** reuse generic AutoEq/Equalizer APO `LSC` / `HSC` shelf tokens in the Black Pearl serializer: the reviewed pyBlackPearl importer does not identify those strings as its Low Shelf/High Shelf tokens.
+
+The reviewed pyBlackPearl importer limits imported preamp to approximately `-16 dB..+6 dB`. EQ Library does not pre-clamp the exported value to that convenience range. If the real Black Pearl plan needs `-18 dB`, the file still contains `Preamp: -18.00 dB`, remains exportable/importable, and the UI/export metadata warns that pyBlackPearl will limit the imported preamp. Direct Flash remains independent and uses the actual hardware plan when it passes Black Pearl safety checks.
+
+The reviewed `cheesyserg/BlackPearlControl-Android` importer currently hard-codes imported filter type to Peak. That is not a reason to distort EQ Library shelf output. Do not claim that one Black Pearl text file is acoustically preserved by every third-party controller.
 
 ## Reset EQ to flat — v0.4.0 behavior
 
@@ -108,11 +144,11 @@ The ordering is intentionally different from ordinary profile Flash. Reset flatt
 
 ## Preamp/headroom rule
 
-The selected profile's source preamp is preferred when present. When the source omits preamp and EQ Library has calculated separate safety headroom, that derived value is used as the required playback-gain adjustment without rewriting the canonical source preamp.
+The selected profile's source preamp is preferred when present. When the source omits preamp, v0.5 derives Black Pearl-specific safety headroom from the final target response. That generated value is used as the required playback-gain adjustment without rewriting canonical source preamp/headroom metadata and makes the target representation Optimized.
 
-A profile remains not flashable if it lacks both source preamp and generated safety headroom, has unsupported or truly unrepresentable filter data, or would require an absolute global gain outside the validated hardware range. A per-band gain outside ±10 dB alone is not classified as unrepresentable when the signed protocol field can encode the exact value; it remains a caution unless that specific wider value/range has been physically validated.
+A profile remains not flashable if target headroom cannot be derived safely, has unsupported or truly unrepresentable filter data, or would require an absolute global gain outside the validated hardware range. A per-band gain outside ±10 dB alone is not classified as unrepresentable when the signed protocol field can encode the exact value; it remains a caution unless that specific wider value/range has been physically validated.
 
-File export remains independent and preserves the effective playback preamp as a `Preamp:` line. Finite source band gains are likewise preserved exactly in Black Pearl import text rather than being rejected or clamped merely because they are outside the generally validated ±10 dB Flash range.
+File export remains independent and writes the actual target playback gain as a `Preamp:` line. Finite target band gains are likewise preserved rather than being rejected or clamped merely because they are outside the generally validated ±10 dB Flash range.
 
 ## Physical hardware validation result
 
@@ -124,12 +160,12 @@ The signed v0.3 candidate at `c70c523e1f530b8b197ebbccc41dfb4af1e27fc4` passed t
 - repeated Flash replacement behavior without cumulative attenuation
 - a 0 dB profile restoring the prior EQ Library-applied attenuation
 - Peak, Low Shelf, and High Shelf behavior where exercised by the checklist
-- ten-band overwrite/first-10 handling and zero-gain padding behavior
+- the then-current v0.3 ten-band/first-10 handling and zero-gain padding behavior
 - the Edition XS `-11.9 dB` test case showing the explicit caution, cancelling without a write, and then flashing without app-side clamping
 - latch/save behavior exercised by the hands-on flow
 - no observed change to unrelated DAC reconstruction filter, gain mode, amplifier topology, balance, microphone settings, or other unrelated controls
 - normal graceful behavior across the tested connection/transaction flows
 
-This pass makes the v0.3 Direct Flash path release-eligible subject to the final signed release build/gate. It does **not** turn every possible protocol-encodable value outside ±10 dB into a generally validated hardware range; those values continue to use the caution path unless further physical evidence establishes broader limits.
+This pass qualified the v0.3 Direct Flash path. It does **not** qualify the changed v0.5 response-derivation algorithm or turn every possible protocol-encodable value outside ±10 dB into a generally validated hardware range. v0.5 therefore keeps the caution path and requires its focused regression.
 
-The **Reset EQ to flat** implementation was then qualified separately on 2026-09-06 using the exact signed candidate at `15f220bd055a2aec49c0cb97c16acbd43ac588da` on Pixel 9 / TRN Black Pearl. The candidate had already passed Android unit tests, lint, debug/release assembly, CodeQL, signed-beta alignment/signature verification, and the pinned release-signing certificate check. The focused hardware pass covered disconnected/connected control state, confirmation and Cancel, all-ten-band flattening in the current slot, persistence, restoration of the tracked EQ Library playback-gain adjustment, the no-tracked-gain case, preservation of a later independent user volume change, and unchanged unrelated DAC settings. Controlled mid-transfer failure injection was not exercised on hardware; automated domain tests cover PEQ-transfer and final gain-write failure ordering plus retry-safe state retention. This result qualifies the reset device behavior for v0.4.0, subject to the final exact release-source automated/signing gate.
+The **Reset EQ to flat** implementation was qualified separately on 2026-09-06 using the exact signed candidate at `15f220bd055a2aec49c0cb97c16acbd43ac588da` on Pixel 9 / TRN Black Pearl. The candidate had already passed Android unit tests, lint, debug/release assembly, CodeQL, signed-beta alignment/signature verification, and the pinned release-signing certificate check. The focused hardware pass covered disconnected/connected control state, confirmation and Cancel, all-ten-band flattening in the current slot, persistence, restoration of the tracked EQ Library playback-gain adjustment, the no-tracked-gain case, preservation of a later independent user volume change, and unchanged unrelated DAC settings. Controlled mid-transfer failure injection was not exercised on hardware; automated domain tests cover PEQ-transfer and final gain-write failure ordering plus retry-safe state retention. This result qualifies the reset device behavior for v0.4.0, subject to the v0.5 derivation regression requirement when v0.5 is released.
