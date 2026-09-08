@@ -65,7 +65,7 @@ class DeviceExportabilityTest {
     }
 
     @Test
-    fun `Black Pearl derives missing playback headroom from target response`() {
+    fun `Black Pearl derives missing playback headroom as optimized target adaptation`() {
         val source = profile().copy(
             preampGainDb = null,
             eqLibrarySafetyHeadroomDb = -9.0,
@@ -73,7 +73,7 @@ class DeviceExportabilityTest {
         )
 
         assertEquals(
-            DeviceExportability.EXACT,
+            DeviceExportability.OPTIMIZED,
             assessDeviceExportability(source, ExportDevice.BLACK_PEARL),
         )
         assertEquals(null, source.preampGainDb)
