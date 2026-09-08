@@ -42,6 +42,7 @@ class MainActivity : ComponentActivity() {
                     managedHeadphones = uiState.managedHeadphones,
                     savedEqs = uiState.savedEqs,
                     savedGeneralEqs = uiState.savedGeneralEqs,
+                    exportCurrentness = uiState.exportCurrentness,
                     blackPearlConnectionState = uiState.blackPearlConnectionState,
                     onConnectBlackPearl = viewModel::connectBlackPearl,
                     onResetBlackPearl = {
@@ -83,9 +84,6 @@ class MainActivity : ComponentActivity() {
                     onDeleteSavedEq = viewModel::deleteSavedEq,
                     onRemoveGeneralEq = viewModel::removeGeneralEq,
                     onPersistExportTree = ::persistExportTree,
-                    onEvaluateExportCurrentness = { treeUri ->
-                        viewModel.evaluateExportCurrentness(treeUri?.toString())
-                    },
                     onExportSelected = { treeUri, device ->
                         viewModel.exportSelected(treeUri.toString(), device)
                     },
