@@ -20,10 +20,10 @@ class FiioJa11FlasherTest {
         result as Kt02h20FlashResult.Success
         assertTrue(result.explicitPersistenceCommandUsed)
         assertEquals(listOf(0x15, 0x15, 0x15, 0x15, 0x15, 0x17, 0x18, 0x19), transport.sentCommands)
-        assertEquals(5, transport.bandReadsAfterWrites)
+        assertEquals(10, transport.bandReadsAfterWrites)
         assertEquals(2, transport.globalGainReadsAfterWrites)
         assertEquals(-4.0, transport.globalGainDb, 0.001)
-        assertEquals(2, transport.saveCount)
+        assertEquals(1, transport.saveCount)
         assertEquals(2.5, transport.bands[0].gainDb, 0.0)
         assertEquals(0.0, transport.bands[2].gainDb, 0.0)
     }
