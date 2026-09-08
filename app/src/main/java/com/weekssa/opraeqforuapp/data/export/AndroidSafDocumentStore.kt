@@ -43,7 +43,7 @@ class AndroidSafDocumentStore(context: Context) : ExportDocumentStore {
                 } else {
                     ExportLookup.Found(
                         AndroidDocumentHandle(
-                            uri = uri,
+                            androidUri = uri,
                             name = lookup.value.name,
                         ),
                     )
@@ -101,7 +101,7 @@ class AndroidSafDocumentStore(context: Context) : ExportDocumentStore {
                 } else {
                     ExportLookup.Found(
                         AndroidDocumentHandle(
-                            uri = lookup.value.uri,
+                            androidUri = lookup.value.uri,
                             name = lookup.value.name,
                         ),
                     )
@@ -229,7 +229,7 @@ class AndroidSafDocumentStore(context: Context) : ExportDocumentStore {
                         flags = cursor.longOrZero(flagsIndex),
                     )
                 }
-                match?.let(ExportLookup::Found) ?: ExportLookup.Missing
+                match?.let { row -> ExportLookup.Found(row) } ?: ExportLookup.Missing
             } ?: ExportLookup.Unavailable
         } catch (_: Exception) {
             ExportLookup.Unavailable
