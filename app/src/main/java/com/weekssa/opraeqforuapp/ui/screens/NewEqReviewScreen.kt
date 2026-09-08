@@ -174,22 +174,10 @@ internal fun NewEqReviewScreen(
     }
 }
 
-private fun outputShortName(device: ExportDevice): String = when (device) {
-    ExportDevice.UAPP -> "UAPP / ToneBoosters"
-    ExportDevice.BLACK_PEARL -> "Black Pearl"
-    ExportDevice.FIIO_JA11 -> "FiiO JA11"
-    ExportDevice.JCALLY_JM12 -> "JCALLY JM12"
-    ExportDevice.UNIVERSAL_PARAMETRIC -> "Universal PEQ"
-    ExportDevice.POWERAMP -> "Poweramp"
-    ExportDevice.WAVELET -> "Wavelet"
-    ExportDevice.TOPPING_DX5_II -> "Topping DX5 II"
-    ExportDevice.TOPPING_DX1_II -> "Topping DX1 II"
-}
+private fun outputShortName(device: ExportDevice): String = device.displayName
 
 private fun outputStatusLabel(status: DeviceExportability, device: ExportDevice): String = when (status) {
     DeviceExportability.EXACT -> "Exact"
     DeviceExportability.OPTIMIZED -> "Optimized"
-    DeviceExportability.NOT_REPRESENTABLE -> if (device in FIVE_BAND_REVIEW_OUTPUTS) "Not suitable" else "Not exportable"
+    DeviceExportability.NOT_REPRESENTABLE -> if (device.isHardwareOutput) "Not suitable" else "Not exportable"
 }
-
-private val FIVE_BAND_REVIEW_OUTPUTS = setOf(ExportDevice.FIIO_JA11, ExportDevice.JCALLY_JM12)
