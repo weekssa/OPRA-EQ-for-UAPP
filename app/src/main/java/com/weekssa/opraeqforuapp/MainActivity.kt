@@ -10,7 +10,13 @@ import androidx.compose.runtime.remember
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshFailureReason
+import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshResult
+import com.weekssa.opraeqforuapp.data.export.PresetExportItemResult
+import com.weekssa.opraeqforuapp.data.export.PresetExportSummary
 import com.weekssa.opraeqforuapp.data.sync.BackgroundSyncScheduler
+import com.weekssa.opraeqforuapp.data.sync.CatalogSyncOutcome
+import com.weekssa.opraeqforuapp.data.update.AppUpdateCheckResult
 import com.weekssa.opraeqforuapp.ui.EqLibraryActions
 import com.weekssa.opraeqforuapp.ui.EqLibraryApp
 import com.weekssa.opraeqforuapp.ui.EqLibraryViewModel
@@ -74,7 +80,9 @@ class MainActivity : ComponentActivity() {
         onFlashGeneralEq = { presetId ->
             resolve(viewModel.flashGeneralEq(presetId))
         },
-        onRefreshCatalog = viewModel::refreshCatalog,
+        onRefreshCatalog = {
+            refreshCatalogMessage(viewModel.refreshCatalog())
+        },
         onLoadManagedHeadphone = viewModel::loadManagedHeadphone,
         onSaveSelection = viewModel::saveSelection,
         onRemoveHeadphone = viewModel::removeHeadphone,
@@ -92,29 +100,33 @@ class MainActivity : ComponentActivity() {
         onRemoveGeneralEq = viewModel::removeGeneralEq,
         onPersistExportTree = ::persistExportTree,
         onExportSelected = { treeUri, device ->
-            viewModel.exportSelected(treeUri.toString(), device)
+            exportMessage(viewModel.exportSelected(treeUri.toString(), device))
         },
         onExportProduct = { treeUri, productId, device ->
-            viewModel.exportProduct(treeUri.toString(), productId, device)
+            exportMessage(viewModel.exportProduct(treeUri.toString(), productId, device))
         },
         onExportManagedProfile = { treeUri, productId, profileId, device ->
-            viewModel.exportManagedProfile(
-                treeUri.toString(),
-                productId,
-                profileId,
-                device,
+            exportMessage(
+                viewModel.exportManagedProfile(
+                    treeUri.toString(),
+                    productId,
+                    profileId,
+                    device,
+                ),
             )
         },
         onExportSavedEq = { treeUri, entryId, device ->
-            viewModel.exportSavedEq(treeUri.toString(), entryId, device)
+            exportMessage(viewModel.exportSavedEq(treeUri.toString(), entryId, device))
         },
         onExportGeneralEq = { treeUri, presetId, device ->
-            viewModel.exportGeneralEq(treeUri.toString(), presetId, device)
+            exportMessage(viewModel.exportGeneralEq(treeUri.toString(), presetId, device))
         },
         onExportGeneralEqs = { treeUri, presetIds, device ->
-            viewModel.exportGeneralEqs(treeUri.toString(), presetIds, device)
+            exportMessage(viewModel.exportGeneralEqs(treeUri.toString(), presetIds, device))
         },
-        onCheckForUpdates = viewModel::checkForUpdates,
+        onCheckForUpdates = {
+            updateCheckMessage(viewModel.checkForUpdates())
+        },
         onDismissUpdate = viewModel::dismissUpdate,
         onDismissPostUpdate = viewModel::dismissPostUpdate,
         onOpenUrl = ::openExternalUrl,
@@ -143,6 +155,105 @@ class MainActivity : ComponentActivity() {
 
         viewModel.setExportTree(uri.toString(), label)
         return true
+    }
+
+    private fun exportMessage(summary: PresetExportSummary): String {
+        val reviewResults = summary.results.filter {
+            it is PresetExportItemResult.Conflict || it is PresetExportItemResult.Failed
+        }
+        val firstReviewReason = reviewResults.firstOrNull()?.let { result ->
+            when (result) {
+                is PresetExportItemResult.Conflict -> result.reason
+                is PresetExportItemResult.Failed -> result.reason
+                else -> null
+            }
+        }
+        val reviewCount = summary.conflictCount + summary.failedCount
+        val message = when {
+            summary.accessLost -> getString(R.string.export_folder_access_lost)
+            summary.results.isEmpty() -> getString(R.string.export_none_ready)
+            reviewCount > 0 -> {
+                val successful = resources.getQuantityString(
+                    R.plurals.export_saved_current_count,
+                    summary.successfulCount,
+                    summary.successfulCount,
+                )
+                val review = resources.getQuantityString(
+                    R.plurals.export_review_count,
+                    reviewCount,
+                    reviewCount,
+                )
+                if (firstReviewReason == null) {
+                    getString(R.string.export_review_summary, successful, review)
+                } else {
+                    getString(
+                        R.string.export_review_summary_with_reason,
+                        successful,
+                        review,
+                        firstReviewReason,
+                    )
+                }
+            }
+            summary.createdCount > 0 || summary.updatedCount > 0 -> getString(
+                R.string.export_write_summary,
+                summary.createdCount,
+                summary.updatedCount,
+                summary.currentCount,
+            )
+            else -> resources.getQuantityString(
+                R.plurals.export_all_current,
+                summary.currentCount,
+                summary.currentCount,
+            )
+        }
+        val device = summary.results.firstOrNull()?.candidate?.deviceName
+        return if (device == null) {
+            message
+        } else {
+            getString(R.string.device_prefixed_message, device, message)
+        }
+    }
+
+    private fun refreshCatalogMessage(outcome: CatalogSyncOutcome): String {
+        val result = outcome.catalogResult
+        return when (result) {
+            is CatalogRefreshResult.Success -> {
+                val affected = outcome.managedChanges?.affectedProductIds?.size ?: 0
+                if (affected == 0) {
+                    getString(R.string.catalog_up_to_date)
+                } else {
+                    resources.getQuantityString(
+                        R.plurals.catalog_saved_headphones_changed,
+                        affected,
+                        affected,
+                    )
+                }
+            }
+            is CatalogRefreshResult.Failure -> when (result.reason) {
+                CatalogRefreshFailureReason.Network -> if (result.usingSavedCatalog) {
+                    getString(R.string.catalog_refresh_failed_saved)
+                } else {
+                    getString(R.string.catalog_download_failed)
+                }
+                CatalogRefreshFailureReason.InvalidCatalog -> if (result.usingSavedCatalog) {
+                    getString(R.string.catalog_invalid_saved)
+                } else {
+                    getString(R.string.catalog_invalid_download)
+                }
+                CatalogRefreshFailureReason.Storage -> if (result.usingSavedCatalog) {
+                    getString(R.string.catalog_storage_failed_saved)
+                } else {
+                    getString(R.string.catalog_storage_failed)
+                }
+            }
+        }
+    }
+
+    private fun updateCheckMessage(result: AppUpdateCheckResult): String = when (result) {
+        is AppUpdateCheckResult.UpdateAvailable ->
+            getString(R.string.update_available_message, result.release.version)
+        is AppUpdateCheckResult.UpToDate -> getString(R.string.update_up_to_date_message)
+        AppUpdateCheckResult.Unavailable -> getString(R.string.update_check_unavailable_message)
     }
 
     private fun openExternalUrl(url: String) {
