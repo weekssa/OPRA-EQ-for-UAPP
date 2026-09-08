@@ -54,6 +54,7 @@ import com.weekssa.opraeqforuapp.domain.catalog.OpraProduct
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.settings.ExportTargetPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityPreferences
+import com.weekssa.opraeqforuapp.ui.StringSetSaver
 import kotlinx.coroutines.launch
 
 private enum class LibrarySection(@param:StringRes val labelResId: Int) {
@@ -330,7 +331,10 @@ private fun GeneralEqBrowse(
 ) {
     val scope = rememberCoroutineScope()
     val selectedFilter = GeneralFilter.entries[selectedFilterIndex]
-    var batchSelectedIds by remember(catalog) { mutableStateOf<Set<String>>(emptySet()) }
+    var batchSelectedIds by rememberSaveable(
+        catalog,
+        stateSaver = StringSetSaver,
+    ) { mutableStateOf(emptySet<String>()) }
     val matching = remember(catalog.generalPresets, searchQuery, selectedFilter) {
         catalog.searchGeneralPresets(searchQuery)
             .filter { preset -> selectedFilter.category == null || preset.category == selectedFilter.category }
