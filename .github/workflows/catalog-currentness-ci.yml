@@ -4,7 +4,9 @@ on:
   push:
     branches:
       - eq-library-community-v0.3
+      - 'v0.*'
     paths:
+      - 'app/**'
       - 'catalog/catalog.json'
       - 'catalog/source_health.json'
       - 'config/source_registry.json'
@@ -33,6 +35,7 @@ on:
       - '.github/workflows/headphone-identity-decisions.yml'
   pull_request:
     paths:
+      - 'app/**'
       - 'catalog/catalog.json'
       - 'catalog/source_health.json'
       - 'config/source_registry.json'
