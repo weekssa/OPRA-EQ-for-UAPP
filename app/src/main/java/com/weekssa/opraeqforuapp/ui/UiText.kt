@@ -5,7 +5,7 @@ import androidx.annotation.StringRes
 
 sealed interface UiText {
     data class Resource(
-        @StringRes val resourceId: Int,
+        @param:StringRes val resourceId: Int,
         val args: List<Any> = emptyList(),
     ) : UiText
 
