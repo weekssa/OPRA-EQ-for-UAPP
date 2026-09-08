@@ -8,6 +8,54 @@
     <string name="output_selector_format">%1$s ▾</string>
     <string name="refresh_eq_library_content_description">Refresh EQ Library</string>
 
+    <string name="browse_headphones">Headphones</string>
+    <string name="browse_general_eqs">General EQs</string>
+    <string name="filter_all">All</string>
+    <string name="filter_sound">Sound</string>
+    <string name="filter_genre">Genre</string>
+    <string name="filter_utility">Utility</string>
+    <string name="catalog_loading">Loading EQ Library…</string>
+    <string name="catalog_not_downloaded">EQ Library catalog not downloaded yet</string>
+    <string name="search_headphones">Search headphones…</string>
+    <string name="search_general_eqs">Search General EQs…</string>
+    <string name="no_headphone_eqs">No headphone EQs are available in the saved catalog.</string>
+    <string name="no_headphones_found">No headphones found</string>
+    <plurals name="model_count">
+        <item quantity="one">%1$d model</item>
+        <item quantity="other">%1$d models</item>
+    </plurals>
+    <plurals name="profile_count">
+        <item quantity="one">%1$d profile</item>
+        <item quantity="other">%1$d profiles</item>
+    </plurals>
+    <plurals name="selected_count">
+        <item quantity="one">%1$d selected</item>
+        <item quantity="other">%1$d selected</item>
+    </plurals>
+    <string name="count_pair">%1$s · %2$s</string>
+    <string name="general_eq_standalone_note">General EQs are standalone presets; v0.3 does not layer them on top of headphone correction EQs.</string>
+    <string name="action_select_all">Select all</string>
+    <string name="action_select_none">Select none</string>
+    <string name="save_selected_count">Save selected (%1$d)</string>
+    <string name="action_hide_selected">Hide selected</string>
+    <plurals name="general_eq_saved_message">
+        <item quantity="one">%1$d General EQ saved to My EQs. Initial export started.</item>
+        <item quantity="other">%1$d General EQs saved to My EQs. Initial export started.</item>
+    </plurals>
+    <plurals name="eq_hidden_message">
+        <item quantity="one">%1$d EQ hidden. Restore it in Settings → Hidden EQs.</item>
+        <item quantity="other">%1$d EQs hidden. Restore them in Settings → Hidden EQs.</item>
+    </plurals>
+    <string name="general_eq_none_visible">No visible General EQs are available. Hidden EQs can be restored from Settings → Hidden EQs.</string>
+    <string name="general_eq_none_match">No General EQs match this search and filter.</string>
+    <string name="general_parametric_eq">General parametric EQ</string>
+    <string name="saved_in_my_eqs_output">Saved in My EQs for this output</string>
+    <string name="community_submission_unverified">Community submission — not independently verified.</string>
+    <string name="action_source">Source</string>
+    <string name="clear_search_content_description">Clear search</string>
+    <string name="manufacturers">Manufacturers</string>
+    <string name="action_try_again">Try again</string>
+
     <string name="selected_folder_fallback">Selected folder</string>
     <string name="export_folder_permission_failed">Couldn’t retain access to that folder. Choose another folder.</string>
     <string name="export_folder_access_lost">Export folder access was lost. Choose the folder again.</string>
