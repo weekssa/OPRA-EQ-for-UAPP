@@ -49,6 +49,7 @@ import com.weekssa.opraeqforuapp.data.export.ExportCurrentness
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
 import com.weekssa.opraeqforuapp.data.export.PresetExportItemResult
 import com.weekssa.opraeqforuapp.data.export.PresetExportSummary
+import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
 import com.weekssa.opraeqforuapp.data.sync.CatalogSyncOutcome
 import com.weekssa.opraeqforuapp.data.update.AppUpdateCheckResult
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqPreset
@@ -103,6 +104,12 @@ fun EqLibraryApp(
     blackPearlConnectionState: BlackPearlConnectionState,
     onConnectBlackPearl: () -> Unit,
     onResetBlackPearl: suspend () -> String,
+    fiioJa11ConnectionState: Kt02h20ConnectionState,
+    onConnectFiioJa11: () -> Unit,
+    onResetFiioJa11: suspend () -> String,
+    jcallyJm12ConnectionState: Kt02h20ConnectionState,
+    onConnectJcallyJm12: () -> Unit,
+    onResetJcallyJm12: suspend () -> String,
     onFlashManagedProfile: suspend (String, String) -> String,
     onFlashSavedEq: suspend (String) -> String,
     onFlashGeneralEq: suspend (String) -> String,
@@ -138,6 +145,8 @@ fun EqLibraryApp(
     onExportTargetChange: (ExportDevice, Boolean) -> Unit,
     onActiveExportTargetChange: (ExportDevice) -> Unit,
     onDirectBlackPearlFlashEnabledChange: (Boolean) -> Unit,
+    onDirectFiioJa11FlashEnabledChange: (Boolean) -> Unit,
+    onDirectJcallyJm12FlashEnabledChange: (Boolean) -> Unit,
 ) {
     var selectedDestinationIndex by rememberSaveable { mutableIntStateOf(0) }
     var selectedManagedProductId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -188,7 +197,11 @@ fun EqLibraryApp(
         savedEqs,
         savedGeneralEqs,
     ) {
-        exportCurrentness = onEvaluateExportCurrentness(appPreferences.exportTreeUri?.let(Uri::parse))
+        exportCurrentness = if (activeOutput.supportsFileExport) {
+            onEvaluateExportCurrentness(appPreferences.exportTreeUri?.let(Uri::parse))
+        } else {
+            ExportCurrentness()
+        }
     }
 
     val latestVersion = appPreferences.updates.latestVersion
@@ -216,6 +229,7 @@ fun EqLibraryApp(
         uri: Uri,
         request: ActiveOutputExportRequest?,
     ): PresetExportSummary? {
+        if (request != null && !request.device.supportsFileExport) return null
         val summary = when (request) {
             is ActiveOutputExportRequest.AllManaged -> onExportSelected(uri, request.device)
             is ActiveOutputExportRequest.Product -> onExportProduct(uri, request.productId, request.device)
@@ -255,12 +269,16 @@ fun EqLibraryApp(
     }
 
     val runExportRequest: (ActiveOutputExportRequest) -> Unit = { request ->
-        val storedUri = appPreferences.exportTreeUri?.let(Uri::parse)
-        if (storedUri == null) {
-            chooseExportFolder(request)
+        if (!request.device.supportsFileExport) {
+            Unit
         } else {
-            scope.launch {
-                executeExport(storedUri, request)?.let { snackbarHostState.showSnackbar(activeOutputExportMessage(it)) }
+            val storedUri = appPreferences.exportTreeUri?.let(Uri::parse)
+            if (storedUri == null) {
+                chooseExportFolder(request)
+            } else {
+                scope.launch {
+                    executeExport(storedUri, request)?.let { snackbarHostState.showSnackbar(activeOutputExportMessage(it)) }
+                }
             }
         }
     }
@@ -408,6 +426,12 @@ fun EqLibraryApp(
                                 directBlackPearlFlashEnabled = appPreferences.directBlackPearlFlashEnabled,
                                 blackPearlConnectionState = blackPearlConnectionState,
                                 onConnectBlackPearl = onConnectBlackPearl,
+                                directFiioJa11FlashEnabled = appPreferences.directFiioJa11FlashEnabled,
+                                fiioJa11ConnectionState = fiioJa11ConnectionState,
+                                onConnectFiioJa11 = onConnectFiioJa11,
+                                directJcallyJm12FlashEnabled = appPreferences.directJcallyJm12FlashEnabled,
+                                jcallyJm12ConnectionState = jcallyJm12ConnectionState,
+                                onConnectJcallyJm12 = onConnectJcallyJm12,
                                 onFlashManagedProfile = { profileId ->
                                     onFlashManagedProfile(selectedManagedHeadphone.productId, profileId)
                                 },
@@ -443,6 +467,14 @@ fun EqLibraryApp(
                                 blackPearlConnectionState = blackPearlConnectionState,
                                 onConnectBlackPearl = onConnectBlackPearl,
                                 onResetBlackPearl = onResetBlackPearl,
+                                directFiioJa11FlashEnabled = appPreferences.directFiioJa11FlashEnabled,
+                                fiioJa11ConnectionState = fiioJa11ConnectionState,
+                                onConnectFiioJa11 = onConnectFiioJa11,
+                                onResetFiioJa11 = onResetFiioJa11,
+                                directJcallyJm12FlashEnabled = appPreferences.directJcallyJm12FlashEnabled,
+                                jcallyJm12ConnectionState = jcallyJm12ConnectionState,
+                                onConnectJcallyJm12 = onConnectJcallyJm12,
+                                onResetJcallyJm12 = onResetJcallyJm12,
                                 onExportAll = requestExportAll,
                                 onOpenHeadphone = { selectedManagedProductId = it },
                                 onImportPersonal = onImportPersonal,
@@ -500,6 +532,8 @@ fun EqLibraryApp(
                         onThemeModeChange = onThemeModeChange,
                         onExportTargetChange = onExportTargetChange,
                         onDirectBlackPearlFlashEnabledChange = onDirectBlackPearlFlashEnabledChange,
+                        onDirectFiioJa11FlashEnabledChange = onDirectFiioJa11FlashEnabledChange,
+                        onDirectJcallyJm12FlashEnabledChange = onDirectJcallyJm12FlashEnabledChange,
                         hiddenCanonicalProfileIds = appPreferences.hiddenCanonicalProfileIds,
                         onUnhideCanonicalProfiles = onUnhideCanonicalProfiles,
                         onMessage = ::showMessage,
@@ -525,6 +559,8 @@ fun EqLibraryApp(
 private fun outputTitle(device: ExportDevice): String = when (device) {
     ExportDevice.UAPP -> "UAPP / ToneBoosters"
     ExportDevice.BLACK_PEARL -> "Black Pearl"
+    ExportDevice.FIIO_JA11 -> "FiiO JA11"
+    ExportDevice.JCALLY_JM12 -> "JCALLY JM12"
     ExportDevice.UNIVERSAL_PARAMETRIC -> "Universal PEQ"
     ExportDevice.POWERAMP -> "Poweramp"
     ExportDevice.WAVELET -> "Wavelet"
