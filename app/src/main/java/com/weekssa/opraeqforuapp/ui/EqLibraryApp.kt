@@ -556,17 +556,7 @@ fun EqLibraryApp(
     }
 }
 
-private fun outputTitle(device: ExportDevice): String = when (device) {
-    ExportDevice.UAPP -> "UAPP / ToneBoosters"
-    ExportDevice.BLACK_PEARL -> "Black Pearl"
-    ExportDevice.FIIO_JA11 -> "FiiO JA11"
-    ExportDevice.JCALLY_JM12 -> "JCALLY JM12"
-    ExportDevice.UNIVERSAL_PARAMETRIC -> "Universal PEQ"
-    ExportDevice.POWERAMP -> "Poweramp"
-    ExportDevice.WAVELET -> "Wavelet"
-    ExportDevice.TOPPING_DX5_II -> "TOPPING DX5 II"
-    ExportDevice.TOPPING_DX1_II -> "TOPPING DX1 II"
-}
+private fun outputTitle(device: ExportDevice): String = device.displayName
 
 private fun activeOutputExportMessage(summary: PresetExportSummary): String {
     val reviewResults = summary.results.filter {
