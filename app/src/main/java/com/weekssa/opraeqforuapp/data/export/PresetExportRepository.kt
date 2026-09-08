@@ -1,8 +1,5 @@
 package com.weekssa.opraeqforuapp.data.export
 
-import android.content.Context
-import android.net.Uri
-import androidx.documentfile.provider.DocumentFile
 import com.weekssa.opraeqforuapp.data.managed.OpraEqDatabase
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.export.PresetExportCandidate
@@ -11,7 +8,7 @@ import com.weekssa.opraeqforuapp.domain.export.disambiguatedExportFileName
 import com.weekssa.opraeqforuapp.domain.export.presetBytes
 import com.weekssa.opraeqforuapp.domain.export.stableExportId
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
-import java.io.IOException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -42,7 +39,11 @@ data class PresetExportSummary(
     val failedCount = results.count { it is PresetExportItemResult.Failed }
     val successfulCount = createdCount + updatedCount + currentCount
     val devicesWritten: Set<String> = results
-        .filter { it is PresetExportItemResult.Created || it is PresetExportItemResult.Updated || it is PresetExportItemResult.Current }
+        .filter {
+            it is PresetExportItemResult.Created ||
+                it is PresetExportItemResult.Updated ||
+                it is PresetExportItemResult.Current
+        }
         .mapTo(linkedSetOf()) { it.candidate.deviceName }
 }
 
@@ -66,25 +67,22 @@ data class ExportCurrentness(
 }
 
 class PresetExportRepository(
-    context: Context,
     database: OpraEqDatabase,
+    private val documentStore: ExportDocumentStore,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val nowMillis: () -> Long = System::currentTimeMillis,
 ) {
-    private val appContext = context.applicationContext
-    private val resolver = appContext.contentResolver
     private val ownershipDao = database.exportOwnershipDao()
 
     /**
      * Evaluates the active output against the exact app-owned SAF document URI and generated
-     * content, not against a provider-specific display-name assumption. A provider may normalize or
-     * otherwise adjust a requested filename; once EQ Library owns that returned URI, the URI and
-     * stable preset identity are authoritative for later currentness/update/cleanup operations.
+     * content, not against a provider-specific display-name assumption.
      */
     suspend fun evaluateCurrentness(
-        treeUri: Uri?,
+        treeUri: String?,
         headphones: List<ManagedHeadphoneRecord>,
         device: ExportDevice,
-    ): ExportCurrentness = withContext(Dispatchers.IO) {
+    ): ExportCurrentness = withContext(ioDispatcher) {
         val plan = buildEqLibraryExportPlan(headphones, device)
         val allCandidates = (plan.candidates + plan.duplicateConflicts).distinctBy {
             Triple(it.productId, it.profileId, it.generatedFingerprint)
@@ -93,17 +91,19 @@ class PresetExportRepository(
             ExportItemKey(candidate.productId, candidate.profileId)
         }
         if (treeUri == null) {
-            return@withContext ExportCurrentness(exportableItems = exportable, needsExportItems = exportable)
+            return@withContext ExportCurrentness(
+                exportableItems = exportable,
+                needsExportItems = exportable,
+            )
         }
 
-        val tree = treeUri.toString()
         val needs = linkedSetOf<ExportItemKey>()
         for (candidate in allCandidates) {
             val key = ExportItemKey(candidate.productId, candidate.profileId)
             val ownerships = ownershipDao.getForExportIdentity(
                 profileId = candidate.profileId,
                 productId = candidate.productId,
-                treeUri = tree,
+                treeUri = treeUri,
                 relativeDirectory = candidate.relativeDirectory,
             )
             val current = ownerships.any { ownership ->
@@ -117,10 +117,10 @@ class PresetExportRepository(
     }
 
     suspend fun exportSelected(
-        treeUri: Uri,
+        treeUri: String,
         headphones: List<ManagedHeadphoneRecord>,
         device: ExportDevice,
-    ): PresetExportSummary = withContext(Dispatchers.IO) {
+    ): PresetExportSummary = withContext(ioDispatcher) {
         val plan = buildEqLibraryExportPlan(headphones, device)
         val results = plan.duplicateConflicts.map { candidate ->
             PresetExportItemResult.Conflict(
@@ -129,21 +129,11 @@ class PresetExportRepository(
             )
         }.toMutableList<PresetExportItemResult>()
 
-        val root = try {
-            DocumentFile.fromTreeUri(appContext, treeUri)
-        } catch (_: SecurityException) {
-            null
-        }
-        if (root == null || !root.exists() || !root.canWrite()) {
-            return@withContext PresetExportSummary(results = results, accessLost = true)
-        }
+        val root = documentStore.openWritableTree(treeUri)
+            ?: return@withContext PresetExportSummary(results = results, accessLost = true)
 
-        try {
-            for (candidate in plan.candidates) {
-                results += exportOne(root, treeUri, candidate)
-            }
-        } catch (_: SecurityException) {
-            return@withContext PresetExportSummary(results = results, accessLost = true)
+        for (candidate in plan.candidates) {
+            results += exportOne(root, treeUri, candidate)
         }
 
         PresetExportSummary(results = results)
@@ -154,46 +144,41 @@ class PresetExportRepository(
         candidate: PresetExportCandidate,
     ): Boolean {
         val document = ownedDocument(ownership) ?: return false
-        return readContentHash(document.uri) == candidate.contentHash
+        return documentStore.contentHash(document) == candidate.contentHash
     }
 
     private suspend fun exportOne(
-        root: DocumentFile,
-        treeUri: Uri,
+        root: ExportDirectoryHandle,
+        treeUri: String,
         candidate: PresetExportCandidate,
     ): PresetExportItemResult {
         var targetDirectory = root
         for (segment in candidate.relativeDirectory.split('/').filter(String::isNotBlank)) {
             targetDirectory = ensureDirectory(targetDirectory, segment)
-                ?: return PresetExportItemResult.Failed(candidate, "Couldn’t create or access ${candidate.relativeDirectory}.")
+                ?: return PresetExportItemResult.Failed(
+                    candidate,
+                    "Couldn’t create or access ${candidate.relativeDirectory}.",
+                )
         }
 
-        val tree = treeUri.toString()
-
-        // First follow the stable preset identity to any exact URI we previously created. This is
-        // deliberately independent of the human-readable filename requested from the provider.
         val knownOwnerships = ownershipDao.getForExportIdentity(
             profileId = candidate.profileId,
             productId = candidate.productId,
-            treeUri = tree,
+            treeUri = treeUri,
             relativeDirectory = candidate.relativeDirectory,
         )
         for (ownership in knownOwnerships) {
             val document = ownedDocument(ownership)
             if (document == null) {
-                // Metadata for a document that is already gone is safe to discard. A later creation
-                // will establish a fresh exact URI without touching any unknown replacement file.
                 ownershipDao.delete(ownership.documentUri)
                 continue
             }
             return exportToOwnedDocument(document, ownership, treeUri, candidate)
         }
 
-        // Legacy/repaired ownership may still be discoverable by the preferred URI even if older
-        // metadata does not match the newer identity fields exactly.
-        val preferredExisting = targetDirectory.findFile(candidate.fileName)
+        val preferredExisting = documentStore.findFile(targetDirectory, candidate.fileName)
         val preferredOwnership = preferredExisting?.let { existing ->
-            ownershipDao.getByDocumentUri(existing.uri.toString())
+            ownershipDao.getByDocumentUri(existing.uri)
         }
         if (
             preferredExisting != null &&
@@ -204,16 +189,16 @@ class PresetExportRepository(
             return exportToOwnedDocument(preferredExisting, preferredOwnership, treeUri, candidate)
         }
 
-        // Never overwrite a same-name document that we cannot prove belongs to this preset. Choose
-        // a stable app-derived fallback name and let the provider normalize that creation if needed.
         val stableId = stableExportId(candidate.productId, candidate.profileId)
-        val preferredNameAvailable = preferredExisting == null
-        val firstRequestName = if (preferredNameAvailable) {
+        val firstRequestName = if (preferredExisting == null) {
             candidate.fileName
         } else {
             disambiguatedExportFileName(candidate.fileName, stableId)
         }
-        val secondRequestName = disambiguatedExportFileName(candidate.fileName, "$stableId-eq-library")
+        val secondRequestName = disambiguatedExportFileName(
+            candidate.fileName,
+            "$stableId-eq-library",
+        )
 
         val requestNames = linkedSetOf(firstRequestName, secondRequestName)
         var lastFailureReason = "The preset file could not be created."
@@ -230,13 +215,13 @@ class PresetExportRepository(
     }
 
     private suspend fun exportToOwnedDocument(
-        document: DocumentFile,
+        document: ExportDocumentHandle,
         ownership: ExportOwnershipEntity,
-        treeUri: Uri,
+        treeUri: String,
         candidate: PresetExportCandidate,
     ): PresetExportItemResult {
         val actualName = persistedExportFileName(candidate.fileName, document.name)
-        val currentHash = readContentHash(document.uri)
+        val currentHash = documentStore.contentHash(document)
         if (
             ownership.exportedFingerprint == candidate.generatedFingerprint &&
             ownership.exportedContentHash == candidate.contentHash &&
@@ -244,7 +229,7 @@ class PresetExportRepository(
         ) {
             ownershipDao.upsert(
                 ownership.copy(
-                    treeUri = treeUri.toString(),
+                    treeUri = treeUri,
                     relativeDirectory = candidate.relativeDirectory,
                     fileName = actualName,
                 ),
@@ -253,10 +238,10 @@ class PresetExportRepository(
         }
 
         val expectedBytes = presetBytes(candidate)
-        return if (replaceManagedFile(document.uri, expectedBytes)) {
+        return if (replaceManagedFile(document, expectedBytes)) {
             ownershipDao.upsert(
                 ownership.copy(
-                    treeUri = treeUri.toString(),
+                    treeUri = treeUri,
                     relativeDirectory = candidate.relativeDirectory,
                     fileName = actualName,
                     exportedFingerprint = candidate.generatedFingerprint,
@@ -266,19 +251,23 @@ class PresetExportRepository(
             )
             PresetExportItemResult.Updated(candidate)
         } else {
-            PresetExportItemResult.Failed(candidate, "The existing app-managed preset could not be updated.")
+            PresetExportItemResult.Failed(
+                candidate,
+                "The existing app-managed preset could not be updated.",
+            )
         }
     }
 
     private suspend fun createOwnedFile(
-        targetDirectory: DocumentFile,
-        treeUri: Uri,
+        targetDirectory: ExportDirectoryHandle,
+        treeUri: String,
         candidate: PresetExportCandidate,
         requestName: String,
     ): CreateOwnedFileResult {
-        val preexisting = targetDirectory.findFile(requestName)
-        val preexistingUri = preexisting?.uri?.toString()
-        val preexistingOwnership = preexistingUri?.let { ownershipDao.getByDocumentUri(it) }
+        val preexisting = documentStore.findFile(targetDirectory, requestName)
+        val preexistingOwnership = preexisting?.let { existing ->
+            ownershipDao.getByDocumentUri(existing.uri)
+        }
         if (
             preexisting != null &&
             preexistingOwnership != null &&
@@ -290,28 +279,31 @@ class PresetExportRepository(
             )
         }
 
-        val created = targetDirectory.createFile(candidate.mimeType, requestName)
-            ?: return CreateOwnedFileResult.RetryableFailure("The document provider did not create $requestName.")
+        val created = documentStore.createFile(
+            targetDirectory,
+            candidate.mimeType,
+            requestName,
+        ) ?: return CreateOwnedFileResult.RetryableFailure(
+            "The document provider did not create $requestName.",
+        )
 
-        // ACTION_OPEN_DOCUMENT_TREE providers are expected to create a new child document. Never
-        // write if a broken provider instead hands back the exact URI of a pre-existing unowned file.
-        if (preexistingUri != null && created.uri.toString() == preexistingUri) {
+        if (preexisting != null && created.uri == preexisting.uri) {
             return CreateOwnedFileResult.UnsafeProviderBehavior(
                 "The document provider returned an existing unowned file instead of creating a new preset. No file was changed.",
             )
         }
 
         val bytes = presetBytes(candidate)
-        if (!writeBytes(created.uri, bytes)) {
-            runCatching { created.delete() }
+        if (!documentStore.writeBytes(created, bytes)) {
+            documentStore.delete(created)
             return CreateOwnedFileResult.RetryableFailure("The preset file could not be written.")
         }
 
         val actualName = persistedExportFileName(requestName, created.name)
         ownershipDao.upsert(
             ExportOwnershipEntity(
-                documentUri = created.uri.toString(),
-                treeUri = treeUri.toString(),
+                documentUri = created.uri,
+                treeUri = treeUri,
                 relativeDirectory = candidate.relativeDirectory,
                 profileId = candidate.profileId,
                 productId = candidate.productId,
@@ -324,58 +316,23 @@ class PresetExportRepository(
         return CreateOwnedFileResult.Success(PresetExportItemResult.Created(candidate))
     }
 
-    private fun ownedDocument(ownership: ExportOwnershipEntity): DocumentFile? {
-        val uri = runCatching { Uri.parse(ownership.documentUri) }.getOrNull() ?: return null
-        val document = runCatching { DocumentFile.fromSingleUri(appContext, uri) }.getOrNull() ?: return null
-        return document.takeIf { it.exists() && it.isFile }
-    }
+    private fun ownedDocument(ownership: ExportOwnershipEntity): ExportDocumentHandle? =
+        documentStore.openDocument(ownership.documentUri)
 
-    private fun ensureDirectory(parent: DocumentFile, name: String): DocumentFile? {
-        val existing = parent.findFile(name)
-        if (existing != null) return existing.takeIf(DocumentFile::isDirectory)
-        return parent.createDirectory(name)?.takeIf(DocumentFile::isDirectory)
-    }
+    private fun ensureDirectory(
+        parent: ExportDirectoryHandle,
+        name: String,
+    ): ExportDirectoryHandle? =
+        documentStore.findDirectory(parent, name) ?: documentStore.createDirectory(parent, name)
 
-    private fun replaceManagedFile(uri: Uri, newBytes: ByteArray): Boolean {
-        val backup = try {
-            resolver.openInputStream(uri)?.use { input ->
-                input.readBytes().takeIf { it.size <= MAX_BACKUP_BYTES }
-            }
-        } catch (_: Exception) {
-            null
-        }
-
-        if (writeBytes(uri, newBytes)) return true
-        if (backup != null) {
-            writeBytes(uri, backup)
-        }
+    private fun replaceManagedFile(
+        document: ExportDocumentHandle,
+        newBytes: ByteArray,
+    ): Boolean {
+        val backup = documentStore.readBytes(document, MAX_BACKUP_BYTES)
+        if (documentStore.writeBytes(document, newBytes)) return true
+        if (backup != null) documentStore.writeBytes(document, backup)
         return false
-    }
-
-    private fun writeBytes(uri: Uri, bytes: ByteArray): Boolean = try {
-        resolver.openOutputStream(uri, "wt")?.use { output ->
-            output.write(bytes)
-            output.flush()
-        } != null
-    } catch (_: IOException) {
-        false
-    } catch (_: SecurityException) {
-        false
-    }
-
-    private fun readContentHash(uri: Uri): String? = try {
-        resolver.openInputStream(uri)?.use { input ->
-            val digest = java.security.MessageDigest.getInstance("SHA-256")
-            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-            while (true) {
-                val count = input.read(buffer)
-                if (count < 0) break
-                digest.update(buffer, 0, count)
-            }
-            digest.digest().joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
-        }
-    } catch (_: Exception) {
-        null
     }
 
     private sealed interface CreateOwnedFileResult {
