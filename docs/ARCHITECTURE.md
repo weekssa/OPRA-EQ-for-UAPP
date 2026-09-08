@@ -69,6 +69,21 @@ Android/platform-backed state and I/O:
 
 Repository-side source discovery/crawling/qualification/publication remains outside Android runtime.
 
+## Android runtime state and platform boundaries
+
+The top-level Android runtime follows a manual dependency-injection / unidirectional-data-flow boundary rather than using `Activity` as a service locator.
+
+- `MainActivity` is the Android composition/lifecycle boundary. It owns platform-only actions such as the SAF activity-result contract, persistable URI permission acquisition, external browser intents, and final Android resource-string resolution.
+- `EqLibraryViewModel` owns screen-level orchestration and exposes one immutable `StateFlow<EqLibraryUiState>`. It receives repositories/coordinators through constructor dependencies and never receives an Android `Context`.
+- `EqLibraryActions` is the stable event surface from Compose into the ViewModel/platform boundary. Compose should not depend on repository-specific result types merely to format operation messages.
+- `EqLibraryDependencyFactory` is the manual composition root. Application `Context` may be consumed there to construct Android data sources, Room, DataStore access, USB transports, and other platform adapters; repositories/ViewModels receive those narrower dependencies instead of retaining `Context`.
+- `ExportDocumentStore` is the repository-facing SAF contract. `AndroidSafDocumentStore` is the Android implementation. SAF lookup semantics explicitly distinguish **Found**, **Missing**, and **Unavailable** so cleanup may forget ownership only after confirmed absence, never after a permission/provider query failure.
+- Room/DataStore remain the durable sources of truth. Transient editing/navigation state that should survive activity recreation uses Bundle-safe `rememberSaveable`; large/durable business state is not copied into Compose saved-state bundles.
+- Hardware USB sessions are owned by the ViewModel-scoped `HardwareEqRepository`, so configuration changes do not replace a live session. The repository closes all transports when the ViewModel is actually cleared.
+- Repository filesystem/database/network work uses explicit IO dispatcher boundaries. CPU-heavy export-record derivation/currentness preparation may use an injected computation dispatcher. Compose/UI callbacks remain nonblocking.
+
+A configuration change must not change canonical selection, export ownership, device plan, or hardware transaction semantics. State-lifetime improvements are not permission to move DSP/wire/storage rules into UI code.
+
 ## Runtime catalog architecture
 
 Android consumes a validated published canonical catalog and never scrapes GitHub/forums in normal operation.
