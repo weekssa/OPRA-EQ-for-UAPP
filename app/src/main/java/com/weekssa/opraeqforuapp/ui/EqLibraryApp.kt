@@ -101,6 +101,7 @@ fun EqLibraryApp(
     managedHeadphones: List<ManagedHeadphoneRecord>,
     savedEqs: List<SavedEqRecord>,
     savedGeneralEqs: List<SavedGeneralEqRecord>,
+    exportCurrentness: ExportCurrentness,
     blackPearlConnectionState: BlackPearlConnectionState,
     onConnectBlackPearl: () -> Unit,
     onResetBlackPearl: suspend () -> String,
@@ -130,7 +131,6 @@ fun EqLibraryApp(
     onDeleteSavedEq: suspend (String) -> Unit,
     onRemoveGeneralEq: suspend (String) -> Unit,
     onPersistExportTree: suspend (Uri) -> Boolean,
-    onEvaluateExportCurrentness: suspend (Uri?) -> ExportCurrentness,
     onExportSelected: suspend (Uri, ExportDevice) -> PresetExportSummary,
     onExportProduct: suspend (Uri, String, ExportDevice) -> PresetExportSummary,
     onExportManagedProfile: suspend (Uri, String, String, ExportDevice) -> PresetExportSummary,
@@ -158,7 +158,6 @@ fun EqLibraryApp(
     val destinations = remember { EqLibraryDestination.entries }
     val selectedDestination = destinations[selectedDestinationIndex]
     val activeOutput = appPreferences.exportTargets.activeTarget
-    var exportCurrentness by remember(activeOutput) { mutableStateOf(ExportCurrentness()) }
     val enabledOutputs = remember(appPreferences.exportTargets) {
         ExportDevice.selectableOutputs.filter(appPreferences.exportTargets::isSelected)
     }
@@ -190,20 +189,6 @@ fun EqLibraryApp(
         }
     }
 
-    LaunchedEffect(
-        activeOutput,
-        appPreferences.exportTreeUri,
-        managedHeadphones,
-        savedEqs,
-        savedGeneralEqs,
-    ) {
-        exportCurrentness = if (activeOutput.supportsFileExport) {
-            onEvaluateExportCurrentness(appPreferences.exportTreeUri?.let(Uri::parse))
-        } else {
-            ExportCurrentness()
-        }
-    }
-
     val latestVersion = appPreferences.updates.latestVersion
     val updateAvailable = latestVersion != null &&
         SemVer.parse(latestVersion)?.let { latest ->
@@ -230,7 +215,7 @@ fun EqLibraryApp(
         request: ActiveOutputExportRequest?,
     ): PresetExportSummary? {
         if (request != null && !request.device.supportsFileExport) return null
-        val summary = when (request) {
+        return when (request) {
             is ActiveOutputExportRequest.AllManaged -> onExportSelected(uri, request.device)
             is ActiveOutputExportRequest.Product -> onExportProduct(uri, request.productId, request.device)
             is ActiveOutputExportRequest.ManagedProfile -> onExportManagedProfile(
@@ -244,10 +229,6 @@ fun EqLibraryApp(
             is ActiveOutputExportRequest.GeneralEqBatch -> onExportGeneralEqs(uri, request.presetIds, request.device)
             null -> null
         }
-        if (summary != null) {
-            exportCurrentness = onEvaluateExportCurrentness(uri)
-        }
-        return summary
     }
 
     val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
