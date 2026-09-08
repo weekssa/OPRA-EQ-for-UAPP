@@ -23,6 +23,7 @@ class BlackPearlFlashPlanTest {
         assertTrue(plan is BlackPearlFlashPlan.Ready)
         plan as BlackPearlFlashPlan.Ready
         assertEquals(DevicePresetFidelity.EXACT, plan.fidelity)
+        assertEquals("source values preserved", plan.adaptationSummary)
         assertEquals(0.0, plan.requiredPlaybackGainDb, 0.0)
         assertEquals(0, plan.omittedBandCount)
         assertEquals(null, plan.warning)
@@ -50,7 +51,8 @@ class BlackPearlFlashPlanTest {
         assertTrue(plan is BlackPearlFlashPlan.Ready)
         plan as BlackPearlFlashPlan.Ready
         assertEquals(DevicePresetFidelity.OPTIMIZED, plan.fidelity)
-        assertTrue(plan.warning.orEmpty().contains("generated headroom"))
+        assertTrue(plan.adaptationSummary.contains("generated headroom"))
+        assertEquals(null, plan.warning)
         assertTrue(plan.requiredPlaybackGainDb <= -3.9)
         assertTrue(plan.requiredPlaybackGainDb >= -4.1)
         assertEquals(null, source.preampGainDb)
@@ -69,7 +71,8 @@ class BlackPearlFlashPlanTest {
         assertTrue(plan is BlackPearlFlashPlan.Ready)
         plan as BlackPearlFlashPlan.Ready
         assertEquals(DevicePresetFidelity.OPTIMIZED, plan.fidelity)
-        assertTrue(plan.warning.orEmpty().contains("generated headroom"))
+        assertTrue(plan.adaptationSummary.contains("generated headroom"))
+        assertEquals(null, plan.warning)
         assertTrue(plan.requiredPlaybackGainDb <= -1.9)
         assertTrue(plan.requiredPlaybackGainDb >= -2.1)
         assertEquals(null, source.preampGainDb)
@@ -87,7 +90,8 @@ class BlackPearlFlashPlanTest {
 
         assertEquals(DevicePresetFidelity.OPTIMIZED, plan.fidelity)
         assertEquals(2, plan.omittedBandCount)
-        assertTrue(plan.warning.orEmpty().contains("12 → 10 bands · full-response fit"))
+        assertTrue(plan.adaptationSummary.contains("12 → 10 bands · full-response fit"))
+        assertEquals(null, plan.warning)
         assertTrue(plan.rmsErrorDb >= 0.0)
         assertTrue(plan.maxAbsoluteErrorDb >= 0.0)
         assertEquals(12, source.bands!!.size)
@@ -106,6 +110,7 @@ class BlackPearlFlashPlanTest {
         assertTrue(plan is BlackPearlFlashPlan.Ready)
         plan as BlackPearlFlashPlan.Ready
         assertEquals(DevicePresetFidelity.EXACT, plan.fidelity)
+        assertEquals("source values preserved", plan.adaptationSummary)
         assertTrue(plan.warning.orEmpty().contains("Band 1 -12.00 dB"))
         assertTrue(plan.warning.orEmpty().contains("outside EQ Library's currently validated"))
         assertTrue(plan.warning.orEmpty().contains("sent unchanged"))
