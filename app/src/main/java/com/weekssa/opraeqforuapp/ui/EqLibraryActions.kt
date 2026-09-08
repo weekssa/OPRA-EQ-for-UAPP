@@ -3,9 +3,6 @@ package com.weekssa.opraeqforuapp.ui
 import android.net.Uri
 import androidx.compose.runtime.Stable
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
-import com.weekssa.opraeqforuapp.data.export.PresetExportSummary
-import com.weekssa.opraeqforuapp.data.sync.CatalogSyncOutcome
-import com.weekssa.opraeqforuapp.data.update.AppUpdateCheckResult
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqPreset
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
@@ -19,6 +16,9 @@ import com.weekssa.opraeqforuapp.domain.settings.ThemeMode
  * The object is created once by the Activity and contains callbacks only. Keeping the event surface
  * behind one stable parameter avoids rebuilding a large callback parameter list on every root
  * recomposition while preserving unidirectional data flow from [EqLibraryViewModel].
+ *
+ * User-facing operation callbacks return already-resolved presentation text so Compose never needs
+ * to know about repository/data-layer result types merely to build a snackbar message.
  */
 @Stable
 class EqLibraryActions(
@@ -31,7 +31,7 @@ class EqLibraryActions(
     val onFlashManagedProfile: suspend (String, String) -> String,
     val onFlashSavedEq: suspend (String) -> String,
     val onFlashGeneralEq: suspend (String) -> String,
-    val onRefreshCatalog: suspend () -> CatalogSyncOutcome,
+    val onRefreshCatalog: suspend () -> String,
     val onLoadManagedHeadphone: suspend (String) -> ManagedHeadphoneRecord?,
     val onSaveSelection: suspend (String, Set<String>, Boolean) -> Unit,
     val onRemoveHeadphone: suspend (String) -> Unit,
@@ -48,13 +48,13 @@ class EqLibraryActions(
     val onDeleteSavedEq: suspend (String) -> Unit,
     val onRemoveGeneralEq: suspend (String) -> Unit,
     val onPersistExportTree: suspend (Uri) -> Boolean,
-    val onExportSelected: suspend (Uri, ExportDevice) -> PresetExportSummary,
-    val onExportProduct: suspend (Uri, String, ExportDevice) -> PresetExportSummary,
-    val onExportManagedProfile: suspend (Uri, String, String, ExportDevice) -> PresetExportSummary,
-    val onExportSavedEq: suspend (Uri, String, ExportDevice) -> PresetExportSummary,
-    val onExportGeneralEq: suspend (Uri, String, ExportDevice) -> PresetExportSummary,
-    val onExportGeneralEqs: suspend (Uri, Set<String>, ExportDevice) -> PresetExportSummary,
-    val onCheckForUpdates: suspend () -> AppUpdateCheckResult,
+    val onExportSelected: suspend (Uri, ExportDevice) -> String,
+    val onExportProduct: suspend (Uri, String, ExportDevice) -> String,
+    val onExportManagedProfile: suspend (Uri, String, String, ExportDevice) -> String,
+    val onExportSavedEq: suspend (Uri, String, ExportDevice) -> String,
+    val onExportGeneralEq: suspend (Uri, String, ExportDevice) -> String,
+    val onExportGeneralEqs: suspend (Uri, Set<String>, ExportDevice) -> String,
+    val onCheckForUpdates: suspend () -> String,
     val onDismissUpdate: suspend (String) -> Unit,
     val onDismissPostUpdate: suspend () -> Unit,
     val onOpenUrl: (String) -> Unit,
