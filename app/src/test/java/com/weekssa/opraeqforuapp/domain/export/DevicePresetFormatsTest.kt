@@ -26,16 +26,17 @@ class DevicePresetFormatsTest {
     private val blackPearlProfile = profile.copy(preampGainDb = 0.0)
 
     @Test
-    fun toppingTuneUsesStandardAutoEqShelfAndPeakTokens() {
-        val variant = buildTextDeviceVariant(profile, ExportDevice.TOPPING_TUNE)!!
+    fun toppingTuneFileUsesStandardAutoEqShelfAndPeakTokensAndConservativeFidelity() {
+        val variant = buildFileExportDeviceVariant(profile, ExportDevice.TOPPING_TUNE)!!
 
         assertTrue(variant.content.contains("Preamp: -5.50 dB"))
         assertTrue(variant.content.contains("ON LSC"))
         assertTrue(variant.content.contains("ON PK"))
         assertTrue(variant.content.contains("ON HSC"))
-        assertEquals(DevicePresetFidelity.EXACT, variant.fidelity)
-        assertTrue(variant.transformation.contains("TOPPING Tune"))
-        assertEquals(1, variant.representationVersion)
+        assertEquals(DevicePresetFidelity.OPTIMIZED, variant.fidelity)
+        assertTrue(variant.transformation.contains("device-side PEQ storage precision"))
+        assertTrue(variant.transformation.contains("does not claim Exact"))
+        assertEquals(2, variant.representationVersion)
     }
 
     @Test
@@ -51,12 +52,11 @@ class DevicePresetFormatsTest {
         }
         val source = profile.copy(preampGainDb = -6.0, bands = sourceBands)
 
-        val variant = buildTextDeviceVariant(source, ExportDevice.TOPPING_TUNE)!!
+        val variant = buildFileExportDeviceVariant(source, ExportDevice.TOPPING_TUNE)!!
 
         assertTrue(filterLines(variant.content).size <= 10)
         assertEquals(DevicePresetFidelity.OPTIMIZED, variant.fidelity)
-        assertTrue(variant.transformation.contains("fitted the complete source response"))
-        assertTrue(variant.transformation.contains("no source bands were silently truncated"))
+        assertTrue(variant.transformation.contains("12 → 10 bands · full-response fit"))
         assertEquals(sourceBands, source.bands)
     }
 
@@ -64,7 +64,7 @@ class DevicePresetFormatsTest {
     fun toppingTuneDoesNotClampOutOfRangeSourcePreampToMakeAFile() {
         val source = profile.copy(preampGainDb = -15.0)
 
-        assertNull(buildTextDeviceVariant(source, ExportDevice.TOPPING_TUNE))
+        assertNull(buildFileExportDeviceVariant(source, ExportDevice.TOPPING_TUNE))
         assertEquals(-15.0, source.preampGainDb!!, 0.0)
     }
 
@@ -165,11 +165,15 @@ class DevicePresetFormatsTest {
     }
 
     @Test
-    fun requestedFormatterUsesDedicatedBlackPearlPathAndHardwareOnlyTargetsHaveNoFileVariant() {
+    fun requestedFormatterUsesDedicatedBlackPearlAndToppingPathsAndHardwareOnlyTargetsHaveNoFileVariant() {
         assertNull(buildTextDeviceVariant(blackPearlProfile, ExportDevice.BLACK_PEARL))
         assertEquals(
             ExportDevice.BLACK_PEARL,
             buildFileExportDeviceVariant(blackPearlProfile, ExportDevice.BLACK_PEARL)?.device,
+        )
+        assertEquals(
+            ExportDevice.TOPPING_TUNE,
+            buildFileExportDeviceVariant(profile, ExportDevice.TOPPING_TUNE)?.device,
         )
         assertNull(buildFileExportDeviceVariant(profile, ExportDevice.FIIO_JA11))
         assertNull(buildFileExportDeviceVariant(profile, ExportDevice.JCALLY_JM12))
@@ -254,10 +258,10 @@ class DevicePresetFormatsTest {
             bands = listOf(OpraBand("peak_dip", 1_000.0, 2.0, 1.0, null)),
         )
 
-        val variant = buildTextDeviceVariant(source, ExportDevice.TOPPING_TUNE)!!
+        val variant = buildFileExportDeviceVariant(source, ExportDevice.TOPPING_TUNE)!!
 
         assertEquals(DevicePresetFidelity.OPTIMIZED, variant.fidelity)
-        assertTrue(variant.transformation.contains("generated"))
+        assertTrue(variant.transformation.contains("generated headroom"))
         assertEquals(null, source.preampGainDb)
     }
 
