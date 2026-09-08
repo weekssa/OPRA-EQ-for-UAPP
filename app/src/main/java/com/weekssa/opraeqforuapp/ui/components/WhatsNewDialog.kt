@@ -22,6 +22,8 @@ fun WhatsNewDialog(
     notes: String,
     onDismiss: () -> Unit,
 ) {
+    val unavailableNotes = stringResource(R.string.whats_new_notes_unavailable)
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.whats_new_title, version)) },
@@ -33,7 +35,7 @@ fun WhatsNewDialog(
                     .verticalScroll(rememberScrollState()),
             ) {
                 Text(
-                    text = notes.ifBlank { stringResource(R.string.whats_new_notes_unavailable) },
+                    text = notes.ifBlank { unavailableNotes },
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(bottom = 4.dp),
                 )
