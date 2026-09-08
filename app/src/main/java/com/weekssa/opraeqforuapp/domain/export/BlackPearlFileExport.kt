@@ -1,20 +1,19 @@
 package com.weekssa.opraeqforuapp.domain.export
 
-import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
+import com.weekssa.opraeqforuapp.domain.hardware.HardwareEqDeviceSpecs
+import com.weekssa.opraeqforuapp.domain.kt02h20.FiveBandOptimizationResult
+import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FiveBandOptimizer
 import java.util.Locale
 
 /**
- * Builds the file representation for an external Black Pearl preset importer.
+ * Builds file representations for outputs whose exported file should match the same derived hardware
+ * plan used by Direct Flash.
  *
- * File export and direct USB Flash remain independent delivery paths. Both preserve the effective
- * source preamp / EQ Library safety headroom; direct Flash applies that value through the approved
- * Black Pearl playback-gain command while file export preserves it as a Preamp line.
- *
- * The +/-10 dB per-band gain range is currently a validated/recommended hardware range, not a text
- * file encoding limit. File export therefore preserves any finite source gain exactly rather than
- * rejecting or clamping it. Direct Flash applies a separate caution for protocol-encodable values
- * outside that validated range.
+ * Black Pearl file export and USB Flash remain independent delivery actions, but they now consume one
+ * shared response-adaptation policy. A >10-band canonical source is fitted to the complete response,
+ * not first-N truncated. Exact protocol-encodable source gains outside the currently validated +/-10
+ * dB region remain unchanged and receive the same caution rather than being clamped.
  */
 internal fun buildFileExportDeviceVariant(
     profile: OpraEqProfile,
@@ -25,88 +24,48 @@ internal fun buildFileExportDeviceVariant(
 }
 
 private fun buildBlackPearlFileExportVariant(profile: OpraEqProfile): DevicePresetVariant? {
-    val capabilities = requireNotNull(ExportDevice.BLACK_PEARL.eqCapabilities)
-    val effectivePreamp = profile.effectivePlaybackPreampDb()
-        ?.takeIf(Double::isFinite)
-        ?: return null
-    val sourceBands = profile.bands.orEmpty()
-    if (sourceBands.isEmpty()) return null
-
-    val selectedBands = capabilities.maxBands?.let(sourceBands::take) ?: sourceBands
-    val mapped = selectedBands.map { band ->
-        mapBlackPearlFileBand(band, capabilities) ?: return null
+    val representation = when (
+        val result = Kt02h20FiveBandOptimizer.optimize(profile, HardwareEqDeviceSpecs.TRN_BLACK_PEARL)
+    ) {
+        is FiveBandOptimizationResult.NotSuitable -> return null
+        is FiveBandOptimizationResult.Ready -> result.representation
     }
-    if (mapped.isEmpty()) return null
+    if (representation.bands.isEmpty()) return null
 
-    val fidelity = blackPearlFileFidelity(profile, sourceBands, capabilities)
     val content = buildString {
-        appendLine("Preamp: ${formatDb(effectivePreamp)} dB")
-        mapped.forEachIndexed { index, band ->
+        appendLine("Preamp: ${formatDb(representation.playbackGainDb)} dB")
+        representation.bands.forEachIndexed { index, band ->
+            val type = parametricType(band.type) ?: return null
             appendLine(
-                "Filter ${index + 1}: ON ${band.type} Fc ${formatHz(band.frequency)} Hz " +
+                "Filter ${index + 1}: ON $type Fc ${formatHz(band.frequencyHz)} Hz " +
                     "Gain ${formatDb(band.gainDb)} dB Q ${formatQ(band.q)}",
             )
         }
     }.trimEnd()
 
-    val baseTransformation = when (fidelity) {
+    val baseTransformation = when (representation.fidelity) {
         DevicePresetFidelity.EXACT ->
-            "Source EQ bands and source preamp are preserved in Black Pearl import text."
+            "Source EQ is natively representable in the Black Pearl hardware plan; file export uses the same quantized filters and playback gain as Direct Flash."
         DevicePresetFidelity.OPTIMIZED ->
-            "EQ Library optimized Black Pearl file export: effective playback headroom is preserved in the Preamp line and only the first ${capabilities.maxBands ?: mapped.size} source-priority bands are included when required by the device limit."
+            "EQ Library fitted the complete source response to the Black Pearl's 10-band hardware plan (RMS ${formatMetric(representation.rmsErrorDb)} dB, max ${formatMetric(representation.maxAbsoluteErrorDb)} dB). The file uses the same derived filters and playback gain as Direct Flash."
     }
-    val outsideValidatedGainRange = mapped.mapIndexedNotNull { index, band ->
-        band.gainDb.takeIf { gain -> gain !in capabilities.minGainDb..capabilities.maxGainDb }?.let { gain ->
+    val outsideValidatedGainRange = representation.bands.mapIndexedNotNull { index, band ->
+        band.gainDb.takeIf { gain -> gain !in -10.0..10.0 }?.let { gain ->
             "Band ${index + 1} ${formatSignedDb(gain)} dB"
         }
     }
     val transformation = if (outsideValidatedGainRange.isEmpty()) {
         baseTransformation
     } else {
-        "$baseTransformation Caution: ${outsideValidatedGainRange.joinToString()} is outside the currently validated Black Pearl filter-gain range; the source value is preserved unchanged and is not clamped."
+        "$baseTransformation Caution: ${outsideValidatedGainRange.joinToString()} is outside the currently validated Black Pearl filter-gain range; the exact source value is preserved unchanged and is not clamped."
     }
 
     return DevicePresetVariant(
         device = ExportDevice.BLACK_PEARL,
         content = content,
         transformation = transformation,
-        fidelity = fidelity,
+        fidelity = representation.fidelity,
     )
-}
-
-private fun blackPearlFileFidelity(
-    profile: OpraEqProfile,
-    sourceBands: List<OpraBand>,
-    capabilities: DeviceEqCapabilities,
-): DevicePresetFidelity {
-    val exceedsBandCount = capabilities.maxBands?.let { sourceBands.size > it } ?: false
-    val usesGeneratedHeadroom = profile.preampGainDb?.takeIf(Double::isFinite) == null
-    return if (exceedsBandCount || usesGeneratedHeadroom) {
-        DevicePresetFidelity.OPTIMIZED
-    } else {
-        DevicePresetFidelity.EXACT
-    }
-}
-
-private data class BlackPearlFileBand(
-    val type: String,
-    val frequency: Double,
-    val gainDb: Double,
-    val q: Double,
-)
-
-private fun mapBlackPearlFileBand(
-    band: OpraBand,
-    capabilities: DeviceEqCapabilities,
-): BlackPearlFileBand? {
-    if (band.type !in capabilities.supportedBandTypes) return null
-    val type = parametricType(band.type) ?: return null
-    val frequency = band.frequency?.takeIf(Double::isFinite) ?: return null
-    val gain = band.gainDb?.takeIf(Double::isFinite) ?: return null
-    val q = band.q?.takeIf(Double::isFinite) ?: return null
-    if (frequency !in capabilities.minFrequencyHz..capabilities.maxFrequencyHz) return null
-    if (q !in capabilities.minQ..capabilities.maxQ) return null
-    return BlackPearlFileBand(type, frequency, gain, q)
 }
 
 private fun formatHz(value: Double): String =
@@ -119,3 +78,4 @@ private fun formatHz(value: Double): String =
 private fun formatDb(value: Double): String = String.format(Locale.US, "%.2f", value)
 private fun formatSignedDb(value: Double): String = String.format(Locale.US, "%+.2f", value)
 private fun formatQ(value: Double): String = String.format(Locale.US, "%.3f", value)
+private fun formatMetric(value: Double): String = String.format(Locale.US, "%.2f", value)
