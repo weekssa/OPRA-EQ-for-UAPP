@@ -14,52 +14,64 @@ class AndroidSafDocumentStore(context: Context) : ExportDocumentStore {
 
     override fun openWritableTree(treeUri: String): ExportDirectoryHandle? {
         val uri = treeUri.toUriOrNull() ?: return null
-        val document = runCatching { DocumentFile.fromTreeUri(appContext, uri) }.getOrNull() ?: return null
-        return document
-            .takeIf { it.exists() && it.isDirectory && it.canWrite() }
-            ?.let(::AndroidDirectoryHandle)
+        return runCatching {
+            DocumentFile.fromTreeUri(appContext, uri)
+                ?.takeIf { document ->
+                    document.exists() && document.isDirectory && document.canWrite()
+                }
+                ?.let(::AndroidDirectoryHandle)
+        }.getOrNull()
     }
 
     override fun openDocument(documentUri: String): ExportDocumentHandle? {
         val uri = documentUri.toUriOrNull() ?: return null
-        val document = runCatching { DocumentFile.fromSingleUri(appContext, uri) }.getOrNull() ?: return null
-        return document.takeIf { it.exists() && it.isFile }?.let(::AndroidDocumentHandle)
+        return runCatching {
+            DocumentFile.fromSingleUri(appContext, uri)
+                ?.takeIf { document -> document.exists() && document.isFile }
+                ?.let(::AndroidDocumentHandle)
+        }.getOrNull()
     }
 
     override fun findDirectory(
         parent: ExportDirectoryHandle,
         name: String,
-    ): ExportDirectoryHandle? = parent.androidDirectoryOrNull()
-        ?.findFileSafely(name)
-        ?.takeIf(DocumentFile::isDirectory)
-        ?.let(::AndroidDirectoryHandle)
+    ): ExportDirectoryHandle? = runCatching {
+        parent.androidDirectoryOrNull()
+            ?.findFile(name)
+            ?.takeIf(DocumentFile::isDirectory)
+            ?.let(::AndroidDirectoryHandle)
+    }.getOrNull()
 
     override fun createDirectory(
         parent: ExportDirectoryHandle,
         name: String,
     ): ExportDirectoryHandle? = runCatching {
-        parent.androidDirectoryOrNull()?.createDirectory(name)
+        parent.androidDirectoryOrNull()
+            ?.createDirectory(name)
+            ?.takeIf(DocumentFile::isDirectory)
+            ?.let(::AndroidDirectoryHandle)
     }.getOrNull()
-        ?.takeIf(DocumentFile::isDirectory)
-        ?.let(::AndroidDirectoryHandle)
 
     override fun findFile(
         parent: ExportDirectoryHandle,
         name: String,
-    ): ExportDocumentHandle? = parent.androidDirectoryOrNull()
-        ?.findFileSafely(name)
-        ?.takeIf(DocumentFile::isFile)
-        ?.let(::AndroidDocumentHandle)
+    ): ExportDocumentHandle? = runCatching {
+        parent.androidDirectoryOrNull()
+            ?.findFile(name)
+            ?.takeIf(DocumentFile::isFile)
+            ?.let(::AndroidDocumentHandle)
+    }.getOrNull()
 
     override fun createFile(
         parent: ExportDirectoryHandle,
         mimeType: String,
         displayName: String,
     ): ExportDocumentHandle? = runCatching {
-        parent.androidDirectoryOrNull()?.createFile(mimeType, displayName)
+        parent.androidDirectoryOrNull()
+            ?.createFile(mimeType, displayName)
+            ?.takeIf(DocumentFile::isFile)
+            ?.let(::AndroidDocumentHandle)
     }.getOrNull()
-        ?.takeIf(DocumentFile::isFile)
-        ?.let(::AndroidDocumentHandle)
 
     override fun contentHash(document: ExportDocumentHandle): String? {
         val uri = document.androidDocumentOrNull()?.uri ?: return null
@@ -133,9 +145,6 @@ class AndroidSafDocumentStore(context: Context) : ExportDocumentStore {
 
     private fun ExportDocumentHandle.androidDocumentOrNull(): DocumentFile? =
         (this as? AndroidDocumentHandle)?.document
-
-    private fun DocumentFile.findFileSafely(name: String): DocumentFile? =
-        runCatching { findFile(name) }.getOrNull()
 
     private fun String.toUriOrNull(): Uri? = runCatching(Uri::parse).getOrNull()
 
