@@ -6,10 +6,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.remember
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.weekssa.opraeqforuapp.data.sync.BackgroundSyncScheduler
+import com.weekssa.opraeqforuapp.ui.EqLibraryActions
 import com.weekssa.opraeqforuapp.ui.EqLibraryApp
 import com.weekssa.opraeqforuapp.ui.EqLibraryViewModel
 import com.weekssa.opraeqforuapp.ui.resolve
@@ -34,89 +36,12 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
+            val actions = remember(viewModel) { createUiActions() }
 
             OpraEqTheme(themeMode = uiState.appPreferences.themeMode) {
                 EqLibraryApp(
-                    appPreferences = uiState.appPreferences,
-                    catalogState = uiState.catalogState,
-                    managedHeadphones = uiState.managedHeadphones,
-                    savedEqs = uiState.savedEqs,
-                    savedGeneralEqs = uiState.savedGeneralEqs,
-                    exportCurrentness = uiState.exportCurrentness,
-                    blackPearlConnectionState = uiState.blackPearlConnectionState,
-                    onConnectBlackPearl = viewModel::connectBlackPearl,
-                    onResetBlackPearl = {
-                        this@MainActivity.resolve(viewModel.resetBlackPearlToFlat())
-                    },
-                    fiioJa11ConnectionState = uiState.fiioJa11ConnectionState,
-                    onConnectFiioJa11 = viewModel::connectFiioJa11,
-                    onResetFiioJa11 = {
-                        this@MainActivity.resolve(viewModel.resetFiioJa11ToFlat())
-                    },
-                    jcallyJm12ConnectionState = uiState.jcallyJm12ConnectionState,
-                    onConnectJcallyJm12 = viewModel::connectJcallyJm12,
-                    onResetJcallyJm12 = {
-                        this@MainActivity.resolve(viewModel.resetJcallyJm12ToFlat())
-                    },
-                    onFlashManagedProfile = { productId, profileId ->
-                        this@MainActivity.resolve(viewModel.flashManagedProfile(productId, profileId))
-                    },
-                    onFlashSavedEq = { entryId ->
-                        this@MainActivity.resolve(viewModel.flashSavedEq(entryId))
-                    },
-                    onFlashGeneralEq = { presetId ->
-                        this@MainActivity.resolve(viewModel.flashGeneralEq(presetId))
-                    },
-                    onRefreshCatalog = viewModel::refreshCatalog,
-                    onLoadManagedHeadphone = viewModel::loadManagedHeadphone,
-                    onSaveSelection = viewModel::saveSelection,
-                    onRemoveHeadphone = viewModel::removeHeadphone,
-                    onRemoveManagedProfile = viewModel::removeManagedProfile,
-                    onRemoveManagedHeadphone = viewModel::removeManagedHeadphone,
-                    onDeleteSavedFilesForProfiles = viewModel::deleteSavedFilesForProfiles,
-                    onDeleteSavedFilesForProduct = viewModel::deleteSavedFilesForProduct,
-                    onMarkReviewed = viewModel::markReviewed,
-                    onToggleFavorite = viewModel::toggleFavorite,
-                    onSaveGeneralPreset = viewModel::saveGeneralPreset,
-                    onHideCanonicalProfiles = viewModel::hideCanonicalProfiles,
-                    onUnhideCanonicalProfiles = viewModel::unhideCanonicalProfiles,
-                    onImportPersonal = viewModel::importPersonal,
-                    onDeleteSavedEq = viewModel::deleteSavedEq,
-                    onRemoveGeneralEq = viewModel::removeGeneralEq,
-                    onPersistExportTree = ::persistExportTree,
-                    onExportSelected = { treeUri, device ->
-                        viewModel.exportSelected(treeUri.toString(), device)
-                    },
-                    onExportProduct = { treeUri, productId, device ->
-                        viewModel.exportProduct(treeUri.toString(), productId, device)
-                    },
-                    onExportManagedProfile = { treeUri, productId, profileId, device ->
-                        viewModel.exportManagedProfile(
-                            treeUri.toString(),
-                            productId,
-                            profileId,
-                            device,
-                        )
-                    },
-                    onExportSavedEq = { treeUri, entryId, device ->
-                        viewModel.exportSavedEq(treeUri.toString(), entryId, device)
-                    },
-                    onExportGeneralEq = { treeUri, presetId, device ->
-                        viewModel.exportGeneralEq(treeUri.toString(), presetId, device)
-                    },
-                    onExportGeneralEqs = { treeUri, presetIds, device ->
-                        viewModel.exportGeneralEqs(treeUri.toString(), presetIds, device)
-                    },
-                    onCheckForUpdates = viewModel::checkForUpdates,
-                    onDismissUpdate = viewModel::dismissUpdate,
-                    onDismissPostUpdate = viewModel::dismissPostUpdate,
-                    onOpenUrl = ::openExternalUrl,
-                    onThemeModeChange = viewModel::setThemeMode,
-                    onExportTargetChange = viewModel::setExportTargetEnabled,
-                    onActiveExportTargetChange = viewModel::setActiveExportTarget,
-                    onDirectBlackPearlFlashEnabledChange = viewModel::setDirectBlackPearlFlashEnabled,
-                    onDirectFiioJa11FlashEnabledChange = viewModel::setDirectFiioJa11FlashEnabled,
-                    onDirectJcallyJm12FlashEnabledChange = viewModel::setDirectJcallyJm12FlashEnabled,
+                    state = uiState,
+                    actions = actions,
                 )
             }
         }
@@ -126,6 +51,80 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         if (::viewModel.isInitialized) viewModel.onAppResumed()
     }
+
+    private fun createUiActions(): EqLibraryActions = EqLibraryActions(
+        onConnectBlackPearl = viewModel::connectBlackPearl,
+        onResetBlackPearl = {
+            resolve(viewModel.resetBlackPearlToFlat())
+        },
+        onConnectFiioJa11 = viewModel::connectFiioJa11,
+        onResetFiioJa11 = {
+            resolve(viewModel.resetFiioJa11ToFlat())
+        },
+        onConnectJcallyJm12 = viewModel::connectJcallyJm12,
+        onResetJcallyJm12 = {
+            resolve(viewModel.resetJcallyJm12ToFlat())
+        },
+        onFlashManagedProfile = { productId, profileId ->
+            resolve(viewModel.flashManagedProfile(productId, profileId))
+        },
+        onFlashSavedEq = { entryId ->
+            resolve(viewModel.flashSavedEq(entryId))
+        },
+        onFlashGeneralEq = { presetId ->
+            resolve(viewModel.flashGeneralEq(presetId))
+        },
+        onRefreshCatalog = viewModel::refreshCatalog,
+        onLoadManagedHeadphone = viewModel::loadManagedHeadphone,
+        onSaveSelection = viewModel::saveSelection,
+        onRemoveHeadphone = viewModel::removeHeadphone,
+        onRemoveManagedProfile = viewModel::removeManagedProfile,
+        onRemoveManagedHeadphone = viewModel::removeManagedHeadphone,
+        onDeleteSavedFilesForProfiles = viewModel::deleteSavedFilesForProfiles,
+        onDeleteSavedFilesForProduct = viewModel::deleteSavedFilesForProduct,
+        onMarkReviewed = viewModel::markReviewed,
+        onToggleFavorite = viewModel::toggleFavorite,
+        onSaveGeneralPreset = viewModel::saveGeneralPreset,
+        onHideCanonicalProfiles = viewModel::hideCanonicalProfiles,
+        onUnhideCanonicalProfiles = viewModel::unhideCanonicalProfiles,
+        onImportPersonal = viewModel::importPersonal,
+        onDeleteSavedEq = viewModel::deleteSavedEq,
+        onRemoveGeneralEq = viewModel::removeGeneralEq,
+        onPersistExportTree = ::persistExportTree,
+        onExportSelected = { treeUri, device ->
+            viewModel.exportSelected(treeUri.toString(), device)
+        },
+        onExportProduct = { treeUri, productId, device ->
+            viewModel.exportProduct(treeUri.toString(), productId, device)
+        },
+        onExportManagedProfile = { treeUri, productId, profileId, device ->
+            viewModel.exportManagedProfile(
+                treeUri.toString(),
+                productId,
+                profileId,
+                device,
+            )
+        },
+        onExportSavedEq = { treeUri, entryId, device ->
+            viewModel.exportSavedEq(treeUri.toString(), entryId, device)
+        },
+        onExportGeneralEq = { treeUri, presetId, device ->
+            viewModel.exportGeneralEq(treeUri.toString(), presetId, device)
+        },
+        onExportGeneralEqs = { treeUri, presetIds, device ->
+            viewModel.exportGeneralEqs(treeUri.toString(), presetIds, device)
+        },
+        onCheckForUpdates = viewModel::checkForUpdates,
+        onDismissUpdate = viewModel::dismissUpdate,
+        onDismissPostUpdate = viewModel::dismissPostUpdate,
+        onOpenUrl = ::openExternalUrl,
+        onThemeModeChange = viewModel::setThemeMode,
+        onExportTargetChange = viewModel::setExportTargetEnabled,
+        onActiveExportTargetChange = viewModel::setActiveExportTarget,
+        onDirectBlackPearlFlashEnabledChange = viewModel::setDirectBlackPearlFlashEnabled,
+        onDirectFiioJa11FlashEnabledChange = viewModel::setDirectFiioJa11FlashEnabled,
+        onDirectJcallyJm12FlashEnabledChange = viewModel::setDirectJcallyJm12FlashEnabled,
+    )
 
     private suspend fun persistExportTree(uri: Uri): Boolean {
         val label = withContext(Dispatchers.IO) {
