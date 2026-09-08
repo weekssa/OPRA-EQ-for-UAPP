@@ -49,6 +49,8 @@ class BlackPearlFlashPlanTest {
 
         assertTrue(plan is BlackPearlFlashPlan.Ready)
         plan as BlackPearlFlashPlan.Ready
+        assertEquals(DevicePresetFidelity.OPTIMIZED, plan.fidelity)
+        assertTrue(plan.warning.orEmpty().contains("generated headroom"))
         assertTrue(plan.requiredPlaybackGainDb <= -3.9)
         assertTrue(plan.requiredPlaybackGainDb >= -4.1)
         assertEquals(null, source.preampGainDb)
@@ -66,6 +68,8 @@ class BlackPearlFlashPlanTest {
 
         assertTrue(plan is BlackPearlFlashPlan.Ready)
         plan as BlackPearlFlashPlan.Ready
+        assertEquals(DevicePresetFidelity.OPTIMIZED, plan.fidelity)
+        assertTrue(plan.warning.orEmpty().contains("generated headroom"))
         assertTrue(plan.requiredPlaybackGainDb <= -1.9)
         assertTrue(plan.requiredPlaybackGainDb >= -2.1)
         assertEquals(null, source.preampGainDb)
@@ -83,7 +87,7 @@ class BlackPearlFlashPlanTest {
 
         assertEquals(DevicePresetFidelity.OPTIMIZED, plan.fidelity)
         assertEquals(2, plan.omittedBandCount)
-        assertTrue(plan.warning.orEmpty().contains("fitted the complete source response"))
+        assertTrue(plan.warning.orEmpty().contains("12 → 10 bands · full-response fit"))
         assertTrue(plan.rmsErrorDb >= 0.0)
         assertTrue(plan.maxAbsoluteErrorDb >= 0.0)
         assertEquals(12, source.bands!!.size)
