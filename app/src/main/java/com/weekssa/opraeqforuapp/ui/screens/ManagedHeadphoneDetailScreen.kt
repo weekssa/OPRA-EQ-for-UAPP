@@ -719,20 +719,10 @@ private fun ManagedProfileRow(
 private fun outputStatusLabel(status: DeviceExportability, device: ExportDevice): String = when (status) {
     DeviceExportability.EXACT -> "Exact"
     DeviceExportability.OPTIMIZED -> "Optimized"
-    DeviceExportability.NOT_REPRESENTABLE -> if (device in FIVE_BAND_OUTPUTS) "Not suitable" else "Not exportable"
+    DeviceExportability.NOT_REPRESENTABLE -> if (device.isHardwareOutput) "Not suitable" else "Not exportable"
 }
 
-private fun outputShortName(device: ExportDevice): String = when (device) {
-    ExportDevice.UAPP -> "UAPP / ToneBoosters"
-    ExportDevice.BLACK_PEARL -> "Black Pearl"
-    ExportDevice.FIIO_JA11 -> "FiiO JA11"
-    ExportDevice.JCALLY_JM12 -> "JCALLY JM12"
-    ExportDevice.UNIVERSAL_PARAMETRIC -> "Universal PEQ"
-    ExportDevice.POWERAMP -> "Poweramp"
-    ExportDevice.WAVELET -> "Wavelet"
-    ExportDevice.TOPPING_DX5_II -> "TOPPING DX5 II"
-    ExportDevice.TOPPING_DX1_II -> "TOPPING DX1 II"
-}
+private fun outputShortName(device: ExportDevice): String = device.displayName
 
 private fun managedHardwareTitle(device: ExportDevice): String = when (device) {
     ExportDevice.BLACK_PEARL -> "Black Pearl"
@@ -790,5 +780,4 @@ private val MANAGED_HARDWARE_FLASH_OUTPUTS = setOf(
     ExportDevice.FIIO_JA11,
     ExportDevice.JCALLY_JM12,
 )
-private val FIVE_BAND_OUTPUTS = setOf(ExportDevice.FIIO_JA11, ExportDevice.JCALLY_JM12)
 private val MANAGED_DETAIL_CONNECTED_GREEN = Color(0xFF2E7D32)
