@@ -55,8 +55,9 @@ class Kt02h20FiveBandOptimizerTest {
         assertFalse(result.representation.usedResponseFit)
         assertFalse(result.representation.usesGeneratedHeadroom)
         assertEquals("native hardware rounding only", result.representation.adaptationSummary())
-        assertEquals(2, source.bands!!.size)
-        assertEquals(1_000.4, source.bands!![0].frequency!!, 0.0)
+        val sourceBands = requireNotNull(source.bands)
+        assertEquals(2, sourceBands.size)
+        assertEquals(1_000.4, sourceBands[0].frequency!!, 0.0)
     }
 
     @Test
