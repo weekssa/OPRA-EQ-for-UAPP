@@ -55,6 +55,12 @@ android {
     }
 }
 
+kotlin {
+    compilerOptions {
+        optIn.add("kotlinx.coroutines.ExperimentalCoroutinesApi")
+    }
+}
+
 dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2026.06.00")
     val lifecycleVersion = "2.10.0"
