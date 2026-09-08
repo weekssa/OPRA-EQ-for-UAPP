@@ -2,19 +2,23 @@ package com.weekssa.opraeqforuapp.data.managed
 
 import androidx.room.withTransaction
 import com.weekssa.opraeqforuapp.domain.catalog.OpraCatalog
-import com.weekssa.opraeqforuapp.domain.catalog.isHistoricalRevision
 import com.weekssa.opraeqforuapp.domain.catalog.isUsableParametricSource
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneSelection
 import com.weekssa.opraeqforuapp.domain.managed.ManagedProfileRecord
 import com.weekssa.opraeqforuapp.domain.managed.StoredProfileSelection
 import com.weekssa.opraeqforuapp.domain.managed.selectionUpdatesForSave
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.withContext
 
 class ManagedHeadphonesRepository(
     private val database: OpraEqDatabase,
     private val snapshotCodec: ManagedProfileSnapshotCodec = ManagedProfileSnapshotCodec(),
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val nowMillis: () -> Long = System::currentTimeMillis,
 ) {
     private val dao = database.managedHeadphonesDao()
@@ -46,7 +50,7 @@ class ManagedHeadphonesRepository(
                     outputSelections = selectionById,
                 )
             }
-        }
+        }.flowOn(ioDispatcher)
 
     fun observeHeadphone(
         productId: String,
@@ -70,17 +74,17 @@ class ManagedHeadphonesRepository(
                     .associateBy(OutputManagedProfileEntity::profileId),
             )
         }
-    }
+    }.flowOn(ioDispatcher)
 
     suspend fun getHeadphone(
         productId: String,
         outputId: String = DEFAULT_OUTPUT_ID,
-    ): ManagedHeadphoneRecord? {
-        val headphone = dao.getHeadphone(productId) ?: return null
-        val output = dao.getOutputHeadphone(outputId, productId) ?: return null
+    ): ManagedHeadphoneRecord? = withContext(ioDispatcher) {
+        val headphone = dao.getHeadphone(productId) ?: return@withContext null
+        val output = dao.getOutputHeadphone(outputId, productId) ?: return@withContext null
         val selections = dao.getOutputProfiles(outputId, productId)
             .associateBy(OutputManagedProfileEntity::profileId)
-        return headphone.toDomain(
+        headphone.toDomain(
             profiles = dao.getProfiles(productId),
             snapshotCodec = snapshotCodec,
             output = output,
@@ -99,7 +103,7 @@ class ManagedHeadphonesRepository(
         stagedSelectedProfileIds: Set<String>,
         autoIncludeNewProfiles: Boolean,
         outputId: String = DEFAULT_OUTPUT_ID,
-    ) {
+    ) = withContext(ioDispatcher) {
         val canonicalProductId = catalog.canonicalProductId(productId)
         val product = requireNotNull(catalog.product(canonicalProductId)) {
             "Cannot manage unknown EQ Library product $productId."
@@ -191,50 +195,58 @@ class ManagedHeadphonesRepository(
     }
 
     suspend fun reconcileCatalog(catalog: OpraCatalog): ManagedCatalogChangeSummary =
-        database.withTransaction {
-            val now = nowMillis()
-            migrateAllManagedHeadphoneAliases(catalog, now)
-            var summary = ManagedCatalogChangeSummary()
+        withContext(ioDispatcher) {
+            database.withTransaction {
+                val now = nowMillis()
+                migrateAllManagedHeadphoneAliases(catalog, now)
+                var summary = ManagedCatalogChangeSummary()
 
-            dao.getHeadphones().forEach { headphone ->
-                val product = catalog.product(headphone.productId)
-                val vendor = product?.let { catalog.vendor(it.vendorId) }
-                val currentProfiles = if (product != null) catalog.profilesForProduct(product.id) else emptyList()
-                val reconciled = reconcileManagedProfiles(
-                    productId = headphone.productId,
-                    productName = product?.name ?: headphone.productName,
-                    currentProfiles = currentProfiles,
-                    existingProfiles = dao.getProfiles(headphone.productId),
-                    // Legacy parameter name: controls whether new/changed profiles become review items.
-                    autoIncludeNewProfiles = headphone.autoIncludeNewProfiles,
-                    nowMillis = now,
-                    snapshotCodec = snapshotCodec,
-                )
-
-                dao.upsertHeadphone(
-                    headphone.copy(
-                        vendorId = vendor?.id ?: headphone.vendorId,
-                        vendorName = vendor?.name ?: headphone.vendorName,
-                        productName = product?.name ?: headphone.productName,
-                        updatedAtMillis = now,
-                    ),
-                )
-                if (reconciled.profiles.isNotEmpty()) dao.upsertProfiles(reconciled.profiles)
-                reconciled.profileIdsToDelete.forEach { profileId -> dao.deleteProfile(headphone.productId, profileId) }
-                summary += reconciled.changes
-
-                dao.getAllOutputHeadphones()
-                    .filter { it.productId == headphone.productId }
-                    .forEach { output ->
-                        reconcileOutputSelection(
-                            output = output,
-                            currentProfiles = currentProfiles,
-                        )
+                dao.getHeadphones().forEach { headphone ->
+                    val product = catalog.product(headphone.productId)
+                    val vendor = product?.let { catalog.vendor(it.vendorId) }
+                    val currentProfiles = if (product != null) {
+                        catalog.profilesForProduct(product.id)
+                    } else {
+                        emptyList()
                     }
-                syncSharedSelectionUnion(headphone.productId)
-            }
+                    val reconciled = reconcileManagedProfiles(
+                        productId = headphone.productId,
+                        productName = product?.name ?: headphone.productName,
+                        currentProfiles = currentProfiles,
+                        existingProfiles = dao.getProfiles(headphone.productId),
+                        // Legacy parameter name: controls whether new/changed profiles become review items.
+                        autoIncludeNewProfiles = headphone.autoIncludeNewProfiles,
+                        nowMillis = now,
+                        snapshotCodec = snapshotCodec,
+                    )
 
-            summary
+                    dao.upsertHeadphone(
+                        headphone.copy(
+                            vendorId = vendor?.id ?: headphone.vendorId,
+                            vendorName = vendor?.name ?: headphone.vendorName,
+                            productName = product?.name ?: headphone.productName,
+                            updatedAtMillis = now,
+                        ),
+                    )
+                    if (reconciled.profiles.isNotEmpty()) dao.upsertProfiles(reconciled.profiles)
+                    reconciled.profileIdsToDelete.forEach { profileId ->
+                        dao.deleteProfile(headphone.productId, profileId)
+                    }
+                    summary += reconciled.changes
+
+                    dao.getAllOutputHeadphones()
+                        .filter { it.productId == headphone.productId }
+                        .forEach { output ->
+                            reconcileOutputSelection(
+                                output = output,
+                                currentProfiles = currentProfiles,
+                            )
+                        }
+                    syncSharedSelectionUnion(headphone.productId)
+                }
+
+                summary
+            }
         }
 
     private suspend fun reconcileOutputSelection(
@@ -309,7 +321,9 @@ class ManagedHeadphonesRepository(
                 updatedAtMillis = now,
             ),
         )
-        if (oldProfiles.isNotEmpty()) dao.upsertProfiles(oldProfiles.map { it.copy(productId = canonicalProductId) })
+        if (oldProfiles.isNotEmpty()) {
+            dao.upsertProfiles(oldProfiles.map { it.copy(productId = canonicalProductId) })
+        }
 
         dao.getAllOutputHeadphones()
             .filter { it.productId == oldProductId }
@@ -340,7 +354,7 @@ class ManagedHeadphonesRepository(
         productId: String,
         profileId: String,
         outputId: String = DEFAULT_OUTPUT_ID,
-    ) {
+    ) = withContext(ioDispatcher) {
         database.withTransaction {
             val profile = dao.getProfiles(productId).firstOrNull { it.profileId == profileId }
                 ?: return@withTransaction
@@ -362,7 +376,7 @@ class ManagedHeadphonesRepository(
     suspend fun removeHeadphone(
         productId: String,
         outputId: String = DEFAULT_OUTPUT_ID,
-    ) {
+    ) = withContext(ioDispatcher) {
         database.withTransaction {
             dao.deleteOutputProfiles(outputId, productId)
             dao.deleteOutputHeadphone(outputId, productId)
@@ -374,7 +388,7 @@ class ManagedHeadphonesRepository(
         }
     }
 
-    suspend fun markReviewed(productId: String) {
+    suspend fun markReviewed(productId: String) = withContext(ioDispatcher) {
         dao.markReviewed(productId)
     }
 
