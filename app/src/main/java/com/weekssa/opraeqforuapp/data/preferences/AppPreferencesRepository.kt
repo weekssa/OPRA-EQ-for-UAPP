@@ -69,6 +69,8 @@ class AppPreferencesRepository(context: Context) {
             ),
             exportTargets = outputPreferences,
             directBlackPearlFlashEnabled = preferences[Keys.DirectBlackPearlFlashEnabled] ?: false,
+            directFiioJa11FlashEnabled = preferences[Keys.DirectFiioJa11FlashEnabled] ?: false,
+            directJcallyJm12FlashEnabled = preferences[Keys.DirectJcallyJm12FlashEnabled] ?: false,
             hiddenCanonicalProfileIds = preferences[Keys.HiddenCanonicalProfileIds].orEmpty(),
             exportTreeUri = preferences[Keys.ExportTreeUri],
             exportTreeLabel = preferences[Keys.ExportTreeLabel],
@@ -130,6 +132,18 @@ class AppPreferencesRepository(context: Context) {
     suspend fun setDirectBlackPearlFlashEnabled(enabled: Boolean) {
         appContext.appPreferencesDataStore.edit { preferences ->
             preferences[Keys.DirectBlackPearlFlashEnabled] = enabled
+        }
+    }
+
+    suspend fun setDirectFiioJa11FlashEnabled(enabled: Boolean) {
+        appContext.appPreferencesDataStore.edit { preferences ->
+            preferences[Keys.DirectFiioJa11FlashEnabled] = enabled
+        }
+    }
+
+    suspend fun setDirectJcallyJm12FlashEnabled(enabled: Boolean) {
+        appContext.appPreferencesDataStore.edit { preferences ->
+            preferences[Keys.DirectJcallyJm12FlashEnabled] = enabled
         }
     }
 
@@ -227,6 +241,8 @@ class AppPreferencesRepository(context: Context) {
         val SelectedExportTargets = stringSetPreferencesKey("selected_export_targets")
         val ActiveExportTarget = stringPreferencesKey("active_export_target")
         val DirectBlackPearlFlashEnabled = booleanPreferencesKey("direct_black_pearl_flash_enabled")
+        val DirectFiioJa11FlashEnabled = booleanPreferencesKey("direct_fiio_ja11_flash_enabled")
+        val DirectJcallyJm12FlashEnabled = booleanPreferencesKey("direct_jcally_jm12_flash_enabled")
         val HiddenCanonicalProfileIds = stringSetPreferencesKey("hidden_canonical_profile_ids")
         // Legacy v0.3 preview key intentionally left unread. Output selection no longer hides library curves.
         @Suppress("unused")
