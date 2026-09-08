@@ -7,367 +7,118 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.documentfile.provider.DocumentFile
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.lifecycleScope
-import com.weekssa.opraeqforuapp.data.blackpearl.AndroidBlackPearlUsbTransport
-import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
-import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlGainStatePreferences
-import com.weekssa.opraeqforuapp.data.catalog.CatalogState
-import com.weekssa.opraeqforuapp.data.catalog.HttpOpraCatalogSource
-import com.weekssa.opraeqforuapp.data.catalog.OpraCatalogRepository
-import com.weekssa.opraeqforuapp.data.export.PresetCleanupRepository
-import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
-import com.weekssa.opraeqforuapp.data.export.PresetExportRepository
-import com.weekssa.opraeqforuapp.data.export.PresetExportSummary
-import com.weekssa.opraeqforuapp.data.kt02h20.AndroidFiioJa11UsbTransport
-import com.weekssa.opraeqforuapp.data.kt02h20.AndroidJcallyJm12UsbTransport
-import com.weekssa.opraeqforuapp.data.kt02h20.JcallyJm12GainStatePreferences
-import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
-import com.weekssa.opraeqforuapp.data.library.CanonicalCatalogRepository
-import com.weekssa.opraeqforuapp.data.library.CanonicalFirstCatalogRepository
-import com.weekssa.opraeqforuapp.data.library.HttpCanonicalCatalogSource
-import com.weekssa.opraeqforuapp.data.library.SavedEqRepository
-import com.weekssa.opraeqforuapp.data.library.SavedGeneralEqRepository
-import com.weekssa.opraeqforuapp.data.managed.ManagedHeadphonesRepository
-import com.weekssa.opraeqforuapp.data.managed.OpraEqDatabase
-import com.weekssa.opraeqforuapp.data.preferences.AppPreferencesRepository
 import com.weekssa.opraeqforuapp.data.sync.BackgroundSyncScheduler
-import com.weekssa.opraeqforuapp.data.sync.CatalogSyncCoordinator
-import com.weekssa.opraeqforuapp.data.update.AppUpdateCoordinator
-import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlashResult
-import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlatResetResult
-import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlasher
-import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
-import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
-import com.weekssa.opraeqforuapp.domain.export.ExportDevice
-import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Flasher
-import com.weekssa.opraeqforuapp.domain.kt02h20.JcallyJm12Flasher
-import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult
-import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult
-import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
-import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
-import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
-import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
 import com.weekssa.opraeqforuapp.ui.EqLibraryApp
+import com.weekssa.opraeqforuapp.ui.EqLibraryViewModel
+import com.weekssa.opraeqforuapp.ui.resolve
 import com.weekssa.opraeqforuapp.ui.theme.OpraEqTheme
-import java.util.Locale
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
-    private val appPreferencesRepository by lazy {
-        AppPreferencesRepository(applicationContext)
-    }
-
-    private val catalogRepository by lazy {
-        CanonicalFirstCatalogRepository(
-            canonicalRepository = CanonicalCatalogRepository(
-                filesDir = filesDir,
-                source = HttpCanonicalCatalogSource(
-                    userAgent = "EQ Library/${BuildConfig.VERSION_NAME}",
-                ),
-            ),
-            legacyFallback = OpraCatalogRepository(
-                filesDir = filesDir,
-                source = HttpOpraCatalogSource(
-                    userAgent = "EQ Library/${BuildConfig.VERSION_NAME}",
-                ),
-            ),
-        )
-    }
-
-    private val database by lazy {
-        OpraEqDatabase.create(applicationContext)
-    }
-
-    private val managedHeadphonesRepository by lazy {
-        ManagedHeadphonesRepository(database)
-    }
-
-    private val savedEqRepository by lazy {
-        SavedEqRepository(database)
-    }
-
-    private val savedGeneralEqRepository by lazy {
-        SavedGeneralEqRepository(database)
-    }
-
-    private val exportRepository by lazy {
-        PresetExportRepository(applicationContext, database)
-    }
-
-    private val cleanupRepository by lazy {
-        PresetCleanupRepository(applicationContext, database)
-    }
-
-    private val syncCoordinator by lazy {
-        CatalogSyncCoordinator(
-            catalogRepository = catalogRepository,
-            managedHeadphonesRepository = managedHeadphonesRepository,
-        )
-    }
-
-    private val updateCoordinator by lazy {
-        AppUpdateCoordinator(
-            installedVersion = BuildConfig.VERSION_NAME,
-            preferencesRepository = appPreferencesRepository,
-        )
-    }
-
-    private val blackPearlTransportDelegate = lazy {
-        AndroidBlackPearlUsbTransport(applicationContext)
-    }
-    private val blackPearlTransport by blackPearlTransportDelegate
-    private val blackPearlGainStateStore by lazy {
-        BlackPearlGainStatePreferences(applicationContext)
-    }
-    private val blackPearlFlasher by lazy {
-        BlackPearlFlasher(blackPearlTransport, blackPearlGainStateStore)
-    }
-
-    private val fiioJa11TransportDelegate = lazy {
-        AndroidFiioJa11UsbTransport(applicationContext)
-    }
-    private val fiioJa11Transport by fiioJa11TransportDelegate
-    private val fiioJa11Flasher by lazy {
-        FiioJa11Flasher(fiioJa11Transport)
-    }
-
-    private val jcallyJm12TransportDelegate = lazy {
-        AndroidJcallyJm12UsbTransport(applicationContext)
-    }
-    private val jcallyJm12Transport by jcallyJm12TransportDelegate
-    private val jcallyJm12GainStateStore by lazy {
-        JcallyJm12GainStatePreferences(applicationContext)
-    }
-    private val jcallyJm12Flasher by lazy {
-        JcallyJm12Flasher(jcallyJm12Transport, jcallyJm12GainStateStore)
-    }
-
-    private var lastForegroundRefreshAttemptMillis: Long = 0L
+    private lateinit var viewModel: EqLibraryViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         BackgroundSyncScheduler.ensureScheduled(applicationContext)
 
-        lifecycleScope.launch { updateCoordinator.initialize() }
-        lifecycleScope.launch {
-            catalogRepository.initialize()
-            val ready = catalogRepository.state.value as? CatalogState.Ready
-            if (ready != null) {
-                managedHeadphonesRepository.reconcileCatalog(ready.catalog)
-            }
-            refreshCatalogIfDue()
-        }
+        viewModel = ViewModelProvider(
+            this,
+            EqLibraryViewModel.Factory {
+                createEqLibraryDependencies(applicationContext)
+            },
+        )[EqLibraryViewModel::class.java]
 
         setContent {
-            val appPreferences = appPreferencesRepository.preferences.collectAsStateWithLifecycle(
-                initialValue = AppPreferences(),
-            ).value
-            val activeOutputId = appPreferences.exportTargets.activeTarget.name
-            val catalogState = catalogRepository.state.collectAsStateWithLifecycle().value
-            val managedHeadphones = managedHeadphonesRepository
-                .observeHeadphones(activeOutputId)
-                .collectAsStateWithLifecycle(initialValue = emptyList<ManagedHeadphoneRecord>())
-                .value
-            val savedEqs = savedEqRepository.observeForOutput(activeOutputId).collectAsStateWithLifecycle(
-                initialValue = emptyList<SavedEqRecord>(),
-            ).value
-            val savedGeneralEqs = savedGeneralEqRepository
-                .observeForOutput(activeOutputId)
-                .collectAsStateWithLifecycle(initialValue = emptyList<SavedGeneralEqRecord>())
-                .value
-            val blackPearlConnectionState = blackPearlTransport.state.collectAsStateWithLifecycle(
-                initialValue = BlackPearlConnectionState.Disconnected,
-            ).value
-            val fiioJa11ConnectionState = fiioJa11Transport.state.collectAsStateWithLifecycle(
-                initialValue = Kt02h20ConnectionState.Disconnected,
-            ).value
-            val jcallyJm12ConnectionState = jcallyJm12Transport.state.collectAsStateWithLifecycle(
-                initialValue = Kt02h20ConnectionState.Disconnected,
-            ).value
+            val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
 
-            OpraEqTheme(themeMode = appPreferences.themeMode) {
+            OpraEqTheme(themeMode = uiState.appPreferences.themeMode) {
                 EqLibraryApp(
-                    appPreferences = appPreferences,
-                    catalogState = catalogState,
-                    managedHeadphones = managedHeadphones,
-                    savedEqs = savedEqs,
-                    savedGeneralEqs = savedGeneralEqs,
-                    blackPearlConnectionState = blackPearlConnectionState,
-                    onConnectBlackPearl = {
-                        if (
-                            appPreferences.directBlackPearlFlashEnabled &&
-                            appPreferences.exportTargets.activeTarget == ExportDevice.BLACK_PEARL
-                        ) {
-                            blackPearlTransport.connect()
-                        }
+                    appPreferences = uiState.appPreferences,
+                    catalogState = uiState.catalogState,
+                    managedHeadphones = uiState.managedHeadphones,
+                    savedEqs = uiState.savedEqs,
+                    savedGeneralEqs = uiState.savedGeneralEqs,
+                    blackPearlConnectionState = uiState.blackPearlConnectionState,
+                    onConnectBlackPearl = viewModel::connectBlackPearl,
+                    onResetBlackPearl = {
+                        this@MainActivity.resolve(viewModel.resetBlackPearlToFlat())
                     },
-                    onResetBlackPearl = ::resetBlackPearlToFlat,
-                    fiioJa11ConnectionState = fiioJa11ConnectionState,
-                    onConnectFiioJa11 = {
-                        if (
-                            appPreferences.directFiioJa11FlashEnabled &&
-                            appPreferences.exportTargets.activeTarget == ExportDevice.FIIO_JA11
-                        ) {
-                            fiioJa11Transport.connect()
-                        }
+                    fiioJa11ConnectionState = uiState.fiioJa11ConnectionState,
+                    onConnectFiioJa11 = viewModel::connectFiioJa11,
+                    onResetFiioJa11 = {
+                        this@MainActivity.resolve(viewModel.resetFiioJa11ToFlat())
                     },
-                    onResetFiioJa11 = ::resetFiioJa11ToFlat,
-                    jcallyJm12ConnectionState = jcallyJm12ConnectionState,
-                    onConnectJcallyJm12 = {
-                        if (
-                            appPreferences.directJcallyJm12FlashEnabled &&
-                            appPreferences.exportTargets.activeTarget == ExportDevice.JCALLY_JM12
-                        ) {
-                            jcallyJm12Transport.connect()
-                        }
+                    jcallyJm12ConnectionState = uiState.jcallyJm12ConnectionState,
+                    onConnectJcallyJm12 = viewModel::connectJcallyJm12,
+                    onResetJcallyJm12 = {
+                        this@MainActivity.resolve(viewModel.resetJcallyJm12ToFlat())
                     },
-                    onResetJcallyJm12 = ::resetJcallyJm12ToFlat,
                     onFlashManagedProfile = { productId, profileId ->
-                        flashManagedProfile(productId, profileId, activeOutputId)
+                        this@MainActivity.resolve(viewModel.flashManagedProfile(productId, profileId))
                     },
-                    onFlashSavedEq = { entryId -> flashSavedEq(entryId, activeOutputId) },
-                    onFlashGeneralEq = { presetId -> flashGeneralEq(presetId, activeOutputId) },
-                    onRefreshCatalog = syncCoordinator::refresh,
-                    onLoadManagedHeadphone = { productId ->
-                        managedHeadphonesRepository.getHeadphone(productId, activeOutputId)
+                    onFlashSavedEq = { entryId ->
+                        this@MainActivity.resolve(viewModel.flashSavedEq(entryId))
                     },
-                    onSaveSelection = { productId, selectedIds, autoInclude ->
-                        val ready = catalogRepository.state.value as? CatalogState.Ready
-                        if (ready != null) {
-                            if (selectedIds.isEmpty()) {
-                                managedHeadphonesRepository.removeHeadphone(productId, activeOutputId)
-                            } else {
-                                managedHeadphonesRepository.saveSelection(
-                                    catalog = ready.catalog,
-                                    productId = productId,
-                                    stagedSelectedProfileIds = selectedIds,
-                                    autoIncludeNewProfiles = autoInclude,
-                                    outputId = activeOutputId,
-                                )
-                            }
-                        }
+                    onFlashGeneralEq = { presetId ->
+                        this@MainActivity.resolve(viewModel.flashGeneralEq(presetId))
                     },
-                    onRemoveHeadphone = { productId ->
-                        managedHeadphonesRepository.removeHeadphone(productId, activeOutputId)
-                    },
-                    onRemoveManagedProfile = { productId, profileId, deleteSavedFiles ->
-                        removeManagedProfile(
-                            productId = productId,
-                            profileId = profileId,
-                            deleteSavedFiles = deleteSavedFiles,
-                            outputId = activeOutputId,
-                        )
-                    },
-                    onRemoveManagedHeadphone = { productId, deleteSavedFiles ->
-                        removeManagedHeadphone(
-                            productId = productId,
-                            deleteSavedFiles = deleteSavedFiles,
-                            outputId = activeOutputId,
-                        )
-                    },
-                    onDeleteSavedFilesForProfiles = cleanupRepository::deleteForProfiles,
-                    onDeleteSavedFilesForProduct = cleanupRepository::deleteForProduct,
-                    onMarkReviewed = managedHeadphonesRepository::markReviewed,
-                    onToggleFavorite = { profile, manufacturer, model ->
-                        savedEqRepository.toggleFavorite(activeOutputId, profile, manufacturer, model)
-                    },
-                    onSaveGeneralPreset = { preset ->
-                        savedGeneralEqRepository.saveForOutput(activeOutputId, preset)
-                    },
-                    onHideCanonicalProfiles = appPreferencesRepository::hideCanonicalProfiles,
-                    onUnhideCanonicalProfiles = appPreferencesRepository::unhideCanonicalProfiles,
-                    onImportPersonal = { manufacturer, model, displayName, target, peqText ->
-                        savedEqRepository.importPersonal(
-                            outputId = activeOutputId,
-                            manufacturer = manufacturer,
-                            model = model,
-                            displayName = displayName,
-                            target = target,
-                            peqText = peqText,
-                        )
-                    },
-                    onDeleteSavedEq = { entryId ->
-                        savedEqRepository.removeFromOutput(activeOutputId, entryId)
-                    },
-                    onRemoveGeneralEq = { presetId ->
-                        savedGeneralEqRepository.removeFromOutput(activeOutputId, presetId)
-                    },
+                    onRefreshCatalog = viewModel::refreshCatalog,
+                    onLoadManagedHeadphone = viewModel::loadManagedHeadphone,
+                    onSaveSelection = viewModel::saveSelection,
+                    onRemoveHeadphone = viewModel::removeHeadphone,
+                    onRemoveManagedProfile = viewModel::removeManagedProfile,
+                    onRemoveManagedHeadphone = viewModel::removeManagedHeadphone,
+                    onDeleteSavedFilesForProfiles = viewModel::deleteSavedFilesForProfiles,
+                    onDeleteSavedFilesForProduct = viewModel::deleteSavedFilesForProduct,
+                    onMarkReviewed = viewModel::markReviewed,
+                    onToggleFavorite = viewModel::toggleFavorite,
+                    onSaveGeneralPreset = viewModel::saveGeneralPreset,
+                    onHideCanonicalProfiles = viewModel::hideCanonicalProfiles,
+                    onUnhideCanonicalProfiles = viewModel::unhideCanonicalProfiles,
+                    onImportPersonal = viewModel::importPersonal,
+                    onDeleteSavedEq = viewModel::deleteSavedEq,
+                    onRemoveGeneralEq = viewModel::removeGeneralEq,
                     onPersistExportTree = ::persistExportTree,
                     onEvaluateExportCurrentness = { treeUri ->
-                        val allRecords = buildList {
-                            addAll(managedHeadphones)
-                            addAll(savedEqs.map(savedEqRepository::toManagedHeadphone))
-                            addAll(savedGeneralEqs.map(savedGeneralEqRepository::toExportRecord))
-                        }
-                        exportRepository.evaluateCurrentness(
-                            treeUri = treeUri,
-                            headphones = allRecords,
-                            device = appPreferences.exportTargets.activeTarget,
+                        viewModel.evaluateExportCurrentness(treeUri?.toString())
+                    },
+                    onExportSelected = { treeUri, device ->
+                        viewModel.exportSelected(treeUri.toString(), device)
+                    },
+                    onExportProduct = { treeUri, productId, device ->
+                        viewModel.exportProduct(treeUri.toString(), productId, device)
+                    },
+                    onExportManagedProfile = { treeUri, productId, profileId, device ->
+                        viewModel.exportManagedProfile(
+                            treeUri.toString(),
+                            productId,
+                            profileId,
+                            device,
                         )
                     },
-                    onExportSelected = { uri, device ->
-                        val allRecords = buildList {
-                            addAll(managedHeadphones)
-                            addAll(savedEqs.map(savedEqRepository::toManagedHeadphone))
-                            addAll(savedGeneralEqs.map(savedGeneralEqRepository::toExportRecord))
-                        }
-                        exportRepository.exportSelected(
-                            treeUri = uri,
-                            headphones = allRecords,
-                            device = device,
-                        )
+                    onExportSavedEq = { treeUri, entryId, device ->
+                        viewModel.exportSavedEq(treeUri.toString(), entryId, device)
                     },
-                    onExportProduct = { uri, productId, device ->
-                        exportManagedProduct(uri, productId, device, activeOutputId)
+                    onExportGeneralEq = { treeUri, presetId, device ->
+                        viewModel.exportGeneralEq(treeUri.toString(), presetId, device)
                     },
-                    onExportManagedProfile = { uri, productId, profileId, device ->
-                        exportManagedProfile(uri, productId, profileId, device, activeOutputId)
+                    onExportGeneralEqs = { treeUri, presetIds, device ->
+                        viewModel.exportGeneralEqs(treeUri.toString(), presetIds, device)
                     },
-                    onExportSavedEq = { uri, entryId, device ->
-                        exportSavedEq(uri, entryId, device, activeOutputId)
-                    },
-                    onExportGeneralEq = { uri, presetId, device ->
-                        exportGeneralEq(uri, presetId, device, activeOutputId)
-                    },
-                    onExportGeneralEqs = { uri, presetIds, device ->
-                        exportGeneralEqs(uri, presetIds, device, activeOutputId)
-                    },
-                    onCheckForUpdates = updateCoordinator::checkNow,
-                    onDismissUpdate = appPreferencesRepository::dismissUpdate,
-                    onDismissPostUpdate = appPreferencesRepository::dismissPostUpdateCard,
+                    onCheckForUpdates = viewModel::checkForUpdates,
+                    onDismissUpdate = viewModel::dismissUpdate,
+                    onDismissPostUpdate = viewModel::dismissPostUpdate,
                     onOpenUrl = ::openExternalUrl,
-                    onThemeModeChange = { themeMode ->
-                        lifecycleScope.launch {
-                            appPreferencesRepository.setThemeMode(themeMode)
-                        }
-                    },
-                    onExportTargetChange = { device, enabled ->
-                        lifecycleScope.launch {
-                            appPreferencesRepository.setExportTargetEnabled(device, enabled)
-                        }
-                    },
-                    onActiveExportTargetChange = { device ->
-                        lifecycleScope.launch {
-                            appPreferencesRepository.setActiveExportTarget(device)
-                        }
-                    },
-                    onDirectBlackPearlFlashEnabledChange = { enabled ->
-                        lifecycleScope.launch {
-                            appPreferencesRepository.setDirectBlackPearlFlashEnabled(enabled)
-                        }
-                    },
-                    onDirectFiioJa11FlashEnabledChange = { enabled ->
-                        lifecycleScope.launch {
-                            appPreferencesRepository.setDirectFiioJa11FlashEnabled(enabled)
-                        }
-                    },
-                    onDirectJcallyJm12FlashEnabledChange = { enabled ->
-                        lifecycleScope.launch {
-                            appPreferencesRepository.setDirectJcallyJm12FlashEnabled(enabled)
-                        }
-                    },
+                    onThemeModeChange = viewModel::setThemeMode,
+                    onExportTargetChange = viewModel::setExportTargetEnabled,
+                    onActiveExportTargetChange = viewModel::setActiveExportTarget,
+                    onDirectBlackPearlFlashEnabledChange = viewModel::setDirectBlackPearlFlashEnabled,
+                    onDirectFiioJa11FlashEnabledChange = viewModel::setDirectFiioJa11FlashEnabled,
+                    onDirectJcallyJm12FlashEnabledChange = viewModel::setDirectJcallyJm12FlashEnabled,
                 )
             }
         }
@@ -375,385 +126,26 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        lifecycleScope.launch { refreshCatalogIfDue() }
-    }
-
-    override fun onDestroy() {
-        if (blackPearlTransportDelegate.isInitialized()) {
-            blackPearlTransport.close()
-        }
-        if (fiioJa11TransportDelegate.isInitialized()) {
-            fiioJa11Transport.close()
-        }
-        if (jcallyJm12TransportDelegate.isInitialized()) {
-            jcallyJm12Transport.close()
-        }
-        super.onDestroy()
-    }
-
-    private suspend fun refreshCatalogIfDue() {
-        val ready = catalogRepository.state.value as? CatalogState.Ready ?: return
-        val now = System.currentTimeMillis()
-        if (now - ready.lastSuccessfulRefreshMillis < FOREGROUND_REFRESH_INTERVAL_MILLIS) return
-        if (now - lastForegroundRefreshAttemptMillis < FOREGROUND_RETRY_THROTTLE_MILLIS) return
-        lastForegroundRefreshAttemptMillis = now
-        syncCoordinator.refresh()
-    }
-
-    private suspend fun importPersonalEq(
-        outputId: String,
-        manufacturer: String,
-        model: String,
-        displayName: String,
-        target: String?,
-        peqText: String,
-    ): String? = runCatching {
-        savedEqRepository.importPersonal(
-            outputId = outputId,
-            manufacturer = manufacturer,
-            model = model,
-            displayName = displayName,
-            target = target,
-            peqText = peqText,
-        )
-    }.fold(
-        onSuccess = { null },
-        onFailure = { error -> error.message ?: "Couldn’t import that PEQ." },
-    )
-
-    private suspend fun exportGeneralEqs(
-        treeUri: Uri,
-        presetIds: Set<String>,
-        device: ExportDevice,
-        outputId: String,
-    ): PresetExportSummary {
-        val records = presetIds.sorted().mapNotNull { presetId ->
-            savedGeneralEqRepository.getForOutput(outputId, presetId)
-        }
-        return exportRepository.exportSelected(
-            treeUri = treeUri,
-            headphones = records.map(savedGeneralEqRepository::toExportRecord),
-            device = device,
-        )
-    }
-
-    private suspend fun flashManagedProfile(
-        productId: String,
-        profileId: String,
-        outputId: String,
-    ): String {
-        val managed = managedHeadphonesRepository.getHeadphone(productId, outputId)
-            ?: return "That headphone is no longer saved for this output."
-        val profile = managed.profiles.firstOrNull { it.profileId == profileId && it.selected }
-            ?: return "That EQ is no longer selected for this output."
-        return flashHardwareProfile(profile.lastKnownProfile)
-    }
-
-    private suspend fun flashSavedEq(entryId: String, outputId: String): String {
-        val record = savedEqRepository.getForOutput(outputId, entryId)
-            ?: return "That EQ is no longer saved for this output."
-        return flashHardwareProfile(record.profile)
-    }
-
-    private suspend fun flashGeneralEq(
-        presetId: String,
-        outputId: String,
-    ): String {
-        val record = savedGeneralEqRepository.getForOutput(outputId, presetId)
-            ?: return "That General EQ is no longer saved for this output."
-        return flashHardwareProfile(record.profile)
-    }
-
-    private suspend fun flashHardwareProfile(profile: OpraEqProfile): String {
-        val preferences = appPreferencesRepository.snapshot()
-        return when (preferences.exportTargets.activeTarget) {
-            ExportDevice.BLACK_PEARL -> flashBlackPearlProfile(profile, preferences)
-            ExportDevice.FIIO_JA11 -> flashFiioJa11Profile(profile, preferences)
-            ExportDevice.JCALLY_JM12 -> flashJcallyJm12Profile(profile, preferences)
-            else -> "Select a supported hardware output before using direct Flash."
-        }
-    }
-
-    private suspend fun resetBlackPearlToFlat(): String {
-        val preferences = appPreferencesRepository.snapshot()
-        if (preferences.exportTargets.activeTarget != ExportDevice.BLACK_PEARL) {
-            return "Select Black Pearl as the active output before resetting its EQ."
-        }
-        if (!preferences.directBlackPearlFlashEnabled) {
-            return "Enable direct Flash in Settings → Black Pearl before resetting its EQ."
-        }
-        if (blackPearlTransport.state.value !is BlackPearlConnectionState.Connected) {
-            return "Connect to the Black Pearl from My EQs before resetting its EQ."
-        }
-
-        return when (val result = blackPearlFlasher.resetToFlat()) {
-            is BlackPearlFlatResetResult.Success -> {
-                if (kotlin.math.abs(result.restoredPlaybackGainDb) < 0.000_001) {
-                    "Black Pearl EQ reset to flat."
-                } else {
-                    val removedAdjustment = String.format(Locale.US, "%+.2f", -result.restoredPlaybackGainDb)
-                    "Black Pearl EQ reset to flat · removed EQ Library’s $removedAdjustment dB playback-gain adjustment"
-                }
-            }
-            is BlackPearlFlatResetResult.NotRepresentable -> "Couldn’t reset to flat · ${result.reason}"
-            is BlackPearlFlatResetResult.DeviceUnavailable -> result.reason
-            is BlackPearlFlatResetResult.TransferFailed -> result.reason
-        }
-    }
-
-    private suspend fun resetFiioJa11ToFlat(): String {
-        val preferences = appPreferencesRepository.snapshot()
-        if (preferences.exportTargets.activeTarget != ExportDevice.FIIO_JA11) {
-            return "Select FiiO JA11 as the active output before resetting its EQ."
-        }
-        if (!preferences.directFiioJa11FlashEnabled) {
-            return "Enable direct Flash in Settings → FiiO JA11 before resetting its EQ."
-        }
-        if (fiioJa11Transport.state.value !is Kt02h20ConnectionState.Connected) {
-            return "Connect to the FiiO JA11 from My EQs before resetting its EQ."
-        }
-        return when (val result = fiioJa11Flasher.resetToFlat()) {
-            is Kt02h20FlatResetResult.Success -> "FiiO JA11 reset to flat and saved to the device."
-            is Kt02h20FlatResetResult.NotSuitable -> "Couldn’t reset FiiO JA11 to flat · ${result.reason}"
-            is Kt02h20FlatResetResult.DeviceUnavailable -> result.reason
-            is Kt02h20FlatResetResult.TransferFailed -> result.reason
-            is Kt02h20FlatResetResult.VerificationFailed -> "FiiO JA11 reset verification failed · ${result.reason}"
-        }
-    }
-
-    private suspend fun resetJcallyJm12ToFlat(): String {
-        val preferences = appPreferencesRepository.snapshot()
-        if (preferences.exportTargets.activeTarget != ExportDevice.JCALLY_JM12) {
-            return "Select JCALLY JM12 as the active output before resetting its EQ."
-        }
-        if (!preferences.directJcallyJm12FlashEnabled) {
-            return "Enable direct Flash in Settings → JCALLY JM12 before resetting its EQ."
-        }
-        if (jcallyJm12Transport.state.value !is Kt02h20ConnectionState.Connected) {
-            return "Connect to the JCALLY JM12 from My EQs before resetting its EQ."
-        }
-        return when (val result = jcallyJm12Flasher.resetToFlat()) {
-            is Kt02h20FlatResetResult.Success -> {
-                val restored = String.format(Locale.US, "%+.2f", result.restoredPlaybackGainDb)
-                "JCALLY JM12 reset to flat · playback gain restored $restored dB · power-cycle persistence still needs hardware validation"
-            }
-            is Kt02h20FlatResetResult.NotSuitable -> "Couldn’t reset JCALLY JM12 to flat · ${result.reason}"
-            is Kt02h20FlatResetResult.DeviceUnavailable -> result.reason
-            is Kt02h20FlatResetResult.TransferFailed -> result.reason
-            is Kt02h20FlatResetResult.VerificationFailed -> "JCALLY JM12 reset verification failed · ${result.reason}"
-        }
-    }
-
-    private suspend fun flashBlackPearlProfile(
-        profile: OpraEqProfile,
-        preferences: AppPreferences,
-    ): String {
-        if (preferences.exportTargets.activeTarget != ExportDevice.BLACK_PEARL) {
-            return "Select Black Pearl as the active output before using direct Flash."
-        }
-        if (!preferences.directBlackPearlFlashEnabled) {
-            return "Enable direct Flash in Settings → Black Pearl before flashing."
-        }
-        if (blackPearlTransport.state.value !is BlackPearlConnectionState.Connected) {
-            return "Connect to the Black Pearl from My EQs before flashing."
-        }
-
-        return when (val result = blackPearlFlasher.flash(profile)) {
-            is BlackPearlFlashResult.Success -> {
-                val gain = String.format(Locale.US, "%+.2f", result.appliedPlaybackGainDb)
-                result.warning?.let { warning ->
-                    "Flash successful · playback gain $gain dB · $warning"
-                } ?: "Flash successful · playback gain $gain dB"
-            }
-            is BlackPearlFlashResult.NotRepresentable -> "Not flashable · ${result.reason}"
-            is BlackPearlFlashResult.DeviceUnavailable -> result.reason
-            is BlackPearlFlashResult.TransferFailed -> result.reason
-        }
-    }
-
-    private suspend fun flashFiioJa11Profile(
-        profile: OpraEqProfile,
-        preferences: AppPreferences,
-    ): String {
-        if (!preferences.directFiioJa11FlashEnabled) {
-            return "Enable direct Flash in Settings → FiiO JA11 before flashing."
-        }
-        if (fiioJa11Transport.state.value !is Kt02h20ConnectionState.Connected) {
-            return "Connect to the FiiO JA11 from My EQs before flashing."
-        }
-        return when (val result = fiioJa11Flasher.flash(profile)) {
-            is Kt02h20FlashResult.Success -> {
-                val gain = String.format(Locale.US, "%+.2f", result.representation.playbackGainDb)
-                "Flash successful · ${fidelityLabel(result.representation.fidelity)} · global EQ gain $gain dB · saved to FiiO JA11"
-            }
-            is Kt02h20FlashResult.NotSuitable -> "Not suitable for FiiO JA11 · ${result.reason}"
-            is Kt02h20FlashResult.DeviceUnavailable -> result.reason
-            is Kt02h20FlashResult.TransferFailed -> result.reason
-            is Kt02h20FlashResult.VerificationFailed -> "FiiO JA11 Flash verification failed · ${result.reason}"
-        }
-    }
-
-    private suspend fun flashJcallyJm12Profile(
-        profile: OpraEqProfile,
-        preferences: AppPreferences,
-    ): String {
-        if (!preferences.directJcallyJm12FlashEnabled) {
-            return "Enable direct Flash in Settings → JCALLY JM12 before flashing."
-        }
-        if (jcallyJm12Transport.state.value !is Kt02h20ConnectionState.Connected) {
-            return "Connect to the JCALLY JM12 from My EQs before flashing."
-        }
-        return when (val result = jcallyJm12Flasher.flash(profile)) {
-            is Kt02h20FlashResult.Success -> {
-                val gain = String.format(Locale.US, "%+.2f", result.representation.playbackGainDb)
-                "Flash successful · ${fidelityLabel(result.representation.fidelity)} · playback gain $gain dB · power-cycle persistence still needs hardware validation"
-            }
-            is Kt02h20FlashResult.NotSuitable -> "Not suitable for JCALLY JM12 · ${result.reason}"
-            is Kt02h20FlashResult.DeviceUnavailable -> result.reason
-            is Kt02h20FlashResult.TransferFailed -> result.reason
-            is Kt02h20FlashResult.VerificationFailed -> "JCALLY JM12 Flash verification failed · ${result.reason}"
-        }
-    }
-
-    private suspend fun exportManagedProduct(
-        treeUri: Uri,
-        productId: String,
-        device: ExportDevice,
-        outputId: String,
-    ): PresetExportSummary {
-        val managed = managedHeadphonesRepository.getHeadphone(productId, outputId)
-            ?: return PresetExportSummary(results = emptyList())
-        return exportRepository.exportSelected(
-            treeUri = treeUri,
-            headphones = listOf(managed),
-            device = device,
-        )
-    }
-
-    private suspend fun exportManagedProfile(
-        treeUri: Uri,
-        productId: String,
-        profileId: String,
-        device: ExportDevice,
-        outputId: String,
-    ): PresetExportSummary {
-        val managed = managedHeadphonesRepository.getHeadphone(productId, outputId)
-            ?: return PresetExportSummary(results = emptyList())
-        val profile = managed.profiles.firstOrNull { it.profileId == profileId && it.selected }
-            ?: return PresetExportSummary(results = emptyList())
-        return exportRepository.exportSelected(
-            treeUri = treeUri,
-            headphones = listOf(managed.copy(profiles = listOf(profile))),
-            device = device,
-        )
-    }
-
-    private suspend fun exportSavedEq(
-        treeUri: Uri,
-        entryId: String,
-        device: ExportDevice,
-        outputId: String,
-    ): PresetExportSummary {
-        val record = savedEqRepository.getForOutput(outputId, entryId)
-            ?: return PresetExportSummary(results = emptyList())
-        return exportRepository.exportSelected(
-            treeUri = treeUri,
-            headphones = listOf(savedEqRepository.toManagedHeadphone(record)),
-            device = device,
-        )
-    }
-
-    private suspend fun exportGeneralEq(
-        treeUri: Uri,
-        presetId: String,
-        device: ExportDevice,
-        outputId: String,
-    ): PresetExportSummary {
-        val record = savedGeneralEqRepository.getForOutput(outputId, presetId)
-            ?: return PresetExportSummary(results = emptyList())
-        return exportRepository.exportSelected(
-            treeUri = treeUri,
-            headphones = listOf(savedGeneralEqRepository.toExportRecord(record)),
-            device = device,
-        )
-    }
-
-    private suspend fun removeManagedProfile(
-        productId: String,
-        profileId: String,
-        deleteSavedFiles: Boolean,
-        outputId: String,
-    ): PresetCleanupSummary? {
-        val managed = managedHeadphonesRepository.getHeadphone(productId, outputId) ?: return null
-        val record = managed.profiles.firstOrNull { it.profileId == profileId } ?: return null
-        val cleanup = if (deleteSavedFiles) {
-            cleanupRepository.deleteForProfiles(setOf(profileId))
-        } else {
-            null
-        }
-        val ready = catalogRepository.state.value as? CatalogState.Ready
-        val currentProfiles = ready?.catalog?.profilesForProduct(productId).orEmpty()
-        val currentProfile = currentProfiles.firstOrNull { it.id == profileId }
-
-        if (record.noLongerAvailable || currentProfile == null || ready == null) {
-            managedHeadphonesRepository.removeUnavailableProfile(productId, profileId, outputId)
-            val remaining = managedHeadphonesRepository.getHeadphone(productId, outputId)
-            if (remaining?.profiles?.none { it.selected || it.noLongerAvailable } != false) {
-                managedHeadphonesRepository.removeHeadphone(productId, outputId)
-            }
-        } else {
-            val selectionState = managed.toSelectionState()
-            val remainingCurrentSelected = currentProfiles
-                .filter(selectionState::isSelected)
-                .mapTo(mutableSetOf()) { it.id }
-                .also { it.remove(profileId) }
-            val retainedSelectedRemain = managed.profiles.any {
-                it.profileId != profileId && it.selected && it.noLongerAvailable
-            }
-            if (remainingCurrentSelected.isEmpty() && !retainedSelectedRemain) {
-                managedHeadphonesRepository.removeHeadphone(productId, outputId)
-            } else {
-                managedHeadphonesRepository.saveSelection(
-                    catalog = ready.catalog,
-                    productId = productId,
-                    stagedSelectedProfileIds = remainingCurrentSelected,
-                    autoIncludeNewProfiles = managed.autoIncludeNewProfiles,
-                    outputId = outputId,
-                )
-            }
-        }
-
-        return cleanup
-    }
-
-    private suspend fun removeManagedHeadphone(
-        productId: String,
-        deleteSavedFiles: Boolean,
-        outputId: String,
-    ): PresetCleanupSummary? {
-        val cleanup = if (deleteSavedFiles) {
-            cleanupRepository.deleteForProduct(productId)
-        } else {
-            null
-        }
-        managedHeadphonesRepository.removeHeadphone(productId, outputId)
-        return cleanup
+        if (::viewModel.isInitialized) viewModel.onAppResumed()
     }
 
     private suspend fun persistExportTree(uri: Uri): Boolean {
-        return try {
-            contentResolver.takePersistableUriPermission(
-                uri,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
-            )
-            val label = DocumentFile.fromTreeUri(applicationContext, uri)?.name
-                ?.takeIf { it.isNotBlank() }
-                ?: "Selected folder"
-            appPreferencesRepository.setExportTree(uri.toString(), label)
-            true
-        } catch (_: SecurityException) {
-            false
-        }
+        val label = withContext(Dispatchers.IO) {
+            try {
+                contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+                )
+                DocumentFile.fromTreeUri(applicationContext, uri)?.name
+                    ?.takeIf(String::isNotBlank)
+                    ?: getString(R.string.selected_folder_fallback)
+            } catch (_: SecurityException) {
+                null
+            }
+        } ?: return false
+
+        viewModel.setExportTree(uri.toString(), label)
+        return true
     }
 
     private fun openExternalUrl(url: String) {
@@ -761,15 +153,5 @@ class MainActivity : ComponentActivity() {
         runCatching {
             startActivity(Intent(Intent.ACTION_VIEW, uri))
         }
-    }
-
-    private fun fidelityLabel(fidelity: DevicePresetFidelity): String = when (fidelity) {
-        DevicePresetFidelity.EXACT -> "Exact"
-        DevicePresetFidelity.OPTIMIZED -> "Optimized"
-    }
-
-    companion object {
-        private const val FOREGROUND_REFRESH_INTERVAL_MILLIS = 24L * 60L * 60L * 1000L
-        private const val FOREGROUND_RETRY_THROTTLE_MILLIS = 15L * 60L * 1000L
     }
 }
