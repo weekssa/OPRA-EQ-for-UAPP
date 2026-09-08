@@ -13,8 +13,10 @@ sealed interface BlackPearlFlashPlan {
         val reports: List<ByteArray>,
         val requiredPlaybackGainDb: Double,
         val fidelity: DevicePresetFidelity,
+        val adaptationSummary: String,
         /** Legacy diagnostic count; optimized profiles are response-fitted, not first-N truncated. */
         val omittedBandCount: Int,
+        /** Safety caution only. Informational Exact/Optimized adaptation text is separate. */
         val warning: String? = null,
         val representationVersion: Int = 1,
         val rmsErrorDb: Double = 0.0,
@@ -64,15 +66,6 @@ fun buildBlackPearlFlashPlan(
     }
 
     val warnings = buildList {
-        if (representation.fidelity == DevicePresetFidelity.OPTIMIZED) {
-            val metrics = if (representation.usedResponseFit) {
-                " RMS ${formatMetric(representation.rmsErrorDb)} dB, max ${formatMetric(representation.maxAbsoluteErrorDb)} dB."
-            } else {
-                ""
-            }
-            add("Black Pearl: Optimized · ${representation.adaptationSummary()}.$metrics".trim())
-        }
-
         val outsideValidatedGainRange = prepared.mapIndexedNotNull { index, band ->
             band.gainDb.takeUnless(BlackPearlProtocol::isBandGainWithinValidatedRange)?.let { gain ->
                 "Band ${index + 1} ${String.format(Locale.US, "%+.2f", gain)} dB"
@@ -92,6 +85,7 @@ fun buildBlackPearlFlashPlan(
         reports = BlackPearlProtocol.flashSequence(prepared, activeSlot),
         requiredPlaybackGainDb = representation.playbackGainDb,
         fidelity = representation.fidelity,
+        adaptationSummary = representation.adaptationSummary(),
         omittedBandCount = (profile.bands.orEmpty().size - prepared.size).coerceAtLeast(0),
         warning = warnings.takeIf(List<String>::isNotEmpty)?.joinToString("\n\n"),
         representationVersion = representation.representationVersion,
@@ -99,5 +93,3 @@ fun buildBlackPearlFlashPlan(
         maxAbsoluteErrorDb = representation.maxAbsoluteErrorDb,
     )
 }
-
-private fun formatMetric(value: Double): String = String.format(Locale.US, "%.2f", value)
