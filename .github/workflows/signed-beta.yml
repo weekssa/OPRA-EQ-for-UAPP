@@ -125,7 +125,7 @@ jobs:
           cat > "$publish_dir/README.md" <<EOF
           # EQ Library mobile test build
 
-          Signed beta generated from commit `${GITHUB_SHA}` for app version `${version_name}`.
+          Signed beta generated from commit ${GITHUB_SHA} for app version ${version_name}.
 
           Stable Android download:
           https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/mobile-test-apk/${stable_name}
