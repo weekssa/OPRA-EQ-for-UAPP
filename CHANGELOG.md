@@ -60,6 +60,8 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Hardware-only outputs explicitly produce no file export artifact. FiiO JA11 and stock JCALLY JM12 therefore keep Direct Flash without inventing a preset-file interchange format; Add/Save stores output-specific state but never automatically writes hardware.
 - Settings nests device-specific Direct Flash controls under enabled hardware outputs and continues to present JA11/JM12 as **Hardware validation pending** until their physical gates pass.
 - Signed-beta publication now supports `v0.*` development branches and produces stable plus versioned mobile-test APK names for exact-candidate hardware testing.
+- Android app orchestration now follows explicit MAD-style boundaries: `MainActivity` is the lifecycle/platform boundary, `EqLibraryViewModel` owns immutable `StateFlow` UI state, a manual composition root constructs Android data sources, repositories use injected dispatcher/platform contracts instead of retaining `Context`, and hardware USB sessions survive configuration changes until the ViewModel is actually cleared.
+- Transient selection/export UI state that users expect to survive activity recreation now uses Bundle-safe saved state, including unsaved headphone profile selections, General EQ batch selections, What’s New presentation state, and the pending export intent while Android’s folder picker is open.
 
 ### Fixed
 
@@ -69,6 +71,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Stock JM12 digital-gain register updates preserve unrelated register bytes instead of reconstructing bytes that EQ Library does not own.
 - Shared hardware adaptation rejects unsupported source filters and quality-gate failures instead of silently dropping or clamping them.
 - Obsolete tests that encoded pre-v0.5 first-N Black Pearl behavior were replaced with regression coverage for the approved complete-response/shared-adapter contract rather than weakening validation.
+- The SAF export/cleanup boundary now distinguishes a confirmed missing owned document/path from a provider/permission lookup failure, so transient access failures cannot be mistaken for deletion and cannot silently discard EQ Library’s ownership record.
 
 ### Validation
 
