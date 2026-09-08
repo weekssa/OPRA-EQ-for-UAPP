@@ -46,9 +46,13 @@ data class FiveBandQuantization(
 /**
  * Shared direct-hardware adaptation profile.
  *
- * The legacy class name is kept to avoid a persisted/API migration, but maxBands may now be any
+ * The legacy class name is kept to avoid a broad API migration, but maxBands may now be any
  * positive finite hardware band budget. `representationVersion` invalidates derived device plans
  * when fitting/capability behavior intentionally changes; canonical EQ data is never mutated.
+ *
+ * A device may expose a protocol-encodable gain range wider than the range we want the optimizer to
+ * synthesize. Black Pearl uses that distinction to preserve an exact, explicitly cautioned source
+ * value outside +/-10 dB while keeping newly fitted bands inside the validated +/-10 dB region.
  */
 data class FiveBandDeviceSpec(
     val stableId: String,
@@ -58,6 +62,8 @@ data class FiveBandDeviceSpec(
     val maxRmsErrorDb: Double = 2.0,
     val maxAbsoluteErrorDb: Double = 6.0,
     val representationVersion: Int = 1,
+    val optimizerMinGainDb: Double = capabilities.minGainDb,
+    val optimizerMaxGainDb: Double = capabilities.maxGainDb,
 ) {
     init {
         require(capabilities.maxBands != null && capabilities.maxBands > 0) {
@@ -66,6 +72,9 @@ data class FiveBandDeviceSpec(
         require(maxRmsErrorDb > 0.0)
         require(maxAbsoluteErrorDb > 0.0)
         require(representationVersion > 0)
+        require(optimizerMinGainDb <= optimizerMaxGainDb)
+        require(optimizerMinGainDb >= capabilities.minGainDb)
+        require(optimizerMaxGainDb <= capabilities.maxGainDb)
     }
 }
 
@@ -165,7 +174,7 @@ object Kt02h20FiveBandOptimizer {
         }
 
         val seeds = parsedSource
-            .map { indexed -> indexed.copy(band = quantizeBand(indexed.band.coerceTo(capabilities), spec)) }
+            .map { indexed -> indexed.copy(band = quantizeBand(indexed.band.coerceToFitRange(spec), spec)) }
             .distinctBy { it.band }
         if (seeds.isEmpty()) {
             return FiveBandOptimizationResult.NotSuitable(
@@ -306,16 +315,15 @@ object Kt02h20FiveBandOptimizer {
     }
 
     private fun gainCandidates(band: Kt02h20Band, spec: FiveBandDeviceSpec): List<Kt02h20Band> {
-        val cap = spec.capabilities
         val scanStep = maxOf(spec.quantization.gainStepDb, 0.5)
         val values = buildList {
-            var value = cap.minGainDb
-            while (value <= cap.maxGainDb + EPSILON) {
+            var value = spec.optimizerMinGainDb
+            while (value <= spec.optimizerMaxGainDb + EPSILON) {
                 add(value)
                 value += scanStep
             }
-            add(band.gainDb)
-            add(0.0.coerceIn(cap.minGainDb, cap.maxGainDb))
+            add(band.gainDb.coerceIn(spec.optimizerMinGainDb, spec.optimizerMaxGainDb))
+            add(0.0.coerceIn(spec.optimizerMinGainDb, spec.optimizerMaxGainDb))
         }
         return values.map { gain -> quantizeBand(band.copy(gainDb = gain), spec) }
     }
@@ -452,11 +460,14 @@ object Kt02h20FiveBandOptimizer {
             gainDb in cap.minGainDb..cap.maxGainDb &&
             q in cap.minQ..cap.maxQ
 
-    private fun Kt02h20Band.coerceTo(cap: DeviceEqCapabilities): Kt02h20Band = copy(
-        frequencyHz = frequencyHz.coerceIn(cap.minFrequencyHz, cap.maxFrequencyHz),
-        gainDb = gainDb.coerceIn(cap.minGainDb, cap.maxGainDb),
-        q = q.coerceIn(cap.minQ, cap.maxQ),
-    )
+    private fun Kt02h20Band.coerceToFitRange(spec: FiveBandDeviceSpec): Kt02h20Band {
+        val cap = spec.capabilities
+        return copy(
+            frequencyHz = frequencyHz.coerceIn(cap.minFrequencyHz, cap.maxFrequencyHz),
+            gainDb = gainDb.coerceIn(spec.optimizerMinGainDb, spec.optimizerMaxGainDb),
+            q = q.coerceIn(cap.minQ, cap.maxQ),
+        )
+    }
 
     private fun quantizeBand(band: Kt02h20Band, spec: FiveBandDeviceSpec): Kt02h20Band {
         val cap = spec.capabilities
