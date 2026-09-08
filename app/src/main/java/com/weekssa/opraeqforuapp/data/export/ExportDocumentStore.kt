@@ -12,6 +12,18 @@ interface ExportDocumentHandle {
 }
 
 /**
+ * Result of a child-document lookup.
+ *
+ * Missing is materially different from Unavailable: cleanup may forget ownership only when the
+ * recorded child is confirmed missing, never when SAF access/querying failed.
+ */
+sealed interface ExportLookup<out T> {
+    data class Found<T>(val value: T) : ExportLookup<T>
+    data object Missing : ExportLookup<Nothing>
+    data object Unavailable : ExportLookup<Nothing>
+}
+
+/**
  * Platform boundary for Storage Access Framework operations used by preset export and cleanup.
  *
  * Repository code depends on this contract rather than Android Context, ContentResolver, Uri, or
@@ -22,11 +34,11 @@ interface ExportDocumentStore {
 
     fun openDocument(documentUri: String): ExportDocumentHandle?
 
-    fun findDirectory(parent: ExportDirectoryHandle, name: String): ExportDirectoryHandle?
+    fun findDirectory(parent: ExportDirectoryHandle, name: String): ExportLookup<ExportDirectoryHandle>
 
     fun createDirectory(parent: ExportDirectoryHandle, name: String): ExportDirectoryHandle?
 
-    fun findFile(parent: ExportDirectoryHandle, name: String): ExportDocumentHandle?
+    fun findFile(parent: ExportDirectoryHandle, name: String): ExportLookup<ExportDocumentHandle>
 
     fun createFile(
         parent: ExportDirectoryHandle,
