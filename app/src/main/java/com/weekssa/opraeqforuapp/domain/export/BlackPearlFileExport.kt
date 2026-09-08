@@ -9,22 +9,24 @@ import java.util.Locale
 
 /**
  * Builds file representations for outputs whose exported file should match the same derived hardware
- * plan used by Direct Flash.
+ * plan used by Direct Flash, or which need a product-specific verified import contract.
  *
  * Black Pearl file export and USB Flash remain independent delivery actions, but they consume one
  * shared response-adaptation policy. A >10-band canonical source is fitted to the complete response,
  * not first-N truncated. Exact protocol-encodable source gains outside the currently validated +/-10
  * dB region remain unchanged and receive the same caution rather than being clamped.
  *
- * The file syntax intentionally follows the verified pyBlackPearl AutoEq importer contract: Peak,
- * Low Shelf, and High Shelf are written as PK / LS / HS. This is a Black Pearl-specific serializer;
- * generic AutoEq/Equalizer APO targets continue to use their own standard shelf tokens.
+ * The Black Pearl file syntax intentionally follows the verified pyBlackPearl AutoEq importer
+ * contract: Peak, Low Shelf, and High Shelf are written as PK / LS / HS. This is a Black
+ * Pearl-specific serializer; generic AutoEq/Equalizer APO targets continue to use their own standard
+ * shelf tokens.
  */
 internal fun buildFileExportDeviceVariant(
     profile: OpraEqProfile,
     device: ExportDevice,
 ): DevicePresetVariant? = when (device) {
     ExportDevice.BLACK_PEARL -> buildBlackPearlFileExportVariant(profile)
+    ExportDevice.TOPPING_TUNE -> buildToppingTuneFileExportVariant(profile)
     else -> buildTextDeviceVariant(profile, device)
 }
 
