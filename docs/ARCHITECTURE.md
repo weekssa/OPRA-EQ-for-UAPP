@@ -1,6 +1,6 @@
 # EQ Library — Architecture
 
-This document supplements `docs/CHATGPT_PROJECT_RUNBOOK.md`. The runbook remains authoritative for product/UX rules. For current v0.5 output/device decisions also read `docs/V0.5_KT02H20_IMPLEMENTATION_PLAN.md` and the applicable protocol/hands-on notes.
+This document supplements `docs/CHATGPT_PROJECT_RUNBOOK.md`. The runbook remains authoritative for product/UX rules. For current v0.5 output/device decisions also read `docs/V0.5_KT02H20_IMPLEMENTATION_PLAN.md`, `docs/V0.5_IMPORT_COMPATIBILITY_NOTES.md`, and the applicable protocol/hands-on notes.
 
 ## Android baseline
 
@@ -44,10 +44,10 @@ Framework-independent business/DSP rules:
 - selection/review semantics;
 - saved/favorite/general/personal EQ semantics;
 - output registry and capabilities;
-- fidelity/exportability assessment;
+- fidelity/exportability assessment and concise adaptation reasons;
 - UAPP/ToneBoosters conversion;
-- generic file-format conversion;
-- deterministic hardware response adaptation;
+- generic and target-specific file-format conversion;
+- deterministic finite-target/hardware response adaptation;
 - Black Pearl/JA11/JM12 transaction planning/protocol encoding where Android-free;
 - deterministic naming/currentness/fingerprints;
 - export planning and SemVer/update comparison.
@@ -103,6 +103,8 @@ A never-managed headphone begins with no selected EQs. Selection is always expli
 
 Add/Save persists the active-output membership. For file-capable outputs it initiates normal initial export once SAF access exists. For hardware-only outputs it persists the local derived representation/currentness but performs no hardware write.
 
+User-facing terminology keeps local membership, files, and USB actions separate: **Add to My EQs / Save** is local membership, **Export** is a verified external file, **Direct Flash** is an explicit USB write, and “saved to device/persists” is reserved for hardware whose persistence is established.
+
 Favorites/personal imports/general EQs normalize into the same canonical/derived-output model rather than bypassing output capability rules.
 
 ## Output registry
@@ -128,7 +130,7 @@ File-capable outputs produce deterministic `DevicePresetVariant`/export candidat
 
 `OutputFormatKind.HARDWARE_ONLY` targets produce no export file. Their target representation is local derived state and is consumed only by explicit Direct Flash/Reset actions.
 
-Do not create a fake file interchange format just to make hardware-only targets fit a file API.
+Do not create a fake file interchange format just to make hardware-only targets fit a file API. FiiO JA11 and stock JCALLY JM12 remain fileless in v0.5 because no sufficiently verified preset interchange contract has been established; adding a future verified file path would be additive and would not remove Direct Flash.
 
 ## Capability and fidelity model
 
@@ -143,9 +145,11 @@ Do not create a fake file interchange format just to make hardware-only targets 
 
 Fidelity is target-specific:
 
-- **Exact**: source is natively representable at actual target resolution without target-side acoustic alteration/generated headroom.
-- **Optimized**: deterministic target derivation is required and passes quality/safety gates.
+- **Exact**: source is natively representable at actual target resolution without target-side acoustic alteration or generated headroom.
+- **Optimized**: deterministic target derivation is required and passes quality/safety gates. Native target rounding, complete-response fitting, or generated target headroom are Optimized.
 - **Not suitable / Not exportable**: a reliable representation cannot be produced.
+
+Finite-target UI should expose the reason separately from source description, for example `source values preserved`, `native hardware rounding only`, `14 → 10 bands · full-response fit`, or `generated headroom −3.0 dB`.
 
 Canonical selection is not gated by this status.
 
@@ -168,6 +172,14 @@ Parametric text targets declare capabilities and use target-format serializers a
 
 Wavelet/portable GraphicEQ output is a response rendering transformation and is therefore Optimized rather than pretending to preserve independent parametric/preamp controls exactly.
 
+### TOPPING Tune import target
+
+TOPPING Tune is a selectable **Apps** output using standard AutoEq-style parametric `.txt` and a ten-band budget. Official TOPPING material establishes direct AutoEq import, up to ten EQ bands, ±12 dB preamp and filter gain, Q 0.1..15, supported Peak/Low Shelf/High Shelf types, and direct numeric parameter entry.
+
+Product-facing TOPPING Tune generation uses the shared finite-target response machinery when adaptation is required and never first-10 truncates a canonical source. Source preamp outside the documented Tune range is not silently clamped merely to make a file.
+
+TOPPING's public documentation does not establish the downstream device storage quantization used after Tune imports a file. `ToppingTuneFileExport` therefore treats its deterministic steps as **text serialization precision only**, not hardware resolution, and conservatively reports TOPPING Tune output as Optimized until import/storage precision is independently qualified. Hidden DX5 II / DX1 II registry entries remain nonselectable implementation/reference state and are not Direct Flash qualification.
+
 ## Shared finite-hardware response adapter
 
 The deterministic hardware response adapter currently serves:
@@ -176,20 +188,33 @@ The deterministic hardware response adapter currently serves:
 - `HardwareEqDeviceSpecs.FIIO_JA11` — 5 bands;
 - `HardwareEqDeviceSpecs.JCALLY_JM12_STOCK` — 5 bands.
 
+The same response machinery may be reused by a finite app/file target such as TOPPING Tune, but hardware physical capability/quantization claims remain separate from file text precision.
+
 The legacy Kotlin names `Kt02h20FiveBandOptimizer`, `FiveBandDeviceSpec`, etc. remain compatibility names; the implementation contract is generic finite-target response adaptation.
 
 ### Exact path
 
-For a supported source:
+For a supported hardware source:
 
 1. parse every source band safely;
 2. verify source count and every parameter against physical target capability;
 3. quantize using the target's actual storage/wire resolution;
-4. call the representation Exact only if quantization preserves the source and source-authored playback gain exactly.
+4. call the representation Exact only if quantization preserves every source band and a source-authored playback gain exactly, with no generated headroom.
 
-### Optimized path
+### Native-rounding path
 
-When exact representation is impossible but source semantics are supported:
+If the source already fits the target band structure and supported ranges but one or more values require only native target quantization:
+
+1. keep the same source filter structure;
+2. quantize those values at the target boundary;
+3. compare the quantized response against the source response and require the same quality gates;
+4. report **Optimized · native hardware rounding only** rather than invoking a different response fit.
+
+This distinction prevents harmless native rounding from being conflated with structural/acoustic fitting.
+
+### Optimized response-fit path
+
+When direct/native-rounded representation is impossible but source semantics are supported:
 
 1. evaluate the **complete source response** over a fixed log-frequency grid;
 2. seed deterministic target-compatible candidates from the source;
@@ -205,7 +230,7 @@ Never silently truncate source bands for Black Pearl/JA11/JM12.
 
 Source preamp is not a fit parameter. If source preamp exists, map/quantize it separately and fail if target playback-gain capability cannot represent it safely.
 
-If source preamp is absent, derive conservative headroom from the final quantized target response. Mark that representation generated/Optimized and leave canonical `preampGainDb` and `eqLibrarySafetyHeadroomDb` untouched.
+If source preamp is absent, derive conservative headroom from the final quantized target response. Mark that representation generated/**Optimized** and leave canonical `preampGainDb` and `eqLibrarySafetyHeadroomDb` untouched. Generated target headroom can never qualify as Exact because it was not source-authored.
 
 ### Representation versioning
 
@@ -232,6 +257,8 @@ Key safety properties:
 - hard unsupported/non-finite/unencodable/global-gain limits fail, never clamp;
 - confirmation preview is built from the actual `BlackPearlFlashPlan` used by Flash.
 
+Black Pearl file export serializes the same derived filters/playback gain in the verified pyBlackPearl AutoEq syntax: `PK / LS / HS`. pyBlackPearl's importer limits preamp to approximately `-16..+6 dB`; EQ Library still writes the true derived value and discloses importer-side adjustment rather than clamping. The external file-import constraint is independent of Direct Flash. Do not claim generic compatibility with controllers whose importers do not preserve shelf types.
+
 Reset retains the v0.4 fail-safe ordering: validate recoverable baseline, flatten the current slot, latch/save, then restore only EQ Library's tracked playback-gain delta and clear tracking after success.
 
 ## FiiO JA11 architecture
@@ -252,6 +279,8 @@ Flash preflights/readbacks device state, validates the entire target before dest
 
 Reset writes five flat bands/global 0 dB, Applies/verifies/Saves/verifies.
 
+No verified JA11 external preset-file format is exposed in v0.5. Direct Flash remains intact.
+
 JA11 remains **Hardware validation pending** until its exact signed Pixel 9 checklist passes.
 
 ## Stock JCALLY JM12 architecture
@@ -271,6 +300,8 @@ Current target:
 The protocol layer preserves unrelated register bytes. Flash tracks EQ Library's relative playback-gain delta, bypasses EQ before replacing state, writes/verifies all target band registers and gain, and re-enables EQ only after full success. Partial failure remains fail-safe/bypassed rather than reporting a successful mixed state.
 
 No independently corroborated explicit persist/save command is used. Power-cycle persistence remains a physical qualification question. If power loss resets the hardware while DataStore retains a prior app-side gain delta, the tracking contract must be hardened before qualification.
+
+No verified stock-JM12 external preset-file format is exposed in v0.5. Direct Flash remains intact.
 
 JM12 remains **Hardware validation pending** until its exact signed Pixel 9 checklist passes.
 
@@ -317,7 +348,7 @@ Hardware-only outputs bypass file export entirely.
 
 Public app updates use GitHub Release metadata at modest cadence with nonblocking What's new / Get update UX. No silent self-update, install-unknown-apps permission, notification permission, or credentialed backend is required.
 
-Preserve OPRA and individual creator/source attribution. Do not imply endorsement by OPRA, Roon Labs, UAPP, ToneBoosters, TRN, FiiO, JCALLY, app-output vendors, or headphone manufacturers.
+Preserve OPRA and individual creator/source attribution. Do not imply endorsement by OPRA, Roon Labs, UAPP, ToneBoosters, TRN, FiiO, JCALLY, TOPPING, app-output vendors, or headphone manufacturers.
 
 No analytics or telemetry. Local selections/settings/generated state stay on-device.
 
@@ -330,7 +361,9 @@ Automated gates protect both canonical and target-specific behavior:
 - selection/review/visibility tests;
 - export ownership/currentness tests;
 - output registry/capability/fidelity tests;
-- hardware response-adapter deterministic/golden/error-gate tests;
+- hardware response-adapter deterministic/golden/error-gate tests, including native-rounding vs response-fit behavior and generated-headroom fidelity;
+- Black Pearl file syntax/plan parity and pyBlackPearl importer-caveat tests;
+- TOPPING Tune AutoEq syntax/ten-band fitting/no-clamp/conservative precision-pending fidelity tests;
 - Black Pearl/JA11/JM12 protocol and staged-failure tests;
 - Android unit tests, lint, debug/release assembly;
 - catalog/currentness and priority-source validation;
