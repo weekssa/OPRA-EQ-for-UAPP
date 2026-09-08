@@ -1,6 +1,5 @@
 package com.weekssa.opraeqforuapp.ui
 
-import android.content.Context
 import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -41,18 +40,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.BuildConfig
 import com.weekssa.opraeqforuapp.R
-import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshFailureReason
-import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshResult
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
-import com.weekssa.opraeqforuapp.data.export.PresetExportItemResult
-import com.weekssa.opraeqforuapp.data.export.PresetExportSummary
-import com.weekssa.opraeqforuapp.data.sync.CatalogSyncOutcome
-import com.weekssa.opraeqforuapp.data.update.AppUpdateCheckResult
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqPreset
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
@@ -68,7 +60,7 @@ import com.weekssa.opraeqforuapp.ui.screens.MyEqsHomeScreen
 import com.weekssa.opraeqforuapp.ui.screens.SettingsScreen
 import kotlinx.coroutines.launch
 
-private enum class EqLibraryDestination(@StringRes val labelResId: Int) {
+private enum class EqLibraryDestination(@param:StringRes val labelResId: Int) {
     MyEqs(R.string.nav_my_eqs),
     EqLibrary(R.string.nav_eq_library),
     Settings(R.string.nav_settings),
@@ -95,7 +87,6 @@ fun EqLibraryApp(
     state: EqLibraryUiState,
     actions: EqLibraryActions,
 ) {
-    val context = LocalContext.current
     val appPreferences = state.appPreferences
     val catalogState = state.catalogState
     val managedHeadphones = state.managedHeadphones
@@ -164,6 +155,7 @@ fun EqLibraryApp(
     }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val exportFolderPermissionFailedMessage = stringResource(R.string.export_folder_permission_failed)
     val favoriteProfileIds = remember(savedEqs) {
         savedEqs.asSequence()
             .filter { it.kind == SavedEqKind.Favorite }
@@ -214,7 +206,7 @@ fun EqLibraryApp(
     suspend fun executeExport(
         uri: Uri,
         request: ActiveOutputExportRequest?,
-    ): PresetExportSummary? {
+    ): String? {
         if (request != null && !request.device.supportsFileExport) return null
         return when (request) {
             is ActiveOutputExportRequest.AllManaged -> onExportSelected(uri, request.device)
@@ -238,10 +230,10 @@ fun EqLibraryApp(
         if (uri == null) return@rememberLauncherForActivityResult
         scope.launch {
             if (!onPersistExportTree(uri)) {
-                snackbarHostState.showSnackbar(context.getString(R.string.export_folder_permission_failed))
+                snackbarHostState.showSnackbar(exportFolderPermissionFailedMessage)
             } else {
-                executeExport(uri, request)?.let {
-                    snackbarHostState.showSnackbar(context.activeOutputExportMessage(it))
+                executeExport(uri, request)?.let { message ->
+                    snackbarHostState.showSnackbar(message)
                 }
             }
         }
@@ -261,8 +253,8 @@ fun EqLibraryApp(
                 chooseExportFolder(request)
             } else {
                 scope.launch {
-                    executeExport(storedUri, request)?.let {
-                        snackbarHostState.showSnackbar(context.activeOutputExportMessage(it))
+                    executeExport(storedUri, request)?.let { message ->
+                        snackbarHostState.showSnackbar(message)
                     }
                 }
             }
@@ -290,21 +282,13 @@ fun EqLibraryApp(
     val requestCatalogRefresh = {
         if (!catalogBusy) {
             scope.launch {
-                snackbarHostState.showSnackbar(context.activeOutputRefreshMessage(onRefreshCatalog()))
+                snackbarHostState.showSnackbar(onRefreshCatalog())
             }
         }
     }
     val requestUpdateCheck: () -> Unit = {
         scope.launch {
-            val message = when (val result = onCheckForUpdates()) {
-                is AppUpdateCheckResult.UpdateAvailable ->
-                    context.getString(R.string.update_available_message, result.release.version)
-                is AppUpdateCheckResult.UpToDate ->
-                    context.getString(R.string.update_up_to_date_message)
-                AppUpdateCheckResult.Unavailable ->
-                    context.getString(R.string.update_check_unavailable_message)
-            }
-            snackbarHostState.showSnackbar(message)
+            snackbarHostState.showSnackbar(onCheckForUpdates())
         }
     }
 
@@ -558,95 +542,3 @@ fun EqLibraryApp(
 }
 
 private fun outputTitle(device: ExportDevice): String = device.displayName
-
-private fun Context.activeOutputExportMessage(summary: PresetExportSummary): String {
-    val reviewResults = summary.results.filter {
-        it is PresetExportItemResult.Conflict || it is PresetExportItemResult.Failed
-    }
-    val firstReviewReason = reviewResults.firstOrNull()?.let { result ->
-        when (result) {
-            is PresetExportItemResult.Conflict -> result.reason
-            is PresetExportItemResult.Failed -> result.reason
-            else -> null
-        }
-    }
-    val reviewCount = summary.conflictCount + summary.failedCount
-    val message = when {
-        summary.accessLost -> getString(R.string.export_folder_access_lost)
-        summary.results.isEmpty() -> getString(R.string.export_none_ready)
-        reviewCount > 0 -> {
-            val successful = resources.getQuantityString(
-                R.plurals.export_saved_current_count,
-                summary.successfulCount,
-                summary.successfulCount,
-            )
-            val review = resources.getQuantityString(
-                R.plurals.export_review_count,
-                reviewCount,
-                reviewCount,
-            )
-            if (firstReviewReason == null) {
-                getString(R.string.export_review_summary, successful, review)
-            } else {
-                getString(
-                    R.string.export_review_summary_with_reason,
-                    successful,
-                    review,
-                    firstReviewReason,
-                )
-            }
-        }
-        summary.createdCount > 0 || summary.updatedCount > 0 -> getString(
-            R.string.export_write_summary,
-            summary.createdCount,
-            summary.updatedCount,
-            summary.currentCount,
-        )
-        else -> resources.getQuantityString(
-            R.plurals.export_all_current,
-            summary.currentCount,
-            summary.currentCount,
-        )
-    }
-    val device = summary.results.firstOrNull()?.candidate?.deviceName
-    return if (device == null) {
-        message
-    } else {
-        getString(R.string.device_prefixed_message, device, message)
-    }
-}
-
-private fun Context.activeOutputRefreshMessage(outcome: CatalogSyncOutcome): String {
-    val result = outcome.catalogResult
-    return when (result) {
-        is CatalogRefreshResult.Success -> {
-            val affected = outcome.managedChanges?.affectedProductIds?.size ?: 0
-            if (affected == 0) {
-                getString(R.string.catalog_up_to_date)
-            } else {
-                resources.getQuantityString(
-                    R.plurals.catalog_saved_headphones_changed,
-                    affected,
-                    affected,
-                )
-            }
-        }
-        is CatalogRefreshResult.Failure -> when (result.reason) {
-            CatalogRefreshFailureReason.Network -> if (result.usingSavedCatalog) {
-                getString(R.string.catalog_refresh_failed_saved)
-            } else {
-                getString(R.string.catalog_download_failed)
-            }
-            CatalogRefreshFailureReason.InvalidCatalog -> if (result.usingSavedCatalog) {
-                getString(R.string.catalog_invalid_saved)
-            } else {
-                getString(R.string.catalog_invalid_download)
-            }
-            CatalogRefreshFailureReason.Storage -> if (result.usingSavedCatalog) {
-                getString(R.string.catalog_storage_failed_saved)
-            } else {
-                getString(R.string.catalog_storage_failed)
-            }
-        }
-    }
-}
