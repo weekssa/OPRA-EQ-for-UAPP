@@ -1,9 +1,11 @@
 package com.weekssa.opraeqforuapp.ui
 
+import android.content.Context
 import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -39,8 +41,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.BuildConfig
+import com.weekssa.opraeqforuapp.R
 import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshFailureReason
 import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshResult
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
@@ -63,10 +68,10 @@ import com.weekssa.opraeqforuapp.ui.screens.MyEqsHomeScreen
 import com.weekssa.opraeqforuapp.ui.screens.SettingsScreen
 import kotlinx.coroutines.launch
 
-private enum class EqLibraryDestination(val label: String) {
-    MyEqs("My EQs"),
-    EqLibrary("EQ Library"),
-    Settings("Settings"),
+private enum class EqLibraryDestination(@StringRes val labelResId: Int) {
+    MyEqs(R.string.nav_my_eqs),
+    EqLibrary(R.string.nav_eq_library),
+    Settings(R.string.nav_settings),
 }
 
 private sealed interface ActiveOutputExportRequest {
@@ -90,6 +95,7 @@ fun EqLibraryApp(
     state: EqLibraryUiState,
     actions: EqLibraryActions,
 ) {
+    val context = LocalContext.current
     val appPreferences = state.appPreferences
     val catalogState = state.catalogState
     val managedHeadphones = state.managedHeadphones
@@ -232,9 +238,11 @@ fun EqLibraryApp(
         if (uri == null) return@rememberLauncherForActivityResult
         scope.launch {
             if (!onPersistExportTree(uri)) {
-                snackbarHostState.showSnackbar("Couldn’t retain access to that folder. Choose another folder.")
+                snackbarHostState.showSnackbar(context.getString(R.string.export_folder_permission_failed))
             } else {
-                executeExport(uri, request)?.let { snackbarHostState.showSnackbar(activeOutputExportMessage(it)) }
+                executeExport(uri, request)?.let {
+                    snackbarHostState.showSnackbar(context.activeOutputExportMessage(it))
+                }
             }
         }
     }
@@ -253,7 +261,9 @@ fun EqLibraryApp(
                 chooseExportFolder(request)
             } else {
                 scope.launch {
-                    executeExport(storedUri, request)?.let { snackbarHostState.showSnackbar(activeOutputExportMessage(it)) }
+                    executeExport(storedUri, request)?.let {
+                        snackbarHostState.showSnackbar(context.activeOutputExportMessage(it))
+                    }
                 }
             }
         }
@@ -279,15 +289,20 @@ fun EqLibraryApp(
     }
     val requestCatalogRefresh = {
         if (!catalogBusy) {
-            scope.launch { snackbarHostState.showSnackbar(activeOutputRefreshMessage(onRefreshCatalog())) }
+            scope.launch {
+                snackbarHostState.showSnackbar(context.activeOutputRefreshMessage(onRefreshCatalog()))
+            }
         }
     }
     val requestUpdateCheck: () -> Unit = {
         scope.launch {
             val message = when (val result = onCheckForUpdates()) {
-                is AppUpdateCheckResult.UpdateAvailable -> "Version ${result.release.version} is available."
-                is AppUpdateCheckResult.UpToDate -> "EQ Library is up to date."
-                AppUpdateCheckResult.Unavailable -> "Couldn’t check for updates right now. Try again later."
+                is AppUpdateCheckResult.UpdateAvailable ->
+                    context.getString(R.string.update_available_message, result.release.version)
+                is AppUpdateCheckResult.UpToDate ->
+                    context.getString(R.string.update_up_to_date_message)
+                AppUpdateCheckResult.Unavailable ->
+                    context.getString(R.string.update_check_unavailable_message)
             }
             snackbarHostState.showSnackbar(message)
         }
@@ -301,12 +316,17 @@ fun EqLibraryApp(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(selectedDestination.label) },
+                title = { Text(stringResource(selectedDestination.labelResId)) },
                 actions = {
                     if (selectedDestination != EqLibraryDestination.Settings) {
                         Box {
                             TextButton(onClick = { outputMenuExpanded = true }) {
-                                Text("${outputTitle(activeOutput)} ▾")
+                                Text(
+                                    stringResource(
+                                        R.string.output_selector_format,
+                                        outputTitle(activeOutput),
+                                    ),
+                                )
                             }
                             DropdownMenu(
                                 expanded = outputMenuExpanded,
@@ -330,7 +350,12 @@ fun EqLibraryApp(
                             if (catalogBusy) {
                                 CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                             } else {
-                                Icon(Icons.Outlined.Refresh, contentDescription = "Refresh EQ Library")
+                                Icon(
+                                    Icons.Outlined.Refresh,
+                                    contentDescription = stringResource(
+                                        R.string.refresh_eq_library_content_description,
+                                    ),
+                                )
                             }
                         }
                     }
@@ -356,7 +381,7 @@ fun EqLibraryApp(
                                 contentDescription = null,
                             )
                         },
-                        label = { Text(destination.label) },
+                        label = { Text(stringResource(destination.labelResId)) },
                     )
                 }
             }
@@ -534,7 +559,7 @@ fun EqLibraryApp(
 
 private fun outputTitle(device: ExportDevice): String = device.displayName
 
-private fun activeOutputExportMessage(summary: PresetExportSummary): String {
+private fun Context.activeOutputExportMessage(summary: PresetExportSummary): String {
     val reviewResults = summary.results.filter {
         it is PresetExportItemResult.Conflict || it is PresetExportItemResult.Failed
     }
@@ -547,52 +572,80 @@ private fun activeOutputExportMessage(summary: PresetExportSummary): String {
     }
     val reviewCount = summary.conflictCount + summary.failedCount
     val message = when {
-        summary.accessLost -> "Export folder access was lost. Choose the folder again."
-        summary.results.isEmpty() -> "No selected presets are ready to export."
-        reviewCount > 0 -> buildString {
-            append(summary.successfulCount)
-            append(if (summary.successfulCount == 1) " preset saved/current · " else " presets saved/current · ")
-            append(reviewCount)
-            append(if (reviewCount == 1) " needs review" else " need review")
-            firstReviewReason?.let { reason ->
-                append(": ")
-                append(reason)
+        summary.accessLost -> getString(R.string.export_folder_access_lost)
+        summary.results.isEmpty() -> getString(R.string.export_none_ready)
+        reviewCount > 0 -> {
+            val successful = resources.getQuantityString(
+                R.plurals.export_saved_current_count,
+                summary.successfulCount,
+                summary.successfulCount,
+            )
+            val review = resources.getQuantityString(
+                R.plurals.export_review_count,
+                reviewCount,
+                reviewCount,
+            )
+            if (firstReviewReason == null) {
+                getString(R.string.export_review_summary, successful, review)
+            } else {
+                getString(
+                    R.string.export_review_summary_with_reason,
+                    successful,
+                    review,
+                    firstReviewReason,
+                )
             }
         }
-        summary.createdCount > 0 || summary.updatedCount > 0 ->
-            "${summary.createdCount} new · ${summary.updatedCount} updated · ${summary.currentCount} already current."
-        else -> "All ${summary.currentCount} selected presets are already current."
+        summary.createdCount > 0 || summary.updatedCount > 0 -> getString(
+            R.string.export_write_summary,
+            summary.createdCount,
+            summary.updatedCount,
+            summary.currentCount,
+        )
+        else -> resources.getQuantityString(
+            R.plurals.export_all_current,
+            summary.currentCount,
+            summary.currentCount,
+        )
     }
     val device = summary.results.firstOrNull()?.candidate?.deviceName
-    return if (device == null) message else "$device · $message"
+    return if (device == null) {
+        message
+    } else {
+        getString(R.string.device_prefixed_message, device, message)
+    }
 }
 
-private fun activeOutputRefreshMessage(outcome: CatalogSyncOutcome): String {
+private fun Context.activeOutputRefreshMessage(outcome: CatalogSyncOutcome): String {
     val result = outcome.catalogResult
     return when (result) {
         is CatalogRefreshResult.Success -> {
             val affected = outcome.managedChanges?.affectedProductIds?.size ?: 0
-            when (affected) {
-                0 -> "EQ Library catalog is up to date."
-                1 -> "1 saved headphone has changes."
-                else -> "$affected saved headphones have changes."
+            if (affected == 0) {
+                getString(R.string.catalog_up_to_date)
+            } else {
+                resources.getQuantityString(
+                    R.plurals.catalog_saved_headphones_changed,
+                    affected,
+                    affected,
+                )
             }
         }
         is CatalogRefreshResult.Failure -> when (result.reason) {
             CatalogRefreshFailureReason.Network -> if (result.usingSavedCatalog) {
-                "Couldn’t refresh EQ Library. Using your saved catalog."
+                getString(R.string.catalog_refresh_failed_saved)
             } else {
-                "Couldn’t download the EQ Library catalog."
+                getString(R.string.catalog_download_failed)
             }
             CatalogRefreshFailureReason.InvalidCatalog -> if (result.usingSavedCatalog) {
-                "Couldn’t use the new EQ Library catalog. Your previous saved catalog is still available."
+                getString(R.string.catalog_invalid_saved)
             } else {
-                "The downloaded EQ Library catalog couldn’t be processed."
+                getString(R.string.catalog_invalid_download)
             }
             CatalogRefreshFailureReason.Storage -> if (result.usingSavedCatalog) {
-                "Couldn’t save the new EQ Library catalog. Using your previous saved catalog."
+                getString(R.string.catalog_storage_failed_saved)
             } else {
-                "Couldn’t save the EQ Library catalog on this device."
+                getString(R.string.catalog_storage_failed)
             }
         }
     }
