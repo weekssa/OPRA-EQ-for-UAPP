@@ -86,6 +86,8 @@ private val POWERAMP_CURRENT_CAPABILITIES = GENERIC_PARAMETRIC_CAPABILITIES.copy
 private val TOPPING_CURRENT_CAPABILITIES = DeviceEqCapabilities(
     maxBands = 10,
     supportedBandTypes = setOf("peak_dip", "low_shelf", "high_shelf"),
+    minFrequencyHz = 20.0,
+    maxFrequencyHz = 20_000.0,
     minGainDb = -12.0,
     maxGainDb = 12.0,
     minQ = 0.1,
@@ -164,7 +166,7 @@ enum class ExportDevice(
         mimeType = "text/plain",
         displayName = "TRN Black Pearl",
         category = OutputCategory.HARDWARE_DAC,
-        settingsSubtitle = ".txt · Black Pearl preset · 10-band hardware PEQ",
+        settingsSubtitle = ".txt · AutoEq preset · 10-band PEQ",
         formatKind = OutputFormatKind.BLACK_PEARL_TEXT,
         eqCapabilities = BLACK_PEARL_CURRENT_CAPABILITIES,
     ),
@@ -174,7 +176,7 @@ enum class ExportDevice(
         mimeType = "text/plain",
         displayName = "FiiO JA11",
         category = OutputCategory.HARDWARE_DAC,
-        settingsSubtitle = "5-band hardware PEQ · No file",
+        settingsSubtitle = "5-band PEQ · Direct Flash · no verified import file",
         formatKind = OutputFormatKind.HARDWARE_ONLY,
         validationStatus = "Hardware validation pending",
         eqCapabilities = FIIO_JA11_CURRENT_CAPABILITIES,
@@ -186,9 +188,9 @@ enum class ExportDevice(
         mimeType = "text/plain",
         displayName = "JCALLY JM12",
         category = OutputCategory.HARDWARE_DAC,
-        settingsSubtitle = "5-band hardware PEQ · No file",
+        settingsSubtitle = "5-band PEQ · Direct Flash · no verified import file",
         formatKind = OutputFormatKind.HARDWARE_ONLY,
-        validationStatus = "Hardware validation pending",
+        validationStatus = "Hardware validation pending · persistence pending",
         eqCapabilities = JCALLY_JM12_CURRENT_CAPABILITIES,
         supportsFileExport = false,
     ),
@@ -211,6 +213,17 @@ enum class ExportDevice(
         settingsSubtitle = ".txt · AutoEq parametric · up to 64 bands",
         formatKind = OutputFormatKind.PARAMETRIC_TEXT,
         eqCapabilities = POWERAMP_CURRENT_CAPABILITIES,
+    ),
+    TOPPING_TUNE(
+        folderName = "TOPPING Tune",
+        extension = "txt",
+        mimeType = "text/plain",
+        displayName = "TOPPING Tune",
+        category = OutputCategory.APP,
+        settingsSubtitle = ".txt · AutoEq parametric · 10 bands",
+        formatKind = OutputFormatKind.PARAMETRIC_TEXT,
+        validationStatus = "Official AutoEq import path",
+        eqCapabilities = TOPPING_CURRENT_CAPABILITIES,
     ),
     WAVELET(
         folderName = "Wavelet",
@@ -313,7 +326,8 @@ fun buildTextDeviceVariant(
     ExportDevice.EQUALIZER_APO -> buildParametricVariant(profile, device)
 
     ExportDevice.POWERAMP,
-    ExportDevice.EASY_EFFECTS -> buildLimitedParametricVariant(profile, device)
+    ExportDevice.EASY_EFFECTS,
+    ExportDevice.TOPPING_TUNE -> buildLimitedParametricVariant(profile, device)
 
     ExportDevice.WAVELET -> formatWaveletGraphicEq(profile)?.let { content ->
         DevicePresetVariant(
@@ -382,17 +396,26 @@ private fun buildLimitedParametricVariant(
 ): DevicePresetVariant? {
     val capabilities = requireNotNull(device.eqCapabilities)
     val maxBands = requireNotNull(capabilities.maxBands)
-    val spec = FiveBandDeviceSpec(
-        stableId = "app-${device.name.lowercase(Locale.US)}",
-        displayName = device.displayName,
-        capabilities = capabilities,
-        quantization = FiveBandQuantization(
+    val quantization = when (device) {
+        ExportDevice.TOPPING_TUNE -> FiveBandQuantization(
+            frequencyStepHz = 1.0,
+            gainStepDb = 0.1,
+            qStep = 0.001,
+            preampStepDb = 0.1,
+        )
+        else -> FiveBandQuantization(
             frequencyStepHz = 0.1,
             gainStepDb = 0.01,
             qStep = 0.001,
             preampStepDb = 0.01,
-        ),
-        representationVersion = 1,
+        )
+    }
+    val spec = FiveBandDeviceSpec(
+        stableId = "app-${device.name.lowercase(Locale.US)}",
+        displayName = device.displayName,
+        capabilities = capabilities,
+        quantization = quantization,
+        representationVersion = if (device == ExportDevice.TOPPING_TUNE) 1 else 2,
     )
     val representation = when (val result = Kt02h20FiveBandOptimizer.optimize(profile, spec)) {
         is FiveBandOptimizationResult.NotSuitable -> return null
@@ -410,10 +433,20 @@ private fun buildLimitedParametricVariant(
     val exactText = when (device) {
         ExportDevice.EASY_EFFECTS -> "Source EQ is directly representable in EasyEffects' Equalizer APO parametric import profile."
         ExportDevice.POWERAMP -> "Source EQ is directly representable in AutoEq parametric text accepted by Poweramp/Poweramp Equalizer."
+        ExportDevice.TOPPING_TUNE -> "Source EQ is directly representable in TOPPING Tune's documented AutoEq import profile."
         else -> "Source EQ is directly representable in ${device.displayName}."
     }
-    val optimizedText =
-        "EQ Library fitted the complete source response to ${device.displayName}'s $maxBands-band target (RMS ${metricDb(representation.rmsErrorDb)} dB, max ${metricDb(representation.maxAbsoluteErrorDb)} dB); no source bands were silently truncated."
+    val optimizedText = when {
+        representation.usedResponseFit ->
+            "EQ Library fitted the complete source response to ${device.displayName}'s $maxBands-band target (RMS ${metricDb(representation.rmsErrorDb)} dB, max ${metricDb(representation.maxAbsoluteErrorDb)} dB); no source bands were silently truncated."
+        representation.usesGeneratedHeadroom && representation.usesNativeQuantization ->
+            "EQ Library preserved the source filter structure, rounded values to ${device.displayName}'s import precision, and generated ${db(representation.playbackGainDb)} dB of target-specific safety headroom because the source has no preamp."
+        representation.usesGeneratedHeadroom ->
+            "EQ Library preserved the source filter structure and generated ${db(representation.playbackGainDb)} dB of target-specific safety headroom because the source has no preamp."
+        representation.usesNativeQuantization ->
+            "EQ Library preserved the source filter structure and rounded values to ${device.displayName}'s supported import precision."
+        else -> "EQ Library produced a deterministic target-specific representation for ${device.displayName}."
+    }
     return DevicePresetVariant(
         device = device,
         content = content,
@@ -461,6 +494,10 @@ private fun preampFitsExactly(
     return if (minPreamp != null && maxPreamp != null) value in minPreamp..maxPreamp else true
 }
 
+/**
+ * Legacy nonselectable TOPPING-device reference formatter. Product-facing TOPPING Tune export uses
+ * the shared finite-target adapter above and never uses this clamping/first-N reference path.
+ */
 internal fun formatToppingTunePreset(
     profile: OpraEqProfile,
     capabilities: DeviceEqCapabilities,
@@ -617,7 +654,6 @@ private fun rbjBiquad(band: OpraBand, sampleRate: Double): Biquad? {
     val gain = band.gainDb?.takeIf(Double::isFinite) ?: return null
     val q = band.q?.takeIf(Double::isFinite)?.takeIf { it > 0.0 } ?: return null
     if (frequency <= 0.0 || frequency >= sampleRate / 2.0) return null
-
     val a = 10.0.pow(gain / 40.0)
     val w0 = 2.0 * PI * frequency / sampleRate
     val cw = cos(w0)
