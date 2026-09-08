@@ -79,15 +79,16 @@ class PresetExportPlanTest {
 
         val uapp = buildEqLibraryExportPlan(listOf(headphone), ExportDevice.UAPP)
         assertEquals(1, uapp.candidates.size)
-        assertTrue(uapp.candidates.all { it.deviceName == ExportDevice.UAPP.folderName })
+        assertTrue(uapp.candidates.all { it.deviceName == ExportDevice.UAPP.displayName })
         assertTrue(uapp.candidates.all { it.relativeDirectory.startsWith("${ExportDevice.UAPP.folderName}/") })
         assertTrue(uapp.candidates.all { it.fidelity == DevicePresetFidelity.EXACT })
 
         val blackPearl = buildEqLibraryExportPlan(listOf(headphone), ExportDevice.BLACK_PEARL)
         assertEquals(1, blackPearl.candidates.size)
-        assertTrue(blackPearl.candidates.all { it.deviceName == ExportDevice.BLACK_PEARL.folderName })
+        assertTrue(blackPearl.candidates.all { it.deviceName == ExportDevice.BLACK_PEARL.displayName })
         assertTrue(blackPearl.candidates.all { it.relativeDirectory.startsWith("${ExportDevice.BLACK_PEARL.folderName}/") })
         assertTrue(blackPearl.candidates.all { it.fidelity == DevicePresetFidelity.EXACT })
+        assertTrue(blackPearl.candidates.single().generatedFingerprint.endsWith(":BLACK_PEARL:v2"))
     }
 
     @Test
@@ -120,7 +121,7 @@ class PresetExportPlanTest {
     }
 
     @Test
-    fun blackPearlNativeShelfIsExactWhenPreampIsZero() {
+    fun blackPearlNativeShelfIsExactWhenAtDeviceQuantization() {
         val source = profile("p1", selected = true, presetName = "Shelf").copy(
             lastKnownProfile = OpraEqProfile(
                 id = "p1",
@@ -130,7 +131,7 @@ class PresetExportPlanTest {
                 link = null,
                 profileType = "parametric_eq",
                 preampGainDb = 0.0,
-                bands = listOf(OpraBand("low_shelf", 105.0, 4.0, 0.71, null)),
+                bands = listOf(OpraBand("low_shelf", 105.0, 4.0, 0.75, null)),
             ),
         )
         val plan = buildEqLibraryExportPlan(
@@ -140,7 +141,7 @@ class PresetExportPlanTest {
 
         assertEquals(1, plan.candidates.size)
         assertEquals(DevicePresetFidelity.EXACT, plan.candidates.single().fidelity)
-        assertTrue(plan.candidates.single().transformation.contains("preserved"))
+        assertTrue(plan.candidates.single().transformation.contains("same quantized filters"))
     }
 
     @Test
@@ -169,7 +170,7 @@ class PresetExportPlanTest {
     }
 
     @Test
-    fun blackPearlFileExportPreservesGainOutsideValidatedRangeUnchanged() {
+    fun blackPearlFileExportPreservesExactGainOutsideValidatedRangeUnchanged() {
         val source = profile("p1", selected = true, presetName = "Wide gain").copy(
             lastKnownProfile = OpraEqProfile(
                 id = "p1",
@@ -178,8 +179,8 @@ class PresetExportPlanTest {
                 details = "Wide gain",
                 link = null,
                 profileType = "parametric_eq",
-                preampGainDb = -3.9,
-                bands = listOf(OpraBand("peak_dip", 13_500.0, -11.9, 4.0, null)),
+                preampGainDb = -4.0,
+                bands = listOf(OpraBand("peak_dip", 13_500.0, -12.0, 4.0, null)),
             ),
         )
 
@@ -190,13 +191,13 @@ class PresetExportPlanTest {
 
         assertEquals(1, plan.candidates.size)
         assertEquals(DevicePresetFidelity.EXACT, plan.candidates.single().fidelity)
-        assertTrue(plan.candidates.single().xml.contains("Gain -11.90 dB"))
+        assertTrue(plan.candidates.single().xml.contains("Gain -12.00 dB"))
         assertTrue(plan.candidates.single().transformation.contains("outside the currently validated"))
         assertTrue(plan.candidates.single().transformation.contains("not clamped"))
     }
 
     @Test
-    fun blackPearlFileExportPreservesGeneratedSafetyHeadroomAsOptimizedMetadata() {
+    fun blackPearlFileExportDerivesGeneratedSafetyHeadroomFromFinalResponse() {
         val source = profile("p1", selected = true, presetName = "Needs headroom").copy(
             lastKnownProfile = OpraEqProfile(
                 id = "p1",
@@ -206,8 +207,8 @@ class PresetExportPlanTest {
                 link = null,
                 profileType = "parametric_eq",
                 preampGainDb = null,
-                bands = listOf(OpraBand("peak_dip", 1_000.0, 4.6, 1.0, null)),
-                eqLibrarySafetyHeadroomDb = -4.6,
+                bands = listOf(OpraBand("peak_dip", 1_000.0, 4.0, 1.0, null)),
+                eqLibrarySafetyHeadroomDb = -9.0,
             ),
         )
 
@@ -217,8 +218,9 @@ class PresetExportPlanTest {
         )
 
         assertEquals(1, plan.candidates.size)
-        assertEquals(DevicePresetFidelity.OPTIMIZED, plan.candidates.single().fidelity)
-        assertTrue(plan.candidates.single().xml.contains("Preamp: -4.60 dB"))
+        assertEquals(DevicePresetFidelity.EXACT, plan.candidates.single().fidelity)
+        assertTrue(plan.candidates.single().xml.contains("Preamp: -4.00 dB"))
+        assertEquals(-9.0, source.lastKnownProfile.eqLibrarySafetyHeadroomDb!!, 0.0)
     }
 
     @Test
@@ -237,7 +239,7 @@ class PresetExportPlanTest {
 
         assertEquals(1, plan.candidates.size)
         assertEquals(historicalId, plan.candidates.single().profileId)
-        assertEquals(ExportDevice.UAPP.folderName, plan.candidates.single().deviceName)
+        assertEquals(ExportDevice.UAPP.displayName, plan.candidates.single().deviceName)
         assertTrue(
             plan.candidates.single().relativeDirectory
                 .startsWith("${ExportDevice.UAPP.folderName}/HIFIMAN/Edition XS"),
