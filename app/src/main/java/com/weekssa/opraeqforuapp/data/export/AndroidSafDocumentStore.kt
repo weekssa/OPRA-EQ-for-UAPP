@@ -35,12 +35,19 @@ class AndroidSafDocumentStore(context: Context) : ExportDocumentStore {
     override fun findDirectory(
         parent: ExportDirectoryHandle,
         name: String,
-    ): ExportDirectoryHandle? = runCatching {
-        parent.androidDirectoryOrNull()
-            ?.findFile(name)
-            ?.takeIf(DocumentFile::isDirectory)
-            ?.let(::AndroidDirectoryHandle)
-    }.getOrNull()
+    ): ExportLookup<ExportDirectoryHandle> {
+        val directory = parent.androidDirectoryOrNull() ?: return ExportLookup.Unavailable
+        return try {
+            val child = directory.findFile(name) ?: return ExportLookup.Missing
+            if (!child.isDirectory) {
+                ExportLookup.Unavailable
+            } else {
+                ExportLookup.Found(AndroidDirectoryHandle(child))
+            }
+        } catch (_: Exception) {
+            ExportLookup.Unavailable
+        }
+    }
 
     override fun createDirectory(
         parent: ExportDirectoryHandle,
@@ -55,12 +62,19 @@ class AndroidSafDocumentStore(context: Context) : ExportDocumentStore {
     override fun findFile(
         parent: ExportDirectoryHandle,
         name: String,
-    ): ExportDocumentHandle? = runCatching {
-        parent.androidDirectoryOrNull()
-            ?.findFile(name)
-            ?.takeIf(DocumentFile::isFile)
-            ?.let(::AndroidDocumentHandle)
-    }.getOrNull()
+    ): ExportLookup<ExportDocumentHandle> {
+        val directory = parent.androidDirectoryOrNull() ?: return ExportLookup.Unavailable
+        return try {
+            val child = directory.findFile(name) ?: return ExportLookup.Missing
+            if (!child.isFile) {
+                ExportLookup.Unavailable
+            } else {
+                ExportLookup.Found(AndroidDocumentHandle(child))
+            }
+        } catch (_: Exception) {
+            ExportLookup.Unavailable
+        }
+    }
 
     override fun createFile(
         parent: ExportDirectoryHandle,
