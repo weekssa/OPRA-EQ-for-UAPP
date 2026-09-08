@@ -88,7 +88,14 @@ class PresetExportPlanTest {
         assertTrue(blackPearl.candidates.all { it.deviceName == ExportDevice.BLACK_PEARL.displayName })
         assertTrue(blackPearl.candidates.all { it.relativeDirectory.startsWith("${ExportDevice.BLACK_PEARL.folderName}/") })
         assertTrue(blackPearl.candidates.all { it.fidelity == DevicePresetFidelity.EXACT })
-        assertTrue(blackPearl.candidates.single().generatedFingerprint.endsWith(":BLACK_PEARL:v2"))
+        assertTrue(blackPearl.candidates.single().generatedFingerprint.endsWith(":BLACK_PEARL:v3"))
+
+        val toppingTune = buildEqLibraryExportPlan(listOf(headphone), ExportDevice.TOPPING_TUNE)
+        assertEquals(1, toppingTune.candidates.size)
+        assertTrue(toppingTune.candidates.all { it.deviceName == ExportDevice.TOPPING_TUNE.displayName })
+        assertTrue(toppingTune.candidates.all { it.relativeDirectory.startsWith("${ExportDevice.TOPPING_TUNE.folderName}/") })
+        assertTrue(toppingTune.candidates.all { it.fidelity == DevicePresetFidelity.EXACT })
+        assertTrue(toppingTune.candidates.single().generatedFingerprint.endsWith(":TOPPING_TUNE:v1"))
     }
 
     @Test
@@ -141,7 +148,8 @@ class PresetExportPlanTest {
 
         assertEquals(1, plan.candidates.size)
         assertEquals(DevicePresetFidelity.EXACT, plan.candidates.single().fidelity)
-        assertTrue(plan.candidates.single().transformation.contains("same quantized filters"))
+        assertTrue(plan.candidates.single().transformation.contains("same filters and playback gain"))
+        assertTrue(plan.candidates.single().xml.contains("ON LS "))
     }
 
     @Test
@@ -197,7 +205,7 @@ class PresetExportPlanTest {
     }
 
     @Test
-    fun blackPearlFileExportDerivesGeneratedSafetyHeadroomFromFinalResponse() {
+    fun blackPearlFileExportDerivesGeneratedSafetyHeadroomFromFinalResponseAndMarksOptimized() {
         val source = profile("p1", selected = true, presetName = "Needs headroom").copy(
             lastKnownProfile = OpraEqProfile(
                 id = "p1",
@@ -218,8 +226,9 @@ class PresetExportPlanTest {
         )
 
         assertEquals(1, plan.candidates.size)
-        assertEquals(DevicePresetFidelity.EXACT, plan.candidates.single().fidelity)
+        assertEquals(DevicePresetFidelity.OPTIMIZED, plan.candidates.single().fidelity)
         assertTrue(plan.candidates.single().xml.contains("Preamp: -4.00 dB"))
+        assertTrue(plan.candidates.single().transformation.contains("generated headroom"))
         assertEquals(-9.0, source.lastKnownProfile.eqLibrarySafetyHeadroomDb!!, 0.0)
     }
 
