@@ -94,8 +94,9 @@ class PresetExportPlanTest {
         assertEquals(1, toppingTune.candidates.size)
         assertTrue(toppingTune.candidates.all { it.deviceName == ExportDevice.TOPPING_TUNE.displayName })
         assertTrue(toppingTune.candidates.all { it.relativeDirectory.startsWith("${ExportDevice.TOPPING_TUNE.folderName}/") })
-        assertTrue(toppingTune.candidates.all { it.fidelity == DevicePresetFidelity.EXACT })
-        assertTrue(toppingTune.candidates.single().generatedFingerprint.endsWith(":TOPPING_TUNE:v1"))
+        assertTrue(toppingTune.candidates.all { it.fidelity == DevicePresetFidelity.OPTIMIZED })
+        assertTrue(toppingTune.candidates.single().transformation.contains("does not claim Exact"))
+        assertTrue(toppingTune.candidates.single().generatedFingerprint.endsWith(":TOPPING_TUNE:v2"))
     }
 
     @Test
