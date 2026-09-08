@@ -63,6 +63,7 @@ import com.weekssa.opraeqforuapp.domain.managed.selectableProfileIds
 import com.weekssa.opraeqforuapp.domain.model.ProfileCompatibility
 import com.weekssa.opraeqforuapp.domain.settings.ExportTargetPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityPreferences
+import com.weekssa.opraeqforuapp.ui.StringSetSaver
 import kotlinx.coroutines.launch
 
 private enum class ProfileFilterDimension(@param:StringRes val labelResId: Int) {
@@ -151,26 +152,38 @@ internal fun ProfileSelectionEditor(
 
     var initialized by remember(selectionContextKey) { mutableStateOf(false) }
     var managedRecord by remember(selectionContextKey) { mutableStateOf<ManagedHeadphoneRecord?>(null) }
-    var stagedSelectedIds by remember(selectionContextKey) { mutableStateOf<Set<String>>(emptySet()) }
-    var baselineSelectedIds by remember(selectionContextKey) { mutableStateOf<Set<String>>(emptySet()) }
-    var autoInclude by remember(selectionContextKey) { mutableStateOf(DEFAULT_NOTIFY_NEW_PROFILES) }
-    var baselineAutoInclude by remember(selectionContextKey) { mutableStateOf(DEFAULT_NOTIFY_NEW_PROFILES) }
-    var showDiscardDialog by remember(selectionContextKey) { mutableStateOf(false) }
-    var sourceProblemExplanation by remember(selectionContextKey) { mutableStateOf<String?>(null) }
+    var draftInitialized by rememberSaveable(selectionContextKey) { mutableStateOf(false) }
+    var stagedSelectedIds by rememberSaveable(
+        selectionContextKey,
+        stateSaver = StringSetSaver,
+    ) { mutableStateOf(emptySet<String>()) }
+    var baselineSelectedIds by rememberSaveable(
+        selectionContextKey,
+        stateSaver = StringSetSaver,
+    ) { mutableStateOf(emptySet<String>()) }
+    var autoInclude by rememberSaveable(selectionContextKey) { mutableStateOf(DEFAULT_NOTIFY_NEW_PROFILES) }
+    var baselineAutoInclude by rememberSaveable(selectionContextKey) {
+        mutableStateOf(DEFAULT_NOTIFY_NEW_PROFILES)
+    }
+    var showDiscardDialog by rememberSaveable(selectionContextKey) { mutableStateOf(false) }
+    var sourceProblemExplanation by rememberSaveable(selectionContextKey) { mutableStateOf<String?>(null) }
 
     LaunchedEffect(selectionContextKey) {
         val managed = onLoadManagedHeadphone(product.id)
         managedRecord = managed
-        val selected = if (managed == null) {
-            defaultStagedSelectedProfileIds(profiles)
-        } else {
-            val selectionState = managed.toSelectionState()
-            profiles.filter(selectionState::isSelected).mapTo(mutableSetOf(), OpraEqProfile::id)
+        if (!draftInitialized) {
+            val selected = if (managed == null) {
+                defaultStagedSelectedProfileIds(profiles)
+            } else {
+                val selectionState = managed.toSelectionState()
+                profiles.filter(selectionState::isSelected).mapTo(mutableSetOf(), OpraEqProfile::id)
+            }
+            stagedSelectedIds = selected
+            baselineSelectedIds = selected
+            autoInclude = managed?.autoIncludeNewProfiles ?: DEFAULT_NOTIFY_NEW_PROFILES
+            baselineAutoInclude = autoInclude
+            draftInitialized = true
         }
-        stagedSelectedIds = selected
-        baselineSelectedIds = selected
-        autoInclude = managed?.autoIncludeNewProfiles ?: DEFAULT_NOTIFY_NEW_PROFILES
-        baselineAutoInclude = autoInclude
         initialized = true
     }
 
@@ -454,10 +467,11 @@ internal fun ProfileSelectionEditor(
                 val activeTarget = exportTargets.activeTarget
                 val outputStatus = assessDeviceExportability(profile, activeTarget)
                 val adaptation = deviceAdaptationSummary(profile, activeTarget)
+                val statusLabel = outputStatusLabel(outputStatus, activeTarget)
                 val statusText = buildString {
                     append(outputShortName(activeTarget))
                     append(": ")
-                    append(outputStatusLabel(outputStatus, activeTarget))
+                    append(statusLabel)
                     adaptation?.let { append(" · $it") }
                 }
                 ProfileSelectionRow(
