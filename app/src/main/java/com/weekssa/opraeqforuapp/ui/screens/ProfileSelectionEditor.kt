@@ -50,6 +50,7 @@ import com.weekssa.opraeqforuapp.domain.catalog.isHistoricalRevision
 import com.weekssa.opraeqforuapp.domain.export.DeviceExportability
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.export.assessDeviceExportability
+import com.weekssa.opraeqforuapp.domain.export.deviceAdaptationSummary
 import com.weekssa.opraeqforuapp.domain.managed.DEFAULT_AUTO_INCLUDE_NEW_PROFILES
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.managed.defaultStagedSelectedProfileIds
@@ -400,12 +401,18 @@ internal fun ProfileSelectionEditor(
         LazyColumn(modifier = Modifier.weight(1f)) {
             items(visibleProfiles, key = OpraEqProfile::id) { profile ->
                 val sourceAssessment = profile.assessCompatibility()
-                val outputStatus = assessDeviceExportability(profile, exportTargets.activeTarget)
+                val activeTarget = exportTargets.activeTarget
+                val outputStatus = assessDeviceExportability(profile, activeTarget)
+                val adaptation = deviceAdaptationSummary(profile, activeTarget)
+                val statusText = buildString {
+                    append("${outputShortName(activeTarget)}: ${outputStatusLabel(outputStatus, activeTarget)}")
+                    adaptation?.let { append(" · $it") }
+                }
                 ProfileSelectionRow(
                     profile = profile,
                     selected = profile.id in stagedSelectedIds,
                     isFavorite = profile.id in favoriteProfileIds,
-                    outputStatus = "${outputShortName(exportTargets.activeTarget)}: ${outputStatusLabel(outputStatus, exportTargets.activeTarget)}",
+                    outputStatus = statusText,
                     outputStatusCategory = outputStatus,
                     onSelectionChange = { selected ->
                         stagedSelectedIds = if (selected) {
@@ -458,7 +465,7 @@ internal fun ProfileSelectionEditor(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 6.dp),
         ) {
-            val label = if (managedRecord == null) "Add" else "Save"
+            val label = if (managedRecord == null) "Add to My EQs" else "Save changes"
             Text("$label (${stagedSelectedIds.size})")
         }
     }
