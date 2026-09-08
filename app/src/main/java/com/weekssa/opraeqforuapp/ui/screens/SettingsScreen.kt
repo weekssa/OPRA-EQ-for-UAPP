@@ -21,6 +21,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -40,6 +41,7 @@ import com.weekssa.opraeqforuapp.domain.catalog.OpraCatalog
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.isHistoricalRevision
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
+import com.weekssa.opraeqforuapp.domain.export.OutputCategory
 import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ThemeMode
 import com.weekssa.opraeqforuapp.domain.update.SemVer
@@ -123,53 +125,49 @@ fun SettingsScreen(
     ) {
         SectionTitle("Outputs")
         Text(
-            text = "Choose which devices and apps appear in the output selector. The active output changes conversion, export, and My EQs context; it never hides curves from EQ Library.",
+            text = "Choose which devices, apps, and portable formats appear in the output selector. The active output changes conversion, export, and My EQs context; it never hides curves from EQ Library.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 4.dp),
+            modifier = Modifier.padding(bottom = 6.dp),
         )
-        ExportDevice.selectableOutputs.forEach { device ->
-            CheckboxOption(
-                title = outputTitle(device),
-                description = outputDescription(device),
-                checked = appPreferences.exportTargets.isSelected(device),
-                onCheckedChange = { enabled -> onExportTargetChange(device, enabled) },
-            )
-        }
+        Text(
+            text = "Direct Flash only writes EQ-related settings. EQ Library never updates device firmware or manages unrelated DAC controls.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 10.dp),
+        )
 
-        if (appPreferences.exportTargets.isSelected(ExportDevice.BLACK_PEARL)) {
-            SectionDivider()
-            SectionTitle("Black Pearl")
-            CheckboxOption(
-                title = "Enable direct Flash",
-                description = "Allow EQ Library to connect to the TRN Black Pearl and write EQ presets from My EQs. Flash may adjust global playback gain when required by a preset's preamp/headroom; the confirmation shows the exact adjustment. Other DAC controls are not managed.",
-                checked = appPreferences.directBlackPearlFlashEnabled,
-                onCheckedChange = onDirectBlackPearlFlashEnabledChange,
-            )
-        }
-
-        if (appPreferences.exportTargets.isSelected(ExportDevice.FIIO_JA11)) {
-            SectionDivider()
-            SectionTitle("FiiO JA11")
-            CheckboxOption(
-                title = "Enable direct Flash",
-                description = "Allow EQ Library to connect to the FiiO JA11 and write 5-band PEQ presets from My EQs. EQs using more than 5 filters are fitted to the JA11's 5-band response when a reliable approximation is possible. Firmware and unrelated DAC controls are never managed.",
-                checked = appPreferences.directFiioJa11FlashEnabled,
-                onCheckedChange = onDirectFiioJa11FlashEnabledChange,
-            )
-            HardwareValidationPendingText()
-        }
-
-        if (appPreferences.exportTargets.isSelected(ExportDevice.JCALLY_JM12)) {
-            SectionDivider()
-            SectionTitle("JCALLY JM12")
-            CheckboxOption(
-                title = "Enable direct Flash",
-                description = "Allow EQ Library to connect to a stock-firmware JCALLY JM12 and write 5-band PEQ presets from My EQs. EQs using more than 5 filters are fitted to the JM12's 5-band response when a reliable approximation is possible. JA11 firmware, firmware flashing, and unrelated DSP controls are never required or managed.",
-                checked = appPreferences.directJcallyJm12FlashEnabled,
-                onCheckedChange = onDirectJcallyJm12FlashEnabledChange,
-            )
-            HardwareValidationPendingText()
+        OutputCategory.entries.forEach { category ->
+            val devices = ExportDevice.selectableOutputs.filter { it.category == category }
+            if (devices.isNotEmpty()) {
+                Text(
+                    text = category.heading,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 10.dp, bottom = 2.dp),
+                )
+                devices.forEach { device ->
+                    val directFlashChecked = when (device) {
+                        ExportDevice.BLACK_PEARL -> appPreferences.directBlackPearlFlashEnabled
+                        ExportDevice.FIIO_JA11 -> appPreferences.directFiioJa11FlashEnabled
+                        ExportDevice.JCALLY_JM12 -> appPreferences.directJcallyJm12FlashEnabled
+                        else -> null
+                    }
+                    val onDirectFlashChange: ((Boolean) -> Unit)? = when (device) {
+                        ExportDevice.BLACK_PEARL -> onDirectBlackPearlFlashEnabledChange
+                        ExportDevice.FIIO_JA11 -> onDirectFiioJa11FlashEnabledChange
+                        ExportDevice.JCALLY_JM12 -> onDirectJcallyJm12FlashEnabledChange
+                        else -> null
+                    }
+                    OutputOption(
+                        device = device,
+                        checked = appPreferences.exportTargets.isSelected(device),
+                        onCheckedChange = { enabled -> onExportTargetChange(device, enabled) },
+                        directFlashChecked = directFlashChecked,
+                        onDirectFlashChange = onDirectFlashChange,
+                    )
+                }
+            }
         }
 
         SectionDivider()
@@ -235,7 +233,7 @@ fun SettingsScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            text = "Selected presets are exported automatically on Add/Save only for outputs that use files. Direct-hardware outputs such as JA11 and JM12 keep their generated representation locally and write it only when you explicitly tap Flash. Suggested file location: Documents/EQ Library.",
+            text = "Selected presets are exported automatically on Add/Save only for outputs that use files. Hardware-only outputs keep their generated representation locally and write it only when you explicitly tap Flash. Suggested file location: Documents/EQ Library.",
             modifier = Modifier.padding(top = 4.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -341,13 +339,73 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun HardwareValidationPendingText() {
-    Text(
-        text = "Hardware validation pending",
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(start = 48.dp, bottom = 4.dp),
-    )
+private fun OutputOption(
+    device: ExportDevice,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    directFlashChecked: Boolean?,
+    onDirectFlashChange: ((Boolean) -> Unit)?,
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onCheckedChange(!checked) }
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Checkbox(checked = checked, onCheckedChange = onCheckedChange)
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(device.displayName)
+                Text(
+                    text = device.settingsSubtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        if (checked && directFlashChecked != null && onDirectFlashChange != null) {
+            Column(modifier = Modifier.padding(start = 48.dp, bottom = 8.dp)) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onDirectFlashChange(!directFlashChecked) },
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "Direct Flash",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Switch(
+                        checked = directFlashChecked,
+                        onCheckedChange = onDirectFlashChange,
+                    )
+                }
+                Text(
+                    text = when (device) {
+                        ExportDevice.BLACK_PEARL -> "Larger EQs are optimized to 10 bands"
+                        ExportDevice.FIIO_JA11,
+                        ExportDevice.JCALLY_JM12 -> "Larger EQs are optimized to 5 bands"
+                        else -> "EQ Library adapts the source to this device's hardware capabilities"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+                device.validationStatus?.let { status ->
+                    Text(
+                        text = status,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 2.dp),
+                    )
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -386,7 +444,7 @@ private fun AboutEqLibraryScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            text = "EQ Library is not affiliated with or endorsed by OPRA, Roon Labs, USB Audio Player PRO/UAPP, ToneBoosters, TRN, FiiO, JCALLY, Poweramp, Wavelet, or headphone manufacturers.",
+            text = "EQ Library is not affiliated with or endorsed by OPRA, Roon Labs, USB Audio Player PRO/UAPP, ToneBoosters, TRN, FiiO, JCALLY, EasyEffects, Equalizer APO, Poweramp, Wavelet, or headphone manufacturers.",
             modifier = Modifier.padding(top = 12.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -660,35 +718,6 @@ private fun SectionDivider() {
 }
 
 @Composable
-private fun CheckboxOption(
-    title: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    description: String? = null,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onCheckedChange(!checked) }
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Checkbox(checked = checked, onCheckedChange = onCheckedChange)
-        Spacer(Modifier.width(12.dp))
-        Column {
-            Text(title)
-            if (description != null) {
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-    }
-}
-
-@Composable
 private fun ThemeOption(
     title: String,
     selected: Boolean,
@@ -715,30 +744,6 @@ private fun ThemeOption(
             }
         }
     }
-}
-
-private fun outputTitle(device: ExportDevice): String = when (device) {
-    ExportDevice.UAPP -> "USB Audio Player PRO / ToneBoosters"
-    ExportDevice.BLACK_PEARL -> "TRN Black Pearl"
-    ExportDevice.FIIO_JA11 -> "FiiO JA11"
-    ExportDevice.JCALLY_JM12 -> "JCALLY JM12"
-    ExportDevice.UNIVERSAL_PARAMETRIC -> "Universal Parametric EQ"
-    ExportDevice.POWERAMP -> "Poweramp / Poweramp Equalizer"
-    ExportDevice.WAVELET -> "Wavelet"
-    ExportDevice.TOPPING_DX5_II -> "TOPPING DX5 II"
-    ExportDevice.TOPPING_DX1_II -> "TOPPING DX1 II"
-}
-
-private fun outputDescription(device: ExportDevice): String = when (device) {
-    ExportDevice.UAPP -> "ToneBoosters XML for USB Audio Player PRO"
-    ExportDevice.BLACK_PEARL -> "Preset file export plus optional direct Flash from My EQs"
-    ExportDevice.FIIO_JA11 -> "5-band PEQ with optional direct Flash from My EQs"
-    ExportDevice.JCALLY_JM12 -> "5-band PEQ with optional direct Flash from My EQs"
-    ExportDevice.UNIVERSAL_PARAMETRIC -> "Portable AutoEq / Equalizer APO-style parametric text"
-    ExportDevice.POWERAMP -> "AutoEq parametric text supported by Poweramp and Poweramp Equalizer"
-    ExportDevice.WAVELET -> "Wavelet 127-point GraphicEQ import"
-    ExportDevice.TOPPING_DX5_II,
-    ExportDevice.TOPPING_DX1_II -> "Hardware validation pending"
 }
 
 private fun formatCatalogTime(epochMillis: Long): String =
