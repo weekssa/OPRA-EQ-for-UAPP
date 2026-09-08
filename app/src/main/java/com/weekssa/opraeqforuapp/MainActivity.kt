@@ -489,10 +489,10 @@ class MainActivity : ComponentActivity() {
         return when (val result = blackPearlFlasher.resetToFlat()) {
             is BlackPearlFlatResetResult.Success -> {
                 if (kotlin.math.abs(result.restoredPlaybackGainDb) < 0.000_001) {
-                    "Current Black Pearl EQ slot reset to flat."
+                    "Black Pearl EQ reset to flat."
                 } else {
-                    val restored = String.format(Locale.US, "%+.2f", result.restoredPlaybackGainDb)
-                    "Current Black Pearl EQ slot reset to flat · playback gain restored $restored dB"
+                    val removedAdjustment = String.format(Locale.US, "%+.2f", -result.restoredPlaybackGainDb)
+                    "Black Pearl EQ reset to flat · removed EQ Library’s $removedAdjustment dB playback-gain adjustment"
                 }
             }
             is BlackPearlFlatResetResult.NotRepresentable -> "Couldn’t reset to flat · ${result.reason}"
