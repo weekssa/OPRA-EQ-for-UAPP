@@ -19,6 +19,10 @@ import com.weekssa.opraeqforuapp.data.export.PresetCleanupRepository
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
 import com.weekssa.opraeqforuapp.data.export.PresetExportRepository
 import com.weekssa.opraeqforuapp.data.export.PresetExportSummary
+import com.weekssa.opraeqforuapp.data.kt02h20.AndroidFiioJa11UsbTransport
+import com.weekssa.opraeqforuapp.data.kt02h20.AndroidJcallyJm12UsbTransport
+import com.weekssa.opraeqforuapp.data.kt02h20.JcallyJm12GainStatePreferences
+import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
 import com.weekssa.opraeqforuapp.data.library.CanonicalCatalogRepository
 import com.weekssa.opraeqforuapp.data.library.CanonicalFirstCatalogRepository
 import com.weekssa.opraeqforuapp.data.library.HttpCanonicalCatalogSource
@@ -34,7 +38,12 @@ import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlashResult
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlatResetResult
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlasher
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
+import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
+import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Flasher
+import com.weekssa.opraeqforuapp.domain.kt02h20.JcallyJm12Flasher
+import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult
+import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
 import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
@@ -115,6 +124,25 @@ class MainActivity : ComponentActivity() {
         BlackPearlFlasher(blackPearlTransport, blackPearlGainStateStore)
     }
 
+    private val fiioJa11TransportDelegate = lazy {
+        AndroidFiioJa11UsbTransport(applicationContext)
+    }
+    private val fiioJa11Transport by fiioJa11TransportDelegate
+    private val fiioJa11Flasher by lazy {
+        FiioJa11Flasher(fiioJa11Transport)
+    }
+
+    private val jcallyJm12TransportDelegate = lazy {
+        AndroidJcallyJm12UsbTransport(applicationContext)
+    }
+    private val jcallyJm12Transport by jcallyJm12TransportDelegate
+    private val jcallyJm12GainStateStore by lazy {
+        JcallyJm12GainStatePreferences(applicationContext)
+    }
+    private val jcallyJm12Flasher by lazy {
+        JcallyJm12Flasher(jcallyJm12Transport, jcallyJm12GainStateStore)
+    }
+
     private var lastForegroundRefreshAttemptMillis: Long = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -152,6 +180,12 @@ class MainActivity : ComponentActivity() {
             val blackPearlConnectionState = blackPearlTransport.state.collectAsStateWithLifecycle(
                 initialValue = BlackPearlConnectionState.Disconnected,
             ).value
+            val fiioJa11ConnectionState = fiioJa11Transport.state.collectAsStateWithLifecycle(
+                initialValue = Kt02h20ConnectionState.Disconnected,
+            ).value
+            val jcallyJm12ConnectionState = jcallyJm12Transport.state.collectAsStateWithLifecycle(
+                initialValue = Kt02h20ConnectionState.Disconnected,
+            ).value
 
             OpraEqTheme(themeMode = appPreferences.themeMode) {
                 EqLibraryApp(
@@ -170,6 +204,26 @@ class MainActivity : ComponentActivity() {
                         }
                     },
                     onResetBlackPearl = ::resetBlackPearlToFlat,
+                    fiioJa11ConnectionState = fiioJa11ConnectionState,
+                    onConnectFiioJa11 = {
+                        if (
+                            appPreferences.directFiioJa11FlashEnabled &&
+                            appPreferences.exportTargets.activeTarget == ExportDevice.FIIO_JA11
+                        ) {
+                            fiioJa11Transport.connect()
+                        }
+                    },
+                    onResetFiioJa11 = ::resetFiioJa11ToFlat,
+                    jcallyJm12ConnectionState = jcallyJm12ConnectionState,
+                    onConnectJcallyJm12 = {
+                        if (
+                            appPreferences.directJcallyJm12FlashEnabled &&
+                            appPreferences.exportTargets.activeTarget == ExportDevice.JCALLY_JM12
+                        ) {
+                            jcallyJm12Transport.connect()
+                        }
+                    },
+                    onResetJcallyJm12 = ::resetJcallyJm12ToFlat,
                     onFlashManagedProfile = { productId, profileId ->
                         flashManagedProfile(productId, profileId, activeOutputId)
                     },
@@ -304,6 +358,16 @@ class MainActivity : ComponentActivity() {
                             appPreferencesRepository.setDirectBlackPearlFlashEnabled(enabled)
                         }
                     },
+                    onDirectFiioJa11FlashEnabledChange = { enabled ->
+                        lifecycleScope.launch {
+                            appPreferencesRepository.setDirectFiioJa11FlashEnabled(enabled)
+                        }
+                    },
+                    onDirectJcallyJm12FlashEnabledChange = { enabled ->
+                        lifecycleScope.launch {
+                            appPreferencesRepository.setDirectJcallyJm12FlashEnabled(enabled)
+                        }
+                    },
                 )
             }
         }
@@ -317,6 +381,12 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         if (blackPearlTransportDelegate.isInitialized()) {
             blackPearlTransport.close()
+        }
+        if (fiioJa11TransportDelegate.isInitialized()) {
+            fiioJa11Transport.close()
+        }
+        if (jcallyJm12TransportDelegate.isInitialized()) {
+            jcallyJm12Transport.close()
         }
         super.onDestroy()
     }
@@ -376,13 +446,13 @@ class MainActivity : ComponentActivity() {
             ?: return "That headphone is no longer saved for this output."
         val profile = managed.profiles.firstOrNull { it.profileId == profileId && it.selected }
             ?: return "That EQ is no longer selected for this output."
-        return flashBlackPearlProfile(profile.lastKnownProfile)
+        return flashHardwareProfile(profile.lastKnownProfile)
     }
 
     private suspend fun flashSavedEq(entryId: String, outputId: String): String {
         val record = savedEqRepository.getForOutput(outputId, entryId)
             ?: return "That EQ is no longer saved for this output."
-        return flashBlackPearlProfile(record.profile)
+        return flashHardwareProfile(record.profile)
     }
 
     private suspend fun flashGeneralEq(
@@ -391,7 +461,17 @@ class MainActivity : ComponentActivity() {
     ): String {
         val record = savedGeneralEqRepository.getForOutput(outputId, presetId)
             ?: return "That General EQ is no longer saved for this output."
-        return flashBlackPearlProfile(record.profile)
+        return flashHardwareProfile(record.profile)
+    }
+
+    private suspend fun flashHardwareProfile(profile: OpraEqProfile): String {
+        val preferences = appPreferencesRepository.snapshot()
+        return when (preferences.exportTargets.activeTarget) {
+            ExportDevice.BLACK_PEARL -> flashBlackPearlProfile(profile, preferences)
+            ExportDevice.FIIO_JA11 -> flashFiioJa11Profile(profile, preferences)
+            ExportDevice.JCALLY_JM12 -> flashJcallyJm12Profile(profile, preferences)
+            else -> "Select a supported hardware output before using direct Flash."
+        }
     }
 
     private suspend fun resetBlackPearlToFlat(): String {
@@ -421,8 +501,53 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private suspend fun flashBlackPearlProfile(profile: OpraEqProfile): String {
+    private suspend fun resetFiioJa11ToFlat(): String {
         val preferences = appPreferencesRepository.snapshot()
+        if (preferences.exportTargets.activeTarget != ExportDevice.FIIO_JA11) {
+            return "Select FiiO JA11 as the active output before resetting its EQ."
+        }
+        if (!preferences.directFiioJa11FlashEnabled) {
+            return "Enable direct Flash in Settings → FiiO JA11 before resetting its EQ."
+        }
+        if (fiioJa11Transport.state.value !is Kt02h20ConnectionState.Connected) {
+            return "Connect to the FiiO JA11 from My EQs before resetting its EQ."
+        }
+        return when (val result = fiioJa11Flasher.resetToFlat()) {
+            is Kt02h20FlatResetResult.Success -> "FiiO JA11 reset to flat and saved to the device."
+            is Kt02h20FlatResetResult.NotSuitable -> "Couldn’t reset FiiO JA11 to flat · ${result.reason}"
+            is Kt02h20FlatResetResult.DeviceUnavailable -> result.reason
+            is Kt02h20FlatResetResult.TransferFailed -> result.reason
+            is Kt02h20FlatResetResult.VerificationFailed -> "FiiO JA11 reset verification failed · ${result.reason}"
+        }
+    }
+
+    private suspend fun resetJcallyJm12ToFlat(): String {
+        val preferences = appPreferencesRepository.snapshot()
+        if (preferences.exportTargets.activeTarget != ExportDevice.JCALLY_JM12) {
+            return "Select JCALLY JM12 as the active output before resetting its EQ."
+        }
+        if (!preferences.directJcallyJm12FlashEnabled) {
+            return "Enable direct Flash in Settings → JCALLY JM12 before resetting its EQ."
+        }
+        if (jcallyJm12Transport.state.value !is Kt02h20ConnectionState.Connected) {
+            return "Connect to the JCALLY JM12 from My EQs before resetting its EQ."
+        }
+        return when (val result = jcallyJm12Flasher.resetToFlat()) {
+            is Kt02h20FlatResetResult.Success -> {
+                val restored = String.format(Locale.US, "%+.2f", result.restoredPlaybackGainDb)
+                "JCALLY JM12 reset to flat · playback gain restored $restored dB · power-cycle persistence still needs hardware validation"
+            }
+            is Kt02h20FlatResetResult.NotSuitable -> "Couldn’t reset JCALLY JM12 to flat · ${result.reason}"
+            is Kt02h20FlatResetResult.DeviceUnavailable -> result.reason
+            is Kt02h20FlatResetResult.TransferFailed -> result.reason
+            is Kt02h20FlatResetResult.VerificationFailed -> "JCALLY JM12 reset verification failed · ${result.reason}"
+        }
+    }
+
+    private suspend fun flashBlackPearlProfile(
+        profile: OpraEqProfile,
+        preferences: AppPreferences,
+    ): String {
         if (preferences.exportTargets.activeTarget != ExportDevice.BLACK_PEARL) {
             return "Select Black Pearl as the active output before using direct Flash."
         }
@@ -443,6 +568,50 @@ class MainActivity : ComponentActivity() {
             is BlackPearlFlashResult.NotRepresentable -> "Not flashable · ${result.reason}"
             is BlackPearlFlashResult.DeviceUnavailable -> result.reason
             is BlackPearlFlashResult.TransferFailed -> result.reason
+        }
+    }
+
+    private suspend fun flashFiioJa11Profile(
+        profile: OpraEqProfile,
+        preferences: AppPreferences,
+    ): String {
+        if (!preferences.directFiioJa11FlashEnabled) {
+            return "Enable direct Flash in Settings → FiiO JA11 before flashing."
+        }
+        if (fiioJa11Transport.state.value !is Kt02h20ConnectionState.Connected) {
+            return "Connect to the FiiO JA11 from My EQs before flashing."
+        }
+        return when (val result = fiioJa11Flasher.flash(profile)) {
+            is Kt02h20FlashResult.Success -> {
+                val gain = String.format(Locale.US, "%+.2f", result.representation.playbackGainDb)
+                "Flash successful · ${fidelityLabel(result.representation.fidelity)} · global EQ gain $gain dB · saved to FiiO JA11"
+            }
+            is Kt02h20FlashResult.NotSuitable -> "Not suitable for FiiO JA11 · ${result.reason}"
+            is Kt02h20FlashResult.DeviceUnavailable -> result.reason
+            is Kt02h20FlashResult.TransferFailed -> result.reason
+            is Kt02h20FlashResult.VerificationFailed -> "FiiO JA11 Flash verification failed · ${result.reason}"
+        }
+    }
+
+    private suspend fun flashJcallyJm12Profile(
+        profile: OpraEqProfile,
+        preferences: AppPreferences,
+    ): String {
+        if (!preferences.directJcallyJm12FlashEnabled) {
+            return "Enable direct Flash in Settings → JCALLY JM12 before flashing."
+        }
+        if (jcallyJm12Transport.state.value !is Kt02h20ConnectionState.Connected) {
+            return "Connect to the JCALLY JM12 from My EQs before flashing."
+        }
+        return when (val result = jcallyJm12Flasher.flash(profile)) {
+            is Kt02h20FlashResult.Success -> {
+                val gain = String.format(Locale.US, "%+.2f", result.representation.playbackGainDb)
+                "Flash successful · ${fidelityLabel(result.representation.fidelity)} · playback gain $gain dB · power-cycle persistence still needs hardware validation"
+            }
+            is Kt02h20FlashResult.NotSuitable -> "Not suitable for JCALLY JM12 · ${result.reason}"
+            is Kt02h20FlashResult.DeviceUnavailable -> result.reason
+            is Kt02h20FlashResult.TransferFailed -> result.reason
+            is Kt02h20FlashResult.VerificationFailed -> "JCALLY JM12 Flash verification failed · ${result.reason}"
         }
     }
 
@@ -592,6 +761,11 @@ class MainActivity : ComponentActivity() {
         runCatching {
             startActivity(Intent(Intent.ACTION_VIEW, uri))
         }
+    }
+
+    private fun fidelityLabel(fidelity: DevicePresetFidelity): String = when (fidelity) {
+        DevicePresetFidelity.EXACT -> "Exact"
+        DevicePresetFidelity.OPTIMIZED -> "Optimized"
     }
 
     companion object {
