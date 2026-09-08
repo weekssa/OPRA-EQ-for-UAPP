@@ -12,10 +12,10 @@ interface ExportDocumentHandle {
 }
 
 /**
- * Result of a child-document lookup.
+ * Result of a SAF lookup.
  *
- * Missing is materially different from Unavailable: cleanup may forget ownership only when the
- * recorded child is confirmed missing, never when SAF access/querying failed.
+ * Missing is materially different from Unavailable: ownership may be forgotten only when a
+ * recorded document/path is confirmed missing, never when access or provider querying failed.
  */
 sealed interface ExportLookup<out T> {
     data class Found<T>(val value: T) : ExportLookup<T>
@@ -32,7 +32,7 @@ sealed interface ExportLookup<out T> {
 interface ExportDocumentStore {
     fun openWritableTree(treeUri: String): ExportDirectoryHandle?
 
-    fun openDocument(documentUri: String): ExportDocumentHandle?
+    fun openDocument(documentUri: String): ExportLookup<ExportDocumentHandle>
 
     fun findDirectory(parent: ExportDirectoryHandle, name: String): ExportLookup<ExportDirectoryHandle>
 
