@@ -2,8 +2,9 @@ package com.weekssa.opraeqforuapp.domain.export
 
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.assessUappCompatibility
+import com.weekssa.opraeqforuapp.domain.hardware.HardwareEqDeviceSpecs
+import com.weekssa.opraeqforuapp.domain.kt02h20.FiveBandDeviceSpec
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiveBandOptimizationResult
-import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20DeviceSpecs
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FiveBandOptimizer
 import com.weekssa.opraeqforuapp.domain.model.ProfileCompatibility
 
@@ -28,8 +29,9 @@ fun assessDeviceExportability(
             }
         }
     }
-    ExportDevice.FIIO_JA11 -> assessFiveBandHardware(profile, Kt02h20DeviceSpecs.FIIO_JA11)
-    ExportDevice.JCALLY_JM12 -> assessFiveBandHardware(profile, Kt02h20DeviceSpecs.JCALLY_JM12_STOCK)
+    ExportDevice.BLACK_PEARL -> assessHardware(profile, HardwareEqDeviceSpecs.TRN_BLACK_PEARL)
+    ExportDevice.FIIO_JA11 -> assessHardware(profile, HardwareEqDeviceSpecs.FIIO_JA11)
+    ExportDevice.JCALLY_JM12 -> assessHardware(profile, HardwareEqDeviceSpecs.JCALLY_JM12_STOCK)
     else -> buildFileExportDeviceVariant(profile, device)?.let { variant ->
         when (variant.fidelity) {
             DevicePresetFidelity.EXACT -> DeviceExportability.EXACT
@@ -38,9 +40,9 @@ fun assessDeviceExportability(
     } ?: DeviceExportability.NOT_REPRESENTABLE
 }
 
-private fun assessFiveBandHardware(
+private fun assessHardware(
     profile: OpraEqProfile,
-    spec: com.weekssa.opraeqforuapp.domain.kt02h20.FiveBandDeviceSpec,
+    spec: FiveBandDeviceSpec,
 ): DeviceExportability = when (val result = Kt02h20FiveBandOptimizer.optimize(profile, spec)) {
     is FiveBandOptimizationResult.NotSuitable -> DeviceExportability.NOT_REPRESENTABLE
     is FiveBandOptimizationResult.Ready -> when (result.representation.fidelity) {
