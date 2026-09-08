@@ -16,6 +16,12 @@ EQ Library supports the **FiiO JA11 on normal FiiO firmware** as its own hardwar
 
 It must not enter bootloader mode, update firmware, cross-flash another device, change reconstruction filters, or manage unrelated DAC controls.
 
+## File interchange status
+
+The v0.5 investigation did **not** establish a sufficiently verified external JA11 preset-file interchange format that EQ Library can safely generate and claim as importable. JA11 therefore remains a hardware-only Direct Flash output in v0.5.
+
+This is not a limitation on Direct Flash. The existing USB Flash path remains intact. If a real repeatable JA11 file format is independently verified later, file export may be added **alongside** Direct Flash; do not replace Direct Flash and do not invent a `.txt`, JSON, binary, or other file in the meantime.
+
 ## Clean-room / licensing boundary
 
 The Kotlin implementation in this repository is independently written. Public reference projects with copyleft licenses may be consulted only to corroborate observable protocol facts. Their implementation code, structure, comments, UI, and algorithms are not copied into this Apache-2.0 project.
@@ -88,7 +94,7 @@ Current provisional capability profile pending hardware qualification:
 - Q: 0.1 .. 10.0
 - global EQ gain: -12 dB .. +12 dB
 
-Source values are never silently clamped. If a full source EQ cannot be represented directly, the shared deterministic five-band response fitter may produce an Optimized representation only when its error thresholds pass. The canonical source profile remains unchanged.
+Source values are never silently clamped. If a full source EQ cannot be represented directly, the shared deterministic five-band response fitter may produce an Optimized representation only when its error thresholds pass. If the source fits the five-band structure but needs only native target rounding, keep that structure and report native rounding separately rather than unnecessarily fitting a different curve. Missing source preamp uses derived target headroom and is Optimized. The canonical source profile remains unchanged.
 
 ## Global EQ gain encoding
 
@@ -109,6 +115,8 @@ The v0.5 implementation uses this fail-closed order:
 9. Read back all five bands and global gain again; stop on any mismatch.
 
 A failed preflight produces no writes. A failed Apply or verification must never be reported as success. Save is not attempted until the first readback passes.
+
+The user-facing **Direct Flash** action therefore includes the observed Apply + Save sequence. The app may describe persistence as saved to the JA11 only after the required physical qualification passes; software command presence alone does not waive the hands-on gate.
 
 ## Reset to flat
 
