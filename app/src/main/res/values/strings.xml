@@ -14,6 +14,12 @@
     <string name="filter_sound">Sound</string>
     <string name="filter_genre">Genre</string>
     <string name="filter_utility">Utility</string>
+    <string name="filter_database">Database</string>
+    <string name="filter_creator">Creator</string>
+    <string name="filter_target">Target</string>
+    <string name="filter_selected_format">%1$s ✓</string>
+    <string name="filter_value_format">%1$s: %2$s</string>
+    <string name="filter_by_format">Filter by %1$s</string>
     <string name="catalog_loading">Loading EQ Library…</string>
     <string name="catalog_not_downloaded">EQ Library catalog not downloaded yet</string>
     <string name="search_headphones">Search headphones…</string>
@@ -51,10 +57,50 @@
     <string name="general_parametric_eq">General parametric EQ</string>
     <string name="saved_in_my_eqs_output">Saved in My EQs for this output</string>
     <string name="community_submission_unverified">Community submission — not independently verified.</string>
+    <string name="community_submission_unverified_review">Community submission — not independently verified. Review the source before use.</string>
     <string name="action_source">Source</string>
     <string name="clear_search_content_description">Clear search</string>
     <string name="manufacturers">Manufacturers</string>
     <string name="action_try_again">Try again</string>
+
+    <string name="discard_changes_title">Discard changes?</string>
+    <string name="discard_selection_changes_text">Your unsaved preset-selection changes will be discarded.</string>
+    <string name="action_discard">Discard</string>
+    <string name="action_keep_editing">Keep editing</string>
+    <string name="source_data_unavailable_title">Source data unavailable</string>
+    <string name="action_ok">OK</string>
+    <string name="models">Models</string>
+    <string name="loading_saved_selections">Loading saved selections…</string>
+    <string name="action_clear">Clear</string>
+    <string name="history_hide">Hide history</string>
+    <string name="history_count">History (%1$d)</string>
+    <string name="history_count_with_selected">History (%1$d) · %2$s</string>
+    <string name="selection_behavior_explanation">New headphones start with no EQs selected. New profiles always appear in EQ Library; saved selections change only when you choose them. My EQs can notify you when new verified or unverified profiles arrive.</string>
+    <plurals name="profiles_hidden_by_filters">
+        <item quantity="one">%1$d EQ profile hidden by Database / Creator / Target filters.</item>
+        <item quantity="other">%1$d EQ profiles hidden by Database / Creator / Target filters.</item>
+    </plurals>
+    <plurals name="selected_presets_retained_unavailable">
+        <item quantity="one">%1$d selected preset is retained because it is no longer available in the current EQ Library catalog. Manage it from My EQs.</item>
+        <item quantity="other">%1$d selected presets are retained because they are no longer available in the current EQ Library catalog. Manage them from My EQs.</item>
+    </plurals>
+    <string name="unknown_manufacturer">Unknown manufacturer</string>
+    <string name="favorite_saved_message">Saved to My EQs favorites.</string>
+    <string name="favorite_removed_message">Removed from My EQs favorites.</string>
+    <string name="eq_hidden_from_library_message">EQ hidden from EQ Library. Restore it in Settings → Hidden EQs.</string>
+    <string name="source_not_usable_default">This catalog row is not a usable parametric EQ source.</string>
+    <string name="add_to_my_eqs_count">Add to My EQs (%1$d)</string>
+    <string name="save_changes_count">Save changes (%1$d)</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="creator_information_missing">Creator information missing</string>
+    <string name="source_data_unavailable_for_selection">Source data unavailable for selection</string>
+    <string name="hide_from_eq_library_content_description">Hide from EQ Library</string>
+    <string name="remove_favorite_content_description">Remove favorite</string>
+    <string name="add_favorite_content_description">Add favorite</string>
+    <string name="output_status_exact">Exact</string>
+    <string name="output_status_optimized">Optimized</string>
+    <string name="output_status_not_suitable">Not suitable</string>
+    <string name="output_status_not_exportable">Not exportable</string>
 
     <string name="selected_folder_fallback">Selected folder</string>
     <string name="export_folder_permission_failed">Couldn’t retain access to that folder. Choose another folder.</string>
