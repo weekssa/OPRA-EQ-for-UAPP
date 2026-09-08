@@ -16,7 +16,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.weekssa.opraeqforuapp.R
 
 @Composable
 fun UpdateAvailableBanner(
@@ -37,17 +39,20 @@ fun UpdateAvailableBanner(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "OPRA EQ for UAPP v$version is available",
+                    text = stringResource(R.string.update_banner_available, version),
                     modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.titleSmall,
                 )
                 IconButton(onClick = onDismiss) {
-                    Icon(Icons.Outlined.Close, contentDescription = "Dismiss update banner")
+                    Icon(
+                        Icons.Outlined.Close,
+                        contentDescription = stringResource(R.string.update_banner_dismiss_content_description),
+                    )
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                TextButton(onClick = onWhatsNew) { Text("What’s new") }
-                TextButton(onClick = onGetUpdate) { Text("Get update") }
+                TextButton(onClick = onWhatsNew) { Text(stringResource(R.string.update_whats_new)) }
+                TextButton(onClick = onGetUpdate) { Text(stringResource(R.string.update_get_update)) }
             }
         }
     }
@@ -69,10 +74,13 @@ fun PostUpdateBanner(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text("Updated to v$version", style = MaterialTheme.typography.titleSmall)
-                TextButton(onClick = onWhatsNew) { Text("What’s new") }
+                Text(
+                    stringResource(R.string.update_banner_installed, version),
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                TextButton(onClick = onWhatsNew) { Text(stringResource(R.string.update_whats_new)) }
             }
-            TextButton(onClick = onDismiss) { Text("Dismiss") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_dismiss)) }
         }
     }
 }
