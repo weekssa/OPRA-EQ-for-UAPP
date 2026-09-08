@@ -38,9 +38,8 @@ import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.export.ExportCurrentness
 import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
-import com.weekssa.opraeqforuapp.domain.blackpearl.blackPearlFlashWarning
-import com.weekssa.opraeqforuapp.domain.blackpearl.blackPearlRequiredPlaybackGainDb
-import com.weekssa.opraeqforuapp.domain.blackpearl.isBlackPearlDirectFlashable
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlashPlan
+import com.weekssa.opraeqforuapp.domain.blackpearl.buildBlackPearlFlashPlan
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqCategory
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
@@ -448,15 +447,14 @@ fun MyEqsHomeScreen(
 }
 
 private fun hardwareFlashPreview(profile: OpraEqProfile, device: ExportDevice): HardwareFlashPreview? = when (device) {
-    ExportDevice.BLACK_PEARL -> if (profile.isBlackPearlDirectFlashable()) {
-        HardwareFlashPreview(
+    ExportDevice.BLACK_PEARL -> when (val plan = buildBlackPearlFlashPlan(profile, activeSlot = 0x00)) {
+        is BlackPearlFlashPlan.NotRepresentable -> null
+        is BlackPearlFlashPlan.Ready -> HardwareFlashPreview(
             device = device,
-            fidelity = if (profile.bands.orEmpty().size <= 10) DevicePresetFidelity.EXACT else DevicePresetFidelity.OPTIMIZED,
-            playbackGainDb = profile.blackPearlRequiredPlaybackGainDb() ?: 0.0,
-            warning = profile.blackPearlFlashWarning(),
+            fidelity = plan.fidelity,
+            playbackGainDb = plan.requiredPlaybackGainDb,
+            warning = plan.warning,
         )
-    } else {
-        null
     }
     ExportDevice.FIIO_JA11 -> fiveBandFlashPreview(profile, device, Kt02h20DeviceSpecs.FIIO_JA11)
     ExportDevice.JCALLY_JM12 -> fiveBandFlashPreview(profile, device, Kt02h20DeviceSpecs.JCALLY_JM12_STOCK)
