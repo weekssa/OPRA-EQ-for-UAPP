@@ -65,6 +65,7 @@ private fun buildBlackPearlFileExportVariant(profile: OpraEqProfile): DevicePres
         content = content,
         transformation = transformation,
         fidelity = representation.fidelity,
+        representationVersion = representation.representationVersion,
     )
 }
 
