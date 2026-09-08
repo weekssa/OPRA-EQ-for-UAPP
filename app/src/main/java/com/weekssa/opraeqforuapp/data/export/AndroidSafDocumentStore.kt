@@ -23,13 +23,19 @@ class AndroidSafDocumentStore(context: Context) : ExportDocumentStore {
         }.getOrNull()
     }
 
-    override fun openDocument(documentUri: String): ExportDocumentHandle? {
-        val uri = documentUri.toUriOrNull() ?: return null
-        return runCatching {
-            DocumentFile.fromSingleUri(appContext, uri)
-                ?.takeIf { document -> document.exists() && document.isFile }
-                ?.let(::AndroidDocumentHandle)
-        }.getOrNull()
+    override fun openDocument(documentUri: String): ExportLookup<ExportDocumentHandle> {
+        val uri = documentUri.toUriOrNull() ?: return ExportLookup.Unavailable
+        return try {
+            val document = DocumentFile.fromSingleUri(appContext, uri)
+                ?: return ExportLookup.Unavailable
+            when {
+                !document.exists() -> ExportLookup.Missing
+                !document.isFile -> ExportLookup.Unavailable
+                else -> ExportLookup.Found(AndroidDocumentHandle(document))
+            }
+        } catch (_: Exception) {
+            ExportLookup.Unavailable
+        }
     }
 
     override fun findDirectory(
