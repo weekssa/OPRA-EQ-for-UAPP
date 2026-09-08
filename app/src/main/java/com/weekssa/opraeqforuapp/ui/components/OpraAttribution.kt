@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.R
 
@@ -27,20 +28,20 @@ fun OpraAttribution(
     Column(modifier = modifier.fillMaxWidth()) {
         Image(
             painter = painterResource(R.drawable.opra_logo),
-            contentDescription = "OPRA — Open Headphone Database",
+            contentDescription = stringResource(R.string.opra_logo_content_description),
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(max = if (compact) 48.dp else 72.dp),
             contentScale = ContentScale.Fit,
         )
         Text(
-            text = "Headphone and EQ data comes from OPRA, the open community-maintained headphone database. Individual profile creators and source details are preserved from OPRA where provided.",
+            text = stringResource(R.string.opra_attribution_text),
             modifier = Modifier.padding(top = 8.dp),
             style = if (compact) MaterialTheme.typography.bodySmall else MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         TextButton(onClick = { onOpenUrl(OPRA_PROJECT_URL) }) {
-            Text("Open OPRA project")
+            Text(stringResource(R.string.opra_open_project))
         }
     }
 }
