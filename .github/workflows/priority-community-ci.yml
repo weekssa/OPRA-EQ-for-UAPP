@@ -3,6 +3,7 @@ name: Priority community coverage CI
 on:
   pull_request:
     paths:
+      - 'app/**'
       - 'catalog/discovery/*_community_curated.json'
       - 'catalog/discovery/priority_headphone_coverage.json'
       - 'config/source_registry.json'
@@ -15,7 +16,9 @@ on:
   push:
     branches:
       - eq-library-community-v0.3
+      - 'v0.*'
     paths:
+      - 'app/**'
       - 'catalog/discovery/*_community_curated.json'
       - 'catalog/discovery/priority_headphone_coverage.json'
       - 'config/source_registry.json'
