@@ -54,6 +54,7 @@ import com.weekssa.opraeqforuapp.domain.export.assessDeviceExportability
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiveBandOptimizationResult
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20DeviceSpecs
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FiveBandOptimizer
+import com.weekssa.opraeqforuapp.domain.kt02h20.adaptationSummary
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedProfileRecord
 import com.weekssa.opraeqforuapp.domain.settings.ExportTargetPreferences
@@ -66,6 +67,7 @@ private data class ManagedHardwareFlashAssessment(
     val reason: String? = null,
     val fidelity: DevicePresetFidelity? = null,
     val playbackGainDb: Double = 0.0,
+    val adaptationSummary: String? = null,
     val warning: String? = null,
 )
 
@@ -421,6 +423,7 @@ fun ManagedHeadphoneDetailScreen(
                     isFavorite = profile.profileId in favoriteProfileIds,
                     activeOutput = activeOutput,
                     outputStatus = outputStatus,
+                    outputAdaptationSummary = assessment.adaptationSummary,
                     showExport = activeOutput.supportsFileExport && profile.selected &&
                         exportCurrentness.needsExport(headphone.productId, profile.profileId),
                     onExport = { onExportProfile(profile.profileId) },
@@ -475,6 +478,7 @@ private fun managedHardwareFlashAssessment(
             ready = true,
             fidelity = plan.fidelity,
             playbackGainDb = plan.requiredPlaybackGainDb,
+            adaptationSummary = plan.adaptationSummary,
             warning = plan.warning,
         )
         is BlackPearlFlashPlan.NotRepresentable -> ManagedHardwareFlashAssessment(
@@ -499,6 +503,7 @@ private fun managedFiveBandAssessment(
         ready = true,
         fidelity = result.representation.fidelity,
         playbackGainDb = result.representation.playbackGainDb,
+        adaptationSummary = result.representation.adaptationSummary(),
     )
 }
 
@@ -511,12 +516,14 @@ private fun managedHardwareFlashConfirmation(
         return blackPearlFlashConfirmation(
             displayName = displayName,
             gainAdjustmentDb = assessment.playbackGainDb,
+            fidelity = assessment.fidelity ?: DevicePresetFidelity.OPTIMIZED,
+            adaptationSummary = assessment.adaptationSummary ?: "target-specific adaptation",
             warning = assessment.warning,
         )
     }
     val fidelity = when (assessment.fidelity) {
-        DevicePresetFidelity.EXACT -> "Exact"
-        DevicePresetFidelity.OPTIMIZED -> "Optimized — adapted to the device’s 5-band PEQ to closely match the original EQ response"
+        DevicePresetFidelity.EXACT -> "Exact · ${assessment.adaptationSummary ?: "source values preserved"}"
+        DevicePresetFidelity.OPTIMIZED -> "Optimized · ${assessment.adaptationSummary ?: "target-specific adaptation"}"
         null -> "Not suitable"
     }
     val gain = String.format(Locale.US, "%+.2f", assessment.playbackGainDb)
@@ -639,6 +646,7 @@ private fun ManagedProfileRow(
     isFavorite: Boolean,
     activeOutput: ExportDevice,
     outputStatus: DeviceExportability,
+    outputAdaptationSummary: String?,
     showExport: Boolean,
     onExport: () -> Unit,
     showFlash: Boolean,
@@ -673,7 +681,10 @@ private fun ManagedProfileRow(
                     else -> Text("Not selected")
                 }
                 Text(
-                    text = "${outputShortName(activeOutput)}: ${outputStatusLabel(outputStatus, activeOutput)}",
+                    text = buildString {
+                        append("${outputShortName(activeOutput)}: ${outputStatusLabel(outputStatus, activeOutput)}")
+                        outputAdaptationSummary?.let { append(" · $it") }
+                    },
                     style = MaterialTheme.typography.labelMedium,
                     color = when (outputStatus) {
                         DeviceExportability.EXACT -> MaterialTheme.colorScheme.onSurfaceVariant
