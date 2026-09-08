@@ -52,7 +52,8 @@ class FiioJa11ProtocolTest {
             0x02, 0xBB, 0x0B, 0x00, 0x00, 0x15, 0x08, 0x02,
             0xFF, 0xDD, 0x00, 0x69, 0x00, 0x47, 0x01, 0x00, 0xEE,
         )
-        val parsed = assertNotNull(FiioJa11Protocol.bandFromResponse(bandResponse))
+        val parsed = FiioJa11Protocol.bandFromResponse(bandResponse)
+        assertNotNull(parsed)
         assertEquals(2, parsed!!.first)
         assertEquals("low_shelf", parsed.second.type)
         assertEquals(105.0, parsed.second.frequencyHz, 0.0)
