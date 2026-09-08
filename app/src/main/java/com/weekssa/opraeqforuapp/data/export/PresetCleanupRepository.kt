@@ -56,6 +56,8 @@ class PresetCleanupRepository(
     /**
      * Delete only the exact URI EQ Library owns. If direct provider deletion fails, traverse the
      * persisted app-owned tree/path and require the same exact child URI before deleting it.
+     * Confirmed missing children are safe to forget; lookup/access failures retain ownership so a
+     * later retry cannot accidentally orphan an app-managed document.
      */
     private fun deleteOwnedDocument(ownership: ExportOwnershipEntity): Boolean {
         if (documentStore.deleteByUri(ownership.documentUri)) return true
@@ -68,11 +70,23 @@ class PresetCleanupRepository(
             .split('/')
             .filter(String::isNotBlank)
         for (segment in segments) {
-            directory = documentStore.findDirectory(directory, segment) ?: return true
+            directory = when (val lookup = documentStore.findDirectory(directory, segment)) {
+                is ExportLookup.Found -> lookup.value
+                ExportLookup.Missing -> return true
+                ExportLookup.Unavailable -> return false
+            }
         }
 
-        val target = documentStore.findFile(directory, ownership.fileName) ?: return true
-        if (target.uri != ownership.documentUri) return false
-        return documentStore.delete(target)
+        return when (val lookup = documentStore.findFile(directory, ownership.fileName)) {
+            is ExportLookup.Found -> {
+                if (lookup.value.uri != ownership.documentUri) {
+                    false
+                } else {
+                    documentStore.delete(lookup.value)
+                }
+            }
+            ExportLookup.Missing -> true
+            ExportLookup.Unavailable -> false
+        }
     }
 }
