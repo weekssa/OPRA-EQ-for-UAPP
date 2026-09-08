@@ -142,9 +142,11 @@ class PresetExportRepository(
     private fun ownedDocumentIsCurrent(
         ownership: ExportOwnershipEntity,
         candidate: PresetExportCandidate,
-    ): Boolean {
-        val document = ownedDocument(ownership) ?: return false
-        return documentStore.contentHash(document) == candidate.contentHash
+    ): Boolean = when (val lookup = ownedDocument(ownership)) {
+        is ExportLookup.Found -> documentStore.contentHash(lookup.value) == candidate.contentHash
+        ExportLookup.Missing,
+        ExportLookup.Unavailable,
+        -> false
     }
 
     private suspend fun exportOne(
@@ -168,15 +170,28 @@ class PresetExportRepository(
             relativeDirectory = candidate.relativeDirectory,
         )
         for (ownership in knownOwnerships) {
-            val document = ownedDocument(ownership)
-            if (document == null) {
-                ownershipDao.delete(ownership.documentUri)
-                continue
+            when (val lookup = ownedDocument(ownership)) {
+                is ExportLookup.Found ->
+                    return exportToOwnedDocument(lookup.value, ownership, treeUri, candidate)
+                ExportLookup.Missing -> {
+                    ownershipDao.delete(ownership.documentUri)
+                    continue
+                }
+                ExportLookup.Unavailable -> return PresetExportItemResult.Failed(
+                    candidate,
+                    "The existing app-managed preset could not be accessed. No file was changed.",
+                )
             }
-            return exportToOwnedDocument(document, ownership, treeUri, candidate)
         }
 
-        val preferredExisting = documentStore.findFile(targetDirectory, candidate.fileName)
+        val preferredExisting = when (val lookup = documentStore.findFile(targetDirectory, candidate.fileName)) {
+            is ExportLookup.Found -> lookup.value
+            ExportLookup.Missing -> null
+            ExportLookup.Unavailable -> return PresetExportItemResult.Failed(
+                candidate,
+                "The export folder could not be safely inspected. No file was changed.",
+            )
+        }
         val preferredOwnership = preferredExisting?.let { existing ->
             ownershipDao.getByDocumentUri(existing.uri)
         }
@@ -264,7 +279,13 @@ class PresetExportRepository(
         candidate: PresetExportCandidate,
         requestName: String,
     ): CreateOwnedFileResult {
-        val preexisting = documentStore.findFile(targetDirectory, requestName)
+        val preexisting = when (val lookup = documentStore.findFile(targetDirectory, requestName)) {
+            is ExportLookup.Found -> lookup.value
+            ExportLookup.Missing -> null
+            ExportLookup.Unavailable -> return CreateOwnedFileResult.UnsafeProviderBehavior(
+                "The document provider could not safely determine whether $requestName already exists. No file was changed.",
+            )
+        }
         val preexistingOwnership = preexisting?.let { existing ->
             ownershipDao.getByDocumentUri(existing.uri)
         }
@@ -316,14 +337,17 @@ class PresetExportRepository(
         return CreateOwnedFileResult.Success(PresetExportItemResult.Created(candidate))
     }
 
-    private fun ownedDocument(ownership: ExportOwnershipEntity): ExportDocumentHandle? =
+    private fun ownedDocument(ownership: ExportOwnershipEntity): ExportLookup<ExportDocumentHandle> =
         documentStore.openDocument(ownership.documentUri)
 
     private fun ensureDirectory(
         parent: ExportDirectoryHandle,
         name: String,
-    ): ExportDirectoryHandle? =
-        documentStore.findDirectory(parent, name) ?: documentStore.createDirectory(parent, name)
+    ): ExportDirectoryHandle? = when (val lookup = documentStore.findDirectory(parent, name)) {
+        is ExportLookup.Found -> lookup.value
+        ExportLookup.Missing -> documentStore.createDirectory(parent, name)
+        ExportLookup.Unavailable -> null
+    }
 
     private fun replaceManagedFile(
         document: ExportDocumentHandle,
