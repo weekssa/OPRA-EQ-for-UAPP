@@ -41,27 +41,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.BuildConfig
-import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshFailureReason
 import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshResult
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
-import com.weekssa.opraeqforuapp.data.export.ExportCurrentness
-import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
 import com.weekssa.opraeqforuapp.data.export.PresetExportItemResult
 import com.weekssa.opraeqforuapp.data.export.PresetExportSummary
-import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
 import com.weekssa.opraeqforuapp.data.sync.CatalogSyncOutcome
 import com.weekssa.opraeqforuapp.data.update.AppUpdateCheckResult
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqPreset
-import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
-import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
 import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
-import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.managed.withHiddenReviewPromptsSuppressed
-import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
-import com.weekssa.opraeqforuapp.domain.settings.ThemeMode
 import com.weekssa.opraeqforuapp.domain.update.SemVer
 import com.weekssa.opraeqforuapp.ui.components.PostUpdateBanner
 import com.weekssa.opraeqforuapp.ui.components.UpdateAvailableBanner
@@ -96,58 +87,62 @@ private sealed interface ActiveOutputExportRequest {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EqLibraryApp(
-    appPreferences: AppPreferences,
-    catalogState: CatalogState,
-    managedHeadphones: List<ManagedHeadphoneRecord>,
-    savedEqs: List<SavedEqRecord>,
-    savedGeneralEqs: List<SavedGeneralEqRecord>,
-    exportCurrentness: ExportCurrentness,
-    blackPearlConnectionState: BlackPearlConnectionState,
-    onConnectBlackPearl: () -> Unit,
-    onResetBlackPearl: suspend () -> String,
-    fiioJa11ConnectionState: Kt02h20ConnectionState,
-    onConnectFiioJa11: () -> Unit,
-    onResetFiioJa11: suspend () -> String,
-    jcallyJm12ConnectionState: Kt02h20ConnectionState,
-    onConnectJcallyJm12: () -> Unit,
-    onResetJcallyJm12: suspend () -> String,
-    onFlashManagedProfile: suspend (String, String) -> String,
-    onFlashSavedEq: suspend (String) -> String,
-    onFlashGeneralEq: suspend (String) -> String,
-    onRefreshCatalog: suspend () -> CatalogSyncOutcome,
-    onLoadManagedHeadphone: suspend (String) -> ManagedHeadphoneRecord?,
-    onSaveSelection: suspend (String, Set<String>, Boolean) -> Unit,
-    onRemoveHeadphone: suspend (String) -> Unit,
-    onRemoveManagedProfile: suspend (String, String, Boolean) -> PresetCleanupSummary?,
-    onRemoveManagedHeadphone: suspend (String, Boolean) -> PresetCleanupSummary?,
-    onDeleteSavedFilesForProfiles: suspend (Set<String>) -> PresetCleanupSummary,
-    onDeleteSavedFilesForProduct: suspend (String) -> PresetCleanupSummary,
-    onMarkReviewed: suspend (String) -> Unit,
-    onToggleFavorite: suspend (OpraEqProfile, String, String) -> Boolean,
-    onSaveGeneralPreset: suspend (GeneralEqPreset) -> Boolean,
-    onHideCanonicalProfiles: suspend (Set<String>) -> Unit,
-    onUnhideCanonicalProfiles: suspend (Set<String>) -> Unit,
-    onImportPersonal: suspend (String, String, String, String?, String) -> SavedEqRecord,
-    onDeleteSavedEq: suspend (String) -> Unit,
-    onRemoveGeneralEq: suspend (String) -> Unit,
-    onPersistExportTree: suspend (Uri) -> Boolean,
-    onExportSelected: suspend (Uri, ExportDevice) -> PresetExportSummary,
-    onExportProduct: suspend (Uri, String, ExportDevice) -> PresetExportSummary,
-    onExportManagedProfile: suspend (Uri, String, String, ExportDevice) -> PresetExportSummary,
-    onExportSavedEq: suspend (Uri, String, ExportDevice) -> PresetExportSummary,
-    onExportGeneralEq: suspend (Uri, String, ExportDevice) -> PresetExportSummary,
-    onExportGeneralEqs: suspend (Uri, Set<String>, ExportDevice) -> PresetExportSummary,
-    onCheckForUpdates: suspend () -> AppUpdateCheckResult,
-    onDismissUpdate: suspend (String) -> Unit,
-    onDismissPostUpdate: suspend () -> Unit,
-    onOpenUrl: (String) -> Unit,
-    onThemeModeChange: (ThemeMode) -> Unit,
-    onExportTargetChange: (ExportDevice, Boolean) -> Unit,
-    onActiveExportTargetChange: (ExportDevice) -> Unit,
-    onDirectBlackPearlFlashEnabledChange: (Boolean) -> Unit,
-    onDirectFiioJa11FlashEnabledChange: (Boolean) -> Unit,
-    onDirectJcallyJm12FlashEnabledChange: (Boolean) -> Unit,
+    state: EqLibraryUiState,
+    actions: EqLibraryActions,
 ) {
+    val appPreferences = state.appPreferences
+    val catalogState = state.catalogState
+    val managedHeadphones = state.managedHeadphones
+    val savedEqs = state.savedEqs
+    val savedGeneralEqs = state.savedGeneralEqs
+    val exportCurrentness = state.exportCurrentness
+    val blackPearlConnectionState = state.blackPearlConnectionState
+    val fiioJa11ConnectionState = state.fiioJa11ConnectionState
+    val jcallyJm12ConnectionState = state.jcallyJm12ConnectionState
+
+    val onConnectBlackPearl = actions.onConnectBlackPearl
+    val onResetBlackPearl = actions.onResetBlackPearl
+    val onConnectFiioJa11 = actions.onConnectFiioJa11
+    val onResetFiioJa11 = actions.onResetFiioJa11
+    val onConnectJcallyJm12 = actions.onConnectJcallyJm12
+    val onResetJcallyJm12 = actions.onResetJcallyJm12
+    val onFlashManagedProfile = actions.onFlashManagedProfile
+    val onFlashSavedEq = actions.onFlashSavedEq
+    val onFlashGeneralEq = actions.onFlashGeneralEq
+    val onRefreshCatalog = actions.onRefreshCatalog
+    val onLoadManagedHeadphone = actions.onLoadManagedHeadphone
+    val onSaveSelection = actions.onSaveSelection
+    val onRemoveHeadphone = actions.onRemoveHeadphone
+    val onRemoveManagedProfile = actions.onRemoveManagedProfile
+    val onRemoveManagedHeadphone = actions.onRemoveManagedHeadphone
+    val onDeleteSavedFilesForProfiles = actions.onDeleteSavedFilesForProfiles
+    val onDeleteSavedFilesForProduct = actions.onDeleteSavedFilesForProduct
+    val onMarkReviewed = actions.onMarkReviewed
+    val onToggleFavorite = actions.onToggleFavorite
+    val onSaveGeneralPreset = actions.onSaveGeneralPreset
+    val onHideCanonicalProfiles = actions.onHideCanonicalProfiles
+    val onUnhideCanonicalProfiles = actions.onUnhideCanonicalProfiles
+    val onImportPersonal = actions.onImportPersonal
+    val onDeleteSavedEq = actions.onDeleteSavedEq
+    val onRemoveGeneralEq = actions.onRemoveGeneralEq
+    val onPersistExportTree = actions.onPersistExportTree
+    val onExportSelected = actions.onExportSelected
+    val onExportProduct = actions.onExportProduct
+    val onExportManagedProfile = actions.onExportManagedProfile
+    val onExportSavedEq = actions.onExportSavedEq
+    val onExportGeneralEq = actions.onExportGeneralEq
+    val onExportGeneralEqs = actions.onExportGeneralEqs
+    val onCheckForUpdates = actions.onCheckForUpdates
+    val onDismissUpdate = actions.onDismissUpdate
+    val onDismissPostUpdate = actions.onDismissPostUpdate
+    val onOpenUrl = actions.onOpenUrl
+    val onThemeModeChange = actions.onThemeModeChange
+    val onExportTargetChange = actions.onExportTargetChange
+    val onActiveExportTargetChange = actions.onActiveExportTargetChange
+    val onDirectBlackPearlFlashEnabledChange = actions.onDirectBlackPearlFlashEnabledChange
+    val onDirectFiioJa11FlashEnabledChange = actions.onDirectFiioJa11FlashEnabledChange
+    val onDirectJcallyJm12FlashEnabledChange = actions.onDirectJcallyJm12FlashEnabledChange
+
     var selectedDestinationIndex by rememberSaveable { mutableIntStateOf(0) }
     var selectedManagedProductId by rememberSaveable { mutableStateOf<String?>(null) }
     var outputMenuExpanded by remember { mutableStateOf(false) }
