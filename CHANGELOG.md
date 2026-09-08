@@ -35,6 +35,43 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Live branch automation recorded successful source-health scans for Head-Fi, Audio Science Review, Squiglink ecosystem currentness, and ParaEQ, with zero consecutive failures for those newly automated lanes.
 - The unified automated-source workflow passed its adapter/automation-contract tests and atomic living-archive validation on the feature branch before final PR closeout.
 
+## [0.5.0] - Unreleased
+
+### Added
+
+- A unified output registry that groups selectable targets as **Hardware DACs**, **Apps**, and **Universal formats**, with one declared source of truth for display labels, file-vs-hardware behavior, format kind, capability profile, and validation status.
+- Additional selectable app/universal output contexts, including Equalizer APO-style parametric text, EasyEffects-compatible parametric import, and portable AutoEq GraphicEQ alongside the existing UAPP/ToneBoosters, Poweramp, and Wavelet paths.
+- **FiiO JA11** as a hardware-only five-band PEQ output with an independent Direct Flash toggle (OFF by default), strict USB identity, read/apply/readback/save verification, and Reset EQ to flat.
+- **JCALLY JM12** on stock firmware as a separate hardware-only five-band PEQ output with its own Direct Flash toggle (OFF by default), strict USB identity/register protocol, readback verification, fail-safe EQ bypass during replacement, tracked EQ Library playback-gain delta, and Reset EQ to flat.
+- A shared deterministic finite-hardware response adapter used by TRN Black Pearl (10 bands), FiiO JA11 (5 bands), and stock JCALLY JM12 (5 bands). It preserves native exact representations where target quantization permits and otherwise fits the complete source response under fixed RMS/max-error gates.
+- Versioned derived-representation semantics/fingerprints so a hardware/output adaptation-rule change makes previously generated target state detectably stale without changing canonical source fingerprints.
+- Device-specific JA11/JM12 protocol notes and Pixel 9 hands-on qualification checklists.
+
+### Changed
+
+- Hardware adaptation no longer treats over-budget Black Pearl/JA11/JM12 profiles as a first-N truncation problem. The shared adapter evaluates and fits the **complete canonical response** while retaining the complete source unchanged.
+- Black Pearl file export and Direct Flash now consume the same shared 10-band device representation. This supersedes the v0.3 Black Pearl first-10 adaptation rule; the independent UAPP/ToneBoosters first-10 rule remains unchanged.
+- Missing source preamp for finite hardware is handled by conservative target-specific headroom derived from the final quantized target response. Generated headroom is representation metadata and never rewrites canonical `preampGainDb` or canonical safety-headroom metadata.
+- Exact/Optimized classification now accounts for actual device quantization rather than only broad parameter ranges/band count.
+- Hardware-only outputs explicitly produce no file export artifact. Add/Save stores output-specific state but never automatically writes hardware; Flash remains an explicit confirmed action.
+- Settings nests device-specific Direct Flash controls under enabled hardware outputs and continues to present JA11/JM12 as **Hardware validation pending** until their physical gates pass.
+- Signed-beta publication now supports `v0.*` development branches and produces stable plus versioned mobile-test APK names for exact-candidate hardware testing.
+
+### Fixed
+
+- Black Pearl Flash confirmation preview now consumes the actual `BlackPearlFlashPlan` used by the transaction instead of guessing Exact/Optimized from the source band count, preventing UI fidelity/gain/warning disagreement with the state that would be written.
+- Stock JM12 digital-gain register updates preserve unrelated register bytes instead of reconstructing bytes that EQ Library does not own.
+- Shared hardware adaptation rejects unsupported source filters and quality-gate failures instead of silently dropping or clamping them.
+- Obsolete tests that encoded pre-v0.5 first-N Black Pearl behavior were replaced with regression coverage for the approved complete-response/shared-adapter contract rather than weakening validation.
+
+### Validation
+
+- Automated coverage includes native/quantized Exact behavior, deterministic over-budget response fitting, target-derived headroom without canonical mutation, quality-gate rejection, Black Pearl file/Flash representation parity, device protocol golden vectors, full-slot overwrite/padding, readback/failure ordering, wrong-device protection, Direct Flash default-OFF state, reset behavior, output registry/file-vs-hardware semantics, and versioned currentness.
+- Final v0.5 qualification still requires an exact signed candidate after all software/documentation closeout changes, followed by the applicable Pixel 9 physical gates.
+- FiiO JA11 and stock JCALLY JM12 remain **Hardware validation pending** until their exact-candidate hands-on checklists pass.
+- Because v0.5 changes Black Pearl DSP derivation through the shared response adapter, the exact v0.5 candidate also requires a focused Black Pearl regression smoke even though the Black Pearl transport protocol and v0.4 flat-reset behavior were previously physically qualified.
+- Stock JM12 power-cycle persistence is not claimed: no independently corroborated explicit Save command is used, and persistence/tracked-gain reconciliation must be resolved by the physical checklist before qualification.
+
 ## [0.4.0] - 2026-09-06
 
 ### Added
