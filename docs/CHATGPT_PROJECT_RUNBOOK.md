@@ -15,6 +15,8 @@ Before substantive work, read this file and the current documents relevant to th
 - `docs/V0.5_KT02H20_IMPLEMENTATION_PLAN.md` for the current output registry, shared hardware response adapter, FiiO JA11, and stock JCALLY JM12 work
 - `docs/V0.5_IMPORT_COMPATIBILITY_NOTES.md` when file-import/export compatibility, TOPPING Tune, Black Pearl text import, or output-fidelity wording is involved
 - `docs/V0.5_HANDS_ON_RELEASE_CHECKLIST.md` for the current v0.5 **Phase 2** Pixel 9 release-candidate testing record
+- `docs/V0.6_MY_DAC_APPROVED_DESIGN.md` for the approved v0.6 My DAC UX/behavior contract
+- `docs/V0.6_MY_DAC_IMPLEMENTATION_PLAN.md` for the current v0.6 architecture, sequencing, tests, and release gates
 - `docs/BLACK_PEARL_PROTOCOL_NOTES.md` when Black Pearl behavior is involved
 - `docs/FIIO_JA11_PROTOCOL_NOTES.md` and `docs/FIIO_JA11_HANDS_ON_CHECKLIST.md` when JA11 behavior is involved
 - `docs/JCALLY_JM12_PROTOCOL_NOTES.md` and `docs/JCALLY_JM12_HANDS_ON_CHECKLIST.md` when JM12 behavior is involved
@@ -51,7 +53,7 @@ Do not commit credentials, signing secrets, tokens, passwords, or private keys.
 - User-facing product: **EQ Library**
 - Native Android, Kotlin + Jetpack Compose
 - minSdk 26 unless a validated reason changes it
-- Primary physical test device: Pixel 9
+- Primary physical validation device: Pixel 9
 - Prefer clear UI/domain/data/platform boundaries, Room, Preferences DataStore, WorkManager, and Android's Storage Access Framework
 - Do not bundle Python in the APK
 
@@ -61,15 +63,26 @@ Normal runtime network use is limited to validated catalog acquisition/currentne
 
 ## 4. Current information architecture
 
-Top-level destinations:
+Base top-level destinations:
 
 - **My EQs**
 - **EQ Library**
 - **Settings**
 
+For approved v0.6 My DAC behavior, after a supported DAC is recognized in the current app session the destinations become:
+
+- **My EQs**
+- **My DAC**
+- **EQ Library**
+- **Settings**
+
+`My DAC` sits immediately beside `My EQs`. Once shown in the current app session it remains present after disconnect so navigation does not jump; disconnected device state is explicitly stale/Last read. A later cold launch with no supported DAC may return to the three-destination baseline. USB attach/open behavior, EQ/DEVICE tabs, and all My DAC states follow `docs/V0.6_MY_DAC_APPROVED_DESIGN.md`.
+
 The active output is a global **operating context**, not a catalog filter. It changes output-specific My EQs membership, conversion/fidelity, file export, connection controls, and Flash availability. It must never hide an otherwise valid canonical curve from EQ Library.
 
-Android Back unwinds in-app hierarchy first. Root EQ Library/Settings return to My EQs; only Back from the My EQs root exits.
+A physically connected DAC and the active output are distinct concepts. Recognizing/connecting a DAC for My DAC must not silently change the user's global active output. My DAC represents actual connected hardware; My EQs/EQ Library output derivation remains governed by the explicit active-output context unless the approved My DAC flow intentionally requests a device-specific representation.
+
+Android Back unwinds in-app hierarchy first. Root EQ Library/Settings return to My EQs; only Back from the My EQs root exits. My DAC editor/detail flows unwind to the My DAC root before leaving the destination.
 
 Favorites and local Hide/Unhide are presentation/saved-state features. Hiding a canonical lineage does not delete archive history, My EQs membership, exported files, favorite state, or Flash state.
 
@@ -124,6 +137,8 @@ When notification is ON, eligible new EQs and materially changed selected tuning
 The persisted compatibility field name `autoIncludeNewProfiles` may remain internally for migration compatibility, but it must not be interpreted as permission to auto-select future profiles.
 
 Selections are output-specific. Favorites/personal imports may also be output-scoped without duplicating/mutating the canonical source.
+
+A hardware EQ captured through My DAC is stored as a **Personal EQ** with actual device-native values and capture provenance. It may be associated with an existing/saved/library headphone or intentionally left unassociated. Never invent a creator/source association. If the hardware exactly matches an existing saved EQ, link to it rather than creating a duplicate.
 
 ## 8. Output registry and fidelity
 
@@ -192,6 +207,8 @@ Rules:
 
 Historical internal class names containing `Kt02h20` or `FiveBand` are implementation-compatibility names only; do not infer a product limitation from those names.
 
+My DAC manual editing must reuse the same deterministic response/headroom principles. Do not create a Compose-only clipping heuristic. A local edit plan evaluates the complete planned native response, determines required safe headroom using verified device semantics, separates headroom warnings from device-limit/unsupported-value warnings, and requires review before any hardware write.
+
 ## 11. TRN Black Pearl
 
 Black Pearl protocol/USB behavior was physically qualified in the v0.3 foundation and Reset EQ to flat was qualified in v0.4. Preserve those protocol boundaries and fail-safe gain-reset rules.
@@ -209,7 +226,7 @@ Black Pearl file export is standard AutoEq-style text specialized for the verifi
 
 Global playback gain uses the observed `0x03` command in 1/256 dB units. Replace the previous EQ Library-applied tracked delta rather than stacking attenuation. Preserve unrelated DAC settings.
 
-Because v0.5 changes Black Pearl response derivation, require a focused Black Pearl regression smoke on the exact release candidate even though the transport protocol itself was previously qualified.
+For v0.6, additional candidate Black Pearl controls such as DAC filter, gain mode, amplifier topology, balance, microphone gain, and firmware readback are **not qualified merely because independent controllers expose them**. Read-only behavior must be established first on the user's exact Black Pearl; production writes require EQ Library's own command/range/readback/persistence/safety qualification one control at a time. Existing qualified EQ/Reset behavior remains the regression anchor.
 
 ## 12. FiiO JA11 Direct Flash
 
@@ -221,7 +238,9 @@ Direct Flash toggle defaults OFF. The app must build/validate the entire target 
 
 No sufficiently verified JA11 local preset-file interchange format has been established for v0.5. Keep Direct Flash intact and do not invent a file. A future verified file format may be added alongside Direct Flash.
 
-No firmware/bootloader/cross-flash or unrelated-control commands.
+For v0.6, DAC reconstruction filter is a candidate control with corroborating evidence but remains hardware-validation pending until its exact clean-room implementation and physical gate pass. Do not expose playback-volume or microphone controls until their exact command/range/readback semantics are independently established.
+
+No firmware/bootloader/cross-flash commands.
 
 ## 13. Stock JCALLY JM12 Direct Flash
 
@@ -235,25 +254,50 @@ There is **no independently corroborated explicit stock-JM12 Save command**. Nev
 
 No sufficiently verified stock-JM12 local preset-file interchange format has been established for v0.5. Keep Direct Flash intact and do not invent a file. A future verified file format may be added alongside Direct Flash.
 
-No JA11 firmware is required or suggested. No firmware/bootloader/cross-flash or unrelated-control commands.
+For v0.6, broader KT02H20 register-map controls remain research candidates only until proven safe and semantically appropriate on the exact stock JM12. Never expose writes to USB manufacturer/product/serial/VID/PID. Do not infer JM12 control semantics from JA11/chipset similarity.
+
+No JA11 firmware is required or suggested. No firmware/bootloader/cross-flash commands.
 
 ## 14. Hardware UX and approval/safety gates
 
-Major user-facing features require UX/behavior approval before implementation. For already-approved hardware outputs:
+Major user-facing features require UX/behavior approval before implementation. The complete v0.6 My DAC UX/behavior design was explicitly approved by the user on **2026-09-09** and is recorded in `docs/V0.6_MY_DAC_APPROVED_DESIGN.md`. Implementation of that approved surface may proceed; materially new user-facing behavior outside that document requires a new approval gate.
 
-- Settings contains the output plus an independent Direct Flash toggle, OFF by default where newly introduced;
-- My EQs shows compact `Connect / Connected` + `Reset EQ to flat` controls when applicable;
-- Reset is disabled while disconnected;
+For existing hardware outputs and My DAC:
+
 - Add/Save never automatically flashes hardware;
 - Flash and Reset always require explicit confirmation;
 - confirmation states Exact/Optimized representation, playback/global gain implications, persistence semantics, and any device-specific caution;
-- unrelated DAC settings must remain untouched.
+- unrelated DAC settings must remain untouched;
+- My DAC begins by reading actual hardware and never presents assumed/cached state as current;
+- manual EQ editing changes a local working copy first, continuously evaluates response/headroom, then requires **Review changes -> Apply -> readback verification**;
+- Flat / Exact saved match / Modified-known / Unknown are distinct states; Unknown never receives guessed source attribution;
+- a readback mismatch or partial/disconnected transaction is visible failure/recovery state, never success;
+- level-sensitive device controls must never reconnect by pushing cached UI values.
 
 Physical qualification of a hardware target requires the exact-candidate Pixel 9 hands-on gate. Do not remove **Hardware validation pending** or make hardware-qualified/persistence claims before the applicable checklist passes.
 
-**v0.5 release decision:** FiiO JA11 and stock JCALLY JM12 physical qualification is explicitly deferred to the next incremental release because the hardware is not yet available. Their pending status is **not a blocker for v0.5.0 publication**. v0.5.0 may include the implemented outputs only while their in-app/release wording continues to say **Hardware validation pending**, and JM12 persistence remains unclaimed. When the devices arrive, refresh each hands-on record to the exact signed candidate for that incremental release before running physical qualification.
+**v0.5 release decision:** FiiO JA11 and stock JCALLY JM12 physical qualification was explicitly deferred because the hardware was unavailable. Their pending status carried into v0.6 discovery and remains until exact-device qualification passes. This does not weaken the Black Pearl qualification record.
 
-## 15. Export, import targets, and storage
+## 15. v0.6 My DAC architecture and device-control policy
+
+`docs/V0.6_MY_DAC_IMPLEMENTATION_PLAN.md` is the current implementation authority.
+
+Architectural rules:
+
+- introduce a ViewModel-scoped DAC session/discovery abstraction as the sole owner/coordinator of a physical supported-DAC session;
+- keep generic device controls separate from existing deterministic hardware EQ planning/transactions;
+- do not force unrelated DAC controls into `HardwareEqRepository` merely because it already owns USB in v0.5;
+- migrate existing transport/session ownership behavior-preservingly before adding new writes;
+- `EqLibraryViewModel` continues to expose immutable UI state, orchestrate repositories, and receive no Android `Context`;
+- Compose receives generic capability/control state and must not branch on report IDs, command bytes, registers, VID/PID, or device protocol details;
+- device-specific adapters own exact read/write semantics and preserve unrelated bytes/settings;
+- use session-generation/freshness protection so an edit based on a stale/disconnected session cannot write without re-read/reconciliation;
+- hardware EQ snapshots and deterministic My EQs matching remain separate from source metadata and use native equality, not fuzzy attribution;
+- Device tab controls are capability-driven and hidden unless sufficiently verified for that exact model.
+
+Control writes follow: fresh read/validated baseline -> user intent -> full validation -> minimal owned write -> readback -> verified actual state. Firmware flashing, raw-register consoles, USB identity mutation, and speculative chipset-similar controls are out of v0.6 normal My DAC scope.
+
+## 16. Export, import targets, and storage
 
 Use terminology consistently:
 
@@ -272,13 +316,13 @@ File ownership follows stable output + product + profile identity and the actual
 
 Hardware-only outputs have no file export path.
 
-## 16. Testing and validation
+## 17. Testing and validation
 
 Never weaken validation simply to get green.
 
 Treat the Python converter as the UAPP behavioral reference. Maintain golden/regression coverage for canonical normalization, preamp, filters, deterministic XML, UAPP 10-band handling, unsupported filters, naming/encoding, selection/review modes, catalog updates, removed/archived profiles, output currentness, and export ownership.
 
-For v0.5 also require coverage for:
+For v0.5 also retain coverage for:
 
 - output-registry categories/file-vs-hardware semantics;
 - target capability/fidelity classification;
@@ -296,27 +340,38 @@ For v0.5 also require coverage for:
 - JA11/JM12 fileless behavior while Direct Flash remains intact;
 - versioned derived-representation fingerprints/currentness.
 
+For v0.6 additionally require coverage for:
+
+- DAC capability/control model invariants;
+- session generation, freshness, reconnect, permission, disconnect, and stale-write rejection;
+- native hardware EQ snapshots;
+- Flat/Exact/Modified-known/Unknown deterministic matching with no fuzzy attribution;
+- visual-editor domain response/headroom calculations;
+- safe-gain recommendation without silent hardware mutation;
+- separation of headroom vs caution-range vs unsupported-value errors;
+- new control command/register vectors, ranges, quantization, owned-byte preservation, read/write/readback ordering, and mismatch/failure behavior before exposure;
+- no cached-state level push on reconnect;
+- captured Personal EQ provenance/association/dedupe semantics;
+- all existing v0.5 Flash/Reset/output regressions after session refactors.
+
 Before physical qualification, require the exact candidate to pass applicable Android unit tests, lint, debug/release assembly, catalog/currentness gates, priority-community coverage, CodeQL, dependency submission, signed-beta build/alignment/signature/certificate checks, and mobile-test publication.
 
 Any behavior-affecting code change after a physical PASS creates a new hardware candidate and requires the relevant hands-on retest. Documentation-only changes may retain the prior hardware result only when the tested source commit is recorded clearly and APK/device/DSP behavior is unchanged; automated/software gates still rerun on the final head.
 
-## 17. Releases, updates, attribution
+## 18. Releases, updates, attribution
 
 Use SemVer. Development remains `0.x`; first stable is `v1.0.0`. Maintain `CHANGELOG.md` from the beginning.
 
-For the v0.5.0 milestone, use the project's original two-stage release model:
+v0.5.0 was published after its Phase 2 Pixel 9 release-candidate testing on 2026-09-09. The next feature target is **v0.6.0 My DAC**. Testing/physical qualification remains part of the same v0.6 release lifecycle rather than becoming a v0.7 milestone.
 
-- **Phase 1 — implementation/release preparation:** build and integrate the intended v0.5.0 feature set and produce the signed release candidate.
-- **Phase 2 — testing/qualification:** validate that same v0.5.0 candidate through the required automated, Pixel 9, export/storage, lifecycle, and applicable hardware qualification gates.
-
-Publication follows a successful Phase 2. **Phase 2 is testing of v0.5.0, not a new feature/version milestone.** Entering or completing Phase 2 does not imply `v0.6.0`; SemVer advances only when a later installable release intentionally changes the product/version. The completed 2026-09-09 Pixel 9 v0.5 hands-on pass is the Phase 2 testing record for v0.5.0. JA11/JM12 remain explicitly deferred/non-blocking as documented elsewhere.
+Do not publish v0.6.0 until the intended approved increments and automated gates pass, affected Black Pearl behavior passes exact-candidate focused regression, any newly exposed Black Pearl device controls pass their own exact-candidate physical qualification, pending JA11/JM12 wording remains accurate, and the user explicitly authorizes publication.
 
 Public distribution initially uses GitHub Releases and one stable release-signing identity. The app may check latest public release metadata and show a nonblocking update banner, What's new, and Get update link. No notification permission, silent APK download/install, or unknown-app install permission in v1.
 
 Preserve OPRA and individual creator/source attribution. Do not imply endorsement by OPRA, Roon Labs, UAPP, ToneBoosters, TRN, FiiO, JCALLY, TOPPING, output-app vendors, or headphone manufacturers.
 
-## 18. Communication and execution discipline
+## 19. Communication and execution discipline
 
 Work in clear phases and use connected GitHub tools directly whenever possible. Explain/obtain approval for genuinely new major UX before implementation. After changes, report exactly what changed and whether validation passed.
 
-The user is not a developer. Do not push routine Git/Terminal work onto them. Ask only for decisions or physical-device steps that materially require the user. When hardware testing is required, give one safe checkpoint at a time and stop before destructive Flash/Reset actions until the preceding checkpoint is confirmed.
+The user is not a developer. Do not push routine Git/Terminal work onto them. Ask only for decisions or physical-device steps that materially require the user. When hardware testing is required, give one safe checkpoint at a time and stop before destructive Flash/Reset or level-sensitive write actions until the preceding checkpoint is confirmed.
