@@ -5,6 +5,7 @@ import com.weekssa.opraeqforuapp.data.blackpearl.AndroidBlackPearlUsbTransport
 import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlGainStatePreferences
 import com.weekssa.opraeqforuapp.data.catalog.HttpOpraCatalogSource
 import com.weekssa.opraeqforuapp.data.catalog.OpraCatalogRepository
+import com.weekssa.opraeqforuapp.data.dac.DacSessionRepository
 import com.weekssa.opraeqforuapp.data.export.AndroidSafDocumentStore
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupRepository
 import com.weekssa.opraeqforuapp.data.export.PresetExportRepository
@@ -83,15 +84,18 @@ internal fun createEqLibraryDependencies(context: Context): EqLibraryViewModel.D
     val blackPearlTransport = AndroidBlackPearlUsbTransport(appContext)
     val fiioJa11Transport = AndroidFiioJa11UsbTransport(appContext)
     val jcallyJm12Transport = AndroidJcallyJm12UsbTransport(appContext)
-    val hardwareRepository = HardwareEqRepository(
+    val dacSessionRepository = DacSessionRepository(
         blackPearlTransport = blackPearlTransport,
+        fiioJa11Transport = fiioJa11Transport,
+        jcallyJm12Transport = jcallyJm12Transport,
+    )
+    val hardwareRepository = HardwareEqRepository(
+        dacSessionRepository = dacSessionRepository,
         blackPearlFlasher = BlackPearlFlasher(
             blackPearlTransport,
             BlackPearlGainStatePreferences(appContext),
         ),
-        fiioJa11Transport = fiioJa11Transport,
         fiioJa11Flasher = FiioJa11Flasher(fiioJa11Transport),
-        jcallyJm12Transport = jcallyJm12Transport,
         jcallyJm12Flasher = JcallyJm12Flasher(
             jcallyJm12Transport,
             JcallyJm12GainStatePreferences(appContext),
