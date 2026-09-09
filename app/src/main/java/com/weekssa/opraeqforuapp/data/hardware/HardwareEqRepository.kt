@@ -3,11 +3,13 @@ package com.weekssa.opraeqforuapp.data.hardware
 import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.dac.DacSessionRepository
 import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlEditorApplyResult
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlashResult
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlatResetResult
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlasher
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.dac.DacRecognitionState
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditWorkingCopy
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotBundle
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Flasher
@@ -33,9 +35,9 @@ import kotlinx.coroutines.sync.withLock
  *
  * Physical USB-session lifecycle and read-only supported-device recognition belong to
  * [DacSessionRepository]. This repository serializes each device's multi-step EQ reads/writes so a
- * snapshot cannot interleave with a Flash/Reset transaction. Black Pearl publishes the most recently
- * verified native snapshot with explicit current/stale state; the other two devices keep their
- * existing v0.5 behavior until their My DAC exposure is qualified.
+ * snapshot cannot interleave with a Flash/Reset/Editor Apply transaction. Black Pearl publishes the
+ * most recently verified native snapshot with explicit current/stale state; the other two devices
+ * keep their existing v0.5 behavior until their My DAC exposure is qualified.
  */
 class HardwareEqRepository(
     private val dacSessionRepository: DacSessionRepository,
@@ -101,6 +103,31 @@ class HardwareEqRepository(
 
     suspend fun readJcallyJm12Snapshot(): HardwareEqSnapshotBundle? = jcallyJm12OperationMutex.withLock {
         dacSessionRepository.readJcallyJm12Snapshot()
+    }
+
+    suspend fun applyBlackPearlEditor(
+        workingCopy: HardwareEqEditWorkingCopy,
+        allowCautions: Boolean,
+    ): BlackPearlEditorApplyResult {
+        if (workingCopy.cautions.isNotEmpty() && !allowCautions) {
+            return BlackPearlEditorApplyResult.ConfirmationRequired(workingCopy.cautions.size)
+        }
+
+        mutableBlackPearlSnapshotState.update { it.markStale() }
+        return try {
+            blackPearlOperationMutex.withLock {
+                blackPearlFlasher.applyEditorWorkingCopy(
+                    workingCopy = workingCopy,
+                    allowCautions = allowCautions,
+                    isSessionCurrent = dacSessionRepository::isBlackPearlSessionCurrent,
+                )
+            }
+        } finally {
+            // Always re-establish hardware truth after any attempted transaction, including partial
+            // transfer or verification failure. This method reacquires the same mutex only after the
+            // apply lock above has been released.
+            refreshBlackPearlSnapshot()
+        }
     }
 
     suspend fun flashBlackPearl(profile: OpraEqProfile): BlackPearlFlashResult {
