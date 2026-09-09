@@ -139,7 +139,7 @@ class AndroidBlackPearlUsbTransport(
         parser = BlackPearlProtocol::globalGainRawFromResponse,
     )
 
-    suspend fun readNativeBand(index: Int): BlackPearlReadCodec.NativeBand? = readParsedResponse(
+    override suspend fun readNativeBand(index: Int): BlackPearlReadCodec.NativeBand? = readParsedResponse(
         request = BlackPearlProtocol.readBandReport(index),
         parser = BlackPearlReadCodec::bandFromResponse,
     )
