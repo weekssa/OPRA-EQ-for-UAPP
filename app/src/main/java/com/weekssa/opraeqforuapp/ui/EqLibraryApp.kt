@@ -91,6 +91,7 @@ fun EqLibraryApp(
     val fiioJa11ConnectionState = state.fiioJa11ConnectionState
     val jcallyJm12ConnectionState = state.jcallyJm12ConnectionState
 
+    val onConnectDacForMyDac = actions.onConnectDacForMyDac
     val onConnectBlackPearl = actions.onConnectBlackPearl
     val onResetBlackPearl = actions.onResetBlackPearl
     val onConnectFiioJa11 = actions.onConnectFiioJa11
@@ -497,6 +498,7 @@ fun EqLibraryApp(
                         jcallyJm12ConnectionState = state.jcallyJm12ConnectionState,
                         blackPearlHardwareEqState = state.blackPearlHardwareEqState,
                         blackPearlHardwareEqMatch = state.blackPearlHardwareEqMatch,
+                        onConnectDac = onConnectDacForMyDac,
                         modifier = Modifier.fillMaxSize(),
                     )
 
