@@ -26,6 +26,7 @@ import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlashResult
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlatResetResult
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqPreset
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult
@@ -72,6 +73,7 @@ private data class HardwareConnectionUiState(
     val blackPearl: BlackPearlConnectionState,
     val fiioJa11: Kt02h20ConnectionState,
     val jcallyJm12: Kt02h20ConnectionState,
+    val blackPearlHardwareEqState: HardwareEqSnapshotState,
 )
 
 data class EqLibraryUiState(
@@ -84,6 +86,7 @@ data class EqLibraryUiState(
     val blackPearlConnectionState: BlackPearlConnectionState = BlackPearlConnectionState.Disconnected,
     val fiioJa11ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
     val jcallyJm12ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
+    val blackPearlHardwareEqState: HardwareEqSnapshotState = HardwareEqSnapshotState(),
 )
 
 class EqLibraryViewModel(
@@ -156,8 +159,14 @@ class EqLibraryViewModel(
         hardwareRepository.blackPearlConnectionState,
         hardwareRepository.fiioJa11ConnectionState,
         hardwareRepository.jcallyJm12ConnectionState,
-    ) { blackPearl, fiioJa11, jcallyJm12 ->
-        HardwareConnectionUiState(blackPearl, fiioJa11, jcallyJm12)
+        hardwareRepository.blackPearlSnapshotState,
+    ) { blackPearl, fiioJa11, jcallyJm12, blackPearlHardwareEqState ->
+        HardwareConnectionUiState(
+            blackPearl = blackPearl,
+            fiioJa11 = fiioJa11,
+            jcallyJm12 = jcallyJm12,
+            blackPearlHardwareEqState = blackPearlHardwareEqState,
+        )
     }
 
     val uiState: StateFlow<EqLibraryUiState> = combine(
@@ -182,6 +191,7 @@ class EqLibraryViewModel(
             blackPearlConnectionState = hardware.blackPearl,
             fiioJa11ConnectionState = hardware.fiioJa11,
             jcallyJm12ConnectionState = hardware.jcallyJm12,
+            blackPearlHardwareEqState = hardware.blackPearlHardwareEqState,
         )
     }.stateIn(
         scope = viewModelScope,
