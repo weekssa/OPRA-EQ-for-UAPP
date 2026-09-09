@@ -10,12 +10,17 @@ import com.weekssa.opraeqforuapp.domain.conversion.ToneBoostersConverter
 import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedProfileRecord
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.withContext
 
 class SavedGeneralEqRepository(
     private val database: OpraEqDatabase,
     private val snapshotCodec: ManagedProfileSnapshotCodec = ManagedProfileSnapshotCodec(),
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val nowMillis: () -> Long = System::currentTimeMillis,
 ) {
     private val dao = database.savedGeneralEqDao()
@@ -35,29 +40,64 @@ class SavedGeneralEqRepository(
                         .thenBy { it.presetId },
                 )
                 .toList()
+        }.flowOn(ioDispatcher)
+
+    suspend fun getForOutput(outputId: String, presetId: String): SavedGeneralEqRecord? =
+        withContext(ioDispatcher) {
+            if (dao.getSelection(outputId, presetId) == null) return@withContext null
+            dao.get(presetId)?.let(::toDomain)
         }
 
-    suspend fun getForOutput(outputId: String, presetId: String): SavedGeneralEqRecord? {
-        if (dao.getSelection(outputId, presetId) == null) return null
-        return dao.get(presetId)?.let(::toDomain)
-    }
-
     suspend fun saveForOutput(outputId: String, preset: GeneralEqPreset): Boolean =
-        database.withTransaction {
-            val existingSelection = dao.getSelection(outputId, preset.id)
-            val now = nowMillis()
-            val existing = dao.get(preset.id)
-            dao.upsert(
-                SavedGeneralEqEntity(
-                    presetId = preset.id,
-                    displayName = preset.displayName,
-                    category = preset.category.name,
-                    profileJson = snapshotCodec.encode(preset.toExportProfile()),
-                    createdAtMillis = existing?.createdAtMillis ?: now,
-                    updatedAtMillis = now,
-                ),
-            )
-            if (existingSelection == null) {
+        withContext(ioDispatcher) {
+            database.withTransaction {
+                val existingSelection = dao.getSelection(outputId, preset.id)
+                val now = nowMillis()
+                val existing = dao.get(preset.id)
+                dao.upsert(
+                    SavedGeneralEqEntity(
+                        presetId = preset.id,
+                        displayName = preset.displayName,
+                        category = preset.category.name,
+                        profileJson = snapshotCodec.encode(preset.toExportProfile()),
+                        createdAtMillis = existing?.createdAtMillis ?: now,
+                        updatedAtMillis = now,
+                    ),
+                )
+                if (existingSelection == null) {
+                    dao.upsertSelection(
+                        OutputGeneralEqEntity(
+                            outputId = outputId,
+                            presetId = preset.id,
+                            selectedAtMillis = now,
+                        ),
+                    )
+                }
+                existingSelection == null
+            }
+        }
+
+    suspend fun toggleForOutput(outputId: String, preset: GeneralEqPreset): Boolean =
+        withContext(ioDispatcher) {
+            database.withTransaction {
+                if (dao.getSelection(outputId, preset.id) != null) {
+                    dao.deleteSelection(outputId, preset.id)
+                    if (dao.selectionCount(preset.id) == 0) dao.delete(preset.id)
+                    return@withTransaction false
+                }
+
+                val now = nowMillis()
+                val existing = dao.get(preset.id)
+                dao.upsert(
+                    SavedGeneralEqEntity(
+                        presetId = preset.id,
+                        displayName = preset.displayName,
+                        category = preset.category.name,
+                        profileJson = snapshotCodec.encode(preset.toExportProfile()),
+                        createdAtMillis = existing?.createdAtMillis ?: now,
+                        updatedAtMillis = now,
+                    ),
+                )
                 dao.upsertSelection(
                     OutputGeneralEqEntity(
                         outputId = outputId,
@@ -65,41 +105,11 @@ class SavedGeneralEqRepository(
                         selectedAtMillis = now,
                     ),
                 )
+                true
             }
-            existingSelection == null
         }
 
-    suspend fun toggleForOutput(outputId: String, preset: GeneralEqPreset): Boolean =
-        database.withTransaction {
-            if (dao.getSelection(outputId, preset.id) != null) {
-                dao.deleteSelection(outputId, preset.id)
-                if (dao.selectionCount(preset.id) == 0) dao.delete(preset.id)
-                return@withTransaction false
-            }
-
-            val now = nowMillis()
-            val existing = dao.get(preset.id)
-            dao.upsert(
-                SavedGeneralEqEntity(
-                    presetId = preset.id,
-                    displayName = preset.displayName,
-                    category = preset.category.name,
-                    profileJson = snapshotCodec.encode(preset.toExportProfile()),
-                    createdAtMillis = existing?.createdAtMillis ?: now,
-                    updatedAtMillis = now,
-                ),
-            )
-            dao.upsertSelection(
-                OutputGeneralEqEntity(
-                    outputId = outputId,
-                    presetId = preset.id,
-                    selectedAtMillis = now,
-                ),
-            )
-            true
-        }
-
-    suspend fun removeFromOutput(outputId: String, presetId: String) {
+    suspend fun removeFromOutput(outputId: String, presetId: String) = withContext(ioDispatcher) {
         database.withTransaction {
             dao.deleteSelection(outputId, presetId)
             if (dao.selectionCount(presetId) == 0) dao.delete(presetId)

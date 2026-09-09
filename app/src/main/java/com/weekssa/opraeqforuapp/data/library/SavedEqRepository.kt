@@ -14,12 +14,17 @@ import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedProfileRecord
 import java.security.MessageDigest
 import java.util.UUID
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.withContext
 
 class SavedEqRepository(
     private val database: OpraEqDatabase,
     private val snapshotCodec: ManagedProfileSnapshotCodec = ManagedProfileSnapshotCodec(),
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val nowMillis: () -> Long = System::currentTimeMillis,
 ) {
     private val dao = database.savedEqDao()
@@ -38,50 +43,53 @@ class SavedEqRepository(
                         .thenBy { it.entryId },
                 )
                 .toList()
-        }
+        }.flowOn(ioDispatcher)
 
-    suspend fun getForOutput(outputId: String, entryId: String): SavedEqRecord? {
-        if (dao.getSelection(outputId, entryId) == null) return null
-        return dao.get(entryId)?.let(::toDomain)
-    }
+    suspend fun getForOutput(outputId: String, entryId: String): SavedEqRecord? =
+        withContext(ioDispatcher) {
+            if (dao.getSelection(outputId, entryId) == null) return@withContext null
+            dao.get(entryId)?.let(::toDomain)
+        }
 
     suspend fun toggleFavorite(
         outputId: String,
         profile: OpraEqProfile,
         manufacturer: String,
         model: String,
-    ): Boolean = database.withTransaction {
-        val entryId = favoriteEntryId(profile.id)
-        if (dao.getSelection(outputId, entryId) != null) {
-            dao.deleteSelection(outputId, entryId)
-            if (dao.selectionCount(entryId) == 0) dao.delete(entryId)
-            return@withTransaction false
-        }
+    ): Boolean = withContext(ioDispatcher) {
+        database.withTransaction {
+            val entryId = favoriteEntryId(profile.id)
+            if (dao.getSelection(outputId, entryId) != null) {
+                dao.deleteSelection(outputId, entryId)
+                if (dao.selectionCount(entryId) == 0) dao.delete(entryId)
+                return@withTransaction false
+            }
 
-        val existing = dao.get(entryId)
-        val now = nowMillis()
-        dao.upsert(
-            SavedEqEntity(
-                entryId = entryId,
-                kind = KIND_FAVORITE,
-                sourceProfileId = profile.id,
-                productId = profile.productId,
-                manufacturer = manufacturer,
-                model = model,
-                displayName = favoriteDisplayName(profile),
-                profileJson = snapshotCodec.encode(profile),
-                createdAtMillis = existing?.createdAtMillis ?: now,
-                updatedAtMillis = now,
-            ),
-        )
-        dao.upsertSelection(
-            OutputSavedEqEntity(
-                outputId = outputId,
-                entryId = entryId,
-                selectedAtMillis = now,
-            ),
-        )
-        true
+            val existing = dao.get(entryId)
+            val now = nowMillis()
+            dao.upsert(
+                SavedEqEntity(
+                    entryId = entryId,
+                    kind = KIND_FAVORITE,
+                    sourceProfileId = profile.id,
+                    productId = profile.productId,
+                    manufacturer = manufacturer,
+                    model = model,
+                    displayName = favoriteDisplayName(profile),
+                    profileJson = snapshotCodec.encode(profile),
+                    createdAtMillis = existing?.createdAtMillis ?: now,
+                    updatedAtMillis = now,
+                ),
+            )
+            dao.upsertSelection(
+                OutputSavedEqEntity(
+                    outputId = outputId,
+                    entryId = entryId,
+                    selectedAtMillis = now,
+                ),
+            )
+            true
+        }
     }
 
     suspend fun importPersonal(
@@ -91,7 +99,7 @@ class SavedEqRepository(
         displayName: String,
         target: String?,
         peqText: String,
-    ): SavedEqRecord {
+    ): SavedEqRecord = withContext(ioDispatcher) {
         val maker = manufacturer.trim()
         val headphoneModel = model.trim()
         val name = displayName.trim()
@@ -161,10 +169,10 @@ class SavedEqRepository(
                 ),
             )
         }
-        return toDomain(entity)
+        toDomain(entity)
     }
 
-    suspend fun removeFromOutput(outputId: String, entryId: String) {
+    suspend fun removeFromOutput(outputId: String, entryId: String) = withContext(ioDispatcher) {
         database.withTransaction {
             dao.deleteSelection(outputId, entryId)
             if (dao.selectionCount(entryId) == 0) dao.delete(entryId)

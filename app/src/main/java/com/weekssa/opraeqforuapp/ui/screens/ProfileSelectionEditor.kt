@@ -1,6 +1,7 @@
 package com.weekssa.opraeqforuapp.ui.screens
 
 import androidx.activity.compose.BackHandler
+import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -39,8 +40,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import com.weekssa.opraeqforuapp.R
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
 import com.weekssa.opraeqforuapp.domain.catalog.OpraCatalog
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
@@ -51,7 +55,7 @@ import com.weekssa.opraeqforuapp.domain.export.DeviceExportability
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.export.assessDeviceExportability
 import com.weekssa.opraeqforuapp.domain.export.deviceAdaptationSummary
-import com.weekssa.opraeqforuapp.domain.managed.DEFAULT_AUTO_INCLUDE_NEW_PROFILES
+import com.weekssa.opraeqforuapp.domain.managed.DEFAULT_NOTIFY_NEW_PROFILES
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.managed.defaultStagedSelectedProfileIds
 import com.weekssa.opraeqforuapp.domain.managed.managedSelectionCommitEnabled
@@ -59,12 +63,13 @@ import com.weekssa.opraeqforuapp.domain.managed.selectableProfileIds
 import com.weekssa.opraeqforuapp.domain.model.ProfileCompatibility
 import com.weekssa.opraeqforuapp.domain.settings.ExportTargetPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityPreferences
+import com.weekssa.opraeqforuapp.ui.StringSetSaver
 import kotlinx.coroutines.launch
 
-private enum class ProfileFilterDimension(val label: String) {
-    Database("Database"),
-    Creator("Creator"),
-    Target("Target"),
+private enum class ProfileFilterDimension(@param:StringRes val labelResId: Int) {
+    Database(R.string.filter_database),
+    Creator(R.string.filter_creator),
+    Target(R.string.filter_target),
 }
 
 @Suppress("UNUSED_PARAMETER")
@@ -111,6 +116,15 @@ internal fun ProfileSelectionEditor(
     val scope = rememberCoroutineScope()
     val selectionContextKey = "${product.id}:${exportTargets.activeTarget.name}"
 
+    val databaseLabel = stringResource(R.string.filter_database)
+    val creatorLabel = stringResource(R.string.filter_creator)
+    val targetLabel = stringResource(R.string.filter_target)
+    val unknownManufacturer = stringResource(R.string.unknown_manufacturer)
+    val favoriteSavedMessage = stringResource(R.string.favorite_saved_message)
+    val favoriteRemovedMessage = stringResource(R.string.favorite_removed_message)
+    val eqHiddenMessage = stringResource(R.string.eq_hidden_from_library_message)
+    val sourceNotUsableDefault = stringResource(R.string.source_not_usable_default)
+
     var databaseFilter by rememberSaveable(product.id) { mutableStateOf<String?>(null) }
     var creatorFilter by rememberSaveable(product.id) { mutableStateOf<String?>(null) }
     var targetFilter by rememberSaveable(product.id) { mutableStateOf<String?>(null) }
@@ -138,26 +152,38 @@ internal fun ProfileSelectionEditor(
 
     var initialized by remember(selectionContextKey) { mutableStateOf(false) }
     var managedRecord by remember(selectionContextKey) { mutableStateOf<ManagedHeadphoneRecord?>(null) }
-    var stagedSelectedIds by remember(selectionContextKey) { mutableStateOf<Set<String>>(emptySet()) }
-    var baselineSelectedIds by remember(selectionContextKey) { mutableStateOf<Set<String>>(emptySet()) }
-    var autoInclude by remember(selectionContextKey) { mutableStateOf(DEFAULT_AUTO_INCLUDE_NEW_PROFILES) }
-    var baselineAutoInclude by remember(selectionContextKey) { mutableStateOf(DEFAULT_AUTO_INCLUDE_NEW_PROFILES) }
-    var showDiscardDialog by remember(selectionContextKey) { mutableStateOf(false) }
-    var sourceProblemExplanation by remember(selectionContextKey) { mutableStateOf<String?>(null) }
+    var draftInitialized by rememberSaveable(selectionContextKey) { mutableStateOf(false) }
+    var stagedSelectedIds by rememberSaveable(
+        selectionContextKey,
+        stateSaver = StringSetSaver,
+    ) { mutableStateOf(emptySet<String>()) }
+    var baselineSelectedIds by rememberSaveable(
+        selectionContextKey,
+        stateSaver = StringSetSaver,
+    ) { mutableStateOf(emptySet<String>()) }
+    var autoInclude by rememberSaveable(selectionContextKey) { mutableStateOf(DEFAULT_NOTIFY_NEW_PROFILES) }
+    var baselineAutoInclude by rememberSaveable(selectionContextKey) {
+        mutableStateOf(DEFAULT_NOTIFY_NEW_PROFILES)
+    }
+    var showDiscardDialog by rememberSaveable(selectionContextKey) { mutableStateOf(false) }
+    var sourceProblemExplanation by rememberSaveable(selectionContextKey) { mutableStateOf<String?>(null) }
 
     LaunchedEffect(selectionContextKey) {
         val managed = onLoadManagedHeadphone(product.id)
         managedRecord = managed
-        val selected = if (managed == null) {
-            defaultStagedSelectedProfileIds(profiles)
-        } else {
-            val selectionState = managed.toSelectionState()
-            profiles.filter(selectionState::isSelected).mapTo(mutableSetOf(), OpraEqProfile::id)
+        if (!draftInitialized) {
+            val selected = if (managed == null) {
+                defaultStagedSelectedProfileIds(profiles)
+            } else {
+                val selectionState = managed.toSelectionState()
+                profiles.filter(selectionState::isSelected).mapTo(mutableSetOf(), OpraEqProfile::id)
+            }
+            stagedSelectedIds = selected
+            baselineSelectedIds = selected
+            autoInclude = managed?.autoIncludeNewProfiles ?: DEFAULT_NOTIFY_NEW_PROFILES
+            baselineAutoInclude = autoInclude
+            draftInitialized = true
         }
-        stagedSelectedIds = selected
-        baselineSelectedIds = selected
-        autoInclude = managed?.autoIncludeNewProfiles ?: DEFAULT_AUTO_INCLUDE_NEW_PROFILES
-        baselineAutoInclude = autoInclude
         initialized = true
     }
 
@@ -199,18 +225,20 @@ internal fun ProfileSelectionEditor(
     if (showDiscardDialog) {
         AlertDialog(
             onDismissRequest = { showDiscardDialog = false },
-            title = { Text("Discard changes?") },
-            text = { Text("Your unsaved preset-selection changes will be discarded.") },
+            title = { Text(stringResource(R.string.discard_changes_title)) },
+            text = { Text(stringResource(R.string.discard_selection_changes_text)) },
             confirmButton = {
                 TextButton(
                     onClick = {
                         showDiscardDialog = false
                         onBack()
                     },
-                ) { Text("Discard") }
+                ) { Text(stringResource(R.string.action_discard)) }
             },
             dismissButton = {
-                TextButton(onClick = { showDiscardDialog = false }) { Text("Keep editing") }
+                TextButton(onClick = { showDiscardDialog = false }) {
+                    Text(stringResource(R.string.action_keep_editing))
+                }
             },
         )
     }
@@ -218,10 +246,12 @@ internal fun ProfileSelectionEditor(
     sourceProblemExplanation?.let { explanation ->
         AlertDialog(
             onDismissRequest = { sourceProblemExplanation = null },
-            title = { Text("Source data unavailable") },
+            title = { Text(stringResource(R.string.source_data_unavailable_title)) },
             text = { Text(explanation) },
             confirmButton = {
-                TextButton(onClick = { sourceProblemExplanation = null }) { Text("OK") }
+                TextButton(onClick = { sourceProblemExplanation = null }) {
+                    Text(stringResource(R.string.action_ok))
+                }
             },
         )
     }
@@ -256,7 +286,10 @@ internal fun ProfileSelectionEditor(
     Column(modifier = modifier.fillMaxSize()) {
         TextButton(onClick = ::requestBack, modifier = Modifier.padding(horizontal = 8.dp)) {
             Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = null)
-            Text(vendor?.name ?: "Models", modifier = Modifier.padding(start = 4.dp))
+            Text(
+                vendor?.name ?: stringResource(R.string.models),
+                modifier = Modifier.padding(start = 4.dp),
+            )
         }
         Text(
             text = product.name,
@@ -270,7 +303,7 @@ internal fun ProfileSelectionEditor(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 CircularProgressIndicator(modifier = Modifier.padding(end = 12.dp))
-                Text("Loading saved selections…")
+                Text(stringResource(R.string.loading_saved_selections))
             }
             return@Column
         }
@@ -286,28 +319,46 @@ internal fun ProfileSelectionEditor(
                 enabled = databaseOptions.isNotEmpty(),
                 modifier = Modifier.weight(1f),
             ) {
-                Text(if (databaseFilter == null) "Database" else "Database ✓")
+                Text(
+                    if (databaseFilter == null) {
+                        databaseLabel
+                    } else {
+                        stringResource(R.string.filter_selected_format, databaseLabel)
+                    },
+                )
             }
             OutlinedButton(
                 onClick = { filterDialog = ProfileFilterDimension.Creator },
                 enabled = creatorOptions.isNotEmpty(),
                 modifier = Modifier.weight(1f),
             ) {
-                Text(if (creatorFilter == null) "Creator" else "Creator ✓")
+                Text(
+                    if (creatorFilter == null) {
+                        creatorLabel
+                    } else {
+                        stringResource(R.string.filter_selected_format, creatorLabel)
+                    },
+                )
             }
             OutlinedButton(
                 onClick = { filterDialog = ProfileFilterDimension.Target },
                 enabled = targetOptions.isNotEmpty(),
                 modifier = Modifier.weight(1f),
             ) {
-                Text(if (targetFilter == null) "Target" else "Target ✓")
+                Text(
+                    if (targetFilter == null) {
+                        targetLabel
+                    } else {
+                        stringResource(R.string.filter_selected_format, targetLabel)
+                    },
+                )
             }
         }
 
         val activeFilters = listOfNotNull(
-            databaseFilter?.let { "Database: $it" },
-            creatorFilter?.let { "Creator: $it" },
-            targetFilter?.let { "Target: $it" },
+            databaseFilter?.let { stringResource(R.string.filter_value_format, databaseLabel, it) },
+            creatorFilter?.let { stringResource(R.string.filter_value_format, creatorLabel, it) },
+            targetFilter?.let { stringResource(R.string.filter_value_format, targetLabel, it) },
         )
         if (activeFilters.isNotEmpty()) {
             Row(
@@ -328,7 +379,7 @@ internal fun ProfileSelectionEditor(
                         creatorFilter = null
                         targetFilter = null
                     },
-                ) { Text("Clear") }
+                ) { Text(stringResource(R.string.action_clear)) }
             }
         }
 
@@ -337,18 +388,22 @@ internal fun ProfileSelectionEditor(
                 onClick = { showHistoricalRevisions = !showHistoricalRevisions },
                 modifier = Modifier.padding(horizontal = 8.dp),
             ) {
-                val selectedSuffix = if (selectedHistoricalCount > 0) {
-                    " · $selectedHistoricalCount selected"
+                val historyLabel = if (showHistoricalRevisions) {
+                    stringResource(R.string.history_hide)
+                } else if (selectedHistoricalCount > 0) {
+                    stringResource(
+                        R.string.history_count_with_selected,
+                        historicalProfileCount,
+                        pluralStringResource(
+                            R.plurals.selected_count,
+                            selectedHistoricalCount,
+                            selectedHistoricalCount,
+                        ),
+                    )
                 } else {
-                    ""
+                    stringResource(R.string.history_count, historicalProfileCount)
                 }
-                Text(
-                    if (showHistoricalRevisions) {
-                        "Hide history"
-                    } else {
-                        "History ($historicalProfileCount)$selectedSuffix"
-                    },
-                )
+                Text(historyLabel)
             }
         }
 
@@ -364,26 +419,30 @@ internal fun ProfileSelectionEditor(
                         selectableProfileIds(visibleProfiles, includeHistorical = true)
                 },
             ) {
-                Text("Select all")
+                Text(stringResource(R.string.action_select_all))
             }
             TextButton(
                 onClick = {
                     stagedSelectedIds = stagedSelectedIds - visibleProfiles.map(OpraEqProfile::id).toSet()
                 },
             ) {
-                Text("Select none")
+                Text(stringResource(R.string.action_select_none))
             }
         }
 
         Text(
-            text = "New headphones start with no EQs selected. New profiles always appear in EQ Library; saved selections change only when you choose them. My EQs can notify you when new verified or unverified profiles arrive.",
+            text = stringResource(R.string.selection_behavior_explanation),
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         if (filteredOutCount > 0) {
             Text(
-                text = "$filteredOutCount EQ profiles hidden by Database / Creator / Target filters.",
+                text = pluralStringResource(
+                    R.plurals.profiles_hidden_by_filters,
+                    filteredOutCount,
+                    filteredOutCount,
+                ),
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -391,7 +450,11 @@ internal fun ProfileSelectionEditor(
         }
         if (retainedSelectedUnavailable > 0) {
             Text(
-                text = "$retainedSelectedUnavailable selected presets are retained because they are no longer available in the current EQ Library catalog. Manage them from My EQs.",
+                text = pluralStringResource(
+                    R.plurals.selected_presets_retained_unavailable,
+                    retainedSelectedUnavailable,
+                    retainedSelectedUnavailable,
+                ),
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -404,8 +467,11 @@ internal fun ProfileSelectionEditor(
                 val activeTarget = exportTargets.activeTarget
                 val outputStatus = assessDeviceExportability(profile, activeTarget)
                 val adaptation = deviceAdaptationSummary(profile, activeTarget)
+                val statusLabel = outputStatusLabel(outputStatus, activeTarget)
                 val statusText = buildString {
-                    append("${outputShortName(activeTarget)}: ${outputStatusLabel(outputStatus, activeTarget)}")
+                    append(outputShortName(activeTarget))
+                    append(": ")
+                    append(statusLabel)
                     adaptation?.let { append(" · $it") }
                 }
                 ProfileSelectionRow(
@@ -426,16 +492,10 @@ internal fun ProfileSelectionEditor(
                             scope.launch {
                                 val favorited = toggle(
                                     profile,
-                                    vendor?.name ?: "Unknown manufacturer",
+                                    vendor?.name ?: unknownManufacturer,
                                     product.name,
                                 )
-                                onMessage(
-                                    if (favorited) {
-                                        "Saved to My EQs favorites."
-                                    } else {
-                                        "Removed from My EQs favorites."
-                                    },
-                                )
+                                onMessage(if (favorited) favoriteSavedMessage else favoriteRemovedMessage)
                             }
                         }
                     },
@@ -445,13 +505,12 @@ internal fun ProfileSelectionEditor(
                                 stagedSelectedIds = stagedSelectedIds - profile.id
                             }
                             onHideCanonicalProfile(profile.canonicalProfileId)
-                            onMessage("EQ hidden from EQ Library. Restore it in Settings → Hidden EQs.")
+                            onMessage(eqHiddenMessage)
                         }
                     },
                     onOpenSource = profile.link?.let { sourceUrl -> { onOpenUrl(sourceUrl) } },
                     onExplainSourceProblem = {
-                        sourceProblemExplanation = sourceAssessment.reason
-                            ?: "This catalog row is not a usable parametric EQ source."
+                        sourceProblemExplanation = sourceAssessment.reason ?: sourceNotUsableDefault
                     },
                 )
                 HorizontalDivider()
@@ -465,8 +524,13 @@ internal fun ProfileSelectionEditor(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 6.dp),
         ) {
-            val label = if (managedRecord == null) "Add to My EQs" else "Save changes"
-            Text("$label (${stagedSelectedIds.size})")
+            Text(
+                if (managedRecord == null) {
+                    stringResource(R.string.add_to_my_eqs_count, stagedSelectedIds.size)
+                } else {
+                    stringResource(R.string.save_changes_count, stagedSelectedIds.size)
+                },
+            )
         }
     }
 }
@@ -479,29 +543,45 @@ private fun ProfileFilterDialog(
     onSelect: (String?) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val dimensionLabel = stringResource(dimension.labelResId)
+    val allLabel = stringResource(R.string.filter_all)
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Filter by ${dimension.label.lowercase()}") },
+        title = { Text(stringResource(R.string.filter_by_format, dimensionLabel.lowercase())) },
         text = {
             Column {
                 TextButton(
                     onClick = { onSelect(null) },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(if (selected == null) "All ✓" else "All")
+                    Text(
+                        if (selected == null) {
+                            stringResource(R.string.filter_selected_format, allLabel)
+                        } else {
+                            allLabel
+                        },
+                    )
                 }
                 options.forEach { option ->
                     TextButton(
                         onClick = { onSelect(option) },
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Text(if (selected == option) "$option ✓" else option)
+                        Text(
+                            if (selected == option) {
+                                stringResource(R.string.filter_selected_format, option)
+                            } else {
+                                option
+                            },
+                        )
                     }
                 }
             }
         },
         confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+        },
     )
 }
 
@@ -547,7 +627,8 @@ internal fun ProfileSelectionRow(
         },
         headlineContent = {
             Text(
-                text = profile.author?.takeIf(String::isNotBlank) ?: "Creator information missing",
+                text = profile.author?.takeIf(String::isNotBlank)
+                    ?: stringResource(R.string.creator_information_missing),
                 style = MaterialTheme.typography.titleMedium,
             )
         },
@@ -555,7 +636,7 @@ internal fun ProfileSelectionRow(
             Column(modifier = Modifier.padding(top = 2.dp, bottom = 4.dp)) {
                 if (!profile.isVerified) {
                     Text(
-                        text = "Community submission — not independently verified. Review the source before use.",
+                        text = stringResource(R.string.community_submission_unverified_review),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.tertiary,
                     )
@@ -587,12 +668,12 @@ internal fun ProfileSelectionRow(
                 }
                 onOpenSource?.let { openSource ->
                     TextButton(onClick = openSource) {
-                        Text("Source")
+                        Text(stringResource(R.string.action_source))
                     }
                 }
                 if (compatibility.category == ProfileCompatibility.NotCompatible) {
                     Text(
-                        text = "Source data unavailable for selection",
+                        text = stringResource(R.string.source_data_unavailable_for_selection),
                         modifier = Modifier.padding(top = 4.dp),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.error,
@@ -604,13 +685,22 @@ internal fun ProfileSelectionRow(
         trailingContent = {
             Row {
                 IconButton(onClick = onHide) {
-                    Icon(Icons.Outlined.VisibilityOff, contentDescription = "Hide from EQ Library")
+                    Icon(
+                        Icons.Outlined.VisibilityOff,
+                        contentDescription = stringResource(R.string.hide_from_eq_library_content_description),
+                    )
                 }
                 onToggleFavorite?.let { action ->
                     IconButton(onClick = action) {
                         Icon(
                             imageVector = if (isFavorite) Icons.Outlined.Star else Icons.Outlined.StarBorder,
-                            contentDescription = if (isFavorite) "Remove favorite" else "Add favorite",
+                            contentDescription = stringResource(
+                                if (isFavorite) {
+                                    R.string.remove_favorite_content_description
+                                } else {
+                                    R.string.add_favorite_content_description
+                                },
+                            ),
                         )
                     }
                 }
@@ -620,11 +710,18 @@ internal fun ProfileSelectionRow(
     )
 }
 
-private fun outputStatusLabel(status: DeviceExportability, device: ExportDevice): String = when (status) {
-    DeviceExportability.EXACT -> "Exact"
-    DeviceExportability.OPTIMIZED -> "Optimized"
-    DeviceExportability.NOT_REPRESENTABLE -> if (device.isHardwareOutput) "Not suitable" else "Not exportable"
-}
+@Composable
+private fun outputStatusLabel(status: DeviceExportability, device: ExportDevice): String = stringResource(
+    when (status) {
+        DeviceExportability.EXACT -> R.string.output_status_exact
+        DeviceExportability.OPTIMIZED -> R.string.output_status_optimized
+        DeviceExportability.NOT_REPRESENTABLE -> if (device.isHardwareOutput) {
+            R.string.output_status_not_suitable
+        } else {
+            R.string.output_status_not_exportable
+        }
+    },
+)
 
 private fun outputShortName(device: ExportDevice): String = device.displayName
 

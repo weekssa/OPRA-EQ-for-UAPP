@@ -5,6 +5,13 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
+val opraCatalogUrl = providers.gradleProperty("OPRA_CATALOG_URL")
+    .orElse("https://opra.roonlabs.net/database_v1.jsonl")
+val canonicalCatalogUrl = providers.gradleProperty("CANONICAL_CATALOG_URL")
+    .orElse("https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/catalog-live/catalog/catalog.json")
+val latestReleaseApiUrl = providers.gradleProperty("LATEST_RELEASE_API_URL")
+    .orElse("https://api.github.com/repos/weekssa/OPRA-EQ-for-UAPP/releases/latest")
+
 android {
     namespace = "com.weekssa.opraeqforuapp"
     compileSdk = 36
@@ -15,6 +22,10 @@ android {
         targetSdk = 36
         versionCode = 5
         versionName = "0.5.0"
+
+        buildConfigField("String", "OPRA_CATALOG_URL", "\"${opraCatalogUrl.get()}\"")
+        buildConfigField("String", "CANONICAL_CATALOG_URL", "\"${canonicalCatalogUrl.get()}\"")
+        buildConfigField("String", "LATEST_RELEASE_API_URL", "\"${latestReleaseApiUrl.get()}\"")
     }
 
     buildTypes {
@@ -44,16 +55,24 @@ android {
     }
 }
 
+kotlin {
+    compilerOptions {
+        optIn.add("kotlinx.coroutines.ExperimentalCoroutinesApi")
+    }
+}
+
 dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2026.06.00")
+    val lifecycleVersion = "2.10.0"
     val roomVersion = "2.8.4"
     val workVersion = "2.11.2"
 
     implementation(composeBom)
     implementation("androidx.core:core-ktx:1.17.0")
     implementation("androidx.activity:activity-compose:1.13.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.10.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.10.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:$lifecycleVersion")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:$lifecycleVersion")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycleVersion")
     implementation("androidx.datastore:datastore-preferences:1.2.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
     implementation("androidx.room:room-runtime:$roomVersion")
