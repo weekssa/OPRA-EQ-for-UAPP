@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -43,6 +44,7 @@ fun MyDacScreen(
     jcallyJm12ConnectionState: Kt02h20ConnectionState,
     blackPearlHardwareEqState: HardwareEqSnapshotState,
     blackPearlHardwareEqMatch: HardwareEqMatchResolution?,
+    onConnectDac: (DacDeviceId) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val recognized = recognitionState.recognizedDeviceIds.sortedBy(DacDeviceId::ordinal)
@@ -105,6 +107,39 @@ fun MyDacScreen(
             ),
         )
 
+        if (
+            shouldOfferMyDacConnect(
+                deviceId = selectedDevice,
+                recognitionState = recognitionState,
+                blackPearl = blackPearlConnectionState,
+                fiioJa11 = fiioJa11ConnectionState,
+                jcallyJm12 = jcallyJm12ConnectionState,
+            )
+        ) {
+            Text(stringResource(R.string.my_dac_connect_explanation))
+            Button(
+                onClick = { onConnectDac(selectedDevice) },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    stringResource(
+                        if (
+                            hasMyDacConnectionError(
+                                deviceId = selectedDevice,
+                                blackPearl = blackPearlConnectionState,
+                                fiioJa11 = fiioJa11ConnectionState,
+                                jcallyJm12 = jcallyJm12ConnectionState,
+                            )
+                        ) {
+                            R.string.my_dac_action_retry_connect
+                        } else {
+                            R.string.my_dac_action_connect
+                        },
+                    ),
+                )
+            }
+        }
+
         TabRow(selectedTabIndex = selectedTabIndex) {
             Tab(
                 selected = selectedTabIndex == 0,
@@ -132,6 +167,38 @@ fun MyDacScreen(
             else -> DeviceStatus(selectedDevice)
         }
     }
+}
+
+internal fun shouldOfferMyDacConnect(
+    deviceId: DacDeviceId,
+    recognitionState: DacRecognitionState,
+    blackPearl: BlackPearlConnectionState,
+    fiioJa11: Kt02h20ConnectionState,
+    jcallyJm12: Kt02h20ConnectionState,
+): Boolean {
+    if (deviceId !in recognitionState.presentDeviceIds) return false
+    return when (deviceId) {
+        DacDeviceId.TRN_BLACK_PEARL ->
+            blackPearl is BlackPearlConnectionState.Disconnected ||
+                blackPearl is BlackPearlConnectionState.Error
+        DacDeviceId.FIIO_JA11 ->
+            fiioJa11 is Kt02h20ConnectionState.Disconnected ||
+                fiioJa11 is Kt02h20ConnectionState.Error
+        DacDeviceId.JCALLY_JM12_STOCK ->
+            jcallyJm12 is Kt02h20ConnectionState.Disconnected ||
+                jcallyJm12 is Kt02h20ConnectionState.Error
+    }
+}
+
+internal fun hasMyDacConnectionError(
+    deviceId: DacDeviceId,
+    blackPearl: BlackPearlConnectionState,
+    fiioJa11: Kt02h20ConnectionState,
+    jcallyJm12: Kt02h20ConnectionState,
+): Boolean = when (deviceId) {
+    DacDeviceId.TRN_BLACK_PEARL -> blackPearl is BlackPearlConnectionState.Error
+    DacDeviceId.FIIO_JA11 -> fiioJa11 is Kt02h20ConnectionState.Error
+    DacDeviceId.JCALLY_JM12_STOCK -> jcallyJm12 is Kt02h20ConnectionState.Error
 }
 
 @Composable
