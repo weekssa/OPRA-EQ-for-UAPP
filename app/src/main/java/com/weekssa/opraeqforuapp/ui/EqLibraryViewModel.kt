@@ -28,6 +28,7 @@ import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlHardwareEqMatchReso
 import com.weekssa.opraeqforuapp.domain.blackpearl.buildBlackPearlMyEqsCandidates
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqPreset
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
+import com.weekssa.opraeqforuapp.domain.dac.DacRecognitionState
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqMatchResolution
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
@@ -87,6 +88,7 @@ data class EqLibraryUiState(
     val savedEqs: List<SavedEqRecord> = emptyList(),
     val savedGeneralEqs: List<SavedGeneralEqRecord> = emptyList(),
     val exportCurrentness: ExportCurrentness = ExportCurrentness(),
+    val dacRecognitionState: DacRecognitionState = DacRecognitionState(),
     val blackPearlConnectionState: BlackPearlConnectionState = BlackPearlConnectionState.Disconnected,
     val fiioJa11ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
     val jcallyJm12ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
@@ -216,7 +218,8 @@ class EqLibraryViewModel(
         catalogRepository.state,
         libraryUi,
         hardwareConnections,
-    ) { preferences, catalogState, library, hardware ->
+        hardwareRepository.recognitionState,
+    ) { preferences, catalogState, library, hardware, recognition ->
         val activeOutputId = preferences.exportTargets.activeTarget.name
         val matchingLibrary = library.data.takeIf { it.outputId == activeOutputId }
         EqLibraryUiState(
@@ -230,6 +233,7 @@ class EqLibraryViewModel(
             } else {
                 library.exportCurrentness
             },
+            dacRecognitionState = recognition,
             blackPearlConnectionState = hardware.blackPearl,
             fiioJa11ConnectionState = hardware.fiioJa11,
             jcallyJm12ConnectionState = hardware.jcallyJm12,
