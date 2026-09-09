@@ -67,7 +67,7 @@ Catalog/currentness/community workflows are path-scoped. PR #6 changes no catalo
 
 ## v0.5.0 release gate
 
-Status: **release notes/public wording prepared; signed candidate provenance pinned; Black Pearl qualified; JA11/JM12 hardware validation pending and explicitly deferred/non-blocking for v0.5.0; final PR-head validation, merge, and publication remain**.
+Status: **phase-one release preparation complete: release notes/public wording and the Pixel 9 hands-on release checklist are prepared; signed candidate provenance is pinned; Black Pearl is qualified; JA11/JM12 hardware validation is pending and explicitly deferred/non-blocking for v0.5.0. Hands-on release-candidate testing, final PR validation/merge, and publication remain.**
 
 ### Product/source state
 
@@ -76,6 +76,7 @@ Status: **release notes/public wording prepared; signed candidate provenance pin
 - [x] `CHANGELOG.md` contains the v0.5.0 feature/change/validation record.
 - [x] Curated `docs/releases/v0.5.0.md` release notes are prepared.
 - [x] README/front-page copy is reconciled to the v0.5 selectable output registry, Black Pearl qualification, and JA11/JM12 pending/deferred status.
+- [x] Dedicated `docs/V0.5_HANDS_ON_RELEASE_CHECKLIST.md` is prepared for the Pixel 9 v0.5 release-candidate hands-on phase.
 - [x] The permanent Android signing identity remains pinned and unchanged.
 - [x] Candidate source commit `30535bd3b1bce9940d23e8735d88a4d9b6a9a4ef` contains the merged MAD-style architecture refactor while explicitly preserving device/DSP/conversion behavior.
 - [x] Release-record reconciliation after `30535bd3...` is documentation-only and does not alter the pinned candidate APK. Any later Android/device/DSP behavior change requires a new exact candidate assessment.
@@ -111,12 +112,20 @@ For candidate source `30535bd3b1bce9940d23e8735d88a4d9b6a9a4ef`:
 
 JA11/JM12 are intentionally shipping, if v0.5.0 is published, as **implemented but not hardware-qualified** outputs. Their pending status does not invalidate the qualified Black Pearl path and does not block v0.5.0. Release/in-app wording must continue to state their pending status accurately. When the devices arrive, refresh their hands-on records to the exact signed candidate for the next incremental release before physical qualification.
 
-### Release documentation closeout
+### Phase-one release preparation
 
 - [x] Curated `docs/releases/v0.5.0.md` is prepared and README/public-facing wording is reconciled with the qualified-vs-pending hardware matrix.
-- [x] The preceding documentation-decision head `86ed34d5e80e7aba9b2675f8f980cf5dbdea30e3` passed Android CI #1024, CodeQL #905, Catalog currentness CI #960, and Priority community coverage CI #448 before the final release-note/README closeout edits.
+- [x] `docs/V0.5_HANDS_ON_RELEASE_CHECKLIST.md` is prepared as the focused Pixel 9 release-candidate smoke after the MAD refactor, covering in-place upgrade/state retention, lifecycle/navigation, selection recreation, catalog/offline behavior, output registry, fidelity presentation, UAPP/ToneBoosters import, additional exports, SAF ownership/recovery, non-destructive Black Pearl lifecycle/write-gate smoke, update presentation, and final regression sweep.
+- [x] The hands-on checklist explicitly preserves completed Black Pearl destructive qualification and defers JA11/JM12 device testing to the next incremental release.
+- [x] The preceding documentation-decision head `86ed34d5e80e7aba9b2675f8f980cf5dbdea30e3` passed Android CI #1024, CodeQL #905, Catalog currentness CI #960, and Priority community coverage CI #448 before the final release-note/README/checklist closeout edits.
 
-### Remaining release closeout
+### Phase two — hands-on release-candidate test
+
+- [ ] Run `docs/V0.5_HANDS_ON_RELEASE_CHECKLIST.md` on the primary Pixel 9 using the pinned signed MAD-integrated candidate `EQ-Library-v0.5.0-beta-30535bd.apk` unless a later Android/device/DSP behavior change requires a new candidate.
+- [ ] Record Pixel 9 build, starting installed EQ Library version, test date, and final PASS/FAIL in the checklist.
+- [ ] If a blocking failure is found, fix it and create a new exact signed candidate before continuing release closeout.
+
+### Remaining release closeout after hands-on PASS
 
 - [ ] Confirm the final documentation/release-preparation PR #14 head is green for all gates required by its changed paths.
 - [ ] Review PR #14's final diff and remove draft status only when release closeout is intentionally ready to proceed.
