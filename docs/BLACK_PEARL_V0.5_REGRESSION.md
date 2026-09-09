@@ -1,10 +1,12 @@
 # TRN Black Pearl — v0.5 focused hardware regression
 
-Status: **HARDWARE/DSP PASS** on the exact signed behavior candidate below. One informational Reset-result wording issue was found and corrected afterward; the final signed wording-only build needs one focused Reset-message confirmation before v0.5 release closeout.
+Status: **QUALIFIED / PASS**
+
+The v0.5 Black Pearl hardware/DSP regression passed on the exact signed behavior candidate recorded below. The informational Reset-result wording issue found during that regression was corrected and the focused follow-up confirmation also passed. The later architecture refactor preserves device/DSP/conversion behavior; its exact signed candidate is pinned below for release provenance without reopening the completed Black Pearl hardware qualification.
 
 This regression is required because v0.5 changes Black Pearl target derivation through the shared finite-target response adapter and changes the Black Pearl AutoEq file serializer. It does **not** replace the earlier v0.3 transport qualification or v0.4 Reset-to-flat qualification.
 
-## Tested candidate
+## Tested behavior candidate
 
 - App version: `v0.5.0` candidate
 - Commit SHA: `34a9cd819466cb301456c052eecadb02e6271e5e`
@@ -80,9 +82,9 @@ Reset was exercised from a non-flat EQ state.
 
 Result: **PASS**
 
-### Informational wording issue found
+### Informational wording issue found and resolved
 
-The tested build reported a successful Reset using wording such as:
+The initially tested build reported a successful Reset using wording such as:
 
 `Current Black Pearl EQ slot reset to flat · playback gain restored +3.90 dB`
 
@@ -93,6 +95,10 @@ The approved wording describes the actual state operation instead:
 `Black Pearl EQ reset to flat · removed EQ Library's -3.90 dB playback-gain adjustment`
 
 The implementation change is informational only: it negates the reported restoration delta for display so the message names the tracked EQ Library adjustment that was removed. It does not change Black Pearl gain math, USB writes, Flash, Reset ordering, persistence, or DSP derivation.
+
+The project owner subsequently completed the focused post-copy Reset confirmation: Reset still succeeded and the success result described the removed EQ Library playback-gain adjustment with the correct sign/meaning.
+
+Focused follow-up result: **PASS**
 
 ## 7. Outside-validated-range caution / Flash anyway
 
@@ -106,18 +112,31 @@ The known HIFIMAN Edition XS **Altruistic-Farmer275** case containing approximat
 
 Result: **PASS**
 
+## Final signed candidate provenance
+
+After the completed Black Pearl behavior qualification, the branch incorporated the MAD-style architecture refactor at candidate source commit `30535bd3b1bce9940d23e8735d88a4d9b6a9a4ef`. That commit explicitly preserves device/DSP/conversion behavior while moving orchestration, dependency-injection, SAF/platform, and lifecycle ownership boundaries.
+
+The exact signed candidate for that source is pinned as follows:
+
+- Candidate source commit SHA: `30535bd3b1bce9940d23e8735d88a4d9b6a9a4ef`
+- Signed APK: `EQ-Library-v0.5.0-beta-30535bd.apk`
+- Signed APK SHA-256: `5a2d4ff47097b1ba37b6bd625a4bfd3de444bf1895d4c0d0484fa2075adea042`
+- Signer certificate SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`, matching `release-signing-cert.sha256`
+- Signer: `CN=OPRA EQ for UAPP, O=weekssa`; RSA 4096; APK Signature Scheme v2/v3 verified; one signer
+- Signed-beta workflow: **Signed EQ Library Beta Candidate** run #691, run ID `34295020653`
+- GitHub Actions artifact: ID `10082967650`, `EQ-Library-signed-beta-30535bd3b1bce9940d23e8735d88a4d9b6a9a4ef`
+- Artifact ZIP SHA-256: `c55d7b53e7b355e85a5b54b2b9a0da6925448c35563f85796605885ad6de91c3`
+- Android CI run #1018: **PASS**
+- CodeQL run #899: **PASS**
+- Signed EQ Library Beta Candidate run #691: **PASS**
+- Catalog currentness, priority community coverage, and automatic dependency submission for the candidate source: **PASS**
+
+Documentation-only reconciliation commits after this candidate do not change the pinned APK. Any later Android/device/DSP behavior change would require a new exact candidate assessment; documentation-only release closeout does not by itself invalidate this completed Black Pearl qualification.
+
 ## Overall result
 
-Black Pearl v0.5 **hardware/DSP regression: PASS** on signed candidate `34a9cd819466cb301456c052eecadb02e6271e5e`.
+Black Pearl v0.5 **hardware/DSP qualification: PASS**.
 
-No additional destructive Black Pearl hardware sequence is required merely because the Reset success copy changed afterward. For the final post-copy signed candidate, perform only a focused smoke check:
+The destructive/fidelity/persistence regression passed on signed behavior candidate `34a9cd819466cb301456c052eecadb02e6271e5e`, the focused Reset-result wording follow-up passed after the informational correction, and the behavior-preserving architecture candidate `30535bd3b1bce9940d23e8735d88a4d9b6a9a4ef` has a verified signed APK and green automated gates.
 
-1. connect the Black Pearl;
-2. Flash one previously qualified ordinary profile that creates a nonzero tracked EQ Library playback-gain adjustment;
-3. Reset to flat;
-4. confirm the success message describes the **removed EQ Library playback-gain adjustment** with the correct sign and amount;
-5. confirm Reset still succeeds.
-
-If that focused message check passes and the exact-head automated/signing gates are green, the v0.5 Black Pearl physical gate is complete.
-
-FiiO JA11 and stock JCALLY JM12 remain independent **Hardware validation pending** targets until their own Pixel 9 checklists can be run. Their pending status does not invalidate the Black Pearl result.
+FiiO JA11 and stock JCALLY JM12 remain independent **Hardware validation pending** targets until their own pinned Pixel 9 checklists are run. Their pending status does not invalidate the Black Pearl result and must not be presented as qualified hardware support.
