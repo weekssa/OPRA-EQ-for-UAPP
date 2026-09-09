@@ -14,6 +14,7 @@ import android.hardware.usb.UsbManager
 import android.os.Build
 import androidx.core.content.ContextCompat
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlProtocol
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlReadCodec
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlTransport
 import java.io.Closeable
 import kotlinx.coroutines.CoroutineScope
@@ -123,6 +124,11 @@ class AndroidBlackPearlUsbTransport(
     override suspend fun readGlobalGainRaw(): Int? = readParsedResponse(
         request = BlackPearlProtocol.readGlobalGainReport(),
         parser = BlackPearlProtocol::globalGainRawFromResponse,
+    )
+
+    suspend fun readNativeBand(index: Int): BlackPearlReadCodec.NativeBand? = readParsedResponse(
+        request = BlackPearlProtocol.readBandReport(index),
+        parser = BlackPearlReadCodec::bandFromResponse,
     )
 
     private suspend fun <T> readParsedResponse(
