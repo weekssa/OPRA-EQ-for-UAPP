@@ -11,6 +11,7 @@ import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Flasher
 import com.weekssa.opraeqforuapp.domain.kt02h20.JcallyJm12Flasher
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult
+import java.io.Closeable
 import kotlinx.coroutines.flow.StateFlow
 
 /**
@@ -20,13 +21,16 @@ import kotlinx.coroutines.flow.StateFlow
  * repository deliberately keeps the existing protocol flashers and delegates connection state and
  * connect requests to the shared session owner so qualified v0.5 Flash/Reset behavior is preserved
  * while future generic DAC controls can share the same physical sessions safely.
+ *
+ * [close] remains here temporarily as the existing ViewModel lifecycle hook; the actual physical
+ * resources are owned and closed by [DacSessionRepository].
  */
 class HardwareEqRepository(
     private val dacSessionRepository: DacSessionRepository,
     private val blackPearlFlasher: BlackPearlFlasher,
     private val fiioJa11Flasher: FiioJa11Flasher,
     private val jcallyJm12Flasher: JcallyJm12Flasher,
-) {
+) : Closeable {
     val blackPearlConnectionState: StateFlow<BlackPearlConnectionState> =
         dacSessionRepository.blackPearlConnectionState
     val fiioJa11ConnectionState: StateFlow<Kt02h20ConnectionState> =
@@ -52,4 +56,8 @@ class HardwareEqRepository(
     suspend fun flashJcallyJm12(profile: OpraEqProfile): Kt02h20FlashResult = jcallyJm12Flasher.flash(profile)
 
     suspend fun resetJcallyJm12(): Kt02h20FlatResetResult = jcallyJm12Flasher.resetToFlat()
+
+    override fun close() {
+        dacSessionRepository.close()
+    }
 }
