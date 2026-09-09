@@ -67,7 +67,7 @@ Catalog/currentness/community workflows are path-scoped. PR #6 changes no catalo
 
 ## v0.5.0 release gate
 
-Status: **Phase 1 closeout is in progress. Release notes/public wording and the Pixel 9 hands-on checklist are prepared; signed candidate provenance is pinned; Black Pearl is qualified; JA11/JM12 hardware validation is pending and explicitly deferred/non-blocking for v0.5.0. The Pixel 9 hands-on pass, final PR validation/merge, and controlled v0.5.0 publication are all part of Phase 1 closeout. Phase 2 has not been defined or started.**
+Status: **Phase 1 closeout is in progress. The Pixel 9 hands-on release-candidate pass is complete with PASS; release notes/public wording are prepared; signed candidate provenance is pinned; Black Pearl is qualified; JA11/JM12 hardware validation is pending and explicitly deferred/non-blocking for v0.5.0. Final PR validation/merge, final `main` validation, and controlled v0.5.0 publication remain part of Phase 1 closeout. Phase 2 has not been defined or started.**
 
 ### Product/source state
 
@@ -121,9 +121,9 @@ JA11/JM12 are intentionally shipping, if v0.5.0 is published, as **implemented b
 
 ### Phase one — hands-on release-candidate test
 
-- [ ] Run `docs/V0.5_HANDS_ON_RELEASE_CHECKLIST.md` on the primary Pixel 9 using the pinned signed MAD-integrated candidate `EQ-Library-v0.5.0-beta-30535bd.apk` unless a later Android/device/DSP behavior change requires a new candidate.
-- [ ] Record Pixel 9 build, starting installed EQ Library version, test date, and final PASS/FAIL in the checklist.
-- [ ] If a blocking failure is found, fix it and create a new exact signed candidate before continuing Phase 1 closeout.
+- [x] Ran `docs/V0.5_HANDS_ON_RELEASE_CHECKLIST.md` on the primary Pixel 9 using the pinned signed MAD-integrated candidate `EQ-Library-v0.5.0-beta-30535bd.apk`; final result **PASS** on 2026-09-09.
+- [x] Recorded the hands-on execution record and final PASS in the checklist. The Android build string and pre-upgrade app version were not captured before/during the pass and are explicitly documented as unknown rather than inferred after the fact; the in-place upgrade itself and retained pre/post app state were directly observed.
+- [x] No blocking hands-on failure was found, so no new Android/device/DSP candidate is required for this Phase 1 closeout step.
 
 ### Remaining Phase-one release closeout after hands-on PASS
 
