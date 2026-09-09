@@ -15,11 +15,21 @@ enum class MyDacEditorError {
     WRONG_DEVICE,
 }
 
+enum class MyDacEditorApplyStatus {
+    IDLE,
+    APPLYING,
+    CONFIRMATION_REQUIRED,
+    VERIFIED,
+    FAILED,
+}
+
 /**
  * ViewModel-owned workflow state for the approved My DAC manual editor.
  *
  * The hardware working copy is intentionally not Saveable UI state. It is derived from a fresh
- * verified read and remains local until a later explicit Apply transaction is implemented.
+ * verified read and remains local until explicit Review -> Apply. After any attempted hardware Apply,
+ * the editor closes so its old baseline can never be reused; the repository republishes fresh hardware
+ * truth and this state retains only concise success/failure feedback.
  */
 data class MyDacEditorUiState(
     val isOpening: Boolean = false,
@@ -27,6 +37,8 @@ data class MyDacEditorUiState(
     val workingCopy: HardwareEqEditWorkingCopy? = null,
     val selectedBandIndex: Int? = null,
     val error: MyDacEditorError? = null,
+    val applyStatus: MyDacEditorApplyStatus = MyDacEditorApplyStatus.IDLE,
+    val applyFailureReason: String? = null,
 ) {
     init {
         require(stage == MyDacEditorStage.CLOSED || workingCopy != null) {
@@ -40,6 +52,15 @@ data class MyDacEditorUiState(
                 workingCopy?.filters?.any { filter -> filter.index == selectedBandIndex } == true,
         ) {
             "Selected editor band must exist in the local working copy."
+        }
+        require(applyStatus != MyDacEditorApplyStatus.APPLYING || stage == MyDacEditorStage.REVIEW) {
+            "Editor can only apply from Review."
+        }
+        require(applyStatus != MyDacEditorApplyStatus.CONFIRMATION_REQUIRED || stage == MyDacEditorStage.REVIEW) {
+            "Editor caution confirmation can only appear from Review."
+        }
+        require(applyStatus != MyDacEditorApplyStatus.FAILED || !applyFailureReason.isNullOrBlank()) {
+            "Failed editor Apply requires a reason."
         }
     }
 
