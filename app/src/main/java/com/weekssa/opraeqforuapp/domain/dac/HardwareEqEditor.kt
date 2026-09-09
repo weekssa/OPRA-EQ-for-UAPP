@@ -162,8 +162,14 @@ data class HardwareEqEditWorkingCopy(
     /** Fresh hardware truth used to start this editor generation. Never mutated by local edits. */
     val baselineSnapshot: HardwareEqSnapshot,
     val filters: List<HardwareEqFilter>,
-    /** Local EQ Library safety-adjustment delta. This is not the DAC's absolute playback volume. */
-    val plannedSafetyGainDb: Double?,
+    /**
+     * Headroom mechanism state at editor entry. For a dedicated EQ preamp this is actual readback;
+     * for Black Pearl it is the app-owned tracked EQ Library playback-gain delta supplied separately
+     * from the absolute DAC playback volume.
+     */
+    val baselineHeadroomGainDb: Double?,
+    /** Local planned headroom value. This remains local until a later explicit Apply transaction. */
+    val plannedHeadroomGainDb: Double?,
     val headroomMechanism: HardwareEqHeadroomMechanism,
     val responseCurve: HardwareEqResponseCurve?,
     val headroomAssessment: DacHeadroomAssessment?,
@@ -174,13 +180,19 @@ data class HardwareEqEditWorkingCopy(
         require(filters.map(HardwareEqFilter::index).toSet() == baselineSnapshot.filters.map(HardwareEqFilter::index).toSet()) {
             "Local editor must preserve the baseline hardware band layout."
         }
-        require(plannedSafetyGainDb == null || plannedSafetyGainDb.isFinite() && plannedSafetyGainDb <= 0.0) {
-            "Planned safety gain must be finite and non-positive."
+        require(headroomGainIsValidForMechanism(baselineHeadroomGainDb, headroomMechanism)) {
+            "Baseline headroom gain is invalid for the selected hardware mechanism."
+        }
+        require(headroomGainIsValidForMechanism(plannedHeadroomGainDb, headroomMechanism)) {
+            "Planned headroom gain is invalid for the selected hardware mechanism."
         }
     }
 
+    val headroomPlanChanged: Boolean
+        get() = !sameNullableDouble(baselineHeadroomGainDb, plannedHeadroomGainDb)
+
     val hasChanges: Boolean
-        get() = differences.isNotEmpty() || plannedSafetyGainDb != null
+        get() = differences.isNotEmpty() || headroomPlanChanged
 
     val hasBlockingIssues: Boolean
         get() = issues.any { issue -> issue.severity == HardwareEqEditIssueSeverity.BLOCKING }
@@ -202,6 +214,7 @@ object HardwareEqEditor {
     fun startFromCurrent(
         snapshotState: HardwareEqSnapshotState,
         spec: HardwareEqEditSpec,
+        trackedPlaybackGainDeltaDb: Double? = null,
     ): HardwareEqEditorStartResult {
         if (snapshotState.freshness != DacStateFreshness.CURRENT) {
             return HardwareEqEditorStartResult.CurrentSnapshotRequired
@@ -209,11 +222,30 @@ object HardwareEqEditor {
         val snapshot = snapshotState.bundle?.snapshot
             ?: return HardwareEqEditorStartResult.CurrentSnapshotRequired
         if (snapshot.deviceId != spec.deviceId) return HardwareEqEditorStartResult.WrongDevice
+
+        require(
+            trackedPlaybackGainDeltaDb == null ||
+                spec.headroomMechanism == HardwareEqHeadroomMechanism.TRACKED_PLAYBACK_GAIN_DELTA,
+        ) {
+            "A tracked playback-gain delta is valid only for that headroom mechanism."
+        }
+        require(
+            trackedPlaybackGainDeltaDb == null ||
+                trackedPlaybackGainDeltaDb.isFinite() && trackedPlaybackGainDeltaDb <= 0.0,
+        ) {
+            "Tracked EQ Library playback-gain delta must be finite and non-positive."
+        }
+
+        val baselineHeadroomGainDb = when (spec.headroomMechanism) {
+            HardwareEqHeadroomMechanism.DEDICATED_EQ_PREAMP -> snapshot.dedicatedEqPreampDb
+            HardwareEqHeadroomMechanism.TRACKED_PLAYBACK_GAIN_DELTA -> trackedPlaybackGainDeltaDb
+        }
         return HardwareEqEditorStartResult.Ready(
             buildWorkingCopy(
                 baselineSnapshot = snapshot,
                 filters = snapshot.filters,
-                plannedSafetyGainDb = snapshot.dedicatedEqPreampDb?.coerceAtMost(0.0),
+                baselineHeadroomGainDb = baselineHeadroomGainDb,
+                plannedHeadroomGainDb = baselineHeadroomGainDb,
                 spec = spec,
             ),
         )
@@ -244,7 +276,8 @@ object HardwareEqEditor {
         return buildWorkingCopy(
             baselineSnapshot = workingCopy.baselineSnapshot,
             filters = filters,
-            plannedSafetyGainDb = workingCopy.plannedSafetyGainDb,
+            baselineHeadroomGainDb = workingCopy.baselineHeadroomGainDb,
+            plannedHeadroomGainDb = workingCopy.plannedHeadroomGainDb,
             spec = spec,
         )
     }
@@ -256,10 +289,19 @@ object HardwareEqEditor {
     ): HardwareEqEditWorkingCopy {
         val assessment = workingCopy.headroomAssessment ?: return workingCopy
         if (assessment.status == DacHeadroomStatus.DEVICE_LIMITED) return workingCopy
+        val targetGainDb = if (
+            abs(assessment.requiredGainDb) <= HEADROOM_EPSILON_DB &&
+            workingCopy.baselineHeadroomGainDb == null
+        ) {
+            null
+        } else {
+            assessment.requiredGainDb
+        }
         return buildWorkingCopy(
             baselineSnapshot = workingCopy.baselineSnapshot,
             filters = workingCopy.filters,
-            plannedSafetyGainDb = assessment.requiredGainDb,
+            baselineHeadroomGainDb = workingCopy.baselineHeadroomGainDb,
+            plannedHeadroomGainDb = targetGainDb,
             spec = spec,
         )
     }
@@ -270,14 +312,16 @@ object HardwareEqEditor {
     ): HardwareEqEditWorkingCopy = buildWorkingCopy(
         baselineSnapshot = workingCopy.baselineSnapshot,
         filters = workingCopy.baselineSnapshot.filters,
-        plannedSafetyGainDb = workingCopy.baselineSnapshot.dedicatedEqPreampDb?.coerceAtMost(0.0),
+        baselineHeadroomGainDb = workingCopy.baselineHeadroomGainDb,
+        plannedHeadroomGainDb = workingCopy.baselineHeadroomGainDb,
         spec = spec,
     )
 
     private fun buildWorkingCopy(
         baselineSnapshot: HardwareEqSnapshot,
         filters: List<HardwareEqFilter>,
-        plannedSafetyGainDb: Double?,
+        baselineHeadroomGainDb: Double?,
+        plannedHeadroomGainDb: Double?,
         spec: HardwareEqEditSpec,
     ): HardwareEqEditWorkingCopy {
         require(baselineSnapshot.deviceId == spec.deviceId) { "Editor spec/device mismatch." }
@@ -292,7 +336,7 @@ object HardwareEqEditor {
             val required = conservativeRequiredHeadroomDb(curve, spec.headroomGainStepDb)
             assessHeadroom(
                 requiredGainDb = required,
-                plannedGainDb = plannedSafetyGainDb,
+                plannedGainDb = plannedHeadroomGainDb,
                 minimumVerifiedGainDb = spec.minimumVerifiedHeadroomGainDb,
             )
         }
@@ -300,7 +344,8 @@ object HardwareEqEditor {
         return HardwareEqEditWorkingCopy(
             baselineSnapshot = baselineSnapshot,
             filters = filters.sortedBy(HardwareEqFilter::index),
-            plannedSafetyGainDb = plannedSafetyGainDb,
+            baselineHeadroomGainDb = baselineHeadroomGainDb,
+            plannedHeadroomGainDb = plannedHeadroomGainDb,
             headroomMechanism = spec.headroomMechanism,
             responseCurve = response,
             headroomAssessment = headroom,
@@ -381,9 +426,10 @@ object HardwareEqEditor {
         val status = when {
             minimumVerifiedGainDb != null && requiredGainDb < minimumVerifiedGainDb - HEADROOM_EPSILON_DB ->
                 DacHeadroomStatus.DEVICE_LIMITED
-            requiredGainDb >= -HEADROOM_EPSILON_DB -> DacHeadroomStatus.SAFE
-            plannedGainDb == null -> DacHeadroomStatus.ADJUSTMENT_REQUIRED
-            plannedGainDb > requiredGainDb + HEADROOM_EPSILON_DB -> DacHeadroomStatus.ADJUSTMENT_REQUIRED
+            plannedGainDb == null && requiredGainDb < -HEADROOM_EPSILON_DB ->
+                DacHeadroomStatus.ADJUSTMENT_REQUIRED
+            plannedGainDb != null && plannedGainDb > requiredGainDb + HEADROOM_EPSILON_DB ->
+                DacHeadroomStatus.ADJUSTMENT_REQUIRED
             else -> DacHeadroomStatus.SAFE
         }
         return DacHeadroomAssessment(
@@ -438,6 +484,21 @@ object HardwareEqEditor {
     }
 
     private fun sameDouble(left: Double, right: Double): Boolean = abs(left - right) <= DIFFERENCE_EPSILON
+}
+
+private fun headroomGainIsValidForMechanism(
+    value: Double?,
+    mechanism: HardwareEqHeadroomMechanism,
+): Boolean {
+    if (value == null) return true
+    if (!value.isFinite()) return false
+    return mechanism != HardwareEqHeadroomMechanism.TRACKED_PLAYBACK_GAIN_DELTA || value <= 0.0
+}
+
+private fun sameNullableDouble(left: Double?, right: Double?): Boolean = when {
+    left == null && right == null -> true
+    left == null || right == null -> false
+    else -> abs(left - right) <= DIFFERENCE_EPSILON
 }
 
 private const val REPRESENTABLE_STEP_EPSILON = 1e-8
