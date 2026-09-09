@@ -26,7 +26,7 @@
     <string name="my_dac_eq_unknown">Unknown EQ</string>
     <string name="my_dac_eq_unknown_detail">The hardware EQ is readable, but EQ Library cannot truthfully associate it with a saved EQ.</string>
     <string name="my_dac_eq_response">EQ response</string>
-    <string name="my_dac_response_unavailable">The current hardware EQ response could not be rendered safely.</string>
+    <string name="my_dac_response_unavailable">The hardware EQ response could not be rendered safely.</string>
     <string name="my_dac_response_graph_accessibility">EQ response graph. %1$d active bands. Response ranges from %2$+.1f to %3$+.1f dB. Read-only.</string>
     <string name="my_dac_filter_count">%1$d filters</string>
     <string name="my_dac_active_slot">Active slot %1$d</string>
