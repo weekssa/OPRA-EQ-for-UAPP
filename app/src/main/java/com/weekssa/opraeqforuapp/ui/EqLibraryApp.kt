@@ -4,7 +4,6 @@ import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,6 +15,7 @@ import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material.icons.outlined.Usb
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -33,7 +33,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -56,15 +55,10 @@ import com.weekssa.opraeqforuapp.ui.components.UpdateAvailableBanner
 import com.weekssa.opraeqforuapp.ui.components.WhatsNewDialog
 import com.weekssa.opraeqforuapp.ui.screens.BrowseOpraScreen
 import com.weekssa.opraeqforuapp.ui.screens.ManagedHeadphoneDetailScreen
+import com.weekssa.opraeqforuapp.ui.screens.MyDacScreen
 import com.weekssa.opraeqforuapp.ui.screens.MyEqsHomeScreen
 import com.weekssa.opraeqforuapp.ui.screens.SettingsScreen
 import kotlinx.coroutines.launch
-
-private enum class EqLibraryDestination(@param:StringRes val labelResId: Int) {
-    MyEqs(R.string.nav_my_eqs),
-    EqLibrary(R.string.nav_eq_library),
-    Settings(R.string.nav_settings),
-}
 
 private sealed interface ActiveOutputExportRequest {
     val device: ExportDevice
@@ -140,15 +134,19 @@ fun EqLibraryApp(
     val onDirectFiioJa11FlashEnabledChange = actions.onDirectFiioJa11FlashEnabledChange
     val onDirectJcallyJm12FlashEnabledChange = actions.onDirectJcallyJm12FlashEnabledChange
 
-    var selectedDestinationIndex by rememberSaveable { mutableIntStateOf(0) }
+    var selectedDestinationName by rememberSaveable {
+        mutableStateOf(EqLibraryDestination.MyEqs.name)
+    }
     var selectedManagedProductId by rememberSaveable { mutableStateOf<String?>(null) }
     var outputMenuExpanded by remember { mutableStateOf(false) }
     var pendingExportRequestState by rememberSaveable { mutableStateOf<ArrayList<String>?>(null) }
     var whatsNewVersion by rememberSaveable { mutableStateOf<String?>(null) }
     var whatsNewNotes by rememberSaveable { mutableStateOf("") }
 
-    val destinations = remember { EqLibraryDestination.entries }
-    val selectedDestination = destinations[selectedDestinationIndex]
+    val destinations = remember(state.dacRecognitionState.hasRecognizedDevice) {
+        eqLibraryDestinations(showMyDac = state.dacRecognitionState.hasRecognizedDevice)
+    }
+    val selectedDestination = restoreEqLibraryDestination(selectedDestinationName, destinations)
     val activeOutput = appPreferences.exportTargets.activeTarget
     val enabledOutputs = remember(appPreferences.exportTargets) {
         ExportDevice.selectableOutputs.filter(appPreferences.exportTargets::isSelected)
@@ -174,6 +172,13 @@ fun EqLibraryApp(
     }
     val selectedManagedHeadphone = selectedManagedProductId?.let { productId ->
         managedHeadphonesForUi.firstOrNull { it.productId == productId }
+    }
+
+    LaunchedEffect(destinations, selectedDestinationName) {
+        val restored = restoreEqLibraryDestination(selectedDestinationName, destinations)
+        if (restored.name != selectedDestinationName) {
+            selectedDestinationName = restored.name
+        }
     }
 
     LaunchedEffect(selectedManagedProductId, selectedManagedHeadphone, activeOutput) {
@@ -292,9 +297,12 @@ fun EqLibraryApp(
         }
     }
 
-    BackHandler(enabled = selectedDestination == EqLibraryDestination.Settings) {
+    BackHandler(
+        enabled = selectedDestination == EqLibraryDestination.Settings ||
+            selectedDestination == EqLibraryDestination.MyDac,
+    ) {
         selectedManagedProductId = null
-        selectedDestinationIndex = EqLibraryDestination.MyEqs.ordinal
+        selectedDestinationName = EqLibraryDestination.MyEqs.name
     }
 
     Scaffold(
@@ -302,7 +310,10 @@ fun EqLibraryApp(
             TopAppBar(
                 title = { Text(stringResource(selectedDestination.labelResId)) },
                 actions = {
-                    if (selectedDestination != EqLibraryDestination.Settings) {
+                    if (
+                        selectedDestination == EqLibraryDestination.MyEqs ||
+                        selectedDestination == EqLibraryDestination.EqLibrary
+                    ) {
                         Box {
                             TextButton(onClick = { outputMenuExpanded = true }) {
                                 Text(
@@ -348,17 +359,18 @@ fun EqLibraryApp(
         },
         bottomBar = {
             NavigationBar {
-                destinations.forEachIndexed { index, destination ->
+                destinations.forEach { destination ->
                     NavigationBarItem(
-                        selected = selectedDestinationIndex == index,
+                        selected = selectedDestination == destination,
                         onClick = {
                             selectedManagedProductId = null
-                            selectedDestinationIndex = index
+                            selectedDestinationName = destination.name
                         },
                         icon = {
                             Icon(
                                 imageVector = when (destination) {
                                     EqLibraryDestination.MyEqs -> Icons.Outlined.Star
+                                    EqLibraryDestination.MyDac -> Icons.Outlined.Usb
                                     EqLibraryDestination.EqLibrary -> Icons.Outlined.Explore
                                     EqLibraryDestination.Settings -> Icons.Outlined.Settings
                                 },
@@ -377,7 +389,10 @@ fun EqLibraryApp(
                 .fillMaxSize()
                 .padding(innerPadding),
         ) {
-            if (selectedDestination != EqLibraryDestination.Settings) {
+            if (
+                selectedDestination == EqLibraryDestination.MyEqs ||
+                selectedDestination == EqLibraryDestination.EqLibrary
+            ) {
                 when {
                     updateBannerVersion != null -> UpdateAvailableBanner(
                         version = updateBannerVersion,
@@ -474,6 +489,17 @@ fun EqLibraryApp(
                             )
                         }
                     }
+
+                    EqLibraryDestination.MyDac -> MyDacScreen(
+                        recognitionState = state.dacRecognitionState,
+                        blackPearlConnectionState = state.blackPearlConnectionState,
+                        fiioJa11ConnectionState = state.fiioJa11ConnectionState,
+                        jcallyJm12ConnectionState = state.jcallyJm12ConnectionState,
+                        blackPearlHardwareEqState = state.blackPearlHardwareEqState,
+                        blackPearlHardwareEqMatch = state.blackPearlHardwareEqMatch,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+
                     EqLibraryDestination.EqLibrary -> BrowseOpraScreen(
                         catalogState = catalogState,
                         profileVisibility = appPreferences.profileVisibility,
@@ -501,10 +527,11 @@ fun EqLibraryApp(
                         onOpenUrl = onOpenUrl,
                         onBackFromRoot = {
                             selectedManagedProductId = null
-                            selectedDestinationIndex = EqLibraryDestination.MyEqs.ordinal
+                            selectedDestinationName = EqLibraryDestination.MyEqs.name
                         },
                         modifier = Modifier.fillMaxSize(),
                     )
+
                     EqLibraryDestination.Settings -> SettingsScreen(
                         appPreferences = appPreferences,
                         catalogState = catalogState,
