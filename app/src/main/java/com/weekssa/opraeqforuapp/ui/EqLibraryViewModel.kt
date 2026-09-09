@@ -30,12 +30,16 @@ import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqPreset
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
 import com.weekssa.opraeqforuapp.domain.dac.DacRecognitionState
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditSpecs
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditor
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditorStartResult
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqMatchResolution
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult
+import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
 import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
@@ -80,6 +84,7 @@ private data class HardwareConnectionUiState(
     val jcallyJm12: Kt02h20ConnectionState,
     val blackPearlHardwareEqState: HardwareEqSnapshotState,
     val blackPearlHardwareEqMatch: HardwareEqMatchResolution?,
+    val blackPearlEditorState: MyDacEditorUiState,
 )
 
 data class EqLibraryUiState(
@@ -95,6 +100,7 @@ data class EqLibraryUiState(
     val jcallyJm12ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
     val blackPearlHardwareEqState: HardwareEqSnapshotState = HardwareEqSnapshotState(),
     val blackPearlHardwareEqMatch: HardwareEqMatchResolution? = null,
+    val blackPearlEditorState: MyDacEditorUiState = MyDacEditorUiState(),
 )
 
 class EqLibraryViewModel(
@@ -113,6 +119,7 @@ class EqLibraryViewModel(
 ) : ViewModel() {
     private var lastForegroundRefreshAttemptMillis: Long = 0L
     private val exportInvalidation = MutableStateFlow(0L)
+    private val mutableBlackPearlEditorState = MutableStateFlow(MyDacEditorUiState())
 
     private val activeOutputId = preferencesRepository.preferences
         .map { preferences -> preferences.exportTargets.activeTarget.name }
@@ -198,7 +205,7 @@ class EqLibraryViewModel(
         LibraryUiState(library, currentness)
     }
 
-    private val hardwareConnections = combine(
+    private val hardwareConnectionsWithoutEditor = combine(
         hardwareRepository.blackPearlConnectionState,
         hardwareRepository.fiioJa11ConnectionState,
         hardwareRepository.jcallyJm12ConnectionState,
@@ -211,8 +218,14 @@ class EqLibraryViewModel(
             jcallyJm12 = jcallyJm12,
             blackPearlHardwareEqState = blackPearlHardwareEqState,
             blackPearlHardwareEqMatch = blackPearlMatch,
+            blackPearlEditorState = MyDacEditorUiState(),
         )
     }
+
+    private val hardwareConnections = combine(
+        hardwareConnectionsWithoutEditor,
+        mutableBlackPearlEditorState,
+    ) { hardware, editor -> hardware.copy(blackPearlEditorState = editor) }
 
     val uiState: StateFlow<EqLibraryUiState> = combine(
         preferencesRepository.preferences,
@@ -240,6 +253,7 @@ class EqLibraryViewModel(
             jcallyJm12ConnectionState = hardware.jcallyJm12,
             blackPearlHardwareEqState = hardware.blackPearlHardwareEqState,
             blackPearlHardwareEqMatch = hardware.blackPearlHardwareEqMatch,
+            blackPearlEditorState = hardware.blackPearlEditorState,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -273,6 +287,147 @@ class EqLibraryViewModel(
             DacDeviceId.TRN_BLACK_PEARL -> hardwareRepository.connectBlackPearl()
             DacDeviceId.FIIO_JA11 -> hardwareRepository.connectFiioJa11()
             DacDeviceId.JCALLY_JM12_STOCK -> hardwareRepository.connectJcallyJm12()
+        }
+    }
+
+    /**
+     * Opens the Black Pearl editor only from a fresh verified read. This refresh is read-only; editor
+     * entry cannot invoke Flash, Reset, or any generic device-control write.
+     */
+    fun openBlackPearlEditor() {
+        val current = mutableBlackPearlEditorState.value
+        if (current.isOpening) return
+        if (hardwareRepository.blackPearlConnectionState.value !is BlackPearlConnectionState.Connected) {
+            mutableBlackPearlEditorState.value = MyDacEditorUiState(error = MyDacEditorError.NOT_CONNECTED)
+            return
+        }
+
+        mutableBlackPearlEditorState.value = MyDacEditorUiState(isOpening = true)
+        viewModelScope.launch {
+            val refreshed = hardwareRepository.readBlackPearlSnapshot()
+            if (refreshed == null) {
+                mutableBlackPearlEditorState.value = MyDacEditorUiState(error = MyDacEditorError.READ_FAILED)
+                return@launch
+            }
+            val trackedGainDeltaDb = hardwareRepository.readBlackPearlTrackedGainDeltaDb()
+            val result = withContext(computationDispatcher) {
+                HardwareEqEditor.startFromCurrent(
+                    snapshotState = hardwareRepository.blackPearlSnapshotState.value,
+                    spec = HardwareEqEditSpecs.TRN_BLACK_PEARL,
+                    trackedPlaybackGainDeltaDb = trackedGainDeltaDb,
+                )
+            }
+            mutableBlackPearlEditorState.value = when (result) {
+                is HardwareEqEditorStartResult.Ready -> {
+                    val selectedBandIndex = result.workingCopy.filters.firstOrNull()?.index
+                    MyDacEditorUiState(
+                        stage = MyDacEditorStage.EDIT,
+                        workingCopy = result.workingCopy,
+                        selectedBandIndex = selectedBandIndex,
+                    )
+                }
+                HardwareEqEditorStartResult.CurrentSnapshotRequired ->
+                    MyDacEditorUiState(error = MyDacEditorError.READ_FAILED)
+                HardwareEqEditorStartResult.WrongDevice ->
+                    MyDacEditorUiState(error = MyDacEditorError.WRONG_DEVICE)
+            }
+        }
+    }
+
+    fun closeMyDacEditor() {
+        mutableBlackPearlEditorState.value = MyDacEditorUiState()
+    }
+
+    /** Returns true when Back was consumed inside the editor workflow. */
+    fun backMyDacEditor(): Boolean {
+        val current = mutableBlackPearlEditorState.value
+        val next = when {
+            current.isOpening -> MyDacEditorUiState()
+            current.stage == MyDacEditorStage.REVIEW || current.stage == MyDacEditorStage.ALL_BANDS ->
+                current.copy(stage = MyDacEditorStage.EDIT, error = null)
+            current.stage == MyDacEditorStage.EDIT -> MyDacEditorUiState()
+            else -> return false
+        }
+        mutableBlackPearlEditorState.value = next
+        return true
+    }
+
+    fun selectBlackPearlEditorBand(bandIndex: Int) {
+        mutableBlackPearlEditorState.update { current ->
+            val working = current.workingCopy ?: return@update current
+            if (working.filters.none { filter -> filter.index == bandIndex }) return@update current
+            current.copy(
+                stage = MyDacEditorStage.EDIT,
+                selectedBandIndex = bandIndex,
+                error = null,
+            )
+        }
+    }
+
+    fun showBlackPearlEditorAllBands() {
+        mutableBlackPearlEditorState.update { current ->
+            if (current.workingCopy == null) current
+            else current.copy(stage = MyDacEditorStage.ALL_BANDS, error = null)
+        }
+    }
+
+    fun showBlackPearlEditorReview() {
+        mutableBlackPearlEditorState.update { current ->
+            if (current.workingCopy == null) current
+            else current.copy(stage = MyDacEditorStage.REVIEW, error = null)
+        }
+    }
+
+    fun updateBlackPearlEditorBand(
+        bandIndex: Int,
+        type: EqFilterType,
+        frequencyHz: Double,
+        gainDb: Double,
+        q: Double,
+    ) {
+        mutableBlackPearlEditorState.update { current ->
+            val working = current.workingCopy ?: return@update current
+            val updated = HardwareEqEditor.updateFilter(
+                workingCopy = working,
+                spec = HardwareEqEditSpecs.TRN_BLACK_PEARL,
+                bandIndex = bandIndex,
+                type = type,
+                frequencyHz = frequencyHz,
+                gainDb = gainDb,
+                q = q,
+            )
+            current.copy(
+                workingCopy = updated,
+                selectedBandIndex = bandIndex,
+                error = null,
+            )
+        }
+    }
+
+    fun useSafeBlackPearlEditorGain() {
+        mutableBlackPearlEditorState.update { current ->
+            val working = current.workingCopy ?: return@update current
+            current.copy(
+                workingCopy = HardwareEqEditor.useSafeGain(
+                    workingCopy = working,
+                    spec = HardwareEqEditSpecs.TRN_BLACK_PEARL,
+                ),
+                error = null,
+            )
+        }
+    }
+
+    fun resetBlackPearlEditorLocalEdits() {
+        mutableBlackPearlEditorState.update { current ->
+            val working = current.workingCopy ?: return@update current
+            current.copy(
+                stage = MyDacEditorStage.EDIT,
+                workingCopy = HardwareEqEditor.resetLocalEdits(
+                    workingCopy = working,
+                    spec = HardwareEqEditSpecs.TRN_BLACK_PEARL,
+                ),
+                error = null,
+            )
         }
     }
 
