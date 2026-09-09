@@ -40,6 +40,15 @@ class MainActivity : ComponentActivity() {
             },
         )[EqLibraryViewModel::class.java]
 
+        // Only a true new Activity launch from Android's USB attach flow requests automatic routing.
+        // Existing singleTop activities keep their current workflow and use the in-app Open My DAC
+        // prompt when the shared DAC session repository reports a newly present supported device.
+        val initialMyDacOpenDeviceId = if (savedInstanceState == null) {
+            intent.supportedAttachedDacDeviceId()
+        } else {
+            null
+        }
+
         setContent {
             val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
             val actions = remember(viewModel) { createUiActions() }
@@ -48,6 +57,7 @@ class MainActivity : ComponentActivity() {
                 EqLibraryApp(
                     state = uiState,
                     actions = actions,
+                    initialMyDacOpenDeviceId = initialMyDacOpenDeviceId,
                 )
             }
         }
