@@ -86,6 +86,13 @@ class HardwareEqRepository(
     fun isJcallyJm12SessionCurrent(sessionGeneration: Long): Boolean =
         dacSessionRepository.isJcallyJm12SessionCurrent(sessionGeneration)
 
+    /**
+     * Local persisted state used by the already-qualified Black Pearl Flash/Reset path. Reading it
+     * performs no USB operation and keeps My DAC editor baseline semantics identical to Flash/Reset.
+     */
+    fun readBlackPearlTrackedGainDeltaDb(): Double =
+        blackPearlFlasher.readTrackedAppliedPlaybackGainDb()
+
     suspend fun readBlackPearlSnapshot(): HardwareEqSnapshotBundle? = refreshBlackPearlSnapshot()
 
     suspend fun readFiioJa11Snapshot(): HardwareEqSnapshotBundle? = fiioJa11OperationMutex.withLock {
