@@ -10,6 +10,9 @@
     <string name="my_dac_connecting">Connecting…</string>
     <string name="my_dac_detected_not_open">Detected · USB session not open</string>
     <string name="my_dac_disconnected">Disconnected</string>
+    <string name="my_dac_connect_explanation">Connect to read and manage this DAC. Android may ask for USB permission. Connecting does not change EQ or device settings.</string>
+    <string name="my_dac_action_connect">Connect</string>
+    <string name="my_dac_action_retry_connect">Try again</string>
     <string name="my_dac_reading_eq">Reading EQ…</string>
     <string name="my_dac_no_verified_eq">No verified hardware EQ read yet.</string>
     <string name="my_dac_current_hardware">Verified current hardware</string>
