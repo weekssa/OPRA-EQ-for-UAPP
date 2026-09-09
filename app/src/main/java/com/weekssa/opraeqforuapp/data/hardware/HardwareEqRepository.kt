@@ -45,6 +45,15 @@ class HardwareEqRepository(
 
     fun connectJcallyJm12() = dacSessionRepository.connectJcallyJm12()
 
+    fun isBlackPearlSessionCurrent(sessionGeneration: Long): Boolean =
+        dacSessionRepository.isBlackPearlSessionCurrent(sessionGeneration)
+
+    fun isFiioJa11SessionCurrent(sessionGeneration: Long): Boolean =
+        dacSessionRepository.isFiioJa11SessionCurrent(sessionGeneration)
+
+    fun isJcallyJm12SessionCurrent(sessionGeneration: Long): Boolean =
+        dacSessionRepository.isJcallyJm12SessionCurrent(sessionGeneration)
+
     suspend fun readBlackPearlSnapshot(): HardwareEqSnapshotBundle? =
         dacSessionRepository.readBlackPearlSnapshot()
 
