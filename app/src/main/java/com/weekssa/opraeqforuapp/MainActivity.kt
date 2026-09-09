@@ -79,6 +79,7 @@ class MainActivity : ComponentActivity() {
         onUpdateBlackPearlEditorBand = viewModel::updateBlackPearlEditorBand,
         onUseSafeBlackPearlEditorGain = viewModel::useSafeBlackPearlEditorGain,
         onResetBlackPearlEditorLocalEdits = viewModel::resetBlackPearlEditorLocalEdits,
+        onApplyBlackPearlEditor = viewModel::applyBlackPearlEditor,
         onConnectBlackPearl = viewModel::connectBlackPearl,
         onResetBlackPearl = {
             resolve(viewModel.resetBlackPearlToFlat())
