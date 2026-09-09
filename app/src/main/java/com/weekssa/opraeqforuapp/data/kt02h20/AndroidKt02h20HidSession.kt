@@ -51,6 +51,8 @@ internal class AndroidKt02h20HidSession(
     private val mutex = Mutex()
     private val mutableState = MutableStateFlow<Kt02h20ConnectionState>(Kt02h20ConnectionState.Disconnected)
     val state: StateFlow<Kt02h20ConnectionState> = mutableState.asStateFlow()
+    private val mutablePresent = MutableStateFlow(false)
+    val present: StateFlow<Boolean> = mutablePresent.asStateFlow()
 
     @Volatile
     private var session: UsbSession? = null
@@ -78,10 +80,12 @@ internal class AndroidKt02h20HidSession(
                     }
                 }
                 UsbManager.ACTION_USB_DEVICE_DETACHED -> {
+                    mutablePresent.value = false
                     closeSession()
                     mutableState.value = Kt02h20ConnectionState.Disconnected
                 }
                 UsbManager.ACTION_USB_DEVICE_ATTACHED -> {
+                    mutablePresent.value = true
                     if (mutableState.value is Kt02h20ConnectionState.Connecting && usbManager.hasPermission(device)) {
                         openAsync(device)
                     }
@@ -92,16 +96,19 @@ internal class AndroidKt02h20HidSession(
 
     init {
         registerReceiver()
+        mutablePresent.value = findDevice() != null
     }
 
     fun connect() {
         val device = findDevice()
         if (device == null) {
+            mutablePresent.value = false
             mutableState.value = Kt02h20ConnectionState.Error(
                 "$deviceLabel not detected. Connect the DAC by USB and try again.",
             )
             return
         }
+        mutablePresent.value = true
         if (session != null) {
             mutableState.value = Kt02h20ConnectionState.Connected
             return
@@ -231,9 +238,12 @@ internal class AndroidKt02h20HidSession(
             if (mutableState.value !is Kt02h20ConnectionState.Connecting) return@launch
             val device = findDevice()
             when {
-                device == null -> mutableState.value = Kt02h20ConnectionState.Error(
-                    "$deviceLabel disconnected while Android was requesting USB permission.",
-                )
+                device == null -> {
+                    mutablePresent.value = false
+                    mutableState.value = Kt02h20ConnectionState.Error(
+                        "$deviceLabel disconnected while Android was requesting USB permission.",
+                    )
+                }
                 usbManager.hasPermission(device) -> openAsync(device)
                 else -> mutableState.value = Kt02h20ConnectionState.Error(
                     "USB permission request timed out. Disconnect and reconnect $deviceLabel, then try again.",
