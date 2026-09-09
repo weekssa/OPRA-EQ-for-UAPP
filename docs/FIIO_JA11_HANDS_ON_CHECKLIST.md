@@ -1,18 +1,26 @@
 # FiiO JA11 v0.5 hands-on qualification
 
-Status: **PENDING**
+Status: **HARDWARE VALIDATION PENDING**
 
 Run this checklist only against the exact candidate APK/commit recorded below. Use the primary Pixel 9 test device and a FiiO JA11 on normal FiiO firmware. Do not use firmware-update mode.
 
 ## Candidate record
 
 - App version: `v0.5.0` candidate
-- Commit SHA: `TBD`
-- APK/signing identity: `TBD`
+- Candidate source commit SHA: `30535bd3b1bce9940d23e8735d88a4d9b6a9a4ef`
+- Signed APK: `EQ-Library-v0.5.0-beta-30535bd.apk`
+- Signed APK SHA-256: `5a2d4ff47097b1ba37b6bd625a4bfd3de444bf1895d4c0d0484fa2075adea042`
+- Signer certificate SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747` (matches repository pin)
+- Signer: `CN=OPRA EQ for UAPP, O=weekssa`; RSA 4096; APK Signature Scheme v2/v3 verified; one signer
+- Signed-beta workflow: **Signed EQ Library Beta Candidate** run #691, run ID `34295020653`
+- GitHub Actions artifact: ID `10082967650`, `EQ-Library-signed-beta-30535bd3b1bce9940d23e8735d88a4d9b6a9a4ef`
+- Artifact ZIP SHA-256: `c55d7b53e7b355e85a5b54b2b9a0da6925448c35563f85796605885ad6de91c3`
 - Pixel 9 Android version/build: `TBD`
 - JA11 firmware: `TBD` (current public FiiO release should be checked before qualification)
 - Date: `TBD`
-- Result: `PENDING`
+- Result: **PENDING — Hardware validation pending**
+
+The signed APK identity above is the pinned software/signing candidate for this hands-on gate. Later documentation-only commits do not change this APK; if any Android/device/DSP behavior changes before testing, generate and pin a new exact signed candidate instead of reusing this record.
 
 ## STOP conditions
 
@@ -137,4 +145,4 @@ Mid-transfer cases that cannot be safely induced are acceptable only when their 
 
 ## Final gate
 
-Record **PASS** only when all applicable steps above pass on the exact candidate and Android CI/unit/lint/build gates are green. Then update this file with the candidate SHA/device details and result before removing **Hardware validation pending** for FiiO JA11.
+Record **PASS** only when all applicable steps above pass on the exact candidate and Android CI/unit/lint/build gates are green. Then update this file with the device/build/date/result before removing **Hardware validation pending** for FiiO JA11.
