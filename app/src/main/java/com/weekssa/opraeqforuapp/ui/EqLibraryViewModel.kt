@@ -22,6 +22,7 @@ import com.weekssa.opraeqforuapp.data.sync.CatalogSyncCoordinator
 import com.weekssa.opraeqforuapp.data.sync.CatalogSyncOutcome
 import com.weekssa.opraeqforuapp.data.update.AppUpdateCheckResult
 import com.weekssa.opraeqforuapp.data.update.AppUpdateCoordinator
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlEditorApplyResult
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlashResult
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlatResetResult
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlHardwareEqMatchResolver
@@ -296,7 +297,7 @@ class EqLibraryViewModel(
      */
     fun openBlackPearlEditor() {
         val current = mutableBlackPearlEditorState.value
-        if (current.isOpening) return
+        if (current.isOpening || current.applyStatus == MyDacEditorApplyStatus.APPLYING) return
         if (hardwareRepository.blackPearlConnectionState.value !is BlackPearlConnectionState.Connected) {
             mutableBlackPearlEditorState.value = MyDacEditorUiState(error = MyDacEditorError.NOT_CONNECTED)
             return
@@ -335,16 +336,23 @@ class EqLibraryViewModel(
     }
 
     fun closeMyDacEditor() {
+        if (mutableBlackPearlEditorState.value.applyStatus == MyDacEditorApplyStatus.APPLYING) return
         mutableBlackPearlEditorState.value = MyDacEditorUiState()
     }
 
     /** Returns true when Back was consumed inside the editor workflow. */
     fun backMyDacEditor(): Boolean {
         val current = mutableBlackPearlEditorState.value
+        if (current.applyStatus == MyDacEditorApplyStatus.APPLYING) return true
         val next = when {
             current.isOpening -> MyDacEditorUiState()
             current.stage == MyDacEditorStage.REVIEW || current.stage == MyDacEditorStage.ALL_BANDS ->
-                current.copy(stage = MyDacEditorStage.EDIT, error = null)
+                current.copy(
+                    stage = MyDacEditorStage.EDIT,
+                    error = null,
+                    applyStatus = MyDacEditorApplyStatus.IDLE,
+                    applyFailureReason = null,
+                )
             current.stage == MyDacEditorStage.EDIT -> MyDacEditorUiState()
             else -> return false
         }
@@ -360,21 +368,33 @@ class EqLibraryViewModel(
                 stage = MyDacEditorStage.EDIT,
                 selectedBandIndex = bandIndex,
                 error = null,
+                applyStatus = MyDacEditorApplyStatus.IDLE,
+                applyFailureReason = null,
             )
         }
     }
 
     fun showBlackPearlEditorAllBands() {
         mutableBlackPearlEditorState.update { current ->
-            if (current.workingCopy == null) current
-            else current.copy(stage = MyDacEditorStage.ALL_BANDS, error = null)
+            if (current.workingCopy == null || current.applyStatus == MyDacEditorApplyStatus.APPLYING) current
+            else current.copy(
+                stage = MyDacEditorStage.ALL_BANDS,
+                error = null,
+                applyStatus = MyDacEditorApplyStatus.IDLE,
+                applyFailureReason = null,
+            )
         }
     }
 
     fun showBlackPearlEditorReview() {
         mutableBlackPearlEditorState.update { current ->
-            if (current.workingCopy == null) current
-            else current.copy(stage = MyDacEditorStage.REVIEW, error = null)
+            if (current.workingCopy == null || current.applyStatus == MyDacEditorApplyStatus.APPLYING) current
+            else current.copy(
+                stage = MyDacEditorStage.REVIEW,
+                error = null,
+                applyStatus = MyDacEditorApplyStatus.IDLE,
+                applyFailureReason = null,
+            )
         }
     }
 
@@ -386,6 +406,7 @@ class EqLibraryViewModel(
         q: Double,
     ) {
         mutableBlackPearlEditorState.update { current ->
+            if (current.applyStatus == MyDacEditorApplyStatus.APPLYING) return@update current
             val working = current.workingCopy ?: return@update current
             val updated = HardwareEqEditor.updateFilter(
                 workingCopy = working,
@@ -400,12 +421,15 @@ class EqLibraryViewModel(
                 workingCopy = updated,
                 selectedBandIndex = bandIndex,
                 error = null,
+                applyStatus = MyDacEditorApplyStatus.IDLE,
+                applyFailureReason = null,
             )
         }
     }
 
     fun useSafeBlackPearlEditorGain() {
         mutableBlackPearlEditorState.update { current ->
+            if (current.applyStatus == MyDacEditorApplyStatus.APPLYING) return@update current
             val working = current.workingCopy ?: return@update current
             current.copy(
                 workingCopy = HardwareEqEditor.useSafeGain(
@@ -413,12 +437,15 @@ class EqLibraryViewModel(
                     spec = HardwareEqEditSpecs.TRN_BLACK_PEARL,
                 ),
                 error = null,
+                applyStatus = MyDacEditorApplyStatus.IDLE,
+                applyFailureReason = null,
             )
         }
     }
 
     fun resetBlackPearlEditorLocalEdits() {
         mutableBlackPearlEditorState.update { current ->
+            if (current.applyStatus == MyDacEditorApplyStatus.APPLYING) return@update current
             val working = current.workingCopy ?: return@update current
             current.copy(
                 stage = MyDacEditorStage.EDIT,
@@ -427,9 +454,48 @@ class EqLibraryViewModel(
                     spec = HardwareEqEditSpecs.TRN_BLACK_PEARL,
                 ),
                 error = null,
+                applyStatus = MyDacEditorApplyStatus.IDLE,
+                applyFailureReason = null,
             )
         }
     }
+
+    fun applyBlackPearlEditor(allowCautions: Boolean) {
+        val current = mutableBlackPearlEditorState.value
+        val workingCopy = current.workingCopy ?: return
+        if (current.stage != MyDacEditorStage.REVIEW || current.applyStatus == MyDacEditorApplyStatus.APPLYING) return
+        if (current.applyStatus == MyDacEditorApplyStatus.CONFIRMATION_REQUIRED && !allowCautions) return
+
+        mutableBlackPearlEditorState.value = current.copy(
+            applyStatus = MyDacEditorApplyStatus.APPLYING,
+            applyFailureReason = null,
+        )
+        viewModelScope.launch {
+            val result = hardwareRepository.applyBlackPearlEditor(
+                workingCopy = workingCopy,
+                allowCautions = allowCautions,
+            )
+            mutableBlackPearlEditorState.value = when (result) {
+                is BlackPearlEditorApplyResult.Verified -> MyDacEditorUiState(
+                    applyStatus = MyDacEditorApplyStatus.VERIFIED,
+                )
+                is BlackPearlEditorApplyResult.ConfirmationRequired -> current.copy(
+                    applyStatus = MyDacEditorApplyStatus.CONFIRMATION_REQUIRED,
+                    applyFailureReason = null,
+                )
+                is BlackPearlEditorApplyResult.InvalidPlan -> failedEditorApply(result.reason)
+                is BlackPearlEditorApplyResult.StaleBaseline -> failedEditorApply(result.reason)
+                is BlackPearlEditorApplyResult.DeviceUnavailable -> failedEditorApply(result.reason)
+                is BlackPearlEditorApplyResult.TransferFailed -> failedEditorApply(result.reason)
+                is BlackPearlEditorApplyResult.VerificationFailed -> failedEditorApply(result.reason)
+            }
+        }
+    }
+
+    private fun failedEditorApply(reason: String): MyDacEditorUiState = MyDacEditorUiState(
+        applyStatus = MyDacEditorApplyStatus.FAILED,
+        applyFailureReason = reason,
+    )
 
     fun connectBlackPearl() {
         viewModelScope.launch {
