@@ -7,6 +7,7 @@ import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlashResult
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlatResetResult
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlasher
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotBundle
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Flasher
 import com.weekssa.opraeqforuapp.domain.kt02h20.JcallyJm12Flasher
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult
@@ -15,12 +16,12 @@ import java.io.Closeable
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * Repository boundary for deterministic hardware-EQ transactions.
+ * Repository boundary for deterministic hardware-EQ transactions and verified native EQ reads.
  *
  * v0.6 moves physical USB-session lifecycle/connection ownership to [DacSessionRepository]. This
- * repository deliberately keeps the existing protocol flashers and delegates connection state and
- * connect requests to the shared session owner so qualified v0.5 Flash/Reset behavior is preserved
- * while future generic DAC controls can share the same physical sessions safely.
+ * repository deliberately keeps the existing protocol flashers and delegates connection state,
+ * session-safe native reads, and connect requests to the shared session owner so qualified v0.5
+ * Flash/Reset behavior is preserved while My DAC can inspect the same physical sessions safely.
  *
  * [close] remains here temporarily as the existing ViewModel lifecycle hook; the actual physical
  * resources are owned and closed by [DacSessionRepository].
@@ -43,6 +44,15 @@ class HardwareEqRepository(
     fun connectFiioJa11() = dacSessionRepository.connectFiioJa11()
 
     fun connectJcallyJm12() = dacSessionRepository.connectJcallyJm12()
+
+    suspend fun readBlackPearlSnapshot(): HardwareEqSnapshotBundle? =
+        dacSessionRepository.readBlackPearlSnapshot()
+
+    suspend fun readFiioJa11Snapshot(): HardwareEqSnapshotBundle? =
+        dacSessionRepository.readFiioJa11Snapshot()
+
+    suspend fun readJcallyJm12Snapshot(): HardwareEqSnapshotBundle? =
+        dacSessionRepository.readJcallyJm12Snapshot()
 
     suspend fun flashBlackPearl(profile: OpraEqProfile): BlackPearlFlashResult =
         blackPearlFlasher.flash(profile)
