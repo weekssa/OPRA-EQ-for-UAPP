@@ -14,7 +14,7 @@ Before substantive work, read this file and the current documents relevant to th
 - `docs/V0.3_RELEASE_POLISH_PLAN.md`
 - `docs/V0.5_KT02H20_IMPLEMENTATION_PLAN.md` for the current output registry, shared hardware response adapter, FiiO JA11, and stock JCALLY JM12 work
 - `docs/V0.5_IMPORT_COMPATIBILITY_NOTES.md` when file-import/export compatibility, TOPPING Tune, Black Pearl text import, or output-fidelity wording is involved
-- `docs/V0.5_HANDS_ON_RELEASE_CHECKLIST.md` for the current v0.5 Pixel 9 release-candidate hands-on phase
+- `docs/V0.5_HANDS_ON_RELEASE_CHECKLIST.md` for the current v0.5 **Phase 2** Pixel 9 release-candidate testing record
 - `docs/BLACK_PEARL_PROTOCOL_NOTES.md` when Black Pearl behavior is involved
 - `docs/FIIO_JA11_PROTOCOL_NOTES.md` and `docs/FIIO_JA11_HANDS_ON_CHECKLIST.md` when JA11 behavior is involved
 - `docs/JCALLY_JM12_PROTOCOL_NOTES.md` and `docs/JCALLY_JM12_HANDS_ON_CHECKLIST.md` when JM12 behavior is involved
@@ -303,6 +303,13 @@ Any behavior-affecting code change after a physical PASS creates a new hardware 
 ## 17. Releases, updates, attribution
 
 Use SemVer. Development remains `0.x`; first stable is `v1.0.0`. Maintain `CHANGELOG.md` from the beginning.
+
+For the v0.5.0 milestone, use the project's original two-stage release model:
+
+- **Phase 1 — implementation/release preparation:** build and integrate the intended v0.5.0 feature set and produce the signed release candidate.
+- **Phase 2 — testing/qualification:** validate that same v0.5.0 candidate through the required automated, Pixel 9, export/storage, lifecycle, and applicable hardware qualification gates.
+
+Publication follows a successful Phase 2. **Phase 2 is testing of v0.5.0, not a new feature/version milestone.** Entering or completing Phase 2 does not imply `v0.6.0`; SemVer advances only when a later installable release intentionally changes the product/version. The completed 2026-09-09 Pixel 9 v0.5 hands-on pass is the Phase 2 testing record for v0.5.0. JA11/JM12 remain explicitly deferred/non-blocking as documented elsewhere.
 
 Public distribution initially uses GitHub Releases and one stable release-signing identity. The app may check latest public release metadata and show a nonblocking update banner, What's new, and Get update link. No notification permission, silent APK download/install, or unknown-app install permission in v1.
 
