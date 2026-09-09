@@ -54,8 +54,14 @@ internal class AndroidKt02h20HidSession(
 
     @Volatile
     private var session: UsbSession? = null
+    @Volatile
+    private var currentSessionGeneration: Long = 0L
+    private var lastSessionGeneration: Long = 0L
     private var receiverRegistered = false
     private val permissionAction = "${appContext.packageName}.$permissionSuffix.USB_PERMISSION"
+
+    val sessionGeneration: Long
+        get() = currentSessionGeneration
 
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -194,6 +200,8 @@ internal class AndroidKt02h20HidSession(
                     endpointIn = descriptor.endpointIn,
                     endpointOut = descriptor.endpointOut,
                 )
+                lastSessionGeneration = nextSessionGeneration(lastSessionGeneration)
+                currentSessionGeneration = lastSessionGeneration
                 mutableState.value = Kt02h20ConnectionState.Connected
             }
         }
@@ -253,6 +261,7 @@ internal class AndroidKt02h20HidSession(
     private fun closeSessionLocked() {
         val current = session ?: return
         session = null
+        currentSessionGeneration = 0L
         runCatching { current.connection.releaseInterface(current.usbInterface) }
         runCatching { current.connection.close() }
     }
@@ -294,5 +303,8 @@ internal class AndroidKt02h20HidSession(
         const val READ_POLL_MILLIS = 80
         const val READ_RETRY_DELAY_MILLIS = 5L
         const val PERMISSION_RESPONSE_TIMEOUT_MILLIS = 10_000L
+
+        fun nextSessionGeneration(previous: Long): Long =
+            if (previous == Long.MAX_VALUE) 1L else previous + 1L
     }
 }
