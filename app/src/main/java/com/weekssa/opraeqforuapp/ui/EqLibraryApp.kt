@@ -45,6 +45,7 @@ import com.weekssa.opraeqforuapp.BuildConfig
 import com.weekssa.opraeqforuapp.R
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqPreset
+import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
 import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
@@ -80,6 +81,7 @@ private sealed interface ActiveOutputExportRequest {
 fun EqLibraryApp(
     state: EqLibraryUiState,
     actions: EqLibraryActions,
+    initialMyDacOpenDeviceId: DacDeviceId? = null,
 ) {
     val appPreferences = state.appPreferences
     val catalogState = state.catalogState
@@ -143,6 +145,9 @@ fun EqLibraryApp(
     var pendingExportRequestState by rememberSaveable { mutableStateOf<ArrayList<String>?>(null) }
     var whatsNewVersion by rememberSaveable { mutableStateOf<String?>(null) }
     var whatsNewNotes by rememberSaveable { mutableStateOf("") }
+    var pendingInitialMyDacOpenDeviceName by rememberSaveable {
+        mutableStateOf(initialMyDacOpenDeviceId?.name)
+    }
 
     val destinations = remember(state.dacRecognitionState.hasRecognizedDevice) {
         eqLibraryDestinations(showMyDac = state.dacRecognitionState.hasRecognizedDevice)
@@ -177,9 +182,28 @@ fun EqLibraryApp(
         managedHeadphonesForUi.firstOrNull { it.productId == productId }
     }
 
+    LaunchedEffect(
+        pendingInitialMyDacOpenDeviceName,
+        state.dacRecognitionState.recognizedDeviceIds,
+    ) {
+        val requestedDeviceId = pendingInitialMyDacOpenDeviceName?.let { name ->
+            runCatching { DacDeviceId.valueOf(name) }.getOrNull()
+        }
+        if (
+            requestedDeviceId != null &&
+            requestedDeviceId in state.dacRecognitionState.recognizedDeviceIds
+        ) {
+            onConnectDacForMyDac(requestedDeviceId)
+            selectedManagedProductId = null
+            selectedDestinationName = EqLibraryDestination.MyDac.name
+            pendingInitialMyDacOpenDeviceName = null
+        }
+    }
+
     MyDacRecognitionPromptEffect(
         recognitionState = state.dacRecognitionState,
-        isMyDacOpen = selectedDestination == EqLibraryDestination.MyDac,
+        isMyDacOpen = selectedDestination == EqLibraryDestination.MyDac ||
+            pendingInitialMyDacOpenDeviceName != null,
         snackbarHostState = snackbarHostState,
         detectedMessage = myDacDetectedMessage,
         openActionLabel = openMyDacActionLabel,
