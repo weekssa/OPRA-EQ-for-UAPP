@@ -94,6 +94,15 @@ fun EqLibraryApp(
     val jcallyJm12ConnectionState = state.jcallyJm12ConnectionState
 
     val onConnectDacForMyDac = actions.onConnectDacForMyDac
+    val onOpenBlackPearlEditor = actions.onOpenBlackPearlEditor
+    val onBackMyDacEditor = actions.onBackMyDacEditor
+    val onCloseMyDacEditor = actions.onCloseMyDacEditor
+    val onSelectBlackPearlEditorBand = actions.onSelectBlackPearlEditorBand
+    val onShowBlackPearlEditorAllBands = actions.onShowBlackPearlEditorAllBands
+    val onShowBlackPearlEditorReview = actions.onShowBlackPearlEditorReview
+    val onUpdateBlackPearlEditorBand = actions.onUpdateBlackPearlEditorBand
+    val onUseSafeBlackPearlEditorGain = actions.onUseSafeBlackPearlEditorGain
+    val onResetBlackPearlEditorLocalEdits = actions.onResetBlackPearlEditorLocalEdits
     val onConnectBlackPearl = actions.onConnectBlackPearl
     val onResetBlackPearl = actions.onResetBlackPearl
     val onConnectFiioJa11 = actions.onConnectFiioJa11
@@ -216,6 +225,7 @@ fun EqLibraryApp(
     LaunchedEffect(destinations, selectedDestinationName) {
         val restored = restoreEqLibraryDestination(selectedDestinationName, destinations)
         if (restored.name != selectedDestinationName) {
+            onCloseMyDacEditor()
             selectedDestinationName = restored.name
         }
     }
@@ -340,6 +350,10 @@ fun EqLibraryApp(
         enabled = selectedDestination == EqLibraryDestination.Settings ||
             selectedDestination == EqLibraryDestination.MyDac,
     ) {
+        if (selectedDestination == EqLibraryDestination.MyDac && onBackMyDacEditor()) {
+            return@BackHandler
+        }
+        onCloseMyDacEditor()
         selectedManagedProductId = null
         selectedDestinationName = EqLibraryDestination.MyEqs.name
     }
@@ -402,6 +416,12 @@ fun EqLibraryApp(
                     NavigationBarItem(
                         selected = selectedDestination == destination,
                         onClick = {
+                            if (
+                                selectedDestination == EqLibraryDestination.MyDac &&
+                                destination != EqLibraryDestination.MyDac
+                            ) {
+                                onCloseMyDacEditor()
+                            }
                             selectedManagedProductId = null
                             selectedDestinationName = destination.name
                         },
@@ -536,7 +556,16 @@ fun EqLibraryApp(
                         jcallyJm12ConnectionState = state.jcallyJm12ConnectionState,
                         blackPearlHardwareEqState = state.blackPearlHardwareEqState,
                         blackPearlHardwareEqMatch = state.blackPearlHardwareEqMatch,
+                        blackPearlEditorState = state.blackPearlEditorState,
                         onConnectDac = onConnectDacForMyDac,
+                        onOpenBlackPearlEditor = onOpenBlackPearlEditor,
+                        onCloseBlackPearlEditor = onCloseMyDacEditor,
+                        onSelectBlackPearlEditorBand = onSelectBlackPearlEditorBand,
+                        onShowBlackPearlEditorAllBands = onShowBlackPearlEditorAllBands,
+                        onShowBlackPearlEditorReview = onShowBlackPearlEditorReview,
+                        onUpdateBlackPearlEditorBand = onUpdateBlackPearlEditorBand,
+                        onUseSafeBlackPearlEditorGain = onUseSafeBlackPearlEditorGain,
+                        onResetBlackPearlEditorLocalEdits = onResetBlackPearlEditorLocalEdits,
                         modifier = Modifier.fillMaxSize(),
                     )
 
