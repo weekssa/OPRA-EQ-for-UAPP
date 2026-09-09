@@ -5,17 +5,33 @@ import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.kt02h20.AndroidFiioJa11UsbTransport
 import com.weekssa.opraeqforuapp.data.kt02h20.AndroidJcallyJm12UsbTransport
 import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
+import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
+import com.weekssa.opraeqforuapp.domain.dac.DacRecognitionState
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotBundle
 import java.io.Closeable
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 /**
  * ViewModel-scoped owner/coordinator for the physical USB sessions of supported DACs.
  *
- * This repository owns lifecycle, connection requests, connection-state exposure, and verified
- * native EQ reads. Each Android transport assigns its monotonically increasing session generation
- * synchronously when the physical USB session opens, before Connected is published. Read results are
- * accepted only while that exact generation remains current.
+ * This repository owns lifecycle, read-only supported-device recognition, connection requests,
+ * connection-state exposure, and verified native EQ reads. Recognition is based only on exact
+ * supported VID/PID presence; a failed Connect attempt cannot manufacture My DAC visibility.
+ * Recognized identities remain session-sticky after detach so navigation does not jump.
+ *
+ * Each Android transport assigns its monotonically increasing session generation synchronously when
+ * the physical USB session opens, before Connected is published. Read results are accepted only
+ * while that exact generation remains current.
  *
  * Protocol-specific EQ write transactions remain in their existing flashers/repositories so the
  * v0.5 qualified behavior is preserved while My DAC can inspect the same physical sessions safely.
@@ -31,6 +47,12 @@ class DacSessionRepository(
     val fiioJa11ConnectionState: StateFlow<Kt02h20ConnectionState> = fiioJa11Transport.state
     val jcallyJm12ConnectionState: StateFlow<Kt02h20ConnectionState> = jcallyJm12Transport.state
 
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val mutableRecognitionState = MutableStateFlow(
+        DacRecognitionState().withPresentDevices(currentPresentDeviceIds()),
+    )
+    val recognitionState: StateFlow<DacRecognitionState> = mutableRecognitionState.asStateFlow()
+
     private val blackPearlSnapshotReader = BlackPearlSnapshotReader(
         source = object : BlackPearlSnapshotSource {
             override suspend fun readNativeBand(index: Int) = blackPearlTransport.readNativeBand(index)
@@ -40,6 +62,26 @@ class DacSessionRepository(
     )
     private val fiioJa11SnapshotReader = FiioJa11SnapshotReader(fiioJa11Transport)
     private val jcallyJm12SnapshotReader = JcallyJm12SnapshotReader(jcallyJm12Transport)
+
+    init {
+        scope.launch {
+            combine(
+                blackPearlTransport.present,
+                fiioJa11Transport.present,
+                jcallyJm12Transport.present,
+            ) { blackPearlPresent, fiioJa11Present, jcallyJm12Present ->
+                buildSet {
+                    if (blackPearlPresent) add(DacDeviceId.TRN_BLACK_PEARL)
+                    if (fiioJa11Present) add(DacDeviceId.FIIO_JA11)
+                    if (jcallyJm12Present) add(DacDeviceId.JCALLY_JM12_STOCK)
+                }
+            }.collect { presentDeviceIds ->
+                mutableRecognitionState.update { previous ->
+                    previous.withPresentDevices(presentDeviceIds)
+                }
+            }
+        }
+    }
 
     fun connectBlackPearl() = blackPearlTransport.connect()
 
@@ -80,6 +122,12 @@ class DacSessionRepository(
         read = jcallyJm12SnapshotReader::read,
     )
 
+    private fun currentPresentDeviceIds(): Set<DacDeviceId> = buildSet {
+        if (blackPearlTransport.present.value) add(DacDeviceId.TRN_BLACK_PEARL)
+        if (fiioJa11Transport.present.value) add(DacDeviceId.FIIO_JA11)
+        if (jcallyJm12Transport.present.value) add(DacDeviceId.JCALLY_JM12_STOCK)
+    }
+
     private suspend fun readVerifiedSnapshot(
         generation: () -> Long,
         isConnected: () -> Boolean,
@@ -93,6 +141,7 @@ class DacSessionRepository(
     }
 
     override fun close() {
+        scope.cancel()
         blackPearlTransport.close()
         fiioJa11Transport.close()
         jcallyJm12Transport.close()
