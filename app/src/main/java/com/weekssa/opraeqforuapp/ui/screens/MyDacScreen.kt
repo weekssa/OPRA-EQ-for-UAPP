@@ -2,7 +2,6 @@ package com.weekssa.opraeqforuapp.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -175,7 +174,7 @@ private fun BlackPearlEqStatus(
     when (match) {
         is HardwareEqMatch.Exact -> {
             Text(match.savedEq.displayName)
-            val representation = matchResolution.representation(match.savedEq.savedEqKey)
+            val representation = matchResolution?.representation(match.savedEq.savedEqKey)
             if (representation != null) {
                 val fidelity = stringResource(
                     if (representation.fidelity == DevicePresetFidelity.EXACT) {
