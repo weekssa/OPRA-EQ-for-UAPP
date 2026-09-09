@@ -59,6 +59,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun createUiActions(): EqLibraryActions = EqLibraryActions(
+        onConnectDacForMyDac = viewModel::connectDacForMyDac,
         onConnectBlackPearl = viewModel::connectBlackPearl,
         onResetBlackPearl = {
             resolve(viewModel.resetBlackPearlToFlat())
