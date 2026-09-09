@@ -38,6 +38,8 @@ import com.weekssa.opraeqforuapp.domain.dac.HardwareEqResponseEvaluator
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.dac.isAcousticallyActive
 import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
+import com.weekssa.opraeqforuapp.domain.library.EqFilterType
+import com.weekssa.opraeqforuapp.ui.MyDacEditorUiState
 import com.weekssa.opraeqforuapp.ui.components.DacEqResponseGraph
 
 @Composable
@@ -48,7 +50,16 @@ fun MyDacScreen(
     jcallyJm12ConnectionState: Kt02h20ConnectionState,
     blackPearlHardwareEqState: HardwareEqSnapshotState,
     blackPearlHardwareEqMatch: HardwareEqMatchResolution?,
+    blackPearlEditorState: MyDacEditorUiState,
     onConnectDac: (DacDeviceId) -> Unit,
+    onOpenBlackPearlEditor: () -> Unit,
+    onCloseBlackPearlEditor: () -> Unit,
+    onSelectBlackPearlEditorBand: (Int) -> Unit,
+    onShowBlackPearlEditorAllBands: () -> Unit,
+    onShowBlackPearlEditorReview: () -> Unit,
+    onUpdateBlackPearlEditorBand: (Int, EqFilterType, Double, Double, Double) -> Unit,
+    onUseSafeBlackPearlEditorGain: () -> Unit,
+    onResetBlackPearlEditorLocalEdits: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val recognized = recognitionState.recognizedDeviceIds.sortedBy(DacDeviceId::ordinal)
@@ -88,7 +99,10 @@ fun MyDacScreen(
             Text(stringResource(R.string.my_dac_choose_device))
             recognized.forEach { deviceId ->
                 TextButton(
-                    onClick = { selectedDeviceName = deviceId.name },
+                    onClick = {
+                        onCloseBlackPearlEditor()
+                        selectedDeviceName = deviceId.name
+                    },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(deviceLabel(deviceId))
@@ -152,17 +166,42 @@ fun MyDacScreen(
             )
             Tab(
                 selected = selectedTabIndex == 1,
-                onClick = { selectedTabIndex = 1 },
+                onClick = {
+                    onCloseBlackPearlEditor()
+                    selectedTabIndex = 1
+                },
                 text = { Text(stringResource(R.string.my_dac_tab_device)) },
             )
         }
 
         when (selectedTabIndex) {
             0 -> when (selectedDevice) {
-                DacDeviceId.TRN_BLACK_PEARL -> BlackPearlEqStatus(
-                    snapshotState = blackPearlHardwareEqState,
-                    matchResolution = blackPearlHardwareEqMatch,
-                )
+                DacDeviceId.TRN_BLACK_PEARL -> {
+                    if (
+                        blackPearlEditorState.isOpening ||
+                        blackPearlEditorState.isOpen ||
+                        blackPearlEditorState.error != null
+                    ) {
+                        BlackPearlEqEditorScreen(
+                            state = blackPearlEditorState,
+                            onRetryOpen = onOpenBlackPearlEditor,
+                            onClose = onCloseBlackPearlEditor,
+                            onSelectBand = onSelectBlackPearlEditorBand,
+                            onShowAllBands = onShowBlackPearlEditorAllBands,
+                            onShowReview = onShowBlackPearlEditorReview,
+                            onUpdateBand = onUpdateBlackPearlEditorBand,
+                            onUseSafeGain = onUseSafeBlackPearlEditorGain,
+                            onResetEdits = onResetBlackPearlEditorLocalEdits,
+                        )
+                    } else {
+                        BlackPearlEqStatus(
+                            snapshotState = blackPearlHardwareEqState,
+                            matchResolution = blackPearlHardwareEqMatch,
+                            canEdit = blackPearlConnectionState is BlackPearlConnectionState.Connected,
+                            onEdit = onOpenBlackPearlEditor,
+                        )
+                    }
+                }
                 DacDeviceId.FIIO_JA11,
                 DacDeviceId.JCALLY_JM12_STOCK,
                 -> Text(stringResource(R.string.my_dac_hardware_pending_eq))
@@ -209,6 +248,8 @@ internal fun hasMyDacConnectionError(
 private fun BlackPearlEqStatus(
     snapshotState: HardwareEqSnapshotState,
     matchResolution: HardwareEqMatchResolution?,
+    canEdit: Boolean,
+    onEdit: () -> Unit,
 ) {
     if (snapshotState.isReading) {
         Text(stringResource(R.string.my_dac_reading_eq))
@@ -299,6 +340,14 @@ private fun BlackPearlEqStatus(
     }
     bundle.snapshot.playbackGainDb?.let { gainDb ->
         Text(stringResource(R.string.my_dac_playback_gain, gainDb))
+    }
+
+    Button(
+        onClick = onEdit,
+        enabled = canEdit,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text(stringResource(R.string.my_dac_action_edit_eq))
     }
 }
 
