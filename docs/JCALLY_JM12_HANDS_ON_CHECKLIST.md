@@ -1,19 +1,27 @@
 # JCALLY JM12 stock-firmware v0.5 hands-on qualification
 
-Status: **PENDING**
+Status: **HARDWARE VALIDATION PENDING**
 
 Run this checklist only against the exact candidate APK/commit recorded below, using the primary Pixel 9 and a JCALLY JM12 on **stock firmware**. Do not cross-flash FiiO firmware and do not enter bootloader/update mode.
 
 ## Candidate record
 
 - App version: `v0.5.0` candidate
-- Commit SHA: `TBD`
-- APK/signing identity: `TBD`
+- Candidate source commit SHA: `30535bd3b1bce9940d23e8735d88a4d9b6a9a4ef`
+- Signed APK: `EQ-Library-v0.5.0-beta-30535bd.apk`
+- Signed APK SHA-256: `5a2d4ff47097b1ba37b6bd625a4bfd3de444bf1895d4c0d0484fa2075adea042`
+- Signer certificate SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747` (matches repository pin)
+- Signer: `CN=OPRA EQ for UAPP, O=weekssa`; RSA 4096; APK Signature Scheme v2/v3 verified; one signer
+- Signed-beta workflow: **Signed EQ Library Beta Candidate** run #691, run ID `34295020653`
+- GitHub Actions artifact: ID `10082967650`, `EQ-Library-signed-beta-30535bd3b1bce9940d23e8735d88a4d9b6a9a4ef`
+- Artifact ZIP SHA-256: `c55d7b53e7b355e85a5b54b2b9a0da6925448c35563f85796605885ad6de91c3`
 - Pixel 9 Android version/build: `TBD`
 - JM12 stock firmware/device version: `TBD`
 - Date: `TBD`
-- Result: `PENDING`
+- Result: **PENDING — Hardware validation pending**
 - Power-cycle persistence result: `TBD`
+
+The signed APK identity above is the pinned software/signing candidate for this hands-on gate. Later documentation-only commits do not change this APK; if any Android/device/DSP behavior changes before testing, generate and pin a new exact signed candidate instead of reusing this record.
 
 ## STOP conditions
 
@@ -142,4 +150,4 @@ Do not change UI/release wording to “saved to device” unless this exact test
 
 Record **PASS** only when all applicable live-write, safety, identity, gain-tracking, reset, and regression steps pass on the exact candidate and Android CI/unit/lint/build gates are green.
 
-Power-cycle persistence is a separately recorded fact. A JM12 hardware PASS does not by itself authorize claiming persistent Save unless section 8 specifically records **PERSISTS**.
+Power-cycle persistence is a separately recorded fact. A JM12 hardware PASS does not by itself authorize claiming persistent Save unless section 8 specifically records **PERSISTS**. Until this checklist reaches PASS, JCALLY JM12 remains **Hardware validation pending**.
