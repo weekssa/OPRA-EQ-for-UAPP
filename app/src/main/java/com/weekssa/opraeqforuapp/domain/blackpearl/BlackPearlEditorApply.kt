@@ -124,7 +124,7 @@ internal class BlackPearlEditorApplier(
         val eqReports = if (filtersChanged) {
             runCatching {
                 BlackPearlProtocol.flashSequence(
-                    bands = orderedWorking.map(HardwareEqFilter::toProtocolBand),
+                    bands = orderedWorking.map { filter -> filter.toProtocolBand() },
                     activeSlot = slotByte,
                 )
             }.getOrElse { error ->
