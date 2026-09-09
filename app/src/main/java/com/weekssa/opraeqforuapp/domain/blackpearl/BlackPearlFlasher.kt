@@ -1,11 +1,13 @@
 package com.weekssa.opraeqforuapp.domain.blackpearl
 
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditWorkingCopy
 import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
 
 interface BlackPearlTransport {
     suspend fun readActiveSlot(): Byte?
     suspend fun readGlobalGainRaw(): Int?
+    suspend fun readNativeBand(index: Int): BlackPearlReadCodec.NativeBand? = null
     suspend fun sendReport(report: ByteArray): Boolean
 }
 
@@ -41,6 +43,19 @@ class BlackPearlFlasher(
      */
     fun readTrackedAppliedPlaybackGainDb(): Double =
         BlackPearlProtocol.rawDeltaToGainDb(gainStateStore.readAppliedGainDeltaRaw())
+
+    suspend fun applyEditorWorkingCopy(
+        workingCopy: HardwareEqEditWorkingCopy,
+        allowCautions: Boolean,
+        isSessionCurrent: (Long) -> Boolean,
+    ): BlackPearlEditorApplyResult = BlackPearlEditorApplier(
+        transport = transport,
+        gainStateStore = gainStateStore,
+    ).apply(
+        workingCopy = workingCopy,
+        allowCautions = allowCautions,
+        isSessionCurrent = isSessionCurrent,
+    )
 
     suspend fun flash(profile: OpraEqProfile): BlackPearlFlashResult {
         val activeSlot = transport.readActiveSlot()
