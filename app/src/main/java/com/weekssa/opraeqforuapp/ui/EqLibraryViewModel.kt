@@ -28,6 +28,7 @@ import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlHardwareEqMatchReso
 import com.weekssa.opraeqforuapp.domain.blackpearl.buildBlackPearlMyEqsCandidates
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqPreset
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
+import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
 import com.weekssa.opraeqforuapp.domain.dac.DacRecognitionState
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqMatchResolution
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
@@ -259,6 +260,20 @@ class EqLibraryViewModel(
 
     fun onAppResumed() {
         viewModelScope.launch { refreshCatalogIfDue() }
+    }
+
+    /**
+     * My DAC session access is intentionally independent from the global output selector and Direct
+     * Flash toggles. It opens/requests Android USB access only for an exact supported DAC that is
+     * physically present now; no EQ or device-control write is issued here.
+     */
+    fun connectDacForMyDac(deviceId: DacDeviceId) {
+        if (deviceId !in hardwareRepository.recognitionState.value.presentDeviceIds) return
+        when (deviceId) {
+            DacDeviceId.TRN_BLACK_PEARL -> hardwareRepository.connectBlackPearl()
+            DacDeviceId.FIIO_JA11 -> hardwareRepository.connectFiioJa11()
+            DacDeviceId.JCALLY_JM12_STOCK -> hardwareRepository.connectJcallyJm12()
+        }
     }
 
     fun connectBlackPearl() {
