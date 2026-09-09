@@ -70,6 +70,15 @@ class MainActivity : ComponentActivity() {
 
     private fun createUiActions(): EqLibraryActions = EqLibraryActions(
         onConnectDacForMyDac = viewModel::connectDacForMyDac,
+        onOpenBlackPearlEditor = viewModel::openBlackPearlEditor,
+        onBackMyDacEditor = viewModel::backMyDacEditor,
+        onCloseMyDacEditor = viewModel::closeMyDacEditor,
+        onSelectBlackPearlEditorBand = viewModel::selectBlackPearlEditorBand,
+        onShowBlackPearlEditorAllBands = viewModel::showBlackPearlEditorAllBands,
+        onShowBlackPearlEditorReview = viewModel::showBlackPearlEditorReview,
+        onUpdateBlackPearlEditorBand = viewModel::updateBlackPearlEditorBand,
+        onUseSafeBlackPearlEditorGain = viewModel::useSafeBlackPearlEditorGain,
+        onResetBlackPearlEditorLocalEdits = viewModel::resetBlackPearlEditorLocalEdits,
         onConnectBlackPearl = viewModel::connectBlackPearl,
         onResetBlackPearl = {
             resolve(viewModel.resetBlackPearlToFlat())
