@@ -4,6 +4,7 @@ import com.google.common.truth.Truth.assertThat
 import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.dac.AmbiguousExactHardwareEqMatch
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqMatch
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqMatcher
 import com.weekssa.opraeqforuapp.domain.dac.SavedHardwareEqIdentity
 import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
@@ -79,6 +80,32 @@ class BlackPearlSavedEqRepresentationTest {
     }
 
     @Test
+    fun resolverDeduplicatesSameSavedIdentityAndRetainsTargetMetadata() {
+        val profile = profile(
+            id = "canonical-eq",
+            bands = listOf(OpraBand("peak_dip", 1000.4, 1.234, 0.777, null)),
+        )
+        val actual = ready(profile).fingerprint
+        val identity = SavedHardwareEqIdentity("canonical:canonical-eq", "Headphone · Creator")
+
+        val resolution = BlackPearlHardwareEqMatchResolver.resolve(
+            actual = actual,
+            candidates = listOf(
+                BlackPearlSavedEqCandidate(identity, profile),
+                // The same canonical profile may also be present as a Favorite in My EQs.
+                BlackPearlSavedEqCandidate(identity, profile),
+            ),
+        )
+
+        assertThat(resolution.match).isEqualTo(HardwareEqMatch.Exact(identity))
+        assertThat(resolution.savedRepresentations).hasSize(1)
+        val saved = resolution.savedRepresentations.single()
+        assertThat(saved.fidelity).isEqualTo(DevicePresetFidelity.OPTIMIZED)
+        assertThat(saved.adaptationSummary).contains("native hardware rounding")
+        assertThat(saved.representationVersion).isGreaterThan(0)
+    }
+
+    @Test
     fun unsupportedSavedProfileCannotEnterNativeMatchSet() {
         val result = BlackPearlSavedEqRepresentationDeriver.derive(
             profile(
@@ -87,6 +114,33 @@ class BlackPearlSavedEqRepresentationTest {
         )
 
         assertThat(result).isInstanceOf(BlackPearlSavedEqRepresentationResult.NotRepresentable::class.java)
+    }
+
+    @Test
+    fun resolverExcludesUnsupportedCandidateInsteadOfAttachingItsMetadata() {
+        val actual = ready(
+            profile(
+                id = "actual-source",
+                bands = listOf(OpraBand("peak_dip", 1000.0, 2.0, 1.0, null)),
+            ),
+        ).fingerprint
+        val unsupported = profile(
+            id = "unsupported",
+            bands = listOf(OpraBand("band_pass", 1000.0, 1.0, 1.0, null)),
+        )
+
+        val resolution = BlackPearlHardwareEqMatchResolver.resolve(
+            actual = actual,
+            candidates = listOf(
+                BlackPearlSavedEqCandidate(
+                    SavedHardwareEqIdentity("unsupported", "Unsupported source"),
+                    unsupported,
+                ),
+            ),
+        )
+
+        assertThat(resolution.match).isSameInstanceAs(HardwareEqMatch.Unknown)
+        assertThat(resolution.savedRepresentations).isEmpty()
     }
 
     @Test
