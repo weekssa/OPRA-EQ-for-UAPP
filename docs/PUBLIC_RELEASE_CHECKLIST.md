@@ -67,7 +67,7 @@ Catalog/currentness/community workflows are path-scoped. PR #6 changes no catalo
 
 ## v0.5.0 release gate
 
-Status: **signed candidate provenance pinned; Black Pearl qualified; JA11/JM12 hardware validation pending; public release not yet authorized**.
+Status: **signed candidate provenance pinned; Black Pearl qualified; JA11/JM12 hardware validation pending and explicitly deferred/non-blocking for v0.5.0; public release not yet authorized pending release closeout**.
 
 ### Product/source state
 
@@ -105,10 +105,10 @@ For candidate source `30535bd3b1bce9940d23e8735d88a4d9b6a9a4ef`:
 - [x] TRN Black Pearl destructive/fidelity/persistence regression passed on signed behavior candidate `34a9cd819466cb301456c052eecadb02e6271e5e` / APK SHA-256 `b03bf244473b8640011718c0918c7ee7b6a2d7f4aa1483817d72660c70f8a43f` on Pixel 9.
 - [x] The informational Black Pearl Reset-result wording correction was followed by the focused confirmation required by `docs/BLACK_PEARL_V0.5_REGRESSION.md`; result **PASS**. Black Pearl v0.5 hardware/DSP qualification is complete.
 - [x] The later `30535bd3...` architecture candidate preserves device/DSP/conversion behavior and passed the exact signed/automated gates above, so the completed Black Pearl qualification remains valid through this documentation-only release closeout.
-- [ ] FiiO JA11 hands-on qualification is complete. **Current status: Hardware validation pending.** Its exact signed candidate is pinned in `docs/FIIO_JA11_HANDS_ON_CHECKLIST.md`.
-- [ ] Stock JCALLY JM12 hands-on qualification is complete. **Current status: Hardware validation pending.** Its exact signed candidate is pinned in `docs/JCALLY_JM12_HANDS_ON_CHECKLIST.md`; power-cycle persistence remains unclaimed until physically established.
+- [ ] FiiO JA11 hands-on qualification is complete. **Current status: Hardware validation pending — deferred to the next incremental release; not a v0.5.0 publication blocker.**
+- [ ] Stock JCALLY JM12 hands-on qualification is complete. **Current status: Hardware validation pending — deferred to the next incremental release; not a v0.5.0 publication blocker.** Power-cycle persistence remains unclaimed until physically established.
 
-JA11/JM12 pending status does not invalidate the qualified Black Pearl path, but v0.5 release/in-app wording must not imply that either pending target has passed hardware validation.
+JA11/JM12 are intentionally shipping, if v0.5.0 is published, as **implemented but not hardware-qualified** outputs. Their pending status does not invalidate the qualified Black Pearl path and does not block v0.5.0. Release/in-app wording must continue to state their pending status accurately. When the devices arrive, refresh their hands-on records to the exact signed candidate for the next incremental release before physical qualification.
 
 ### Remaining release closeout
 

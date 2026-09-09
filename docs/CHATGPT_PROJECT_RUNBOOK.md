@@ -248,7 +248,9 @@ Major user-facing features require UX/behavior approval before implementation. F
 - confirmation states Exact/Optimized representation, playback/global gain implications, persistence semantics, and any device-specific caution;
 - unrelated DAC settings must remain untouched.
 
-Final hardware support requires the exact-candidate Pixel 9 hands-on gate. Do not remove **Hardware validation pending** or make stable-release qualification claims before the applicable checklist passes.
+Physical qualification of a hardware target requires the exact-candidate Pixel 9 hands-on gate. Do not remove **Hardware validation pending** or make hardware-qualified/persistence claims before the applicable checklist passes.
+
+**v0.5 release decision:** FiiO JA11 and stock JCALLY JM12 physical qualification is explicitly deferred to the next incremental release because the hardware is not yet available. Their pending status is **not a blocker for v0.5.0 publication**. v0.5.0 may include the implemented outputs only while their in-app/release wording continues to say **Hardware validation pending**, and JM12 persistence remains unclaimed. When the devices arrive, refresh each hands-on record to the exact signed candidate for that incremental release before running physical qualification.
 
 ## 15. Export, import targets, and storage
 

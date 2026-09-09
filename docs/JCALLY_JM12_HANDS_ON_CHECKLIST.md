@@ -1,10 +1,10 @@
-# JCALLY JM12 stock-firmware v0.5 hands-on qualification
+# JCALLY JM12 stock-firmware hands-on qualification
 
-Status: **HARDWARE VALIDATION PENDING**
+Status: **HARDWARE VALIDATION PENDING — DEFERRED TO NEXT INCREMENTAL RELEASE**
 
-Run this checklist only against the exact candidate APK/commit recorded below, using the primary Pixel 9 and a JCALLY JM12 on **stock firmware**. Do not cross-flash FiiO firmware and do not enter bootloader/update mode.
+This physical gate is explicitly **not a v0.5.0 publication blocker** because the stock JM12 hardware is not yet available. Keep the shipped/in-app status **Hardware validation pending**, and do not claim power-cycle persistence. When the hardware arrives, run this checklist against the exact signed candidate for the next incremental release being qualified; do not automatically reuse the historical v0.5.0 candidate below.
 
-## Candidate record
+## Historical v0.5.0 software candidate record
 
 - App version: `v0.5.0` candidate
 - Candidate source commit SHA: `30535bd3b1bce9940d23e8735d88a4d9b6a9a4ef`
@@ -18,10 +18,10 @@ Run this checklist only against the exact candidate APK/commit recorded below, u
 - Pixel 9 Android version/build: `TBD`
 - JM12 stock firmware/device version: `TBD`
 - Date: `TBD`
-- Result: **PENDING — Hardware validation pending**
+- Result: **PENDING — Hardware validation pending / deferred**
 - Power-cycle persistence result: `TBD`
 
-The signed APK identity above is the pinned software/signing candidate for this hands-on gate. Later documentation-only commits do not change this APK; if any Android/device/DSP behavior changes before testing, generate and pin a new exact signed candidate instead of reusing this record.
+The record above documents the v0.5.0 software/signing state only. Before deferred physical qualification begins, replace or supplement it with the exact source SHA, signed APK/hash, signer verification, device/build/date, and workflow/artifact identity for the incremental release candidate actually being tested. Any Android/device/DSP behavior change always requires a new exact candidate.
 
 ## STOP conditions
 
@@ -114,7 +114,7 @@ If a physical mid-transfer disconnect cannot be induced safely, exact-head trans
 
 ## 8. Power-cycle persistence — decisive open question
 
-This section determines what v0.5 may claim publicly.
+This section determines what a future qualified release may claim publicly.
 
 1. Flash a distinctive verified preset.
 2. Confirm live readback matches.
@@ -148,6 +148,6 @@ Do not change UI/release wording to “saved to device” unless this exact test
 
 ## Final gate
 
-Record **PASS** only when all applicable live-write, safety, identity, gain-tracking, reset, and regression steps pass on the exact candidate and Android CI/unit/lint/build gates are green.
+Record **PASS** only when all applicable live-write, safety, identity, gain-tracking, reset, and regression steps pass on the exact signed candidate for the incremental release being qualified and its Android CI/unit/lint/build gates are green.
 
-Power-cycle persistence is a separately recorded fact. A JM12 hardware PASS does not by itself authorize claiming persistent Save unless section 8 specifically records **PERSISTS**. Until this checklist reaches PASS, JCALLY JM12 remains **Hardware validation pending**.
+Power-cycle persistence is a separately recorded fact. A JM12 hardware PASS does not by itself authorize claiming persistent Save unless section 8 specifically records **PERSISTS**. Until this future checklist reaches PASS, JCALLY JM12 remains **Hardware validation pending**; this pending state does not block v0.5.0 publication.

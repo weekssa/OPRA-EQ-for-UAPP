@@ -1,10 +1,10 @@
-# FiiO JA11 v0.5 hands-on qualification
+# FiiO JA11 hands-on qualification
 
-Status: **HARDWARE VALIDATION PENDING**
+Status: **HARDWARE VALIDATION PENDING — DEFERRED TO NEXT INCREMENTAL RELEASE**
 
-Run this checklist only against the exact candidate APK/commit recorded below. Use the primary Pixel 9 test device and a FiiO JA11 on normal FiiO firmware. Do not use firmware-update mode.
+This physical gate is explicitly **not a v0.5.0 publication blocker** because the JA11 hardware is not yet available. Keep the shipped/in-app status **Hardware validation pending**. When the hardware arrives, run this checklist against the exact signed candidate for the next incremental release being qualified; do not automatically reuse the historical v0.5.0 candidate below.
 
-## Candidate record
+## Historical v0.5.0 software candidate record
 
 - App version: `v0.5.0` candidate
 - Candidate source commit SHA: `30535bd3b1bce9940d23e8735d88a4d9b6a9a4ef`
@@ -18,9 +18,9 @@ Run this checklist only against the exact candidate APK/commit recorded below. U
 - Pixel 9 Android version/build: `TBD`
 - JA11 firmware: `TBD` (current public FiiO release should be checked before qualification)
 - Date: `TBD`
-- Result: **PENDING — Hardware validation pending**
+- Result: **PENDING — Hardware validation pending / deferred**
 
-The signed APK identity above is the pinned software/signing candidate for this hands-on gate. Later documentation-only commits do not change this APK; if any Android/device/DSP behavior changes before testing, generate and pin a new exact signed candidate instead of reusing this record.
+The record above documents the v0.5.0 software/signing state only. Before deferred physical qualification begins, replace or supplement it with the exact source SHA, signed APK/hash, signer verification, device/build/date, and workflow/artifact identity for the incremental release candidate actually being tested. Any Android/device/DSP behavior change always requires a new exact candidate.
 
 ## STOP conditions
 
@@ -145,4 +145,6 @@ Mid-transfer cases that cannot be safely induced are acceptable only when their 
 
 ## Final gate
 
-Record **PASS** only when all applicable steps above pass on the exact candidate and Android CI/unit/lint/build gates are green. Then update this file with the device/build/date/result before removing **Hardware validation pending** for FiiO JA11.
+Record **PASS** only when all applicable steps above pass on the exact signed candidate for the incremental release being qualified and its Android CI/unit/lint/build gates are green. Then update this file with the device/build/date/result before removing **Hardware validation pending** for FiiO JA11.
+
+Until that future PASS, JA11 remains explicitly implemented-but-unqualified; this pending state does not block v0.5.0 publication.
