@@ -165,7 +165,7 @@ data class HardwareEqEditWorkingCopy(
     /**
      * Headroom mechanism state at editor entry. For a dedicated EQ preamp this is actual readback;
      * for Black Pearl it is the app-owned tracked EQ Library playback-gain delta supplied separately
-     * from the absolute DAC playback volume.
+     * from the absolute DAC playback volume. Either baseline may legitimately be positive or negative.
      */
     val baselineHeadroomGainDb: Double?,
     /** Local planned headroom value. This remains local until a later explicit Apply transaction. */
@@ -180,11 +180,11 @@ data class HardwareEqEditWorkingCopy(
         require(filters.map(HardwareEqFilter::index).toSet() == baselineSnapshot.filters.map(HardwareEqFilter::index).toSet()) {
             "Local editor must preserve the baseline hardware band layout."
         }
-        require(headroomGainIsValidForMechanism(baselineHeadroomGainDb, headroomMechanism)) {
-            "Baseline headroom gain is invalid for the selected hardware mechanism."
+        require(baselineHeadroomGainDb == null || baselineHeadroomGainDb.isFinite()) {
+            "Baseline headroom gain must be finite."
         }
-        require(headroomGainIsValidForMechanism(plannedHeadroomGainDb, headroomMechanism)) {
-            "Planned headroom gain is invalid for the selected hardware mechanism."
+        require(plannedHeadroomGainDb == null || plannedHeadroomGainDb.isFinite()) {
+            "Planned headroom gain must be finite."
         }
     }
 
@@ -229,11 +229,8 @@ object HardwareEqEditor {
         ) {
             "A tracked playback-gain delta is valid only for that headroom mechanism."
         }
-        require(
-            trackedPlaybackGainDeltaDb == null ||
-                trackedPlaybackGainDeltaDb.isFinite() && trackedPlaybackGainDeltaDb <= 0.0,
-        ) {
-            "Tracked EQ Library playback-gain delta must be finite and non-positive."
+        require(trackedPlaybackGainDeltaDb == null || trackedPlaybackGainDeltaDb.isFinite()) {
+            "Tracked EQ Library playback-gain delta must be finite."
         }
 
         val baselineHeadroomGainDb = when (spec.headroomMechanism) {
@@ -484,15 +481,6 @@ object HardwareEqEditor {
     }
 
     private fun sameDouble(left: Double, right: Double): Boolean = abs(left - right) <= DIFFERENCE_EPSILON
-}
-
-private fun headroomGainIsValidForMechanism(
-    value: Double?,
-    mechanism: HardwareEqHeadroomMechanism,
-): Boolean {
-    if (value == null) return true
-    if (!value.isFinite()) return false
-    return mechanism != HardwareEqHeadroomMechanism.TRACKED_PLAYBACK_GAIN_DELTA || value <= 0.0
 }
 
 private fun sameNullableDouble(left: Double?, right: Double?): Boolean = when {
