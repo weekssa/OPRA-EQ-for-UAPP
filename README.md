@@ -173,6 +173,7 @@ The application source code, tests, and project documentation are licensed under
 
 - [CHANGELOG.md](CHANGELOG.md) — release history and notable changes
 - [docs/releases/v0.5.0.md](docs/releases/v0.5.0.md) — prepared v0.5.0 release notes
+- [docs/V0.5_HANDS_ON_RELEASE_CHECKLIST.md](docs/V0.5_HANDS_ON_RELEASE_CHECKLIST.md) — Pixel 9 v0.5 release-candidate hands-on checklist
 - [docs/releases/v0.4.0.md](docs/releases/v0.4.0.md) — v0.4.0 release notes
 - [docs/releases/v0.3.0.md](docs/releases/v0.3.0.md) — v0.3.0 release notes
 - [PRIVACY.md](PRIVACY.md) — public privacy policy
