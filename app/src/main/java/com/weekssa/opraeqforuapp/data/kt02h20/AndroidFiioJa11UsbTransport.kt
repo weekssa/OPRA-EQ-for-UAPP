@@ -18,6 +18,8 @@ class AndroidFiioJa11UsbTransport(
     )
 
     val state: StateFlow<Kt02h20ConnectionState> = hid.state
+    val sessionGeneration: Long
+        get() = hid.sessionGeneration
 
     fun connect() = hid.connect()
 
