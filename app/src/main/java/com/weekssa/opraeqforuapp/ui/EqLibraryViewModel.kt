@@ -24,8 +24,11 @@ import com.weekssa.opraeqforuapp.data.update.AppUpdateCheckResult
 import com.weekssa.opraeqforuapp.data.update.AppUpdateCoordinator
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlashResult
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlatResetResult
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlHardwareEqMatchResolver
+import com.weekssa.opraeqforuapp.domain.blackpearl.buildBlackPearlMyEqsCandidates
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqPreset
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqMatchResolution
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
@@ -74,6 +77,7 @@ private data class HardwareConnectionUiState(
     val fiioJa11: Kt02h20ConnectionState,
     val jcallyJm12: Kt02h20ConnectionState,
     val blackPearlHardwareEqState: HardwareEqSnapshotState,
+    val blackPearlHardwareEqMatch: HardwareEqMatchResolution?,
 )
 
 data class EqLibraryUiState(
@@ -87,6 +91,7 @@ data class EqLibraryUiState(
     val fiioJa11ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
     val jcallyJm12ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
     val blackPearlHardwareEqState: HardwareEqSnapshotState = HardwareEqSnapshotState(),
+    val blackPearlHardwareEqMatch: HardwareEqMatchResolution? = null,
 )
 
 class EqLibraryViewModel(
@@ -129,6 +134,41 @@ class EqLibraryViewModel(
         initialValue = LibraryDataState(),
     )
 
+    /**
+     * My DAC matching intentionally reads the connected device's own output-specific My EQs state.
+     * It must not follow or silently switch the user's separate global active-output context.
+     */
+    private val blackPearlLibraryData = combine(
+        managedHeadphonesRepository.observeHeadphones(ExportDevice.BLACK_PEARL.name),
+        savedEqRepository.observeForOutput(ExportDevice.BLACK_PEARL.name),
+        savedGeneralEqRepository.observeForOutput(ExportDevice.BLACK_PEARL.name),
+    ) { managedHeadphones, savedEqs, savedGeneralEqs ->
+        LibraryDataState(
+            outputId = ExportDevice.BLACK_PEARL.name,
+            managedHeadphones = managedHeadphones,
+            savedEqs = savedEqs,
+            savedGeneralEqs = savedGeneralEqs,
+        )
+    }
+
+    private val blackPearlHardwareEqMatch = combine(
+        hardwareRepository.blackPearlSnapshotState,
+        blackPearlLibraryData,
+    ) { snapshotState, library -> snapshotState to library }
+        .mapLatest { (snapshotState, library) ->
+            val actual = snapshotState.bundle?.fingerprint ?: return@mapLatest null
+            withContext(computationDispatcher) {
+                BlackPearlHardwareEqMatchResolver.resolve(
+                    actual = actual,
+                    candidates = buildBlackPearlMyEqsCandidates(
+                        managedHeadphones = library.managedHeadphones,
+                        savedEqs = library.savedEqs,
+                        savedGeneralEqs = library.savedGeneralEqs,
+                    ),
+                )
+            }
+        }
+
     private val exportCurrentness = combine(
         preferencesRepository.preferences,
         libraryData,
@@ -160,12 +200,14 @@ class EqLibraryViewModel(
         hardwareRepository.fiioJa11ConnectionState,
         hardwareRepository.jcallyJm12ConnectionState,
         hardwareRepository.blackPearlSnapshotState,
-    ) { blackPearl, fiioJa11, jcallyJm12, blackPearlHardwareEqState ->
+        blackPearlHardwareEqMatch,
+    ) { blackPearl, fiioJa11, jcallyJm12, blackPearlHardwareEqState, blackPearlMatch ->
         HardwareConnectionUiState(
             blackPearl = blackPearl,
             fiioJa11 = fiioJa11,
             jcallyJm12 = jcallyJm12,
             blackPearlHardwareEqState = blackPearlHardwareEqState,
+            blackPearlHardwareEqMatch = blackPearlMatch,
         )
     }
 
@@ -192,6 +234,7 @@ class EqLibraryViewModel(
             fiioJa11ConnectionState = hardware.fiioJa11,
             jcallyJm12ConnectionState = hardware.jcallyJm12,
             blackPearlHardwareEqState = hardware.blackPearlHardwareEqState,
+            blackPearlHardwareEqMatch = hardware.blackPearlHardwareEqMatch,
         )
     }.stateIn(
         scope = viewModelScope,
