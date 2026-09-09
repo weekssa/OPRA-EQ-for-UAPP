@@ -7,6 +7,7 @@ import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlashResult
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlatResetResult
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlasher
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
+import com.weekssa.opraeqforuapp.domain.dac.DacRecognitionState
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotBundle
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Flasher
@@ -30,10 +31,11 @@ import kotlinx.coroutines.sync.withLock
 /**
  * Repository boundary for deterministic hardware-EQ transactions and verified native EQ reads.
  *
- * Physical USB-session lifecycle belongs to [DacSessionRepository]. This repository serializes each
- * device's multi-step EQ reads/writes so a snapshot cannot interleave with a Flash/Reset transaction.
- * Black Pearl publishes the most recently verified native snapshot with explicit current/stale state;
- * the other two devices keep their existing v0.5 behavior until their My DAC exposure is qualified.
+ * Physical USB-session lifecycle and read-only supported-device recognition belong to
+ * [DacSessionRepository]. This repository serializes each device's multi-step EQ reads/writes so a
+ * snapshot cannot interleave with a Flash/Reset transaction. Black Pearl publishes the most recently
+ * verified native snapshot with explicit current/stale state; the other two devices keep their
+ * existing v0.5 behavior until their My DAC exposure is qualified.
  */
 class HardwareEqRepository(
     private val dacSessionRepository: DacSessionRepository,
@@ -41,6 +43,7 @@ class HardwareEqRepository(
     private val fiioJa11Flasher: FiioJa11Flasher,
     private val jcallyJm12Flasher: JcallyJm12Flasher,
 ) : Closeable {
+    val recognitionState: StateFlow<DacRecognitionState> = dacSessionRepository.recognitionState
     val blackPearlConnectionState: StateFlow<BlackPearlConnectionState> =
         dacSessionRepository.blackPearlConnectionState
     val fiioJa11ConnectionState: StateFlow<Kt02h20ConnectionState> =
