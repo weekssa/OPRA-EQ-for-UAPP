@@ -45,6 +45,8 @@ class AndroidBlackPearlUsbTransport(
     private val usbMutex = Mutex()
     private val mutableState = MutableStateFlow<BlackPearlConnectionState>(BlackPearlConnectionState.Disconnected)
     val state: StateFlow<BlackPearlConnectionState> = mutableState.asStateFlow()
+    private val mutablePresent = MutableStateFlow(false)
+    val present: StateFlow<Boolean> = mutablePresent.asStateFlow()
 
     @Volatile
     private var session: UsbSession? = null
@@ -73,10 +75,12 @@ class AndroidBlackPearlUsbTransport(
                     }
                 }
                 UsbManager.ACTION_USB_DEVICE_DETACHED -> {
+                    mutablePresent.value = false
                     closeSession()
                     mutableState.value = BlackPearlConnectionState.Disconnected
                 }
                 UsbManager.ACTION_USB_DEVICE_ATTACHED -> {
+                    mutablePresent.value = true
                     if (mutableState.value is BlackPearlConnectionState.Connecting && usbManager.hasPermission(device)) {
                         openAsync(device)
                     }
@@ -87,16 +91,19 @@ class AndroidBlackPearlUsbTransport(
 
     init {
         registerReceiver()
+        mutablePresent.value = findDevice() != null
     }
 
     fun connect() {
         val device = findDevice()
         if (device == null) {
+            mutablePresent.value = false
             mutableState.value = BlackPearlConnectionState.Error(
                 "TRN Black Pearl not detected. Connect the DAC by USB and try again.",
             )
             return
         }
+        mutablePresent.value = true
         if (session != null) {
             mutableState.value = BlackPearlConnectionState.Connected
             return
@@ -231,9 +238,12 @@ class AndroidBlackPearlUsbTransport(
             if (mutableState.value !is BlackPearlConnectionState.Connecting) return@launch
             val device = findDevice()
             when {
-                device == null -> mutableState.value = BlackPearlConnectionState.Error(
-                    "TRN Black Pearl disconnected while Android was requesting USB permission.",
-                )
+                device == null -> {
+                    mutablePresent.value = false
+                    mutableState.value = BlackPearlConnectionState.Error(
+                        "TRN Black Pearl disconnected while Android was requesting USB permission.",
+                    )
+                }
                 usbManager.hasPermission(device) -> openAsync(device)
                 else -> mutableState.value = BlackPearlConnectionState.Error(
                     "USB permission request timed out. Disconnect and reconnect the Black Pearl, then try again.",
