@@ -1,6 +1,7 @@
 package com.weekssa.opraeqforuapp.ui.components
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -17,6 +18,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
@@ -26,12 +28,15 @@ import com.weekssa.opraeqforuapp.domain.dac.HardwareEqResponseEvaluator
 import com.weekssa.opraeqforuapp.domain.dac.isAcousticallyActive
 import kotlin.math.ceil
 import kotlin.math.ln
+import kotlin.math.pow
+import kotlin.math.sqrt
 
 /**
- * Read-only presentation of a domain-evaluated device-native PEQ response.
+ * Presentation of a domain-evaluated device-native PEQ response.
  *
- * This component performs coordinate mapping only. It has deliberately no pointer/drag gesture and
- * no hardware callback; response/DSP authority remains in [HardwareEqResponseEvaluator].
+ * The compact usage remains read-only. The editor may opt into tap-only marker selection through
+ * [onBandSelected]. There is deliberately no drag gesture and no hardware callback; response/DSP
+ * authority remains in [HardwareEqResponseEvaluator], and a tap can only select a local band.
  */
 @Composable
 internal fun DacEqResponseGraph(
@@ -39,15 +44,22 @@ internal fun DacEqResponseGraph(
     filters: List<HardwareEqFilter>,
     accessibilityDescription: String,
     modifier: Modifier = Modifier,
+    selectedBandIndex: Int? = null,
+    onBandSelected: ((Int) -> Unit)? = null,
+    expanded: Boolean = false,
 ) {
     val curveColor = MaterialTheme.colorScheme.primary
     val markerColor = MaterialTheme.colorScheme.primary
+    val selectedMarkerColor = MaterialTheme.colorScheme.onPrimaryContainer
+    val selectedMarkerRingColor = MaterialTheme.colorScheme.primaryContainer
     val zeroReferenceColor = MaterialTheme.colorScheme.outline
     val gridColor = MaterialTheme.colorScheme.outlineVariant
     val verticalBoundDb = maxOf(
         MIN_DISPLAY_BOUND_DB,
         ceil(curve.peakAbsoluteGainDb / DISPLAY_BOUND_STEP_DB) * DISPLAY_BOUND_STEP_DB,
     )
+    val activeFilters = filters.filter(HardwareEqFilter::isAcousticallyActive)
+    val graphHeight = if (expanded) EXPANDED_GRAPH_HEIGHT else GRAPH_HEIGHT
 
     Column(
         modifier = modifier
@@ -57,18 +69,36 @@ internal fun DacEqResponseGraph(
         Canvas(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(GRAPH_HEIGHT),
+                .height(graphHeight)
+                .then(
+                    if (onBandSelected == null) {
+                        Modifier
+                    } else {
+                        Modifier.pointerInput(activeFilters, curve, verticalBoundDb) {
+                            detectTapGestures { tap ->
+                                if (activeFilters.isEmpty()) return@detectTapGestures
+                                val widthPx = size.width.toFloat()
+                                val heightPx = size.height.toFloat()
+                                val nearest = activeFilters.minByOrNull { filter ->
+                                    val markerGainDb = curve.gainDbAt(filter.frequencyHz) ?: 0.0
+                                    val marker = Offset(
+                                        x = (logarithmicFraction(filter.frequencyHz) * widthPx).toFloat(),
+                                        y = yForGain(markerGainDb, verticalBoundDb, heightPx),
+                                    )
+                                    distance(marker, tap)
+                                }
+                                nearest?.let { filter -> onBandSelected(filter.index) }
+                            }
+                        }
+                    },
+                ),
         ) {
             fun xFor(frequencyHz: Double): Float {
                 val fraction = logarithmicFraction(frequencyHz)
                 return (fraction * size.width).toFloat()
             }
 
-            fun yFor(gainDb: Double): Float {
-                val fraction = ((verticalBoundDb - gainDb) / (verticalBoundDb * 2.0))
-                    .coerceIn(0.0, 1.0)
-                return (fraction * size.height).toFloat()
-            }
+            fun yFor(gainDb: Double): Float = yForGain(gainDb, verticalBoundDb, size.height)
 
             GRID_FREQUENCIES_HZ.forEach { frequencyHz ->
                 val x = xFor(frequencyHz)
@@ -103,19 +133,31 @@ internal fun DacEqResponseGraph(
                 ),
             )
 
-            filters.asSequence()
-                .filter(HardwareEqFilter::isAcousticallyActive)
-                .forEach { filter ->
-                    val markerGainDb = curve.gainDbAt(filter.frequencyHz) ?: return@forEach
+            activeFilters.forEach { filter ->
+                val markerGainDb = curve.gainDbAt(filter.frequencyHz) ?: return@forEach
+                val center = Offset(
+                    x = xFor(filter.frequencyHz),
+                    y = yFor(markerGainDb),
+                )
+                if (filter.index == selectedBandIndex) {
+                    drawCircle(
+                        color = selectedMarkerRingColor,
+                        radius = SELECTED_MARKER_RING_RADIUS.toPx(),
+                        center = center,
+                    )
+                    drawCircle(
+                        color = selectedMarkerColor,
+                        radius = SELECTED_MARKER_RADIUS.toPx(),
+                        center = center,
+                    )
+                } else {
                     drawCircle(
                         color = markerColor,
                         radius = MARKER_RADIUS.toPx(),
-                        center = Offset(
-                            x = xFor(filter.frequencyHz),
-                            y = yFor(markerGainDb),
-                        ),
+                        center = center,
                     )
                 }
+            }
         }
 
         FrequencyLabels()
@@ -154,6 +196,15 @@ private fun logarithmicFraction(frequencyHz: Double): Double {
     return (ln(bounded / minimum) / ln(maximum / minimum)).coerceIn(0.0, 1.0)
 }
 
+private fun yForGain(gainDb: Double, verticalBoundDb: Double, heightPx: Float): Float {
+    val fraction = ((verticalBoundDb - gainDb) / (verticalBoundDb * 2.0)).coerceIn(0.0, 1.0)
+    return (fraction * heightPx).toFloat()
+}
+
+private fun distance(left: Offset, right: Offset): Float = sqrt(
+    (left.x - right.x).pow(2) + (left.y - right.y).pow(2),
+)
+
 private data class FrequencyLabel(
     val frequencyHz: Double,
     val text: String,
@@ -169,11 +220,14 @@ private val FREQUENCY_LABELS = listOf(
 private val GRID_FREQUENCIES_HZ = FREQUENCY_LABELS.map(FrequencyLabel::frequencyHz)
 
 private val GRAPH_HEIGHT = 160.dp
+private val EXPANDED_GRAPH_HEIGHT = 220.dp
 private val LABEL_HEIGHT = 24.dp
 private val LABEL_WIDTH = 40.dp
 private val GRID_STROKE_WIDTH = 1.dp
 private val ZERO_STROKE_WIDTH = 1.5.dp
 private val CURVE_STROKE_WIDTH = 2.5.dp
 private val MARKER_RADIUS = 4.dp
+private val SELECTED_MARKER_RADIUS = 5.dp
+private val SELECTED_MARKER_RING_RADIUS = 9.dp
 private const val MIN_DISPLAY_BOUND_DB = 6.0
 private const val DISPLAY_BOUND_STEP_DB = 3.0
