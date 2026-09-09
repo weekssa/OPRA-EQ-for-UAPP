@@ -14,6 +14,7 @@ Before substantive work, read this file and the current documents relevant to th
 - `docs/V0.3_RELEASE_POLISH_PLAN.md`
 - `docs/V0.5_KT02H20_IMPLEMENTATION_PLAN.md` for the current output registry, shared hardware response adapter, FiiO JA11, and stock JCALLY JM12 work
 - `docs/V0.5_IMPORT_COMPATIBILITY_NOTES.md` when file-import/export compatibility, TOPPING Tune, Black Pearl text import, or output-fidelity wording is involved
+- `docs/V0.5_HANDS_ON_RELEASE_CHECKLIST.md` for the current v0.5 Pixel 9 release-candidate hands-on phase
 - `docs/BLACK_PEARL_PROTOCOL_NOTES.md` when Black Pearl behavior is involved
 - `docs/FIIO_JA11_PROTOCOL_NOTES.md` and `docs/FIIO_JA11_HANDS_ON_CHECKLIST.md` when JA11 behavior is involved
 - `docs/JCALLY_JM12_PROTOCOL_NOTES.md` and `docs/JCALLY_JM12_HANDS_ON_CHECKLIST.md` when JM12 behavior is involved
@@ -99,7 +100,7 @@ Android runtime requirements:
 
 1. consume a validated published EQ Library catalog;
 2. validate a candidate before promotion;
-3. retain a last-known-good local cache;
+3. retain last-known-good local cache;
 4. work offline after initial successful sync;
 5. support manual Refresh;
 6. perform approximately daily background/currentness checks;
