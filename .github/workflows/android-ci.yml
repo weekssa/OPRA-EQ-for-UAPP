@@ -47,6 +47,15 @@ jobs:
       - name: Run Android lint
         run: gradle :app:lintDebug --stacktrace
 
+      - name: Upload Android lint reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: android-lint-reports
+          path: app/build/reports/lint-results-debug.*
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Assemble debug APK
         run: gradle :app:assembleDebug --stacktrace
 

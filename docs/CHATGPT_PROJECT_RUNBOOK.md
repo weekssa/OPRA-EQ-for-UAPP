@@ -1,25 +1,28 @@
 # OPRA EQ for UAPP / EQ Library — ChatGPT Project Runbook
 
-This document is the maintained operational source of truth for work on **OPRA EQ for UAPP / EQ Library**. It summarizes the current product rules and points to the detailed v0.3 foundation documents plus later approved release-specific decisions. Older behavior that has been explicitly superseded by later approved decisions must not be restored.
+This is the maintained operational source of truth for work on **OPRA EQ for UAPP / EQ Library**. Read it before substantive work. Later explicit user decisions supersede older planning text; when that happens, update this runbook in the same workstream rather than restoring obsolete behavior.
 
-If a later explicit user decision conflicts with this file, the later user decision wins and this runbook must be updated in the same workstream.
+## 1. Mandatory reading
 
-## 1. Mandatory reading before substantive work
-
-At the start of substantive work, read this file and then the current detailed sources of truth:
+Before substantive work, read this file and the current documents relevant to the task:
 
 - `docs/ARCHITECTURE.md`
 - `docs/PHASE1_DECISIONS.md`
 - `docs/SOURCE_INGESTION_STRATEGY.md`
-- `docs/FUTURE_SOURCE_AUTOMATION_PLAN.md` for the current source-expansion/currentness operating model and closeout criteria
+- `docs/FUTURE_SOURCE_AUTOMATION_PLAN.md`
 - `docs/V0.3_LOCKED_EXECUTION_PLAN.md`
-- `docs/V0.3_RELEASE_POLISH_PLAN.md` for the final v0.3.0 foundation/release-polish record
+- `docs/V0.3_RELEASE_POLISH_PLAN.md`
+- `docs/V0.5_KT02H20_IMPLEMENTATION_PLAN.md` for the current output registry, shared hardware response adapter, FiiO JA11, and stock JCALLY JM12 work
+- `docs/V0.5_IMPORT_COMPATIBILITY_NOTES.md` when file-import/export compatibility, TOPPING Tune, Black Pearl text import, or output-fidelity wording is involved
+- `docs/V0.5_HANDS_ON_RELEASE_CHECKLIST.md` for the current v0.5 Pixel 9 release-candidate hands-on phase
 - `docs/BLACK_PEARL_PROTOCOL_NOTES.md` when Black Pearl behavior is involved
-- `docs/V0.3_HANDS_ON_CHECKLIST.md` for the v0.3 device qualification record
-- `docs/BLACK_PEARL_FLAT_RESET_HANDS_ON_CHECKLIST.md` for the v0.4.0 Reset EQ to flat qualification record
+- `docs/FIIO_JA11_PROTOCOL_NOTES.md` and `docs/FIIO_JA11_HANDS_ON_CHECKLIST.md` when JA11 behavior is involved
+- `docs/JCALLY_JM12_PROTOCOL_NOTES.md` and `docs/JCALLY_JM12_HANDS_ON_CHECKLIST.md` when JM12 behavior is involved
+- `docs/V0.3_HANDS_ON_CHECKLIST.md` for the qualified v0.3 Black Pearl/foundation record
+- `docs/BLACK_PEARL_FLAT_RESET_HANDS_ON_CHECKLIST.md` for the qualified v0.4 Black Pearl reset record
 - `CHANGELOG.md`
 
-`docs/AUTONOMOUS_V0.3_PLAN.md` records the implementation plan that led into the locked plan. Where wording differs, the later locked plan, release-polish plan, this runbook, the maintained source-automation plan, and explicit later decisions are authoritative.
+Historical plans remain useful context, but this runbook, current architecture, current release-specific plan, and later explicit decisions control where wording conflicts.
 
 ## 2. Repository boundary
 
@@ -27,295 +30,286 @@ At the start of substantive work, read this file and then the current detailed s
 
 `weekssa/opra-eq-for-uapp`
 
-Confirm this exact repository before every write.
+Confirm this repository before every write. The GitHub API may display canonical repository casing as `weekssa/OPRA-EQ-for-UAPP`; it is the same repository.
 
 ### Read-only behavioral reference
 
 `weekssa/opra-uapp-converter`
 
-Use it as the proven OPRA → UAPP/ToneBoosters behavioral reference. Never modify it unless the user explicitly asks.
+Use it only as the proven OPRA → UAPP/ToneBoosters behavioral reference. Never modify it unless the user explicitly asks.
 
-### Upstream sources
+### Upstream/reference sources
 
 - OPRA upstream: `https://github.com/opra-project/OPRA`
-- Runtime OPRA catalog: `https://opra.roonlabs.net/database_v1.jsonl`
+- OPRA runtime feed: `https://opra.roonlabs.net/database_v1.jsonl`
 
-Normal app runtime consumes the validated published EQ Library catalog built from OPRA and other qualified sources. Do not scrape GitHub during normal app operation.
+Do not commit credentials, signing secrets, tokens, passwords, or private keys.
 
-## 3. Product identity, privacy, and Android baseline
+## 3. Product baseline and privacy
 
 - Application ID: `com.weekssa.opraeqforuapp`
-- Native Android app, Kotlin + Jetpack Compose
+- User-facing product: **EQ Library**
+- Native Android, Kotlin + Jetpack Compose
 - minSdk 26 unless a validated reason changes it
-- Primary validation device: Pixel 9
-- Prefer clear UI/domain/data/platform-integration boundaries, Room, and WorkManager or current Android-recommended equivalents
+- Primary physical test device: Pixel 9
+- Prefer clear UI/domain/data/platform boundaries, Room, Preferences DataStore, WorkManager, and Android's Storage Access Framework
 - Do not bundle Python in the APK
 
-The app ships with **zero bundled headphones/EQs**. End users need no login, cloud backend, analytics, telemetry, ChatGPT, GitHub account, or Google Drive account. User selections and preferences remain local.
+The app ships with **zero bundled headphones/EQs**. End users need no login, cloud backend, analytics, telemetry, ChatGPT, GitHub account, or Google Drive account. Selections/preferences/generated state remain local.
 
-Normal runtime network use is limited to the catalog and public app-release metadata/update links. Do not download OPRA artwork by default in v1.
+Normal runtime network use is limited to validated catalog acquisition/currentness and public app-release metadata/update links. Do not scrape GitHub/forums during normal Android operation and do not download OPRA artwork by default in v1.
 
-## 4. Current information architecture and UX
+## 4. Current information architecture
 
-The active top-level destinations are:
+Top-level destinations:
 
 - **My EQs**
 - **EQ Library**
 - **Settings**
 
-The active output is an **operating context**, not a catalog filter. Changing output changes conversion/export/Flash capability and the output-specific My EQs collection, but does not hide otherwise valid canonical curves from EQ Library.
+The active output is a global **operating context**, not a catalog filter. It changes output-specific My EQs membership, conversion/fidelity, file export, connection controls, and Flash availability. It must never hide an otherwise valid canonical curve from EQ Library.
 
-Android Back follows the in-app hierarchy before leaving the activity: selection editor → headphone detail → My EQs, EQ Library model → manufacturer/search → EQ Library root, and root EQ Library/Settings → My EQs. Only Back from the My EQs root exits the app. Visible back arrows and the Android Back gesture/button must agree.
+Android Back unwinds in-app hierarchy first. Root EQ Library/Settings return to My EQs; only Back from the My EQs root exits.
 
-Favorites are manageable from both EQ Library and My EQs. A managed-profile row in My EQs exposes the same filled/outlined star state as EQ Library; toggling the star changes only the active-output Favorite membership and must not change headphone selection, export currentness, or Flash state. Favorite snapshot rows use the filled star as the remove-from-favorites action; personal imports retain their explicit remove action.
+Favorites and local Hide/Unhide are presentation/saved-state features. Hiding a canonical lineage does not delete archive history, My EQs membership, exported files, favorite state, or Flash state.
 
-EQ Library contains headphone EQs and General EQs. The initial qualified General EQ seed is sourced from the MIT-licensed ParaEQ built-in preset definitions and includes Sound, Utility, and source-authored Genre examples; the canonical catalog keeps exact source coefficients/preamp state and separate EQ Library-generated safety headroom when the source omits preamp. Headphone browse starts Manufacturer → Model and may include deeper verified source segments only when the source genuinely requires them. Never invent variants or meanings from IDs, filenames, or path fragments.
+## 5. Canonical EQ model
 
-EQ Library is also a **living archive**. Once a genuine canonical EQ or genuine acoustic revision has been validly published, it remains represented in the current canonical catalog even if its source moves, goes offline, is removed, pauses, or is retired. Provenance/source-availability metadata may change, but source disappearance is never an instruction to delete archived acoustic history.
-
-Users may locally **Hide** canonical headphone or General EQ profiles without deleting or mutating the archive. Hidden state is global local visibility state keyed by stable canonical profile identity, survives restart/refresh, and does not remove an already-saved My EQs entry, export state/file, favorite, or Flash state. Settings exposes **Hidden EQs** with batch Select all/none and Unhide selected. General EQ review provides none-selected-by-default batch controls for **Save selected** and **Hide selected**.
-
-Personal PEQ import is a canonical-ingestion path, not a separate output converter. The compact **+ Import** action belongs with the Saved snapshots & personal imports section rather than as a large button competing with Black Pearl Connect. The v0.3 import surface supports pasted or chosen-file **Equalizer APO / AutoEq text**, parses contents rather than trusting file extension, previews the exact canonical interpretation before Save, blocks malformed/unsupported active filters instead of silently producing a partial EQ, preserves omitted preamp as null, and performs initial active-output export after a successful save when exportable. Import never automatically flashes hardware.
-
-### New headphone selection and new-EQ review — final approved v0.3 behavior
-
-A never-added headphone starts with **zero EQ profiles selected**. The user explicitly selects the profiles they want; no current or future EQ is ever silently selected merely because it is verified, newly published, or covered by a notification preference.
-
-Every usable canonical parametric EQ is represented as a selectable checkbox. Active-output capability is presented separately as Exact, Optimized, or Not exportable; a valid canonical EQ remains visible and selectable/savable even when the active output cannot represent it. Output capability must never become a catalog-visibility or canonical-selection filter. Provide Select all and Select none as explicit selection actions.
-
-Once a headphone is saved in My EQs, it has a per-headphone **Notify me about new EQs** preference. For newly managed headphones this notification preference starts **ON**. It is a review/attention preference only and never changes the saved selection by itself.
-
-When notification is ON:
-
-- newly published verified or unverified usable EQs for that headphone may create a pending in-app review;
-- a materially changed selected tuning may also create a pending review;
-- the review starts with no new EQ rows selected;
-- **Add selected** adds only the explicitly checked new EQs to that output-specific My EQs selection and starts their normal initial export where representable;
-- **Dismiss** marks the current batch reviewed without selecting, hiding, deleting, or exporting the unchosen EQs;
-- Android/visible **Back** leaves the batch pending rather than silently dismissing it.
-
-When notification is OFF, future EQ arrivals remain available in EQ Library but do not create the per-headphone new-EQ review prompt. Turning the preference off clears the currently pending attention state for that headphone without changing its saved EQ selection.
-
-A locally hidden canonical lineage must not generate new-EQ review badges/prompts while it is hidden, including future revisions of that lineage. Hiding an already-selected EQ still preserves its My EQs membership, exported files/currentness, favorite state, and Flash availability. Unrelated new EQ lineages remain visible and reviewable normally.
-
-The legacy Room/domain storage field name `autoIncludeNewProfiles` is retained through the v0.3 migration boundary for compatibility, but its v0.3-final meaning is **Notify me about new EQs** only. It must not be used to auto-select future profiles. Older automatic-inclusion rules in pre-final planning text are superseded by this section.
-
-Selections remain output-specific. A selection under one output does not silently become selected under another output.
-
-### Add/Save and export — approved v0.3 behavior
-
-For an export-capable output, **Add/Save persists the selected EQs and initiates their initial export**. The normal workflow must not require a second routine Export action immediately after Add/Save.
-
-**Export** and **Export all** are recovery actions. They are shown only when expected app-managed files for the active output are missing, stale, or otherwise need recovery. When expected files are present and current, those actions stay hidden.
-
-If the user removes the final selected EQ for a headphone under the active output, that headphone is removed from that output's My EQs collection. Retained exported files are not silently deleted.
-
-Use Android's Storage Access Framework/system picker. Suggest a sensible Documents location but let the user choose. Persist supported directory access. Do not request broad storage permission and do not write to another app's private storage. Manage/delete only files the app can prove it created.
-
-Human-readable deterministic names remain the preferred requested export names, but **a physical filename is not the preset's ownership identity**. Export/currentness/cleanup must follow the stable output + product + profile identity and the exact SAF document URI actually returned for the app-created file, together with generated fingerprint/content hash. If a document provider normalizes or adjusts the requested display name, keep and track the successful newly created document instead of deleting it merely because its name changed. Store the provider-returned actual display name for fallback traversal/cleanup. If the preferred name is already occupied by an unowned file, never overwrite or delete that file; request a stable EQ-Library-disambiguated fallback name and accept a safe provider-created unique name if the provider further normalizes it. Internal same-name app presets must likewise receive stable identity-derived names rather than becoming permanent retry conflicts. Existing tracked app-owned files do not need to be renamed solely because naming logic improves.
-
-## 5. Catalog, cache, refresh, and upstream changes
-
-Normal operation:
-
-1. Download the validated published EQ Library catalog.
-2. Validate the candidate before promotion.
-3. Keep a last-known-good local cache.
-4. Work offline after initial successful sync.
-5. Support manual Refresh.
-6. Perform approximately daily background checks.
-7. Keep known-good cached state usable while refreshing or after failure.
-8. Never replace good state with a partial/malformed candidate.
-
-Changed selected profile:
-
-- regenerate deterministic local generated state;
-- report the change;
-- make the expected output eligible for automatic Add/Save generation or recovery export according to current v0.3 export-currentness rules;
-- do not silently corrupt or overwrite unowned external files.
-
-Source moved/unavailable/retired:
-
-- keep the genuine canonical EQ and every genuine archived revision in the current published catalog;
-- update a source URL only when the new location is confidently identified;
-- otherwise mark source availability/lifecycle appropriately while retaining the archived record and provenance;
-- retain any selected/saved local state and generated/exported state according to the normal My EQs/currentness rules;
-- never treat source disappearance as permission to delete canonical acoustic history.
-
-Catalog publication/currentness validation must fail when a candidate would silently remove a previously published genuine canonical profile or revision. Safe identity remaps may change routing/presentation only when the archived acoustic lineage is preserved.
-
-### Source expansion/currentness — automation-first policy
-
-Repository-side source maintenance follows the final automation-first model in `docs/FUTURE_SOURCE_AUTOMATION_PLAN.md`:
-
-- automate every registered source that has a legitimate stable public retrieval path;
-- keep OPRA runtime-managed by the Android app against the official feed;
-- do not maintain a recurring manual-currentness queue merely because a source is inconvenient to automate;
-- if required automated access is unavailable or prohibited, mark the source explicitly paused while preserving archive/provenance;
-- one-off quarantine/identity/policy review is allowed, but routine source currentness must not depend on manual data entry or ChatGPT;
-- scheduled adapters must record real source-health timestamps/cursors and are subject to overdue/never-successful/repeated-failure gates;
-- source failures must preserve the last-known-good catalog and every published canonical profile/revision;
-- measurement curves such as Squiglink frequency-response data are not silently converted into invented source-authored PEQ;
-- Reddit/oratory direct currentness remains paused until a compliant Reddit access path exists;
-- Topping Community remains paused until an authorized API/feed or explicit permission supports automation;
-- ordinary source/catalog publication remains independent of APK releases while the client schema and Android/device/DSP behavior are unchanged.
-
-The source-automation milestone is closed only after its final PR is green/merged and at least one post-merge `main` production run successfully validates/publishes the resulting catalog to `catalog-live`.
-
-## 6. Canonical EQ and conversion rules
-
-Canonical source data is device-independent. Output capability is evaluated at the output boundary.
-
-Preserve source metadata and acoustic intent including:
+Canonical EQ data is source-agnostic and device-independent. Preserve the complete source and metadata including:
 
 - preamp/overall gain;
 - frequency;
 - gain;
 - Q;
-- filter/band priority and order;
+- supported filter type;
+- source band priority/order;
 - creator/author;
-- details;
-- provenance/attribution.
+- details/target/intent when sourced;
+- provenance/attribution;
+- immutable acoustic revision identity.
 
-Never silently alter acoustic values, invent creator metadata, ignore unsupported filters, or mutate canonical source data just to satisfy an output.
+Never silently alter canonical acoustic values, invent creator/variant meaning, ignore unsupported active filters, or truncate canonical source merely to satisfy an output.
 
-### UAPP / ToneBoosters
+Missing source preamp remains `null`. EQ Library-generated safety headroom is derived metadata, never a rewritten source preamp.
 
-Treat `weekssa/opra-uapp-converter` as behavioral reference and require Kotlin parity for established conversion behavior.
+The canonical catalog is a **living archive**. Genuine published acoustic profiles/revisions remain represented even if a source moves, disappears, pauses, or retires. Publication/currentness validation must reject silent loss or in-place acoustic mutation of archived history.
 
-ToneBoosters output is limited to 10 bands:
+## 6. Catalog, cache, refresh, and source automation
+
+Android runtime requirements:
+
+1. consume a validated published EQ Library catalog;
+2. validate a candidate before promotion;
+3. retain last-known-good local cache;
+4. work offline after initial successful sync;
+5. support manual Refresh;
+6. perform approximately daily background/currentness checks;
+7. keep cached state usable during refresh/failure;
+8. never replace good state with a partial or malformed candidate.
+
+A changed selected profile regenerates deterministic derived output/currentness and is surfaced to the user. A removed/unavailable upstream profile keeps its archived/local generated state and is marked appropriately; users remove it explicitly.
+
+Repository-side source maintenance follows `docs/FUTURE_SOURCE_AUTOMATION_PLAN.md`: automate legitimate stable public retrieval paths, quarantine ambiguous/malformed records without blocking unrelated publication, preserve source-health state, and pause sources that cannot be automated safely rather than creating a recurring manual-currentness queue. Measurement curves are never converted into invented source-authored PEQ.
+
+Ordinary catalog publication remains independent of APK releases while client schema/device/DSP behavior is unchanged.
+
+## 7. Selection, review, and My EQs
+
+A never-managed headphone starts with **zero selected EQ profiles**. Every usable canonical PEQ is an explicit checkbox with Select all / Select none. A valid canonical EQ stays visible/selectable even if the active output reports it as Not suitable/Not exportable.
+
+The final approved behavior supersedes the older automatic-future-selection model: **Notify me about new EQs** starts ON for newly managed headphones but is attention-only. It never silently selects a future profile.
+
+When notification is ON, eligible new EQs and materially changed selected tunings may create review attention. New review rows start unchecked; **Add selected** adds only checked rows, **Dismiss** reviews the current batch without adding/hiding/deleting unchosen EQs, and Back leaves the batch pending. Turning notification OFF clears attention without changing the stored selection.
+
+The persisted compatibility field name `autoIncludeNewProfiles` may remain internally for migration compatibility, but it must not be interpreted as permission to auto-select future profiles.
+
+Selections are output-specific. Favorites/personal imports may also be output-scoped without duplicating/mutating the canonical source.
+
+## 8. Output registry and fidelity
+
+`ExportDevice` is the single UI/domain output registry. Selectable outputs are grouped as:
+
+- **Hardware DACs**
+- **Apps**
+- **Universal formats**
+
+Each target declares presentation, file-vs-hardware semantics, format kind, capability profile, current selectability, and validation status where applicable.
+
+Hardware-only outputs do not invent export files. Their deterministic derived representation remains local until the user explicitly taps **Flash**.
+
+Use fidelity states consistently:
+
+- **Exact** — source is natively representable at the target's actual limits/quantization without target-side acoustic alteration or generated headroom.
+- **Optimized** — EQ Library deterministically derives a faithful target representation and it passes that target's quality/safety gates. Native target rounding, complete-response fitting, and EQ Library-generated target headroom are all Optimized rather than Exact.
+- **Not suitable / Not exportable** — a safe/faithful representation cannot be produced.
+
+For finite hardware, show a concise reason separate from source/catalog description text. Prefer wording such as:
+
+- `Exact · source values preserved`
+- `Optimized · native hardware rounding only`
+- `Optimized · 14 → 10 bands · full-response fit`
+- `Optimized · generated headroom −3.0 dB`
+
+Do not force redundant `N → N bands` wording when no band-budget change occurred. If a source fits the target band structure and needs only native rounding, preserve that structure rather than unnecessarily invoking the response fitter.
+
+Changing output capability code must not mutate canonical data.
+
+## 9. UAPP / ToneBoosters conversion
+
+Treat `weekssa/opra-uapp-converter` as behavioral reference and require Kotlin parity for established conversion semantics.
+
+ToneBoosters output remains limited to 10 bands:
 
 - preserve source priority/order;
 - use the first 10 applicable source-priority bands;
-- present the limitation clearly;
-- retain the complete canonical source locally.
+- surface the limitation clearly;
+- retain all source bands canonically.
 
-Use headphone-first deterministic names:
+Use deterministic headphone-first names:
 
 `Model [Variant] - Creator - Details`
 
-Only use Variant/deeper identity when source data genuinely verifies it.
+Only include deeper variant/configuration identity when the source genuinely verifies it.
 
-ToneBoosters XML must remain ISO-8859-1-safe while full Unicode metadata is retained locally.
+ToneBoosters XML must remain ISO-8859-1-safe while full Unicode metadata remains local.
 
-### TRN Black Pearl Direct Flash — approved v0.3 behavior
+## 10. Shared finite-hardware response adapter
 
-Direct Flash remains an explicit user action with confirmation. It uses the DAC's currently active EQ slot and preserves the established Peak, Low Shelf, High Shelf, 10-band overwrite/latch/save behavior.
+Finite PEQ hardware derivation for **TRN Black Pearl (10 bands)**, **FiiO JA11 (5 bands)**, and **stock JCALLY JM12 (5 bands)** uses the shared deterministic hardware response adapter described in `docs/V0.5_KT02H20_IMPLEMENTATION_PLAN.md`.
 
-Black Pearl playback-gain handling uses the observed global-gain protocol documented in `docs/BLACK_PEARL_PROTOCOL_NOTES.md`:
+Rules:
 
-- command `0x03`;
-- signed little-endian gain value;
-- 1/256 dB units;
-- read the current global gain before the Flash sequence;
-- apply the selected profile's required source-preamp/generated-headroom adjustment when representable;
-- replace the previous EQ Library-applied gain delta rather than stacking a new reduction on top of it;
-- a later 0 dB profile can remove the prior EQ Library-applied attenuation and restore the underlying baseline, subject to independent user volume changes;
-- if the requested absolute gain is outside the validated representable device range, fail clearly rather than clamping;
-- record a successful gain write before later PEQ writes so a retry cannot accidentally stack the same attenuation after a later transfer failure.
+- complete canonical source remains unchanged;
+- unsupported source filter types fail rather than being ignored;
+- exact native values pass only when target range and target quantization truly preserve them and the source provides an exactly representable preamp;
+- if the source fits the available band structure but needs only native target rounding, preserve the same filter structure and report Optimized/native rounding rather than fitting a different curve;
+- otherwise fit the **complete source response** to the available target bands;
+- never silently take the first N bands for these hardware targets;
+- quantize only at the device boundary;
+- require fixed RMS/max-error gates for Optimized output;
+- generate missing-preamp safety headroom from the final quantized target response without mutating canonical preamp/headroom metadata, and always classify that generated target headroom as Optimized;
+- version derived representation semantics so output currentness changes when the adapter contract changes.
 
-The Black Pearl's observed/recommended **per-filter gain** range of `-10 dB..+10 dB` is not treated as the same thing as the hard global-gain range. Because the PEQ packet stores band gain as a signed 16-bit 1/256 dB value, a finite source value outside ±10 dB that still fits that protocol field is preserved exactly for Black Pearl file export and may be Direct-Flashed only behind an explicit caution. The confirmation must identify the affected band/value, say that the exact value will be sent unchanged and not clamped, and provide **Cancel** / **Flash anyway**. The physical Pixel 9 / TRN Black Pearl test passed for the Edition XS Altruistic-Farmer275 `13,500 Hz / -11.9 dB / Q 4.0` case, including Cancel-without-write and Flash-anyway without app-side clamping. That one successful value does not establish every possible gain outside ±10 dB as validated, so the general caution remains. Unsupported filter types, non-finite/unencodable gain, and currently validated frequency/Q hard limits remain blocking. The global playback-gain representability range remains a hard limit.
+Historical internal class names containing `Kt02h20` or `FiveBand` are implementation-compatibility names only; do not infer a product limitation from those names.
 
-The Flash confirmation must disclose the listening-volume/playback-gain change when nonzero and combine it with any 10-band or out-of-validated-range caution that applies.
+## 11. TRN Black Pearl
 
-Unrelated Black Pearl settings remain outside the Flash path.
+Black Pearl protocol/USB behavior was physically qualified in the v0.3 foundation and Reset EQ to flat was qualified in v0.4. Preserve those protocol boundaries and fail-safe gain-reset rules.
 
-### TRN Black Pearl Reset EQ to flat — v0.4.0 behavior
+v0.5 changes **derived DSP adaptation**, not the qualified Black Pearl USB identity:
 
-**Reset EQ to flat** is a Black Pearl device action, not a canonical or saved EQ. In My EQs, when Black Pearl is the active output and Direct Flash is enabled, **Connect/Connected** and outlined **Reset EQ to flat** share one compact side-by-side row. Reset is enabled only while the DAC is connected and always requires confirmation.
+- Direct Flash and Black Pearl file export consume the same shared device representation;
+- profiles over 10 bands are complete-response fitted instead of first-10 truncated;
+- exact protocol-encodable values are not silently clamped;
+- per-filter gains outside the currently validated ±10 dB listening range retain the explicit affected-value caution and **Flash anyway** gate when still wire-encodable;
+- unsupported/non-finite/unencodable filters and absolute global-gain limits remain blocking;
+- UI Flash preview must consume the same `BlackPearlFlashPlan` as the transaction so fidelity/gain/warnings cannot disagree.
 
-The confirmation states that the current EQ slot will be overwritten with flat settings, all ten bands will be reset, any playback-gain adjustment previously applied by EQ Library will be removed, listening volume may change, and unrelated DAC settings will not be changed. The action never creates a catalog entry, General EQ, Favorite, saved My EQs record, or export file.
+Black Pearl file export is standard AutoEq-style text specialized for the verified pyBlackPearl importer. Use `PK / LS / HS` for Peak / Low Shelf / High Shelf in this serializer; do not reuse generic `LSC / HSC` shelf tokens here. pyBlackPearl limits imported preamp to approximately `-16 dB..+6 dB`; EQ Library still exports the true derived preamp unchanged and warns about importer-side adjustment rather than clamping or disabling an otherwise importable file. File-import limitations never remove valid Direct Flash functionality. Do not imply that every third-party Black Pearl controller handles shelves correctly.
 
-Reset uses the current active slot and the tracked EQ Library gain delta. It must validate the underlying baseline gain before any write, then write/latch/save all ten bands flat **before** restoring playback gain. Only after the slot is confirmed flat may it restore the underlying baseline gain and clear the tracked EQ Library gain delta. If PEQ transfer fails, leave playback gain and the tracked delta unchanged. If the final gain restore fails after the slot is flat, retain the tracked delta so a retry can finish safely. Detailed packet/transaction behavior is maintained in `docs/BLACK_PEARL_PROTOCOL_NOTES.md`.
+Global playback gain uses the observed `0x03` command in 1/256 dB units. Replace the previous EQ Library-applied tracked delta rather than stacking attenuation. Preserve unrelated DAC settings.
 
-The exact signed device/DSP candidate at `15f220bd055a2aec49c0cb97c16acbd43ac588da` passed Android unit/lint/debug/release assembly, CodeQL, signed-beta alignment/signature verification, the pinned signing-certificate check, and the focused Pixel 9 / TRN Black Pearl hands-on qualification on 2026-09-06. Sections 1–7 of `docs/BLACK_PEARL_FLAT_RESET_HANDS_ON_CHECKLIST.md` passed; unsafe controlled mid-transfer failure injection was not required because automated domain tests cover PEQ-transfer/final-gain-write failure ordering and retry-safe state retention. Release-preparation changes after that commit may advance version/release/documentation metadata without another hardware pass, but any further Android/device/DSP behavior change requires renewed hands-on validation.
+Because v0.5 changes Black Pearl response derivation, require a focused Black Pearl regression smoke on the exact release candidate even though the transport protocol itself was previously qualified.
 
-## 7. Testing and validation
+## 12. FiiO JA11 Direct Flash
 
-Never weaken validation merely to get green.
+JA11 v0.5 support is hardware-only Direct Flash and is **Hardware validation pending** until its Pixel 9 checklist passes.
 
-Treat the Python converter as behavioral reference and keep deterministic/golden coverage for at least:
+Strict identity/protocol facts are maintained in `docs/FIIO_JA11_PROTOCOL_NOTES.md`. Current implementation targets VID/PID `0x2972:0x0102`, HID report ID `0x02`, five Peak/Low Shelf/High Shelf bands, global EQ gain, Apply, Save, and readback.
 
-- normalization and preamp;
-- supported/unsupported filters;
-- deterministic XML;
-- 10-band handling;
-- naming/encoding;
-- explicit zero-default selection and notification-only new-EQ behavior, including no silent verified/unverified selection;
-- new-EQ review Add selected / Dismiss / Back semantics and hidden-lineage prompt suppression;
-- output-specific selections;
-- catalog updates/removals plus living-archive preservation of previously published canonical profiles/revisions;
-- local Hide/Unhide persistence, browse/search filtering, future-revision behavior, and preservation of already-saved My EQs/export state;
-- Equalizer APO / AutoEq personal-import exactness, null-preamp preservation, strict malformed/unsupported-filter rejection, content-based format recognition independent of filename extension, parsed preview, and initial export;
-- export/currentness/ownership, including provider-adjusted SAF names, stable same-name disambiguation, unowned-name collisions, exact-URI updates, and safe cleanup;
-- Black Pearl protocol encoding, active slot, filter mapping, playback-gain read/write, non-cumulative replacement, 0 dB restoration, transfer failure, hard out-of-range rejection, and protocol-encodable-but-outside-validated filter-gain cautions without clamping;
-- Black Pearl flat reset active-slot preservation, ten-band zero-gain overwrite/latch/save, fail-safe flatten-before-gain-restore ordering, baseline-range rejection, tracked-gain clearing only after success, and retry-safe PEQ/gain-write failures.
+Direct Flash toggle defaults OFF. The app must build/validate the entire target before writes, write all five slots including validated flat padding, apply, read back, save, and verify as required. Do not report success early. Reset returns all five bands and global EQ gain to flat/0 dB, verifies, saves, and verifies again.
 
-Before a hardware-test APK is handed to the user, the exact source head must pass:
+No sufficiently verified JA11 local preset-file interchange format has been established for v0.5. Keep Direct Flash intact and do not invent a file. A future verified file format may be added alongside Direct Flash.
 
-- Android unit tests;
-- Android lint;
-- debug assembly;
-- release assembly;
-- catalog currentness check;
-- priority-community coverage check;
-- CodeQL;
-- signed-beta workflow including pinned signing-certificate verification.
+No firmware/bootloader/cross-flash or unrelated-control commands.
 
-The v0.3 signed candidate at `c70c523e1f530b8b197ebbccc41dfb4af1e27fc4` passed those gates and then passed `docs/V0.3_HANDS_ON_CHECKLIST.md` on Pixel 9 / TRN Black Pearl on 2026-08-31. PR #3 was subsequently fast-forward merged to `main`, preserving that tested commit as the merge commit. Release-preparation documentation or catalog-only automation may advance `main`; any final public-release source head still must pass the release workflow before publication. Code/DSP/device-behavior changes after a hardware-tested candidate require renewed hands-on validation as appropriate.
+## 13. Stock JCALLY JM12 Direct Flash
 
-The most important Black Pearl hardware checks that passed include:
+JM12 v0.5 support is hardware-only Direct Flash for **stock firmware** and is **Hardware validation pending** until its Pixel 9 checklist passes.
 
-- real playback gain changes by the disclosed amount for a negative-preamp/headroom profile;
-- a second Flash replaces rather than accumulates the prior EQ Library adjustment;
-- a 0 dB Flash removes the prior EQ Library attenuation;
-- Peak/Low Shelf/High Shelf and active-slot behavior;
-- the `-11.9 dB` Edition XS case showing the caution, cancelling without a write, and then flashing without app-side clamping;
-- Reset EQ to flat confirmation/cancel, all-ten-band flattening/current-slot persistence, tracked-gain restoration, zero-tracked-gain behavior, preservation of later user volume changes, and unrelated-setting preservation on the v0.4.0 hardware candidate;
-- unrelated DAC settings remaining unchanged.
+Strict identity/protocol facts are maintained in `docs/JCALLY_JM12_PROTOCOL_NOTES.md`. Current implementation targets VID/PID `0x31B2:0x0111`, HID report ID `0x4B`, the observed run-mode register protocol, five PEQ bands, EQ enable/bypass, and digital/global gain.
 
-## 8. Releases, signing, updates, and changelog
+The implementation preserves unrelated register bytes and tracks only EQ Library's relative playback-gain delta so later Flash/Reset can replace/remove the app-applied adjustment.
 
-Use SemVer; development remains `0.x`; first stable release is `v1.0.0`.
+There is **no independently corroborated explicit stock-JM12 Save command**. Never claim persistence across a full power cycle until physical testing proves it. If the device resets EQ/gain on power loss, app-side tracked-gain state must be made robust against stale hardware state before qualification.
 
-Initial distribution is through GitHub Releases. Maintain `CHANGELOG.md` from the beginning and keep release notes aligned with it.
+No sufficiently verified stock-JM12 local preset-file interchange format has been established for v0.5. Keep Direct Flash intact and do not invent a file. A future verified file format may be added alongside Direct Flash.
 
-The app may check latest public release metadata and show an in-app update banner, What's new, and a Get update link. No notification permission or APK-install permission in v1.
+No JA11 firmware is required or suggested. No firmware/bootloader/cross-flash or unrelated-control commands.
 
-Never commit signing keys, passwords, tokens, credentials, or secrets. Use one stable release-signing identity once release signing is intentionally introduced. Signed beta/release workflows must verify the pinned public signing identity.
+## 14. Hardware UX and approval/safety gates
 
-## 9. Attribution and claims
+Major user-facing features require UX/behavior approval before implementation. For already-approved hardware outputs:
 
-Follow OPRA attribution requirements and clearly credit:
+- Settings contains the output plus an independent Direct Flash toggle, OFF by default where newly introduced;
+- My EQs shows compact `Connect / Connected` + `Reset EQ to flat` controls when applicable;
+- Reset is disabled while disconnected;
+- Add/Save never automatically flashes hardware;
+- Flash and Reset always require explicit confirmation;
+- confirmation states Exact/Optimized representation, playback/global gain implications, persistence semantics, and any device-specific caution;
+- unrelated DAC settings must remain untouched.
 
-- OPRA;
-- individual EQ creators/authors;
-- relevant sources/provenance.
+Physical qualification of a hardware target requires the exact-candidate Pixel 9 hands-on gate. Do not remove **Hardware validation pending** or make hardware-qualified/persistence claims before the applicable checklist passes.
 
-Do not imply endorsement by OPRA, Roon Labs, UAPP/USB Audio Player PRO, ToneBoosters, TRN, or other output/device vendors.
+**v0.5 release decision:** FiiO JA11 and stock JCALLY JM12 physical qualification is explicitly deferred to the next incremental release because the hardware is not yet available. Their pending status is **not a blocker for v0.5.0 publication**. v0.5.0 may include the implemented outputs only while their in-app/release wording continues to say **Hardware validation pending**, and JM12 persistence remains unclaimed. When the devices arrive, refresh each hands-on record to the exact signed candidate for that incremental release before running physical qualification.
 
-## 10. Working rules for ChatGPT
+## 15. Export, import targets, and storage
 
-For substantive work:
+Use terminology consistently:
 
-1. Read the mandatory files in section 1.
-2. Confirm the only writable repo is `weekssa/opra-eq-for-uapp` before every write.
-3. Keep `weekssa/opra-uapp-converter` read-only unless explicitly told otherwise.
-4. Use connected GitHub tools directly whenever possible; manual Git/Terminal steps are a last resort.
-5. Do not implement a major user-facing feature without first explaining its UX/behavior and receiving approval.
-6. Do not reinterpret older Phase 0/v0.3 planning text as overriding later approved behavior.
-7. Make focused changes and validate them without weakening checks.
-8. After changes, state exactly what changed and whether validation passed.
-9. Keep hardware-gated feature PRs unmerged until the applicable signed candidate passes hands-on validation.
-10. Update this runbook and the relevant detailed decision/architecture documents whenever the maintained source of truth changes.
-11. For source maintenance, prefer scheduled/runtime automation; do not create a recurring manual-currentness dependency when a source lacks an authorized automation path—pause it explicitly and preserve archived data instead.
+- **Add to My EQs / Save** stores output-specific local membership;
+- **Export** writes a verified external preset/import file;
+- **Direct Flash** writes a supported DAC over USB only after explicit confirmation;
+- **saved to device / persists** is used only when hardware persistence is established.
 
-## 11. Current release and source-infrastructure status
+For file-capable outputs, Add/Save initiates normal initial export once Storage Access Framework access exists. Export/Export all are recovery/currentness actions and stay hidden when expected app-owned files are current.
 
-**v0.4.0 is the current public release.** The controlled GitHub Release was published on 2026-09-06 from target commit `eaa7bcf326cdbc6967d477d28b97c54dc862bc72`. It includes the separately hardware-qualified Black Pearl **Reset EQ to flat** behavior and uses the same permanent Android signing identity/application ID for in-place upgrades. The exact device/DSP candidate `15f220bd055a2aec49c0cb97c16acbd43ac588da` passed the required signed automated gates and focused Pixel 9 / TRN Black Pearl hardware qualification before release.
+**TOPPING Tune** is a selectable Apps output using `.txt · AutoEq parametric · 10 bands`. Official TOPPING material documents AutoEq import, up to ten bands, ±12 dB preamp and filter gain, Q 0.1..15, supported Peak/Low Shelf/High Shelf filters, and direct numeric entry. Use the shared complete-response finite-target path when adaptation is required; never first-10 truncate. TOPPING's public documentation does not establish downstream device storage quantization, so do not invent hardware precision or claim Exact downstream fidelity. Until that precision is independently qualified, product-facing TOPPING Tune exports are conservatively reported Optimized even when source values are preserved at deterministic AutoEq text precision.
 
-The v0.3 foundation remains in force: output-specific My EQs, canonical multi-source EQ handling, zero-selected new-headphone defaults, per-headphone notification/review for newly arriving EQs without silent selection, Add/Save-triggered initial export with recovery-only Export actions, SAF ownership anchored to the actual app-created document URI, hierarchical Android Back behavior, Favorite controls in My EQs, qualified General EQs, living-archive preservation, reversible Hide/Unhide, strict previewed Equalizer APO / AutoEq personal import, and Black Pearl Direct Flash with non-cumulative playback-gain adjustment plus explicit caution for protocol-encodable per-band gains outside the generally validated ±10 dB range.
+Use Android's system folder/document picker and persisted supported access. Suggest a sensible Documents location but let the user choose. Never request broad storage access or write to another app's private storage.
 
-Post-v0.4 source expansion is repository/catalog infrastructure and is governed by `docs/FUTURE_SOURCE_AUTOMATION_PLAN.md`. The final operating target has no recurring manual-currentness owners: automatable sources are scheduled, OPRA is runtime-managed, and inaccessible/restricted ecosystems are explicitly paused. Source/catalog changes remain independent of APK releases while the client schema and Android/device/DSP behavior stay compatible.
+File ownership follows stable output + product + profile identity and the actual provider-returned SAF document URI, actual display name, generated fingerprint, and content hash. Never overwrite/delete an unowned same-name file. Manage/delete only files the app can prove it created.
 
-`docs/V0.3_RELEASE_POLISH_PLAN.md` and `docs/V0.3_HANDS_ON_CHECKLIST.md` remain the record of the final v0.3 validation scope. `docs/BLACK_PEARL_FLAT_RESET_HANDS_ON_CHECKLIST.md` records the v0.4.0 hardware qualification. `docs/FUTURE_SOURCE_AUTOMATION_PLAN.md` records the final source-automation operating model, blocked-source policy, and milestone closeout criteria.
+Hardware-only outputs have no file export path.
+
+## 16. Testing and validation
+
+Never weaken validation simply to get green.
+
+Treat the Python converter as the UAPP behavioral reference. Maintain golden/regression coverage for canonical normalization, preamp, filters, deterministic XML, UAPP 10-band handling, unsupported filters, naming/encoding, selection/review modes, catalog updates, removed/archived profiles, output currentness, and export ownership.
+
+For v0.5 also require coverage for:
+
+- output-registry categories/file-vs-hardware semantics;
+- target capability/fidelity classification;
+- exact hardware quantization;
+- native hardware rounding without unnecessary response fitting;
+- deterministic complete-response fitting;
+- target-derived generated headroom without canonical mutation and never labeled Exact;
+- protocol golden vectors/readback ordering/failure handling;
+- wrong-device/permission/disconnect behavior;
+- Direct Flash default-OFF behavior;
+- reset behavior;
+- Black Pearl file/Flash plan parity;
+- Black Pearl pyBlackPearl `PK / LS / HS` syntax and importer-side preamp warning without app-side clamp;
+- TOPPING Tune standard AutoEq syntax, complete-response 10-band adaptation, no source-preamp clamp, and conservative precision-pending fidelity;
+- JA11/JM12 fileless behavior while Direct Flash remains intact;
+- versioned derived-representation fingerprints/currentness.
+
+Before physical qualification, require the exact candidate to pass applicable Android unit tests, lint, debug/release assembly, catalog/currentness gates, priority-community coverage, CodeQL, dependency submission, signed-beta build/alignment/signature/certificate checks, and mobile-test publication.
+
+Any behavior-affecting code change after a physical PASS creates a new hardware candidate and requires the relevant hands-on retest. Documentation-only changes may retain the prior hardware result only when the tested source commit is recorded clearly and APK/device/DSP behavior is unchanged; automated/software gates still rerun on the final head.
+
+## 17. Releases, updates, attribution
+
+Use SemVer. Development remains `0.x`; first stable is `v1.0.0`. Maintain `CHANGELOG.md` from the beginning.
+
+Public distribution initially uses GitHub Releases and one stable release-signing identity. The app may check latest public release metadata and show a nonblocking update banner, What's new, and Get update link. No notification permission, silent APK download/install, or unknown-app install permission in v1.
+
+Preserve OPRA and individual creator/source attribution. Do not imply endorsement by OPRA, Roon Labs, UAPP, ToneBoosters, TRN, FiiO, JCALLY, TOPPING, output-app vendors, or headphone manufacturers.
+
+## 18. Communication and execution discipline
+
+Work in clear phases and use connected GitHub tools directly whenever possible. Explain/obtain approval for genuinely new major UX before implementation. After changes, report exactly what changed and whether validation passed.
+
+The user is not a developer. Do not push routine Git/Terminal work onto them. Ask only for decisions or physical-device steps that materially require the user. When hardware testing is required, give one safe checkpoint at a time and stop before destructive Flash/Reset actions until the preceding checkpoint is confirmed.

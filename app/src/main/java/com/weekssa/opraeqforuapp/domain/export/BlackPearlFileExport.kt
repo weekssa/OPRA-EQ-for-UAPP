@@ -1,112 +1,106 @@
 package com.weekssa.opraeqforuapp.domain.export
 
-import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
+import com.weekssa.opraeqforuapp.domain.hardware.HardwareEqDeviceSpecs
+import com.weekssa.opraeqforuapp.domain.kt02h20.FiveBandOptimizationResult
+import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FiveBandOptimizer
+import com.weekssa.opraeqforuapp.domain.kt02h20.adaptationSummary
 import java.util.Locale
 
 /**
- * Builds the file representation for an external Black Pearl preset importer.
+ * Builds file representations for outputs whose exported file should match the same derived hardware
+ * plan used by Direct Flash, or which need a product-specific verified import contract.
  *
- * File export and direct USB Flash remain independent delivery paths. Both preserve the effective
- * source preamp / EQ Library safety headroom; direct Flash applies that value through the approved
- * Black Pearl playback-gain command while file export preserves it as a Preamp line.
+ * Black Pearl file export and USB Flash remain independent delivery actions, but they consume one
+ * shared response-adaptation policy. A >10-band canonical source is fitted to the complete response,
+ * not first-N truncated. Exact protocol-encodable source gains outside the currently validated +/-10
+ * dB region remain unchanged and receive the same caution rather than being clamped.
  *
- * The +/-10 dB per-band gain range is currently a validated/recommended hardware range, not a text
- * file encoding limit. File export therefore preserves any finite source gain exactly rather than
- * rejecting or clamping it. Direct Flash applies a separate caution for protocol-encodable values
- * outside that validated range.
+ * The Black Pearl file syntax intentionally follows the verified pyBlackPearl AutoEq importer
+ * contract: Peak, Low Shelf, and High Shelf are written as PK / LS / HS. This is a Black
+ * Pearl-specific serializer; generic AutoEq/Equalizer APO targets continue to use their own standard
+ * shelf tokens.
  */
 internal fun buildFileExportDeviceVariant(
     profile: OpraEqProfile,
     device: ExportDevice,
 ): DevicePresetVariant? = when (device) {
     ExportDevice.BLACK_PEARL -> buildBlackPearlFileExportVariant(profile)
+    ExportDevice.TOPPING_TUNE -> buildToppingTuneFileExportVariant(profile)
     else -> buildTextDeviceVariant(profile, device)
 }
 
 private fun buildBlackPearlFileExportVariant(profile: OpraEqProfile): DevicePresetVariant? {
-    val capabilities = requireNotNull(ExportDevice.BLACK_PEARL.eqCapabilities)
-    val effectivePreamp = profile.effectivePlaybackPreampDb()
-        ?.takeIf(Double::isFinite)
-        ?: return null
-    val sourceBands = profile.bands.orEmpty()
-    if (sourceBands.isEmpty()) return null
-
-    val selectedBands = capabilities.maxBands?.let(sourceBands::take) ?: sourceBands
-    val mapped = selectedBands.map { band ->
-        mapBlackPearlFileBand(band, capabilities) ?: return null
+    val representation = when (
+        val result = Kt02h20FiveBandOptimizer.optimize(profile, HardwareEqDeviceSpecs.TRN_BLACK_PEARL)
+    ) {
+        is FiveBandOptimizationResult.NotSuitable -> return null
+        is FiveBandOptimizationResult.Ready -> result.representation
     }
-    if (mapped.isEmpty()) return null
+    if (representation.bands.isEmpty()) return null
 
-    val fidelity = blackPearlFileFidelity(profile, sourceBands, capabilities)
     val content = buildString {
-        appendLine("Preamp: ${formatDb(effectivePreamp)} dB")
-        mapped.forEachIndexed { index, band ->
+        appendLine("Preamp: ${formatDb(representation.playbackGainDb)} dB")
+        representation.bands.forEachIndexed { index, band ->
+            val type = blackPearlImportType(band.type) ?: return null
             appendLine(
-                "Filter ${index + 1}: ON ${band.type} Fc ${formatHz(band.frequency)} Hz " +
+                "Filter ${index + 1}: ON $type Fc ${formatHz(band.frequencyHz)} Hz " +
                     "Gain ${formatDb(band.gainDb)} dB Q ${formatQ(band.q)}",
             )
         }
     }.trimEnd()
 
-    val baseTransformation = when (fidelity) {
+    val baseTransformation = when (representation.fidelity) {
         DevicePresetFidelity.EXACT ->
-            "Source EQ bands and source preamp are preserved in Black Pearl import text."
-        DevicePresetFidelity.OPTIMIZED ->
-            "EQ Library optimized Black Pearl file export: effective playback headroom is preserved in the Preamp line and only the first ${capabilities.maxBands ?: mapped.size} source-priority bands are included when required by the device limit."
-    }
-    val outsideValidatedGainRange = mapped.mapIndexedNotNull { index, band ->
-        band.gainDb.takeIf { gain -> gain !in capabilities.minGainDb..capabilities.maxGainDb }?.let { gain ->
-            "Band ${index + 1} ${formatSignedDb(gain)} dB"
+            "Source values are preserved in the Black Pearl hardware plan; this AutoEq text uses the same filters and playback gain as Direct Flash."
+        DevicePresetFidelity.OPTIMIZED -> {
+            val metrics = if (representation.usedResponseFit) {
+                " (RMS ${formatMetric(representation.rmsErrorDb)} dB, max ${formatMetric(representation.maxAbsoluteErrorDb)} dB)"
+            } else {
+                ""
+            }
+            "Black Pearl: Optimized · ${representation.adaptationSummary()}$metrics. This AutoEq text uses the same derived filters and playback gain as Direct Flash."
         }
     }
-    val transformation = if (outsideValidatedGainRange.isEmpty()) {
-        baseTransformation
-    } else {
-        "$baseTransformation Caution: ${outsideValidatedGainRange.joinToString()} is outside the currently validated Black Pearl filter-gain range; the source value is preserved unchanged and is not clamped."
+
+    val cautions = buildList {
+        val outsideValidatedGainRange = representation.bands.mapIndexedNotNull { index, band ->
+            band.gainDb.takeIf { gain -> gain !in -10.0..10.0 }?.let { gain ->
+                "Band ${index + 1} ${formatSignedDb(gain)} dB"
+            }
+        }
+        if (outsideValidatedGainRange.isNotEmpty()) {
+            add(
+                "Caution: ${outsideValidatedGainRange.joinToString()} is outside the currently validated Black Pearl " +
+                    "filter-gain range; the value is preserved unchanged and is not clamped.",
+            )
+        }
+        if (representation.playbackGainDb !in PYBLACKPEARL_IMPORT_PREAMP_MIN_DB..PYBLACKPEARL_IMPORT_PREAMP_MAX_DB) {
+            add(
+                "pyBlackPearl accepts this AutoEq text but limits imported preamp to " +
+                    "${formatDb(PYBLACKPEARL_IMPORT_PREAMP_MIN_DB)}..${formatSignedDb(PYBLACKPEARL_IMPORT_PREAMP_MAX_DB)} dB. " +
+                    "EQ Library exports the true ${formatSignedDb(representation.playbackGainDb)} dB value unchanged; " +
+                    "pyBlackPearl will adjust it when imported. Direct Flash remains independent and uses the actual " +
+                    "Black Pearl plan when that plan passes its hardware safety checks.",
+            )
+        }
     }
+    val transformation = (listOf(baseTransformation) + cautions).joinToString(" ")
 
     return DevicePresetVariant(
         device = ExportDevice.BLACK_PEARL,
         content = content,
         transformation = transformation,
-        fidelity = fidelity,
+        fidelity = representation.fidelity,
+        representationVersion = representation.representationVersion,
     )
 }
 
-private fun blackPearlFileFidelity(
-    profile: OpraEqProfile,
-    sourceBands: List<OpraBand>,
-    capabilities: DeviceEqCapabilities,
-): DevicePresetFidelity {
-    val exceedsBandCount = capabilities.maxBands?.let { sourceBands.size > it } ?: false
-    val usesGeneratedHeadroom = profile.preampGainDb?.takeIf(Double::isFinite) == null
-    return if (exceedsBandCount || usesGeneratedHeadroom) {
-        DevicePresetFidelity.OPTIMIZED
-    } else {
-        DevicePresetFidelity.EXACT
-    }
-}
-
-private data class BlackPearlFileBand(
-    val type: String,
-    val frequency: Double,
-    val gainDb: Double,
-    val q: Double,
-)
-
-private fun mapBlackPearlFileBand(
-    band: OpraBand,
-    capabilities: DeviceEqCapabilities,
-): BlackPearlFileBand? {
-    if (band.type !in capabilities.supportedBandTypes) return null
-    val type = parametricType(band.type) ?: return null
-    val frequency = band.frequency?.takeIf(Double::isFinite) ?: return null
-    val gain = band.gainDb?.takeIf(Double::isFinite) ?: return null
-    val q = band.q?.takeIf(Double::isFinite) ?: return null
-    if (frequency !in capabilities.minFrequencyHz..capabilities.maxFrequencyHz) return null
-    if (q !in capabilities.minQ..capabilities.maxQ) return null
-    return BlackPearlFileBand(type, frequency, gain, q)
+private fun blackPearlImportType(type: String): String? = when (type) {
+    "peak_dip" -> "PK"
+    "low_shelf" -> "LS"
+    "high_shelf" -> "HS"
+    else -> null
 }
 
 private fun formatHz(value: Double): String =
@@ -119,3 +113,7 @@ private fun formatHz(value: Double): String =
 private fun formatDb(value: Double): String = String.format(Locale.US, "%.2f", value)
 private fun formatSignedDb(value: Double): String = String.format(Locale.US, "%+.2f", value)
 private fun formatQ(value: Double): String = String.format(Locale.US, "%.3f", value)
+private fun formatMetric(value: Double): String = String.format(Locale.US, "%.2f", value)
+
+private const val PYBLACKPEARL_IMPORT_PREAMP_MIN_DB = -16.0
+private const val PYBLACKPEARL_IMPORT_PREAMP_MAX_DB = 6.0

@@ -30,9 +30,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.export.DeviceExportability
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.export.assessDeviceExportability
+import com.weekssa.opraeqforuapp.domain.export.deviceAdaptationSummary
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedProfileRecord
 import com.weekssa.opraeqforuapp.domain.managed.reviewableNewEqProfiles
@@ -111,7 +113,7 @@ internal fun NewEqReviewScreen(
                                 }
                                 source.details?.takeIf(String::isNotBlank)?.let { Text(it) }
                                 Text(
-                                    "${outputShortName(activeOutput)}: ${outputStatusLabel(assessDeviceExportability(source, activeOutput))}",
+                                    outputStatusText(source, activeOutput),
                                     style = MaterialTheme.typography.labelMedium,
                                 )
                                 source.link?.takeIf(String::isNotBlank)?.let { url ->
@@ -145,6 +147,10 @@ internal fun NewEqReviewScreen(
                             Column {
                                 Text("Updated tuning · ${if (profile.selected) "already selected" else "not selected"}")
                                 source.details?.takeIf(String::isNotBlank)?.let { Text(it) }
+                                Text(
+                                    outputStatusText(source, activeOutput),
+                                    style = MaterialTheme.typography.labelMedium,
+                                )
                                 source.link?.takeIf(String::isNotBlank)?.let { url ->
                                     TextButton(onClick = { onOpenUrl(url) }) { Text("Source") }
                                 }
@@ -168,24 +174,23 @@ internal fun NewEqReviewScreen(
                 Button(
                     enabled = selectedIds.isNotEmpty(),
                     onClick = { scope.launch { onAddSelected(selectedIds) } },
-                ) { Text("Add selected (${selectedIds.size})") }
+                ) { Text("Add to My EQs (${selectedIds.size})") }
             }
         }
     }
 }
 
-private fun outputShortName(device: ExportDevice): String = when (device) {
-    ExportDevice.UAPP -> "UAPP / ToneBoosters"
-    ExportDevice.BLACK_PEARL -> "Black Pearl"
-    ExportDevice.UNIVERSAL_PARAMETRIC -> "Universal PEQ"
-    ExportDevice.POWERAMP -> "Poweramp"
-    ExportDevice.WAVELET -> "Wavelet"
-    ExportDevice.TOPPING_DX5_II -> "Topping DX5 II"
-    ExportDevice.TOPPING_DX1_II -> "Topping DX1 II"
+private fun outputStatusText(profile: OpraEqProfile, device: ExportDevice): String {
+    val status = assessDeviceExportability(profile, device)
+    val adaptation = deviceAdaptationSummary(profile, device)
+    return buildString {
+        append("${device.displayName}: ${outputStatusLabel(status, device)}")
+        adaptation?.let { append(" · $it") }
+    }
 }
 
-private fun outputStatusLabel(status: DeviceExportability): String = when (status) {
+private fun outputStatusLabel(status: DeviceExportability, device: ExportDevice): String = when (status) {
     DeviceExportability.EXACT -> "Exact"
     DeviceExportability.OPTIMIZED -> "Optimized"
-    DeviceExportability.NOT_REPRESENTABLE -> "Not exportable"
+    DeviceExportability.NOT_REPRESENTABLE -> if (device.isHardwareOutput) "Not suitable" else "Not exportable"
 }

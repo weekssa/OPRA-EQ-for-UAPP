@@ -14,6 +14,7 @@ import com.weekssa.opraeqforuapp.data.library.CanonicalFirstCatalogRepository
 import com.weekssa.opraeqforuapp.data.library.HttpCanonicalCatalogSource
 import com.weekssa.opraeqforuapp.data.managed.ManagedHeadphonesRepository
 import com.weekssa.opraeqforuapp.data.managed.OpraEqDatabase
+import java.net.URL
 
 class OpraCatalogSyncWorker(
     appContext: Context,
@@ -22,17 +23,20 @@ class OpraCatalogSyncWorker(
     override suspend fun doWork(): Result {
         val database = OpraEqDatabase.create(applicationContext)
         return try {
+            val userAgent = "${BuildConfig.APPLICATION_ID}/${BuildConfig.VERSION_NAME}"
             val catalogRepository = CanonicalFirstCatalogRepository(
                 canonicalRepository = CanonicalCatalogRepository(
                     filesDir = applicationContext.filesDir,
                     source = HttpCanonicalCatalogSource(
-                        userAgent = "EQ Library/${BuildConfig.VERSION_NAME}",
+                        userAgent = userAgent,
+                        catalogUrl = URL(BuildConfig.CANONICAL_CATALOG_URL),
                     ),
                 ),
                 legacyFallback = OpraCatalogRepository(
                     filesDir = applicationContext.filesDir,
                     source = HttpOpraCatalogSource(
-                        userAgent = "EQ Library/${BuildConfig.VERSION_NAME}",
+                        userAgent = userAgent,
+                        catalogUrl = URL(BuildConfig.OPRA_CATALOG_URL),
                     ),
                 ),
             )
@@ -51,7 +55,8 @@ class OpraCatalogSyncWorker(
                             KEY_NEW_PROFILES to (changes?.newProfileCount ?: 0),
                             KEY_UPDATED_PROFILES to (changes?.updatedSelectedProfileCount ?: 0),
                             KEY_REMOVED_PROFILES to (changes?.removedSelectedProfileCount ?: 0),
-                            KEY_BECAME_INCOMPATIBLE to (changes?.becameNotCompatibleSelectedProfileCount ?: 0),
+                            KEY_BECAME_INCOMPATIBLE to
+                                (changes?.becameNotCompatibleSelectedProfileCount ?: 0),
                         ),
                     )
                 }

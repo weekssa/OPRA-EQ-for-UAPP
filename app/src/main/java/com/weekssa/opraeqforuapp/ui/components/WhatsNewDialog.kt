@@ -12,7 +12,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.weekssa.opraeqforuapp.R
 
 @Composable
 fun WhatsNewDialog(
@@ -20,9 +22,11 @@ fun WhatsNewDialog(
     notes: String,
     onDismiss: () -> Unit,
 ) {
+    val unavailableNotes = stringResource(R.string.whats_new_notes_unavailable)
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("What’s new in v$version") },
+        title = { Text(stringResource(R.string.whats_new_title, version)) },
         text = {
             Column(
                 modifier = Modifier
@@ -31,14 +35,14 @@ fun WhatsNewDialog(
                     .verticalScroll(rememberScrollState()),
             ) {
                 Text(
-                    text = notes.ifBlank { "Release notes are not available for this version." },
+                    text = notes.ifBlank { unavailableNotes },
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(bottom = 4.dp),
                 )
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Close") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) }
         },
     )
 }

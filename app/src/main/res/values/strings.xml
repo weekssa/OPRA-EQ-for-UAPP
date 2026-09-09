@@ -1,4 +1,204 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">EQ Library</string>
+
+    <string name="nav_my_eqs">My EQs</string>
+    <string name="nav_eq_library">EQ Library</string>
+    <string name="nav_settings">Settings</string>
+    <string name="output_selector_format">%1$s ▾</string>
+    <string name="refresh_eq_library_content_description">Refresh EQ Library</string>
+
+    <string name="browse_headphones">Headphones</string>
+    <string name="browse_general_eqs">General EQs</string>
+    <string name="filter_all">All</string>
+    <string name="filter_sound">Sound</string>
+    <string name="filter_genre">Genre</string>
+    <string name="filter_utility">Utility</string>
+    <string name="filter_database">Database</string>
+    <string name="filter_creator">Creator</string>
+    <string name="filter_target">Target</string>
+    <string name="filter_selected_format">%1$s ✓</string>
+    <string name="filter_value_format">%1$s: %2$s</string>
+    <string name="filter_by_format">Filter by %1$s</string>
+    <string name="catalog_loading">Loading EQ Library…</string>
+    <string name="catalog_not_downloaded">EQ Library catalog not downloaded yet</string>
+    <string name="search_headphones">Search headphones…</string>
+    <string name="search_general_eqs">Search General EQs…</string>
+    <string name="no_headphone_eqs">No headphone EQs are available in the saved catalog.</string>
+    <string name="no_headphones_found">No headphones found</string>
+    <plurals name="model_count">
+        <item quantity="one">%1$d model</item>
+        <item quantity="other">%1$d models</item>
+    </plurals>
+    <plurals name="profile_count">
+        <item quantity="one">%1$d profile</item>
+        <item quantity="other">%1$d profiles</item>
+    </plurals>
+    <plurals name="selected_count">
+        <item quantity="one">%1$d selected</item>
+        <item quantity="other">%1$d selected</item>
+    </plurals>
+    <string name="count_pair">%1$s · %2$s</string>
+    <string name="general_eq_standalone_note">General EQs are standalone presets; v0.3 does not layer them on top of headphone correction EQs.</string>
+    <string name="action_select_all">Select all</string>
+    <string name="action_select_none">Select none</string>
+    <string name="save_selected_count">Save selected (%1$d)</string>
+    <string name="action_hide_selected">Hide selected</string>
+    <plurals name="general_eq_saved_message">
+        <item quantity="one">%1$d General EQ saved to My EQs. Initial export started.</item>
+        <item quantity="other">%1$d General EQs saved to My EQs. Initial export started.</item>
+    </plurals>
+    <plurals name="eq_hidden_message">
+        <item quantity="one">%1$d EQ hidden. Restore it in Settings → Hidden EQs.</item>
+        <item quantity="other">%1$d EQs hidden. Restore them in Settings → Hidden EQs.</item>
+    </plurals>
+    <string name="general_eq_none_visible">No visible General EQs are available. Hidden EQs can be restored from Settings → Hidden EQs.</string>
+    <string name="general_eq_none_match">No General EQs match this search and filter.</string>
+    <string name="general_parametric_eq">General parametric EQ</string>
+    <string name="saved_in_my_eqs_output">Saved in My EQs for this output</string>
+    <string name="community_submission_unverified">Community submission — not independently verified.</string>
+    <string name="community_submission_unverified_review">Community submission — not independently verified. Review the source before use.</string>
+    <string name="action_source">Source</string>
+    <string name="clear_search_content_description">Clear search</string>
+    <string name="manufacturers">Manufacturers</string>
+    <string name="action_try_again">Try again</string>
+
+    <string name="discard_changes_title">Discard changes?</string>
+    <string name="discard_selection_changes_text">Your unsaved preset-selection changes will be discarded.</string>
+    <string name="action_discard">Discard</string>
+    <string name="action_keep_editing">Keep editing</string>
+    <string name="source_data_unavailable_title">Source data unavailable</string>
+    <string name="action_ok">OK</string>
+    <string name="models">Models</string>
+    <string name="loading_saved_selections">Loading saved selections…</string>
+    <string name="action_clear">Clear</string>
+    <string name="history_hide">Hide history</string>
+    <string name="history_count">History (%1$d)</string>
+    <string name="history_count_with_selected">History (%1$d) · %2$s</string>
+    <string name="selection_behavior_explanation">New headphones start with no EQs selected. New profiles always appear in EQ Library; saved selections change only when you choose them. My EQs can notify you when new verified or unverified profiles arrive.</string>
+    <plurals name="profiles_hidden_by_filters">
+        <item quantity="one">%1$d EQ profile hidden by Database / Creator / Target filters.</item>
+        <item quantity="other">%1$d EQ profiles hidden by Database / Creator / Target filters.</item>
+    </plurals>
+    <plurals name="selected_presets_retained_unavailable">
+        <item quantity="one">%1$d selected preset is retained because it is no longer available in the current EQ Library catalog. Manage it from My EQs.</item>
+        <item quantity="other">%1$d selected presets are retained because they are no longer available in the current EQ Library catalog. Manage them from My EQs.</item>
+    </plurals>
+    <string name="unknown_manufacturer">Unknown manufacturer</string>
+    <string name="favorite_saved_message">Saved to My EQs favorites.</string>
+    <string name="favorite_removed_message">Removed from My EQs favorites.</string>
+    <string name="eq_hidden_from_library_message">EQ hidden from EQ Library. Restore it in Settings → Hidden EQs.</string>
+    <string name="source_not_usable_default">This catalog row is not a usable parametric EQ source.</string>
+    <string name="add_to_my_eqs_count">Add to My EQs (%1$d)</string>
+    <string name="save_changes_count">Save changes (%1$d)</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="creator_information_missing">Creator information missing</string>
+    <string name="source_data_unavailable_for_selection">Source data unavailable for selection</string>
+    <string name="hide_from_eq_library_content_description">Hide from EQ Library</string>
+    <string name="remove_favorite_content_description">Remove favorite</string>
+    <string name="add_favorite_content_description">Add favorite</string>
+    <string name="output_status_exact">Exact</string>
+    <string name="output_status_optimized">Optimized</string>
+    <string name="output_status_not_suitable">Not suitable</string>
+    <string name="output_status_not_exportable">Not exportable</string>
+
+    <string name="selected_folder_fallback">Selected folder</string>
+    <string name="export_folder_permission_failed">Couldn’t retain access to that folder. Choose another folder.</string>
+    <string name="export_folder_access_lost">Export folder access was lost. Choose the folder again.</string>
+    <string name="export_none_ready">No selected presets are ready to export.</string>
+    <plurals name="export_saved_current_count">
+        <item quantity="one">%1$d preset saved/current</item>
+        <item quantity="other">%1$d presets saved/current</item>
+    </plurals>
+    <plurals name="export_review_count">
+        <item quantity="one">%1$d needs review</item>
+        <item quantity="other">%1$d need review</item>
+    </plurals>
+    <string name="export_review_summary">%1$s · %2$s</string>
+    <string name="export_review_summary_with_reason">%1$s · %2$s: %3$s</string>
+    <string name="export_write_summary">%1$d new · %2$d updated · %3$d already current.</string>
+    <plurals name="export_all_current">
+        <item quantity="one">All %1$d selected preset is already current.</item>
+        <item quantity="other">All %1$d selected presets are already current.</item>
+    </plurals>
+    <string name="device_prefixed_message">%1$s · %2$s</string>
+
+    <string name="catalog_up_to_date">EQ Library catalog is up to date.</string>
+    <plurals name="catalog_saved_headphones_changed">
+        <item quantity="one">%1$d saved headphone has changes.</item>
+        <item quantity="other">%1$d saved headphones have changes.</item>
+    </plurals>
+    <string name="catalog_refresh_failed_saved">Couldn’t refresh EQ Library. Using your saved catalog.</string>
+    <string name="catalog_download_failed">Couldn’t download the EQ Library catalog.</string>
+    <string name="catalog_invalid_saved">Couldn’t use the new EQ Library catalog. Your previous saved catalog is still available.</string>
+    <string name="catalog_invalid_download">The downloaded EQ Library catalog couldn’t be processed.</string>
+    <string name="catalog_storage_failed_saved">Couldn’t save the new EQ Library catalog. Using your previous saved catalog.</string>
+    <string name="catalog_storage_failed">Couldn’t save the EQ Library catalog on this device.</string>
+
+    <string name="update_available_message">Version %1$s is available.</string>
+    <string name="update_up_to_date_message">EQ Library is up to date.</string>
+    <string name="update_check_unavailable_message">Couldn’t check for updates right now. Try again later.</string>
+    <string name="update_banner_available">EQ Library v%1$s is available</string>
+    <string name="update_banner_dismiss_content_description">Dismiss update banner</string>
+    <string name="update_whats_new">What’s new</string>
+    <string name="update_get_update">Get update</string>
+    <string name="update_banner_installed">Updated to v%1$s</string>
+    <string name="action_dismiss">Dismiss</string>
+    <string name="whats_new_title">What’s new in v%1$s</string>
+    <string name="whats_new_notes_unavailable">Release notes are not available for this version.</string>
+    <string name="action_close">Close</string>
+
+    <string name="opra_logo_content_description">OPRA — Open Headphone Database</string>
+    <string name="opra_attribution_text">Headphone and EQ data comes from OPRA, the open community-maintained headphone database. Individual profile creators and source details are preserved from OPRA where provided.</string>
+    <string name="opra_open_project">Open OPRA project</string>
+
+    <string name="error_headphone_not_saved">That headphone is no longer saved for this output.</string>
+    <string name="error_eq_not_selected">That EQ is no longer selected for this output.</string>
+    <string name="error_eq_not_saved">That EQ is no longer saved for this output.</string>
+    <string name="error_general_eq_not_saved">That General EQ is no longer saved for this output.</string>
+    <string name="error_select_supported_hardware">Select a supported hardware output before using direct Flash.</string>
+
+    <string name="error_select_black_pearl_reset">Select Black Pearl as the active output before resetting its EQ.</string>
+    <string name="error_enable_black_pearl_reset">Enable direct Flash in Settings → Black Pearl before resetting its EQ.</string>
+    <string name="error_connect_black_pearl_reset">Connect to the Black Pearl from My EQs before resetting its EQ.</string>
+    <string name="black_pearl_reset_success">Black Pearl EQ reset to flat.</string>
+    <string name="black_pearl_reset_removed_adjustment">Black Pearl EQ reset to flat · removed EQ Library’s %1$+.2f dB playback-gain adjustment</string>
+    <string name="black_pearl_reset_failed">Couldn’t reset to flat · %1$s</string>
+
+    <string name="error_select_fiio_reset">Select FiiO JA11 as the active output before resetting its EQ.</string>
+    <string name="error_enable_fiio_reset">Enable direct Flash in Settings → FiiO JA11 before resetting its EQ.</string>
+    <string name="error_connect_fiio_reset">Connect to the FiiO JA11 from My EQs before resetting its EQ.</string>
+    <string name="fiio_reset_success">FiiO JA11 reset to flat and saved to the device.</string>
+    <string name="fiio_reset_failed">Couldn’t reset FiiO JA11 to flat · %1$s</string>
+    <string name="fiio_reset_verification_failed">FiiO JA11 reset verification failed · %1$s</string>
+
+    <string name="error_select_jm12_reset">Select JCALLY JM12 as the active output before resetting its EQ.</string>
+    <string name="error_enable_jm12_reset">Enable direct Flash in Settings → JCALLY JM12 before resetting its EQ.</string>
+    <string name="error_connect_jm12_reset">Connect to the JCALLY JM12 from My EQs before resetting its EQ.</string>
+    <string name="jm12_reset_success">JCALLY JM12 reset to flat · playback gain restored %1$+.2f dB · power-cycle persistence still needs hardware validation</string>
+    <string name="jm12_reset_failed">Couldn’t reset JCALLY JM12 to flat · %1$s</string>
+    <string name="jm12_reset_verification_failed">JCALLY JM12 reset verification failed · %1$s</string>
+
+    <string name="error_select_black_pearl_flash">Select Black Pearl as the active output before using direct Flash.</string>
+    <string name="error_enable_black_pearl_flash">Enable direct Flash in Settings → Black Pearl before flashing.</string>
+    <string name="error_connect_black_pearl_flash">Connect to the Black Pearl from My EQs before flashing.</string>
+    <string name="black_pearl_flash_success">Flash successful · playback gain %1$+.2f dB</string>
+    <string name="black_pearl_flash_success_warning">Flash successful · playback gain %1$+.2f dB · %2$s</string>
+    <string name="black_pearl_not_flashable">Not flashable · %1$s</string>
+
+    <string name="error_enable_fiio_flash">Enable direct Flash in Settings → FiiO JA11 before flashing.</string>
+    <string name="error_connect_fiio_flash">Connect to the FiiO JA11 from My EQs before flashing.</string>
+    <string name="fiio_flash_success_exact">Flash successful · Exact · global EQ gain %1$+.2f dB · saved to FiiO JA11</string>
+    <string name="fiio_flash_success_optimized">Flash successful · Optimized · global EQ gain %1$+.2f dB · saved to FiiO JA11</string>
+    <string name="fiio_not_suitable">Not suitable for FiiO JA11 · %1$s</string>
+    <string name="fiio_flash_verification_failed">FiiO JA11 Flash verification failed · %1$s</string>
+
+    <string name="error_enable_jm12_flash">Enable direct Flash in Settings → JCALLY JM12 before flashing.</string>
+    <string name="error_connect_jm12_flash">Connect to the JCALLY JM12 from My EQs before flashing.</string>
+    <string name="jm12_flash_success_exact">Flash successful · Exact · playback gain %1$+.2f dB · power-cycle persistence still needs hardware validation</string>
+    <string name="jm12_flash_success_optimized">Flash successful · Optimized · playback gain %1$+.2f dB · power-cycle persistence still needs hardware validation</string>
+    <string name="jm12_not_suitable">Not suitable for JCALLY JM12 · %1$s</string>
+    <string name="jm12_flash_verification_failed">JCALLY JM12 Flash verification failed · %1$s</string>
+
+    <string name="personal_eq_import_failed">Couldn’t import that PEQ.</string>
 </resources>

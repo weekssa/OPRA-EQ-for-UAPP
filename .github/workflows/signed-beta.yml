@@ -2,7 +2,7 @@ name: Signed EQ Library Beta Candidate
 
 on:
   push:
-    branches: [eq-library-beta, eq-library-community-v0.3, 'v0.3-*']
+    branches: [eq-library-beta, eq-library-community-v0.3, 'v0.*']
 
 permissions:
   contents: write
@@ -112,19 +112,37 @@ jobs:
           set -euo pipefail
           source_apk="$(find dist -maxdepth 1 -type f -name 'EQ-Library-v*.apk' -print -quit)"
           test -n "$source_apk"
+          version_name="$(sed -n 's/^[[:space:]]*versionName = "\([^"]*\)".*/\1/p' app/build.gradle.kts | head -n 1)"
+          test -n "$version_name"
 
           publish_dir="$(mktemp -d)"
-          cp "$source_apk" "$publish_dir/EQ-Library-v0.3-mobile-test.apk"
-          sha256sum "$publish_dir/EQ-Library-v0.3-mobile-test.apk" > "$publish_dir/EQ-Library-v0.3-mobile-test.apk.sha256"
+          stable_name="EQ-Library-mobile-test.apk"
+          versioned_name="EQ-Library-v${version_name}-mobile-test.apk"
+          zip_name="EQ-Library-v${version_name}-mobile-test.zip"
+          cp "$source_apk" "$publish_dir/$stable_name"
+          cp "$source_apk" "$publish_dir/$versioned_name"
+          (
+            cd "$publish_dir"
+            zip -9 "$zip_name" "$versioned_name"
+          )
+          sha256sum "$publish_dir/$stable_name" > "$publish_dir/${stable_name}.sha256"
+          sha256sum "$publish_dir/$versioned_name" > "$publish_dir/${versioned_name}.sha256"
+          sha256sum "$publish_dir/$zip_name" > "$publish_dir/${zip_name}.sha256"
           cat > "$publish_dir/README.md" <<EOF
-          # EQ Library v0.3 mobile test build
+          # EQ Library mobile test build
 
-          Signed beta generated from commit `${GITHUB_SHA}`.
+          Signed beta generated from commit ${GITHUB_SHA} for app version ${version_name}.
 
-          Direct Android download:
-          https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/mobile-test-apk/EQ-Library-v0.3-mobile-test.apk
+          Stable Android APK download:
+          https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/mobile-test-apk/${stable_name}
 
-          This branch is only a temporary hands-on testing surface. It is not a public v0.3 release.
+          Versioned Android APK download:
+          https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/mobile-test-apk/${versioned_name}
+
+          ZIP fallback for browsers that do not finalize direct APK downloads:
+          https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/mobile-test-apk/${zip_name}
+
+          This branch is only a temporary hands-on testing surface. It is not a public release.
           EOF
 
           cd "$publish_dir"
@@ -132,12 +150,16 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b mobile-test-apk
-          git add README.md EQ-Library-v0.3-mobile-test.apk EQ-Library-v0.3-mobile-test.apk.sha256
-          git commit -m "Publish signed v0.3 mobile test APK from ${GITHUB_SHA::7}"
+          git add README.md "$stable_name" "$stable_name.sha256" "$versioned_name" "$versioned_name.sha256" "$zip_name" "$zip_name.sha256"
+          git commit -m "Publish signed mobile test APK from ${GITHUB_SHA::7}"
           git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git push --force origin HEAD:mobile-test-apk
 
           {
             echo "### Mobile test APK"
-            echo "https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/mobile-test-apk/EQ-Library-v0.3-mobile-test.apk"
+            echo "https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/mobile-test-apk/${stable_name}"
+            echo ""
+            echo "Versioned copy: https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/mobile-test-apk/${versioned_name}"
+            echo ""
+            echo "ZIP fallback: https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/mobile-test-apk/${zip_name}"
           } >> "$GITHUB_STEP_SUMMARY"

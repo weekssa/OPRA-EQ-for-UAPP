@@ -9,13 +9,13 @@ import org.junit.Test
 
 class BlackPearlFlashPlanTest {
     @Test
-    fun zeroPreampPeakAndShelvesProduceExactEqPlan() {
+    fun nativeQuantizedPeakAndShelvesProduceExactEqPlan() {
         val profile = profile(
             preamp = 0.0,
             bands = listOf(
-                OpraBand("low_shelf", 105.0, 4.0, 0.71, null),
-                OpraBand("peak_dip", 1_000.0, -2.5, 1.2, null),
-                OpraBand("high_shelf", 8_000.0, -1.5, 0.71, null),
+                OpraBand("low_shelf", 105.0, 4.0, 0.75, null),
+                OpraBand("peak_dip", 1_000.0, -2.5, 1.25, null),
+                OpraBand("high_shelf", 8_000.0, -1.5, 0.75, null),
             ),
         )
 
@@ -23,6 +23,7 @@ class BlackPearlFlashPlanTest {
         assertTrue(plan is BlackPearlFlashPlan.Ready)
         plan as BlackPearlFlashPlan.Ready
         assertEquals(DevicePresetFidelity.EXACT, plan.fidelity)
+        assertEquals("source values preserved", plan.adaptationSummary)
         assertEquals(0.0, plan.requiredPlaybackGainDb, 0.0)
         assertEquals(0, plan.omittedBandCount)
         assertEquals(null, plan.warning)
@@ -39,28 +40,47 @@ class BlackPearlFlashPlanTest {
     }
 
     @Test
-    fun generatedSafetyHeadroomIsCarriedSeparatelyIntoFlashPlan() {
-        val source = profile(preamp = null).copy(eqLibrarySafetyHeadroomDb = -4.5)
+    fun generatedHeadroomIsDerivedFromFinalHardwareResponseWithoutMutatingCanonicalMetadata() {
+        val source = profile(
+            preamp = null,
+            bands = listOf(OpraBand("peak_dip", 1_000.0, 4.0, 1.0, null)),
+        ).copy(eqLibrarySafetyHeadroomDb = -9.0)
+
         val plan = buildBlackPearlFlashPlan(source, activeSlot = 0x00)
 
         assertTrue(plan is BlackPearlFlashPlan.Ready)
-        assertEquals(-4.5, (plan as BlackPearlFlashPlan.Ready).requiredPlaybackGainDb, 0.0)
+        plan as BlackPearlFlashPlan.Ready
+        assertEquals(DevicePresetFidelity.OPTIMIZED, plan.fidelity)
+        assertTrue(plan.adaptationSummary.contains("generated headroom"))
+        assertEquals(null, plan.warning)
+        assertTrue(plan.requiredPlaybackGainDb <= -3.9)
+        assertTrue(plan.requiredPlaybackGainDb >= -4.1)
         assertEquals(null, source.preampGainDb)
-        assertEquals(-4.5, source.eqLibrarySafetyHeadroomDb!!, 0.0)
+        assertEquals(-9.0, source.eqLibrarySafetyHeadroomDb!!, 0.0)
     }
 
     @Test
-    fun missingBothSourcePreampAndGeneratedHeadroomIsRejected() {
-        val source = profile(preamp = null).copy(eqLibrarySafetyHeadroomDb = null)
+    fun missingSourcePreampAndStoredHeadroomStillGetsSafeDerivedHardwareHeadroom() {
+        val source = profile(
+            preamp = null,
+            bands = listOf(OpraBand("peak_dip", 1_000.0, 2.0, 1.0, null)),
+        ).copy(eqLibrarySafetyHeadroomDb = null)
 
         val plan = buildBlackPearlFlashPlan(source, activeSlot = 0x00)
 
-        assertTrue(plan is BlackPearlFlashPlan.NotRepresentable)
-        assertTrue((plan as BlackPearlFlashPlan.NotRepresentable).reason.contains("cannot determine"))
+        assertTrue(plan is BlackPearlFlashPlan.Ready)
+        plan as BlackPearlFlashPlan.Ready
+        assertEquals(DevicePresetFidelity.OPTIMIZED, plan.fidelity)
+        assertTrue(plan.adaptationSummary.contains("generated headroom"))
+        assertEquals(null, plan.warning)
+        assertTrue(plan.requiredPlaybackGainDb <= -1.9)
+        assertTrue(plan.requiredPlaybackGainDb >= -2.1)
+        assertEquals(null, source.preampGainDb)
+        assertEquals(null, source.eqLibrarySafetyHeadroomDb)
     }
 
     @Test
-    fun moreThanTenBandsUsesFirstTenInSourcePriorityOrderAndWarns() {
+    fun moreThanTenBandsFitsCompleteResponseAndDoesNotMutateSource() {
         val bands = (1..12).map { index ->
             OpraBand("peak_dip", index * 100.0, index / 10.0, 1.0, null)
         }
@@ -70,7 +90,10 @@ class BlackPearlFlashPlanTest {
 
         assertEquals(DevicePresetFidelity.OPTIMIZED, plan.fidelity)
         assertEquals(2, plan.omittedBandCount)
-        assertTrue(plan.warning.orEmpty().contains("first 10 source-priority bands"))
+        assertTrue(plan.adaptationSummary.contains("12 → 10 bands · full-response fit"))
+        assertEquals(null, plan.warning)
+        assertTrue(plan.rmsErrorDb >= 0.0)
+        assertTrue(plan.maxAbsoluteErrorDb >= 0.0)
         assertEquals(12, source.bands!!.size)
         assertEquals(bands, source.bands)
     }
@@ -78,8 +101,8 @@ class BlackPearlFlashPlanTest {
     @Test
     fun protocolEncodableGainOutsideValidatedRangeIsReadyWithExplicitCaution() {
         val source = profile(
-            preamp = -3.9,
-            bands = listOf(OpraBand("peak_dip", 13_500.0, -11.9, 4.0, null)),
+            preamp = -4.0,
+            bands = listOf(OpraBand("peak_dip", 13_500.0, -12.0, 4.0, null)),
         )
 
         val plan = buildBlackPearlFlashPlan(source, activeSlot = 0x00)
@@ -87,7 +110,8 @@ class BlackPearlFlashPlanTest {
         assertTrue(plan is BlackPearlFlashPlan.Ready)
         plan as BlackPearlFlashPlan.Ready
         assertEquals(DevicePresetFidelity.EXACT, plan.fidelity)
-        assertTrue(plan.warning.orEmpty().contains("Band 1 -11.90 dB"))
+        assertEquals("source values preserved", plan.adaptationSummary)
+        assertTrue(plan.warning.orEmpty().contains("Band 1 -12.00 dB"))
         assertTrue(plan.warning.orEmpty().contains("outside EQ Library's currently validated"))
         assertTrue(plan.warning.orEmpty().contains("sent unchanged"))
         assertTrue(plan.warning.orEmpty().contains("not be clamped"))

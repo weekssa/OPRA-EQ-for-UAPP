@@ -21,7 +21,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - `github-community` is a daily scheduled source with source-health ownership. Public exact structured community PEQ uses the established Unverified community policy while specific source restrictions remain binding.
 - Source maintenance is now automation-first: every registered source with a legitimate stable public retrieval path is scheduled or runtime-managed; sources that cannot currently be automated safely are explicitly paused rather than depending on recurring manual input.
 - Head-Fi and Audio Science Review moved from manual/curated currentness to weekly scheduled public adapters.
-- Squiglink-compatible sources moved from manual intake to weekly scheduled ecosystem-currentness/provenance monitoring. Measurement-only `phone_book`/frequency-response data remains non-PEQ and is never converted into fabricated source-authored filters.
+- Squiglink-compatible sources moved from manual intake to weekly scheduled ecosystem-currentness/provenance monitoring. Measurement-only `phone_book`/frequency-response data remains non-PEQ and is never converted into fabricated source-authored PEQ.
 - ParaEQ General presets moved to weekly scheduled qualified-source currentness probing; upstream source changes remain review-gated rather than silently mutating qualified preset classification or acoustic history.
 - Topping Community is paused instead of relying on recurring manual capture. It can become scheduled only when TOPPING provides an authorized public API/feed or explicit permission for the required automated retrieval.
 - oratory1990 direct Reddit currentness is paused while Reddit access is unavailable; structured values may continue to arrive through separately automated qualified carriers such as OPRA.
@@ -34,6 +34,54 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Added regression coverage for valid Unverified publication, missing-preamp preservation, exact-duplicate provenance merging, short model identity with manufacturer context, target-folder handling, malformed/unsupported PEQ quarantine, unknown headphone quarantine, and General graphic-EQ rejection.
 - Live branch automation recorded successful source-health scans for Head-Fi, Audio Science Review, Squiglink ecosystem currentness, and ParaEQ, with zero consecutive failures for those newly automated lanes.
 - The unified automated-source workflow passed its adapter/automation-contract tests and atomic living-archive validation on the feature branch before final PR closeout.
+
+## [0.5.0] - Unreleased
+
+### Added
+
+- A unified output registry that groups selectable targets as **Hardware DACs**, **Apps**, and **Universal formats**, with one declared source of truth for display labels, file-vs-hardware behavior, format kind, capability profile, and validation status.
+- Additional selectable app/universal output contexts, including Equalizer APO-style parametric text, EasyEffects-compatible parametric import, portable AutoEq GraphicEQ, and **TOPPING Tune** AutoEq text alongside the existing UAPP/ToneBoosters, Poweramp, and Wavelet paths.
+- **TOPPING Tune** as a selectable App output using documented AutoEq `.txt` import, a 10-band finite-target adapter, documented ±12 dB preamp/filter-gain and Q 0.1–15 limits, and conservative Optimized fidelity until downstream device storage precision is independently qualified.
+- **FiiO JA11** as a hardware-only five-band PEQ output with an independent Direct Flash toggle (OFF by default), strict USB identity, read/apply/readback/save verification, and Reset EQ to flat.
+- **JCALLY JM12** on stock firmware as a separate hardware-only five-band PEQ output with its own Direct Flash toggle (OFF by default), strict USB identity/register protocol, readback verification, fail-safe EQ bypass during replacement, tracked EQ Library playback-gain delta, and Reset EQ to flat.
+- A shared deterministic finite-hardware response adapter used by TRN Black Pearl (10 bands), FiiO JA11 (5 bands), and stock JCALLY JM12 (5 bands). It preserves native exact representations where target quantization permits and otherwise fits the complete source response under fixed RMS/max-error gates.
+- Versioned derived-representation semantics/fingerprints so a hardware/output adaptation-rule change makes previously generated target state detectably stale without changing canonical source fingerprints.
+- Device-specific JA11/JM12 protocol notes and Pixel 9 hands-on qualification checklists.
+
+### Changed
+
+- Hardware adaptation no longer treats over-budget Black Pearl/JA11/JM12 profiles as a first-N truncation problem. The shared adapter evaluates and fits the **complete canonical response** while retaining the complete source unchanged.
+- Black Pearl file export and Direct Flash now consume the same shared 10-band device representation. This supersedes the v0.3 Black Pearl first-10 adaptation rule; the independent UAPP/ToneBoosters first-10 rule remains unchanged.
+- Black Pearl `.txt` export now follows the verified pyBlackPearl AutoEq importer syntax for shelves and peaks (`PK` / `LS` / `HS`) while generic AutoEq outputs keep their own standard tokens. The file preserves the same derived bands and true playback preamp as Direct Flash instead of clamping values to a third-party importer's convenience range.
+- If Black Pearl playback preamp falls outside pyBlackPearl's observed `-16..+6 dB` import range, EQ Library keeps the true exported value and surfaces the importer limitation; Direct Flash remains an independent hardware path and is not disabled merely because a third-party importer will adjust the text value.
+- Missing source preamp for finite hardware is handled by conservative target-specific headroom derived from the final quantized target response. Generated headroom is representation metadata and never rewrites canonical `preampGainDb` or canonical safety-headroom metadata.
+- Exact/Optimized classification now accounts for actual device quantization rather than only broad parameter ranges/band count. Native target rounding, generated headroom, and complete-response fitting are explicitly Optimized and expose concise reasons separately from safety cautions.
+- TOPPING Tune over-budget profiles use the complete-response finite-target fitter rather than silently taking the first 10 source bands. Source preamp outside Tune's documented range is rejected instead of clamped, while the public lack of downstream storage-resolution documentation prevents an Exact product claim for now.
+- Hardware-only outputs explicitly produce no file export artifact. FiiO JA11 and stock JCALLY JM12 therefore keep Direct Flash without inventing a preset-file interchange format; Add/Save stores output-specific state but never automatically writes hardware.
+- Settings nests device-specific Direct Flash controls under enabled hardware outputs and continues to present JA11/JM12 as **Hardware validation pending** until their physical gates pass.
+- Signed-beta publication now supports `v0.*` development branches and produces stable plus versioned mobile-test APK names for exact-candidate hardware testing.
+- Android app orchestration now follows explicit MAD-style boundaries: `MainActivity` is the lifecycle/platform boundary, `EqLibraryViewModel` owns immutable `StateFlow` UI state, a manual composition root constructs Android data sources, repositories use injected dispatcher/platform contracts instead of retaining `Context`, and hardware USB sessions survive configuration changes until the ViewModel is actually cleared.
+- Transient selection/export UI state that users expect to survive activity recreation now uses Bundle-safe saved state, including unsaved headphone profile selections, General EQ batch selections, What’s New presentation state, and the pending export intent while Android’s folder picker is open.
+
+### Fixed
+
+- Black Pearl Flash confirmation preview now consumes the actual `BlackPearlFlashPlan` used by the transaction instead of guessing Exact/Optimized from the source band count, preventing UI fidelity/gain/warning disagreement with the state that would be written.
+- Black Pearl informational adaptation reasons are now separate from hardware safety cautions, so ordinary Optimized plans use the normal **Flash** action while **Flash anyway** is reserved for an actual caution such as a protocol-encodable filter gain outside the currently validated ±10 dB range.
+- Managed hardware rows and Flash confirmations now distinguish reasons such as source values preserved, native hardware rounding, complete-response band fitting, and generated headroom rather than presenting every Optimized result as the same generic transformation.
+- Stock JM12 digital-gain register updates preserve unrelated register bytes instead of reconstructing bytes that EQ Library does not own.
+- Shared hardware adaptation rejects unsupported source filters and quality-gate failures instead of silently dropping or clamping them.
+- Obsolete tests that encoded pre-v0.5 first-N Black Pearl behavior were replaced with regression coverage for the approved complete-response/shared-adapter contract rather than weakening validation.
+- The SAF export/cleanup boundary now distinguishes a confirmed missing owned document/path from a provider/permission lookup failure, so transient access failures cannot be mistaken for deletion and cannot silently discard EQ Library’s ownership record.
+
+### Validation
+
+- Automated coverage includes native/quantized Exact behavior, deterministic over-budget response fitting, target-derived headroom without canonical mutation, quality-gate rejection, Black Pearl file/Flash representation parity and `PK`/`LS`/`HS` import syntax, TOPPING Tune finite-target behavior and conservative fidelity, device protocol golden vectors, full-slot overwrite/padding, readback/failure ordering, wrong-device protection, Direct Flash default-OFF state, reset behavior, output registry/file-vs-hardware semantics, safety-warning/adaptation-reason separation, and versioned currentness.
+- The v0.5 branch was synchronized with the newer `main` catalog/currentness state before final candidate validation so the release candidate does not drop current published catalog data.
+- Candidate source `30535bd3b1bce9940d23e8735d88a4d9b6a9a4ef` passed Android CI run #1018, CodeQL run #899, Signed EQ Library Beta Candidate run #691, catalog currentness, priority community coverage, and automatic dependency submission. Its signed APK `EQ-Library-v0.5.0-beta-30535bd.apk` has SHA-256 `5a2d4ff47097b1ba37b6bd625a4bfd3de444bf1895d4c0d0484fa2075adea042` and matches the repository-pinned release signer certificate.
+- Black Pearl v0.5 hardware/DSP qualification is complete: the destructive/fidelity/persistence regression passed on signed behavior candidate `34a9cd819466cb301456c052eecadb02e6271e5e`, and the required focused Reset-result wording follow-up also passed after the informational correction. The later `30535bd3...` architecture refactor preserves device/DSP/conversion behavior, so documentation-only release closeout does not invalidate that completed qualification.
+- FiiO JA11 and stock JCALLY JM12 remain **Hardware validation pending** until their pinned exact-candidate Pixel 9 hands-on checklists pass.
+- Stock JM12 power-cycle persistence is not claimed: no independently corroborated explicit Save command is used, and persistence/tracked-gain reconciliation must be resolved by the physical checklist before qualification.
+- Documentation/release-preparation commits after the pinned beta do not change that APK, but the controlled public release must still rebuild/test/sign the exact finalized `main` source and verify the same permanent signer before publication.
 
 ## [0.4.0] - 2026-09-06
 

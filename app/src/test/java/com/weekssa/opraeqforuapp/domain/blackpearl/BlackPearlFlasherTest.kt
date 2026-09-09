@@ -222,7 +222,7 @@ class BlackPearlFlasherTest {
         preampGainDb = preamp,
         bands = listOf(
             OpraBand("peak_dip", 1_000.0, -2.0, 1.0, null),
-            OpraBand("low_shelf", 105.0, 3.0, 0.71, null),
+            OpraBand("low_shelf", 105.0, 3.0, 0.75, null),
         ),
     )
 

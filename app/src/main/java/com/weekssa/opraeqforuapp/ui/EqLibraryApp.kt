@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -39,28 +40,16 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.BuildConfig
-import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
-import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshFailureReason
-import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshResult
+import com.weekssa.opraeqforuapp.R
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
-import com.weekssa.opraeqforuapp.data.export.ExportCurrentness
-import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
-import com.weekssa.opraeqforuapp.data.export.PresetExportItemResult
-import com.weekssa.opraeqforuapp.data.export.PresetExportSummary
-import com.weekssa.opraeqforuapp.data.sync.CatalogSyncOutcome
-import com.weekssa.opraeqforuapp.data.update.AppUpdateCheckResult
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqPreset
-import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
-import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
 import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
-import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.managed.withHiddenReviewPromptsSuppressed
-import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
-import com.weekssa.opraeqforuapp.domain.settings.ThemeMode
 import com.weekssa.opraeqforuapp.domain.update.SemVer
 import com.weekssa.opraeqforuapp.ui.components.PostUpdateBanner
 import com.weekssa.opraeqforuapp.ui.components.UpdateAvailableBanner
@@ -71,10 +60,10 @@ import com.weekssa.opraeqforuapp.ui.screens.MyEqsHomeScreen
 import com.weekssa.opraeqforuapp.ui.screens.SettingsScreen
 import kotlinx.coroutines.launch
 
-private enum class EqLibraryDestination(val label: String) {
-    MyEqs("My EQs"),
-    EqLibrary("EQ Library"),
-    Settings("Settings"),
+private enum class EqLibraryDestination(@param:StringRes val labelResId: Int) {
+    MyEqs(R.string.nav_my_eqs),
+    EqLibrary(R.string.nav_eq_library),
+    Settings(R.string.nav_settings),
 }
 
 private sealed interface ActiveOutputExportRequest {
@@ -95,66 +84,78 @@ private sealed interface ActiveOutputExportRequest {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EqLibraryApp(
-    appPreferences: AppPreferences,
-    catalogState: CatalogState,
-    managedHeadphones: List<ManagedHeadphoneRecord>,
-    savedEqs: List<SavedEqRecord>,
-    savedGeneralEqs: List<SavedGeneralEqRecord>,
-    blackPearlConnectionState: BlackPearlConnectionState,
-    onConnectBlackPearl: () -> Unit,
-    onResetBlackPearl: suspend () -> String,
-    onFlashManagedProfile: suspend (String, String) -> String,
-    onFlashSavedEq: suspend (String) -> String,
-    onFlashGeneralEq: suspend (String) -> String,
-    onRefreshCatalog: suspend () -> CatalogSyncOutcome,
-    onLoadManagedHeadphone: suspend (String) -> ManagedHeadphoneRecord?,
-    onSaveSelection: suspend (String, Set<String>, Boolean) -> Unit,
-    onRemoveHeadphone: suspend (String) -> Unit,
-    onRemoveManagedProfile: suspend (String, String, Boolean) -> PresetCleanupSummary?,
-    onRemoveManagedHeadphone: suspend (String, Boolean) -> PresetCleanupSummary?,
-    onDeleteSavedFilesForProfiles: suspend (Set<String>) -> PresetCleanupSummary,
-    onDeleteSavedFilesForProduct: suspend (String) -> PresetCleanupSummary,
-    onMarkReviewed: suspend (String) -> Unit,
-    onToggleFavorite: suspend (OpraEqProfile, String, String) -> Boolean,
-    onSaveGeneralPreset: suspend (GeneralEqPreset) -> Boolean,
-    onHideCanonicalProfiles: suspend (Set<String>) -> Unit,
-    onUnhideCanonicalProfiles: suspend (Set<String>) -> Unit,
-    onImportPersonal: suspend (String, String, String, String?, String) -> SavedEqRecord,
-    onDeleteSavedEq: suspend (String) -> Unit,
-    onRemoveGeneralEq: suspend (String) -> Unit,
-    onPersistExportTree: suspend (Uri) -> Boolean,
-    onEvaluateExportCurrentness: suspend (Uri?) -> ExportCurrentness,
-    onExportSelected: suspend (Uri, ExportDevice) -> PresetExportSummary,
-    onExportProduct: suspend (Uri, String, ExportDevice) -> PresetExportSummary,
-    onExportManagedProfile: suspend (Uri, String, String, ExportDevice) -> PresetExportSummary,
-    onExportSavedEq: suspend (Uri, String, ExportDevice) -> PresetExportSummary,
-    onExportGeneralEq: suspend (Uri, String, ExportDevice) -> PresetExportSummary,
-    onExportGeneralEqs: suspend (Uri, Set<String>, ExportDevice) -> PresetExportSummary,
-    onCheckForUpdates: suspend () -> AppUpdateCheckResult,
-    onDismissUpdate: suspend (String) -> Unit,
-    onDismissPostUpdate: suspend () -> Unit,
-    onOpenUrl: (String) -> Unit,
-    onThemeModeChange: (ThemeMode) -> Unit,
-    onExportTargetChange: (ExportDevice, Boolean) -> Unit,
-    onActiveExportTargetChange: (ExportDevice) -> Unit,
-    onDirectBlackPearlFlashEnabledChange: (Boolean) -> Unit,
+    state: EqLibraryUiState,
+    actions: EqLibraryActions,
 ) {
+    val appPreferences = state.appPreferences
+    val catalogState = state.catalogState
+    val managedHeadphones = state.managedHeadphones
+    val savedEqs = state.savedEqs
+    val savedGeneralEqs = state.savedGeneralEqs
+    val exportCurrentness = state.exportCurrentness
+    val blackPearlConnectionState = state.blackPearlConnectionState
+    val fiioJa11ConnectionState = state.fiioJa11ConnectionState
+    val jcallyJm12ConnectionState = state.jcallyJm12ConnectionState
+
+    val onConnectBlackPearl = actions.onConnectBlackPearl
+    val onResetBlackPearl = actions.onResetBlackPearl
+    val onConnectFiioJa11 = actions.onConnectFiioJa11
+    val onResetFiioJa11 = actions.onResetFiioJa11
+    val onConnectJcallyJm12 = actions.onConnectJcallyJm12
+    val onResetJcallyJm12 = actions.onResetJcallyJm12
+    val onFlashManagedProfile = actions.onFlashManagedProfile
+    val onFlashSavedEq = actions.onFlashSavedEq
+    val onFlashGeneralEq = actions.onFlashGeneralEq
+    val onRefreshCatalog = actions.onRefreshCatalog
+    val onLoadManagedHeadphone = actions.onLoadManagedHeadphone
+    val onSaveSelection = actions.onSaveSelection
+    val onRemoveHeadphone = actions.onRemoveHeadphone
+    val onRemoveManagedProfile = actions.onRemoveManagedProfile
+    val onRemoveManagedHeadphone = actions.onRemoveManagedHeadphone
+    val onDeleteSavedFilesForProfiles = actions.onDeleteSavedFilesForProfiles
+    val onDeleteSavedFilesForProduct = actions.onDeleteSavedFilesForProduct
+    val onMarkReviewed = actions.onMarkReviewed
+    val onToggleFavorite = actions.onToggleFavorite
+    val onSaveGeneralPreset = actions.onSaveGeneralPreset
+    val onHideCanonicalProfiles = actions.onHideCanonicalProfiles
+    val onUnhideCanonicalProfiles = actions.onUnhideCanonicalProfiles
+    val onImportPersonal = actions.onImportPersonal
+    val onDeleteSavedEq = actions.onDeleteSavedEq
+    val onRemoveGeneralEq = actions.onRemoveGeneralEq
+    val onPersistExportTree = actions.onPersistExportTree
+    val onExportSelected = actions.onExportSelected
+    val onExportProduct = actions.onExportProduct
+    val onExportManagedProfile = actions.onExportManagedProfile
+    val onExportSavedEq = actions.onExportSavedEq
+    val onExportGeneralEq = actions.onExportGeneralEq
+    val onExportGeneralEqs = actions.onExportGeneralEqs
+    val onCheckForUpdates = actions.onCheckForUpdates
+    val onDismissUpdate = actions.onDismissUpdate
+    val onDismissPostUpdate = actions.onDismissPostUpdate
+    val onOpenUrl = actions.onOpenUrl
+    val onThemeModeChange = actions.onThemeModeChange
+    val onExportTargetChange = actions.onExportTargetChange
+    val onActiveExportTargetChange = actions.onActiveExportTargetChange
+    val onDirectBlackPearlFlashEnabledChange = actions.onDirectBlackPearlFlashEnabledChange
+    val onDirectFiioJa11FlashEnabledChange = actions.onDirectFiioJa11FlashEnabledChange
+    val onDirectJcallyJm12FlashEnabledChange = actions.onDirectJcallyJm12FlashEnabledChange
+
     var selectedDestinationIndex by rememberSaveable { mutableIntStateOf(0) }
     var selectedManagedProductId by rememberSaveable { mutableStateOf<String?>(null) }
     var outputMenuExpanded by remember { mutableStateOf(false) }
-    var pendingExportRequest by remember { mutableStateOf<ActiveOutputExportRequest?>(null) }
-    var whatsNewVersion by remember { mutableStateOf<String?>(null) }
-    var whatsNewNotes by remember { mutableStateOf("") }
+    var pendingExportRequestState by rememberSaveable { mutableStateOf<ArrayList<String>?>(null) }
+    var whatsNewVersion by rememberSaveable { mutableStateOf<String?>(null) }
+    var whatsNewNotes by rememberSaveable { mutableStateOf("") }
 
     val destinations = remember { EqLibraryDestination.entries }
     val selectedDestination = destinations[selectedDestinationIndex]
     val activeOutput = appPreferences.exportTargets.activeTarget
-    var exportCurrentness by remember(activeOutput) { mutableStateOf(ExportCurrentness()) }
     val enabledOutputs = remember(appPreferences.exportTargets) {
         ExportDevice.selectableOutputs.filter(appPreferences.exportTargets::isSelected)
     }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val exportFolderPermissionFailedMessage = stringResource(R.string.export_folder_permission_failed)
     val favoriteProfileIds = remember(savedEqs) {
         savedEqs.asSequence()
             .filter { it.kind == SavedEqKind.Favorite }
@@ -181,16 +182,6 @@ fun EqLibraryApp(
         }
     }
 
-    LaunchedEffect(
-        activeOutput,
-        appPreferences.exportTreeUri,
-        managedHeadphones,
-        savedEqs,
-        savedGeneralEqs,
-    ) {
-        exportCurrentness = onEvaluateExportCurrentness(appPreferences.exportTreeUri?.let(Uri::parse))
-    }
-
     val latestVersion = appPreferences.updates.latestVersion
     val updateAvailable = latestVersion != null &&
         SemVer.parse(latestVersion)?.let { latest ->
@@ -215,8 +206,9 @@ fun EqLibraryApp(
     suspend fun executeExport(
         uri: Uri,
         request: ActiveOutputExportRequest?,
-    ): PresetExportSummary? {
-        val summary = when (request) {
+    ): String? {
+        if (request != null && !request.device.supportsFileExport) return null
+        return when (request) {
             is ActiveOutputExportRequest.AllManaged -> onExportSelected(uri, request.device)
             is ActiveOutputExportRequest.Product -> onExportProduct(uri, request.productId, request.device)
             is ActiveOutputExportRequest.ManagedProfile -> onExportManagedProfile(
@@ -230,37 +222,41 @@ fun EqLibraryApp(
             is ActiveOutputExportRequest.GeneralEqBatch -> onExportGeneralEqs(uri, request.presetIds, request.device)
             null -> null
         }
-        if (summary != null) {
-            exportCurrentness = onEvaluateExportCurrentness(uri)
-        }
-        return summary
     }
 
     val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
-        val request = pendingExportRequest
-        pendingExportRequest = null
+        val request = restoreActiveOutputExportRequest(pendingExportRequestState)
+        pendingExportRequestState = null
         if (uri == null) return@rememberLauncherForActivityResult
         scope.launch {
             if (!onPersistExportTree(uri)) {
-                snackbarHostState.showSnackbar("Couldn’t retain access to that folder. Choose another folder.")
+                snackbarHostState.showSnackbar(exportFolderPermissionFailedMessage)
             } else {
-                executeExport(uri, request)?.let { snackbarHostState.showSnackbar(activeOutputExportMessage(it)) }
+                executeExport(uri, request)?.let { message ->
+                    snackbarHostState.showSnackbar(message)
+                }
             }
         }
     }
 
     val chooseExportFolder: (ActiveOutputExportRequest?) -> Unit = { request ->
-        pendingExportRequest = request
+        pendingExportRequestState = request?.toSaveableState()
         folderPicker.launch(appPreferences.exportTreeUri?.let(Uri::parse))
     }
 
     val runExportRequest: (ActiveOutputExportRequest) -> Unit = { request ->
-        val storedUri = appPreferences.exportTreeUri?.let(Uri::parse)
-        if (storedUri == null) {
-            chooseExportFolder(request)
+        if (!request.device.supportsFileExport) {
+            Unit
         } else {
-            scope.launch {
-                executeExport(storedUri, request)?.let { snackbarHostState.showSnackbar(activeOutputExportMessage(it)) }
+            val storedUri = appPreferences.exportTreeUri?.let(Uri::parse)
+            if (storedUri == null) {
+                chooseExportFolder(request)
+            } else {
+                scope.launch {
+                    executeExport(storedUri, request)?.let { message ->
+                        snackbarHostState.showSnackbar(message)
+                    }
+                }
             }
         }
     }
@@ -285,17 +281,14 @@ fun EqLibraryApp(
     }
     val requestCatalogRefresh = {
         if (!catalogBusy) {
-            scope.launch { snackbarHostState.showSnackbar(activeOutputRefreshMessage(onRefreshCatalog())) }
+            scope.launch {
+                snackbarHostState.showSnackbar(onRefreshCatalog())
+            }
         }
     }
     val requestUpdateCheck: () -> Unit = {
         scope.launch {
-            val message = when (val result = onCheckForUpdates()) {
-                is AppUpdateCheckResult.UpdateAvailable -> "Version ${result.release.version} is available."
-                is AppUpdateCheckResult.UpToDate -> "EQ Library is up to date."
-                AppUpdateCheckResult.Unavailable -> "Couldn’t check for updates right now. Try again later."
-            }
-            snackbarHostState.showSnackbar(message)
+            snackbarHostState.showSnackbar(onCheckForUpdates())
         }
     }
 
@@ -307,12 +300,17 @@ fun EqLibraryApp(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(selectedDestination.label) },
+                title = { Text(stringResource(selectedDestination.labelResId)) },
                 actions = {
                     if (selectedDestination != EqLibraryDestination.Settings) {
                         Box {
                             TextButton(onClick = { outputMenuExpanded = true }) {
-                                Text("${outputTitle(activeOutput)} ▾")
+                                Text(
+                                    stringResource(
+                                        R.string.output_selector_format,
+                                        outputTitle(activeOutput),
+                                    ),
+                                )
                             }
                             DropdownMenu(
                                 expanded = outputMenuExpanded,
@@ -336,7 +334,12 @@ fun EqLibraryApp(
                             if (catalogBusy) {
                                 CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                             } else {
-                                Icon(Icons.Outlined.Refresh, contentDescription = "Refresh EQ Library")
+                                Icon(
+                                    Icons.Outlined.Refresh,
+                                    contentDescription = stringResource(
+                                        R.string.refresh_eq_library_content_description,
+                                    ),
+                                )
                             }
                         }
                     }
@@ -362,7 +365,7 @@ fun EqLibraryApp(
                                 contentDescription = null,
                             )
                         },
-                        label = { Text(destination.label) },
+                        label = { Text(stringResource(destination.labelResId)) },
                     )
                 }
             }
@@ -408,6 +411,12 @@ fun EqLibraryApp(
                                 directBlackPearlFlashEnabled = appPreferences.directBlackPearlFlashEnabled,
                                 blackPearlConnectionState = blackPearlConnectionState,
                                 onConnectBlackPearl = onConnectBlackPearl,
+                                directFiioJa11FlashEnabled = appPreferences.directFiioJa11FlashEnabled,
+                                fiioJa11ConnectionState = fiioJa11ConnectionState,
+                                onConnectFiioJa11 = onConnectFiioJa11,
+                                directJcallyJm12FlashEnabled = appPreferences.directJcallyJm12FlashEnabled,
+                                jcallyJm12ConnectionState = jcallyJm12ConnectionState,
+                                onConnectJcallyJm12 = onConnectJcallyJm12,
                                 onFlashManagedProfile = { profileId ->
                                     onFlashManagedProfile(selectedManagedHeadphone.productId, profileId)
                                 },
@@ -443,6 +452,14 @@ fun EqLibraryApp(
                                 blackPearlConnectionState = blackPearlConnectionState,
                                 onConnectBlackPearl = onConnectBlackPearl,
                                 onResetBlackPearl = onResetBlackPearl,
+                                directFiioJa11FlashEnabled = appPreferences.directFiioJa11FlashEnabled,
+                                fiioJa11ConnectionState = fiioJa11ConnectionState,
+                                onConnectFiioJa11 = onConnectFiioJa11,
+                                onResetFiioJa11 = onResetFiioJa11,
+                                directJcallyJm12FlashEnabled = appPreferences.directJcallyJm12FlashEnabled,
+                                jcallyJm12ConnectionState = jcallyJm12ConnectionState,
+                                onConnectJcallyJm12 = onConnectJcallyJm12,
+                                onResetJcallyJm12 = onResetJcallyJm12,
                                 onExportAll = requestExportAll,
                                 onOpenHeadphone = { selectedManagedProductId = it },
                                 onImportPersonal = onImportPersonal,
@@ -500,6 +517,8 @@ fun EqLibraryApp(
                         onThemeModeChange = onThemeModeChange,
                         onExportTargetChange = onExportTargetChange,
                         onDirectBlackPearlFlashEnabledChange = onDirectBlackPearlFlashEnabledChange,
+                        onDirectFiioJa11FlashEnabledChange = onDirectFiioJa11FlashEnabledChange,
+                        onDirectJcallyJm12FlashEnabledChange = onDirectJcallyJm12FlashEnabledChange,
                         hiddenCanonicalProfileIds = appPreferences.hiddenCanonicalProfileIds,
                         onUnhideCanonicalProfiles = onUnhideCanonicalProfiles,
                         onMessage = ::showMessage,
@@ -522,76 +541,58 @@ fun EqLibraryApp(
     }
 }
 
-private fun outputTitle(device: ExportDevice): String = when (device) {
-    ExportDevice.UAPP -> "UAPP / ToneBoosters"
-    ExportDevice.BLACK_PEARL -> "Black Pearl"
-    ExportDevice.UNIVERSAL_PARAMETRIC -> "Universal PEQ"
-    ExportDevice.POWERAMP -> "Poweramp"
-    ExportDevice.WAVELET -> "Wavelet"
-    ExportDevice.TOPPING_DX5_II -> "TOPPING DX5 II"
-    ExportDevice.TOPPING_DX1_II -> "TOPPING DX1 II"
+private fun outputTitle(device: ExportDevice): String = device.displayName
+
+private fun ActiveOutputExportRequest.toSaveableState(): ArrayList<String> = when (this) {
+    is ActiveOutputExportRequest.AllManaged -> arrayListOf(EXPORT_REQUEST_ALL_MANAGED, device.name)
+    is ActiveOutputExportRequest.Product -> arrayListOf(EXPORT_REQUEST_PRODUCT, device.name, productId)
+    is ActiveOutputExportRequest.ManagedProfile -> arrayListOf(
+        EXPORT_REQUEST_MANAGED_PROFILE,
+        device.name,
+        productId,
+        profileId,
+    )
+    is ActiveOutputExportRequest.SavedEq -> arrayListOf(EXPORT_REQUEST_SAVED_EQ, device.name, entryId)
+    is ActiveOutputExportRequest.GeneralEq -> arrayListOf(EXPORT_REQUEST_GENERAL_EQ, device.name, presetId)
+    is ActiveOutputExportRequest.GeneralEqBatch -> arrayListOf(
+        EXPORT_REQUEST_GENERAL_EQ_BATCH,
+        device.name,
+    ).apply { addAll(presetIds.sorted()) }
 }
 
-private fun activeOutputExportMessage(summary: PresetExportSummary): String {
-    val reviewResults = summary.results.filter {
-        it is PresetExportItemResult.Conflict || it is PresetExportItemResult.Failed
-    }
-    val firstReviewReason = reviewResults.firstOrNull()?.let { result ->
-        when (result) {
-            is PresetExportItemResult.Conflict -> result.reason
-            is PresetExportItemResult.Failed -> result.reason
-            else -> null
+private fun restoreActiveOutputExportRequest(state: List<String>?): ActiveOutputExportRequest? {
+    val requestType = state?.getOrNull(0) ?: return null
+    val device = state.getOrNull(1)?.let { deviceName ->
+        runCatching { ExportDevice.valueOf(deviceName) }.getOrNull()
+    } ?: return null
+
+    return when (requestType) {
+        EXPORT_REQUEST_ALL_MANAGED -> ActiveOutputExportRequest.AllManaged(device)
+        EXPORT_REQUEST_PRODUCT -> state.getOrNull(2)?.let { productId ->
+            ActiveOutputExportRequest.Product(productId, device)
         }
-    }
-    val reviewCount = summary.conflictCount + summary.failedCount
-    val message = when {
-        summary.accessLost -> "Export folder access was lost. Choose the folder again."
-        summary.results.isEmpty() -> "No selected presets are ready to export."
-        reviewCount > 0 -> buildString {
-            append(summary.successfulCount)
-            append(if (summary.successfulCount == 1) " preset saved/current · " else " presets saved/current · ")
-            append(reviewCount)
-            append(if (reviewCount == 1) " needs review" else " need review")
-            firstReviewReason?.let { reason ->
-                append(": ")
-                append(reason)
-            }
+        EXPORT_REQUEST_MANAGED_PROFILE -> {
+            val productId = state.getOrNull(2) ?: return null
+            val profileId = state.getOrNull(3) ?: return null
+            ActiveOutputExportRequest.ManagedProfile(productId, profileId, device)
         }
-        summary.createdCount > 0 || summary.updatedCount > 0 ->
-            "${summary.createdCount} new · ${summary.updatedCount} updated · ${summary.currentCount} already current."
-        else -> "All ${summary.currentCount} selected presets are already current."
+        EXPORT_REQUEST_SAVED_EQ -> state.getOrNull(2)?.let { entryId ->
+            ActiveOutputExportRequest.SavedEq(entryId, device)
+        }
+        EXPORT_REQUEST_GENERAL_EQ -> state.getOrNull(2)?.let { presetId ->
+            ActiveOutputExportRequest.GeneralEq(presetId, device)
+        }
+        EXPORT_REQUEST_GENERAL_EQ_BATCH -> ActiveOutputExportRequest.GeneralEqBatch(
+            presetIds = state.drop(2).toSet(),
+            device = device,
+        )
+        else -> null
     }
-    val device = summary.results.firstOrNull()?.candidate?.deviceName
-    return if (device == null) message else "$device · $message"
 }
 
-private fun activeOutputRefreshMessage(outcome: CatalogSyncOutcome): String {
-    val result = outcome.catalogResult
-    return when (result) {
-        is CatalogRefreshResult.Success -> {
-            val affected = outcome.managedChanges?.affectedProductIds?.size ?: 0
-            when (affected) {
-                0 -> "EQ Library catalog is up to date."
-                1 -> "1 saved headphone has changes."
-                else -> "$affected saved headphones have changes."
-            }
-        }
-        is CatalogRefreshResult.Failure -> when (result.reason) {
-            CatalogRefreshFailureReason.Network -> if (result.usingSavedCatalog) {
-                "Couldn’t refresh EQ Library. Using your saved catalog."
-            } else {
-                "Couldn’t download the EQ Library catalog."
-            }
-            CatalogRefreshFailureReason.InvalidCatalog -> if (result.usingSavedCatalog) {
-                "Couldn’t use the new EQ Library catalog. Your previous saved catalog is still available."
-            } else {
-                "The downloaded EQ Library catalog couldn’t be processed."
-            }
-            CatalogRefreshFailureReason.Storage -> if (result.usingSavedCatalog) {
-                "Couldn’t save the new EQ Library catalog. Using your previous saved catalog."
-            } else {
-                "Couldn’t save the EQ Library catalog on this device."
-            }
-        }
-    }
-}
+private const val EXPORT_REQUEST_ALL_MANAGED = "all-managed"
+private const val EXPORT_REQUEST_PRODUCT = "product"
+private const val EXPORT_REQUEST_MANAGED_PROFILE = "managed-profile"
+private const val EXPORT_REQUEST_SAVED_EQ = "saved-eq"
+private const val EXPORT_REQUEST_GENERAL_EQ = "general-eq"
+private const val EXPORT_REQUEST_GENERAL_EQ_BATCH = "general-eq-batch"

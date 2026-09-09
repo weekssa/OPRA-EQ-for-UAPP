@@ -43,17 +43,33 @@ import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.data.export.ExportCurrentness
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
+import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlashPlan
 import com.weekssa.opraeqforuapp.domain.blackpearl.buildBlackPearlFlashPlan
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.export.DeviceExportability
+import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.export.assessDeviceExportability
+import com.weekssa.opraeqforuapp.domain.kt02h20.FiveBandOptimizationResult
+import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20DeviceSpecs
+import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FiveBandOptimizer
+import com.weekssa.opraeqforuapp.domain.kt02h20.adaptationSummary
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedProfileRecord
 import com.weekssa.opraeqforuapp.domain.settings.ExportTargetPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityPreferences
+import java.util.Locale
 import kotlinx.coroutines.launch
+
+private data class ManagedHardwareFlashAssessment(
+    val ready: Boolean,
+    val reason: String? = null,
+    val fidelity: DevicePresetFidelity? = null,
+    val playbackGainDb: Double = 0.0,
+    val adaptationSummary: String? = null,
+    val warning: String? = null,
+)
 
 @Composable
 fun ManagedHeadphoneDetailScreen(
@@ -66,6 +82,12 @@ fun ManagedHeadphoneDetailScreen(
     directBlackPearlFlashEnabled: Boolean,
     blackPearlConnectionState: BlackPearlConnectionState,
     onConnectBlackPearl: () -> Unit,
+    directFiioJa11FlashEnabled: Boolean,
+    fiioJa11ConnectionState: Kt02h20ConnectionState,
+    onConnectFiioJa11: () -> Unit,
+    directJcallyJm12FlashEnabled: Boolean,
+    jcallyJm12ConnectionState: Kt02h20ConnectionState,
+    onConnectJcallyJm12: () -> Unit,
     onFlashManagedProfile: suspend (String) -> String,
     onToggleFavorite: suspend (OpraEqProfile, String, String) -> Boolean,
     onHideCanonicalProfile: suspend (String) -> Unit,
@@ -93,10 +115,16 @@ fun ManagedHeadphoneDetailScreen(
         headphone.profiles.filter { it.selected || it.noLongerAvailable }
     }
     val activeOutput = exportTargets.activeTarget
-    val isBlackPearlOutput = activeOutput == ExportDevice.BLACK_PEARL
-    val flashEnabled = isBlackPearlOutput &&
-        directBlackPearlFlashEnabled &&
-        blackPearlConnectionState is BlackPearlConnectionState.Connected
+    val isHardwareOutput = activeOutput in MANAGED_HARDWARE_FLASH_OUTPUTS
+    val flashEnabled = when (activeOutput) {
+        ExportDevice.BLACK_PEARL -> directBlackPearlFlashEnabled &&
+            blackPearlConnectionState is BlackPearlConnectionState.Connected
+        ExportDevice.FIIO_JA11 -> directFiioJa11FlashEnabled &&
+            fiioJa11ConnectionState is Kt02h20ConnectionState.Connected
+        ExportDevice.JCALLY_JM12 -> directJcallyJm12FlashEnabled &&
+            jcallyJm12ConnectionState is Kt02h20ConnectionState.Connected
+        else -> false
+    }
 
     val pendingNewCount = headphone.profiles.count { it.isNewUnreviewed && !it.noLongerAvailable }
     val pendingUpdatedCount = headphone.profiles.count {
@@ -170,18 +198,12 @@ fun ManagedHeadphoneDetailScreen(
         val displayName = source.details?.takeIf(String::isNotBlank)
             ?: source.author?.takeIf(String::isNotBlank)
             ?: "this EQ"
-        val flashPlan = buildBlackPearlFlashPlan(source, activeSlot = 0x00) as? BlackPearlFlashPlan.Ready
+        val assessment = managedHardwareFlashAssessment(source, activeOutput)
         AlertDialog(
             onDismissRequest = { pendingProfileFlash = null },
-            title = { Text("Flash to Black Pearl?") },
+            title = { Text("Flash to ${managedHardwareTitle(activeOutput)}?") },
             text = {
-                Text(
-                    blackPearlFlashConfirmation(
-                        displayName = displayName,
-                        gainAdjustmentDb = flashPlan?.requiredPlaybackGainDb ?: 0.0,
-                        warning = flashPlan?.warning,
-                    ),
-                )
+                Text(managedHardwareFlashConfirmation(displayName, activeOutput, assessment))
             },
             confirmButton = {
                 TextButton(
@@ -189,7 +211,15 @@ fun ManagedHeadphoneDetailScreen(
                         pendingProfileFlash = null
                         scope.launch { onMessage(onFlashManagedProfile(profile.profileId)) }
                     },
-                ) { Text(if (flashPlan?.warning.isNullOrBlank()) "Flash" else "Flash anyway") }
+                ) {
+                    Text(
+                        if (activeOutput == ExportDevice.BLACK_PEARL && !assessment.warning.isNullOrBlank()) {
+                            "Flash anyway"
+                        } else {
+                            "Flash"
+                        },
+                    )
+                }
             },
             dismissButton = {
                 TextButton(onClick = { pendingProfileFlash = null }) { Text("Cancel") }
@@ -315,7 +345,7 @@ fun ManagedHeadphoneDetailScreen(
                 },
             )
         }
-        if (isBlackPearlOutput || product != null) {
+        if (isHardwareOutput || product != null) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -323,13 +353,26 @@ fun ManagedHeadphoneDetailScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                if (isBlackPearlOutput) {
-                    CompactBlackPearlConnectionAction(
+                when (activeOutput) {
+                    ExportDevice.BLACK_PEARL -> CompactBlackPearlConnectionAction(
                         enabled = directBlackPearlFlashEnabled,
                         state = blackPearlConnectionState,
                         onConnect = onConnectBlackPearl,
                         modifier = Modifier.weight(1f),
                     )
+                    ExportDevice.FIIO_JA11 -> CompactKt02h20ConnectionAction(
+                        enabled = directFiioJa11FlashEnabled,
+                        state = fiioJa11ConnectionState,
+                        onConnect = onConnectFiioJa11,
+                        modifier = Modifier.weight(1f),
+                    )
+                    ExportDevice.JCALLY_JM12 -> CompactKt02h20ConnectionAction(
+                        enabled = directJcallyJm12FlashEnabled,
+                        state = jcallyJm12ConnectionState,
+                        onConnect = onConnectJcallyJm12,
+                        modifier = Modifier.weight(1f),
+                    )
+                    else -> Unit
                 }
                 if (product != null) {
                     Button(
@@ -343,20 +386,20 @@ fun ManagedHeadphoneDetailScreen(
                 }
             }
         }
-        if (isBlackPearlOutput && !directBlackPearlFlashEnabled) {
+        hardwareConnectionHelp(
+            activeOutput = activeOutput,
+            directBlackPearlFlashEnabled = directBlackPearlFlashEnabled,
+            blackPearlConnectionState = blackPearlConnectionState,
+            directFiioJa11FlashEnabled = directFiioJa11FlashEnabled,
+            fiioJa11ConnectionState = fiioJa11ConnectionState,
+            directJcallyJm12FlashEnabled = directJcallyJm12FlashEnabled,
+            jcallyJm12ConnectionState = jcallyJm12ConnectionState,
+        )?.let { (message, isError) ->
             Text(
-                text = "Enable direct Flash in Settings → Black Pearl before connecting to the DAC.",
+                text = message,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        if (isBlackPearlOutput && blackPearlConnectionState is BlackPearlConnectionState.Error) {
-            Text(
-                text = blackPearlConnectionState.message,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error,
+                color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         if (product == null) {
@@ -370,26 +413,23 @@ fun ManagedHeadphoneDetailScreen(
         LazyColumn(modifier = Modifier.weight(1f)) {
             items(displayedProfiles, key = ManagedProfileRecord::profileId) { profile ->
                 val outputStatus = assessDeviceExportability(profile.lastKnownProfile, activeOutput)
-                val directFlashPlan = if (isBlackPearlOutput) {
-                    buildBlackPearlFlashPlan(profile.lastKnownProfile, activeSlot = 0x00)
+                val assessment = if (isHardwareOutput) {
+                    managedHardwareFlashAssessment(profile.lastKnownProfile, activeOutput)
                 } else {
-                    null
+                    ManagedHardwareFlashAssessment(ready = false)
                 }
-                val directFlashable = directFlashPlan is BlackPearlFlashPlan.Ready
-                val directFlashUnavailableReason = (directFlashPlan as? BlackPearlFlashPlan.NotRepresentable)
-                    ?.reason
-                    ?.takeIf { profile.selected }
                 ManagedProfileRow(
                     profile = profile,
                     isFavorite = profile.profileId in favoriteProfileIds,
                     activeOutput = activeOutput,
                     outputStatus = outputStatus,
-                    showExport = profile.selected &&
+                    outputAdaptationSummary = assessment.adaptationSummary,
+                    showExport = activeOutput.supportsFileExport && profile.selected &&
                         exportCurrentness.needsExport(headphone.productId, profile.profileId),
                     onExport = { onExportProfile(profile.profileId) },
-                    showFlash = isBlackPearlOutput,
-                    flashEnabled = flashEnabled && profile.selected && directFlashable,
-                    flashUnavailableReason = directFlashUnavailableReason,
+                    showFlash = isHardwareOutput,
+                    flashEnabled = flashEnabled && profile.selected && assessment.ready,
+                    flashUnavailableReason = assessment.reason?.takeIf { profile.selected },
                     onFlash = { pendingProfileFlash = profile },
                     onOpenSource = profile.lastKnownProfile.link?.let { sourceUrl -> { onOpenUrl(sourceUrl) } },
                     onToggleFavorite = {
@@ -429,6 +469,109 @@ fun ManagedHeadphoneDetailScreen(
     }
 }
 
+private fun managedHardwareFlashAssessment(
+    profile: OpraEqProfile,
+    device: ExportDevice,
+): ManagedHardwareFlashAssessment = when (device) {
+    ExportDevice.BLACK_PEARL -> when (val plan = buildBlackPearlFlashPlan(profile, activeSlot = 0x00)) {
+        is BlackPearlFlashPlan.Ready -> ManagedHardwareFlashAssessment(
+            ready = true,
+            fidelity = plan.fidelity,
+            playbackGainDb = plan.requiredPlaybackGainDb,
+            adaptationSummary = plan.adaptationSummary,
+            warning = plan.warning,
+        )
+        is BlackPearlFlashPlan.NotRepresentable -> ManagedHardwareFlashAssessment(
+            ready = false,
+            reason = plan.reason,
+        )
+    }
+    ExportDevice.FIIO_JA11 -> managedFiveBandAssessment(profile, Kt02h20DeviceSpecs.FIIO_JA11)
+    ExportDevice.JCALLY_JM12 -> managedFiveBandAssessment(profile, Kt02h20DeviceSpecs.JCALLY_JM12_STOCK)
+    else -> ManagedHardwareFlashAssessment(ready = false)
+}
+
+private fun managedFiveBandAssessment(
+    profile: OpraEqProfile,
+    spec: com.weekssa.opraeqforuapp.domain.kt02h20.FiveBandDeviceSpec,
+): ManagedHardwareFlashAssessment = when (val result = Kt02h20FiveBandOptimizer.optimize(profile, spec)) {
+    is FiveBandOptimizationResult.NotSuitable -> ManagedHardwareFlashAssessment(
+        ready = false,
+        reason = result.reason,
+    )
+    is FiveBandOptimizationResult.Ready -> ManagedHardwareFlashAssessment(
+        ready = true,
+        fidelity = result.representation.fidelity,
+        playbackGainDb = result.representation.playbackGainDb,
+        adaptationSummary = result.representation.adaptationSummary(),
+    )
+}
+
+private fun managedHardwareFlashConfirmation(
+    displayName: String,
+    device: ExportDevice,
+    assessment: ManagedHardwareFlashAssessment,
+): String {
+    if (device == ExportDevice.BLACK_PEARL) {
+        return blackPearlFlashConfirmation(
+            displayName = displayName,
+            gainAdjustmentDb = assessment.playbackGainDb,
+            fidelity = assessment.fidelity ?: DevicePresetFidelity.OPTIMIZED,
+            adaptationSummary = assessment.adaptationSummary ?: "target-specific adaptation",
+            warning = assessment.warning,
+        )
+    }
+    val fidelity = when (assessment.fidelity) {
+        DevicePresetFidelity.EXACT -> "Exact · ${assessment.adaptationSummary ?: "source values preserved"}"
+        DevicePresetFidelity.OPTIMIZED -> "Optimized · ${assessment.adaptationSummary ?: "target-specific adaptation"}"
+        null -> "Not suitable"
+    }
+    val gain = String.format(Locale.US, "%+.2f", assessment.playbackGainDb)
+    val gainSentence = if (kotlin.math.abs(assessment.playbackGainDb) < 0.000_001) {
+        "The EQ-related gain will be 0.00 dB."
+    } else if (device == ExportDevice.FIIO_JA11) {
+        "The JA11 global EQ gain will be set to $gain dB."
+    } else {
+        "EQ Library will apply a $gain dB tracked playback-gain adjustment for this preset."
+    }
+    val persistence = if (device == ExportDevice.FIIO_JA11) {
+        "The five-band PEQ will be applied, read back, and saved to the JA11."
+    } else {
+        "The five-band PEQ will be written and read back. Persistence across a full power cycle is still hardware-validation pending for stock JM12 firmware."
+    }
+    return "Flash $displayName to ${managedHardwareTitle(device)}? $fidelity. $gainSentence $persistence Unrelated DAC settings are not changed."
+}
+
+private fun hardwareConnectionHelp(
+    activeOutput: ExportDevice,
+    directBlackPearlFlashEnabled: Boolean,
+    blackPearlConnectionState: BlackPearlConnectionState,
+    directFiioJa11FlashEnabled: Boolean,
+    fiioJa11ConnectionState: Kt02h20ConnectionState,
+    directJcallyJm12FlashEnabled: Boolean,
+    jcallyJm12ConnectionState: Kt02h20ConnectionState,
+): Pair<String, Boolean>? = when (activeOutput) {
+    ExportDevice.BLACK_PEARL -> when {
+        !directBlackPearlFlashEnabled ->
+            "Enable direct Flash in Settings → Black Pearl before connecting to the DAC." to false
+        blackPearlConnectionState is BlackPearlConnectionState.Error -> blackPearlConnectionState.message to true
+        else -> null
+    }
+    ExportDevice.FIIO_JA11 -> when {
+        !directFiioJa11FlashEnabled ->
+            "Enable direct Flash in Settings → FiiO JA11 before connecting to the DAC." to false
+        fiioJa11ConnectionState is Kt02h20ConnectionState.Error -> fiioJa11ConnectionState.message to true
+        else -> null
+    }
+    ExportDevice.JCALLY_JM12 -> when {
+        !directJcallyJm12FlashEnabled ->
+            "Enable direct Flash in Settings → JCALLY JM12 before connecting to the DAC." to false
+        jcallyJm12ConnectionState is Kt02h20ConnectionState.Error -> jcallyJm12ConnectionState.message to true
+        else -> null
+    }
+    else -> null
+}
+
 @Composable
 private fun CompactBlackPearlConnectionAction(
     enabled: Boolean,
@@ -464,11 +607,46 @@ private fun CompactBlackPearlConnectionAction(
 }
 
 @Composable
+private fun CompactKt02h20ConnectionAction(
+    enabled: Boolean,
+    state: Kt02h20ConnectionState,
+    onConnect: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val connected = state is Kt02h20ConnectionState.Connected
+    val connecting = state is Kt02h20ConnectionState.Connecting
+    val containerColor = if (connected) MANAGED_DETAIL_CONNECTED_GREEN else MaterialTheme.colorScheme.error
+    Button(
+        onClick = onConnect,
+        enabled = enabled && !connected && !connecting,
+        modifier = modifier.heightIn(min = 48.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = containerColor,
+            contentColor = Color.White,
+            disabledContainerColor = when {
+                connected -> MANAGED_DETAIL_CONNECTED_GREEN
+                else -> MaterialTheme.colorScheme.surfaceVariant
+            },
+            disabledContentColor = if (connected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+        ),
+    ) {
+        Text(
+            when {
+                connected -> "Connected"
+                connecting -> "Connecting…"
+                else -> "Connect"
+            },
+        )
+    }
+}
+
+@Composable
 private fun ManagedProfileRow(
     profile: ManagedProfileRecord,
     isFavorite: Boolean,
     activeOutput: ExportDevice,
     outputStatus: DeviceExportability,
+    outputAdaptationSummary: String?,
     showExport: Boolean,
     onExport: () -> Unit,
     showFlash: Boolean,
@@ -503,7 +681,10 @@ private fun ManagedProfileRow(
                     else -> Text("Not selected")
                 }
                 Text(
-                    text = "${outputShortName(activeOutput)}: ${outputStatusLabel(outputStatus)}",
+                    text = buildString {
+                        append("${outputShortName(activeOutput)}: ${outputStatusLabel(outputStatus, activeOutput)}")
+                        outputAdaptationSummary?.let { append(" · $it") }
+                    },
                     style = MaterialTheme.typography.labelMedium,
                     color = when (outputStatus) {
                         DeviceExportability.EXACT -> MaterialTheme.colorScheme.onSurfaceVariant
@@ -546,20 +727,19 @@ private fun ManagedProfileRow(
     )
 }
 
-private fun outputStatusLabel(status: DeviceExportability): String = when (status) {
+private fun outputStatusLabel(status: DeviceExportability, device: ExportDevice): String = when (status) {
     DeviceExportability.EXACT -> "Exact"
     DeviceExportability.OPTIMIZED -> "Optimized"
-    DeviceExportability.NOT_REPRESENTABLE -> "Not exportable"
+    DeviceExportability.NOT_REPRESENTABLE -> if (device.isHardwareOutput) "Not suitable" else "Not exportable"
 }
 
-private fun outputShortName(device: ExportDevice): String = when (device) {
-    ExportDevice.UAPP -> "UAPP / ToneBoosters"
+private fun outputShortName(device: ExportDevice): String = device.displayName
+
+private fun managedHardwareTitle(device: ExportDevice): String = when (device) {
     ExportDevice.BLACK_PEARL -> "Black Pearl"
-    ExportDevice.UNIVERSAL_PARAMETRIC -> "Universal PEQ"
-    ExportDevice.POWERAMP -> "Poweramp"
-    ExportDevice.WAVELET -> "Wavelet"
-    ExportDevice.TOPPING_DX5_II -> "TOPPING DX5 II"
-    ExportDevice.TOPPING_DX1_II -> "TOPPING DX1 II"
+    ExportDevice.FIIO_JA11 -> "FiiO JA11"
+    ExportDevice.JCALLY_JM12 -> "JCALLY JM12"
+    else -> device.folderName
 }
 
 @Composable
@@ -606,4 +786,9 @@ private fun RemovalDialog(
     )
 }
 
+private val MANAGED_HARDWARE_FLASH_OUTPUTS = setOf(
+    ExportDevice.BLACK_PEARL,
+    ExportDevice.FIIO_JA11,
+    ExportDevice.JCALLY_JM12,
+)
 private val MANAGED_DETAIL_CONNECTED_GREEN = Color(0xFF2E7D32)
