@@ -35,6 +35,13 @@ class BlackPearlFlasher(
     private val transport: BlackPearlTransport,
     private val gainStateStore: BlackPearlGainStateStore,
 ) {
+    /**
+     * Returns the app-owned relative playback-gain delta already tracked by the qualified Flash/Reset
+     * path. This is local persisted state, not a USB read and not the DAC's absolute playback volume.
+     */
+    fun readTrackedAppliedPlaybackGainDb(): Double =
+        BlackPearlProtocol.rawDeltaToGainDb(gainStateStore.readAppliedGainDeltaRaw())
+
     suspend fun flash(profile: OpraEqProfile): BlackPearlFlashResult {
         val activeSlot = transport.readActiveSlot()
             ?: return BlackPearlFlashResult.DeviceUnavailable(
