@@ -17,8 +17,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqFilter
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqResponseCurve
@@ -52,7 +52,7 @@ internal fun DacEqResponseGraph(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .semantics { contentDescription = accessibilityDescription },
+            .clearAndSetSemantics { contentDescription = accessibilityDescription },
     ) {
         Canvas(
             modifier = Modifier
