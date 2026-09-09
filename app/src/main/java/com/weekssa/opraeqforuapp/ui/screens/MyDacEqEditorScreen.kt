@@ -29,6 +29,7 @@ import com.weekssa.opraeqforuapp.domain.dac.DacHeadroomStatus
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqDifference
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqDifferenceField
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditIssue
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditIssueSeverity
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditWorkingCopy
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqFilter
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
@@ -254,6 +255,13 @@ private fun SelectedBandEditor(
         mutableStateOf(editableNumber(filter.q))
     }
 
+    fun publishIfValid(type: EqFilterType = filter.type) {
+        val frequency = frequencyText.toFinitePositiveDoubleOrNull() ?: return
+        val gain = gainText.toFiniteDoubleOrNull() ?: return
+        val q = qText.toFinitePositiveDoubleOrNull() ?: return
+        onUpdate(filter.index, type, frequency, gain, q)
+    }
+
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -291,15 +299,7 @@ private fun SelectedBandEditor(
                 ).forEach { candidate ->
                     FilterChip(
                         selected = filter.type == candidate,
-                        onClick = {
-                            onUpdate(
-                                filter.index,
-                                candidate,
-                                frequencyText.toDoubleOrNull() ?: filter.frequencyHz,
-                                gainText.toDoubleOrNull() ?: filter.gainDb,
-                                qText.toDoubleOrNull() ?: filter.q,
-                            )
-                        },
+                        onClick = { publishIfValid(candidate) },
                         label = { Text(filterTypeLabel(candidate)) },
                     )
                 }
@@ -309,15 +309,7 @@ private fun SelectedBandEditor(
                 value = frequencyText,
                 onValueChange = { value ->
                     frequencyText = value
-                    value.toDoubleOrNull()?.let { parsed ->
-                        onUpdate(
-                            filter.index,
-                            filter.type,
-                            parsed,
-                            gainText.toDoubleOrNull() ?: filter.gainDb,
-                            qText.toDoubleOrNull() ?: filter.q,
-                        )
-                    }
+                    publishIfValid()
                 },
                 label = { Text(stringResource(R.string.my_dac_editor_frequency)) },
                 singleLine = true,
@@ -327,15 +319,7 @@ private fun SelectedBandEditor(
                 value = gainText,
                 onValueChange = { value ->
                     gainText = value
-                    value.toDoubleOrNull()?.let { parsed ->
-                        onUpdate(
-                            filter.index,
-                            filter.type,
-                            frequencyText.toDoubleOrNull() ?: filter.frequencyHz,
-                            parsed,
-                            qText.toDoubleOrNull() ?: filter.q,
-                        )
-                    }
+                    publishIfValid()
                 },
                 label = { Text(stringResource(R.string.my_dac_editor_gain)) },
                 singleLine = true,
@@ -345,15 +329,7 @@ private fun SelectedBandEditor(
                 value = qText,
                 onValueChange = { value ->
                     qText = value
-                    value.toDoubleOrNull()?.let { parsed ->
-                        onUpdate(
-                            filter.index,
-                            filter.type,
-                            frequencyText.toDoubleOrNull() ?: filter.frequencyHz,
-                            gainText.toDoubleOrNull() ?: filter.gainDb,
-                            parsed,
-                        )
-                    }
+                    publishIfValid()
                 },
                 label = { Text(stringResource(R.string.my_dac_editor_q)) },
                 singleLine = true,
@@ -419,7 +395,7 @@ private fun HeadroomCard(
 private fun EditorIssues(working: HardwareEqEditWorkingCopy) {
     if (working.issues.isEmpty()) return
 
-    working.issues.filter { it.severity.name == "BLOCKING" }.forEach { issue ->
+    working.issues.filter { issue -> issue.severity == HardwareEqEditIssueSeverity.BLOCKING }.forEach { issue ->
         Text(
             text = editIssueText(issue),
             color = MaterialTheme.colorScheme.error,
@@ -611,3 +587,9 @@ private fun editableNumber(value: Double): String = when {
     value == value.toLong().toDouble() -> value.toLong().toString()
     else -> String.format(Locale.US, "%.4f", value).trimEnd('0').trimEnd('.')
 }
+
+private fun String.toFiniteDoubleOrNull(): Double? =
+    toDoubleOrNull()?.takeIf(Double::isFinite)
+
+private fun String.toFinitePositiveDoubleOrNull(): Double? =
+    toFiniteDoubleOrNull()?.takeIf { value -> value > 0.0 }
