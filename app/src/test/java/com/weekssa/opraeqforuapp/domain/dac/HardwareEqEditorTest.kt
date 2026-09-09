@@ -3,7 +3,6 @@ package com.weekssa.opraeqforuapp.domain.dac
 import com.google.common.truth.Truth.assertThat
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 import kotlin.math.roundToLong
-import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class HardwareEqEditorTest {
@@ -66,6 +65,31 @@ class HardwareEqEditorTest {
 
         val safer = HardwareEqEditor.useSafeGain(working, spec)
         assertThat(safer.plannedHeadroomGainDb).isEqualTo(0.0)
+        assertThat(safer.headroomPlanChanged).isTrue()
+        assertThat(safer.hasChanges).isTrue()
+        assertThat(requireNotNull(safer.headroomAssessment).status).isEqualTo(DacHeadroomStatus.SAFE)
+    }
+
+    @Test
+    fun positiveTrackedPlaybackGainBaselineIsPreservedAndCanBeMadeSafeLocally() {
+        val result = HardwareEqEditor.startFromCurrent(
+            snapshotState = currentState(blackPearlSnapshot()),
+            spec = HardwareEqEditSpecs.TRN_BLACK_PEARL,
+            trackedPlaybackGainDeltaDb = 2.0,
+        ) as HardwareEqEditorStartResult.Ready
+
+        val working = result.workingCopy
+        assertThat(working.baselineHeadroomGainDb).isEqualTo(2.0)
+        assertThat(working.plannedHeadroomGainDb).isEqualTo(2.0)
+        assertThat(working.hasChanges).isFalse()
+        assertThat(requireNotNull(working.headroomAssessment).requiredGainDb).isWithin(1e-9).of(0.0)
+        assertThat(requireNotNull(working.headroomAssessment).status)
+            .isEqualTo(DacHeadroomStatus.ADJUSTMENT_REQUIRED)
+
+        val safer = HardwareEqEditor.useSafeGain(working, HardwareEqEditSpecs.TRN_BLACK_PEARL)
+        assertThat(safer.plannedHeadroomGainDb).isEqualTo(0.0)
+        assertThat(safer.baselineHeadroomGainDb).isEqualTo(2.0)
+        assertThat(safer.baselineSnapshot.playbackGainDb).isEqualTo(-18.0)
         assertThat(safer.headroomPlanChanged).isTrue()
         assertThat(safer.hasChanges).isTrue()
         assertThat(requireNotNull(safer.headroomAssessment).status).isEqualTo(DacHeadroomStatus.SAFE)
@@ -177,6 +201,31 @@ class HardwareEqEditorTest {
     }
 
     @Test
+    fun absoluteOutOfRangeGainIsBlockingAndNeverSilentlyClamped() {
+        val started = HardwareEqEditor.startFromCurrent(
+            snapshotState = currentState(blackPearlSnapshot()),
+            spec = HardwareEqEditSpecs.TRN_BLACK_PEARL,
+        ) as HardwareEqEditorStartResult.Ready
+
+        val changed = HardwareEqEditor.updateFilter(
+            workingCopy = started.workingCopy,
+            spec = HardwareEqEditSpecs.TRN_BLACK_PEARL,
+            bandIndex = 0,
+            type = EqFilterType.PEAK,
+            frequencyHz = 1_000.0,
+            gainDb = 128.0,
+            q = 1.0,
+        )
+
+        assertThat(changed.hasBlockingIssues).isTrue()
+        val issue = changed.issues.filterIsInstance<HardwareEqEditIssue.OutOfRange>().single()
+        assertThat(issue.bandIndex).isEqualTo(0)
+        assertThat(issue.field).isEqualTo(HardwareEqDifferenceField.GAIN_DB)
+        assertThat(changed.filters.first { it.index == 0 }.gainDb).isEqualTo(128.0)
+        assertThat(changed.cautions).isEmpty()
+    }
+
+    @Test
     fun nativeStepMismatchIsBlockingAndNeverSilentlyRounded() {
         val started = HardwareEqEditor.startFromCurrent(
             snapshotState = currentState(blackPearlSnapshot()),
@@ -242,17 +291,6 @@ class HardwareEqEditorTest {
 
         val unchanged = HardwareEqEditor.useSafeGain(working, spec)
         assertThat(unchanged).isEqualTo(working)
-    }
-
-    @Test
-    fun trackedPlaybackHeadroomCannotBePositive() {
-        assertThrows(IllegalArgumentException::class.java) {
-            HardwareEqEditor.startFromCurrent(
-                snapshotState = currentState(blackPearlSnapshot()),
-                spec = HardwareEqEditSpecs.TRN_BLACK_PEARL,
-                trackedPlaybackGainDeltaDb = 1.0,
-            )
-        }
     }
 
     private fun blackPearlSnapshot(
