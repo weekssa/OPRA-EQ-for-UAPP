@@ -155,6 +155,8 @@ fun EqLibraryApp(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val exportFolderPermissionFailedMessage = stringResource(R.string.export_folder_permission_failed)
+    val myDacDetectedMessage = stringResource(R.string.my_dac_detected_prompt)
+    val openMyDacActionLabel = stringResource(R.string.my_dac_action_open)
     val favoriteProfileIds = remember(savedEqs) {
         savedEqs.asSequence()
             .filter { it.kind == SavedEqKind.Favorite }
@@ -174,6 +176,18 @@ fun EqLibraryApp(
     val selectedManagedHeadphone = selectedManagedProductId?.let { productId ->
         managedHeadphonesForUi.firstOrNull { it.productId == productId }
     }
+
+    MyDacRecognitionPromptEffect(
+        recognitionState = state.dacRecognitionState,
+        isMyDacOpen = selectedDestination == EqLibraryDestination.MyDac,
+        snackbarHostState = snackbarHostState,
+        detectedMessage = myDacDetectedMessage,
+        openActionLabel = openMyDacActionLabel,
+        onOpenMyDac = {
+            selectedManagedProductId = null
+            selectedDestinationName = EqLibraryDestination.MyDac.name
+        },
+    )
 
     LaunchedEffect(destinations, selectedDestinationName) {
         val restored = restoreEqLibraryDestination(selectedDestinationName, destinations)
