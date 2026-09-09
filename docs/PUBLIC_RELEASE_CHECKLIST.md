@@ -67,7 +67,7 @@ Catalog/currentness/community workflows are path-scoped. PR #6 changes no catalo
 
 ## v0.5.0 release gate
 
-Status: **Phase 1 closeout is in progress. The Pixel 9 hands-on release-candidate pass is complete with PASS; release notes/public wording are prepared; signed candidate provenance is pinned; Black Pearl is qualified; JA11/JM12 hardware validation is pending and explicitly deferred/non-blocking for v0.5.0. Final PR validation/merge, final `main` validation, and controlled v0.5.0 publication remain part of Phase 1 closeout. Phase 2 has not been defined or started.**
+Status: **Phase 1 implementation/release preparation is complete. Phase 2 testing/qualification of that same v0.5.0 milestone is complete with PASS on the Pixel 9. TRN Black Pearl is qualified; FiiO JA11 and stock JCALLY JM12 remain Hardware validation pending and are explicitly deferred/non-blocking for v0.5.0. PR #14 is merged, and merged `main` commit `58d761b5d9677b5605613c6e61cfc06f6ea831d9` passed Android CI #1047 and CodeQL #928. v0.5.0 remains unpublished; controlled publication and post-publication verification are the remaining release gates. Phase 2 is testing of v0.5.0, not a new feature/version milestone, so it does not imply v0.6.0.**
 
 ### Product/source state
 
@@ -76,7 +76,7 @@ Status: **Phase 1 closeout is in progress. The Pixel 9 hands-on release-candidat
 - [x] `CHANGELOG.md` contains the v0.5.0 feature/change/validation record.
 - [x] Curated `docs/releases/v0.5.0.md` release notes are prepared.
 - [x] README/front-page copy is reconciled to the v0.5 selectable output registry, Black Pearl qualification, and JA11/JM12 pending/deferred status.
-- [x] Dedicated `docs/V0.5_HANDS_ON_RELEASE_CHECKLIST.md` is prepared for the Pixel 9 v0.5 release-candidate hands-on portion of Phase 1 closeout.
+- [x] Dedicated `docs/V0.5_HANDS_ON_RELEASE_CHECKLIST.md` is prepared for the Pixel 9 v0.5 **Phase 2** release-candidate testing pass.
 - [x] The permanent Android signing identity remains pinned and unchanged.
 - [x] Candidate source commit `30535bd3b1bce9940d23e8735d88a4d9b6a9a4ef` contains the merged MAD-style architecture refactor while explicitly preserving device/DSP/conversion behavior.
 - [x] Release-record reconciliation after `30535bd3...` is documentation-only and does not alter the pinned candidate APK. Any later Android/device/DSP behavior change requires a new exact candidate assessment.
@@ -106,38 +106,38 @@ For candidate source `30535bd3b1bce9940d23e8735d88a4d9b6a9a4ef`:
 
 - [x] TRN Black Pearl destructive/fidelity/persistence regression passed on signed behavior candidate `34a9cd819466cb301456c052eecadb02e6271e5e` / APK SHA-256 `b03bf244473b8640011718c0918c7ee7b6a2d7f4aa1483817d72660c70f8a43f` on Pixel 9.
 - [x] The informational Black Pearl Reset-result wording correction was followed by the focused confirmation required by `docs/BLACK_PEARL_V0.5_REGRESSION.md`; result **PASS**. Black Pearl v0.5 hardware/DSP qualification is complete.
-- [x] The later `30535bd3...` architecture candidate preserves device/DSP/conversion behavior and passed the exact signed/automated gates above, so the completed Black Pearl qualification remains valid through this documentation-only release closeout.
+- [x] The later `30535bd3...` architecture candidate preserves device/DSP/conversion behavior and passed the exact signed/automated gates above, so the completed Black Pearl qualification remains valid through documentation-only release closeout.
 - [ ] FiiO JA11 hands-on qualification is complete. **Current status: Hardware validation pending — deferred to the next incremental release; not a v0.5.0 publication blocker.**
 - [ ] Stock JCALLY JM12 hands-on qualification is complete. **Current status: Hardware validation pending — deferred to the next incremental release; not a v0.5.0 publication blocker.** Power-cycle persistence remains unclaimed until physically established.
 
 JA11/JM12 are intentionally shipping, if v0.5.0 is published, as **implemented but not hardware-qualified** outputs. Their pending status does not invalidate the qualified Black Pearl path and does not block v0.5.0. Release/in-app wording must continue to state their pending status accurately. When the devices arrive, refresh their hands-on records to the exact signed candidate for the next incremental release before physical qualification.
 
-### Phase-one release preparation checkpoint
+### Phase 1 — implementation/release preparation checkpoint
 
 - [x] Curated `docs/releases/v0.5.0.md` is prepared and README/public-facing wording is reconciled with the qualified-vs-pending hardware matrix.
 - [x] `docs/V0.5_HANDS_ON_RELEASE_CHECKLIST.md` is prepared as the focused Pixel 9 release-candidate smoke after the MAD refactor, covering in-place upgrade/state retention, lifecycle/navigation, selection recreation, catalog/offline behavior, output registry, fidelity presentation, UAPP/ToneBoosters import, additional exports, SAF ownership/recovery, non-destructive Black Pearl lifecycle/write-gate smoke, update presentation, and final regression sweep.
 - [x] The hands-on checklist explicitly preserves completed Black Pearl destructive qualification and defers JA11/JM12 device testing to the next incremental release.
 - [x] The preceding documentation-decision head `86ed34d5e80e7aba9b2675f8f980cf5dbdea30e3` passed Android CI #1024, CodeQL #905, Catalog currentness CI #960, and Priority community coverage CI #448 before the final release-note/README/checklist closeout edits.
 
-### Phase one — hands-on release-candidate test
+### Phase 2 — hands-on release-candidate testing
 
 - [x] Ran `docs/V0.5_HANDS_ON_RELEASE_CHECKLIST.md` on the primary Pixel 9 using the pinned signed MAD-integrated candidate `EQ-Library-v0.5.0-beta-30535bd.apk`; final result **PASS** on 2026-09-09.
 - [x] Recorded the hands-on execution record and final PASS in the checklist. The Android build string and pre-upgrade app version were not captured before/during the pass and are explicitly documented as unknown rather than inferred after the fact; the in-place upgrade itself and retained pre/post app state were directly observed.
-- [x] No blocking hands-on failure was found, so no new Android/device/DSP candidate is required for this Phase 1 closeout step.
+- [x] No blocking hands-on failure was found, so no new Android/device/DSP candidate is required for this v0.5.0 Phase 2 testing pass.
 
-### Remaining Phase-one release closeout after hands-on PASS
+Phase 2 validates the same v0.5.0 milestone built in Phase 1. It does not create a separate installable version and does not require a `v0.6.0` version bump.
 
-- [ ] Confirm the final documentation/release-preparation PR #14 head is green for all gates required by its changed paths.
-- [ ] Review PR #14's final diff and remove draft status only when Phase 1 release closeout is intentionally ready to proceed.
-- [ ] Merge PR #14 to `main` without bypassing validation.
-- [ ] Confirm merged/final `main` source passes the required Android CI and CodeQL gates.
-- [ ] Confirm tag `v0.5.0` and a public `v0.5.0` release do not already exist.
-- [ ] Run the controlled signed-release publication workflow from the exact intended `main` source only after the merged source is green and public release is intentionally authorized.
+### Post-Phase-2 v0.5.0 publication closeout
+
+- [x] Final PR #14 head `a94aedfd8533e94496908bec3460cf9e5178760f` passed the required changed-path gates, including Android CI #1046, CodeQL #927, Catalog currentness #982, and Priority community coverage #470.
+- [x] Reviewed PR #14's final diff, removed draft status, and confirmed the PR was mergeable before merge.
+- [x] Merged PR #14 to `main` without bypassing validation; merge commit is `58d761b5d9677b5605613c6e61cfc06f6ea831d9`.
+- [x] Confirmed merged `main` source passed Android CI #1047 and CodeQL #928.
+- [x] Confirmed on 2026-09-09 that tag `v0.5.0` and a public `v0.5.0` release did not exist; latest public release remained v0.4.0.
+- [ ] Run the controlled signed-release publication workflow from the exact intended `main` source only after public release is intentionally authorized.
 - [ ] Verify the publish workflow rebuilds/tests/signs from the exact release source and the actual signer still matches the permanent pinned certificate.
 - [ ] Verify the published `v0.5.0` tag points at the intended finalized source commit and release assets/checksums/signature verification are complete.
 - [ ] Verify GitHub's latest-release metadata exposes v0.5.0 so existing installations can discover the update.
-
-Phase 2 is outside this v0.5.0 Phase 1 closeout record and remains intentionally undefined until the project owner explicitly introduces and approves it.
 
 The signed `30535bd3...` beta is a pinned qualification/candidate artifact, not authorization to publish that beta artifact directly as the public release. Public publication must still rebuild and verify the exact finalized release source through the controlled release workflow.
 
