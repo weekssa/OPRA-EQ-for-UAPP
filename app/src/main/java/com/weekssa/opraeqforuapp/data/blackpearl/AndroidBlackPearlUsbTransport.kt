@@ -48,7 +48,13 @@ class AndroidBlackPearlUsbTransport(
 
     @Volatile
     private var session: UsbSession? = null
+    @Volatile
+    private var currentSessionGeneration: Long = 0L
+    private var lastSessionGeneration: Long = 0L
     private var receiverRegistered = false
+
+    val sessionGeneration: Long
+        get() = currentSessionGeneration
 
     private val permissionAction = "${appContext.packageName}.BLACK_PEARL_USB_PERMISSION"
 
@@ -212,6 +218,8 @@ class AndroidBlackPearlUsbTransport(
                     return@withLock
                 }
                 session = UsbSession(connection, usbInterface, endpointIn)
+                lastSessionGeneration = nextSessionGeneration(lastSessionGeneration)
+                currentSessionGeneration = lastSessionGeneration
                 mutableState.value = BlackPearlConnectionState.Connected
             }
         }
@@ -279,6 +287,7 @@ class AndroidBlackPearlUsbTransport(
     private fun closeSessionLocked() {
         val current = session ?: return
         session = null
+        currentSessionGeneration = 0L
         runCatching { current.connection.releaseInterface(current.usbInterface) }
         runCatching { current.connection.close() }
     }
@@ -320,5 +329,8 @@ class AndroidBlackPearlUsbTransport(
         private const val FLASH_SETTLE_MILLIS = 300L
         private const val COMMAND_SETTLE_MILLIS = 20L
         private const val PERMISSION_RESPONSE_TIMEOUT_MILLIS = 10_000L
+
+        private fun nextSessionGeneration(previous: Long): Long =
+            if (previous == Long.MAX_VALUE) 1L else previous + 1L
     }
 }
