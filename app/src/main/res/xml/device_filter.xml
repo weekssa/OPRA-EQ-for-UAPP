@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- TRN Black Pearl: 0x3302:0x43E8 -->
+    <usb-device vendor-id="13058" product-id="17384" />
+    <!-- FiiO JA11: 0x2972:0x0102 -->
+    <usb-device vendor-id="10610" product-id="258" />
+    <!-- Stock JCALLY JM12: 0x31B2:0x0111 -->
+    <usb-device vendor-id="12722" product-id="273" />
+</resources>
