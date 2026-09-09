@@ -2,9 +2,10 @@ package com.weekssa.opraeqforuapp.domain.blackpearl
 
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 
-/** Pure decoder for the already-observed Black Pearl PEQ read response. No write behavior lives here. */
+/** Pure decoder for the already-observed Black Pearl PEQ native report payload. No write behavior lives here. */
 object BlackPearlReadCodec {
     private const val REPORT_ID = 0x4B
+    private const val WRITE = 0x01
     private const val READ = 0x80
     private const val CMD_PEQ_VALUES = 0x09
     private const val TYPE_PEAK = 0x02
@@ -24,11 +25,21 @@ object BlackPearlReadCodec {
         val q: Double get() = qRaw256.toDouble() / 256.0
     }
 
-    fun bandFromResponse(report: ByteArray): NativeBand? {
+    fun bandFromResponse(report: ByteArray): NativeBand? = bandFromReport(report, READ)
+
+    /**
+     * Decodes the PEQ value payload from one deterministic EQ Library write report.
+     *
+     * My DAC saved-EQ matching uses this to fingerprint the exact native representation the existing
+     * Flash planner would send, rather than maintaining a second target-quantization algorithm.
+     */
+    fun bandFromWriteReport(report: ByteArray): NativeBand? = bandFromReport(report, WRITE)
+
+    private fun bandFromReport(report: ByteArray, expectedOperation: Int): NativeBand? {
         if (report.size < 37) return null
         if (
             report[0].u8() != REPORT_ID ||
-            report[1].u8() != READ ||
+            report[1].u8() != expectedOperation ||
             report[2].u8() != CMD_PEQ_VALUES
         ) {
             return null
