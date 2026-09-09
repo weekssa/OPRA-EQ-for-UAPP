@@ -6,6 +6,7 @@ import com.weekssa.opraeqforuapp.domain.dac.HardwareEqNativeBandFingerprint
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqNativeFingerprint
 import com.weekssa.opraeqforuapp.domain.dac.SavedHardwareEqFingerprint
 import com.weekssa.opraeqforuapp.domain.dac.SavedHardwareEqIdentity
+import com.weekssa.opraeqforuapp.domain.dac.SavedHardwareEqRepresentation
 import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
 
 /**
@@ -32,6 +33,15 @@ data class BlackPearlSavedEqRepresentation(
 
     fun asSavedFingerprint(identity: SavedHardwareEqIdentity): SavedHardwareEqFingerprint =
         SavedHardwareEqFingerprint(identity = identity, fingerprint = fingerprint)
+
+    fun asSavedRepresentation(identity: SavedHardwareEqIdentity): SavedHardwareEqRepresentation =
+        SavedHardwareEqRepresentation(
+            identity = identity,
+            fingerprint = fingerprint,
+            fidelity = fidelity,
+            adaptationSummary = adaptationSummary,
+            representationVersion = representationVersion,
+        )
 }
 
 sealed interface BlackPearlSavedEqRepresentationResult {
