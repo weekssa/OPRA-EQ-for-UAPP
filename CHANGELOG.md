@@ -35,7 +35,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Live branch automation recorded successful source-health scans for Head-Fi, Audio Science Review, Squiglink ecosystem currentness, and ParaEQ, with zero consecutive failures for those newly automated lanes.
 - The unified automated-source workflow passed its adapter/automation-contract tests and atomic living-archive validation on the feature branch before final PR closeout.
 
-## [0.5.0] - Unreleased
+## [0.5.0] - 2026-09-09
 
 ### Added
 
@@ -81,7 +81,9 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Black Pearl v0.5 hardware/DSP qualification is complete: the destructive/fidelity/persistence regression passed on signed behavior candidate `34a9cd819466cb301456c052eecadb02e6271e5e`, and the required focused Reset-result wording follow-up also passed after the informational correction. The later `30535bd3...` architecture refactor preserves device/DSP/conversion behavior, so documentation-only release closeout does not invalidate that completed qualification.
 - FiiO JA11 and stock JCALLY JM12 remain **Hardware validation pending** until their pinned exact-candidate Pixel 9 hands-on checklists pass.
 - Stock JM12 power-cycle persistence is not claimed: no independently corroborated explicit Save command is used, and persistence/tracked-gain reconciliation must be resolved by the physical checklist before qualification.
-- Documentation/release-preparation commits after the pinned beta do not change that APK, but the controlled public release must still rebuild/test/sign the exact finalized `main` source and verify the same permanent signer before publication.
+- Phase 1 implementation/release preparation and Phase 2 Pixel 9 release-candidate testing both completed before publication.
+- Final publication source `ff2fa351d5f38f9dcf37a77859f1e988bbdb76a8` passed Android CI #1049, CodeQL #930, and Automatic Dependency Submission #1174 before **Signed GitHub Release #5** / run ID `34341588059` rebuilt, signed, verified, and published v0.5.0 successfully.
+- The public `v0.5.0` tag points to `ff2fa351d5f38f9dcf37a77859f1e988bbdb76a8`. Public APK `EQ-Library-v0.5.0.apk` has SHA-256 `58e6ac5c62f9af1caf354f97cf2e7d9e2bcddea9937fac3c35532c279cd429eb`, and GitHub latest-release metadata exposes v0.5.0.
 
 ## [0.4.0] - 2026-09-06
 
@@ -99,7 +101,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Added domain regression coverage for active-slot preservation, all-ten-band zero-gain reset, no-op gain restoration, unsafe baseline rejection, PEQ-transfer failure, final gain-restore failure, and retry-safe tracked-gain behavior.
 - Exact hardware candidate `15f220bd055a2aec49c0cb97c16acbd43ac588da` passed Android unit tests, lint, debug/release assembly, CodeQL, signed-beta alignment/signature verification, and the pinned release-certificate check. The signed candidate SHA-256 was `96d9ea12caf8c7944ecd059f7fdda533d1c936c5ed9583910a3d3ab01168c3cf`.
 - The same signed candidate passed the focused Pixel 9 / TRN Black Pearl Reset EQ to flat hands-on qualification on 2026-09-06. Sections 1–7 of the focused checklist passed; controlled mid-transfer failure injection was not required on hardware because the retry/failure ordering is covered by automated domain tests.
-- The final v0.4.0 release-preparation head changes only version/release/documentation metadata after the hardware-qualified device/DSP commit, so it must repeat automated/release signing gates but does not require another Black Pearl hands-on pass unless Android/device/DSP behavior changes again.
+- v0.4.0 was subsequently published through the controlled signed-release path while preserving the qualified Black Pearl device/DSP behavior and permanent signing identity.
 
 ## [0.3.0] - 2026-08-31
 
