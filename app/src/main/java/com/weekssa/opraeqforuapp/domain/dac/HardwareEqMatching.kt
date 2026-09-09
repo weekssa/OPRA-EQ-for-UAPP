@@ -1,5 +1,6 @@
 package com.weekssa.opraeqforuapp.domain.dac
 
+import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 
 /**
@@ -59,6 +60,47 @@ data class SavedHardwareEqFingerprint(
 )
 
 /**
+ * Saved target derivation metadata retained alongside the exact native fingerprint.
+ *
+ * Match identity itself remains native equality. Fidelity/adaptation are presentation metadata for
+ * the exact deterministic target representation and never participate in equality.
+ */
+data class SavedHardwareEqRepresentation(
+    val identity: SavedHardwareEqIdentity,
+    val fingerprint: HardwareEqNativeFingerprint,
+    val fidelity: DevicePresetFidelity,
+    val adaptationSummary: String,
+    val representationVersion: Int,
+) {
+    init {
+        require(adaptationSummary.isNotBlank()) { "Saved hardware adaptation summary must not be blank" }
+        require(representationVersion > 0) { "Saved hardware representation version must be positive" }
+    }
+
+    fun asFingerprint(): SavedHardwareEqFingerprint = SavedHardwareEqFingerprint(identity, fingerprint)
+}
+
+/**
+ * A deterministic match plus the saved target representations considered for that device.
+ *
+ * Keeping candidate metadata with the result lets presentation show fidelity/adaptation for an exact
+ * match without re-deriving it or attaching metadata to Unknown hardware state.
+ */
+data class HardwareEqMatchResolution(
+    val match: HardwareEqMatch,
+    val savedRepresentations: List<SavedHardwareEqRepresentation>,
+) {
+    init {
+        require(savedRepresentations.map { it.identity.savedEqKey }.distinct().size == savedRepresentations.size) {
+            "Resolved saved hardware representations must have unique identities"
+        }
+    }
+
+    fun representation(savedEqKey: String): SavedHardwareEqRepresentation? =
+        savedRepresentations.firstOrNull { it.identity.savedEqKey == savedEqKey }
+}
+
+/**
  * More than one saved EQ can quantize to the exact same native hardware representation. In that
  * case EQ Library must not arbitrarily attribute the DAC to one creator/profile.
  */
@@ -102,5 +144,18 @@ object HardwareEqMatcher {
             1 -> HardwareEqMatch.Exact(exact.single())
             else -> AmbiguousExactHardwareEqMatch(exact)
         }
+    }
+
+    fun resolve(
+        actual: HardwareEqNativeFingerprint,
+        saved: List<SavedHardwareEqRepresentation>,
+    ): HardwareEqMatchResolution {
+        val unique = saved
+            .distinctBy { it.identity.savedEqKey }
+            .sortedBy { it.identity.savedEqKey }
+        return HardwareEqMatchResolution(
+            match = match(actual, unique.map(SavedHardwareEqRepresentation::asFingerprint)),
+            savedRepresentations = unique,
+        )
     }
 }
