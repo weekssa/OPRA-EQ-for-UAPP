@@ -18,6 +18,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -33,8 +34,11 @@ import com.weekssa.opraeqforuapp.domain.dac.DacRecognitionState
 import com.weekssa.opraeqforuapp.domain.dac.DacStateFreshness
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqMatch
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqMatchResolution
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqResponseEvaluator
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
+import com.weekssa.opraeqforuapp.domain.dac.isAcousticallyActive
 import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
+import com.weekssa.opraeqforuapp.ui.components.DacEqResponseGraph
 
 @Composable
 fun MyDacScreen(
@@ -262,6 +266,30 @@ private fun BlackPearlEqStatus(
 
         HardwareEqMatch.Unknown, null -> Text(stringResource(R.string.my_dac_eq_unknown_detail))
         else -> Unit
+    }
+
+    val responseCurve = remember(bundle.snapshot.filters) {
+        HardwareEqResponseEvaluator.evaluate(bundle.snapshot.filters)
+    }
+    Text(
+        text = stringResource(R.string.my_dac_eq_response),
+        fontWeight = FontWeight.SemiBold,
+    )
+    if (responseCurve == null) {
+        Text(stringResource(R.string.my_dac_response_unavailable))
+    } else {
+        val activeBandCount = bundle.snapshot.filters.count { filter -> filter.isAcousticallyActive() }
+        DacEqResponseGraph(
+            curve = responseCurve,
+            filters = bundle.snapshot.filters,
+            accessibilityDescription = stringResource(
+                R.string.my_dac_response_graph_accessibility,
+                activeBandCount,
+                responseCurve.minimumGainDb,
+                responseCurve.maximumGainDb,
+            ),
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 
     HorizontalDivider()
