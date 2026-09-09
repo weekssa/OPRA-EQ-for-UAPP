@@ -267,7 +267,6 @@ class AndroidSafDocumentStore(context: Context) : ExportDocumentStore {
             return false
         }
         if (mimeType.isNullOrBlank()) return false
-        if ((flags and DocumentsContract.Document.FLAG_SUPPORTS_DELETE.toLong()) != 0L) return true
         return if (isDirectory) {
             (flags and DocumentsContract.Document.FLAG_DIR_SUPPORTS_CREATE.toLong()) != 0L
         } else {
