@@ -75,6 +75,21 @@ class DacSessionRepository(
 
     fun connectJcallyJm12() = jcallyJm12Transport.connect()
 
+    fun isBlackPearlSessionCurrent(sessionGeneration: Long): Boolean =
+        sessionGeneration > 0L &&
+            blackPearlConnectionState.value is BlackPearlConnectionState.Connected &&
+            blackPearlSessionGeneration.value == sessionGeneration
+
+    fun isFiioJa11SessionCurrent(sessionGeneration: Long): Boolean =
+        sessionGeneration > 0L &&
+            fiioJa11ConnectionState.value is Kt02h20ConnectionState.Connected &&
+            fiioJa11SessionGeneration.value == sessionGeneration
+
+    fun isJcallyJm12SessionCurrent(sessionGeneration: Long): Boolean =
+        sessionGeneration > 0L &&
+            jcallyJm12ConnectionState.value is Kt02h20ConnectionState.Connected &&
+            jcallyJm12SessionGeneration.value == sessionGeneration
+
     suspend fun readBlackPearlSnapshot(): HardwareEqSnapshotBundle? = readVerifiedSnapshot(
         generation = blackPearlSessionGeneration,
         isConnected = { blackPearlConnectionState.value is BlackPearlConnectionState.Connected },
