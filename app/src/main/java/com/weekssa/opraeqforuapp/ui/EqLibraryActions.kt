@@ -34,6 +34,7 @@ class EqLibraryActions(
     val onUpdateBlackPearlEditorBand: (Int, EqFilterType, Double, Double, Double) -> Unit,
     val onUseSafeBlackPearlEditorGain: () -> Unit,
     val onResetBlackPearlEditorLocalEdits: () -> Unit,
+    val onApplyBlackPearlEditor: (Boolean) -> Unit,
     val onConnectBlackPearl: () -> Unit,
     val onResetBlackPearl: suspend () -> String,
     val onConnectFiioJa11: () -> Unit,
