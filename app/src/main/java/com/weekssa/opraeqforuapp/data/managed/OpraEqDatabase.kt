@@ -27,7 +27,7 @@ import com.weekssa.opraeqforuapp.data.library.SavedGeneralEqEntity
         SavedGeneralEqEntity::class,
         OutputGeneralEqEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = false,
 )
 abstract class OpraEqDatabase : RoomDatabase() {
@@ -200,6 +200,13 @@ abstract class OpraEqDatabase : RoomDatabase() {
             }
         }
 
+        /** Adds optional provenance for DAC-captured Personal EQs without changing existing records. */
+        internal val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE saved_eqs ADD COLUMN captureMetadataJson TEXT")
+            }
+        }
+
         fun create(context: Context): OpraEqDatabase =
             Room.databaseBuilder(
                 context.applicationContext,
@@ -212,6 +219,7 @@ abstract class OpraEqDatabase : RoomDatabase() {
                     MIGRATION_3_4,
                     MIGRATION_4_5,
                     MIGRATION_5_6,
+                    MIGRATION_6_7,
                 )
                 .build()
     }
