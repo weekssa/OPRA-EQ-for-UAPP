@@ -45,6 +45,7 @@ import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 import com.weekssa.opraeqforuapp.domain.library.SavedEqHeadphoneAssociation
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
+import com.weekssa.opraeqforuapp.ui.BlackPearlQualificationUiState
 import com.weekssa.opraeqforuapp.ui.MyDacEditorApplyStatus
 import com.weekssa.opraeqforuapp.ui.MyDacEditorUiState
 import com.weekssa.opraeqforuapp.ui.components.DacEqResponseGraph
@@ -61,6 +62,7 @@ fun MyDacScreen(
     blackPearlManagedHeadphones: List<ManagedHeadphoneRecord>,
     blackPearlSavedEqs: List<SavedEqRecord>,
     blackPearlEditorState: MyDacEditorUiState,
+    blackPearlQualificationState: BlackPearlQualificationUiState,
     onConnectDac: (DacDeviceId) -> Unit,
     onOpenBlackPearlEditor: () -> Unit,
     onCloseBlackPearlEditor: () -> Unit,
@@ -72,6 +74,7 @@ fun MyDacScreen(
     onResetBlackPearlEditorLocalEdits: () -> Unit,
     onApplyBlackPearlEditor: (Boolean) -> Unit,
     onCaptureBlackPearlDacEq: suspend (String, SavedEqHeadphoneAssociation?) -> String,
+    onReadBlackPearlQualification: () -> Unit,
     onMessage: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -238,7 +241,14 @@ fun MyDacScreen(
                 -> Text(stringResource(R.string.my_dac_hardware_pending_eq))
             }
 
-            else -> DeviceStatus(selectedDevice)
+            else -> CapabilityDrivenDeviceStatus(
+                deviceId = selectedDevice,
+                blackPearlQualificationState = blackPearlQualificationState,
+                blackPearlQualificationEnabled =
+                    selectedDevice == DacDeviceId.TRN_BLACK_PEARL &&
+                        blackPearlConnectionState is BlackPearlConnectionState.Connected,
+                onReadBlackPearlQualification = onReadBlackPearlQualification,
+            )
         }
     }
 }
@@ -414,25 +424,6 @@ private fun BlackPearlEqStatus(
             Text(stringResource(R.string.my_dac_action_save_eq))
         }
     }
-}
-
-@Composable
-private fun DeviceStatus(deviceId: DacDeviceId) {
-    Text(
-        text = stringResource(R.string.my_dac_device_info),
-        fontWeight = FontWeight.SemiBold,
-    )
-    Text(
-        stringResource(
-            if (deviceId == DacDeviceId.TRN_BLACK_PEARL) {
-                R.string.my_dac_validation_qualified
-            } else {
-                R.string.my_dac_validation_pending
-            },
-        ),
-    )
-    HorizontalDivider()
-    Text(stringResource(R.string.my_dac_no_device_controls))
 }
 
 @Composable
