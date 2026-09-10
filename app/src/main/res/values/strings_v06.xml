@@ -54,6 +54,33 @@
     <string name="my_dac_section_advanced">Advanced</string>
     <string name="my_dac_no_device_controls">No additional device controls are exposed yet. Controls appear here only after their exact read/write/readback semantics are qualified.</string>
 
+    <string name="my_dac_qualification_title">Hardware qualification · read-only</string>
+    <string name="my_dac_qualification_explanation">Reads candidate Black Pearl settings for validation only. No setting is changed, latched, or saved.</string>
+    <string name="my_dac_qualification_action">Read candidate controls</string>
+    <string name="my_dac_qualification_reading">Reading candidate controls…</string>
+    <string name="my_dac_qualification_current">Current session read</string>
+    <string name="my_dac_qualification_stale">Last read · USB session changed</string>
+    <string name="my_dac_qualification_filter">DAC filter</string>
+    <string name="my_dac_qualification_gain_mode">Gain mode</string>
+    <string name="my_dac_qualification_amp_topology">Amp topology</string>
+    <string name="my_dac_qualification_mic_gain">Mic gain</string>
+    <string name="my_dac_qualification_balance">Balance</string>
+    <string name="my_dac_qualification_playback_gain">Playback/global gain</string>
+    <string name="my_dac_qualification_raw">raw %1$d</string>
+    <string name="my_dac_qualification_filter_fast_ll">FAST-LL</string>
+    <string name="my_dac_qualification_filter_fast_pc">Fast-PC</string>
+    <string name="my_dac_qualification_filter_slow_ll">Slow-LL</string>
+    <string name="my_dac_qualification_filter_slow_pc">SLOW-PC</string>
+    <string name="my_dac_qualification_filter_nos">NOS</string>
+    <string name="my_dac_qualification_gain_low">LOW</string>
+    <string name="my_dac_qualification_gain_high">HIGH</string>
+    <string name="my_dac_qualification_amp_class_h">CLASS H</string>
+    <string name="my_dac_qualification_amp_class_ab">CLASS AB</string>
+    <string name="my_dac_qualification_balance_center">Centered</string>
+    <string name="my_dac_qualification_balance_db">%1$+d dB</string>
+    <string name="my_dac_qualification_balance_inconsistent">Left %1$+d dB · Right %2$+d dB · needs review</string>
+    <string name="my_dac_qualification_db">%1$+.2f dB</string>
+
     <string name="my_dac_action_save_eq">Save DAC EQ</string>
     <string name="my_dac_save_title">Save DAC EQ</string>
     <string name="my_dac_save_provenance">The current hardware values will be saved as a Personal EQ with “Captured from TRN Black Pearl” provenance. Playback volume is not stored as source preamp.</string>
