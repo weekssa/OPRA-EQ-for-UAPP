@@ -29,8 +29,11 @@ import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlEditorApplyResult
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlashResult
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlatResetResult
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlHardwareEqMatchResolver
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlKnownLineage
+import com.weekssa.opraeqforuapp.domain.blackpearl.buildBlackPearlKnownLineage
 import com.weekssa.opraeqforuapp.domain.blackpearl.buildBlackPearlMyEqsCandidates
 import com.weekssa.opraeqforuapp.domain.blackpearl.decideBlackPearlCapture
+import com.weekssa.opraeqforuapp.domain.blackpearl.withBlackPearlKnownLineage
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqPreset
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
@@ -38,8 +41,12 @@ import com.weekssa.opraeqforuapp.domain.dac.DacRecognitionState
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditSpecs
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditor
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditorStartResult
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqMatch
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqMatchResolution
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqNativeFingerprint
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotBundle
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
+import com.weekssa.opraeqforuapp.domain.dac.SavedHardwareEqRepresentation
 import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult
@@ -132,6 +139,8 @@ class EqLibraryViewModel(
     private val exportInvalidation = MutableStateFlow(0L)
     private val mutableBlackPearlEditorState = MutableStateFlow(MyDacEditorUiState())
     private val mutableBlackPearlQualificationState = MutableStateFlow(BlackPearlQualificationUiState())
+    private val mutableBlackPearlKnownLineage = MutableStateFlow<BlackPearlKnownLineage?>(null)
+    private var blackPearlEditorLineageRepresentation: SavedHardwareEqRepresentation? = null
 
     private val activeOutputId = preferencesRepository.preferences
         .map { preferences -> preferences.exportTargets.activeTarget.name }
@@ -180,17 +189,15 @@ class EqLibraryViewModel(
     private val blackPearlHardwareEqMatch = combine(
         hardwareRepository.blackPearlSnapshotState,
         blackPearlLibraryData,
-    ) { snapshotState, library -> snapshotState to library }
-        .mapLatest { (snapshotState, library) ->
-            val actual = snapshotState.bundle?.fingerprint ?: return@mapLatest null
+        mutableBlackPearlKnownLineage,
+    ) { snapshotState, library, lineage -> Triple(snapshotState, library, lineage) }
+        .mapLatest { (snapshotState, library, lineage) ->
+            val bundle = snapshotState.bundle ?: return@mapLatest null
             withContext(computationDispatcher) {
-                BlackPearlHardwareEqMatchResolver.resolve(
-                    actual = actual,
-                    candidates = buildBlackPearlMyEqsCandidates(
-                        managedHeadphones = library.managedHeadphones,
-                        savedEqs = library.savedEqs,
-                        savedGeneralEqs = library.savedGeneralEqs,
-                    ),
+                resolveBlackPearlHardwareEq(
+                    bundle = bundle,
+                    library = library,
+                    lineage = lineage,
                 )
             }
         }
@@ -330,6 +337,7 @@ class EqLibraryViewModel(
     fun openBlackPearlEditor() {
         val current = mutableBlackPearlEditorState.value
         if (current.isOpening || current.applyStatus == MyDacEditorApplyStatus.APPLYING) return
+        blackPearlEditorLineageRepresentation = null
         if (hardwareRepository.blackPearlConnectionState.value !is BlackPearlConnectionState.Connected) {
             mutableBlackPearlEditorState.value = MyDacEditorUiState(error = MyDacEditorError.NOT_CONNECTED)
             return
@@ -339,9 +347,19 @@ class EqLibraryViewModel(
         viewModelScope.launch {
             val refreshed = hardwareRepository.readBlackPearlSnapshot()
             if (refreshed == null) {
+                blackPearlEditorLineageRepresentation = null
                 mutableBlackPearlEditorState.value = MyDacEditorUiState(error = MyDacEditorError.READ_FAILED)
                 return@launch
             }
+            val currentResolution = withContext(computationDispatcher) {
+                resolveBlackPearlHardwareEq(
+                    bundle = refreshed,
+                    library = blackPearlLibraryData.value,
+                    lineage = mutableBlackPearlKnownLineage.value,
+                )
+            }
+            blackPearlEditorLineageRepresentation = lineageRepresentationFor(currentResolution)
+
             val trackedGainDeltaDb = hardwareRepository.readBlackPearlTrackedGainDeltaDb()
             val result = withContext(computationDispatcher) {
                 HardwareEqEditor.startFromCurrent(
@@ -359,16 +377,21 @@ class EqLibraryViewModel(
                         selectedBandIndex = selectedBandIndex,
                     )
                 }
-                HardwareEqEditorStartResult.CurrentSnapshotRequired ->
+                HardwareEqEditorStartResult.CurrentSnapshotRequired -> {
+                    blackPearlEditorLineageRepresentation = null
                     MyDacEditorUiState(error = MyDacEditorError.READ_FAILED)
-                HardwareEqEditorStartResult.WrongDevice ->
+                }
+                HardwareEqEditorStartResult.WrongDevice -> {
+                    blackPearlEditorLineageRepresentation = null
                     MyDacEditorUiState(error = MyDacEditorError.WRONG_DEVICE)
+                }
             }
         }
     }
 
     fun closeMyDacEditor() {
         if (mutableBlackPearlEditorState.value.applyStatus == MyDacEditorApplyStatus.APPLYING) return
+        blackPearlEditorLineageRepresentation = null
         mutableBlackPearlEditorState.value = MyDacEditorUiState()
     }
 
@@ -376,6 +399,7 @@ class EqLibraryViewModel(
     fun backMyDacEditor(): Boolean {
         val current = mutableBlackPearlEditorState.value
         if (current.applyStatus == MyDacEditorApplyStatus.APPLYING) return true
+        val closesEditor = current.isOpening || current.stage == MyDacEditorStage.EDIT
         val next = when {
             current.isOpening -> MyDacEditorUiState()
             current.stage == MyDacEditorStage.REVIEW || current.stage == MyDacEditorStage.ALL_BANDS ->
@@ -388,6 +412,7 @@ class EqLibraryViewModel(
             current.stage == MyDacEditorStage.EDIT -> MyDacEditorUiState()
             else -> return false
         }
+        if (closesEditor) blackPearlEditorLineageRepresentation = null
         mutableBlackPearlEditorState.value = next
         return true
     }
@@ -497,6 +522,7 @@ class EqLibraryViewModel(
         val workingCopy = current.workingCopy ?: return
         if (current.stage != MyDacEditorStage.REVIEW || current.applyStatus == MyDacEditorApplyStatus.APPLYING) return
         if (current.applyStatus == MyDacEditorApplyStatus.CONFIRMATION_REQUIRED && !allowCautions) return
+        val lineageSource = blackPearlEditorLineageRepresentation
 
         mutableBlackPearlEditorState.value = current.copy(
             applyStatus = MyDacEditorApplyStatus.APPLYING,
@@ -508,18 +534,48 @@ class EqLibraryViewModel(
                 allowCautions = allowCautions,
             )
             mutableBlackPearlEditorState.value = when (result) {
-                is BlackPearlEditorApplyResult.Verified -> MyDacEditorUiState(
-                    applyStatus = MyDacEditorApplyStatus.VERIFIED,
-                )
+                is BlackPearlEditorApplyResult.Verified -> {
+                    val fresh = hardwareRepository.blackPearlSnapshotState.value.bundle
+                    mutableBlackPearlKnownLineage.value = if (
+                        lineageSource != null &&
+                        fresh != null &&
+                        hardwareRepository.isBlackPearlSessionCurrent(fresh.snapshot.sessionGeneration)
+                    ) {
+                        buildBlackPearlKnownLineage(
+                            sessionGeneration = fresh.snapshot.sessionGeneration,
+                            savedRepresentation = lineageSource,
+                            actualFingerprint = fresh.fingerprint,
+                        )
+                    } else {
+                        null
+                    }
+                    blackPearlEditorLineageRepresentation = null
+                    MyDacEditorUiState(applyStatus = MyDacEditorApplyStatus.VERIFIED)
+                }
                 is BlackPearlEditorApplyResult.ConfirmationRequired -> current.copy(
                     applyStatus = MyDacEditorApplyStatus.CONFIRMATION_REQUIRED,
                     applyFailureReason = null,
                 )
-                is BlackPearlEditorApplyResult.InvalidPlan -> failedEditorApply(result.reason)
-                is BlackPearlEditorApplyResult.StaleBaseline -> failedEditorApply(result.reason)
-                is BlackPearlEditorApplyResult.DeviceUnavailable -> failedEditorApply(result.reason)
-                is BlackPearlEditorApplyResult.TransferFailed -> failedEditorApply(result.reason)
-                is BlackPearlEditorApplyResult.VerificationFailed -> failedEditorApply(result.reason)
+                is BlackPearlEditorApplyResult.InvalidPlan -> failedEditorApply(result.reason).also {
+                    mutableBlackPearlKnownLineage.value = null
+                    blackPearlEditorLineageRepresentation = null
+                }
+                is BlackPearlEditorApplyResult.StaleBaseline -> failedEditorApply(result.reason).also {
+                    mutableBlackPearlKnownLineage.value = null
+                    blackPearlEditorLineageRepresentation = null
+                }
+                is BlackPearlEditorApplyResult.DeviceUnavailable -> failedEditorApply(result.reason).also {
+                    mutableBlackPearlKnownLineage.value = null
+                    blackPearlEditorLineageRepresentation = null
+                }
+                is BlackPearlEditorApplyResult.TransferFailed -> failedEditorApply(result.reason).also {
+                    mutableBlackPearlKnownLineage.value = null
+                    blackPearlEditorLineageRepresentation = null
+                }
+                is BlackPearlEditorApplyResult.VerificationFailed -> failedEditorApply(result.reason).also {
+                    mutableBlackPearlKnownLineage.value = null
+                    blackPearlEditorLineageRepresentation = null
+                }
             }
         }
     }
@@ -551,13 +607,10 @@ class EqLibraryViewModel(
 
         val library = loadLibraryData(ExportDevice.BLACK_PEARL.name)
         val resolution = withContext(computationDispatcher) {
-            BlackPearlHardwareEqMatchResolver.resolve(
-                actual = bundle.fingerprint,
-                candidates = buildBlackPearlMyEqsCandidates(
-                    managedHeadphones = library.managedHeadphones,
-                    savedEqs = library.savedEqs,
-                    savedGeneralEqs = library.savedGeneralEqs,
-                ),
+            resolveBlackPearlHardwareEq(
+                bundle = bundle,
+                library = library,
+                lineage = mutableBlackPearlKnownLineage.value,
             )
         }
 
@@ -1101,6 +1154,38 @@ class EqLibraryViewModel(
             is Kt02h20FlashResult.VerificationFailed ->
                 resource(R.string.jm12_flash_verification_failed, result.reason)
         }
+    }
+
+    private fun resolveBlackPearlHardwareEq(
+        bundle: HardwareEqSnapshotBundle,
+        library: LibraryDataState,
+        lineage: BlackPearlKnownLineage?,
+    ): HardwareEqMatchResolution {
+        val actual = bundle.fingerprint
+        return BlackPearlHardwareEqMatchResolver.resolve(
+            actual = actual,
+            candidates = buildBlackPearlMyEqsCandidates(
+                managedHeadphones = library.managedHeadphones,
+                savedEqs = library.savedEqs,
+                savedGeneralEqs = library.savedGeneralEqs,
+            ),
+        ).withBlackPearlKnownLineage(
+            currentSessionGeneration = bundle.snapshot.sessionGeneration,
+            actualFingerprint = actual,
+            lineage = lineage,
+        )
+    }
+
+    private fun lineageRepresentationFor(
+        resolution: HardwareEqMatchResolution,
+    ): SavedHardwareEqRepresentation? = when (val match = resolution.match) {
+        is HardwareEqMatch.Exact -> resolution.representation(match.savedEq.savedEqKey)
+        is HardwareEqMatch.ModifiedKnown ->
+            resolution.representation(match.savedEq.savedEqKey)
+                ?: mutableBlackPearlKnownLineage.value
+                    ?.savedRepresentation
+                    ?.takeIf { it.identity.savedEqKey == match.savedEq.savedEqKey }
+        else -> null
     }
 
     private suspend fun loadLibraryData(outputId: String): LibraryDataState = combine(
