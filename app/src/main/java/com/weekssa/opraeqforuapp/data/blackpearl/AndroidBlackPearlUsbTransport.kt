@@ -13,6 +13,7 @@ import android.hardware.usb.UsbInterface
 import android.hardware.usb.UsbManager
 import android.os.Build
 import androidx.core.content.ContextCompat
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceControlReadCodec
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlProtocol
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlReadCodec
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlTransport
@@ -142,6 +143,36 @@ class AndroidBlackPearlUsbTransport(
     override suspend fun readNativeBand(index: Int): BlackPearlReadCodec.NativeBand? = readParsedResponse(
         request = BlackPearlProtocol.readBandReport(index),
         parser = BlackPearlReadCodec::bandFromResponse,
+    )
+
+    suspend fun readDeviceFilterCode(): Int? = readParsedResponse(
+        request = BlackPearlDeviceControlReadCodec.filterRequest(),
+        parser = BlackPearlDeviceControlReadCodec::filterFromResponse,
+    )
+
+    suspend fun readDeviceGainModeCode(): Int? = readParsedResponse(
+        request = BlackPearlDeviceControlReadCodec.gainModeRequest(),
+        parser = BlackPearlDeviceControlReadCodec::gainModeFromResponse,
+    )
+
+    suspend fun readDeviceAmpTopologyCode(): Int? = readParsedResponse(
+        request = BlackPearlDeviceControlReadCodec.ampTopologyRequest(),
+        parser = BlackPearlDeviceControlReadCodec::ampTopologyFromResponse,
+    )
+
+    suspend fun readDeviceMicGainDb(): Int? = readParsedResponse(
+        request = BlackPearlDeviceControlReadCodec.micGainRequest(),
+        parser = BlackPearlDeviceControlReadCodec::micGainDbFromResponse,
+    )
+
+    suspend fun readDeviceLeftBalanceDb(): Int? = readParsedResponse(
+        request = BlackPearlDeviceControlReadCodec.balanceLeftRequest(),
+        parser = BlackPearlDeviceControlReadCodec::leftBalanceDbFromResponse,
+    )
+
+    suspend fun readDeviceRightBalanceDb(): Int? = readParsedResponse(
+        request = BlackPearlDeviceControlReadCodec.balanceRightRequest(),
+        parser = BlackPearlDeviceControlReadCodec::rightBalanceDbFromResponse,
     )
 
     private suspend fun <T> readParsedResponse(
