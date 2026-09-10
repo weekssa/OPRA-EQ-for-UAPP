@@ -20,8 +20,8 @@ android {
         applicationId = "com.weekssa.opraeqforuapp"
         minSdk = 26
         targetSdk = 36
-        versionCode = 5
-        versionName = "0.5.0"
+        versionCode = 6
+        versionName = "0.6.0"
 
         buildConfigField("String", "OPRA_CATALOG_URL", "\"${opraCatalogUrl.get()}\"")
         buildConfigField("String", "CANONICAL_CATALOG_URL", "\"${canonicalCatalogUrl.get()}\"")
