@@ -104,6 +104,7 @@ fun EqLibraryApp(
     val onUseSafeBlackPearlEditorGain = actions.onUseSafeBlackPearlEditorGain
     val onResetBlackPearlEditorLocalEdits = actions.onResetBlackPearlEditorLocalEdits
     val onApplyBlackPearlEditor = actions.onApplyBlackPearlEditor
+    val onCaptureBlackPearlDacEq = actions.onCaptureBlackPearlDacEq
     val onConnectBlackPearl = actions.onConnectBlackPearl
     val onResetBlackPearl = actions.onResetBlackPearl
     val onConnectFiioJa11 = actions.onConnectFiioJa11
@@ -552,11 +553,14 @@ fun EqLibraryApp(
 
                     EqLibraryDestination.MyDac -> MyDacScreen(
                         recognitionState = state.dacRecognitionState,
+                        catalogState = state.catalogState,
                         blackPearlConnectionState = state.blackPearlConnectionState,
                         fiioJa11ConnectionState = state.fiioJa11ConnectionState,
                         jcallyJm12ConnectionState = state.jcallyJm12ConnectionState,
                         blackPearlHardwareEqState = state.blackPearlHardwareEqState,
                         blackPearlHardwareEqMatch = state.blackPearlHardwareEqMatch,
+                        blackPearlManagedHeadphones = state.blackPearlManagedHeadphones,
+                        blackPearlSavedEqs = state.blackPearlSavedEqs,
                         blackPearlEditorState = state.blackPearlEditorState,
                         onConnectDac = onConnectDacForMyDac,
                         onOpenBlackPearlEditor = onOpenBlackPearlEditor,
@@ -568,6 +572,8 @@ fun EqLibraryApp(
                         onUseSafeBlackPearlEditorGain = onUseSafeBlackPearlEditorGain,
                         onResetBlackPearlEditorLocalEdits = onResetBlackPearlEditorLocalEdits,
                         onApplyBlackPearlEditor = onApplyBlackPearlEditor,
+                        onCaptureBlackPearlDacEq = onCaptureBlackPearlDacEq,
+                        onMessage = ::showMessage,
                         modifier = Modifier.fillMaxSize(),
                     )
 
