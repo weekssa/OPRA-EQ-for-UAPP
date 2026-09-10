@@ -35,8 +35,23 @@
     <string name="my_dac_adaptation">%1$s · %2$s</string>
     <string name="my_dac_hardware_pending_eq">Hardware EQ inspection for this DAC remains hardware-validation pending.</string>
     <string name="my_dac_device_info">Device information</string>
+    <string name="my_dac_device_model">Model</string>
+    <string name="my_dac_device_usb_identity">USB VID:PID</string>
+    <string name="my_dac_device_validation">EQ Library validation</string>
+    <string name="my_dac_device_firmware">Firmware</string>
     <string name="my_dac_validation_qualified">Black Pearl EQ path · hardware qualified</string>
+    <string name="my_dac_validation_qualified_short">Hardware qualified</string>
     <string name="my_dac_validation_pending">Hardware validation pending</string>
+    <string name="my_dac_origin_usb_reported">Reported by USB</string>
+    <string name="my_dac_origin_device_reported">Reported by device</string>
+    <string name="my_dac_origin_known_capability">Known device capability</string>
+    <string name="my_dac_origin_validation_status">EQ Library validation status</string>
+    <string name="my_dac_section_playback">Playback</string>
+    <string name="my_dac_section_dac_filter">DAC / Filter</string>
+    <string name="my_dac_section_output">Output</string>
+    <string name="my_dac_section_microphone">Microphone / Input</string>
+    <string name="my_dac_section_usb_system">USB / System</string>
+    <string name="my_dac_section_advanced">Advanced</string>
     <string name="my_dac_no_device_controls">No additional device controls are exposed yet. Controls appear here only after their exact read/write/readback semantics are qualified.</string>
 
     <string name="my_dac_action_save_eq">Save DAC EQ</string>
