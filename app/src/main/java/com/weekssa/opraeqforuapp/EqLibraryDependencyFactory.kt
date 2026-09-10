@@ -5,7 +5,9 @@ import com.weekssa.opraeqforuapp.data.blackpearl.AndroidBlackPearlUsbTransport
 import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlGainStatePreferences
 import com.weekssa.opraeqforuapp.data.catalog.HttpOpraCatalogSource
 import com.weekssa.opraeqforuapp.data.catalog.OpraCatalogRepository
+import com.weekssa.opraeqforuapp.data.dac.DacControlRepository
 import com.weekssa.opraeqforuapp.data.dac.DacSessionRepository
+import com.weekssa.opraeqforuapp.data.dac.SessionBlackPearlDeviceControlReadSource
 import com.weekssa.opraeqforuapp.data.export.AndroidSafDocumentStore
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupRepository
 import com.weekssa.opraeqforuapp.data.export.PresetExportRepository
@@ -89,6 +91,9 @@ internal fun createEqLibraryDependencies(context: Context): EqLibraryViewModel.D
         fiioJa11Transport = fiioJa11Transport,
         jcallyJm12Transport = jcallyJm12Transport,
     )
+    val dacControlRepository = DacControlRepository(
+        SessionBlackPearlDeviceControlReadSource(dacSessionRepository),
+    )
     val hardwareRepository = HardwareEqRepository(
         dacSessionRepository = dacSessionRepository,
         blackPearlFlasher = BlackPearlFlasher(
@@ -112,6 +117,7 @@ internal fun createEqLibraryDependencies(context: Context): EqLibraryViewModel.D
         cleanupRepository = cleanupRepository,
         syncCoordinator = syncCoordinator,
         updateCoordinator = updateCoordinator,
+        dacControlRepository = dacControlRepository,
         hardwareRepository = hardwareRepository,
     )
 }
