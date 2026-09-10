@@ -12,15 +12,17 @@ import java.util.Locale
 
 /**
  * Session-scoped proof that one non-exact Black Pearl state was produced by EQ Library from a
- * specific saved representation. The actual fingerprint is intentionally exact: any later outside
- * hardware change breaks this proof and the state returns to Unknown rather than using similarity.
+ * specific saved representation. Both the session generation and actual fingerprint are exact: a
+ * reconnect or any later outside hardware change breaks this proof back to Unknown.
  */
 data class BlackPearlKnownLineage(
+    val sessionGeneration: Long,
     val savedRepresentation: SavedHardwareEqRepresentation,
     val actualFingerprint: HardwareEqNativeFingerprint,
     val differences: List<HardwareEqDifference>,
 ) {
     init {
+        require(sessionGeneration > 0) { "Known lineage requires a current USB session generation." }
         require(savedRepresentation.fingerprint.deviceId == DacDeviceId.TRN_BLACK_PEARL)
         require(actualFingerprint.deviceId == DacDeviceId.TRN_BLACK_PEARL)
         require(savedRepresentation.fingerprint != actualFingerprint) {
@@ -31,9 +33,11 @@ data class BlackPearlKnownLineage(
 }
 
 fun buildBlackPearlKnownLineage(
+    sessionGeneration: Long,
     savedRepresentation: SavedHardwareEqRepresentation,
     actualFingerprint: HardwareEqNativeFingerprint,
 ): BlackPearlKnownLineage? {
+    require(sessionGeneration > 0) { "Black Pearl lineage requires a current USB session generation." }
     val expected = savedRepresentation.fingerprint
     require(expected.deviceId == DacDeviceId.TRN_BLACK_PEARL) {
         "Black Pearl lineage requires a Black Pearl saved representation."
@@ -49,6 +53,7 @@ fun buildBlackPearlKnownLineage(
     val differences = blackPearlNativeDifferences(expected, actualFingerprint)
     if (differences.isEmpty()) return null
     return BlackPearlKnownLineage(
+        sessionGeneration = sessionGeneration,
         savedRepresentation = savedRepresentation,
         actualFingerprint = actualFingerprint,
         differences = differences,
@@ -57,14 +62,18 @@ fun buildBlackPearlKnownLineage(
 
 /**
  * Applies lineage only after ordinary Flat/Exact/ambiguous matching has failed. This guarantees that
- * exact truth always wins and that a merely similar cold-start hardware state remains Unknown.
+ * exact truth always wins and that a merely similar cold-start or reconnected state remains Unknown.
  */
 fun HardwareEqMatchResolution.withBlackPearlKnownLineage(
+    currentSessionGeneration: Long,
     actualFingerprint: HardwareEqNativeFingerprint,
     lineage: BlackPearlKnownLineage?,
 ): HardwareEqMatchResolution {
     if (match !is HardwareEqMatch.Unknown) return this
-    val proven = lineage?.takeIf { it.actualFingerprint == actualFingerprint } ?: return this
+    val proven = lineage?.takeIf {
+        it.sessionGeneration == currentSessionGeneration &&
+            it.actualFingerprint == actualFingerprint
+    } ?: return this
     return copy(
         match = HardwareEqMatch.ModifiedKnown(
             savedEq = proven.savedRepresentation.identity,
