@@ -9,6 +9,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -39,6 +40,7 @@ import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.dac.isAcousticallyActive
 import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
+import com.weekssa.opraeqforuapp.ui.MyDacEditorApplyStatus
 import com.weekssa.opraeqforuapp.ui.MyDacEditorUiState
 import com.weekssa.opraeqforuapp.ui.components.DacEqResponseGraph
 
@@ -60,6 +62,7 @@ fun MyDacScreen(
     onUpdateBlackPearlEditorBand: (Int, EqFilterType, Double, Double, Double) -> Unit,
     onUseSafeBlackPearlEditorGain: () -> Unit,
     onResetBlackPearlEditorLocalEdits: () -> Unit,
+    onApplyBlackPearlEditor: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val recognized = recognitionState.recognizedDeviceIds.sortedBy(DacDeviceId::ordinal)
@@ -192,8 +195,10 @@ fun MyDacScreen(
                             onUpdateBand = onUpdateBlackPearlEditorBand,
                             onUseSafeGain = onUseSafeBlackPearlEditorGain,
                             onResetEdits = onResetBlackPearlEditorLocalEdits,
+                            onApply = onApplyBlackPearlEditor,
                         )
                     } else {
+                        BlackPearlEditorApplyFeedback(blackPearlEditorState)
                         BlackPearlEqStatus(
                             snapshotState = blackPearlHardwareEqState,
                             matchResolution = blackPearlHardwareEqMatch,
@@ -209,6 +214,24 @@ fun MyDacScreen(
 
             else -> DeviceStatus(selectedDevice)
         }
+    }
+}
+
+@Composable
+private fun BlackPearlEditorApplyFeedback(state: MyDacEditorUiState) {
+    when (state.applyStatus) {
+        MyDacEditorApplyStatus.VERIFIED -> Text(
+            text = stringResource(R.string.my_dac_editor_apply_verified),
+            fontWeight = FontWeight.SemiBold,
+        )
+        MyDacEditorApplyStatus.FAILED -> Text(
+            text = stringResource(
+                R.string.my_dac_editor_apply_failed,
+                state.applyFailureReason.orEmpty(),
+            ),
+            color = MaterialTheme.colorScheme.error,
+        )
+        else -> Unit
     }
 }
 
