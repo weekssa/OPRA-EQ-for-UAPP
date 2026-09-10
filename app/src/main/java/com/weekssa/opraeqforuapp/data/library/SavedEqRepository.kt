@@ -3,15 +3,14 @@ package com.weekssa.opraeqforuapp.data.library
 import androidx.room.withTransaction
 import com.weekssa.opraeqforuapp.data.managed.ManagedProfileSnapshotCodec
 import com.weekssa.opraeqforuapp.data.managed.OpraEqDatabase
+import com.weekssa.opraeqforuapp.domain.blackpearl.buildBlackPearlCapturedEqDraft
 import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.conversion.ToneBoostersConverter
-import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotBundle
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 import com.weekssa.opraeqforuapp.domain.library.ParametricEqTextParser
-import com.weekssa.opraeqforuapp.domain.library.SavedEqCaptureMetadata
 import com.weekssa.opraeqforuapp.domain.library.SavedEqHeadphoneAssociation
 import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
@@ -190,67 +189,26 @@ class SavedEqRepository(
     ): SavedEqRecord = withContext(ioDispatcher) {
         val name = displayName.trim()
         require(name.isNotEmpty()) { "EQ name is required." }
-        val snapshot = snapshotBundle.snapshot
-        require(snapshot.deviceId == DacDeviceId.TRN_BLACK_PEARL) {
-            "Only a verified TRN Black Pearl snapshot can be captured by this path."
-        }
-        require(snapshot.filters.isNotEmpty()) { "The verified hardware EQ has no filters to capture." }
-        require(snapshot.filters.all { it.enabled }) {
-            "This hardware EQ contains disabled bands that cannot yet be represented faithfully as a Personal EQ."
-        }
-        require(snapshot.filters.all { it.type in SUPPORTED_PERSONAL_TYPES }) {
-            "This hardware EQ contains a filter type that cannot yet be represented faithfully as a Personal EQ."
-        }
 
         val id = UUID.randomUUID().toString()
-        val associatedProductId = association?.productId
-        val productId = associatedProductId ?: "personal-product:$id"
-        val profile = OpraEqProfile(
-            id = "personal-eq:$id",
-            productId = productId,
-            author = "Personal",
-            details = buildString {
-                append("Captured from TRN Black Pearl")
-                snapshot.activeSlot?.let { slot -> append(" · Slot $slot") }
-            },
-            link = null,
-            profileType = "parametric_eq",
-            // Black Pearl 0x03 is ordinary playback/global gain, not a source-authentic EQ preamp.
-            preampGainDb = snapshot.dedicatedEqPreampDb,
-            bands = snapshot.filters.sortedBy { it.index }.map { filter ->
-                OpraBand(
-                    type = when (filter.type) {
-                        EqFilterType.PEAK -> "peak_dip"
-                        EqFilterType.LOW_SHELF -> "low_shelf"
-                        EqFilterType.HIGH_SHELF -> "high_shelf"
-                        else -> error("unsupported captured EQ filter")
-                    },
-                    frequency = filter.frequencyHz,
-                    gainDb = filter.gainDb,
-                    q = filter.q,
-                    slope = null,
-                )
-            },
-        )
-        val metadata = SavedEqCaptureMetadata(
-            deviceId = snapshot.deviceId,
-            activeSlot = snapshot.activeSlot,
-            verifiedAtEpochMillis = snapshot.verifiedAtEpochMillis,
-            nativeFingerprint = snapshotBundle.fingerprint,
+        val draft = buildBlackPearlCapturedEqDraft(
+            captureId = id,
+            snapshotBundle = snapshotBundle,
+            association = association,
         )
         val now = nowMillis()
         val entity = SavedEqEntity(
             entryId = "personal:$id",
             kind = KIND_PERSONAL,
             sourceProfileId = null,
-            productId = productId,
-            manufacturer = association?.manufacturer.orEmpty(),
-            model = association?.model.orEmpty(),
+            productId = draft.productId,
+            manufacturer = draft.manufacturer,
+            model = draft.model,
             displayName = name,
-            profileJson = snapshotCodec.encode(profile),
+            profileJson = snapshotCodec.encode(draft.profile),
             createdAtMillis = now,
             updatedAtMillis = now,
-            captureMetadataJson = captureMetadataCodec.encode(metadata),
+            captureMetadataJson = captureMetadataCodec.encode(draft.captureMetadata),
         )
         database.withTransaction {
             dao.upsert(entity)
