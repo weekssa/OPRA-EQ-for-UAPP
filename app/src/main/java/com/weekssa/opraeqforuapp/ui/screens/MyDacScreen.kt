@@ -10,6 +10,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -28,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.R
 import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
+import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
 import com.weekssa.opraeqforuapp.domain.dac.AmbiguousExactHardwareEqMatch
 import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
@@ -40,6 +42,9 @@ import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.dac.isAcousticallyActive
 import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
+import com.weekssa.opraeqforuapp.domain.library.SavedEqHeadphoneAssociation
+import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
+import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.ui.MyDacEditorApplyStatus
 import com.weekssa.opraeqforuapp.ui.MyDacEditorUiState
 import com.weekssa.opraeqforuapp.ui.components.DacEqResponseGraph
@@ -47,11 +52,14 @@ import com.weekssa.opraeqforuapp.ui.components.DacEqResponseGraph
 @Composable
 fun MyDacScreen(
     recognitionState: DacRecognitionState,
+    catalogState: CatalogState,
     blackPearlConnectionState: BlackPearlConnectionState,
     fiioJa11ConnectionState: Kt02h20ConnectionState,
     jcallyJm12ConnectionState: Kt02h20ConnectionState,
     blackPearlHardwareEqState: HardwareEqSnapshotState,
     blackPearlHardwareEqMatch: HardwareEqMatchResolution?,
+    blackPearlManagedHeadphones: List<ManagedHeadphoneRecord>,
+    blackPearlSavedEqs: List<SavedEqRecord>,
     blackPearlEditorState: MyDacEditorUiState,
     onConnectDac: (DacDeviceId) -> Unit,
     onOpenBlackPearlEditor: () -> Unit,
@@ -63,18 +71,22 @@ fun MyDacScreen(
     onUseSafeBlackPearlEditorGain: () -> Unit,
     onResetBlackPearlEditorLocalEdits: () -> Unit,
     onApplyBlackPearlEditor: (Boolean) -> Unit,
+    onCaptureBlackPearlDacEq: suspend (String, SavedEqHeadphoneAssociation?) -> String,
+    onMessage: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val recognized = recognitionState.recognizedDeviceIds.sortedBy(DacDeviceId::ordinal)
     val present = recognitionState.presentDeviceIds.sortedBy(DacDeviceId::ordinal)
     var selectedDeviceName by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
+    var saveDacEqOpen by remember { mutableStateOf(false) }
 
     LaunchedEffect(recognized, present, selectedDeviceName) {
         val selected = selectedDeviceName?.let { name ->
             runCatching { DacDeviceId.valueOf(name) }.getOrNull()
         }
         if (selected !in recognized) {
+            saveDacEqOpen = false
             selectedDeviceName = when {
                 recognized.size == 1 -> recognized.single().name
                 present.size == 1 -> present.single().name
@@ -86,6 +98,17 @@ fun MyDacScreen(
     val selectedDevice = selectedDeviceName?.let { name ->
         runCatching { DacDeviceId.valueOf(name) }.getOrNull()
     }?.takeIf(recognized::contains)
+
+    if (saveDacEqOpen && selectedDevice == DacDeviceId.TRN_BLACK_PEARL) {
+        BlackPearlSaveDacEqDialog(
+            catalogState = catalogState,
+            managedHeadphones = blackPearlManagedHeadphones,
+            savedEqs = blackPearlSavedEqs,
+            onDismiss = { saveDacEqOpen = false },
+            onSave = onCaptureBlackPearlDacEq,
+            onMessage = onMessage,
+        )
+    }
 
     Column(
         modifier = modifier
@@ -103,6 +126,7 @@ fun MyDacScreen(
             recognized.forEach { deviceId ->
                 TextButton(
                     onClick = {
+                        saveDacEqOpen = false
                         onCloseBlackPearlEditor()
                         selectedDeviceName = deviceId.name
                     },
@@ -170,6 +194,7 @@ fun MyDacScreen(
             Tab(
                 selected = selectedTabIndex == 1,
                 onClick = {
+                    saveDacEqOpen = false
                     onCloseBlackPearlEditor()
                     selectedTabIndex = 1
                 },
@@ -204,6 +229,7 @@ fun MyDacScreen(
                             matchResolution = blackPearlHardwareEqMatch,
                             canEdit = blackPearlConnectionState is BlackPearlConnectionState.Connected,
                             onEdit = onOpenBlackPearlEditor,
+                            onSaveDacEq = { saveDacEqOpen = true },
                         )
                     }
                 }
@@ -273,6 +299,7 @@ private fun BlackPearlEqStatus(
     matchResolution: HardwareEqMatchResolution?,
     canEdit: Boolean,
     onEdit: () -> Unit,
+    onSaveDacEq: () -> Unit,
 ) {
     if (snapshotState.isReading) {
         Text(stringResource(R.string.my_dac_reading_eq))
@@ -371,6 +398,21 @@ private fun BlackPearlEqStatus(
         modifier = Modifier.fillMaxWidth(),
     ) {
         Text(stringResource(R.string.my_dac_action_edit_eq))
+    }
+
+    if (
+        shouldOfferSaveDacEq(
+            match = match,
+            freshness = snapshotState.freshness,
+            connected = canEdit,
+        )
+    ) {
+        OutlinedButton(
+            onClick = onSaveDacEq,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.my_dac_action_save_eq))
+        }
     }
 }
 
