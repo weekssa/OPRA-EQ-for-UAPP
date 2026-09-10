@@ -23,6 +23,10 @@
     <string name="my_dac_eq_exact">Matches My EQs</string>
     <string name="my_dac_eq_ambiguous">Matches multiple saved EQs</string>
     <string name="my_dac_eq_modified">Modified saved EQ</string>
+    <string name="my_dac_eq_modified_origin">Started from %1$s · modified on TRN Black Pearl.</string>
+    <string name="my_dac_eq_modified_difference_count">Hardware differences from the saved EQ: %1$d</string>
+    <string name="my_dac_eq_modified_difference">Band %1$d · %2$s · %3$s → %4$s</string>
+    <string name="my_dac_eq_modified_difference_global">%1$s · %2$s → %3$s</string>
     <string name="my_dac_eq_unknown">Unknown EQ</string>
     <string name="my_dac_eq_unknown_detail">The hardware EQ is readable, but EQ Library cannot truthfully associate it with a saved EQ.</string>
     <string name="my_dac_eq_response">EQ response</string>
