@@ -35,6 +35,8 @@ import com.weekssa.opraeqforuapp.domain.dac.AmbiguousExactHardwareEqMatch
 import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
 import com.weekssa.opraeqforuapp.domain.dac.DacRecognitionState
 import com.weekssa.opraeqforuapp.domain.dac.DacStateFreshness
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqDifference
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqDifferenceField
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqMatch
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqMatchResolution
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqResponseEvaluator
@@ -365,6 +367,18 @@ private fun BlackPearlEqStatus(
             }
         }
 
+        is HardwareEqMatch.ModifiedKnown -> {
+            Text(stringResource(R.string.my_dac_eq_modified_origin, match.savedEq.displayName))
+            Text(stringResource(R.string.my_dac_eq_modified_difference_count, match.differences.size))
+            match.differences.forEach { difference ->
+                Text(
+                    text = modifiedDifferenceText(difference),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
         HardwareEqMatch.Unknown, null -> Text(stringResource(R.string.my_dac_eq_unknown_detail))
         else -> Unit
     }
@@ -425,6 +439,40 @@ private fun BlackPearlEqStatus(
         }
     }
 }
+
+@Composable
+private fun modifiedDifferenceText(difference: HardwareEqDifference): String {
+    val field = differenceFieldLabel(difference.field)
+    val band = difference.bandIndex
+    return if (band == null) {
+        stringResource(
+            R.string.my_dac_eq_modified_difference_global,
+            field,
+            difference.expectedValue,
+            difference.actualValue,
+        )
+    } else {
+        stringResource(
+            R.string.my_dac_eq_modified_difference,
+            band + 1,
+            field,
+            difference.expectedValue,
+            difference.actualValue,
+        )
+    }
+}
+
+@Composable
+private fun differenceFieldLabel(field: HardwareEqDifferenceField): String = stringResource(
+    when (field) {
+        HardwareEqDifferenceField.ENABLED -> R.string.my_dac_editor_field_enabled
+        HardwareEqDifferenceField.FILTER_TYPE -> R.string.my_dac_editor_field_filter_type
+        HardwareEqDifferenceField.FREQUENCY_HZ -> R.string.my_dac_editor_field_frequency
+        HardwareEqDifferenceField.GAIN_DB -> R.string.my_dac_editor_field_gain
+        HardwareEqDifferenceField.Q -> R.string.my_dac_editor_field_q
+        HardwareEqDifferenceField.DEDICATED_EQ_PREAMP_DB -> R.string.my_dac_editor_field_preamp
+    },
+)
 
 @Composable
 private fun deviceLabel(deviceId: DacDeviceId): String = stringResource(
