@@ -6,6 +6,7 @@ import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceQualification
 interface BlackPearlDeviceControlReadSource {
     val sessionGeneration: Long
     fun isSessionCurrent(sessionGeneration: Long): Boolean
+    suspend fun readFirmwareVersion(): String?
     suspend fun readFilterCode(): Int?
     suspend fun readGainModeCode(): Int?
     suspend fun readAmpTopologyCode(): Int?
@@ -49,6 +50,8 @@ class DacControlRepository(
             return block()?.takeIf { blackPearlSource.isSessionCurrent(generation) }
         }
 
+        val firmwareVersion = read("firmware version", blackPearlSource::readFirmwareVersion)
+            ?: return failedOrChanged(generation, "firmware version")
         val filter = read("DAC filter", blackPearlSource::readFilterCode)
             ?: return failedOrChanged(generation, "DAC filter")
         val gainMode = read("gain mode", blackPearlSource::readGainModeCode)
@@ -70,6 +73,7 @@ class DacControlRepository(
         return BlackPearlQualificationReadResult.Success(
             BlackPearlDeviceQualificationSnapshot(
                 sessionGeneration = generation,
+                firmwareVersion = firmwareVersion,
                 filterCode = filter,
                 gainModeCode = gainMode,
                 ampTopologyCode = topology,
@@ -101,6 +105,9 @@ class SessionBlackPearlDeviceControlReadSource(
     override fun isSessionCurrent(sessionGeneration: Long): Boolean =
         sessions.blackPearlConnectionState.value is BlackPearlConnectionState.Connected &&
             sessions.isBlackPearlSessionCurrent(sessionGeneration)
+
+    override suspend fun readFirmwareVersion(): String? =
+        sessions.blackPearlTransport.readDeviceFirmwareVersion()
 
     override suspend fun readFilterCode(): Int? = sessions.blackPearlTransport.readDeviceFilterCode()
     override suspend fun readGainModeCode(): Int? = sessions.blackPearlTransport.readDeviceGainModeCode()
