@@ -22,11 +22,13 @@ import com.weekssa.opraeqforuapp.data.sync.CatalogSyncCoordinator
 import com.weekssa.opraeqforuapp.data.sync.CatalogSyncOutcome
 import com.weekssa.opraeqforuapp.data.update.AppUpdateCheckResult
 import com.weekssa.opraeqforuapp.data.update.AppUpdateCoordinator
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlCaptureDecision
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlEditorApplyResult
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlashResult
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlatResetResult
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlHardwareEqMatchResolver
 import com.weekssa.opraeqforuapp.domain.blackpearl.buildBlackPearlMyEqsCandidates
+import com.weekssa.opraeqforuapp.domain.blackpearl.decideBlackPearlCapture
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqPreset
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
@@ -41,6 +43,7 @@ import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
+import com.weekssa.opraeqforuapp.domain.library.SavedEqHeadphoneAssociation
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
 import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
@@ -101,6 +104,8 @@ data class EqLibraryUiState(
     val jcallyJm12ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
     val blackPearlHardwareEqState: HardwareEqSnapshotState = HardwareEqSnapshotState(),
     val blackPearlHardwareEqMatch: HardwareEqMatchResolution? = null,
+    val blackPearlManagedHeadphones: List<ManagedHeadphoneRecord> = emptyList(),
+    val blackPearlSavedEqs: List<SavedEqRecord> = emptyList(),
     val blackPearlEditorState: MyDacEditorUiState = MyDacEditorUiState(),
 )
 
@@ -149,7 +154,7 @@ class EqLibraryViewModel(
      * My DAC matching intentionally reads the connected device's own output-specific My EQs state.
      * It must not follow or silently switch the user's separate global active-output context.
      */
-    private val blackPearlLibraryData = combine(
+    private val blackPearlLibraryData: StateFlow<LibraryDataState> = combine(
         managedHeadphonesRepository.observeHeadphones(ExportDevice.BLACK_PEARL.name),
         savedEqRepository.observeForOutput(ExportDevice.BLACK_PEARL.name),
         savedGeneralEqRepository.observeForOutput(ExportDevice.BLACK_PEARL.name),
@@ -160,7 +165,11 @@ class EqLibraryViewModel(
             savedEqs = savedEqs,
             savedGeneralEqs = savedGeneralEqs,
         )
-    }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
+        initialValue = LibraryDataState(outputId = ExportDevice.BLACK_PEARL.name),
+    )
 
     private val blackPearlHardwareEqMatch = combine(
         hardwareRepository.blackPearlSnapshotState,
@@ -237,6 +246,7 @@ class EqLibraryViewModel(
     ) { preferences, catalogState, library, hardware, recognition ->
         val activeOutputId = preferences.exportTargets.activeTarget.name
         val matchingLibrary = library.data.takeIf { it.outputId == activeOutputId }
+        val blackPearlLibrary = blackPearlLibraryData.value
         EqLibraryUiState(
             appPreferences = preferences,
             catalogState = catalogState,
@@ -254,6 +264,8 @@ class EqLibraryViewModel(
             jcallyJm12ConnectionState = hardware.jcallyJm12,
             blackPearlHardwareEqState = hardware.blackPearlHardwareEqState,
             blackPearlHardwareEqMatch = hardware.blackPearlHardwareEqMatch,
+            blackPearlManagedHeadphones = blackPearlLibrary.managedHeadphones,
+            blackPearlSavedEqs = blackPearlLibrary.savedEqs,
             blackPearlEditorState = hardware.blackPearlEditorState,
         )
     }.stateIn(
@@ -496,6 +508,65 @@ class EqLibraryViewModel(
         applyStatus = MyDacEditorApplyStatus.FAILED,
         applyFailureReason = reason,
     )
+
+    /**
+     * Captures only a freshly read Black Pearl hardware state. Exact native matches are linked to
+     * existing My EQs identities rather than duplicated, and Flat never creates a Personal EQ.
+     */
+    suspend fun captureBlackPearlDacEq(
+        displayName: String,
+        association: SavedEqHeadphoneAssociation?,
+    ): UiText {
+        val name = displayName.trim()
+        if (name.isEmpty()) return UiText.Dynamic("EQ name is required.")
+        if (hardwareRepository.blackPearlConnectionState.value !is BlackPearlConnectionState.Connected) {
+            return UiText.Dynamic("Connect TRN Black Pearl before saving its EQ.")
+        }
+
+        val bundle = hardwareRepository.readBlackPearlSnapshot()
+            ?: return UiText.Dynamic("Could not read the current Black Pearl EQ. No Personal EQ was saved.")
+        if (!hardwareRepository.isBlackPearlSessionCurrent(bundle.snapshot.sessionGeneration)) {
+            return UiText.Dynamic("The Black Pearl connection changed while reading. Reconnect and try again.")
+        }
+
+        val library = loadLibraryData(ExportDevice.BLACK_PEARL.name)
+        val resolution = withContext(computationDispatcher) {
+            BlackPearlHardwareEqMatchResolver.resolve(
+                actual = bundle.fingerprint,
+                candidates = buildBlackPearlMyEqsCandidates(
+                    managedHeadphones = library.managedHeadphones,
+                    savedEqs = library.savedEqs,
+                    savedGeneralEqs = library.savedGeneralEqs,
+                ),
+            )
+        }
+
+        return when (val decision = decideBlackPearlCapture(resolution.match)) {
+            BlackPearlCaptureDecision.Flat ->
+                UiText.Dynamic("The Black Pearl EQ is already flat. No duplicate Personal EQ was created.")
+            is BlackPearlCaptureDecision.ExistingMatch -> {
+                if (decision.savedEqs.size == 1) {
+                    UiText.Dynamic("Already in My EQs: ${decision.savedEqs.single().displayName}")
+                } else {
+                    UiText.Dynamic(
+                        "This Black Pearl EQ already exactly matches ${decision.savedEqs.size} saved EQs. No duplicate was created.",
+                    )
+                }
+            }
+            BlackPearlCaptureDecision.Capture -> runCatching {
+                savedEqRepository.captureBlackPearlEq(
+                    displayName = name,
+                    snapshotBundle = bundle,
+                    association = association,
+                )
+            }.fold(
+                onSuccess = { record -> UiText.Dynamic("Saved ${record.displayName} to Black Pearl My EQs.") },
+                onFailure = { error ->
+                    UiText.Dynamic(error.message ?: "Could not save the current Black Pearl EQ.")
+                },
+            )
+        }
+    }
 
     fun connectBlackPearl() {
         viewModelScope.launch {
