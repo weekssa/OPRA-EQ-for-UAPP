@@ -29,6 +29,7 @@ import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.domain.library.SavedEqHeadphoneAssociation
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
+import java.util.Locale
 import kotlinx.coroutines.launch
 
 @Composable
@@ -71,8 +72,13 @@ internal fun BlackPearlSaveDacEqDialog(
         }.distinctBy { association ->
             Triple(association.productId, association.manufacturer, association.model)
         }.sortedWith(
-            compareBy<SavedEqHeadphoneAssociation>(String.CASE_INSENSITIVE_ORDER) { it.manufacturer }
-                .thenBy(String.CASE_INSENSITIVE_ORDER) { it.model },
+            compareBy<SavedEqHeadphoneAssociation> {
+                it.manufacturer.lowercase(Locale.ROOT)
+            }.thenBy {
+                it.model.lowercase(Locale.ROOT)
+            }.thenBy {
+                it.productId
+            },
         )
     }
 
