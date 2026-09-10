@@ -83,6 +83,7 @@ class MainActivity : ComponentActivity() {
         onCaptureBlackPearlDacEq = { displayName, association ->
             resolve(viewModel.captureBlackPearlDacEq(displayName, association))
         },
+        onReadBlackPearlQualificationControls = viewModel::readBlackPearlQualificationControls,
         onConnectBlackPearl = viewModel::connectBlackPearl,
         onResetBlackPearl = {
             resolve(viewModel.resetBlackPearlToFlat())
