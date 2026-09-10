@@ -23,17 +23,34 @@ object BlackPearlDeviceControlReadCodec {
     private const val REPORT_ID = 0x4B
     private const val READ = 0x80
     private const val CMD_MIC_GAIN = 0x02
+    private const val CMD_VERSION = 0x0C
     private const val CMD_FILTER = 0x11
     private const val CMD_BALANCE = 0x16
     private const val CMD_GAIN_MODE = 0x19
     private const val CMD_AMP_TOPOLOGY = 0x1D
 
+    fun firmwareVersionRequest(): ByteArray = readRequest(CMD_VERSION)
     fun filterRequest(): ByteArray = readRequest(CMD_FILTER)
     fun gainModeRequest(): ByteArray = readRequest(CMD_GAIN_MODE)
     fun ampTopologyRequest(): ByteArray = readRequest(CMD_AMP_TOPOLOGY)
     fun micGainRequest(): ByteArray = readRequest(CMD_MIC_GAIN, p1 = 0x02, p2 = 0x02)
     fun balanceLeftRequest(): ByteArray = readRequest(CMD_BALANCE, p1 = 0x04, p2 = 0x01)
     fun balanceRightRequest(): ByteArray = readRequest(CMD_BALANCE, p1 = 0x04, p2 = 0x00)
+
+    /**
+     * The corroborated firmware response stores a NUL-terminated ASCII version string beginning at
+     * byte 4. Qualification is deliberately conservative: malformed/non-printable payloads are not
+     * guessed or partially displayed as a version.
+     */
+    fun firmwareVersionFromResponse(report: ByteArray): String? {
+        if (!validHeader(report, CMD_VERSION) || report.size <= 4) return null
+        val payloadEnd = (4 until report.size).firstOrNull { index -> report[index] == 0.toByte() }
+            ?: report.size
+        if (payloadEnd <= 4) return null
+        val payload = report.copyOfRange(4, payloadEnd)
+        if (payload.any { byte -> byte.u8() !in 0x20..0x7E }) return null
+        return payload.toString(Charsets.US_ASCII).trim().takeIf(String::isNotEmpty)
+    }
 
     fun filterFromResponse(report: ByteArray): Int? =
         byte4Value(report, CMD_FILTER)?.takeIf { it in FILTER_FAST_LL..FILTER_NOS }
@@ -92,6 +109,7 @@ object BlackPearlDeviceControlReadCodec {
 
 data class BlackPearlDeviceQualificationSnapshot(
     val sessionGeneration: Long,
+    val firmwareVersion: String,
     val filterCode: Int,
     val gainModeCode: Int,
     val ampTopologyCode: Int,
@@ -102,6 +120,8 @@ data class BlackPearlDeviceQualificationSnapshot(
 ) {
     init {
         require(sessionGeneration > 0)
+        require(firmwareVersion.isNotBlank())
+        require(firmwareVersion.all { character -> character.code in 0x20..0x7E })
         require(filterCode in 1..5)
         require(gainModeCode in 0..1)
         require(ampTopologyCode in 0..1)
