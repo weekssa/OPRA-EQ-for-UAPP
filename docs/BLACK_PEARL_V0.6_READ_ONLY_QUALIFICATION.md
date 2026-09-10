@@ -1,10 +1,10 @@
 # TRN Black Pearl — v0.6 My DAC read-only DEVICE qualification
 
-Status: **PENDING PHYSICAL VALIDATION**
+Status: **READY FOR PHYSICAL VALIDATION**
 
 This checklist is the first physical gate for additional Black Pearl DEVICE capabilities in v0.6. It validates **read-only** behavior only. Passing this checklist does **not** authorize any new device-control write, normal production exposure, persistence claim, or expansion of the already-qualified EQ/Reset protocol.
 
-Use this checklist only after the exact candidate commit has passed the required Android unit/lint/build/security/catalog gates and a signed APK has been produced from that exact source. Record the exact commit and signed artifact before testing.
+The exact candidate below passed the required Android unit/lint/build/security/catalog gates and was signed with the established EQ Library release identity before hands-on testing.
 
 ## Scope
 
@@ -30,16 +30,25 @@ No candidate DEVICE write command exists in this increment. The panel is explici
 - Keep listening volume conservative before reconnecting or resuming playback.
 - Do not perform firmware, bootloader, identity, or raw-register operations.
 
-Record before testing:
+Recorded candidate provenance:
 
-- Candidate commit SHA: `TBD`
-- Signed APK/artifact name: `TBD`
-- Signed APK SHA-256: `TBD`
-- Signer certificate SHA-256: `TBD`
-- Android CI run: `TBD`
-- CodeQL run: `TBD`
+- Candidate commit SHA: `d3d227de45751f6606b75637a2fd311249afa88d`
+- Signed beta source APK: `EQ-Library-v0.6.0-beta-d3d227d.apk`
+- Mobile-test APK: `EQ-Library-v0.6.0-mobile-test.apk`
+- Signed APK SHA-256: `ea8235ee1ba2828873b488054b25d40c917b844c2d76a813bf9e038cf31c8ee5`
+- Signer certificate SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`
+- Signer: `CN=OPRA EQ for UAPP, O=weekssa`; RSA 4096; APK Signature Scheme v2/v3 verified; one signer
+- Android CI: run #1226 / ID `34431846554` — **PASS**
+- CodeQL: run #1107 / ID `34431846550` — **PASS**
+- Catalog currentness CI: run #1331 — **PASS**
+- Priority community coverage CI: run #819 — **PASS**
+- Signed EQ Library Beta Candidate: run #901 / ID `34431843368` — **PASS**
+- Signed-beta artifact ID: `10134900164`
+- Signed-beta artifact ZIP SHA-256: `04c9c085c5aed42d4b2421391410151291354fe05841600f635445e733fff773`
 - Test date: `TBD`
 - Tester: Project owner
+
+This checklist/provenance documentation may receive later documentation-only commits. The hardware candidate remains the exact signed source commit recorded above unless a behavior-changing replacement candidate is explicitly pinned.
 
 ## Baseline record
 
