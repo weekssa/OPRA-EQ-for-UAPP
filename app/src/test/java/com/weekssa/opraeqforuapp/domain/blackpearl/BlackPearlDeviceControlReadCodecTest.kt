@@ -7,12 +7,43 @@ import org.junit.Test
 class BlackPearlDeviceControlReadCodecTest {
     @Test
     fun candidateReadRequestsUseObservedReadHeadersAndParameters() {
+        assertRequest(BlackPearlDeviceControlReadCodec.firmwareVersionRequest(), 0x0C, 0x00, 0x00, 0x00)
         assertRequest(BlackPearlDeviceControlReadCodec.filterRequest(), 0x11, 0x00, 0x00, 0x00)
         assertRequest(BlackPearlDeviceControlReadCodec.gainModeRequest(), 0x19, 0x00, 0x00, 0x00)
         assertRequest(BlackPearlDeviceControlReadCodec.ampTopologyRequest(), 0x1D, 0x00, 0x00, 0x00)
         assertRequest(BlackPearlDeviceControlReadCodec.micGainRequest(), 0x02, 0x02, 0x02, 0x00)
         assertRequest(BlackPearlDeviceControlReadCodec.balanceLeftRequest(), 0x16, 0x04, 0x01, 0x00)
         assertRequest(BlackPearlDeviceControlReadCodec.balanceRightRequest(), 0x16, 0x04, 0x00, 0x00)
+    }
+
+    @Test
+    fun decodesObservedFirmwareAsciiPayload() {
+        val response = response(0x0C).apply {
+            "BP-1.2.3".encodeToByteArray().copyInto(this, destinationOffset = 4)
+        }
+
+        assertEquals("BP-1.2.3", BlackPearlDeviceControlReadCodec.firmwareVersionFromResponse(response))
+    }
+
+    @Test
+    fun firmwareDecodeRejectsWrongHeaderEmptyAndNonPrintablePayload() {
+        assertNull(BlackPearlDeviceControlReadCodec.firmwareVersionFromResponse(response(0x0C)))
+        assertNull(
+            BlackPearlDeviceControlReadCodec.firmwareVersionFromResponse(
+                response(0x0C).apply {
+                    this[4] = '1'.code.toByte()
+                    this[5] = 0x01
+                },
+            ),
+        )
+        assertNull(
+            BlackPearlDeviceControlReadCodec.firmwareVersionFromResponse(
+                response(0x0C).apply {
+                    "1.0".encodeToByteArray().copyInto(this, destinationOffset = 4)
+                    this[1] = 0x01
+                },
+            ),
+        )
     }
 
     @Test
@@ -56,9 +87,10 @@ class BlackPearlDeviceControlReadCodecTest {
     }
 
     @Test
-    fun qualificationSnapshotRetainsBothBalanceSidesWithoutInventingCombinedState() {
+    fun qualificationSnapshotRetainsFirmwareAndBothBalanceSidesWithoutInventingCombinedState() {
         val normal = BlackPearlDeviceQualificationSnapshot(
             sessionGeneration = 3,
+            firmwareVersion = "BP-1.2.3",
             filterCode = 2,
             gainModeCode = 1,
             ampTopologyCode = 0,
@@ -67,6 +99,7 @@ class BlackPearlDeviceControlReadCodecTest {
             rightBalanceDb = 6,
             playbackGainRaw = -1024,
         )
+        assertEquals("BP-1.2.3", normal.firmwareVersion)
         assertEquals(6, normal.signedBalanceDb)
         assertEquals(-4.0, normal.playbackGainDb, 0.0)
 
