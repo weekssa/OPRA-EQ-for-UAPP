@@ -103,6 +103,7 @@ fun EqLibraryApp(
     val onUpdateBlackPearlEditorBand = actions.onUpdateBlackPearlEditorBand
     val onUseSafeBlackPearlEditorGain = actions.onUseSafeBlackPearlEditorGain
     val onResetBlackPearlEditorLocalEdits = actions.onResetBlackPearlEditorLocalEdits
+    val onApplyBlackPearlEditor = actions.onApplyBlackPearlEditor
     val onConnectBlackPearl = actions.onConnectBlackPearl
     val onResetBlackPearl = actions.onResetBlackPearl
     val onConnectFiioJa11 = actions.onConnectFiioJa11
@@ -566,6 +567,7 @@ fun EqLibraryApp(
                         onUpdateBlackPearlEditorBand = onUpdateBlackPearlEditorBand,
                         onUseSafeBlackPearlEditorGain = onUseSafeBlackPearlEditorGain,
                         onResetBlackPearlEditorLocalEdits = onResetBlackPearlEditorLocalEdits,
+                        onApplyBlackPearlEditor = onApplyBlackPearlEditor,
                         modifier = Modifier.fillMaxSize(),
                     )
 
