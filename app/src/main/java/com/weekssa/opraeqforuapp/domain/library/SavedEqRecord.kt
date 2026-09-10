@@ -18,4 +18,8 @@ data class SavedEqRecord(
     val profile: OpraEqProfile,
     val createdAtMillis: Long,
     val updatedAtMillis: Long,
-)
+    val captureMetadata: SavedEqCaptureMetadata? = null,
+) {
+    val hasHeadphoneAssociation: Boolean
+        get() = manufacturer.isNotBlank() && model.isNotBlank()
+}
