@@ -1,14 +1,14 @@
 package com.weekssa.opraeqforuapp.data.dac
 
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlProtocol
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DacControlRepositoryTest {
     @Test
-    fun readOnlyQualificationReturnsCompleteSnapshotFromOneCurrentSession() = runTest {
+    fun readOnlyQualificationReturnsCompleteSnapshotFromOneCurrentSession() = runBlocking {
         val source = FakeSource()
         val result = DacControlRepository(source).readBlackPearlQualificationSnapshot()
 
@@ -26,7 +26,7 @@ class DacControlRepositoryTest {
     }
 
     @Test
-    fun disconnectBeforeReadReturnsNotConnectedWithoutTransfers() = runTest {
+    fun disconnectBeforeReadReturnsNotConnectedWithoutTransfers() = runBlocking {
         val source = FakeSource(current = false)
         val result = DacControlRepository(source).readBlackPearlQualificationSnapshot()
 
@@ -35,7 +35,7 @@ class DacControlRepositoryTest {
     }
 
     @Test
-    fun sessionChangeDuringSequenceIsNotMisreportedAsFieldFailure() = runTest {
+    fun sessionChangeDuringSequenceIsNotMisreportedAsFieldFailure() = runBlocking {
         val source = FakeSource(changeSessionAfterRead = 2)
         val result = DacControlRepository(source).readBlackPearlQualificationSnapshot()
 
@@ -44,7 +44,7 @@ class DacControlRepositoryTest {
     }
 
     @Test
-    fun malformedSingleFieldStopsSequenceAndNamesFailedRead() = runTest {
+    fun malformedSingleFieldStopsSequenceAndNamesFailedRead() = runBlocking {
         val source = FakeSource(failField = "mic")
         val result = DacControlRepository(source).readBlackPearlQualificationSnapshot()
 
