@@ -6,8 +6,13 @@ import com.weekssa.opraeqforuapp.data.managed.OpraEqDatabase
 import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.conversion.ToneBoostersConverter
+import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotBundle
+import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 import com.weekssa.opraeqforuapp.domain.library.ParametricEqTextParser
+import com.weekssa.opraeqforuapp.domain.library.SavedEqCaptureMetadata
+import com.weekssa.opraeqforuapp.domain.library.SavedEqHeadphoneAssociation
 import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
@@ -24,6 +29,7 @@ import kotlinx.coroutines.withContext
 class SavedEqRepository(
     private val database: OpraEqDatabase,
     private val snapshotCodec: ManagedProfileSnapshotCodec = ManagedProfileSnapshotCodec(),
+    private val captureMetadataCodec: SavedEqCaptureMetadataCodec = SavedEqCaptureMetadataCodec(),
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val nowMillis: () -> Long = System::currentTimeMillis,
 ) {
@@ -172,6 +178,95 @@ class SavedEqRepository(
         toDomain(entity)
     }
 
+    /**
+     * Saves a complete verified Black Pearl hardware EQ as a Personal EQ without treating ordinary
+     * playback/global gain as source preamp. The exact native fingerprint is retained separately so
+     * provenance survives canonical conversion and future matching can remain deterministic.
+     */
+    suspend fun captureBlackPearlEq(
+        displayName: String,
+        snapshotBundle: HardwareEqSnapshotBundle,
+        association: SavedEqHeadphoneAssociation?,
+    ): SavedEqRecord = withContext(ioDispatcher) {
+        val name = displayName.trim()
+        require(name.isNotEmpty()) { "EQ name is required." }
+        val snapshot = snapshotBundle.snapshot
+        require(snapshot.deviceId == DacDeviceId.TRN_BLACK_PEARL) {
+            "Only a verified TRN Black Pearl snapshot can be captured by this path."
+        }
+        require(snapshot.filters.isNotEmpty()) { "The verified hardware EQ has no filters to capture." }
+        require(snapshot.filters.all { it.enabled }) {
+            "This hardware EQ contains disabled bands that cannot yet be represented faithfully as a Personal EQ."
+        }
+        require(snapshot.filters.all { it.type in SUPPORTED_PERSONAL_TYPES }) {
+            "This hardware EQ contains a filter type that cannot yet be represented faithfully as a Personal EQ."
+        }
+
+        val id = UUID.randomUUID().toString()
+        val associatedProductId = association?.productId
+        val productId = associatedProductId ?: "personal-product:$id"
+        val profile = OpraEqProfile(
+            id = "personal-eq:$id",
+            productId = productId,
+            author = "Personal",
+            details = buildString {
+                append("Captured from TRN Black Pearl")
+                snapshot.activeSlot?.let { slot -> append(" · Slot $slot") }
+            },
+            link = null,
+            profileType = "parametric_eq",
+            // Black Pearl 0x03 is ordinary playback/global gain, not a source-authentic EQ preamp.
+            preampGainDb = snapshot.dedicatedEqPreampDb,
+            bands = snapshot.filters.sortedBy { it.index }.map { filter ->
+                OpraBand(
+                    type = when (filter.type) {
+                        EqFilterType.PEAK -> "peak_dip"
+                        EqFilterType.LOW_SHELF -> "low_shelf"
+                        EqFilterType.HIGH_SHELF -> "high_shelf"
+                        else -> error("unsupported captured EQ filter")
+                    },
+                    frequency = filter.frequencyHz,
+                    gainDb = filter.gainDb,
+                    q = filter.q,
+                    slope = null,
+                )
+            },
+        )
+        val metadata = SavedEqCaptureMetadata(
+            deviceId = snapshot.deviceId,
+            activeSlot = snapshot.activeSlot,
+            verifiedAtEpochMillis = snapshot.verifiedAtEpochMillis,
+            nativeFingerprint = snapshotBundle.fingerprint,
+        )
+        val now = nowMillis()
+        val entity = SavedEqEntity(
+            entryId = "personal:$id",
+            kind = KIND_PERSONAL,
+            sourceProfileId = null,
+            productId = productId,
+            manufacturer = association?.manufacturer.orEmpty(),
+            model = association?.model.orEmpty(),
+            displayName = name,
+            profileJson = snapshotCodec.encode(profile),
+            createdAtMillis = now,
+            updatedAtMillis = now,
+            captureMetadataJson = captureMetadataCodec.encode(metadata),
+        )
+        database.withTransaction {
+            dao.upsert(entity)
+            // A DAC capture belongs to that hardware output's My EQs, not the user's unrelated
+            // active file-export selection.
+            dao.upsertSelection(
+                OutputSavedEqEntity(
+                    outputId = ExportDevice.BLACK_PEARL.name,
+                    entryId = entity.entryId,
+                    selectedAtMillis = now,
+                ),
+            )
+        }
+        toDomain(entity)
+    }
+
     suspend fun removeFromOutput(outputId: String, entryId: String) = withContext(ioDispatcher) {
         database.withTransaction {
             dao.deleteSelection(outputId, entryId)
@@ -181,8 +276,10 @@ class SavedEqRepository(
 
     fun toManagedHeadphone(record: SavedEqRecord): ManagedHeadphoneRecord {
         val fingerprint = snapshotCodec.fingerprint(record.profile)
+        val modelLabel = record.model.ifBlank { record.displayName }
+        val manufacturerLabel = record.manufacturer.ifBlank { "Personal EQ" }
         val presetName = ToneBoostersConverter.buildPresetName(
-            modelLabel = record.model,
+            modelLabel = modelLabel,
             creator = record.profile.author,
             details = record.displayName,
         )
@@ -192,9 +289,9 @@ class SavedEqRepository(
         val uapp = runCatching { ToneBoostersConverter.convert(record.profile, presetName) }.getOrNull()
         return ManagedHeadphoneRecord(
             productId = record.productId,
-            vendorId = "saved-eq-vendor:${sha256(record.manufacturer)}",
-            vendorName = record.manufacturer,
-            productName = record.model,
+            vendorId = "saved-eq-vendor:${sha256(manufacturerLabel)}",
+            vendorName = manufacturerLabel,
+            productName = modelLabel,
             autoIncludeNewProfiles = false,
             createdAtMillis = record.createdAtMillis,
             updatedAtMillis = record.updatedAtMillis,
@@ -234,6 +331,7 @@ class SavedEqRepository(
         profile = snapshotCodec.decode(entity.profileJson),
         createdAtMillis = entity.createdAtMillis,
         updatedAtMillis = entity.updatedAtMillis,
+        captureMetadata = entity.captureMetadataJson?.let(captureMetadataCodec::decode),
     )
 
     companion object {
