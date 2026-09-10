@@ -1,6 +1,5 @@
 package com.weekssa.opraeqforuapp.data.dac
 
-import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlProtocol
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -15,6 +14,7 @@ class DacControlRepositoryTest {
         assertTrue(result is BlackPearlQualificationReadResult.Success)
         val snapshot = (result as BlackPearlQualificationReadResult.Success).snapshot
         assertEquals(7L, snapshot.sessionGeneration)
+        assertEquals("BP-1.2.3", snapshot.firmwareVersion)
         assertEquals(2, snapshot.filterCode)
         assertEquals(1, snapshot.gainModeCode)
         assertEquals(0, snapshot.ampTopologyCode)
@@ -22,7 +22,7 @@ class DacControlRepositoryTest {
         assertEquals(-3, snapshot.leftBalanceDb)
         assertEquals(0, snapshot.rightBalanceDb)
         assertEquals(-1024, snapshot.playbackGainRaw)
-        assertEquals(7, source.readCount)
+        assertEquals(8, source.readCount)
     }
 
     @Test
@@ -49,7 +49,16 @@ class DacControlRepositoryTest {
         val result = DacControlRepository(source).readBlackPearlQualificationSnapshot()
 
         assertEquals(BlackPearlQualificationReadResult.ReadFailed("mic gain"), result)
-        assertEquals(4, source.readCount)
+        assertEquals(5, source.readCount)
+    }
+
+    @Test
+    fun malformedFirmwareStopsBeforeOtherCandidateReads() = runBlocking {
+        val source = FakeSource(failField = "firmware")
+        val result = DacControlRepository(source).readBlackPearlQualificationSnapshot()
+
+        assertEquals(BlackPearlQualificationReadResult.ReadFailed("firmware version"), result)
+        assertEquals(1, source.readCount)
     }
 
     private class FakeSource(
@@ -63,6 +72,7 @@ class DacControlRepositoryTest {
         override fun isSessionCurrent(sessionGeneration: Long): Boolean =
             current && this.sessionGeneration == sessionGeneration
 
+        override suspend fun readFirmwareVersion(): String? = read("firmware") { "BP-1.2.3" }
         override suspend fun readFilterCode(): Int? = read("filter") { 2 }
         override suspend fun readGainModeCode(): Int? = read("gain") { 1 }
         override suspend fun readAmpTopologyCode(): Int? = read("topology") { 0 }
