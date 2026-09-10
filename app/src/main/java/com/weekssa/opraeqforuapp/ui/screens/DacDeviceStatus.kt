@@ -159,6 +159,10 @@ private fun BlackPearlQualificationPanel(
 @Composable
 private fun QualificationSnapshotRows(snapshot: BlackPearlDeviceQualificationSnapshot) {
     QualificationValue(
+        label = stringResource(R.string.my_dac_device_firmware),
+        value = snapshot.firmwareVersion,
+    )
+    QualificationValue(
         label = stringResource(R.string.my_dac_qualification_filter),
         value = filterLabel(snapshot.filterCode),
     )
