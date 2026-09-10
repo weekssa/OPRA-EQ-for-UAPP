@@ -68,7 +68,12 @@
     <string name="my_dac_editor_change_line">Band %1$d · %2$s · %3$s → %4$s</string>
     <string name="my_dac_editor_headroom_change">EQ safety adjustment · %1$+.2f → %2$+.2f dB</string>
     <string name="my_dac_editor_apply">Apply to DAC</string>
-    <string name="my_dac_editor_apply_not_ready">Apply is not enabled in this checkpoint. No hardware writes can occur from the editor yet.</string>
+    <string name="my_dac_editor_apply_anyway">Apply anyway</string>
+    <string name="my_dac_editor_apply_explanation">EQ Library re-reads the DAC before writing and verifies hardware readback afterward. A mismatch is treated as a failure, not success.</string>
+    <string name="my_dac_editor_applying">Applying and verifying…</string>
+    <string name="my_dac_editor_apply_verified">EQ applied and verified.</string>
+    <string name="my_dac_editor_apply_failed">Apply did not complete · %1$s</string>
+    <string name="my_dac_editor_apply_caution_confirmation">One or more band gains are outside the Black Pearl’s currently validated ±10 dB range. The reviewed values will be sent unchanged and will not be clamped.</string>
     <string name="my_dac_editor_blocked">Fix the blocking values before applying.</string>
     <string name="my_dac_editor_caution_title">Needs confirmation</string>
     <string name="my_dac_editor_outside_normal_gain">Band %1$d gain is outside the Black Pearl’s currently validated %2$+.0f to %3$+.0f dB range. The value is encodable and is not clamped.</string>
