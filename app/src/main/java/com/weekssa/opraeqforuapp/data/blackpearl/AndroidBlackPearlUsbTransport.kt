@@ -145,6 +145,11 @@ class AndroidBlackPearlUsbTransport(
         parser = BlackPearlReadCodec::bandFromResponse,
     )
 
+    suspend fun readDeviceFirmwareVersion(): String? = readParsedResponse(
+        request = BlackPearlDeviceControlReadCodec.firmwareVersionRequest(),
+        parser = BlackPearlDeviceControlReadCodec::firmwareVersionFromResponse,
+    )
+
     suspend fun readDeviceFilterCode(): Int? = readParsedResponse(
         request = BlackPearlDeviceControlReadCodec.filterRequest(),
         parser = BlackPearlDeviceControlReadCodec::filterFromResponse,
