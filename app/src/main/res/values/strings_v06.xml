@@ -39,6 +39,22 @@
     <string name="my_dac_validation_pending">Hardware validation pending</string>
     <string name="my_dac_no_device_controls">No additional device controls are exposed yet. Controls appear here only after their exact read/write/readback semantics are qualified.</string>
 
+    <string name="my_dac_action_save_eq">Save DAC EQ</string>
+    <string name="my_dac_save_title">Save DAC EQ</string>
+    <string name="my_dac_save_provenance">The current hardware values will be saved as a Personal EQ with “Captured from TRN Black Pearl” provenance. Playback volume is not stored as source preamp.</string>
+    <string name="my_dac_save_name">EQ name</string>
+    <string name="my_dac_save_name_placeholder">My Black Pearl EQ</string>
+    <string name="my_dac_save_association_heading">Headphone association</string>
+    <string name="my_dac_save_association_explanation">Association is optional and does not change creator/source attribution.</string>
+    <string name="my_dac_save_leave_unassociated">Leave unassociated</string>
+    <string name="my_dac_save_saved_headphones">Saved headphones</string>
+    <string name="my_dac_save_search_library">Search EQ Library</string>
+    <string name="my_dac_save_search_hint">Manufacturer or model</string>
+    <string name="my_dac_save_catalog_unavailable">The catalog is not available right now. You can save unassociated or use a saved headphone.</string>
+    <string name="my_dac_save_no_library_matches">No matching headphones found.</string>
+    <string name="my_dac_save_action">Save Personal EQ</string>
+    <string name="my_dac_save_saving">Saving…</string>
+
     <string name="my_dac_action_edit_eq">Edit EQ</string>
     <string name="my_dac_editor_opening">Reading fresh hardware EQ…</string>
     <string name="my_dac_editor_requires_connection">Connect the Black Pearl before editing its EQ.</string>
