@@ -10,14 +10,13 @@ Use this checklist only after the exact candidate commit has passed the required
 
 The candidate read-only panel currently reads, in one current USB session:
 
+- firmware/version string;
 - DAC reconstruction filter;
 - gain mode;
 - amplifier topology;
 - microphone gain;
 - left/right balance;
 - playback/global gain.
-
-Firmware readback is **not** part of this first transaction and is not a pass criterion here.
 
 No candidate DEVICE write command exists in this increment. The panel is explicitly labeled **Hardware qualification · read-only** and must not latch, save, or change any setting.
 
@@ -46,6 +45,7 @@ Record before testing:
 
 Before opening the qualification panel, record the current values with the independent controller/tool:
 
+- Firmware/version: `TBD`
 - DAC filter: `TBD`
 - Gain mode: `TBD`
 - Amp topology: `TBD`
@@ -74,6 +74,7 @@ Notes: `TBD`
 1. With the Black Pearl connected, tap **Read candidate controls** once.
 2. Verify the panel reports **Current session read**.
 3. Compare every displayed value against the independent baseline record:
+   - firmware/version;
    - DAC filter;
    - gain mode;
    - amp topology;
@@ -87,6 +88,7 @@ PASS / FAIL: **TBD**
 
 Observed EQ Library values:
 
+- Firmware/version: `TBD`
 - DAC filter: `TBD`
 - Gain mode: `TBD`
 - Amp topology: `TBD`
@@ -102,7 +104,7 @@ Notes: `TBD`
 1. Without changing any DAC setting, tap **Read candidate controls** at least three times.
 2. Verify the same hardware state is reported each time.
 3. Re-check the same settings with the independent controller/tool after closing/releasing EQ Library's USB session as needed.
-4. Verify EQ Library's reads did not change DAC filter, gain mode, topology, mic gain, balance, or playback/global gain.
+4. Verify EQ Library's reads did not change firmware/version, DAC filter, gain mode, topology, mic gain, balance, or playback/global gain.
 5. Verify no save/persistence action was triggered merely by reading.
 
 PASS / FAIL: **TBD**
@@ -120,7 +122,7 @@ This section proves the panel is reading current hardware rather than replaying 
 5. Reconnect/open the Black Pearl in EQ Library through the normal USB flow.
 6. Open **My DAC → DEVICE** and tap **Read candidate controls**.
 7. Verify the displayed DAC filter now matches the externally changed hardware filter.
-8. Verify all unrelated displayed settings still match their prior values.
+8. Verify firmware/version and all other unrelated displayed settings still match their prior values.
 9. Restore the original DAC filter with the independent controller/tool, reconnect EQ Library, read again, and verify the original filter is reported.
 
 Do not use gain mode, amp topology, or playback/global gain as the comparison change for this first read-only proof.
@@ -154,7 +156,7 @@ Notes: `TBD`
 3. Before tapping the qualification read, verify prior retained values are not silently relabeled current merely because the DAC reappeared.
 4. Tap **Read candidate controls**.
 5. Verify the panel returns to **Current session read** only after the new read succeeds.
-6. Compare the values again with the expected hardware state.
+6. Compare the values again with the expected hardware state, including firmware/version.
 
 PASS / FAIL: **TBD**
 
@@ -180,6 +182,7 @@ After all read-only tests, compare the Black Pearl with the independent controll
 
 Required result:
 
+- firmware/version unchanged;
 - DAC filter equals the intentionally restored baseline;
 - gain mode unchanged;
 - amp topology unchanged;
