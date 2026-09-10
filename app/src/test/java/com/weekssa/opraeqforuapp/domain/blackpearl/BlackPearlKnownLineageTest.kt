@@ -17,7 +17,7 @@ class BlackPearlKnownLineageTest {
     fun exactSavedRepresentationDoesNotCreateModifiedLineage() {
         val saved = savedRepresentation(gainUnits = -512)
 
-        assertThat(buildBlackPearlKnownLineage(saved, saved.fingerprint)).isNull()
+        assertThat(buildBlackPearlKnownLineage(7, saved, saved.fingerprint)).isNull()
     }
 
     @Test
@@ -25,10 +25,11 @@ class BlackPearlKnownLineageTest {
         val saved = savedRepresentation(gainUnits = -512)
         val actual = fingerprint(gainUnits = -640, qUnits = 320)
 
-        val lineage = buildBlackPearlKnownLineage(saved, actual)
+        val lineage = buildBlackPearlKnownLineage(7, saved, actual)
 
         assertThat(lineage).isNotNull()
-        assertThat(lineage!!.savedRepresentation.identity.savedEqKey).isEqualTo("saved-1")
+        assertThat(lineage!!.sessionGeneration).isEqualTo(7)
+        assertThat(lineage.savedRepresentation.identity.savedEqKey).isEqualTo("saved-1")
         assertThat(lineage.actualFingerprint).isEqualTo(actual)
         assertThat(lineage.differences.map { it.field.name })
             .containsExactly("GAIN_DB", "Q")
@@ -38,16 +39,16 @@ class BlackPearlKnownLineageTest {
     }
 
     @Test
-    fun unknownBecomesModifiedOnlyForExactProvenActualFingerprint() {
+    fun unknownBecomesModifiedOnlyForExactProvenSessionAndFingerprint() {
         val saved = savedRepresentation(gainUnits = -512)
         val modified = fingerprint(gainUnits = -640)
-        val lineage = buildBlackPearlKnownLineage(saved, modified)!!
+        val lineage = buildBlackPearlKnownLineage(7, saved, modified)!!
         val base = HardwareEqMatchResolution(
             match = HardwareEqMatch.Unknown,
             savedRepresentations = listOf(saved),
         )
 
-        val result = base.withBlackPearlKnownLineage(modified, lineage)
+        val result = base.withBlackPearlKnownLineage(7, modified, lineage)
 
         assertThat(result.match).isInstanceOf(HardwareEqMatch.ModifiedKnown::class.java)
         result.match as HardwareEqMatch.ModifiedKnown
@@ -55,17 +56,32 @@ class BlackPearlKnownLineageTest {
     }
 
     @Test
+    fun reconnectBreaksLineageEvenWhenHardwareFingerprintIsIdentical() {
+        val saved = savedRepresentation(gainUnits = -512)
+        val modified = fingerprint(gainUnits = -640)
+        val lineage = buildBlackPearlKnownLineage(7, saved, modified)!!
+        val base = HardwareEqMatchResolution(
+            match = HardwareEqMatch.Unknown,
+            savedRepresentations = listOf(saved),
+        )
+
+        val result = base.withBlackPearlKnownLineage(8, modified, lineage)
+
+        assertThat(result.match).isSameInstanceAs(HardwareEqMatch.Unknown)
+    }
+
+    @Test
     fun laterOutsideHardwareChangeBreaksLineageBackToUnknown() {
         val saved = savedRepresentation(gainUnits = -512)
         val modified = fingerprint(gainUnits = -640)
-        val lineage = buildBlackPearlKnownLineage(saved, modified)!!
+        val lineage = buildBlackPearlKnownLineage(7, saved, modified)!!
         val laterOutsideChange = fingerprint(gainUnits = -639)
         val base = HardwareEqMatchResolution(
             match = HardwareEqMatch.Unknown,
             savedRepresentations = listOf(saved),
         )
 
-        val result = base.withBlackPearlKnownLineage(laterOutsideChange, lineage)
+        val result = base.withBlackPearlKnownLineage(7, laterOutsideChange, lineage)
 
         assertThat(result.match).isSameInstanceAs(HardwareEqMatch.Unknown)
     }
@@ -74,16 +90,16 @@ class BlackPearlKnownLineageTest {
     fun flatOrExactOrdinaryResolutionAlwaysWinsOverLineage() {
         val saved = savedRepresentation(gainUnits = -512)
         val modified = fingerprint(gainUnits = -640)
-        val lineage = buildBlackPearlKnownLineage(saved, modified)!!
+        val lineage = buildBlackPearlKnownLineage(7, saved, modified)!!
 
         val exact = HardwareEqMatchResolution(
             match = HardwareEqMatch.Exact(saved.identity),
             savedRepresentations = listOf(saved),
-        ).withBlackPearlKnownLineage(modified, lineage)
+        ).withBlackPearlKnownLineage(7, modified, lineage)
         val flat = HardwareEqMatchResolution(
             match = HardwareEqMatch.Flat,
             savedRepresentations = listOf(saved),
-        ).withBlackPearlKnownLineage(modified, lineage)
+        ).withBlackPearlKnownLineage(7, modified, lineage)
 
         assertThat(exact.match).isEqualTo(HardwareEqMatch.Exact(saved.identity))
         assertThat(flat.match).isSameInstanceAs(HardwareEqMatch.Flat)
@@ -94,7 +110,7 @@ class BlackPearlKnownLineageTest {
         val saved = savedRepresentation(gainUnits = -512)
         val actual = fingerprint(gainUnits = -640).copy(eqEnabled = false)
 
-        assertThat(buildBlackPearlKnownLineage(saved, actual)).isNull()
+        assertThat(buildBlackPearlKnownLineage(7, saved, actual)).isNull()
     }
 
     private fun savedRepresentation(gainUnits: Long) = SavedHardwareEqRepresentation(
