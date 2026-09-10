@@ -33,6 +33,7 @@ import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditIssueSeverity
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditWorkingCopy
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqFilter
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
+import com.weekssa.opraeqforuapp.ui.MyDacEditorApplyStatus
 import com.weekssa.opraeqforuapp.ui.MyDacEditorError
 import com.weekssa.opraeqforuapp.ui.MyDacEditorStage
 import com.weekssa.opraeqforuapp.ui.MyDacEditorUiState
@@ -50,6 +51,7 @@ internal fun BlackPearlEqEditorScreen(
     onUpdateBand: (Int, EqFilterType, Double, Double, Double) -> Unit,
     onUseSafeGain: () -> Unit,
     onResetEdits: () -> Unit,
+    onApply: (Boolean) -> Unit,
 ) {
     when {
         state.isOpening -> {
@@ -76,7 +78,11 @@ internal fun BlackPearlEqEditorScreen(
     }
 
     val working = requireNotNull(state.workingCopy)
-    EditorHeader(working = working, onClose = onClose)
+    EditorHeader(
+        working = working,
+        onClose = onClose,
+        closeEnabled = state.applyStatus != MyDacEditorApplyStatus.APPLYING,
+    )
 
     when (state.stage) {
         MyDacEditorStage.EDIT -> EditorMain(
@@ -97,8 +103,9 @@ internal fun BlackPearlEqEditorScreen(
         )
 
         MyDacEditorStage.REVIEW -> ReviewChanges(
-            working = working,
+            state = state,
             onBack = { state.selectedBandIndex?.let(onSelectBand) },
+            onApply = onApply,
         )
 
         MyDacEditorStage.CLOSED -> Unit
@@ -109,6 +116,7 @@ internal fun BlackPearlEqEditorScreen(
 private fun EditorHeader(
     working: HardwareEqEditWorkingCopy,
     onClose: () -> Unit,
+    closeEnabled: Boolean,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -127,7 +135,7 @@ private fun EditorHeader(
                 ),
             )
         }
-        TextButton(onClick = onClose) {
+        TextButton(onClick = onClose, enabled = closeEnabled) {
             Text(stringResource(R.string.action_close))
         }
     }
@@ -456,9 +464,18 @@ private fun AllBands(
 
 @Composable
 private fun ReviewChanges(
-    working: HardwareEqEditWorkingCopy,
+    state: MyDacEditorUiState,
     onBack: () -> Unit,
+    onApply: (Boolean) -> Unit,
 ) {
+    val working = requireNotNull(state.workingCopy)
+    val isApplying = state.applyStatus == MyDacEditorApplyStatus.APPLYING
+    val confirmationRequired = state.applyStatus == MyDacEditorApplyStatus.CONFIRMATION_REQUIRED
+    val canApply = working.hasChanges &&
+        !working.hasBlockingIssues &&
+        working.headroomAssessment?.status == DacHeadroomStatus.SAFE &&
+        !isApplying
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -468,7 +485,7 @@ private fun ReviewChanges(
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
         )
-        TextButton(onClick = onBack) {
+        TextButton(onClick = onBack, enabled = !isApplying) {
             Text(stringResource(R.string.my_dac_editor_back_to_editor))
         }
     }
@@ -500,15 +517,37 @@ private fun ReviewChanges(
         )
     }
 
+    if (confirmationRequired) {
+        Text(
+            text = stringResource(R.string.my_dac_editor_apply_caution_confirmation),
+            color = MaterialTheme.colorScheme.error,
+        )
+    }
+
+    if (isApplying) {
+        Text(
+            text = stringResource(R.string.my_dac_editor_applying),
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
+
     Button(
-        onClick = {},
-        enabled = false,
+        onClick = { onApply(confirmationRequired) },
+        enabled = canApply,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Text(stringResource(R.string.my_dac_editor_apply))
+        Text(
+            stringResource(
+                if (confirmationRequired) {
+                    R.string.my_dac_editor_apply_anyway
+                } else {
+                    R.string.my_dac_editor_apply
+                },
+            ),
+        )
     }
     Text(
-        text = stringResource(R.string.my_dac_editor_apply_not_ready),
+        text = stringResource(R.string.my_dac_editor_apply_explanation),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
