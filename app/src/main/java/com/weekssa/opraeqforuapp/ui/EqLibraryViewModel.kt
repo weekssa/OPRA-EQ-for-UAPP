@@ -7,6 +7,8 @@ import com.weekssa.opraeqforuapp.R
 import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.catalog.AppCatalogRepository
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
+import com.weekssa.opraeqforuapp.data.dac.BlackPearlQualificationReadResult
+import com.weekssa.opraeqforuapp.data.dac.DacControlRepository
 import com.weekssa.opraeqforuapp.data.export.ExportCurrentness
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupRepository
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
@@ -89,6 +91,7 @@ private data class HardwareConnectionUiState(
     val blackPearlHardwareEqState: HardwareEqSnapshotState,
     val blackPearlHardwareEqMatch: HardwareEqMatchResolution?,
     val blackPearlEditorState: MyDacEditorUiState,
+    val blackPearlQualificationState: BlackPearlQualificationUiState,
 )
 
 data class EqLibraryUiState(
@@ -107,6 +110,7 @@ data class EqLibraryUiState(
     val blackPearlManagedHeadphones: List<ManagedHeadphoneRecord> = emptyList(),
     val blackPearlSavedEqs: List<SavedEqRecord> = emptyList(),
     val blackPearlEditorState: MyDacEditorUiState = MyDacEditorUiState(),
+    val blackPearlQualificationState: BlackPearlQualificationUiState = BlackPearlQualificationUiState(),
 )
 
 class EqLibraryViewModel(
@@ -119,6 +123,7 @@ class EqLibraryViewModel(
     private val cleanupRepository: PresetCleanupRepository,
     private val syncCoordinator: CatalogSyncCoordinator,
     private val updateCoordinator: AppUpdateCoordinator,
+    private val dacControlRepository: DacControlRepository,
     private val hardwareRepository: HardwareEqRepository,
     private val computationDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val nowMillis: () -> Long = System::currentTimeMillis,
@@ -126,6 +131,7 @@ class EqLibraryViewModel(
     private var lastForegroundRefreshAttemptMillis: Long = 0L
     private val exportInvalidation = MutableStateFlow(0L)
     private val mutableBlackPearlEditorState = MutableStateFlow(MyDacEditorUiState())
+    private val mutableBlackPearlQualificationState = MutableStateFlow(BlackPearlQualificationUiState())
 
     private val activeOutputId = preferencesRepository.preferences
         .map { preferences -> preferences.exportTargets.activeTarget.name }
@@ -229,13 +235,26 @@ class EqLibraryViewModel(
             blackPearlHardwareEqState = blackPearlHardwareEqState,
             blackPearlHardwareEqMatch = blackPearlMatch,
             blackPearlEditorState = MyDacEditorUiState(),
+            blackPearlQualificationState = BlackPearlQualificationUiState(),
         )
     }
 
-    private val hardwareConnections = combine(
+    private val hardwareConnectionsWithEditor = combine(
         hardwareConnectionsWithoutEditor,
         mutableBlackPearlEditorState,
     ) { hardware, editor -> hardware.copy(blackPearlEditorState = editor) }
+
+    private val hardwareConnections = combine(
+        hardwareConnectionsWithEditor,
+        mutableBlackPearlQualificationState,
+    ) { hardware, qualification ->
+        val current = qualification.snapshot?.let { snapshot ->
+            hardwareRepository.isBlackPearlSessionCurrent(snapshot.sessionGeneration)
+        } == true
+        hardware.copy(
+            blackPearlQualificationState = qualification.withSessionCurrent(current),
+        )
+    }
 
     val uiState: StateFlow<EqLibraryUiState> = combine(
         preferencesRepository.preferences,
@@ -267,6 +286,7 @@ class EqLibraryViewModel(
             blackPearlManagedHeadphones = blackPearlLibrary.managedHeadphones,
             blackPearlSavedEqs = blackPearlLibrary.savedEqs,
             blackPearlEditorState = hardware.blackPearlEditorState,
+            blackPearlQualificationState = hardware.blackPearlQualificationState,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -565,6 +585,32 @@ class EqLibraryViewModel(
                     UiText.Dynamic(error.message ?: "Could not save the current Black Pearl EQ.")
                 },
             )
+        }
+    }
+
+    /** Read-only v0.6 hardware qualification. This cannot issue candidate DEVICE writes. */
+    fun readBlackPearlQualificationControls() {
+        if (mutableBlackPearlQualificationState.value.isReading) return
+        mutableBlackPearlQualificationState.update(BlackPearlQualificationUiState::beginRead)
+        viewModelScope.launch {
+            mutableBlackPearlQualificationState.value = when (
+                val result = dacControlRepository.readBlackPearlQualificationSnapshot()
+            ) {
+                is BlackPearlQualificationReadResult.Success ->
+                    mutableBlackPearlQualificationState.value.success(result.snapshot)
+                BlackPearlQualificationReadResult.NotConnected ->
+                    mutableBlackPearlQualificationState.value.failure(
+                        "Connect TRN Black Pearl before reading candidate device controls.",
+                    )
+                BlackPearlQualificationReadResult.SessionChanged ->
+                    mutableBlackPearlQualificationState.value.failure(
+                        "The Black Pearl connection changed during the read. Reconnect and read again.",
+                    )
+                is BlackPearlQualificationReadResult.ReadFailed ->
+                    mutableBlackPearlQualificationState.value.failure(
+                        "Could not read ${result.field}. No candidate setting was changed.",
+                    )
+            }
         }
     }
 
@@ -1120,6 +1166,7 @@ class EqLibraryViewModel(
                 cleanupRepository = dependencies.cleanupRepository,
                 syncCoordinator = dependencies.syncCoordinator,
                 updateCoordinator = dependencies.updateCoordinator,
+                dacControlRepository = dependencies.dacControlRepository,
                 hardwareRepository = dependencies.hardwareRepository,
             ) as T
         }
@@ -1135,6 +1182,7 @@ class EqLibraryViewModel(
         val cleanupRepository: PresetCleanupRepository,
         val syncCoordinator: CatalogSyncCoordinator,
         val updateCoordinator: AppUpdateCoordinator,
+        val dacControlRepository: DacControlRepository,
         val hardwareRepository: HardwareEqRepository,
     )
 
