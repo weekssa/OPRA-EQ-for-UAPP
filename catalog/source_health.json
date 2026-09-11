@@ -16,10 +16,10 @@
     {
       "consecutive_failures": 0,
       "cursor": "7ae0f56d53074872b028649617a22bbb4232feb7",
-      "last_attempt_at": "2026-09-10T13:35:33Z",
+      "last_attempt_at": "2026-09-11T13:33:53Z",
       "last_content_fingerprint": "3468bb71c0da0be7c08ff1014a8505f626b221177cc2261f53a3bb6efeacfb3e",
       "last_error": null,
-      "last_successful_scan_at": "2026-09-10T13:35:33Z",
+      "last_successful_scan_at": "2026-09-11T13:33:53Z",
       "last_terms_review_at": "2026-08-29T19:35:00Z",
       "lifecycle": "active",
       "parser_version": "4",
@@ -28,10 +28,10 @@
     {
       "consecutive_failures": 0,
       "cursor": "993d03c9bc9e010e224b3cf1b43df03cef12d46e661948ae4cdf248dac49de6a",
-      "last_attempt_at": "2026-09-10T13:35:37Z",
+      "last_attempt_at": "2026-09-11T13:33:57Z",
       "last_content_fingerprint": "a027a48be56756a34560b37bab2e4809e1626b2bd85529ed4abb7965c74ed321",
       "last_error": null,
-      "last_successful_scan_at": "2026-09-10T13:35:37Z",
+      "last_successful_scan_at": "2026-09-11T13:33:57Z",
       "last_terms_review_at": null,
       "lifecycle": "active",
       "parser_version": "2",
@@ -100,10 +100,10 @@
     {
       "consecutive_failures": 0,
       "cursor": "ff03705f4872c6f12628f87bbb9d02802a8294eece0aa955747d0821c04e1882",
-      "last_attempt_at": "2026-09-10T13:35:36Z",
+      "last_attempt_at": "2026-09-11T13:33:56Z",
       "last_content_fingerprint": "845e704fb2a598938e5fe0728d3fb4884ca6e200b0d968f169df3349f4972a3c",
       "last_error": null,
-      "last_successful_scan_at": "2026-09-10T13:35:36Z",
+      "last_successful_scan_at": "2026-09-11T13:33:56Z",
       "last_terms_review_at": null,
       "lifecycle": "active",
       "parser_version": "2",
@@ -181,6 +181,5 @@
       "parser_version": "5",
       "source_id": "topping-community"
     }
-  ],
-  "updated_at": "2026-09-10T16:18:13Z"
+  ]
 }
