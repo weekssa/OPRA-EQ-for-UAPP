@@ -2,7 +2,7 @@
   "candidate_count": 3,
   "candidates": [
     {
-      "candidate_id": "github-general-e370d3d3e6969e6127f92814",
+      "candidate_id": "github-general-de89309e7d8cd02915df075d",
       "content_sha": "bd76ed3166b82eff0d95aaad695a01f99cf575ba",
       "creator": null,
       "creator_is_explicit": false,
@@ -24,7 +24,7 @@
       "source_kind": "community_repository",
       "source_record_id": "Psysonic/psysonic:src/store/eqStore.ts:bd76ed3166b82eff0d95aaad695a01f99cf575ba",
       "status": "new_candidate",
-      "url": "https://github.com/Psysonic/psysonic/blob/f14dfaf5cfceaec2b82a06fc1150ff24740308ae/src/store/eqStore.ts"
+      "url": "https://github.com/Psysonic/psysonic/blob/f4b7707393c4fa32b8f10e12291353f42b45e72a/src/store/eqStore.ts"
     },
     {
       "candidate_id": "github-general-90902e40d9317c277646be44",
