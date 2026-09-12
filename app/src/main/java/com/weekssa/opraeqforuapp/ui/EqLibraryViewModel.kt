@@ -7,6 +7,8 @@ import com.weekssa.opraeqforuapp.R
 import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.catalog.AppCatalogRepository
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
+import com.weekssa.opraeqforuapp.data.dac.BlackPearlQualificationReadResult
+import com.weekssa.opraeqforuapp.data.dac.DacControlRepository
 import com.weekssa.opraeqforuapp.data.export.ExportCurrentness
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupRepository
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
@@ -22,14 +24,35 @@ import com.weekssa.opraeqforuapp.data.sync.CatalogSyncCoordinator
 import com.weekssa.opraeqforuapp.data.sync.CatalogSyncOutcome
 import com.weekssa.opraeqforuapp.data.update.AppUpdateCheckResult
 import com.weekssa.opraeqforuapp.data.update.AppUpdateCoordinator
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlCaptureDecision
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlEditorApplyResult
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlashResult
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlatResetResult
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlHardwareEqMatchResolver
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlKnownLineage
+import com.weekssa.opraeqforuapp.domain.blackpearl.buildBlackPearlKnownLineage
+import com.weekssa.opraeqforuapp.domain.blackpearl.buildBlackPearlMyEqsCandidates
+import com.weekssa.opraeqforuapp.domain.blackpearl.decideBlackPearlCapture
+import com.weekssa.opraeqforuapp.domain.blackpearl.withBlackPearlKnownLineage
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqPreset
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
+import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
+import com.weekssa.opraeqforuapp.domain.dac.DacRecognitionState
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditSpecs
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditor
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditorStartResult
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqMatch
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqMatchResolution
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqNativeFingerprint
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotBundle
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
+import com.weekssa.opraeqforuapp.domain.dac.SavedHardwareEqRepresentation
 import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult
+import com.weekssa.opraeqforuapp.domain.library.EqFilterType
+import com.weekssa.opraeqforuapp.domain.library.SavedEqHeadphoneAssociation
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
 import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
@@ -72,6 +95,10 @@ private data class HardwareConnectionUiState(
     val blackPearl: BlackPearlConnectionState,
     val fiioJa11: Kt02h20ConnectionState,
     val jcallyJm12: Kt02h20ConnectionState,
+    val blackPearlHardwareEqState: HardwareEqSnapshotState,
+    val blackPearlHardwareEqMatch: HardwareEqMatchResolution?,
+    val blackPearlEditorState: MyDacEditorUiState,
+    val blackPearlQualificationState: BlackPearlQualificationUiState,
 )
 
 data class EqLibraryUiState(
@@ -81,9 +108,16 @@ data class EqLibraryUiState(
     val savedEqs: List<SavedEqRecord> = emptyList(),
     val savedGeneralEqs: List<SavedGeneralEqRecord> = emptyList(),
     val exportCurrentness: ExportCurrentness = ExportCurrentness(),
+    val dacRecognitionState: DacRecognitionState = DacRecognitionState(),
     val blackPearlConnectionState: BlackPearlConnectionState = BlackPearlConnectionState.Disconnected,
     val fiioJa11ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
     val jcallyJm12ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
+    val blackPearlHardwareEqState: HardwareEqSnapshotState = HardwareEqSnapshotState(),
+    val blackPearlHardwareEqMatch: HardwareEqMatchResolution? = null,
+    val blackPearlManagedHeadphones: List<ManagedHeadphoneRecord> = emptyList(),
+    val blackPearlSavedEqs: List<SavedEqRecord> = emptyList(),
+    val blackPearlEditorState: MyDacEditorUiState = MyDacEditorUiState(),
+    val blackPearlQualificationState: BlackPearlQualificationUiState = BlackPearlQualificationUiState(),
 )
 
 class EqLibraryViewModel(
@@ -96,12 +130,17 @@ class EqLibraryViewModel(
     private val cleanupRepository: PresetCleanupRepository,
     private val syncCoordinator: CatalogSyncCoordinator,
     private val updateCoordinator: AppUpdateCoordinator,
+    private val dacControlRepository: DacControlRepository,
     private val hardwareRepository: HardwareEqRepository,
     private val computationDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val nowMillis: () -> Long = System::currentTimeMillis,
 ) : ViewModel() {
     private var lastForegroundRefreshAttemptMillis: Long = 0L
     private val exportInvalidation = MutableStateFlow(0L)
+    private val mutableBlackPearlEditorState = MutableStateFlow(MyDacEditorUiState())
+    private val mutableBlackPearlQualificationState = MutableStateFlow(BlackPearlQualificationUiState())
+    private val mutableBlackPearlKnownLineage = MutableStateFlow<BlackPearlKnownLineage?>(null)
+    private var blackPearlEditorLineageRepresentation: SavedHardwareEqRepresentation? = null
 
     private val activeOutputId = preferencesRepository.preferences
         .map { preferences -> preferences.exportTargets.activeTarget.name }
@@ -125,6 +164,43 @@ class EqLibraryViewModel(
         started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
         initialValue = LibraryDataState(),
     )
+
+    /**
+     * My DAC matching intentionally reads the connected device's own output-specific My EQs state.
+     * It must not follow or silently switch the user's separate global active-output context.
+     */
+    private val blackPearlLibraryData: StateFlow<LibraryDataState> = combine(
+        managedHeadphonesRepository.observeHeadphones(ExportDevice.BLACK_PEARL.name),
+        savedEqRepository.observeForOutput(ExportDevice.BLACK_PEARL.name),
+        savedGeneralEqRepository.observeForOutput(ExportDevice.BLACK_PEARL.name),
+    ) { managedHeadphones, savedEqs, savedGeneralEqs ->
+        LibraryDataState(
+            outputId = ExportDevice.BLACK_PEARL.name,
+            managedHeadphones = managedHeadphones,
+            savedEqs = savedEqs,
+            savedGeneralEqs = savedGeneralEqs,
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
+        initialValue = LibraryDataState(outputId = ExportDevice.BLACK_PEARL.name),
+    )
+
+    private val blackPearlHardwareEqMatch = combine(
+        hardwareRepository.blackPearlSnapshotState,
+        blackPearlLibraryData,
+        mutableBlackPearlKnownLineage,
+    ) { snapshotState, library, lineage -> Triple(snapshotState, library, lineage) }
+        .mapLatest { (snapshotState, library, lineage) ->
+            val bundle = snapshotState.bundle ?: return@mapLatest null
+            withContext(computationDispatcher) {
+                resolveBlackPearlHardwareEq(
+                    bundle = bundle,
+                    library = library,
+                    lineage = lineage,
+                )
+            }
+        }
 
     private val exportCurrentness = combine(
         preferencesRepository.preferences,
@@ -152,12 +228,39 @@ class EqLibraryViewModel(
         LibraryUiState(library, currentness)
     }
 
-    private val hardwareConnections = combine(
+    private val hardwareConnectionsWithoutEditor = combine(
         hardwareRepository.blackPearlConnectionState,
         hardwareRepository.fiioJa11ConnectionState,
         hardwareRepository.jcallyJm12ConnectionState,
-    ) { blackPearl, fiioJa11, jcallyJm12 ->
-        HardwareConnectionUiState(blackPearl, fiioJa11, jcallyJm12)
+        hardwareRepository.blackPearlSnapshotState,
+        blackPearlHardwareEqMatch,
+    ) { blackPearl, fiioJa11, jcallyJm12, blackPearlHardwareEqState, blackPearlMatch ->
+        HardwareConnectionUiState(
+            blackPearl = blackPearl,
+            fiioJa11 = fiioJa11,
+            jcallyJm12 = jcallyJm12,
+            blackPearlHardwareEqState = blackPearlHardwareEqState,
+            blackPearlHardwareEqMatch = blackPearlMatch,
+            blackPearlEditorState = MyDacEditorUiState(),
+            blackPearlQualificationState = BlackPearlQualificationUiState(),
+        )
+    }
+
+    private val hardwareConnectionsWithEditor = combine(
+        hardwareConnectionsWithoutEditor,
+        mutableBlackPearlEditorState,
+    ) { hardware, editor -> hardware.copy(blackPearlEditorState = editor) }
+
+    private val hardwareConnections = combine(
+        hardwareConnectionsWithEditor,
+        mutableBlackPearlQualificationState,
+    ) { hardware, qualification ->
+        val current = qualification.snapshot?.let { snapshot ->
+            hardwareRepository.isBlackPearlSessionCurrent(snapshot.sessionGeneration)
+        } == true
+        hardware.copy(
+            blackPearlQualificationState = qualification.withSessionCurrent(current),
+        )
     }
 
     val uiState: StateFlow<EqLibraryUiState> = combine(
@@ -165,9 +268,11 @@ class EqLibraryViewModel(
         catalogRepository.state,
         libraryUi,
         hardwareConnections,
-    ) { preferences, catalogState, library, hardware ->
+        hardwareRepository.recognitionState,
+    ) { preferences, catalogState, library, hardware, recognition ->
         val activeOutputId = preferences.exportTargets.activeTarget.name
         val matchingLibrary = library.data.takeIf { it.outputId == activeOutputId }
+        val blackPearlLibrary = blackPearlLibraryData.value
         EqLibraryUiState(
             appPreferences = preferences,
             catalogState = catalogState,
@@ -179,9 +284,16 @@ class EqLibraryViewModel(
             } else {
                 library.exportCurrentness
             },
+            dacRecognitionState = recognition,
             blackPearlConnectionState = hardware.blackPearl,
             fiioJa11ConnectionState = hardware.fiioJa11,
             jcallyJm12ConnectionState = hardware.jcallyJm12,
+            blackPearlHardwareEqState = hardware.blackPearlHardwareEqState,
+            blackPearlHardwareEqMatch = hardware.blackPearlHardwareEqMatch,
+            blackPearlManagedHeadphones = blackPearlLibrary.managedHeadphones,
+            blackPearlSavedEqs = blackPearlLibrary.savedEqs,
+            blackPearlEditorState = hardware.blackPearlEditorState,
+            blackPearlQualificationState = hardware.blackPearlQualificationState,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -202,6 +314,357 @@ class EqLibraryViewModel(
 
     fun onAppResumed() {
         viewModelScope.launch { refreshCatalogIfDue() }
+    }
+
+    /**
+     * My DAC session access is intentionally independent from the global output selector and Direct
+     * Flash toggles. It opens/requests Android USB access only for an exact supported DAC that is
+     * physically present now; no EQ or device-control write is issued here.
+     */
+    fun connectDacForMyDac(deviceId: DacDeviceId) {
+        if (deviceId !in hardwareRepository.recognitionState.value.presentDeviceIds) return
+        when (deviceId) {
+            DacDeviceId.TRN_BLACK_PEARL -> hardwareRepository.connectBlackPearl()
+            DacDeviceId.FIIO_JA11 -> hardwareRepository.connectFiioJa11()
+            DacDeviceId.JCALLY_JM12_STOCK -> hardwareRepository.connectJcallyJm12()
+        }
+    }
+
+    /**
+     * Opens the Black Pearl editor only from a fresh verified read. This refresh is read-only; editor
+     * entry cannot invoke Flash, Reset, or any generic device-control write.
+     */
+    fun openBlackPearlEditor() {
+        val current = mutableBlackPearlEditorState.value
+        if (current.isOpening || current.applyStatus == MyDacEditorApplyStatus.APPLYING) return
+        blackPearlEditorLineageRepresentation = null
+        if (hardwareRepository.blackPearlConnectionState.value !is BlackPearlConnectionState.Connected) {
+            mutableBlackPearlEditorState.value = MyDacEditorUiState(error = MyDacEditorError.NOT_CONNECTED)
+            return
+        }
+
+        mutableBlackPearlEditorState.value = MyDacEditorUiState(isOpening = true)
+        viewModelScope.launch {
+            val refreshed = hardwareRepository.readBlackPearlSnapshot()
+            if (refreshed == null) {
+                blackPearlEditorLineageRepresentation = null
+                mutableBlackPearlEditorState.value = MyDacEditorUiState(error = MyDacEditorError.READ_FAILED)
+                return@launch
+            }
+            val currentResolution = withContext(computationDispatcher) {
+                resolveBlackPearlHardwareEq(
+                    bundle = refreshed,
+                    library = blackPearlLibraryData.value,
+                    lineage = mutableBlackPearlKnownLineage.value,
+                )
+            }
+            blackPearlEditorLineageRepresentation = lineageRepresentationFor(currentResolution)
+
+            val trackedGainDeltaDb = hardwareRepository.readBlackPearlTrackedGainDeltaDb()
+            val result = withContext(computationDispatcher) {
+                HardwareEqEditor.startFromCurrent(
+                    snapshotState = hardwareRepository.blackPearlSnapshotState.value,
+                    spec = HardwareEqEditSpecs.TRN_BLACK_PEARL,
+                    trackedPlaybackGainDeltaDb = trackedGainDeltaDb,
+                )
+            }
+            mutableBlackPearlEditorState.value = when (result) {
+                is HardwareEqEditorStartResult.Ready -> {
+                    val selectedBandIndex = result.workingCopy.filters.firstOrNull()?.index
+                    MyDacEditorUiState(
+                        stage = MyDacEditorStage.EDIT,
+                        workingCopy = result.workingCopy,
+                        selectedBandIndex = selectedBandIndex,
+                    )
+                }
+                HardwareEqEditorStartResult.CurrentSnapshotRequired -> {
+                    blackPearlEditorLineageRepresentation = null
+                    MyDacEditorUiState(error = MyDacEditorError.READ_FAILED)
+                }
+                HardwareEqEditorStartResult.WrongDevice -> {
+                    blackPearlEditorLineageRepresentation = null
+                    MyDacEditorUiState(error = MyDacEditorError.WRONG_DEVICE)
+                }
+            }
+        }
+    }
+
+    fun closeMyDacEditor() {
+        if (mutableBlackPearlEditorState.value.applyStatus == MyDacEditorApplyStatus.APPLYING) return
+        blackPearlEditorLineageRepresentation = null
+        mutableBlackPearlEditorState.value = MyDacEditorUiState()
+    }
+
+    /** Returns true when Back was consumed inside the editor workflow. */
+    fun backMyDacEditor(): Boolean {
+        val current = mutableBlackPearlEditorState.value
+        if (current.applyStatus == MyDacEditorApplyStatus.APPLYING) return true
+        val closesEditor = current.isOpening || current.stage == MyDacEditorStage.EDIT
+        val next = when {
+            current.isOpening -> MyDacEditorUiState()
+            current.stage == MyDacEditorStage.REVIEW || current.stage == MyDacEditorStage.ALL_BANDS ->
+                current.copy(
+                    stage = MyDacEditorStage.EDIT,
+                    error = null,
+                    applyStatus = MyDacEditorApplyStatus.IDLE,
+                    applyFailureReason = null,
+                )
+            current.stage == MyDacEditorStage.EDIT -> MyDacEditorUiState()
+            else -> return false
+        }
+        if (closesEditor) blackPearlEditorLineageRepresentation = null
+        mutableBlackPearlEditorState.value = next
+        return true
+    }
+
+    fun selectBlackPearlEditorBand(bandIndex: Int) {
+        mutableBlackPearlEditorState.update { current ->
+            val working = current.workingCopy ?: return@update current
+            if (working.filters.none { filter -> filter.index == bandIndex }) return@update current
+            current.copy(
+                stage = MyDacEditorStage.EDIT,
+                selectedBandIndex = bandIndex,
+                error = null,
+                applyStatus = MyDacEditorApplyStatus.IDLE,
+                applyFailureReason = null,
+            )
+        }
+    }
+
+    fun showBlackPearlEditorAllBands() {
+        mutableBlackPearlEditorState.update { current ->
+            if (current.workingCopy == null || current.applyStatus == MyDacEditorApplyStatus.APPLYING) current
+            else current.copy(
+                stage = MyDacEditorStage.ALL_BANDS,
+                error = null,
+                applyStatus = MyDacEditorApplyStatus.IDLE,
+                applyFailureReason = null,
+            )
+        }
+    }
+
+    fun showBlackPearlEditorReview() {
+        mutableBlackPearlEditorState.update { current ->
+            if (current.workingCopy == null || current.applyStatus == MyDacEditorApplyStatus.APPLYING) current
+            else current.copy(
+                stage = MyDacEditorStage.REVIEW,
+                error = null,
+                applyStatus = MyDacEditorApplyStatus.IDLE,
+                applyFailureReason = null,
+            )
+        }
+    }
+
+    fun updateBlackPearlEditorBand(
+        bandIndex: Int,
+        type: EqFilterType,
+        frequencyHz: Double,
+        gainDb: Double,
+        q: Double,
+    ) {
+        mutableBlackPearlEditorState.update { current ->
+            if (current.applyStatus == MyDacEditorApplyStatus.APPLYING) return@update current
+            val working = current.workingCopy ?: return@update current
+            val updated = HardwareEqEditor.updateFilter(
+                workingCopy = working,
+                spec = HardwareEqEditSpecs.TRN_BLACK_PEARL,
+                bandIndex = bandIndex,
+                type = type,
+                frequencyHz = frequencyHz,
+                gainDb = gainDb,
+                q = q,
+            )
+            current.copy(
+                workingCopy = updated,
+                selectedBandIndex = bandIndex,
+                error = null,
+                applyStatus = MyDacEditorApplyStatus.IDLE,
+                applyFailureReason = null,
+            )
+        }
+    }
+
+    fun useSafeBlackPearlEditorGain() {
+        mutableBlackPearlEditorState.update { current ->
+            if (current.applyStatus == MyDacEditorApplyStatus.APPLYING) return@update current
+            val working = current.workingCopy ?: return@update current
+            current.copy(
+                workingCopy = HardwareEqEditor.useSafeGain(
+                    workingCopy = working,
+                    spec = HardwareEqEditSpecs.TRN_BLACK_PEARL,
+                ),
+                error = null,
+                applyStatus = MyDacEditorApplyStatus.IDLE,
+                applyFailureReason = null,
+            )
+        }
+    }
+
+    fun resetBlackPearlEditorLocalEdits() {
+        mutableBlackPearlEditorState.update { current ->
+            if (current.applyStatus == MyDacEditorApplyStatus.APPLYING) return@update current
+            val working = current.workingCopy ?: return@update current
+            current.copy(
+                stage = MyDacEditorStage.EDIT,
+                workingCopy = HardwareEqEditor.resetLocalEdits(
+                    workingCopy = working,
+                    spec = HardwareEqEditSpecs.TRN_BLACK_PEARL,
+                ),
+                error = null,
+                applyStatus = MyDacEditorApplyStatus.IDLE,
+                applyFailureReason = null,
+            )
+        }
+    }
+
+    fun applyBlackPearlEditor(allowCautions: Boolean) {
+        val current = mutableBlackPearlEditorState.value
+        val workingCopy = current.workingCopy ?: return
+        if (current.stage != MyDacEditorStage.REVIEW || current.applyStatus == MyDacEditorApplyStatus.APPLYING) return
+        if (current.applyStatus == MyDacEditorApplyStatus.CONFIRMATION_REQUIRED && !allowCautions) return
+        val lineageSource = blackPearlEditorLineageRepresentation
+
+        mutableBlackPearlEditorState.value = current.copy(
+            applyStatus = MyDacEditorApplyStatus.APPLYING,
+            applyFailureReason = null,
+        )
+        viewModelScope.launch {
+            val result = hardwareRepository.applyBlackPearlEditor(
+                workingCopy = workingCopy,
+                allowCautions = allowCautions,
+            )
+            mutableBlackPearlEditorState.value = when (result) {
+                is BlackPearlEditorApplyResult.Verified -> {
+                    val fresh = hardwareRepository.blackPearlSnapshotState.value.bundle
+                    mutableBlackPearlKnownLineage.value = if (
+                        lineageSource != null &&
+                        fresh != null &&
+                        hardwareRepository.isBlackPearlSessionCurrent(fresh.snapshot.sessionGeneration)
+                    ) {
+                        buildBlackPearlKnownLineage(
+                            sessionGeneration = fresh.snapshot.sessionGeneration,
+                            savedRepresentation = lineageSource,
+                            actualFingerprint = fresh.fingerprint,
+                        )
+                    } else {
+                        null
+                    }
+                    blackPearlEditorLineageRepresentation = null
+                    MyDacEditorUiState(applyStatus = MyDacEditorApplyStatus.VERIFIED)
+                }
+                is BlackPearlEditorApplyResult.ConfirmationRequired -> current.copy(
+                    applyStatus = MyDacEditorApplyStatus.CONFIRMATION_REQUIRED,
+                    applyFailureReason = null,
+                )
+                is BlackPearlEditorApplyResult.InvalidPlan -> failedEditorApply(result.reason).also {
+                    mutableBlackPearlKnownLineage.value = null
+                    blackPearlEditorLineageRepresentation = null
+                }
+                is BlackPearlEditorApplyResult.StaleBaseline -> failedEditorApply(result.reason).also {
+                    mutableBlackPearlKnownLineage.value = null
+                    blackPearlEditorLineageRepresentation = null
+                }
+                is BlackPearlEditorApplyResult.DeviceUnavailable -> failedEditorApply(result.reason).also {
+                    mutableBlackPearlKnownLineage.value = null
+                    blackPearlEditorLineageRepresentation = null
+                }
+                is BlackPearlEditorApplyResult.TransferFailed -> failedEditorApply(result.reason).also {
+                    mutableBlackPearlKnownLineage.value = null
+                    blackPearlEditorLineageRepresentation = null
+                }
+                is BlackPearlEditorApplyResult.VerificationFailed -> failedEditorApply(result.reason).also {
+                    mutableBlackPearlKnownLineage.value = null
+                    blackPearlEditorLineageRepresentation = null
+                }
+            }
+        }
+    }
+
+    private fun failedEditorApply(reason: String): MyDacEditorUiState = MyDacEditorUiState(
+        applyStatus = MyDacEditorApplyStatus.FAILED,
+        applyFailureReason = reason,
+    )
+
+    /**
+     * Captures only a freshly read Black Pearl hardware state. Exact native matches are linked to
+     * existing My EQs identities rather than duplicated, and Flat never creates a Personal EQ.
+     */
+    suspend fun captureBlackPearlDacEq(
+        displayName: String,
+        association: SavedEqHeadphoneAssociation?,
+    ): UiText {
+        val name = displayName.trim()
+        if (name.isEmpty()) return UiText.Dynamic("EQ name is required.")
+        if (hardwareRepository.blackPearlConnectionState.value !is BlackPearlConnectionState.Connected) {
+            return UiText.Dynamic("Connect TRN Black Pearl before saving its EQ.")
+        }
+
+        val bundle = hardwareRepository.readBlackPearlSnapshot()
+            ?: return UiText.Dynamic("Could not read the current Black Pearl EQ. No Personal EQ was saved.")
+        if (!hardwareRepository.isBlackPearlSessionCurrent(bundle.snapshot.sessionGeneration)) {
+            return UiText.Dynamic("The Black Pearl connection changed while reading. Reconnect and try again.")
+        }
+
+        val library = loadLibraryData(ExportDevice.BLACK_PEARL.name)
+        val resolution = withContext(computationDispatcher) {
+            resolveBlackPearlHardwareEq(
+                bundle = bundle,
+                library = library,
+                lineage = mutableBlackPearlKnownLineage.value,
+            )
+        }
+
+        return when (val decision = decideBlackPearlCapture(resolution.match)) {
+            BlackPearlCaptureDecision.Flat ->
+                UiText.Dynamic("The Black Pearl EQ is already flat. No duplicate Personal EQ was created.")
+            is BlackPearlCaptureDecision.ExistingMatch -> {
+                if (decision.savedEqs.size == 1) {
+                    UiText.Dynamic("Already in My EQs: ${decision.savedEqs.single().displayName}")
+                } else {
+                    UiText.Dynamic(
+                        "This Black Pearl EQ already exactly matches ${decision.savedEqs.size} saved EQs. No duplicate was created.",
+                    )
+                }
+            }
+            BlackPearlCaptureDecision.Capture -> runCatching {
+                savedEqRepository.captureBlackPearlEq(
+                    displayName = name,
+                    snapshotBundle = bundle,
+                    association = association,
+                )
+            }.fold(
+                onSuccess = { record -> UiText.Dynamic("Saved ${record.displayName} to Black Pearl My EQs.") },
+                onFailure = { error ->
+                    UiText.Dynamic(error.message ?: "Could not save the current Black Pearl EQ.")
+                },
+            )
+        }
+    }
+
+    /** Read-only v0.6 hardware qualification. This cannot issue candidate DEVICE writes. */
+    fun readBlackPearlQualificationControls() {
+        if (mutableBlackPearlQualificationState.value.isReading) return
+        mutableBlackPearlQualificationState.update(BlackPearlQualificationUiState::beginRead)
+        viewModelScope.launch {
+            mutableBlackPearlQualificationState.value = when (
+                val result = dacControlRepository.readBlackPearlQualificationSnapshot()
+            ) {
+                is BlackPearlQualificationReadResult.Success ->
+                    mutableBlackPearlQualificationState.value.success(result.snapshot)
+                BlackPearlQualificationReadResult.NotConnected ->
+                    mutableBlackPearlQualificationState.value.failure(
+                        "Connect TRN Black Pearl before reading candidate device controls.",
+                    )
+                BlackPearlQualificationReadResult.SessionChanged ->
+                    mutableBlackPearlQualificationState.value.failure(
+                        "The Black Pearl connection changed during the read. Reconnect and read again.",
+                    )
+                is BlackPearlQualificationReadResult.ReadFailed ->
+                    mutableBlackPearlQualificationState.value.failure(
+                        "Could not read ${result.field}. No candidate setting was changed.",
+                    )
+            }
+        }
     }
 
     fun connectBlackPearl() {
@@ -693,6 +1156,38 @@ class EqLibraryViewModel(
         }
     }
 
+    private fun resolveBlackPearlHardwareEq(
+        bundle: HardwareEqSnapshotBundle,
+        library: LibraryDataState,
+        lineage: BlackPearlKnownLineage?,
+    ): HardwareEqMatchResolution {
+        val actual = bundle.fingerprint
+        return BlackPearlHardwareEqMatchResolver.resolve(
+            actual = actual,
+            candidates = buildBlackPearlMyEqsCandidates(
+                managedHeadphones = library.managedHeadphones,
+                savedEqs = library.savedEqs,
+                savedGeneralEqs = library.savedGeneralEqs,
+            ),
+        ).withBlackPearlKnownLineage(
+            currentSessionGeneration = bundle.snapshot.sessionGeneration,
+            actualFingerprint = actual,
+            lineage = lineage,
+        )
+    }
+
+    private fun lineageRepresentationFor(
+        resolution: HardwareEqMatchResolution,
+    ): SavedHardwareEqRepresentation? = when (val match = resolution.match) {
+        is HardwareEqMatch.Exact -> resolution.representation(match.savedEq.savedEqKey)
+        is HardwareEqMatch.ModifiedKnown ->
+            resolution.representation(match.savedEq.savedEqKey)
+                ?: mutableBlackPearlKnownLineage.value
+                    ?.savedRepresentation
+                    ?.takeIf { it.identity.savedEqKey == match.savedEq.savedEqKey }
+        else -> null
+    }
+
     private suspend fun loadLibraryData(outputId: String): LibraryDataState = combine(
         managedHeadphonesRepository.observeHeadphones(outputId),
         savedEqRepository.observeForOutput(outputId),
@@ -756,6 +1251,7 @@ class EqLibraryViewModel(
                 cleanupRepository = dependencies.cleanupRepository,
                 syncCoordinator = dependencies.syncCoordinator,
                 updateCoordinator = dependencies.updateCoordinator,
+                dacControlRepository = dependencies.dacControlRepository,
                 hardwareRepository = dependencies.hardwareRepository,
             ) as T
         }
@@ -771,6 +1267,7 @@ class EqLibraryViewModel(
         val cleanupRepository: PresetCleanupRepository,
         val syncCoordinator: CatalogSyncCoordinator,
         val updateCoordinator: AppUpdateCoordinator,
+        val dacControlRepository: DacControlRepository,
         val hardwareRepository: HardwareEqRepository,
     )
 

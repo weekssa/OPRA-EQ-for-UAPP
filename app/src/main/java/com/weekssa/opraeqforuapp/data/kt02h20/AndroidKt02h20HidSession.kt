@@ -51,11 +51,19 @@ internal class AndroidKt02h20HidSession(
     private val mutex = Mutex()
     private val mutableState = MutableStateFlow<Kt02h20ConnectionState>(Kt02h20ConnectionState.Disconnected)
     val state: StateFlow<Kt02h20ConnectionState> = mutableState.asStateFlow()
+    private val mutablePresent = MutableStateFlow(false)
+    val present: StateFlow<Boolean> = mutablePresent.asStateFlow()
 
     @Volatile
     private var session: UsbSession? = null
+    @Volatile
+    private var currentSessionGeneration: Long = 0L
+    private var lastSessionGeneration: Long = 0L
     private var receiverRegistered = false
     private val permissionAction = "${appContext.packageName}.$permissionSuffix.USB_PERMISSION"
+
+    val sessionGeneration: Long
+        get() = currentSessionGeneration
 
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -72,10 +80,12 @@ internal class AndroidKt02h20HidSession(
                     }
                 }
                 UsbManager.ACTION_USB_DEVICE_DETACHED -> {
+                    mutablePresent.value = false
                     closeSession()
                     mutableState.value = Kt02h20ConnectionState.Disconnected
                 }
                 UsbManager.ACTION_USB_DEVICE_ATTACHED -> {
+                    mutablePresent.value = true
                     if (mutableState.value is Kt02h20ConnectionState.Connecting && usbManager.hasPermission(device)) {
                         openAsync(device)
                     }
@@ -86,16 +96,19 @@ internal class AndroidKt02h20HidSession(
 
     init {
         registerReceiver()
+        mutablePresent.value = findDevice() != null
     }
 
     fun connect() {
         val device = findDevice()
         if (device == null) {
+            mutablePresent.value = false
             mutableState.value = Kt02h20ConnectionState.Error(
                 "$deviceLabel not detected. Connect the DAC by USB and try again.",
             )
             return
         }
+        mutablePresent.value = true
         if (session != null) {
             mutableState.value = Kt02h20ConnectionState.Connected
             return
@@ -194,6 +207,8 @@ internal class AndroidKt02h20HidSession(
                     endpointIn = descriptor.endpointIn,
                     endpointOut = descriptor.endpointOut,
                 )
+                lastSessionGeneration = nextSessionGeneration(lastSessionGeneration)
+                currentSessionGeneration = lastSessionGeneration
                 mutableState.value = Kt02h20ConnectionState.Connected
             }
         }
@@ -223,9 +238,12 @@ internal class AndroidKt02h20HidSession(
             if (mutableState.value !is Kt02h20ConnectionState.Connecting) return@launch
             val device = findDevice()
             when {
-                device == null -> mutableState.value = Kt02h20ConnectionState.Error(
-                    "$deviceLabel disconnected while Android was requesting USB permission.",
-                )
+                device == null -> {
+                    mutablePresent.value = false
+                    mutableState.value = Kt02h20ConnectionState.Error(
+                        "$deviceLabel disconnected while Android was requesting USB permission.",
+                    )
+                }
                 usbManager.hasPermission(device) -> openAsync(device)
                 else -> mutableState.value = Kt02h20ConnectionState.Error(
                     "USB permission request timed out. Disconnect and reconnect $deviceLabel, then try again.",
@@ -253,6 +271,7 @@ internal class AndroidKt02h20HidSession(
     private fun closeSessionLocked() {
         val current = session ?: return
         session = null
+        currentSessionGeneration = 0L
         runCatching { current.connection.releaseInterface(current.usbInterface) }
         runCatching { current.connection.close() }
     }
@@ -294,5 +313,8 @@ internal class AndroidKt02h20HidSession(
         const val READ_POLL_MILLIS = 80
         const val READ_RETRY_DELAY_MILLIS = 5L
         const val PERMISSION_RESPONSE_TIMEOUT_MILLIS = 10_000L
+
+        fun nextSessionGeneration(previous: Long): Long =
+            if (previous == Long.MAX_VALUE) 1L else previous + 1L
     }
 }

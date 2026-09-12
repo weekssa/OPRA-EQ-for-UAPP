@@ -13,7 +13,9 @@ import android.hardware.usb.UsbInterface
 import android.hardware.usb.UsbManager
 import android.os.Build
 import androidx.core.content.ContextCompat
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceControlReadCodec
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlProtocol
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlReadCodec
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlTransport
 import java.io.Closeable
 import kotlinx.coroutines.CoroutineScope
@@ -44,10 +46,18 @@ class AndroidBlackPearlUsbTransport(
     private val usbMutex = Mutex()
     private val mutableState = MutableStateFlow<BlackPearlConnectionState>(BlackPearlConnectionState.Disconnected)
     val state: StateFlow<BlackPearlConnectionState> = mutableState.asStateFlow()
+    private val mutablePresent = MutableStateFlow(false)
+    val present: StateFlow<Boolean> = mutablePresent.asStateFlow()
 
     @Volatile
     private var session: UsbSession? = null
+    @Volatile
+    private var currentSessionGeneration: Long = 0L
+    private var lastSessionGeneration: Long = 0L
     private var receiverRegistered = false
+
+    val sessionGeneration: Long
+        get() = currentSessionGeneration
 
     private val permissionAction = "${appContext.packageName}.BLACK_PEARL_USB_PERMISSION"
 
@@ -66,10 +76,12 @@ class AndroidBlackPearlUsbTransport(
                     }
                 }
                 UsbManager.ACTION_USB_DEVICE_DETACHED -> {
+                    mutablePresent.value = false
                     closeSession()
                     mutableState.value = BlackPearlConnectionState.Disconnected
                 }
                 UsbManager.ACTION_USB_DEVICE_ATTACHED -> {
+                    mutablePresent.value = true
                     if (mutableState.value is BlackPearlConnectionState.Connecting && usbManager.hasPermission(device)) {
                         openAsync(device)
                     }
@@ -80,16 +92,19 @@ class AndroidBlackPearlUsbTransport(
 
     init {
         registerReceiver()
+        mutablePresent.value = findDevice() != null
     }
 
     fun connect() {
         val device = findDevice()
         if (device == null) {
+            mutablePresent.value = false
             mutableState.value = BlackPearlConnectionState.Error(
                 "TRN Black Pearl not detected. Connect the DAC by USB and try again.",
             )
             return
         }
+        mutablePresent.value = true
         if (session != null) {
             mutableState.value = BlackPearlConnectionState.Connected
             return
@@ -123,6 +138,46 @@ class AndroidBlackPearlUsbTransport(
     override suspend fun readGlobalGainRaw(): Int? = readParsedResponse(
         request = BlackPearlProtocol.readGlobalGainReport(),
         parser = BlackPearlProtocol::globalGainRawFromResponse,
+    )
+
+    override suspend fun readNativeBand(index: Int): BlackPearlReadCodec.NativeBand? = readParsedResponse(
+        request = BlackPearlProtocol.readBandReport(index),
+        parser = BlackPearlReadCodec::bandFromResponse,
+    )
+
+    suspend fun readDeviceFirmwareVersion(): String? = readParsedResponse(
+        request = BlackPearlDeviceControlReadCodec.firmwareVersionRequest(),
+        parser = BlackPearlDeviceControlReadCodec::firmwareVersionFromResponse,
+    )
+
+    suspend fun readDeviceFilterCode(): Int? = readParsedResponse(
+        request = BlackPearlDeviceControlReadCodec.filterRequest(),
+        parser = BlackPearlDeviceControlReadCodec::filterFromResponse,
+    )
+
+    suspend fun readDeviceGainModeCode(): Int? = readParsedResponse(
+        request = BlackPearlDeviceControlReadCodec.gainModeRequest(),
+        parser = BlackPearlDeviceControlReadCodec::gainModeFromResponse,
+    )
+
+    suspend fun readDeviceAmpTopologyCode(): Int? = readParsedResponse(
+        request = BlackPearlDeviceControlReadCodec.ampTopologyRequest(),
+        parser = BlackPearlDeviceControlReadCodec::ampTopologyFromResponse,
+    )
+
+    suspend fun readDeviceMicGainDb(): Int? = readParsedResponse(
+        request = BlackPearlDeviceControlReadCodec.micGainRequest(),
+        parser = BlackPearlDeviceControlReadCodec::micGainDbFromResponse,
+    )
+
+    suspend fun readDeviceLeftBalanceDb(): Int? = readParsedResponse(
+        request = BlackPearlDeviceControlReadCodec.balanceLeftRequest(),
+        parser = BlackPearlDeviceControlReadCodec::leftBalanceDbFromResponse,
+    )
+
+    suspend fun readDeviceRightBalanceDb(): Int? = readParsedResponse(
+        request = BlackPearlDeviceControlReadCodec.balanceRightRequest(),
+        parser = BlackPearlDeviceControlReadCodec::rightBalanceDbFromResponse,
     )
 
     private suspend fun <T> readParsedResponse(
@@ -206,6 +261,8 @@ class AndroidBlackPearlUsbTransport(
                     return@withLock
                 }
                 session = UsbSession(connection, usbInterface, endpointIn)
+                lastSessionGeneration = nextSessionGeneration(lastSessionGeneration)
+                currentSessionGeneration = lastSessionGeneration
                 mutableState.value = BlackPearlConnectionState.Connected
             }
         }
@@ -217,9 +274,12 @@ class AndroidBlackPearlUsbTransport(
             if (mutableState.value !is BlackPearlConnectionState.Connecting) return@launch
             val device = findDevice()
             when {
-                device == null -> mutableState.value = BlackPearlConnectionState.Error(
-                    "TRN Black Pearl disconnected while Android was requesting USB permission.",
-                )
+                device == null -> {
+                    mutablePresent.value = false
+                    mutableState.value = BlackPearlConnectionState.Error(
+                        "TRN Black Pearl disconnected while Android was requesting USB permission.",
+                    )
+                }
                 usbManager.hasPermission(device) -> openAsync(device)
                 else -> mutableState.value = BlackPearlConnectionState.Error(
                     "USB permission request timed out. Disconnect and reconnect the Black Pearl, then try again.",
@@ -273,6 +333,7 @@ class AndroidBlackPearlUsbTransport(
     private fun closeSessionLocked() {
         val current = session ?: return
         session = null
+        currentSessionGeneration = 0L
         runCatching { current.connection.releaseInterface(current.usbInterface) }
         runCatching { current.connection.close() }
     }
@@ -314,5 +375,8 @@ class AndroidBlackPearlUsbTransport(
         private const val FLASH_SETTLE_MILLIS = 300L
         private const val COMMAND_SETTLE_MILLIS = 20L
         private const val PERMISSION_RESPONSE_TIMEOUT_MILLIS = 10_000L
+
+        private fun nextSessionGeneration(previous: Long): Long =
+            if (previous == Long.MAX_VALUE) 1L else previous + 1L
     }
 }

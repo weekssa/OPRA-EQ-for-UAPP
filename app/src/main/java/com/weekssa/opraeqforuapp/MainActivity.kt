@@ -40,6 +40,15 @@ class MainActivity : ComponentActivity() {
             },
         )[EqLibraryViewModel::class.java]
 
+        // Only a true new Activity launch from Android's USB attach flow requests automatic routing.
+        // Existing singleTop activities keep their current workflow and use the in-app Open My DAC
+        // prompt when the shared DAC session repository reports a newly present supported device.
+        val initialMyDacOpenDeviceId = if (savedInstanceState == null) {
+            intent.supportedAttachedDacDeviceId()
+        } else {
+            null
+        }
+
         setContent {
             val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
             val actions = remember(viewModel) { createUiActions() }
@@ -48,6 +57,7 @@ class MainActivity : ComponentActivity() {
                 EqLibraryApp(
                     state = uiState,
                     actions = actions,
+                    initialMyDacOpenDeviceId = initialMyDacOpenDeviceId,
                 )
             }
         }
@@ -59,6 +69,21 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun createUiActions(): EqLibraryActions = EqLibraryActions(
+        onConnectDacForMyDac = viewModel::connectDacForMyDac,
+        onOpenBlackPearlEditor = viewModel::openBlackPearlEditor,
+        onBackMyDacEditor = viewModel::backMyDacEditor,
+        onCloseMyDacEditor = viewModel::closeMyDacEditor,
+        onSelectBlackPearlEditorBand = viewModel::selectBlackPearlEditorBand,
+        onShowBlackPearlEditorAllBands = viewModel::showBlackPearlEditorAllBands,
+        onShowBlackPearlEditorReview = viewModel::showBlackPearlEditorReview,
+        onUpdateBlackPearlEditorBand = viewModel::updateBlackPearlEditorBand,
+        onUseSafeBlackPearlEditorGain = viewModel::useSafeBlackPearlEditorGain,
+        onResetBlackPearlEditorLocalEdits = viewModel::resetBlackPearlEditorLocalEdits,
+        onApplyBlackPearlEditor = viewModel::applyBlackPearlEditor,
+        onCaptureBlackPearlDacEq = { displayName, association ->
+            resolve(viewModel.captureBlackPearlDacEq(displayName, association))
+        },
+        onReadBlackPearlQualificationControls = viewModel::readBlackPearlQualificationControls,
         onConnectBlackPearl = viewModel::connectBlackPearl,
         onResetBlackPearl = {
             resolve(viewModel.resetBlackPearlToFlat())
