@@ -34,7 +34,8 @@ Recorded candidate provenance:
 
 - Candidate commit SHA: `d3d227de45751f6606b75637a2fd311249afa88d`
 - Signed beta source APK: `EQ-Library-v0.6.0-beta-d3d227d.apk`
-- Mobile-test APK: `EQ-Library-v0.6.0-mobile-test.apk`
+- Immutable exact-candidate URL: `https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.6.0-beta-d3d227d.apk`
+- Immutable checksum URL: `https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.6.0-beta-d3d227d.apk.sha256`
 - Signed APK SHA-256: `ea8235ee1ba2828873b488054b25d40c917b844c2d76a813bf9e038cf31c8ee5`
 - Signer certificate SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`
 - Signer: `CN=OPRA EQ for UAPP, O=weekssa`; RSA 4096; APK Signature Scheme v2/v3 verified; one signer
@@ -47,6 +48,8 @@ Recorded candidate provenance:
 - Signed-beta artifact ZIP SHA-256: `04c9c085c5aed42d4b2421391410151291354fe05841600f635445e733fff773`
 - Test date: `2026-09-13`
 - Tester: Project owner
+
+The `EQ-Library-mobile-test.apk` and `EQ-Library-v0.6.0-mobile-test.apk` convenience filenames move as development advances and are **not** qualification provenance. For this checklist, use the immutable exact-candidate URL above if a reinstall is needed.
 
 This checklist/provenance documentation may receive later documentation-only commits. The hardware candidate remains the exact signed source commit recorded above unless a behavior-changing replacement candidate is explicitly pinned.
 
@@ -217,15 +220,3 @@ A **read-only qualification PASS** requires:
 - the exact tested commit and signed APK are recorded above.
 
 Overall read-only qualification: **IN PROGRESS**
-
-Blocking observations: Independent semantic cross-check, repeated-read/no-write proof, external filter fresh-read proof, disconnect/stale-state proof, reconnect proof, and final no-write comparison remain pending.
-
-## What passing this checklist permits
-
-A pass raises only these exact read semantics from corroborated candidate to physically observed read-only behavior on the tested Pixel 9 / TRN Black Pearl combination. It does **not** automatically make the corresponding controls writable in production.
-
-Any later write-capable control must be qualified individually with its own safe sequence:
-
-`fresh read → explicit user intent → validate → write only the owned value → readback → verify → persistence/reconnect check where relevant`
-
-Level-sensitive controls require additional volume-safety handling. Production wording must not claim persistence until it has been specifically proven.
