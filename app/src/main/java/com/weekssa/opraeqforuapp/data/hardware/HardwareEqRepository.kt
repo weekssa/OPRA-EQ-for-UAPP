@@ -57,6 +57,9 @@ class HardwareEqRepository(
     private val mutableBlackPearlSnapshotState = MutableStateFlow(HardwareEqSnapshotState())
     val blackPearlSnapshotState: StateFlow<HardwareEqSnapshotState> =
         mutableBlackPearlSnapshotState.asStateFlow()
+    private val mutableFiioJa11SnapshotState = MutableStateFlow(HardwareEqSnapshotState())
+    val fiioJa11SnapshotState: StateFlow<HardwareEqSnapshotState> =
+        mutableFiioJa11SnapshotState.asStateFlow()
 
     init {
         scope.launch {
@@ -65,6 +68,15 @@ class HardwareEqRepository(
                     refreshBlackPearlSnapshot()
                 } else {
                     mutableBlackPearlSnapshotState.update { it.markStale() }
+                }
+            }
+        }
+        scope.launch {
+            fiioJa11ConnectionState.collectLatest { state ->
+                if (state is Kt02h20ConnectionState.Connected) {
+                    refreshFiioJa11Snapshot()
+                } else {
+                    mutableFiioJa11SnapshotState.update { it.markStale() }
                 }
             }
         }
@@ -88,10 +100,7 @@ class HardwareEqRepository(
 
     suspend fun readBlackPearlSnapshot(): HardwareEqSnapshotBundle? = refreshBlackPearlSnapshot()
 
-    suspend fun readFiioJa11Snapshot(): HardwareEqSnapshotBundle? =
-        dacSessionRepository.withExclusiveFiioJa11Operation {
-            dacSessionRepository.readFiioJa11Snapshot()
-        }
+    suspend fun readFiioJa11Snapshot(): HardwareEqSnapshotBundle? = refreshFiioJa11Snapshot()
 
     suspend fun readJcallyJm12Snapshot(): HardwareEqSnapshotBundle? = jcallyJm12OperationMutex.withLock {
         dacSessionRepository.readJcallyJm12Snapshot()
@@ -115,7 +124,6 @@ class HardwareEqRepository(
                 )
             }
         } finally {
-            // Reacquire only after the write transaction has released the shared physical-session gate.
             refreshBlackPearlSnapshot()
         }
     }
@@ -142,15 +150,27 @@ class HardwareEqRepository(
         }
     }
 
-    suspend fun flashFiioJa11(profile: OpraEqProfile): Kt02h20FlashResult =
-        dacSessionRepository.withExclusiveFiioJa11Operation {
-            fiioJa11Flasher.flash(profile)
+    suspend fun flashFiioJa11(profile: OpraEqProfile): Kt02h20FlashResult {
+        mutableFiioJa11SnapshotState.update { it.markStale() }
+        return try {
+            dacSessionRepository.withExclusiveFiioJa11Operation {
+                fiioJa11Flasher.flash(profile)
+            }
+        } finally {
+            scheduleFiioJa11SnapshotRefresh()
         }
+    }
 
-    suspend fun resetFiioJa11(): Kt02h20FlatResetResult =
-        dacSessionRepository.withExclusiveFiioJa11Operation {
-            fiioJa11Flasher.resetToFlat()
+    suspend fun resetFiioJa11(): Kt02h20FlatResetResult {
+        mutableFiioJa11SnapshotState.update { it.markStale() }
+        return try {
+            dacSessionRepository.withExclusiveFiioJa11Operation {
+                fiioJa11Flasher.resetToFlat()
+            }
+        } finally {
+            scheduleFiioJa11SnapshotRefresh()
         }
+    }
 
     suspend fun flashJcallyJm12(profile: OpraEqProfile): Kt02h20FlashResult = jcallyJm12OperationMutex.withLock {
         jcallyJm12Flasher.flash(profile)
@@ -188,12 +208,52 @@ class HardwareEqRepository(
             }
         }
 
+    private suspend fun refreshFiioJa11Snapshot(): HardwareEqSnapshotBundle? =
+        dacSessionRepository.withExclusiveFiioJa11Operation {
+            if (fiioJa11ConnectionState.value !is Kt02h20ConnectionState.Connected) {
+                mutableFiioJa11SnapshotState.update { it.markStale() }
+                return@withExclusiveFiioJa11Operation null
+            }
+
+            mutableFiioJa11SnapshotState.update { it.beginRead() }
+            val bundle = dacSessionRepository.readFiioJa11Snapshot()
+            val stillCurrent = bundle != null &&
+                dacSessionRepository.isFiioJa11SessionCurrent(bundle.snapshot.sessionGeneration)
+
+            when {
+                stillCurrent -> {
+                    mutableFiioJa11SnapshotState.update { it.publishCurrent(requireNotNull(bundle)) }
+                    bundle
+                }
+                fiioJa11ConnectionState.value !is Kt02h20ConnectionState.Connected -> {
+                    mutableFiioJa11SnapshotState.update { it.markStale() }
+                    null
+                }
+                else -> {
+                    // Built-in JA11 programs intentionally have no established coefficient snapshot.
+                    // The DEVICE state still reports the active program exactly; no fake curve is shown.
+                    mutableFiioJa11SnapshotState.update { it.markReadFailed() }
+                    null
+                }
+            }
+        }
+
     private fun scheduleBlackPearlSnapshotRefresh() {
         scope.launch {
             if (blackPearlConnectionState.value is BlackPearlConnectionState.Connected) {
                 refreshBlackPearlSnapshot()
             } else {
                 mutableBlackPearlSnapshotState.update { it.markStale() }
+            }
+        }
+    }
+
+    private fun scheduleFiioJa11SnapshotRefresh() {
+        scope.launch {
+            if (fiioJa11ConnectionState.value is Kt02h20ConnectionState.Connected) {
+                refreshFiioJa11Snapshot()
+            } else {
+                mutableFiioJa11SnapshotState.update { it.markStale() }
             }
         }
     }
