@@ -73,35 +73,38 @@ object HardwareEqSnapshotFactory {
         globalEqGainDb: Double,
         sessionGeneration: Long,
         verifiedAtEpochMillis: Long,
+        eqEnabled: Boolean = true,
     ): HardwareEqSnapshotBundle? {
         if (nativeBands.size != FiioJa11Protocol.BAND_COUNT) return null
         if (!globalEqGainDb.isFinite() || globalEqGainDb !in FiioJa11Protocol.MIN_GLOBAL_GAIN_DB..FiioJa11Protocol.MAX_GLOBAL_GAIN_DB) {
             return null
         }
 
-        val filters = nativeBands.mapIndexed { index, band -> band.toHardwareFilter(index) ?: return null }
+        val filters = nativeBands.mapIndexed { index, band ->
+            band.toHardwareFilter(index, enabled = eqEnabled) ?: return null
+        }
         val fingerprint = HardwareEqNativeFingerprint(
             deviceId = DacDeviceId.FIIO_JA11,
-            eqEnabled = true,
+            eqEnabled = eqEnabled,
             bands = nativeBands.mapIndexed { index, band ->
                 HardwareEqNativeBandFingerprint(
                     index = index,
-                    enabled = true,
+                    enabled = eqEnabled,
                     type = band.type.toEqFilterType() ?: return null,
                     frequencyUnits = band.frequencyHz.roundToLong(),
                     gainUnits = (band.gainDb * 10.0).roundToLong(),
                     qUnits = (band.q * 100.0).roundToLong(),
                 )
             },
-            // JA11 command 0x17 is the dedicated global EQ/preamp control used by its PEQ path.
-            dedicatedEqPreampUnits = (globalEqGainDb * 2560.0).roundToLong(),
+            // JA11 command 0x17 is the dedicated global EQ/preamp control used by its User 1 PEQ path.
+            dedicatedEqPreampUnits = if (eqEnabled) (globalEqGainDb * 2560.0).roundToLong() else null,
         )
         return HardwareEqSnapshotBundle(
             snapshot = HardwareEqSnapshot(
                 deviceId = DacDeviceId.FIIO_JA11,
                 sessionGeneration = sessionGeneration,
                 filters = filters,
-                dedicatedEqPreampDb = globalEqGainDb,
+                dedicatedEqPreampDb = if (eqEnabled) globalEqGainDb else null,
                 playbackGainDb = null,
                 verifiedAtEpochMillis = verifiedAtEpochMillis,
             ),
@@ -153,10 +156,10 @@ object HardwareEqSnapshotFactory {
         )
     }
 
-    private fun FiioJa11Protocol.Band.toHardwareFilter(index: Int): HardwareEqFilter? =
+    private fun FiioJa11Protocol.Band.toHardwareFilter(index: Int, enabled: Boolean): HardwareEqFilter? =
         HardwareEqFilter(
             index = index,
-            enabled = true,
+            enabled = enabled,
             type = type.toEqFilterType() ?: return null,
             frequencyHz = frequencyHz,
             gainDb = gainDb,
