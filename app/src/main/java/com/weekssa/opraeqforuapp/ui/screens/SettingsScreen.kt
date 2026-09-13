@@ -37,12 +37,12 @@ import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.BuildConfig
 import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshFailureReason
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
-import com.weekssa.opraeqforuapp.domain.catalog.OpraCatalog
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.isHistoricalRevision
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.export.OutputCategory
 import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
+import com.weekssa.opraeqforuapp.domain.settings.OutputBehavior
 import com.weekssa.opraeqforuapp.domain.settings.ThemeMode
 import com.weekssa.opraeqforuapp.domain.update.SemVer
 import com.weekssa.opraeqforuapp.ui.components.OPRA_DATA_LICENSE_URL
@@ -74,10 +74,11 @@ fun SettingsScreen(
     onGetUpdate: () -> Unit,
     onOpenUrl: (String) -> Unit,
     onThemeModeChange: (ThemeMode) -> Unit,
+    onOutputBehaviorChange: (OutputBehavior) -> Unit,
     onExportTargetChange: (ExportDevice, Boolean) -> Unit,
+    onActiveExportTargetChange: (ExportDevice) -> Unit,
     onDirectBlackPearlFlashEnabledChange: (Boolean) -> Unit,
     onDirectFiioJa11FlashEnabledChange: (Boolean) -> Unit,
-    onDirectJcallyJm12FlashEnabledChange: (Boolean) -> Unit,
     hiddenCanonicalProfileIds: Set<String>,
     onUnhideCanonicalProfiles: suspend (Set<String>) -> Unit,
     onMessage: (String) -> Unit,
@@ -123,15 +124,49 @@ fun SettingsScreen(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 16.dp),
     ) {
+        SectionTitle("Output behavior")
+        ThemeOption(
+            title = "Automatic (recommended)",
+            description = "Use the connected supported DAC when one is attached. Otherwise use your normal app/output.",
+            selected = appPreferences.outputBehavior == OutputBehavior.Automatic,
+            onSelected = { onOutputBehaviorChange(OutputBehavior.Automatic) },
+        )
+        ThemeOption(
+            title = "Manual",
+            description = "Always use the output you choose below, even when a supported DAC is attached.",
+            selected = appPreferences.outputBehavior == OutputBehavior.Manual,
+            onSelected = { onOutputBehaviorChange(OutputBehavior.Manual) },
+        )
+        Text(
+            text = "Current output: ${appPreferences.exportTargets.activeTarget.displayName}",
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(top = 4.dp),
+        )
+        Text(
+            text = "Normal fallback: ${appPreferences.manualExportTargets.activeTarget.displayName}",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 2.dp),
+        )
+        if (appPreferences.outputBehavior == OutputBehavior.Automatic) {
+            Text(
+                text = "Automatic switching is temporary. It does not overwrite your normal fallback.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+        }
+
+        SectionDivider()
         SectionTitle("Outputs")
         Text(
-            text = "Choose which devices, apps, and portable formats appear in the output selector. The active output changes conversion, export, and My EQs context; it never hides curves from EQ Library.",
+            text = "Choose the apps, devices, and portable formats you use. These choices define your normal/manual output list; a connected supported DAC can still become the temporary current output in Automatic mode.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 6.dp),
         )
         Text(
-            text = "Direct Flash only writes EQ-related settings. EQ Library never updates device firmware or manages unrelated DAC controls.",
+            text = "Direct Flash writes only the EQ transaction you explicitly request. My DAC device controls are shown separately and only for capabilities established for the connected model.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 10.dp),
@@ -150,23 +185,48 @@ fun SettingsScreen(
                     val directFlashChecked = when (device) {
                         ExportDevice.BLACK_PEARL -> appPreferences.directBlackPearlFlashEnabled
                         ExportDevice.FIIO_JA11 -> appPreferences.directFiioJa11FlashEnabled
-                        ExportDevice.JCALLY_JM12 -> appPreferences.directJcallyJm12FlashEnabled
                         else -> null
                     }
                     val onDirectFlashChange: ((Boolean) -> Unit)? = when (device) {
                         ExportDevice.BLACK_PEARL -> onDirectBlackPearlFlashEnabledChange
                         ExportDevice.FIIO_JA11 -> onDirectFiioJa11FlashEnabledChange
-                        ExportDevice.JCALLY_JM12 -> onDirectJcallyJm12FlashEnabledChange
                         else -> null
                     }
                     OutputOption(
                         device = device,
-                        checked = appPreferences.exportTargets.isSelected(device),
+                        checked = appPreferences.manualExportTargets.isSelected(device),
                         onCheckedChange = { enabled -> onExportTargetChange(device, enabled) },
                         directFlashChecked = directFlashChecked,
                         onDirectFlashChange = onDirectFlashChange,
                     )
                 }
+            }
+        }
+
+        val manualChoices = ExportDevice.selectableOutputs.filter(appPreferences.manualExportTargets::isSelected)
+        if (manualChoices.isNotEmpty()) {
+            Text(
+                text = "Normal / manual output",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 14.dp, bottom = 2.dp),
+            )
+            manualChoices.forEach { device ->
+                ThemeOption(
+                    title = device.displayName,
+                    description = if (device == appPreferences.manualExportTargets.activeTarget) {
+                        "Used whenever Automatic has no single supported DAC to use."
+                    } else null,
+                    selected = device == appPreferences.manualExportTargets.activeTarget,
+                    onSelected = { onActiveExportTargetChange(device) },
+                )
+            }
+            if (appPreferences.outputBehavior == OutputBehavior.Automatic) {
+                Text(
+                    text = "Choosing a normal/manual output is an explicit override and switches Output behavior to Manual. You can turn Automatic back on above at any time.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
 
@@ -387,8 +447,7 @@ private fun OutputOption(
                 Text(
                     text = when (device) {
                         ExportDevice.BLACK_PEARL -> "Larger EQs are optimized to 10 bands"
-                        ExportDevice.FIIO_JA11,
-                        ExportDevice.JCALLY_JM12 -> "Larger EQs are optimized to 5 bands"
+                        ExportDevice.FIIO_JA11 -> "Larger EQs are optimized to 5 bands"
                         else -> "EQ Library adapts the source to this device's hardware capabilities"
                     },
                     style = MaterialTheme.typography.bodySmall,
@@ -439,12 +498,12 @@ private fun AboutEqLibraryScreen(
         SectionDivider()
         SectionTitle("Open source & independence")
         Text(
-            text = "EQ Library source code is Apache-2.0. External Black Pearl, FiiO JA11, and JCALLY JM12 tools are studied only for observable device/protocol behavior; copyleft implementation code is not copied into this project.",
+            text = "EQ Library source code is Apache-2.0. External Black Pearl and FiiO tools are studied only for observable device/protocol behavior; copyleft implementation code is not copied into this project.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            text = "EQ Library is not affiliated with or endorsed by OPRA, Roon Labs, USB Audio Player PRO/UAPP, ToneBoosters, TRN, FiiO, JCALLY, EasyEffects, Equalizer APO, Poweramp, Wavelet, or headphone manufacturers.",
+            text = "EQ Library is not affiliated with or endorsed by OPRA, Roon Labs, USB Audio Player PRO/UAPP, ToneBoosters, TRN, FiiO, EasyEffects, Equalizer APO, Poweramp, Wavelet, or headphone manufacturers.",
             modifier = Modifier.padding(top = 12.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
