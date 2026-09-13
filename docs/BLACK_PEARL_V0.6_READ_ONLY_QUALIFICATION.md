@@ -62,10 +62,14 @@ Independent Black Pearl controller observations supplied by the project owner:
 - Gain mode: `HIGH` — confirmed
 - Amp topology: `CLASS AB` — confirmed
 - Mic gain: `0 dB` — confirmed
-- Balance: `TBD` — not visible in supplied independent-controller screenshots
-- Playback/global gain: `TBD` — not visible in supplied independent-controller screenshots
+- Balance: `Center` — confirmed
+- Playback level presentation: `Volume 63%` — confirmed
 
-If the independent tool expresses playback level in a different unit, record both its displayed value and any raw value it exposes. EQ Library currently displays playback/global gain in dB plus the native raw integer.
+EQ Library reports the same playback/global-gain register as `+2.00 dB`, native raw `512`. The reviewed independent Android controller source at commit `491e9d5131562d85b44ce9fd741f3e1ff5c4781c` defines its volume percentage as a linear presentation of raw range `-9472..6440`:
+
+`raw = VOL_MIN_RAW + (percent / 100) * (VOL_MAX_RAW - VOL_MIN_RAW)`
+
+Rearranging that presentation for raw `512` gives `62.745...%`, which is consistent with the controller's displayed rounded `63%`. This establishes that the two applications are presenting the same underlying playback register in different units. It does **not** make percent a dB unit or authorize a playback-volume write control.
 
 ## 1. Recognition, connection, and read-only presentation
 
@@ -96,7 +100,7 @@ Notes: Supplied EQ Library screenshots confirm the **Hardware qualification · r
 4. Verify no field is silently substituted with a default or guessed value.
 5. If EQ Library reports an inconsistent left/right balance state, stop and record the exact values rather than treating it as a centered/valid balance.
 
-PASS / FAIL: **IN PROGRESS — five of seven fields independently confirmed; balance/playback comparison pending**
+PASS / FAIL: **PASS — all seven fields independently reconciled**
 
 Observed EQ Library values:
 
@@ -109,9 +113,9 @@ Observed EQ Library values:
 - Playback/global gain dB: `+2.00 dB`
 - Playback/global gain raw: `512`
 
-Independent comparison now confirms exact semantic agreement for firmware `0.6`, active `Fast-PC`, `HIGH`, `CLASS AB`, and mic gain `0 dB`. Balance and playback/global gain remain pending because those values were not visible in the supplied independent-controller screenshots.
+Independent comparison confirms semantic agreement for firmware `0.6`, active `Fast-PC`, `HIGH`, `CLASS AB`, mic gain `0 dB`, and centered balance (`Center` vs `Centered`). For playback/global gain, the independent controller shows `Volume 63%`; its maintained source maps percent linearly across the same raw range, and raw `512` maps to approximately `62.745%`, reconciling the controller presentation with EQ Library's raw `512` / `+2.00 dB` presentation.
 
-Notes: The supplied Pixel 9 screenshots show **Current session read** and all seven candidate fields populated together. Independent controller screenshots subsequently confirm five of the seven labels/values. This is strong positive physical evidence for USB read/parse/presentation and semantic mapping. It does not yet establish independent agreement for balance/playback, the required three consecutive stable reads, or fresh-read behavior after an external change.
+Notes: The supplied Pixel 9 screenshots show **Current session read** and all seven candidate fields populated together. The independent controller evidence and maintained presentation formula now reconcile all seven fields. This section therefore passes. Repeated-read non-destructiveness, external-change freshness, disconnect/reconnect freshness, and final no-write comparison remain separate required gates.
 
 ## 3. Repeated reads are stable and non-destructive
 
@@ -123,7 +127,7 @@ Notes: The supplied Pixel 9 screenshots show **Current session read** and all se
 
 PASS / FAIL: **IN PROGRESS**
 
-Notes: EQ Library screenshots from separate reads show the same complete values, and the later independent-controller screenshots still show matching firmware/filter/gain-mode/topology/mic state. This is positive non-destructive evidence, but the checklist still requires an explicitly observed sequence of at least three consecutive EQ Library reads with unchanged values before this section is marked PASS.
+Notes: EQ Library screenshots from separate reads show the same complete values, and the later independent-controller screenshots still show matching firmware/filter/gain-mode/topology/mic/balance/playback state. This is positive non-destructive evidence, but the checklist still requires an explicitly observed sequence of at least three consecutive EQ Library reads with unchanged values before this section is marked PASS.
 
 ## 4. Fresh-read proof using one safe external change
 
