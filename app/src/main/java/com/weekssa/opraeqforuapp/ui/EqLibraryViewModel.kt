@@ -116,6 +116,7 @@ data class EqLibraryUiState(
     val blackPearlHardwareEqMatch: HardwareEqMatchResolution? = null,
     val blackPearlManagedHeadphones: List<ManagedHeadphoneRecord> = emptyList(),
     val blackPearlSavedEqs: List<SavedEqRecord> = emptyList(),
+    val blackPearlSavedGeneralEqs: List<SavedGeneralEqRecord> = emptyList(),
     val blackPearlEditorState: MyDacEditorUiState = MyDacEditorUiState(),
     val blackPearlQualificationState: BlackPearlQualificationUiState = BlackPearlQualificationUiState(),
 )
@@ -292,6 +293,7 @@ class EqLibraryViewModel(
             blackPearlHardwareEqMatch = hardware.blackPearlHardwareEqMatch,
             blackPearlManagedHeadphones = blackPearlLibrary.managedHeadphones,
             blackPearlSavedEqs = blackPearlLibrary.savedEqs,
+            blackPearlSavedGeneralEqs = blackPearlLibrary.savedGeneralEqs,
             blackPearlEditorState = hardware.blackPearlEditorState,
             blackPearlQualificationState = hardware.blackPearlQualificationState,
         )
@@ -667,6 +669,28 @@ class EqLibraryViewModel(
         }
     }
 
+    /**
+     * My DAC operates on the physically connected Black Pearl, not the global active-output context.
+     * This intentionally reuses the qualified Flash transaction without changing output preferences.
+     */
+    suspend fun flashBlackPearlFromMyDac(profile: OpraEqProfile): UiText {
+        if (hardwareRepository.blackPearlConnectionState.value !is BlackPearlConnectionState.Connected) {
+            return UiText.Dynamic("Connect TRN Black Pearl before changing its EQ.")
+        }
+        return blackPearlFlashResultMessage(hardwareRepository.flashBlackPearl(profile))
+    }
+
+    /**
+     * My DAC reset is likewise scoped to the current physical session and preserves the qualified
+     * Black Pearl fail-safe reset ordering without requiring or changing the global output selector.
+     */
+    suspend fun resetBlackPearlFromMyDacToFlat(): UiText {
+        if (hardwareRepository.blackPearlConnectionState.value !is BlackPearlConnectionState.Connected) {
+            return UiText.Dynamic("Connect TRN Black Pearl before resetting its EQ.")
+        }
+        return blackPearlResetResultMessage(hardwareRepository.resetBlackPearl())
+    }
+
     fun connectBlackPearl() {
         viewModelScope.launch {
             val preferences = preferencesRepository.snapshot()
@@ -715,22 +739,7 @@ class EqLibraryViewModel(
             return resource(R.string.error_connect_black_pearl_reset)
         }
 
-        return when (val result = hardwareRepository.resetBlackPearl()) {
-            is BlackPearlFlatResetResult.Success -> {
-                if (kotlin.math.abs(result.restoredPlaybackGainDb) < ZERO_GAIN_EPSILON) {
-                    resource(R.string.black_pearl_reset_success)
-                } else {
-                    resource(
-                        R.string.black_pearl_reset_removed_adjustment,
-                        -result.restoredPlaybackGainDb,
-                    )
-                }
-            }
-            is BlackPearlFlatResetResult.NotRepresentable ->
-                resource(R.string.black_pearl_reset_failed, result.reason)
-            is BlackPearlFlatResetResult.DeviceUnavailable -> UiText.Dynamic(result.reason)
-            is BlackPearlFlatResetResult.TransferFailed -> UiText.Dynamic(result.reason)
-        }
+        return blackPearlResetResultMessage(hardwareRepository.resetBlackPearl())
     }
 
     suspend fun resetFiioJa11ToFlat(): UiText {
@@ -1085,19 +1094,38 @@ class EqLibraryViewModel(
         if (hardwareRepository.blackPearlConnectionState.value !is BlackPearlConnectionState.Connected) {
             return resource(R.string.error_connect_black_pearl_flash)
         }
-        return when (val result = hardwareRepository.flashBlackPearl(profile)) {
-            is BlackPearlFlashResult.Success -> result.warning?.let { warning ->
+        return blackPearlFlashResultMessage(hardwareRepository.flashBlackPearl(profile))
+    }
+
+    private fun blackPearlFlashResultMessage(result: BlackPearlFlashResult): UiText = when (result) {
+        is BlackPearlFlashResult.Success -> result.warning?.let { warning ->
+            resource(
+                R.string.black_pearl_flash_success_warning,
+                result.appliedPlaybackGainDb,
+                warning,
+            )
+        } ?: resource(R.string.black_pearl_flash_success, result.appliedPlaybackGainDb)
+        is BlackPearlFlashResult.NotRepresentable ->
+            resource(R.string.black_pearl_not_flashable, result.reason)
+        is BlackPearlFlashResult.DeviceUnavailable -> UiText.Dynamic(result.reason)
+        is BlackPearlFlashResult.TransferFailed -> UiText.Dynamic(result.reason)
+    }
+
+    private fun blackPearlResetResultMessage(result: BlackPearlFlatResetResult): UiText = when (result) {
+        is BlackPearlFlatResetResult.Success -> {
+            if (kotlin.math.abs(result.restoredPlaybackGainDb) < ZERO_GAIN_EPSILON) {
+                resource(R.string.black_pearl_reset_success)
+            } else {
                 resource(
-                    R.string.black_pearl_flash_success_warning,
-                    result.appliedPlaybackGainDb,
-                    warning,
+                    R.string.black_pearl_reset_removed_adjustment,
+                    -result.restoredPlaybackGainDb,
                 )
-            } ?: resource(R.string.black_pearl_flash_success, result.appliedPlaybackGainDb)
-            is BlackPearlFlashResult.NotRepresentable ->
-                resource(R.string.black_pearl_not_flashable, result.reason)
-            is BlackPearlFlashResult.DeviceUnavailable -> UiText.Dynamic(result.reason)
-            is BlackPearlFlashResult.TransferFailed -> UiText.Dynamic(result.reason)
+            }
         }
+        is BlackPearlFlatResetResult.NotRepresentable ->
+            resource(R.string.black_pearl_reset_failed, result.reason)
+        is BlackPearlFlatResetResult.DeviceUnavailable -> UiText.Dynamic(result.reason)
+        is BlackPearlFlatResetResult.TransferFailed -> UiText.Dynamic(result.reason)
     }
 
     private suspend fun flashFiioJa11Profile(
