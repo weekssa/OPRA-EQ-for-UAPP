@@ -7,10 +7,18 @@ import kotlin.math.round
 interface FiioJa11Transport {
     suspend fun readBand(index: Int): FiioJa11Protocol.Band?
     suspend fun readGlobalGainDb(): Double?
+    suspend fun readEqProgram(): FiioJa11Protocol.EqProgram?
     suspend fun sendReport(report: ByteArray): Boolean
 }
 
-/** Direct-Flash transaction for the normal FiiO JA11 run-mode PEQ protocol. */
+/**
+ * Direct-Flash transaction for the normal FiiO JA11 run-mode PEQ protocol.
+ *
+ * The five editable coefficients live in User 1. A complete Flash therefore writes every User 1
+ * band, writes the global EQ gain, explicitly selects User 1, applies, verifies the active program
+ * and coefficients, saves, then verifies again. This prevents a successful write to an inactive
+ * User 1 bank from being misreported as an audible EQ change while Vocal/Classic/Bass/Off is active.
+ */
 class FiioJa11Flasher(
     private val transport: FiioJa11Transport,
 ) {
@@ -20,9 +28,11 @@ class FiioJa11Flasher(
             is FiveBandOptimizationResult.Ready -> optimized.representation
         }
 
-        // Read before any write. Besides proving the run-mode PEQ interface is responsive, this
-        // prevents a wrong interface/firmware combination from becoming a write-only experiment.
-        if (transport.readGlobalGainDb() == null || transport.readBand(0) == null) {
+        if (
+            transport.readEqProgram() == null ||
+            transport.readGlobalGainDb() == null ||
+            transport.readBand(0) == null
+        ) {
             return Kt02h20FlashResult.DeviceUnavailable(
                 "Couldn’t read the FiiO JA11 PEQ state. Reconnect the DAC and try again.",
             )
@@ -39,6 +49,11 @@ class FiioJa11Flasher(
         if (!transport.sendReport(FiioJa11Protocol.writeGlobalGainReport(representation.playbackGainDb))) {
             return Kt02h20FlashResult.TransferFailed(
                 "FiiO JA11 did not accept the required global EQ gain. The preset was not reported as applied.",
+            )
+        }
+        if (!transport.sendReport(FiioJa11Protocol.writeEqProgramReport(FiioJa11Protocol.EqProgram.USER_1))) {
+            return Kt02h20FlashResult.TransferFailed(
+                "FiiO JA11 did not accept selection of the User 1 PEQ program. The preset was not reported as applied.",
             )
         }
         if (!transport.sendReport(FiioJa11Protocol.applyReport())) {
@@ -70,7 +85,11 @@ class FiioJa11Flasher(
     }
 
     suspend fun resetToFlat(): Kt02h20FlatResetResult {
-        if (transport.readGlobalGainDb() == null || transport.readBand(0) == null) {
+        if (
+            transport.readEqProgram() == null ||
+            transport.readGlobalGainDb() == null ||
+            transport.readBand(0) == null
+        ) {
             return Kt02h20FlatResetResult.DeviceUnavailable(
                 "Couldn’t read the FiiO JA11 PEQ state. Reconnect the DAC and try again.",
             )
@@ -86,6 +105,11 @@ class FiioJa11Flasher(
         if (!transport.sendReport(FiioJa11Protocol.writeGlobalGainReport(0.0))) {
             return Kt02h20FlatResetResult.TransferFailed(
                 "FiiO JA11 did not accept the 0 dB global EQ gain for Reset.",
+            )
+        }
+        if (!transport.sendReport(FiioJa11Protocol.writeEqProgramReport(FiioJa11Protocol.EqProgram.USER_1))) {
+            return Kt02h20FlatResetResult.TransferFailed(
+                "FiiO JA11 did not accept selection of the flat User 1 EQ for Reset.",
             )
         }
         if (!transport.sendReport(FiioJa11Protocol.applyReport())) {
@@ -114,6 +138,9 @@ class FiioJa11Flasher(
         expectedBands: List<FiioJa11Protocol.Band>,
         expectedGlobalGainDb: Double,
     ): String? {
+        if (transport.readEqProgram() != FiioJa11Protocol.EqProgram.USER_1) {
+            return "JA11 User 1 was not the active EQ program after Apply."
+        }
         expectedBands.forEachIndexed { index, expected ->
             val actual = transport.readBand(index)
                 ?: return "Couldn’t read back JA11 band ${index + 1}."
