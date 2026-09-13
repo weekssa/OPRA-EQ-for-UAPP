@@ -1,6 +1,6 @@
 # TRN Black Pearl — v0.6 remaining DEVICE controls consolidated qualification
 
-Status: **READY FOR PHYSICAL TEST — EXACT SIGNED CANDIDATE PINNED**
+Status: **PHYSICAL TEST STOPPED — CANDIDATE REQUIRES FIXES / RETEST**
 
 This checklist is the single hands-on qualification round approved by the project owner for the remaining normal Black Pearl DEVICE controls after the already-qualified DAC reconstruction-filter write.
 
@@ -16,7 +16,7 @@ The DAC reconstruction-filter write already passed its own maintained qualificat
 
 ## Exact candidate provenance
 
-The exact behavior candidate below is pinned for this hands-on batch. Later documentation-only commits do not replace it.
+The first consolidated physical candidate was:
 
 - Repository: `weekssa/opra-eq-for-uapp`
 - Branch: `v0.6-my-dac`
@@ -35,10 +35,10 @@ The exact behavior candidate below is pinned for this hands-on batch. Later docu
 - Signing verification: APK Signature Scheme v2/v3; signer `CN=OPRA EQ for UAPP, O=weekssa`; RSA 4096
 - Test device: Pixel 9
 - DAC: TRN Black Pearl
-- Test date: `TBD`
+- Test date: `2026-09-13`
 - Tester: Project owner
 
-Moving mobile-test filenames are not qualification provenance. Use only the immutable exact-candidate APK recorded above.
+Moving mobile-test filenames are not qualification provenance. The candidate above is retained as failed/incomplete physical evidence and must not be reused as the next qualification candidate after behavior changes.
 
 ## Shared transaction contract
 
@@ -50,16 +50,18 @@ The batch candidate must never:
 
 - write while a slider, stepper, text field, or choice sheet is merely being adjusted;
 - replay a cached setting after USB reconnect;
-- silently retry after USB-session replacement;
+- silently retry a write after USB-session replacement;
 - report the staged/requested value as current before readback verification;
 - report success when any unrelated DEVICE field changes unexpectedly;
 - send the Black Pearl generic Save-to-Flash command for these DEVICE changes;
 - claim that these transient DEVICE writes survive a power cycle;
 - make firmware write-interactive.
 
+A bounded same-session **read-only** settling/reverification sequence after one write is permitted when physical evidence shows a control applies asynchronously. Such verification must never resend the write, cross a USB-session replacement, or hide a final mismatch.
+
 ## Safety setup
 
-1. Use only the exact immutable signed candidate recorded above.
+1. Use only the exact immutable signed candidate recorded for the current test round.
 2. Start with playback stopped and ordinary listening/downstream volume conservative.
 3. Do not change EQ bands or use Direct Flash/Reset during this checklist.
 4. Do not change the already-qualified DAC reconstruction filter during this checklist; it should remain `Fast-PC` unless the actual baseline differs, in which case record the actual state and stop before writes.
@@ -68,154 +70,97 @@ The batch candidate must never:
 7. Make only the small reversible changes specified below.
 8. If any step reports an error, mismatch, stale session, disconnect, transfer failure, or unexpected unrelated value change, stop the batch at that point and record the exact screen/result. Do not retry blindly.
 
+## First consolidated candidate physical observation — 2026-09-13
+
+The project owner exercised the `a383777...` candidate and encountered reproducible/visible verification problems before the consolidated batch could be qualified.
+
+Observed/reportable evidence:
+
+- the initial/restored reference state was visible as firmware `0.6`, `Fast-PC`, `HIGH`, `CLASS AB`, microphone `0 dB`, balance `Centered`, and playback raw `512` / `+2.00 dB` / approximately `63%`;
+- EQ Library displayed **“The Black Pearl readback did not match the requested setting. The change was not reported as successful.”** during the session;
+- the owner reported amplifier-topology changes required several refresh/retry attempts before the requested topology took effect reliably enough to continue;
+- a screenshot captured `CLASS H` during the session while the mismatch banner was present, showing that the hardware/app verification timing or transaction semantics need further investigation rather than being treated as a clean first-pass success;
+- playback/global level did not behave reliably with the candidate's `0.5 dB` test increments: the owner reported that a downward `0.5 dB` step was not accepted reliably, and after an upward `0.5 dB` attempt subsequent observed changes behaved in whole-dB increments;
+- a screenshot captured playback at raw `768` / `+3.00 dB` / approximately `64%` while the mismatch banner was present, despite the checklist being designed around a `0.5 dB` step;
+- the owner successfully restored the Black Pearl to the reference/default state at the end of the session: `Fast-PC`, `HIGH`, `CLASS AB`, mic `0 dB`, centered balance, raw `512` / `+2.00 dB` / approximately `63%`.
+
+The attached screenshots also include a microphone-gain review screen, but the owner did not claim a completed microphone-gain qualification result from that image alone. Do not infer a PASS or FAIL for microphone gain solely from screenshot chronology.
+
+**Decision:** stop qualification on this candidate. Do not promote any newly tested control solely from this session. Investigate/fix readback settling and playback-step assumptions, then produce a new exact signed candidate and repeat one consolidated small-change session.
+
 ## 1. Exact-candidate baseline and exposure check
 
-1. Install the exact immutable candidate.
-2. Connect the Black Pearl normally on Pixel 9.
-3. Open **My DAC -> DEVICE** and perform one fresh **Refresh device state**.
-4. Require **Current session read**.
-5. Record the complete baseline. Expected restored reference state from earlier qualification is:
-   - firmware `0.6`;
-   - DAC filter `Fast-PC`;
-   - gain mode `HIGH`;
-   - amp topology `CLASS AB`;
-   - microphone gain `0 dB`;
-   - balance `Centered`;
-   - playback/global level raw `512` = `+2.00 dB`, approximately `63%` in the independent controller.
-6. Confirm DAC filter is still changeable as an already-qualified control.
-7. Confirm the same DEVICE surface now offers reviewed changes for balance, microphone gain, amp topology, gain mode, and playback level.
-8. Confirm firmware is read-only.
+First candidate `a383777...`: **PASS for baseline/exposure observation.**
 
-PASS / FAIL: **TBD**
+Observed restored reference state:
+- firmware `0.6`;
+- DAC filter `Fast-PC`;
+- gain mode `HIGH`;
+- amp topology `CLASS AB`;
+- microphone gain `0 dB`;
+- balance `Centered`;
+- playback/global level raw `512` = `+2.00 dB`, approximately `63%`.
 
-Observed baseline: **TBD**
-
-Notes: **TBD**
+The remaining write controls were exposed through reviewed Change flows as intended, and firmware remained read-only.
 
 ## 2. Balance — one small step and restore
 
-1. Keep playback stopped.
-2. Open **Balance**.
-3. Stage `-1 dB` from Center. Moving the slider/stepper must not claim a device change.
-4. Review must show `Current: Centered` and `New: -1 dB` (left attenuated).
-5. Tap **Apply** once.
-6. Require verified complete readback showing the requested balance and every unrelated field unchanged.
-7. Open Balance again, stage **Center**, Review, and Apply once.
-8. Require verified complete readback showing Center restored and every unrelated field unchanged.
+First candidate result: **PENDING / NOT QUALIFIED FROM THIS SESSION.**
 
-PASS / FAIL: **TBD**
-
-Notes: **TBD**
+No independent PASS is recorded here from the evidence supplied so far.
 
 ## 3. Microphone gain — one small step and restore
 
-1. Keep playback stopped.
-2. Open **Microphone gain**.
-3. Stage `-1 dB` from the expected `0 dB` baseline.
-4. Review Current/New and tap **Apply** once.
-5. Require verified complete readback showing `-1 dB` mic gain and no unrelated changes.
-6. Stage `0 dB`, Review, Apply once, and require verified restoration.
+First candidate result: **PENDING / NOT QUALIFIED FROM THIS SESSION.**
 
-PASS / FAIL: **TBD**
-
-Notes: **TBD**
+A review screen was captured, but no independent completed PASS/FAIL is inferred from the screenshot alone.
 
 ## 4. Amplifier topology — alternate mode and restore
 
-1. Keep playback stopped and downstream/listening volume conservative.
-2. Open **Amp topology**.
-3. If baseline is `CLASS AB`, stage `CLASS H`.
-4. Review the explicit Current/New values and the level-sensitive warning.
-5. Tap **Apply** once.
-6. Require verified complete readback showing `CLASS H` and every unrelated field unchanged.
-7. Stage `CLASS AB`, Review, Apply once, and require verified restoration.
+First candidate result: **FAIL / REQUIRES SOFTWARE INVESTIGATION.**
 
-PASS / FAIL: **TBD**
-
-Notes: **TBD**
+The owner reported the topology change eventually worked only after several refresh/retry attempts. That does not satisfy the one-Apply -> verified-readback qualification contract. A future candidate must verify the requested topology from the single deliberate write without requiring the user to resend it. If the hardware applies this control asynchronously, EQ Library may perform bounded same-session read-only settling/reverification before declaring mismatch.
 
 ## 5. Gain mode — lower mode first and restore
 
-1. Keep playback stopped and downstream/listening volume conservative.
-2. Open **Gain mode**.
-3. From expected `HIGH`, stage `LOW` first. Do not make an upward gain jump as the first test.
-4. Review Current/New and the level-sensitive warning.
-5. Tap **Apply** once.
-6. Require verified complete readback showing `LOW` and every unrelated field unchanged.
-7. With playback still stopped, stage `HIGH`, Review, Apply once, and require verified restoration.
+First candidate result: **PENDING / NOT QUALIFIED FROM THIS SESSION.**
 
-PASS / FAIL: **TBD**
-
-Notes: **TBD**
+Do not infer gain-mode qualification from the playback/global-gain behavior described below.
 
 ## 6. Playback/global level — small decrease first and exact restore
 
-This is deliberately last because it is level-sensitive. The controller percentage is presentation only; qualification is anchored to the exact raw/dB device value.
+First candidate result: **FAIL / CURRENT STEP ASSUMPTION INVALIDATED.**
 
-1. Keep playback stopped and downstream/listening volume conservative.
-2. Open **Playback level**.
-3. From expected raw `512` / `+2.00 dB`, use the small-decrease control to stage `+1.50 dB`, which is exact raw `384`.
-4. Review must show the exact Current/New dB and raw values; the approximate controller percentage may also be shown as presentation.
-5. Tap **Apply** once.
-6. Require verified complete readback showing raw `384` / `+1.50 dB` and every unrelated field unchanged.
-7. Re-open Playback level and stage the exact baseline `+2.00 dB` / raw `512`.
-8. Review, Apply once, and require verified complete readback restoring raw `512` / `+2.00 dB`.
-9. Do not test a larger upward jump.
+The `0.5 dB` qualification assumption did not round-trip reliably on the physical Black Pearl. The owner observed mismatch behavior and a whole-dB state (`+3.00 dB`, raw `768`) during the attempted small-step testing, then restored the reference raw `512` / `+2.00 dB` state.
 
-PASS / FAIL: **TBD**
+Until a finer settled increment is independently proven, the normal My DAC playback control must use the conservative physically observed whole-dB product step rather than advertising `0.5 dB` as a reliable settled setting. This does not rewrite the lower-level global-gain protocol representation used by already-qualified EQ/Flash behavior; it narrows only the normal DEVICE-control UX/qualification contract.
 
-Notes: **TBD**
+The replacement test should therefore use a one-dB **decrease first**, for example `+2.00 dB / raw 512 -> +1.00 dB / raw 256 -> +2.00 dB / raw 512`, with playback stopped and exact readback verification.
 
 ## 7. Independent semantic comparison
 
-After all controls have been restored through EQ Library:
+First candidate result: **NOT REACHED AS A QUALIFICATION STEP.**
 
-1. Release EQ Library's Black Pearl USB session as needed.
-2. Open the trusted independent controller.
-3. Observe only; do not change settings and do not tap Save to Flash.
-4. Confirm the final restored reference state agrees semantically:
-   - `FAST-PC` / Fast-PC;
-   - `High` / HIGH;
-   - `Class-AB` / CLASS AB;
-   - microphone `0 dB`;
-   - balance `Center`;
-   - Volume approximately `63%`, corresponding to raw `512` / `+2.00 dB`.
-
-PASS / FAIL: **TBD**
-
-Notes: **TBD**
+The owner nevertheless restored the device to the reference/default state before ending the interrupted session.
 
 ## 8. Disconnect/reconnect freshness and final read
 
-1. Release the independent controller and reconnect EQ Library if needed.
-2. Physically disconnect/reconnect the Black Pearl once.
-3. Before a new read, retained old-session state must not be presented as current.
-4. Perform one fresh **Refresh device state**.
-5. Require **Current session read** and the restored final baseline.
-6. Confirm no UI wording says these DEVICE changes were saved to flash, made permanent, or power-cycle persistent.
+First candidate result: **NOT REACHED AS A CONSOLIDATED QUALIFICATION STEP.**
 
-PASS / FAIL: **TBD**
-
-Notes: **TBD**
+Previously qualified read-only/DAC-filter reconnect-freshness behavior remains authoritative and is not invalidated by these new control-write bugs.
 
 ## 9. Failure/session-interruption behavior
 
-Deliberate mid-write USB disconnection is **not required** merely to create risk. Automated regression coverage is green for stale generation, session replacement, failed transfer, readback mismatch, invalid/out-of-range/non-native-grid values, inconsistent balance, unrelated-state-change rejection, and busy/current-session projection on the exact candidate above.
+The candidate surfaced real readback-mismatch handling without a deliberate USB interruption. The app correctly did **not** report those mismatches as successful. Deliberate mid-write USB disconnection remains unnecessary.
 
-PASS / FAIL / NOT EXERCISED: **TBD**
-
-Notes: **TBD**
-
-## Per-control qualification decisions
-
-Record each independently after the single hands-on session:
+## Per-control qualification decisions after first consolidated candidate
 
 - Balance write: **PENDING**
 - Microphone gain write: **PENDING**
-- Amp topology write: **PENDING**
+- Amp topology write: **FAIL ON `a383777...`; fix/retest required**
 - Gain mode write: **PENDING**
-- Playback/global level write: **PENDING**
+- Playback/global level write: **FAIL ON `a383777...`; step/readback behavior fix/retest required**
 
-Overall consolidated batch: **PENDING**
+Overall consolidated batch on `a383777...`: **FAIL / STOPPED; DEVICE RESTORED TO REFERENCE STATE**
 
-A control may be promoted to production-qualified only if its own change, complete readback, unrelated-state preservation, and restoration steps pass on the exact signed candidate. A failure in a later control stops further hands-on writes until investigated, but does not silently convert earlier passed controls into failures.
+A new behavior-affecting candidate must pass automated/security/signing gates before the next physical round. The already-qualified DAC reconstruction-filter write remains qualified unless a later code change touches its behavior.
