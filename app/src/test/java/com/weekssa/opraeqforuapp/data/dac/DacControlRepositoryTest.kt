@@ -215,6 +215,61 @@ class DacControlRepositoryTest {
     }
 
     @Test
+    fun microphoneGainWriteVerifiesReadbackAndPreservesOtherControls() = runBlocking {
+        val source = FakeSource(micGainDb = 0, leftBalanceDb = 0, rightBalanceDb = 0, playbackGainRaw = 512)
+        val result = DacControlRepository(source).writeBlackPearlControl(
+            DacWriteIntent(
+                controlId = BlackPearlDeviceControls.MIC_GAIN_DB,
+                requestedValue = DacControlValue.Numeric(-1.0),
+                expectedSessionGeneration = 7L,
+            ),
+        )
+
+        assertTrue(result is BlackPearlDeviceControlWriteResult.Verified)
+        result as BlackPearlDeviceControlWriteResult.Verified
+        assertEquals(-1, result.snapshot.micGainDb)
+        assertEquals(2, result.snapshot.filterCode)
+        assertEquals(1, result.snapshot.gainModeCode)
+        assertEquals(0, result.snapshot.ampTopologyCode)
+        assertEquals(0, result.snapshot.signedBalanceDb)
+        assertEquals(512, result.snapshot.playbackGainRaw)
+    }
+
+    @Test
+    fun amplifierTopologyWriteVerifiesRequestedDiscreteValue() = runBlocking {
+        val source = FakeSource(ampTopologyCode = 0, leftBalanceDb = 0, rightBalanceDb = 0)
+        val result = DacControlRepository(source).writeBlackPearlControl(
+            DacWriteIntent(
+                controlId = BlackPearlDeviceControls.AMP_TOPOLOGY,
+                requestedValue = DacControlValue.Discrete(BlackPearlDeviceControls.AMP_CLASS_AB),
+                expectedSessionGeneration = 7L,
+            ),
+        )
+
+        assertTrue(result is BlackPearlDeviceControlWriteResult.Verified)
+        result as BlackPearlDeviceControlWriteResult.Verified
+        assertEquals(1, result.snapshot.ampTopologyCode)
+        assertEquals(1, source.writeCount)
+    }
+
+    @Test
+    fun gainModeWriteVerifiesRequestedDiscreteValue() = runBlocking {
+        val source = FakeSource(gainModeCode = 1, leftBalanceDb = 0, rightBalanceDb = 0)
+        val result = DacControlRepository(source).writeBlackPearlControl(
+            DacWriteIntent(
+                controlId = BlackPearlDeviceControls.GAIN_MODE,
+                requestedValue = DacControlValue.Discrete(BlackPearlDeviceControls.GAIN_LOW),
+                expectedSessionGeneration = 7L,
+            ),
+        )
+
+        assertTrue(result is BlackPearlDeviceControlWriteResult.Verified)
+        result as BlackPearlDeviceControlWriteResult.Verified
+        assertEquals(0, result.snapshot.gainModeCode)
+        assertEquals(1, source.writeCount)
+    }
+
+    @Test
     fun playbackWriteUsesExactlyRepresentableGainAndVerifiesRawReadback() = runBlocking {
         val source = FakeSource(playbackGainRaw = 512)
         val result = DacControlRepository(source).writeBlackPearlControl(
@@ -228,6 +283,22 @@ class DacControlRepositoryTest {
         assertTrue(result is BlackPearlDeviceControlWriteResult.Verified)
         result as BlackPearlDeviceControlWriteResult.Verified
         assertEquals(256, result.snapshot.playbackGainRaw)
+    }
+
+    @Test
+    fun playbackWriteRejectsNonNativeGridValueBeforeUsbTraffic() = runBlocking {
+        val source = FakeSource(playbackGainRaw = 512)
+        val result = DacControlRepository(source).writeBlackPearlControl(
+            DacWriteIntent(
+                controlId = BlackPearlDeviceControls.PLAYBACK_GAIN_DB,
+                requestedValue = DacControlValue.Numeric(1.001),
+                expectedSessionGeneration = 7L,
+            ),
+        )
+
+        assertTrue(result is BlackPearlDeviceControlWriteResult.InvalidRequest)
+        assertEquals(0, source.readCount)
+        assertEquals(0, source.writeCount)
     }
 
     private class FakeSource(
