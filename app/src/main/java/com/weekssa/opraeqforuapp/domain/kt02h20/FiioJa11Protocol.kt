@@ -50,7 +50,6 @@ object FiioJa11Protocol {
     private const val CMD_GLOBAL_GAIN = 0x17
     private const val CMD_APPLY = 0x18
     private const val CMD_SAVE = 0x19
-    private const val CMD_RESET_PEQ = 0x1B
     private const val CMD_UAC_MODE = 0x20
 
     private const val TYPE_PEAK = 0
@@ -162,12 +161,6 @@ object FiioJa11Protocol {
 
     fun saveToFlashReport(): ByteArray =
         wire(byteArrayOf(SET_1.b(), SET_2.b(), 0, 0, CMD_SAVE.b(), 1, 3, 0, FOOTER.b()))
-
-    /**
-     * Observed run-mode reset command. Existing deterministic EQ Library Reset does not need to use
-     * it; it is encoded here for protocol completeness and future readback-qualified comparison.
-     */
-    fun resetPeqReport(): ByteArray = readOneByteReport(CMD_RESET_PEQ)
 
     fun outputVolumeFromResponse(report: ByteArray): Int? =
         oneByteValueFromResponse(report, CMD_OUTPUT_VOLUME)
