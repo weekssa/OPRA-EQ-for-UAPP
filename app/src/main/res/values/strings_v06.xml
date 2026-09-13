@@ -101,6 +101,19 @@
     <string name="my_dac_save_action">Save Personal EQ</string>
     <string name="my_dac_save_saving">Saving…</string>
 
+    <string name="my_dac_action_change_eq">Change EQ</string>
+    <string name="my_dac_change_eq_title">Change EQ</string>
+    <string name="my_dac_change_eq_empty">No Black Pearl EQs are saved in My EQs yet.</string>
+    <string name="my_dac_change_eq_current_status">Current · %1$s</string>
+    <string name="my_dac_change_eq_not_suitable">Not suitable · %1$s</string>
+    <string name="my_dac_change_eq_flash_title">Flash to TRN Black Pearl?</string>
+    <string name="my_dac_change_eq_flash">Flash</string>
+    <string name="my_dac_change_eq_flash_anyway">Flash anyway</string>
+    <string name="my_dac_action_reset_eq">Reset EQ to flat</string>
+    <string name="my_dac_reset_title">Reset EQ to flat?</string>
+    <string name="my_dac_reset_confirmation">This will overwrite all 10 EQ bands in the Black Pearl’s current EQ slot with flat settings and remove any playback-gain adjustment previously applied by EQ Library. This may change listening volume. Other DAC settings will not be changed.</string>
+    <string name="my_dac_reset_confirm">Reset to flat</string>
+
     <string name="my_dac_action_edit_eq">Edit EQ</string>
     <string name="my_dac_editor_opening">Reading fresh hardware EQ…</string>
     <string name="my_dac_editor_requires_connection">Connect the Black Pearl before editing its EQ.</string>
