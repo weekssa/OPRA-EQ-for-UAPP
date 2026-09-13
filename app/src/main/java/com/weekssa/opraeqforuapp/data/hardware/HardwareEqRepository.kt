@@ -33,11 +33,9 @@ import kotlinx.coroutines.sync.withLock
 /**
  * Repository boundary for deterministic hardware-EQ transactions and verified native EQ reads.
  *
- * Physical USB-session lifecycle and read-only supported-device recognition belong to
- * [DacSessionRepository]. This repository serializes each device's multi-step EQ reads/writes so a
- * snapshot cannot interleave with a Flash/Reset/Editor Apply transaction. Black Pearl publishes the
- * most recently verified native snapshot with explicit current/stale state; the other two devices
- * keep their existing v0.5 behavior until their My DAC exposure is qualified.
+ * Physical USB-session lifecycle, recognition, and the Black Pearl/FiiO operation serialization
+ * boundaries belong to [DacSessionRepository]. Sharing those gates with DEVICE repositories prevents
+ * an EQ read/Flash/Reset from interleaving with a DEVICE transaction on the same physical DAC.
  */
 class HardwareEqRepository(
     private val dacSessionRepository: DacSessionRepository,
@@ -54,8 +52,7 @@ class HardwareEqRepository(
         dacSessionRepository.jcallyJm12ConnectionState
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val blackPearlOperationMutex = Mutex()
-    private val fiioJa11OperationMutex = Mutex()
+    // Legacy internal JCALLY path only. Current product devices serialize at DacSessionRepository.
     private val jcallyJm12OperationMutex = Mutex()
     private val mutableBlackPearlSnapshotState = MutableStateFlow(HardwareEqSnapshotState())
     val blackPearlSnapshotState: StateFlow<HardwareEqSnapshotState> =
@@ -74,9 +71,7 @@ class HardwareEqRepository(
     }
 
     fun connectBlackPearl() = dacSessionRepository.connectBlackPearl()
-
     fun connectFiioJa11() = dacSessionRepository.connectFiioJa11()
-
     fun connectJcallyJm12() = dacSessionRepository.connectJcallyJm12()
 
     fun isBlackPearlSessionCurrent(sessionGeneration: Long): Boolean =
@@ -88,18 +83,15 @@ class HardwareEqRepository(
     fun isJcallyJm12SessionCurrent(sessionGeneration: Long): Boolean =
         dacSessionRepository.isJcallyJm12SessionCurrent(sessionGeneration)
 
-    /**
-     * Local persisted state used by the already-qualified Black Pearl Flash/Reset path. Reading it
-     * performs no USB operation and keeps My DAC editor baseline semantics identical to Flash/Reset.
-     */
     fun readBlackPearlTrackedGainDeltaDb(): Double =
         blackPearlFlasher.readTrackedAppliedPlaybackGainDb()
 
     suspend fun readBlackPearlSnapshot(): HardwareEqSnapshotBundle? = refreshBlackPearlSnapshot()
 
-    suspend fun readFiioJa11Snapshot(): HardwareEqSnapshotBundle? = fiioJa11OperationMutex.withLock {
-        dacSessionRepository.readFiioJa11Snapshot()
-    }
+    suspend fun readFiioJa11Snapshot(): HardwareEqSnapshotBundle? =
+        dacSessionRepository.withExclusiveFiioJa11Operation {
+            dacSessionRepository.readFiioJa11Snapshot()
+        }
 
     suspend fun readJcallyJm12Snapshot(): HardwareEqSnapshotBundle? = jcallyJm12OperationMutex.withLock {
         dacSessionRepository.readJcallyJm12Snapshot()
@@ -115,7 +107,7 @@ class HardwareEqRepository(
 
         mutableBlackPearlSnapshotState.update { it.markStale() }
         return try {
-            blackPearlOperationMutex.withLock {
+            dacSessionRepository.withExclusiveBlackPearlOperation {
                 blackPearlFlasher.applyEditorWorkingCopy(
                     workingCopy = workingCopy,
                     allowCautions = allowCautions,
@@ -123,9 +115,7 @@ class HardwareEqRepository(
                 )
             }
         } finally {
-            // Always re-establish hardware truth after any attempted transaction, including partial
-            // transfer or verification failure. This method reacquires the same mutex only after the
-            // apply lock above has been released.
+            // Reacquire only after the write transaction has released the shared physical-session gate.
             refreshBlackPearlSnapshot()
         }
     }
@@ -133,7 +123,9 @@ class HardwareEqRepository(
     suspend fun flashBlackPearl(profile: OpraEqProfile): BlackPearlFlashResult {
         mutableBlackPearlSnapshotState.update { it.markStale() }
         return try {
-            blackPearlOperationMutex.withLock { blackPearlFlasher.flash(profile) }
+            dacSessionRepository.withExclusiveBlackPearlOperation {
+                blackPearlFlasher.flash(profile)
+            }
         } finally {
             scheduleBlackPearlSnapshotRefresh()
         }
@@ -142,19 +134,23 @@ class HardwareEqRepository(
     suspend fun resetBlackPearl(): BlackPearlFlatResetResult {
         mutableBlackPearlSnapshotState.update { it.markStale() }
         return try {
-            blackPearlOperationMutex.withLock { blackPearlFlasher.resetToFlat() }
+            dacSessionRepository.withExclusiveBlackPearlOperation {
+                blackPearlFlasher.resetToFlat()
+            }
         } finally {
             scheduleBlackPearlSnapshotRefresh()
         }
     }
 
-    suspend fun flashFiioJa11(profile: OpraEqProfile): Kt02h20FlashResult = fiioJa11OperationMutex.withLock {
-        fiioJa11Flasher.flash(profile)
-    }
+    suspend fun flashFiioJa11(profile: OpraEqProfile): Kt02h20FlashResult =
+        dacSessionRepository.withExclusiveFiioJa11Operation {
+            fiioJa11Flasher.flash(profile)
+        }
 
-    suspend fun resetFiioJa11(): Kt02h20FlatResetResult = fiioJa11OperationMutex.withLock {
-        fiioJa11Flasher.resetToFlat()
-    }
+    suspend fun resetFiioJa11(): Kt02h20FlatResetResult =
+        dacSessionRepository.withExclusiveFiioJa11Operation {
+            fiioJa11Flasher.resetToFlat()
+        }
 
     suspend fun flashJcallyJm12(profile: OpraEqProfile): Kt02h20FlashResult = jcallyJm12OperationMutex.withLock {
         jcallyJm12Flasher.flash(profile)
@@ -165,10 +161,10 @@ class HardwareEqRepository(
     }
 
     private suspend fun refreshBlackPearlSnapshot(): HardwareEqSnapshotBundle? =
-        blackPearlOperationMutex.withLock {
+        dacSessionRepository.withExclusiveBlackPearlOperation {
             if (blackPearlConnectionState.value !is BlackPearlConnectionState.Connected) {
                 mutableBlackPearlSnapshotState.update { it.markStale() }
-                return@withLock null
+                return@withExclusiveBlackPearlOperation null
             }
 
             mutableBlackPearlSnapshotState.update { it.beginRead() }
