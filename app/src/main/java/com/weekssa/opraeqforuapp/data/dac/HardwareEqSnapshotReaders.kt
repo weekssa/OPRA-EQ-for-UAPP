@@ -5,7 +5,6 @@ import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlReadCodec
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotBundle
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotFactory
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
-import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Transport
 import com.weekssa.opraeqforuapp.domain.kt02h20.JcallyJm12Protocol
 import com.weekssa.opraeqforuapp.domain.kt02h20.JcallyJm12Transport
 
@@ -36,23 +35,46 @@ class BlackPearlSnapshotReader(
     }
 }
 
+/**
+ * Read surface for the JA11 EQ tab.
+ *
+ * Active EQ program is read explicitly so stored User 1 coefficients are never misrepresented as
+ * the current acoustic EQ while the device is Off or running a built-in Vocal/Classic/Bass program.
+ */
+interface FiioJa11SnapshotSource {
+    suspend fun readEqProgram(): FiioJa11Protocol.EqProgram?
+    suspend fun readBand(index: Int): FiioJa11Protocol.Band?
+    suspend fun readGlobalGainDb(): Double?
+}
+
 class FiioJa11SnapshotReader(
-    private val transport: FiioJa11Transport,
+    private val source: FiioJa11SnapshotSource,
     private val nowEpochMillis: () -> Long = System::currentTimeMillis,
 ) {
     suspend fun read(sessionGeneration: Long): HardwareEqSnapshotBundle? {
         if (sessionGeneration <= 0) return null
+        val program = source.readEqProgram() ?: return null
+
+        // Built-in programs are real current hardware state, but their native coefficient set is not
+        // established by the current protocol evidence. Returning no PEQ bundle is safer than drawing
+        // the stored User 1 bank as though it were Vocal/Classic/Bass. DEVICE state still reports the
+        // exact active program separately.
+        if (program != FiioJa11Protocol.EqProgram.USER_1 && program != FiioJa11Protocol.EqProgram.OFF) {
+            return null
+        }
+
         val bands = buildList {
             repeat(FiioJa11Protocol.BAND_COUNT) { index ->
-                add(transport.readBand(index) ?: return null)
+                add(source.readBand(index) ?: return null)
             }
         }
-        val globalEqGainDb = transport.readGlobalGainDb() ?: return null
+        val globalEqGainDb = source.readGlobalGainDb() ?: return null
         return HardwareEqSnapshotFactory.fiioJa11(
             nativeBands = bands,
             globalEqGainDb = globalEqGainDb,
             sessionGeneration = sessionGeneration,
             verifiedAtEpochMillis = nowEpochMillis(),
+            eqEnabled = program == FiioJa11Protocol.EqProgram.USER_1,
         )
     }
 }
