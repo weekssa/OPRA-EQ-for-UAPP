@@ -1,127 +1,200 @@
-# FiiO JA11 Direct Flash protocol notes
+# FiiO / JadeAudio JA11 protocol notes
 
-Status: **software implementation complete enough for CI; physical hardware validation pending**
+Status: **expanded v0.6 software implementation in progress; physical hardware validation pending**
 
-These notes document only the observable run-mode behavior needed for EQ Library's approved Direct Flash feature. They are not firmware-update documentation and must not be expanded into a bootloader/firmware flasher without a separately approved product scope.
+These notes document observable normal run-mode behavior used by EQ Library. They are not firmware-update documentation and must not be expanded into bootloader, firmware-flash, cross-flash, USB-identity mutation, or raw-command functionality without a separately approved product scope.
 
-## Product boundary
+## Current v0.6 product direction
 
-EQ Library supports the **FiiO JA11 on normal FiiO firmware** as its own hardware output. The feature may:
+The project owner approved building the JA11 integration as completely as safely possible before the physical unit arrives. Software implementation and automated validation therefore proceed now; hands-on testing and device-specific tweaks are deferred until the software-side build is substantially complete.
 
-- identify the exact approved USB device;
-- read and write the five-band PEQ;
-- represent source preamp / EQ Library safety headroom through the JA11 global EQ-gain control when it fits the validated capability profile;
-- apply, read back, and persist the PEQ through the observed run-mode save command;
-- reset the five PEQ bands and global EQ gain to flat / 0 dB.
+The intended user experience is plug-and-recognize: a supported JA11 does not require the user to preselect FiiO in Settings before My DAC can recognize it. Automatic output selection is the recommended default, with an explicit manual-output override available in Settings.
 
-It must not enter bootloader mode, update firmware, cross-flash another device, change reconstruction filters, or manage unrelated DAC controls.
+Physical qualification is still mandatory before any JA11 write is described as hardware-qualified or production-proven.
 
-## File interchange status
+## Clean-room / evidence boundary
 
-The v0.5 investigation did **not** establish a sufficiently verified external JA11 preset-file interchange format that EQ Library can safely generate and claim as importable. JA11 therefore remains a hardware-only Direct Flash output in v0.5.
+The Kotlin implementation in this repository is independently written from observable protocol facts. Public reference projects may corroborate command values, packet shapes, device identities, and externally observable behavior; incompatible implementation code, structure, comments, or UI are not copied.
 
-This is not a limitation on Direct Flash. The existing USB Flash path remains intact. If a real repeatable JA11 file format is independently verified later, file export may be added **alongside** Direct Flash; do not replace Direct Flash and do not invent a `.txt`, JSON, binary, or other file in the meantime.
+The expanded v0.6 protocol facts were cross-checked against maintained public JA11 research, including `Cyfine/ja11-web-control` at commit `4d4eb83df6fcdf9e20b52e1bdf59a77f463b2c30`, which in turn documents independent comparison with FiiO Control behavior and live JA11 firmware 2.20 observations.
 
-## Clean-room / licensing boundary
+## USB identity and UAC re-enumeration
 
-The Kotlin implementation in this repository is independently written. Public reference projects with copyleft licenses may be consulted only to corroborate observable protocol facts. Their implementation code, structure, comments, UI, and algorithms are not copied into this Apache-2.0 project.
+Vendor ID:
 
-The relevant protocol facts were also checked against FiiO's public product/support behavior: JA11 exposes five-band PEQ control from Android and saves EQ state on the dongle. Hardware behavior still requires our own Pixel 9 + JA11 qualification before the app claims validated support.
+- `0x2972`
 
-## USB identity
+The same JA11 model uses two observed product IDs depending on USB Audio Class mode:
 
-Current exact identity used by EQ Library:
+- UAC 1.0: `0x0101`
+- UAC 2.0: `0x0102`
 
-- Vendor ID: `0x2972`
-- Product ID: `0x0102`
-- HID report ID: `0x02`
-- PEQ bands: `5`
+Both identities use the same JA11 vendor-HID protocol surface and must resolve to the single EQ Library device identity `FIIO_JA11`. The app must not make the JA11 appear unsupported merely because UAC mode changed.
 
-The Android transport matches the exact VID/PID and then dynamically locates a HID interface that has interrupt IN and OUT endpoints. It does not accept arbitrary KT02H20-family devices.
+HID report ID:
+
+- `0x02`
+
+Android dynamically locates the HID interface containing interrupt IN + OUT endpoints. It does not assume an interface index and does not accept arbitrary related-chipset devices.
 
 ## Run-mode packet envelope
 
-The report ID is sent as the first HID-report byte. The protocol packet follows it.
+WebHID-style references omit report ID `0x02` from the payload; Android USB sends it as the first report byte.
 
-Set packet:
-
-```text
-AA 0A 00 00 <command> <length> <payload...> EE
-```
-
-Read/response packet:
+Simple one-byte read:
 
 ```text
-BB 0B 00 00 <command> <length/subcommand> <payload...> EE
+BB 0B 00 00 <command> 00 00 EE
 ```
 
-WebHID-style implementations may expose the packet without the report-ID prefix while lower-level HID APIs may include it. The decoder accepts either response form and still validates the protocol header and command.
-
-## Commands used by EQ Library
-
-| Purpose | Command | EQ Library use |
-| --- | ---: | --- |
-| Filter parameters | `0x15` | Read/write PEQ band 0..4 |
-| Global EQ gain | `0x17` | Read/write source preamp/headroom representation |
-| Apply | `0x18` | Apply staged/current PEQ state |
-| Save | `0x19` | Persist the applied PEQ state |
-
-No other JA11 commands belong to the v0.5 Direct Flash surface.
-
-## Filter payload
-
-Observed filter write payload after command/length:
+Simple one-byte write:
 
 ```text
-<band index>
-<gain signed x10, big-endian 16-bit>
-<frequency Hz, big-endian unsigned 16-bit>
-<Q x100, big-endian unsigned 16-bit>
-<filter type>
-00
+AA 0A 00 00 <command> 01 <value> 00 EE
 ```
 
-Filter type mapping used by the JA11 run-mode protocol:
+PEQ read/write retains the established v0.5 codec. Response parsing accepts the protocol payload with or without a leading report-ID byte and validates the expected command.
 
-- `0` = Peak
-- `1` = Low Shelf
-- `2` = High Shelf
+## Software-established normal controls
 
-Current provisional capability profile pending hardware qualification:
+| Purpose | Command | Value / semantics | v0.6 software status | Physical status |
+| --- | ---: | --- | --- | --- |
+| Device output volume | `0x02` | integer `0..60` | implemented | pending |
+| Current stream/sample rate | `0x09` | enum, read-only | implemented | pending |
+| Firmware version | `0x0B` | major/minor bytes, read-only | implemented | pending |
+| Headset mic / inline remote control | `0x12` | `0/1` | implemented; may restart USB | pending |
+| PEQ band | `0x15` | five structured bands | existing implementation | pending |
+| Active EQ program | `0x16` | `0..4` | implemented | pending |
+| PEQ master/global EQ gain | `0x17` | signed fixed point | existing implementation | pending |
+| Apply PEQ | `0x18` | existing run-mode apply | existing implementation | pending |
+| Save User 1 PEQ | `0x19` | observed save payload | existing implementation | pending |
+| UAC mode | `0x20` | `0/1` | implemented; re-enumerates | pending |
 
-- frequency: 20 Hz .. 20 kHz
-- per-band gain: -24 dB .. +12 dB
-- Q: 0.1 .. 10.0
-- global EQ gain: -12 dB .. +12 dB
+### Active EQ program
 
-Source values are never silently clamped. If a full source EQ cannot be represented directly, the shared deterministic five-band response fitter may produce an Optimized representation only when its error thresholds pass. If the source fits the five-band structure but needs only native target rounding, keep that structure and report native rounding separately rather than unnecessarily fitting a different curve. Missing source preamp uses derived target headroom and is Optimized. The canonical source profile remains unchanged.
+- `0` = Vocal
+- `1` = Classic
+- `2` = Bass
+- `3` = User 1
+- `4` = Off
 
-## Global EQ gain encoding
+This value is important to hardware truth. Reading stored User 1 PEQ bands does **not** prove that User 1 is currently active. My DAC must read the active EQ program before presenting User 1 bands as the current acoustic EQ.
 
-Global gain is a signed 16-bit value in `1/2560 dB` units, little-endian on the wire. EQ Library keeps this separate from the acoustic five-band fit.
+If `Off` is active, current EQ response is flat even though stored User 1 parameters may remain on-device. If Vocal/Classic/Bass is active and the device does not provide the actual underlying coefficients, EQ Library must identify the built-in program without inventing a response curve or attributing the stored User 1 bands as current.
 
-## Flash transaction
+### UAC mode
 
-The v0.5 implementation uses this fail-closed order:
+- `0` = UAC 1.0 → PID `0x0101`
+- `1` = UAC 2.0 → PID `0x0102`
 
-1. Build and validate the complete five-band representation before touching USB.
-2. Read current global EQ gain.
-3. Read at least one PEQ band as a preflight communication check.
-4. Write all five PEQ slots, explicitly padding unused slots with flat Peak filters so stale previous bands cannot remain active.
-5. Write the required global EQ gain.
-6. Send Apply.
-7. Read back all five bands and global gain; stop on any mismatch.
-8. Send Save.
-9. Read back all five bands and global gain again; stop on any mismatch.
+A UAC change is session-disruptive by design. A write cannot be reported as verified merely because the outgoing packet succeeded. EQ Library must wait for a replacement USB session, read the new mode and actual PID, and verify that they agree before presenting success.
 
-A failed preflight produces no writes. A failed Apply or verification must never be reported as success. Save is not attempted until the first readback passes.
+### Headset mic / inline remote control
 
-The user-facing **Direct Flash** action therefore includes the observed Apply + Save sequence. The app may describe persistence as saved to the JA11 only after the required physical qualification passes; software command presence alone does not waive the hands-on gate.
+- `0` = disabled
+- `1` = enabled
 
-## Reset to flat
+Public live testing observed a USB restart/re-enumeration when this control changed. EQ Library therefore treats it like a session-disruptive write: outgoing transfer is only an intermediate state; a fresh replacement-session read is required before success.
 
-Reset writes all five slots as 0 dB Peak filters, sets global EQ gain to 0 dB, sends Apply, verifies the result, sends Save, and verifies again. Other DAC settings are outside the transaction.
+### Device output volume
 
-## Hardware qualification gate
+Observed value domain is integer `0..60`. This is an independent JA11 device-output level and is not the same concept as command `0x17` PEQ master gain.
 
-See `FIIO_JA11_HANDS_ON_CHECKLIST.md`. Until that checklist records PASS on the signed/identified candidate APK and physical JA11, Settings and release notes must continue to say **Hardware validation pending**.
+It is level-sensitive. EQ Library must:
+
+- start from a fresh actual hardware value;
+- never push cached volume on reconnect;
+- preview the requested value locally;
+- write only after explicit user action;
+- read back in the same current session;
+- never retry on a replacement session;
+- never report success before exact readback.
+
+The app should display the native `0..60` level unless and until a separate, verified acoustic/dB mapping exists. It must not invent a percentage or dB conversion.
+
+### Current stream/sample-rate labels
+
+Observed values:
+
+| Value | Label |
+| ---: | --- |
+| 0 | 32 kHz |
+| 1 | 44.1 kHz |
+| 2 | 48 kHz |
+| 3 | 88.2 kHz |
+| 4 | 96 kHz |
+| 5 | 176.4 kHz |
+| 6 | 192 kHz |
+| 7 | 352.8 kHz |
+| 8 | 384 kHz |
+| 9 | 705.6 kHz |
+| 10 | 768 kHz |
+| 11 | DSD64 |
+| 12 | DSD128 |
+| 13 | DSD256 |
+| 14 | DSD512 |
+
+This is informational state and may change independently while audio starts/stops or sample rate changes. It must not be treated as an unrelated-setting mutation during another targeted write.
+
+## PEQ path
+
+The established JA11 PEQ contract remains:
+
+- five bands;
+- Peak / Low Shelf / High Shelf;
+- frequency `20 Hz..20 kHz`;
+- per-band gain `-24 dB..+12 dB`;
+- Q `0.1..10.0`;
+- global PEQ gain `-12 dB..+12 dB`;
+- complete target built before writes;
+- all five slots written, with validated flat padding for unused slots;
+- global gain written;
+- Apply;
+- full readback verification;
+- Save User 1;
+- final readback verification.
+
+Source values are never silently clamped. Complete-response adaptation uses the shared deterministic finite-hardware response machinery and leaves canonical source data unchanged.
+
+## Device-control transaction model
+
+Non-disruptive writes use:
+
+`fresh complete device read → local choice → review → one targeted write → complete readback → exact value verification → unrelated-state verification`
+
+Session-disruptive writes such as UAC/headset control use:
+
+`fresh complete device read → local choice → review → one targeted write → restart/re-enumeration expected → replacement session → complete read → exact requested value verification → stable unrelated-state verification`
+
+An outgoing packet is never sufficient for success. Permission loss, detach, stale session generation, read failure, mismatch, or unexpected unrelated mutation must fail visibly.
+
+No cached state is automatically restored after reconnect.
+
+## SPDIF / digital output
+
+**No JA11 SPDIF control is established by the current evidence.** EQ Library must not invent a JA11 SPDIF row, DoP/D2P selector, or digital-output mode.
+
+The generic FiiO capability architecture should support a future `Digital Output / SPDIF` module for exact FiiO models that actually expose verified SPDIF behavior. UAC mode and SPDIF mode are distinct concepts and must never be conflated.
+
+## File interchange
+
+No sufficiently verified external JA11 preset-file interchange format has been established. JA11 remains hardware-managed rather than inventing a `.txt`, JSON, or binary import format. A future verified interchange format may be additive and must not replace Direct Flash.
+
+## Explicitly prohibited / not inferred
+
+- firmware flashing or update mode;
+- bootloader operations;
+- cross-flashing;
+- USB VID/PID/string mutation;
+- raw register/command console;
+- arbitrary chipset-relative commands;
+- invented DAC reconstruction-filter control;
+- invented SPDIF control;
+- invented output-volume dB/percent mapping;
+- unverified persistence claims outside the established User 1 PEQ Save behavior.
+
+## Physical qualification gate
+
+`docs/FIIO_JA11_HANDS_ON_CHECKLIST.md` remains the physical authority. Physical testing is intentionally deferred until the software-side build and automated regression sweep are complete enough to produce one consolidated candidate. At that point, pin the exact source SHA and signed APK and test one small safe step at a time.
+
+Until physical PASS, JA11 must remain clearly labeled **Hardware validation pending** even when the software path is complete.
