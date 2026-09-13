@@ -39,7 +39,7 @@ class BlackPearlQualificationUiStateTest {
     }
 
     @Test
-    fun currentSessionProjectionPreservesActiveWriteUntilRepositoryCompletes() {
+    fun currentSessionProjectionPreservesActiveWriteAndDoesNotPresentBaselineAsCurrent() {
         val writing = BlackPearlQualificationUiState()
             .success(snapshot(filterCode = 2))
             .beginWrite(BlackPearlDeviceControls.DAC_FILTER)
@@ -49,7 +49,7 @@ class BlackPearlQualificationUiStateTest {
         assertThat(projected.isBusy).isTrue()
         assertThat(projected.isWriting).isTrue()
         assertThat(projected.activeWriteControlId).isEqualTo(BlackPearlDeviceControls.DAC_FILTER)
-        assertThat(projected.isCurrentSession).isTrue()
+        assertThat(projected.isCurrentSession).isFalse()
     }
 
     @Test
@@ -66,15 +66,16 @@ class BlackPearlQualificationUiStateTest {
     }
 
     @Test
-    fun staleSessionProjectionCancelsBusyPresentationAndMarksRetainedSnapshotStale() {
+    fun staleSessionProjectionKeepsActiveTransactionBusyUntilRepositoryCompletes() {
         val writing = BlackPearlQualificationUiState()
             .success(snapshot(filterCode = 2))
             .beginWrite(BlackPearlDeviceControls.DAC_FILTER)
 
         val projected = writing.withSessionCurrent(current = false)
 
-        assertThat(projected.isBusy).isFalse()
-        assertThat(projected.activeWriteControlId).isNull()
+        assertThat(projected.isBusy).isTrue()
+        assertThat(projected.isWriting).isTrue()
+        assertThat(projected.activeWriteControlId).isEqualTo(BlackPearlDeviceControls.DAC_FILTER)
         assertThat(projected.isCurrentSession).isFalse()
         assertThat(projected.snapshot).isNotNull()
     }
