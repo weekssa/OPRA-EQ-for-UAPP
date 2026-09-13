@@ -12,6 +12,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -33,12 +34,15 @@ import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceQualification
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlVolumeScale
 import com.weekssa.opraeqforuapp.domain.dac.DacCapabilityCatalog
 import com.weekssa.opraeqforuapp.domain.dac.DacControlDescriptor
+import com.weekssa.opraeqforuapp.domain.dac.DacControlId
+import com.weekssa.opraeqforuapp.domain.dac.DacControlValue
 import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
 import com.weekssa.opraeqforuapp.domain.dac.DacMetadataOrigin
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
 import com.weekssa.opraeqforuapp.ui.BlackPearlQualificationUiState
 import com.weekssa.opraeqforuapp.ui.FiioJa11DeviceUiState
 import java.util.Locale
+import kotlin.math.roundToInt
 
 @Composable
 internal fun CapabilityDrivenDeviceStatus(
@@ -46,7 +50,7 @@ internal fun CapabilityDrivenDeviceStatus(
     blackPearlQualificationState: BlackPearlQualificationUiState,
     blackPearlQualificationEnabled: Boolean,
     onReadBlackPearlQualification: () -> Unit,
-    onSetBlackPearlDacFilter: (String) -> Unit = {},
+    onSetBlackPearlDeviceControl: (DacControlId, DacControlValue) -> Unit = { _, _ -> },
     fiioJa11DeviceState: FiioJa11DeviceUiState = FiioJa11DeviceUiState(),
     fiioJa11Connected: Boolean = false,
     onReadFiioJa11DeviceControls: () -> Unit = {},
@@ -60,7 +64,7 @@ internal fun CapabilityDrivenDeviceStatus(
             state = blackPearlQualificationState,
             enabled = blackPearlQualificationEnabled,
             onRead = onReadBlackPearlQualification,
-            onSetDacFilter = onSetBlackPearlDacFilter,
+            onSetDeviceControl = onSetBlackPearlDeviceControl,
         )
         DacDeviceId.FIIO_JA11 -> FiioJa11DeviceStatus(
             state = fiioJa11DeviceState,
@@ -83,7 +87,7 @@ private fun BlackPearlDeviceStatus(
     state: BlackPearlQualificationUiState,
     enabled: Boolean,
     onRead: () -> Unit,
-    onSetDacFilter: (String) -> Unit,
+    onSetDeviceControl: (DacControlId, DacControlValue) -> Unit,
 ) {
     val identity = DacCapabilityCatalog.forDevice(DacDeviceId.TRN_BLACK_PEARL).identity
     state.snapshot?.let { snapshot ->
@@ -138,7 +142,7 @@ private fun BlackPearlDeviceStatus(
         state = state,
         enabled = enabled,
         onRead = onRead,
-        onSetDacFilter = onSetDacFilter,
+        onSetDeviceControl = onSetDeviceControl,
     )
 }
 
@@ -397,18 +401,26 @@ private fun BlackPearlDeviceControlPanel(
     state: BlackPearlQualificationUiState,
     enabled: Boolean,
     onRead: () -> Unit,
-    onSetDacFilter: (String) -> Unit,
+    onSetDeviceControl: (DacControlId, DacControlValue) -> Unit,
 ) {
     var choosingFilter by rememberSaveable { mutableStateOf(false) }
     var pendingFilterValueId by rememberSaveable { mutableStateOf<String?>(null) }
+    var choosingBalance by rememberSaveable { mutableStateOf(false) }
+    var stagedBalanceDb by rememberSaveable { mutableStateOf(0f) }
+    var pendingBalanceDb by rememberSaveable { mutableStateOf<Int?>(null) }
+
     val filterDescriptor = BlackPearlDeviceControls.descriptor(BlackPearlDeviceControls.DAC_FILTER)
         as? DacControlDescriptor.Discrete
     val filterOptions = filterDescriptor?.options.orEmpty()
-    val filterCandidateEnabled = BlackPearlDeviceQualificationPolicy.isCandidateWriteEnabled(
-        BlackPearlDeviceControls.DAC_FILTER,
+    val sessionControlsEnabled = enabled && state.isCurrentSession && !state.isBusy
+    val filterControlsEnabled = sessionControlsEnabled &&
+        BlackPearlDeviceQualificationPolicy.isWriteInteractive(BlackPearlDeviceControls.DAC_FILTER)
+    val balancePolicyEnabled = BlackPearlDeviceQualificationPolicy.isWriteInteractive(
+        BlackPearlDeviceControls.BALANCE_DB,
     )
-    val controlsEnabled = enabled && state.isCurrentSession && !state.isBusy && filterCandidateEnabled
     val snapshot = state.snapshot
+    val currentBalanceDb = snapshot?.signedBalanceDb
+    val balanceControlsEnabled = sessionControlsEnabled && balancePolicyEnabled && currentBalanceDb != null
 
     HorizontalDivider(modifier = Modifier.padding(top = 12.dp))
     Text(
@@ -417,7 +429,7 @@ private fun BlackPearlDeviceControlPanel(
         modifier = Modifier.padding(top = 8.dp),
     )
     Text(
-        text = "EQ Library verifies Black Pearl device state directly before and after every candidate change. A DEVICE change is never reported as successful from the requested value alone.",
+        text = "EQ Library verifies Black Pearl device state directly before and after every change. A DEVICE change is never reported as successful from the requested value alone.",
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -438,22 +450,35 @@ private fun BlackPearlDeviceControlPanel(
         )
     }
 
-    if (state.isWriting && state.activeWriteControlId == BlackPearlDeviceControls.DAC_FILTER) {
-        Text(
-            text = "Applying DAC filter and verifying complete device readback…",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+    when (state.activeWriteControlId) {
+        BlackPearlDeviceControls.DAC_FILTER -> if (state.isWriting) {
+            Text(
+                text = "Applying DAC filter and verifying complete device readback…",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        BlackPearlDeviceControls.BALANCE_DB -> if (state.isWriting) {
+            Text(
+                text = "Applying balance and verifying complete device readback…",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
-    if (
-        state.lastVerifiedWriteControlId == BlackPearlDeviceControls.DAC_FILTER &&
-        state.isCurrentSession
-    ) {
-        Text(
-            text = "DAC filter change verified by readback.",
-            style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.SemiBold,
-        )
+    if (state.isCurrentSession) {
+        when (state.lastVerifiedWriteControlId) {
+            BlackPearlDeviceControls.DAC_FILTER -> Text(
+                text = "DAC filter change verified by readback.",
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.SemiBold,
+            )
+            BlackPearlDeviceControls.BALANCE_DB -> Text(
+                text = "Balance change verified by readback.",
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
     }
 
     snapshot?.let { currentSnapshot ->
@@ -467,18 +492,47 @@ private fun BlackPearlDeviceControlPanel(
         QualificationValue(label = "DAC filter", value = filterLabel(currentSnapshot.filterCode))
         TextButton(
             onClick = { choosingFilter = true },
-            enabled = controlsEnabled,
+            enabled = filterControlsEnabled,
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text("Change DAC filter")
         }
         Text(
-            text = "DAC filter is the first Black Pearl DEVICE write qualification candidate. Balance, microphone gain, amp topology, gain mode, and playback level remain read-only until their own hardware qualification gates pass.",
+            text = "DAC filter is hardware-qualified. It remains available while later Black Pearl controls graduate through their own qualification gates.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        DeviceSectionTitle("Output")
+        QualificationValue(
+            label = "Balance",
+            value = currentSnapshot.signedBalanceDb?.let(::balanceLabel)
+                ?: "Inconsistent channel balance read",
+        )
+        TextButton(
+            onClick = {
+                currentSnapshot.signedBalanceDb?.let { current ->
+                    stagedBalanceDb = current.toFloat()
+                    choosingBalance = true
+                }
+            },
+            enabled = balanceControlsEnabled,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("Change balance")
+        }
+        Text(
+            text = "Balance is the current hardware-qualification candidate. Adjusting the slider is local only; no USB write occurs until the reviewed value is explicitly applied.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            text = "Applying a DAC filter change does not send a save-to-flash command or claim persistence across power cycles.",
+            text = "Microphone gain, amp topology, gain mode, and playback level remain read-only until their own hardware qualification gates pass.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = "DEVICE changes do not send a generic Save to Flash command or claim persistence across power cycles.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -502,7 +556,7 @@ private fun BlackPearlDeviceControlPanel(
                                 choosingFilter = false
                                 pendingFilterValueId = option.valueId
                             },
-                            enabled = !isCurrent && controlsEnabled,
+                            enabled = !isCurrent && filterControlsEnabled,
                             modifier = Modifier.fillMaxWidth(),
                         ) {
                             Text(if (isCurrent) "${option.technicalLabel} · Current" else option.technicalLabel)
@@ -532,7 +586,7 @@ private fun BlackPearlDeviceControlPanel(
                             "Apply performs a fresh complete device read, writes only the DAC-filter control, then reads the complete Black Pearl device state again. Any stale session, readback mismatch, or unrelated state change fails verification.",
                         )
                         Text(
-                            "This is a hardware-qualification candidate. It does not send Save to Flash.",
+                            "The DAC-filter write is hardware-qualified. This operation still does not send Save to Flash or claim power-cycle persistence.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -542,9 +596,12 @@ private fun BlackPearlDeviceControlPanel(
                     TextButton(
                         onClick = {
                             pendingFilterValueId = null
-                            onSetDacFilter(requestedValueId)
+                            onSetDeviceControl(
+                                BlackPearlDeviceControls.DAC_FILTER,
+                                DacControlValue.Discrete(requestedValueId),
+                            )
                         },
-                        enabled = controlsEnabled,
+                        enabled = filterControlsEnabled,
                     ) { Text("Apply") }
                 },
                 dismissButton = {
@@ -553,6 +610,116 @@ private fun BlackPearlDeviceControlPanel(
             )
         }
     }
+
+    if (choosingBalance && currentBalanceDb != null) {
+        val staged = stagedBalanceDb.roundToInt().coerceIn(
+            BlackPearlDeviceControlReadCodec.BALANCE_MIN_DB,
+            BlackPearlDeviceControlReadCodec.BALANCE_MAX_DB,
+        )
+        AlertDialog(
+            onDismissRequest = { choosingBalance = false },
+            title = { Text("Adjust balance") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Current: ${balanceLabel(currentBalanceDb)}")
+                    Text("New: ${balanceLabel(staged)}", fontWeight = FontWeight.SemiBold)
+                    Slider(
+                        value = stagedBalanceDb,
+                        onValueChange = { value -> stagedBalanceDb = value.roundToInt().toFloat() },
+                        valueRange = BlackPearlDeviceControlReadCodec.BALANCE_MIN_DB.toFloat()..
+                            BlackPearlDeviceControlReadCodec.BALANCE_MAX_DB.toFloat(),
+                        steps = BlackPearlDeviceControlReadCodec.BALANCE_MAX_DB -
+                            BlackPearlDeviceControlReadCodec.BALANCE_MIN_DB - 1,
+                        enabled = balanceControlsEnabled,
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        TextButton(
+                            onClick = { stagedBalanceDb = (staged - 1).coerceAtLeast(
+                                BlackPearlDeviceControlReadCodec.BALANCE_MIN_DB,
+                            ).toFloat() },
+                            enabled = balanceControlsEnabled && staged > BlackPearlDeviceControlReadCodec.BALANCE_MIN_DB,
+                        ) { Text("−1 dB") }
+                        TextButton(
+                            onClick = { stagedBalanceDb = 0f },
+                            enabled = balanceControlsEnabled && staged != 0,
+                        ) { Text("Center") }
+                        TextButton(
+                            onClick = { stagedBalanceDb = (staged + 1).coerceAtMost(
+                                BlackPearlDeviceControlReadCodec.BALANCE_MAX_DB,
+                            ).toFloat() },
+                            enabled = balanceControlsEnabled && staged < BlackPearlDeviceControlReadCodec.BALANCE_MAX_DB,
+                        ) { Text("+1 dB") }
+                    }
+                    Text(
+                        "Adjustments are staged locally in exact 1 dB hardware steps. Review is required before any USB write.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        choosingBalance = false
+                        if (staged != currentBalanceDb) pendingBalanceDb = staged
+                    },
+                    enabled = balanceControlsEnabled && staged != currentBalanceDb,
+                ) { Text("Review") }
+            },
+            dismissButton = {
+                TextButton(onClick = { choosingBalance = false }) { Text("Cancel") }
+            },
+        )
+    }
+
+    pendingBalanceDb?.let { requestedBalanceDb ->
+        val current = snapshot?.signedBalanceDb
+        if (current != null) {
+            AlertDialog(
+                onDismissRequest = { pendingBalanceDb = null },
+                title = { Text("Review balance change") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Current: ${balanceLabel(current)}")
+                        Text("New: ${balanceLabel(requestedBalanceDb)}")
+                        Text(
+                            "Apply performs a fresh complete device read, writes only the balance control, then reads the complete Black Pearl device state again. Any stale session, readback mismatch, or unrelated state change fails verification.",
+                        )
+                        Text(
+                            "This is the current hardware-qualification candidate. It does not send Save to Flash or claim power-cycle persistence.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            pendingBalanceDb = null
+                            onSetDeviceControl(
+                                BlackPearlDeviceControls.BALANCE_DB,
+                                DacControlValue.Numeric(requestedBalanceDb.toDouble()),
+                            )
+                        },
+                        enabled = balanceControlsEnabled && requestedBalanceDb != current,
+                    ) { Text("Apply") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { pendingBalanceDb = null }) { Text("Cancel") }
+                },
+            )
+        }
+    }
+}
+
+private fun balanceLabel(balanceDb: Int): String = when {
+    balanceDb == 0 -> "Centered"
+    balanceDb > 0 -> "+$balanceDb dB"
+    else -> "$balanceDb dB"
 }
 
 @Composable
