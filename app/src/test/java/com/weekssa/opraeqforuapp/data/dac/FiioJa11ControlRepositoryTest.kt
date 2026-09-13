@@ -5,12 +5,12 @@ import com.weekssa.opraeqforuapp.domain.dac.DacControlValue
 import com.weekssa.opraeqforuapp.domain.dac.DacWriteIntent
 import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceControls
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import org.junit.Test
 
 class FiioJa11ControlRepositoryTest {
     @Test
-    fun completeReadReturnsOneCurrentSnapshot() = runTest {
+    fun completeReadReturnsOneCurrentSnapshot() = runBlocking {
         val source = FakeSource()
         val result = FiioJa11ControlRepository(source).readSnapshot()
 
@@ -24,7 +24,7 @@ class FiioJa11ControlRepositoryTest {
     }
 
     @Test
-    fun outputVolumeUsesFreshBaselineTargetedWriteAndVerifiedReadback() = runTest {
+    fun outputVolumeUsesFreshBaselineTargetedWriteAndVerifiedReadback() = runBlocking {
         val source = FakeSource()
         val repository = FiioJa11ControlRepository(source)
 
@@ -44,7 +44,7 @@ class FiioJa11ControlRepositoryTest {
     }
 
     @Test
-    fun staleExpectedGenerationCannotWrite() = runTest {
+    fun staleExpectedGenerationCannotWrite() = runBlocking {
         val source = FakeSource()
         val result = FiioJa11ControlRepository(source).writeControl(
             DacWriteIntent(
@@ -59,7 +59,7 @@ class FiioJa11ControlRepositoryTest {
     }
 
     @Test
-    fun sameSessionReadbackMismatchNeverReportsSuccess() = runTest {
+    fun sameSessionReadbackMismatchNeverReportsSuccess() = runBlocking {
         val source = FakeSource(ignoreVolumeWrite = true)
         val result = FiioJa11ControlRepository(source).writeControl(
             DacWriteIntent(
@@ -73,7 +73,7 @@ class FiioJa11ControlRepositoryTest {
     }
 
     @Test
-    fun headsetWriteRequiresAReplacementSessionBeforeVerification() = runTest {
+    fun headsetWriteRequiresAReplacementSessionBeforeVerification() = runBlocking {
         val source = FakeSource()
         val repository = FiioJa11ControlRepository(source)
 
@@ -98,7 +98,7 @@ class FiioJa11ControlRepositoryTest {
     }
 
     @Test
-    fun uacWriteIsVerifiedOnlyAfterNewPidAndNewSessionAgree() = runTest {
+    fun uacWriteIsVerifiedOnlyAfterNewPidAndNewSessionAgree() = runBlocking {
         val source = FakeSource()
         val repository = FiioJa11ControlRepository(source)
         val first = repository.writeControl(
@@ -119,7 +119,7 @@ class FiioJa11ControlRepositoryTest {
     }
 
     @Test
-    fun readFailsClosedWhenReportedUacModeDisagreesWithUsbIdentity() = runTest {
+    fun readFailsClosedWhenReportedUacModeDisagreesWithUsbIdentity() = runBlocking {
         val source = FakeSource().apply {
             productId = FiioJa11Protocol.PRODUCT_ID_UAC_1
             uacMode = FiioJa11Protocol.UacMode.UAC_2
