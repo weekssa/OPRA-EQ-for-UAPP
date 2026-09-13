@@ -10,8 +10,10 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import com.weekssa.opraeqforuapp.data.update.AppReleaseInfo
+import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
+import com.weekssa.opraeqforuapp.domain.settings.EffectiveOutputResolver
 import com.weekssa.opraeqforuapp.domain.settings.ExportTargetPreferences
 import com.weekssa.opraeqforuapp.domain.settings.OutputBehavior
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityCategory
@@ -26,11 +28,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 
 class AppPreferencesRepository(
     private val dataStore: DataStore<Preferences>,
+    private val presentSupportedDacs: Flow<Set<DacDeviceId>> = flowOf(emptySet()),
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     /**
@@ -38,8 +42,8 @@ class AppPreferencesRepository(
      *
      * DataStore remains the durable source of truth, but a selector tap must affect every composed
      * screen immediately instead of waiting for the asynchronous disk-backed flow to round-trip.
-     * Automatic connected-DAC resolution happens above this repository and does not overwrite the
-     * saved manual fallback.
+     * Automatic connected-DAC resolution is a projection over this durable manual fallback and
+     * never overwrites it merely because hardware was attached.
      */
     private val activeTargetOverride = MutableStateFlow<ExportDevice?>(null)
 
@@ -52,7 +56,8 @@ class AppPreferencesRepository(
             }
         },
         activeTargetOverride,
-    ) { preferences, sessionActiveTarget ->
+        presentSupportedDacs,
+    ) { preferences, sessionActiveTarget, presentDeviceIds ->
         val storedTargets = preferences[Keys.SelectedExportTargets]
         val selectedTargets = if (storedTargets == null) {
             setOf(ExportDevice.UAPP)
@@ -63,9 +68,19 @@ class AppPreferencesRepository(
         }
         val storedActive = preferences[Keys.ActiveExportTarget]
             ?.let { storedName -> ExportDevice.entries.firstOrNull { it.name == storedName } }
-        val outputPreferences = ExportTargetPreferences.normalize(
+        val manualOutputPreferences = ExportTargetPreferences.normalize(
             selectedTargets,
             sessionActiveTarget ?: storedActive,
+        )
+        val outputBehavior = OutputBehavior.fromStorageValue(preferences[Keys.OutputBehavior])
+        val effective = EffectiveOutputResolver.resolve(
+            behavior = outputBehavior,
+            manualFallback = manualOutputPreferences.activeTarget,
+            presentDeviceIds = presentDeviceIds,
+        )
+        val effectiveOutputPreferences = ExportTargetPreferences.normalize(
+            selectedTargets = manualOutputPreferences.selectedTargets + effective.output,
+            activeTarget = effective.output,
         )
 
         AppPreferences(
@@ -75,8 +90,9 @@ class AppPreferencesRepository(
                 showCompatibleWithLimitation = preferences[Keys.ShowCompatibleWithLimitation] ?: true,
                 showNotCompatible = preferences[Keys.ShowNotCompatible] ?: true,
             ),
-            exportTargets = outputPreferences,
-            outputBehavior = OutputBehavior.fromStorageValue(preferences[Keys.OutputBehavior]),
+            exportTargets = effectiveOutputPreferences,
+            manualExportTargets = manualOutputPreferences,
+            outputBehavior = outputBehavior,
             directBlackPearlFlashEnabled = preferences[Keys.DirectBlackPearlFlashEnabled] ?: false,
             directFiioJa11FlashEnabled = preferences[Keys.DirectFiioJa11FlashEnabled] ?: false,
             // Legacy migration state only. JCALLY is no longer a current product output.
@@ -133,7 +149,7 @@ class AppPreferencesRepository(
 
     suspend fun setActiveExportTarget(device: ExportDevice) {
         if (!device.selectableInV03) return
-        // Publish first so My EQs, EQ Library, and every callback switch manual context together.
+        // Explicit selection is the user's persistent Manual override until Automatic is restored.
         activeTargetOverride.value = device
         updatePreferences { preferences ->
             val current = outputPreferences(
@@ -143,6 +159,7 @@ class AppPreferencesRepository(
             val next = current.withActiveTarget(device)
             preferences[Keys.SelectedExportTargets] = next.selectedTargets.mapTo(mutableSetOf()) { it.name }
             preferences[Keys.ActiveExportTarget] = next.activeTarget.name
+            preferences[Keys.OutputBehavior] = OutputBehavior.Manual.storageValue
         }
     }
 
