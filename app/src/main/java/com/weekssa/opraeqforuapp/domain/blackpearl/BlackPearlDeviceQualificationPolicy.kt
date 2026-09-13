@@ -3,11 +3,11 @@ package com.weekssa.opraeqforuapp.domain.blackpearl
 import com.weekssa.opraeqforuapp.domain.dac.DacControlId
 
 /**
- * Separates software implementation from physical production qualification.
+ * Separates software implementation, the next physical candidate, and production-qualified writes.
  *
- * All normal Black Pearl controls below have software transaction support, but only the next control
- * under hands-on qualification is allowed to become write-interactive in a candidate build. Advancing
- * this set requires the prior control's maintained physical checklist to pass.
+ * All normal Black Pearl controls below have software transaction support. A control becomes normal
+ * write-interactive only after its maintained physical checklist passes. Exactly one later control is
+ * admitted as the next qualification candidate so hardware exposure advances deliberately.
  */
 object BlackPearlDeviceQualificationPolicy {
     val softwareImplementedControlIds: Set<DacControlId> = setOf(
@@ -19,12 +19,14 @@ object BlackPearlDeviceQualificationPolicy {
         BlackPearlDeviceControls.PLAYBACK_GAIN_DB,
     )
 
-    /** First physical write gate. Do not broaden until its Black Pearl checklist passes. */
+    /** Next physical write gate after the qualified DAC reconstruction filter. */
     val candidateWriteControlIds: Set<DacControlId> = setOf(
-        BlackPearlDeviceControls.DAC_FILTER,
+        BlackPearlDeviceControls.BALANCE_DB,
     )
 
-    val productionQualifiedWriteControlIds: Set<DacControlId> = emptySet()
+    val productionQualifiedWriteControlIds: Set<DacControlId> = setOf(
+        BlackPearlDeviceControls.DAC_FILTER,
+    )
 
     fun isSoftwareImplemented(controlId: DacControlId): Boolean =
         controlId in softwareImplementedControlIds
@@ -34,4 +36,7 @@ object BlackPearlDeviceQualificationPolicy {
 
     fun isProductionWriteQualified(controlId: DacControlId): Boolean =
         controlId in productionQualifiedWriteControlIds
+
+    fun isWriteInteractive(controlId: DacControlId): Boolean =
+        isProductionWriteQualified(controlId) || isCandidateWriteEnabled(controlId)
 }
