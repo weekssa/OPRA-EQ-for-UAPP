@@ -5,6 +5,8 @@ import androidx.compose.runtime.Stable
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqPreset
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
+import com.weekssa.opraeqforuapp.domain.dac.DacControlId
+import com.weekssa.opraeqforuapp.domain.dac.DacControlValue
 import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
@@ -33,7 +35,7 @@ class EqLibraryActions(
     val onFlashBlackPearlFromMyDac: suspend (OpraEqProfile) -> String,
     val onResetBlackPearlFromMyDac: suspend () -> String,
     val onReadBlackPearlQualificationControls: () -> Unit,
-    val onSetBlackPearlDacFilter: (String) -> Unit,
+    val onSetBlackPearlDeviceControl: (DacControlId, DacControlValue) -> Unit,
     val onReadFiioJa11DeviceControls: () -> Unit,
     val onSetFiioJa11OutputVolume: (Int) -> Unit,
     val onSetFiioJa11EqProgram: (FiioJa11Protocol.EqProgram) -> Unit,
