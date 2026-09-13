@@ -30,6 +30,10 @@ import kotlinx.coroutines.sync.withLock
  * Pearl and FiiO. The legacy JCALLY transport is retained temporarily only so persisted v0.5
  * internals can be migrated without a destructive data/API break; its presence never creates My DAC
  * visibility and it is not part of the current supported-device registry.
+ *
+ * Per-device operation locks live here, at the physical-session owner, so EQ and DEVICE repositories
+ * can share one serialization boundary rather than each believing it exclusively owns the same HID
+ * session.
  */
 class DacSessionRepository(
     internal val blackPearlTransport: AndroidBlackPearlUsbTransport,
@@ -44,6 +48,7 @@ class DacSessionRepository(
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val blackPearlOperationMutex = Mutex()
+    private val fiioJa11OperationMutex = Mutex()
     private val mutableRecognitionState = MutableStateFlow(
         DacRecognitionState().withPresentDevices(currentPresentDeviceIds()),
     )
@@ -52,11 +57,16 @@ class DacSessionRepository(
     private val blackPearlSnapshotReader = BlackPearlSnapshotReader(
         source = object : BlackPearlSnapshotSource {
             override suspend fun readNativeBand(index: Int) = blackPearlTransport.readNativeBand(index)
-
             override suspend fun readGlobalGainRaw(): Int? = blackPearlTransport.readGlobalGainRaw()
         },
     )
-    private val fiioJa11SnapshotReader = FiioJa11SnapshotReader(fiioJa11Transport)
+    private val fiioJa11SnapshotReader = FiioJa11SnapshotReader(
+        source = object : FiioJa11SnapshotSource {
+            override suspend fun readEqProgram() = fiioJa11Transport.readEqProgram()
+            override suspend fun readBand(index: Int) = fiioJa11Transport.readBand(index)
+            override suspend fun readGlobalGainDb() = fiioJa11Transport.readGlobalGainDb()
+        },
+    )
     private val jcallyJm12SnapshotReader = JcallyJm12SnapshotReader(jcallyJm12Transport)
 
     init {
@@ -70,15 +80,12 @@ class DacSessionRepository(
                     if (fiioJa11Present) add(DacDeviceId.FIIO_JA11)
                 }
             }.collect { presentDeviceIds ->
-                mutableRecognitionState.update { previous ->
-                    previous.withPresentDevices(presentDeviceIds)
-                }
+                mutableRecognitionState.update { previous -> previous.withPresentDevices(presentDeviceIds) }
             }
         }
     }
 
     fun connectBlackPearl() = blackPearlTransport.connect()
-
     fun connectFiioJa11() = fiioJa11Transport.connect()
 
     /** Legacy internal compatibility only; current product UI/recognition must not call this. */
@@ -86,6 +93,9 @@ class DacSessionRepository(
 
     suspend fun <T> withExclusiveBlackPearlOperation(block: suspend () -> T): T =
         blackPearlOperationMutex.withLock { block() }
+
+    suspend fun <T> withExclusiveFiioJa11Operation(block: suspend () -> T): T =
+        fiioJa11OperationMutex.withLock { block() }
 
     fun isBlackPearlSessionCurrent(sessionGeneration: Long): Boolean =
         sessionGeneration > 0L &&
