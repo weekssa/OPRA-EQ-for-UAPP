@@ -13,7 +13,6 @@ import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditWorkingCopy
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotBundle
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Flasher
-import com.weekssa.opraeqforuapp.domain.kt02h20.JcallyJm12Flasher
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult
 import java.io.Closeable
@@ -27,8 +26,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 
 /**
  * Repository boundary for deterministic hardware-EQ transactions and verified native EQ reads.
@@ -36,24 +33,30 @@ import kotlinx.coroutines.sync.withLock
  * Physical USB-session lifecycle, recognition, and the Black Pearl/FiiO operation serialization
  * boundaries belong to [DacSessionRepository]. Sharing those gates with DEVICE repositories prevents
  * an EQ read/Flash/Reset from interleaving with a DEVICE transaction on the same physical DAC.
+ *
+ * JCALLY is intentionally not a current hardware runtime. Temporary compatibility stubs below keep
+ * older UI/data call sites non-destructive while the remaining product plumbing is removed; they
+ * never open a JCALLY USB session or perform a write.
  */
 class HardwareEqRepository(
     private val dacSessionRepository: DacSessionRepository,
     private val blackPearlFlasher: BlackPearlFlasher,
     private val fiioJa11Flasher: FiioJa11Flasher,
-    private val jcallyJm12Flasher: JcallyJm12Flasher,
 ) : Closeable {
     val recognitionState: StateFlow<DacRecognitionState> = dacSessionRepository.recognitionState
     val blackPearlConnectionState: StateFlow<BlackPearlConnectionState> =
         dacSessionRepository.blackPearlConnectionState
     val fiioJa11ConnectionState: StateFlow<Kt02h20ConnectionState> =
         dacSessionRepository.fiioJa11ConnectionState
+
+    private val mutableUnsupportedJcallyState = MutableStateFlow<Kt02h20ConnectionState>(
+        Kt02h20ConnectionState.Disconnected,
+    )
+    @Deprecated("JCALLY is not part of the current product; remove remaining callers.")
     val jcallyJm12ConnectionState: StateFlow<Kt02h20ConnectionState> =
-        dacSessionRepository.jcallyJm12ConnectionState
+        mutableUnsupportedJcallyState.asStateFlow()
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    // Legacy internal JCALLY path only. Current product devices serialize at DacSessionRepository.
-    private val jcallyJm12OperationMutex = Mutex()
     private val mutableBlackPearlSnapshotState = MutableStateFlow(HardwareEqSnapshotState())
     val blackPearlSnapshotState: StateFlow<HardwareEqSnapshotState> =
         mutableBlackPearlSnapshotState.asStateFlow()
@@ -84,7 +87,9 @@ class HardwareEqRepository(
 
     fun connectBlackPearl() = dacSessionRepository.connectBlackPearl()
     fun connectFiioJa11() = dacSessionRepository.connectFiioJa11()
-    fun connectJcallyJm12() = dacSessionRepository.connectJcallyJm12()
+
+    @Deprecated("JCALLY is not part of the current product; remove remaining callers.")
+    fun connectJcallyJm12() = Unit
 
     fun isBlackPearlSessionCurrent(sessionGeneration: Long): Boolean =
         dacSessionRepository.isBlackPearlSessionCurrent(sessionGeneration)
@@ -92,8 +97,8 @@ class HardwareEqRepository(
     fun isFiioJa11SessionCurrent(sessionGeneration: Long): Boolean =
         dacSessionRepository.isFiioJa11SessionCurrent(sessionGeneration)
 
-    fun isJcallyJm12SessionCurrent(sessionGeneration: Long): Boolean =
-        dacSessionRepository.isJcallyJm12SessionCurrent(sessionGeneration)
+    @Deprecated("JCALLY is not part of the current product; remove remaining callers.")
+    fun isJcallyJm12SessionCurrent(sessionGeneration: Long): Boolean = false
 
     fun readBlackPearlTrackedGainDeltaDb(): Double =
         blackPearlFlasher.readTrackedAppliedPlaybackGainDb()
@@ -102,9 +107,8 @@ class HardwareEqRepository(
 
     suspend fun readFiioJa11Snapshot(): HardwareEqSnapshotBundle? = refreshFiioJa11Snapshot()
 
-    suspend fun readJcallyJm12Snapshot(): HardwareEqSnapshotBundle? = jcallyJm12OperationMutex.withLock {
-        dacSessionRepository.readJcallyJm12Snapshot()
-    }
+    @Deprecated("JCALLY is not part of the current product; remove remaining callers.")
+    suspend fun readJcallyJm12Snapshot(): HardwareEqSnapshotBundle? = null
 
     suspend fun applyBlackPearlEditor(
         workingCopy: HardwareEqEditWorkingCopy,
@@ -172,13 +176,13 @@ class HardwareEqRepository(
         }
     }
 
-    suspend fun flashJcallyJm12(profile: OpraEqProfile): Kt02h20FlashResult = jcallyJm12OperationMutex.withLock {
-        jcallyJm12Flasher.flash(profile)
-    }
+    @Deprecated("JCALLY is not part of the current product; remove remaining callers.")
+    suspend fun flashJcallyJm12(profile: OpraEqProfile): Kt02h20FlashResult =
+        Kt02h20FlashResult.DeviceUnavailable("JCALLY JM12 is not supported by the current product.")
 
-    suspend fun resetJcallyJm12(): Kt02h20FlatResetResult = jcallyJm12OperationMutex.withLock {
-        jcallyJm12Flasher.resetToFlat()
-    }
+    @Deprecated("JCALLY is not part of the current product; remove remaining callers.")
+    suspend fun resetJcallyJm12(): Kt02h20FlatResetResult =
+        Kt02h20FlatResetResult.DeviceUnavailable("JCALLY JM12 is not supported by the current product.")
 
     private suspend fun refreshBlackPearlSnapshot(): HardwareEqSnapshotBundle? =
         dacSessionRepository.withExclusiveBlackPearlOperation {

@@ -3,7 +3,6 @@ package com.weekssa.opraeqforuapp.data.dac
 import com.weekssa.opraeqforuapp.data.blackpearl.AndroidBlackPearlUsbTransport
 import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.kt02h20.AndroidFiioJa11UsbTransport
-import com.weekssa.opraeqforuapp.data.kt02h20.AndroidJcallyJm12UsbTransport
 import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
 import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
 import com.weekssa.opraeqforuapp.domain.dac.DacRecognitionState
@@ -24,12 +23,11 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 /**
- * ViewModel-scoped owner/coordinator for physical USB sessions.
+ * ViewModel-scoped owner/coordinator for current-product physical USB sessions.
  *
- * Current My DAC recognition is intentionally limited to the active product roadmap: TRN Black
- * Pearl and FiiO. The legacy JCALLY transport is retained temporarily only so persisted v0.5
- * internals can be migrated without a destructive data/API break; its presence never creates My DAC
- * visibility and it is not part of the current supported-device registry.
+ * Current My DAC recognition and session ownership are intentionally limited to TRN Black Pearl
+ * and FiiO. Historical JCALLY protocol knowledge may remain in research/reference files, but no
+ * JCALLY transport is opened or owned by the current product.
  *
  * Per-device operation locks live here, at the physical-session owner, so EQ and DEVICE repositories
  * can share one serialization boundary rather than each believing it exclusively owns the same HID
@@ -38,13 +36,9 @@ import kotlinx.coroutines.sync.withLock
 class DacSessionRepository(
     internal val blackPearlTransport: AndroidBlackPearlUsbTransport,
     internal val fiioJa11Transport: AndroidFiioJa11UsbTransport,
-    internal val jcallyJm12Transport: AndroidJcallyJm12UsbTransport,
 ) : Closeable {
     val blackPearlConnectionState: StateFlow<BlackPearlConnectionState> = blackPearlTransport.state
     val fiioJa11ConnectionState: StateFlow<Kt02h20ConnectionState> = fiioJa11Transport.state
-
-    /** Legacy internal state only; do not use this to recognize or expose a current product device. */
-    val jcallyJm12ConnectionState: StateFlow<Kt02h20ConnectionState> = jcallyJm12Transport.state
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val blackPearlOperationMutex = Mutex()
@@ -67,7 +61,6 @@ class DacSessionRepository(
             override suspend fun readGlobalGainDb() = fiioJa11Transport.readGlobalGainDb()
         },
     )
-    private val jcallyJm12SnapshotReader = JcallyJm12SnapshotReader(jcallyJm12Transport)
 
     init {
         scope.launch {
@@ -88,9 +81,6 @@ class DacSessionRepository(
     fun connectBlackPearl() = blackPearlTransport.connect()
     fun connectFiioJa11() = fiioJa11Transport.connect()
 
-    /** Legacy internal compatibility only; current product UI/recognition must not call this. */
-    fun connectJcallyJm12() = jcallyJm12Transport.connect()
-
     suspend fun <T> withExclusiveBlackPearlOperation(block: suspend () -> T): T =
         blackPearlOperationMutex.withLock { block() }
 
@@ -107,12 +97,6 @@ class DacSessionRepository(
             fiioJa11ConnectionState.value is Kt02h20ConnectionState.Connected &&
             fiioJa11Transport.sessionGeneration == sessionGeneration
 
-    /** Legacy internal compatibility only. */
-    fun isJcallyJm12SessionCurrent(sessionGeneration: Long): Boolean =
-        sessionGeneration > 0L &&
-            jcallyJm12ConnectionState.value is Kt02h20ConnectionState.Connected &&
-            jcallyJm12Transport.sessionGeneration == sessionGeneration
-
     suspend fun readBlackPearlSnapshot(): HardwareEqSnapshotBundle? = readVerifiedSnapshot(
         generation = { blackPearlTransport.sessionGeneration },
         isConnected = { blackPearlConnectionState.value is BlackPearlConnectionState.Connected },
@@ -123,13 +107,6 @@ class DacSessionRepository(
         generation = { fiioJa11Transport.sessionGeneration },
         isConnected = { fiioJa11ConnectionState.value is Kt02h20ConnectionState.Connected },
         read = fiioJa11SnapshotReader::read,
-    )
-
-    /** Legacy internal compatibility only; not reachable from current My DAC recognition. */
-    suspend fun readJcallyJm12Snapshot(): HardwareEqSnapshotBundle? = readVerifiedSnapshot(
-        generation = { jcallyJm12Transport.sessionGeneration },
-        isConnected = { jcallyJm12ConnectionState.value is Kt02h20ConnectionState.Connected },
-        read = jcallyJm12SnapshotReader::read,
     )
 
     private fun currentPresentDeviceIds(): Set<DacDeviceId> = buildSet {
@@ -153,6 +130,5 @@ class DacSessionRepository(
         scope.cancel()
         blackPearlTransport.close()
         fiioJa11Transport.close()
-        jcallyJm12Transport.close()
     }
 }
