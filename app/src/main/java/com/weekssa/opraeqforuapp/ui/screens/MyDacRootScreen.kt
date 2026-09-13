@@ -21,6 +21,8 @@ import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
+import com.weekssa.opraeqforuapp.domain.dac.DacControlId
+import com.weekssa.opraeqforuapp.domain.dac.DacControlValue
 import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
 import com.weekssa.opraeqforuapp.domain.dac.DacRecognitionState
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqMatchResolution
@@ -68,7 +70,7 @@ fun MyDacRootScreen(
     onFlashBlackPearlFromMyDac: suspend (OpraEqProfile) -> String,
     onResetBlackPearlFromMyDac: suspend () -> String,
     onReadBlackPearlQualification: () -> Unit,
-    onSetBlackPearlDacFilter: (String) -> Unit,
+    onSetBlackPearlDeviceControl: (DacControlId, DacControlValue) -> Unit,
     onReadFiioJa11DeviceControls: () -> Unit,
     onSetFiioJa11OutputVolume: (Int) -> Unit,
     onSetFiioJa11EqProgram: (FiioJa11Protocol.EqProgram) -> Unit,
@@ -160,7 +162,7 @@ fun MyDacRootScreen(
                 onFlashBlackPearlFromMyDac = onFlashBlackPearlFromMyDac,
                 onResetBlackPearlFromMyDac = onResetBlackPearlFromMyDac,
                 onReadBlackPearlQualification = onReadBlackPearlQualification,
-                onSetBlackPearlDacFilter = onSetBlackPearlDacFilter,
+                onSetBlackPearlDeviceControl = onSetBlackPearlDeviceControl,
                 onMessage = onMessage,
                 modifier = modifier,
             )
