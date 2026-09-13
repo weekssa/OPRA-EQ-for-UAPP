@@ -14,7 +14,10 @@ class SupportedDacUsbIdentityTest {
             supportedDacDeviceId(BlackPearlProtocol.VENDOR_ID, BlackPearlProtocol.PRODUCT_ID),
         ).isEqualTo(DacDeviceId.TRN_BLACK_PEARL)
         assertThat(
-            supportedDacDeviceId(FiioJa11Protocol.VENDOR_ID, FiioJa11Protocol.PRODUCT_ID),
+            supportedDacDeviceId(FiioJa11Protocol.VENDOR_ID, FiioJa11Protocol.PRODUCT_ID_UAC_1),
+        ).isEqualTo(DacDeviceId.FIIO_JA11)
+        assertThat(
+            supportedDacDeviceId(FiioJa11Protocol.VENDOR_ID, FiioJa11Protocol.PRODUCT_ID_UAC_2),
         ).isEqualTo(DacDeviceId.FIIO_JA11)
     }
 
@@ -28,24 +31,22 @@ class SupportedDacUsbIdentityTest {
     @Test
     fun sameVendorWithWrongProductDoesNotMatch() {
         assertThat(
-            supportedDacDeviceId(BlackPearlProtocol.VENDOR_ID, BlackPearlProtocol.PRODUCT_ID + 1),
+            supportedDacDeviceId(FiioJa11Protocol.VENDOR_ID, 0x0103),
         ).isNull()
     }
 
     @Test
     fun sameProductWithWrongVendorDoesNotMatch() {
         assertThat(
-            supportedDacDeviceId(FiioJa11Protocol.VENDOR_ID + 1, FiioJa11Protocol.PRODUCT_ID),
+            supportedDacDeviceId(FiioJa11Protocol.VENDOR_ID + 1, FiioJa11Protocol.PRODUCT_ID_UAC_2),
         ).isNull()
     }
 
     @Test
-    fun registryContainsOnlyBlackPearlAndFiioCurrentTargets() {
-        assertThat(supportedDacUsbIdentities.map { identity -> identity.deviceId })
-            .containsExactly(
-                DacDeviceId.TRN_BLACK_PEARL,
-                DacDeviceId.FIIO_JA11,
-            )
-            .inOrder()
+    fun registryContainsBlackPearlAndBothFiioEnumerationsOnly() {
+        assertThat(supportedDacUsbIdentities).hasSize(3)
+        assertThat(supportedDacUsbIdentities.count { it.deviceId == DacDeviceId.TRN_BLACK_PEARL }).isEqualTo(1)
+        assertThat(supportedDacUsbIdentities.count { it.deviceId == DacDeviceId.FIIO_JA11 }).isEqualTo(2)
+        assertThat(supportedDacUsbIdentities.any { it.deviceId == DacDeviceId.JCALLY_JM12_STOCK }).isFalse()
     }
 }
