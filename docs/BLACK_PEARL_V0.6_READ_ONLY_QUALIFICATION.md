@@ -125,9 +125,9 @@ Notes: The supplied Pixel 9 screenshots show **Current session read** and all se
 4. Verify EQ Library's reads did not change firmware/version, DAC filter, gain mode, topology, mic gain, balance, or playback/global gain.
 5. Verify no save/persistence action was triggered merely by reading.
 
-PASS / FAIL: **IN PROGRESS**
+PASS / FAIL: **PASS**
 
-Notes: EQ Library screenshots from separate reads show the same complete values, and the later independent-controller screenshots still show matching firmware/filter/gain-mode/topology/mic/balance/playback state. This is positive non-destructive evidence, but the checklist still requires an explicitly observed sequence of at least three consecutive EQ Library reads with unchanged values before this section is marked PASS.
+Notes: On 2026-09-13 the project owner explicitly performed three consecutive **Read candidate controls** actions on the pinned candidate without changing any DAC setting and reported success. All three remained **Current session read** and returned the same complete state: firmware `0.6`, filter `Fast-PC`, gain mode `HIGH`, topology `CLASS AB`, mic gain `+0.00 dB`, balance `Centered`, playback/global gain `+2.00 dB` / raw `512`. Together with the already-supplied later independent-controller state showing the matching baseline and no unexpected persistence change, this satisfies the required stable/non-destructive repeated-read gate.
 
 ## 4. Fresh-read proof using one safe external change
 
