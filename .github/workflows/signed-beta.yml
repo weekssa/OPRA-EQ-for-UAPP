@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: write
+  actions: read
 
 concurrency:
   group: signed-eq-library-beta-${{ github.ref }}
@@ -144,9 +145,7 @@ jobs:
           cp "$GITHUB_WORKSPACE/$source_apk" "$stable_name"
           cp "$GITHUB_WORKSPACE/$source_apk" "$versioned_name"
           cp "$GITHUB_WORKSPACE/$source_apk" "candidates/$immutable_name"
-          (
-            zip -9 -j "$zip_name" "$versioned_name"
-          )
+          zip -9 -j "$zip_name" "$versioned_name"
           sha256sum "$stable_name" > "${stable_name}.sha256"
           sha256sum "$versioned_name" > "${versioned_name}.sha256"
           sha256sum "$zip_name" > "${zip_name}.sha256"
