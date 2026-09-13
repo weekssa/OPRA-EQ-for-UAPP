@@ -1,6 +1,6 @@
 # TRN Black Pearl — v0.6 remaining DEVICE controls consolidated qualification
 
-Status: **SOFTWARE BATCH IN VALIDATION — DO NOT TEST UNTIL EXACT SIGNED CANDIDATE IS PINNED**
+Status: **READY FOR PHYSICAL TEST — EXACT SIGNED CANDIDATE PINNED**
 
 This checklist is the single hands-on qualification round approved by the project owner for the remaining normal Black Pearl DEVICE controls after the already-qualified DAC reconstruction-filter write.
 
@@ -16,22 +16,23 @@ The DAC reconstruction-filter write already passed its own maintained qualificat
 
 ## Exact candidate provenance
 
-Populate only after the final batch software head passes all required automated and signing gates.
+The exact behavior candidate below is pinned for this hands-on batch. Later documentation-only commits do not replace it.
 
 - Repository: `weekssa/opra-eq-for-uapp`
 - Branch: `v0.6-my-dac`
-- Candidate commit SHA: `TBD`
+- Candidate commit SHA: `a3837779b5b732f3b388f80a86c0b14fc00e34c5`
 - App version: `0.6.0`
-- Immutable exact-candidate APK: `TBD`
-- Signed APK SHA-256: `TBD`
+- Immutable exact-candidate APK: `https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.6.0-beta-a383777.apk`
+- Signed APK SHA-256: `cdf1d08551eb3aa336d2ade8d7d15ee32b608366ca11c2e0c20eefa86b013b89`
 - Signer certificate SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`
-- Android CI: `TBD`
-- CodeQL: `TBD`
-- Catalog currentness CI: `TBD`
-- Priority community coverage CI: `TBD`
-- Signed EQ Library Beta Candidate: `TBD`
-- Signed-beta artifact ID: `TBD`
-- Signed-beta artifact ZIP SHA-256: `TBD`
+- Android CI #1366 — **PASS**
+- CodeQL #1247 — **PASS**
+- Catalog currentness CI #1552 — **PASS**
+- Priority community coverage CI #1038 — **PASS**
+- Signed EQ Library Beta Candidate #1040 / run `34789342972` — **PASS**
+- Signed-beta artifact ID: `10327790834`
+- Signed-beta artifact ZIP SHA-256: `34027f387e9f0862f38c6e95a6a39f109a06c6b068f280b4b8353c321f3ae98c`
+- Signing verification: APK Signature Scheme v2/v3; signer `CN=OPRA EQ for UAPP, O=weekssa`; RSA 4096
 - Test device: Pixel 9
 - DAC: TRN Black Pearl
 - Test date: `TBD`
@@ -199,7 +200,7 @@ Notes: **TBD**
 
 ## 9. Failure/session-interruption behavior
 
-Deliberate mid-write USB disconnection is **not required** merely to create risk. Automated regression coverage must be green for stale generation, session replacement, failed transfer, readback mismatch, invalid/out-of-range/non-native-grid values, inconsistent balance, unrelated-state-change rejection, and busy/current-session projection.
+Deliberate mid-write USB disconnection is **not required** merely to create risk. Automated regression coverage is green for stale generation, session replacement, failed transfer, readback mismatch, invalid/out-of-range/non-native-grid values, inconsistent balance, unrelated-state-change rejection, and busy/current-session projection on the exact candidate above.
 
 PASS / FAIL / NOT EXERCISED: **TBD**
 
