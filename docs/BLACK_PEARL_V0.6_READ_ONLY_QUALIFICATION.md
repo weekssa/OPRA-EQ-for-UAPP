@@ -81,9 +81,9 @@ Rearranging that presentation for raw `512` gives `62.745...%`, which is consist
 6. Verify the explanation states that no setting is changed, latched, or saved.
 7. Verify there are no new normal Black Pearl DEVICE setting controls for filter, gain mode, topology, balance, microphone gain, or playback level.
 
-PASS / FAIL: **IN PROGRESS**
+PASS / FAIL: **PASS**
 
-Notes: Supplied EQ Library screenshots confirm the **Hardware qualification · read-only** section, the no-change/no-latch/no-save explanation, the read action, and absence of candidate setting write controls. A 2026-09-13 reconnect screenshot also visibly confirms **Device information → Model → TRN Black Pearl** and the known capability/validation presentation. The remaining visual gap is the connected-state text after the USB session is actually opened; the current supplied post-Connect/pre-Read screenshot is scrolled below that header.
+Notes: The final 2026-09-13 connected-state screenshot visibly shows **TRN Black Pearl** with textual state **Connected**, the **DEVICE** tab, `Device information → Model → TRN Black Pearl`, and the **Hardware qualification · read-only** section. It also shows the explanatory text that reads candidate settings for validation only and changes, latches, or saves nothing, plus the message that no additional device controls are exposed until their read/write/readback semantics are qualified. This closes the recognition/connection/header and read-only-presentation gate.
 
 ## 2. First complete hardware read
 
