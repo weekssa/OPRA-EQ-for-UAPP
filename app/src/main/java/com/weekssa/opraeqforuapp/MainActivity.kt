@@ -40,9 +40,6 @@ class MainActivity : ComponentActivity() {
             },
         )[EqLibraryViewModel::class.java]
 
-        // Only a true new Activity launch from Android's USB attach flow requests automatic routing.
-        // Existing singleTop activities keep their current workflow and use the in-app Open My DAC
-        // prompt when the shared DAC session repository reports a newly present supported device.
         val initialMyDacOpenDeviceId = if (savedInstanceState == null) {
             intent.supportedAttachedDacDeviceId()
         } else {
@@ -90,6 +87,17 @@ class MainActivity : ComponentActivity() {
             resolve(viewModel.resetBlackPearlFromMyDacToFlat())
         },
         onReadBlackPearlQualificationControls = viewModel::readBlackPearlQualificationControls,
+        onReadFiioJa11DeviceControls = viewModel::readFiioJa11DeviceControls,
+        onSetFiioJa11OutputVolume = viewModel::setFiioJa11OutputVolume,
+        onSetFiioJa11EqProgram = viewModel::setFiioJa11EqProgram,
+        onSetFiioJa11HeadsetControl = viewModel::setFiioJa11HeadsetControl,
+        onSetFiioJa11UacMode = viewModel::setFiioJa11UacMode,
+        onFlashFiioJa11FromMyDac = { profile ->
+            resolve(viewModel.flashFiioJa11FromMyDac(profile))
+        },
+        onResetFiioJa11FromMyDac = {
+            resolve(viewModel.resetFiioJa11FromMyDacToFlat())
+        },
         onConnectBlackPearl = viewModel::connectBlackPearl,
         onResetBlackPearl = {
             resolve(viewModel.resetBlackPearlToFlat())
@@ -162,6 +170,7 @@ class MainActivity : ComponentActivity() {
         onDismissPostUpdate = viewModel::dismissPostUpdate,
         onOpenUrl = ::openExternalUrl,
         onThemeModeChange = viewModel::setThemeMode,
+        onOutputBehaviorChange = viewModel::setOutputBehavior,
         onExportTargetChange = viewModel::setExportTargetEnabled,
         onActiveExportTargetChange = viewModel::setActiveExportTarget,
         onDirectBlackPearlFlashEnabledChange = viewModel::setDirectBlackPearlFlashEnabled,
@@ -238,11 +247,7 @@ class MainActivity : ComponentActivity() {
             )
         }
         val device = summary.results.firstOrNull()?.candidate?.deviceName
-        return if (device == null) {
-            message
-        } else {
-            getString(R.string.device_prefixed_message, device, message)
-        }
+        return if (device == null) message else getString(R.string.device_prefixed_message, device, message)
     }
 
     private fun refreshCatalogMessage(outcome: CatalogSyncOutcome): String {
@@ -281,16 +286,13 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun updateCheckMessage(result: AppUpdateCheckResult): String = when (result) {
-        is AppUpdateCheckResult.UpdateAvailable ->
-            getString(R.string.update_available_message, result.release.version)
+        is AppUpdateCheckResult.UpdateAvailable -> getString(R.string.update_available_message, result.release.version)
         is AppUpdateCheckResult.UpToDate -> getString(R.string.update_up_to_date_message)
         AppUpdateCheckResult.Unavailable -> getString(R.string.update_check_unavailable_message)
     }
 
     private fun openExternalUrl(url: String) {
         val uri = runCatching { Uri.parse(url) }.getOrNull() ?: return
-        runCatching {
-            startActivity(Intent(Intent.ACTION_VIEW, uri))
-        }
+        runCatching { startActivity(Intent(Intent.ACTION_VIEW, uri)) }
     }
 }
