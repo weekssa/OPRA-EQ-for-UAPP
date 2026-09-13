@@ -11,8 +11,6 @@ import com.weekssa.opraeqforuapp.domain.dac.DacControlValue
 import com.weekssa.opraeqforuapp.domain.dac.DacWriteIntent
 import com.weekssa.opraeqforuapp.domain.dac.validateForWrite
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 
 interface BlackPearlDeviceControlReadSource {
     val sessionGeneration: Long
@@ -39,12 +37,8 @@ sealed interface BlackPearlQualificationReadResult {
     ) : BlackPearlQualificationReadResult
 
     data object NotConnected : BlackPearlQualificationReadResult
-
     data object SessionChanged : BlackPearlQualificationReadResult
-
-    data class ReadFailed(
-        val field: String,
-    ) : BlackPearlQualificationReadResult
+    data class ReadFailed(val field: String) : BlackPearlQualificationReadResult
 }
 
 sealed interface BlackPearlDeviceControlWriteResult {
@@ -60,9 +54,7 @@ sealed interface BlackPearlDeviceControlWriteResult {
         val validation: DacControlValidation?,
     ) : BlackPearlDeviceControlWriteResult
 
-    data class NotConnected(
-        val controlId: DacControlId,
-    ) : BlackPearlDeviceControlWriteResult
+    data class NotConnected(val controlId: DacControlId) : BlackPearlDeviceControlWriteResult
 
     data class StaleBaseline(
         val controlId: DacControlId,
@@ -75,9 +67,7 @@ sealed interface BlackPearlDeviceControlWriteResult {
         val field: String,
     ) : BlackPearlDeviceControlWriteResult
 
-    data class TransferFailed(
-        val controlId: DacControlId,
-    ) : BlackPearlDeviceControlWriteResult
+    data class TransferFailed(val controlId: DacControlId) : BlackPearlDeviceControlWriteResult
 
     data class ReadbackMismatch(
         val controlId: DacControlId,
@@ -96,23 +86,21 @@ sealed interface BlackPearlDeviceControlWriteResult {
 /**
  * Device-control boundary kept separate from HardwareEqRepository.
  *
- * Reads are already physically qualified. Candidate writes use the strict transaction model:
- * fresh complete baseline -> one targeted write -> complete readback -> requested-value verification
- * -> unrelated-state verification. No generic flash/save command is used here; persistence remains a
- * separate hardware qualification question.
+ * All operations run through the physical-session gate. Production injects the gate owned by
+ * [DacSessionRepository], which prevents DEVICE reads/writes from interleaving with EQ transactions
+ * on the same Black Pearl. Tests use an isolated mutex gate by default.
  */
 class DacControlRepository(
     private val blackPearlSource: BlackPearlDeviceControlReadSource,
+    private val operationGate: DacOperationGate = MutexDacOperationGate(),
 ) {
-    private val operationMutex = Mutex()
-
     suspend fun readBlackPearlQualificationSnapshot(): BlackPearlQualificationReadResult =
-        operationMutex.withLock { readBlackPearlQualificationSnapshotUnlocked() }
+        operationGate.withExclusiveOperation { readBlackPearlQualificationSnapshotUnlocked() }
 
     suspend fun writeBlackPearlControl(intent: DacWriteIntent): BlackPearlDeviceControlWriteResult =
-        operationMutex.withLock {
+        operationGate.withExclusiveOperation {
             val descriptor = BlackPearlDeviceControls.descriptor(intent.controlId)
-                ?: return@withLock BlackPearlDeviceControlWriteResult.InvalidRequest(
+                ?: return@withExclusiveOperation BlackPearlDeviceControlWriteResult.InvalidRequest(
                     controlId = intent.controlId,
                     validation = null,
                 )
@@ -120,15 +108,15 @@ class DacControlRepository(
             if (validation !is DacControlValidation.Valid &&
                 validation !is DacControlValidation.CautionOutsideNormalRange
             ) {
-                return@withLock BlackPearlDeviceControlWriteResult.InvalidRequest(intent.controlId, validation)
+                return@withExclusiveOperation BlackPearlDeviceControlWriteResult.InvalidRequest(intent.controlId, validation)
             }
 
             val generation = blackPearlSource.sessionGeneration
             if (generation <= 0L || !blackPearlSource.isSessionCurrent(generation)) {
-                return@withLock BlackPearlDeviceControlWriteResult.NotConnected(intent.controlId)
+                return@withExclusiveOperation BlackPearlDeviceControlWriteResult.NotConnected(intent.controlId)
             }
             if (generation != intent.expectedSessionGeneration) {
-                return@withLock BlackPearlDeviceControlWriteResult.StaleBaseline(
+                return@withExclusiveOperation BlackPearlDeviceControlWriteResult.StaleBaseline(
                     controlId = intent.controlId,
                     expectedSessionGeneration = intent.expectedSessionGeneration,
                     actualSessionGeneration = generation,
@@ -138,19 +126,19 @@ class DacControlRepository(
             val baseline = when (val read = readBlackPearlQualificationSnapshotUnlocked()) {
                 is BlackPearlQualificationReadResult.Success -> read.snapshot
                 is BlackPearlQualificationReadResult.NotConnected ->
-                    return@withLock BlackPearlDeviceControlWriteResult.NotConnected(intent.controlId)
+                    return@withExclusiveOperation BlackPearlDeviceControlWriteResult.NotConnected(intent.controlId)
                 is BlackPearlQualificationReadResult.SessionChanged ->
-                    return@withLock BlackPearlDeviceControlWriteResult.StaleBaseline(
+                    return@withExclusiveOperation BlackPearlDeviceControlWriteResult.StaleBaseline(
                         intent.controlId,
                         intent.expectedSessionGeneration,
                         blackPearlSource.sessionGeneration,
                     )
                 is BlackPearlQualificationReadResult.ReadFailed ->
-                    return@withLock BlackPearlDeviceControlWriteResult.ReadFailed(intent.controlId, read.field)
+                    return@withExclusiveOperation BlackPearlDeviceControlWriteResult.ReadFailed(intent.controlId, read.field)
             }
 
             if (baseline.sessionGeneration != intent.expectedSessionGeneration) {
-                return@withLock BlackPearlDeviceControlWriteResult.StaleBaseline(
+                return@withExclusiveOperation BlackPearlDeviceControlWriteResult.StaleBaseline(
                     intent.controlId,
                     intent.expectedSessionGeneration,
                     baseline.sessionGeneration,
@@ -159,7 +147,7 @@ class DacControlRepository(
 
             val baselineValue = BlackPearlDeviceControls.valueFromSnapshot(intent.controlId, baseline)
             if (baselineValue == intent.requestedValue) {
-                return@withLock BlackPearlDeviceControlWriteResult.Verified(
+                return@withExclusiveOperation BlackPearlDeviceControlWriteResult.Verified(
                     intent.controlId,
                     intent.requestedValue,
                     baseline,
@@ -168,7 +156,7 @@ class DacControlRepository(
             }
 
             if (!writeTarget(intent.controlId, intent.requestedValue)) {
-                return@withLock if (blackPearlSource.isSessionCurrent(generation)) {
+                return@withExclusiveOperation if (blackPearlSource.isSessionCurrent(generation)) {
                     BlackPearlDeviceControlWriteResult.TransferFailed(intent.controlId)
                 } else {
                     BlackPearlDeviceControlWriteResult.StaleBaseline(
@@ -179,7 +167,7 @@ class DacControlRepository(
                 }
             }
             if (!blackPearlSource.isSessionCurrent(generation)) {
-                return@withLock BlackPearlDeviceControlWriteResult.StaleBaseline(
+                return@withExclusiveOperation BlackPearlDeviceControlWriteResult.StaleBaseline(
                     intent.controlId,
                     intent.expectedSessionGeneration,
                     blackPearlSource.sessionGeneration,
@@ -189,20 +177,20 @@ class DacControlRepository(
             val readback = when (val read = readBlackPearlQualificationSnapshotUnlocked()) {
                 is BlackPearlQualificationReadResult.Success -> read.snapshot
                 is BlackPearlQualificationReadResult.NotConnected ->
-                    return@withLock BlackPearlDeviceControlWriteResult.NotConnected(intent.controlId)
+                    return@withExclusiveOperation BlackPearlDeviceControlWriteResult.NotConnected(intent.controlId)
                 is BlackPearlQualificationReadResult.SessionChanged ->
-                    return@withLock BlackPearlDeviceControlWriteResult.StaleBaseline(
+                    return@withExclusiveOperation BlackPearlDeviceControlWriteResult.StaleBaseline(
                         intent.controlId,
                         intent.expectedSessionGeneration,
                         blackPearlSource.sessionGeneration,
                     )
                 is BlackPearlQualificationReadResult.ReadFailed ->
-                    return@withLock BlackPearlDeviceControlWriteResult.ReadFailed(intent.controlId, read.field)
+                    return@withExclusiveOperation BlackPearlDeviceControlWriteResult.ReadFailed(intent.controlId, read.field)
             }
 
             val actualValue = BlackPearlDeviceControls.valueFromSnapshot(intent.controlId, readback)
             if (actualValue != intent.requestedValue) {
-                return@withLock BlackPearlDeviceControlWriteResult.ReadbackMismatch(
+                return@withExclusiveOperation BlackPearlDeviceControlWriteResult.ReadbackMismatch(
                     controlId = intent.controlId,
                     requestedValue = intent.requestedValue,
                     actualValue = actualValue,
@@ -212,7 +200,7 @@ class DacControlRepository(
 
             val unrelatedChanges = unrelatedChangedFields(intent.controlId, baseline, readback)
             if (unrelatedChanges.isNotEmpty()) {
-                return@withLock BlackPearlDeviceControlWriteResult.UnrelatedStateChanged(
+                return@withExclusiveOperation BlackPearlDeviceControlWriteResult.UnrelatedStateChanged(
                     controlId = intent.controlId,
                     changedFields = unrelatedChanges,
                     snapshot = readback,
