@@ -33,6 +33,7 @@ class EqLibraryActions(
     val onFlashBlackPearlFromMyDac: suspend (OpraEqProfile) -> String,
     val onResetBlackPearlFromMyDac: suspend () -> String,
     val onReadBlackPearlQualificationControls: () -> Unit,
+    val onSetBlackPearlDacFilter: (String) -> Unit,
     val onReadFiioJa11DeviceControls: () -> Unit,
     val onSetFiioJa11OutputVolume: (Int) -> Unit,
     val onSetFiioJa11EqProgram: (FiioJa11Protocol.EqProgram) -> Unit,

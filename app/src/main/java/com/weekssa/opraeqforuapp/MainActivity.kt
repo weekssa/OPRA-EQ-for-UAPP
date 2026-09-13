@@ -87,6 +87,7 @@ class MainActivity : ComponentActivity() {
             resolve(viewModel.resetBlackPearlFromMyDacToFlat())
         },
         onReadBlackPearlQualificationControls = viewModel::readBlackPearlQualificationControls,
+        onSetBlackPearlDacFilter = viewModel::setBlackPearlDacFilter,
         onReadFiioJa11DeviceControls = viewModel::readFiioJa11DeviceControls,
         onSetFiioJa11OutputVolume = viewModel::setFiioJa11OutputVolume,
         onSetFiioJa11EqProgram = viewModel::setFiioJa11EqProgram,

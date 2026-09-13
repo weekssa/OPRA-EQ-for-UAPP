@@ -75,10 +75,17 @@ data class BlackPearlQualificationUiState(
         error = message,
     )
 
-    fun withSessionCurrent(current: Boolean): BlackPearlQualificationUiState = copy(
-        isReading = false,
-        isWriting = false,
-        activeWriteControlId = null,
-        isCurrentSession = snapshot != null && current,
-    )
+    fun withSessionCurrent(current: Boolean): BlackPearlQualificationUiState {
+        val retainedSnapshotWentStale = snapshot != null && !current
+        return when {
+            retainedSnapshotWentStale -> copy(
+                isReading = false,
+                isWriting = false,
+                activeWriteControlId = null,
+                isCurrentSession = false,
+            )
+            isReading -> copy(isCurrentSession = false)
+            else -> copy(isCurrentSession = snapshot != null && current)
+        }
+    }
 }

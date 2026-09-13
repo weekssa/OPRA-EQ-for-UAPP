@@ -38,6 +38,47 @@ class BlackPearlQualificationUiStateTest {
         assertThat(state.error).isEqualTo("Verification failed")
     }
 
+    @Test
+    fun currentSessionProjectionPreservesActiveWriteUntilRepositoryCompletes() {
+        val writing = BlackPearlQualificationUiState()
+            .success(snapshot(filterCode = 2))
+            .beginWrite(BlackPearlDeviceControls.DAC_FILTER)
+
+        val projected = writing.withSessionCurrent(current = true)
+
+        assertThat(projected.isBusy).isTrue()
+        assertThat(projected.isWriting).isTrue()
+        assertThat(projected.activeWriteControlId).isEqualTo(BlackPearlDeviceControls.DAC_FILTER)
+        assertThat(projected.isCurrentSession).isTrue()
+    }
+
+    @Test
+    fun currentSessionProjectionPreservesReadBusyStateWithoutPresentingOldSnapshotAsCurrent() {
+        val reading = BlackPearlQualificationUiState()
+            .success(snapshot(filterCode = 2))
+            .beginRead()
+
+        val projected = reading.withSessionCurrent(current = true)
+
+        assertThat(projected.isBusy).isTrue()
+        assertThat(projected.isReading).isTrue()
+        assertThat(projected.isCurrentSession).isFalse()
+    }
+
+    @Test
+    fun staleSessionProjectionCancelsBusyPresentationAndMarksRetainedSnapshotStale() {
+        val writing = BlackPearlQualificationUiState()
+            .success(snapshot(filterCode = 2))
+            .beginWrite(BlackPearlDeviceControls.DAC_FILTER)
+
+        val projected = writing.withSessionCurrent(current = false)
+
+        assertThat(projected.isBusy).isFalse()
+        assertThat(projected.activeWriteControlId).isNull()
+        assertThat(projected.isCurrentSession).isFalse()
+        assertThat(projected.snapshot).isNotNull()
+    }
+
     private fun snapshot(filterCode: Int) = BlackPearlDeviceQualificationSnapshot(
         sessionGeneration = 7L,
         firmwareVersion = "0.6",

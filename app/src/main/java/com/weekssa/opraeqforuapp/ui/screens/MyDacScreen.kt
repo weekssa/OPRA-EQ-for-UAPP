@@ -90,6 +90,7 @@ fun MyDacScreen(
     onFlashBlackPearlFromMyDac: suspend (OpraEqProfile) -> String,
     onResetBlackPearlFromMyDac: suspend () -> String,
     onReadBlackPearlQualification: () -> Unit,
+    onSetBlackPearlDacFilter: (String) -> Unit,
     onMessage: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -341,6 +342,7 @@ fun MyDacScreen(
                     selectedDevice == DacDeviceId.TRN_BLACK_PEARL &&
                         blackPearlConnectionState is BlackPearlConnectionState.Connected,
                 onReadBlackPearlQualification = onReadBlackPearlQualification,
+                onSetBlackPearlDacFilter = onSetBlackPearlDacFilter,
             )
         }
     }

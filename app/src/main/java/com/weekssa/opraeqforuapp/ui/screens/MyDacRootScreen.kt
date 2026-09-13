@@ -68,6 +68,7 @@ fun MyDacRootScreen(
     onFlashBlackPearlFromMyDac: suspend (OpraEqProfile) -> String,
     onResetBlackPearlFromMyDac: suspend () -> String,
     onReadBlackPearlQualification: () -> Unit,
+    onSetBlackPearlDacFilter: (String) -> Unit,
     onReadFiioJa11DeviceControls: () -> Unit,
     onSetFiioJa11OutputVolume: (Int) -> Unit,
     onSetFiioJa11EqProgram: (FiioJa11Protocol.EqProgram) -> Unit,
@@ -159,6 +160,7 @@ fun MyDacRootScreen(
                 onFlashBlackPearlFromMyDac = onFlashBlackPearlFromMyDac,
                 onResetBlackPearlFromMyDac = onResetBlackPearlFromMyDac,
                 onReadBlackPearlQualification = onReadBlackPearlQualification,
+                onSetBlackPearlDacFilter = onSetBlackPearlDacFilter,
                 onMessage = onMessage,
                 modifier = modifier,
             )

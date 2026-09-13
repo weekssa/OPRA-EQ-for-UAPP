@@ -7,6 +7,7 @@ import com.weekssa.opraeqforuapp.R
 import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.catalog.AppCatalogRepository
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
+import com.weekssa.opraeqforuapp.data.dac.BlackPearlDeviceControlWriteResult
 import com.weekssa.opraeqforuapp.data.dac.BlackPearlQualificationReadResult
 import com.weekssa.opraeqforuapp.data.dac.DacControlRepository
 import com.weekssa.opraeqforuapp.data.dac.FiioJa11ControlReadResult
@@ -28,6 +29,8 @@ import com.weekssa.opraeqforuapp.data.sync.CatalogSyncOutcome
 import com.weekssa.opraeqforuapp.data.update.AppUpdateCheckResult
 import com.weekssa.opraeqforuapp.data.update.AppUpdateCoordinator
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlCaptureDecision
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceControls
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceQualificationPolicy
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlEditorApplyResult
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlashResult
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlatResetResult
@@ -768,7 +771,7 @@ class EqLibraryViewModel(
     }
 
     fun readBlackPearlQualificationControls() {
-        if (mutableBlackPearlQualificationState.value.isReading) return
+        if (mutableBlackPearlQualificationState.value.isBusy) return
         mutableBlackPearlQualificationState.update(BlackPearlQualificationUiState::beginRead)
         viewModelScope.launch {
             mutableBlackPearlQualificationState.value = when (
@@ -778,7 +781,7 @@ class EqLibraryViewModel(
                     mutableBlackPearlQualificationState.value.success(result.snapshot)
                 BlackPearlQualificationReadResult.NotConnected ->
                     mutableBlackPearlQualificationState.value.failure(
-                        "Connect TRN Black Pearl before reading candidate device controls.",
+                        "Connect TRN Black Pearl before reading device controls.",
                     )
                 BlackPearlQualificationReadResult.SessionChanged ->
                     mutableBlackPearlQualificationState.value.failure(
@@ -786,8 +789,103 @@ class EqLibraryViewModel(
                     )
                 is BlackPearlQualificationReadResult.ReadFailed ->
                     mutableBlackPearlQualificationState.value.failure(
-                        "Could not read ${result.field}. No candidate setting was changed.",
+                        "Could not read ${result.field}. No device setting was changed.",
                     )
+            }
+        }
+    }
+
+    fun setBlackPearlDacFilter(valueId: String) = writeBlackPearlDeviceControl(
+        BlackPearlDeviceControls.DAC_FILTER,
+        DacControlValue.Discrete(valueId),
+    )
+
+    private fun writeBlackPearlDeviceControl(controlId: DacControlId, value: DacControlValue) {
+        val state = mutableBlackPearlQualificationState.value
+        val snapshot = state.snapshot
+        if (state.isBusy) return
+        if (
+            snapshot == null ||
+            !state.isCurrentSession ||
+            !hardwareRepository.isBlackPearlSessionCurrent(snapshot.sessionGeneration) ||
+            hardwareRepository.blackPearlConnectionState.value !is BlackPearlConnectionState.Connected
+        ) {
+            mutableBlackPearlQualificationState.value = state.writeFailure(
+                "Read the current Black Pearl device state before changing this setting.",
+                actualSnapshot = snapshot,
+                actualIsCurrent = false,
+            )
+            return
+        }
+        if (!BlackPearlDeviceQualificationPolicy.isCandidateWriteEnabled(controlId)) {
+            mutableBlackPearlQualificationState.value = state.writeFailure(
+                "This Black Pearl control is not enabled for hardware qualification yet.",
+                actualSnapshot = snapshot,
+                actualIsCurrent = true,
+            )
+            return
+        }
+
+        mutableBlackPearlQualificationState.value = state.beginWrite(controlId)
+        viewModelScope.launch {
+            when (
+                val result = dacControlRepository.writeBlackPearlControl(
+                    DacWriteIntent(
+                        controlId = controlId,
+                        requestedValue = value,
+                        expectedSessionGeneration = snapshot.sessionGeneration,
+                    ),
+                )
+            ) {
+                is BlackPearlDeviceControlWriteResult.Verified -> {
+                    mutableBlackPearlQualificationState.value =
+                        mutableBlackPearlQualificationState.value.writeVerified(controlId, result.snapshot)
+                }
+                is BlackPearlDeviceControlWriteResult.ReadbackMismatch -> {
+                    mutableBlackPearlQualificationState.value =
+                        mutableBlackPearlQualificationState.value.writeFailure(
+                            "The Black Pearl readback did not match the requested setting. The change was not reported as successful.",
+                            actualSnapshot = result.snapshot,
+                            actualIsCurrent = hardwareRepository.isBlackPearlSessionCurrent(
+                                result.snapshot.sessionGeneration,
+                            ),
+                        )
+                }
+                is BlackPearlDeviceControlWriteResult.UnrelatedStateChanged -> {
+                    mutableBlackPearlQualificationState.value =
+                        mutableBlackPearlQualificationState.value.writeFailure(
+                            "Black Pearl changed unrelated state (${result.changedFields.joinToString()}). The change was not reported as successful.",
+                            actualSnapshot = result.snapshot,
+                            actualIsCurrent = hardwareRepository.isBlackPearlSessionCurrent(
+                                result.snapshot.sessionGeneration,
+                            ),
+                        )
+                }
+                is BlackPearlDeviceControlWriteResult.InvalidRequest ->
+                    mutableBlackPearlQualificationState.value =
+                        mutableBlackPearlQualificationState.value.writeFailure(
+                            "That Black Pearl setting value is not supported.",
+                        )
+                is BlackPearlDeviceControlWriteResult.NotConnected ->
+                    mutableBlackPearlQualificationState.value =
+                        mutableBlackPearlQualificationState.value.writeFailure(
+                            "The Black Pearl disconnected before the change could be verified.",
+                        )
+                is BlackPearlDeviceControlWriteResult.StaleBaseline ->
+                    mutableBlackPearlQualificationState.value =
+                        mutableBlackPearlQualificationState.value.writeFailure(
+                            "The Black Pearl USB session changed. Read the current device state again before changing a setting.",
+                        )
+                is BlackPearlDeviceControlWriteResult.ReadFailed ->
+                    mutableBlackPearlQualificationState.value =
+                        mutableBlackPearlQualificationState.value.writeFailure(
+                            "Could not verify ${result.field}. The change was not reported as successful.",
+                        )
+                is BlackPearlDeviceControlWriteResult.TransferFailed ->
+                    mutableBlackPearlQualificationState.value =
+                        mutableBlackPearlQualificationState.value.writeFailure(
+                            "The Black Pearl did not accept the requested setting change. Read the device state again before retrying.",
+                        )
             }
         }
     }

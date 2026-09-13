@@ -27,12 +27,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.R
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceControlReadCodec
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceControls
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceQualificationPolicy
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceQualificationSnapshot
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlVolumeScale
 import com.weekssa.opraeqforuapp.domain.dac.DacCapabilityCatalog
+import com.weekssa.opraeqforuapp.domain.dac.DacControlDescriptor
 import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
 import com.weekssa.opraeqforuapp.domain.dac.DacMetadataOrigin
-import com.weekssa.opraeqforuapp.domain.dac.DacValidationStatus
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
 import com.weekssa.opraeqforuapp.ui.BlackPearlQualificationUiState
 import com.weekssa.opraeqforuapp.ui.FiioJa11DeviceUiState
@@ -44,6 +46,7 @@ internal fun CapabilityDrivenDeviceStatus(
     blackPearlQualificationState: BlackPearlQualificationUiState,
     blackPearlQualificationEnabled: Boolean,
     onReadBlackPearlQualification: () -> Unit,
+    onSetBlackPearlDacFilter: (String) -> Unit = {},
     fiioJa11DeviceState: FiioJa11DeviceUiState = FiioJa11DeviceUiState(),
     fiioJa11Connected: Boolean = false,
     onReadFiioJa11DeviceControls: () -> Unit = {},
@@ -57,6 +60,7 @@ internal fun CapabilityDrivenDeviceStatus(
             state = blackPearlQualificationState,
             enabled = blackPearlQualificationEnabled,
             onRead = onReadBlackPearlQualification,
+            onSetDacFilter = onSetBlackPearlDacFilter,
         )
         DacDeviceId.FIIO_JA11 -> FiioJa11DeviceStatus(
             state = fiioJa11DeviceState,
@@ -79,6 +83,7 @@ private fun BlackPearlDeviceStatus(
     state: BlackPearlQualificationUiState,
     enabled: Boolean,
     onRead: () -> Unit,
+    onSetDacFilter: (String) -> Unit,
 ) {
     val identity = DacCapabilityCatalog.forDevice(DacDeviceId.TRN_BLACK_PEARL).identity
     state.snapshot?.let { snapshot ->
@@ -129,7 +134,12 @@ private fun BlackPearlDeviceStatus(
         originLabel = stringResource(R.string.my_dac_origin_validation_status),
     )
 
-    BlackPearlQualificationPanel(state = state, enabled = enabled, onRead = onRead)
+    BlackPearlDeviceControlPanel(
+        state = state,
+        enabled = enabled,
+        onRead = onRead,
+        onSetDacFilter = onSetDacFilter,
+    )
 }
 
 @Composable
@@ -383,34 +393,41 @@ private fun DeviceSectionTitle(title: String) {
 }
 
 @Composable
-private fun BlackPearlQualificationPanel(
+private fun BlackPearlDeviceControlPanel(
     state: BlackPearlQualificationUiState,
     enabled: Boolean,
     onRead: () -> Unit,
+    onSetDacFilter: (String) -> Unit,
 ) {
+    var choosingFilter by rememberSaveable { mutableStateOf(false) }
+    var pendingFilterValueId by rememberSaveable { mutableStateOf<String?>(null) }
+    val filterDescriptor = BlackPearlDeviceControls.descriptor(BlackPearlDeviceControls.DAC_FILTER)
+        as? DacControlDescriptor.Discrete
+    val filterOptions = filterDescriptor?.options.orEmpty()
+    val filterCandidateEnabled = BlackPearlDeviceQualificationPolicy.isCandidateWriteEnabled(
+        BlackPearlDeviceControls.DAC_FILTER,
+    )
+    val controlsEnabled = enabled && state.isCurrentSession && !state.isBusy && filterCandidateEnabled
+    val snapshot = state.snapshot
+
     HorizontalDivider(modifier = Modifier.padding(top = 12.dp))
     Text(
-        text = stringResource(R.string.my_dac_qualification_title),
+        text = "Device controls",
         fontWeight = FontWeight.SemiBold,
         modifier = Modifier.padding(top = 8.dp),
     )
     Text(
-        text = stringResource(R.string.my_dac_qualification_explanation),
+        text = "EQ Library verifies Black Pearl device state directly before and after every candidate change. A DEVICE change is never reported as successful from the requested value alone.",
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 
     Button(
         onClick = onRead,
-        enabled = enabled && !state.isReading,
+        enabled = enabled && !state.isBusy,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Text(
-            stringResource(
-                if (state.isReading) R.string.my_dac_qualification_reading
-                else R.string.my_dac_qualification_action,
-            ),
-        )
+        Text(if (state.isReading) "Reading…" else "Refresh device state")
     }
 
     state.error?.let { error ->
@@ -421,15 +438,120 @@ private fun BlackPearlQualificationPanel(
         )
     }
 
-    state.snapshot?.let { snapshot ->
+    if (state.isWriting && state.activeWriteControlId == BlackPearlDeviceControls.DAC_FILTER) {
         Text(
-            text = stringResource(
-                if (state.isCurrentSession) R.string.my_dac_qualification_current
-                else R.string.my_dac_qualification_stale,
-            ),
+            text = "Applying DAC filter and verifying complete device readback…",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+    if (
+        state.lastVerifiedWriteControlId == BlackPearlDeviceControls.DAC_FILTER &&
+        state.isCurrentSession
+    ) {
+        Text(
+            text = "DAC filter change verified by readback.",
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
+
+    snapshot?.let { currentSnapshot ->
+        Text(
+            text = if (state.isCurrentSession) "Current session read" else "Last read · USB session changed",
             style = MaterialTheme.typography.labelLarge,
         )
-        QualificationSnapshotRows(snapshot)
+        QualificationSnapshotRows(currentSnapshot)
+
+        DeviceSectionTitle("DAC / Digital")
+        QualificationValue(label = "DAC filter", value = filterLabel(currentSnapshot.filterCode))
+        TextButton(
+            onClick = { choosingFilter = true },
+            enabled = controlsEnabled,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("Change DAC filter")
+        }
+        Text(
+            text = "DAC filter is the first Black Pearl DEVICE write qualification candidate. Balance, microphone gain, amp topology, gain mode, and playback level remain read-only until their own hardware qualification gates pass.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = "Applying a DAC filter change does not send a save-to-flash command or claim persistence across power cycles.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+
+    if (choosingFilter && snapshot != null) {
+        AlertDialog(
+            onDismissRequest = { choosingFilter = false },
+            title = { Text("Change DAC filter") },
+            text = {
+                Column {
+                    Text(
+                        "Choose the reconstruction filter. Selecting an option only stages it; the next screen reviews the exact change before any USB write.",
+                        modifier = Modifier.padding(bottom = 8.dp),
+                    )
+                    filterOptions.forEach { option ->
+                        val optionCode = BlackPearlDeviceControls.filterCode(option.valueId)
+                        val isCurrent = optionCode == snapshot.filterCode
+                        TextButton(
+                            onClick = {
+                                choosingFilter = false
+                                pendingFilterValueId = option.valueId
+                            },
+                            enabled = !isCurrent && controlsEnabled,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(if (isCurrent) "${option.technicalLabel} · Current" else option.technicalLabel)
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { choosingFilter = false }) { Text("Cancel") }
+            },
+        )
+    }
+
+    pendingFilterValueId?.let { requestedValueId ->
+        val currentSnapshot = snapshot
+        val requestedOption = filterOptions.firstOrNull { it.valueId == requestedValueId }
+        if (currentSnapshot != null && requestedOption != null) {
+            AlertDialog(
+                onDismissRequest = { pendingFilterValueId = null },
+                title = { Text("Review DAC filter change") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Current: ${filterLabel(currentSnapshot.filterCode)}")
+                        Text("New: ${requestedOption.technicalLabel}")
+                        Text(
+                            "Apply performs a fresh complete device read, writes only the DAC-filter control, then reads the complete Black Pearl device state again. Any stale session, readback mismatch, or unrelated state change fails verification.",
+                        )
+                        Text(
+                            "This is a hardware-qualification candidate. It does not send Save to Flash.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            pendingFilterValueId = null
+                            onSetDacFilter(requestedValueId)
+                        },
+                        enabled = controlsEnabled,
+                    ) { Text("Apply") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { pendingFilterValueId = null }) { Text("Cancel") }
+                },
+            )
+        }
     }
 }
 
