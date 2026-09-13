@@ -66,7 +66,10 @@ data class UpdatePreferences(
 data class AppPreferences(
     val themeMode: ThemeMode = ThemeMode.System,
     val profileVisibility: ProfileVisibilityPreferences = ProfileVisibilityPreferences(),
+    /** Effective output context after Automatic/Manual resolution. */
     val exportTargets: ExportTargetPreferences = ExportTargetPreferences(),
+    /** Durable user-selected fallback/override, preserved while Automatic temporarily follows hardware. */
+    val manualExportTargets: ExportTargetPreferences = ExportTargetPreferences(),
     val outputBehavior: OutputBehavior = OutputBehavior.Automatic,
     val directBlackPearlFlashEnabled: Boolean = false,
     val directFiioJa11FlashEnabled: Boolean = false,
