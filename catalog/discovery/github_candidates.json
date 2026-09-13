@@ -288,7 +288,7 @@
       "url": "https://github.com/AlbertH0ng/headphones-eq-match/blob/3707e05b453049ac53091043f41aba3fe6e403ac/results/TRN MT3 (Harpo) ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-7c7c352c950141a5b524793d",
+      "candidate_id": "github-eb787df3065001c4aa0557e4",
       "content_sha": "3cd150f254e4ad8a7ecd1e7413e30d6faaeec220",
       "creator": null,
       "creator_is_explicit": false,
@@ -311,7 +311,7 @@
       "source_record_id": "FengChiWei-official/krummholz-buecherstube:archives/Philips SHP9500 ParametricEq.txt:3cd150f254e4ad8a7ecd1e7413e30d6faaeec220",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/FengChiWei-official/krummholz-buecherstube/blob/7ad8baf6ab4913f6ad6264a38b5da674fb0966d0/archives/Philips SHP9500 ParametricEq.txt"
+      "url": "https://github.com/FengChiWei-official/krummholz-buecherstube/blob/1fd9b205b733287be6d20dadc4912c8b29f96ffa/archives/Philips SHP9500 ParametricEq.txt"
     },
     {
       "candidate_id": "github-c2932e2c5bdb6757669fbb12",
@@ -1198,7 +1198,7 @@
       "url": "https://github.com/pierreaubert/AUpresetConverter/blob/54d55f607b9e23eb3b266e0f98202a7ccd90b626/examples_rews/Sennheiser HD 650 ParametricEq.txt"
     },
     {
-      "candidate_id": "github-71e54dd08292c36391655c7d",
+      "candidate_id": "github-b0b6618ee1a6f3fc7d31f0d2",
       "content_sha": "d9287e038fb824a9eb784006ca16772fa3fcb046",
       "creator": null,
       "creator_is_explicit": false,
@@ -1221,7 +1221,7 @@
       "source_record_id": "sallliisa/Airwave:AirwaveTests/Fixtures/CCA CRA ParametricEq.txt:d9287e038fb824a9eb784006ca16772fa3fcb046",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/sallliisa/Airwave/blob/c59963501cba064a36522fbe9d9532d8ab7233b0/AirwaveTests/Fixtures/CCA CRA ParametricEq.txt"
+      "url": "https://github.com/sallliisa/Airwave/blob/bef9d4849419422211e91aff755b90f6a746bcf2/AirwaveTests/Fixtures/CCA CRA ParametricEq.txt"
     },
     {
       "candidate_id": "github-02577b81230338886d28c17f",
