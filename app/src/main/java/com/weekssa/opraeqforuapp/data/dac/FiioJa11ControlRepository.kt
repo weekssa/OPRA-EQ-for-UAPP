@@ -9,8 +9,6 @@ import com.weekssa.opraeqforuapp.domain.dac.validateForWrite
 import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceControls
 import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceSnapshot
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 
 interface FiioJa11DeviceControlSource {
     val sessionGeneration: Long
@@ -76,121 +74,124 @@ sealed interface FiioJa11ControlWriteResult {
 /**
  * Software-established JA11 DEVICE transaction boundary.
  *
- * No write is treated as physically production-qualified by this class. Normal writes require a
- * complete fresh baseline, one targeted write, complete same-session readback, exact requested-value
- * verification, and unrelated-state verification. Headset/UAC writes are intentionally different:
- * public JA11 behavior establishes that they can restart/re-enumerate USB, so the first transaction
- * can only return ReconnectRequired. A later new-session read must verify the requested value before
- * the caller may present success.
+ * Production injects the physical JA11 session gate so DEVICE and EQ transactions serialize through
+ * one owner. Normal writes require a complete fresh baseline, one targeted write, complete same-
+ * session readback, exact requested-value verification, and unrelated-state verification. Controls
+ * established to restart/re-enumerate USB return ReconnectRequired until a fresh replacement-session
+ * read verifies the requested state.
  */
 class FiioJa11ControlRepository(
     private val source: FiioJa11DeviceControlSource,
+    private val operationGate: DacOperationGate = MutexDacOperationGate(),
 ) {
-    private val operationMutex = Mutex()
-
     suspend fun readSnapshot(): FiioJa11ControlReadResult =
-        operationMutex.withLock { readSnapshotUnlocked() }
+        operationGate.withExclusiveOperation { readSnapshotUnlocked() }
 
-    suspend fun writeControl(intent: DacWriteIntent): FiioJa11ControlWriteResult = operationMutex.withLock {
-        val descriptor = FiioJa11DeviceControls.descriptor(intent.controlId)
-            ?: return@withLock FiioJa11ControlWriteResult.InvalidRequest(intent.controlId, null)
-        if (intent.controlId !in FiioJa11DeviceControls.softwareImplementedWriteControlIds) {
-            return@withLock FiioJa11ControlWriteResult.InvalidRequest(intent.controlId, null)
-        }
-        val validation = descriptor.validateForWrite(intent.requestedValue)
-        if (validation !is DacControlValidation.Valid) {
-            return@withLock FiioJa11ControlWriteResult.InvalidRequest(intent.controlId, validation)
-        }
-
-        val generation = source.sessionGeneration
-        if (generation <= 0L || !source.isSessionCurrent(generation)) {
-            return@withLock FiioJa11ControlWriteResult.NotConnected(intent.controlId)
-        }
-        if (generation != intent.expectedSessionGeneration) {
-            return@withLock FiioJa11ControlWriteResult.StaleBaseline(
-                intent.controlId,
-                intent.expectedSessionGeneration,
-                generation,
-            )
-        }
-
-        val baseline = when (val read = readSnapshotUnlocked()) {
-            is FiioJa11ControlReadResult.Success -> read.snapshot
-            FiioJa11ControlReadResult.NotConnected -> return@withLock FiioJa11ControlWriteResult.NotConnected(intent.controlId)
-            FiioJa11ControlReadResult.SessionChanged -> return@withLock FiioJa11ControlWriteResult.StaleBaseline(
-                intent.controlId,
-                intent.expectedSessionGeneration,
-                source.sessionGeneration,
-            )
-            is FiioJa11ControlReadResult.ReadFailed -> return@withLock FiioJa11ControlWriteResult.ReadFailed(
-                intent.controlId,
-                read.field,
-            )
-        }
-        if (baseline.sessionGeneration != intent.expectedSessionGeneration) {
-            return@withLock FiioJa11ControlWriteResult.StaleBaseline(
-                intent.controlId,
-                intent.expectedSessionGeneration,
-                baseline.sessionGeneration,
-            )
-        }
-
-        val baselineValue = FiioJa11DeviceControls.valueFromSnapshot(intent.controlId, baseline)
-        if (baselineValue == intent.requestedValue) {
-            return@withLock FiioJa11ControlWriteResult.Verified(
-                intent.controlId,
-                intent.requestedValue,
-                baseline,
-                baseline,
-            )
-        }
-
-        if (!writeTarget(intent.controlId, intent.requestedValue)) {
-            return@withLock if (source.isSessionCurrent(generation)) {
-                FiioJa11ControlWriteResult.TransferFailed(intent.controlId)
-            } else {
-                FiioJa11ControlWriteResult.StaleBaseline(intent.controlId, generation, source.sessionGeneration)
+    suspend fun writeControl(intent: DacWriteIntent): FiioJa11ControlWriteResult =
+        operationGate.withExclusiveOperation {
+            val descriptor = FiioJa11DeviceControls.descriptor(intent.controlId)
+                ?: return@withExclusiveOperation FiioJa11ControlWriteResult.InvalidRequest(intent.controlId, null)
+            if (intent.controlId !in FiioJa11DeviceControls.softwareImplementedWriteControlIds) {
+                return@withExclusiveOperation FiioJa11ControlWriteResult.InvalidRequest(intent.controlId, null)
             }
-        }
+            val validation = descriptor.validateForWrite(intent.requestedValue)
+            if (validation !is DacControlValidation.Valid) {
+                return@withExclusiveOperation FiioJa11ControlWriteResult.InvalidRequest(intent.controlId, validation)
+            }
 
-        if (FiioJa11DeviceControls.requiresSessionRestart(intent.controlId)) {
-            return@withLock FiioJa11ControlWriteResult.ReconnectRequired(
-                FiioJa11PendingRestartWrite(
-                    controlId = intent.controlId,
-                    requestedValue = intent.requestedValue,
-                    previousSessionGeneration = generation,
-                    baseline = baseline,
-                ),
-            )
-        }
-
-        if (!source.isSessionCurrent(generation)) {
-            return@withLock FiioJa11ControlWriteResult.StaleBaseline(intent.controlId, generation, source.sessionGeneration)
-        }
-        val readback = when (val read = readSnapshotUnlocked()) {
-            is FiioJa11ControlReadResult.Success -> read.snapshot
-            FiioJa11ControlReadResult.NotConnected -> return@withLock FiioJa11ControlWriteResult.NotConnected(intent.controlId)
-            FiioJa11ControlReadResult.SessionChanged -> return@withLock FiioJa11ControlWriteResult.StaleBaseline(
-                intent.controlId,
-                generation,
-                source.sessionGeneration,
-            )
-            is FiioJa11ControlReadResult.ReadFailed -> return@withLock FiioJa11ControlWriteResult.ReadFailed(
-                intent.controlId,
-                read.field,
-            )
-        }
-        verifyReadback(intent.controlId, intent.requestedValue, baseline, readback)
-    }
-
-    suspend fun verifyRestartedControl(pending: FiioJa11PendingRestartWrite): FiioJa11ControlWriteResult =
-        operationMutex.withLock {
             val generation = source.sessionGeneration
             if (generation <= 0L || !source.isSessionCurrent(generation)) {
-                return@withLock FiioJa11ControlWriteResult.NotConnected(pending.controlId)
+                return@withExclusiveOperation FiioJa11ControlWriteResult.NotConnected(intent.controlId)
+            }
+            if (generation != intent.expectedSessionGeneration) {
+                return@withExclusiveOperation FiioJa11ControlWriteResult.StaleBaseline(
+                    intent.controlId,
+                    intent.expectedSessionGeneration,
+                    generation,
+                )
+            }
+
+            val baseline = when (val read = readSnapshotUnlocked()) {
+                is FiioJa11ControlReadResult.Success -> read.snapshot
+                FiioJa11ControlReadResult.NotConnected ->
+                    return@withExclusiveOperation FiioJa11ControlWriteResult.NotConnected(intent.controlId)
+                FiioJa11ControlReadResult.SessionChanged ->
+                    return@withExclusiveOperation FiioJa11ControlWriteResult.StaleBaseline(
+                        intent.controlId,
+                        intent.expectedSessionGeneration,
+                        source.sessionGeneration,
+                    )
+                is FiioJa11ControlReadResult.ReadFailed ->
+                    return@withExclusiveOperation FiioJa11ControlWriteResult.ReadFailed(intent.controlId, read.field)
+            }
+            if (baseline.sessionGeneration != intent.expectedSessionGeneration) {
+                return@withExclusiveOperation FiioJa11ControlWriteResult.StaleBaseline(
+                    intent.controlId,
+                    intent.expectedSessionGeneration,
+                    baseline.sessionGeneration,
+                )
+            }
+
+            val baselineValue = FiioJa11DeviceControls.valueFromSnapshot(intent.controlId, baseline)
+            if (baselineValue == intent.requestedValue) {
+                return@withExclusiveOperation FiioJa11ControlWriteResult.Verified(
+                    intent.controlId,
+                    intent.requestedValue,
+                    baseline,
+                    baseline,
+                )
+            }
+
+            if (!writeTarget(intent.controlId, intent.requestedValue)) {
+                return@withExclusiveOperation if (source.isSessionCurrent(generation)) {
+                    FiioJa11ControlWriteResult.TransferFailed(intent.controlId)
+                } else {
+                    FiioJa11ControlWriteResult.StaleBaseline(intent.controlId, generation, source.sessionGeneration)
+                }
+            }
+
+            if (FiioJa11DeviceControls.requiresSessionRestart(intent.controlId)) {
+                return@withExclusiveOperation FiioJa11ControlWriteResult.ReconnectRequired(
+                    FiioJa11PendingRestartWrite(
+                        controlId = intent.controlId,
+                        requestedValue = intent.requestedValue,
+                        previousSessionGeneration = generation,
+                        baseline = baseline,
+                    ),
+                )
+            }
+
+            if (!source.isSessionCurrent(generation)) {
+                return@withExclusiveOperation FiioJa11ControlWriteResult.StaleBaseline(
+                    intent.controlId,
+                    generation,
+                    source.sessionGeneration,
+                )
+            }
+            val readback = when (val read = readSnapshotUnlocked()) {
+                is FiioJa11ControlReadResult.Success -> read.snapshot
+                FiioJa11ControlReadResult.NotConnected ->
+                    return@withExclusiveOperation FiioJa11ControlWriteResult.NotConnected(intent.controlId)
+                FiioJa11ControlReadResult.SessionChanged ->
+                    return@withExclusiveOperation FiioJa11ControlWriteResult.StaleBaseline(
+                        intent.controlId,
+                        generation,
+                        source.sessionGeneration,
+                    )
+                is FiioJa11ControlReadResult.ReadFailed ->
+                    return@withExclusiveOperation FiioJa11ControlWriteResult.ReadFailed(intent.controlId, read.field)
+            }
+            verifyReadback(intent.controlId, intent.requestedValue, baseline, readback)
+        }
+
+    suspend fun verifyRestartedControl(pending: FiioJa11PendingRestartWrite): FiioJa11ControlWriteResult =
+        operationGate.withExclusiveOperation {
+            val generation = source.sessionGeneration
+            if (generation <= 0L || !source.isSessionCurrent(generation)) {
+                return@withExclusiveOperation FiioJa11ControlWriteResult.NotConnected(pending.controlId)
             }
             if (generation == pending.previousSessionGeneration) {
-                return@withLock FiioJa11ControlWriteResult.StaleBaseline(
+                return@withExclusiveOperation FiioJa11ControlWriteResult.StaleBaseline(
                     pending.controlId,
                     pending.previousSessionGeneration,
                     generation,
@@ -198,16 +199,16 @@ class FiioJa11ControlRepository(
             }
             val readback = when (val read = readSnapshotUnlocked()) {
                 is FiioJa11ControlReadResult.Success -> read.snapshot
-                FiioJa11ControlReadResult.NotConnected -> return@withLock FiioJa11ControlWriteResult.NotConnected(pending.controlId)
-                FiioJa11ControlReadResult.SessionChanged -> return@withLock FiioJa11ControlWriteResult.StaleBaseline(
-                    pending.controlId,
-                    pending.previousSessionGeneration,
-                    source.sessionGeneration,
-                )
-                is FiioJa11ControlReadResult.ReadFailed -> return@withLock FiioJa11ControlWriteResult.ReadFailed(
-                    pending.controlId,
-                    read.field,
-                )
+                FiioJa11ControlReadResult.NotConnected ->
+                    return@withExclusiveOperation FiioJa11ControlWriteResult.NotConnected(pending.controlId)
+                FiioJa11ControlReadResult.SessionChanged ->
+                    return@withExclusiveOperation FiioJa11ControlWriteResult.StaleBaseline(
+                        pending.controlId,
+                        pending.previousSessionGeneration,
+                        source.sessionGeneration,
+                    )
+                is FiioJa11ControlReadResult.ReadFailed ->
+                    return@withExclusiveOperation FiioJa11ControlWriteResult.ReadFailed(pending.controlId, read.field)
             }
             verifyReadback(pending.controlId, pending.requestedValue, pending.baseline, readback, afterRestart = true)
         }
@@ -306,7 +307,7 @@ class FiioJa11ControlRepository(
         if (controlId != FiioJa11DeviceControls.UAC_MODE && before.uacMode != after.uacMode) add("UAC mode")
         if (controlId != FiioJa11DeviceControls.UAC_MODE && before.usbProductId != after.usbProductId) add("USB identity")
         // Stream/sample-rate may legitimately change independently while audio is playing. It is read
-        // for user information but is not treated as an owned setting changed by this transaction.
+        // for information but is not an owned setting changed by this transaction.
         if (!afterRestart && before.sessionGeneration != after.sessionGeneration) add("USB session")
     }
 
