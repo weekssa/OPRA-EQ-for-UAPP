@@ -56,7 +56,7 @@ import com.weekssa.opraeqforuapp.ui.components.UpdateAvailableBanner
 import com.weekssa.opraeqforuapp.ui.components.WhatsNewDialog
 import com.weekssa.opraeqforuapp.ui.screens.BrowseOpraScreen
 import com.weekssa.opraeqforuapp.ui.screens.ManagedHeadphoneDetailScreen
-import com.weekssa.opraeqforuapp.ui.screens.MyDacScreen
+import com.weekssa.opraeqforuapp.ui.screens.MyDacRootScreen
 import com.weekssa.opraeqforuapp.ui.screens.MyEqsHomeScreen
 import com.weekssa.opraeqforuapp.ui.screens.SettingsScreen
 import kotlinx.coroutines.launch
@@ -108,6 +108,12 @@ fun EqLibraryApp(
     val onFlashBlackPearlFromMyDac = actions.onFlashBlackPearlFromMyDac
     val onResetBlackPearlFromMyDac = actions.onResetBlackPearlFromMyDac
     val onReadBlackPearlQualificationControls = actions.onReadBlackPearlQualificationControls
+    val onReadFiioJa11DeviceControls = actions.onReadFiioJa11DeviceControls
+    val onSetFiioJa11OutputVolume = actions.onSetFiioJa11OutputVolume
+    val onSetFiioJa11EqProgram = actions.onSetFiioJa11EqProgram
+    val onSetFiioJa11HeadsetControl = actions.onSetFiioJa11HeadsetControl
+    val onSetFiioJa11UacMode = actions.onSetFiioJa11UacMode
+    val onResetFiioJa11FromMyDac = actions.onResetFiioJa11FromMyDac
     val onConnectBlackPearl = actions.onConnectBlackPearl
     val onResetBlackPearl = actions.onResetBlackPearl
     val onConnectFiioJa11 = actions.onConnectFiioJa11
@@ -145,15 +151,13 @@ fun EqLibraryApp(
     val onDismissPostUpdate = actions.onDismissPostUpdate
     val onOpenUrl = actions.onOpenUrl
     val onThemeModeChange = actions.onThemeModeChange
+    val onOutputBehaviorChange = actions.onOutputBehaviorChange
     val onExportTargetChange = actions.onExportTargetChange
     val onActiveExportTargetChange = actions.onActiveExportTargetChange
     val onDirectBlackPearlFlashEnabledChange = actions.onDirectBlackPearlFlashEnabledChange
     val onDirectFiioJa11FlashEnabledChange = actions.onDirectFiioJa11FlashEnabledChange
-    val onDirectJcallyJm12FlashEnabledChange = actions.onDirectJcallyJm12FlashEnabledChange
 
-    var selectedDestinationName by rememberSaveable {
-        mutableStateOf(EqLibraryDestination.MyEqs.name)
-    }
+    var selectedDestinationName by rememberSaveable { mutableStateOf(EqLibraryDestination.MyEqs.name) }
     var selectedManagedProductId by rememberSaveable { mutableStateOf<String?>(null) }
     var outputMenuExpanded by remember { mutableStateOf(false) }
     var pendingExportRequestState by rememberSaveable { mutableStateOf<ArrayList<String>?>(null) }
@@ -262,19 +266,13 @@ fun EqLibraryApp(
         whatsNewNotes = notes.orEmpty()
     }
 
-    suspend fun executeExport(
-        uri: Uri,
-        request: ActiveOutputExportRequest?,
-    ): String? {
+    suspend fun executeExport(uri: Uri, request: ActiveOutputExportRequest?): String? {
         if (request != null && !request.device.supportsFileExport) return null
         return when (request) {
             is ActiveOutputExportRequest.AllManaged -> onExportSelected(uri, request.device)
             is ActiveOutputExportRequest.Product -> onExportProduct(uri, request.productId, request.device)
             is ActiveOutputExportRequest.ManagedProfile -> onExportManagedProfile(
-                uri,
-                request.productId,
-                request.profileId,
-                request.device,
+                uri, request.productId, request.profileId, request.device,
             )
             is ActiveOutputExportRequest.SavedEq -> onExportSavedEq(uri, request.entryId, request.device)
             is ActiveOutputExportRequest.GeneralEq -> onExportGeneralEq(uri, request.presetId, request.device)
@@ -291,9 +289,7 @@ fun EqLibraryApp(
             if (!onPersistExportTree(uri)) {
                 snackbarHostState.showSnackbar(exportFolderPermissionFailedMessage)
             } else {
-                executeExport(uri, request)?.let { message ->
-                    snackbarHostState.showSnackbar(message)
-                }
+                executeExport(uri, request)?.let { message -> snackbarHostState.showSnackbar(message) }
             }
         }
     }
@@ -312,17 +308,13 @@ fun EqLibraryApp(
                 chooseExportFolder(request)
             } else {
                 scope.launch {
-                    executeExport(storedUri, request)?.let { message ->
-                        snackbarHostState.showSnackbar(message)
-                    }
+                    executeExport(storedUri, request)?.let { message -> snackbarHostState.showSnackbar(message) }
                 }
             }
         }
     }
 
-    val requestExportAll = {
-        runExportRequest(ActiveOutputExportRequest.AllManaged(activeOutput))
-    }
+    val requestExportAll = { runExportRequest(ActiveOutputExportRequest.AllManaged(activeOutput)) }
     val requestExportProduct: (String) -> Unit = { productId ->
         runExportRequest(ActiveOutputExportRequest.Product(productId, activeOutput))
     }
@@ -340,15 +332,11 @@ fun EqLibraryApp(
     }
     val requestCatalogRefresh = {
         if (!catalogBusy) {
-            scope.launch {
-                snackbarHostState.showSnackbar(onRefreshCatalog())
-            }
+            scope.launch { snackbarHostState.showSnackbar(onRefreshCatalog()) }
         }
     }
     val requestUpdateCheck: () -> Unit = {
-        scope.launch {
-            snackbarHostState.showSnackbar(onCheckForUpdates())
-        }
+        scope.launch { snackbarHostState.showSnackbar(onCheckForUpdates()) }
     }
 
     BackHandler(
@@ -374,12 +362,7 @@ fun EqLibraryApp(
                     ) {
                         Box {
                             TextButton(onClick = { outputMenuExpanded = true }) {
-                                Text(
-                                    stringResource(
-                                        R.string.output_selector_format,
-                                        outputTitle(activeOutput),
-                                    ),
-                                )
+                                Text(stringResource(R.string.output_selector_format, outputTitle(activeOutput)))
                             }
                             DropdownMenu(
                                 expanded = outputMenuExpanded,
@@ -405,9 +388,7 @@ fun EqLibraryApp(
                             } else {
                                 Icon(
                                     Icons.Outlined.Refresh,
-                                    contentDescription = stringResource(
-                                        R.string.refresh_eq_library_content_description,
-                                    ),
+                                    contentDescription = stringResource(R.string.refresh_eq_library_content_description),
                                 )
                             }
                         }
@@ -554,19 +535,20 @@ fun EqLibraryApp(
                         }
                     }
 
-                    EqLibraryDestination.MyDac -> MyDacScreen(
+                    EqLibraryDestination.MyDac -> MyDacRootScreen(
                         recognitionState = state.dacRecognitionState,
                         catalogState = state.catalogState,
                         blackPearlConnectionState = state.blackPearlConnectionState,
                         fiioJa11ConnectionState = state.fiioJa11ConnectionState,
-                        jcallyJm12ConnectionState = state.jcallyJm12ConnectionState,
                         blackPearlHardwareEqState = state.blackPearlHardwareEqState,
+                        fiioJa11HardwareEqState = state.fiioJa11HardwareEqState,
                         blackPearlHardwareEqMatch = state.blackPearlHardwareEqMatch,
                         blackPearlManagedHeadphones = state.blackPearlManagedHeadphones,
                         blackPearlSavedEqs = state.blackPearlSavedEqs,
                         blackPearlSavedGeneralEqs = state.blackPearlSavedGeneralEqs,
                         blackPearlEditorState = state.blackPearlEditorState,
                         blackPearlQualificationState = state.blackPearlQualificationState,
+                        fiioJa11DeviceState = state.fiioJa11DeviceState,
                         onConnectDac = onConnectDacForMyDac,
                         onOpenBlackPearlEditor = onOpenBlackPearlEditor,
                         onCloseBlackPearlEditor = onCloseMyDacEditor,
@@ -581,6 +563,12 @@ fun EqLibraryApp(
                         onFlashBlackPearlFromMyDac = onFlashBlackPearlFromMyDac,
                         onResetBlackPearlFromMyDac = onResetBlackPearlFromMyDac,
                         onReadBlackPearlQualification = onReadBlackPearlQualificationControls,
+                        onReadFiioJa11DeviceControls = onReadFiioJa11DeviceControls,
+                        onSetFiioJa11OutputVolume = onSetFiioJa11OutputVolume,
+                        onSetFiioJa11EqProgram = onSetFiioJa11EqProgram,
+                        onSetFiioJa11HeadsetControl = onSetFiioJa11HeadsetControl,
+                        onSetFiioJa11UacMode = onSetFiioJa11UacMode,
+                        onResetFiioJa11FromMyDac = onResetFiioJa11FromMyDac,
                         onMessage = ::showMessage,
                         modifier = Modifier.fillMaxSize(),
                     )
@@ -627,10 +615,11 @@ fun EqLibraryApp(
                         onGetUpdate = { appPreferences.updates.releaseUrl?.let(onOpenUrl) },
                         onOpenUrl = onOpenUrl,
                         onThemeModeChange = onThemeModeChange,
+                        onOutputBehaviorChange = onOutputBehaviorChange,
                         onExportTargetChange = onExportTargetChange,
+                        onActiveExportTargetChange = onActiveExportTargetChange,
                         onDirectBlackPearlFlashEnabledChange = onDirectBlackPearlFlashEnabledChange,
                         onDirectFiioJa11FlashEnabledChange = onDirectFiioJa11FlashEnabledChange,
-                        onDirectJcallyJm12FlashEnabledChange = onDirectJcallyJm12FlashEnabledChange,
                         hiddenCanonicalProfileIds = appPreferences.hiddenCanonicalProfileIds,
                         onUnhideCanonicalProfiles = onUnhideCanonicalProfiles,
                         onMessage = ::showMessage,
