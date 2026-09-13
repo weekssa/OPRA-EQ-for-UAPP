@@ -2,18 +2,83 @@ package com.weekssa.opraeqforuapp.domain.blackpearl
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class BlackPearlDeviceControlReadCodecTest {
     @Test
     fun candidateReadRequestsUseObservedReadHeadersAndParameters() {
-        assertRequest(BlackPearlDeviceControlReadCodec.firmwareVersionRequest(), 0x0C, 0x00, 0x00, 0x00)
-        assertRequest(BlackPearlDeviceControlReadCodec.filterRequest(), 0x11, 0x00, 0x00, 0x00)
-        assertRequest(BlackPearlDeviceControlReadCodec.gainModeRequest(), 0x19, 0x00, 0x00, 0x00)
-        assertRequest(BlackPearlDeviceControlReadCodec.ampTopologyRequest(), 0x1D, 0x00, 0x00, 0x00)
-        assertRequest(BlackPearlDeviceControlReadCodec.micGainRequest(), 0x02, 0x02, 0x02, 0x00)
-        assertRequest(BlackPearlDeviceControlReadCodec.balanceLeftRequest(), 0x16, 0x04, 0x01, 0x00)
-        assertRequest(BlackPearlDeviceControlReadCodec.balanceRightRequest(), 0x16, 0x04, 0x00, 0x00)
+        assertReadRequest(BlackPearlDeviceControlReadCodec.firmwareVersionRequest(), 0x0C, 0x00, 0x00, 0x00)
+        assertReadRequest(BlackPearlDeviceControlReadCodec.filterRequest(), 0x11, 0x00, 0x00, 0x00)
+        assertReadRequest(BlackPearlDeviceControlReadCodec.gainModeRequest(), 0x19, 0x00, 0x00, 0x00)
+        assertReadRequest(BlackPearlDeviceControlReadCodec.ampTopologyRequest(), 0x1D, 0x00, 0x00, 0x00)
+        assertReadRequest(BlackPearlDeviceControlReadCodec.micGainRequest(), 0x02, 0x02, 0x02, 0x00)
+        assertReadRequest(BlackPearlDeviceControlReadCodec.balanceLeftRequest(), 0x16, 0x04, 0x01, 0x00)
+        assertReadRequest(BlackPearlDeviceControlReadCodec.balanceRightRequest(), 0x16, 0x04, 0x00, 0x00)
+    }
+
+    @Test
+    fun candidateWritePacketsMatchCorroboratedControlSemantics() {
+        assertWriteRequest(
+            BlackPearlDeviceControlReadCodec.filterWriteReport(BlackPearlDeviceControlReadCodec.FILTER_FAST_PC),
+            command = 0x11,
+            p1 = 0x01,
+            p2 = 0x02,
+        )
+        assertWriteRequest(
+            BlackPearlDeviceControlReadCodec.gainModeWriteReport(BlackPearlDeviceControlReadCodec.GAIN_MODE_HIGH),
+            command = 0x19,
+            p1 = 0x01,
+            p2 = 0x01,
+        )
+        assertWriteRequest(
+            BlackPearlDeviceControlReadCodec.ampTopologyWriteReport(BlackPearlDeviceControlReadCodec.AMP_TOPOLOGY_CLASS_AB),
+            command = 0x1D,
+            p1 = 0x01,
+            p2 = 0x01,
+        )
+        assertWriteRequest(
+            BlackPearlDeviceControlReadCodec.micGainWriteReport(-7),
+            command = 0x02,
+            p1 = 0x02,
+            p2 = 0x80,
+            p3 = 0xF9,
+        )
+    }
+
+    @Test
+    fun balanceWriteAlwaysOwnsBothSidesAndClearsOppositeAttenuation() {
+        val left = BlackPearlDeviceControlReadCodec.balanceWriteReports(-5)
+        assertEquals(2, left.size)
+        assertWriteRequest(left[0], command = 0x16, p1 = 0x04, p2 = 0x01, p3 = 0x00, p4 = 251)
+        assertWriteRequest(left[1], command = 0x16, p1 = 0x04, p2 = 0x00, p3 = 0x00, p4 = 0)
+
+        val right = BlackPearlDeviceControlReadCodec.balanceWriteReports(7)
+        assertWriteRequest(right[0], command = 0x16, p1 = 0x04, p2 = 0x01, p3 = 0x00, p4 = 0)
+        assertWriteRequest(right[1], command = 0x16, p1 = 0x04, p2 = 0x00, p3 = 0x00, p4 = 249)
+
+        val centered = BlackPearlDeviceControlReadCodec.balanceWriteReports(0)
+        assertWriteRequest(centered[0], command = 0x16, p1 = 0x04, p2 = 0x01, p3 = 0x00, p4 = 0)
+        assertWriteRequest(centered[1], command = 0x16, p1 = 0x04, p2 = 0x00, p3 = 0x00, p4 = 0)
+    }
+
+    @Test
+    fun candidateWriteBuildersRejectUnknownOrOutOfRangeValues() {
+        assertThrows(IllegalArgumentException::class.java) {
+            BlackPearlDeviceControlReadCodec.filterWriteReport(0)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            BlackPearlDeviceControlReadCodec.gainModeWriteReport(2)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            BlackPearlDeviceControlReadCodec.ampTopologyWriteReport(2)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            BlackPearlDeviceControlReadCodec.micGainWriteReport(16)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            BlackPearlDeviceControlReadCodec.balanceWriteReports(-16)
+        }
     }
 
     @Test
@@ -107,7 +172,7 @@ class BlackPearlDeviceControlReadCodecTest {
         assertNull(inconsistent.signedBalanceDb)
     }
 
-    private fun assertRequest(request: ByteArray, command: Int, p1: Int, p2: Int, p3: Int) {
+    private fun assertReadRequest(request: ByteArray, command: Int, p1: Int, p2: Int, p3: Int) {
         assertEquals(64, request.size)
         assertEquals(0x4B, request[0].toInt() and 0xFF)
         assertEquals(0x80, request[1].toInt() and 0xFF)
@@ -115,6 +180,25 @@ class BlackPearlDeviceControlReadCodecTest {
         assertEquals(p1, request[3].toInt() and 0xFF)
         assertEquals(p2, request[4].toInt() and 0xFF)
         assertEquals(p3, request[5].toInt() and 0xFF)
+    }
+
+    private fun assertWriteRequest(
+        request: ByteArray,
+        command: Int,
+        p1: Int,
+        p2: Int,
+        p3: Int = 0,
+        p4: Int = 0,
+    ) {
+        assertEquals(64, request.size)
+        assertEquals(0x4B, request[0].toInt() and 0xFF)
+        assertEquals(0x01, request[1].toInt() and 0xFF)
+        assertEquals(command, request[2].toInt() and 0xFF)
+        assertEquals(p1, request[3].toInt() and 0xFF)
+        assertEquals(p2, request[4].toInt() and 0xFF)
+        assertEquals(p3, request[5].toInt() and 0xFF)
+        assertEquals(p4, request[6].toInt() and 0xFF)
+        assertEquals(0, request.drop(7).sumOf { it.toInt() })
     }
 
     private fun response(command: Int, byte4: Int = 0): ByteArray = ByteArray(64).apply {
