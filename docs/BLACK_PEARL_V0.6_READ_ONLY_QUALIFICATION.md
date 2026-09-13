@@ -55,15 +55,15 @@ This checklist/provenance documentation may receive later documentation-only com
 
 ## Baseline record
 
-Before opening the qualification panel, record the current values with the independent controller/tool:
+Independent Black Pearl controller observations supplied by the project owner:
 
-- Firmware/version: `TBD`
-- DAC filter: `TBD`
-- Gain mode: `TBD`
-- Amp topology: `TBD`
-- Mic gain: `TBD`
-- Balance: `TBD`
-- Playback/global gain: `TBD`
+- Firmware/version: `0.6` — confirmed
+- DAC filter: `Fast-PC` — confirmed active
+- Gain mode: `HIGH` — confirmed
+- Amp topology: `CLASS AB` — confirmed
+- Mic gain: `0 dB` — confirmed
+- Balance: `TBD` — not visible in supplied independent-controller screenshots
+- Playback/global gain: `TBD` — not visible in supplied independent-controller screenshots
 
 If the independent tool expresses playback level in a different unit, record both its displayed value and any raw value it exposes. EQ Library currently displays playback/global gain in dB plus the native raw integer.
 
@@ -79,7 +79,7 @@ If the independent tool expresses playback level in a different unit, record bot
 
 PASS / FAIL: **IN PROGRESS**
 
-Notes: First supplied physical screenshot confirms the **Hardware qualification · read-only** section, the no-change/no-latch/no-save explanation, the read action, and absence of candidate setting write controls. The device identity/connection header was outside the supplied frame, so step 4 remains to be visually confirmed before this section is marked PASS.
+Notes: Supplied EQ Library screenshots confirm the **Hardware qualification · read-only** section, the no-change/no-latch/no-save explanation, the read action, and absence of candidate setting write controls. The independent controller screenshot identifies the same connected hardware as **TRN Black Pearl / FW 0.6**. The EQ Library device identity/connection header itself remains outside the supplied EQ Library frame, so step 4 is not yet marked PASS from visual evidence.
 
 ## 2. First complete hardware read
 
@@ -96,7 +96,7 @@ Notes: First supplied physical screenshot confirms the **Hardware qualification 
 4. Verify no field is silently substituted with a default or guessed value.
 5. If EQ Library reports an inconsistent left/right balance state, stop and record the exact values rather than treating it as a centered/valid balance.
 
-PASS / FAIL: **IN PROGRESS — complete app read observed; independent baseline comparison pending**
+PASS / FAIL: **IN PROGRESS — five of seven fields independently confirmed; balance/playback comparison pending**
 
 Observed EQ Library values:
 
@@ -109,7 +109,9 @@ Observed EQ Library values:
 - Playback/global gain dB: `+2.00 dB`
 - Playback/global gain raw: `512`
 
-Notes: The supplied Pixel 9 screenshot shows **Current session read** and all seven candidate fields populated together. This is positive physical evidence for USB read/parse/presentation on the pinned candidate, including firmware parsing. It does not yet prove that each semantic label agrees with an independent controller, that repeated reads are non-destructive, or that values are fresh after an external change.
+Independent comparison now confirms exact semantic agreement for firmware `0.6`, active `Fast-PC`, `HIGH`, `CLASS AB`, and mic gain `0 dB`. Balance and playback/global gain remain pending because those values were not visible in the supplied independent-controller screenshots.
+
+Notes: The supplied Pixel 9 screenshots show **Current session read** and all seven candidate fields populated together. Independent controller screenshots subsequently confirm five of the seven labels/values. This is strong positive physical evidence for USB read/parse/presentation and semantic mapping. It does not yet establish independent agreement for balance/playback, the required three consecutive stable reads, or fresh-read behavior after an external change.
 
 ## 3. Repeated reads are stable and non-destructive
 
@@ -119,9 +121,9 @@ Notes: The supplied Pixel 9 screenshot shows **Current session read** and all se
 4. Verify EQ Library's reads did not change firmware/version, DAC filter, gain mode, topology, mic gain, balance, or playback/global gain.
 5. Verify no save/persistence action was triggered merely by reading.
 
-PASS / FAIL: **TBD**
+PASS / FAIL: **IN PROGRESS**
 
-Notes: `TBD`
+Notes: EQ Library screenshots from separate reads show the same complete values, and the later independent-controller screenshots still show matching firmware/filter/gain-mode/topology/mic state. This is positive non-destructive evidence, but the checklist still requires an explicitly observed sequence of at least three consecutive EQ Library reads with unchanged values before this section is marked PASS.
 
 ## 4. Fresh-read proof using one safe external change
 
@@ -141,7 +143,7 @@ Do not use gain mode, amp topology, or playback/global gain as the comparison ch
 
 PASS / FAIL: **TBD**
 
-Original filter: `Fast-PC` as first observed by EQ Library; independent baseline confirmation still pending
+Original filter: `Fast-PC` — independently confirmed active
 
 Temporary comparison filter: `TBD`
 
