@@ -5,9 +5,13 @@ import com.weekssa.opraeqforuapp.data.blackpearl.AndroidBlackPearlUsbTransport
 import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlGainStatePreferences
 import com.weekssa.opraeqforuapp.data.catalog.HttpOpraCatalogSource
 import com.weekssa.opraeqforuapp.data.catalog.OpraCatalogRepository
+import com.weekssa.opraeqforuapp.data.dac.BlackPearlSessionOperationGate
 import com.weekssa.opraeqforuapp.data.dac.DacControlRepository
 import com.weekssa.opraeqforuapp.data.dac.DacSessionRepository
+import com.weekssa.opraeqforuapp.data.dac.FiioJa11ControlRepository
+import com.weekssa.opraeqforuapp.data.dac.FiioJa11SessionOperationGate
 import com.weekssa.opraeqforuapp.data.dac.SessionBlackPearlDeviceControlReadSource
+import com.weekssa.opraeqforuapp.data.dac.SessionFiioJa11DeviceControlSource
 import com.weekssa.opraeqforuapp.data.export.AndroidSafDocumentStore
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupRepository
 import com.weekssa.opraeqforuapp.data.export.PresetExportRepository
@@ -79,14 +83,8 @@ internal fun createEqLibraryDependencies(context: Context): EqLibraryViewModel.D
     val savedEqRepository = SavedEqRepository(database)
     val savedGeneralEqRepository = SavedGeneralEqRepository(database)
     val documentStore = AndroidSafDocumentStore(appContext)
-    val exportRepository = PresetExportRepository(
-        database = database,
-        documentStore = documentStore,
-    )
-    val cleanupRepository = PresetCleanupRepository(
-        database = database,
-        documentStore = documentStore,
-    )
+    val exportRepository = PresetExportRepository(database = database, documentStore = documentStore)
+    val cleanupRepository = PresetCleanupRepository(database = database, documentStore = documentStore)
     val syncCoordinator = CatalogSyncCoordinator(
         catalogRepository = catalogRepository,
         managedHeadphonesRepository = managedHeadphonesRepository,
@@ -100,7 +98,12 @@ internal fun createEqLibraryDependencies(context: Context): EqLibraryViewModel.D
     )
 
     val dacControlRepository = DacControlRepository(
-        SessionBlackPearlDeviceControlReadSource(dacSessionRepository),
+        blackPearlSource = SessionBlackPearlDeviceControlReadSource(dacSessionRepository),
+        operationGate = BlackPearlSessionOperationGate(dacSessionRepository),
+    )
+    val fiioJa11ControlRepository = FiioJa11ControlRepository(
+        source = SessionFiioJa11DeviceControlSource(dacSessionRepository),
+        operationGate = FiioJa11SessionOperationGate(dacSessionRepository),
     )
     val hardwareRepository = HardwareEqRepository(
         dacSessionRepository = dacSessionRepository,
@@ -126,6 +129,7 @@ internal fun createEqLibraryDependencies(context: Context): EqLibraryViewModel.D
         syncCoordinator = syncCoordinator,
         updateCoordinator = updateCoordinator,
         dacControlRepository = dacControlRepository,
+        fiioJa11ControlRepository = fiioJa11ControlRepository,
         hardwareRepository = hardwareRepository,
     )
 }
