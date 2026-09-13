@@ -33,18 +33,26 @@ sealed interface Kt02h20ConnectionState {
 }
 
 /**
- * Narrow Android USB-host session for one exact VID/PID and one HID interrupt interface.
+ * Narrow Android USB-host session for one exact approved hardware model.
  *
- * This class has no device commands of its own. It cannot enter firmware-update mode or address an
- * arbitrary KT02H20 dongle; the caller supplies the exact approved USB identity at construction.
+ * A model may have more than one exact approved PID when a verified mode switch re-enumerates the
+ * same physical device (for example JA11 UAC 1.0/2.0). This class still accepts only the explicit
+ * closed set supplied by the caller; it never broad-matches a chipset family.
+ *
+ * This class has no device commands of its own and cannot enter firmware-update mode.
  */
 internal class AndroidKt02h20HidSession(
     context: Context,
     private val vendorId: Int,
-    private val productId: Int,
+    private val productIds: Set<Int>,
     private val deviceLabel: String,
     permissionSuffix: String,
 ) : Closeable {
+    init {
+        require(productIds.isNotEmpty()) { "At least one approved USB PID is required." }
+        require(productIds.all { it in 0..0xFFFF }) { "USB PIDs must be 16-bit values." }
+    }
+
     private val appContext = context.applicationContext
     private val usbManager = appContext.getSystemService(Context.USB_SERVICE) as UsbManager
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -65,6 +73,9 @@ internal class AndroidKt02h20HidSession(
     val sessionGeneration: Long
         get() = currentSessionGeneration
 
+    val connectedProductId: Int?
+        get() = session?.productId
+
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val device = intent.usbDevice() ?: return
@@ -80,7 +91,7 @@ internal class AndroidKt02h20HidSession(
                     }
                 }
                 UsbManager.ACTION_USB_DEVICE_DETACHED -> {
-                    mutablePresent.value = false
+                    mutablePresent.value = findDevice() != null
                     closeSession()
                     mutableState.value = Kt02h20ConnectionState.Disconnected
                 }
@@ -206,6 +217,7 @@ internal class AndroidKt02h20HidSession(
                     usbInterface = descriptor.usbInterface,
                     endpointIn = descriptor.endpointIn,
                     endpointOut = descriptor.endpointOut,
+                    productId = device.productId,
                 )
                 lastSessionGeneration = nextSessionGeneration(lastSessionGeneration)
                 currentSessionGeneration = lastSessionGeneration
@@ -285,7 +297,7 @@ internal class AndroidKt02h20HidSession(
         mutableState.value = Kt02h20ConnectionState.Disconnected
     }
 
-    private fun UsbDevice.matchesTarget(): Boolean = this.vendorId == vendorId && this.productId == productId
+    private fun UsbDevice.matchesTarget(): Boolean = this.vendorId == vendorId && this.productId in productIds
 
     @Suppress("DEPRECATION")
     private fun Intent.usbDevice(): UsbDevice? = if (Build.VERSION.SDK_INT >= 33) {
@@ -305,6 +317,7 @@ internal class AndroidKt02h20HidSession(
         val usbInterface: UsbInterface,
         val endpointIn: UsbEndpoint,
         val endpointOut: UsbEndpoint,
+        val productId: Int,
     )
 
     private companion object {
