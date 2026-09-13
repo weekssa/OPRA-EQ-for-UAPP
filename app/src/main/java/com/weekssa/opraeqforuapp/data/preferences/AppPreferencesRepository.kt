@@ -13,6 +13,7 @@ import com.weekssa.opraeqforuapp.data.update.AppReleaseInfo
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ExportTargetPreferences
+import com.weekssa.opraeqforuapp.domain.settings.OutputBehavior
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityCategory
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ThemeMode
@@ -33,10 +34,12 @@ class AppPreferencesRepository(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     /**
-     * Session overlay for the global output context.
+     * Session overlay for the saved manual output context.
      *
      * DataStore remains the durable source of truth, but a selector tap must affect every composed
      * screen immediately instead of waiting for the asynchronous disk-backed flow to round-trip.
+     * Automatic connected-DAC resolution happens above this repository and does not overwrite the
+     * saved manual fallback.
      */
     private val activeTargetOverride = MutableStateFlow<ExportDevice?>(null)
 
@@ -73,8 +76,10 @@ class AppPreferencesRepository(
                 showNotCompatible = preferences[Keys.ShowNotCompatible] ?: true,
             ),
             exportTargets = outputPreferences,
+            outputBehavior = OutputBehavior.fromStorageValue(preferences[Keys.OutputBehavior]),
             directBlackPearlFlashEnabled = preferences[Keys.DirectBlackPearlFlashEnabled] ?: false,
             directFiioJa11FlashEnabled = preferences[Keys.DirectFiioJa11FlashEnabled] ?: false,
+            // Legacy migration state only. JCALLY is no longer a current product output.
             directJcallyJm12FlashEnabled = preferences[Keys.DirectJcallyJm12FlashEnabled] ?: false,
             hiddenCanonicalProfileIds = preferences[Keys.HiddenCanonicalProfileIds].orEmpty(),
             exportTreeUri = preferences[Keys.ExportTreeUri],
@@ -95,6 +100,10 @@ class AppPreferencesRepository(
 
     suspend fun setThemeMode(themeMode: ThemeMode) = updatePreferences { preferences ->
         preferences[Keys.ThemeMode] = themeMode.storageValue
+    }
+
+    suspend fun setOutputBehavior(outputBehavior: OutputBehavior) = updatePreferences { preferences ->
+        preferences[Keys.OutputBehavior] = outputBehavior.storageValue
     }
 
     suspend fun setProfileVisibility(category: ProfileVisibilityCategory, visible: Boolean) =
@@ -124,7 +133,7 @@ class AppPreferencesRepository(
 
     suspend fun setActiveExportTarget(device: ExportDevice) {
         if (!device.selectableInV03) return
-        // Publish first so My EQs, EQ Library, and every callback switch operating context together.
+        // Publish first so My EQs, EQ Library, and every callback switch manual context together.
         activeTargetOverride.value = device
         updatePreferences { preferences ->
             val current = outputPreferences(
@@ -232,6 +241,7 @@ class AppPreferencesRepository(
 
     private object Keys {
         val ThemeMode = stringPreferencesKey("theme_mode")
+        val OutputBehavior = stringPreferencesKey("output_behavior")
         val ShowFullyCompatible = booleanPreferencesKey("show_fully_compatible")
         val ShowCompatibleWithLimitation = booleanPreferencesKey("show_compatible_with_limitation")
         val ShowNotCompatible = booleanPreferencesKey("show_not_compatible")
