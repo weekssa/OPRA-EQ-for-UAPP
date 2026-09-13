@@ -4,6 +4,7 @@ import com.google.common.truth.Truth.assertThat
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqCategory
 import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
+import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
 import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
 import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
@@ -85,6 +86,39 @@ class BlackPearlMyEqsCandidatesTest {
         assertThat(candidates.map { it.identity.displayName })
             .containsExactly("My Headphone · Desk EQ", "Bass Lift")
             .inOrder()
+    }
+
+    @Test
+    fun changeEqChoicesUseTheDeterministicBlackPearlRepresentation() {
+        val canonical = profile("canonical-ready")
+
+        val choices = buildBlackPearlMyEqChoices(
+            managedHeadphones = listOf(managedHeadphone(listOf(managedProfile(canonical, selected = true)))),
+            savedEqs = emptyList(),
+            savedGeneralEqs = emptyList(),
+        )
+
+        val ready = choices.single() as BlackPearlMyEqChoice.Ready
+        assertThat(ready.candidate.profile).isEqualTo(canonical)
+        assertThat(ready.representation.fidelity).isEqualTo(DevicePresetFidelity.EXACT)
+        assertThat(ready.representation.adaptationSummary).isNotEmpty()
+    }
+
+    @Test
+    fun changeEqChoicesKeepUnsupportedProfilesVisibleAsNotSuitable() {
+        val unsupported = profile("unsupported").copy(
+            bands = listOf(OpraBand("low_pass", 1000.0, 0.0, 1.0, null)),
+        )
+
+        val choices = buildBlackPearlMyEqChoices(
+            managedHeadphones = listOf(managedHeadphone(listOf(managedProfile(unsupported, selected = true)))),
+            savedEqs = emptyList(),
+            savedGeneralEqs = emptyList(),
+        )
+
+        val notSuitable = choices.single() as BlackPearlMyEqChoice.NotSuitable
+        assertThat(notSuitable.candidate.profile).isEqualTo(unsupported)
+        assertThat(notSuitable.reason).isNotEmpty()
     }
 
     private fun managedHeadphone(profiles: List<ManagedProfileRecord>) = ManagedHeadphoneRecord(
