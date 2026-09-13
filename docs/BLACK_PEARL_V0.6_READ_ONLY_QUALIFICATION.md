@@ -83,7 +83,7 @@ Rearranging that presentation for raw `512` gives `62.745...%`, which is consist
 
 PASS / FAIL: **IN PROGRESS**
 
-Notes: Supplied EQ Library screenshots confirm the **Hardware qualification · read-only** section, the no-change/no-latch/no-save explanation, the read action, and absence of candidate setting write controls. A 2026-09-13 reconnect screenshot also visibly confirms **Device information → Model → TRN Black Pearl** and the known capability/validation presentation. The remaining visual gap is the connected-state text after the USB session is actually opened: the pre-read reconnect screenshot still shows the **Connect** button, so it does not yet prove the post-Connect connection-state label required by step 4.
+Notes: Supplied EQ Library screenshots confirm the **Hardware qualification · read-only** section, the no-change/no-latch/no-save explanation, the read action, and absence of candidate setting write controls. A 2026-09-13 reconnect screenshot also visibly confirms **Device information → Model → TRN Black Pearl** and the known capability/validation presentation. The remaining visual gap is the connected-state text after the USB session is actually opened; the current supplied post-Connect/pre-Read screenshot is scrolled below that header.
 
 ## 2. First complete hardware read
 
@@ -176,9 +176,9 @@ Notes: On 2026-09-13 the project owner completed a current-session qualification
 5. Verify the panel returns to **Current session read** only after the new read succeeds.
 6. Compare the values again with the expected hardware state, including firmware/version.
 
-PASS / FAIL: **IN PROGRESS — fresh post-reconnect read proven; one pre-read connected-state observation remains**
+PASS / FAIL: **PASS**
 
-Notes: The 2026-09-13 reconnect evidence includes two screenshots. At 4:02, EQ Library still recognized **TRN Black Pearl** but showed **Connect** and a disabled qualification-read button; no old qualification values were being presented as current. At 4:03, after the session was opened and a fresh qualification read was performed, the panel reported **Current session read** with the expected baseline: firmware `0.6`, `Fast-PC`, `HIGH`, `CLASS AB`, mic `+0.00 dB`, `Centered`, playback/global `+2.00 dB` / raw `512`. This passes the fresh post-reconnect read requirement. The remaining narrow gate is to observe the state **after tapping Connect / opening the USB session but before tapping Read candidate controls**, proving that opening the new session alone does not relabel prior data current.
+Notes: The reconnect sequence is now fully evidenced. A 4:10 screenshot supplied immediately after the project owner followed the explicit **Connect, but do not tap Read candidate controls** instruction shows the retained baseline still labeled **Last read · USB session changed** rather than current. A prior 4:03 screenshot then shows **Current session read** only after a fresh qualification read, with the expected baseline: firmware `0.6`, `Fast-PC`, `HIGH`, `CLASS AB`, mic `+0.00 dB`, `Centered`, playback/global `+2.00 dB` / raw `512`. Opening/reopening the USB session therefore does not itself promote old data to current; only the successful new hardware read does.
 
 ## 7. Read interruption / failure behavior
 
@@ -190,9 +190,9 @@ This is optional on hardware because automated tests cover session-generation ch
 4. Reconnect and perform a fresh read.
 5. Verify the app recovers without pushing cached settings to the DAC.
 
-PASS / FAIL / NOT EXERCISED: **TBD**
+PASS / FAIL / NOT EXERCISED: **NOT EXERCISED**
 
-Notes: `TBD`
+Notes: This optional destructive-timing hardware exercise was intentionally not required. Automated read-only candidate/session tests already cover session-generation changes and field-read failures, including rejecting partial/current snapshots when the session changes. Those tests are green at the recorded behavior/software checkpoints.
 
 ## 8. Final no-write comparison
 
