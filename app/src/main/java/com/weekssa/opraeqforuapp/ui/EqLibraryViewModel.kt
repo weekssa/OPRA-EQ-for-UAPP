@@ -795,10 +795,8 @@ class EqLibraryViewModel(
         }
     }
 
-    fun setBlackPearlDacFilter(valueId: String) = writeBlackPearlDeviceControl(
-        BlackPearlDeviceControls.DAC_FILTER,
-        DacControlValue.Discrete(valueId),
-    )
+    fun setBlackPearlDeviceControl(controlId: DacControlId, value: DacControlValue) =
+        writeBlackPearlDeviceControl(controlId, value)
 
     private fun writeBlackPearlDeviceControl(controlId: DacControlId, value: DacControlValue) {
         val state = mutableBlackPearlQualificationState.value
@@ -817,9 +815,9 @@ class EqLibraryViewModel(
             )
             return
         }
-        if (!BlackPearlDeviceQualificationPolicy.isCandidateWriteEnabled(controlId)) {
+        if (!BlackPearlDeviceQualificationPolicy.isWriteInteractive(controlId)) {
             mutableBlackPearlQualificationState.value = state.writeFailure(
-                "This Black Pearl control is not enabled for hardware qualification yet.",
+                "This Black Pearl control is not enabled for use or hardware qualification yet.",
                 actualSnapshot = snapshot,
                 actualIsCurrent = true,
             )
