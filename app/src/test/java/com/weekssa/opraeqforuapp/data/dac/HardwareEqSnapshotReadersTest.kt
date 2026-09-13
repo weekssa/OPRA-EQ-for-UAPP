@@ -38,16 +38,41 @@ class HardwareEqSnapshotReadersTest {
     }
 
     @Test
-    fun ja11ReaderReadsFiveBandsAndGlobalEqGainOnly() = runBlocking {
+    fun ja11ReaderReadsActiveProgramFiveBandsAndGlobalEqGainWithoutWriting() = runBlocking {
         val transport = FakeJa11Transport()
         val bundle = FiioJa11SnapshotReader(transport) { 55L }.read(sessionGeneration = 2)
 
         assertThat(bundle).isNotNull()
+        assertThat(transport.programReads).isEqualTo(1)
         assertThat(transport.bandReads).containsExactly(0, 1, 2, 3, 4).inOrder()
         assertThat(transport.globalGainReads).isEqualTo(1)
         assertThat(transport.sendCount).isEqualTo(0)
         assertThat(bundle!!.snapshot.dedicatedEqPreampDb).isEqualTo(-3.0)
         assertThat(bundle.snapshot.verifiedAtEpochMillis).isEqualTo(55L)
+        assertThat(bundle.fingerprint.eqEnabled).isTrue()
+    }
+
+    @Test
+    fun ja11ReaderTreatsOffProgramAsAcousticallyFlatWithoutInventingDifferentStoredBands() = runBlocking {
+        val transport = FakeJa11Transport(program = FiioJa11Protocol.EqProgram.OFF)
+        val bundle = FiioJa11SnapshotReader(transport).read(sessionGeneration = 2)
+
+        assertThat(bundle).isNotNull()
+        assertThat(bundle!!.fingerprint.eqEnabled).isFalse()
+        assertThat(bundle.fingerprint.isFlatResponse).isTrue()
+    }
+
+    @Test
+    fun ja11BuiltInProgramDoesNotMisrepresentStoredUserOneCoefficientsAsCurrent() = runBlocking {
+        val transport = FakeJa11Transport(program = FiioJa11Protocol.EqProgram.VOCAL)
+
+        val bundle = FiioJa11SnapshotReader(transport).read(sessionGeneration = 2)
+
+        assertThat(bundle).isNull()
+        assertThat(transport.programReads).isEqualTo(1)
+        assertThat(transport.bandReads).isEmpty()
+        assertThat(transport.globalGainReads).isEqualTo(0)
+        assertThat(transport.sendCount).isEqualTo(0)
     }
 
     @Test
@@ -101,10 +126,18 @@ class HardwareEqSnapshotReadersTest {
         }
     }
 
-    private class FakeJa11Transport : FiioJa11Transport {
+    private class FakeJa11Transport(
+        private val program: FiioJa11Protocol.EqProgram = FiioJa11Protocol.EqProgram.USER_1,
+    ) : FiioJa11Transport, FiioJa11SnapshotSource {
         val bandReads = mutableListOf<Int>()
+        var programReads = 0
         var globalGainReads = 0
         var sendCount = 0
+
+        override suspend fun readEqProgram(): FiioJa11Protocol.EqProgram {
+            programReads += 1
+            return program
+        }
 
         override suspend fun readBand(index: Int): FiioJa11Protocol.Band? {
             bandReads += index
