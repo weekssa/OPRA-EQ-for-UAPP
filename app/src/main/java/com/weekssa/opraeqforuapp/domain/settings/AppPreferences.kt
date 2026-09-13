@@ -11,6 +11,20 @@ enum class ThemeMode(val storageValue: String) {
     }
 }
 
+enum class OutputBehavior(val storageValue: String) {
+    /** Prefer one physically connected supported DAC; otherwise use the saved manual output. */
+    Automatic("automatic"),
+
+    /** Always use the explicitly saved active output. */
+    Manual("manual"),
+    ;
+
+    companion object {
+        fun fromStorageValue(value: String?): OutputBehavior =
+            entries.firstOrNull { it.storageValue == value } ?: Automatic
+    }
+}
+
 enum class ProfileVisibilityCategory {
     FullyCompatible,
     CompatibleWithLimitation,
@@ -53,6 +67,7 @@ data class AppPreferences(
     val themeMode: ThemeMode = ThemeMode.System,
     val profileVisibility: ProfileVisibilityPreferences = ProfileVisibilityPreferences(),
     val exportTargets: ExportTargetPreferences = ExportTargetPreferences(),
+    val outputBehavior: OutputBehavior = OutputBehavior.Automatic,
     val directBlackPearlFlashEnabled: Boolean = false,
     val directFiioJa11FlashEnabled: Boolean = false,
     val directJcallyJm12FlashEnabled: Boolean = false,
