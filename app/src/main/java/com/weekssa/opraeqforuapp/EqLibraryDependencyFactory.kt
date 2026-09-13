@@ -32,6 +32,7 @@ import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Flasher
 import com.weekssa.opraeqforuapp.domain.kt02h20.JcallyJm12Flasher
 import com.weekssa.opraeqforuapp.ui.EqLibraryViewModel
 import java.net.URL
+import kotlinx.coroutines.flow.map
 
 /**
  * Manual DI composition root. Android Context is consumed only while constructing platform data
@@ -40,9 +41,24 @@ import java.net.URL
 internal fun createEqLibraryDependencies(context: Context): EqLibraryViewModel.Dependencies {
     val appContext = context.applicationContext
     val database = OpraEqDatabase.create(appContext)
-    val preferencesRepository = AppPreferencesRepository(appContext.eqLibraryPreferencesDataStore)
-    val userAgent = "${BuildConfig.APPLICATION_ID}/${BuildConfig.VERSION_NAME}"
 
+    // Physical presence is intentionally established before preferences so Automatic output can
+    // project one connected supported DAC over the user's durable manual fallback without requiring
+    // a Settings selection first.
+    val blackPearlTransport = AndroidBlackPearlUsbTransport(appContext)
+    val fiioJa11Transport = AndroidFiioJa11UsbTransport(appContext)
+    val jcallyJm12Transport = AndroidJcallyJm12UsbTransport(appContext)
+    val dacSessionRepository = DacSessionRepository(
+        blackPearlTransport = blackPearlTransport,
+        fiioJa11Transport = fiioJa11Transport,
+        jcallyJm12Transport = jcallyJm12Transport,
+    )
+    val preferencesRepository = AppPreferencesRepository(
+        dataStore = appContext.eqLibraryPreferencesDataStore,
+        presentSupportedDacs = dacSessionRepository.recognitionState.map { it.presentDeviceIds },
+    )
+
+    val userAgent = "${BuildConfig.APPLICATION_ID}/${BuildConfig.VERSION_NAME}"
     val catalogRepository = CanonicalFirstCatalogRepository(
         canonicalRepository = CanonicalCatalogRepository(
             filesDir = appContext.filesDir,
@@ -83,14 +99,6 @@ internal fun createEqLibraryDependencies(context: Context): EqLibraryViewModel.D
         ),
     )
 
-    val blackPearlTransport = AndroidBlackPearlUsbTransport(appContext)
-    val fiioJa11Transport = AndroidFiioJa11UsbTransport(appContext)
-    val jcallyJm12Transport = AndroidJcallyJm12UsbTransport(appContext)
-    val dacSessionRepository = DacSessionRepository(
-        blackPearlTransport = blackPearlTransport,
-        fiioJa11Transport = fiioJa11Transport,
-        jcallyJm12Transport = jcallyJm12Transport,
-    )
     val dacControlRepository = DacControlRepository(
         SessionBlackPearlDeviceControlReadSource(dacSessionRepository),
     )
