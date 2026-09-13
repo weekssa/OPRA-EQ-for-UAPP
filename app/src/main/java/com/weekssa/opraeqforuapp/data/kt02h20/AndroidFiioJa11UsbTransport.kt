@@ -49,7 +49,7 @@ class AndroidFiioJa11UsbTransport(
         decoder = FiioJa11Protocol::headsetControlFromResponse,
     )
 
-    suspend fun readEqProgram(): FiioJa11Protocol.EqProgram? = exchangeOneByte(
+    override suspend fun readEqProgram(): FiioJa11Protocol.EqProgram? = exchangeOneByte(
         request = FiioJa11Protocol.readEqProgramReport(),
         decoder = FiioJa11Protocol::eqProgramFromResponse,
     )
