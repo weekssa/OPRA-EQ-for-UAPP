@@ -37,6 +37,8 @@ class EqLibraryActions(
     val onResetBlackPearlEditorLocalEdits: () -> Unit,
     val onApplyBlackPearlEditor: (Boolean) -> Unit,
     val onCaptureBlackPearlDacEq: suspend (String, SavedEqHeadphoneAssociation?) -> String,
+    val onFlashBlackPearlFromMyDac: suspend (OpraEqProfile) -> String,
+    val onResetBlackPearlFromMyDac: suspend () -> String,
     val onReadBlackPearlQualificationControls: () -> Unit,
     val onConnectBlackPearl: () -> Unit,
     val onResetBlackPearl: suspend () -> String,
