@@ -19,8 +19,13 @@ data class FiioJa11DeviceUiState(
         require(!isCurrentSession || snapshot != null)
     }
 
+    /**
+     * A reconnect-verification transaction is intentionally busy even when no USB transfer is
+     * currently in flight. Treating that gap as idle would let a manual refresh overwrite the
+     * pending intent before the replacement JA11 session can be verified.
+     */
     val isBusy: Boolean
-        get() = isReading || isWriting
+        get() = isReading || isWriting || pendingRestartWrite != null
 
     fun beginRead(): FiioJa11DeviceUiState = copy(
         isReading = true,
