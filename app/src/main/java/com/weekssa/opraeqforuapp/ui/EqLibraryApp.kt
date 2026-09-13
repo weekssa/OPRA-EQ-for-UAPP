@@ -105,6 +105,8 @@ fun EqLibraryApp(
     val onResetBlackPearlEditorLocalEdits = actions.onResetBlackPearlEditorLocalEdits
     val onApplyBlackPearlEditor = actions.onApplyBlackPearlEditor
     val onCaptureBlackPearlDacEq = actions.onCaptureBlackPearlDacEq
+    val onFlashBlackPearlFromMyDac = actions.onFlashBlackPearlFromMyDac
+    val onResetBlackPearlFromMyDac = actions.onResetBlackPearlFromMyDac
     val onReadBlackPearlQualificationControls = actions.onReadBlackPearlQualificationControls
     val onConnectBlackPearl = actions.onConnectBlackPearl
     val onResetBlackPearl = actions.onResetBlackPearl
@@ -562,6 +564,7 @@ fun EqLibraryApp(
                         blackPearlHardwareEqMatch = state.blackPearlHardwareEqMatch,
                         blackPearlManagedHeadphones = state.blackPearlManagedHeadphones,
                         blackPearlSavedEqs = state.blackPearlSavedEqs,
+                        blackPearlSavedGeneralEqs = state.blackPearlSavedGeneralEqs,
                         blackPearlEditorState = state.blackPearlEditorState,
                         blackPearlQualificationState = state.blackPearlQualificationState,
                         onConnectDac = onConnectDacForMyDac,
@@ -575,6 +578,8 @@ fun EqLibraryApp(
                         onResetBlackPearlEditorLocalEdits = onResetBlackPearlEditorLocalEdits,
                         onApplyBlackPearlEditor = onApplyBlackPearlEditor,
                         onCaptureBlackPearlDacEq = onCaptureBlackPearlDacEq,
+                        onFlashBlackPearlFromMyDac = onFlashBlackPearlFromMyDac,
+                        onResetBlackPearlFromMyDac = onResetBlackPearlFromMyDac,
                         onReadBlackPearlQualification = onReadBlackPearlQualificationControls,
                         onMessage = ::showMessage,
                         modifier = Modifier.fillMaxSize(),
