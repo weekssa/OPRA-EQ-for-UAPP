@@ -44,13 +44,13 @@ internal fun CapabilityDrivenDeviceStatus(
     blackPearlQualificationState: BlackPearlQualificationUiState,
     blackPearlQualificationEnabled: Boolean,
     onReadBlackPearlQualification: () -> Unit,
-    fiioJa11DeviceState: FiioJa11DeviceUiState,
-    fiioJa11Connected: Boolean,
-    onReadFiioJa11DeviceControls: () -> Unit,
-    onSetFiioJa11OutputVolume: (Int) -> Unit,
-    onSetFiioJa11EqProgram: (FiioJa11Protocol.EqProgram) -> Unit,
-    onSetFiioJa11HeadsetControl: (Boolean) -> Unit,
-    onSetFiioJa11UacMode: (FiioJa11Protocol.UacMode) -> Unit,
+    fiioJa11DeviceState: FiioJa11DeviceUiState = FiioJa11DeviceUiState(),
+    fiioJa11Connected: Boolean = false,
+    onReadFiioJa11DeviceControls: () -> Unit = {},
+    onSetFiioJa11OutputVolume: (Int) -> Unit = {},
+    onSetFiioJa11EqProgram: (FiioJa11Protocol.EqProgram) -> Unit = {},
+    onSetFiioJa11HeadsetControl: (Boolean) -> Unit = {},
+    onSetFiioJa11UacMode: (FiioJa11Protocol.UacMode) -> Unit = {},
 ) {
     when (deviceId) {
         DacDeviceId.TRN_BLACK_PEARL -> BlackPearlDeviceStatus(
