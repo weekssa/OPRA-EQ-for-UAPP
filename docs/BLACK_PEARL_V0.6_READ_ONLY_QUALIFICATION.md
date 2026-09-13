@@ -1,6 +1,6 @@
 # TRN Black Pearl — v0.6 My DAC read-only DEVICE qualification
 
-Status: **READY FOR PHYSICAL VALIDATION**
+Status: **PHYSICAL VALIDATION IN PROGRESS**
 
 This checklist is the first physical gate for additional Black Pearl DEVICE capabilities in v0.6. It validates **read-only** behavior only. Passing this checklist does **not** authorize any new device-control write, normal production exposure, persistence claim, or expansion of the already-qualified EQ/Reset protocol.
 
@@ -45,7 +45,7 @@ Recorded candidate provenance:
 - Signed EQ Library Beta Candidate: run #901 / ID `34431843368` — **PASS**
 - Signed-beta artifact ID: `10134900164`
 - Signed-beta artifact ZIP SHA-256: `04c9c085c5aed42d4b2421391410151291354fe05841600f635445e733fff773`
-- Test date: `TBD`
+- Test date: `2026-09-13`
 - Tester: Project owner
 
 This checklist/provenance documentation may receive later documentation-only commits. The hardware candidate remains the exact signed source commit recorded above unless a behavior-changing replacement candidate is explicitly pinned.
@@ -74,9 +74,9 @@ If the independent tool expresses playback level in a different unit, record bot
 6. Verify the explanation states that no setting is changed, latched, or saved.
 7. Verify there are no new normal Black Pearl DEVICE setting controls for filter, gain mode, topology, balance, microphone gain, or playback level.
 
-PASS / FAIL: **TBD**
+PASS / FAIL: **IN PROGRESS**
 
-Notes: `TBD`
+Notes: First supplied physical screenshot confirms the **Hardware qualification · read-only** section, the no-change/no-latch/no-save explanation, the read action, and absence of candidate setting write controls. The device identity/connection header was outside the supplied frame, so step 4 remains to be visually confirmed before this section is marked PASS.
 
 ## 2. First complete hardware read
 
@@ -93,20 +93,20 @@ Notes: `TBD`
 4. Verify no field is silently substituted with a default or guessed value.
 5. If EQ Library reports an inconsistent left/right balance state, stop and record the exact values rather than treating it as a centered/valid balance.
 
-PASS / FAIL: **TBD**
+PASS / FAIL: **IN PROGRESS — complete app read observed; independent baseline comparison pending**
 
 Observed EQ Library values:
 
-- Firmware/version: `TBD`
-- DAC filter: `TBD`
-- Gain mode: `TBD`
-- Amp topology: `TBD`
-- Mic gain: `TBD`
-- Balance: `TBD`
-- Playback/global gain dB: `TBD`
-- Playback/global gain raw: `TBD`
+- Firmware/version: `0.6`
+- DAC filter: `Fast-PC`
+- Gain mode: `HIGH`
+- Amp topology: `CLASS AB`
+- Mic gain: `+0.00 dB`
+- Balance: `Centered`
+- Playback/global gain dB: `+2.00 dB`
+- Playback/global gain raw: `512`
 
-Notes: `TBD`
+Notes: The supplied Pixel 9 screenshot shows **Current session read** and all seven candidate fields populated together. This is positive physical evidence for USB read/parse/presentation on the pinned candidate, including firmware parsing. It does not yet prove that each semantic label agrees with an independent controller, that repeated reads are non-destructive, or that values are fresh after an external change.
 
 ## 3. Repeated reads are stable and non-destructive
 
@@ -138,7 +138,7 @@ Do not use gain mode, amp topology, or playback/global gain as the comparison ch
 
 PASS / FAIL: **TBD**
 
-Original filter: `TBD`
+Original filter: `Fast-PC` as first observed by EQ Library; independent baseline confirmation still pending
 
 Temporary comparison filter: `TBD`
 
@@ -216,9 +216,9 @@ A **read-only qualification PASS** requires:
 - no Black Pearl setting changes as a side effect of EQ Library reads;
 - the exact tested commit and signed APK are recorded above.
 
-Overall read-only qualification: **TBD**
+Overall read-only qualification: **IN PROGRESS**
 
-Blocking observations: `TBD`
+Blocking observations: Independent semantic cross-check, repeated-read/no-write proof, external filter fresh-read proof, disconnect/stale-state proof, reconnect proof, and final no-write comparison remain pending.
 
 ## What passing this checklist permits
 
