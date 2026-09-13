@@ -12,7 +12,7 @@ class AndroidFiioJa11UsbTransport(
     private val hid = AndroidKt02h20HidSession(
         context = context,
         vendorId = FiioJa11Protocol.VENDOR_ID,
-        productId = FiioJa11Protocol.PRODUCT_ID,
+        productIds = FiioJa11Protocol.SUPPORTED_PRODUCT_IDS,
         deviceLabel = "FiiO JA11",
         permissionSuffix = "FIIO_JA11",
     )
@@ -21,8 +21,55 @@ class AndroidFiioJa11UsbTransport(
     val present: StateFlow<Boolean> = hid.present
     val sessionGeneration: Long
         get() = hid.sessionGeneration
+    val connectedProductId: Int?
+        get() = hid.connectedProductId
 
     fun connect() = hid.connect()
+
+    suspend fun readOutputVolume(): Int? = exchangeOneByte(
+        request = FiioJa11Protocol.readOutputVolumeReport(),
+        decoder = FiioJa11Protocol::outputVolumeFromResponse,
+    )
+
+    suspend fun readSampleRateLabel(): String? = exchangeOneByte(
+        request = FiioJa11Protocol.readSampleRateReport(),
+        decoder = FiioJa11Protocol::sampleRateLabelFromResponse,
+    )
+
+    suspend fun readFirmwareVersion(): String? {
+        val response = hid.exchange(
+            report = FiioJa11Protocol.readFirmwareVersionReport(),
+            minResponseBytes = 8,
+        ) ?: return null
+        return FiioJa11Protocol.firmwareVersionFromResponse(response)
+    }
+
+    suspend fun readHeadsetControlEnabled(): Boolean? = exchangeOneByte(
+        request = FiioJa11Protocol.readHeadsetControlReport(),
+        decoder = FiioJa11Protocol::headsetControlFromResponse,
+    )
+
+    suspend fun readEqProgram(): FiioJa11Protocol.EqProgram? = exchangeOneByte(
+        request = FiioJa11Protocol.readEqProgramReport(),
+        decoder = FiioJa11Protocol::eqProgramFromResponse,
+    )
+
+    suspend fun readUacMode(): FiioJa11Protocol.UacMode? = exchangeOneByte(
+        request = FiioJa11Protocol.readUacModeReport(),
+        decoder = FiioJa11Protocol::uacModeFromResponse,
+    )
+
+    suspend fun writeOutputVolume(level: Int): Boolean =
+        sendReport(FiioJa11Protocol.writeOutputVolumeReport(level))
+
+    suspend fun writeHeadsetControlEnabled(enabled: Boolean): Boolean =
+        sendReport(FiioJa11Protocol.writeHeadsetControlReport(enabled))
+
+    suspend fun writeEqProgram(program: FiioJa11Protocol.EqProgram): Boolean =
+        sendReport(FiioJa11Protocol.writeEqProgramReport(program))
+
+    suspend fun writeUacMode(mode: FiioJa11Protocol.UacMode): Boolean =
+        sendReport(FiioJa11Protocol.writeUacModeReport(mode))
 
     override suspend fun readBand(index: Int): FiioJa11Protocol.Band? {
         val response = hid.exchange(
@@ -46,9 +93,18 @@ class AndroidFiioJa11UsbTransport(
         settleMillis = when {
             report.size > 6 && (report[5].toInt() and 0xFF) == 0x15 -> 25L
             report.size > 6 && (report[5].toInt() and 0xFF) == 0x19 -> 80L
+            report.size > 6 && (report[5].toInt() and 0xFF) in setOf(0x12, 0x20) -> 25L
             else -> 15L
         },
     )
+
+    private suspend fun <T> exchangeOneByte(
+        request: ByteArray,
+        decoder: (ByteArray) -> T?,
+    ): T? {
+        val response = hid.exchange(report = request, minResponseBytes = 7) ?: return null
+        return decoder(response)
+    }
 
     override fun close() = hid.close()
 }
