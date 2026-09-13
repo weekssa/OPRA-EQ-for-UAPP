@@ -108,7 +108,7 @@ fun EqLibraryApp(
     val onFlashBlackPearlFromMyDac = actions.onFlashBlackPearlFromMyDac
     val onResetBlackPearlFromMyDac = actions.onResetBlackPearlFromMyDac
     val onReadBlackPearlQualificationControls = actions.onReadBlackPearlQualificationControls
-    val onSetBlackPearlDacFilter = actions.onSetBlackPearlDacFilter
+    val onSetBlackPearlDeviceControl = actions.onSetBlackPearlDeviceControl
     val onReadFiioJa11DeviceControls = actions.onReadFiioJa11DeviceControls
     val onSetFiioJa11OutputVolume = actions.onSetFiioJa11OutputVolume
     val onSetFiioJa11EqProgram = actions.onSetFiioJa11EqProgram
@@ -564,7 +564,7 @@ fun EqLibraryApp(
                         onFlashBlackPearlFromMyDac = onFlashBlackPearlFromMyDac,
                         onResetBlackPearlFromMyDac = onResetBlackPearlFromMyDac,
                         onReadBlackPearlQualification = onReadBlackPearlQualificationControls,
-                        onSetBlackPearlDacFilter = onSetBlackPearlDacFilter,
+                        onSetBlackPearlDeviceControl = onSetBlackPearlDeviceControl,
                         onReadFiioJa11DeviceControls = onReadFiioJa11DeviceControls,
                         onSetFiioJa11OutputVolume = onSetFiioJa11OutputVolume,
                         onSetFiioJa11EqProgram = onSetFiioJa11EqProgram,
