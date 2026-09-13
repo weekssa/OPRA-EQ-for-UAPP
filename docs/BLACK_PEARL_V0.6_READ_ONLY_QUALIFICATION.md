@@ -145,13 +145,13 @@ This section proves the panel is reading current hardware rather than replaying 
 
 Do not use gain mode, amp topology, or playback/global gain as the comparison change for this first read-only proof.
 
-PASS / FAIL: **TBD**
+PASS / FAIL: **PASS**
 
-Original filter: `Fast-PC` — independently confirmed active
+Original filter: `Fast-PC` — independently confirmed active and restored
 
-Temporary comparison filter: `TBD`
+Temporary comparison filter: a different known reconstruction filter selected in the independent controller; exact label was not required for the pass because both changed-state and restored-state reads were explicitly verified by the project owner.
 
-Notes: `TBD`
+Notes: On 2026-09-13 the project owner stopped playback, changed only the DAC reconstruction filter outside EQ Library, reconnected the pinned candidate, and confirmed **Read candidate controls** reported the externally changed filter while firmware `0.6`, gain mode `HIGH`, topology `CLASS AB`, mic gain `+0.00 dB`, balance `Centered`, and playback/global gain `+2.00 dB` / raw `512` remained unchanged. The owner then restored the filter externally to `Fast-PC`, reconnected EQ Library, and confirmed a fresh read again reported `Fast-PC` with the unrelated values unchanged. This proves the panel is reading current hardware rather than replaying a cached filter value and confirms the baseline filter was restored.
 
 ## 5. Disconnect marks retained values stale
 
