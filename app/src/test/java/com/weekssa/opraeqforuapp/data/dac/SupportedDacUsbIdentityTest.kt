@@ -9,16 +9,20 @@ import org.junit.Test
 
 class SupportedDacUsbIdentityTest {
     @Test
-    fun exactSupportedVidPidPairsMapToTheirDeviceIds() {
+    fun exactCurrentProductVidPidPairsMapToTheirDeviceIds() {
         assertThat(
             supportedDacDeviceId(BlackPearlProtocol.VENDOR_ID, BlackPearlProtocol.PRODUCT_ID),
         ).isEqualTo(DacDeviceId.TRN_BLACK_PEARL)
         assertThat(
             supportedDacDeviceId(FiioJa11Protocol.VENDOR_ID, FiioJa11Protocol.PRODUCT_ID),
         ).isEqualTo(DacDeviceId.FIIO_JA11)
+    }
+
+    @Test
+    fun legacyJcallyIdentityFallsThroughToUnsupportedDeviceBehavior() {
         assertThat(
             supportedDacDeviceId(JcallyJm12Protocol.VENDOR_ID, JcallyJm12Protocol.PRODUCT_ID),
-        ).isEqualTo(DacDeviceId.JCALLY_JM12_STOCK)
+        ).isNull()
     }
 
     @Test
@@ -36,12 +40,11 @@ class SupportedDacUsbIdentityTest {
     }
 
     @Test
-    fun registryContainsOnlyTheThreeApprovedTargets() {
+    fun registryContainsOnlyBlackPearlAndFiioCurrentTargets() {
         assertThat(supportedDacUsbIdentities.map { identity -> identity.deviceId })
             .containsExactly(
                 DacDeviceId.TRN_BLACK_PEARL,
                 DacDeviceId.FIIO_JA11,
-                DacDeviceId.JCALLY_JM12_STOCK,
             )
             .inOrder()
     }
