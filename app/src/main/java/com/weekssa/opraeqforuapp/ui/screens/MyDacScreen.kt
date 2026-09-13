@@ -40,6 +40,8 @@ import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlMyEqChoice
 import com.weekssa.opraeqforuapp.domain.blackpearl.buildBlackPearlMyEqChoices
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.dac.AmbiguousExactHardwareEqMatch
+import com.weekssa.opraeqforuapp.domain.dac.DacControlId
+import com.weekssa.opraeqforuapp.domain.dac.DacControlValue
 import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
 import com.weekssa.opraeqforuapp.domain.dac.DacRecognitionState
 import com.weekssa.opraeqforuapp.domain.dac.DacStateFreshness
@@ -90,7 +92,7 @@ fun MyDacScreen(
     onFlashBlackPearlFromMyDac: suspend (OpraEqProfile) -> String,
     onResetBlackPearlFromMyDac: suspend () -> String,
     onReadBlackPearlQualification: () -> Unit,
-    onSetBlackPearlDacFilter: (String) -> Unit,
+    onSetBlackPearlDeviceControl: (DacControlId, DacControlValue) -> Unit,
     onMessage: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -342,7 +344,7 @@ fun MyDacScreen(
                     selectedDevice == DacDeviceId.TRN_BLACK_PEARL &&
                         blackPearlConnectionState is BlackPearlConnectionState.Connected,
                 onReadBlackPearlQualification = onReadBlackPearlQualification,
-                onSetBlackPearlDacFilter = onSetBlackPearlDacFilter,
+                onSetBlackPearlDeviceControl = onSetBlackPearlDeviceControl,
             )
         }
     }
