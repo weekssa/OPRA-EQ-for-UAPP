@@ -4,9 +4,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -21,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -31,6 +36,9 @@ import com.weekssa.opraeqforuapp.R
 import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlMyEqChoice
+import com.weekssa.opraeqforuapp.domain.blackpearl.buildBlackPearlMyEqChoices
+import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.dac.AmbiguousExactHardwareEqMatch
 import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
 import com.weekssa.opraeqforuapp.domain.dac.DacRecognitionState
@@ -46,11 +54,13 @@ import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 import com.weekssa.opraeqforuapp.domain.library.SavedEqHeadphoneAssociation
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
+import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.ui.BlackPearlQualificationUiState
 import com.weekssa.opraeqforuapp.ui.MyDacEditorApplyStatus
 import com.weekssa.opraeqforuapp.ui.MyDacEditorUiState
 import com.weekssa.opraeqforuapp.ui.components.DacEqResponseGraph
+import kotlinx.coroutines.launch
 
 @Composable
 fun MyDacScreen(
@@ -63,6 +73,7 @@ fun MyDacScreen(
     blackPearlHardwareEqMatch: HardwareEqMatchResolution?,
     blackPearlManagedHeadphones: List<ManagedHeadphoneRecord>,
     blackPearlSavedEqs: List<SavedEqRecord>,
+    blackPearlSavedGeneralEqs: List<SavedGeneralEqRecord>,
     blackPearlEditorState: MyDacEditorUiState,
     blackPearlQualificationState: BlackPearlQualificationUiState,
     onConnectDac: (DacDeviceId) -> Unit,
@@ -76,15 +87,21 @@ fun MyDacScreen(
     onResetBlackPearlEditorLocalEdits: () -> Unit,
     onApplyBlackPearlEditor: (Boolean) -> Unit,
     onCaptureBlackPearlDacEq: suspend (String, SavedEqHeadphoneAssociation?) -> String,
+    onFlashBlackPearlFromMyDac: suspend (OpraEqProfile) -> String,
+    onResetBlackPearlFromMyDac: suspend () -> String,
     onReadBlackPearlQualification: () -> Unit,
     onMessage: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val scope = rememberCoroutineScope()
     val recognized = recognitionState.recognizedDeviceIds.sortedBy(DacDeviceId::ordinal)
     val present = recognitionState.presentDeviceIds.sortedBy(DacDeviceId::ordinal)
     var selectedDeviceName by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
     var saveDacEqOpen by remember { mutableStateOf(false) }
+    var changeEqOpen by remember { mutableStateOf(false) }
+    var pendingChangeEq by remember { mutableStateOf<BlackPearlMyEqChoice.Ready?>(null) }
+    var resetEqOpen by remember { mutableStateOf(false) }
 
     LaunchedEffect(recognized, present, selectedDeviceName) {
         val selected = selectedDeviceName?.let { name ->
@@ -92,6 +109,9 @@ fun MyDacScreen(
         }
         if (selected !in recognized) {
             saveDacEqOpen = false
+            changeEqOpen = false
+            pendingChangeEq = null
+            resetEqOpen = false
             selectedDeviceName = when {
                 recognized.size == 1 -> recognized.single().name
                 present.size == 1 -> present.single().name
@@ -104,6 +124,21 @@ fun MyDacScreen(
         runCatching { DacDeviceId.valueOf(name) }.getOrNull()
     }?.takeIf(recognized::contains)
 
+    val blackPearlEqChoices = remember(
+        blackPearlManagedHeadphones,
+        blackPearlSavedEqs,
+        blackPearlSavedGeneralEqs,
+    ) {
+        buildBlackPearlMyEqChoices(
+            managedHeadphones = blackPearlManagedHeadphones,
+            savedEqs = blackPearlSavedEqs,
+            savedGeneralEqs = blackPearlSavedGeneralEqs,
+        )
+    }
+    val currentExactKey = (blackPearlHardwareEqMatch?.match as? HardwareEqMatch.Exact)
+        ?.savedEq
+        ?.savedEqKey
+
     if (saveDacEqOpen && selectedDevice == DacDeviceId.TRN_BLACK_PEARL) {
         BlackPearlSaveDacEqDialog(
             catalogState = catalogState,
@@ -112,6 +147,54 @@ fun MyDacScreen(
             onDismiss = { saveDacEqOpen = false },
             onSave = onCaptureBlackPearlDacEq,
             onMessage = onMessage,
+        )
+    }
+
+    if (changeEqOpen && selectedDevice == DacDeviceId.TRN_BLACK_PEARL) {
+        BlackPearlChangeEqDialog(
+            choices = blackPearlEqChoices,
+            currentExactKey = currentExactKey,
+            onDismiss = { changeEqOpen = false },
+            onSelect = { choice ->
+                changeEqOpen = false
+                pendingChangeEq = choice
+            },
+        )
+    }
+
+    pendingChangeEq?.takeIf { selectedDevice == DacDeviceId.TRN_BLACK_PEARL }?.let { choice ->
+        BlackPearlFlashReviewDialog(
+            choice = choice,
+            onDismiss = { pendingChangeEq = null },
+            onConfirm = {
+                pendingChangeEq = null
+                scope.launch {
+                    onMessage(onFlashBlackPearlFromMyDac(choice.candidate.profile))
+                }
+            },
+        )
+    }
+
+    if (resetEqOpen && selectedDevice == DacDeviceId.TRN_BLACK_PEARL) {
+        AlertDialog(
+            onDismissRequest = { resetEqOpen = false },
+            title = { Text(stringResource(R.string.my_dac_reset_title)) },
+            text = { Text(stringResource(R.string.my_dac_reset_confirmation)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        resetEqOpen = false
+                        scope.launch { onMessage(onResetBlackPearlFromMyDac()) }
+                    },
+                ) {
+                    Text(stringResource(R.string.my_dac_reset_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { resetEqOpen = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            },
         )
     }
 
@@ -132,6 +215,9 @@ fun MyDacScreen(
                 TextButton(
                     onClick = {
                         saveDacEqOpen = false
+                        changeEqOpen = false
+                        pendingChangeEq = null
+                        resetEqOpen = false
                         onCloseBlackPearlEditor()
                         selectedDeviceName = deviceId.name
                     },
@@ -200,6 +286,9 @@ fun MyDacScreen(
                 selected = selectedTabIndex == 1,
                 onClick = {
                     saveDacEqOpen = false
+                    changeEqOpen = false
+                    pendingChangeEq = null
+                    resetEqOpen = false
                     onCloseBlackPearlEditor()
                     selectedTabIndex = 1
                 },
@@ -233,7 +322,9 @@ fun MyDacScreen(
                             snapshotState = blackPearlHardwareEqState,
                             matchResolution = blackPearlHardwareEqMatch,
                             canEdit = blackPearlConnectionState is BlackPearlConnectionState.Connected,
+                            onChangeEq = { changeEqOpen = true },
                             onEdit = onOpenBlackPearlEditor,
+                            onReset = { resetEqOpen = true },
                             onSaveDacEq = { saveDacEqOpen = true },
                         )
                     }
@@ -253,6 +344,131 @@ fun MyDacScreen(
             )
         }
     }
+}
+
+@Composable
+private fun BlackPearlChangeEqDialog(
+    choices: List<BlackPearlMyEqChoice>,
+    currentExactKey: String?,
+    onDismiss: () -> Unit,
+    onSelect: (BlackPearlMyEqChoice.Ready) -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.my_dac_change_eq_title)) },
+        text = {
+            if (choices.isEmpty()) {
+                Text(stringResource(R.string.my_dac_change_eq_empty))
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 420.dp),
+                ) {
+                    items(
+                        items = choices,
+                        key = { it.candidate.identity.savedEqKey },
+                    ) { choice ->
+                        val isCurrent = choice.candidate.identity.savedEqKey == currentExactKey
+                        TextButton(
+                            onClick = {
+                                if (choice is BlackPearlMyEqChoice.Ready && !isCurrent) onSelect(choice)
+                            },
+                            enabled = choice is BlackPearlMyEqChoice.Ready && !isCurrent,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Text(
+                                    text = choice.candidate.identity.displayName,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                                Text(
+                                    text = changeEqStatusText(choice, isCurrent),
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                            }
+                        }
+                        HorizontalDivider()
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.action_cancel))
+            }
+        },
+    )
+}
+
+@Composable
+private fun changeEqStatusText(choice: BlackPearlMyEqChoice, isCurrent: Boolean): String = when (choice) {
+    is BlackPearlMyEqChoice.Ready -> {
+        val fidelity = stringResource(
+            if (choice.representation.fidelity == DevicePresetFidelity.EXACT) {
+                R.string.output_status_exact
+            } else {
+                R.string.output_status_optimized
+            },
+        )
+        val status = stringResource(
+            R.string.my_dac_adaptation,
+            fidelity,
+            choice.representation.adaptationSummary,
+        )
+        if (isCurrent) {
+            stringResource(R.string.my_dac_change_eq_current_status, status)
+        } else {
+            status
+        }
+    }
+    is BlackPearlMyEqChoice.NotSuitable -> stringResource(
+        R.string.my_dac_change_eq_not_suitable,
+        choice.reason,
+    )
+}
+
+@Composable
+private fun BlackPearlFlashReviewDialog(
+    choice: BlackPearlMyEqChoice.Ready,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    val representation = choice.representation
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.my_dac_change_eq_flash_title)) },
+        text = {
+            Text(
+                blackPearlFlashConfirmation(
+                    displayName = choice.candidate.identity.displayName,
+                    gainAdjustmentDb = representation.requiredPlaybackGainDb,
+                    fidelity = representation.fidelity,
+                    adaptationSummary = representation.adaptationSummary,
+                    warning = representation.warning,
+                ),
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(
+                    stringResource(
+                        if (representation.warning.isNullOrBlank()) {
+                            R.string.my_dac_change_eq_flash
+                        } else {
+                            R.string.my_dac_change_eq_flash_anyway
+                        },
+                    ),
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.action_cancel))
+            }
+        },
+    )
 }
 
 @Composable
@@ -310,7 +526,9 @@ private fun BlackPearlEqStatus(
     snapshotState: HardwareEqSnapshotState,
     matchResolution: HardwareEqMatchResolution?,
     canEdit: Boolean,
+    onChangeEq: () -> Unit,
     onEdit: () -> Unit,
+    onReset: () -> Unit,
     onSaveDacEq: () -> Unit,
 ) {
     if (snapshotState.isReading) {
@@ -348,7 +566,7 @@ private fun BlackPearlEqStatus(
     when (match) {
         is HardwareEqMatch.Exact -> {
             Text(match.savedEq.displayName)
-            val representation = matchResolution?.representation(match.savedEq.savedEqKey)
+            val representation = matchResolution.representation(match.savedEq.savedEqKey)
             if (representation != null) {
                 val fidelity = stringResource(
                     if (representation.fidelity == DevicePresetFidelity.EXACT) {
@@ -417,11 +635,27 @@ private fun BlackPearlEqStatus(
     }
 
     Button(
+        onClick = onChangeEq,
+        enabled = canEdit,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text(stringResource(R.string.my_dac_action_change_eq))
+    }
+
+    Button(
         onClick = onEdit,
         enabled = canEdit,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Text(stringResource(R.string.my_dac_action_edit_eq))
+    }
+
+    OutlinedButton(
+        onClick = onReset,
+        enabled = canEdit,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text(stringResource(R.string.my_dac_action_reset_eq))
     }
 
     if (
