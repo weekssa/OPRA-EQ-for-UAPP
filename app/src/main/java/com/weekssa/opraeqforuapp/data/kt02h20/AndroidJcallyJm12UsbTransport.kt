@@ -12,7 +12,7 @@ class AndroidJcallyJm12UsbTransport(
     private val hid = AndroidKt02h20HidSession(
         context = context,
         vendorId = JcallyJm12Protocol.VENDOR_ID,
-        productId = JcallyJm12Protocol.PRODUCT_ID,
+        productIds = setOf(JcallyJm12Protocol.PRODUCT_ID),
         deviceLabel = "JCALLY JM12",
         permissionSuffix = "JCALLY_JM12",
     )
