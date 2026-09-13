@@ -163,9 +163,9 @@ Notes: On 2026-09-13 the project owner stopped playback, changed only the DAC re
 6. Verify **Read candidate controls** cannot perform a current read while disconnected.
 7. Verify no cached value is written back to hardware because of disconnect/reconnect.
 
-PASS / FAIL: **TBD**
+PASS / FAIL: **PASS**
 
-Notes: `TBD`
+Notes: On 2026-09-13 the project owner completed a current-session qualification read, physically disconnected the Black Pearl without closing EQ Library, and reported success for the required stale-state behavior. **My DAC** remained available, the device state changed to **Disconnected**, retained values were no longer presented as current and were marked as the prior/changed USB session, and **Read candidate controls** could not produce a successful current hardware read while the DAC was unplugged. No reconnect was performed as part of this step, so reconnect freshness remains a separate gate below.
 
 ## 6. Reconnect creates a new current session
 
