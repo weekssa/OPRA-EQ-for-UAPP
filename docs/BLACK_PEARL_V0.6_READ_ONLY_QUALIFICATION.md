@@ -1,6 +1,6 @@
 # TRN Black Pearl — v0.6 My DAC read-only DEVICE qualification
 
-Status: **PHYSICAL VALIDATION IN PROGRESS**
+Status: **PASS — READ-ONLY DEVICE SEMANTICS QUALIFIED**
 
 This checklist is the first physical gate for additional Black Pearl DEVICE capabilities in v0.6. It validates **read-only** behavior only. Passing this checklist does **not** authorize any new device-control write, normal production exposure, persistence claim, or expansion of the already-qualified EQ/Reset protocol.
 
@@ -115,7 +115,7 @@ Observed EQ Library values:
 
 Independent comparison confirms semantic agreement for firmware `0.6`, active `Fast-PC`, `HIGH`, `CLASS AB`, mic gain `0 dB`, and centered balance (`Center` vs `Centered`). For playback/global gain, the independent controller shows `Volume 63%`; its maintained source maps percent linearly across the same raw range, and raw `512` maps to approximately `62.745%`, reconciling the controller presentation with EQ Library's raw `512` / `+2.00 dB` presentation.
 
-Notes: The supplied Pixel 9 screenshots show **Current session read** and all seven candidate fields populated together. The independent controller evidence and maintained presentation formula now reconcile all seven fields. This section therefore passes. Repeated-read non-destructiveness, external-change freshness, disconnect/reconnect freshness, and final no-write comparison remain separate required gates.
+Notes: The supplied Pixel 9 screenshots show **Current session read** and all seven candidate fields populated together. The independent controller evidence and maintained presentation formula reconcile all seven fields.
 
 ## 3. Repeated reads are stable and non-destructive
 
@@ -127,7 +127,7 @@ Notes: The supplied Pixel 9 screenshots show **Current session read** and all se
 
 PASS / FAIL: **PASS**
 
-Notes: On 2026-09-13 the project owner explicitly performed three consecutive **Read candidate controls** actions on the pinned candidate without changing any DAC setting and reported success. All three remained **Current session read** and returned the same complete state: firmware `0.6`, filter `Fast-PC`, gain mode `HIGH`, topology `CLASS AB`, mic gain `+0.00 dB`, balance `Centered`, playback/global gain `+2.00 dB` / raw `512`. Together with the already-supplied later independent-controller state showing the matching baseline and no unexpected persistence change, this satisfies the required stable/non-destructive repeated-read gate.
+Notes: On 2026-09-13 the project owner explicitly performed three consecutive **Read candidate controls** actions on the pinned candidate without changing any DAC setting and reported success. All three remained **Current session read** and returned the same complete state: firmware `0.6`, filter `Fast-PC`, gain mode `HIGH`, topology `CLASS AB`, mic gain `+0.00 dB`, balance `Centered`, playback/global gain `+2.00 dB` / raw `512`. Together with the later independent-controller comparison showing the matching baseline and no unexpected persistence change, this satisfies the required stable/non-destructive repeated-read gate.
 
 ## 4. Fresh-read proof using one safe external change
 
@@ -165,7 +165,7 @@ Notes: On 2026-09-13 the project owner stopped playback, changed only the DAC re
 
 PASS / FAIL: **PASS**
 
-Notes: On 2026-09-13 the project owner completed a current-session qualification read, physically disconnected the Black Pearl without closing EQ Library, and reported success for the required stale-state behavior. **My DAC** remained available, the device state changed to **Disconnected**, retained values were no longer presented as current and were marked as the prior/changed USB session, and **Read candidate controls** could not produce a successful current hardware read while the DAC was unplugged. No reconnect was performed as part of this step, so reconnect freshness remains a separate gate below.
+Notes: On 2026-09-13 the project owner completed a current-session qualification read, physically disconnected the Black Pearl without closing EQ Library, and reported success for the required stale-state behavior. **My DAC** remained available, the device state changed to **Disconnected**, retained values were no longer presented as current and were marked as the prior/changed USB session, and **Read candidate controls** could not produce a successful current hardware read while the DAC was unplugged.
 
 ## 6. Reconnect creates a new current session
 
@@ -178,7 +178,7 @@ Notes: On 2026-09-13 the project owner completed a current-session qualification
 
 PASS / FAIL: **PASS**
 
-Notes: The reconnect sequence is now fully evidenced. A 4:10 screenshot supplied immediately after the project owner followed the explicit **Connect, but do not tap Read candidate controls** instruction shows the retained baseline still labeled **Last read · USB session changed** rather than current. A prior 4:03 screenshot then shows **Current session read** only after a fresh qualification read, with the expected baseline: firmware `0.6`, `Fast-PC`, `HIGH`, `CLASS AB`, mic `+0.00 dB`, `Centered`, playback/global `+2.00 dB` / raw `512`. Opening/reopening the USB session therefore does not itself promote old data to current; only the successful new hardware read does.
+Notes: The reconnect sequence is fully evidenced. A 4:10 screenshot supplied immediately after the project owner followed the explicit **Connect, but do not tap Read candidate controls** instruction shows the retained baseline still labeled **Last read · USB session changed** rather than current. A prior 4:03 screenshot then shows **Current session read** only after a fresh qualification read, with the expected baseline: firmware `0.6`, `Fast-PC`, `HIGH`, `CLASS AB`, mic `+0.00 dB`, `Centered`, playback/global `+2.00 dB` / raw `512`. Opening/reopening the USB session therefore does not itself promote old data to current; only the successful new hardware read does.
 
 ## 7. Read interruption / failure behavior
 
@@ -209,9 +209,9 @@ Required result:
 - playback/global gain unchanged except for an intentional external user change made during testing;
 - no unexpected persistence/state change occurred because EQ Library read the device.
 
-PASS / FAIL: **TBD**
+PASS / FAIL: **PASS**
 
-Notes: `TBD`
+Notes: Final independent-controller evidence after the complete EQ Library read-only sequence reconfirmed the baseline hardware state: firmware `v0.6`, DAC filter `FAST-PC`, gain mode `High`, amp topology `Class-AB`, microphone gain `0 dB`, balance `Center`, and playback presentation `Volume 63%`. The project owner explicitly confirmed the remaining filter, microphone, and playback values after screenshots had already visually reconfirmed firmware, topology, gain mode, and balance. No unexpected persistence/state change was observed, and no independent-controller save-to-flash action was used for this comparison.
 
 ## Qualification decision
 
@@ -225,4 +225,6 @@ A **read-only qualification PASS** requires:
 - no Black Pearl setting changes as a side effect of EQ Library reads;
 - the exact tested commit and signed APK are recorded above.
 
-Overall read-only qualification: **IN PROGRESS**
+Overall read-only qualification: **PASS — 2026-09-13**
+
+This PASS qualifies only the Black Pearl read semantics covered by this checklist. It does **not** qualify or authorize any new DEVICE write control. Every future write-capable control still requires its own exact read → user intent → write → readback → verification hardware qualification before production exposure.
