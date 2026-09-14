@@ -24,10 +24,11 @@ class BlackPearlDeviceControlSettlingTest {
         assertTrue(result is BlackPearlDeviceControlWriteResult.InvalidRequest)
         assertEquals(0, source.readCount)
         assertEquals(0, source.writeCount)
+        assertEquals(0, source.persistCount)
     }
 
     @Test
-    fun delayedAmpTopologyVisibilityVerifiesWithoutResendingWrite() = runBlocking {
+    fun delayedAmpTopologyVisibilityVerifiesBeforePersistingThenVerifiesAgain() = runBlocking {
         val source = SettlingSource(applyAmpOnReadbackAttempt = 3)
 
         val result = DacControlRepository(source).writeBlackPearlControl(
@@ -42,11 +43,13 @@ class BlackPearlDeviceControlSettlingTest {
         result as BlackPearlDeviceControlWriteResult.Verified
         assertEquals(0, result.snapshot.ampTopologyCode)
         assertEquals(1, source.writeCount)
-        assertEquals(3, source.postWriteReadbackAttempts)
+        assertEquals(1, source.persistCount)
+        assertEquals(3, source.persistedAfterReadbackAttempt)
+        assertEquals(4, source.postWriteReadbackAttempts)
     }
 
     @Test
-    fun neverSettledAmpTopologyReturnsFinalMismatchWithoutResendingWrite() = runBlocking {
+    fun neverSettledAmpTopologyReturnsFinalMismatchWithoutPersistingOrResendingWrite() = runBlocking {
         val source = SettlingSource(applyAmpOnReadbackAttempt = null)
 
         val result = DacControlRepository(source).writeBlackPearlControl(
@@ -59,11 +62,12 @@ class BlackPearlDeviceControlSettlingTest {
 
         assertTrue(result is BlackPearlDeviceControlWriteResult.ReadbackMismatch)
         assertEquals(1, source.writeCount)
+        assertEquals(0, source.persistCount)
         assertEquals(4, source.postWriteReadbackAttempts)
     }
 
     @Test
-    fun sessionReplacementDuringSettlingStopsVerificationWithoutResendingWrite() = runBlocking {
+    fun sessionReplacementDuringSettlingStopsVerificationWithoutPersistingOrResendingWrite() = runBlocking {
         val source = SettlingSource(
             applyAmpOnReadbackAttempt = null,
             replaceSessionOnReadbackAttempt = 2,
@@ -79,6 +83,7 @@ class BlackPearlDeviceControlSettlingTest {
 
         assertTrue(result is BlackPearlDeviceControlWriteResult.StaleBaseline)
         assertEquals(1, source.writeCount)
+        assertEquals(0, source.persistCount)
         assertEquals(2, source.postWriteReadbackAttempts)
     }
 
@@ -89,6 +94,8 @@ class BlackPearlDeviceControlSettlingTest {
         override var sessionGeneration: Long = 7L
         var readCount: Int = 0
         var writeCount: Int = 0
+        var persistCount: Int = 0
+        var persistedAfterReadbackAttempt: Int? = null
         var postWriteReadbackAttempts: Int = 0
 
         private var writeIssued = false
@@ -145,7 +152,11 @@ class BlackPearlDeviceControlSettlingTest {
             playbackGainRaw = value
         }
 
-        override suspend fun persistDeviceSettings(): Boolean = true
+        override suspend fun persistDeviceSettings(): Boolean {
+            persistCount += 1
+            persistedAfterReadbackAttempt = postWriteReadbackAttempts
+            return true
+        }
 
         private fun beginSnapshotReadIfNeeded() {
             if (!writeIssued) return
