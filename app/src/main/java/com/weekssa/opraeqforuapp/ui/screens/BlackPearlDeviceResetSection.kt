@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -22,12 +21,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceDefaults
 import com.weekssa.opraeqforuapp.domain.dac.DacControlId
 import com.weekssa.opraeqforuapp.domain.dac.DacControlValue
 import com.weekssa.opraeqforuapp.ui.BlackPearlQualificationUiState
+import com.weekssa.opraeqforuapp.ui.components.PremiumSectionLabel
+import com.weekssa.opraeqforuapp.ui.components.PremiumValueRow
 import kotlinx.coroutines.launch
 
 /**
@@ -119,31 +119,30 @@ internal fun BlackPearlDeviceResetSection(
         }
     }
 
-    HorizontalDivider(modifier = Modifier.padding(top = 16.dp, bottom = 10.dp))
-    Text("Reset device", fontWeight = FontWeight.SemiBold)
-    Text(
-        text = "Restore EQ Library's Black Pearl defaults. Your saved EQs are not affected.",
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(top = 4.dp),
+    PremiumSectionLabel(
+        text = "Reset device",
+        modifier = Modifier.padding(top = 16.dp),
+    )
+    PremiumValueRow(
+        title = "Restore defaults",
+        supportingText = "Restore EQ Library's Black Pearl defaults. Saved EQs are not affected.",
+        enabled = canStartReset,
+        showDisclosure = canStartReset,
+        onClick = if (canStartReset) {
+            {
+                includeEqReset = false
+                dialogOpen = true
+            }
+        } else {
+            null
+        },
     )
     if (resetInProgress) {
         Text(
             text = if (eqResetRunning) "Resetting EQ to flat…" else "Restoring device defaults…",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(top = 6.dp),
         )
-    }
-    TextButton(
-        onClick = {
-            includeEqReset = false
-            dialogOpen = true
-        },
-        enabled = canStartReset,
-        modifier = Modifier.padding(top = 2.dp),
-    ) {
-        Text("Restore defaults")
     }
 
     if (dialogOpen) {
