@@ -14,6 +14,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -81,6 +82,13 @@ private fun BlackPearlDeviceStatus(
 ) {
     val identity = DacCapabilityCatalog.forDevice(DacDeviceId.TRN_BLACK_PEARL).identity
     var aboutExpanded by rememberSaveable { mutableStateOf(false) }
+
+    // My DAC shares the existing app-wide Black Pearl session. Entering DEVICE or reconnecting
+    // therefore refreshes current state automatically; the manual Refresh action remains available
+    // only for external changes/recovery.
+    LaunchedEffect(enabled) {
+        if (enabled && !state.isBusy) onRead()
+    }
 
     BlackPearlDeviceBatchControlPanel(
         state = state,
