@@ -133,4 +133,4 @@ class UnclaimedEqParserTest {
     }
 }
 
-private fun Double.powOneThird(): Double = kotlin.math.pow(1.0 / 3.0)
+private fun Double.powOneThird(): Double = Math.pow(this, 1.0 / 3.0)
