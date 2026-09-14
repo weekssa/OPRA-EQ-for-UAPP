@@ -1,16 +1,44 @@
 # TRN Black Pearl v0.6 — factory-default/reset research
 
-Status: **RESET UX APPROVED; FACTORY-DEFAULT SEMANTICS NOT YET ESTABLISHED — DO NOT EXPOSE THE ACTION**
+Status: **TRUE TRN FACTORY-DEFAULT SEMANTICS REMAIN UNESTABLISHED; OWNER-SELECTED EQ LIBRARY RESTORE PRESET APPROVED AND IMPLEMENTED; FOCUSED PHYSICAL QUALIFICATION PENDING**
 
-Purpose: determine whether EQ Library can truthfully expose the approved My DAC -> DEVICE **Reset to factory defaults** action without inventing a reset command or default values.
+Purpose: preserve the research boundary around a true Black Pearl factory reset while documenting the later project-owner decision to expose a truthful EQ Library-owned **Restore defaults** action using an explicitly selected set of values.
 
 This is clean-room observable-behavior research. Public third-party implementations with incompatible licenses are evidence sources only; implementation code must not be copied.
 
-## Approved UI gate
+## Current product decision
 
-The common reset UX is defined in `docs/V0.6_DEVICE_UX_POLISH_APPROVED.md`. Black Pearl must not show that action until this document can establish the exact model/firmware reset semantics strongly enough for a safe transaction and truthful wording.
+The project owner explicitly approved a Black Pearl **EQ Library restore preset** rather than claiming that the values are verified TRN factory defaults.
 
-Existing `Reset EQ to flat` is separate and remains qualified.
+The v0.6 restore targets are:
+
+- playback volume: **50% presentation** using the already-qualified whole-dB DEVICE write that displays as 50%;
+- DAC filter: **FAST-LL**;
+- gain: **HIGH**;
+- amplifier: **CLASS AB**;
+- balance: **centered**;
+- microphone gain: **unchanged**.
+
+The confirmation dialog retains an optional **Also reset EQ to flat** checkbox, OFF by default. When selected, it reuses the separately qualified `Reset EQ to flat` transaction. Saved EQs in EQ Library are not changed.
+
+Because this is an owner-selected hybrid preset, the UI must use truthful wording such as **Reset device**, **Restore defaults**, and **EQ Library's Black Pearl defaults**. It must not call this a TRN factory reset or imply that TRN supplied or endorsed these values.
+
+## Restore transaction contract
+
+The restore action does not invent a new Black Pearl opcode. It reuses the already-established individual DEVICE write/readback/persistence path.
+
+The device-settings sequence is intentionally conservative:
+
+1. lower playback to the qualified minimum whole-dB DEVICE level (`-37 dB`) as a fail-safe intermediate step;
+2. write/persist FAST-LL;
+3. write/persist centered balance;
+4. write/persist CLASS AB;
+5. write/persist HIGH gain;
+6. write/persist the whole-dB playback value (`-6 dB`) that presents as **50%** in the Black Pearl percentage UI.
+
+Every selected restore target is explicitly issued once, even if its current readback already matches, so the normal DEVICE persistence command is also exercised. Each step still requires the normal fresh baseline/session checks and verified readback. Setting writes are never automatically retried. A disconnect, stale session, transfer failure, readback mismatch, or unrelated-state change stops the restore and must not be presented as success.
+
+The optional EQ-flat action remains a separate transaction with its own already-qualified fail-safe ordering. Microphone gain is never written by this restore action.
 
 ## Evidence reviewed
 
@@ -66,9 +94,9 @@ Independent Black Pearl reviews conflict with the controller reset sequence on i
 
 These reports are not sufficient to define every factory default, but the conflict is enough to reject the LOW / CLASS H third-party reset sequence as a proven factory-default set.
 
-## Current conclusion
+## Research conclusion
 
-There is not yet enough evidence to claim an exact Black Pearl **factory reset**.
+There is still not enough evidence to claim an exact Black Pearl **factory reset**.
 
 Specifically:
 
@@ -78,19 +106,35 @@ Specifically:
 4. the sequence does not clearly reset every currently supported DEVICE control;
 5. official public material reviewed so far does not resolve the complete value set or EQ inclusion semantics.
 
-Therefore:
+Therefore the historical restrictions still apply to any claim about TRN factory state:
 
-- **Do not expose `Reset to factory defaults` on Black Pearl yet.**
-- Do not use the qualification baseline (`63%`, Fast-PC, HIGH, CLASS AB, etc.) as defaults merely because those values were observed during testing.
-- Do not use the third-party controller's 50% / FAST-LL / LOW / CLASS H sequence as factory defaults merely because its button is labeled Factory Reset.
-- Keep the approved generic reset UX/capability architecture ready for a future exact model contract.
+- do not label the EQ Library preset as `TRN factory defaults`;
+- do not use the qualification baseline (`63%`, Fast-PC, HIGH, CLASS AB, etc.) as factory evidence merely because those values were observed during testing;
+- do not describe the third-party controller's 50% / FAST-LL / LOW / CLASS H sequence as verified factory state merely because its button is labeled Factory Reset.
 
-## What would clear the gate
+The later owner decision changes the **product action**, not the evidence classification: EQ Library may expose its explicitly defined restore preset with truthful app-owned wording.
 
-Any one sufficiently strong path, preferably corroborated, may clear the product gate:
+## Focused physical gate for the new restore action
+
+Before the new whole-device restore action is treated as physically qualified on Black Pearl, an exact signed candidate must verify:
+
+- Cancel performs no write/change;
+- with **Also reset EQ to flat** OFF, the device ends at displayed 50% volume, FAST-LL, HIGH, CLASS AB, and centered balance;
+- microphone gain is unchanged;
+- the current hardware EQ is unchanged when the checkbox is OFF;
+- after disconnect/reconnect the restored DEVICE values remain present;
+- with the checkbox ON, the same DEVICE targets are established and the hardware EQ is flat;
+- saved EQs in EQ Library remain untouched;
+- any disconnect/readback failure stops without false success.
+
+Passing this gate qualifies the EQ Library restore behavior. It still does not prove that the selected values are TRN's original factory defaults.
+
+## What would establish a true factory contract later
+
+Any one sufficiently strong path, preferably corroborated, may establish a separate true-factory capability in the future:
 
 - official TRN/Walk Play documentation or observable official-app behavior that defines Black Pearl factory reset/default values and EQ behavior;
-- an independently verified hardware reset operation with complete before/after reads across all supported controls and EQ;
-- a documented exact default table plus a safe EQ Library-owned multi-control restore transaction, if there is no native reset command.
+- an independently verified native hardware reset operation with complete before/after reads across all supported controls and EQ;
+- a documented exact factory default table plus a safe EQ Library-owned restore transaction, if there is no native reset command.
 
-When evidence clears the gate, implementation still requires a fresh complete baseline, a prevalidated reset plan, safe device-specific ordering, no automatic write retry, complete post-reset readback, and success only after the requested reset state is verified.
+Any future true-factory implementation would still require a fresh complete baseline, a prevalidated reset plan, safe device-specific ordering, no automatic write retry, complete post-reset readback, and success only after the requested state is verified.
