@@ -32,14 +32,24 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 
+/** Process-lifetime action target chosen from My EQs / EQ Library. Never persisted. */
+internal object SessionExportTarget {
+    val activeTarget = MutableStateFlow<ExportDevice?>(null)
+
+    fun select(device: ExportDevice) {
+        if (device.selectableInV03) activeTarget.value = device
+    }
+
+    fun clear() {
+        activeTarget.value = null
+    }
+}
+
 class AppPreferencesRepository(
     private val dataStore: DataStore<Preferences>,
     private val presentSupportedDacs: Flow<Set<DacDeviceId>> = flowOf(emptySet()),
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
-    /** Temporary My EQs / EQ Library action target. It is deliberately never written to DataStore. */
-    private val sessionActiveTarget = MutableStateFlow<ExportDevice?>(null)
-
     val preferences: Flow<AppPreferences> = combine(
         dataStore.data.catch { exception ->
             if (exception is IOException) {
@@ -48,9 +58,9 @@ class AppPreferencesRepository(
                 throw exception
             }
         },
-        sessionActiveTarget,
+        SessionExportTarget.activeTarget,
         presentSupportedDacs,
-    ) { preferences, sessionTarget, presentDeviceIds ->
+    ) { preferences, sessionActiveTarget, presentDeviceIds ->
         val storedTargets = preferences[Keys.SelectedExportTargets]
         val selectedTargets = if (storedTargets == null) {
             setOf(ExportDevice.UAPP)
@@ -70,7 +80,7 @@ class AppPreferencesRepository(
             behavior = outputBehavior,
             manualFallback = manualOutputPreferences.activeTarget,
             presentDeviceIds = presentDeviceIds,
-            sessionOverride = sessionTarget,
+            sessionOverride = sessionActiveTarget,
         )
         val effectiveOutputPreferences = ExportTargetPreferences.normalize(
             selectedTargets = manualOutputPreferences.selectedTargets + effective.output,
@@ -113,7 +123,7 @@ class AppPreferencesRepository(
     }
 
     suspend fun setOutputBehavior(outputBehavior: OutputBehavior) {
-        sessionActiveTarget.value = null
+        SessionExportTarget.clear()
         updatePreferences { preferences ->
             preferences[Keys.OutputBehavior] = outputBehavior.storageValue
         }
@@ -144,7 +154,7 @@ class AppPreferencesRepository(
     /** Persistent Settings choice for Default EQ target; this retains the approved Manual-mode action. */
     suspend fun setActiveExportTarget(device: ExportDevice) {
         if (!device.selectableInV03) return
-        sessionActiveTarget.value = null
+        SessionExportTarget.clear()
         updatePreferences { preferences ->
             val current = outputPreferences(
                 preferences[Keys.SelectedExportTargets],
@@ -155,12 +165,6 @@ class AppPreferencesRepository(
             preferences[Keys.ActiveExportTarget] = next.activeTarget.name
             preferences[Keys.OutputBehavior] = OutputBehavior.Manual.storageValue
         }
-    }
-
-    /** Session-only action target selected from My EQs / EQ Library. */
-    fun setSessionActiveExportTarget(device: ExportDevice) {
-        if (!device.selectableInV03) return
-        sessionActiveTarget.value = device
     }
 
     suspend fun setDirectBlackPearlFlashEnabled(enabled: Boolean) = updatePreferences { preferences ->
