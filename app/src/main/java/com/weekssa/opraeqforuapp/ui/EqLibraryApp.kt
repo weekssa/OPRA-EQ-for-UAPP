@@ -17,8 +17,6 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.Usb
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -28,7 +26,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -52,6 +49,7 @@ import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
 import com.weekssa.opraeqforuapp.domain.managed.withHiddenReviewPromptsSuppressed
 import com.weekssa.opraeqforuapp.domain.update.SemVer
 import com.weekssa.opraeqforuapp.ui.components.PostUpdateBanner
+import com.weekssa.opraeqforuapp.ui.components.TargetContextSelector
 import com.weekssa.opraeqforuapp.ui.components.UpdateAvailableBanner
 import com.weekssa.opraeqforuapp.ui.components.WhatsNewDialog
 import com.weekssa.opraeqforuapp.ui.screens.BrowseOpraScreen
@@ -162,7 +160,6 @@ fun EqLibraryApp(
 
     var selectedDestinationName by rememberSaveable { mutableStateOf(EqLibraryDestination.MyEqs.name) }
     var selectedManagedProductId by rememberSaveable { mutableStateOf<String?>(null) }
-    var outputMenuExpanded by remember { mutableStateOf(false) }
     var pendingExportRequestState by rememberSaveable { mutableStateOf<ArrayList<String>?>(null) }
     var whatsNewVersion by rememberSaveable { mutableStateOf<String?>(null) }
     var whatsNewNotes by rememberSaveable { mutableStateOf("") }
@@ -359,30 +356,6 @@ fun EqLibraryApp(
             TopAppBar(
                 title = { Text(stringResource(selectedDestination.labelResId)) },
                 actions = {
-                    if (
-                        selectedDestination == EqLibraryDestination.MyEqs ||
-                        selectedDestination == EqLibraryDestination.EqLibrary
-                    ) {
-                        Box {
-                            TextButton(onClick = { outputMenuExpanded = true }) {
-                                Text(stringResource(R.string.output_selector_format, outputTitle(activeOutput)))
-                            }
-                            DropdownMenu(
-                                expanded = outputMenuExpanded,
-                                onDismissRequest = { outputMenuExpanded = false },
-                            ) {
-                                enabledOutputs.forEach { output ->
-                                    DropdownMenuItem(
-                                        text = { Text(outputTitle(output)) },
-                                        onClick = {
-                                            outputMenuExpanded = false
-                                            onSessionActiveExportTargetChange(output)
-                                        },
-                                    )
-                                }
-                            }
-                        }
-                    }
                     if (selectedDestination == EqLibraryDestination.EqLibrary) {
                         IconButton(onClick = requestCatalogRefresh, enabled = !catalogBusy) {
                             if (catalogBusy) {
@@ -440,6 +413,11 @@ fun EqLibraryApp(
                 selectedDestination == EqLibraryDestination.MyEqs ||
                 selectedDestination == EqLibraryDestination.EqLibrary
             ) {
+                TargetContextSelector(
+                    activeTarget = activeOutput,
+                    enabledTargets = enabledOutputs,
+                    onTargetChange = onSessionActiveExportTargetChange,
+                )
                 when {
                     updateBannerVersion != null -> UpdateAvailableBanner(
                         version = updateBannerVersion,
@@ -647,8 +625,6 @@ fun EqLibraryApp(
         )
     }
 }
-
-private fun outputTitle(device: ExportDevice): String = device.displayName
 
 private fun ActiveOutputExportRequest.toSaveableState(): ArrayList<String> = when (this) {
     is ActiveOutputExportRequest.AllManaged -> arrayListOf(EXPORT_REQUEST_ALL_MANAGED, device.name)
