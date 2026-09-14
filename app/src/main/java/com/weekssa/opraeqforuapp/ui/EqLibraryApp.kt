@@ -241,7 +241,7 @@ fun EqLibraryApp(
         }
     }
 
-    LaunchedEffect(selectedManagedProductId, selectedManagedHeadphone, activeOutput) {
+    LaunchedEffect(selectedManagedProductId, selectedManagedHeadphone) {
         if (selectedManagedProductId != null && selectedManagedHeadphone == null) {
             selectedManagedProductId = null
         }
@@ -375,7 +375,6 @@ fun EqLibraryApp(
                                         text = { Text(outputTitle(output)) },
                                         onClick = {
                                             outputMenuExpanded = false
-                                            selectedManagedProductId = null
                                             onActiveExportTargetChange(output)
                                         },
                                     )
@@ -592,7 +591,6 @@ fun EqLibraryApp(
                         onSaveGeneralPresets = { presets ->
                             val presetIds = presets.mapTo(mutableSetOf(), GeneralEqPreset::id)
                             presets.forEach { preset -> onSaveGeneralPreset(preset) }
-                            if (presetIds.isNotEmpty()) requestExportGeneralEqs(presetIds)
                             presetIds.size
                         },
                         onHideCanonicalProfiles = onHideCanonicalProfiles,
