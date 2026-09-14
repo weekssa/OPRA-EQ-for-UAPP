@@ -127,30 +127,36 @@ fun SettingsScreen(
         SectionTitle("Output behavior")
         ThemeOption(
             title = "Automatic (recommended)",
-            description = "Use the connected supported DAC when one is attached. Otherwise use your normal app/output.",
+            description = "Use a connected supported DAC when one is available. Otherwise use your Default EQ target.",
             selected = appPreferences.outputBehavior == OutputBehavior.Automatic,
             onSelected = { onOutputBehaviorChange(OutputBehavior.Automatic) },
         )
         ThemeOption(
             title = "Manual",
-            description = "Always use the output you choose below, even when a supported DAC is attached.",
+            description = "Always use your Default EQ target, even when a supported DAC is connected.",
             selected = appPreferences.outputBehavior == OutputBehavior.Manual,
             onSelected = { onOutputBehaviorChange(OutputBehavior.Manual) },
         )
         Text(
-            text = "Current output: ${appPreferences.exportTargets.activeTarget.displayName}",
+            text = "Current EQ target: ${appPreferences.exportTargets.activeTarget.displayName}",
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(top = 4.dp),
         )
         Text(
-            text = "Normal fallback: ${appPreferences.manualExportTargets.activeTarget.displayName}",
+            text = "Default EQ target: ${appPreferences.manualExportTargets.activeTarget.displayName}",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 2.dp),
         )
+        Text(
+            text = "This controls how EQs are prepared, exported, and flashed. It does not change Android's audio output.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 4.dp),
+        )
         if (appPreferences.outputBehavior == OutputBehavior.Automatic) {
             Text(
-                text = "Automatic switching is temporary. It does not overwrite your normal fallback.",
+                text = "A connected supported DAC is temporary; it does not overwrite your Default EQ target.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp),
@@ -160,7 +166,7 @@ fun SettingsScreen(
         SectionDivider()
         SectionTitle("Outputs")
         Text(
-            text = "Choose the apps, devices, and portable formats you use. These choices define your normal/manual output list; a connected supported DAC can still become the temporary current output in Automatic mode.",
+            text = "Choose the apps, devices, and portable formats you use. These choices determine which options can be selected as your Default EQ target.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 6.dp),
@@ -206,7 +212,7 @@ fun SettingsScreen(
         val manualChoices = ExportDevice.selectableOutputs.filter(appPreferences.manualExportTargets::isSelected)
         if (manualChoices.isNotEmpty()) {
             Text(
-                text = "Normal / manual output",
+                text = "Default EQ target",
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 14.dp, bottom = 2.dp),
@@ -215,7 +221,7 @@ fun SettingsScreen(
                 ThemeOption(
                     title = device.displayName,
                     description = if (device == appPreferences.manualExportTargets.activeTarget) {
-                        "Used whenever Automatic has no single supported DAC to use."
+                        "Used in Manual mode and whenever Automatic has no single supported DAC to use."
                     } else null,
                     selected = device == appPreferences.manualExportTargets.activeTarget,
                     onSelected = { onActiveExportTargetChange(device) },
@@ -223,7 +229,7 @@ fun SettingsScreen(
             }
             if (appPreferences.outputBehavior == OutputBehavior.Automatic) {
                 Text(
-                    text = "Choosing a normal/manual output is an explicit override and switches Output behavior to Manual. You can turn Automatic back on above at any time.",
+                    text = "Choosing a Default EQ target switches Output behavior to Manual. Turn Automatic back on above whenever you want connected supported DACs to take priority.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
