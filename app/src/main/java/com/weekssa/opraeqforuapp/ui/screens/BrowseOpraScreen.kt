@@ -44,6 +44,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.R
+import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqCategory
@@ -81,6 +82,8 @@ fun BrowseOpraScreen(
     favoriteProfileIds: Set<String>,
     savedGeneralPresetIds: Set<String> = emptySet(),
     hiddenCanonicalProfileIds: Set<String> = emptySet(),
+    blackPearlConnectionState: BlackPearlConnectionState = BlackPearlConnectionState.Disconnected,
+    onFlashBlackPearlProfile: (suspend (OpraEqProfile) -> String)? = null,
     onToggleFavorite: suspend (OpraEqProfile, String, String) -> Boolean,
     onSaveGeneralPresets: suspend (List<GeneralEqPreset>) -> Int = { 0 },
     onHideCanonicalProfiles: suspend (Set<String>) -> Unit = {},
@@ -181,6 +184,8 @@ fun BrowseOpraScreen(
                         onMessage = onMessage,
                         onOpenUrl = onOpenUrl,
                         onBack = { selectedProductId = null },
+                        blackPearlConnected = blackPearlConnectionState is BlackPearlConnectionState.Connected,
+                        onFlashBlackPearlProfile = onFlashBlackPearlProfile,
                         modifier = Modifier.weight(1f),
                     )
                     vendor != null -> VendorProducts(
