@@ -23,6 +23,30 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 /**
+ * Session-sticky reconnect policy shared by current and future supported DAC transports.
+ *
+ * Merely detecting a supported USB identity never opens a session. Automatic reconnect is armed
+ * only after that exact DAC has connected successfully once during the current ViewModel lifetime.
+ * A later physical reattach may then reopen the same app-owned session path without requiring a
+ * second Connect tap. Connecting/error states never loop or auto-retry.
+ */
+internal class DacReconnectPolicy {
+    private var hasConnectedSuccessfully = false
+
+    fun shouldReconnect(
+        isPresent: Boolean,
+        isConnected: Boolean,
+        isDisconnected: Boolean,
+    ): Boolean {
+        if (isConnected) {
+            hasConnectedSuccessfully = true
+            return false
+        }
+        return hasConnectedSuccessfully && isPresent && isDisconnected
+    }
+}
+
+/**
  * ViewModel-scoped owner/coordinator for current-product physical USB sessions.
  *
  * Current My DAC recognition and session ownership are intentionally limited to TRN Black Pearl
@@ -76,6 +100,21 @@ class DacSessionRepository(
                 mutableRecognitionState.update { previous -> previous.withPresentDevices(presentDeviceIds) }
             }
         }
+
+        observeAutomaticReconnect(
+            present = blackPearlTransport.present,
+            connectionState = blackPearlConnectionState,
+            isConnected = { state -> state is BlackPearlConnectionState.Connected },
+            isDisconnected = { state -> state is BlackPearlConnectionState.Disconnected },
+            connect = blackPearlTransport::connect,
+        )
+        observeAutomaticReconnect(
+            present = fiioJa11Transport.present,
+            connectionState = fiioJa11ConnectionState,
+            isConnected = { state -> state is Kt02h20ConnectionState.Connected },
+            isDisconnected = { state -> state is Kt02h20ConnectionState.Disconnected },
+            connect = fiioJa11Transport::connect,
+        )
     }
 
     fun connectBlackPearl() = blackPearlTransport.connect()
@@ -112,6 +151,30 @@ class DacSessionRepository(
     private fun currentPresentDeviceIds(): Set<DacDeviceId> = buildSet {
         if (blackPearlTransport.present.value) add(DacDeviceId.TRN_BLACK_PEARL)
         if (fiioJa11Transport.present.value) add(DacDeviceId.FIIO_JA11)
+    }
+
+    private fun <T> observeAutomaticReconnect(
+        present: StateFlow<Boolean>,
+        connectionState: StateFlow<T>,
+        isConnected: (T) -> Boolean,
+        isDisconnected: (T) -> Boolean,
+        connect: () -> Unit,
+    ) {
+        scope.launch {
+            val policy = DacReconnectPolicy()
+            combine(connectionState, present) { state, isPresent -> state to isPresent }
+                .collect { (state, isPresent) ->
+                    if (
+                        policy.shouldReconnect(
+                            isPresent = isPresent,
+                            isConnected = isConnected(state),
+                            isDisconnected = isDisconnected(state),
+                        )
+                    ) {
+                        connect()
+                    }
+                }
+        }
     }
 
     private suspend fun readVerifiedSnapshot(
