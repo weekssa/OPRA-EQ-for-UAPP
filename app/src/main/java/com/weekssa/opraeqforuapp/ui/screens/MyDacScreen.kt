@@ -57,6 +57,7 @@ import com.weekssa.opraeqforuapp.ui.BlackPearlQualificationUiState
 import com.weekssa.opraeqforuapp.ui.MyDacEditorApplyStatus
 import com.weekssa.opraeqforuapp.ui.MyDacEditorUiState
 import com.weekssa.opraeqforuapp.ui.components.DacEqResponseGraph
+import com.weekssa.opraeqforuapp.ui.components.PremiumSectionLabel
 import kotlinx.coroutines.launch
 
 /**
@@ -164,15 +165,20 @@ fun MyDacScreen(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 16.dp),
+            .padding(horizontal = 16.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         if (selectedDevice == null) {
             Text(
                 text = stringResource(R.string.my_dac_multiple_devices),
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
-            Text(stringResource(R.string.my_dac_choose_device))
+            Text(
+                text = stringResource(R.string.my_dac_choose_device),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             recognized.forEach { deviceId ->
                 TextButton(
                     onClick = {
@@ -189,19 +195,24 @@ fun MyDacScreen(
             return@Column
         }
 
-        Text(
-            text = deviceLabel(selectedDevice),
-            fontWeight = FontWeight.SemiBold,
-        )
-        Text(
-            connectionStatus(
-                deviceId = selectedDevice,
-                presentNow = selectedDevice in recognitionState.presentDeviceIds,
-                blackPearl = blackPearlConnectionState,
-                fiioJa11 = fiioJa11ConnectionState,
-                jcallyJm12 = jcallyJm12ConnectionState,
-            ),
-        )
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                text = deviceLabel(selectedDevice),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = connectionStatus(
+                    deviceId = selectedDevice,
+                    presentNow = selectedDevice in recognitionState.presentDeviceIds,
+                    blackPearl = blackPearlConnectionState,
+                    fiioJa11 = fiioJa11ConnectionState,
+                    jcallyJm12 = jcallyJm12ConnectionState,
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
 
         if (
             shouldOfferMyDacConnect(
@@ -212,7 +223,11 @@ fun MyDacScreen(
                 jcallyJm12 = jcallyJm12ConnectionState,
             )
         ) {
-            Text(stringResource(R.string.my_dac_connect_explanation))
+            Text(
+                text = stringResource(R.string.my_dac_connect_explanation),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Button(
                 onClick = { onConnectDac(selectedDevice) },
                 modifier = Modifier.fillMaxWidth(),
@@ -375,16 +390,24 @@ private fun BlackPearlEqStatus(
     onSaveDacEq: () -> Unit,
 ) {
     if (snapshotState.isReading) {
-        Text(stringResource(R.string.my_dac_reading_eq))
+        Text(
+            text = stringResource(R.string.my_dac_reading_eq),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 
     val bundle = snapshotState.bundle
     if (bundle == null) {
-        Text(stringResource(R.string.my_dac_no_verified_eq))
+        Text(
+            text = stringResource(R.string.my_dac_no_verified_eq),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         return
     }
 
-    Text(
+    PremiumSectionLabel(
         text = stringResource(
             if (snapshotState.freshness == DacStateFreshness.CURRENT) {
                 R.string.my_dac_current_hardware
@@ -392,6 +415,7 @@ private fun BlackPearlEqStatus(
                 R.string.my_dac_last_read
             },
         ),
+        divider = false,
     )
 
     val match = matchResolution?.match
@@ -403,12 +427,16 @@ private fun BlackPearlEqStatus(
             is HardwareEqMatch.ModifiedKnown -> stringResource(R.string.my_dac_eq_modified)
             HardwareEqMatch.Unknown, null -> stringResource(R.string.my_dac_eq_unknown)
         },
+        style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.SemiBold,
     )
 
     when (match) {
         is HardwareEqMatch.Exact -> {
-            Text(match.savedEq.displayName)
+            Text(
+                text = match.savedEq.displayName,
+                style = MaterialTheme.typography.bodyLarge,
+            )
             val representation = matchResolution.representation(match.savedEq.savedEqKey)
             if (representation != null) {
                 val fidelity = stringResource(
@@ -419,18 +447,27 @@ private fun BlackPearlEqStatus(
                     },
                 )
                 Text(
-                    stringResource(
+                    text = stringResource(
                         R.string.my_dac_adaptation,
                         fidelity,
                         representation.adaptationSummary,
                     ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
 
         is HardwareEqMatch.ModifiedKnown -> {
-            Text(stringResource(R.string.my_dac_eq_modified_origin, match.savedEq.displayName))
-            Text(stringResource(R.string.my_dac_eq_modified_difference_count, match.differences.size))
+            Text(
+                text = stringResource(R.string.my_dac_eq_modified_origin, match.savedEq.displayName),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Text(
+                text = stringResource(R.string.my_dac_eq_modified_difference_count, match.differences.size),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             match.differences.forEach { difference ->
                 Text(
                     text = modifiedDifferenceText(difference),
@@ -440,19 +477,27 @@ private fun BlackPearlEqStatus(
             }
         }
 
-        HardwareEqMatch.Unknown, null -> Text(stringResource(R.string.my_dac_eq_unknown_detail))
+        HardwareEqMatch.Unknown, null -> Text(
+            text = stringResource(R.string.my_dac_eq_unknown_detail),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         else -> Unit
     }
 
     val responseCurve = remember(bundle.snapshot.filters) {
         HardwareEqResponseEvaluator.evaluate(bundle.snapshot.filters)
     }
-    Text(
+    PremiumSectionLabel(
         text = stringResource(R.string.my_dac_eq_response),
-        fontWeight = FontWeight.SemiBold,
+        divider = false,
     )
     if (responseCurve == null) {
-        Text(stringResource(R.string.my_dac_response_unavailable))
+        Text(
+            text = stringResource(R.string.my_dac_response_unavailable),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     } else {
         val activeBandCount = bundle.snapshot.filters.count { filter -> filter.isAcousticallyActive() }
         DacEqResponseGraph(
@@ -469,12 +514,24 @@ private fun BlackPearlEqStatus(
     }
 
     HorizontalDivider()
-    Text(stringResource(R.string.my_dac_filter_count, bundle.snapshot.filters.size))
+    Text(
+        text = stringResource(R.string.my_dac_filter_count, bundle.snapshot.filters.size),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
     bundle.snapshot.activeSlot?.let { slot ->
-        Text(stringResource(R.string.my_dac_active_slot, slot))
+        Text(
+            text = stringResource(R.string.my_dac_active_slot, slot),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
     bundle.snapshot.playbackGainDb?.let { gainDb ->
-        Text(stringResource(R.string.my_dac_playback_gain, gainDb))
+        Text(
+            text = stringResource(R.string.my_dac_playback_gain, gainDb),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 
     Button(
@@ -483,14 +540,6 @@ private fun BlackPearlEqStatus(
         modifier = Modifier.fillMaxWidth(),
     ) {
         Text(stringResource(R.string.my_dac_action_edit_eq))
-    }
-
-    OutlinedButton(
-        onClick = onReset,
-        enabled = canEdit,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Text(stringResource(R.string.my_dac_action_reset_eq))
     }
 
     if (
@@ -506,6 +555,14 @@ private fun BlackPearlEqStatus(
         ) {
             Text(stringResource(R.string.my_dac_action_save_eq))
         }
+    }
+
+    OutlinedButton(
+        onClick = onReset,
+        enabled = canEdit,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text(stringResource(R.string.my_dac_action_reset_eq))
     }
 }
 
