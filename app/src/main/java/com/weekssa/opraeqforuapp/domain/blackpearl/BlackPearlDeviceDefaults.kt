@@ -10,8 +10,8 @@ import com.weekssa.opraeqforuapp.domain.dac.DacControlValue
  * establish the complete Black Pearl factory state. These values are the explicit EQ Library reset
  * targets approved by the project owner for v0.6.
  *
- * Microphone gain is deliberately absent and must remain unchanged. EQ reset is separately optional
- * and continues to use the independently qualified Reset EQ to flat transaction.
+ * Microphone gain is explicitly restored to 0 dB. EQ reset is separately optional and continues to
+ * use the independently qualified Reset EQ to flat transaction.
  */
 data class BlackPearlDeviceDefaultStep(
     val controlId: DacControlId,
@@ -28,7 +28,7 @@ object BlackPearlDeviceDefaults {
     /**
      * Safe restore ordering: lower listening level first, restore non-volume settings, then establish
      * the requested 50% presentation last. Every step still goes through the existing fresh-read,
-     * one-write, persist, and verified-readback DEVICE transaction.
+     * one-write, persist, and verified-readback DEVICE transaction when a change is required.
      */
     val restoreSteps: List<BlackPearlDeviceDefaultStep> = listOf(
         BlackPearlDeviceDefaultStep(
@@ -41,6 +41,10 @@ object BlackPearlDeviceDefaults {
         ),
         BlackPearlDeviceDefaultStep(
             BlackPearlDeviceControls.BALANCE_DB,
+            DacControlValue.Numeric(0.0),
+        ),
+        BlackPearlDeviceDefaultStep(
+            BlackPearlDeviceControls.MIC_GAIN_DB,
             DacControlValue.Numeric(0.0),
         ),
         BlackPearlDeviceDefaultStep(
@@ -63,6 +67,7 @@ object BlackPearlDeviceDefaults {
         BlackPearlDeviceControls.GAIN_MODE to DacControlValue.Discrete(BlackPearlDeviceControls.GAIN_HIGH),
         BlackPearlDeviceControls.AMP_TOPOLOGY to DacControlValue.Discrete(BlackPearlDeviceControls.AMP_CLASS_AB),
         BlackPearlDeviceControls.BALANCE_DB to DacControlValue.Numeric(0.0),
+        BlackPearlDeviceControls.MIC_GAIN_DB to DacControlValue.Numeric(0.0),
     )
 
     fun isStepSatisfied(
