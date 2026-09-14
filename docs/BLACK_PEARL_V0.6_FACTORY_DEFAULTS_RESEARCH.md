@@ -29,14 +29,18 @@ The restore action does not invent a new Black Pearl opcode. It reuses the alrea
 
 The device-settings sequence is intentionally conservative:
 
-1. lower playback to the qualified minimum whole-dB DEVICE level (`-37 dB`) as a fail-safe intermediate step;
-2. write/persist FAST-LL;
-3. write/persist centered balance;
-4. write/persist CLASS AB;
-5. write/persist HIGH gain;
-6. write/persist the whole-dB playback value (`-6 dB`) that presents as **50%** in the Black Pearl percentage UI.
+1. establish the qualified minimum whole-dB DEVICE level (`-37 dB`) as a fail-safe intermediate playback state;
+2. establish FAST-LL;
+3. establish centered balance;
+4. establish CLASS AB;
+5. establish HIGH gain;
+6. establish the whole-dB playback value (`-6 dB`) that presents as **50%** in the Black Pearl percentage UI.
 
-Every selected restore target is explicitly issued once, even if its current readback already matches, so the normal DEVICE persistence command is also exercised. Each step still requires the normal fresh baseline/session checks and verified readback. Setting writes are never automatically retried. A disconnect, stale session, transfer failure, readback mismatch, or unrelated-state change stops the restore and must not be presented as success.
+Each selected target is submitted through the normal fresh-baseline/write/readback path. When a target already matches the fresh hardware read, the normal repository correctly treats it as a verified no-op rather than sending a redundant setting write. When a target differs, it is written once, verified live, persisted with the established device save command, then verified again after save.
+
+A completed restore is nevertheless guaranteed to exercise DEVICE persistence because the fail-safe playback stage and the final 50%-presentation playback stage are intentionally different values. At least one of those playback targets must differ from the starting/current stage during the completed sequence, and the Black Pearl save command persists the current DEVICE settings block. This preserves the no-redundant-write rule while still establishing a persisted final restore state.
+
+Setting writes are never automatically retried. A disconnect, stale session, transfer failure, readback mismatch, or unrelated-state change stops the restore and must not be presented as success.
 
 The optional EQ-flat action remains a separate transaction with its own already-qualified fail-safe ordering. Microphone gain is never written by this restore action.
 
