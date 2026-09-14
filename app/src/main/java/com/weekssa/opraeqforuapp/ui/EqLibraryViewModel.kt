@@ -338,6 +338,16 @@ class EqLibraryViewModel(
             refreshCatalogIfDue()
         }
         viewModelScope.launch {
+            hardwareRepository.blackPearlConnectionState.collectLatest { state ->
+                when (state) {
+                    BlackPearlConnectionState.Connected -> refreshBlackPearlDeviceState()
+                    else -> mutableBlackPearlQualificationState.update { current ->
+                        current.withSessionCurrent(false)
+                    }
+                }
+            }
+        }
+        viewModelScope.launch {
             hardwareRepository.fiioJa11ConnectionState.collectLatest { state ->
                 when (state) {
                     Kt02h20ConnectionState.Connected -> {
@@ -434,6 +444,7 @@ class EqLibraryViewModel(
     }
 
     private suspend fun refreshFiioJa11DeviceState() {
+        if (mutableFiioJa11DeviceState.value.isBusy) return
         mutableFiioJa11DeviceState.update(FiioJa11DeviceUiState::beginRead)
         mutableFiioJa11DeviceState.value = when (val result = fiioJa11ControlRepository.readSnapshot()) {
             is FiioJa11ControlReadResult.Success -> mutableFiioJa11DeviceState.value.readSuccess(result.snapshot)
@@ -689,6 +700,7 @@ class EqLibraryViewModel(
                         )
                     } else null
                     blackPearlEditorLineageRepresentation = null
+                    refreshBlackPearlDeviceState()
                     MyDacEditorUiState(applyStatus = MyDacEditorApplyStatus.VERIFIED)
                 }
                 is BlackPearlEditorApplyResult.ConfirmationRequired -> current.copy(
@@ -772,26 +784,29 @@ class EqLibraryViewModel(
 
     fun readBlackPearlQualificationControls() {
         if (mutableBlackPearlQualificationState.value.isBusy) return
+        viewModelScope.launch { refreshBlackPearlDeviceState() }
+    }
+
+    private suspend fun refreshBlackPearlDeviceState() {
+        if (mutableBlackPearlQualificationState.value.isBusy) return
         mutableBlackPearlQualificationState.update(BlackPearlQualificationUiState::beginRead)
-        viewModelScope.launch {
-            mutableBlackPearlQualificationState.value = when (
-                val result = dacControlRepository.readBlackPearlQualificationSnapshot()
-            ) {
-                is BlackPearlQualificationReadResult.Success ->
-                    mutableBlackPearlQualificationState.value.success(result.snapshot)
-                BlackPearlQualificationReadResult.NotConnected ->
-                    mutableBlackPearlQualificationState.value.failure(
-                        "Connect TRN Black Pearl before reading device controls.",
-                    )
-                BlackPearlQualificationReadResult.SessionChanged ->
-                    mutableBlackPearlQualificationState.value.failure(
-                        "The Black Pearl connection changed during the read. Reconnect and read again.",
-                    )
-                is BlackPearlQualificationReadResult.ReadFailed ->
-                    mutableBlackPearlQualificationState.value.failure(
-                        "Could not read ${result.field}. No device setting was changed.",
-                    )
-            }
+        mutableBlackPearlQualificationState.value = when (
+            val result = dacControlRepository.readBlackPearlQualificationSnapshot()
+        ) {
+            is BlackPearlQualificationReadResult.Success ->
+                mutableBlackPearlQualificationState.value.success(result.snapshot)
+            BlackPearlQualificationReadResult.NotConnected ->
+                mutableBlackPearlQualificationState.value.failure(
+                    "Connect TRN Black Pearl before reading device controls.",
+                )
+            BlackPearlQualificationReadResult.SessionChanged ->
+                mutableBlackPearlQualificationState.value.failure(
+                    "The Black Pearl connection changed during the read. Reconnect and read again.",
+                )
+            is BlackPearlQualificationReadResult.ReadFailed ->
+                mutableBlackPearlQualificationState.value.failure(
+                    "Could not read ${result.field}. No device setting was changed.",
+                )
         }
     }
 
@@ -838,6 +853,9 @@ class EqLibraryViewModel(
                 is BlackPearlDeviceControlWriteResult.Verified -> {
                     mutableBlackPearlQualificationState.value =
                         mutableBlackPearlQualificationState.value.writeVerified(controlId, result.snapshot)
+                    if (controlId == BlackPearlDeviceControls.PLAYBACK_GAIN_DB) {
+                        hardwareRepository.readBlackPearlSnapshot()
+                    }
                 }
                 is BlackPearlDeviceControlWriteResult.ReadbackMismatch -> {
                     mutableBlackPearlQualificationState.value =
@@ -892,28 +910,28 @@ class EqLibraryViewModel(
         if (hardwareRepository.blackPearlConnectionState.value !is BlackPearlConnectionState.Connected) {
             return UiText.Dynamic("Connect TRN Black Pearl before changing its EQ.")
         }
-        return blackPearlFlashResultMessage(hardwareRepository.flashBlackPearl(profile))
+        return blackPearlFlashResultMessage(flashBlackPearlAndRefresh(profile))
     }
 
     suspend fun resetBlackPearlFromMyDacToFlat(): UiText {
         if (hardwareRepository.blackPearlConnectionState.value !is BlackPearlConnectionState.Connected) {
             return UiText.Dynamic("Connect TRN Black Pearl before resetting its EQ.")
         }
-        return blackPearlResetResultMessage(hardwareRepository.resetBlackPearl())
+        return blackPearlResetResultMessage(resetBlackPearlAndRefresh())
     }
 
     suspend fun flashFiioJa11FromMyDac(profile: OpraEqProfile): UiText {
         if (hardwareRepository.fiioJa11ConnectionState.value !is Kt02h20ConnectionState.Connected) {
             return UiText.Dynamic("Connect FiiO JA11 before changing its EQ.")
         }
-        return fiioJa11FlashResultMessage(hardwareRepository.flashFiioJa11(profile))
+        return fiioJa11FlashResultMessage(flashFiioJa11AndRefresh(profile))
     }
 
     suspend fun resetFiioJa11FromMyDacToFlat(): UiText {
         if (hardwareRepository.fiioJa11ConnectionState.value !is Kt02h20ConnectionState.Connected) {
             return UiText.Dynamic("Connect FiiO JA11 before resetting its EQ.")
         }
-        return fiioJa11ResetResultMessage(hardwareRepository.resetFiioJa11())
+        return fiioJa11ResetResultMessage(resetFiioJa11AndRefresh())
     }
 
     fun connectBlackPearl() {
@@ -947,7 +965,7 @@ class EqLibraryViewModel(
         if (hardwareRepository.blackPearlConnectionState.value !is BlackPearlConnectionState.Connected) {
             return resource(R.string.error_connect_black_pearl_reset)
         }
-        return blackPearlResetResultMessage(hardwareRepository.resetBlackPearl())
+        return blackPearlResetResultMessage(resetBlackPearlAndRefresh())
     }
 
     suspend fun resetFiioJa11ToFlat(): UiText {
@@ -961,7 +979,7 @@ class EqLibraryViewModel(
         if (hardwareRepository.fiioJa11ConnectionState.value !is Kt02h20ConnectionState.Connected) {
             return resource(R.string.error_connect_fiio_reset)
         }
-        return fiioJa11ResetResultMessage(hardwareRepository.resetFiioJa11())
+        return fiioJa11ResetResultMessage(resetFiioJa11AndRefresh())
     }
 
     suspend fun resetJcallyJm12ToFlat(): UiText = UiText.Dynamic("This device is not supported by the current product.")
@@ -1239,7 +1257,7 @@ class EqLibraryViewModel(
         if (hardwareRepository.blackPearlConnectionState.value !is BlackPearlConnectionState.Connected) {
             return resource(R.string.error_connect_black_pearl_flash)
         }
-        return blackPearlFlashResultMessage(hardwareRepository.flashBlackPearl(profile))
+        return blackPearlFlashResultMessage(flashBlackPearlAndRefresh(profile))
     }
 
     private fun blackPearlFlashResultMessage(result: BlackPearlFlashResult): UiText = when (result) {
@@ -1272,7 +1290,7 @@ class EqLibraryViewModel(
         if (hardwareRepository.fiioJa11ConnectionState.value !is Kt02h20ConnectionState.Connected) {
             return resource(R.string.error_connect_fiio_flash)
         }
-        return fiioJa11FlashResultMessage(hardwareRepository.flashFiioJa11(profile))
+        return fiioJa11FlashResultMessage(flashFiioJa11AndRefresh(profile))
     }
 
     private fun fiioJa11FlashResultMessage(result: Kt02h20FlashResult): UiText = when (result) {
@@ -1296,6 +1314,38 @@ class EqLibraryViewModel(
         is Kt02h20FlatResetResult.DeviceUnavailable -> UiText.Dynamic(result.reason)
         is Kt02h20FlatResetResult.TransferFailed -> UiText.Dynamic(result.reason)
         is Kt02h20FlatResetResult.VerificationFailed -> resource(R.string.fiio_reset_verification_failed, result.reason)
+    }
+
+    private suspend fun flashBlackPearlAndRefresh(profile: OpraEqProfile): BlackPearlFlashResult {
+        val result = hardwareRepository.flashBlackPearl(profile)
+        if (hardwareRepository.blackPearlConnectionState.value is BlackPearlConnectionState.Connected) {
+            refreshBlackPearlDeviceState()
+        }
+        return result
+    }
+
+    private suspend fun resetBlackPearlAndRefresh(): BlackPearlFlatResetResult {
+        val result = hardwareRepository.resetBlackPearl()
+        if (hardwareRepository.blackPearlConnectionState.value is BlackPearlConnectionState.Connected) {
+            refreshBlackPearlDeviceState()
+        }
+        return result
+    }
+
+    private suspend fun flashFiioJa11AndRefresh(profile: OpraEqProfile): Kt02h20FlashResult {
+        val result = hardwareRepository.flashFiioJa11(profile)
+        if (hardwareRepository.fiioJa11ConnectionState.value is Kt02h20ConnectionState.Connected) {
+            refreshFiioJa11DeviceState()
+        }
+        return result
+    }
+
+    private suspend fun resetFiioJa11AndRefresh(): Kt02h20FlatResetResult {
+        val result = hardwareRepository.resetFiioJa11()
+        if (hardwareRepository.fiioJa11ConnectionState.value is Kt02h20ConnectionState.Connected) {
+            refreshFiioJa11DeviceState()
+        }
+        return result
     }
 
     private fun resolveBlackPearlHardwareEq(
