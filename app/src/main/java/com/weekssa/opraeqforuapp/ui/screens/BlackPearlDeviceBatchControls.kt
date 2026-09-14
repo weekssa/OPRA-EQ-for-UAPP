@@ -6,11 +6,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -22,7 +20,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceControlReadCodec
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceControls
@@ -31,12 +28,9 @@ import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlUsbAudioMode
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlVolumeScale
 import com.weekssa.opraeqforuapp.domain.dac.DacControlDescriptor
 import com.weekssa.opraeqforuapp.domain.dac.DacControlId
-import com.weekssa.opraeqforuapp.domain.dac.DacControlValidation
 import com.weekssa.opraeqforuapp.domain.dac.DacControlValue
 import com.weekssa.opraeqforuapp.domain.dac.DacDiscreteOption
-import com.weekssa.opraeqforuapp.domain.dac.validateForWrite
 import com.weekssa.opraeqforuapp.ui.BlackPearlQualificationUiState
-import java.util.Locale
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.round
@@ -45,9 +39,9 @@ import kotlin.math.roundToInt
 /**
  * Finished Black Pearl DEVICE settings surface.
  *
- * The UI stays intentionally simple. Repository/domain code remains responsible for fresh-session
- * validation, target-only writes, bounded settling reads, complete readback verification and
- * rejection of unrelated state changes.
+ * User-facing volume is intentionally percentage-first because that is the Black Pearl's ordinary
+ * controller presentation. The repository/domain transaction still uses the exact native raw/dB
+ * protocol value and the physically qualified whole-dB DEVICE step internally.
  */
 @Composable
 internal fun BlackPearlDeviceBatchControlPanel(
@@ -63,60 +57,25 @@ internal fun BlackPearlDeviceBatchControlPanel(
     var choosingIntegerControl by rememberSaveable { mutableStateOf<String?>(null) }
     var stagedIntegerDb by rememberSaveable { mutableStateOf(0f) }
 
-    var choosingPlayback by rememberSaveable { mutableStateOf(false) }
-    var playbackText by rememberSaveable { mutableStateOf("") }
+    var choosingVolume by rememberSaveable { mutableStateOf(false) }
+    var stagedPlaybackDb by rememberSaveable { mutableStateOf<Double?>(null) }
 
     val snapshot = state.snapshot
     val sessionControlsEnabled = enabled && state.isCurrentSession && !state.isBusy
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = when {
-                    state.isReading -> "Reading device settings…"
-                    state.isCurrentSession -> "Current device state"
-                    snapshot != null -> "Last read"
-                    else -> "Device settings"
-                },
-                fontWeight = FontWeight.SemiBold,
-            )
-            if (snapshot != null && !state.isCurrentSession && !state.isReading) {
-                Text(
-                    text = "Reconnect or refresh to make these values current.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-        TextButton(
-            onClick = onRead,
-            enabled = enabled && !state.isBusy,
-        ) {
-            Text(if (state.isReading) "Reading…" else "Refresh")
-        }
-    }
-
-    state.error?.let { error ->
-        Text(
-            text = error,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.error,
-            modifier = Modifier.padding(top = 4.dp),
-        )
-    }
-
-    state.activeWriteControlId?.takeIf { state.isWriting }?.let { controlId ->
-        Text(
-            text = "Applying ${blackPearlControlName(controlId)}…",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 4.dp),
-        )
-    }
+    DeviceOperationStatusHeader(
+        isReading = state.isReading,
+        isWriting = state.isWriting,
+        activeWriteControlId = state.activeWriteControlId,
+        lastVerifiedWriteControlId = state.lastVerifiedWriteControlId,
+        hasSnapshot = snapshot != null,
+        isCurrentSession = state.isCurrentSession,
+        error = state.error,
+        enabled = enabled,
+        busy = state.isBusy,
+        onRefresh = onRead,
+        controlName = ::blackPearlControlName,
+    )
 
     if (snapshot == null) {
         Text(
@@ -134,12 +93,12 @@ internal fun BlackPearlDeviceBatchControlPanel(
 
     DeviceSettingsSection("Audio")
     DeviceSettingRow(
-        label = "Playback level",
-        value = playbackLabel(snapshot.playbackGainRaw),
+        label = "Volume",
+        value = blackPearlVolumeLabel(snapshot.playbackGainRaw),
         enabled = isControlEnabled(BlackPearlDeviceControls.PLAYBACK_GAIN_DB, sessionControlsEnabled),
         onClick = {
-            playbackText = formatGainDb(snapshot.playbackGainDb)
-            choosingPlayback = true
+            stagedPlaybackDb = snapshot.playbackGainDb
+            choosingVolume = true
         },
     )
     DeviceSettingRow(
@@ -347,66 +306,45 @@ internal fun BlackPearlDeviceBatchControlPanel(
         }
     }
 
-    if (choosingPlayback) {
-        val parsedDb = playbackText.trim().toDoubleOrNull()
-        val requestedValue = parsedDb?.let { DacControlValue.Numeric(it) }
-        val descriptor = BlackPearlDeviceControls.descriptor(BlackPearlDeviceControls.PLAYBACK_GAIN_DB)
-        val validation = if (requestedValue != null) descriptor?.validateForWrite(requestedValue) else null
-        val requestedRaw = if (
-            validation == DacControlValidation.Valid ||
-            validation is DacControlValidation.CautionOutsideNormalRange
-        ) {
-            parsedDb?.let(BlackPearlDeviceControls::playbackGainRaw)
-        } else {
-            null
-        }
+    if (choosingVolume) {
         val currentRaw = snapshot.playbackGainRaw
         val currentDb = snapshot.playbackGainDb
-        val stepBaseDb = parsedDb ?: currentDb
-        val lowerStepDb = playbackWholeDbStep(stepBaseDb, direction = -1)
-        val upperStepDb = playbackWholeDbStep(stepBaseDb, direction = 1)
+        val stagedDb = stagedPlaybackDb ?: currentDb
+        val stagedRaw = BlackPearlDeviceControls.playbackGainRaw(stagedDb)
+        val lowerStepDb = playbackWholeDbStep(stagedDb, direction = -1)
+        val upperStepDb = playbackWholeDbStep(stagedDb, direction = 1)
 
         AlertDialog(
-            onDismissRequest = { choosingPlayback = false },
-            title = { Text("Playback level") },
+            onDismissRequest = { choosingVolume = false },
+            title = { Text("Volume") },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Current: ${playbackLabel(currentRaw)}")
-                    OutlinedTextField(
-                        value = playbackText,
-                        onValueChange = { playbackText = it },
-                        label = { Text("New level (dB)") },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        isError = playbackText.isNotBlank() && requestedRaw == null,
-                        modifier = Modifier.fillMaxWidth(),
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("Current: ${blackPearlVolumeLabel(currentRaw)}")
+                    Text(
+                        text = stagedRaw?.let(::blackPearlVolumeLabel) ?: blackPearlVolumeLabel(currentRaw),
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.SemiBold,
                     )
-                    requestedRaw?.let { raw ->
-                        Text("New: ${playbackLabel(raw)}", fontWeight = FontWeight.SemiBold)
-                    }
-                    if (playbackText.isNotBlank() && requestedRaw == null) {
-                        Text(
-                            text = "Enter a supported whole-dB value.",
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         TextButton(
-                            onClick = { playbackText = formatGainDb(lowerStepDb) },
+                            onClick = { stagedPlaybackDb = lowerStepDb },
                             enabled = BlackPearlDeviceControls.playbackGainRaw(lowerStepDb) != null,
-                        ) { Text("−1 dB") }
-                        TextButton(onClick = { playbackText = formatGainDb(currentDb) }) { Text("Current") }
+                        ) { Text("−") }
                         TextButton(
-                            onClick = { playbackText = formatGainDb(upperStepDb) },
+                            onClick = { stagedPlaybackDb = currentDb },
+                            enabled = stagedRaw != currentRaw,
+                        ) { Text("Current") }
+                        TextButton(
+                            onClick = { stagedPlaybackDb = upperStepDb },
                             enabled = BlackPearlDeviceControls.playbackGainRaw(upperStepDb) != null,
-                        ) { Text("+1 dB") }
+                        ) { Text("+") }
                     }
                     Text(
-                        text = "Playback level changes immediately after Apply. Keep listening volume conservative.",
+                        text = "The new volume becomes the current volume after EQ Library verifies it on the DAC.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -415,20 +353,20 @@ internal fun BlackPearlDeviceBatchControlPanel(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        choosingPlayback = false
-                        parsedDb?.let { requested ->
+                        choosingVolume = false
+                        stagedPlaybackDb?.let { requested ->
                             onSetDeviceControl(
                                 BlackPearlDeviceControls.PLAYBACK_GAIN_DB,
                                 DacControlValue.Numeric(requested),
                             )
                         }
                     },
-                    enabled = requestedRaw != null && requestedRaw != currentRaw &&
+                    enabled = stagedRaw != null && stagedRaw != currentRaw &&
                         isControlEnabled(BlackPearlDeviceControls.PLAYBACK_GAIN_DB, sessionControlsEnabled),
                 ) { Text("Apply") }
             },
             dismissButton = {
-                TextButton(onClick = { choosingPlayback = false }) { Text("Cancel") }
+                TextButton(onClick = { choosingVolume = false }) { Text("Cancel") }
             },
         )
     }
@@ -530,7 +468,7 @@ private fun blackPearlControlTitle(controlId: DacControlId): String = when (cont
     BlackPearlDeviceControls.MIC_GAIN_DB -> "Microphone gain"
     BlackPearlDeviceControls.AMP_TOPOLOGY -> "Amplifier"
     BlackPearlDeviceControls.GAIN_MODE -> "Gain"
-    BlackPearlDeviceControls.PLAYBACK_GAIN_DB -> "Playback level"
+    BlackPearlDeviceControls.PLAYBACK_GAIN_DB -> "Volume"
     BlackPearlDeviceControls.USB_AUDIO_MODE -> "USB audio mode"
     else -> "Device setting"
 }
@@ -580,12 +518,13 @@ private fun blackPearlUsbAudioModeLabel(mode: BlackPearlUsbAudioMode?): String =
     null -> "Unknown"
 }
 
-private fun playbackLabel(raw: Int): String =
-    "${BlackPearlVolumeScale.percentFromRaw(raw)}% · ${formatGainDb(raw / 256.0)} dB"
+private fun blackPearlVolumeLabel(raw: Int): String =
+    "${BlackPearlVolumeScale.percentFromRaw(raw)}%"
 
 /**
- * Normal DEVICE playback changes deliberately use whole-dB steps. If hardware is externally left
- * between whole-dB points, the first down/up step lands on the adjacent conservative whole value.
+ * Normal DEVICE volume changes deliberately retain the physically observed conservative whole-dB
+ * protocol step underneath the percentage UI. If hardware is externally left between whole-dB
+ * points, the first down/up step lands on the adjacent conservative whole value.
  */
 private fun playbackWholeDbStep(value: Double, direction: Int): Double {
     require(direction == -1 || direction == 1)
@@ -597,9 +536,4 @@ private fun playbackWholeDbStep(value: Double, direction: Int): Double {
         direction > 0 && isWhole -> nearestWhole + 1.0
         else -> ceil(value)
     }
-}
-
-private fun formatGainDb(value: Double): String {
-    val formatted = String.format(Locale.US, "%.5f", value)
-    return formatted.trimEnd('0').trimEnd('.').let { if ('.' in it) it else "$it.0" }
 }
