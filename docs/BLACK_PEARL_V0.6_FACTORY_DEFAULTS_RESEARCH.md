@@ -17,7 +17,7 @@ The v0.6 restore targets are:
 - gain: **HIGH**;
 - amplifier: **CLASS AB**;
 - balance: **centered**;
-- microphone gain: **unchanged**.
+- microphone gain: **0 dB**.
 
 The confirmation dialog retains an optional **Also reset EQ to flat** checkbox, OFF by default. When selected, it reuses the separately qualified `Reset EQ to flat` transaction. Saved EQs in EQ Library are not changed.
 
@@ -32,9 +32,10 @@ The device-settings sequence is intentionally conservative:
 1. establish the qualified minimum whole-dB DEVICE level (`-37 dB`) as a fail-safe intermediate playback state;
 2. establish FAST-LL;
 3. establish centered balance;
-4. establish CLASS AB;
-5. establish HIGH gain;
-6. establish the whole-dB playback value (`-6 dB`) that presents as **50%** in the Black Pearl percentage UI.
+4. establish microphone gain **0 dB**;
+5. establish CLASS AB;
+6. establish HIGH gain;
+7. establish the whole-dB playback value (`-6 dB`) that presents as **50%** in the Black Pearl percentage UI.
 
 Each selected target is submitted through the normal fresh-baseline/write/readback path. When a target already matches the fresh hardware read, the normal repository correctly treats it as a verified no-op rather than sending a redundant setting write. When a target differs, it is written once, verified live, persisted with the established device save command, then verified again after save.
 
@@ -42,7 +43,7 @@ A completed restore is nevertheless guaranteed to exercise DEVICE persistence be
 
 Setting writes are never automatically retried. A disconnect, stale session, transfer failure, readback mismatch, or unrelated-state change stops the restore and must not be presented as success.
 
-The optional EQ-flat action remains a separate transaction with its own already-qualified fail-safe ordering. Microphone gain is never written by this restore action.
+The optional EQ-flat action remains a separate transaction with its own already-qualified fail-safe ordering. Microphone gain is explicitly restored through the same qualified normal DEVICE control path at **0 dB**.
 
 ## Evidence reviewed
 
@@ -123,8 +124,7 @@ The later owner decision changes the **product action**, not the evidence classi
 Before the new whole-device restore action is treated as physically qualified on Black Pearl, an exact signed candidate must verify:
 
 - Cancel performs no write/change;
-- with **Also reset EQ to flat** OFF, the device ends at displayed 50% volume, FAST-LL, HIGH, CLASS AB, and centered balance;
-- microphone gain is unchanged;
+- with **Also reset EQ to flat** OFF, the device ends at displayed 50% volume, FAST-LL, HIGH, CLASS AB, centered balance, and **0 dB microphone gain**;
 - the current hardware EQ is unchanged when the checkbox is OFF;
 - after disconnect/reconnect the restored DEVICE values remain present;
 - with the checkbox ON, the same DEVICE targets are established and the hardware EQ is flat;
@@ -141,4 +141,4 @@ Any one sufficiently strong path, preferably corroborated, may establish a separ
 - an independently verified native hardware reset operation with complete before/after reads across all supported controls and EQ;
 - a documented exact factory default table plus a safe EQ Library-owned restore transaction, if there is no native reset command.
 
-Any future true-factory implementation would still require a fresh complete baseline, a prevalidated reset plan, safe device-specific ordering, no automatic write retry, complete post-reset readback, and success only after the requested state is verified.
+Any future true-factory implementation would still require a fresh complete baseline, a prevalidated reset plan, safe device-specific ordering, no automatic write retry, complete post-reset readback, and success only after the requested reset state is verified.
