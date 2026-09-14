@@ -47,8 +47,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.R
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
-import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlashPlan
-import com.weekssa.opraeqforuapp.domain.blackpearl.buildBlackPearlFlashPlan
 import com.weekssa.opraeqforuapp.domain.catalog.OpraCatalog
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.OpraProduct
@@ -98,6 +96,8 @@ internal fun ProfileSelectionEditor(
     onBack: () -> Unit,
     blackPearlConnected: Boolean = false,
     onFlashBlackPearlProfile: (suspend (OpraEqProfile) -> String)? = null,
+    fiioJa11Connected: Boolean = false,
+    onFlashFiioJa11Profile: (suspend (OpraEqProfile) -> String)? = null,
     modifier: Modifier = Modifier,
 ) {
     val vendor = catalog.vendor(product.vendorId)
@@ -137,7 +137,9 @@ internal fun ProfileSelectionEditor(
     var targetFilter by rememberSaveable(product.id) { mutableStateOf<String?>(null) }
     var showHistoricalRevisions by rememberSaveable(product.id) { mutableStateOf(false) }
     var filterDialog by remember { mutableStateOf<ProfileFilterDimension?>(null) }
-    var pendingBlackPearlFlash by remember { mutableStateOf<OpraEqProfile?>(null) }
+    var pendingHardwareFlash by remember {
+        mutableStateOf<Pair<LibraryHardwareFlashDevice, OpraEqProfile>?>(null)
+    }
 
     LaunchedEffect(databaseOptions, creatorOptions, targetOptions) {
         if (databaseFilter != null && databaseFilter !in databaseOptions) databaseFilter = null
@@ -264,27 +266,42 @@ internal fun ProfileSelectionEditor(
         )
     }
 
-    pendingBlackPearlFlash?.let { profile ->
-        when (val plan = remember(profile) { buildBlackPearlFlashPlan(profile, activeSlot = 0x00) }) {
-            is BlackPearlFlashPlan.Ready -> {
-                val fidelity = when (plan.fidelity) {
+    pendingHardwareFlash?.let { (device, profile) ->
+        when (val preview = remember(device, profile) { libraryHardwareFlashPreview(profile, device) }) {
+            is LibraryHardwareFlashPreview.Ready -> {
+                val fidelity = when (preview.fidelity) {
                     DevicePresetFidelity.EXACT -> "Exact"
                     DevicePresetFidelity.OPTIMIZED -> "Optimized"
                 }
                 val creator = profile.author?.takeIf(String::isNotBlank)
-                val gain = String.format(Locale.US, "%+.2f dB", plan.requiredPlaybackGainDb)
+                val gain = String.format(Locale.US, "%+.2f dB", preview.gainDb)
                 AlertDialog(
-                    onDismissRequest = { pendingBlackPearlFlash = null },
-                    title = { Text("Flash to TRN Black Pearl?") },
+                    onDismissRequest = { pendingHardwareFlash = null },
+                    title = { Text("Flash to ${device.displayName}?") },
                     text = {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(
                                 text = listOfNotNull(product.name, creator).joinToString(" · "),
                                 fontWeight = FontWeight.SemiBold,
                             )
-                            Text("$fidelity · ${plan.adaptationSummary}")
-                            Text("Playback adjustment: $gain")
-                            plan.warning?.takeIf(String::isNotBlank)?.let { warning ->
+                            Text("$fidelity · ${preview.adaptationSummary}")
+                            Text(
+                                when (device) {
+                                    LibraryHardwareFlashDevice.BLACK_PEARL -> "Playback adjustment: $gain"
+                                    LibraryHardwareFlashDevice.FIIO_JA11 -> "Global EQ gain: $gain"
+                                },
+                            )
+                            Text(
+                                text = when (device) {
+                                    LibraryHardwareFlashDevice.BLACK_PEARL ->
+                                        "The current hardware EQ slot will be overwritten and verified."
+                                    LibraryHardwareFlashDevice.FIIO_JA11 ->
+                                        "User 1 will be applied, saved, and verified."
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            preview.warning?.takeIf(String::isNotBlank)?.let { warning ->
                                 Text(
                                     warning,
                                     style = MaterialTheme.typography.bodySmall,
@@ -296,27 +313,34 @@ internal fun ProfileSelectionEditor(
                     confirmButton = {
                         TextButton(
                             onClick = {
-                                pendingBlackPearlFlash = null
-                                onFlashBlackPearlProfile?.let { flash ->
-                                    scope.launch { onMessage(flash(profile)) }
+                                pendingHardwareFlash = null
+                                when (device) {
+                                    LibraryHardwareFlashDevice.BLACK_PEARL ->
+                                        onFlashBlackPearlProfile?.let { flash ->
+                                            scope.launch { onMessage(flash(profile)) }
+                                        }
+                                    LibraryHardwareFlashDevice.FIIO_JA11 ->
+                                        onFlashFiioJa11Profile?.let { flash ->
+                                            scope.launch { onMessage(flash(profile)) }
+                                        }
                                 }
                             },
                         ) {
-                            Text(if (plan.warning.isNullOrBlank()) "Flash" else "Flash anyway")
+                            Text(if (preview.warning.isNullOrBlank()) "Flash" else "Flash anyway")
                         }
                     },
                     dismissButton = {
-                        TextButton(onClick = { pendingBlackPearlFlash = null }) { Text("Cancel") }
+                        TextButton(onClick = { pendingHardwareFlash = null }) { Text("Cancel") }
                     },
                 )
             }
-            is BlackPearlFlashPlan.NotRepresentable -> {
+            is LibraryHardwareFlashPreview.NotSuitable -> {
                 AlertDialog(
-                    onDismissRequest = { pendingBlackPearlFlash = null },
+                    onDismissRequest = { pendingHardwareFlash = null },
                     title = { Text("Can't flash this EQ") },
-                    text = { Text(plan.reason) },
+                    text = { Text(preview.reason) },
                     confirmButton = {
-                        TextButton(onClick = { pendingBlackPearlFlash = null }) { Text("OK") }
+                        TextButton(onClick = { pendingHardwareFlash = null }) { Text("OK") }
                     },
                 )
             }
@@ -528,6 +552,11 @@ internal fun ProfileSelectionEditor(
             )
         }
 
+        val connectedHardwareFlashDevice = connectedLibraryHardwareFlashDevice(
+            blackPearlConnected = blackPearlConnected && onFlashBlackPearlProfile != null,
+            fiioJa11Connected = fiioJa11Connected && onFlashFiioJa11Profile != null,
+        )
+
         LazyColumn(modifier = Modifier.weight(1f)) {
             items(visibleProfiles, key = OpraEqProfile::id) { profile ->
                 val sourceAssessment = profile.assessCompatibility()
@@ -541,9 +570,9 @@ internal fun ProfileSelectionEditor(
                     append(statusLabel)
                     adaptation?.let { append(" · $it") }
                 }
-                val blackPearlFlashReady = blackPearlConnected &&
-                    onFlashBlackPearlProfile != null &&
-                    buildBlackPearlFlashPlan(profile, activeSlot = 0x00) is BlackPearlFlashPlan.Ready
+                val hardwareFlashReady = connectedHardwareFlashDevice?.let { device ->
+                    libraryHardwareFlashPreview(profile, device) is LibraryHardwareFlashPreview.Ready
+                } == true
                 ProfileSelectionRow(
                     profile = profile,
                     selected = profile.id in stagedSelectedIds,
@@ -582,8 +611,8 @@ internal fun ProfileSelectionEditor(
                     onExplainSourceProblem = {
                         sourceProblemExplanation = sourceAssessment.reason ?: sourceNotUsableDefault
                     },
-                    onFlashBlackPearl = if (blackPearlFlashReady) {
-                        { pendingBlackPearlFlash = profile }
+                    onFlashHardware = if (hardwareFlashReady && connectedHardwareFlashDevice != null) {
+                        { pendingHardwareFlash = connectedHardwareFlashDevice to profile }
                     } else {
                         null
                     },
@@ -672,7 +701,7 @@ internal fun ProfileSelectionRow(
     onHide: () -> Unit,
     onOpenSource: (() -> Unit)?,
     onExplainSourceProblem: () -> Unit,
-    onFlashBlackPearl: (() -> Unit)? = null,
+    onFlashHardware: (() -> Unit)? = null,
 ) {
     val compatibility = profile.assessCompatibility()
     val selectable = compatibility.category.isSelectable
@@ -760,7 +789,7 @@ internal fun ProfileSelectionRow(
         },
         trailingContent = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                onFlashBlackPearl?.let { flash ->
+                onFlashHardware?.let { flash ->
                     TextButton(onClick = flash) { Text("Flash") }
                 }
                 IconButton(onClick = onHide) {
