@@ -65,7 +65,7 @@ class DacControlRepositoryTest {
     }
 
     @Test
-    fun filterWriteRequiresFreshBaselineThenVerifiesCompleteReadback() = runBlocking {
+    fun filterWriteRequiresFreshBaselineThenPersistsThenVerifiesCompleteReadback() = runBlocking {
         val source = FakeSource()
         val repository = DacControlRepository(source)
         val result = repository.writeBlackPearlControl(
@@ -81,11 +81,13 @@ class DacControlRepositoryTest {
         assertEquals(2, result.baseline.filterCode)
         assertEquals(3, result.snapshot.filterCode)
         assertEquals(1, source.writeCount)
+        assertEquals(1, source.persistCount)
+        assertEquals(listOf("write", "persist"), source.operationLog)
         assertEquals(16, source.readCount)
     }
 
     @Test
-    fun alreadyCurrentRequestedValueDoesNotIssueRedundantWrite() = runBlocking {
+    fun alreadyCurrentRequestedValueDoesNotIssueRedundantWriteOrPersistenceSave() = runBlocking {
         val source = FakeSource()
         val result = DacControlRepository(source).writeBlackPearlControl(
             DacWriteIntent(
@@ -97,6 +99,7 @@ class DacControlRepositoryTest {
 
         assertTrue(result is BlackPearlDeviceControlWriteResult.Verified)
         assertEquals(0, source.writeCount)
+        assertEquals(0, source.persistCount)
         assertEquals(8, source.readCount)
     }
 
@@ -113,6 +116,7 @@ class DacControlRepositoryTest {
 
         assertTrue(result is BlackPearlDeviceControlWriteResult.StaleBaseline)
         assertEquals(0, source.writeCount)
+        assertEquals(0, source.persistCount)
         assertEquals(0, source.readCount)
     }
 
@@ -129,10 +133,11 @@ class DacControlRepositoryTest {
 
         assertTrue(result is BlackPearlDeviceControlWriteResult.StaleBaseline)
         assertEquals(0, source.writeCount)
+        assertEquals(0, source.persistCount)
     }
 
     @Test
-    fun failedTargetTransferIsReportedWithoutReadbackSuccess() = runBlocking {
+    fun failedTargetTransferIsReportedWithoutPersistenceOrReadbackSuccess() = runBlocking {
         val source = FakeSource(failWrites = true)
         val result = DacControlRepository(source).writeBlackPearlControl(
             DacWriteIntent(
@@ -144,6 +149,25 @@ class DacControlRepositoryTest {
 
         assertTrue(result is BlackPearlDeviceControlWriteResult.TransferFailed)
         assertEquals(1, source.writeCount)
+        assertEquals(0, source.persistCount)
+        assertEquals(8, source.readCount)
+    }
+
+    @Test
+    fun failedPersistenceIsReportedWithoutReadbackSuccessOrSaveRetry() = runBlocking {
+        val source = FakeSource(failPersistence = true)
+        val result = DacControlRepository(source).writeBlackPearlControl(
+            DacWriteIntent(
+                controlId = BlackPearlDeviceControls.DAC_FILTER,
+                requestedValue = DacControlValue.Discrete(BlackPearlDeviceControls.FILTER_NOS),
+                expectedSessionGeneration = 7L,
+            ),
+        )
+
+        assertTrue(result is BlackPearlDeviceControlWriteResult.TransferFailed)
+        assertEquals(1, source.writeCount)
+        assertEquals(1, source.persistCount)
+        assertEquals(listOf("write", "persist"), source.operationLog)
         assertEquals(8, source.readCount)
     }
 
@@ -163,6 +187,7 @@ class DacControlRepositoryTest {
         result as BlackPearlDeviceControlWriteResult.ReadbackMismatch
         assertEquals(requested, result.requestedValue)
         assertEquals(DacControlValue.Discrete(BlackPearlDeviceControls.FILTER_FAST_PC), result.actualValue)
+        assertEquals(1, source.persistCount)
     }
 
     @Test
@@ -179,6 +204,7 @@ class DacControlRepositoryTest {
         assertTrue(result is BlackPearlDeviceControlWriteResult.UnrelatedStateChanged)
         result as BlackPearlDeviceControlWriteResult.UnrelatedStateChanged
         assertEquals(listOf("gain mode"), result.changedFields)
+        assertEquals(1, source.persistCount)
     }
 
     @Test
@@ -195,6 +221,7 @@ class DacControlRepositoryTest {
         assertTrue(result is BlackPearlDeviceControlWriteResult.InvalidRequest)
         assertEquals(0, source.readCount)
         assertEquals(0, source.writeCount)
+        assertEquals(0, source.persistCount)
     }
 
     @Test
@@ -212,6 +239,7 @@ class DacControlRepositoryTest {
         result as BlackPearlDeviceControlWriteResult.Verified
         assertEquals(-5, result.snapshot.signedBalanceDb)
         assertEquals(1, source.writeCount)
+        assertEquals(1, source.persistCount)
     }
 
     @Test
@@ -233,6 +261,7 @@ class DacControlRepositoryTest {
         assertEquals(0, result.snapshot.ampTopologyCode)
         assertEquals(0, result.snapshot.signedBalanceDb)
         assertEquals(512, result.snapshot.playbackGainRaw)
+        assertEquals(1, source.persistCount)
     }
 
     @Test
@@ -250,6 +279,7 @@ class DacControlRepositoryTest {
         result as BlackPearlDeviceControlWriteResult.Verified
         assertEquals(1, result.snapshot.ampTopologyCode)
         assertEquals(1, source.writeCount)
+        assertEquals(1, source.persistCount)
     }
 
     @Test
@@ -267,10 +297,11 @@ class DacControlRepositoryTest {
         result as BlackPearlDeviceControlWriteResult.Verified
         assertEquals(0, result.snapshot.gainModeCode)
         assertEquals(1, source.writeCount)
+        assertEquals(1, source.persistCount)
     }
 
     @Test
-    fun playbackWriteUsesExactlyRepresentableGainAndVerifiesRawReadback() = runBlocking {
+    fun playbackWriteUsesExactlyRepresentableGainPersistsAndVerifiesRawReadback() = runBlocking {
         val source = FakeSource(playbackGainRaw = 512)
         val result = DacControlRepository(source).writeBlackPearlControl(
             DacWriteIntent(
@@ -283,6 +314,8 @@ class DacControlRepositoryTest {
         assertTrue(result is BlackPearlDeviceControlWriteResult.Verified)
         result as BlackPearlDeviceControlWriteResult.Verified
         assertEquals(256, result.snapshot.playbackGainRaw)
+        assertEquals(1, source.persistCount)
+        assertEquals(listOf("write", "persist"), source.operationLog)
     }
 
     @Test
@@ -299,6 +332,7 @@ class DacControlRepositoryTest {
         assertTrue(result is BlackPearlDeviceControlWriteResult.InvalidRequest)
         assertEquals(0, source.readCount)
         assertEquals(0, source.writeCount)
+        assertEquals(0, source.persistCount)
     }
 
     private class FakeSource(
@@ -306,6 +340,7 @@ class DacControlRepositoryTest {
         private val changeSessionAfterRead: Int? = null,
         private val failField: String? = null,
         private val failWrites: Boolean = false,
+        private val failPersistence: Boolean = false,
         private val ignoreWrites: Boolean = false,
         private val mutateUnrelatedOnWrite: Boolean = false,
         var firmwareVersion: String = "BP-1.2.3",
@@ -320,6 +355,8 @@ class DacControlRepositoryTest {
         override var sessionGeneration: Long = 7L
         var readCount: Int = 0
         var writeCount: Int = 0
+        var persistCount: Int = 0
+        val operationLog = mutableListOf<String>()
 
         override fun isSessionCurrent(sessionGeneration: Long): Boolean =
             current && this.sessionGeneration == sessionGeneration
@@ -358,6 +395,12 @@ class DacControlRepositoryTest {
             playbackGainRaw = value
         }
 
+        override suspend fun persistDeviceSettings(): Boolean {
+            persistCount += 1
+            operationLog += "persist"
+            return !failPersistence
+        }
+
         private fun <T> read(field: String, value: () -> T): T? {
             readCount += 1
             if (changeSessionAfterRead == readCount) {
@@ -369,6 +412,7 @@ class DacControlRepositoryTest {
 
         private fun write(block: () -> Unit): Boolean {
             writeCount += 1
+            operationLog += "write"
             if (failWrites) return false
             if (!ignoreWrites) block()
             if (mutateUnrelatedOnWrite) gainModeCode = 0
