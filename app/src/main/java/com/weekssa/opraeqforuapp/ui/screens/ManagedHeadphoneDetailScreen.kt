@@ -147,9 +147,14 @@ fun ManagedHeadphoneDetailScreen(
                     .mapTo(mutableSetOf(), ManagedProfileRecord::profileId) + selectedNewIds
                 onSaveSelection(headphone.productId, selectedIds, headphone.autoIncludeNewProfiles)
                 onMarkReviewed(headphone.productId)
-                if (selectedNewIds.isNotEmpty()) onExportProduct(headphone.productId)
                 reviewingNewEqs = false
-                onMessage("New EQ review completed.")
+                onMessage(
+                    if (selectedNewIds.isEmpty()) {
+                        "New EQ review completed."
+                    } else {
+                        "New EQ review completed. Selected EQs were saved to My EQs; Export or Flash is separate."
+                    },
+                )
             },
             onDismissBatch = {
                 onMarkReviewed(headphone.productId)
@@ -202,9 +207,7 @@ fun ManagedHeadphoneDetailScreen(
         AlertDialog(
             onDismissRequest = { pendingProfileFlash = null },
             title = { Text("Flash to ${managedHardwareTitle(activeOutput)}?") },
-            text = {
-                Text(managedHardwareFlashConfirmation(displayName, activeOutput, assessment))
-            },
+            text = { Text(managedHardwareFlashConfirmation(displayName, activeOutput, assessment)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -221,9 +224,7 @@ fun ManagedHeadphoneDetailScreen(
                     )
                 }
             },
-            dismissButton = {
-                TextButton(onClick = { pendingProfileFlash = null }) { Text("Cancel") }
-            },
+            dismissButton = { TextButton(onClick = { pendingProfileFlash = null }) { Text("Cancel") } },
         )
     }
 
@@ -237,11 +238,7 @@ fun ManagedHeadphoneDetailScreen(
             onConfirm = {
                 pendingProfileRemoval = null
                 scope.launch {
-                    val cleanup = onRemoveManagedProfile(
-                        headphone.productId,
-                        profile.profileId,
-                        deleteSavedFiles,
-                    )
+                    val cleanup = onRemoveManagedProfile(headphone.productId, profile.profileId, deleteSavedFiles)
                     if (cleanup != null && cleanup.failedCount > 0) {
                         onMessage("Preset was removed locally, but ${cleanup.failedCount} exported files could not be removed.")
                     }
@@ -254,7 +251,7 @@ fun ManagedHeadphoneDetailScreen(
     if (showHeadphoneRemoval) {
         RemovalDialog(
             title = "Remove headphone?",
-            body = "${headphone.productName} will be removed from My EQs for this output.",
+            body = "${headphone.productName} will be removed from My EQs. Exported files are kept unless you choose to delete files created by EQ Library.",
             deleteSavedFiles = deleteSavedFiles,
             onDeleteSavedFilesChange = { deleteSavedFiles = it },
             confirmLabel = "Remove headphone",
@@ -288,9 +285,7 @@ fun ManagedHeadphoneDetailScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -347,9 +342,7 @@ fun ManagedHeadphoneDetailScreen(
         }
         if (isHardwareOutput || product != null) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -377,12 +370,8 @@ fun ManagedHeadphoneDetailScreen(
                 if (product != null) {
                     Button(
                         onClick = { editing = true },
-                        modifier = Modifier
-                            .weight(1f)
-                            .heightIn(min = 48.dp),
-                    ) {
-                        Text("Manage presets")
-                    }
+                        modifier = Modifier.weight(1f).heightIn(min = 48.dp),
+                    ) { Text("Manage presets") }
                 }
             }
         }
@@ -440,11 +429,8 @@ fun ManagedHeadphoneDetailScreen(
                                 headphone.productName,
                             )
                             onMessage(
-                                if (favorited) {
-                                    "Saved to My EQs favorites."
-                                } else {
-                                    "Removed from My EQs favorites."
-                                },
+                                if (favorited) "Saved to My EQs favorites."
+                                else "Removed from My EQs favorites.",
                             )
                         }
                     },
@@ -463,9 +449,7 @@ fun ManagedHeadphoneDetailScreen(
                 showHeadphoneRemoval = true
             },
             modifier = Modifier.padding(16.dp),
-        ) {
-            Text("Remove headphone")
-        }
+        ) { Text("Remove headphone") }
     }
 }
 
@@ -589,9 +573,10 @@ private fun CompactBlackPearlConnectionAction(
         colors = ButtonDefaults.buttonColors(
             containerColor = containerColor,
             contentColor = Color.White,
-            disabledContainerColor = when {
-                connected -> MANAGED_DETAIL_CONNECTED_GREEN
-                else -> MaterialTheme.colorScheme.surfaceVariant
+            disabledContainerColor = if (connected) {
+                MANAGED_DETAIL_CONNECTED_GREEN
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant
             },
             disabledContentColor = if (connected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
         ),
@@ -623,9 +608,10 @@ private fun CompactKt02h20ConnectionAction(
         colors = ButtonDefaults.buttonColors(
             containerColor = containerColor,
             contentColor = Color.White,
-            disabledContainerColor = when {
-                connected -> MANAGED_DETAIL_CONNECTED_GREEN
-                else -> MaterialTheme.colorScheme.surfaceVariant
+            disabledContainerColor = if (connected) {
+                MANAGED_DETAIL_CONNECTED_GREEN
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant
             },
             disabledContentColor = if (connected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
         ),
@@ -672,9 +658,7 @@ private fun ManagedProfileRow(
                     )
                 }
                 source.details?.let { Text(it) }
-                onOpenSource?.let { action ->
-                    TextButton(onClick = action) { Text("Source") }
-                }
+                onOpenSource?.let { action -> TextButton(onClick = action) { Text("Source") } }
                 when {
                     profile.noLongerAvailable -> Text("No longer available in EQ Library")
                     profile.selected -> Text("Selected")
@@ -710,18 +694,11 @@ private fun ManagedProfileRow(
                         contentDescription = if (isFavorite) "Remove favorite" else "Add favorite",
                     )
                 }
-                if (showExport) {
-                    TextButton(onClick = onExport) { Text("Export") }
-                }
+                if (showExport) TextButton(onClick = onExport) { Text("Export") }
                 if (showFlash) {
-                    TextButton(
-                        enabled = flashEnabled,
-                        onClick = onFlash,
-                    ) { Text("Flash") }
+                    TextButton(enabled = flashEnabled, onClick = onFlash) { Text("Flash") }
                 }
-                onRemove?.let { action ->
-                    TextButton(onClick = action) { Text("Remove") }
-                }
+                onRemove?.let { action -> TextButton(onClick = action) { Text("Remove") } }
             }
         },
     )
@@ -777,12 +754,8 @@ private fun RemovalDialog(
                 }
             }
         },
-        confirmButton = {
-            TextButton(onClick = onConfirm) { Text(confirmLabel) }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
-        },
+        confirmButton = { TextButton(onClick = onConfirm) { Text(confirmLabel) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }
 
