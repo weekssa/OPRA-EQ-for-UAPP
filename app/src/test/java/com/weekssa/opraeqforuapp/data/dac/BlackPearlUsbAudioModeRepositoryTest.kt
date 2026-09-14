@@ -49,5 +49,6 @@ class BlackPearlUsbAudioModeRepositoryTest {
         override suspend fun writeMicGainDb(value: Int): Boolean = true
         override suspend fun writeBalanceDb(value: Int): Boolean = true
         override suspend fun writePlaybackGainRaw(value: Int): Boolean = true
+        override suspend fun persistDeviceSettings(): Boolean = true
     }
 }
