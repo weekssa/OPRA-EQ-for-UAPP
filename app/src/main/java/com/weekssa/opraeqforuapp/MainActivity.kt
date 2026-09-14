@@ -14,9 +14,12 @@ import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshFailureReason
 import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshResult
 import com.weekssa.opraeqforuapp.data.export.PresetExportItemResult
 import com.weekssa.opraeqforuapp.data.export.PresetExportSummary
+import com.weekssa.opraeqforuapp.data.preferences.SessionExportTarget
 import com.weekssa.opraeqforuapp.data.sync.BackgroundSyncScheduler
 import com.weekssa.opraeqforuapp.data.sync.CatalogSyncOutcome
 import com.weekssa.opraeqforuapp.data.update.AppUpdateCheckResult
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditSpecs
+import com.weekssa.opraeqforuapp.domain.dac.normalizeHardwareEqUserInput
 import com.weekssa.opraeqforuapp.ui.EqLibraryActions
 import com.weekssa.opraeqforuapp.ui.EqLibraryApp
 import com.weekssa.opraeqforuapp.ui.EqLibraryViewModel
@@ -82,7 +85,21 @@ class MainActivity : ComponentActivity() {
         onSelectBlackPearlEditorBand = viewModel::selectBlackPearlEditorBand,
         onShowBlackPearlEditorAllBands = viewModel::showBlackPearlEditorAllBands,
         onShowBlackPearlEditorReview = viewModel::showBlackPearlEditorReview,
-        onUpdateBlackPearlEditorBand = viewModel::updateBlackPearlEditorBand,
+        onUpdateBlackPearlEditorBand = { bandIndex, type, frequencyHz, gainDb, q ->
+            val normalized = normalizeHardwareEqUserInput(
+                spec = HardwareEqEditSpecs.TRN_BLACK_PEARL,
+                frequencyHz = frequencyHz,
+                gainDb = gainDb,
+                q = q,
+            )
+            viewModel.updateBlackPearlEditorBand(
+                bandIndex = bandIndex,
+                type = type,
+                frequencyHz = normalized.frequencyHz,
+                gainDb = normalized.gainDb,
+                q = normalized.q,
+            )
+        },
         onUseSafeBlackPearlEditorGain = viewModel::useSafeBlackPearlEditorGain,
         onResetBlackPearlEditorLocalEdits = viewModel::resetBlackPearlEditorLocalEdits,
         onApplyBlackPearlEditor = viewModel::applyBlackPearlEditor,
@@ -182,6 +199,7 @@ class MainActivity : ComponentActivity() {
         onThemeModeChange = viewModel::setThemeMode,
         onOutputBehaviorChange = viewModel::setOutputBehavior,
         onExportTargetChange = viewModel::setExportTargetEnabled,
+        onSessionActiveExportTargetChange = SessionExportTarget::select,
         onActiveExportTargetChange = viewModel::setActiveExportTarget,
         onDirectBlackPearlFlashEnabledChange = viewModel::setDirectBlackPearlFlashEnabled,
         onDirectFiioJa11FlashEnabledChange = viewModel::setDirectFiioJa11FlashEnabled,
