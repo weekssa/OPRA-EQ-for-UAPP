@@ -291,15 +291,26 @@ fun MyDacScreen(
                 -> Text(stringResource(R.string.my_dac_hardware_pending_eq))
             }
 
-            else -> CapabilityDrivenDeviceStatus(
-                deviceId = selectedDevice,
-                blackPearlQualificationState = blackPearlQualificationState,
-                blackPearlQualificationEnabled =
-                    selectedDevice == DacDeviceId.TRN_BLACK_PEARL &&
-                        blackPearlConnectionState is BlackPearlConnectionState.Connected,
-                onReadBlackPearlQualification = onReadBlackPearlQualification,
-                onSetBlackPearlDeviceControl = onSetBlackPearlDeviceControl,
-            )
+            else -> {
+                CapabilityDrivenDeviceStatus(
+                    deviceId = selectedDevice,
+                    blackPearlQualificationState = blackPearlQualificationState,
+                    blackPearlQualificationEnabled =
+                        selectedDevice == DacDeviceId.TRN_BLACK_PEARL &&
+                            blackPearlConnectionState is BlackPearlConnectionState.Connected,
+                    onReadBlackPearlQualification = onReadBlackPearlQualification,
+                    onSetBlackPearlDeviceControl = onSetBlackPearlDeviceControl,
+                )
+                if (selectedDevice == DacDeviceId.TRN_BLACK_PEARL) {
+                    BlackPearlDeviceResetSection(
+                        state = blackPearlQualificationState,
+                        enabled = blackPearlConnectionState is BlackPearlConnectionState.Connected,
+                        onSetDeviceControl = onSetBlackPearlDeviceControl,
+                        onResetEqToFlat = onResetBlackPearlFromMyDac,
+                        onMessage = onMessage,
+                    )
+                }
+            }
         }
     }
 }
