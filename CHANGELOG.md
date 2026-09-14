@@ -8,6 +8,11 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ### Added
 
+- **My DAC** for supported hardware, with one ViewModel-scoped DAC session shared across My EQs, My DAC, and EQ Library; successful connection/reconnection automatically refreshes supported EQ + DEVICE state and later physical reattach can reopen the replacement session after one successful current-app-session connection.
+- Black Pearl current-EQ inspection, response graph, local EQ editing with Review → Apply/readback verification, Personal EQ capture, qualified Reset EQ to flat, concise DEVICE controls, read-only UAC mode detection/manual startup help, and session-sticky Last-read state after disconnect.
+- Capability-driven FiiO JA11 My DAC/session integration while preserving its independently established native device semantics; exact physical JA11 qualification remains pending.
+- Persistent **Needs attention** recovery for exact app-owned/persisted-access preset artifacts that no longer have a confident current My EQ association. Strict recovery preserves supported PEQ values and original-file provenance, requires user-supplied missing headphone/name identity, and never scans arbitrary external storage.
+- A design-only premium v0.6 UX audit/blueprint covering Apple, Material 3, a combined native-Android direction, information hierarchy, navigation, top bars, settings/list anatomy, spacing, typography, icons, feedback, and accessibility. Major visual implementation remains approval-gated.
 - Scheduled public GitHub/Gist community ingestion now takes discovered headphone PEQ through exact source retrieval, strict PEQ parsing, canonical headphone identity, creator/source provenance, acoustic dedupe, living-archive validation, and Unverified publication instead of leaving mechanically valid community data indefinitely review-only.
 - Community-ingestion reports record fetched/parsed/published/deduplicated/quarantined counts and machine-readable quarantine reasons; one malformed or ambiguous record cannot block unrelated valid candidates.
 - Broad General GitHub discovery is actively audited for exact parametric structure. Fixed/graphic-EQ data without source-provided Q/filter types is rejected rather than converted by invention.
@@ -18,6 +23,12 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ### Changed
 
+- **My EQs is one device/output-agnostic local library.** Managed headphone/profile selections, Favorites, Personal EQs, captured DAC EQs, and General EQs no longer change identity or visibility when the active target changes. Legacy per-output tables/signatures remain migration compatibility only.
+- Save/Add to My EQs is now deliberately separate from **Export** and **Flash**. Saving changes local library state only and does not automatically open the folder picker, write a file, or write hardware.
+- The active output is an action/derivation context: it may change compatibility, fidelity, target-derived currentness, Export behavior, connection controls, or Flash availability, but does not change My EQs ownership or dismiss an open managed-headphone detail.
+- DAC-captured EQs use the source DAC as provenance only and become normal device-agnostic Personal EQs.
+- EQ selection/Flash lives where the EQ already lives in **My EQs** and **EQ Library**; My DAC no longer duplicates this with a Change EQ chooser.
+- Black Pearl DEVICE settings use one concise current-value/edit surface with immediate qualified write + verified readback for routine settings and short confirmation only for level-sensitive changes; full-EQ editing remains staged locally until Review → Apply.
 - `github-community` is a daily scheduled source with source-health ownership. Public exact structured community PEQ uses the established Unverified community policy while specific source restrictions remain binding.
 - Source maintenance is now automation-first: every registered source with a legitimate stable public retrieval path is scheduled or runtime-managed; sources that cannot currently be automated safely are explicitly paused rather than depending on recurring manual input.
 - Head-Fi and Audio Science Review moved from manual/curated currentness to weekly scheduled public adapters.
@@ -27,8 +38,20 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - oratory1990 direct Reddit currentness is paused while Reddit access is unavailable; structured values may continue to arrive through separately automated qualified carriers such as OPRA.
 - Reddit remains paused; no anonymous Reddit scanning, scraping, circumvention, or manual-currentness substitute was introduced.
 
+### Fixed
+
+- Removed the final save-to-auto-export coupling from General EQ batch Save.
+- Changing the active target no longer clears the currently open managed-headphone detail or drives selection reconciliation.
+- Personal EQ import/parser integration now compiles with the strict `ParametricEqTextParser` path restored.
+- Unresolved app-owned artifacts can no longer silently disappear merely because current library identity cannot be resolved; provider/permission unavailability remains unresolved instead of being treated as confirmed absence.
+- Recovery/deletion remains bounded to exact ownership-tracked SAF documents and refuses malformed/unsupported content rather than silently dropping unsupported filters.
+
 ### Validation
 
+- TRN Black Pearl automatic physical reconnect passed the focused Pixel 9 retest on exact signed source `a3bc1740ed44892f4e6b78f9d0a359e2a87ef663`; the app reopened a fresh replacement session without an app Connect/Refresh tap, refreshed EQ + DEVICE state, showed no Applying/Flashing transaction, and pushed no cached state. Evidence category: **OWNER-REPORTED**. The candidate APK SHA-256 is `3154748c72ad576a0b13b8adbdf549cc36eede6feef900dd68eecbc65bf1d64a`.
+- The parser/import repair at `0adb34b640261d16d934a80ab29ffe94d3dc253c` passed Android CI, CodeQL, catalog currentness, and priority-community coverage before the final library/documentation closeout.
+- Added strict recovery/parser coverage for valid Personal PEQ text, deterministic EQ Library UAPP/ToneBoosters XML, exact preamp/band preservation, malformed/incomplete rejection, unsupported-filter rejection, GraphicEQ rejection, destination-independent unresolved ownership, exact-URI uniqueness, and recovered provenance preservation.
+- Later device-agnostic library/recovery/documentation work does not replace the pinned Black Pearl hardware evidence unless it changes connection ownership, read timing, write sequencing, persistence, verification, or session behavior.
 - Initial GitHub community ingestion fetched all 50 current headphone candidates: 39 parsed as exact supported PEQ, producing 28 new Unverified profiles and 11 exact-duplicate provenance merges; 11 unmatched/ambiguous headphone identities were quarantined. Atomic living-archive validation passed before the candidate catalog was committed.
 - All three current broad General GitHub candidates were processed and classified `no_exact_parametric_structure`; none was published with invented Q/filter types.
 - Added regression coverage for valid Unverified publication, missing-preamp preservation, exact-duplicate provenance merging, short model identity with manufacturer context, target-folder handling, malformed/unsupported PEQ quarantine, unknown headphone quarantine, and General graphic-EQ rejection.
