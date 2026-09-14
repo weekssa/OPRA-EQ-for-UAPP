@@ -23,6 +23,7 @@ object BlackPearlDeviceControls {
     val BALANCE_DB = DacControlId("black_pearl.balance_db")
     val MIC_GAIN_DB = DacControlId("black_pearl.mic_gain_db")
     val PLAYBACK_GAIN_DB = DacControlId("black_pearl.playback_gain_db")
+    val USB_AUDIO_MODE = DacControlId("black_pearl.usb_audio_mode")
     val FIRMWARE = DacControlId("black_pearl.firmware")
 
     const val FILTER_FAST_LL = "fast_ll"
@@ -36,6 +37,9 @@ object BlackPearlDeviceControls {
 
     const val AMP_CLASS_H = "class_h"
     const val AMP_CLASS_AB = "class_ab"
+
+    const val USB_UAC_1 = "uac1"
+    const val USB_UAC_2 = "uac2"
 
     val descriptors: List<DacControlDescriptor> = listOf(
         DacControlDescriptor.Numeric(
@@ -106,6 +110,16 @@ object BlackPearlDeviceControls {
             ),
             step = 1.0,
         ),
+        DacControlDescriptor.Discrete(
+            id = USB_AUDIO_MODE,
+            section = DacControlSection.USB_SYSTEM,
+            safetyClass = DacControlSafetyClass.NORMAL,
+            writable = false,
+            options = listOf(
+                DacDiscreteOption(USB_UAC_1, "UAC 1.0"),
+                DacDiscreteOption(USB_UAC_2, "UAC 2.0"),
+            ),
+        ),
         DacControlDescriptor.ReadOnlyText(id = FIRMWARE),
     )
 
@@ -122,6 +136,7 @@ object BlackPearlDeviceControls {
         BALANCE_DB -> snapshot.signedBalanceDb?.let { DacControlValue.Numeric(it.toDouble()) }
         MIC_GAIN_DB -> DacControlValue.Numeric(snapshot.micGainDb.toDouble())
         PLAYBACK_GAIN_DB -> DacControlValue.Numeric(snapshot.playbackGainDb)
+        USB_AUDIO_MODE -> snapshot.usbAudioMode?.let { DacControlValue.Discrete(usbAudioModeValueId(it)) }
         FIRMWARE -> DacControlValue.Text(snapshot.firmwareVersion)
         else -> null
     }
@@ -172,5 +187,10 @@ object BlackPearlDeviceControls {
         BlackPearlDeviceControlReadCodec.AMP_TOPOLOGY_CLASS_H -> AMP_CLASS_H
         BlackPearlDeviceControlReadCodec.AMP_TOPOLOGY_CLASS_AB -> AMP_CLASS_AB
         else -> error("Validated Black Pearl amplifier topology unexpectedly missing.")
+    }
+
+    private fun usbAudioModeValueId(mode: BlackPearlUsbAudioMode): String = when (mode) {
+        BlackPearlUsbAudioMode.UAC_1_0 -> USB_UAC_1
+        BlackPearlUsbAudioMode.UAC_2_0 -> USB_UAC_2
     }
 }
