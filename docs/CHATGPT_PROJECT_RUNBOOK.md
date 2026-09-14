@@ -18,6 +18,7 @@ Before substantive work, read this file and the current documents relevant to th
 - `docs/V0.6_MY_DAC_APPROVED_DESIGN.md` for the approved v0.6 My DAC UX/behavior contract
 - `docs/V0.6_MY_DAC_IMPLEMENTATION_PLAN.md` for the current v0.6 architecture, sequencing, tests, and release gates
 - `docs/V0.6_MY_DAC_STATUS.md` for the concise current v0.6 branch/hardware/UX state
+- `docs/V0.6_LIBRARY_OWNERSHIP_AND_RECOVERY.md` for the current device-agnostic My EQs ownership and Needs attention recovery contract; where older architecture text still says My EQs is output-specific, this newer authority wins
 - `docs/BLACK_PEARL_PROTOCOL_NOTES.md` when Black Pearl behavior is involved
 - `docs/BLACK_PEARL_V0.6_UAC_MODE.md` when Black Pearl UAC detection/manual-switch help is involved
 - `docs/FIIO_JA11_PROTOCOL_NOTES.md` and `docs/FIIO_JA11_HANDS_ON_CHECKLIST.md` when JA11 behavior is involved
@@ -86,7 +87,7 @@ EQ choice belongs where the EQ lives: **My EQs** and **EQ Library** expose Flash
 
 Routine qualified DEVICE choices apply immediately and verify readback; protocol/qualification mechanics remain internal. Level-sensitive changes may use a short plain-language confirmation. Do not add a generic Save-device-settings or Restore-defaults action without exact device semantics.
 
-The active output is a global **operating context**, not a catalog filter. It changes output-specific My EQs membership, conversion/fidelity, file export, connection controls, and Flash availability. It must never hide an otherwise valid canonical curve from EQ Library.
+The active output is a global **operating/action context**, not a catalog or ownership filter. It changes target-specific conversion/fidelity, derived currentness, file export, connection controls, and Flash availability. It must **not** change which headphones/EQs belong to My EQs, clear an open My EQ detail, or silently add/remove local selections. A valid canonical curve remains visible regardless of target compatibility.
 
 A physically connected DAC and the active output are distinct concepts. Recognizing/connecting a DAC for My DAC must not silently change the user's global active output unless the approved Automatic-output behavior explicitly makes that connected DAC the effective output context. My DAC always represents actual connected hardware.
 
@@ -134,7 +135,7 @@ Repository-side source maintenance follows `docs/FUTURE_SOURCE_AUTOMATION_PLAN.m
 
 Ordinary catalog publication remains independent of APK releases while client schema/device/DSP behavior is unchanged.
 
-## 7. Selection, review, and My EQs
+## 7. Selection, review, My EQs, and recovery
 
 A never-managed headphone starts with **zero selected EQ profiles**. Every usable canonical PEQ is an explicit checkbox with Select all / Select none. A valid canonical EQ stays visible/selectable even if the active output reports it as Not suitable/Not exportable.
 
@@ -144,7 +145,11 @@ When notification is ON, eligible new EQs and materially changed selected tuning
 
 The persisted compatibility field name `autoIncludeNewProfiles` may remain internally for migration compatibility, but it must not be interpreted as permission to auto-select future profiles.
 
-Selections are output-specific. Favorites/personal imports may also be output-scoped without duplicating/mutating the canonical source.
+**My EQs ownership and selection are device/output-agnostic.** A headphone, Favorite, Personal EQ, captured DAC EQ, or General EQ saved to My EQs remains the same local item when the active target changes. Saving to My EQs does not itself export a file, download anything, or Flash hardware. Target-specific representations/currentness remain derived state and are created/used only by explicit Export/Flash paths.
+
+Legacy output-selection tables/`outputId` parameters may remain temporarily for migration/source compatibility, but they must not be used to decide current My EQs identity or visibility. A DAC capture records device identity as provenance only; after capture it behaves like any other Personal EQ.
+
+Persisted app-managed exported artifacts that no longer have a confident current My EQ association remain visible under **Needs attention** rather than disappearing. Recovery is limited to exact app-owned/persisted-access artifacts, uses strict parsing, requires the user to provide any missing headphone/name association, preserves decoded EQ values and original-file provenance, and never scans or deletes arbitrary external files. Malformed/unsupported artifacts remain visible but are not falsely recoverable. An unresolved artifact remains present across restart/rescan until recovered, explicitly removed, or confirmed missing according to the storage ownership rules.
 
 A hardware EQ captured through My DAC is stored as a **Personal EQ** with actual device-native values and capture provenance. It may be associated with an existing/saved/library headphone or intentionally left unassociated. Never invent a creator/source association. If the hardware exactly matches an existing saved EQ, link to it rather than creating a duplicate.
 
