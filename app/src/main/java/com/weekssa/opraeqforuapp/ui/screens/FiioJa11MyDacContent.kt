@@ -209,7 +209,7 @@ private fun FiioJa11EqStatus(
     ) { Text("Reset EQ to flat") }
 
     Text(
-        text = "Choose or flash saved EQs from My EQs. Automatic output mode uses JA11 as the current hardware output while it is the single supported DAC attached.",
+        text = "Choose or flash EQs from My EQs or EQ Library. Automatic output mode uses JA11 as the current hardware output while it is the single supported DAC attached.",
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
