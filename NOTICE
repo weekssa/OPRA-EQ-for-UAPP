@@ -1,5 +1,7 @@
-OPRA EQ for UAPP
+EQ Library
 Copyright 2026 weekssa and contributors
+
+The Android application ID remains com.weekssa.opraeqforuapp for upgrade continuity from the earlier OPRA EQ for UAPP product name.
 
 Portions of the ToneBoosters/UAPP normalization and XML mapping are based on
 SiliconExarch/EqConverter, licensed under the Apache License, Version 2.0.
@@ -8,12 +10,21 @@ Source: https://github.com/SiliconExarch/EqConverter
 License: https://www.apache.org/licenses/LICENSE-2.0
 
 The implementation in this repository is a native Kotlin/Android port of the
-established weekssa/opra-uapp-converter behavior and has been substantially
-rewritten for local OPRA catalog ingestion, validation, Room-managed user state,
-background reconciliation, Android Storage Access Framework export, and native
-app UX.
+established weekssa/opra-uapp-converter conversion behavior and has been
+substantially rewritten for validated multi-source catalog ingestion, OPRA
+compatibility/base ingestion, provenance and revision handling, Room-managed
+local user state, background reconciliation, Android Storage Access Framework
+export/recovery, supported local USB-DAC management, and native app UX.
 
+Third-party EQ data remains subject to source-specific rights and attribution.
 OPRA-derived headphone and EQ data is separately licensed under CC BY-SA 4.0.
-See DATA_LICENSE.md for data attribution and licensing details.
+The runtime canonical catalog may also contain qualified structured EQ records
+from sources with other terms, including specifically qualified MIT-licensed
+creator/repository and General-EQ sources, plus provenance-preserving qualified
+community records under the maintained source policy.
 
-The runtime canonical catalog also includes qualified General EQ preset parameters derived from the MIT-licensed ParaEQ project by wabsto1. Source and license details are preserved in DATA_LICENSE.md and the catalog source registry.
+EQ Library does not treat the application Apache-2.0 license as a blanket
+license for third-party EQ data, source prose, images, or measurements.
+See DATA_LICENSE.md, config/source_registry.json, and
+`docs/SOURCE_INGESTION_STRATEGY.md` for data attribution, publication boundaries,
+and source-specific policy details.
