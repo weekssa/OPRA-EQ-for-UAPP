@@ -28,6 +28,7 @@ import com.weekssa.opraeqforuapp.domain.dac.DacControlId
 import com.weekssa.opraeqforuapp.domain.dac.DacControlValue
 import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
 import com.weekssa.opraeqforuapp.domain.dac.DacMetadataOrigin
+import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceControls
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
 import com.weekssa.opraeqforuapp.ui.BlackPearlQualificationUiState
 import com.weekssa.opraeqforuapp.ui.FiioJa11DeviceUiState
@@ -138,53 +139,20 @@ private fun FiioJa11DeviceStatus(
     val snapshot = state.snapshot
     val controlsEnabled = connected && state.isCurrentSession && !state.isBusy && state.pendingRestartWrite == null
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = when {
-                    state.isReading -> "Reading device settings…"
-                    state.isCurrentSession -> "Current device state"
-                    snapshot != null -> "Last read"
-                    else -> "Device settings"
-                },
-                fontWeight = FontWeight.SemiBold,
-            )
-            if (snapshot != null && !state.isCurrentSession && !state.isReading) {
-                Text(
-                    text = "Reconnect or refresh to make these values current.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-        TextButton(
-            onClick = onRead,
-            enabled = connected && !state.isBusy && state.pendingRestartWrite == null,
-        ) {
-            Text(if (state.isReading) "Reading…" else "Refresh")
-        }
-    }
-
-    state.error?.let { error ->
-        Text(
-            text = error,
-            color = MaterialTheme.colorScheme.error,
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier.padding(top = 4.dp),
-        )
-    }
-    state.pendingRestartWrite?.let {
-        Text(
-            text = "Waiting for JA11 to reconnect so the change can be verified.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 4.dp),
-        )
-    }
+    DeviceOperationStatusHeader(
+        isReading = state.isReading,
+        isWriting = state.isWriting,
+        activeWriteControlId = state.activeWriteControlId,
+        pendingVerificationControlId = state.pendingRestartWrite?.controlId,
+        lastVerifiedWriteControlId = state.lastVerifiedWriteControlId,
+        hasSnapshot = snapshot != null,
+        isCurrentSession = state.isCurrentSession,
+        error = state.error,
+        enabled = connected,
+        busy = state.isBusy || state.pendingRestartWrite != null,
+        onRefresh = onRead,
+        controlName = ::fiioControlName,
+    )
 
     if (snapshot == null) {
         Text(
@@ -417,6 +385,14 @@ private fun FiioJa11DeviceStatus(
             },
         )
     }
+}
+
+private fun fiioControlName(controlId: DacControlId): String = when (controlId) {
+    FiioJa11DeviceControls.OUTPUT_VOLUME -> "volume"
+    FiioJa11DeviceControls.EQ_PROGRAM -> "EQ program"
+    FiioJa11DeviceControls.HEADSET_CONTROL -> "headset / mic remote"
+    FiioJa11DeviceControls.UAC_MODE -> "USB Audio Class"
+    else -> "device setting"
 }
 
 @Composable
