@@ -22,6 +22,7 @@ import com.weekssa.opraeqforuapp.data.library.CanonicalFirstCatalogRepository
 import com.weekssa.opraeqforuapp.data.library.HttpCanonicalCatalogSource
 import com.weekssa.opraeqforuapp.data.library.SavedEqRepository
 import com.weekssa.opraeqforuapp.data.library.SavedGeneralEqRepository
+import com.weekssa.opraeqforuapp.data.library.UnclaimedEqRepository
 import com.weekssa.opraeqforuapp.data.managed.ManagedHeadphonesRepository
 import com.weekssa.opraeqforuapp.data.managed.OpraEqDatabase
 import com.weekssa.opraeqforuapp.data.preferences.AppPreferencesRepository
@@ -35,11 +36,16 @@ import com.weekssa.opraeqforuapp.ui.EqLibraryViewModel
 import java.net.URL
 import kotlinx.coroutines.flow.map
 
+internal data class EqLibraryRuntimeDependencies(
+    val eqLibrary: EqLibraryViewModel.Dependencies,
+    val unclaimedEqRepository: UnclaimedEqRepository,
+)
+
 /**
  * Manual DI composition root. Android Context is consumed only while constructing platform data
  * sources; it is never passed to a ViewModel or repository.
  */
-internal fun createEqLibraryDependencies(context: Context): EqLibraryViewModel.Dependencies {
+internal fun createEqLibraryRuntimeDependencies(context: Context): EqLibraryRuntimeDependencies {
     val appContext = context.applicationContext
     val database = OpraEqDatabase.create(appContext)
 
@@ -80,6 +86,7 @@ internal fun createEqLibraryDependencies(context: Context): EqLibraryViewModel.D
     val documentStore = AndroidSafDocumentStore(appContext)
     val exportRepository = PresetExportRepository(database = database, documentStore = documentStore)
     val cleanupRepository = PresetCleanupRepository(database = database, documentStore = documentStore)
+    val unclaimedEqRepository = UnclaimedEqRepository(database = database, documentStore = documentStore)
     val syncCoordinator = CatalogSyncCoordinator(
         catalogRepository = catalogRepository,
         managedHeadphonesRepository = managedHeadphonesRepository,
@@ -109,18 +116,25 @@ internal fun createEqLibraryDependencies(context: Context): EqLibraryViewModel.D
         fiioJa11Flasher = FiioJa11Flasher(fiioJa11Transport),
     )
 
-    return EqLibraryViewModel.Dependencies(
-        preferencesRepository = preferencesRepository,
-        catalogRepository = catalogRepository,
-        managedHeadphonesRepository = managedHeadphonesRepository,
-        savedEqRepository = savedEqRepository,
-        savedGeneralEqRepository = savedGeneralEqRepository,
-        exportRepository = exportRepository,
-        cleanupRepository = cleanupRepository,
-        syncCoordinator = syncCoordinator,
-        updateCoordinator = updateCoordinator,
-        dacControlRepository = dacControlRepository,
-        fiioJa11ControlRepository = fiioJa11ControlRepository,
-        hardwareRepository = hardwareRepository,
+    return EqLibraryRuntimeDependencies(
+        eqLibrary = EqLibraryViewModel.Dependencies(
+            preferencesRepository = preferencesRepository,
+            catalogRepository = catalogRepository,
+            managedHeadphonesRepository = managedHeadphonesRepository,
+            savedEqRepository = savedEqRepository,
+            savedGeneralEqRepository = savedGeneralEqRepository,
+            exportRepository = exportRepository,
+            cleanupRepository = cleanupRepository,
+            syncCoordinator = syncCoordinator,
+            updateCoordinator = updateCoordinator,
+            dacControlRepository = dacControlRepository,
+            fiioJa11ControlRepository = fiioJa11ControlRepository,
+            hardwareRepository = hardwareRepository,
+        ),
+        unclaimedEqRepository = unclaimedEqRepository,
     )
 }
+
+/** Compatibility helper for existing tests/callers that only need the primary ViewModel graph. */
+internal fun createEqLibraryDependencies(context: Context): EqLibraryViewModel.Dependencies =
+    createEqLibraryRuntimeDependencies(context).eqLibrary
