@@ -17,6 +17,8 @@ import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceControlReadCo
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlProtocol
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlReadCodec
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlTransport
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlUsbAudioDescriptorParser
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlUsbAudioMode
 import java.io.Closeable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -179,6 +181,18 @@ class AndroidBlackPearlUsbTransport(
         request = BlackPearlDeviceControlReadCodec.balanceRightRequest(),
         parser = BlackPearlDeviceControlReadCodec::rightBalanceDbFromResponse,
     )
+
+    /**
+     * Reads the currently enumerated USB Audio Class revision from standard USB descriptors.
+     * This intentionally does not issue a vendor HID command: no exact Black Pearl software UAC
+     * switch/read register has been independently established yet.
+     */
+    suspend fun readUsbAudioMode(): BlackPearlUsbAudioMode? = usbMutex.withLock {
+        val current = session ?: return@withLock null
+        val rawDescriptors = runCatching { current.connection.rawDescriptors }.getOrNull()
+            ?: return@withLock null
+        BlackPearlUsbAudioDescriptorParser.parse(rawDescriptors)
+    }
 
     private suspend fun <T> readParsedResponse(
         request: ByteArray,
