@@ -3,6 +3,12 @@ package com.weekssa.opraeqforuapp.domain.dac
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 import kotlin.math.round
 
+data class HardwareEqUserInputValues(
+    val frequencyHz: Double,
+    val gainDb: Double,
+    val q: Double,
+)
+
 /**
  * Converts ordinary decimal editor input into the exact native gain/Q representation before the
  * strict hardware editor validator sees it.
@@ -13,6 +19,17 @@ import kotlin.math.round
  * nearest native gain/Q step. Out-of-range values are never clamped, and frequency remains strict
  * because its native 1 Hz step is directly understandable in the editor.
  */
+internal fun normalizeHardwareEqUserInput(
+    spec: HardwareEqEditSpec,
+    frequencyHz: Double,
+    gainDb: Double,
+    q: Double,
+): HardwareEqUserInputValues = HardwareEqUserInputValues(
+    frequencyHz = frequencyHz,
+    gainDb = gainDb.snapToNativeStepWhenInRange(spec.gainRangeDb, spec.gainStepDb),
+    q = q.snapToNativeStepWhenInRange(spec.qRange, spec.qStep),
+)
+
 internal fun updateHardwareEqFilterFromUserInput(
     workingCopy: HardwareEqEditWorkingCopy,
     spec: HardwareEqEditSpec,
@@ -21,15 +38,18 @@ internal fun updateHardwareEqFilterFromUserInput(
     frequencyHz: Double,
     gainDb: Double,
     q: Double,
-): HardwareEqEditWorkingCopy = HardwareEqEditor.updateFilter(
-    workingCopy = workingCopy,
-    spec = spec,
-    bandIndex = bandIndex,
-    type = type,
-    frequencyHz = frequencyHz,
-    gainDb = gainDb.snapToNativeStepWhenInRange(spec.gainRangeDb, spec.gainStepDb),
-    q = q.snapToNativeStepWhenInRange(spec.qRange, spec.qStep),
-)
+): HardwareEqEditWorkingCopy {
+    val normalized = normalizeHardwareEqUserInput(spec, frequencyHz, gainDb, q)
+    return HardwareEqEditor.updateFilter(
+        workingCopy = workingCopy,
+        spec = spec,
+        bandIndex = bandIndex,
+        type = type,
+        frequencyHz = normalized.frequencyHz,
+        gainDb = normalized.gainDb,
+        q = normalized.q,
+    )
+}
 
 private fun Double.snapToNativeStepWhenInRange(
     range: DacNumericRange,
