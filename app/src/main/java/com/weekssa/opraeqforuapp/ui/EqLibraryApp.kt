@@ -114,6 +114,7 @@ fun EqLibraryApp(
     val onSetFiioJa11EqProgram = actions.onSetFiioJa11EqProgram
     val onSetFiioJa11HeadsetControl = actions.onSetFiioJa11HeadsetControl
     val onSetFiioJa11UacMode = actions.onSetFiioJa11UacMode
+    val onFlashFiioJa11FromMyDac = actions.onFlashFiioJa11FromMyDac
     val onResetFiioJa11FromMyDac = actions.onResetFiioJa11FromMyDac
     val onConnectBlackPearl = actions.onConnectBlackPearl
     val onResetBlackPearl = actions.onResetBlackPearl
@@ -583,6 +584,10 @@ fun EqLibraryApp(
                         favoriteProfileIds = favoriteProfileIds,
                         savedGeneralPresetIds = savedGeneralPresetIds,
                         hiddenCanonicalProfileIds = appPreferences.hiddenCanonicalProfileIds,
+                        blackPearlConnectionState = blackPearlConnectionState,
+                        onFlashBlackPearlProfile = onFlashBlackPearlFromMyDac,
+                        fiioJa11ConnectionState = fiioJa11ConnectionState,
+                        onFlashFiioJa11Profile = onFlashFiioJa11FromMyDac,
                         onToggleFavorite = onToggleFavorite,
                         onSaveGeneralPresets = { presets ->
                             val presetIds = presets.mapTo(mutableSetOf(), GeneralEqPreset::id)
