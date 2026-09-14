@@ -54,6 +54,7 @@ internal fun BlackPearlDeviceResetSection(
     var eqResetRunning by rememberSaveable { mutableStateOf(false) }
     var eqResetResult by rememberSaveable { mutableStateOf<String?>(null) }
     var resetStepIndex by rememberSaveable { mutableIntStateOf(IDLE_STEP) }
+    var issuedStepIndex by rememberSaveable { mutableIntStateOf(IDLE_STEP) }
 
     val resetInProgress = eqResetRunning || resetStepIndex >= 0
     val canStartReset = enabled &&
@@ -65,6 +66,7 @@ internal fun BlackPearlDeviceResetSection(
 
     LaunchedEffect(
         resetStepIndex,
+        issuedStepIndex,
         eqResetRunning,
         state.isBusy,
         state.snapshot,
@@ -76,6 +78,7 @@ internal fun BlackPearlDeviceResetSection(
         val snapshot = state.snapshot
         if (state.error != null || snapshot == null || !state.isCurrentSession) {
             resetStepIndex = IDLE_STEP
+            issuedStepIndex = IDLE_STEP
             onMessage(
                 state.error?.let { "Restore stopped: $it" }
                     ?: "Restore stopped because the current Black Pearl state could not be verified.",
@@ -86,6 +89,7 @@ internal fun BlackPearlDeviceResetSection(
         if (resetStepIndex >= BlackPearlDeviceDefaults.restoreSteps.size) {
             val eqResult = eqResetResult
             resetStepIndex = IDLE_STEP
+            issuedStepIndex = IDLE_STEP
             eqResetResult = null
             onMessage(
                 buildString {
@@ -97,10 +101,21 @@ internal fun BlackPearlDeviceResetSection(
         }
 
         val step = BlackPearlDeviceDefaults.restoreSteps[resetStepIndex]
+        if (issuedStepIndex != resetStepIndex) {
+            // Always issue every restore step once, even when the current value already matches, so
+            // the normal DEVICE path also sends the device persistence command for that target.
+            issuedStepIndex = resetStepIndex
+            onSetDeviceControl(step.controlId, step.requestedValue)
+            return@LaunchedEffect
+        }
+
         if (BlackPearlDeviceDefaults.isStepSatisfied(step, snapshot)) {
+            issuedStepIndex = IDLE_STEP
             resetStepIndex += 1
         } else {
-            onSetDeviceControl(step.controlId, step.requestedValue)
+            resetStepIndex = IDLE_STEP
+            issuedStepIndex = IDLE_STEP
+            onMessage("Restore stopped because the requested Black Pearl setting could not be verified.")
         }
     }
 
@@ -164,6 +179,7 @@ internal fun BlackPearlDeviceResetSection(
                     onClick = {
                         dialogOpen = false
                         eqResetResult = null
+                        issuedStepIndex = IDLE_STEP
                         if (includeEqReset) {
                             eqResetRunning = true
                             scope.launch {
