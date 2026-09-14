@@ -15,7 +15,7 @@ With **Also reset EQ to flat** OFF, Restore defaults must establish:
 - Gain: **HIGH**;
 - Amplifier: **CLASS AB**;
 - Balance: **Centered**;
-- Microphone gain: **unchanged**;
+- Microphone gain: **0 dB**;
 - current hardware EQ: **unchanged**.
 
 With **Also reset EQ to flat** ON, the same DEVICE targets must be established and the current hardware EQ must additionally become flat using the already-qualified Reset EQ to flat transaction.
@@ -24,22 +24,22 @@ Saved EQs in EQ Library must never be deleted or modified by either path.
 
 ## Safety contract
 
-The implementation reuses the qualified individual Black Pearl DEVICE write/persist/readback path. It first lowers playback to a conservative qualified minimum, writes/persists each selected restore target exactly once, and establishes the final displayed 50% volume last.
+The implementation reuses the qualified individual Black Pearl DEVICE write/persist/readback path. It first lowers playback to a conservative qualified minimum, submits each selected restore target through that verified path, and establishes the final displayed 50% volume last. A target that already matches may be treated as a verified no-op by the normal repository path; changed targets are written once and persisted without automatic write retry.
 
-No setting write may be automatically retried. Any disconnect, stale session, transfer failure, readback mismatch, or unrelated-state change must stop the sequence and must not be reported as success.
+Any disconnect, stale session, transfer failure, readback mismatch, or unrelated-state change must stop the sequence and must not be reported as success.
 
 ## A. Baseline
 
 - [ ] Install/update the exact signed candidate without clearing app data.
 - [ ] Connect TRN Black Pearl normally and wait for fresh My DAC -> DEVICE state.
-- [ ] Record the current microphone gain.
 - [ ] Establish a clearly non-default DEVICE state for at least one target, if necessary, so the restore action has something observable to change.
+- [ ] If practical, set microphone gain to a non-zero value before the checkbox-OFF test so the 0 dB restore is directly observable.
 - [ ] Confirm the current hardware EQ is non-flat before the checkbox-OFF test, or flash a known non-flat saved EQ first.
 
 ## B. Cancel — no write
 
 - [ ] Open My DAC -> DEVICE -> **Reset device** -> **Restore defaults**.
-- [ ] Confirm the dialog lists 50% / FAST-LL / HIGH / CLASS AB / Centered and says microphone gain is unchanged.
+- [ ] Confirm the dialog lists 50% / FAST-LL / HIGH / CLASS AB / Centered / **0 dB microphone gain**.
 - [ ] Confirm **Also reset EQ to flat** starts OFF.
 - [ ] Tap **Cancel**.
 - [ ] Verify DEVICE values did not change.
@@ -55,7 +55,7 @@ No setting write may be automatically retried. Any disconnect, stale session, tr
 - [ ] Verify Gain = **HIGH**.
 - [ ] Verify Amplifier = **CLASS AB**.
 - [ ] Verify Balance = **Centered**.
-- [ ] Verify microphone gain is exactly the baseline value recorded in Section A.
+- [ ] Verify Microphone gain = **0 dB**.
 - [ ] Verify the previously non-flat hardware EQ is still unchanged/non-flat.
 - [ ] Verify the app reports success only after the requested DEVICE state is visible as verified current state.
 
@@ -66,7 +66,7 @@ No setting write may be automatically retried. Any disconnect, stale session, tr
 - [ ] Wait for the normal automatic replacement-session read.
 - [ ] Verify Volume still displays **50%**.
 - [ ] Verify FAST-LL / HIGH / CLASS AB / Centered remain present.
-- [ ] Verify microphone gain remains unchanged.
+- [ ] Verify Microphone gain remains **0 dB**.
 - [ ] Verify no cached-state push or spurious Applying/Flashing state appears during reconnect.
 
 ## E. Restore defaults with EQ checkbox ON
@@ -74,8 +74,7 @@ No setting write may be automatically retried. Any disconnect, stale session, tr
 - [ ] Ensure the hardware EQ is non-flat again before this test.
 - [ ] Open Restore defaults and enable **Also reset EQ to flat**.
 - [ ] Tap **Reset** once.
-- [ ] Verify the same DEVICE targets: 50% / FAST-LL / HIGH / CLASS AB / Centered.
-- [ ] Verify microphone gain remains unchanged.
+- [ ] Verify the same DEVICE targets: 50% / FAST-LL / HIGH / CLASS AB / Centered / **0 dB microphone gain**.
 - [ ] Verify the hardware EQ is now **Flat**.
 - [ ] Verify saved EQs in My EQs / EQ Library are still present and unchanged.
 - [ ] Disconnect/reconnect once more and verify the restored DEVICE state and Flat hardware EQ persist.
