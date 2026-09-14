@@ -28,6 +28,7 @@ import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceControlReadCo
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceControls
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceQualificationPolicy
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceQualificationSnapshot
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlUsbAudioMode
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlVolumeScale
 import com.weekssa.opraeqforuapp.domain.dac.DacControlDescriptor
 import com.weekssa.opraeqforuapp.domain.dac.DacControlId
@@ -83,7 +84,7 @@ internal fun BlackPearlDeviceBatchControlPanel(
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
     Text(
-        text = "DAC filter is already hardware-qualified. Balance, microphone gain, amp topology, gain mode, and playback level are in one consolidated hardware-qualification batch. No DEVICE change sends Save to Flash or claims power-cycle persistence.",
+        text = "DAC filter is already hardware-qualified. Balance, microphone gain, amp topology, gain mode, and playback level are in one consolidated hardware-qualification batch. USB audio mode is read from the current USB enumeration while its exact Black Pearl software-switch command remains unproven. No DEVICE change sends Save to Flash or claims power-cycle persistence.",
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -191,6 +192,18 @@ internal fun BlackPearlDeviceBatchControlPanel(
         )
         Text(
             text = "Level-sensitive. Playback changes are staged locally and require a separate Review before Apply. Stop playback before changing this control during qualification.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        BatchSectionTitle("USB / System")
+        BatchValue("USB audio mode", blackPearlUsbAudioModeLabel(current.usbAudioMode))
+        Text(
+            text = if (current.usbAudioMode == null) {
+                "The current USB Audio Class revision could not be proven from this session, so EQ Library does not guess it."
+            } else {
+                "Reported from the current USB AudioControl descriptors. Software switching is not exposed until the exact Black Pearl switch command is independently established; no vendor command is guessed."
+            },
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -489,6 +502,7 @@ private fun BlackPearlBatchSnapshotRows(snapshot: BlackPearlDeviceQualificationS
         snapshot.signedBalanceDb?.let(::blackPearlBalanceLabel) ?: "Inconsistent channel balance read",
     )
     BatchValue("Playback level", playbackLabel(snapshot.playbackGainRaw))
+    BatchValue("USB audio mode", blackPearlUsbAudioModeLabel(snapshot.usbAudioMode))
 }
 
 @Composable
@@ -581,6 +595,7 @@ private fun blackPearlControlName(controlId: DacControlId): String = when (contr
     BlackPearlDeviceControls.AMP_TOPOLOGY -> "amp topology"
     BlackPearlDeviceControls.GAIN_MODE -> "gain mode"
     BlackPearlDeviceControls.PLAYBACK_GAIN_DB -> "playback level"
+    BlackPearlDeviceControls.USB_AUDIO_MODE -> "USB audio mode"
     else -> "device control"
 }
 
@@ -618,6 +633,12 @@ private fun blackPearlAmpLabel(code: Int): String = when (code) {
     BlackPearlDeviceControlReadCodec.AMP_TOPOLOGY_CLASS_H -> "CLASS H"
     BlackPearlDeviceControlReadCodec.AMP_TOPOLOGY_CLASS_AB -> "CLASS AB"
     else -> "Unknown ($code)"
+}
+
+private fun blackPearlUsbAudioModeLabel(mode: BlackPearlUsbAudioMode?): String = when (mode) {
+    BlackPearlUsbAudioMode.UAC_1_0 -> "UAC 1.0"
+    BlackPearlUsbAudioMode.UAC_2_0 -> "UAC 2.0"
+    null -> "Unknown"
 }
 
 private fun playbackLabel(raw: Int): String =
