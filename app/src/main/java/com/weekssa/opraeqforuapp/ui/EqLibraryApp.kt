@@ -155,6 +155,7 @@ fun EqLibraryApp(
     val onThemeModeChange = actions.onThemeModeChange
     val onOutputBehaviorChange = actions.onOutputBehaviorChange
     val onExportTargetChange = actions.onExportTargetChange
+    val onSessionActiveExportTargetChange = actions.onSessionActiveExportTargetChange
     val onActiveExportTargetChange = actions.onActiveExportTargetChange
     val onDirectBlackPearlFlashEnabledChange = actions.onDirectBlackPearlFlashEnabledChange
     val onDirectFiioJa11FlashEnabledChange = actions.onDirectFiioJa11FlashEnabledChange
@@ -375,7 +376,7 @@ fun EqLibraryApp(
                                         text = { Text(outputTitle(output)) },
                                         onClick = {
                                             outputMenuExpanded = false
-                                            onActiveExportTargetChange(output)
+                                            onSessionActiveExportTargetChange(output)
                                         },
                                     )
                                 }
