@@ -7,14 +7,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -83,13 +81,6 @@ private fun BlackPearlDeviceStatus(
     val identity = DacCapabilityCatalog.forDevice(DacDeviceId.TRN_BLACK_PEARL).identity
     var aboutExpanded by rememberSaveable { mutableStateOf(false) }
 
-    // My DAC shares the existing app-wide Black Pearl session. Entering DEVICE or reconnecting
-    // therefore refreshes current state automatically; the manual Refresh action remains available
-    // only for external changes/recovery.
-    LaunchedEffect(enabled) {
-        if (enabled && !state.isBusy) onRead()
-    }
-
     BlackPearlDeviceBatchControlPanel(
         state = state,
         enabled = enabled,
@@ -98,21 +89,10 @@ private fun BlackPearlDeviceStatus(
     )
 
     HorizontalDivider(modifier = Modifier.padding(top = 16.dp, bottom = 4.dp))
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { aboutExpanded = !aboutExpanded }
-            .padding(vertical = 10.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text("About this DAC", fontWeight = FontWeight.SemiBold)
-        Text(
-            text = if (aboutExpanded) "⌃" else "›",
-            color = MaterialTheme.colorScheme.primary,
-        )
-    }
-
+    ExpandableAboutHeader(
+        expanded = aboutExpanded,
+        onToggle = { aboutExpanded = !aboutExpanded },
+    )
     if (aboutExpanded) {
         DeviceInfoLine(
             label = stringResource(R.string.my_dac_device_model),
@@ -149,39 +129,46 @@ private fun FiioJa11DeviceStatus(
     onSetHeadsetControl: (Boolean) -> Unit,
     onSetUacMode: (FiioJa11Protocol.UacMode) -> Unit,
 ) {
-    var advancedExpanded by rememberSaveable { mutableStateOf(false) }
-    var pendingHeadsetValue by rememberSaveable { mutableStateOf<Boolean?>(null) }
+    var stagedVolume by rememberSaveable { mutableStateOf<Int?>(null) }
     var choosingEqProgram by rememberSaveable { mutableStateOf(false) }
+    var pendingHeadsetValue by rememberSaveable { mutableStateOf<Boolean?>(null) }
     var choosingUacMode by rememberSaveable { mutableStateOf(false) }
+    var aboutExpanded by rememberSaveable { mutableStateOf(false) }
+
     val snapshot = state.snapshot
     val controlsEnabled = connected && state.isCurrentSession && !state.isBusy && state.pendingRestartWrite == null
 
-    Text("Overview", fontWeight = FontWeight.SemiBold)
-    if (snapshot == null) {
-        Text(
-            text = "Read the connected JA11 to show current device settings.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    } else {
-        QualificationValue(label = "Volume", value = "${snapshot.outputVolume} / ${FiioJa11Protocol.MAX_OUTPUT_VOLUME}")
-        QualificationValue(label = "EQ", value = snapshot.eqProgram.technicalLabel)
-        QualificationValue(label = "Sample rate", value = snapshot.sampleRateLabel)
-        Text(
-            text = if (state.isCurrentSession) "Current device state" else "Last read · USB session changed",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-    Button(
-        onClick = onRead,
-        enabled = connected && !state.isBusy && state.pendingRestartWrite == null,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp),
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(if (state.isReading) "Reading…" else "Refresh device state")
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = when {
+                    state.isReading -> "Reading device settings…"
+                    state.isCurrentSession -> "Current device state"
+                    snapshot != null -> "Last read"
+                    else -> "Device settings"
+                },
+                fontWeight = FontWeight.SemiBold,
+            )
+            if (snapshot != null && !state.isCurrentSession && !state.isReading) {
+                Text(
+                    text = "Reconnect or refresh to make these values current.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        TextButton(
+            onClick = onRead,
+            enabled = connected && !state.isBusy && state.pendingRestartWrite == null,
+        ) {
+            Text(if (state.isReading) "Reading…" else "Refresh")
+        }
     }
+
     state.error?.let { error ->
         Text(
             text = error,
@@ -192,157 +179,181 @@ private fun FiioJa11DeviceStatus(
     }
     state.pendingRestartWrite?.let {
         Text(
-            text = "Waiting for the JA11 USB session to reconnect so the change can be verified. The setting will not be replayed automatically.",
+            text = "Waiting for JA11 to reconnect so the change can be verified.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 4.dp),
         )
     }
 
-    if (snapshot != null) {
-        DeviceSectionTitle("Playback")
-        Text("Device volume", style = MaterialTheme.typography.labelLarge)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Button(
-                onClick = { onSetVolume(snapshot.outputVolume - 1) },
-                enabled = controlsEnabled && snapshot.outputVolume > FiioJa11Protocol.MIN_OUTPUT_VOLUME,
-            ) { Text("−") }
-            Text("${snapshot.outputVolume} / ${FiioJa11Protocol.MAX_OUTPUT_VOLUME}")
-            Button(
-                onClick = { onSetVolume(snapshot.outputVolume + 1) },
-                enabled = controlsEnabled && snapshot.outputVolume < FiioJa11Protocol.MAX_OUTPUT_VOLUME,
-            ) { Text("+") }
-        }
+    if (snapshot == null) {
         Text(
-            text = "Volume changes one hardware step at a time so large level changes cannot happen accidentally.",
-            style = MaterialTheme.typography.bodySmall,
+            text = if (connected) {
+                "Current settings appear automatically after JA11 is read."
+            } else {
+                "Connect JA11 to view its settings."
+            },
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 12.dp),
         )
-
-        DeviceSectionTitle("Microphone")
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(enabled = controlsEnabled) {
-                    pendingHeadsetValue = !snapshot.headsetControlEnabled
-                }
-                .padding(vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text("Headset / mic remote")
-                Text(
-                    text = "May restart the JA11 USB session; EQ Library verifies the new session before reporting success.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Switch(
-                checked = snapshot.headsetControlEnabled,
-                onCheckedChange = if (controlsEnabled) {
-                    { pendingHeadsetValue = it }
-                } else null,
-            )
-        }
-
-        DeviceSectionTitle("USB / System")
-        QualificationValue(label = "Current sample rate", value = snapshot.sampleRateLabel)
-
-        DeviceSectionTitle("Device info")
-        QualificationValue(label = "Firmware", value = snapshot.firmwareVersion)
-        QualificationValue(
-            label = "USB identity",
-            value = String.format(Locale.US, "2972:%04X", snapshot.usbProductId),
-        )
-        QualificationValue(label = "Validation", value = "Hardware validation pending")
-        Text(
-            text = "Software transaction paths are implemented from maintained protocol evidence. These JA11 controls are not claimed as physically qualified until hands-on validation is complete.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-
-        HorizontalDivider(modifier = Modifier.padding(top = 12.dp))
-        TextButton(
-            onClick = { advancedExpanded = !advancedExpanded },
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(if (advancedExpanded) "Hide Advanced" else "Show Advanced")
-        }
-        if (advancedExpanded) {
-            Text(
-                text = "Advanced settings can change the audible response or restart USB. Review the effect before applying.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 8.dp),
-            )
-
-            Text("EQ program", style = MaterialTheme.typography.labelLarge)
-            Text(snapshot.eqProgram.technicalLabel)
-            TextButton(
-                onClick = { choosingEqProgram = true },
-                enabled = controlsEnabled,
-            ) { Text("Change EQ program") }
-
-            Text("USB Audio Class", style = MaterialTheme.typography.labelLarge)
-            Text(snapshot.uacMode.technicalLabel)
-            Text(
-                text = "Changing UAC mode re-enumerates the USB device. EQ Library waits for the replacement USB session and verifies the reported mode and PID.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            TextButton(
-                onClick = { choosingUacMode = true },
-                enabled = controlsEnabled,
-            ) { Text("Change UAC mode") }
-        }
+        return
     }
 
-    pendingHeadsetValue?.let { requested ->
+    DeviceSectionTitle("Audio")
+    SimpleDeviceSettingRow(
+        label = "Device volume",
+        value = "${snapshot.outputVolume} / ${FiioJa11Protocol.MAX_OUTPUT_VOLUME}",
+        enabled = controlsEnabled,
+        onClick = { stagedVolume = snapshot.outputVolume },
+    )
+    SimpleDeviceSettingRow(
+        label = "EQ program",
+        value = snapshot.eqProgram.technicalLabel,
+        enabled = controlsEnabled,
+        onClick = { choosingEqProgram = true },
+    )
+
+    DeviceSectionTitle("Microphone")
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = controlsEnabled) {
+                pendingHeadsetValue = !snapshot.headsetControlEnabled
+            }
+            .padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text("Headset / mic remote", style = MaterialTheme.typography.labelLarge)
+            Text(
+                text = if (snapshot.headsetControlEnabled) "On" else "Off",
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (controlsEnabled) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+            )
+        }
+        Switch(
+            checked = snapshot.headsetControlEnabled,
+            onCheckedChange = if (controlsEnabled) {
+                { requested -> pendingHeadsetValue = requested }
+            } else {
+                null
+            },
+        )
+    }
+
+    DeviceSectionTitle("USB & System")
+    SimpleDeviceSettingRow(
+        label = "USB Audio Class",
+        value = snapshot.uacMode.technicalLabel,
+        enabled = controlsEnabled,
+        onClick = { choosingUacMode = true },
+    )
+    ReadOnlyValueRow(label = "Current sample rate", value = snapshot.sampleRateLabel)
+
+    HorizontalDivider(modifier = Modifier.padding(top = 16.dp, bottom = 4.dp))
+    ExpandableAboutHeader(
+        expanded = aboutExpanded,
+        onToggle = { aboutExpanded = !aboutExpanded },
+    )
+    if (aboutExpanded) {
+        DeviceInfoLine(
+            label = stringResource(R.string.my_dac_device_model),
+            value = "FiiO JA11",
+            originLabel = stringResource(R.string.my_dac_origin_known_capability),
+        )
+        DeviceInfoLine(
+            label = "Firmware",
+            value = snapshot.firmwareVersion,
+            origin = DacMetadataOrigin.DEVICE_REPORTED,
+        )
+        DeviceInfoLine(
+            label = stringResource(R.string.my_dac_device_usb_identity),
+            value = String.format(Locale.US, "2972:%04X", snapshot.usbProductId),
+            origin = DacMetadataOrigin.USB_REPORTED,
+        )
+        DeviceInfoLine(
+            label = stringResource(R.string.my_dac_device_validation),
+            value = "Hardware validation pending",
+            originLabel = stringResource(R.string.my_dac_origin_validation_status),
+        )
+    }
+
+    stagedVolume?.let { staged ->
         AlertDialog(
-            onDismissRequest = { pendingHeadsetValue = null },
-            title = { Text("Change headset / mic remote?") },
+            onDismissRequest = { stagedVolume = null },
+            title = { Text("Device volume") },
             text = {
-                Text(
-                    "The JA11 may disconnect and reconnect while this setting changes. EQ Library will verify the new USB session and will not replay the write automatically.",
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "$staged / ${FiioJa11Protocol.MAX_OUTPUT_VOLUME}",
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        TextButton(
+                            onClick = {
+                                stagedVolume = (staged - 1).coerceAtLeast(FiioJa11Protocol.MIN_OUTPUT_VOLUME)
+                            },
+                            enabled = staged > FiioJa11Protocol.MIN_OUTPUT_VOLUME,
+                        ) { Text("−1") }
+                        TextButton(
+                            onClick = { stagedVolume = snapshot.outputVolume },
+                            enabled = staged != snapshot.outputVolume,
+                        ) { Text("Current") }
+                        TextButton(
+                            onClick = {
+                                stagedVolume = (staged + 1).coerceAtMost(FiioJa11Protocol.MAX_OUTPUT_VOLUME)
+                            },
+                            enabled = staged < FiioJa11Protocol.MAX_OUTPUT_VOLUME,
+                        ) { Text("+1") }
+                    }
+                    Text(
+                        text = "This is the JA11's native 0–60 hardware level. Keep listening volume conservative.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        pendingHeadsetValue = null
-                        onSetHeadsetControl(requested)
+                        stagedVolume = null
+                        onSetVolume(staged)
                     },
+                    enabled = controlsEnabled && staged != snapshot.outputVolume,
                 ) { Text("Apply") }
             },
             dismissButton = {
-                TextButton(onClick = { pendingHeadsetValue = null }) { Text("Cancel") }
+                TextButton(onClick = { stagedVolume = null }) { Text("Cancel") }
             },
         )
     }
 
-    if (choosingEqProgram && snapshot != null) {
+    if (choosingEqProgram) {
         AlertDialog(
             onDismissRequest = { choosingEqProgram = false },
-            title = { Text("Change EQ program") },
+            title = { Text("EQ program") },
             text = {
                 Column {
-                    Text(
-                        "This changes the active acoustic response immediately. User 1 is the editable five-band PEQ used by EQ Library.",
-                        modifier = Modifier.padding(bottom = 8.dp),
-                    )
                     FiioJa11Protocol.EqProgram.entries.forEach { program ->
+                        val current = program == snapshot.eqProgram
                         TextButton(
                             onClick = {
                                 choosingEqProgram = false
                                 onSetEqProgram(program)
                             },
-                            enabled = program != snapshot.eqProgram,
+                            enabled = controlsEnabled && !current,
                             modifier = Modifier.fillMaxWidth(),
-                        ) { Text(program.technicalLabel) }
+                        ) {
+                            Text(if (current) "${program.technicalLabel} · Current" else program.technicalLabel)
+                        }
                     }
                 }
             },
@@ -353,25 +364,50 @@ private fun FiioJa11DeviceStatus(
         )
     }
 
-    if (choosingUacMode && snapshot != null) {
+    pendingHeadsetValue?.let { requested ->
+        AlertDialog(
+            onDismissRequest = { pendingHeadsetValue = null },
+            title = { Text("Change headset / mic remote?") },
+            text = {
+                Text("JA11 may briefly disconnect and reconnect. EQ Library verifies the new session before showing the change as current.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        pendingHeadsetValue = null
+                        onSetHeadsetControl(requested)
+                    },
+                    enabled = controlsEnabled && requested != snapshot.headsetControlEnabled,
+                ) { Text("Change") }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingHeadsetValue = null }) { Text("Cancel") }
+            },
+        )
+    }
+
+    if (choosingUacMode) {
         AlertDialog(
             onDismissRequest = { choosingUacMode = false },
-            title = { Text("Change USB Audio Class") },
+            title = { Text("USB Audio Class") },
             text = {
                 Column {
                     Text(
-                        "The JA11 will re-enumerate as a different USB product. Audio will be interrupted until Android reconnects it. Choose the compatibility mode you need.",
+                        text = "Changing this mode interrupts USB audio while JA11 reconnects.",
                         modifier = Modifier.padding(bottom = 8.dp),
                     )
                     FiioJa11Protocol.UacMode.entries.forEach { mode ->
+                        val current = mode == snapshot.uacMode
                         TextButton(
                             onClick = {
                                 choosingUacMode = false
                                 onSetUacMode(mode)
                             },
-                            enabled = mode != snapshot.uacMode,
+                            enabled = controlsEnabled && !current,
                             modifier = Modifier.fillMaxWidth(),
-                        ) { Text(mode.technicalLabel) }
+                        ) {
+                            Text(if (current) "${mode.technicalLabel} · Current" else mode.technicalLabel)
+                        }
                     }
                 }
             },
@@ -385,23 +421,78 @@ private fun FiioJa11DeviceStatus(
 
 @Composable
 private fun DeviceSectionTitle(title: String) {
-    HorizontalDivider(modifier = Modifier.padding(top = 12.dp, bottom = 8.dp))
+    HorizontalDivider(modifier = Modifier.padding(top = 14.dp, bottom = 10.dp))
     Text(title, fontWeight = FontWeight.SemiBold)
 }
 
 @Composable
-private fun QualificationValue(
+private fun SimpleDeviceSettingRow(
     label: String,
     value: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
 ) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(vertical = 10.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(label, style = MaterialTheme.typography.labelLarge)
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (enabled) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+            )
+        }
+        if (enabled) {
+            Text(
+                text = "›",
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 12.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun ReadOnlyValueRow(label: String, value: String) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 3.dp),
-        verticalArrangement = Arrangement.spacedBy(1.dp),
+            .padding(vertical = 8.dp),
     ) {
-        Text(text = label, style = MaterialTheme.typography.labelLarge)
-        Text(text = value, style = MaterialTheme.typography.bodyMedium)
+        Text(label, style = MaterialTheme.typography.labelLarge)
+        Text(value, style = MaterialTheme.typography.bodyMedium)
+    }
+}
+
+@Composable
+private fun ExpandableAboutHeader(
+    expanded: Boolean,
+    onToggle: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onToggle)
+            .padding(vertical = 10.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text("About this DAC", fontWeight = FontWeight.SemiBold)
+        Text(
+            text = if (expanded) "⌃" else "›",
+            color = MaterialTheme.colorScheme.primary,
+        )
     }
 }
 
