@@ -21,6 +21,7 @@ Before substantive work, read this file and the current documents relevant to th
 - `docs/V0.6_LIBRARY_OWNERSHIP_AND_RECOVERY.md` for the current device-agnostic My EQs ownership and Needs attention recovery contract; where older architecture text still says My EQs is output-specific, this newer authority wins
 - `docs/BLACK_PEARL_PROTOCOL_NOTES.md` when Black Pearl behavior is involved
 - `docs/BLACK_PEARL_V0.6_UAC_MODE.md` when Black Pearl UAC detection/manual-switch help is involved
+- `docs/BLACK_PEARL_V0.6_FACTORY_DEFAULTS_RESEARCH.md` and `docs/BLACK_PEARL_V0.6_RESTORE_DEFAULTS_HANDS_ON_CHECKLIST.md` for the current Black Pearl app-owned Restore-defaults contract and focused physical gate
 - `docs/FIIO_JA11_PROTOCOL_NOTES.md` and `docs/FIIO_JA11_HANDS_ON_CHECKLIST.md` when JA11 behavior is involved
 - `docs/JCALLY_JM12_PROTOCOL_NOTES.md` and `docs/JCALLY_JM12_HANDS_ON_CHECKLIST.md` when JM12 behavior is involved
 - `docs/V0.3_HANDS_ON_CHECKLIST.md` for the qualified v0.3 Black Pearl/foundation record
@@ -235,6 +236,8 @@ v0.5 changes **derived DSP adaptation**, not the qualified Black Pearl USB ident
 - Reset keeps its qualified fail-safe ordering.
 
 v0.6 My DAC additionally exposes only independently established/qualified normal controls. UAC 1.0/2.0 current mode is read from standard USB AudioControl descriptors. No speculative Black Pearl UAC write command is used. The UI provides the approved manual startup sequence under the read-only UAC row and automatically re-detects the replacement session.
+
+The later owner-approved **EQ Library Restore defaults** action is an app-owned preset, not a claim about TRN factory state. Its current target contract is displayed **50%** volume, **FAST-LL**, **HIGH** gain, **CLASS AB**, centered balance, and **0 dB microphone gain**. The confirmation dialog keeps **Also reset EQ to flat** OFF by default; when enabled it reuses the separately qualified Reset EQ to flat transaction. Preserve truthful non-factory wording and the focused exact-signed-candidate hardware gate in `docs/BLACK_PEARL_V0.6_RESTORE_DEFAULTS_HANDS_ON_CHECKLIST.md`.
 
 ## 12. Testing and release discipline
 
