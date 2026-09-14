@@ -43,15 +43,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.R
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlashPlan
+import com.weekssa.opraeqforuapp.domain.blackpearl.buildBlackPearlFlashPlan
 import com.weekssa.opraeqforuapp.domain.catalog.OpraCatalog
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.OpraProduct
 import com.weekssa.opraeqforuapp.domain.catalog.assessCompatibility
 import com.weekssa.opraeqforuapp.domain.catalog.isHistoricalRevision
 import com.weekssa.opraeqforuapp.domain.export.DeviceExportability
+import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.export.assessDeviceExportability
 import com.weekssa.opraeqforuapp.domain.export.deviceAdaptationSummary
@@ -64,6 +68,7 @@ import com.weekssa.opraeqforuapp.domain.model.ProfileCompatibility
 import com.weekssa.opraeqforuapp.domain.settings.ExportTargetPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityPreferences
 import com.weekssa.opraeqforuapp.ui.StringSetSaver
+import java.util.Locale
 import kotlinx.coroutines.launch
 
 private enum class ProfileFilterDimension(@param:StringRes val labelResId: Int) {
@@ -91,6 +96,8 @@ internal fun ProfileSelectionEditor(
     onMessage: (String) -> Unit,
     onOpenUrl: (String) -> Unit,
     onBack: () -> Unit,
+    blackPearlConnected: Boolean = false,
+    onFlashBlackPearlProfile: (suspend (OpraEqProfile) -> String)? = null,
     modifier: Modifier = Modifier,
 ) {
     val vendor = catalog.vendor(product.vendorId)
@@ -130,6 +137,7 @@ internal fun ProfileSelectionEditor(
     var targetFilter by rememberSaveable(product.id) { mutableStateOf<String?>(null) }
     var showHistoricalRevisions by rememberSaveable(product.id) { mutableStateOf(false) }
     var filterDialog by remember { mutableStateOf<ProfileFilterDimension?>(null) }
+    var pendingBlackPearlFlash by remember { mutableStateOf<OpraEqProfile?>(null) }
 
     LaunchedEffect(databaseOptions, creatorOptions, targetOptions) {
         if (databaseFilter != null && databaseFilter !in databaseOptions) databaseFilter = null
@@ -254,6 +262,65 @@ internal fun ProfileSelectionEditor(
                 }
             },
         )
+    }
+
+    pendingBlackPearlFlash?.let { profile ->
+        when (val plan = remember(profile) { buildBlackPearlFlashPlan(profile, activeSlot = 0x00) }) {
+            is BlackPearlFlashPlan.Ready -> {
+                val fidelity = when (plan.fidelity) {
+                    DevicePresetFidelity.EXACT -> "Exact"
+                    DevicePresetFidelity.OPTIMIZED -> "Optimized"
+                }
+                val creator = profile.author?.takeIf(String::isNotBlank)
+                val gain = String.format(Locale.US, "%+.2f dB", plan.requiredPlaybackGainDb)
+                AlertDialog(
+                    onDismissRequest = { pendingBlackPearlFlash = null },
+                    title = { Text("Flash to TRN Black Pearl?") },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(
+                                text = listOfNotNull(product.name, creator).joinToString(" · "),
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            Text("$fidelity · ${plan.adaptationSummary}")
+                            Text("Playback adjustment: $gain")
+                            plan.warning?.takeIf(String::isNotBlank)?.let { warning ->
+                                Text(
+                                    warning,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                pendingBlackPearlFlash = null
+                                onFlashBlackPearlProfile?.let { flash ->
+                                    scope.launch { onMessage(flash(profile)) }
+                                }
+                            },
+                        ) {
+                            Text(if (plan.warning.isNullOrBlank()) "Flash" else "Flash anyway")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { pendingBlackPearlFlash = null }) { Text("Cancel") }
+                    },
+                )
+            }
+            is BlackPearlFlashPlan.NotRepresentable -> {
+                AlertDialog(
+                    onDismissRequest = { pendingBlackPearlFlash = null },
+                    title = { Text("Can't flash this EQ") },
+                    text = { Text(plan.reason) },
+                    confirmButton = {
+                        TextButton(onClick = { pendingBlackPearlFlash = null }) { Text("OK") }
+                    },
+                )
+            }
+        }
     }
 
     filterDialog?.let { dimension ->
@@ -474,6 +541,9 @@ internal fun ProfileSelectionEditor(
                     append(statusLabel)
                     adaptation?.let { append(" · $it") }
                 }
+                val blackPearlFlashReady = blackPearlConnected &&
+                    onFlashBlackPearlProfile != null &&
+                    buildBlackPearlFlashPlan(profile, activeSlot = 0x00) is BlackPearlFlashPlan.Ready
                 ProfileSelectionRow(
                     profile = profile,
                     selected = profile.id in stagedSelectedIds,
@@ -511,6 +581,11 @@ internal fun ProfileSelectionEditor(
                     onOpenSource = profile.link?.let { sourceUrl -> { onOpenUrl(sourceUrl) } },
                     onExplainSourceProblem = {
                         sourceProblemExplanation = sourceAssessment.reason ?: sourceNotUsableDefault
+                    },
+                    onFlashBlackPearl = if (blackPearlFlashReady) {
+                        { pendingBlackPearlFlash = profile }
+                    } else {
+                        null
                     },
                 )
                 HorizontalDivider()
@@ -597,6 +672,7 @@ internal fun ProfileSelectionRow(
     onHide: () -> Unit,
     onOpenSource: (() -> Unit)?,
     onExplainSourceProblem: () -> Unit,
+    onFlashBlackPearl: (() -> Unit)? = null,
 ) {
     val compatibility = profile.assessCompatibility()
     val selectable = compatibility.category.isSelectable
@@ -683,7 +759,10 @@ internal fun ProfileSelectionRow(
             }
         },
         trailingContent = {
-            Row {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                onFlashBlackPearl?.let { flash ->
+                    TextButton(onClick = flash) { Text("Flash") }
+                }
                 IconButton(onClick = onHide) {
                     Icon(
                         Icons.Outlined.VisibilityOff,
