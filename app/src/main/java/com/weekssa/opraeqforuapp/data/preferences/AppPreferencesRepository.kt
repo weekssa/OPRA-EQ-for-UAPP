@@ -38,12 +38,10 @@ class AppPreferencesRepository(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     /**
-     * Session overlay for the saved manual output context.
+     * Process-session operating-context override used by the My EQs / EQ Library output selector.
      *
-     * DataStore remains the durable source of truth, but a selector tap must affect every composed
-     * screen immediately instead of waiting for the asynchronous disk-backed flow to round-trip.
-     * Automatic connected-DAC resolution is a projection over this durable manual fallback and
-     * never overwrites it merely because hardware was attached.
+     * It never changes the persisted Automatic/Manual preference or the saved Default EQ target.
+     * A cold app start naturally clears it, allowing the saved output policy to resolve again.
      */
     private val activeTargetOverride = MutableStateFlow<ExportDevice?>(null)
 
@@ -70,13 +68,14 @@ class AppPreferencesRepository(
             ?.let { storedName -> ExportDevice.entries.firstOrNull { it.name == storedName } }
         val manualOutputPreferences = ExportTargetPreferences.normalize(
             selectedTargets,
-            sessionActiveTarget ?: storedActive,
+            storedActive,
         )
         val outputBehavior = OutputBehavior.fromStorageValue(preferences[Keys.OutputBehavior])
         val effective = EffectiveOutputResolver.resolve(
             behavior = outputBehavior,
             manualFallback = manualOutputPreferences.activeTarget,
             presentDeviceIds = presentDeviceIds,
+            sessionOverride = sessionActiveTarget,
         )
         val effectiveOutputPreferences = ExportTargetPreferences.normalize(
             selectedTargets = manualOutputPreferences.selectedTargets + effective.output,
@@ -118,8 +117,11 @@ class AppPreferencesRepository(
         preferences[Keys.ThemeMode] = themeMode.storageValue
     }
 
-    suspend fun setOutputBehavior(outputBehavior: OutputBehavior) = updatePreferences { preferences ->
-        preferences[Keys.OutputBehavior] = outputBehavior.storageValue
+    suspend fun setOutputBehavior(outputBehavior: OutputBehavior) {
+        activeTargetOverride.value = null
+        updatePreferences { preferences ->
+            preferences[Keys.OutputBehavior] = outputBehavior.storageValue
+        }
     }
 
     suspend fun setProfileVisibility(category: ProfileVisibilityCategory, visible: Boolean) =
@@ -133,7 +135,6 @@ class AppPreferencesRepository(
 
     suspend fun setExportTargetEnabled(device: ExportDevice, enabled: Boolean) {
         if (!device.selectableInV03) return
-        var nextActive: ExportDevice? = null
         updatePreferences { preferences ->
             val current = outputPreferences(
                 preferences[Keys.SelectedExportTargets],
@@ -142,15 +143,13 @@ class AppPreferencesRepository(
             val next = current.withTarget(device, enabled)
             preferences[Keys.SelectedExportTargets] = next.selectedTargets.mapTo(mutableSetOf()) { it.name }
             preferences[Keys.ActiveExportTarget] = next.activeTarget.name
-            nextActive = next.activeTarget
         }
-        nextActive?.let { activeTargetOverride.value = it }
     }
 
+    /** Persistent Settings choice for Default EQ target; this retains the approved Manual-mode action. */
     suspend fun setActiveExportTarget(device: ExportDevice) {
         if (!device.selectableInV03) return
-        // Explicit selection is the user's persistent Manual override until Automatic is restored.
-        activeTargetOverride.value = device
+        activeTargetOverride.value = null
         updatePreferences { preferences ->
             val current = outputPreferences(
                 preferences[Keys.SelectedExportTargets],
@@ -161,6 +160,12 @@ class AppPreferencesRepository(
             preferences[Keys.ActiveExportTarget] = next.activeTarget.name
             preferences[Keys.OutputBehavior] = OutputBehavior.Manual.storageValue
         }
+    }
+
+    /** Temporary My EQs / EQ Library action target. Never persists or changes Automatic/Manual. */
+    fun setSessionActiveExportTarget(device: ExportDevice) {
+        if (!device.selectableInV03) return
+        activeTargetOverride.value = device
     }
 
     suspend fun setDirectBlackPearlFlashEnabled(enabled: Boolean) = updatePreferences { preferences ->
