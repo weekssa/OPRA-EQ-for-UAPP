@@ -174,46 +174,91 @@ class DacControlRepository(
                 )
             }
 
+            verifyBlackPearlReadbackAfterWrite(
+                intent = intent,
+                baseline = baseline,
+                generation = generation,
+            )
+        }
+
+    /**
+     * DAC-filter behavior is already physically qualified and retains its original immediate single
+     * complete readback. The still-unqualified normal DEVICE controls are allowed a bounded
+     * same-session settling window because the first consolidated physical candidate showed that
+     * amplifier/output state can become visible only after the immediate readback. Settling is
+     * read-only: the requested hardware write is never resent, and a session replacement, read
+     * failure, unrelated-state mutation, or final mismatch remains a visible failure.
+     */
+    private suspend fun verifyBlackPearlReadbackAfterWrite(
+        intent: DacWriteIntent,
+        baseline: BlackPearlDeviceQualificationSnapshot,
+        generation: Long,
+    ): BlackPearlDeviceControlWriteResult {
+        val settlingControl = intent.controlId != BlackPearlDeviceControls.DAC_FILTER
+        val attempts = if (settlingControl) CANDIDATE_READBACK_ATTEMPTS else 1
+        if (settlingControl) {
+            delay(CANDIDATE_INITIAL_SETTLE_MILLIS)
+        }
+
+        var lastSnapshot: BlackPearlDeviceQualificationSnapshot? = null
+        var lastActualValue: DacControlValue? = null
+
+        for (attempt in 0 until attempts) {
+            if (!blackPearlSource.isSessionCurrent(generation)) {
+                return BlackPearlDeviceControlWriteResult.StaleBaseline(
+                    intent.controlId,
+                    intent.expectedSessionGeneration,
+                    blackPearlSource.sessionGeneration,
+                )
+            }
+
             val readback = when (val read = readBlackPearlQualificationSnapshotUnlocked()) {
                 is BlackPearlQualificationReadResult.Success -> read.snapshot
                 is BlackPearlQualificationReadResult.NotConnected ->
-                    return@withExclusiveOperation BlackPearlDeviceControlWriteResult.NotConnected(intent.controlId)
+                    return BlackPearlDeviceControlWriteResult.NotConnected(intent.controlId)
                 is BlackPearlQualificationReadResult.SessionChanged ->
-                    return@withExclusiveOperation BlackPearlDeviceControlWriteResult.StaleBaseline(
+                    return BlackPearlDeviceControlWriteResult.StaleBaseline(
                         intent.controlId,
                         intent.expectedSessionGeneration,
                         blackPearlSource.sessionGeneration,
                     )
                 is BlackPearlQualificationReadResult.ReadFailed ->
-                    return@withExclusiveOperation BlackPearlDeviceControlWriteResult.ReadFailed(intent.controlId, read.field)
-            }
-
-            val actualValue = BlackPearlDeviceControls.valueFromSnapshot(intent.controlId, readback)
-            if (actualValue != intent.requestedValue) {
-                return@withExclusiveOperation BlackPearlDeviceControlWriteResult.ReadbackMismatch(
-                    controlId = intent.controlId,
-                    requestedValue = intent.requestedValue,
-                    actualValue = actualValue,
-                    snapshot = readback,
-                )
+                    return BlackPearlDeviceControlWriteResult.ReadFailed(intent.controlId, read.field)
             }
 
             val unrelatedChanges = unrelatedChangedFields(intent.controlId, baseline, readback)
             if (unrelatedChanges.isNotEmpty()) {
-                return@withExclusiveOperation BlackPearlDeviceControlWriteResult.UnrelatedStateChanged(
+                return BlackPearlDeviceControlWriteResult.UnrelatedStateChanged(
                     controlId = intent.controlId,
                     changedFields = unrelatedChanges,
                     snapshot = readback,
                 )
             }
 
-            BlackPearlDeviceControlWriteResult.Verified(
-                controlId = intent.controlId,
-                requestedValue = intent.requestedValue,
-                baseline = baseline,
-                snapshot = readback,
-            )
+            val actualValue = BlackPearlDeviceControls.valueFromSnapshot(intent.controlId, readback)
+            if (actualValue == intent.requestedValue) {
+                return BlackPearlDeviceControlWriteResult.Verified(
+                    controlId = intent.controlId,
+                    requestedValue = intent.requestedValue,
+                    baseline = baseline,
+                    snapshot = readback,
+                )
+            }
+
+            lastSnapshot = readback
+            lastActualValue = actualValue
+            if (attempt < attempts - 1) {
+                delay(CANDIDATE_RETRY_SETTLE_MILLIS)
+            }
         }
+
+        return BlackPearlDeviceControlWriteResult.ReadbackMismatch(
+            controlId = intent.controlId,
+            requestedValue = intent.requestedValue,
+            actualValue = lastActualValue,
+            snapshot = checkNotNull(lastSnapshot) { "At least one Black Pearl readback attempt is required." },
+        )
+    }
 
     private suspend fun readBlackPearlQualificationSnapshotUnlocked(): BlackPearlQualificationReadResult {
         val generation = blackPearlSource.sessionGeneration
@@ -316,6 +361,12 @@ class DacControlRepository(
         } else {
             BlackPearlQualificationReadResult.SessionChanged
         }
+
+    private companion object {
+        const val CANDIDATE_READBACK_ATTEMPTS = 4
+        const val CANDIDATE_INITIAL_SETTLE_MILLIS = 250L
+        const val CANDIDATE_RETRY_SETTLE_MILLIS = 250L
+    }
 }
 
 class SessionBlackPearlDeviceControlReadSource(
