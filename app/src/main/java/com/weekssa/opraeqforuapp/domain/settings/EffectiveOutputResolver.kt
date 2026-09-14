@@ -15,8 +15,10 @@ data class EffectiveOutputResolution(
 /**
  * Pure resolver for the user-friendly output policy.
  *
- * Automatic mode uses one physically present current-product DAC without requiring the user to
- * pre-enable/select that hardware output. Zero or multiple supported DACs never cause guessing and
+ * A session override is the most specific operating context and deliberately does not change the
+ * persisted Automatic/Manual preference or the saved Default EQ target. When no session override is
+ * active, Automatic mode uses one physically present current-product DAC without requiring the user
+ * to pre-enable/select that hardware output. Zero or multiple supported DACs never cause guessing and
  * fall back to the user's saved manual output. My DAC remains independently bound to actual hardware.
  */
 object EffectiveOutputResolver {
@@ -24,7 +26,12 @@ object EffectiveOutputResolver {
         behavior: OutputBehavior,
         manualFallback: ExportDevice,
         presentDeviceIds: Set<DacDeviceId>,
+        sessionOverride: ExportDevice? = null,
     ): EffectiveOutputResolution {
+        if (sessionOverride != null) {
+            return EffectiveOutputResolution(output = sessionOverride)
+        }
+
         if (behavior == OutputBehavior.Manual) {
             return EffectiveOutputResolution(output = manualFallback)
         }
