@@ -47,6 +47,7 @@ import com.weekssa.opraeqforuapp.R
 import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
+import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqCategory
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqPreset
 import com.weekssa.opraeqforuapp.domain.catalog.OpraCatalog
@@ -84,6 +85,8 @@ fun BrowseOpraScreen(
     hiddenCanonicalProfileIds: Set<String> = emptySet(),
     blackPearlConnectionState: BlackPearlConnectionState = BlackPearlConnectionState.Disconnected,
     onFlashBlackPearlProfile: (suspend (OpraEqProfile) -> String)? = null,
+    fiioJa11ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
+    onFlashFiioJa11Profile: (suspend (OpraEqProfile) -> String)? = null,
     onToggleFavorite: suspend (OpraEqProfile, String, String) -> Boolean,
     onSaveGeneralPresets: suspend (List<GeneralEqPreset>) -> Int = { 0 },
     onHideCanonicalProfiles: suspend (Set<String>) -> Unit = {},
@@ -186,6 +189,8 @@ fun BrowseOpraScreen(
                         onBack = { selectedProductId = null },
                         blackPearlConnected = blackPearlConnectionState is BlackPearlConnectionState.Connected,
                         onFlashBlackPearlProfile = onFlashBlackPearlProfile,
+                        fiioJa11Connected = fiioJa11ConnectionState is Kt02h20ConnectionState.Connected,
+                        onFlashFiioJa11Profile = onFlashFiioJa11Profile,
                         modifier = Modifier.weight(1f),
                     )
                     vendor != null -> VendorProducts(
