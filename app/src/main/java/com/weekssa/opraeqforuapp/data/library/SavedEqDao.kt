@@ -31,6 +31,10 @@ interface SavedEqDao {
     @Query("DELETE FROM output_saved_eqs WHERE outputId = :outputId AND entryId = :entryId")
     suspend fun deleteSelection(outputId: String, entryId: String)
 
+    /** Legacy output memberships are no longer ownership; clear them when the global item is removed. */
+    @Query("DELETE FROM output_saved_eqs WHERE entryId = :entryId")
+    suspend fun deleteAllSelections(entryId: String)
+
     @Query("DELETE FROM saved_eqs WHERE entryId = :entryId")
     suspend fun delete(entryId: String)
 }
