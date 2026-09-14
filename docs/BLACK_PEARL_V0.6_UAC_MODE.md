@@ -1,8 +1,8 @@
 # EQ Library v0.6 — TRN Black Pearl USB audio mode
 
-Status date: 2026-09-13
+Status date: 2026-09-14
 
-Status: **approved product feature; current-mode readback implemented; exact software-switch command still not established**.
+Status: **approved product feature; current-mode readback implemented; manual button-assisted UAC 1.0 startup documented; exact software-switch command still not established**.
 
 This document supplements `docs/CHATGPT_PROJECT_RUNBOOK.md`, `docs/V0.6_MY_DAC_APPROVED_DESIGN.md`, `docs/V0.6_MY_DAC_IMPLEMENTATION_PLAN.md`, and `docs/BLACK_PEARL_PROTOCOL_NOTES.md`. Later explicit project-owner decisions supersede older wording.
 
@@ -10,16 +10,13 @@ This document supplements `docs/CHATGPT_PROJECT_RUNBOOK.md`, `docs/V0.6_MY_DAC_A
 
 The project owner approved adding **USB audio mode** to **My DAC -> DEVICE -> USB / System**.
 
-Intended finished UX:
+Finished v0.6 UX:
 
 - show the current mode as **UAC 1.0** or **UAC 2.0** only when actual hardware/session evidence supports it;
-- offer exactly those two choices only if a safe exact software switch is established;
-- describe UAC 1.0 as compatibility mode and UAC 2.0 as the normal mode without inventing sample-rate limits for this exact Black Pearl;
-- stage a requested mode locally before any hardware action;
-- warn that changing USB audio mode is session-disruptive and will restart/re-enumerate the DAC;
-- report success only after a replacement USB session is recognized and a fresh read verifies the requested mode;
-- never replay cached state after reconnect, silently retry a setting write, or send generic Save to Flash as part of a UAC change;
-- make no power-cycle-persistence claim until independently proven on the exact Black Pearl.
+- keep the control read-only because no safe exact in-app software switch command is established;
+- provide concise manual-switch help directly under the row rather than speculative protocol wording;
+- after reconnect, automatically read the replacement USB session and show its actual mode;
+- never replay cached state after reconnect, silently retry a setting write, or send generic Save to Flash as part of a UAC change.
 
 ## Exact Black Pearl evidence
 
@@ -31,9 +28,9 @@ A second public Black Pearl implementation was reviewed at exact source commit:
 
 Its public protocol map independently exposes the same normal controls (`0x02`, `0x03`, `0x09`, `0x01`, `0x0A`, `0x0C`, `0x11`, `0x16`, `0x19`, `0x1D`) but contains **no UAC read/write command or software UAC selector**. Its Android/main/v1 public source likewise does not establish a UAC HID register. The repository currently has no chosen license and states all rights reserved, so it is reference evidence only; EQ Library does not copy its implementation.
 
-Independent owner reports still establish that the hardware itself supports UAC 1.0/2.0 through its physical button/startup behavior. That proves the feature exists, not that a host HID switch command exists.
+Independent owner reports establish that the hardware supports UAC 1.0/2.0 through startup/button behavior. Public owner testing on Black Pearl firmware v0.5 further reports a working UAC 1.0 startup sequence: with headphones already inserted, hold both **+** and **−** while reconnecting the DAC to the USB host, then release after power/enumeration. The same report also describes an equivalent sequence in which the DAC is connected without headphones, both buttons are held, and headphones are then inserted. EQ Library uses the simpler reconnect-with-headphones sequence in its help text.
 
-Therefore EQ Library must not infer a UAC command from a related CB5100/WalkPlay product and must not probe undocumented vendor command values on the user's DAC.
+This is evidence for a manual hardware/startup behavior, not a host HID register. EQ Library therefore must not infer a UAC command from a related CB5100/WalkPlay product and must not probe undocumented vendor command values on the user's DAC.
 
 ## Current-mode readback implementation
 
@@ -52,6 +49,16 @@ This read is session-local. A reconnect creates a new USB session and the mode m
 
 USB audio mode is modeled as a typed `USB_SYSTEM` DEVICE capability but remains **read-only** until a trustworthy Black Pearl software switch command is established.
 
+## Manual mode-switch help
+
+For Black Pearl hardware/firmware that supports the qualified startup behavior, the app presents:
+
+- **UAC 1.0:** disconnect the Black Pearl, leave headphones connected, hold **+** and **−**, reconnect USB, then release after the DAC powers on;
+- **UAC 2.0:** reconnect normally without holding the buttons;
+- after either reconnect, EQ Library automatically detects and displays the active mode from the new USB descriptors.
+
+The detected descriptor state is authoritative. The help text does not promise that every hardware revision exposes the same startup behavior, and it does not claim the app itself switches UAC mode.
+
 ## Automated safety coverage
 
 Domain tests cover UAC 1.0/2.0 recognition, malformed/truncated descriptors, non-AudioControl headers, unsupported/conflicting revisions, repository propagation, and the rule that the typed UAC control remains non-writable.
@@ -62,16 +69,15 @@ The normal DEVICE transaction tests remain authoritative for unrelated controls.
 
 A true one-tap in-app UAC switch still requires independently established exact Black Pearl write semantics: packet/value, re-enumeration identity/timing, Android permission behavior, post-reconnect verification, failure recovery, and persistence behavior.
 
-If no exact software command is established, a button-assisted flow remains a possible later product decision. It is not silently substituted for a software switch.
+The manual button-assisted flow is the v0.6 user-facing fallback and removes the need for speculative in-app wording.
 
 ## Qualification state
 
 - hardware UAC 1.0/2.0 feature existence — **ESTABLISHED**
 - current-mode USB-descriptor parser — **IMPLEMENTED / AUTOMATED COVERAGE PRESENT**
-- Pixel 9 / exact Black Pearl descriptor readback — **PHYSICAL PENDING**
+- manual button-assisted UAC 1.0 startup — **PUBLIC OWNER EVIDENCE; IN-APP HELP APPROVED**
+- Pixel 9 / exact Black Pearl descriptor readback — **OWNER CONFIRMED WORKING 2026-09-14**
 - software UAC write command — **NOT ESTABLISHED**
 - software UAC write — **NOT IMPLEMENTED / NOT EXPOSED**
-- button-assisted alternative — **NOT IMPLEMENTED**
-- persistence claim — **NOT ESTABLISHED**
 
 No merge or release is authorized by this document.
