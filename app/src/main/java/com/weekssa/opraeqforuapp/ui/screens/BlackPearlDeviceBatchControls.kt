@@ -37,6 +37,9 @@ import com.weekssa.opraeqforuapp.domain.dac.DacDiscreteOption
 import com.weekssa.opraeqforuapp.domain.dac.validateForWrite
 import com.weekssa.opraeqforuapp.ui.BlackPearlQualificationUiState
 import java.util.Locale
+import kotlin.math.ceil
+import kotlin.math.floor
+import kotlin.math.round
 import kotlin.math.roundToInt
 
 /**
@@ -354,6 +357,9 @@ internal fun BlackPearlDeviceBatchControlPanel(
         } else null
         val currentRaw = snapshot.playbackGainRaw
         val currentDb = snapshot.playbackGainDb
+        val stepBaseDb = parsedDb ?: currentDb
+        val lowerStepDb = playbackWholeDbStep(stepBaseDb, direction = -1)
+        val upperStepDb = playbackWholeDbStep(stepBaseDb, direction = 1)
 
         AlertDialog(
             onDismissRequest = { choosingPlayback = false },
@@ -378,7 +384,7 @@ internal fun BlackPearlDeviceBatchControlPanel(
                     }
                     if (playbackText.isNotBlank() && requestedRaw == null) {
                         Text(
-                            text = "Enter a value inside the verified hardware range on the native 1/256 dB grid.",
+                            text = "Enter a whole-dB value inside the qualified normal DEVICE range.",
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall,
                         )
@@ -388,19 +394,19 @@ internal fun BlackPearlDeviceBatchControlPanel(
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         TextButton(
-                            onClick = { playbackText = formatGainDb(currentDb - 0.5) },
-                            enabled = BlackPearlDeviceControls.playbackGainRaw(currentDb - 0.5) != null,
-                        ) { Text("−0.5 dB") }
+                            onClick = { playbackText = formatGainDb(lowerStepDb) },
+                            enabled = BlackPearlDeviceControls.playbackGainRaw(lowerStepDb) != null,
+                        ) { Text("−1 dB") }
                         TextButton(
                             onClick = { playbackText = formatGainDb(currentDb) },
                         ) { Text("Current") }
                         TextButton(
-                            onClick = { playbackText = formatGainDb(currentDb + 0.5) },
-                            enabled = BlackPearlDeviceControls.playbackGainRaw(currentDb + 0.5) != null,
-                        ) { Text("+0.5 dB") }
+                            onClick = { playbackText = formatGainDb(upperStepDb) },
+                            enabled = BlackPearlDeviceControls.playbackGainRaw(upperStepDb) != null,
+                        ) { Text("+1 dB") }
                     }
                     Text(
-                        "Level-sensitive: changes are local only on this screen. For hardware qualification, stop playback and test a small decrease before restoring the exact baseline.",
+                        "Level-sensitive: changes are local only on this screen. Normal DEVICE changes use conservative whole-dB steps; the exact raw value is still shown when reading hardware. Stop playback and lower the level first during qualification.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -551,7 +557,7 @@ private fun ReviewDeviceControlDialog(
                 Text("New: $requested", fontWeight = FontWeight.SemiBold)
                 warning?.let { Text(it) }
                 Text(
-                    "Apply performs a fresh complete device read, writes only this control, then reads the complete Black Pearl state again. Stale sessions, readback mismatch, or unrelated state changes fail verification.",
+                    "Apply performs a fresh complete device read, writes only this control, then verifies the complete Black Pearl state. Controls that settle asynchronously may be re-read briefly without resending the write. Stale sessions, final readback mismatch, or unrelated state changes fail verification.",
                 )
                 Text(
                     "This DEVICE transaction does not send Save to Flash or claim power-cycle persistence.",
@@ -616,6 +622,24 @@ private fun blackPearlAmpLabel(code: Int): String = when (code) {
 
 private fun playbackLabel(raw: Int): String =
     "${BlackPearlVolumeScale.percentFromRaw(raw)}% · ${formatGainDb(raw / 256.0)} dB · raw $raw"
+
+/**
+ * DEVICE playback changes are deliberately whole-dB after the first physical batch invalidated the
+ * half-dB assumption. If the actual hardware is externally left between whole-dB points, the first
+ * down/up step lands on the adjacent conservative whole-dB value rather than silently rounding the
+ * current read before the user chooses a direction.
+ */
+private fun playbackWholeDbStep(value: Double, direction: Int): Double {
+    require(direction == -1 || direction == 1)
+    val nearestWhole = round(value)
+    val isWhole = kotlin.math.abs(value - nearestWhole) < 1e-9
+    return when {
+        direction < 0 && isWhole -> nearestWhole - 1.0
+        direction < 0 -> floor(value)
+        direction > 0 && isWhole -> nearestWhole + 1.0
+        else -> ceil(value)
+    }
+}
 
 private fun formatGainDb(value: Double): String {
     val formatted = String.format(Locale.US, "%.5f", value)
