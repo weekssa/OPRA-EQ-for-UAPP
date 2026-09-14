@@ -33,12 +33,13 @@ The approved v0.6 direction includes:
 - automatic fresh EQ + supported DEVICE reads after connection/reconnection and after verified hardware changes;
 - Flash from the EQ's existing My EQs / EQ Library surface rather than a duplicate My DAC chooser;
 - one concise DEVICE settings surface with current verified values and direct row-level editing;
+- Black Pearl **Restore defaults** using the qualified EQ Library-owned preset: 50% volume, FAST-LL, HIGH, CLASS AB, centered balance, and microphone gain 0 dB, with optional EQ reset to flat;
 - a single **device-agnostic My EQs** library whose saved headphones/EQs do not change when the output target changes;
 - Save/Add separated from **Export** and **Flash**—saving changes local library state only;
 - persistent **Needs attention** recovery for exact app-owned preset artifacts that can no longer be confidently associated with a current My EQ item;
 - conservative recovery into Personal EQs without scanning or deleting arbitrary external files.
 
-TRN Black Pearl automatic physical reattach has passed the maintained focused Pixel 9 test on its exact signed evidence candidate. FiiO/JadeAudio JA11 physical qualification remains pending. See the v0.6 status/checklist documents for exact evidence categories and release gates.
+TRN Black Pearl automatic physical reattach and the EQ Library Restore-defaults behavior have both passed maintained focused Pixel 9 testing on their exact signed evidence candidates. Restore defaults is deliberately an **EQ Library preset**, not a claim about TRN factory defaults. FiiO/JadeAudio JA11 physical qualification remains pending. See the v0.6 status/checklist documents for exact evidence categories and release gates.
 
 ## What you can do
 
@@ -87,6 +88,8 @@ Black Pearl file export and Direct Flash use the same shared 10-band device repr
 Flash replaces EQ Library's prior playback-gain adjustment instead of stacking repeated attenuation. Protocol-encodable filter gains outside the currently validated approximately ±10 dB listening range are preserved rather than clamped and require an explicit exact-value caution before Flash.
 
 **Reset EQ to flat** operates on the DAC's current EQ slot, writes all 10 bands flat, persists the slot, and then removes only the playback-gain adjustment previously tracked as applied by EQ Library. Unrelated DAC settings remain outside the transaction.
+
+On the v0.6 development branch, My DAC also exposes a physically qualified **EQ Library Restore defaults** action for Black Pearl. It restores 50% volume, FAST-LL, HIGH gain, CLASS AB, centered balance, and microphone gain 0 dB. **Also reset EQ to flat** is optional and OFF by default. With it OFF, the current hardware EQ remains unchanged; with it ON, the separately qualified EQ-flat reset is used. The selected values are app-owned restore targets and are **not** presented as verified TRN factory defaults.
 
 Black Pearl `.txt` export uses the verified pyBlackPearl `PK / LS / HS` peak/shelf syntax and preserves the true derived preamp. Third-party importer limitations are disclosed rather than silently changing canonical EQ data or the Direct Flash plan.
 
@@ -149,6 +152,8 @@ The public v0.5.0 release was rebuilt, tested, signed, and published from exact 
 `ff2fa351d5f38f9dcf37a77859f1e988bbdb76a8`
 
 The release workflow verified the same permanent signing identity pinned in [`release-signing-cert.sha256`](release-signing-cert.sha256).
+
+For v0.6, the Black Pearl Restore-defaults physical PASS is pinned to exact signed source `b0340842dd88dc85613d9441fcc72ceadf877b20`; its APK SHA-256 is `dcae4f54881976af70e93c2c796b6993697d1a0a8f333698e9d925933c61ff37`. Documentation-only closeout does not replace that behavior evidence unless it changes the qualified transaction semantics.
 
 v0.6 remains a draft development release until its final exact-head software/documentation/signing gates pass and the project owner explicitly authorizes merge/publication. Passing CI alone does not publish a release.
 
