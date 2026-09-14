@@ -1,6 +1,6 @@
 # TRN Black Pearl v0.6 — factory-default/reset research
 
-Status: **TRUE TRN FACTORY-DEFAULT SEMANTICS REMAIN UNESTABLISHED; OWNER-SELECTED EQ LIBRARY RESTORE PRESET APPROVED AND IMPLEMENTED; FOCUSED PHYSICAL QUALIFICATION PENDING**
+Status: **TRUE TRN FACTORY-DEFAULT SEMANTICS REMAIN UNESTABLISHED; OWNER-SELECTED EQ LIBRARY RESTORE PRESET APPROVED, IMPLEMENTED, AND PHYSICALLY QUALIFIED**
 
 Purpose: preserve the research boundary around a true Black Pearl factory reset while documenting the later project-owner decision to expose a truthful EQ Library-owned **Restore defaults** action using an explicitly selected set of values.
 
@@ -39,7 +39,7 @@ The device-settings sequence is intentionally conservative:
 
 Each selected target is submitted through the normal fresh-baseline/write/readback path. When a target already matches the fresh hardware read, the normal repository correctly treats it as a verified no-op rather than sending a redundant setting write. When a target differs, it is written once, verified live, persisted with the established device save command, then verified again after save.
 
-A completed restore is nevertheless guaranteed to exercise DEVICE persistence because the fail-safe playback stage and the final 50%-presentation playback stage are intentionally different values. At least one of those playback targets must differ from the starting/current stage during the completed sequence, and the Black Pearl save command persists the current DEVICE settings block. This preserves the no-redundant-write rule while still establishing a persisted final restore state.
+A completed restore is guaranteed to exercise DEVICE persistence because the fail-safe playback stage and the final 50%-presentation playback stage are intentionally different values. At least one of those playback targets must differ from the starting/current stage during the completed sequence, and the Black Pearl save command persists the current DEVICE settings block. This preserves the no-redundant-write rule while still establishing a persisted final restore state.
 
 Setting writes are never automatically retried. A disconnect, stale session, transfer failure, readback mismatch, or unrelated-state change stops the restore and must not be presented as success.
 
@@ -119,19 +119,39 @@ Therefore the historical restrictions still apply to any claim about TRN factory
 
 The later owner decision changes the **product action**, not the evidence classification: EQ Library may expose its explicitly defined restore preset with truthful app-owned wording.
 
-## Focused physical gate for the new restore action
+## Focused physical qualification — PASS
 
-Before the new whole-device restore action is treated as physically qualified on Black Pearl, an exact signed candidate must verify:
+Exact signed source and physical-test pin:
 
-- Cancel performs no write/change;
-- with **Also reset EQ to flat** OFF, the device ends at displayed 50% volume, FAST-LL, HIGH, CLASS AB, centered balance, and **0 dB microphone gain**;
-- the current hardware EQ is unchanged when the checkbox is OFF;
-- after disconnect/reconnect the restored DEVICE values remain present;
-- with the checkbox ON, the same DEVICE targets are established and the hardware EQ is flat;
-- saved EQs in EQ Library remain untouched;
-- any disconnect/readback failure stops without false success.
+`b0340842dd88dc85613d9441fcc72ceadf877b20`
 
-Passing this gate qualifies the EQ Library restore behavior. It still does not prove that the selected values are TRN's original factory defaults.
+Immutable signed APK:
+
+`https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.6.0-beta-b034084.apk`
+
+APK SHA-256:
+
+`dcae4f54881976af70e93c2c796b6993697d1a0a8f333698e9d925933c61ff37`
+
+Signer certificate SHA-256:
+
+`65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`
+
+On **2026-09-14**, the project owner completed the focused Pixel 9 / TRN Black Pearl test and reported **SUCCESS**. Evidence category: **OWNER-REPORTED**.
+
+The owner-reported PASS covered:
+
+- Cancel performed no DEVICE or EQ change;
+- with **Also reset EQ to flat** OFF, the device ended at displayed 50% volume, FAST-LL, HIGH, CLASS AB, centered balance, and **0 dB microphone gain**;
+- the current non-flat hardware EQ remained unchanged with the checkbox OFF;
+- after disconnect/reconnect, the restored DEVICE values remained present after fresh automatic read;
+- with the checkbox ON, the same DEVICE targets were established and the hardware EQ became Flat;
+- saved EQs in EQ Library remained untouched;
+- the restored DEVICE state and Flat EQ persisted through reconnect.
+
+**Result: PASS.** This qualifies the **EQ Library Restore defaults** behavior on exact signed `b0340842`. It still does not prove that the selected values are TRN's original factory defaults.
+
+Documentation-only commits after this pass do not replace the hardware evidence pin unless they change connection ownership, read timing, write sequencing, persistence, reset values/order, EQ-reset behavior, verification, or session semantics.
 
 ## What would establish a true factory contract later
 
