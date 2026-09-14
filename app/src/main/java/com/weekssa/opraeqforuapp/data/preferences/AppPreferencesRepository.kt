@@ -32,19 +32,24 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 
+/** Process-lifetime action target chosen from My EQs / EQ Library. Never persisted. */
+internal object SessionExportTarget {
+    val activeTarget = MutableStateFlow<ExportDevice?>(null)
+
+    fun select(device: ExportDevice) {
+        if (device.selectableInV03) activeTarget.value = device
+    }
+
+    fun clear() {
+        activeTarget.value = null
+    }
+}
+
 class AppPreferencesRepository(
     private val dataStore: DataStore<Preferences>,
     private val presentSupportedDacs: Flow<Set<DacDeviceId>> = flowOf(emptySet()),
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
-    /**
-     * Process-session operating-context override used by the My EQs / EQ Library output selector.
-     *
-     * It never changes the persisted Automatic/Manual preference or the saved Default EQ target.
-     * A cold app start naturally clears it, allowing the saved output policy to resolve again.
-     */
-    private val activeTargetOverride = MutableStateFlow<ExportDevice?>(null)
-
     val preferences: Flow<AppPreferences> = combine(
         dataStore.data.catch { exception ->
             if (exception is IOException) {
@@ -53,7 +58,7 @@ class AppPreferencesRepository(
                 throw exception
             }
         },
-        activeTargetOverride,
+        SessionExportTarget.activeTarget,
         presentSupportedDacs,
     ) { preferences, sessionActiveTarget, presentDeviceIds ->
         val storedTargets = preferences[Keys.SelectedExportTargets]
@@ -118,7 +123,7 @@ class AppPreferencesRepository(
     }
 
     suspend fun setOutputBehavior(outputBehavior: OutputBehavior) {
-        activeTargetOverride.value = null
+        SessionExportTarget.clear()
         updatePreferences { preferences ->
             preferences[Keys.OutputBehavior] = outputBehavior.storageValue
         }
@@ -149,7 +154,7 @@ class AppPreferencesRepository(
     /** Persistent Settings choice for Default EQ target; this retains the approved Manual-mode action. */
     suspend fun setActiveExportTarget(device: ExportDevice) {
         if (!device.selectableInV03) return
-        activeTargetOverride.value = null
+        SessionExportTarget.clear()
         updatePreferences { preferences ->
             val current = outputPreferences(
                 preferences[Keys.SelectedExportTargets],
@@ -160,12 +165,6 @@ class AppPreferencesRepository(
             preferences[Keys.ActiveExportTarget] = next.activeTarget.name
             preferences[Keys.OutputBehavior] = OutputBehavior.Manual.storageValue
         }
-    }
-
-    /** Temporary My EQs / EQ Library action target. Never persists or changes Automatic/Manual. */
-    fun setSessionActiveExportTarget(device: ExportDevice) {
-        if (!device.selectableInV03) return
-        activeTargetOverride.value = device
     }
 
     suspend fun setDirectBlackPearlFlashEnabled(enabled: Boolean) = updatePreferences { preferences ->
