@@ -24,8 +24,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.R
-import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceControlReadCodec
-import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlVolumeScale
 import com.weekssa.opraeqforuapp.domain.dac.DacCapabilityCatalog
 import com.weekssa.opraeqforuapp.domain.dac.DacControlId
 import com.weekssa.opraeqforuapp.domain.dac.DacControlValue
@@ -82,53 +80,7 @@ private fun BlackPearlDeviceStatus(
     onSetDeviceControl: (DacControlId, DacControlValue) -> Unit,
 ) {
     val identity = DacCapabilityCatalog.forDevice(DacDeviceId.TRN_BLACK_PEARL).identity
-    state.snapshot?.let { snapshot ->
-        Text("Overview", fontWeight = FontWeight.SemiBold)
-        QualificationValue(
-            label = "Volume",
-            value = "${BlackPearlVolumeScale.percentFromRaw(snapshot.playbackGainRaw)}%",
-        )
-        QualificationValue(
-            label = "DAC filter",
-            value = filterLabel(snapshot.filterCode),
-        )
-        QualificationValue(
-            label = "Gain",
-            value = gainModeLabel(snapshot.gainModeCode),
-        )
-        QualificationValue(
-            label = "Amp",
-            value = ampTopologyLabel(snapshot.ampTopologyCode),
-        )
-        Text(
-            text = if (state.isCurrentSession) "Current device state" else "Last read · USB session changed",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 8.dp),
-        )
-        HorizontalDivider()
-    }
-
-    Text(
-        text = stringResource(R.string.my_dac_device_info),
-        fontWeight = FontWeight.SemiBold,
-        modifier = Modifier.padding(top = 8.dp),
-    )
-    DeviceInfoLine(
-        label = stringResource(R.string.my_dac_device_model),
-        value = "${identity.manufacturer.value} ${identity.model.value}",
-        origin = identity.model.origin,
-    )
-    DeviceInfoLine(
-        label = stringResource(R.string.my_dac_device_usb_identity),
-        value = String.format(Locale.US, "%04X:%04X", identity.usbVendorId, identity.usbProductId),
-        originLabel = stringResource(R.string.my_dac_origin_known_capability),
-    )
-    DeviceInfoLine(
-        label = stringResource(R.string.my_dac_device_validation),
-        value = stringResource(R.string.my_dac_validation_qualified_short),
-        originLabel = stringResource(R.string.my_dac_origin_validation_status),
-    )
+    var aboutExpanded by rememberSaveable { mutableStateOf(false) }
 
     BlackPearlDeviceBatchControlPanel(
         state = state,
@@ -136,6 +88,47 @@ private fun BlackPearlDeviceStatus(
         onRead = onRead,
         onSetDeviceControl = onSetDeviceControl,
     )
+
+    HorizontalDivider(modifier = Modifier.padding(top = 16.dp, bottom = 4.dp))
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { aboutExpanded = !aboutExpanded }
+            .padding(vertical = 10.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text("About this DAC", fontWeight = FontWeight.SemiBold)
+        Text(
+            text = if (aboutExpanded) "⌃" else "›",
+            color = MaterialTheme.colorScheme.primary,
+        )
+    }
+
+    if (aboutExpanded) {
+        DeviceInfoLine(
+            label = stringResource(R.string.my_dac_device_model),
+            value = "${identity.manufacturer.value} ${identity.model.value}",
+            origin = identity.model.origin,
+        )
+        state.snapshot?.firmwareVersion?.let { firmware ->
+            DeviceInfoLine(
+                label = "Firmware",
+                value = firmware,
+                origin = DacMetadataOrigin.DEVICE_REPORTED,
+            )
+        }
+        DeviceInfoLine(
+            label = stringResource(R.string.my_dac_device_usb_identity),
+            value = String.format(Locale.US, "%04X:%04X", identity.usbVendorId, identity.usbProductId),
+            originLabel = stringResource(R.string.my_dac_origin_known_capability),
+        )
+        DeviceInfoLine(
+            label = stringResource(R.string.my_dac_device_validation),
+            value = stringResource(R.string.my_dac_validation_qualified_short),
+            originLabel = stringResource(R.string.my_dac_origin_validation_status),
+        )
+    }
 }
 
 @Composable
@@ -403,36 +396,6 @@ private fun QualificationValue(
         Text(text = value, style = MaterialTheme.typography.bodyMedium)
     }
 }
-
-@Composable
-private fun filterLabel(code: Int): String = stringResource(
-    when (code) {
-        BlackPearlDeviceControlReadCodec.FILTER_FAST_LL -> R.string.my_dac_qualification_filter_fast_ll
-        BlackPearlDeviceControlReadCodec.FILTER_FAST_PC -> R.string.my_dac_qualification_filter_fast_pc
-        BlackPearlDeviceControlReadCodec.FILTER_SLOW_LL -> R.string.my_dac_qualification_filter_slow_ll
-        BlackPearlDeviceControlReadCodec.FILTER_SLOW_PC -> R.string.my_dac_qualification_filter_slow_pc
-        BlackPearlDeviceControlReadCodec.FILTER_NOS -> R.string.my_dac_qualification_filter_nos
-        else -> error("Validated Black Pearl filter code unexpectedly missing.")
-    },
-)
-
-@Composable
-private fun gainModeLabel(code: Int): String = stringResource(
-    when (code) {
-        BlackPearlDeviceControlReadCodec.GAIN_MODE_LOW -> R.string.my_dac_qualification_gain_low
-        BlackPearlDeviceControlReadCodec.GAIN_MODE_HIGH -> R.string.my_dac_qualification_gain_high
-        else -> error("Validated Black Pearl gain mode unexpectedly missing.")
-    },
-)
-
-@Composable
-private fun ampTopologyLabel(code: Int): String = stringResource(
-    when (code) {
-        BlackPearlDeviceControlReadCodec.AMP_TOPOLOGY_CLASS_H -> R.string.my_dac_qualification_amp_class_h
-        BlackPearlDeviceControlReadCodec.AMP_TOPOLOGY_CLASS_AB -> R.string.my_dac_qualification_amp_class_ab
-        else -> error("Validated Black Pearl amp topology unexpectedly missing.")
-    },
-)
 
 @Composable
 private fun DeviceInfoLine(
