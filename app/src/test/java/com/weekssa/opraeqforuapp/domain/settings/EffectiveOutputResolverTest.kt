@@ -57,6 +57,46 @@ class EffectiveOutputResolverTest {
     }
 
     @Test
+    fun automaticSessionOverrideWinsWithoutBecomingAutomaticHardware() {
+        val result = EffectiveOutputResolver.resolve(
+            behavior = OutputBehavior.Automatic,
+            manualFallback = ExportDevice.POWERAMP,
+            presentDeviceIds = setOf(DacDeviceId.TRN_BLACK_PEARL),
+            sessionOverride = ExportDevice.UAPP,
+        )
+
+        assertThat(result.output).isEqualTo(ExportDevice.UAPP)
+        assertThat(result.automaticDevice).isNull()
+        assertThat(result.isUsingAutomaticHardware).isFalse()
+    }
+
+    @Test
+    fun automaticReturnsToConnectedHardwareWhenSessionOverrideIsGone() {
+        val result = EffectiveOutputResolver.resolve(
+            behavior = OutputBehavior.Automatic,
+            manualFallback = ExportDevice.POWERAMP,
+            presentDeviceIds = setOf(DacDeviceId.TRN_BLACK_PEARL),
+            sessionOverride = null,
+        )
+
+        assertThat(result.output).isEqualTo(ExportDevice.BLACK_PEARL)
+        assertThat(result.automaticDevice).isEqualTo(DacDeviceId.TRN_BLACK_PEARL)
+    }
+
+    @Test
+    fun manualSessionOverrideIsTemporaryOperatingContext() {
+        val result = EffectiveOutputResolver.resolve(
+            behavior = OutputBehavior.Manual,
+            manualFallback = ExportDevice.POWERAMP,
+            presentDeviceIds = setOf(DacDeviceId.FIIO_JA11),
+            sessionOverride = ExportDevice.UAPP,
+        )
+
+        assertThat(result.output).isEqualTo(ExportDevice.UAPP)
+        assertThat(result.isUsingAutomaticHardware).isFalse()
+    }
+
+    @Test
     fun legacyJcallyNeverBecomesAutomaticProductOutput() {
         val result = EffectiveOutputResolver.resolve(
             behavior = OutputBehavior.Automatic,
