@@ -12,6 +12,7 @@ import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
 import com.weekssa.opraeqforuapp.domain.library.UnclaimedEqFormat
 import com.weekssa.opraeqforuapp.domain.library.UnclaimedEqParseState
+import com.weekssa.opraeqforuapp.domain.library.UnclaimedEqParsedContent
 import com.weekssa.opraeqforuapp.domain.library.UnclaimedEqParser
 import com.weekssa.opraeqforuapp.domain.library.UnclaimedEqRecord
 import java.util.UUID
@@ -60,15 +61,12 @@ class UnclaimedEqRepository(
         )
     }.mapLatest { index ->
         withContext(ioDispatcher) {
-            index.ownerships
-                .asSequence()
-                .filter { it.profileId !in index.claimedProfileIds }
+            unresolvedOwnedArtifacts(index.ownerships, index.claimedProfileIds)
                 .mapNotNull { inspectOwnership(it) }
                 .sortedWith(
                     compareByDescending<UnclaimedEqRecord> { it.exportedAtMillis }
                         .thenBy(String.CASE_INSENSITIVE_ORDER) { it.originalFileName },
                 )
-                .toList()
         }
     }.flowOn(ioDispatcher)
 
@@ -105,18 +103,13 @@ class UnclaimedEqRepository(
         }
 
         val id = UUID.randomUUID().toString()
-        val productId = "personal-product:$id"
-        val profileId = "personal-eq:$id"
-        val profile = OpraEqProfile(
-            id = profileId,
-            productId = productId,
-            author = "Personal",
-            details = "Recovered legacy EQ · Original file: ${ownership.fileName}",
-            link = null,
-            profileType = "parametric_eq",
-            preampGainDb = content.preampGainDb,
-            bands = content.bands,
+        val profile = buildRecoveredPersonalProfile(
+            captureId = id,
+            originalFileName = ownership.fileName,
+            content = content,
         )
+        val productId = profile.productId
+        val profileId = profile.id
         val now = nowMillis()
         val entity = SavedEqEntity(
             entryId = "personal:$id",
@@ -199,11 +192,7 @@ class UnclaimedEqRepository(
             )
             is ExportLookup.Found -> {
                 val bytes = documentStore.readBytes(lookup.value, MAX_RECOVERY_BYTES)
-                val parsed = if (bytes == null) {
-                    null
-                } else {
-                    UnclaimedEqParser.parse(ownership.fileName, bytes)
-                }
+                val parsed = if (bytes == null) null else UnclaimedEqParser.parse(ownership.fileName, bytes)
                 UnclaimedEqRecord(
                     documentUri = ownership.documentUri,
                     originalFileName = ownership.fileName,
@@ -230,3 +219,31 @@ class UnclaimedEqRepository(
         private const val MAX_RECOVERY_BYTES = 1024 * 1024
     }
 }
+
+/**
+ * Destination/device state is deliberately absent from this policy. A file is unresolved only when
+ * the profile identity recorded for that exact app-owned URI is no longer claimed by the global
+ * My EQs collection. distinctBy is defensive; export_ownership also has documentUri as its PK.
+ */
+internal fun unresolvedOwnedArtifacts(
+    ownerships: List<ExportOwnershipEntity>,
+    claimedProfileIds: Set<String>,
+): List<ExportOwnershipEntity> = ownerships
+    .distinctBy(ExportOwnershipEntity::documentUri)
+    .filter { it.profileId !in claimedProfileIds }
+
+/** Builds an ordinary Personal EQ while preserving every parsed filter/preamp value verbatim. */
+internal fun buildRecoveredPersonalProfile(
+    captureId: String,
+    originalFileName: String,
+    content: UnclaimedEqParsedContent,
+): OpraEqProfile = OpraEqProfile(
+    id = "personal-eq:$captureId",
+    productId = "personal-product:$captureId",
+    author = "Personal",
+    details = "Recovered legacy EQ · Original file: $originalFileName",
+    link = null,
+    profileType = "parametric_eq",
+    preampGainDb = content.preampGainDb,
+    bands = content.bands,
+)
