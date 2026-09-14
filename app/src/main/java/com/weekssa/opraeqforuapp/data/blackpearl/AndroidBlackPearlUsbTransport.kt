@@ -194,6 +194,10 @@ class AndroidBlackPearlUsbTransport(
         BlackPearlUsbAudioDescriptorParser.parse(rawDescriptors)
     }
 
+    /**
+     * All Black Pearl USB traffic is serialized by [usbMutex]. A timed-out nondestructive READ may
+     * be reissued once in the same session; setting writes are never retried here or elsewhere.
+     */
     private suspend fun <T> readParsedResponse(
         request: ByteArray,
         parser: (ByteArray) -> T?,
@@ -201,22 +205,31 @@ class AndroidBlackPearlUsbTransport(
         val current = session ?: return@withLock null
         val endpoint = current.endpointIn ?: return@withLock null
 
-        val drain = ByteArray(BlackPearlProtocol.REPORT_SIZE)
-        repeat(8) {
-            if (current.connection.bulkTransfer(endpoint, drain, drain.size, 2) <= 0) return@repeat
+        suspend fun attemptRead(): T? {
+            val drain = ByteArray(BlackPearlProtocol.REPORT_SIZE)
+            repeat(8) {
+                if (current.connection.bulkTransfer(endpoint, drain, drain.size, 2) <= 0) return@repeat
+            }
+
+            if (!sendControlReport(current, request)) return null
+            val deadline = System.currentTimeMillis() + READ_TIMEOUT_MILLIS
+            val response = ByteArray(BlackPearlProtocol.REPORT_SIZE)
+            while (System.currentTimeMillis() < deadline) {
+                val read = current.connection.bulkTransfer(endpoint, response, response.size, READ_POLL_MILLIS)
+                if (read > 0) {
+                    parser(response)?.let { return it }
+                }
+                delay(READ_RETRY_DELAY_MILLIS)
+            }
+            return null
         }
 
-        if (!sendControlReport(current, request)) return@withLock null
-        val deadline = System.currentTimeMillis() + READ_TIMEOUT_MILLIS
-        val response = ByteArray(BlackPearlProtocol.REPORT_SIZE)
-        while (System.currentTimeMillis() < deadline) {
-            val read = current.connection.bulkTransfer(endpoint, response, response.size, READ_POLL_MILLIS)
-            if (read > 0) {
-                parser(response)?.let { return@withLock it }
-            }
-            delay(READ_RETRY_DELAY_MILLIS)
-        }
-        null
+        retryBlackPearlRead(
+            maxAttempts = READ_REQUEST_ATTEMPTS,
+            retryDelayMillis = READ_REQUEST_RETRY_DELAY_MILLIS,
+            isSessionCurrent = { session === current },
+            attempt = ::attemptRead,
+        )
     }
 
     override suspend fun sendReport(report: ByteArray): Boolean = usbMutex.withLock {
@@ -385,6 +398,8 @@ class AndroidBlackPearlUsbTransport(
         private const val READ_TIMEOUT_MILLIS = 500L
         private const val READ_POLL_MILLIS = 60
         private const val READ_RETRY_DELAY_MILLIS = 5L
+        private const val READ_REQUEST_ATTEMPTS = 2
+        private const val READ_REQUEST_RETRY_DELAY_MILLIS = 20L
         private const val PEQ_WRITE_SETTLE_MILLIS = 100L
         private const val FLASH_SETTLE_MILLIS = 300L
         private const val COMMAND_SETTLE_MILLIS = 20L
