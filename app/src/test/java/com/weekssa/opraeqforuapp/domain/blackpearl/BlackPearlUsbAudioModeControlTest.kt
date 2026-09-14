@@ -2,17 +2,17 @@ package com.weekssa.opraeqforuapp.domain.blackpearl
 
 import com.weekssa.opraeqforuapp.domain.dac.DacControlDescriptor
 import com.weekssa.opraeqforuapp.domain.dac.DacControlValue
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertIs
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
 
 class BlackPearlUsbAudioModeControlTest {
     @Test
     fun usbAudioModeIsTypedButNotWritableWithoutEstablishedCommand() {
-        val descriptor = assertIs<DacControlDescriptor.Discrete>(
-            BlackPearlDeviceControls.descriptor(BlackPearlDeviceControls.USB_AUDIO_MODE),
-        )
+        val descriptor = BlackPearlDeviceControls.descriptor(BlackPearlDeviceControls.USB_AUDIO_MODE)
+        assertTrue(descriptor is DacControlDescriptor.Discrete)
+        descriptor as DacControlDescriptor.Discrete
 
         assertFalse(descriptor.writable)
         assertEquals(

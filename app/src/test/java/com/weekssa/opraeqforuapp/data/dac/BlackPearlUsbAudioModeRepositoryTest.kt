@@ -2,28 +2,30 @@ package com.weekssa.opraeqforuapp.data.dac
 
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceControlReadCodec
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlUsbAudioMode
-import kotlinx.coroutines.test.runTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertIs
-import kotlin.test.assertNull
+import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
 
 class BlackPearlUsbAudioModeRepositoryTest {
     @Test
-    fun completeDeviceReadCarriesCurrentUacMode() = runTest {
+    fun completeDeviceReadCarriesCurrentUacMode() = runBlocking {
         val result = DacControlRepository(FakeSource(BlackPearlUsbAudioMode.UAC_2_0))
             .readBlackPearlQualificationSnapshot()
 
-        val success = assertIs<BlackPearlQualificationReadResult.Success>(result)
+        assertTrue(result is BlackPearlQualificationReadResult.Success)
+        val success = result as BlackPearlQualificationReadResult.Success
         assertEquals(BlackPearlUsbAudioMode.UAC_2_0, success.snapshot.usbAudioMode)
     }
 
     @Test
-    fun unknownUacDescriptorDoesNotInvalidateOtherwiseCompleteDeviceRead() = runTest {
+    fun unknownUacDescriptorDoesNotInvalidateOtherwiseCompleteDeviceRead() = runBlocking {
         val result = DacControlRepository(FakeSource(null))
             .readBlackPearlQualificationSnapshot()
 
-        val success = assertIs<BlackPearlQualificationReadResult.Success>(result)
+        assertTrue(result is BlackPearlQualificationReadResult.Success)
+        val success = result as BlackPearlQualificationReadResult.Success
         assertNull(success.snapshot.usbAudioMode)
     }
 
