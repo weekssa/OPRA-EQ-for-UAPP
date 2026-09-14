@@ -5,6 +5,7 @@ import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceControlReadCo
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceControls
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceQualificationSnapshot
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlProtocol
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlUsbAudioMode
 import com.weekssa.opraeqforuapp.domain.dac.DacControlId
 import com.weekssa.opraeqforuapp.domain.dac.DacControlValidation
 import com.weekssa.opraeqforuapp.domain.dac.DacControlValue
@@ -23,6 +24,7 @@ interface BlackPearlDeviceControlReadSource {
     suspend fun readLeftBalanceDb(): Int?
     suspend fun readRightBalanceDb(): Int?
     suspend fun readPlaybackGainRaw(): Int?
+    suspend fun readUsbAudioMode(): BlackPearlUsbAudioMode? = null
     suspend fun writeFilterCode(value: Int): Boolean
     suspend fun writeGainModeCode(value: Int): Boolean
     suspend fun writeAmpTopologyCode(value: Int): Boolean
@@ -287,6 +289,11 @@ class DacControlRepository(
             ?: return failedOrChanged(generation, "right balance")
         val playbackGain = read("playback gain", blackPearlSource::readPlaybackGainRaw)
             ?: return failedOrChanged(generation, "playback gain")
+        val usbAudioMode = if (blackPearlSource.isSessionCurrent(generation)) {
+            blackPearlSource.readUsbAudioMode()?.takeIf { blackPearlSource.isSessionCurrent(generation) }
+        } else {
+            null
+        }
 
         if (!blackPearlSource.isSessionCurrent(generation)) {
             return BlackPearlQualificationReadResult.SessionChanged
@@ -302,6 +309,7 @@ class DacControlRepository(
                 leftBalanceDb = leftBalance,
                 rightBalanceDb = rightBalance,
                 playbackGainRaw = playbackGain,
+                usbAudioMode = usbAudioMode,
             ),
         )
     }
@@ -350,6 +358,9 @@ class DacControlRepository(
         if (controlId != BlackPearlDeviceControls.PLAYBACK_GAIN_DB && before.playbackGainRaw != after.playbackGainRaw) {
             add("playback gain")
         }
+        if (before.usbAudioMode != null && after.usbAudioMode != null && before.usbAudioMode != after.usbAudioMode) {
+            add("USB audio mode")
+        }
     }
 
     private fun failedOrChanged(
@@ -389,6 +400,7 @@ class SessionBlackPearlDeviceControlReadSource(
     override suspend fun readLeftBalanceDb(): Int? = sessions.blackPearlTransport.readDeviceLeftBalanceDb()
     override suspend fun readRightBalanceDb(): Int? = sessions.blackPearlTransport.readDeviceRightBalanceDb()
     override suspend fun readPlaybackGainRaw(): Int? = sessions.blackPearlTransport.readGlobalGainRaw()
+    override suspend fun readUsbAudioMode(): BlackPearlUsbAudioMode? = sessions.blackPearlTransport.readUsbAudioMode()
 
     override suspend fun writeFilterCode(value: Int): Boolean =
         sessions.blackPearlTransport.sendReport(BlackPearlDeviceControlReadCodec.filterWriteReport(value))
