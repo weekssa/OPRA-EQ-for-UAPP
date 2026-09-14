@@ -20,6 +20,7 @@ import com.weekssa.opraeqforuapp.data.update.AppUpdateCheckResult
 import com.weekssa.opraeqforuapp.ui.EqLibraryActions
 import com.weekssa.opraeqforuapp.ui.EqLibraryApp
 import com.weekssa.opraeqforuapp.ui.EqLibraryViewModel
+import com.weekssa.opraeqforuapp.ui.UnclaimedEqViewModel
 import com.weekssa.opraeqforuapp.ui.resolve
 import com.weekssa.opraeqforuapp.ui.theme.OpraEqTheme
 import kotlinx.coroutines.Dispatchers
@@ -27,18 +28,22 @@ import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
     private lateinit var viewModel: EqLibraryViewModel
+    private lateinit var unclaimedEqViewModel: UnclaimedEqViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         BackgroundSyncScheduler.ensureScheduled(applicationContext)
 
+        val runtimeDependencies = createEqLibraryRuntimeDependencies(applicationContext)
         viewModel = ViewModelProvider(
             this,
-            EqLibraryViewModel.Factory {
-                createEqLibraryDependencies(applicationContext)
-            },
+            EqLibraryViewModel.Factory { runtimeDependencies.eqLibrary },
         )[EqLibraryViewModel::class.java]
+        unclaimedEqViewModel = ViewModelProvider(
+            this,
+            UnclaimedEqViewModel.Factory { runtimeDependencies.unclaimedEqRepository },
+        )[UnclaimedEqViewModel::class.java]
 
         val initialMyDacOpenDeviceId = if (savedInstanceState == null) {
             intent.supportedAttachedDacDeviceId()
@@ -48,12 +53,16 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
+            val unclaimedEqs = unclaimedEqViewModel.items.collectAsStateWithLifecycle().value
             val actions = remember(viewModel) { createUiActions() }
 
             OpraEqTheme(themeMode = uiState.appPreferences.themeMode) {
                 EqLibraryApp(
                     state = uiState,
                     actions = actions,
+                    unclaimedEqs = unclaimedEqs,
+                    onRecoverUnclaimedEq = unclaimedEqViewModel::recover,
+                    onDeleteUnclaimedEq = unclaimedEqViewModel::delete,
                     initialMyDacOpenDeviceId = initialMyDacOpenDeviceId,
                 )
             }
