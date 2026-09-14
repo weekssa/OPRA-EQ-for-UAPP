@@ -47,7 +47,12 @@ object BlackPearlDeviceControls {
                 minimum = BlackPearlProtocol.rawDeltaToGainDb(BlackPearlProtocol.GLOBAL_GAIN_MIN_RAW),
                 maximum = BlackPearlProtocol.rawDeltaToGainDb(BlackPearlProtocol.GLOBAL_GAIN_MAX_RAW),
             ),
-            step = 1.0 / BlackPearlProtocol.GLOBAL_GAIN_RAW_PER_DB,
+            // The wire field is 1/256 dB, but the first consolidated Pixel 9 / Black Pearl
+            // qualification showed that 0.5 dB normal DEVICE changes did not settle/read back
+            // reliably and a requested half-step was observed as a whole-dB state. Keep the
+            // lower-level raw protocol untouched for the separately qualified EQ/Flash path while
+            // exposing only the physically observed conservative whole-dB DEVICE step.
+            step = 1.0,
         ),
         DacControlDescriptor.Discrete(
             id = DAC_FILTER,
