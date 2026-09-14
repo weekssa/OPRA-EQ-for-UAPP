@@ -34,8 +34,8 @@ import kotlinx.coroutines.launch
  * Black Pearl reset surface for the project-owner selected EQ Library defaults.
  *
  * The sequence intentionally reuses the already-qualified individual DEVICE write path. Each step
- * therefore performs its own fresh complete read, one target write, persistence command and verified
- * readback. A failure stops the remaining DEVICE sequence and is never presented as success.
+ * therefore performs its own fresh complete read, target application when needed, persistence, and
+ * verified readback. A failure stops the remaining DEVICE sequence and is never presented as success.
  *
  * The optional EQ action reuses the separately qualified Reset EQ to flat transaction. It is not
  * folded into or reimplemented by this DEVICE reset.
@@ -93,7 +93,7 @@ internal fun BlackPearlDeviceResetSection(
             eqResetResult = null
             onMessage(
                 buildString {
-                    append("Black Pearl defaults restored: 50% volume, FAST-LL, HIGH gain, CLASS AB, centered balance. Microphone gain was unchanged.")
+                    append("Black Pearl defaults restored: 50% volume, FAST-LL, HIGH gain, CLASS AB, centered balance, 0 dB microphone gain.")
                     if (eqResult != null) append(" EQ reset: $eqResult")
                 },
             )
@@ -102,8 +102,8 @@ internal fun BlackPearlDeviceResetSection(
 
         val step = BlackPearlDeviceDefaults.restoreSteps[resetStepIndex]
         if (issuedStepIndex != resetStepIndex) {
-            // Always issue every restore step once, even when the current value already matches, so
-            // the normal DEVICE path also sends the device persistence command for that target.
+            // Route every restore target through the normal verified DEVICE path once. If a target is
+            // already current, the repository may resolve it as a verified no-op rather than writing it.
             issuedStepIndex = resetStepIndex
             onSetDeviceControl(step.controlId, step.requestedValue)
             return@LaunchedEffect
@@ -122,7 +122,7 @@ internal fun BlackPearlDeviceResetSection(
     HorizontalDivider(modifier = Modifier.padding(top = 16.dp, bottom = 10.dp))
     Text("Reset device", fontWeight = FontWeight.SemiBold)
     Text(
-        text = "Restore EQ Library's Black Pearl defaults. This does not change microphone gain or your saved EQs.",
+        text = "Restore EQ Library's Black Pearl defaults. Your saved EQs are not affected.",
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(top = 4.dp),
@@ -153,7 +153,7 @@ internal fun BlackPearlDeviceResetSection(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        "This restores 50% volume, FAST-LL DAC filter, HIGH gain, CLASS AB amplifier, and centered balance. Microphone gain is unchanged. Listening volume may change.",
+                        "This restores 50% volume, FAST-LL DAC filter, HIGH gain, CLASS AB amplifier, centered balance, and 0 dB microphone gain. Listening volume may change.",
                     )
                     Row(
                         modifier = Modifier
