@@ -121,7 +121,7 @@ internal fun ProfileSelectionEditor(
             .sortedWith(String.CASE_INSENSITIVE_ORDER)
     }
     val scope = rememberCoroutineScope()
-    val selectionContextKey = "${product.id}:${exportTargets.activeTarget.name}"
+    val selectionContextKey = product.id
 
     val databaseLabel = stringResource(R.string.filter_database)
     val creatorLabel = stringResource(R.string.filter_creator)
@@ -218,10 +218,10 @@ internal fun ProfileSelectionEditor(
             baselineSelectedIds = stagedSelectedIds
             baselineAutoInclude = autoInclude
             managedRecord = onLoadManagedHeadphone(product.id)
-            if (stagedSelectedIds.isNotEmpty()) {
-                onExportProduct(product.id)
-            } else {
+            if (stagedSelectedIds.isEmpty()) {
                 onBack()
+            } else {
+                onMessage("Saved to My EQs. Export or Flash when you want to send it somewhere.")
             }
         }
     }
@@ -411,11 +411,8 @@ internal fun ProfileSelectionEditor(
                 modifier = Modifier.weight(1f),
             ) {
                 Text(
-                    if (databaseFilter == null) {
-                        databaseLabel
-                    } else {
-                        stringResource(R.string.filter_selected_format, databaseLabel)
-                    },
+                    if (databaseFilter == null) databaseLabel
+                    else stringResource(R.string.filter_selected_format, databaseLabel),
                 )
             }
             OutlinedButton(
@@ -424,11 +421,8 @@ internal fun ProfileSelectionEditor(
                 modifier = Modifier.weight(1f),
             ) {
                 Text(
-                    if (creatorFilter == null) {
-                        creatorLabel
-                    } else {
-                        stringResource(R.string.filter_selected_format, creatorLabel)
-                    },
+                    if (creatorFilter == null) creatorLabel
+                    else stringResource(R.string.filter_selected_format, creatorLabel),
                 )
             }
             OutlinedButton(
@@ -437,11 +431,8 @@ internal fun ProfileSelectionEditor(
                 modifier = Modifier.weight(1f),
             ) {
                 Text(
-                    if (targetFilter == null) {
-                        targetLabel
-                    } else {
-                        stringResource(R.string.filter_selected_format, targetLabel)
-                    },
+                    if (targetFilter == null) targetLabel
+                    else stringResource(R.string.filter_selected_format, targetLabel),
                 )
             }
         }
@@ -485,11 +476,7 @@ internal fun ProfileSelectionEditor(
                     stringResource(
                         R.string.history_count_with_selected,
                         historicalProfileCount,
-                        pluralStringResource(
-                            R.plurals.selected_count,
-                            selectedHistoricalCount,
-                            selectedHistoricalCount,
-                        ),
+                        pluralStringResource(R.plurals.selected_count, selectedHistoricalCount, selectedHistoricalCount),
                     )
                 } else {
                     stringResource(R.string.history_count, historicalProfileCount)
@@ -504,21 +491,12 @@ internal fun ProfileSelectionEditor(
                 .padding(horizontal = 16.dp, vertical = 0.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            TextButton(
-                onClick = {
-                    stagedSelectedIds = stagedSelectedIds +
-                        selectableProfileIds(visibleProfiles, includeHistorical = true)
-                },
-            ) {
-                Text(stringResource(R.string.action_select_all))
-            }
-            TextButton(
-                onClick = {
-                    stagedSelectedIds = stagedSelectedIds - visibleProfiles.map(OpraEqProfile::id).toSet()
-                },
-            ) {
-                Text(stringResource(R.string.action_select_none))
-            }
+            TextButton(onClick = {
+                stagedSelectedIds = stagedSelectedIds + selectableProfileIds(visibleProfiles, includeHistorical = true)
+            }) { Text(stringResource(R.string.action_select_all)) }
+            TextButton(onClick = {
+                stagedSelectedIds = stagedSelectedIds - visibleProfiles.map(OpraEqProfile::id).toSet()
+            }) { Text(stringResource(R.string.action_select_none)) }
         }
 
         Text(
@@ -529,11 +507,7 @@ internal fun ProfileSelectionEditor(
         )
         if (filteredOutCount > 0) {
             Text(
-                text = pluralStringResource(
-                    R.plurals.profiles_hidden_by_filters,
-                    filteredOutCount,
-                    filteredOutCount,
-                ),
+                text = pluralStringResource(R.plurals.profiles_hidden_by_filters, filteredOutCount, filteredOutCount),
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -580,29 +554,19 @@ internal fun ProfileSelectionEditor(
                     outputStatus = statusText,
                     outputStatusCategory = outputStatus,
                     onSelectionChange = { selected ->
-                        stagedSelectedIds = if (selected) {
-                            stagedSelectedIds + profile.id
-                        } else {
-                            stagedSelectedIds - profile.id
-                        }
+                        stagedSelectedIds = if (selected) stagedSelectedIds + profile.id else stagedSelectedIds - profile.id
                     },
                     onToggleFavorite = onToggleFavorite?.let { toggle ->
                         {
                             scope.launch {
-                                val favorited = toggle(
-                                    profile,
-                                    vendor?.name ?: unknownManufacturer,
-                                    product.name,
-                                )
+                                val favorited = toggle(profile, vendor?.name ?: unknownManufacturer, product.name)
                                 onMessage(if (favorited) favoriteSavedMessage else favoriteRemovedMessage)
                             }
                         }
                     },
                     onHide = {
                         scope.launch {
-                            if (profile.id !in baselineSelectedIds) {
-                                stagedSelectedIds = stagedSelectedIds - profile.id
-                            }
+                            if (profile.id !in baselineSelectedIds) stagedSelectedIds = stagedSelectedIds - profile.id
                             onHideCanonicalProfile(profile.canonicalProfileId)
                             onMessage(eqHiddenMessage)
                         }
@@ -613,9 +577,7 @@ internal fun ProfileSelectionEditor(
                     },
                     onFlashHardware = if (hardwareFlashReady && connectedHardwareFlashDevice != null) {
                         { pendingHardwareFlash = connectedHardwareFlashDevice to profile }
-                    } else {
-                        null
-                    },
+                    } else null,
                 )
                 HorizontalDivider()
             }
@@ -629,11 +591,8 @@ internal fun ProfileSelectionEditor(
                 .padding(horizontal = 16.dp, vertical = 6.dp),
         ) {
             Text(
-                if (managedRecord == null) {
-                    stringResource(R.string.add_to_my_eqs_count, stagedSelectedIds.size)
-                } else {
-                    stringResource(R.string.save_changes_count, stagedSelectedIds.size)
-                },
+                if (managedRecord == null) stringResource(R.string.add_to_my_eqs_count, stagedSelectedIds.size)
+                else stringResource(R.string.save_changes_count, stagedSelectedIds.size),
             )
         }
     }
@@ -654,38 +613,18 @@ private fun ProfileFilterDialog(
         title = { Text(stringResource(R.string.filter_by_format, dimensionLabel.lowercase())) },
         text = {
             Column {
-                TextButton(
-                    onClick = { onSelect(null) },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(
-                        if (selected == null) {
-                            stringResource(R.string.filter_selected_format, allLabel)
-                        } else {
-                            allLabel
-                        },
-                    )
+                TextButton(onClick = { onSelect(null) }, modifier = Modifier.fillMaxWidth()) {
+                    Text(if (selected == null) stringResource(R.string.filter_selected_format, allLabel) else allLabel)
                 }
                 options.forEach { option ->
-                    TextButton(
-                        onClick = { onSelect(option) },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(
-                            if (selected == option) {
-                                stringResource(R.string.filter_selected_format, option)
-                            } else {
-                                option
-                            },
-                        )
+                    TextButton(onClick = { onSelect(option) }, modifier = Modifier.fillMaxWidth()) {
+                        Text(if (selected == option) stringResource(R.string.filter_selected_format, option) else option)
                     }
                 }
             }
         },
         confirmButton = {},
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
-        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
 
@@ -707,28 +646,18 @@ internal fun ProfileSelectionRow(
     val selectable = compatibility.category.isSelectable
     val displayDetails = profile.displayDetails()
     val rowModifier = if (selectable) {
-        Modifier
-            .fillMaxWidth()
-            .heightIn(min = 56.dp)
-            .toggleable(
-                value = selected,
-                role = Role.Checkbox,
-                onValueChange = onSelectionChange,
-            )
+        Modifier.fillMaxWidth().heightIn(min = 56.dp).toggleable(
+            value = selected,
+            role = Role.Checkbox,
+            onValueChange = onSelectionChange,
+        )
     } else {
-        Modifier
-            .fillMaxWidth()
-            .heightIn(min = 56.dp)
-            .clickable(onClick = onExplainSourceProblem)
+        Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable(onClick = onExplainSourceProblem)
     }
 
     ListItem(
         leadingContent = {
-            Checkbox(
-                checked = selected && selectable,
-                onCheckedChange = null,
-                enabled = selectable,
-            )
+            Checkbox(checked = selected && selectable, onCheckedChange = null, enabled = selectable)
         },
         headlineContent = {
             Text(
@@ -765,17 +694,9 @@ internal fun ProfileSelectionRow(
                     )
                 }
                 displayDetails.soundImpact?.let {
-                    Text(
-                        text = it,
-                        modifier = Modifier.padding(top = 4.dp),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
+                    Text(text = it, modifier = Modifier.padding(top = 4.dp), style = MaterialTheme.typography.bodyMedium)
                 }
-                onOpenSource?.let { openSource ->
-                    TextButton(onClick = openSource) {
-                        Text(stringResource(R.string.action_source))
-                    }
-                }
+                onOpenSource?.let { openSource -> TextButton(onClick = openSource) { Text(stringResource(R.string.action_source)) } }
                 if (compatibility.category == ProfileCompatibility.NotCompatible) {
                     Text(
                         text = stringResource(R.string.source_data_unavailable_for_selection),
@@ -789,9 +710,7 @@ internal fun ProfileSelectionRow(
         },
         trailingContent = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                onFlashHardware?.let { flash ->
-                    TextButton(onClick = flash) { Text("Flash") }
-                }
+                onFlashHardware?.let { flash -> TextButton(onClick = flash) { Text("Flash") } }
                 IconButton(onClick = onHide) {
                     Icon(
                         Icons.Outlined.VisibilityOff,
@@ -803,11 +722,8 @@ internal fun ProfileSelectionRow(
                         Icon(
                             imageVector = if (isFavorite) Icons.Outlined.Star else Icons.Outlined.StarBorder,
                             contentDescription = stringResource(
-                                if (isFavorite) {
-                                    R.string.remove_favorite_content_description
-                                } else {
-                                    R.string.add_favorite_content_description
-                                },
+                                if (isFavorite) R.string.remove_favorite_content_description
+                                else R.string.add_favorite_content_description,
                             ),
                         )
                     }
@@ -833,10 +749,7 @@ private fun outputStatusLabel(status: DeviceExportability, device: ExportDevice)
 
 private fun outputShortName(device: ExportDevice): String = device.displayName
 
-private data class ProfileDisplayDetails(
-    val metadata: String?,
-    val soundImpact: String?,
-)
+private data class ProfileDisplayDetails(val metadata: String?, val soundImpact: String?)
 
 private fun OpraEqProfile.displayDetails(): ProfileDisplayDetails {
     val parts = details
@@ -845,10 +758,7 @@ private fun OpraEqProfile.displayDetails(): ProfileDisplayDetails {
         ?.filter(String::isNotEmpty)
         .orEmpty()
     val soundImpact = parts.lastOrNull(::isSoundImpactText)
-    val metadata = parts
-        .filterNot { it == soundImpact }
-        .joinToString(" · ")
-        .takeIf(String::isNotBlank)
+    val metadata = parts.filterNot { it == soundImpact }.joinToString(" · ").takeIf(String::isNotBlank)
     return ProfileDisplayDetails(metadata = metadata, soundImpact = soundImpact)
 }
 
