@@ -6,6 +6,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Upsert
+import kotlinx.coroutines.flow.Flow
 
 @Entity(
     tableName = "export_ownership",
@@ -30,6 +31,12 @@ data class ExportOwnershipEntity(
 
 @Dao
 interface ExportOwnershipDao {
+    @Query("SELECT * FROM export_ownership ORDER BY exportedAtMillis DESC, documentUri")
+    fun observeAll(): Flow<List<ExportOwnershipEntity>>
+
+    @Query("SELECT * FROM export_ownership ORDER BY exportedAtMillis DESC, documentUri")
+    suspend fun getAll(): List<ExportOwnershipEntity>
+
     @Query("SELECT * FROM export_ownership WHERE documentUri = :documentUri")
     suspend fun getByDocumentUri(documentUri: String): ExportOwnershipEntity?
 
