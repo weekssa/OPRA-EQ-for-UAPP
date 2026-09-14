@@ -177,10 +177,30 @@ class DacControlRepository(
                 )
             }
 
-            // Black Pearl normal controls are volatile until the device's established save command
-            // is issued. Persist exactly once after the requested target write and before declaring
-            // success. This is not a write retry: a failed save is surfaced as failure and the app
-            // requires a fresh read before another user-requested attempt.
+            // Verify that the one requested target write has actually taken effect before saving it.
+            // This is especially important for controls whose live readback settles asynchronously:
+            // we never persist a value merely because the USB transfer itself returned success.
+            val liveVerification = verifyBlackPearlReadbackAfterWrite(
+                intent = intent,
+                baseline = baseline,
+                generation = generation,
+                allowSettling = true,
+            )
+            if (liveVerification !is BlackPearlDeviceControlWriteResult.Verified) {
+                return@withExclusiveOperation liveVerification
+            }
+            if (!blackPearlSource.isSessionCurrent(generation)) {
+                return@withExclusiveOperation BlackPearlDeviceControlWriteResult.StaleBaseline(
+                    intent.controlId,
+                    intent.expectedSessionGeneration,
+                    blackPearlSource.sessionGeneration,
+                )
+            }
+
+            // Black Pearl normal controls are volatile until the established device save command is
+            // issued. Persist exactly once only after the requested state has been verified live.
+            // This is not a write retry: a failed save is surfaced as failure and requires a fresh
+            // read before another user-requested attempt.
             if (!blackPearlSource.persistDeviceSettings()) {
                 return@withExclusiveOperation if (blackPearlSource.isSessionCurrent(generation)) {
                     BlackPearlDeviceControlWriteResult.TransferFailed(intent.controlId)
@@ -200,27 +220,31 @@ class DacControlRepository(
                 )
             }
 
+            // The save command has its own transport settle period. Read the complete state one more
+            // time and require the target plus every unrelated field to remain correct after saving.
             verifyBlackPearlReadbackAfterWrite(
                 intent = intent,
                 baseline = baseline,
                 generation = generation,
+                allowSettling = false,
             )
         }
 
     /**
-     * DAC-filter behavior is already physically qualified and retains its original immediate single
-     * complete readback. The still-unqualified normal DEVICE controls are allowed a bounded
-     * same-session settling window because the first consolidated physical candidate showed that
-     * amplifier/output state can become visible only after the immediate readback. Settling is
-     * read-only: the requested hardware write is never resent, and a session replacement, read
-     * failure, unrelated-state mutation, or final mismatch remains a visible failure.
+     * DAC-filter behavior uses one complete readback. Other normal DEVICE controls may use a bounded
+     * same-session settling window because physical testing showed that amplifier/output state can
+     * become visible only after the immediate readback. Settling is read-only: the requested hardware
+     * write is never resent, and a session replacement, read failure, unrelated-state mutation, or
+     * final mismatch remains a visible failure. Post-persistence verification disables settling and
+     * performs one complete fresh read after the save command's transport settle period.
      */
     private suspend fun verifyBlackPearlReadbackAfterWrite(
         intent: DacWriteIntent,
         baseline: BlackPearlDeviceQualificationSnapshot,
         generation: Long,
+        allowSettling: Boolean,
     ): BlackPearlDeviceControlWriteResult {
-        val settlingControl = intent.controlId != BlackPearlDeviceControls.DAC_FILTER
+        val settlingControl = allowSettling && intent.controlId != BlackPearlDeviceControls.DAC_FILTER
         val attempts = if (settlingControl) CANDIDATE_READBACK_ATTEMPTS else 1
         if (settlingControl) {
             delay(CANDIDATE_INITIAL_SETTLE_MILLIS)
