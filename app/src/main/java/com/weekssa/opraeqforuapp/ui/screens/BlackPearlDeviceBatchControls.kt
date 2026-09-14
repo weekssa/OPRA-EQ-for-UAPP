@@ -1,13 +1,11 @@
 package com.weekssa.opraeqforuapp.ui.screens
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
@@ -31,6 +29,8 @@ import com.weekssa.opraeqforuapp.domain.dac.DacControlId
 import com.weekssa.opraeqforuapp.domain.dac.DacControlValue
 import com.weekssa.opraeqforuapp.domain.dac.DacDiscreteOption
 import com.weekssa.opraeqforuapp.ui.BlackPearlQualificationUiState
+import com.weekssa.opraeqforuapp.ui.components.PremiumSectionLabel
+import com.weekssa.opraeqforuapp.ui.components.PremiumValueRow
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.round
@@ -86,7 +86,6 @@ internal fun BlackPearlDeviceBatchControlPanel(
             },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 12.dp),
         )
         return
     }
@@ -154,20 +153,17 @@ internal fun BlackPearlDeviceBatchControlPanel(
             text = "This USB session did not report a mode EQ Library could verify.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 2.dp),
         )
     }
     Text(
         text = "UAC 1.0: unplug the Black Pearl, leave headphones connected, hold + and −, reconnect USB, then release after it powers on.",
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(top = 4.dp),
     )
     Text(
         text = "UAC 2.0: reconnect normally without holding the buttons. EQ Library detects the active mode after reconnection.",
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(top = 2.dp),
     )
 
     val discreteControl = choosingDiscreteControl?.let(::DacControlId)
@@ -374,8 +370,10 @@ internal fun BlackPearlDeviceBatchControlPanel(
 
 @Composable
 private fun DeviceSettingsSection(title: String) {
-    HorizontalDivider(modifier = Modifier.padding(top = 14.dp, bottom = 10.dp))
-    Text(title, fontWeight = FontWeight.SemiBold)
+    PremiumSectionLabel(
+        text = title,
+        modifier = Modifier.padding(top = 16.dp),
+    )
 }
 
 @Composable
@@ -385,43 +383,21 @@ private fun DeviceSettingRow(
     enabled: Boolean,
     onClick: () -> Unit,
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(enabled = enabled, onClick = onClick)
-            .padding(vertical = 10.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(label, style = MaterialTheme.typography.labelLarge)
-            Text(
-                value,
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        if (enabled) {
-            Text(
-                text = "›",
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(start = 12.dp),
-            )
-        }
-    }
+    PremiumValueRow(
+        title = label,
+        value = value,
+        enabled = enabled,
+        showDisclosure = enabled,
+        onClick = if (enabled) onClick else null,
+    )
 }
 
 @Composable
 private fun ReadOnlySettingRow(label: String, value: String) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-    ) {
-        Text(label, style = MaterialTheme.typography.labelLarge)
-        Text(value, style = MaterialTheme.typography.bodyMedium)
-    }
+    PremiumValueRow(
+        title = label,
+        value = value,
+    )
 }
 
 @Composable
