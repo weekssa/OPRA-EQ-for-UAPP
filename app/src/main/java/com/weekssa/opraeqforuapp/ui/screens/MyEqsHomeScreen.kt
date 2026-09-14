@@ -12,7 +12,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.ExpandLess
+import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.FileUpload
+import androidx.compose.material.icons.outlined.Restore
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -31,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -51,7 +55,10 @@ import com.weekssa.opraeqforuapp.domain.kt02h20.adaptationSummary
 import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
 import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
+import com.weekssa.opraeqforuapp.domain.library.UnclaimedEqParseState
+import com.weekssa.opraeqforuapp.domain.library.UnclaimedEqRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
+import com.weekssa.opraeqforuapp.ui.LocalUnclaimedEqUiFeature
 import java.util.Locale
 import kotlinx.coroutines.launch
 
@@ -118,9 +125,14 @@ fun MyEqsHomeScreen(
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
+    val unclaimedFeature = LocalUnclaimedEqUiFeature.current
+    val unclaimedEqs = unclaimedFeature.items
     var importOpen by remember { mutableStateOf(false) }
     var pendingFlash by remember { mutableStateOf<PendingHardwareFlash?>(null) }
     var pendingResetDevice by remember { mutableStateOf<ExportDevice?>(null) }
+    var pendingRecovery by remember { mutableStateOf<UnclaimedEqRecord?>(null) }
+    var pendingUnclaimedDelete by remember { mutableStateOf<UnclaimedEqRecord?>(null) }
+    var unclaimedExpanded by rememberSaveable { mutableStateOf(false) }
     val selectedHeadphoneCount = managedHeadphones.sumOf(ManagedHeadphoneRecord::selectedProfileCount)
     val headphoneSavedEqs = remember(savedEqs) { savedEqs.toList() }
     val hardwareFlashOutput = activeOutput in HARDWARE_FLASH_OUTPUTS
@@ -138,15 +150,64 @@ fun MyEqsHomeScreen(
         PersonalEqImportScreen(
             onBack = { importOpen = false },
             onSave = onImportPersonal,
-            onSaved = { record ->
+            onSaved = {
                 importOpen = false
                 onMessage("Personal EQ saved to My EQs.")
-                onExportSavedEq(record.entryId)
             },
             onMessage = onMessage,
             modifier = modifier,
         )
         return
+    }
+
+    pendingRecovery?.let { record ->
+        UnclaimedRecoveryDialog(
+            record = record,
+            onDismiss = { pendingRecovery = null },
+            onRecover = { manufacturer, model, displayName ->
+                scope.launch {
+                    runCatching {
+                        unclaimedFeature.onRecover(record.documentUri, manufacturer, model, displayName)
+                    }.onSuccess {
+                        pendingRecovery = null
+                        onMessage("Recovered as a Personal EQ in My EQs.")
+                    }.onFailure { error ->
+                        onMessage(error.message ?: "This EQ could not be recovered safely.")
+                    }
+                }
+            },
+        )
+    }
+
+    pendingUnclaimedDelete?.let { record ->
+        AlertDialog(
+            onDismissRequest = { pendingUnclaimedDelete = null },
+            title = { Text("Delete managed EQ file?") },
+            text = {
+                Text(
+                    "This deletes ${record.originalFileName} and its EQ Library ownership record. " +
+                        "No other files are touched.",
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        scope.launch {
+                            val deleted = unclaimedFeature.onDelete(record.documentUri)
+                            if (deleted) {
+                                pendingUnclaimedDelete = null
+                                onMessage("Unclaimed EQ deleted.")
+                            } else {
+                                onMessage("EQ Library could not access or delete that managed file. Nothing was removed.")
+                            }
+                        }
+                    },
+                ) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingUnclaimedDelete = null }) { Text("Cancel") }
+            },
+        )
     }
 
     pendingFlash?.let { pending ->
@@ -244,8 +305,6 @@ fun MyEqsHomeScreen(
                         Icon(Icons.Outlined.FileUpload, contentDescription = null)
                         Text("Export all", modifier = Modifier.padding(start = 6.dp))
                     }
-                }
-                if (exportCurrentness.hasPendingExport) {
                     Text(
                         text = exportStatusText(exportCurrentness),
                         modifier = Modifier.padding(top = 8.dp),
@@ -254,7 +313,10 @@ fun MyEqsHomeScreen(
                     )
                 }
                 Text(
-                    text = "$selectedHeadphoneCount headphone EQs · ${savedGeneralEqs.size} General EQs",
+                    text = buildString {
+                        append("$selectedHeadphoneCount headphone EQs · ${savedGeneralEqs.size} General EQs")
+                        if (unclaimedEqs.isNotEmpty()) append(" · ${unclaimedEqs.size} need attention")
+                    },
                     modifier = Modifier.padding(top = 2.dp),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -268,7 +330,7 @@ fun MyEqsHomeScreen(
         }
         if (managedHeadphones.isEmpty() && headphoneSavedEqs.isEmpty()) {
             item(key = "headphones-empty") {
-                EmptyMessage("No headphone EQs saved for this output yet. Add them from EQ Library.")
+                EmptyMessage("No headphone EQs saved yet. Add them from EQ Library.")
             }
         } else {
             managedHeadphones
@@ -394,7 +456,7 @@ fun MyEqsHomeScreen(
         }
         if (savedGeneralEqs.isEmpty()) {
             item(key = "general-empty") {
-                EmptyMessage("No General EQs saved for this output yet. Add them from EQ Library → General EQs.")
+                EmptyMessage("No General EQs saved yet. Add them from EQ Library → General EQs.")
             }
         } else {
             items(savedGeneralEqs, key = { "general:${it.presetId}" }) { record ->
@@ -433,7 +495,7 @@ fun MyEqsHomeScreen(
                                 onClick = {
                                     scope.launch {
                                         onRemoveGeneralEq(record.presetId)
-                                        onMessage("${record.displayName} removed from this output. Existing exported files were kept.")
+                                        onMessage("${record.displayName} removed from My EQs. Existing exported files were kept.")
                                     }
                                 },
                             ) {
@@ -445,8 +507,142 @@ fun MyEqsHomeScreen(
                 HorizontalDivider()
             }
         }
+
+        if (unclaimedEqs.isNotEmpty()) {
+            item(key = "unclaimed-heading") {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { unclaimedExpanded = !unclaimedExpanded }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Needs attention (${unclaimedEqs.size})", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            "App-managed EQ files that no longer match a current My EQs item.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Icon(
+                        imageVector = if (unclaimedExpanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
+                        contentDescription = if (unclaimedExpanded) "Collapse Needs attention" else "Expand Needs attention",
+                    )
+                }
+                HorizontalDivider()
+            }
+            if (unclaimedExpanded) {
+                items(unclaimedEqs, key = { "unclaimed:${it.documentUri}" }) { record ->
+                    ListItem(
+                        headlineContent = { Text(record.originalFileName) },
+                        supportingContent = {
+                            Column {
+                                Text(unclaimedSummary(record))
+                                Text(
+                                    record.reason,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                if (record.relativeDirectory.isNotBlank()) {
+                                    Text(
+                                        "Previous app path: ${record.relativeDirectory}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                        },
+                        trailingContent = {
+                            Row {
+                                IconButton(
+                                    enabled = record.isRecoverable,
+                                    onClick = { pendingRecovery = record },
+                                ) {
+                                    Icon(
+                                        Icons.Outlined.Restore,
+                                        contentDescription = "Add ${record.originalFileName} to Personal EQs",
+                                    )
+                                }
+                                IconButton(onClick = { pendingUnclaimedDelete = record }) {
+                                    Icon(Icons.Outlined.Delete, contentDescription = "Delete ${record.originalFileName}")
+                                }
+                            }
+                        },
+                    )
+                    HorizontalDivider()
+                }
+            }
+        }
     }
 }
+
+@Composable
+private fun UnclaimedRecoveryDialog(
+    record: UnclaimedEqRecord,
+    onDismiss: () -> Unit,
+    onRecover: (manufacturer: String, model: String, displayName: String) -> Unit,
+) {
+    var manufacturer by remember(record.documentUri) { mutableStateOf("") }
+    var model by remember(record.documentUri) { mutableStateOf("") }
+    var displayName by remember(record.documentUri) {
+        mutableStateOf(
+            record.parsedContent?.suggestedName
+                ?: record.originalFileName.substringBeforeLast('.').ifBlank { "Recovered EQ" },
+        )
+    }
+    val canRecover = manufacturer.isNotBlank() && model.isNotBlank() && displayName.isNotBlank()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add to Personal EQs") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    "EQ Library can recover the parsed EQ values from ${record.originalFileName}. " +
+                        "Confirm the headphone association and name; no filter values will be changed.",
+                )
+                OutlinedTextField(
+                    value = manufacturer,
+                    onValueChange = { manufacturer = it },
+                    label = { Text("Manufacturer") },
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    value = model,
+                    onValueChange = { model = it },
+                    label = { Text("Model") },
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    value = displayName,
+                    onValueChange = { displayName = it },
+                    label = { Text("EQ name") },
+                    singleLine = true,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = canRecover,
+                onClick = { onRecover(manufacturer, model, displayName) },
+            ) { Text("Add to Personal EQs") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}
+
+private fun unclaimedSummary(record: UnclaimedEqRecord): String = buildList {
+    add(record.format.label)
+    record.parsedContent?.preampGainDb?.let { preamp -> add("Preamp ${String.format(Locale.US, "%+.2f dB", preamp)}") }
+    record.parsedContent?.bands?.let { bands -> add("${bands.size} ${if (bands.size == 1) "band" else "bands"}") }
+    when (record.parseState) {
+        UnclaimedEqParseState.RECOVERABLE -> add("Recoverable")
+        UnclaimedEqParseState.INVALID -> add("Incomplete or malformed")
+        UnclaimedEqParseState.UNSUPPORTED -> add("Recovery unsupported")
+        UnclaimedEqParseState.ACCESS_UNAVAILABLE -> add("File access unavailable")
+    }
+    record.parseMessage?.takeIf(String::isNotBlank)?.let(::add)
+}.joinToString(" · ")
 
 private fun hardwareFlashPreview(profile: OpraEqProfile, device: ExportDevice): HardwareFlashPreview? = when (device) {
     ExportDevice.BLACK_PEARL -> when (val plan = buildBlackPearlFlashPlan(profile, activeSlot = 0x00)) {
