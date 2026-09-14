@@ -1,6 +1,6 @@
 # EQ Library mobile test builds
 
-Latest signed beta generated from commit f32b9c3a81f77a8650f1b6f730e4a4c9171310ad for app version 0.6.0.
+Latest signed beta generated from commit da3d44b8eda89f160431af1aefaf90310f9d2247 for app version 0.6.0.
 
 Latest convenience APK (moves as the development branch advances):
 https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/EQ-Library-mobile-test.apk
@@ -9,7 +9,7 @@ Latest version convenience APK (also moves while version 0.6.0 is under developm
 https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/EQ-Library-v0.6.0-mobile-test.apk
 
 Exact immutable candidate for this commit:
-https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.6.0-beta-f32b9c3.apk
+https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.6.0-beta-da3d44b.apk
 
 Pinned v0.6 Black Pearl read-only qualification candidate:
 https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.6.0-beta-d3d227d.apk
