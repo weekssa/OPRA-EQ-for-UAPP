@@ -3,11 +3,9 @@ package com.weekssa.opraeqforuapp.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -15,7 +13,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
@@ -36,6 +33,7 @@ import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.ui.BlackPearlQualificationUiState
 import com.weekssa.opraeqforuapp.ui.FiioJa11DeviceUiState
 import com.weekssa.opraeqforuapp.ui.MyDacEditorUiState
+import com.weekssa.opraeqforuapp.ui.components.PremiumValueRow
 
 /**
  * Current product My DAC router. Only active supported product identities can enter this surface.
@@ -101,27 +99,29 @@ fun MyDacRootScreen(
         Column(
             modifier = modifier
                 .fillMaxSize()
-                .padding(horizontal = 24.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text("Choose connected DAC", fontWeight = FontWeight.SemiBold)
             Text(
-                "More than one supported DAC has been recognized in this app session. Choose the physical device you want My DAC to manage.",
+                text = "Choose connected DAC",
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Text(
+                text = "More than one supported DAC is available. Choose the one you want My DAC to manage.",
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             recognized.sortedBy(DacDeviceId::ordinal).forEach { deviceId ->
-                TextButton(
+                PremiumValueRow(
+                    title = when (deviceId) {
+                        DacDeviceId.TRN_BLACK_PEARL -> "TRN Black Pearl"
+                        DacDeviceId.FIIO_JA11 -> "FiiO JA11"
+                        DacDeviceId.JCALLY_JM12_STOCK -> "Unsupported device"
+                    },
+                    supportingText = "Manage this DAC",
+                    showDisclosure = true,
                     onClick = { selectedName = deviceId.name },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(
-                        when (deviceId) {
-                            DacDeviceId.TRN_BLACK_PEARL -> "TRN Black Pearl"
-                            DacDeviceId.FIIO_JA11 -> "FiiO JA11"
-                            DacDeviceId.JCALLY_JM12_STOCK -> "Unsupported device"
-                        },
-                    )
-                }
+                )
             }
         }
         return

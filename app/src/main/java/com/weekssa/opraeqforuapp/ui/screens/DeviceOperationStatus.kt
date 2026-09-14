@@ -45,11 +45,11 @@ internal fun deviceOperationStatusPresentation(
             heading = "Applying ${controlName(pendingVerificationControlId)}…",
             pendingMessage = "Reconnect the DAC so EQ Library can verify the change.",
         )
-        isReading -> DeviceOperationStatusPresentation(heading = "Reading device settings…")
+        isReading -> DeviceOperationStatusPresentation(heading = "Refreshing device…")
         isCurrentSession -> DeviceOperationStatusPresentation(heading = "Current device state")
         hasSnapshot -> DeviceOperationStatusPresentation(
             heading = "Last read",
-            staleMessage = "Reconnect or refresh to make these values current.",
+            staleMessage = "Reconnect or refresh to update these values.",
         )
         else -> DeviceOperationStatusPresentation(heading = "Device settings")
     }
@@ -107,8 +107,15 @@ internal fun DeviceOperationStatusHeader(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(presentation.heading, fontWeight = FontWeight.SemiBold)
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = presentation.heading,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
             presentation.staleMessage?.let { message ->
                 Text(
                     text = message,
@@ -118,7 +125,7 @@ internal fun DeviceOperationStatusHeader(
             }
         }
         TextButton(onClick = onRefresh, enabled = enabled && !busy) {
-            Text(if (isReading) "Reading…" else "Refresh")
+            Text(if (isReading) "Refreshing…" else "Refresh")
         }
     }
 
