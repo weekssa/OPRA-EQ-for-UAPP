@@ -82,6 +82,7 @@ class EqLibraryActions(
     val onThemeModeChange: (ThemeMode) -> Unit,
     val onOutputBehaviorChange: (OutputBehavior) -> Unit,
     val onExportTargetChange: (ExportDevice, Boolean) -> Unit,
+    val onSessionActiveExportTargetChange: (ExportDevice) -> Unit,
     val onActiveExportTargetChange: (ExportDevice) -> Unit,
     val onDirectBlackPearlFlashEnabledChange: (Boolean) -> Unit,
     val onDirectFiioJa11FlashEnabledChange: (Boolean) -> Unit,
