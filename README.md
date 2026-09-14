@@ -23,6 +23,23 @@ The public v0.5.0 APK is `EQ-Library-v0.5.0.apk`. Its SHA-256 is:
 
 Android may ask you to allow installation from the browser or file manager used to open the APK because GitHub Releases are installed outside an app store. EQ Library itself does not request package-install permission and never silently installs updates.
 
+## v0.6 development preview
+
+The current `v0.6-my-dac` development branch is expanding EQ Library with **My DAC** while preserving the source-independent library model. It is not the public release yet.
+
+The approved v0.6 direction includes:
+
+- one app-wide supported-DAC session shared by My EQs, My DAC, and EQ Library;
+- automatic fresh EQ + supported DEVICE reads after connection/reconnection and after verified hardware changes;
+- Flash from the EQ's existing My EQs / EQ Library surface rather than a duplicate My DAC chooser;
+- one concise DEVICE settings surface with current verified values and direct row-level editing;
+- a single **device-agnostic My EQs** library whose saved headphones/EQs do not change when the output target changes;
+- Save/Add separated from **Export** and **Flash**—saving changes local library state only;
+- persistent **Needs attention** recovery for exact app-owned preset artifacts that can no longer be confidently associated with a current My EQ item;
+- conservative recovery into Personal EQs without scanning or deleting arbitrary external files.
+
+TRN Black Pearl automatic physical reattach has passed the maintained focused Pixel 9 test on its exact signed evidence candidate. FiiO/JadeAudio JA11 physical qualification remains pending. See the v0.6 status/checklist documents for exact evidence categories and release gates.
+
 ## What you can do
 
 ### Find and organize EQs
@@ -30,7 +47,7 @@ Android may ask you to allow installation from the browser or file manager used 
 - Browse headphone EQs by **Manufacturer → Model**, with deeper identity only when a source genuinely verifies it.
 - Search the canonical library without hiding valid curves merely because the active output cannot represent them.
 - Browse standalone **General EQs** in Sound, Genre, and Utility groups when the source itself supports that classification.
-- Keep separate **My EQs** collections for each output.
+- Keep one local **My EQs** collection independent of the current output target on the v0.6 development branch.
 - Favorite saved EQs and locally Hide/Unhide canonical EQ lineages without deleting source history.
 - Review new or changed EQs explicitly. **Notify me about new EQs** is attention-only and never silently selects a profile.
 - Import personal Equalizer APO / AutoEq-style parametric text from paste or Android file selection.
@@ -45,9 +62,9 @@ EQ Library supports multiple output contexts from one canonical source represent
 | **Apps** | USB Audio Player PRO / ToneBoosters, Poweramp / Poweramp Equalizer, Wavelet, TOPPING Tune, EasyEffects, Equalizer APO |
 | **Universal formats** | AutoEq / Equalizer APO Parametric, AutoEq GraphicEQ |
 
-The active output is an **operating context**, not a catalog filter. Switching outputs changes My EQs membership, conversion/fidelity, export behavior, and hardware controls without hiding otherwise valid canonical EQs.
+The active output is an **operating/action context**, not a catalog or My EQs ownership filter. Switching outputs changes target compatibility, conversion/fidelity, export behavior, and hardware actions without hiding otherwise valid canonical EQs or changing which EQs the user saved.
 
-For file-capable outputs, **Add/Save performs the initial export** once a Storage Access Framework folder is available. Normal Export / Export all actions are recovery tools and stay out of the way while app-managed files are current.
+On the v0.6 development branch, **Save/Add changes local My EQs state only**. File export is an explicit Export action and hardware writes are explicit Flash actions. This prevents selecting a target from silently becoming a library-membership or storage operation.
 
 Exports use Android's system folder picker. EQ Library does not request broad storage access, does not write into another app's private storage, and manages only files it can prove it created.
 
@@ -59,7 +76,7 @@ Exports use Android's system folder picker. EQ Library does not request broad st
 | **FiiO JA11** | Hardware-only 5-band Direct Flash, global EQ gain, Apply/Save/readback, Reset EQ to flat | **Hardware validation pending** |
 | **JCALLY JM12 (stock firmware)** | Hardware-only 5-band Direct Flash, readback verification, tracked playback-gain adjustment, Reset EQ to flat | **Hardware validation pending · power-cycle persistence unclaimed** |
 
-Direct Flash is OFF by default for newly introduced hardware outputs. Add/Save never automatically writes to a DAC. Flash and Reset require explicit confirmation.
+Direct Flash is OFF by default for newly introduced hardware outputs. Add/Save never automatically writes to a DAC. Flash and Reset require explicit confirmation where the maintained device safety contract requires it.
 
 EQ Library does **not** include firmware update, bootloader, cross-flash, or unrelated DAC-management commands in v0.5.0.
 
@@ -79,6 +96,8 @@ v0.5.0 includes implemented Direct Flash paths for FiiO JA11 on normal FiiO firm
 
 The physical devices were not available for the required Pixel 9 hands-on qualification before v0.5.0 publication, so both remain visibly **Hardware validation pending**. Stock JM12 power-cycle persistence is not claimed until it is established on hardware.
 
+The v0.6 product roadmap focuses on **TRN Black Pearl → FiiO**. Historical/internal JCALLY protocol material may remain for reference, but JCALLY is not current/upcoming v0.6 product UX.
+
 ## Fidelity and safety
 
 Each canonical EQ is evaluated against the active output as:
@@ -89,7 +108,7 @@ Each canonical EQ is evaluated against the active output as:
 
 Canonical source data remains complete and unchanged even when an output has tighter limits. Unsupported active filters, unsafe values, or quality-gate failures are rejected instead of silently dropped or clamped.
 
-For finite hardware, TRN Black Pearl, FiiO JA11, and stock JCALLY JM12 use a shared deterministic response adapter. It preserves a direct/native representation when possible and otherwise fits the **complete source response** within the target band budget under fixed response-error gates.
+For finite hardware, TRN Black Pearl, FiiO JA11, and the historical stock JCALLY JM12 implementation use a shared deterministic response adapter. It preserves a direct/native representation when possible and otherwise fits the **complete source response** within the target band budget under fixed response-error gates.
 
 The UAPP/ToneBoosters path intentionally remains different: ToneBoosters supports at most 10 bands, so that format keeps its established first-10 source-priority rule while the complete canonical source remains stored locally.
 
@@ -101,7 +120,7 @@ The catalog is treated as a **living archive**: a genuinely published canonical 
 
 Normal Android runtime does **not** scrape GitHub, Reddit, forums, or other community sites. Source discovery and catalog publication happen upstream; the app consumes the validated published catalog.
 
-Selections, settings, generated-preset state, favorites, hidden-EQ preferences, and conversion remain local on the device. Runtime network access is limited to validated catalog acquisition/currentness and public GitHub Release metadata used for update checks.
+Selections, settings, generated-preset state, favorites, hidden-EQ preferences, Needs attention recovery state, and conversion remain local on the device. Runtime network access is limited to validated catalog acquisition/currentness and public GitHub Release metadata used for update checks.
 
 See [PRIVACY.md](PRIVACY.md) for the full privacy statement.
 
@@ -119,17 +138,19 @@ EQ Library follows modern Android development boundaries so UI, domain rules, st
 - Android USB host/HID integration behind device-specific data/platform adapters
 - source-independent EQ and target-specific derivation kept in the domain layer
 
-Compose does not implement DSP fitting, source parsing, storage ownership, or USB wire protocol rules. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the maintained technical architecture.
+Compose does not implement DSP fitting, source parsing, storage ownership, or USB wire protocol rules. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/V0.6_LIBRARY_OWNERSHIP_AND_RECOVERY.md](docs/V0.6_LIBRARY_OWNERSHIP_AND_RECOVERY.md) for the maintained architecture and current v0.6 ownership/recovery contract.
 
 ## Validation and release discipline
 
-v0.5.0 completed both its implementation phase and Pixel 9 release-candidate testing before publication. TRN Black Pearl's v0.5 hardware/DSP regression passed; JA11/JM12 remain explicitly pending hardware qualification.
+v0.5.0 completed both its implementation phase and Pixel 9 release-candidate testing before publication. TRN Black Pearl's v0.5 hardware/DSP regression passed; JA11/JM12 remain explicitly pending hardware qualification for that release.
 
 The public v0.5.0 release was rebuilt, tested, signed, and published from exact source commit:
 
 `ff2fa351d5f38f9dcf37a77859f1e988bbdb76a8`
 
 The release workflow verified the same permanent signing identity pinned in [`release-signing-cert.sha256`](release-signing-cert.sha256).
+
+v0.6 remains a draft development release until its final exact-head software/documentation/signing gates pass and the project owner explicitly authorizes merge/publication. Passing CI alone does not publish a release.
 
 Installable releases use SemVer during the `0.x` development series. The first stable release is reserved for `v1.0.0`.
 
@@ -145,6 +166,8 @@ USB Audio Player PRO/UAPP, ToneBoosters, OPRA, Roon Labs, TRN, FiiO, JCALLY, TOP
 - [CHANGELOG.md](CHANGELOG.md) — release history and notable changes
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — Android/MAD architecture and invariants
 - [docs/CHATGPT_PROJECT_RUNBOOK.md](docs/CHATGPT_PROJECT_RUNBOOK.md) — maintained product and execution source of truth
+- [docs/V0.6_LIBRARY_OWNERSHIP_AND_RECOVERY.md](docs/V0.6_LIBRARY_OWNERSHIP_AND_RECOVERY.md) — v0.6 device-agnostic My EQs / Needs attention authority
+- [docs/V0.6_PREMIUM_UX_AUDIT_BLUEPRINT.md](docs/V0.6_PREMIUM_UX_AUDIT_BLUEPRINT.md) — design-only v0.6 polish blueprint; approval required before major UI changes
 - [docs/PUBLIC_RELEASE_CHECKLIST.md](docs/PUBLIC_RELEASE_CHECKLIST.md) — GitHub release gates
 - [docs/RELEASE_SIGNING.md](docs/RELEASE_SIGNING.md) — permanent APK signing process
 - [PRIVACY.md](PRIVACY.md) — privacy policy
