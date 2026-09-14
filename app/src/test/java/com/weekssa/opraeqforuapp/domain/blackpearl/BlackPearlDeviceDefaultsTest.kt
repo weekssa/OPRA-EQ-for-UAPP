@@ -6,7 +6,7 @@ import org.junit.Test
 
 class BlackPearlDeviceDefaultsTest {
     @Test
-    fun `restore preset uses owner approved hybrid values and leaves microphone untouched`() {
+    fun `restore preset uses owner approved hybrid values including zero microphone gain`() {
         assertThat(BlackPearlDeviceDefaults.finalTargets[BlackPearlDeviceControls.PLAYBACK_GAIN_DB])
             .isEqualTo(DacControlValue.Numeric(BlackPearlDeviceDefaults.RESTORED_VOLUME_DB))
         assertThat(BlackPearlDeviceDefaults.finalTargets[BlackPearlDeviceControls.DAC_FILTER])
@@ -17,8 +17,8 @@ class BlackPearlDeviceDefaultsTest {
             .isEqualTo(DacControlValue.Discrete(BlackPearlDeviceControls.AMP_CLASS_AB))
         assertThat(BlackPearlDeviceDefaults.finalTargets[BlackPearlDeviceControls.BALANCE_DB])
             .isEqualTo(DacControlValue.Numeric(0.0))
-        assertThat(BlackPearlDeviceDefaults.finalTargets)
-            .doesNotContainKey(BlackPearlDeviceControls.MIC_GAIN_DB)
+        assertThat(BlackPearlDeviceDefaults.finalTargets[BlackPearlDeviceControls.MIC_GAIN_DB])
+            .isEqualTo(DacControlValue.Numeric(0.0))
     }
 
     @Test
@@ -36,8 +36,10 @@ class BlackPearlDeviceDefaultsTest {
         )
         assertThat(BlackPearlVolumeScale.percentFromRaw(restoredRaw)).isEqualTo(50)
 
+        val micIndex = steps.indexOfFirst { it.controlId == BlackPearlDeviceControls.MIC_GAIN_DB }
         val ampIndex = steps.indexOfFirst { it.controlId == BlackPearlDeviceControls.AMP_TOPOLOGY }
         val gainIndex = steps.indexOfFirst { it.controlId == BlackPearlDeviceControls.GAIN_MODE }
+        assertThat(micIndex).isIn(1 until steps.lastIndex)
         assertThat(ampIndex).isIn(1 until steps.lastIndex)
         assertThat(gainIndex).isIn(1 until steps.lastIndex)
     }
