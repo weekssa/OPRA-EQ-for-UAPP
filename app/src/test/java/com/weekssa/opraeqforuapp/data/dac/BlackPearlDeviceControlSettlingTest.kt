@@ -145,6 +145,8 @@ class BlackPearlDeviceControlSettlingTest {
             playbackGainRaw = value
         }
 
+        override suspend fun persistDeviceSettings(): Boolean = true
+
         private fun beginSnapshotReadIfNeeded() {
             if (!writeIssued) return
             postWriteReadbackAttempts += 1
