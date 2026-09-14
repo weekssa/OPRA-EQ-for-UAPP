@@ -31,6 +31,7 @@ interface BlackPearlDeviceControlReadSource {
     suspend fun writeMicGainDb(value: Int): Boolean
     suspend fun writeBalanceDb(value: Int): Boolean
     suspend fun writePlaybackGainRaw(value: Int): Boolean
+    suspend fun persistDeviceSettings(): Boolean
 }
 
 sealed interface BlackPearlQualificationReadResult {
@@ -158,6 +159,29 @@ class DacControlRepository(
             }
 
             if (!writeTarget(intent.controlId, intent.requestedValue)) {
+                return@withExclusiveOperation if (blackPearlSource.isSessionCurrent(generation)) {
+                    BlackPearlDeviceControlWriteResult.TransferFailed(intent.controlId)
+                } else {
+                    BlackPearlDeviceControlWriteResult.StaleBaseline(
+                        intent.controlId,
+                        intent.expectedSessionGeneration,
+                        blackPearlSource.sessionGeneration,
+                    )
+                }
+            }
+            if (!blackPearlSource.isSessionCurrent(generation)) {
+                return@withExclusiveOperation BlackPearlDeviceControlWriteResult.StaleBaseline(
+                    intent.controlId,
+                    intent.expectedSessionGeneration,
+                    blackPearlSource.sessionGeneration,
+                )
+            }
+
+            // Black Pearl normal controls are volatile until the device's established save command
+            // is issued. Persist exactly once after the requested target write and before declaring
+            // success. This is not a write retry: a failed save is surfaced as failure and the app
+            // requires a fresh read before another user-requested attempt.
+            if (!blackPearlSource.persistDeviceSettings()) {
                 return@withExclusiveOperation if (blackPearlSource.isSessionCurrent(generation)) {
                     BlackPearlDeviceControlWriteResult.TransferFailed(intent.controlId)
                 } else {
@@ -426,6 +450,9 @@ class SessionBlackPearlDeviceControlReadSource(
     override suspend fun writePlaybackGainRaw(value: Int): Boolean =
         sessions.blackPearlTransport.sendReport(BlackPearlProtocol.writeGlobalGainReport(value)) &&
             sessions.blackPearlTransport.sendReport(BlackPearlProtocol.latchReport())
+
+    override suspend fun persistDeviceSettings(): Boolean =
+        sessions.blackPearlTransport.sendReport(BlackPearlProtocol.flashReport())
 
     private companion object {
         const val BALANCE_SIDE_SETTLE_MILLIS = 50L
