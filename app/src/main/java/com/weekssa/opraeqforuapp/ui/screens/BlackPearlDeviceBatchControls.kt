@@ -1,5 +1,6 @@
 package com.weekssa.opraeqforuapp.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -7,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -27,7 +27,6 @@ import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceControlReadCodec
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceControls
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceQualificationPolicy
-import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceQualificationSnapshot
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlUsbAudioMode
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlVolumeScale
 import com.weekssa.opraeqforuapp.domain.dac.DacControlDescriptor
@@ -44,10 +43,11 @@ import kotlin.math.round
 import kotlin.math.roundToInt
 
 /**
- * Finished Black Pearl DEVICE surface for the consolidated v0.6 qualification batch.
+ * Finished Black Pearl DEVICE settings surface.
  *
- * Every edit is local until Review -> Apply. Repository verification remains the authority for
- * freshness, target-only ownership, complete readback and unrelated-state preservation.
+ * The UI stays intentionally simple. Repository/domain code remains responsible for fresh-session
+ * validation, target-only writes, bounded settling reads, complete readback verification and
+ * rejection of unrelated state changes.
  */
 @Composable
 internal fun BlackPearlDeviceBatchControlPanel(
@@ -57,44 +57,47 @@ internal fun BlackPearlDeviceBatchControlPanel(
     onSetDeviceControl: (DacControlId, DacControlValue) -> Unit,
 ) {
     var choosingDiscreteControl by rememberSaveable { mutableStateOf<String?>(null) }
-    var pendingDiscreteControl by rememberSaveable { mutableStateOf<String?>(null) }
-    var pendingDiscreteValue by rememberSaveable { mutableStateOf<String?>(null) }
+    var pendingLevelSensitiveControl by rememberSaveable { mutableStateOf<String?>(null) }
+    var pendingLevelSensitiveValue by rememberSaveable { mutableStateOf<String?>(null) }
 
     var choosingIntegerControl by rememberSaveable { mutableStateOf<String?>(null) }
     var stagedIntegerDb by rememberSaveable { mutableStateOf(0f) }
-    var pendingIntegerControl by rememberSaveable { mutableStateOf<String?>(null) }
-    var pendingIntegerDb by rememberSaveable { mutableStateOf<Int?>(null) }
 
     var choosingPlayback by rememberSaveable { mutableStateOf(false) }
     var playbackText by rememberSaveable { mutableStateOf("") }
-    var pendingPlaybackDb by rememberSaveable { mutableStateOf<Double?>(null) }
 
     val snapshot = state.snapshot
     val sessionControlsEnabled = enabled && state.isCurrentSession && !state.isBusy
 
-    HorizontalDivider(modifier = Modifier.padding(top = 12.dp))
-    Text(
-        text = "Device controls",
-        fontWeight = FontWeight.SemiBold,
-        modifier = Modifier.padding(top = 8.dp),
-    )
-    Text(
-        text = "Choose a setting, review the exact Current → New change, then Apply once. EQ Library performs a fresh complete read before the target-only write and verifies the complete device state afterward.",
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-    Text(
-        text = "DAC filter is already hardware-qualified. Balance, microphone gain, amp topology, gain mode, and playback level are in one consolidated hardware-qualification batch. USB audio mode is read from the current USB enumeration while its exact Black Pearl software-switch command remains unproven. No DEVICE change sends Save to Flash or claims power-cycle persistence.",
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-
-    Button(
-        onClick = onRead,
-        enabled = enabled && !state.isBusy,
+    Row(
         modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(if (state.isReading) "Reading…" else "Refresh device state")
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = when {
+                    state.isReading -> "Reading device settings…"
+                    state.isCurrentSession -> "Current device state"
+                    snapshot != null -> "Last read"
+                    else -> "Device settings"
+                },
+                fontWeight = FontWeight.SemiBold,
+            )
+            if (snapshot != null && !state.isCurrentSession && !state.isReading) {
+                Text(
+                    text = "Reconnect or refresh to make these values current.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        TextButton(
+            onClick = onRead,
+            enabled = enabled && !state.isBusy,
+        ) {
+            Text(if (state.isReading) "Reading…" else "Refresh")
+        }
     }
 
     state.error?.let { error ->
@@ -102,170 +105,184 @@ internal fun BlackPearlDeviceBatchControlPanel(
             text = error,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.error,
+            modifier = Modifier.padding(top = 4.dp),
         )
     }
 
     state.activeWriteControlId?.takeIf { state.isWriting }?.let { controlId ->
         Text(
-            text = "Applying ${blackPearlControlName(controlId)} and verifying complete device readback…",
+            text = "Applying ${blackPearlControlName(controlId)}…",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 4.dp),
         )
     }
-    if (state.isCurrentSession) {
-        state.lastVerifiedWriteControlId?.let { controlId ->
-            Text(
-                text = "${blackPearlControlName(controlId)} change verified by readback.",
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.SemiBold,
-            )
-        }
-    }
 
-    snapshot?.let { current ->
+    if (snapshot == null) {
         Text(
-            text = if (state.isCurrentSession) "Current session read" else "Last read · USB session changed",
-            style = MaterialTheme.typography.labelLarge,
-        )
-        BlackPearlBatchSnapshotRows(current)
-
-        BatchSectionTitle("DAC / Digital")
-        BatchControlRow(
-            label = "DAC filter",
-            value = blackPearlFilterLabel(current.filterCode),
-            enabled = isControlEnabled(BlackPearlDeviceControls.DAC_FILTER, sessionControlsEnabled),
-            onChange = { choosingDiscreteControl = BlackPearlDeviceControls.DAC_FILTER.value },
-        )
-        Text(
-            text = "Hardware-qualified.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-
-        BatchSectionTitle("Output")
-        BatchControlRow(
-            label = "Amp topology",
-            value = blackPearlAmpLabel(current.ampTopologyCode),
-            enabled = isControlEnabled(BlackPearlDeviceControls.AMP_TOPOLOGY, sessionControlsEnabled),
-            onChange = { choosingDiscreteControl = BlackPearlDeviceControls.AMP_TOPOLOGY.value },
-        )
-        BatchControlRow(
-            label = "Gain mode",
-            value = blackPearlGainLabel(current.gainModeCode),
-            enabled = isControlEnabled(BlackPearlDeviceControls.GAIN_MODE, sessionControlsEnabled),
-            onChange = { choosingDiscreteControl = BlackPearlDeviceControls.GAIN_MODE.value },
-        )
-        BatchControlRow(
-            label = "Balance",
-            value = current.signedBalanceDb?.let(::blackPearlBalanceLabel)
-                ?: "Inconsistent channel balance read",
-            enabled = current.signedBalanceDb != null &&
-                isControlEnabled(BlackPearlDeviceControls.BALANCE_DB, sessionControlsEnabled),
-            onChange = {
-                current.signedBalanceDb?.let { value ->
-                    stagedIntegerDb = value.toFloat()
-                    choosingIntegerControl = BlackPearlDeviceControls.BALANCE_DB.value
-                }
-            },
-        )
-
-        BatchSectionTitle("Microphone / Input")
-        BatchControlRow(
-            label = "Microphone gain",
-            value = blackPearlSignedDb(current.micGainDb),
-            enabled = isControlEnabled(BlackPearlDeviceControls.MIC_GAIN_DB, sessionControlsEnabled),
-            onChange = {
-                stagedIntegerDb = current.micGainDb.toFloat()
-                choosingIntegerControl = BlackPearlDeviceControls.MIC_GAIN_DB.value
-            },
-        )
-
-        BatchSectionTitle("Playback")
-        BatchControlRow(
-            label = "Playback level",
-            value = playbackLabel(current.playbackGainRaw),
-            enabled = isControlEnabled(BlackPearlDeviceControls.PLAYBACK_GAIN_DB, sessionControlsEnabled),
-            onChange = {
-                playbackText = formatGainDb(current.playbackGainDb)
-                choosingPlayback = true
-            },
-        )
-        Text(
-            text = "Level-sensitive. Playback changes are staged locally and require a separate Review before Apply. Stop playback before changing this control during qualification.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-
-        BatchSectionTitle("USB / System")
-        BatchValue("USB audio mode", blackPearlUsbAudioModeLabel(current.usbAudioMode))
-        Text(
-            text = if (current.usbAudioMode == null) {
-                "The current USB Audio Class revision could not be proven from this session, so EQ Library does not guess it."
+            text = if (enabled) {
+                "Current settings appear automatically after the Black Pearl is read."
             } else {
-                "Reported from the current USB AudioControl descriptors. Software switching is not exposed until the exact Black Pearl switch command is independently established; no vendor command is guessed."
+                "Connect the Black Pearl to view its settings."
             },
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 12.dp),
+        )
+        return
+    }
+
+    DeviceSettingsSection("Audio")
+    DeviceSettingRow(
+        label = "Playback level",
+        value = playbackLabel(snapshot.playbackGainRaw),
+        enabled = isControlEnabled(BlackPearlDeviceControls.PLAYBACK_GAIN_DB, sessionControlsEnabled),
+        onClick = {
+            playbackText = formatGainDb(snapshot.playbackGainDb)
+            choosingPlayback = true
+        },
+    )
+    DeviceSettingRow(
+        label = "DAC filter",
+        value = blackPearlFilterLabel(snapshot.filterCode),
+        enabled = isControlEnabled(BlackPearlDeviceControls.DAC_FILTER, sessionControlsEnabled),
+        onClick = { choosingDiscreteControl = BlackPearlDeviceControls.DAC_FILTER.value },
+    )
+    DeviceSettingRow(
+        label = "Gain",
+        value = blackPearlGainLabel(snapshot.gainModeCode),
+        enabled = isControlEnabled(BlackPearlDeviceControls.GAIN_MODE, sessionControlsEnabled),
+        onClick = { choosingDiscreteControl = BlackPearlDeviceControls.GAIN_MODE.value },
+    )
+    DeviceSettingRow(
+        label = "Amplifier",
+        value = blackPearlAmpLabel(snapshot.ampTopologyCode),
+        enabled = isControlEnabled(BlackPearlDeviceControls.AMP_TOPOLOGY, sessionControlsEnabled),
+        onClick = { choosingDiscreteControl = BlackPearlDeviceControls.AMP_TOPOLOGY.value },
+    )
+    DeviceSettingRow(
+        label = "Balance",
+        value = snapshot.signedBalanceDb?.let(::blackPearlBalanceLabel)
+            ?: "Inconsistent channel read",
+        enabled = snapshot.signedBalanceDb != null &&
+            isControlEnabled(BlackPearlDeviceControls.BALANCE_DB, sessionControlsEnabled),
+        onClick = {
+            snapshot.signedBalanceDb?.let { value ->
+                stagedIntegerDb = value.toFloat()
+                choosingIntegerControl = BlackPearlDeviceControls.BALANCE_DB.value
+            }
+        },
+    )
+
+    DeviceSettingsSection("Microphone")
+    DeviceSettingRow(
+        label = "Microphone gain",
+        value = blackPearlSignedDb(snapshot.micGainDb),
+        enabled = isControlEnabled(BlackPearlDeviceControls.MIC_GAIN_DB, sessionControlsEnabled),
+        onClick = {
+            stagedIntegerDb = snapshot.micGainDb.toFloat()
+            choosingIntegerControl = BlackPearlDeviceControls.MIC_GAIN_DB.value
+        },
+    )
+
+    DeviceSettingsSection("USB & System")
+    ReadOnlySettingRow(
+        label = "USB audio mode",
+        value = blackPearlUsbAudioModeLabel(snapshot.usbAudioMode),
+    )
+    if (snapshot.usbAudioMode == null) {
+        Text(
+            text = "This USB session did not report a mode EQ Library could verify.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 2.dp),
         )
     }
+    Text(
+        text = "UAC 1.0: unplug the Black Pearl, leave headphones connected, hold + and −, reconnect USB, then release after it powers on.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = 4.dp),
+    )
+    Text(
+        text = "UAC 2.0: reconnect normally without holding the buttons. EQ Library detects the active mode after reconnection.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = 2.dp),
+    )
 
     val discreteControl = choosingDiscreteControl?.let(::DacControlId)
-    if (discreteControl != null && snapshot != null) {
+    if (discreteControl != null) {
         val descriptor = BlackPearlDeviceControls.descriptor(discreteControl) as? DacControlDescriptor.Discrete
         val currentValue = BlackPearlDeviceControls.valueFromSnapshot(discreteControl, snapshot) as? DacControlValue.Discrete
         if (descriptor != null && currentValue != null) {
-            DiscreteChooserDialog(
-                title = "Change ${blackPearlControlName(discreteControl)}",
+            DiscreteSettingDialog(
+                title = blackPearlControlTitle(discreteControl),
                 currentValueId = currentValue.valueId,
                 options = descriptor.options,
                 enabled = isControlEnabled(discreteControl, sessionControlsEnabled),
                 onChoose = { valueId ->
                     choosingDiscreteControl = null
-                    pendingDiscreteControl = discreteControl.value
-                    pendingDiscreteValue = valueId
+                    if (isLevelSensitiveDiscrete(discreteControl)) {
+                        pendingLevelSensitiveControl = discreteControl.value
+                        pendingLevelSensitiveValue = valueId
+                    } else {
+                        onSetDeviceControl(discreteControl, DacControlValue.Discrete(valueId))
+                    }
                 },
                 onDismiss = { choosingDiscreteControl = null },
             )
         }
     }
 
-    val reviewDiscreteControl = pendingDiscreteControl?.let(::DacControlId)
-    val reviewDiscreteValue = pendingDiscreteValue
-    if (reviewDiscreteControl != null && reviewDiscreteValue != null && snapshot != null) {
-        val descriptor = BlackPearlDeviceControls.descriptor(reviewDiscreteControl) as? DacControlDescriptor.Discrete
-        val currentValue = BlackPearlDeviceControls.valueFromSnapshot(reviewDiscreteControl, snapshot) as? DacControlValue.Discrete
-        val currentOption = descriptor?.options?.firstOrNull { it.valueId == currentValue?.valueId }
-        val requestedOption = descriptor?.options?.firstOrNull { it.valueId == reviewDiscreteValue }
-        if (descriptor != null && currentValue != null && currentOption != null && requestedOption != null) {
-            ReviewDeviceControlDialog(
-                title = "Review ${blackPearlControlName(reviewDiscreteControl)} change",
-                current = currentOption.technicalLabel,
-                requested = requestedOption.technicalLabel,
-                warning = when (reviewDiscreteControl) {
-                    BlackPearlDeviceControls.AMP_TOPOLOGY,
-                    BlackPearlDeviceControls.GAIN_MODE,
-                    -> "This setting can change output level or amplifier behavior. Stop playback and keep listening volume conservative before Apply."
-                    BlackPearlDeviceControls.DAC_FILTER ->
-                        "DAC filter is already hardware-qualified."
-                    else -> null
+    val levelSensitiveControl = pendingLevelSensitiveControl?.let(::DacControlId)
+    val levelSensitiveValue = pendingLevelSensitiveValue
+    if (levelSensitiveControl != null && levelSensitiveValue != null) {
+        val descriptor = BlackPearlDeviceControls.descriptor(levelSensitiveControl) as? DacControlDescriptor.Discrete
+        val current = BlackPearlDeviceControls.valueFromSnapshot(levelSensitiveControl, snapshot) as? DacControlValue.Discrete
+        val currentLabel = descriptor?.options?.firstOrNull { it.valueId == current?.valueId }?.technicalLabel
+        val requestedLabel = descriptor?.options?.firstOrNull { it.valueId == levelSensitiveValue }?.technicalLabel
+        if (descriptor != null && current != null && currentLabel != null && requestedLabel != null) {
+            AlertDialog(
+                onDismissRequest = {
+                    pendingLevelSensitiveControl = null
+                    pendingLevelSensitiveValue = null
                 },
-                enabled = isControlEnabled(reviewDiscreteControl, sessionControlsEnabled) &&
-                    reviewDiscreteValue != currentValue.valueId,
-                onApply = {
-                    pendingDiscreteControl = null
-                    pendingDiscreteValue = null
-                    onSetDeviceControl(reviewDiscreteControl, DacControlValue.Discrete(reviewDiscreteValue))
+                title = { Text("Change ${blackPearlControlName(levelSensitiveControl)}?") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("$currentLabel → $requestedLabel", fontWeight = FontWeight.SemiBold)
+                        Text("This may change listening volume. Keep the level conservative.")
+                    }
                 },
-                onDismiss = {
-                    pendingDiscreteControl = null
-                    pendingDiscreteValue = null
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            pendingLevelSensitiveControl = null
+                            pendingLevelSensitiveValue = null
+                            onSetDeviceControl(
+                                levelSensitiveControl,
+                                DacControlValue.Discrete(levelSensitiveValue),
+                            )
+                        },
+                        enabled = isControlEnabled(levelSensitiveControl, sessionControlsEnabled) &&
+                            current.valueId != levelSensitiveValue,
+                    ) { Text("Change") }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            pendingLevelSensitiveControl = null
+                            pendingLevelSensitiveValue = null
+                        },
+                    ) { Text("Cancel") }
                 },
             )
         }
     }
 
     val integerControl = choosingIntegerControl?.let(::DacControlId)
-    if (integerControl != null && snapshot != null) {
+    if (integerControl != null) {
         val currentValue = (BlackPearlDeviceControls.valueFromSnapshot(integerControl, snapshot) as? DacControlValue.Numeric)
             ?.value?.roundToInt()
         val range = when (integerControl) {
@@ -279,11 +296,10 @@ internal fun BlackPearlDeviceBatchControlPanel(
             val staged = stagedIntegerDb.roundToInt().coerceIn(range.first, range.last)
             AlertDialog(
                 onDismissRequest = { choosingIntegerControl = null },
-                title = { Text("Adjust ${blackPearlControlName(integerControl)}") },
+                title = { Text(blackPearlControlTitle(integerControl)) },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Current: ${integerControlLabel(integerControl, currentValue)}")
-                        Text("New: ${integerControlLabel(integerControl, staged)}", fontWeight = FontWeight.SemiBold)
+                        Text(integerControlLabel(integerControl, staged), fontWeight = FontWeight.SemiBold)
                         Slider(
                             value = stagedIntegerDb,
                             onValueChange = { value -> stagedIntegerDb = value.roundToInt().toFloat() },
@@ -304,29 +320,25 @@ internal fun BlackPearlDeviceBatchControlPanel(
                                 TextButton(
                                     onClick = { stagedIntegerDb = 0f },
                                     enabled = staged != 0,
-                                ) { Text(if (integerControl == BlackPearlDeviceControls.BALANCE_DB) "Center" else "0 dB") }
+                                ) {
+                                    Text(if (integerControl == BlackPearlDeviceControls.BALANCE_DB) "Center" else "0 dB")
+                                }
                             }
                             TextButton(
                                 onClick = { stagedIntegerDb = (staged + 1).coerceAtMost(range.last).toFloat() },
                                 enabled = staged < range.last,
                             ) { Text("+1 dB") }
                         }
-                        Text(
-                            "The slider and step buttons change only this local draft. Review is required before any USB write.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
                     }
                 },
                 confirmButton = {
                     TextButton(
                         onClick = {
                             choosingIntegerControl = null
-                            pendingIntegerControl = integerControl.value
-                            pendingIntegerDb = staged
+                            onSetDeviceControl(integerControl, DacControlValue.Numeric(staged.toDouble()))
                         },
                         enabled = isControlEnabled(integerControl, sessionControlsEnabled) && staged != currentValue,
-                    ) { Text("Review") }
+                    ) { Text("Apply") }
                 },
                 dismissButton = {
                     TextButton(onClick = { choosingIntegerControl = null }) { Text("Cancel") }
@@ -335,39 +347,19 @@ internal fun BlackPearlDeviceBatchControlPanel(
         }
     }
 
-    val reviewIntegerControl = pendingIntegerControl?.let(::DacControlId)
-    val reviewIntegerDb = pendingIntegerDb
-    if (reviewIntegerControl != null && reviewIntegerDb != null && snapshot != null) {
-        val currentValue = (BlackPearlDeviceControls.valueFromSnapshot(reviewIntegerControl, snapshot) as? DacControlValue.Numeric)
-            ?.value?.roundToInt()
-        if (currentValue != null) {
-            ReviewDeviceControlDialog(
-                title = "Review ${blackPearlControlName(reviewIntegerControl)} change",
-                current = integerControlLabel(reviewIntegerControl, currentValue),
-                requested = integerControlLabel(reviewIntegerControl, reviewIntegerDb),
-                warning = null,
-                enabled = isControlEnabled(reviewIntegerControl, sessionControlsEnabled) && reviewIntegerDb != currentValue,
-                onApply = {
-                    pendingIntegerControl = null
-                    pendingIntegerDb = null
-                    onSetDeviceControl(reviewIntegerControl, DacControlValue.Numeric(reviewIntegerDb.toDouble()))
-                },
-                onDismiss = {
-                    pendingIntegerControl = null
-                    pendingIntegerDb = null
-                },
-            )
-        }
-    }
-
-    if (choosingPlayback && snapshot != null) {
+    if (choosingPlayback) {
         val parsedDb = playbackText.trim().toDoubleOrNull()
         val requestedValue = parsedDb?.let { DacControlValue.Numeric(it) }
         val descriptor = BlackPearlDeviceControls.descriptor(BlackPearlDeviceControls.PLAYBACK_GAIN_DB)
         val validation = if (requestedValue != null) descriptor?.validateForWrite(requestedValue) else null
-        val requestedRaw = if (validation == DacControlValidation.Valid || validation is DacControlValidation.CautionOutsideNormalRange) {
+        val requestedRaw = if (
+            validation == DacControlValidation.Valid ||
+            validation is DacControlValidation.CautionOutsideNormalRange
+        ) {
             parsedDb?.let(BlackPearlDeviceControls::playbackGainRaw)
-        } else null
+        } else {
+            null
+        }
         val currentRaw = snapshot.playbackGainRaw
         val currentDb = snapshot.playbackGainDb
         val stepBaseDb = parsedDb ?: currentDb
@@ -376,7 +368,7 @@ internal fun BlackPearlDeviceBatchControlPanel(
 
         AlertDialog(
             onDismissRequest = { choosingPlayback = false },
-            title = { Text("Adjust playback level") },
+            title = { Text("Playback level") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Current: ${playbackLabel(currentRaw)}")
@@ -390,14 +382,11 @@ internal fun BlackPearlDeviceBatchControlPanel(
                         modifier = Modifier.fillMaxWidth(),
                     )
                     requestedRaw?.let { raw ->
-                        Text(
-                            text = "New: ${playbackLabel(raw)}",
-                            fontWeight = FontWeight.SemiBold,
-                        )
+                        Text("New: ${playbackLabel(raw)}", fontWeight = FontWeight.SemiBold)
                     }
                     if (playbackText.isNotBlank() && requestedRaw == null) {
                         Text(
-                            text = "Enter a whole-dB value inside the qualified normal DEVICE range.",
+                            text = "Enter a supported whole-dB value.",
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall,
                         )
@@ -410,16 +399,14 @@ internal fun BlackPearlDeviceBatchControlPanel(
                             onClick = { playbackText = formatGainDb(lowerStepDb) },
                             enabled = BlackPearlDeviceControls.playbackGainRaw(lowerStepDb) != null,
                         ) { Text("−1 dB") }
-                        TextButton(
-                            onClick = { playbackText = formatGainDb(currentDb) },
-                        ) { Text("Current") }
+                        TextButton(onClick = { playbackText = formatGainDb(currentDb) }) { Text("Current") }
                         TextButton(
                             onClick = { playbackText = formatGainDb(upperStepDb) },
                             enabled = BlackPearlDeviceControls.playbackGainRaw(upperStepDb) != null,
                         ) { Text("+1 dB") }
                     }
                     Text(
-                        "Level-sensitive: changes are local only on this screen. Normal DEVICE changes use conservative whole-dB steps; the exact raw value is still shown when reading hardware. Stop playback and lower the level first during qualification.",
+                        text = "Playback level changes immediately after Apply. Keep listening volume conservative.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -429,88 +416,70 @@ internal fun BlackPearlDeviceBatchControlPanel(
                 TextButton(
                     onClick = {
                         choosingPlayback = false
-                        pendingPlaybackDb = parsedDb
+                        parsedDb?.let { requested ->
+                            onSetDeviceControl(
+                                BlackPearlDeviceControls.PLAYBACK_GAIN_DB,
+                                DacControlValue.Numeric(requested),
+                            )
+                        }
                     },
-                    enabled = requestedRaw != null && requestedRaw != currentRaw,
-                ) { Text("Review") }
+                    enabled = requestedRaw != null && requestedRaw != currentRaw &&
+                        isControlEnabled(BlackPearlDeviceControls.PLAYBACK_GAIN_DB, sessionControlsEnabled),
+                ) { Text("Apply") }
             },
             dismissButton = {
                 TextButton(onClick = { choosingPlayback = false }) { Text("Cancel") }
             },
         )
     }
+}
 
-    pendingPlaybackDb?.let { requestedDb ->
-        val current = snapshot
-        val requestedRaw = BlackPearlDeviceControls.playbackGainRaw(requestedDb)
-        if (current != null && requestedRaw != null) {
-            ReviewDeviceControlDialog(
-                title = "Review playback level change",
-                current = playbackLabel(current.playbackGainRaw),
-                requested = playbackLabel(requestedRaw),
-                warning = "Level-sensitive. Stop playback before Apply and keep downstream/listening volume conservative. During qualification, lower the level first; never use a larger upward jump as the first test.",
-                enabled = isControlEnabled(BlackPearlDeviceControls.PLAYBACK_GAIN_DB, sessionControlsEnabled) &&
-                    requestedRaw != current.playbackGainRaw,
-                onApply = {
-                    pendingPlaybackDb = null
-                    onSetDeviceControl(
-                        BlackPearlDeviceControls.PLAYBACK_GAIN_DB,
-                        DacControlValue.Numeric(requestedDb),
-                    )
-                },
-                onDismiss = { pendingPlaybackDb = null },
+@Composable
+private fun DeviceSettingsSection(title: String) {
+    HorizontalDivider(modifier = Modifier.padding(top = 14.dp, bottom = 10.dp))
+    Text(title, fontWeight = FontWeight.SemiBold)
+}
+
+@Composable
+private fun DeviceSettingRow(
+    label: String,
+    value: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(vertical = 10.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(label, style = MaterialTheme.typography.labelLarge)
+            Text(
+                value,
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (enabled) {
+            Text(
+                text = "›",
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 12.dp),
             )
         }
     }
 }
 
 @Composable
-private fun BatchControlRow(
-    label: String,
-    value: String,
-    enabled: Boolean,
-    onChange: () -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(label, style = MaterialTheme.typography.labelLarge)
-            Text(value, style = MaterialTheme.typography.bodyMedium)
-        }
-        TextButton(onClick = onChange, enabled = enabled) { Text("Change") }
-    }
-}
-
-@Composable
-private fun BatchSectionTitle(title: String) {
-    HorizontalDivider(modifier = Modifier.padding(top = 12.dp, bottom = 8.dp))
-    Text(title, fontWeight = FontWeight.SemiBold)
-}
-
-@Composable
-private fun BlackPearlBatchSnapshotRows(snapshot: BlackPearlDeviceQualificationSnapshot) {
-    BatchValue("Firmware", snapshot.firmwareVersion)
-    BatchValue("DAC filter", blackPearlFilterLabel(snapshot.filterCode))
-    BatchValue("Gain mode", blackPearlGainLabel(snapshot.gainModeCode))
-    BatchValue("Amp topology", blackPearlAmpLabel(snapshot.ampTopologyCode))
-    BatchValue("Microphone gain", blackPearlSignedDb(snapshot.micGainDb))
-    BatchValue(
-        "Balance",
-        snapshot.signedBalanceDb?.let(::blackPearlBalanceLabel) ?: "Inconsistent channel balance read",
-    )
-    BatchValue("Playback level", playbackLabel(snapshot.playbackGainRaw))
-    BatchValue("USB audio mode", blackPearlUsbAudioModeLabel(snapshot.usbAudioMode))
-}
-
-@Composable
-private fun BatchValue(label: String, value: String) {
+private fun ReadOnlySettingRow(label: String, value: String) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 3.dp),
+            .padding(vertical = 8.dp),
     ) {
         Text(label, style = MaterialTheme.typography.labelLarge)
         Text(value, style = MaterialTheme.typography.bodyMedium)
@@ -518,7 +487,7 @@ private fun BatchValue(label: String, value: String) {
 }
 
 @Composable
-private fun DiscreteChooserDialog(
+private fun DiscreteSettingDialog(
     title: String,
     currentValueId: String,
     options: List<DacDiscreteOption>,
@@ -531,10 +500,6 @@ private fun DiscreteChooserDialog(
         title = { Text(title) },
         text = {
             Column {
-                Text(
-                    "Selecting a value only stages it. Review is required before any USB write.",
-                    modifier = Modifier.padding(bottom = 8.dp),
-                )
                 options.forEach { option ->
                     val current = option.valueId == currentValueId
                     TextButton(
@@ -552,52 +517,26 @@ private fun DiscreteChooserDialog(
     )
 }
 
-@Composable
-private fun ReviewDeviceControlDialog(
-    title: String,
-    current: String,
-    requested: String,
-    warning: String?,
-    enabled: Boolean,
-    onApply: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(title) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Current: $current")
-                Text("New: $requested", fontWeight = FontWeight.SemiBold)
-                warning?.let { Text(it) }
-                Text(
-                    "Apply performs a fresh complete device read, writes only this control, then verifies the complete Black Pearl state. Controls that settle asynchronously may be re-read briefly without resending the write. Stale sessions, final readback mismatch, or unrelated state changes fail verification.",
-                )
-                Text(
-                    "This DEVICE transaction does not send Save to Flash or claim power-cycle persistence.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        },
-        confirmButton = { TextButton(onClick = onApply, enabled = enabled) { Text("Apply") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
-    )
-}
-
 private fun isControlEnabled(controlId: DacControlId, sessionEnabled: Boolean): Boolean =
     sessionEnabled && BlackPearlDeviceQualificationPolicy.isWriteInteractive(controlId)
 
-private fun blackPearlControlName(controlId: DacControlId): String = when (controlId) {
+private fun isLevelSensitiveDiscrete(controlId: DacControlId): Boolean =
+    controlId == BlackPearlDeviceControls.AMP_TOPOLOGY ||
+        controlId == BlackPearlDeviceControls.GAIN_MODE
+
+private fun blackPearlControlTitle(controlId: DacControlId): String = when (controlId) {
     BlackPearlDeviceControls.DAC_FILTER -> "DAC filter"
-    BlackPearlDeviceControls.BALANCE_DB -> "balance"
-    BlackPearlDeviceControls.MIC_GAIN_DB -> "microphone gain"
-    BlackPearlDeviceControls.AMP_TOPOLOGY -> "amp topology"
-    BlackPearlDeviceControls.GAIN_MODE -> "gain mode"
-    BlackPearlDeviceControls.PLAYBACK_GAIN_DB -> "playback level"
+    BlackPearlDeviceControls.BALANCE_DB -> "Balance"
+    BlackPearlDeviceControls.MIC_GAIN_DB -> "Microphone gain"
+    BlackPearlDeviceControls.AMP_TOPOLOGY -> "Amplifier"
+    BlackPearlDeviceControls.GAIN_MODE -> "Gain"
+    BlackPearlDeviceControls.PLAYBACK_GAIN_DB -> "Playback level"
     BlackPearlDeviceControls.USB_AUDIO_MODE -> "USB audio mode"
-    else -> "device control"
+    else -> "Device setting"
 }
+
+private fun blackPearlControlName(controlId: DacControlId): String =
+    blackPearlControlTitle(controlId).lowercase()
 
 private fun integerControlLabel(controlId: DacControlId, value: Int): String =
     if (controlId == BlackPearlDeviceControls.BALANCE_DB) blackPearlBalanceLabel(value)
@@ -642,13 +581,11 @@ private fun blackPearlUsbAudioModeLabel(mode: BlackPearlUsbAudioMode?): String =
 }
 
 private fun playbackLabel(raw: Int): String =
-    "${BlackPearlVolumeScale.percentFromRaw(raw)}% · ${formatGainDb(raw / 256.0)} dB · raw $raw"
+    "${BlackPearlVolumeScale.percentFromRaw(raw)}% · ${formatGainDb(raw / 256.0)} dB"
 
 /**
- * DEVICE playback changes are deliberately whole-dB after the first physical batch invalidated the
- * half-dB assumption. If the actual hardware is externally left between whole-dB points, the first
- * down/up step lands on the adjacent conservative whole-dB value rather than silently rounding the
- * current read before the user chooses a direction.
+ * Normal DEVICE playback changes deliberately use whole-dB steps. If hardware is externally left
+ * between whole-dB points, the first down/up step lands on the adjacent conservative whole value.
  */
 private fun playbackWholeDbStep(value: Double, direction: Int): Double {
     require(direction == -1 || direction == 1)
