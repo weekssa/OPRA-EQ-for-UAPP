@@ -1,10 +1,10 @@
 # TRN Black Pearl — v0.6 remaining DEVICE controls consolidated qualification
 
-Status: **READY — EXACT SIGNED CANDIDATE PINNED; PHYSICAL ROUND NEXT**
+Status: **SUPERSEDED AS THE CURRENT UI CANDIDATE; retained as exact transaction-behavior provenance**
 
-This is the maintained record for the one-round hardware qualification of the remaining normal Black Pearl DEVICE controls after the already-qualified DAC reconstruction-filter write.
+This record preserves the consolidated Black Pearl DEVICE-control qualification work that preceded the finished v0.6 connected-DAC UX refactor.
 
-It covers independently within one exact signed candidate:
+It covers independently within the original consolidated behavior scope:
 
 1. balance;
 2. microphone gain;
@@ -13,7 +13,7 @@ It covers independently within one exact signed candidate:
 5. playback/global level;
 6. current USB audio mode readout as a read-only observation.
 
-The DAC reconstruction-filter write already passed its own qualification and is not re-tested. Firmware remains read-only. UAC switching is not part of this checklist because no exact software UAC command is established.
+The DAC reconstruction-filter write already passed its own dedicated qualification and is not reclassified here. Firmware remains read-only. UAC switching is not part of this record because no exact software UAC command is established.
 
 ## Candidate history
 
@@ -34,18 +34,16 @@ No PASS is inferred for balance, mic gain or gain mode from that incomplete roun
 
 Source: `001b5ea5b2199784cfc8cf34941b018bf927caa1`
 
-It added whole-dB normal playback steps and bounded same-session post-write settling reads without resending writes. Its automated/security/catalog/signing gates passed, but the owner correctly paused physical retest when the missing UAC-mode surface was identified.
+It added whole-dB normal playback steps and bounded same-session post-write settling reads without resending writes. Its automated/security/catalog/signing gates passed, but the owner paused physical retest when the missing UAC-mode surface was identified.
 
-`001b5ea...` is superseded by the UAC-readout and read-transport reliability work below. Its immutable APK remains provenance only and must not be used for the current hardware round.
+`001b5ea...` is superseded by the UAC-readout and read-transport reliability work below.
 
-## Exact current candidate provenance
+### Consolidated transaction-behavior candidate
 
-The current behavior candidate is frozen at:
+Source: `7b693c838b41126b3b2e82f2f387122962a4baaa`
 
 - Repository: `weekssa/opra-eq-for-uapp`
 - Branch: `v0.6-my-dac`
-- Source commit: `7b693c838b41126b3b2e82f2f387122962a4baaa`
-- Commit: `Fix Black Pearl UAC unit test compatibility`
 - App version: `0.6.0`
 - Immutable signed APK: `https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.6.0-beta-7b693c8.apk`
 - APK SHA-256: `891cc8cae06070399d5cd4079d3dc981ed6d4b661ae1d534b393bc35164e0bab`
@@ -54,19 +52,11 @@ The current behavior candidate is frozen at:
 - Catalog currentness CI #1589 / run `34806374455` — **PASS**
 - Priority community coverage CI #1075 / run `34806374471` — **PASS**
 - Signed EQ Library Beta Candidate #1062 / run `34806372508` — **PASS**
-- Signed-beta artifact: `EQ-Library-signed-beta-7b693c838b41126b3b2e82f2f387122962a4baaa`
-- Artifact ID: `10333555957`
-- Artifact ZIP digest: `sha256:8e47f07d1f6ab373d025360c74ba01605d4884d1e3c2374e0ed1ed2b05443e0b`
-- Base `main` at candidate pin: `f0e6c16d37cbf23ad8e339d49e31251ee4e3f828`
-- Candidate branch was 0 commits behind `main` at the pin.
+- signed-beta artifact ID: `10333555957`
+- artifact ZIP digest: `sha256:8e47f07d1f6ab373d025360c74ba01605d4884d1e3c2374e0ed1ed2b05443e0b`
+- base `main` at pin: `f0e6c16d37cbf23ad8e339d49e31251ee4e3f828`
 
-The signed-beta workflow verifies the APK certificate against the repository-pinned release-signing fingerprint before publication. The immutable candidate checksum above is independently published beside the APK.
-
-Later documentation-only commits may update this checklist without replacing the exact `7b693c8` behavior candidate. Any behavior-affecting replacement requires a new exact candidate, new green gates and an explicit new pin here before hardware testing continues.
-
-## Candidate behavior under test
-
-The pinned candidate satisfies the pre-hardware requirements:
+This candidate established the replacement software behavior:
 
 - Black Pearl USB operations are serialized;
 - a failed nondestructive READ may be reissued at most once in the same USB session;
@@ -79,83 +69,50 @@ The pinned candidate satisfies the pre-hardware requirements:
 - malformed, conflicting or unsupported UAC descriptor evidence produces Unknown rather than a guess;
 - no generic Save-to-Flash or persistence claim is used by these DEVICE transactions.
 
-## Consolidated hands-on scope
+## Evidence classification after `7b693c8`
 
-Run one continuous Pixel 9 / TRN Black Pearl session with playback stopped for writes and small reversible changes. Advance one section at a time.
+The project owner subsequently reported the remaining controls working in normal use on this exact signed behavior candidate, including correct UAC-mode readout.
 
-### 1. Baseline + UAC readout
+Record that evidence as **OWNER-REPORTED**. It supports the maintained transaction behavior but is not silently upgraded into screenshot, independent-controller, or formally completed section-by-section evidence for every individual control.
 
-Require a fresh **Current session read** and record:
+The earlier failed round remains important evidence because it demonstrated that EQ Library stopped on real readback mismatches instead of reporting success. The replacement candidate addressed those two observed failure modes without adding write retries.
 
-- firmware;
-- reconstruction filter;
-- gain mode;
-- amplifier topology;
-- microphone gain;
-- balance;
-- playback/global level;
-- UAC mode as `UAC 1.0`, `UAC 2.0`, or `Unknown` only from actual descriptor evidence.
+## Original consolidated transaction contract
 
-This section is read-only. Do not change a setting.
+Every tested write was designed to remain:
 
-### 2. Balance
+`fresh complete read -> local staged choice -> explicit user intent -> target-only write once -> bounded same-session read-only verification -> exact target verification -> unrelated-state verification`
 
-`Center -> -1 dB -> Center`
+The app must never present a requested value as current before verification, replay cached values after reconnect, cross a session replacement, silently resend a setting write, or claim persistence without separate evidence.
 
-Each change must be staged locally, reviewed, Applied once, then verified by complete readback with unrelated state unchanged.
+The finished v0.6 UI simplifies the presentation of ordinary controls to row-level selection plus immediate verified apply. That does not weaken this transaction contract.
 
-### 3. Microphone gain
+## Current per-control evidence state
 
-`0 dB -> -1 dB -> 0 dB`
+- DAC reconstruction filter — **PHYSICALLY QUALIFIED / PASS** in its dedicated record.
+- Balance — software transaction green; later normal-use success is **OWNER-REPORTED**.
+- Microphone gain — software transaction green; later normal-use success is **OWNER-REPORTED**.
+- Amp topology — first batch exposed a verification failure; replacement behavior green; later normal-use success is **OWNER-REPORTED**.
+- Gain mode — software transaction green; later normal-use success is **OWNER-REPORTED**.
+- Playback/global level — first batch exposed unreliable 0.5 dB behavior; whole-dB replacement green; later normal-use success is **OWNER-REPORTED**.
+- UAC current-mode readout — descriptor-based read-only implementation green; later correct readout is **OWNER-REPORTED**.
 
-Use the same one-Apply -> complete verified-readback rule.
+## Current finished-UX candidate
 
-### 4. Amplifier topology
+The app-wide shared-session / automatic-read / simplified DEVICE UX is now pinned separately to behavior source:
 
-`CLASS AB -> CLASS H -> CLASS AB`
+`f32b9c3a81f77a8650f1b6f730e4a4c9171310ad`
 
-Do not manually refresh/retry a failed write to make it appear successful. If one Apply does not verify, stop the qualification at this section.
+Its immutable signed APK is:
 
-### 5. Gain mode
+`https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.6.0-beta-f32b9c3.apk`
 
-`HIGH -> LOW -> HIGH`
+APK SHA-256:
 
-Keep playback stopped and listening level conservative before any later listening.
+`21407021a4cfa41960cb45f9f59979f868b50f41b9fc81c718ee0ebf4b12458d`
 
-### 6. Playback/global level
+The exact candidate passed Android CI #1410, CodeQL #1291, Catalog currentness #1625, Priority community coverage #1111, and Signed EQ Library Beta Candidate #1084.
 
-`raw 512 / +2.00 dB -> raw 256 / +1.00 dB -> raw 512 / +2.00 dB`
-
-This is level-sensitive. Use only the approved one-whole-dB decrease and restoration. Do not test a `0.5 dB` step in this qualification round.
-
-### 7. Independent-controller final comparison
-
-After EQ Library releases the USB session, use the trusted independent controller read-only to compare the final restored normal DEVICE state. Never invoke its Save-to-Flash action for this qualification.
-
-### 8. Disconnect/reconnect freshness
-
-Physically disconnect/reconnect, verify retained values are stale until a new hardware read succeeds, then perform one final complete current-session read.
-
-After each Apply, wait for EQ Library verification. If any step reports mismatch, error, session loss, or unexpected unrelated-state change, stop immediately and do not manually retry the failed write or continue to the next control.
-
-## Transaction contract
-
-Every tested write remains:
-
-`fresh complete read -> local staged choice -> explicit Current/New review -> Apply once -> fresh complete baseline -> target-only write once -> bounded same-session read-only verification -> exact target verification -> unrelated-state verification`
-
-The app must never present a staged value as current before verification, replay cached values after reconnect, cross a session replacement, silently resend a setting write, or claim persistence without separate evidence.
-
-## Current per-control state
-
-- DAC reconstruction filter — **PHYSICALLY QUALIFIED / PASS**
-- Balance — **PHYSICAL PENDING ON EXACT `7b693c8` CANDIDATE**
-- Microphone gain — **PHYSICAL PENDING ON EXACT `7b693c8` CANDIDATE**
-- Amp topology — **FIRST BATCH FAILED; REPLACEMENT BEHAVIOR GREEN; PHYSICAL RETEST PENDING ON `7b693c8`**
-- Gain mode — **PHYSICAL PENDING ON EXACT `7b693c8` CANDIDATE**
-- Playback/global level — **FIRST BATCH FAILED; WHOLE-DB FIX GREEN; PHYSICAL RETEST PENDING ON `7b693c8`**
-- UAC current-mode readout — **SOFTWARE IMPLEMENTED / AUTOMATED GREEN / PHYSICAL READBACK PENDING / READ-ONLY**
-
-Overall batch: **READY FOR PHYSICAL QUALIFICATION ON EXACT SIGNED `7b693c8` CANDIDATE**.
+The required next physical work is the focused finished-UX regression maintained in `docs/V0.6_RELEASE_CHECKLIST.md`. It validates the changed session/read orchestration and representative user-visible hardware actions without pretending the older protocol evidence disappeared.
 
 No merge or release is authorized by this record.
