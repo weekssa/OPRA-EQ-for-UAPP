@@ -177,6 +177,7 @@ data class BlackPearlDeviceQualificationSnapshot(
     val leftBalanceDb: Int,
     val rightBalanceDb: Int,
     val playbackGainRaw: Int,
+    val usbAudioMode: BlackPearlUsbAudioMode? = null,
 ) {
     init {
         require(sessionGeneration > 0)
