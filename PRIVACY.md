@@ -11,7 +11,7 @@ The app stores only local app-operation data needed for its features, including:
 - your saved headphones, EQ selections, exclusions, and automatic future-profile preferences;
 - Favorites, hidden-EQ preferences, review state, Personal EQs, General EQs, and captured DAC EQ metadata;
 - app appearance, default/manual EQ-target preferences, and other local settings;
-- the last-known-good canonical EQ catalog cache and legacy OPRA fallback cache when needed;
+- the last-known-good canonical EQ catalog cache and OPRA compatibility/base catalog cache;
 - generated-preset metadata, export ownership/currentness records, and locally generated preset state;
 - the Android document-tree or document access you explicitly grant through the system picker when Android allows that access to be retained;
 - exact records identifying files created by EQ Library so later regeneration, recovery, or optional cleanup can be performed safely; and
@@ -32,10 +32,10 @@ EQ Library does not upload connected-DAC settings, hardware reads, USB identifie
 The app uses Internet access for limited public-data retrieval:
 
 1. **Canonical EQ catalog:** downloading the validated live catalog from `https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/catalog-live/catalog/catalog.json` and checking it for later updates.
-2. **Legacy OPRA fallback:** if the canonical catalog path is unavailable or cannot provide a usable catalog, the maintained fallback can read the public OPRA runtime catalog from `https://opra.roonlabs.net/database_v1.jsonl`.
+2. **OPRA compatibility/base catalog:** downloading the public OPRA runtime catalog from `https://opra.roonlabs.net/database_v1.jsonl`. The current catalog bridge keeps the complete OPRA layer available and overlays canonical multi-source records/provenance on top rather than shrinking the library when the canonical snapshot is smaller.
 3. **App update metadata:** checking public GitHub Releases metadata for this project so the app can tell you when a newer EQ Library release is available.
 
-Normal Android runtime does not scrape GitHub repositories, Reddit, forums, measurement sites, or other community sources for EQ discovery. Source discovery, qualification, and canonical catalog publication happen outside the installed app; the app consumes the validated published catalog.
+Normal Android runtime does not scrape GitHub repositories, Reddit, forums, measurement sites, or other community sources for EQ discovery. Source discovery, qualification, and canonical catalog publication happen outside the installed app; the app consumes the validated published catalog plus the maintained OPRA compatibility/base feed.
 
 EQ Library does not upload your saved headphones, EQ selections, generated presets, export-folder contents, hardware state, or app settings to these services.
 
