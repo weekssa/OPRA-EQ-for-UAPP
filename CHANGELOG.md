@@ -6,6 +6,12 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ## [Unreleased]
 
+No changes yet.
+
+## [0.6.0] - 2026-09-15
+
+## [Unreleased]
+
 ### Added
 
 - **My DAC** for supported hardware, with one ViewModel-scoped DAC session shared across My EQs, My DAC, and EQ Library; successful connection/reconnection automatically refreshes supported EQ + DEVICE state and later physical reattach can reopen the replacement session after one successful current-app-session connection.
@@ -13,7 +19,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Black Pearl **Restore defaults** using the physically qualified EQ Library-owned preset: 50% volume, FAST-LL, HIGH gain, CLASS AB, centered balance, and microphone gain 0 dB, with an optional OFF-by-default **Also reset EQ to flat** action. The preset is not presented as verified TRN factory state.
 - Capability-driven FiiO JA11 My DAC/session integration while preserving its independently established native device semantics; exact physical JA11 qualification remains pending.
 - Persistent **Needs attention** recovery for exact app-owned/persisted-access preset artifacts that no longer have a confident current My EQ association. Strict recovery preserves supported PEQ values and original-file provenance, requires user-supplied missing headphone/name identity, and never scans arbitrary external storage.
-- An owner-approved premium v0.6 UX audit/blueprint covering Apple, Material 3, a combined native-Android direction, information hierarchy, navigation, top bars, settings/list anatomy, spacing, typography, icons, feedback, and accessibility. Implementation is approved; the latest corrective beta awaits physical review.
+- An owner-approved premium v0.6 UX audit/blueprint covering Apple, Material 3, a combined native-Android direction, information hierarchy, navigation, top bars, settings/list anatomy, spacing, typography, icons, feedback, and accessibility. Implementation is approved; v0.6.0 publication is complete.
 - Scheduled public GitHub/Gist community ingestion now takes discovered headphone PEQ through exact source retrieval, strict PEQ parsing, canonical headphone identity, creator/source provenance, acoustic dedupe, living-archive validation, and Unverified publication instead of leaving mechanically valid community data indefinitely review-only.
 - Community-ingestion reports record fetched/parsed/published/deduplicated/quarantined counts and machine-readable quarantine reasons; one malformed or ambiguous record cannot block unrelated valid candidates.
 - Broad General GitHub discovery is actively audited for exact parametric structure. Fixed/graphic-EQ data without source-provided Q/filter types is rejected rather than converted by invention.
@@ -54,6 +60,8 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Recovery/deletion remains bounded to exact ownership-tracked SAF documents and refuses malformed/unsupported content rather than silently dropping unsupported filters.
 
 ### Validation
+
+- Public v0.6.0 release published at https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.6.0 from merge commit `e5ffa5d00862edc3b79bf52e1508db5244845e94` via workflow run #35008912862; public APK SHA-256 is `93b5250d7f32b068f24702c9fbfacb697e7921100250ee0652981100e29adb62`.
 
 - The approved DEVICE operation-feedback UX pass passed the full Android/software gates on exact source `eef5633e18a4ac311f110493e29633bf382675e3`; Signed EQ Library Beta Candidate #1229 published the exact Pixel 9 test APK with SHA-256 `4eee1f491971bd49ec72d10033b83a548c9b970c002befe79cc944f268a4cb59`.
 - FiiO JA11 physical qualification is explicitly deferred and is not a blocker for the Black Pearl/UI v0.6 closeout; its capability/session implementation remains available for a later hardware-validation pass.
@@ -296,5 +304,5 @@ APK SHA-256: `dabf4bcdddf69853b09793f5a94bec0a3af7efb430f1cdfe26ffc35a93b783ad`
 
 The exact candidate passed Android CI #1538, CodeQL #1420, Catalog currentness CI #1826, Priority community coverage CI #1311, and Signed EQ Library Beta Candidate #1213. The signing workflow verified the pinned certificate `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`.
 
-This PASS closes the corrective Black Pearl physical gate. It does not establish TRN factory-default semantics and does not qualify FiiO JA11 hardware behavior. PR #16 remains open and draft; merge, release, and publication remain explicit owner-authorization gates.
+This PASS closes the corrective Black Pearl physical gate. It does not establish TRN factory-default semantics and does not qualify FiiO JA11 hardware behavior. PR #16 was merged and v0.6.0 publication is complete. FiiO JA11 physical qualification remains hardware-validation-pending.
 
