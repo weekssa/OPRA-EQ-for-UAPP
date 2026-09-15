@@ -57,6 +57,12 @@ class DeviceOperationStatusTest {
     }
 
     @Test
+    fun controlLabelUsesCapabilityIdAsStableFallback() {
+        assertThat(deviceOperationControlLabel(DacControlId("fiio.uac_mode")))
+            .isEqualTo("Uac mode")
+    }
+
+    @Test
     fun currentIdleSnapshotReportsCurrentDeviceState() {
         val presentation = deviceOperationStatusPresentation(
             isReading = false,
