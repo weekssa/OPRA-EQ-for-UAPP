@@ -15,6 +15,7 @@ class BlackPearlQualificationUiStateTest {
         assertThat(writing.isWriting).isTrue()
         assertThat(writing.snapshot).isEqualTo(baseline)
         assertThat(writing.lastVerifiedWriteControlId).isNull()
+        assertThat(writing.writeGeneration).isEqualTo(1L)
 
         val verified = writing.writeVerified(
             BlackPearlDeviceControls.DAC_FILTER,
@@ -24,6 +25,21 @@ class BlackPearlQualificationUiStateTest {
         assertThat(verified.isCurrentSession).isTrue()
         assertThat(verified.snapshot?.filterCode).isEqualTo(3)
         assertThat(verified.lastVerifiedWriteControlId).isEqualTo(BlackPearlDeviceControls.DAC_FILTER)
+        assertThat(verified.writeGeneration).isEqualTo(1L)
+    }
+
+    @Test
+    fun repeatedWritesOfSameControlGetDistinctGenerations() {
+        val initial = BlackPearlQualificationUiState().success(snapshot(filterCode = 2))
+        val firstVerified = initial
+            .beginWrite(BlackPearlDeviceControls.PLAYBACK_GAIN_DB)
+            .writeVerified(BlackPearlDeviceControls.PLAYBACK_GAIN_DB, snapshot(filterCode = 2))
+
+        val secondWriting = firstVerified.beginWrite(BlackPearlDeviceControls.PLAYBACK_GAIN_DB)
+
+        assertThat(firstVerified.writeGeneration).isEqualTo(1L)
+        assertThat(secondWriting.writeGeneration).isEqualTo(2L)
+        assertThat(secondWriting.lastVerifiedWriteControlId).isNull()
     }
 
     @Test
@@ -36,6 +52,7 @@ class BlackPearlQualificationUiStateTest {
         assertThat(state.isBusy).isFalse()
         assertThat(state.isCurrentSession).isFalse()
         assertThat(state.error).isEqualTo("Verification failed")
+        assertThat(state.writeGeneration).isEqualTo(1L)
     }
 
     @Test
@@ -50,12 +67,15 @@ class BlackPearlQualificationUiStateTest {
         assertThat(projected.isWriting).isTrue()
         assertThat(projected.activeWriteControlId).isEqualTo(BlackPearlDeviceControls.DAC_FILTER)
         assertThat(projected.isCurrentSession).isFalse()
+        assertThat(projected.writeGeneration).isEqualTo(writing.writeGeneration)
     }
 
     @Test
     fun currentSessionProjectionPreservesReadBusyStateWithoutPresentingOldSnapshotAsCurrent() {
         val reading = BlackPearlQualificationUiState()
             .success(snapshot(filterCode = 2))
+            .beginWrite(BlackPearlDeviceControls.DAC_FILTER)
+            .writeFailure("test")
             .beginRead()
 
         val projected = reading.withSessionCurrent(current = true)
@@ -63,6 +83,7 @@ class BlackPearlQualificationUiStateTest {
         assertThat(projected.isBusy).isTrue()
         assertThat(projected.isReading).isTrue()
         assertThat(projected.isCurrentSession).isFalse()
+        assertThat(projected.writeGeneration).isEqualTo(1L)
     }
 
     @Test
