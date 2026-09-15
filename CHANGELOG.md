@@ -49,6 +49,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Changing the active target no longer clears the currently open managed-headphone detail or drives selection reconciliation.
 - Personal EQ import/parser integration now compiles with the strict `ParametricEqTextParser` path restored.
 - Unresolved app-owned artifacts can no longer silently disappear merely because current library identity cannot be resolved; provider/permission unavailability remains unresolved instead of being treated as confirmed absence.
+- Acoustic catalog deduplication now carries app-owned export ownership forward to the canonical profile ID, so removing a preset also cleans exports created before that identity migration instead of leaving duplicate **Needs attention** entries.
 - Recovery/deletion remains bounded to exact ownership-tracked SAF documents and refuses malformed/unsupported content rather than silently dropping unsupported filters.
 
 ### Validation

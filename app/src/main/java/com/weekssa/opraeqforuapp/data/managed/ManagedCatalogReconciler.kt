@@ -35,6 +35,8 @@ internal data class ReconciledManagedProfiles(
     val profiles: List<ManagedProfileEntity>,
     val changes: ManagedCatalogChangeSummary,
     val profileIdsToDelete: Set<String> = emptySet(),
+    /** Old source IDs that were acoustically merged into the current canonical profile ID. */
+    val profileIdMigrations: Map<String, String> = emptyMap(),
 )
 
 internal fun reconcileManagedProfiles(
@@ -58,6 +60,7 @@ internal fun reconcileManagedProfiles(
     }
     val currentIds = currentProfiles.mapTo(mutableSetOf(), OpraEqProfile::id)
     val migratedAliasIds = mutableSetOf<String>()
+    val profileIdMigrations = linkedMapOf<String, String>()
     var newCount = 0
     var updatedSelectedCount = 0
     var removedSelectedCount = 0
@@ -75,6 +78,13 @@ internal fun reconcileManagedProfiles(
                 .map { it.first }
         }
         migratedAliasIds += acousticAliases.map(ManagedProfileEntity::profileId)
+        acousticAliases
+            .filter { it.profileId !in currentIds }
+            .forEach { alias ->
+                // Keep an already assigned alias stable if malformed/ambiguous source data presents
+                // the same acoustic signature more than once in the current catalog.
+                profileIdMigrations.putIfAbsent(alias.profileId, profile.id)
+            }
         val exactExisting = existingById[profile.id]
         val existing = exactExisting ?: acousticAliases.preferredMigrationSource()
         val fingerprint = snapshotCodec.fingerprint(profile)
@@ -210,6 +220,7 @@ internal fun reconcileManagedProfiles(
         profiles = (reconciledCurrent + retainedRemoved).sortedBy(ManagedProfileEntity::profileId),
         changes = changes,
         profileIdsToDelete = migratedAliasIds - currentIds,
+        profileIdMigrations = profileIdMigrations,
     )
 }
 

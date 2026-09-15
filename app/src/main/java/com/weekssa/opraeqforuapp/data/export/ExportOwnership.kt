@@ -66,6 +66,20 @@ interface ExportOwnershipDao {
     @Upsert
     suspend fun upsert(ownership: ExportOwnershipEntity)
 
+    @Query(
+        """
+        UPDATE export_ownership
+        SET profileId = :toProfileId
+        WHERE productId = :productId
+          AND profileId = :fromProfileId
+        """,
+    )
+    suspend fun migrateProfile(
+        productId: String,
+        fromProfileId: String,
+        toProfileId: String,
+    )
+
     @Query("DELETE FROM export_ownership WHERE documentUri = :documentUri")
     suspend fun delete(documentUri: String)
 }

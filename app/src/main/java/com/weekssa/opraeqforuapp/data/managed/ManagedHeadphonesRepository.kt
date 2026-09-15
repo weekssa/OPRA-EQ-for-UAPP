@@ -1,6 +1,7 @@
 package com.weekssa.opraeqforuapp.data.managed
 
 import androidx.room.withTransaction
+import com.weekssa.opraeqforuapp.data.export.ExportOwnershipDao
 import com.weekssa.opraeqforuapp.domain.catalog.OpraCatalog
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneSelection
@@ -28,6 +29,7 @@ class ManagedHeadphonesRepository(
     private val nowMillis: () -> Long = System::currentTimeMillis,
 ) {
     private val dao = database.managedHeadphonesDao()
+    private val exportOwnershipDao: ExportOwnershipDao = database.exportOwnershipDao()
 
     @Suppress("UNUSED_PARAMETER")
     fun observeHeadphones(outputId: String = DEFAULT_OUTPUT_ID): Flow<List<ManagedHeadphoneRecord>> =
@@ -193,6 +195,13 @@ class ManagedHeadphonesRepository(
                         ),
                     )
                     if (reconciled.profiles.isNotEmpty()) dao.upsertProfiles(reconciled.profiles)
+                    reconciled.profileIdMigrations.forEach { (fromProfileId, toProfileId) ->
+                        exportOwnershipDao.migrateProfile(
+                            productId = headphone.productId,
+                            fromProfileId = fromProfileId,
+                            toProfileId = toProfileId,
+                        )
+                    }
                     reconciled.profileIdsToDelete.forEach { profileId ->
                         dao.deleteProfile(headphone.productId, profileId)
                     }
