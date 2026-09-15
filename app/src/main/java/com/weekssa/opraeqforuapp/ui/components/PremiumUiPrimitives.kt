@@ -14,8 +14,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -58,7 +58,7 @@ internal fun PremiumValueRow(
     val clickableModifier = if (onClick != null) {
         Modifier
             .clickable(enabled = enabled, onClick = onClick)
-            .semantics { role = Role.Button }
+            .semantics(mergeDescendants = true) { role = Role.Button }
     } else {
         Modifier
     }
