@@ -8,7 +8,7 @@ EQ Library ships with **zero headphone or EQ profiles bundled in the APK**. It d
 
 ## Current release
 
-**v0.5.0** is the current public Android release.
+**v0.6.0** is the current public Android release.
 
 [Download the latest signed release](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/latest)
 
@@ -17,15 +17,15 @@ EQ Library ships with **zero headphone or EQ profiles bundled in the APK**. It d
 - No Google Play account, EQ Library account, or cloud account required
 - No analytics or telemetry
 
-The public v0.5.0 APK is `EQ-Library-v0.5.0.apk`. Its SHA-256 is:
+The public v0.6.0 APK is `EQ-Library-v0.6.0.apk`. Its SHA-256 is:
 
-`58e6ac5c62f9af1caf354f97cf2e7d9e2bcddea9937fac3c35532c279cd429eb`
+`93b5250d7f32b068f24702c9fbfacb697e7921100250ee0652981100e29adb62`
 
 Android may ask you to allow installation from the browser or file manager used to open the APK because GitHub Releases are installed outside an app store. EQ Library itself does not request package-install permission and never silently installs updates.
 
-## v0.6.0 release candidate
+## v0.6.0 release
 
-The `v0.6-my-dac` branch contains the release candidate for EQ Library v0.6.0. The exact signed candidate passed the focused Pixel 9 Black Pearl/UI smoke test; public publication is being completed from the validated source.
+v0.6.0 is publicly released from merge commit `e5ffa5d00862edc3b79bf52e1508db5244845e94`. The signed release build passed the controlled publication workflow; the focused Pixel 9 Black Pearl/UI smoke test passed on exact behavior evidence source `eef5633e18a4ac311f110493e29633bf382675e3`.
 
 The approved v0.6 direction includes:
 
@@ -49,7 +49,7 @@ TRN Black Pearl automatic physical reattach, Restore defaults, and the final DEV
 - Browse headphone EQs by **Manufacturer → Model**, with deeper identity only when a source genuinely verifies it.
 - Search the canonical library without hiding valid curves merely because the active output cannot represent them.
 - Browse standalone **General EQs** in Sound, Genre, and Utility groups when the source itself supports that classification.
-- Keep one local **My EQs** collection independent of the current output target on the v0.6 development branch.
+- Keep one local **My EQs** collection independent of the current output target on the v0.6.0 release.
 - Favorite saved EQs and locally Hide/Unhide canonical EQ lineages without deleting source history.
 - Review new or changed EQs explicitly. **Notify me about new EQs** is attention-only and never silently selects a profile.
 - Import personal Equalizer APO / AutoEq-style parametric text from paste or Android file selection.
@@ -72,15 +72,15 @@ Exports use Android's system folder picker. EQ Library does not request broad st
 
 ## Hardware support
 
-| Device | EQ Library behavior | v0.5.0 status |
+| Device | EQ Library behavior | v0.6.0 status |
 | --- | --- | --- |
-| **TRN Black Pearl** | `.txt` export, 10-band Direct Flash, playback-gain/headroom handling, Reset EQ to flat | **Hardware-qualified for the v0.5 path** |
+| **TRN Black Pearl** | `.txt` export, 10-band Direct Flash, playback-gain/headroom handling, Reset EQ to flat | **Hardware-qualified for the v0.6.0 path** |
 | **FiiO JA11** | Hardware-only 5-band Direct Flash, global EQ gain, Apply/Save/readback, Reset EQ to flat | **Hardware validation pending** |
 | **JCALLY JM12 (stock firmware)** | Hardware-only 5-band Direct Flash, readback verification, tracked playback-gain adjustment, Reset EQ to flat | **Hardware validation pending · power-cycle persistence unclaimed** |
 
 Direct Flash is OFF by default for newly introduced hardware outputs. Add/Save never automatically writes to a DAC. Flash and Reset require explicit confirmation where the maintained device safety contract requires it.
 
-EQ Library does **not** include firmware update, bootloader, cross-flash, or unrelated DAC-management commands in v0.5.0.
+EQ Library does **not** include firmware update, bootloader, cross-flash, or unrelated DAC-management commands in v0.6.0.
 
 ### TRN Black Pearl
 
@@ -96,9 +96,9 @@ Black Pearl `.txt` export uses the verified pyBlackPearl `PK / LS / HS` peak/she
 
 ### FiiO JA11 and JCALLY JM12
 
-v0.5.0 includes implemented Direct Flash paths for FiiO JA11 on normal FiiO firmware and JCALLY JM12 on stock firmware. Each has its own strict USB identity, device representation, confirmation flow, and readback/failure handling.
+v0.6.0 includes implemented Direct Flash paths for FiiO JA11 on normal FiiO firmware and JCALLY JM12 on stock firmware. Each has its own strict USB identity, device representation, confirmation flow, and readback/failure handling.
 
-The physical devices were not available for the required Pixel 9 hands-on qualification before v0.5.0 publication, so both remain visibly **Hardware validation pending**. Stock JM12 power-cycle persistence is not claimed until it is established on hardware.
+The physical devices were not available for the required Pixel 9 hands-on qualification before v0.6.0 publication, so both remain visibly **Hardware validation pending**. Stock JM12 power-cycle persistence is not claimed until it is established on hardware.
 
 The v0.6 product roadmap focuses on **TRN Black Pearl → FiiO**. Historical/internal JCALLY protocol material may remain for reference, but JCALLY is not current/upcoming v0.6 product UX.
 
@@ -156,7 +156,7 @@ The release workflow verified the same permanent signing identity pinned in [`re
 
 For v0.6, the Black Pearl Restore-defaults physical PASS is pinned to exact signed source `b0340842dd88dc85613d9441fcc72ceadf877b20`; its APK SHA-256 is `dcae4f54881976af70e93c2c796b6993697d1a0a8f333698e9d925933c61ff37`. Documentation-only closeout does not replace that behavior evidence unless it changes the qualified transaction semantics.
 
-v0.6 remains a draft development release until its final exact-head software/documentation/signing gates pass and the project owner explicitly authorizes merge/publication. Passing CI alone does not publish a release.
+The public v0.6.0 release was built, tested, signed, and published from merge commit `e5ffa5d00862edc3b79bf52e1508db5244845e94` via [Signed GitHub Release workflow run #35008912862](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/35008912862). The release is [EQ Library v0.6.0](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.6.0); its APK is `EQ-Library-v0.6.0.apk` with SHA-256 `93b5250d7f32b068f24702c9fbfacb697e7921100250ee0652981100e29adb62`. The signer certificate remains `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`. FiiO JA11 physical qualification remains deferred and is not a blocker for v0.6.0.
 
 Installable releases use SemVer during the `0.x` development series. The first stable release is reserved for `v1.0.0`.
 
@@ -168,6 +168,7 @@ USB Audio Player PRO/UAPP, ToneBoosters, OPRA, Roon Labs, TRN, FiiO, JCALLY, TOP
 
 ## Documentation
 
+- [docs/releases/v0.6.0.md](docs/releases/v0.6.0.md) — v0.6.0 release notes and validation record
 - [docs/releases/v0.5.0.md](docs/releases/v0.5.0.md) — v0.5.0 release notes and validation record
 - [CHANGELOG.md](CHANGELOG.md) — release history and notable changes
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — Android/MAD architecture and invariants
