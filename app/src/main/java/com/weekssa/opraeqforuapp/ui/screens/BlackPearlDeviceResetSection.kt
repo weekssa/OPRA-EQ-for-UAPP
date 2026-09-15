@@ -30,6 +30,33 @@ import com.weekssa.opraeqforuapp.ui.components.PremiumSectionLabel
 import com.weekssa.opraeqforuapp.ui.components.PremiumValueRow
 import kotlinx.coroutines.launch
 
+internal enum class BlackPearlRestoreStepVerification {
+    WAITING,
+    SATISFIED,
+    MISMATCH,
+}
+
+/**
+ * Decide whether an already-issued restore step is ready to advance.
+ *
+ * Compose can re-run the reset effect immediately after local issued-step state changes, before the
+ * ViewModel's beginWrite state has propagated back through the combined UI StateFlow. Treating that
+ * stale pre-write snapshot as a failed readback can falsely abort the restore after the safety-volume
+ * step. A restore step is therefore never judged until the ViewModel reports that this exact control
+ * completed verification.
+ */
+internal fun blackPearlRestoreStepVerification(
+    isBusy: Boolean,
+    lastVerifiedWriteControlId: DacControlId?,
+    expectedControlId: DacControlId,
+    requestedValueSatisfied: Boolean,
+): BlackPearlRestoreStepVerification = when {
+    isBusy -> BlackPearlRestoreStepVerification.WAITING
+    lastVerifiedWriteControlId != expectedControlId -> BlackPearlRestoreStepVerification.WAITING
+    requestedValueSatisfied -> BlackPearlRestoreStepVerification.SATISFIED
+    else -> BlackPearlRestoreStepVerification.MISMATCH
+}
+
 /**
  * Black Pearl reset surface for the project-owner selected EQ Library defaults.
  *
@@ -69,6 +96,8 @@ internal fun BlackPearlDeviceResetSection(
         issuedStepIndex,
         eqResetRunning,
         state.isBusy,
+        state.activeWriteControlId,
+        state.lastVerifiedWriteControlId,
         state.snapshot,
         state.isCurrentSession,
         state.error,
@@ -77,11 +106,16 @@ internal fun BlackPearlDeviceResetSection(
 
         val snapshot = state.snapshot
         if (state.error != null || snapshot == null || !state.isCurrentSession) {
+            val safetyNote = if (resetStepIndex > 0) {
+                " Volume may remain at the 0% safety level; refresh the device state before retrying."
+            } else {
+                ""
+            }
             resetStepIndex = IDLE_STEP
             issuedStepIndex = IDLE_STEP
             onMessage(
-                state.error?.let { "Restore stopped: $it" }
-                    ?: "Restore stopped because the current Black Pearl state could not be verified.",
+                (state.error?.let { "Restore stopped: $it" }
+                    ?: "Restore stopped because the current Black Pearl state could not be verified.") + safetyNote,
             )
             return@LaunchedEffect
         }
@@ -109,13 +143,27 @@ internal fun BlackPearlDeviceResetSection(
             return@LaunchedEffect
         }
 
-        if (BlackPearlDeviceDefaults.isStepSatisfied(step, snapshot)) {
-            issuedStepIndex = IDLE_STEP
-            resetStepIndex += 1
-        } else {
-            resetStepIndex = IDLE_STEP
-            issuedStepIndex = IDLE_STEP
-            onMessage("Restore stopped because the requested Black Pearl setting could not be verified.")
+        when (
+            blackPearlRestoreStepVerification(
+                isBusy = state.isBusy,
+                lastVerifiedWriteControlId = state.lastVerifiedWriteControlId,
+                expectedControlId = step.controlId,
+                requestedValueSatisfied = BlackPearlDeviceDefaults.isStepSatisfied(step, snapshot),
+            )
+        ) {
+            BlackPearlRestoreStepVerification.WAITING -> return@LaunchedEffect
+            BlackPearlRestoreStepVerification.SATISFIED -> {
+                issuedStepIndex = IDLE_STEP
+                resetStepIndex += 1
+            }
+            BlackPearlRestoreStepVerification.MISMATCH -> {
+                resetStepIndex = IDLE_STEP
+                issuedStepIndex = IDLE_STEP
+                onMessage(
+                    "Restore stopped because the verified Black Pearl setting did not match the requested value. " +
+                        "Volume may remain at the 0% safety level; refresh the device state before retrying.",
+                )
+            }
         }
     }
 
