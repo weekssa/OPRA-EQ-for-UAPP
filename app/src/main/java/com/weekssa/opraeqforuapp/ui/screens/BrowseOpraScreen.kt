@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
@@ -255,6 +256,11 @@ private fun HeadphoneBrowseRoot(
 
         if (searchQuery.isBlank()) {
             val vendors = catalog.vendors.sortedBy { it.name.lowercase() }
+            Text(
+                text = stringResource(R.string.manufacturers),
+                modifier = Modifier.padding(vertical = 8.dp),
+                style = MaterialTheme.typography.titleSmall,
+            )
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 if (vendors.isEmpty()) {
                     item(key = "no-headphones") {
@@ -274,7 +280,7 @@ private fun HeadphoneBrowseRoot(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(min = 48.dp)
+                            .heightIn(min = 56.dp)
                             .clickable { onVendorSelected(vendor.id) },
                     )
                     HorizontalDivider()
@@ -314,7 +320,7 @@ private fun HeadphoneBrowseRoot(
                             trailingContent = { Text(profileText) },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .heightIn(min = 48.dp)
+                                .heightIn(min = 56.dp)
                                 .clickable { onProductSelected(result.product) },
                         )
                         HorizontalDivider()
@@ -372,13 +378,14 @@ private fun GeneralEqBrowse(
             onValueChange = onSearchQueryChange,
             labelResId = R.string.search_general_eqs,
         )
-        Row(
+        LazyRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            GeneralFilter.entries.forEachIndexed { index, filter ->
+            items(GeneralFilter.entries.size) { index ->
+                val filter = GeneralFilter.entries[index]
                 FilterChip(
                     selected = selectedFilterIndex == index,
                     onClick = { onFilterSelected(index) },
@@ -405,11 +412,11 @@ private fun GeneralEqBrowse(
                 enabled = matching.isNotEmpty(),
             ) { Text(stringResource(R.string.action_select_none)) }
         }
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(bottom = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Button(
                 onClick = {
@@ -421,6 +428,7 @@ private fun GeneralEqBrowse(
                     }
                 },
                 enabled = selectedPresets.isNotEmpty(),
+                modifier = Modifier.fillMaxWidth(),
             ) { Text(stringResource(R.string.save_selected_count, selectedPresets.size)) }
             OutlinedButton(
                 onClick = {
@@ -432,6 +440,7 @@ private fun GeneralEqBrowse(
                     }
                 },
                 enabled = selectedPresets.isNotEmpty(),
+                modifier = Modifier.fillMaxWidth(),
             ) { Text(stringResource(R.string.action_hide_selected)) }
         }
 
@@ -492,6 +501,7 @@ private fun GeneralEqBrowse(
                                 },
                             )
                         },
+                        modifier = Modifier.heightIn(min = 56.dp),
                     )
                     HorizontalDivider()
                 }
@@ -511,7 +521,7 @@ private fun SearchField(
         onValueChange = onValueChange,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 12.dp, bottom = 8.dp),
+            .padding(top = 12.dp, bottom = 12.dp),
         singleLine = true,
         label = { Text(stringResource(labelResId)) },
         trailingIcon = if (value.isNotEmpty()) {
@@ -571,7 +581,7 @@ private fun VendorProducts(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 48.dp)
+                        .heightIn(min = 56.dp)
                         .clickable { onProductSelected(product) },
                 )
                 HorizontalDivider()
