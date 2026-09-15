@@ -40,19 +40,23 @@ internal enum class BlackPearlRestoreStepVerification {
  * Decide whether an already-issued restore step is ready to advance.
  *
  * Compose can re-run the reset effect immediately after local issued-step state changes, before the
- * ViewModel's beginWrite state has propagated back through the combined UI StateFlow. Treating that
- * stale pre-write snapshot as a failed readback can falsely abort the restore after the safety-volume
- * step. A restore step is therefore never judged until the ViewModel reports that this exact control
- * completed verification.
+ * ViewModel's beginWrite state has propagated back through the combined UI StateFlow. The restore
+ * also writes playback twice (safety floor, then final 50%), so control identity alone is not enough.
+ * A step is judged only after the ViewModel's monotonically increasing write generation proves that
+ * a new write cycle started after this step was issued and that exact cycle completed verification.
  */
 internal fun blackPearlRestoreStepVerification(
     isBusy: Boolean,
+    writeGeneration: Long,
+    issuedFromWriteGeneration: Long?,
     lastVerifiedWriteControlId: DacControlId?,
     expectedControlId: DacControlId,
     requestedValueSatisfied: Boolean,
 ): BlackPearlRestoreStepVerification = when {
+    issuedFromWriteGeneration == null -> BlackPearlRestoreStepVerification.WAITING
+    writeGeneration <= issuedFromWriteGeneration -> BlackPearlRestoreStepVerification.WAITING
     isBusy -> BlackPearlRestoreStepVerification.WAITING
-    lastVerifiedWriteControlId != expectedControlId -> BlackPearlRestoreStepVerification.WAITING
+    lastVerifiedWriteControlId != expectedControlId -> BlackPearlRestoreStepVerification.MISMATCH
     requestedValueSatisfied -> BlackPearlRestoreStepVerification.SATISFIED
     else -> BlackPearlRestoreStepVerification.MISMATCH
 }
@@ -82,6 +86,7 @@ internal fun BlackPearlDeviceResetSection(
     var eqResetResult by rememberSaveable { mutableStateOf<String?>(null) }
     var resetStepIndex by rememberSaveable { mutableIntStateOf(IDLE_STEP) }
     var issuedStepIndex by rememberSaveable { mutableIntStateOf(IDLE_STEP) }
+    var issuedFromWriteGeneration by rememberSaveable { mutableStateOf<Long?>(null) }
 
     val resetInProgress = eqResetRunning || resetStepIndex >= 0
     val canStartReset = enabled &&
@@ -94,10 +99,12 @@ internal fun BlackPearlDeviceResetSection(
     LaunchedEffect(
         resetStepIndex,
         issuedStepIndex,
+        issuedFromWriteGeneration,
         eqResetRunning,
         state.isBusy,
         state.activeWriteControlId,
         state.lastVerifiedWriteControlId,
+        state.writeGeneration,
         state.snapshot,
         state.isCurrentSession,
         state.error,
@@ -113,6 +120,7 @@ internal fun BlackPearlDeviceResetSection(
             }
             resetStepIndex = IDLE_STEP
             issuedStepIndex = IDLE_STEP
+            issuedFromWriteGeneration = null
             onMessage(
                 (state.error?.let { "Restore stopped: $it" }
                     ?: "Restore stopped because the current Black Pearl state could not be verified.") + safetyNote,
@@ -124,6 +132,7 @@ internal fun BlackPearlDeviceResetSection(
             val eqResult = eqResetResult
             resetStepIndex = IDLE_STEP
             issuedStepIndex = IDLE_STEP
+            issuedFromWriteGeneration = null
             eqResetResult = null
             onMessage(
                 buildString {
@@ -138,6 +147,7 @@ internal fun BlackPearlDeviceResetSection(
         if (issuedStepIndex != resetStepIndex) {
             // Route every restore target through the normal verified DEVICE path once. If a target is
             // already current, the repository may resolve it as a verified no-op rather than writing it.
+            issuedFromWriteGeneration = state.writeGeneration
             issuedStepIndex = resetStepIndex
             onSetDeviceControl(step.controlId, step.requestedValue)
             return@LaunchedEffect
@@ -146,6 +156,8 @@ internal fun BlackPearlDeviceResetSection(
         when (
             blackPearlRestoreStepVerification(
                 isBusy = state.isBusy,
+                writeGeneration = state.writeGeneration,
+                issuedFromWriteGeneration = issuedFromWriteGeneration,
                 lastVerifiedWriteControlId = state.lastVerifiedWriteControlId,
                 expectedControlId = step.controlId,
                 requestedValueSatisfied = BlackPearlDeviceDefaults.isStepSatisfied(step, snapshot),
@@ -154,11 +166,13 @@ internal fun BlackPearlDeviceResetSection(
             BlackPearlRestoreStepVerification.WAITING -> return@LaunchedEffect
             BlackPearlRestoreStepVerification.SATISFIED -> {
                 issuedStepIndex = IDLE_STEP
+                issuedFromWriteGeneration = null
                 resetStepIndex += 1
             }
             BlackPearlRestoreStepVerification.MISMATCH -> {
                 resetStepIndex = IDLE_STEP
                 issuedStepIndex = IDLE_STEP
+                issuedFromWriteGeneration = null
                 onMessage(
                     "Restore stopped because the verified Black Pearl setting did not match the requested value. " +
                         "Volume may remain at the 0% safety level; refresh the device state before retrying.",
@@ -227,6 +241,7 @@ internal fun BlackPearlDeviceResetSection(
                         dialogOpen = false
                         eqResetResult = null
                         issuedStepIndex = IDLE_STEP
+                        issuedFromWriteGeneration = null
                         if (includeEqReset) {
                             eqResetRunning = true
                             scope.launch {
