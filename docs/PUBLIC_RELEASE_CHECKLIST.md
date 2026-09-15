@@ -37,19 +37,24 @@ These apply to every installable GitHub release:
 
 # v0.6.0 — COMPLETE
 
-**Release source:** `eef5633e18a4ac311f110493e29633bf382675e3`  
-**Signed beta candidate:** `EQ-Library-v0.6.0-beta-eef5633.apk`  
-**Candidate SHA-256:** `4eee1f491971bd49ec72d10033b83a548c9b970c002befe79cc944f268a4cb59`  
+**Published:** 2026-09-15  
+**Tag:** `v0.6.0`  
+**Release:** https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.6.0  
+**Release workflow:** https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/35008912862  
+**Release source:** `e5ffa5d00862edc3b79bf52e1508db5244845e94`  
+**Behavior evidence source:** `eef5633e18a4ac311f110493e29633bf382675e3`  
+**Public APK:** `EQ-Library-v0.6.0.apk`  
+**Public APK SHA-256:** `93b5250d7f32b068f24702c9fbfacb697e7921100250ee0652981100e29adb62`  
 **Signing certificate:** `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`
 
-Status: **Implementation, automated gates, signed-candidate verification, and owner-reported Pixel 9 Black Pearl/UI smoke testing passed.**
+Status: **Published.** Implementation, automated gates, signed-candidate verification, owner-reported Pixel 9 Black Pearl/UI smoke testing, controlled publication, and public asset verification passed.
 
 ## Product and documentation
 
 - [x] `docs/releases/v0.6.0.md` contains curated release notes.
-- [x] `CHANGELOG.md` records the My DAC, operation-feedback, recovery, and validation changes.
-- [x] `README.md` describes the v0.6 candidate and current hardware-validation status.
-- [x] `docs/V0.6_MY_DAC_STATUS.md` records exact source, candidate, automated gates, and owner-reported Pixel 9 PASS.
+- [x] `CHANGELOG.md` records the My DAC, operation-feedback, recovery, validation, and public-release changes.
+- [x] `README.md` describes v0.6.0 as the current public release and includes the public APK checksum.
+- [x] `docs/V0.6_MY_DAC_STATUS.md` records exact behavior evidence, merge/publication provenance, and owner-reported Pixel 9 PASS.
 - [x] FiiO JA11 physical qualification is explicitly deferred and is not a release blocker.
 
 ## Automated and physical validation
@@ -63,10 +68,10 @@ Status: **Implementation, automated gates, signed-candidate verification, and ow
 
 ## Publication
 
-- [ ] PR #16 marked ready and merged.
-- [ ] Signed GitHub Release workflow run in publish mode for `v0.6.0`.
-- [ ] Public release assets, checksum, signer verification, and latest-release metadata verified.
-- [ ] README current-release section updated to the published v0.6.0 APK.
+- [x] PR #16 marked ready and merged.
+- [x] Signed GitHub Release workflow run in publish mode for `v0.6.0`.
+- [x] Public release assets, checksum, signer verification, and latest-release metadata verified.
+- [x] README current-release section updated to the published v0.6.0 APK.
 
 # v0.5.0 — COMPLETE
 
