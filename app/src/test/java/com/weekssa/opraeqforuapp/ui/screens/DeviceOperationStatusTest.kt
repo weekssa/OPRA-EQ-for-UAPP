@@ -57,6 +57,34 @@ class DeviceOperationStatusTest {
     }
 
     @Test
+    fun sharedFeedbackModelUsesApplyingPhase() {
+        val feedback = deviceOperationFeedback(
+            isWriting = true,
+            activeWriteControlId = volume,
+            pendingVerificationControlId = null,
+            lastVerifiedWriteControlId = null,
+            error = null,
+        )
+
+        assertThat(feedback?.phase).isEqualTo(DeviceOperationPhase.APPLYING)
+        assertThat(feedback?.controlId).isEqualTo(volume)
+    }
+
+    @Test
+    fun sharedFeedbackModelUsesReconnectPhase() {
+        val feedback = deviceOperationFeedback(
+            isWriting = false,
+            activeWriteControlId = null,
+            pendingVerificationControlId = volume,
+            lastVerifiedWriteControlId = null,
+            error = null,
+        )
+
+        assertThat(feedback?.phase).isEqualTo(DeviceOperationPhase.RECONNECTING)
+        assertThat(feedback?.controlId).isEqualTo(volume)
+    }
+
+    @Test
     fun controlLabelUsesCapabilityIdAsStableFallback() {
         assertThat(deviceOperationControlLabel(DacControlId("fiio.uac_mode")))
             .isEqualTo("Uac Mode")
