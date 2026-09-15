@@ -17,6 +17,7 @@ Before substantive work, read this file and the current documents relevant to th
 - `docs/V0.5_HANDS_ON_RELEASE_CHECKLIST.md` for the current v0.5 **Phase 2** Pixel 9 release-candidate testing record
 - `docs/V0.6_MY_DAC_APPROVED_DESIGN.md` for the approved v0.6 My DAC UX/behavior contract
 - `docs/V0.6_MY_DAC_IMPLEMENTATION_PLAN.md` for the current v0.6 architecture, sequencing, tests, and release gates
+- `docs/V0.7_EW300_DSP_IMPLEMENTATION_PLAN.md` for the approved next-hardware scope, evidence gates, additive framework contract, automated validation, and signed owner-testing handoff
 - `docs/V0.6_MY_DAC_STATUS.md` for the concise current v0.6 branch/hardware/UX state
 - `docs/V0.6_LIBRARY_OWNERSHIP_AND_RECOVERY.md` for the current device-agnostic My EQs ownership and Needs attention recovery contract; where older architecture text still says My EQs is output-specific, this newer authority wins
 - `docs/BLACK_PEARL_PROTOCOL_NOTES.md` when Black Pearl behavior is involved
@@ -222,6 +223,12 @@ Rules:
 Historical internal class names containing `Kt02h20` or `FiveBand` are implementation-compatibility names only; do not infer a product limitation from those names.
 
 My DAC manual editing must reuse the same deterministic response/headroom principles. Do not create a Compose-only clipping heuristic. A local edit plan evaluates the complete planned native response, determines required safe headroom using verified device semantics, separates headroom warnings from device-limit/unsupported-value warnings, and requires review before any hardware write.
+
+### Planned v0.7 SIMGOT EW300 DSP cable
+
+The next planned hardware addition is the USB-C DAC/DSP cable supplied with the SIMGOT EW300 DSP. It is **not supported by v0.6.0**. Work follows `docs/V0.7_EW300_DSP_IMPLEMENTATION_PLAN.md` and must reuse the current output registry, immutable device capabilities, shared finite-hardware response adapter, authoritative DAC session, and approved My DAC/Flash/capture/reset UX.
+
+The exact USB identity, protocol, ranges, quantization, persistence, and reset semantics remain discovery gates. Do not infer compatibility from a chipset, browser tool, community report, or similarity to FiiO/JCALLY behavior. No production write path is enabled until the exact supported command set is independently established and the owner's original cable state is preserved. Implementation stops at a signed testing candidate; merge and release require an exact-candidate physical PASS and explicit owner authorization.
 
 ## 11. TRN Black Pearl
 
