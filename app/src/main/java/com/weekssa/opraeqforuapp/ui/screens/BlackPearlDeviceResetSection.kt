@@ -214,14 +214,6 @@ internal fun BlackPearlDeviceResetSection(
             null
         },
     )
-    if (resetInProgress) {
-        Text(
-            text = if (eqResetRunning) "Resetting EQ to flat…" else "Restoring device defaults…",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.primary,
-        )
-    }
-
     if (dialogOpen) {
         AlertDialog(
             onDismissRequest = { dialogOpen = false },
