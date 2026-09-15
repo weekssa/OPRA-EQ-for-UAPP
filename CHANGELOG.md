@@ -30,6 +30,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - DAC-captured EQs use the source DAC as provenance only and become normal device-agnostic Personal EQs.
 - EQ selection/Flash lives where the EQ already lives in **My EQs** and **EQ Library**; My DAC no longer duplicates this with a Change EQ chooser.
 - Black Pearl DEVICE settings use one concise current-value/edit surface with immediate qualified write + verified readback for routine settings and short confirmation only for level-sensitive changes; full-EQ editing remains staged locally until Review → Apply.
+- My DAC operation feedback now uses one shared bottom snackbar lifecycle for Applying, reconnect verification, verified success, and recoverable failure. The DEVICE header keeps a fixed connection summary so settings never jump during hardware work; the same contract is ready for additional capability-driven DAC adapters.
 - `github-community` is a daily scheduled source with source-health ownership. Public exact structured community PEQ uses the established Unverified community policy while specific source restrictions remain binding.
 - Source maintenance is now automation-first: every registered source with a legitimate stable public retrieval path is scheduled or runtime-managed; sources that cannot currently be automated safely are explicitly paused rather than depending on recurring manual input.
 - Head-Fi and Audio Science Review moved from manual/curated currentness to weekly scheduled public adapters.
