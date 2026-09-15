@@ -49,6 +49,77 @@ internal fun deviceOperationStatusPresentation(
     }
 }
 
+internal enum class DeviceOperationPhase {
+    APPLYING,
+    RECONNECTING,
+    VERIFIED,
+    FAILED,
+}
+
+internal data class DeviceOperationFeedback(
+    val signature: String,
+    val phase: DeviceOperationPhase,
+    val controlId: DacControlId? = null,
+    val error: String? = null,
+)
+
+internal fun deviceOperationStateSignature(
+    isWriting: Boolean,
+    activeWriteControlId: DacControlId?,
+    pendingVerificationControlId: DacControlId?,
+    lastVerifiedWriteControlId: DacControlId?,
+    error: String?,
+): String = listOf(
+    isWriting,
+    activeWriteControlId?.value,
+    pendingVerificationControlId?.value,
+    lastVerifiedWriteControlId?.value,
+    error,
+).joinToString("|")
+
+/**
+ * Maps any capability-driven DAC transaction into the shared UI lifecycle. Hardware adapters keep
+ * protocol/session semantics; the app shell only renders these truthful phases.
+ */
+internal fun deviceOperationFeedback(
+    isWriting: Boolean,
+    activeWriteControlId: DacControlId?,
+    pendingVerificationControlId: DacControlId?,
+    lastVerifiedWriteControlId: DacControlId?,
+    error: String?,
+): DeviceOperationFeedback? {
+    val signature = deviceOperationStateSignature(
+        isWriting = isWriting,
+        activeWriteControlId = activeWriteControlId,
+        pendingVerificationControlId = pendingVerificationControlId,
+        lastVerifiedWriteControlId = lastVerifiedWriteControlId,
+        error = error,
+    )
+    return when {
+        isWriting && activeWriteControlId != null -> DeviceOperationFeedback(
+            signature = signature,
+            phase = DeviceOperationPhase.APPLYING,
+            controlId = activeWriteControlId,
+        )
+        pendingVerificationControlId != null -> DeviceOperationFeedback(
+            signature = signature,
+            phase = DeviceOperationPhase.RECONNECTING,
+            controlId = pendingVerificationControlId,
+        )
+        lastVerifiedWriteControlId != null -> DeviceOperationFeedback(
+            signature = signature,
+            phase = DeviceOperationPhase.VERIFIED,
+            controlId = lastVerifiedWriteControlId,
+        )
+        error != null -> DeviceOperationFeedback(
+            signature = signature,
+            phase = DeviceOperationPhase.FAILED,
+            error = error,
+        )
+        else -> null
+    }
+}
+
 /**
  * Shared My DAC DEVICE operation header.
  *
