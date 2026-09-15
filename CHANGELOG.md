@@ -6,7 +6,9 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ## [Unreleased]
 
-No changes yet.
+### Documentation
+
+- Added the approved v0.7 SIMGOT EW300 DSP implementation plan, including protocol-evidence gates, reuse of the scalable My DAC framework, automated validation, signed-candidate handoff, and the owner physical-test boundary.
 
 ## [0.6.0] - 2026-09-15
 
