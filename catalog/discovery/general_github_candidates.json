@@ -1,31 +1,6 @@
 {
-  "candidate_count": 3,
+  "candidate_count": 2,
   "candidates": [
-    {
-      "candidate_id": "github-general-ae8f09d5d58bc5b41fa51da6",
-      "content_sha": "bd76ed3166b82eff0d95aaad695a01f99cf575ba",
-      "creator": null,
-      "creator_is_explicit": false,
-      "license_review_required": false,
-      "path": "src/store/eqStore.ts",
-      "platform": "github_code",
-      "publication_eligible": false,
-      "qualification_required": [
-        "source_provenance",
-        "explicit_general_eq_intent_and_category",
-        "structured_parametric_eq_parse",
-        "canonical_dedupe"
-      ],
-      "redistribution": "structured-data-only",
-      "repository": "Psysonic/psysonic",
-      "scope_hint": "general",
-      "source_account": "Psysonic",
-      "source_id": "github-community",
-      "source_kind": "community_repository",
-      "source_record_id": "Psysonic/psysonic:src/store/eqStore.ts:bd76ed3166b82eff0d95aaad695a01f99cf575ba",
-      "status": "new_candidate",
-      "url": "https://github.com/Psysonic/psysonic/blob/b7df7133d8c3eb05d734cd6fea2cd776741dc5f0/src/store/eqStore.ts"
-    },
     {
       "candidate_id": "github-general-90902e40d9317c277646be44",
       "content_sha": "74c113a0bfb64759dc41f040a10449c267d109b0",
