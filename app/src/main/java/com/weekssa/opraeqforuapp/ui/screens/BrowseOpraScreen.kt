@@ -25,7 +25,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
@@ -381,7 +380,7 @@ private fun GeneralEqBrowse(
         LazyRow(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 8.dp),
+                .padding(bottom = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             items(GeneralFilter.entries.size) { index ->
@@ -395,53 +394,56 @@ private fun GeneralEqBrowse(
         }
         Text(
             text = stringResource(R.string.general_eq_standalone_note),
-            modifier = Modifier.padding(bottom = 4.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            TextButton(
-                onClick = { batchSelectedIds = batchSelectedIds + matching.map(GeneralEqPreset::id) },
-                enabled = matching.isNotEmpty(),
-            ) { Text(stringResource(R.string.action_select_all)) }
-            TextButton(
-                onClick = { batchSelectedIds = batchSelectedIds - matching.map(GeneralEqPreset::id).toSet() },
-                enabled = matching.isNotEmpty(),
-            ) { Text(stringResource(R.string.action_select_none)) }
-        }
-        Column(
+        LazyRow(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(bottom = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Button(
-                onClick = {
-                    val toSave = selectedPresets.toList()
-                    scope.launch {
-                        onSavePresets(toSave)
-                        batchSelectedIds = emptySet()
-                        onMessage(savedMessage)
-                    }
-                },
-                enabled = selectedPresets.isNotEmpty(),
-                modifier = Modifier.fillMaxWidth(),
-            ) { Text(stringResource(R.string.save_selected_count, selectedPresets.size)) }
-            OutlinedButton(
-                onClick = {
-                    val canonicalIds = selectedCanonicalIds.toSet()
-                    scope.launch {
-                        onHideCanonicalProfiles(canonicalIds)
-                        batchSelectedIds = emptySet()
-                        onMessage(hiddenMessage)
-                    }
-                },
-                enabled = selectedPresets.isNotEmpty(),
-                modifier = Modifier.fillMaxWidth(),
-            ) { Text(stringResource(R.string.action_hide_selected)) }
+            item {
+                TextButton(
+                    onClick = { batchSelectedIds = batchSelectedIds + matching.map(GeneralEqPreset::id) },
+                    enabled = matching.isNotEmpty(),
+                ) { Text(stringResource(R.string.action_select_all)) }
+            }
+            if (selectedPresets.isNotEmpty()) {
+                item {
+                    TextButton(
+                        onClick = {
+                            batchSelectedIds = batchSelectedIds - matching.map(GeneralEqPreset::id).toSet()
+                        },
+                    ) { Text(stringResource(R.string.action_select_none)) }
+                }
+                item {
+                    Button(
+                        onClick = {
+                            val toSave = selectedPresets.toList()
+                            scope.launch {
+                                onSavePresets(toSave)
+                                batchSelectedIds = emptySet()
+                                onMessage(savedMessage)
+                            }
+                        },
+                        modifier = Modifier.heightIn(min = 48.dp),
+                    ) { Text(stringResource(R.string.save_selected_count, selectedPresets.size)) }
+                }
+                item {
+                    TextButton(
+                        onClick = {
+                            val canonicalIds = selectedCanonicalIds.toSet()
+                            scope.launch {
+                                onHideCanonicalProfiles(canonicalIds)
+                                batchSelectedIds = emptySet()
+                                onMessage(hiddenMessage)
+                            }
+                        },
+                    ) { Text(stringResource(R.string.action_hide_selected)) }
+                }
+            }
         }
 
         if (matching.isEmpty()) {
@@ -521,7 +523,7 @@ private fun SearchField(
         onValueChange = onValueChange,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 12.dp, bottom = 12.dp),
+            .padding(top = 8.dp, bottom = 6.dp),
         singleLine = true,
         label = { Text(stringResource(labelResId)) },
         trailingIcon = if (value.isNotEmpty()) {
