@@ -8,6 +8,7 @@ data class BlackPearlQualificationUiState(
     val isWriting: Boolean = false,
     val activeWriteControlId: DacControlId? = null,
     val lastVerifiedWriteControlId: DacControlId? = null,
+    val writeGeneration: Long = 0L,
     val snapshot: BlackPearlDeviceQualificationSnapshot? = null,
     val isCurrentSession: Boolean = false,
     val error: String? = null,
@@ -33,11 +34,15 @@ data class BlackPearlQualificationUiState(
         error = null,
     )
 
-    fun success(snapshot: BlackPearlDeviceQualificationSnapshot): BlackPearlQualificationUiState =
-        BlackPearlQualificationUiState(
-            snapshot = snapshot,
-            isCurrentSession = true,
-        )
+    fun success(snapshot: BlackPearlDeviceQualificationSnapshot): BlackPearlQualificationUiState = copy(
+        isReading = false,
+        isWriting = false,
+        activeWriteControlId = null,
+        lastVerifiedWriteControlId = null,
+        snapshot = snapshot,
+        isCurrentSession = true,
+        error = null,
+    )
 
     fun failure(message: String): BlackPearlQualificationUiState = copy(
         isReading = false,
@@ -53,6 +58,7 @@ data class BlackPearlQualificationUiState(
         isWriting = true,
         activeWriteControlId = controlId,
         lastVerifiedWriteControlId = null,
+        writeGeneration = writeGeneration + 1L,
         error = null,
     )
 
@@ -61,6 +67,7 @@ data class BlackPearlQualificationUiState(
         snapshot: BlackPearlDeviceQualificationSnapshot,
     ): BlackPearlQualificationUiState = BlackPearlQualificationUiState(
         lastVerifiedWriteControlId = controlId,
+        writeGeneration = writeGeneration,
         snapshot = snapshot,
         isCurrentSession = true,
     )
@@ -70,6 +77,7 @@ data class BlackPearlQualificationUiState(
         actualSnapshot: BlackPearlDeviceQualificationSnapshot? = snapshot,
         actualIsCurrent: Boolean = false,
     ): BlackPearlQualificationUiState = BlackPearlQualificationUiState(
+        writeGeneration = writeGeneration,
         snapshot = actualSnapshot,
         isCurrentSession = actualSnapshot != null && actualIsCurrent,
         error = message,
