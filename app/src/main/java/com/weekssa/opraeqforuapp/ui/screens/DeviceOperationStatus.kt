@@ -9,20 +9,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.liveRegion
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.domain.dac.DacControlId
-import kotlinx.coroutines.delay
 
 internal data class DeviceOperationStatusPresentation(
     val heading: String,
@@ -64,6 +55,7 @@ internal fun deviceOperationStatusPresentation(
  * Device adapters keep their own protocol/units. This surface only standardizes truthful progress,
  * verification, stale-state and error feedback so every supported DAC behaves consistently.
  */
+@Suppress("UNUSED_PARAMETER")
 @Composable
 internal fun DeviceOperationStatusHeader(
     isReading: Boolean,
@@ -79,31 +71,18 @@ internal fun DeviceOperationStatusHeader(
     onRefresh: () -> Unit,
     controlName: (DacControlId) -> String,
 ) {
-    val verifiedId = lastVerifiedWriteControlId?.value
-    var lastSeenVerifiedId by remember { mutableStateOf(verifiedId) }
-    var visibleVerifiedId by remember { mutableStateOf<String?>(null) }
-
-    LaunchedEffect(verifiedId) {
-        if (verifiedId == null) {
-            lastSeenVerifiedId = null
-            visibleVerifiedId = null
-        } else if (verifiedId != lastSeenVerifiedId) {
-            lastSeenVerifiedId = verifiedId
-            visibleVerifiedId = verifiedId
-            delay(2_200)
-            if (visibleVerifiedId == verifiedId) visibleVerifiedId = null
-        }
+    // The header is deliberately stable. Transient writes, verification and failures belong in the
+    // shared bottom snackbar so setting rows never move while a device operation is running.
+    val heading = when {
+        isCurrentSession -> "Current device state"
+        hasSnapshot -> "Last read"
+        else -> "Device settings"
     }
-
-    val presentation = deviceOperationStatusPresentation(
-        isReading = isReading,
-        isWriting = isWriting,
-        activeWriteControlId = activeWriteControlId,
-        pendingVerificationControlId = pendingVerificationControlId,
-        hasSnapshot = hasSnapshot,
-        isCurrentSession = isCurrentSession,
-        controlName = controlName,
-    )
+    val supportingText = when {
+        isCurrentSession -> "Values verified from the connected DAC."
+        hasSnapshot -> "Reconnect or refresh to update these values."
+        else -> "Connect a DAC to read its settings."
+    }
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -111,61 +90,37 @@ internal fun DeviceOperationStatusHeader(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(
-            modifier = Modifier
-                .weight(1f)
-                .semantics { liveRegion = LiveRegionMode.Polite },
+            modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             Text(
-                text = presentation.heading,
+                text = heading,
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
             )
-            presentation.staleMessage?.let { message ->
-                Text(
-                    text = message,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            Text(
+                text = supportingText,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
         TextButton(onClick = onRefresh, enabled = enabled && !busy) {
-            Text(if (isReading) "Refreshing…" else "Refresh")
+            Text("Refresh")
         }
     }
-
-    presentation.pendingMessage?.let { message ->
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier
-                .padding(top = 4.dp)
-                .semantics { liveRegion = LiveRegionMode.Polite },
-        )
-    }
-
-    error?.let { message ->
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.error,
-            modifier = Modifier
-                .padding(top = 4.dp)
-                .semantics { liveRegion = LiveRegionMode.Assertive },
-        )
-    }
-
-    visibleVerifiedId?.takeIf { !busy && error == null }?.let { id ->
-        val name = controlName(DacControlId(id))
-        val label = name.replaceFirstChar { char -> char.uppercase() }
-        Text(
-            text = "$label updated ✓",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier
-                .padding(top = 4.dp)
-                .semantics { liveRegion = LiveRegionMode.Polite },
-        )
-    }
 }
+
+/**
+ * Creates a readable fallback label from a capability/control identifier. Device adapters can
+ * provide richer labels later without changing the shared operation-feedback lifecycle.
+ */
+internal fun deviceOperationControlLabel(controlId: DacControlId): String =
+    controlId.value
+        .substringAfterLast('.')
+        .replace('_', ' ')
+        .replace('-', ' ')
+        .split(' ')
+        .filter(String::isNotBlank)
+        .joinToString(" ") { token ->
+            token.replaceFirstChar { char -> char.uppercase() }
+        }
