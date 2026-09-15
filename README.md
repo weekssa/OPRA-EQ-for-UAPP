@@ -77,6 +77,9 @@ Exports use Android's system folder picker. EQ Library does not request broad st
 | **TRN Black Pearl** | `.txt` export, 10-band Direct Flash, playback-gain/headroom handling, Reset EQ to flat | **Hardware-qualified for the v0.6.0 path** |
 | **FiiO JA11** | Hardware-only 5-band Direct Flash, global EQ gain, Apply/Save/readback, Reset EQ to flat | **Hardware validation pending** |
 | **JCALLY JM12 (stock firmware)** | Hardware-only 5-band Direct Flash, readback verification, tracked playback-gain adjustment, Reset EQ to flat | **Hardware validation pending · power-cycle persistence unclaimed** |
+| **SIMGOT EW300 DSP cable** | Planned hardware-only EQ read, edit, Flash, verification, capture, and qualified reset through the existing My DAC framework | **Planned for v0.7.0 · protocol discovery pending** |
+
+The next planned hardware addition is the SIMGOT EW300 DSP cable. It is not supported by v0.6.0. The work will reuse the existing device registry, finite-hardware response adapter, authoritative DAC session, and My DAC/Flash/capture flows, then stop at a signed candidate for owner testing. See the [v0.7 EW300 DSP implementation plan](docs/V0.7_EW300_DSP_IMPLEMENTATION_PLAN.md).
 
 Direct Flash is OFF by default for newly introduced hardware outputs. Add/Save never automatically writes to a DAC. Flash and Reset require explicit confirmation where the maintained device safety contract requires it.
 
@@ -174,6 +177,7 @@ USB Audio Player PRO/UAPP, ToneBoosters, OPRA, Roon Labs, TRN, FiiO, JCALLY, TOP
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — Android/MAD architecture and invariants
 - [docs/CHATGPT_PROJECT_RUNBOOK.md](docs/CHATGPT_PROJECT_RUNBOOK.md) — maintained product and execution source of truth
 - [docs/V0.6_LIBRARY_OWNERSHIP_AND_RECOVERY.md](docs/V0.6_LIBRARY_OWNERSHIP_AND_RECOVERY.md) — v0.6 device-agnostic My EQs / Needs attention authority
+- [docs/V0.7_EW300_DSP_IMPLEMENTATION_PLAN.md](docs/V0.7_EW300_DSP_IMPLEMENTATION_PLAN.md) — approved scope, evidence gates, implementation sequence, validation, and signed testing handoff for the planned EW300 DSP cable support
 - [docs/V0.6_PREMIUM_UX_AUDIT_BLUEPRINT.md](docs/V0.6_PREMIUM_UX_AUDIT_BLUEPRINT.md) — design-only v0.6 polish blueprint; approval required before major UI changes
 - [docs/PUBLIC_RELEASE_CHECKLIST.md](docs/PUBLIC_RELEASE_CHECKLIST.md) — GitHub release gates
 - [docs/RELEASE_SIGNING.md](docs/RELEASE_SIGNING.md) — permanent APK signing process
