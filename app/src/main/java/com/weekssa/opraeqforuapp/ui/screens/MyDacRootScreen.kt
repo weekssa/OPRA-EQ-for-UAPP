@@ -76,6 +76,7 @@ fun MyDacRootScreen(
     onSetFiioJa11UacMode: (FiioJa11Protocol.UacMode) -> Unit,
     onResetFiioJa11FromMyDac: suspend () -> String,
     onMessage: (String) -> Unit,
+    onOperationStatus: (String, Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val recognized = recognitionState.recognizedDeviceIds
@@ -164,6 +165,7 @@ fun MyDacRootScreen(
                 onReadBlackPearlQualification = onReadBlackPearlQualification,
                 onSetBlackPearlDeviceControl = onSetBlackPearlDeviceControl,
                 onMessage = onMessage,
+                onOperationStatus = onOperationStatus,
                 modifier = modifier,
             )
         }
