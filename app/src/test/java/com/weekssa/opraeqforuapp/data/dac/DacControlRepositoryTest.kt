@@ -1,6 +1,10 @@
 package com.weekssa.opraeqforuapp.data.dac
 
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceControls
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceDefaults
+import com.weekssa.opraeqforuapp.ui.BlackPearlQualificationUiState
+import com.weekssa.opraeqforuapp.ui.screens.BlackPearlRestoreStepVerification
+import com.weekssa.opraeqforuapp.ui.screens.blackPearlRestoreStepVerification
 import com.weekssa.opraeqforuapp.domain.dac.DacControlValue
 import com.weekssa.opraeqforuapp.domain.dac.DacWriteIntent
 import kotlinx.coroutines.runBlocking
@@ -9,6 +13,58 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DacControlRepositoryTest {
+    @Test
+    fun restoreWithDelayedUiDeliveryAndVerifiedNoOpsReachesFinalVolumeWithoutRepeatingWrites() = runBlocking {
+        val source = FakeSource(filterCode = 1, gainModeCode = 1, ampTopologyCode = 1,
+            micGainDb = 0, leftBalanceDb = 0, rightBalanceDb = 0, playbackGainRaw = -1536)
+        val repository = DacControlRepository(source)
+        val initial = repository.readBlackPearlQualificationSnapshot() as BlackPearlQualificationReadResult.Success
+        var state = BlackPearlQualificationUiState().success(initial.snapshot)
+
+        for (step in BlackPearlDeviceDefaults.restoreSteps) {
+            val issuedFrom = state.writeGeneration
+            // Compose can deliver this old state repeatedly after a callback has issued a step.
+            // It may even match the target (verified no-op), but it is not completion evidence.
+            repeat(3) {
+                assertEquals(BlackPearlRestoreStepVerification.WAITING, blackPearlRestoreStepVerification(
+                    state.isBusy, state.writeGeneration, issuedFrom, state.lastVerifiedWriteControlId,
+                    step.controlId, BlackPearlDeviceDefaults.isStepSatisfied(step, state.snapshot!!),
+                ))
+            }
+            state = state.beginWrite(step.controlId)
+            val result = repository.writeBlackPearlControl(DacWriteIntent(
+                step.controlId, step.requestedValue, initial.snapshot.sessionGeneration,
+            ))
+            assertTrue(result is BlackPearlDeviceControlWriteResult.Verified)
+            result as BlackPearlDeviceControlWriteResult.Verified
+            // A StateFlow collector may skip the busy emission; the completed cycle still counts.
+            state = state.writeVerified(step.controlId, result.snapshot)
+            assertEquals(BlackPearlRestoreStepVerification.SATISFIED, blackPearlRestoreStepVerification(
+                state.isBusy, state.writeGeneration, issuedFrom, state.lastVerifiedWriteControlId,
+                step.controlId, BlackPearlDeviceDefaults.isStepSatisfied(step, state.snapshot!!),
+            ))
+        }
+        assertEquals(-1536, source.playbackGainRaw)
+        assertEquals(2, source.writeCount) // Safety volume and final volume; five verified no-ops.
+        assertEquals(2, source.persistCount)
+        assertEquals(7L, state.writeGeneration)
+    }
+
+    @Test
+    fun realFailureAfterSafetyVolumeHasNoAutomaticRetryOrVolumeIncrease() = runBlocking {
+        val source = FakeSource(failOnWrite = 2)
+        val repository = DacControlRepository(source)
+        val safety = BlackPearlDeviceDefaults.restoreSteps.first()
+        val floor = repository.writeBlackPearlControl(DacWriteIntent(safety.controlId, safety.requestedValue, 7L))
+        assertTrue(floor is BlackPearlDeviceControlWriteResult.Verified)
+        val filter = BlackPearlDeviceDefaults.restoreSteps[1]
+        val failure = repository.writeBlackPearlControl(DacWriteIntent(filter.controlId, filter.requestedValue, 7L))
+        assertTrue(failure is BlackPearlDeviceControlWriteResult.TransferFailed)
+        assertEquals(-9472, source.playbackGainRaw)
+        assertEquals(2, source.writeCount)
+        assertEquals(1, source.persistCount)
+    }
+
     @Test
     fun readOnlyQualificationReturnsCompleteSnapshotFromOneCurrentSession() = runBlocking {
         val source = FakeSource()
@@ -367,6 +423,7 @@ class DacControlRepositoryTest {
         private val changeSessionAfterRead: Int? = null,
         private val failField: String? = null,
         private val failWrites: Boolean = false,
+        private val failOnWrite: Int? = null,
         private val failPersistence: Boolean = false,
         private val ignoreWrites: Boolean = false,
         private val mutateUnrelatedOnWrite: Boolean = false,
@@ -443,7 +500,7 @@ class DacControlRepositoryTest {
         private fun write(block: () -> Unit): Boolean {
             writeCount += 1
             operationLog += "write"
-            if (failWrites) return false
+            if (failWrites || writeCount == failOnWrite) return false
             if (!ignoreWrites) block()
             if (mutateUnrelatedOnWrite) gainModeCode = 0
             return true

@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceDefaults
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceDefaultStep
 import com.weekssa.opraeqforuapp.domain.dac.DacControlId
 import com.weekssa.opraeqforuapp.domain.dac.DacControlValue
 import com.weekssa.opraeqforuapp.ui.BlackPearlQualificationUiState
@@ -56,6 +57,7 @@ internal fun blackPearlRestoreStepVerification(
     issuedFromWriteGeneration == null -> BlackPearlRestoreStepVerification.WAITING
     writeGeneration <= issuedFromWriteGeneration -> BlackPearlRestoreStepVerification.WAITING
     isBusy -> BlackPearlRestoreStepVerification.WAITING
+    writeGeneration != issuedFromWriteGeneration + 1L -> BlackPearlRestoreStepVerification.MISMATCH
     lastVerifiedWriteControlId != expectedControlId -> BlackPearlRestoreStepVerification.MISMATCH
     requestedValueSatisfied -> BlackPearlRestoreStepVerification.SATISFIED
     else -> BlackPearlRestoreStepVerification.MISMATCH
@@ -87,6 +89,7 @@ internal fun BlackPearlDeviceResetSection(
     var resetStepIndex by rememberSaveable { mutableIntStateOf(IDLE_STEP) }
     var issuedStepIndex by rememberSaveable { mutableIntStateOf(IDLE_STEP) }
     var issuedFromWriteGeneration by rememberSaveable { mutableStateOf<Long?>(null) }
+    var restoreSessionGeneration by rememberSaveable { mutableStateOf<Long?>(null) }
 
     val resetInProgress = eqResetRunning || resetStepIndex >= 0
     val canStartReset = enabled &&
@@ -112,9 +115,11 @@ internal fun BlackPearlDeviceResetSection(
         if (eqResetRunning || resetStepIndex < 0 || state.isBusy) return@LaunchedEffect
 
         val snapshot = state.snapshot
-        if (state.error != null || snapshot == null || !state.isCurrentSession) {
+        if (state.error != null || snapshot == null || !state.isCurrentSession ||
+            snapshot.sessionGeneration != restoreSessionGeneration
+        ) {
             val safetyNote = if (issuedStepIndex >= 0) {
-                " Volume may remain at the 0% safety level; refresh the device state before retrying."
+                " Volume may remain at 0%. Refresh DEVICE, then adjust Volume when ready. No setting was automatically retried."
             } else {
                 ""
             }
@@ -134,6 +139,16 @@ internal fun BlackPearlDeviceResetSection(
             issuedStepIndex = IDLE_STEP
             issuedFromWriteGeneration = null
             eqResetResult = null
+            if (!BlackPearlDeviceDefaults.finalTargets.all { (control, value) ->
+                    BlackPearlDeviceDefaults.isStepSatisfied(
+                        BlackPearlDeviceDefaultStep(control, value),
+                        snapshot,
+                    )
+                }
+            ) {
+                onMessage("Restore stopped because the final device state did not match all defaults. Refresh DEVICE to review current values.")
+                return@LaunchedEffect
+            }
             onMessage(
                 buildString {
                     append("Black Pearl defaults restored: 50% volume, FAST-LL, HIGH gain, CLASS AB, centered balance, 0 dB microphone gain.")
@@ -175,7 +190,7 @@ internal fun BlackPearlDeviceResetSection(
                 issuedFromWriteGeneration = null
                 onMessage(
                     "Restore stopped because the verified Black Pearl setting did not match the requested value. " +
-                        "Volume may remain at the 0% safety level; refresh the device state before retrying.",
+                        "Volume may remain at 0%. Refresh DEVICE, then adjust Volume when ready. No setting was automatically retried.",
                 )
             }
         }
@@ -240,6 +255,7 @@ internal fun BlackPearlDeviceResetSection(
                     onClick = {
                         dialogOpen = false
                         eqResetResult = null
+                        restoreSessionGeneration = state.snapshot?.sessionGeneration
                         issuedStepIndex = IDLE_STEP
                         issuedFromWriteGeneration = null
                         if (includeEqReset) {

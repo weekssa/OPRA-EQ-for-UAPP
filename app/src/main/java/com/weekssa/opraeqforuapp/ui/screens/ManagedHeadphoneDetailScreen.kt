@@ -4,18 +4,21 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -25,7 +28,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -196,6 +200,7 @@ fun ManagedHeadphoneDetailScreen(
     var showHeadphoneRemoval by remember { mutableStateOf(false) }
     var deleteSavedFiles by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    var headphoneMenuOpen by remember(headphone.productId) { mutableStateOf(false) }
 
     val onNotifyChanged: (Boolean) -> Unit = { enabled ->
         scope.launch {
@@ -282,184 +287,175 @@ fun ManagedHeadphoneDetailScreen(
         )
     }
 
-    Column(modifier = modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 4.dp, end = 16.dp, top = 2.dp, bottom = 2.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            TextButton(onClick = onBack, modifier = Modifier.heightIn(min = 48.dp)) {
-                Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = null)
-                Text("My EQs", modifier = Modifier.padding(start = 4.dp))
-            }
-            Column(modifier = Modifier.weight(1f).padding(start = 4.dp)) {
-                Text(
-                    text = headphone.productName,
-                    style = MaterialTheme.typography.titleLarge,
-                )
-                Text(
-                    text = buildString {
-                        append(headphone.vendorName)
-                        append(" · ")
-                        append(headphone.selectedProfileCount)
-                        append(" selected")
-                        availableProfileCount?.let {
-                            append(" · ")
-                            append(it)
-                            append(" available")
-                        }
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-        if (hasPendingReview) {
-            TextButton(
-                onClick = { reviewingNewEqs = true },
-                modifier = Modifier.padding(horizontal = 12.dp),
-            ) {
-                Text("Review $pendingReviewLabel EQs")
-            }
-        }
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .toggleable(
-                    value = headphone.autoIncludeNewProfiles,
-                    role = Role.Switch,
-                    onValueChange = onNotifyChanged,
-                )
-                .padding(horizontal = 16.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-                Text("Notify me about new EQs", style = MaterialTheme.typography.bodyMedium)
-                Text(
-                    "Review new and changed EQs for this headphone.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Switch(
-                checked = headphone.autoIncludeNewProfiles,
-                onCheckedChange = null,
-            )
-        }
-        if (isHardwareOutput || product != null) {
+    LazyColumn(modifier = modifier.fillMaxSize()) {
+        item {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 4.dp, end = 16.dp, top = 2.dp, bottom = 2.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                when (activeOutput) {
-                    ExportDevice.BLACK_PEARL -> CompactBlackPearlConnectionAction(
-                        enabled = directBlackPearlFlashEnabled,
-                        state = blackPearlConnectionState,
-                        onConnect = onConnectBlackPearl,
-                        modifier = Modifier.weight(1f),
-                    )
-                    ExportDevice.FIIO_JA11 -> CompactKt02h20ConnectionAction(
-                        enabled = directFiioJa11FlashEnabled,
-                        state = fiioJa11ConnectionState,
-                        onConnect = onConnectFiioJa11,
-                        connectedLabel = "FiiO JA11 · Connected",
-                        modifier = Modifier.weight(1f),
-                    )
-                    ExportDevice.JCALLY_JM12 -> CompactKt02h20ConnectionAction(
-                        enabled = directJcallyJm12FlashEnabled,
-                        state = jcallyJm12ConnectionState,
-                        onConnect = onConnectJcallyJm12,
-                        connectedLabel = "JCALLY JM12 · Connected",
-                        modifier = Modifier.weight(1f),
-                    )
-                    else -> Unit
+                IconButton(onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back to My EQs")
                 }
-                if (product != null) {
-                    TextButton(
-                        onClick = { editing = true },
-                        modifier = Modifier.heightIn(min = 48.dp),
-                    ) { Text("Manage presets") }
+                Column(modifier = Modifier.weight(1f).padding(start = 4.dp)) {
+                    Text(
+                        text = headphone.productName,
+                        style = MaterialTheme.typography.titleLarge,
+                    )
+                    Text(
+                        text = buildString {
+                            append(headphone.vendorName)
+                            append(" · ")
+                            append(headphone.selectedProfileCount)
+                            append(" selected")
+                            availableProfileCount?.let {
+                                append(" · ")
+                                append(it)
+                                append(" available")
+                            }
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Box {
+                    IconButton(onClick = { headphoneMenuOpen = true }) {
+                        Icon(Icons.Outlined.MoreVert, contentDescription = "Headphone options")
+                    }
+                    DropdownMenu(expanded = headphoneMenuOpen, onDismissRequest = { headphoneMenuOpen = false }) {
+                        DropdownMenuItem(
+                            text = { Text("Notify me about new EQs: " + if (headphone.autoIncludeNewProfiles) "On" else "Off") },
+                            trailingIcon = { if (headphone.autoIncludeNewProfiles) Icon(Icons.Outlined.Check, contentDescription = null) },
+                            onClick = {
+                                headphoneMenuOpen = false
+                                onNotifyChanged(!headphone.autoIncludeNewProfiles)
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Remove headphone…") },
+                            onClick = {
+                                headphoneMenuOpen = false
+                                deleteSavedFiles = false
+                                showHeadphoneRemoval = true
+                            },
+                        )
+                    }
                 }
             }
-        }
-        hardwareConnectionHelp(
-            activeOutput = activeOutput,
-            directBlackPearlFlashEnabled = directBlackPearlFlashEnabled,
-            blackPearlConnectionState = blackPearlConnectionState,
-            directFiioJa11FlashEnabled = directFiioJa11FlashEnabled,
-            fiioJa11ConnectionState = fiioJa11ConnectionState,
-            directJcallyJm12FlashEnabled = directJcallyJm12FlashEnabled,
-            jcallyJm12ConnectionState = jcallyJm12ConnectionState,
-        )?.let { (message, isError) ->
-            Text(
-                text = message,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
-                style = MaterialTheme.typography.bodySmall,
-                color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        if (product == null) {
-            Text(
-                text = "This headphone is no longer present in the current EQ Library catalog. Retained presets remain available until you remove them.",
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-
-        LazyColumn(modifier = Modifier.weight(1f)) {
-            items(displayedProfiles, key = ManagedProfileRecord::profileId) { profile ->
-                val outputStatus = assessDeviceExportability(profile.lastKnownProfile, activeOutput)
-                val assessment = if (isHardwareOutput) {
-                    managedHardwareFlashAssessment(profile.lastKnownProfile, activeOutput)
-                } else {
-                    ManagedHardwareFlashAssessment(ready = false)
+            if (hasPendingReview) {
+                TextButton(
+                    onClick = { reviewingNewEqs = true },
+                    modifier = Modifier.padding(horizontal = 12.dp),
+                ) {
+                    Text("Review $pendingReviewLabel EQs")
                 }
-                ManagedProfileRow(
-                    profile = profile,
-                    isFavorite = profile.profileId in favoriteProfileIds,
-                    activeOutput = activeOutput,
-                    outputStatus = outputStatus,
-                    outputAdaptationSummary = assessment.adaptationSummary,
-                    showExport = activeOutput.supportsFileExport && profile.selected &&
-                        exportCurrentness.needsExport(headphone.productId, profile.profileId),
-                    onExport = { onExportProfile(profile.profileId) },
-                    showFlash = isHardwareOutput,
-                    flashEnabled = flashEnabled && profile.selected && assessment.ready,
-                    flashUnavailableReason = assessment.reason?.takeIf { profile.selected },
-                    onFlash = { pendingProfileFlash = profile },
-                    onOpenSource = profile.lastKnownProfile.link?.let { sourceUrl -> { onOpenUrl(sourceUrl) } },
-                    onToggleFavorite = {
-                        scope.launch {
-                            val favorited = onToggleFavorite(
-                                profile.lastKnownProfile,
-                                headphone.vendorName,
-                                headphone.productName,
-                            )
-                            onMessage(
-                                if (favorited) "Saved to My EQs favorites."
-                                else "Removed from My EQs favorites.",
-                            )
-                        }
-                    },
-                    onRemove = {
-                        deleteSavedFiles = false
-                        pendingProfileRemoval = profile
-                    },
+            }
+            if (isHardwareOutput || product != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    when (activeOutput) {
+                        ExportDevice.BLACK_PEARL -> CompactBlackPearlConnectionAction(
+                            enabled = directBlackPearlFlashEnabled,
+                            state = blackPearlConnectionState,
+                            onConnect = onConnectBlackPearl,
+                            modifier = Modifier.weight(1f),
+                        )
+                        ExportDevice.FIIO_JA11 -> CompactKt02h20ConnectionAction(
+                            enabled = directFiioJa11FlashEnabled,
+                            state = fiioJa11ConnectionState,
+                            onConnect = onConnectFiioJa11,
+                            connectedLabel = "FiiO JA11 · Connected",
+                            modifier = Modifier.weight(1f),
+                        )
+                        ExportDevice.JCALLY_JM12 -> CompactKt02h20ConnectionAction(
+                            enabled = directJcallyJm12FlashEnabled,
+                            state = jcallyJm12ConnectionState,
+                            onConnect = onConnectJcallyJm12,
+                            connectedLabel = "JCALLY JM12 · Connected",
+                            modifier = Modifier.weight(1f),
+                        )
+                        else -> Unit
+                    }
+                    if (product != null) {
+                        TextButton(
+                            onClick = { editing = true },
+                            modifier = Modifier.heightIn(min = 48.dp),
+                        ) { Text("Manage presets") }
+                    }
+                }
+            }
+            hardwareConnectionHelp(
+                activeOutput = activeOutput,
+                directBlackPearlFlashEnabled = directBlackPearlFlashEnabled,
+                blackPearlConnectionState = blackPearlConnectionState,
+                directFiioJa11FlashEnabled = directFiioJa11FlashEnabled,
+                fiioJa11ConnectionState = fiioJa11ConnectionState,
+                directJcallyJm12FlashEnabled = directJcallyJm12FlashEnabled,
+                jcallyJm12ConnectionState = jcallyJm12ConnectionState,
+            )?.let { (message, isError) ->
+                Text(
+                    text = message,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                HorizontalDivider()
             }
-        }
+            if (product == null) {
+                Text(
+                    text = "This headphone is no longer present in the current EQ Library catalog. Retained presets remain available until you remove them.",
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
 
-        TextButton(
-            onClick = {
-                deleteSavedFiles = false
-                showHeadphoneRemoval = true
-            },
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-        ) { Text("Remove headphone") }
+        }
+        items(displayedProfiles, key = ManagedProfileRecord::profileId) { profile ->
+            val outputStatus = assessDeviceExportability(profile.lastKnownProfile, activeOutput)
+            val assessment = if (isHardwareOutput) {
+                managedHardwareFlashAssessment(profile.lastKnownProfile, activeOutput)
+            } else {
+                ManagedHardwareFlashAssessment(ready = false)
+            }
+            ManagedProfileRow(
+                profile = profile,
+                isFavorite = profile.profileId in favoriteProfileIds,
+                activeOutput = activeOutput,
+                outputStatus = outputStatus,
+                outputAdaptationSummary = assessment.adaptationSummary,
+                showExport = activeOutput.supportsFileExport && profile.selected &&
+                    exportCurrentness.needsExport(headphone.productId, profile.profileId),
+                onExport = { onExportProfile(profile.profileId) },
+                showFlash = isHardwareOutput,
+                flashEnabled = flashEnabled && profile.selected && assessment.ready,
+                flashUnavailableReason = assessment.reason?.takeIf { profile.selected },
+                onFlash = { pendingProfileFlash = profile },
+                onOpenSource = profile.lastKnownProfile.link?.let { sourceUrl -> { onOpenUrl(sourceUrl) } },
+                onToggleFavorite = {
+                    scope.launch {
+                        val favorited = onToggleFavorite(
+                            profile.lastKnownProfile,
+                            headphone.vendorName,
+                            headphone.productName,
+                        )
+                        onMessage(
+                            if (favorited) "Saved to My EQs favorites."
+                            else "Removed from My EQs favorites.",
+                        )
+                    }
+                },
+                onRemove = {
+                    deleteSavedFiles = false
+                    pendingProfileRemoval = profile
+                },
+            )
+            HorizontalDivider()
+        }
     }
+
 }
 
 private fun managedHardwareFlashAssessment(
@@ -685,24 +681,21 @@ private fun ManagedProfileRow(
                         color = MaterialTheme.colorScheme.error,
                     )
                 }
-                LazyRow(
+                FlowRow(
                     modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
-                    horizontalArrangement = Arrangement.spacedBy(2.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     onOpenSource?.let { action ->
-                        item { TextButton(onClick = action) { Text("Source") } }
+                        TextButton(onClick = action) { Text("Source") }
                     }
                     if (showExport) {
-                        item { TextButton(onClick = onExport) { Text("Export") } }
+                        TextButton(onClick = onExport) { Text("Export") }
                     }
                     if (showFlash) {
-                        item {
-                            TextButton(enabled = flashEnabled, onClick = onFlash) { Text("Flash") }
-                        }
+                        TextButton(enabled = flashEnabled, onClick = onFlash) { Text("Flash") }
                     }
                     onRemove?.let { action ->
-                        item { TextButton(onClick = action) { Text("Remove") } }
+                        TextButton(onClick = action) { Text("Remove") }
                     }
                 }
             }

@@ -6,6 +6,18 @@ import org.junit.Test
 
 class BlackPearlDeviceResetSectionTest {
     @Test
+    fun anotherCompletedWriteCannotSatisfyIssuedStepEvenWithMatchingControlAndValue() {
+        assertThat(blackPearlRestoreStepVerification(
+            isBusy = false,
+            writeGeneration = 10L,
+            issuedFromWriteGeneration = 7L,
+            lastVerifiedWriteControlId = BlackPearlDeviceControls.PLAYBACK_GAIN_DB,
+            expectedControlId = BlackPearlDeviceControls.PLAYBACK_GAIN_DB,
+            requestedValueSatisfied = true,
+        )).isEqualTo(BlackPearlRestoreStepVerification.MISMATCH)
+    }
+
+    @Test
     fun stalePreWriteSnapshot_waitsInsteadOfFailing() {
         val result = blackPearlRestoreStepVerification(
             isBusy = false,
