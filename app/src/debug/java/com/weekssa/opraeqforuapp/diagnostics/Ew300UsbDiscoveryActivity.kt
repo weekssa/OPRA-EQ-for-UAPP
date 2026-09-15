@@ -21,6 +21,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.weekssa.opraeqforuapp.domain.settings.ThemeMode
 import com.weekssa.opraeqforuapp.ui.theme.OpraEqTheme
 
 /**
@@ -36,7 +37,7 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             var report by mutableStateOf(readOnlyUsbReport())
-            OpraEqTheme {
+            OpraEqTheme(themeMode = ThemeMode.System) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
