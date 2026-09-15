@@ -281,6 +281,15 @@ fun EqLibraryApp(
         if (result == SnackbarResult.ActionPerformed) onAction?.invoke()
     }
 
+    fun showOperationStatus(message: String, persistent: Boolean) {
+        scope.launch {
+            showDeviceOperation(
+                message = message,
+                duration = if (persistent) SnackbarDuration.Indefinite else SnackbarDuration.Short,
+            )
+        }
+    }
+
     var lastBlackPearlOperationSignature by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(
         state.blackPearlQualificationState.isWriting,
@@ -666,6 +675,7 @@ fun EqLibraryApp(
                         onSetFiioJa11UacMode = onSetFiioJa11UacMode,
                         onResetFiioJa11FromMyDac = onResetFiioJa11FromMyDac,
                         onMessage = ::showMessage,
+                        onOperationStatus = ::showOperationStatus,
                         modifier = Modifier.fillMaxSize(),
                     )
 
