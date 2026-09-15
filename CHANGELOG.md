@@ -8,6 +8,12 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ### Added
 
+- **My DAC** for supported hardware, with one ViewModel-scoped DAC session shared across My EQs, My DAC, and EQ Library; successful connection/reconnection automatically refreshes supported EQ + DEVICE state and later physical reattach can reopen the replacement session after one successful current-app-session connection.
+- Black Pearl current-EQ inspection, response graph, local EQ editing with Review → Apply/readback verification, Personal EQ capture, qualified Reset EQ to flat, concise DEVICE controls, read-only UAC mode detection/manual startup help, and session-sticky Last-read state after disconnect.
+- Black Pearl **Restore defaults** using the physically qualified EQ Library-owned preset: 50% volume, FAST-LL, HIGH gain, CLASS AB, centered balance, and microphone gain 0 dB, with an optional OFF-by-default **Also reset EQ to flat** action. The preset is not presented as verified TRN factory state.
+- Capability-driven FiiO JA11 My DAC/session integration while preserving its independently established native device semantics; exact physical JA11 qualification remains pending.
+- Persistent **Needs attention** recovery for exact app-owned/persisted-access preset artifacts that no longer have a confident current My EQ association. Strict recovery preserves supported PEQ values and original-file provenance, requires user-supplied missing headphone/name identity, and never scans arbitrary external storage.
+- An owner-approved premium v0.6 UX audit/blueprint covering Apple, Material 3, a combined native-Android direction, information hierarchy, navigation, top bars, settings/list anatomy, spacing, typography, icons, feedback, and accessibility. Implementation is approved; the latest corrective beta awaits physical review.
 - Scheduled public GitHub/Gist community ingestion now takes discovered headphone PEQ through exact source retrieval, strict PEQ parsing, canonical headphone identity, creator/source provenance, acoustic dedupe, living-archive validation, and Unverified publication instead of leaving mechanically valid community data indefinitely review-only.
 - Community-ingestion reports record fetched/parsed/published/deduplicated/quarantined counts and machine-readable quarantine reasons; one malformed or ambiguous record cannot block unrelated valid candidates.
 - Broad General GitHub discovery is actively audited for exact parametric structure. Fixed/graphic-EQ data without source-provided Q/filter types is rejected rather than converted by invention.
@@ -18,6 +24,13 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ### Changed
 
+- **My EQs is one device/output-agnostic local library.** Managed headphone/profile selections, Favorites, Personal EQs, captured DAC EQs, and General EQs no longer change identity or visibility when the active target changes. Legacy per-output tables/signatures remain migration compatibility only.
+- Save/Add to My EQs is now deliberately separate from **Export** and **Flash**. Saving changes local library state only and does not automatically open the folder picker, write a file, or write hardware.
+- The active output is an action/derivation context: it may change compatibility, fidelity, target-derived currentness, Export behavior, connection controls, or Flash availability, but does not change My EQs ownership or dismiss an open managed-headphone detail.
+- DAC-captured EQs use the source DAC as provenance only and become normal device-agnostic Personal EQs.
+- EQ selection/Flash lives where the EQ already lives in **My EQs** and **EQ Library**; My DAC no longer duplicates this with a Change EQ chooser.
+- Black Pearl DEVICE settings use one concise current-value/edit surface with immediate qualified write + verified readback for routine settings and short confirmation only for level-sensitive changes; full-EQ editing remains staged locally until Review → Apply.
+- My DAC operation feedback now uses one shared bottom snackbar lifecycle for Applying, reconnect verification, verified success, and recoverable failure. The DEVICE header keeps a fixed connection summary so settings never jump during hardware work; the same contract is ready for additional capability-driven DAC adapters.
 - `github-community` is a daily scheduled source with source-health ownership. Public exact structured community PEQ uses the established Unverified community policy while specific source restrictions remain binding.
 - Source maintenance is now automation-first: every registered source with a legitimate stable public retrieval path is scheduled or runtime-managed; sources that cannot currently be automated safely are explicitly paused rather than depending on recurring manual input.
 - Head-Fi and Audio Science Review moved from manual/curated currentness to weekly scheduled public adapters.
@@ -27,8 +40,30 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - oratory1990 direct Reddit currentness is paused while Reddit access is unavailable; structured values may continue to arrive through separately automated qualified carriers such as OPRA.
 - Reddit remains paused; no anonymous Reddit scanning, scraping, circumvention, or manual-currentness substitute was introduced.
 
+### Fixed
+
+- Corrective Black Pearl Restore-defaults retest passed on exact signed `eb19800`; the restore reached all approved DEVICE targets and the compact My EQs / General EQs layouts passed owner review.\n
+- Black Pearl Restore defaults waits for its exact verified write cycle rather than aborting on an older screen snapshot, checks the original USB session and all final values, and explains retained safety volume on genuine failure. No automatic write retry or speculative recovery command is introduced; physical retest is pending.
+- Managed-headphone details and General EQs use compact, scrollable headers and wrapping actions; notification/removal options and explanatory help move out of the main content area.
+
+- Removed the final save-to-auto-export coupling from General EQ batch Save.
+- Changing the active target no longer clears the currently open managed-headphone detail or drives selection reconciliation.
+- Personal EQ import/parser integration now compiles with the strict `ParametricEqTextParser` path restored.
+- Unresolved app-owned artifacts can no longer silently disappear merely because current library identity cannot be resolved; provider/permission unavailability remains unresolved instead of being treated as confirmed absence.
+- Acoustic catalog deduplication now carries app-owned export ownership forward to the canonical profile ID, so removing a preset also cleans exports created before that identity migration instead of leaving duplicate **Needs attention** entries.
+- Recovery/deletion remains bounded to exact ownership-tracked SAF documents and refuses malformed/unsupported content rather than silently dropping unsupported filters.
+
 ### Validation
 
+- The approved DEVICE operation-feedback UX pass passed the full Android/software gates on exact source `eef5633e18a4ac311f110493e29633bf382675e3`; Signed EQ Library Beta Candidate #1229 published the exact Pixel 9 test APK with SHA-256 `4eee1f491971bd49ec72d10033b83a548c9b970c002befe79cc944f268a4cb59`.
+- FiiO JA11 physical qualification is explicitly deferred and is not a blocker for the Black Pearl/UI v0.6 closeout; its capability/session implementation remains available for a later hardware-validation pass.
+- The owner completed the exact signed Pixel 9 smoke pass for the stable DEVICE header, bottom operation feedback, and Restore-defaults flow on candidate `eef5633`; **OWNER-REPORTED PASS**. FiiO JA11 remains deferred.
+
+- TRN Black Pearl automatic physical reconnect passed the focused Pixel 9 retest on exact signed source `a3bc1740ed44892f4e6b78f9d0a359e2a87ef663`; the app reopened a fresh replacement session without an app Connect/Refresh tap, refreshed EQ + DEVICE state, showed no Applying/Flashing transaction, and pushed no cached state. Evidence category: **OWNER-REPORTED**. The candidate APK SHA-256 is `3154748c72ad576a0b13b8adbdf549cc36eede6feef900dd68eecbc65bf1d64a`.
+- TRN Black Pearl **Restore defaults** passed the focused Pixel 9 test on exact signed source `b0340842dd88dc85613d9441fcc72ceadf877b20`; Cancel made no change, checkbox OFF restored 50% / FAST-LL / HIGH / CLASS AB / Centered / microphone 0 dB while preserving the non-flat hardware EQ, checkbox ON established the same DEVICE targets plus Flat EQ, saved My EQs remained untouched, and restored state persisted through reconnect. Evidence category: **OWNER-REPORTED**. Candidate APK SHA-256: `dcae4f54881976af70e93c2c796b6993697d1a0a8f333698e9d925933c61ff37`.
+- The parser/import repair at `0adb34b640261d16d934a80ab29ffe94d3dc253c` passed Android CI, CodeQL, catalog currentness, and priority-community coverage before the final library/documentation closeout.
+- Added strict recovery/parser coverage for valid Personal PEQ text, deterministic EQ Library UAPP/ToneBoosters XML, exact preamp/band preservation, malformed/incomplete rejection, unsupported-filter rejection, GraphicEQ rejection, destination-independent unresolved ownership, exact-URI uniqueness, and recovered provenance preservation.
+- Later device-agnostic library/recovery/documentation work does not replace the pinned Black Pearl hardware evidence unless it changes connection ownership, read timing, write sequencing, persistence, verification, or session behavior.
 - Initial GitHub community ingestion fetched all 50 current headphone candidates: 39 parsed as exact supported PEQ, producing 28 new Unverified profiles and 11 exact-duplicate provenance merges; 11 unmatched/ambiguous headphone identities were quarantined. Atomic living-archive validation passed before the candidate catalog was committed.
 - All three current broad General GitHub candidates were processed and classified `no_exact_parametric_structure`; none was published with invented Q/filter types.
 - Added regression coverage for valid Unverified publication, missing-preamp preservation, exact-duplicate provenance merging, short model identity with manufacturer context, target-folder handling, malformed/unsupported PEQ quarantine, unknown headphone quarantine, and General graphic-EQ rejection.
@@ -43,7 +78,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Additional selectable app/universal output contexts, including Equalizer APO-style parametric text, EasyEffects-compatible parametric import, portable AutoEq GraphicEQ, and **TOPPING Tune** AutoEq text alongside the existing UAPP/ToneBoosters, Poweramp, and Wavelet paths.
 - **TOPPING Tune** as a selectable App output using documented AutoEq `.txt` import, a 10-band finite-target adapter, documented ±12 dB preamp/filter-gain and Q 0.1–15 limits, and conservative Optimized fidelity until downstream device storage precision is independently qualified.
 - **FiiO JA11** as a hardware-only five-band PEQ output with an independent Direct Flash toggle (OFF by default), strict USB identity, read/apply/readback/save verification, and Reset EQ to flat.
-- **JCALLY JM12** on stock firmware as a separate hardware-only five-band PEQ output with its own Direct Flash toggle (OFF by default), strict USB identity/register protocol, readback verification, fail-safe EQ bypass during replacement, tracked EQ Library playback-gain delta, and Reset EQ to flat.
+- **JCALLY JM12** on stock firmware as a separate hardware-only five-band PEQ output with its own Direct Flash toggle (OFF by default), strict USB identity/register protocol, readback verification, fail-safe EQ bypass during replacement, tracked playback-gain adjustment, and Reset EQ to flat.
 - A shared deterministic finite-hardware response adapter used by TRN Black Pearl (10 bands), FiiO JA11 (5 bands), and stock JCALLY JM12 (5 bands). It preserves native exact representations where target quantization permits and otherwise fits the complete source response under fixed RMS/max-error gates.
 - Versioned derived-representation semantics/fingerprints so a hardware/output adaptation-rule change makes previously generated target state detectably stale without changing canonical source fingerprints.
 - Device-specific JA11/JM12 protocol notes and Pixel 9 hands-on qualification checklists.
@@ -240,3 +275,26 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Built a signed `v0.1.0` candidate from commit `7bc0f687aece6f58f3431a71b5bb32794c0b7ffa`, verified its pinned signing certificate, installed it on the Pixel 9, and passed the release-build smoke test including UAPP/ToneBoosters import.
 - Published GitHub Release `v0.1.0` from that exact tested commit with the signed APK, APK SHA-256 checksum, and `apksigner` verification output.
 - Verified the public `releases/latest` metadata endpoint and confirmed the installed `v0.1.0` app reports **You're up to date** against the live public release metadata.
+
+
+## 2026-09-15 corrective candidate — PASS
+
+The project owner completed the focused Pixel 9 / TRN Black Pearl retest on exact signed source `eb1980076009001b5216ffbb531de8a28a4780eb` and reported **SUCCESS**.
+
+The retest confirmed:
+
+- Restore defaults completed normally on the first attempt and reached **50% / FAST-LL / HIGH / CLASS AB / Centered / microphone 0 dB**.
+- The optional EQ-flat behavior and saved My EQs remained protected as specified.
+- Reconnect persistence remained correct.
+- The revised My EQs managed-headphone detail and General EQs pages were materially less cramped, with the revised action/help hierarchy.
+
+Evidence category: **OWNER-REPORTED**.
+
+Exact signed APK: https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.6.0-beta-eb19800.apk
+
+APK SHA-256: `dabf4bcdddf69853b09793f5a94bec0a3af7efb430f1cdfe26ffc35a93b783ad`
+
+The exact candidate passed Android CI #1538, CodeQL #1420, Catalog currentness CI #1826, Priority community coverage CI #1311, and Signed EQ Library Beta Candidate #1213. The signing workflow verified the pinned certificate `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`.
+
+This PASS closes the corrective Black Pearl physical gate. It does not establish TRN factory-default semantics and does not qualify FiiO JA11 hardware behavior. PR #16 remains open and draft; merge, release, and publication remain explicit owner-authorization gates.
+

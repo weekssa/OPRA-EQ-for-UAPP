@@ -7,6 +7,12 @@ import com.weekssa.opraeqforuapp.R
 import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.catalog.AppCatalogRepository
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
+import com.weekssa.opraeqforuapp.data.dac.BlackPearlDeviceControlWriteResult
+import com.weekssa.opraeqforuapp.data.dac.BlackPearlQualificationReadResult
+import com.weekssa.opraeqforuapp.data.dac.DacControlRepository
+import com.weekssa.opraeqforuapp.data.dac.FiioJa11ControlReadResult
+import com.weekssa.opraeqforuapp.data.dac.FiioJa11ControlRepository
+import com.weekssa.opraeqforuapp.data.dac.FiioJa11ControlWriteResult
 import com.weekssa.opraeqforuapp.data.export.ExportCurrentness
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupRepository
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
@@ -22,24 +28,53 @@ import com.weekssa.opraeqforuapp.data.sync.CatalogSyncCoordinator
 import com.weekssa.opraeqforuapp.data.sync.CatalogSyncOutcome
 import com.weekssa.opraeqforuapp.data.update.AppUpdateCheckResult
 import com.weekssa.opraeqforuapp.data.update.AppUpdateCoordinator
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlCaptureDecision
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceControls
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceQualificationPolicy
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlEditorApplyResult
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlashResult
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlatResetResult
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlHardwareEqMatchResolver
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlKnownLineage
+import com.weekssa.opraeqforuapp.domain.blackpearl.buildBlackPearlKnownLineage
+import com.weekssa.opraeqforuapp.domain.blackpearl.buildBlackPearlMyEqsCandidates
+import com.weekssa.opraeqforuapp.domain.blackpearl.decideBlackPearlCapture
+import com.weekssa.opraeqforuapp.domain.blackpearl.withBlackPearlKnownLineage
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqPreset
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
+import com.weekssa.opraeqforuapp.domain.dac.DacControlId
+import com.weekssa.opraeqforuapp.domain.dac.DacControlValue
+import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
+import com.weekssa.opraeqforuapp.domain.dac.DacRecognitionState
+import com.weekssa.opraeqforuapp.domain.dac.DacWriteIntent
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditSpecs
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditor
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditorStartResult
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqMatch
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqMatchResolution
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotBundle
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
+import com.weekssa.opraeqforuapp.domain.dac.SavedHardwareEqRepresentation
 import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
+import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceControls
+import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult
+import com.weekssa.opraeqforuapp.domain.library.EqFilterType
+import com.weekssa.opraeqforuapp.domain.library.SavedEqHeadphoneAssociation
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
 import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
+import com.weekssa.opraeqforuapp.domain.settings.OutputBehavior
 import com.weekssa.opraeqforuapp.domain.settings.ThemeMode
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -72,6 +107,12 @@ private data class HardwareConnectionUiState(
     val blackPearl: BlackPearlConnectionState,
     val fiioJa11: Kt02h20ConnectionState,
     val jcallyJm12: Kt02h20ConnectionState,
+    val blackPearlHardwareEqState: HardwareEqSnapshotState,
+    val fiioJa11HardwareEqState: HardwareEqSnapshotState,
+    val blackPearlHardwareEqMatch: HardwareEqMatchResolution?,
+    val blackPearlEditorState: MyDacEditorUiState,
+    val blackPearlQualificationState: BlackPearlQualificationUiState,
+    val fiioJa11DeviceState: FiioJa11DeviceUiState,
 )
 
 data class EqLibraryUiState(
@@ -81,9 +122,19 @@ data class EqLibraryUiState(
     val savedEqs: List<SavedEqRecord> = emptyList(),
     val savedGeneralEqs: List<SavedGeneralEqRecord> = emptyList(),
     val exportCurrentness: ExportCurrentness = ExportCurrentness(),
+    val dacRecognitionState: DacRecognitionState = DacRecognitionState(),
     val blackPearlConnectionState: BlackPearlConnectionState = BlackPearlConnectionState.Disconnected,
     val fiioJa11ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
     val jcallyJm12ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
+    val blackPearlHardwareEqState: HardwareEqSnapshotState = HardwareEqSnapshotState(),
+    val fiioJa11HardwareEqState: HardwareEqSnapshotState = HardwareEqSnapshotState(),
+    val blackPearlHardwareEqMatch: HardwareEqMatchResolution? = null,
+    val blackPearlManagedHeadphones: List<ManagedHeadphoneRecord> = emptyList(),
+    val blackPearlSavedEqs: List<SavedEqRecord> = emptyList(),
+    val blackPearlSavedGeneralEqs: List<SavedGeneralEqRecord> = emptyList(),
+    val blackPearlEditorState: MyDacEditorUiState = MyDacEditorUiState(),
+    val blackPearlQualificationState: BlackPearlQualificationUiState = BlackPearlQualificationUiState(),
+    val fiioJa11DeviceState: FiioJa11DeviceUiState = FiioJa11DeviceUiState(),
 )
 
 class EqLibraryViewModel(
@@ -96,12 +147,19 @@ class EqLibraryViewModel(
     private val cleanupRepository: PresetCleanupRepository,
     private val syncCoordinator: CatalogSyncCoordinator,
     private val updateCoordinator: AppUpdateCoordinator,
+    private val dacControlRepository: DacControlRepository,
+    private val fiioJa11ControlRepository: FiioJa11ControlRepository,
     private val hardwareRepository: HardwareEqRepository,
     private val computationDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val nowMillis: () -> Long = System::currentTimeMillis,
 ) : ViewModel() {
     private var lastForegroundRefreshAttemptMillis: Long = 0L
     private val exportInvalidation = MutableStateFlow(0L)
+    private val mutableBlackPearlEditorState = MutableStateFlow(MyDacEditorUiState())
+    private val mutableBlackPearlQualificationState = MutableStateFlow(BlackPearlQualificationUiState())
+    private val mutableFiioJa11DeviceState = MutableStateFlow(FiioJa11DeviceUiState())
+    private val mutableBlackPearlKnownLineage = MutableStateFlow<BlackPearlKnownLineage?>(null)
+    private var blackPearlEditorLineageRepresentation: SavedHardwareEqRepresentation? = null
 
     private val activeOutputId = preferencesRepository.preferences
         .map { preferences -> preferences.exportTargets.activeTarget.name }
@@ -126,6 +184,39 @@ class EqLibraryViewModel(
         initialValue = LibraryDataState(),
     )
 
+    private val blackPearlLibraryData: StateFlow<LibraryDataState> = combine(
+        managedHeadphonesRepository.observeHeadphones(ExportDevice.BLACK_PEARL.name),
+        savedEqRepository.observeForOutput(ExportDevice.BLACK_PEARL.name),
+        savedGeneralEqRepository.observeForOutput(ExportDevice.BLACK_PEARL.name),
+    ) { managedHeadphones, savedEqs, savedGeneralEqs ->
+        LibraryDataState(
+            outputId = ExportDevice.BLACK_PEARL.name,
+            managedHeadphones = managedHeadphones,
+            savedEqs = savedEqs,
+            savedGeneralEqs = savedGeneralEqs,
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
+        initialValue = LibraryDataState(outputId = ExportDevice.BLACK_PEARL.name),
+    )
+
+    private val blackPearlHardwareEqMatch = combine(
+        hardwareRepository.blackPearlSnapshotState,
+        blackPearlLibraryData,
+        mutableBlackPearlKnownLineage,
+    ) { snapshotState, library, lineage -> Triple(snapshotState, library, lineage) }
+        .mapLatest { (snapshotState, library, lineage) ->
+            val bundle = snapshotState.bundle ?: return@mapLatest null
+            withContext(computationDispatcher) {
+                resolveBlackPearlHardwareEq(
+                    bundle = bundle,
+                    library = library,
+                    lineage = lineage,
+                )
+            }
+        }
+
     private val exportCurrentness = combine(
         preferencesRepository.preferences,
         libraryData,
@@ -137,9 +228,7 @@ class EqLibraryViewModel(
         if (!device.supportsFileExport || input.library.outputId != device.name) {
             ExportCurrentness()
         } else {
-            val records = withContext(computationDispatcher) {
-                input.library.toExportRecords()
-            }
+            val records = withContext(computationDispatcher) { input.library.toExportRecords() }
             exportRepository.evaluateCurrentness(
                 treeUri = input.preferences.exportTreeUri,
                 headphones = records,
@@ -152,12 +241,54 @@ class EqLibraryViewModel(
         LibraryUiState(library, currentness)
     }
 
-    private val hardwareConnections = combine(
+    private val hardwareConnectionsWithoutEditor = combine(
         hardwareRepository.blackPearlConnectionState,
         hardwareRepository.fiioJa11ConnectionState,
         hardwareRepository.jcallyJm12ConnectionState,
-    ) { blackPearl, fiioJa11, jcallyJm12 ->
-        HardwareConnectionUiState(blackPearl, fiioJa11, jcallyJm12)
+        hardwareRepository.blackPearlSnapshotState,
+        blackPearlHardwareEqMatch,
+    ) { blackPearl, fiioJa11, jcallyJm12, blackPearlHardwareEqState, blackPearlMatch ->
+        HardwareConnectionUiState(
+            blackPearl = blackPearl,
+            fiioJa11 = fiioJa11,
+            jcallyJm12 = jcallyJm12,
+            blackPearlHardwareEqState = blackPearlHardwareEqState,
+            fiioJa11HardwareEqState = HardwareEqSnapshotState(),
+            blackPearlHardwareEqMatch = blackPearlMatch,
+            blackPearlEditorState = MyDacEditorUiState(),
+            blackPearlQualificationState = BlackPearlQualificationUiState(),
+            fiioJa11DeviceState = FiioJa11DeviceUiState(),
+        )
+    }
+
+    private val hardwareConnectionsWithFiioEq = combine(
+        hardwareConnectionsWithoutEditor,
+        hardwareRepository.fiioJa11SnapshotState,
+    ) { hardware, fiioEq -> hardware.copy(fiioJa11HardwareEqState = fiioEq) }
+
+    private val hardwareConnectionsWithEditor = combine(
+        hardwareConnectionsWithFiioEq,
+        mutableBlackPearlEditorState,
+    ) { hardware, editor -> hardware.copy(blackPearlEditorState = editor) }
+
+    private val hardwareConnectionsWithQualification = combine(
+        hardwareConnectionsWithEditor,
+        mutableBlackPearlQualificationState,
+    ) { hardware, qualification ->
+        val current = qualification.snapshot?.let { snapshot ->
+            hardwareRepository.isBlackPearlSessionCurrent(snapshot.sessionGeneration)
+        } == true
+        hardware.copy(blackPearlQualificationState = qualification.withSessionCurrent(current))
+    }
+
+    private val hardwareConnections = combine(
+        hardwareConnectionsWithQualification,
+        mutableFiioJa11DeviceState,
+    ) { hardware, fiioDevice ->
+        val current = fiioDevice.snapshot?.let { snapshot ->
+            hardwareRepository.isFiioJa11SessionCurrent(snapshot.sessionGeneration)
+        } == true
+        hardware.copy(fiioJa11DeviceState = fiioDevice.withSessionCurrent(current))
     }
 
     val uiState: StateFlow<EqLibraryUiState> = combine(
@@ -165,23 +296,31 @@ class EqLibraryViewModel(
         catalogRepository.state,
         libraryUi,
         hardwareConnections,
-    ) { preferences, catalogState, library, hardware ->
+        hardwareRepository.recognitionState,
+    ) { preferences, catalogState, library, hardware, recognition ->
         val activeOutputId = preferences.exportTargets.activeTarget.name
         val matchingLibrary = library.data.takeIf { it.outputId == activeOutputId }
+        val blackPearlLibrary = blackPearlLibraryData.value
         EqLibraryUiState(
             appPreferences = preferences,
             catalogState = catalogState,
             managedHeadphones = matchingLibrary?.managedHeadphones.orEmpty(),
             savedEqs = matchingLibrary?.savedEqs.orEmpty(),
             savedGeneralEqs = matchingLibrary?.savedGeneralEqs.orEmpty(),
-            exportCurrentness = if (matchingLibrary == null) {
-                ExportCurrentness()
-            } else {
-                library.exportCurrentness
-            },
+            exportCurrentness = if (matchingLibrary == null) ExportCurrentness() else library.exportCurrentness,
+            dacRecognitionState = recognition,
             blackPearlConnectionState = hardware.blackPearl,
             fiioJa11ConnectionState = hardware.fiioJa11,
             jcallyJm12ConnectionState = hardware.jcallyJm12,
+            blackPearlHardwareEqState = hardware.blackPearlHardwareEqState,
+            fiioJa11HardwareEqState = hardware.fiioJa11HardwareEqState,
+            blackPearlHardwareEqMatch = hardware.blackPearlHardwareEqMatch,
+            blackPearlManagedHeadphones = blackPearlLibrary.managedHeadphones,
+            blackPearlSavedEqs = blackPearlLibrary.savedEqs,
+            blackPearlSavedGeneralEqs = blackPearlLibrary.savedGeneralEqs,
+            blackPearlEditorState = hardware.blackPearlEditorState,
+            blackPearlQualificationState = hardware.blackPearlQualificationState,
+            fiioJa11DeviceState = hardware.fiioJa11DeviceState,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -198,19 +337,607 @@ class EqLibraryViewModel(
             }
             refreshCatalogIfDue()
         }
+        viewModelScope.launch {
+            hardwareRepository.blackPearlConnectionState.collectLatest { state ->
+                when (state) {
+                    BlackPearlConnectionState.Connected -> refreshBlackPearlDeviceState()
+                    else -> mutableBlackPearlQualificationState.update { current ->
+                        current.withSessionCurrent(false)
+                    }
+                }
+            }
+        }
+        viewModelScope.launch {
+            hardwareRepository.fiioJa11ConnectionState.collectLatest { state ->
+                when (state) {
+                    Kt02h20ConnectionState.Connected -> {
+                        val pending = mutableFiioJa11DeviceState.value.pendingRestartWrite
+                        if (pending != null) verifyPendingFiioJa11Control(pending)
+                        else refreshFiioJa11DeviceState()
+                    }
+                    else -> mutableFiioJa11DeviceState.update(FiioJa11DeviceUiState::markStale)
+                }
+            }
+        }
     }
 
     fun onAppResumed() {
         viewModelScope.launch { refreshCatalogIfDue() }
     }
 
+    fun connectDacForMyDac(deviceId: DacDeviceId) {
+        if (deviceId !in hardwareRepository.recognitionState.value.presentDeviceIds) return
+        when (deviceId) {
+            DacDeviceId.TRN_BLACK_PEARL -> hardwareRepository.connectBlackPearl()
+            DacDeviceId.FIIO_JA11 -> hardwareRepository.connectFiioJa11()
+            DacDeviceId.JCALLY_JM12_STOCK -> Unit
+        }
+    }
+
+    fun readFiioJa11DeviceControls() {
+        if (mutableFiioJa11DeviceState.value.isBusy) return
+        viewModelScope.launch { refreshFiioJa11DeviceState() }
+    }
+
+    fun setFiioJa11OutputVolume(level: Int) = writeFiioJa11Control(
+        FiioJa11DeviceControls.OUTPUT_VOLUME,
+        DacControlValue.Numeric(level.toDouble()),
+    )
+
+    fun setFiioJa11EqProgram(program: FiioJa11Protocol.EqProgram) = writeFiioJa11Control(
+        FiioJa11DeviceControls.EQ_PROGRAM,
+        DacControlValue.Discrete(program.name.lowercase()),
+    )
+
+    fun setFiioJa11HeadsetControl(enabled: Boolean) = writeFiioJa11Control(
+        FiioJa11DeviceControls.HEADSET_CONTROL,
+        DacControlValue.Toggle(enabled),
+    )
+
+    fun setFiioJa11UacMode(mode: FiioJa11Protocol.UacMode) = writeFiioJa11Control(
+        FiioJa11DeviceControls.UAC_MODE,
+        DacControlValue.Discrete(mode.name.lowercase()),
+    )
+
+    private fun writeFiioJa11Control(controlId: DacControlId, value: DacControlValue) {
+        val state = mutableFiioJa11DeviceState.value
+        val snapshot = state.snapshot
+        if (state.isBusy || state.pendingRestartWrite != null) return
+        if (
+            snapshot == null ||
+            !state.isCurrentSession ||
+            hardwareRepository.fiioJa11ConnectionState.value !is Kt02h20ConnectionState.Connected
+        ) {
+            mutableFiioJa11DeviceState.value = state.failure(
+                "Read the current FiiO JA11 device state before changing this setting.",
+            )
+            return
+        }
+
+        mutableFiioJa11DeviceState.value = state.beginWrite(controlId)
+        viewModelScope.launch {
+            when (
+                val result = fiioJa11ControlRepository.writeControl(
+                    DacWriteIntent(
+                        controlId = controlId,
+                        requestedValue = value,
+                        expectedSessionGeneration = snapshot.sessionGeneration,
+                    ),
+                )
+            ) {
+                is FiioJa11ControlWriteResult.Verified -> {
+                    mutableFiioJa11DeviceState.value =
+                        mutableFiioJa11DeviceState.value.verified(controlId, result.snapshot)
+                    if (controlId == FiioJa11DeviceControls.EQ_PROGRAM) {
+                        hardwareRepository.readFiioJa11Snapshot()
+                    }
+                }
+                is FiioJa11ControlWriteResult.ReconnectRequired -> {
+                    mutableFiioJa11DeviceState.value =
+                        mutableFiioJa11DeviceState.value.reconnectRequired(result.pending)
+                }
+                else -> mutableFiioJa11DeviceState.value = mutableFiioJa11DeviceState.value.failure(
+                    fiioJa11WriteFailureMessage(result),
+                )
+            }
+        }
+    }
+
+    private suspend fun refreshFiioJa11DeviceState() {
+        if (mutableFiioJa11DeviceState.value.isBusy) return
+        mutableFiioJa11DeviceState.update(FiioJa11DeviceUiState::beginRead)
+        mutableFiioJa11DeviceState.value = when (val result = fiioJa11ControlRepository.readSnapshot()) {
+            is FiioJa11ControlReadResult.Success -> mutableFiioJa11DeviceState.value.readSuccess(result.snapshot)
+            FiioJa11ControlReadResult.NotConnected -> mutableFiioJa11DeviceState.value.failure(
+                "Connect FiiO JA11 before reading device controls.",
+            )
+            FiioJa11ControlReadResult.SessionChanged -> mutableFiioJa11DeviceState.value.failure(
+                "The FiiO JA11 USB session changed during the read. Reconnect and read again.",
+            )
+            is FiioJa11ControlReadResult.ReadFailed -> mutableFiioJa11DeviceState.value.failure(
+                "Could not read ${result.field} from FiiO JA11.",
+            )
+        }
+    }
+
+    private suspend fun verifyPendingFiioJa11Control(
+        pending: com.weekssa.opraeqforuapp.data.dac.FiioJa11PendingRestartWrite,
+    ) {
+        when (val result = fiioJa11ControlRepository.verifyRestartedControl(pending)) {
+            is FiioJa11ControlWriteResult.Verified -> {
+                mutableFiioJa11DeviceState.value =
+                    mutableFiioJa11DeviceState.value.verified(result.controlId, result.snapshot)
+                hardwareRepository.readFiioJa11Snapshot()
+            }
+            else -> mutableFiioJa11DeviceState.value = mutableFiioJa11DeviceState.value.failure(
+                fiioJa11WriteFailureMessage(result),
+            )
+        }
+    }
+
+    private fun fiioJa11WriteFailureMessage(result: FiioJa11ControlWriteResult): String = when (result) {
+        is FiioJa11ControlWriteResult.InvalidRequest -> "That FiiO JA11 setting value is not supported."
+        is FiioJa11ControlWriteResult.NotConnected -> "FiiO JA11 is not connected. No setting was changed."
+        is FiioJa11ControlWriteResult.StaleBaseline -> "The FiiO JA11 USB session changed. Read the current state and try again."
+        is FiioJa11ControlWriteResult.ReadFailed -> "Could not verify ${result.field}. The change was not reported as successful."
+        is FiioJa11ControlWriteResult.TransferFailed -> "FiiO JA11 did not accept the setting change."
+        is FiioJa11ControlWriteResult.ReadbackMismatch -> "FiiO JA11 readback did not match the requested setting."
+        is FiioJa11ControlWriteResult.UnrelatedStateChanged ->
+            "FiiO JA11 changed unrelated state (${result.changedFields.joinToString()}). The change was not reported as successful."
+        is FiioJa11ControlWriteResult.ReconnectRequired -> "Reconnect FiiO JA11 so the change can be verified."
+        is FiioJa11ControlWriteResult.Verified -> "Verified."
+    }
+
+    fun openBlackPearlEditor() {
+        val current = mutableBlackPearlEditorState.value
+        if (current.isOpening || current.applyStatus == MyDacEditorApplyStatus.APPLYING) return
+        blackPearlEditorLineageRepresentation = null
+        if (hardwareRepository.blackPearlConnectionState.value !is BlackPearlConnectionState.Connected) {
+            mutableBlackPearlEditorState.value = MyDacEditorUiState(error = MyDacEditorError.NOT_CONNECTED)
+            return
+        }
+
+        mutableBlackPearlEditorState.value = MyDacEditorUiState(isOpening = true)
+        viewModelScope.launch {
+            val refreshed = hardwareRepository.readBlackPearlSnapshot()
+            if (refreshed == null) {
+                blackPearlEditorLineageRepresentation = null
+                mutableBlackPearlEditorState.value = MyDacEditorUiState(error = MyDacEditorError.READ_FAILED)
+                return@launch
+            }
+            val currentResolution = withContext(computationDispatcher) {
+                resolveBlackPearlHardwareEq(
+                    bundle = refreshed,
+                    library = blackPearlLibraryData.value,
+                    lineage = mutableBlackPearlKnownLineage.value,
+                )
+            }
+            blackPearlEditorLineageRepresentation = lineageRepresentationFor(currentResolution)
+
+            val trackedGainDeltaDb = hardwareRepository.readBlackPearlTrackedGainDeltaDb()
+            val result = withContext(computationDispatcher) {
+                HardwareEqEditor.startFromCurrent(
+                    snapshotState = hardwareRepository.blackPearlSnapshotState.value,
+                    spec = HardwareEqEditSpecs.TRN_BLACK_PEARL,
+                    trackedPlaybackGainDeltaDb = trackedGainDeltaDb,
+                )
+            }
+            mutableBlackPearlEditorState.value = when (result) {
+                is HardwareEqEditorStartResult.Ready -> {
+                    val selectedBandIndex = result.workingCopy.filters.firstOrNull()?.index
+                    MyDacEditorUiState(
+                        stage = MyDacEditorStage.EDIT,
+                        workingCopy = result.workingCopy,
+                        selectedBandIndex = selectedBandIndex,
+                    )
+                }
+                HardwareEqEditorStartResult.CurrentSnapshotRequired -> {
+                    blackPearlEditorLineageRepresentation = null
+                    MyDacEditorUiState(error = MyDacEditorError.READ_FAILED)
+                }
+                HardwareEqEditorStartResult.WrongDevice -> {
+                    blackPearlEditorLineageRepresentation = null
+                    MyDacEditorUiState(error = MyDacEditorError.WRONG_DEVICE)
+                }
+            }
+        }
+    }
+
+    fun closeMyDacEditor() {
+        if (mutableBlackPearlEditorState.value.applyStatus == MyDacEditorApplyStatus.APPLYING) return
+        blackPearlEditorLineageRepresentation = null
+        mutableBlackPearlEditorState.value = MyDacEditorUiState()
+    }
+
+    fun backMyDacEditor(): Boolean {
+        val current = mutableBlackPearlEditorState.value
+        if (current.applyStatus == MyDacEditorApplyStatus.APPLYING) return true
+        val closesEditor = current.isOpening || current.stage == MyDacEditorStage.EDIT
+        val next = when {
+            current.isOpening -> MyDacEditorUiState()
+            current.stage == MyDacEditorStage.REVIEW || current.stage == MyDacEditorStage.ALL_BANDS ->
+                current.copy(
+                    stage = MyDacEditorStage.EDIT,
+                    error = null,
+                    applyStatus = MyDacEditorApplyStatus.IDLE,
+                    applyFailureReason = null,
+                )
+            current.stage == MyDacEditorStage.EDIT -> MyDacEditorUiState()
+            else -> return false
+        }
+        if (closesEditor) blackPearlEditorLineageRepresentation = null
+        mutableBlackPearlEditorState.value = next
+        return true
+    }
+
+    fun selectBlackPearlEditorBand(bandIndex: Int) {
+        mutableBlackPearlEditorState.update { current ->
+            val working = current.workingCopy ?: return@update current
+            if (working.filters.none { filter -> filter.index == bandIndex }) return@update current
+            current.copy(
+                stage = MyDacEditorStage.EDIT,
+                selectedBandIndex = bandIndex,
+                error = null,
+                applyStatus = MyDacEditorApplyStatus.IDLE,
+                applyFailureReason = null,
+            )
+        }
+    }
+
+    fun showBlackPearlEditorAllBands() {
+        mutableBlackPearlEditorState.update { current ->
+            if (current.workingCopy == null || current.applyStatus == MyDacEditorApplyStatus.APPLYING) current
+            else current.copy(
+                stage = MyDacEditorStage.ALL_BANDS,
+                error = null,
+                applyStatus = MyDacEditorApplyStatus.IDLE,
+                applyFailureReason = null,
+            )
+        }
+    }
+
+    fun showBlackPearlEditorReview() {
+        mutableBlackPearlEditorState.update { current ->
+            if (current.workingCopy == null || current.applyStatus == MyDacEditorApplyStatus.APPLYING) current
+            else current.copy(
+                stage = MyDacEditorStage.REVIEW,
+                error = null,
+                applyStatus = MyDacEditorApplyStatus.IDLE,
+                applyFailureReason = null,
+            )
+        }
+    }
+
+    fun updateBlackPearlEditorBand(
+        bandIndex: Int,
+        type: EqFilterType,
+        frequencyHz: Double,
+        gainDb: Double,
+        q: Double,
+    ) {
+        mutableBlackPearlEditorState.update { current ->
+            if (current.applyStatus == MyDacEditorApplyStatus.APPLYING) return@update current
+            val working = current.workingCopy ?: return@update current
+            val updated = HardwareEqEditor.updateFilter(
+                workingCopy = working,
+                spec = HardwareEqEditSpecs.TRN_BLACK_PEARL,
+                bandIndex = bandIndex,
+                type = type,
+                frequencyHz = frequencyHz,
+                gainDb = gainDb,
+                q = q,
+            )
+            current.copy(
+                workingCopy = updated,
+                selectedBandIndex = bandIndex,
+                error = null,
+                applyStatus = MyDacEditorApplyStatus.IDLE,
+                applyFailureReason = null,
+            )
+        }
+    }
+
+    fun useSafeBlackPearlEditorGain() {
+        mutableBlackPearlEditorState.update { current ->
+            if (current.applyStatus == MyDacEditorApplyStatus.APPLYING) return@update current
+            val working = current.workingCopy ?: return@update current
+            current.copy(
+                workingCopy = HardwareEqEditor.useSafeGain(
+                    workingCopy = working,
+                    spec = HardwareEqEditSpecs.TRN_BLACK_PEARL,
+                ),
+                error = null,
+                applyStatus = MyDacEditorApplyStatus.IDLE,
+                applyFailureReason = null,
+            )
+        }
+    }
+
+    fun resetBlackPearlEditorLocalEdits() {
+        mutableBlackPearlEditorState.update { current ->
+            if (current.applyStatus == MyDacEditorApplyStatus.APPLYING) return@update current
+            val working = current.workingCopy ?: return@update current
+            current.copy(
+                stage = MyDacEditorStage.EDIT,
+                workingCopy = HardwareEqEditor.resetLocalEdits(
+                    workingCopy = working,
+                    spec = HardwareEqEditSpecs.TRN_BLACK_PEARL,
+                ),
+                error = null,
+                applyStatus = MyDacEditorApplyStatus.IDLE,
+                applyFailureReason = null,
+            )
+        }
+    }
+
+    fun applyBlackPearlEditor(allowCautions: Boolean) {
+        val current = mutableBlackPearlEditorState.value
+        val workingCopy = current.workingCopy ?: return
+        if (current.stage != MyDacEditorStage.REVIEW || current.applyStatus == MyDacEditorApplyStatus.APPLYING) return
+        if (current.applyStatus == MyDacEditorApplyStatus.CONFIRMATION_REQUIRED && !allowCautions) return
+        val lineageSource = blackPearlEditorLineageRepresentation
+
+        mutableBlackPearlEditorState.value = current.copy(
+            applyStatus = MyDacEditorApplyStatus.APPLYING,
+            applyFailureReason = null,
+        )
+        viewModelScope.launch {
+            val result = hardwareRepository.applyBlackPearlEditor(
+                workingCopy = workingCopy,
+                allowCautions = allowCautions,
+            )
+            mutableBlackPearlEditorState.value = when (result) {
+                is BlackPearlEditorApplyResult.Verified -> {
+                    val fresh = hardwareRepository.blackPearlSnapshotState.value.bundle
+                    mutableBlackPearlKnownLineage.value = if (
+                        lineageSource != null && fresh != null &&
+                        hardwareRepository.isBlackPearlSessionCurrent(fresh.snapshot.sessionGeneration)
+                    ) {
+                        buildBlackPearlKnownLineage(
+                            sessionGeneration = fresh.snapshot.sessionGeneration,
+                            savedRepresentation = lineageSource,
+                            actualFingerprint = fresh.fingerprint,
+                        )
+                    } else null
+                    blackPearlEditorLineageRepresentation = null
+                    refreshBlackPearlDeviceState()
+                    MyDacEditorUiState(applyStatus = MyDacEditorApplyStatus.VERIFIED)
+                }
+                is BlackPearlEditorApplyResult.ConfirmationRequired -> current.copy(
+                    applyStatus = MyDacEditorApplyStatus.CONFIRMATION_REQUIRED,
+                    applyFailureReason = null,
+                )
+                is BlackPearlEditorApplyResult.InvalidPlan -> failedEditorApply(result.reason).also {
+                    mutableBlackPearlKnownLineage.value = null
+                    blackPearlEditorLineageRepresentation = null
+                }
+                is BlackPearlEditorApplyResult.StaleBaseline -> failedEditorApply(result.reason).also {
+                    mutableBlackPearlKnownLineage.value = null
+                    blackPearlEditorLineageRepresentation = null
+                }
+                is BlackPearlEditorApplyResult.DeviceUnavailable -> failedEditorApply(result.reason).also {
+                    mutableBlackPearlKnownLineage.value = null
+                    blackPearlEditorLineageRepresentation = null
+                }
+                is BlackPearlEditorApplyResult.TransferFailed -> failedEditorApply(result.reason).also {
+                    mutableBlackPearlKnownLineage.value = null
+                    blackPearlEditorLineageRepresentation = null
+                }
+                is BlackPearlEditorApplyResult.VerificationFailed -> failedEditorApply(result.reason).also {
+                    mutableBlackPearlKnownLineage.value = null
+                    blackPearlEditorLineageRepresentation = null
+                }
+            }
+        }
+    }
+
+    private fun failedEditorApply(reason: String): MyDacEditorUiState = MyDacEditorUiState(
+        applyStatus = MyDacEditorApplyStatus.FAILED,
+        applyFailureReason = reason,
+    )
+
+    suspend fun captureBlackPearlDacEq(
+        displayName: String,
+        association: SavedEqHeadphoneAssociation?,
+    ): UiText {
+        val name = displayName.trim()
+        if (name.isEmpty()) return UiText.Dynamic("EQ name is required.")
+        if (hardwareRepository.blackPearlConnectionState.value !is BlackPearlConnectionState.Connected) {
+            return UiText.Dynamic("Connect TRN Black Pearl before saving its EQ.")
+        }
+
+        val bundle = hardwareRepository.readBlackPearlSnapshot()
+            ?: return UiText.Dynamic("Could not read the current Black Pearl EQ. No Personal EQ was saved.")
+        if (!hardwareRepository.isBlackPearlSessionCurrent(bundle.snapshot.sessionGeneration)) {
+            return UiText.Dynamic("The Black Pearl connection changed while reading. Reconnect and try again.")
+        }
+
+        val library = loadLibraryData(ExportDevice.BLACK_PEARL.name)
+        val resolution = withContext(computationDispatcher) {
+            resolveBlackPearlHardwareEq(bundle, library, mutableBlackPearlKnownLineage.value)
+        }
+
+        return when (val decision = decideBlackPearlCapture(resolution.match)) {
+            BlackPearlCaptureDecision.Flat ->
+                UiText.Dynamic("The Black Pearl EQ is already flat. No duplicate Personal EQ was created.")
+            is BlackPearlCaptureDecision.ExistingMatch -> {
+                if (decision.savedEqs.size == 1) {
+                    UiText.Dynamic("Already in My EQs: ${decision.savedEqs.single().displayName}")
+                } else {
+                    UiText.Dynamic(
+                        "This Black Pearl EQ already exactly matches ${decision.savedEqs.size} saved EQs. No duplicate was created.",
+                    )
+                }
+            }
+            BlackPearlCaptureDecision.Capture -> runCatching {
+                savedEqRepository.captureBlackPearlEq(
+                    displayName = name,
+                    snapshotBundle = bundle,
+                    association = association,
+                )
+            }.fold(
+                onSuccess = { record -> UiText.Dynamic("Saved ${record.displayName} to Black Pearl My EQs.") },
+                onFailure = { error -> UiText.Dynamic(error.message ?: "Could not save the current Black Pearl EQ.") },
+            )
+        }
+    }
+
+    fun readBlackPearlQualificationControls() {
+        if (mutableBlackPearlQualificationState.value.isBusy) return
+        viewModelScope.launch { refreshBlackPearlDeviceState() }
+    }
+
+    private suspend fun refreshBlackPearlDeviceState() {
+        if (mutableBlackPearlQualificationState.value.isBusy) return
+        mutableBlackPearlQualificationState.update(BlackPearlQualificationUiState::beginRead)
+        mutableBlackPearlQualificationState.value = when (
+            val result = dacControlRepository.readBlackPearlQualificationSnapshot()
+        ) {
+            is BlackPearlQualificationReadResult.Success ->
+                mutableBlackPearlQualificationState.value.success(result.snapshot)
+            BlackPearlQualificationReadResult.NotConnected ->
+                mutableBlackPearlQualificationState.value.failure(
+                    "Connect TRN Black Pearl before reading device controls.",
+                )
+            BlackPearlQualificationReadResult.SessionChanged ->
+                mutableBlackPearlQualificationState.value.failure(
+                    "The Black Pearl connection changed during the read. Reconnect and read again.",
+                )
+            is BlackPearlQualificationReadResult.ReadFailed ->
+                mutableBlackPearlQualificationState.value.failure(
+                    "Could not read ${result.field}. No device setting was changed.",
+                )
+        }
+    }
+
+    fun setBlackPearlDeviceControl(controlId: DacControlId, value: DacControlValue) =
+        writeBlackPearlDeviceControl(controlId, value)
+
+    private fun writeBlackPearlDeviceControl(controlId: DacControlId, value: DacControlValue) {
+        val state = mutableBlackPearlQualificationState.value
+        val snapshot = state.snapshot
+        if (state.isBusy) return
+        if (
+            snapshot == null ||
+            !state.isCurrentSession ||
+            !hardwareRepository.isBlackPearlSessionCurrent(snapshot.sessionGeneration) ||
+            hardwareRepository.blackPearlConnectionState.value !is BlackPearlConnectionState.Connected
+        ) {
+            mutableBlackPearlQualificationState.value = state.writeFailure(
+                "Read the current Black Pearl device state before changing this setting.",
+                actualSnapshot = snapshot,
+                actualIsCurrent = false,
+            )
+            return
+        }
+        if (!BlackPearlDeviceQualificationPolicy.isWriteInteractive(controlId)) {
+            mutableBlackPearlQualificationState.value = state.writeFailure(
+                "This Black Pearl control is not enabled for use or hardware qualification yet.",
+                actualSnapshot = snapshot,
+                actualIsCurrent = true,
+            )
+            return
+        }
+
+        mutableBlackPearlQualificationState.value = state.beginWrite(controlId)
+        viewModelScope.launch {
+            when (
+                val result = dacControlRepository.writeBlackPearlControl(
+                    DacWriteIntent(
+                        controlId = controlId,
+                        requestedValue = value,
+                        expectedSessionGeneration = snapshot.sessionGeneration,
+                    ),
+                )
+            ) {
+                is BlackPearlDeviceControlWriteResult.Verified -> {
+                    mutableBlackPearlQualificationState.value =
+                        mutableBlackPearlQualificationState.value.writeVerified(controlId, result.snapshot)
+                    if (controlId == BlackPearlDeviceControls.PLAYBACK_GAIN_DB) {
+                        hardwareRepository.readBlackPearlSnapshot()
+                    }
+                }
+                is BlackPearlDeviceControlWriteResult.ReadbackMismatch -> {
+                    mutableBlackPearlQualificationState.value =
+                        mutableBlackPearlQualificationState.value.writeFailure(
+                            "The Black Pearl readback did not match the requested setting. The change was not reported as successful.",
+                            actualSnapshot = result.snapshot,
+                            actualIsCurrent = hardwareRepository.isBlackPearlSessionCurrent(
+                                result.snapshot.sessionGeneration,
+                            ),
+                        )
+                }
+                is BlackPearlDeviceControlWriteResult.UnrelatedStateChanged -> {
+                    mutableBlackPearlQualificationState.value =
+                        mutableBlackPearlQualificationState.value.writeFailure(
+                            "Black Pearl changed unrelated state (${result.changedFields.joinToString()}). The change was not reported as successful.",
+                            actualSnapshot = result.snapshot,
+                            actualIsCurrent = hardwareRepository.isBlackPearlSessionCurrent(
+                                result.snapshot.sessionGeneration,
+                            ),
+                        )
+                }
+                is BlackPearlDeviceControlWriteResult.InvalidRequest ->
+                    mutableBlackPearlQualificationState.value =
+                        mutableBlackPearlQualificationState.value.writeFailure(
+                            "That Black Pearl setting value is not supported.",
+                        )
+                is BlackPearlDeviceControlWriteResult.NotConnected ->
+                    mutableBlackPearlQualificationState.value =
+                        mutableBlackPearlQualificationState.value.writeFailure(
+                            "The Black Pearl disconnected before the change could be verified.",
+                        )
+                is BlackPearlDeviceControlWriteResult.StaleBaseline ->
+                    mutableBlackPearlQualificationState.value =
+                        mutableBlackPearlQualificationState.value.writeFailure(
+                            "The Black Pearl USB session changed. Read the current device state again before changing a setting.",
+                        )
+                is BlackPearlDeviceControlWriteResult.ReadFailed ->
+                    mutableBlackPearlQualificationState.value =
+                        mutableBlackPearlQualificationState.value.writeFailure(
+                            "Could not verify ${result.field}. The change was not reported as successful.",
+                        )
+                is BlackPearlDeviceControlWriteResult.TransferFailed ->
+                    mutableBlackPearlQualificationState.value =
+                        mutableBlackPearlQualificationState.value.writeFailure(
+                            "The Black Pearl did not accept the requested setting change. Read the device state again before retrying.",
+                        )
+            }
+        }
+    }
+
+    suspend fun flashBlackPearlFromMyDac(profile: OpraEqProfile): UiText {
+        if (hardwareRepository.blackPearlConnectionState.value !is BlackPearlConnectionState.Connected) {
+            return UiText.Dynamic("Connect TRN Black Pearl before changing its EQ.")
+        }
+        return blackPearlFlashResultMessage(flashBlackPearlAndRefresh(profile))
+    }
+
+    suspend fun resetBlackPearlFromMyDacToFlat(): UiText {
+        if (hardwareRepository.blackPearlConnectionState.value !is BlackPearlConnectionState.Connected) {
+            return UiText.Dynamic("Connect TRN Black Pearl before resetting its EQ.")
+        }
+        return blackPearlResetResultMessage(resetBlackPearlAndRefresh())
+    }
+
+    suspend fun flashFiioJa11FromMyDac(profile: OpraEqProfile): UiText {
+        if (hardwareRepository.fiioJa11ConnectionState.value !is Kt02h20ConnectionState.Connected) {
+            return UiText.Dynamic("Connect FiiO JA11 before changing its EQ.")
+        }
+        return fiioJa11FlashResultMessage(flashFiioJa11AndRefresh(profile))
+    }
+
+    suspend fun resetFiioJa11FromMyDacToFlat(): UiText {
+        if (hardwareRepository.fiioJa11ConnectionState.value !is Kt02h20ConnectionState.Connected) {
+            return UiText.Dynamic("Connect FiiO JA11 before resetting its EQ.")
+        }
+        return fiioJa11ResetResultMessage(resetFiioJa11AndRefresh())
+    }
+
     fun connectBlackPearl() {
         viewModelScope.launch {
             val preferences = preferencesRepository.snapshot()
-            if (
-                preferences.directBlackPearlFlashEnabled &&
-                preferences.exportTargets.activeTarget == ExportDevice.BLACK_PEARL
-            ) {
+            if (preferences.directBlackPearlFlashEnabled && preferences.exportTargets.activeTarget == ExportDevice.BLACK_PEARL) {
                 hardwareRepository.connectBlackPearl()
             }
         }
@@ -219,26 +946,13 @@ class EqLibraryViewModel(
     fun connectFiioJa11() {
         viewModelScope.launch {
             val preferences = preferencesRepository.snapshot()
-            if (
-                preferences.directFiioJa11FlashEnabled &&
-                preferences.exportTargets.activeTarget == ExportDevice.FIIO_JA11
-            ) {
+            if (preferences.directFiioJa11FlashEnabled && preferences.exportTargets.activeTarget == ExportDevice.FIIO_JA11) {
                 hardwareRepository.connectFiioJa11()
             }
         }
     }
 
-    fun connectJcallyJm12() {
-        viewModelScope.launch {
-            val preferences = preferencesRepository.snapshot()
-            if (
-                preferences.directJcallyJm12FlashEnabled &&
-                preferences.exportTargets.activeTarget == ExportDevice.JCALLY_JM12
-            ) {
-                hardwareRepository.connectJcallyJm12()
-            }
-        }
-    }
+    fun connectJcallyJm12() = Unit
 
     suspend fun resetBlackPearlToFlat(): UiText {
         val preferences = preferencesRepository.snapshot()
@@ -251,23 +965,7 @@ class EqLibraryViewModel(
         if (hardwareRepository.blackPearlConnectionState.value !is BlackPearlConnectionState.Connected) {
             return resource(R.string.error_connect_black_pearl_reset)
         }
-
-        return when (val result = hardwareRepository.resetBlackPearl()) {
-            is BlackPearlFlatResetResult.Success -> {
-                if (kotlin.math.abs(result.restoredPlaybackGainDb) < ZERO_GAIN_EPSILON) {
-                    resource(R.string.black_pearl_reset_success)
-                } else {
-                    resource(
-                        R.string.black_pearl_reset_removed_adjustment,
-                        -result.restoredPlaybackGainDb,
-                    )
-                }
-            }
-            is BlackPearlFlatResetResult.NotRepresentable ->
-                resource(R.string.black_pearl_reset_failed, result.reason)
-            is BlackPearlFlatResetResult.DeviceUnavailable -> UiText.Dynamic(result.reason)
-            is BlackPearlFlatResetResult.TransferFailed -> UiText.Dynamic(result.reason)
-        }
+        return blackPearlResetResultMessage(resetBlackPearlAndRefresh())
     }
 
     suspend fun resetFiioJa11ToFlat(): UiText {
@@ -281,39 +979,10 @@ class EqLibraryViewModel(
         if (hardwareRepository.fiioJa11ConnectionState.value !is Kt02h20ConnectionState.Connected) {
             return resource(R.string.error_connect_fiio_reset)
         }
-        return when (val result = hardwareRepository.resetFiioJa11()) {
-            is Kt02h20FlatResetResult.Success -> resource(R.string.fiio_reset_success)
-            is Kt02h20FlatResetResult.NotSuitable ->
-                resource(R.string.fiio_reset_failed, result.reason)
-            is Kt02h20FlatResetResult.DeviceUnavailable -> UiText.Dynamic(result.reason)
-            is Kt02h20FlatResetResult.TransferFailed -> UiText.Dynamic(result.reason)
-            is Kt02h20FlatResetResult.VerificationFailed ->
-                resource(R.string.fiio_reset_verification_failed, result.reason)
-        }
+        return fiioJa11ResetResultMessage(resetFiioJa11AndRefresh())
     }
 
-    suspend fun resetJcallyJm12ToFlat(): UiText {
-        val preferences = preferencesRepository.snapshot()
-        if (preferences.exportTargets.activeTarget != ExportDevice.JCALLY_JM12) {
-            return resource(R.string.error_select_jm12_reset)
-        }
-        if (!preferences.directJcallyJm12FlashEnabled) {
-            return resource(R.string.error_enable_jm12_reset)
-        }
-        if (hardwareRepository.jcallyJm12ConnectionState.value !is Kt02h20ConnectionState.Connected) {
-            return resource(R.string.error_connect_jm12_reset)
-        }
-        return when (val result = hardwareRepository.resetJcallyJm12()) {
-            is Kt02h20FlatResetResult.Success ->
-                resource(R.string.jm12_reset_success, result.restoredPlaybackGainDb)
-            is Kt02h20FlatResetResult.NotSuitable ->
-                resource(R.string.jm12_reset_failed, result.reason)
-            is Kt02h20FlatResetResult.DeviceUnavailable -> UiText.Dynamic(result.reason)
-            is Kt02h20FlatResetResult.TransferFailed -> UiText.Dynamic(result.reason)
-            is Kt02h20FlatResetResult.VerificationFailed ->
-                resource(R.string.jm12_reset_verification_failed, result.reason)
-        }
-    }
+    suspend fun resetJcallyJm12ToFlat(): UiText = UiText.Dynamic("This device is not supported by the current product.")
 
     suspend fun flashManagedProfile(productId: String, profileId: String): UiText {
         val outputId = activeOutputId()
@@ -377,9 +1046,7 @@ class EqLibraryViewModel(
         val record = managed.profiles.firstOrNull { it.profileId == profileId } ?: return null
         val cleanup = if (deleteSavedFiles) {
             cleanupRepository.deleteForProfiles(setOf(profileId)).also { invalidateExportCurrentness() }
-        } else {
-            null
-        }
+        } else null
         val ready = catalogRepository.state.value as? CatalogState.Ready
         val currentProfiles = ready?.catalog?.profilesForProduct(productId).orEmpty()
         val currentProfile = currentProfiles.firstOrNull { it.id == profileId }
@@ -421,9 +1088,7 @@ class EqLibraryViewModel(
         val outputId = activeOutputId()
         val cleanup = if (deleteSavedFiles) {
             cleanupRepository.deleteForProduct(productId).also { invalidateExportCurrentness() }
-        } else {
-            null
-        }
+        } else null
         managedHeadphonesRepository.removeHeadphone(productId, outputId)
         return cleanup
     }
@@ -441,10 +1106,7 @@ class EqLibraryViewModel(
         manufacturer: String,
         model: String,
     ): Boolean = savedEqRepository.toggleFavorite(
-        activeOutputId(),
-        profile,
-        manufacturer,
-        model,
+        activeOutputId(), profile, manufacturer, model,
     )
 
     suspend fun saveGeneralPreset(preset: GeneralEqPreset): Boolean =
@@ -471,20 +1133,14 @@ class EqLibraryViewModel(
         peqText = peqText,
     )
 
-    suspend fun deleteSavedEq(entryId: String) =
-        savedEqRepository.removeFromOutput(activeOutputId(), entryId)
-
-    suspend fun removeGeneralEq(presetId: String) =
-        savedGeneralEqRepository.removeFromOutput(activeOutputId(), presetId)
-
+    suspend fun deleteSavedEq(entryId: String) = savedEqRepository.removeFromOutput(activeOutputId(), entryId)
+    suspend fun removeGeneralEq(presetId: String) = savedGeneralEqRepository.removeFromOutput(activeOutputId(), presetId)
     suspend fun setExportTree(uri: String, label: String) = preferencesRepository.setExportTree(uri, label)
 
     suspend fun exportSelected(treeUri: String, device: ExportDevice): PresetExportSummary {
         val library = loadLibraryData(device.name)
         val records = withContext(computationDispatcher) { library.toExportRecords() }
-        return exportWithInvalidation {
-            exportRepository.exportSelected(treeUri, records, device)
-        }
+        return exportWithInvalidation { exportRepository.exportSelected(treeUri, records, device) }
     }
 
     suspend fun exportProduct(
@@ -494,9 +1150,7 @@ class EqLibraryViewModel(
     ): PresetExportSummary {
         val managed = managedHeadphonesRepository.getHeadphone(productId, device.name)
             ?: return PresetExportSummary(emptyList())
-        return exportWithInvalidation {
-            exportRepository.exportSelected(treeUri, listOf(managed), device)
-        }
+        return exportWithInvalidation { exportRepository.exportSelected(treeUri, listOf(managed), device) }
     }
 
     suspend fun exportManagedProfile(
@@ -510,11 +1164,7 @@ class EqLibraryViewModel(
         val profile = managed.profiles.firstOrNull { it.profileId == profileId && it.selected }
             ?: return PresetExportSummary(emptyList())
         return exportWithInvalidation {
-            exportRepository.exportSelected(
-                treeUri,
-                listOf(managed.copy(profiles = listOf(profile))),
-                device,
-            )
+            exportRepository.exportSelected(treeUri, listOf(managed.copy(profiles = listOf(profile))), device)
         }
     }
 
@@ -525,12 +1175,8 @@ class EqLibraryViewModel(
     ): PresetExportSummary {
         val record = savedEqRepository.getForOutput(device.name, entryId)
             ?: return PresetExportSummary(emptyList())
-        val exportRecord = withContext(computationDispatcher) {
-            savedEqRepository.toManagedHeadphone(record)
-        }
-        return exportWithInvalidation {
-            exportRepository.exportSelected(treeUri, listOf(exportRecord), device)
-        }
+        val exportRecord = withContext(computationDispatcher) { savedEqRepository.toManagedHeadphone(record) }
+        return exportWithInvalidation { exportRepository.exportSelected(treeUri, listOf(exportRecord), device) }
     }
 
     suspend fun exportGeneralEq(
@@ -540,12 +1186,8 @@ class EqLibraryViewModel(
     ): PresetExportSummary {
         val record = savedGeneralEqRepository.getForOutput(device.name, presetId)
             ?: return PresetExportSummary(emptyList())
-        val exportRecord = withContext(computationDispatcher) {
-            savedGeneralEqRepository.toExportRecord(record)
-        }
-        return exportWithInvalidation {
-            exportRepository.exportSelected(treeUri, listOf(exportRecord), device)
-        }
+        val exportRecord = withContext(computationDispatcher) { savedGeneralEqRepository.toExportRecord(record) }
+        return exportWithInvalidation { exportRepository.exportSelected(treeUri, listOf(exportRecord), device) }
     }
 
     suspend fun exportGeneralEqs(
@@ -553,25 +1195,21 @@ class EqLibraryViewModel(
         presetIds: Set<String>,
         device: ExportDevice,
     ): PresetExportSummary {
-        val records = presetIds.sorted().mapNotNull { presetId ->
-            savedGeneralEqRepository.getForOutput(device.name, presetId)
-        }
-        val exportRecords = withContext(computationDispatcher) {
-            records.map(savedGeneralEqRepository::toExportRecord)
-        }
-        return exportWithInvalidation {
-            exportRepository.exportSelected(treeUri, exportRecords, device)
-        }
+        val records = presetIds.sorted().mapNotNull { presetId -> savedGeneralEqRepository.getForOutput(device.name, presetId) }
+        val exportRecords = withContext(computationDispatcher) { records.map(savedGeneralEqRepository::toExportRecord) }
+        return exportWithInvalidation { exportRepository.exportSelected(treeUri, exportRecords, device) }
     }
 
     suspend fun checkForUpdates(): AppUpdateCheckResult = updateCoordinator.checkNow()
-
     suspend fun dismissUpdate(version: String) = preferencesRepository.dismissUpdate(version)
-
     suspend fun dismissPostUpdate() = preferencesRepository.dismissPostUpdateCard()
 
     fun setThemeMode(themeMode: ThemeMode) {
         viewModelScope.launch { preferencesRepository.setThemeMode(themeMode) }
+    }
+
+    fun setOutputBehavior(outputBehavior: OutputBehavior) {
+        viewModelScope.launch { preferencesRepository.setOutputBehavior(outputBehavior) }
     }
 
     fun setExportTargetEnabled(device: ExportDevice, enabled: Boolean) {
@@ -590,9 +1228,7 @@ class EqLibraryViewModel(
         viewModelScope.launch { preferencesRepository.setDirectFiioJa11FlashEnabled(enabled) }
     }
 
-    fun setDirectJcallyJm12FlashEnabled(enabled: Boolean) {
-        viewModelScope.launch { preferencesRepository.setDirectJcallyJm12FlashEnabled(enabled) }
-    }
+    fun setDirectJcallyJm12FlashEnabled(enabled: Boolean) = Unit
 
     override fun onCleared() {
         hardwareRepository.close()
@@ -604,7 +1240,6 @@ class EqLibraryViewModel(
         return when (preferences.exportTargets.activeTarget) {
             ExportDevice.BLACK_PEARL -> flashBlackPearlProfile(profile, preferences)
             ExportDevice.FIIO_JA11 -> flashFiioJa11Profile(profile, preferences)
-            ExportDevice.JCALLY_JM12 -> flashJcallyJm12Profile(profile, preferences)
             else -> resource(R.string.error_select_supported_hardware)
         }
     }
@@ -622,75 +1257,127 @@ class EqLibraryViewModel(
         if (hardwareRepository.blackPearlConnectionState.value !is BlackPearlConnectionState.Connected) {
             return resource(R.string.error_connect_black_pearl_flash)
         }
-        return when (val result = hardwareRepository.flashBlackPearl(profile)) {
-            is BlackPearlFlashResult.Success -> result.warning?.let { warning ->
-                resource(
-                    R.string.black_pearl_flash_success_warning,
-                    result.appliedPlaybackGainDb,
-                    warning,
-                )
-            } ?: resource(R.string.black_pearl_flash_success, result.appliedPlaybackGainDb)
-            is BlackPearlFlashResult.NotRepresentable ->
-                resource(R.string.black_pearl_not_flashable, result.reason)
-            is BlackPearlFlashResult.DeviceUnavailable -> UiText.Dynamic(result.reason)
-            is BlackPearlFlashResult.TransferFailed -> UiText.Dynamic(result.reason)
+        return blackPearlFlashResultMessage(flashBlackPearlAndRefresh(profile))
+    }
+
+    private fun blackPearlFlashResultMessage(result: BlackPearlFlashResult): UiText = when (result) {
+        is BlackPearlFlashResult.Success -> result.warning?.let { warning ->
+            resource(R.string.black_pearl_flash_success_warning, result.appliedPlaybackGainDb, warning)
+        } ?: resource(R.string.black_pearl_flash_success, result.appliedPlaybackGainDb)
+        is BlackPearlFlashResult.NotRepresentable -> resource(R.string.black_pearl_not_flashable, result.reason)
+        is BlackPearlFlashResult.DeviceUnavailable -> UiText.Dynamic(result.reason)
+        is BlackPearlFlashResult.TransferFailed -> UiText.Dynamic(result.reason)
+    }
+
+    private fun blackPearlResetResultMessage(result: BlackPearlFlatResetResult): UiText = when (result) {
+        is BlackPearlFlatResetResult.Success -> {
+            if (kotlin.math.abs(result.restoredPlaybackGainDb) < ZERO_GAIN_EPSILON) {
+                resource(R.string.black_pearl_reset_success)
+            } else {
+                resource(R.string.black_pearl_reset_removed_adjustment, -result.restoredPlaybackGainDb)
+            }
         }
+        is BlackPearlFlatResetResult.NotRepresentable -> resource(R.string.black_pearl_reset_failed, result.reason)
+        is BlackPearlFlatResetResult.DeviceUnavailable -> UiText.Dynamic(result.reason)
+        is BlackPearlFlatResetResult.TransferFailed -> UiText.Dynamic(result.reason)
     }
 
     private suspend fun flashFiioJa11Profile(
         profile: OpraEqProfile,
         preferences: AppPreferences,
     ): UiText {
-        if (!preferences.directFiioJa11FlashEnabled) {
-            return resource(R.string.error_enable_fiio_flash)
-        }
+        if (!preferences.directFiioJa11FlashEnabled) return resource(R.string.error_enable_fiio_flash)
         if (hardwareRepository.fiioJa11ConnectionState.value !is Kt02h20ConnectionState.Connected) {
             return resource(R.string.error_connect_fiio_flash)
         }
-        return when (val result = hardwareRepository.flashFiioJa11(profile)) {
-            is Kt02h20FlashResult.Success -> resource(
-                if (result.representation.fidelity == DevicePresetFidelity.EXACT) {
-                    R.string.fiio_flash_success_exact
-                } else {
-                    R.string.fiio_flash_success_optimized
-                },
-                result.representation.playbackGainDb,
-            )
-            is Kt02h20FlashResult.NotSuitable ->
-                resource(R.string.fiio_not_suitable, result.reason)
-            is Kt02h20FlashResult.DeviceUnavailable -> UiText.Dynamic(result.reason)
-            is Kt02h20FlashResult.TransferFailed -> UiText.Dynamic(result.reason)
-            is Kt02h20FlashResult.VerificationFailed ->
-                resource(R.string.fiio_flash_verification_failed, result.reason)
-        }
+        return fiioJa11FlashResultMessage(flashFiioJa11AndRefresh(profile))
     }
 
-    private suspend fun flashJcallyJm12Profile(
-        profile: OpraEqProfile,
-        preferences: AppPreferences,
-    ): UiText {
-        if (!preferences.directJcallyJm12FlashEnabled) {
-            return resource(R.string.error_enable_jm12_flash)
+    private fun fiioJa11FlashResultMessage(result: Kt02h20FlashResult): UiText = when (result) {
+        is Kt02h20FlashResult.Success -> resource(
+            if (result.representation.fidelity == DevicePresetFidelity.EXACT) {
+                R.string.fiio_flash_success_exact
+            } else {
+                R.string.fiio_flash_success_optimized
+            },
+            result.representation.playbackGainDb,
+        )
+        is Kt02h20FlashResult.NotSuitable -> resource(R.string.fiio_not_suitable, result.reason)
+        is Kt02h20FlashResult.DeviceUnavailable -> UiText.Dynamic(result.reason)
+        is Kt02h20FlashResult.TransferFailed -> UiText.Dynamic(result.reason)
+        is Kt02h20FlashResult.VerificationFailed -> resource(R.string.fiio_flash_verification_failed, result.reason)
+    }
+
+    private fun fiioJa11ResetResultMessage(result: Kt02h20FlatResetResult): UiText = when (result) {
+        is Kt02h20FlatResetResult.Success -> resource(R.string.fiio_reset_success)
+        is Kt02h20FlatResetResult.NotSuitable -> resource(R.string.fiio_reset_failed, result.reason)
+        is Kt02h20FlatResetResult.DeviceUnavailable -> UiText.Dynamic(result.reason)
+        is Kt02h20FlatResetResult.TransferFailed -> UiText.Dynamic(result.reason)
+        is Kt02h20FlatResetResult.VerificationFailed -> resource(R.string.fiio_reset_verification_failed, result.reason)
+    }
+
+    private suspend fun flashBlackPearlAndRefresh(profile: OpraEqProfile): BlackPearlFlashResult {
+        val result = hardwareRepository.flashBlackPearl(profile)
+        if (hardwareRepository.blackPearlConnectionState.value is BlackPearlConnectionState.Connected) {
+            refreshBlackPearlDeviceState()
         }
-        if (hardwareRepository.jcallyJm12ConnectionState.value !is Kt02h20ConnectionState.Connected) {
-            return resource(R.string.error_connect_jm12_flash)
+        return result
+    }
+
+    private suspend fun resetBlackPearlAndRefresh(): BlackPearlFlatResetResult {
+        val result = hardwareRepository.resetBlackPearl()
+        if (hardwareRepository.blackPearlConnectionState.value is BlackPearlConnectionState.Connected) {
+            refreshBlackPearlDeviceState()
         }
-        return when (val result = hardwareRepository.flashJcallyJm12(profile)) {
-            is Kt02h20FlashResult.Success -> resource(
-                if (result.representation.fidelity == DevicePresetFidelity.EXACT) {
-                    R.string.jm12_flash_success_exact
-                } else {
-                    R.string.jm12_flash_success_optimized
-                },
-                result.representation.playbackGainDb,
-            )
-            is Kt02h20FlashResult.NotSuitable ->
-                resource(R.string.jm12_not_suitable, result.reason)
-            is Kt02h20FlashResult.DeviceUnavailable -> UiText.Dynamic(result.reason)
-            is Kt02h20FlashResult.TransferFailed -> UiText.Dynamic(result.reason)
-            is Kt02h20FlashResult.VerificationFailed ->
-                resource(R.string.jm12_flash_verification_failed, result.reason)
+        return result
+    }
+
+    private suspend fun flashFiioJa11AndRefresh(profile: OpraEqProfile): Kt02h20FlashResult {
+        val result = hardwareRepository.flashFiioJa11(profile)
+        if (hardwareRepository.fiioJa11ConnectionState.value is Kt02h20ConnectionState.Connected) {
+            refreshFiioJa11DeviceState()
         }
+        return result
+    }
+
+    private suspend fun resetFiioJa11AndRefresh(): Kt02h20FlatResetResult {
+        val result = hardwareRepository.resetFiioJa11()
+        if (hardwareRepository.fiioJa11ConnectionState.value is Kt02h20ConnectionState.Connected) {
+            refreshFiioJa11DeviceState()
+        }
+        return result
+    }
+
+    private fun resolveBlackPearlHardwareEq(
+        bundle: HardwareEqSnapshotBundle,
+        library: LibraryDataState,
+        lineage: BlackPearlKnownLineage?,
+    ): HardwareEqMatchResolution {
+        val actual = bundle.fingerprint
+        return BlackPearlHardwareEqMatchResolver.resolve(
+            actual = actual,
+            candidates = buildBlackPearlMyEqsCandidates(
+                managedHeadphones = library.managedHeadphones,
+                savedEqs = library.savedEqs,
+                savedGeneralEqs = library.savedGeneralEqs,
+            ),
+        ).withBlackPearlKnownLineage(
+            currentSessionGeneration = bundle.snapshot.sessionGeneration,
+            actualFingerprint = actual,
+            lineage = lineage,
+        )
+    }
+
+    private fun lineageRepresentationFor(
+        resolution: HardwareEqMatchResolution,
+    ): SavedHardwareEqRepresentation? = when (val match = resolution.match) {
+        is HardwareEqMatch.Exact -> resolution.representation(match.savedEq.savedEqKey)
+        is HardwareEqMatch.ModifiedKnown ->
+            resolution.representation(match.savedEq.savedEqKey)
+                ?: mutableBlackPearlKnownLineage.value
+                    ?.savedRepresentation
+                    ?.takeIf { it.identity.savedEqKey == match.savedEq.savedEqKey }
+        else -> null
     }
 
     private suspend fun loadLibraryData(outputId: String): LibraryDataState = combine(
@@ -712,9 +1399,7 @@ class EqLibraryViewModel(
         addAll(savedGeneralEqs.map(savedGeneralEqRepository::toExportRecord))
     }
 
-    private suspend fun exportWithInvalidation(
-        export: suspend () -> PresetExportSummary,
-    ): PresetExportSummary {
+    private suspend fun exportWithInvalidation(export: suspend () -> PresetExportSummary): PresetExportSummary {
         val summary = export()
         invalidateExportCurrentness()
         return summary
@@ -724,8 +1409,7 @@ class EqLibraryViewModel(
         exportInvalidation.update { version -> version + 1L }
     }
 
-    private suspend fun activeOutputId(): String =
-        preferencesRepository.snapshot().exportTargets.activeTarget.name
+    private suspend fun activeOutputId(): String = preferencesRepository.snapshot().exportTargets.activeTarget.name
 
     private suspend fun refreshCatalogIfDue() {
         val ready = catalogRepository.state.value as? CatalogState.Ready ?: return
@@ -756,6 +1440,8 @@ class EqLibraryViewModel(
                 cleanupRepository = dependencies.cleanupRepository,
                 syncCoordinator = dependencies.syncCoordinator,
                 updateCoordinator = dependencies.updateCoordinator,
+                dacControlRepository = dependencies.dacControlRepository,
+                fiioJa11ControlRepository = dependencies.fiioJa11ControlRepository,
                 hardwareRepository = dependencies.hardwareRepository,
             ) as T
         }
@@ -771,6 +1457,8 @@ class EqLibraryViewModel(
         val cleanupRepository: PresetCleanupRepository,
         val syncCoordinator: CatalogSyncCoordinator,
         val updateCoordinator: AppUpdateCoordinator,
+        val dacControlRepository: DacControlRepository,
+        val fiioJa11ControlRepository: FiioJa11ControlRepository,
         val hardwareRepository: HardwareEqRepository,
     )
 

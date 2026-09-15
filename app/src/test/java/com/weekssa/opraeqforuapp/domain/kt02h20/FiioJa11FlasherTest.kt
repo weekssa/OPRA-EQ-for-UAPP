@@ -10,8 +10,8 @@ import org.junit.Test
 
 class FiioJa11FlasherTest {
     @Test
-    fun flashWritesFiveSlotsThenGainApplyVerifySaveAndFinalVerify() = runBlocking {
-        val transport = FakeJa11Transport()
+    fun flashWritesFiveSlotsGainSelectsUserOneApplyVerifySaveAndFinalVerify() = runBlocking {
+        val transport = FakeJa11Transport(initialProgram = FiioJa11Protocol.EqProgram.VOCAL)
         val flasher = FiioJa11Flasher(transport)
 
         val result = flasher.flash(exactProfile())
@@ -19,9 +19,14 @@ class FiioJa11FlasherTest {
         assertTrue(result is Kt02h20FlashResult.Success)
         result as Kt02h20FlashResult.Success
         assertTrue(result.explicitPersistenceCommandUsed)
-        assertEquals(listOf(0x15, 0x15, 0x15, 0x15, 0x15, 0x17, 0x18, 0x19), transport.sentCommands)
+        assertEquals(
+            listOf(0x15, 0x15, 0x15, 0x15, 0x15, 0x17, 0x16, 0x18, 0x19),
+            transport.sentCommands,
+        )
+        assertEquals(FiioJa11Protocol.EqProgram.USER_1, transport.program)
         assertEquals(10, transport.bandReadsAfterWrites)
         assertEquals(2, transport.globalGainReadsAfterWrites)
+        assertEquals(2, transport.programReadsAfterWrites)
         assertEquals(-4.0, transport.globalGainDb, 0.001)
         assertEquals(1, transport.saveCount)
         assertEquals(2.5, transport.bands[0].gainDb, 0.0)
@@ -48,8 +53,22 @@ class FiioJa11FlasherTest {
     }
 
     @Test
-    fun resetWritesAllFiveFlatSlotsZeroGainApplyAndSave() = runBlocking {
-        val transport = FakeJa11Transport().apply {
+    fun programSelectionReadbackMismatchNeverReportsFlashSuccess() = runBlocking {
+        val transport = FakeJa11Transport(
+            initialProgram = FiioJa11Protocol.EqProgram.VOCAL,
+            ignoreProgramWrite = true,
+        )
+
+        val result = FiioJa11Flasher(transport).flash(exactProfile())
+
+        assertTrue(result is Kt02h20FlashResult.VerificationFailed)
+        assertFalse(0x19 in transport.sentCommands)
+        assertEquals(FiioJa11Protocol.EqProgram.VOCAL, transport.program)
+    }
+
+    @Test
+    fun resetWritesAllFiveFlatSlotsZeroGainSelectsUserOneApplyAndSave() = runBlocking {
+        val transport = FakeJa11Transport(initialProgram = FiioJa11Protocol.EqProgram.BASS).apply {
             globalGainDb = -6.0
             bands[0] = FiioJa11Protocol.Band("peak_dip", 1_000.0, 6.0, 1.0)
         }
@@ -59,7 +78,11 @@ class FiioJa11FlasherTest {
         assertTrue(result is Kt02h20FlatResetResult.Success)
         assertEquals(0.0, transport.globalGainDb, 0.001)
         assertTrue(transport.bands.all { kotlin.math.abs(it.gainDb) < 0.000_001 })
-        assertEquals(listOf(0x15, 0x15, 0x15, 0x15, 0x15, 0x17, 0x18, 0x19), transport.sentCommands)
+        assertEquals(FiioJa11Protocol.EqProgram.USER_1, transport.program)
+        assertEquals(
+            listOf(0x15, 0x15, 0x15, 0x15, 0x15, 0x17, 0x16, 0x18, 0x19),
+            transport.sentCommands,
+        )
     }
 
     private fun exactProfile(): OpraEqProfile = OpraEqProfile(
@@ -79,14 +102,18 @@ class FiioJa11FlasherTest {
     private class FakeJa11Transport(
         private val failCommand: Int? = null,
         private val readable: Boolean = true,
+        initialProgram: FiioJa11Protocol.EqProgram = FiioJa11Protocol.EqProgram.USER_1,
+        private val ignoreProgramWrite: Boolean = false,
     ) : FiioJa11Transport {
         val bands = FiioJa11Protocol.completeBands(emptyList()).toMutableList()
         var globalGainDb: Double = 0.0
+        var program: FiioJa11Protocol.EqProgram = initialProgram
         val sentCommands = mutableListOf<Int>()
         var saveCount = 0
         var writeStarted = false
         var bandReadsAfterWrites = 0
         var globalGainReadsAfterWrites = 0
+        var programReadsAfterWrites = 0
 
         override suspend fun readBand(index: Int): FiioJa11Protocol.Band? {
             if (!readable) return null
@@ -98,6 +125,12 @@ class FiioJa11FlasherTest {
             if (!readable) return null
             if (writeStarted) globalGainReadsAfterWrites++
             return globalGainDb
+        }
+
+        override suspend fun readEqProgram(): FiioJa11Protocol.EqProgram? {
+            if (!readable) return null
+            if (writeStarted) programReadsAfterWrites++
+            return program
         }
 
         override suspend fun sendReport(report: ByteArray): Boolean {
@@ -119,6 +152,10 @@ class FiioJa11FlasherTest {
                         else -> error("unexpected test filter type")
                     }
                     bands[index] = FiioJa11Protocol.Band(type, frequency.toDouble(), gainRaw / 10.0, qRaw / 100.0)
+                }
+                0x16 -> if (!ignoreProgramWrite) {
+                    program = FiioJa11Protocol.EqProgram.fromCode(report[7].toInt() and 0xFF)
+                        ?: error("unexpected test EQ program")
                 }
                 0x17 -> {
                     val rawUnsigned = (report[7].toInt() and 0xFF) or ((report[8].toInt() and 0xFF) shl 8)

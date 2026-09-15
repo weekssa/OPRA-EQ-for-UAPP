@@ -5,16 +5,19 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Clear
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
@@ -24,7 +27,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
@@ -42,10 +44,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.R
+import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
+import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqCategory
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqPreset
 import com.weekssa.opraeqforuapp.domain.catalog.OpraCatalog
@@ -81,6 +87,10 @@ fun BrowseOpraScreen(
     favoriteProfileIds: Set<String>,
     savedGeneralPresetIds: Set<String> = emptySet(),
     hiddenCanonicalProfileIds: Set<String> = emptySet(),
+    blackPearlConnectionState: BlackPearlConnectionState = BlackPearlConnectionState.Disconnected,
+    onFlashBlackPearlProfile: (suspend (OpraEqProfile) -> String)? = null,
+    fiioJa11ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
+    onFlashFiioJa11Profile: (suspend (OpraEqProfile) -> String)? = null,
     onToggleFavorite: suspend (OpraEqProfile, String, String) -> Boolean,
     onSaveGeneralPresets: suspend (List<GeneralEqPreset>) -> Int = { 0 },
     onHideCanonicalProfiles: suspend (Set<String>) -> Unit = {},
@@ -181,6 +191,10 @@ fun BrowseOpraScreen(
                         onMessage = onMessage,
                         onOpenUrl = onOpenUrl,
                         onBack = { selectedProductId = null },
+                        blackPearlConnected = blackPearlConnectionState is BlackPearlConnectionState.Connected,
+                        onFlashBlackPearlProfile = onFlashBlackPearlProfile,
+                        fiioJa11Connected = fiioJa11ConnectionState is Kt02h20ConnectionState.Connected,
+                        onFlashFiioJa11Profile = onFlashFiioJa11Profile,
                         modifier = Modifier.weight(1f),
                     )
                     vendor != null -> VendorProducts(
@@ -245,6 +259,11 @@ private fun HeadphoneBrowseRoot(
 
         if (searchQuery.isBlank()) {
             val vendors = catalog.vendors.sortedBy { it.name.lowercase() }
+            Text(
+                text = stringResource(R.string.manufacturers),
+                modifier = Modifier.padding(vertical = 8.dp),
+                style = MaterialTheme.typography.titleSmall,
+            )
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 if (vendors.isEmpty()) {
                     item(key = "no-headphones") {
@@ -264,7 +283,7 @@ private fun HeadphoneBrowseRoot(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(min = 48.dp)
+                            .heightIn(min = 56.dp)
                             .clickable { onVendorSelected(vendor.id) },
                     )
                     HorizontalDivider()
@@ -304,7 +323,7 @@ private fun HeadphoneBrowseRoot(
                             trailingContent = { Text(profileText) },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .heightIn(min = 48.dp)
+                                .heightIn(min = 56.dp)
                                 .clickable { onProductSelected(result.product) },
                         )
                         HorizontalDivider()
@@ -330,6 +349,7 @@ private fun GeneralEqBrowse(
     modifier: Modifier,
 ) {
     val scope = rememberCoroutineScope()
+    var showHelp by rememberSaveable { mutableStateOf(false) }
     val selectedFilter = GeneralFilter.entries[selectedFilterIndex]
     var batchSelectedIds by rememberSaveable(
         catalog,
@@ -352,81 +372,81 @@ private fun GeneralEqBrowse(
         selectedCanonicalIds.size,
     )
 
-    Column(
+    if (showHelp) {
+        AlertDialog(
+            onDismissRequest = { showHelp = false },
+            title = { Text("About General EQs") },
+            text = { Text(stringResource(R.string.general_eq_standalone_note)) },
+            confirmButton = { TextButton(onClick = { showHelp = false }) { Text("OK") } },
+        )
+    }
+    LazyColumn(
         modifier = modifier
             .fillMaxSize()
             .padding(horizontal = 16.dp),
     ) {
-        SearchField(
-            value = searchQuery,
-            onValueChange = onSearchQueryChange,
-            labelResId = R.string.search_general_eqs,
-        )
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            GeneralFilter.entries.forEachIndexed { index, filter ->
-                FilterChip(
-                    selected = selectedFilterIndex == index,
-                    onClick = { onFilterSelected(index) },
-                    label = { Text(stringResource(filter.labelResId)) },
-                )
+        item {
+            SearchField(
+                value = searchQuery,
+                onValueChange = onSearchQueryChange,
+                labelResId = R.string.search_general_eqs,
+            )
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                items(GeneralFilter.entries.size) { index ->
+                    val filter = GeneralFilter.entries[index]
+                    FilterChip(
+                        selected = selectedFilterIndex == index,
+                        onClick = { onFilterSelected(index) },
+                        label = { Text(stringResource(filter.labelResId)) },
+                    )
+                }
             }
-        }
-        Text(
-            text = stringResource(R.string.general_eq_standalone_note),
-            modifier = Modifier.padding(bottom = 4.dp),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            TextButton(
-                onClick = { batchSelectedIds = batchSelectedIds + matching.map(GeneralEqPreset::id) },
-                enabled = matching.isNotEmpty(),
-            ) { Text(stringResource(R.string.action_select_all)) }
-            TextButton(
-                onClick = { batchSelectedIds = batchSelectedIds - matching.map(GeneralEqPreset::id).toSet() },
-                enabled = matching.isNotEmpty(),
-            ) { Text(stringResource(R.string.action_select_none)) }
-        }
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Button(
-                onClick = {
-                    val toSave = selectedPresets.toList()
-                    scope.launch {
-                        onSavePresets(toSave)
-                        batchSelectedIds = emptySet()
-                        onMessage(savedMessage)
-                    }
-                },
-                enabled = selectedPresets.isNotEmpty(),
-            ) { Text(stringResource(R.string.save_selected_count, selectedPresets.size)) }
-            OutlinedButton(
-                onClick = {
-                    val canonicalIds = selectedCanonicalIds.toSet()
-                    scope.launch {
-                        onHideCanonicalProfiles(canonicalIds)
-                        batchSelectedIds = emptySet()
-                        onMessage(hiddenMessage)
-                    }
-                },
-                enabled = selectedPresets.isNotEmpty(),
-            ) { Text(stringResource(R.string.action_hide_selected)) }
+            FlowRow(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                TextButton(
+                    onClick = { batchSelectedIds = batchSelectedIds + matching.map(GeneralEqPreset::id) },
+                    enabled = matching.isNotEmpty(),
+                ) { Text(stringResource(R.string.action_select_all)) }
+                TextButton(
+                    onClick = { batchSelectedIds = batchSelectedIds - matching.map(GeneralEqPreset::id).toSet() },
+                    enabled = selectedPresets.isNotEmpty(),
+                ) { Text(stringResource(R.string.action_select_none)) }
+                if (selectedPresets.isNotEmpty()) {
+                    Button(
+                        onClick = {
+                            val toSave = selectedPresets.toList()
+                            scope.launch {
+                                onSavePresets(toSave)
+                                batchSelectedIds = emptySet()
+                                onMessage(savedMessage)
+                            }
+                        },
+                        modifier = Modifier.heightIn(min = 48.dp),
+                    ) { Text(stringResource(R.string.save_selected_count, selectedPresets.size)) }
+                    TextButton(
+                        onClick = {
+                            val canonicalIds = selectedCanonicalIds.toSet()
+                            scope.launch {
+                                onHideCanonicalProfiles(canonicalIds)
+                                batchSelectedIds = emptySet()
+                                onMessage(hiddenMessage)
+                            }
+                        },
+                    ) { Text(stringResource(R.string.action_hide_selected)) }
+                }
+                TextButton(onClick = { showHelp = true }) { Text("About") }
+            }
         }
 
         if (matching.isEmpty()) {
-            Text(
+            item { Text(
                 text = if (catalog.generalPresets.isEmpty()) {
                     stringResource(R.string.general_eq_none_visible)
                 } else {
@@ -434,57 +454,57 @@ private fun GeneralEqBrowse(
                 },
                 modifier = Modifier.padding(top = 16.dp),
                 style = MaterialTheme.typography.bodyLarge,
-            )
+            ) }
         } else {
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(matching, key = GeneralEqPreset::id) { preset ->
-                    ListItem(
-                        headlineContent = { Text(preset.displayName) },
-                        supportingContent = {
-                            Column {
-                                Text(
-                                    listOfNotNull(
-                                        preset.creator?.takeIf(String::isNotBlank),
-                                        preset.soundImpactSummary?.takeIf(String::isNotBlank),
-                                    ).joinToString(" · ").ifBlank {
-                                        stringResource(R.string.general_parametric_eq)
-                                    },
-                                )
-                                if (preset.id in savedPresetIds) {
-                                    Text(
-                                        stringResource(R.string.saved_in_my_eqs_output),
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.primary,
-                                    )
-                                }
-                                if (!preset.isVerified) {
-                                    Text(
-                                        stringResource(R.string.community_submission_unverified),
-                                        color = MaterialTheme.colorScheme.tertiary,
-                                    )
-                                }
-                                preset.sourceUrl?.let { sourceUrl ->
-                                    TextButton(onClick = { onOpenUrl(sourceUrl) }) {
-                                        Text(stringResource(R.string.action_source))
-                                    }
-                                }
-                            }
-                        },
-                        trailingContent = {
-                            Checkbox(
-                                checked = preset.id in batchSelectedIds,
-                                onCheckedChange = { checked ->
-                                    batchSelectedIds = if (checked) {
-                                        batchSelectedIds + preset.id
-                                    } else {
-                                        batchSelectedIds - preset.id
-                                    }
+            items(matching, key = GeneralEqPreset::id) { preset ->
+                ListItem(
+                    headlineContent = { Text(preset.displayName) },
+                    supportingContent = {
+                        Column {
+                            Text(
+                                listOfNotNull(
+                                    preset.creator?.takeIf(String::isNotBlank),
+                                    preset.soundImpactSummary?.takeIf(String::isNotBlank),
+                                ).joinToString(" · ").ifBlank {
+                                    stringResource(R.string.general_parametric_eq)
                                 },
                             )
-                        },
-                    )
-                    HorizontalDivider()
-                }
+                            if (preset.id in savedPresetIds) {
+                                Text(
+                                    stringResource(R.string.saved_in_my_eqs_output),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                            if (!preset.isVerified) {
+                                Text(
+                                    stringResource(R.string.community_submission_unverified),
+                                    color = MaterialTheme.colorScheme.tertiary,
+                                )
+                            }
+                            preset.sourceUrl?.let { sourceUrl ->
+                                TextButton(onClick = { onOpenUrl(sourceUrl) }) {
+                                    Text(stringResource(R.string.action_source))
+                                }
+                            }
+                        }
+                    },
+                    trailingContent = {
+                        Checkbox(
+                            checked = preset.id in batchSelectedIds,
+                            modifier = Modifier.semantics { contentDescription = preset.displayName },
+                            onCheckedChange = { checked ->
+                                batchSelectedIds = if (checked) {
+                                    batchSelectedIds + preset.id
+                                } else {
+                                    batchSelectedIds - preset.id
+                                }
+                            },
+                        )
+                    },
+                    modifier = Modifier.heightIn(min = 56.dp),
+                )
+                HorizontalDivider()
             }
         }
     }
@@ -501,7 +521,7 @@ private fun SearchField(
         onValueChange = onValueChange,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 12.dp, bottom = 8.dp),
+            .padding(top = 8.dp, bottom = 6.dp),
         singleLine = true,
         label = { Text(stringResource(labelResId)) },
         trailingIcon = if (value.isNotEmpty()) {
@@ -561,7 +581,7 @@ private fun VendorProducts(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 48.dp)
+                        .heightIn(min = 56.dp)
                         .clickable { onProductSelected(product) },
                 )
                 HorizontalDivider()

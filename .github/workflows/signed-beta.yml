@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: write
+  actions: read
 
 concurrency:
   group: signed-eq-library-beta-${{ github.ref }}
@@ -104,9 +105,12 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Publish stable mobile-test APK link
+      - name: Publish mobile-test APKs and immutable candidate copy
         env:
           GH_TOKEN: ${{ github.token }}
+          PINNED_V06_READ_ONLY_ARTIFACT_ID: "10134900164"
+          PINNED_V06_READ_ONLY_COMMIT: "d3d227de45751f6606b75637a2fd311249afa88d"
+          PINNED_V06_READ_ONLY_SHA256: "ea8235ee1ba2828873b488054b25d40c917b844c2d76a813bf9e038cf31c8ee5"
         shell: bash
         run: |
           set -euo pipefail
@@ -116,50 +120,94 @@ jobs:
           test -n "$version_name"
 
           publish_dir="$(mktemp -d)"
+          if git clone --depth 1 --branch mobile-test-apk \
+            "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$publish_dir"; then
+            :
+          else
+            rm -rf "$publish_dir"
+            publish_dir="$(mktemp -d)"
+            cd "$publish_dir"
+            git init
+            git checkout -b mobile-test-apk
+            git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          fi
+
+          cd "$publish_dir"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          mkdir -p candidates
+
           stable_name="EQ-Library-mobile-test.apk"
           versioned_name="EQ-Library-v${version_name}-mobile-test.apk"
           zip_name="EQ-Library-v${version_name}-mobile-test.zip"
-          cp "$source_apk" "$publish_dir/$stable_name"
-          cp "$source_apk" "$publish_dir/$versioned_name"
-          (
-            cd "$publish_dir"
-            zip -9 "$zip_name" "$versioned_name"
-          )
-          sha256sum "$publish_dir/$stable_name" > "$publish_dir/${stable_name}.sha256"
-          sha256sum "$publish_dir/$versioned_name" > "$publish_dir/${versioned_name}.sha256"
-          sha256sum "$publish_dir/$zip_name" > "$publish_dir/${zip_name}.sha256"
-          cat > "$publish_dir/README.md" <<EOF
-          # EQ Library mobile test build
+          immutable_name="EQ-Library-v${version_name}-beta-${GITHUB_SHA::7}.apk"
 
-          Signed beta generated from commit ${GITHUB_SHA} for app version ${version_name}.
+          cp "$GITHUB_WORKSPACE/$source_apk" "$stable_name"
+          cp "$GITHUB_WORKSPACE/$source_apk" "$versioned_name"
+          cp "$GITHUB_WORKSPACE/$source_apk" "candidates/$immutable_name"
+          zip -9 -j "$zip_name" "$versioned_name"
+          sha256sum "$stable_name" > "${stable_name}.sha256"
+          sha256sum "$versioned_name" > "${versioned_name}.sha256"
+          sha256sum "$zip_name" > "${zip_name}.sha256"
+          sha256sum "candidates/$immutable_name" > "candidates/${immutable_name}.sha256"
 
-          Stable Android APK download:
+          pinned_name="EQ-Library-v0.6.0-beta-${PINNED_V06_READ_ONLY_COMMIT::7}.apk"
+          if [[ ! -f "candidates/$pinned_name" ]]; then
+            pinned_zip="$RUNNER_TEMP/pinned-v06-read-only.zip"
+            pinned_dir="$RUNNER_TEMP/pinned-v06-read-only"
+            mkdir -p "$pinned_dir"
+            curl --fail --location --retry 3 \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/${PINNED_V06_READ_ONLY_ARTIFACT_ID}/zip" \
+              --output "$pinned_zip"
+            unzip -q "$pinned_zip" -d "$pinned_dir"
+            pinned_source="$(find "$pinned_dir" -type f -name "EQ-Library-v0.6.0-beta-${PINNED_V06_READ_ONLY_COMMIT::7}.apk" -print -quit)"
+            test -n "$pinned_source"
+            actual_pinned_sha="$(sha256sum "$pinned_source" | awk '{print $1}')"
+            test "$actual_pinned_sha" = "$PINNED_V06_READ_ONLY_SHA256"
+            cp "$pinned_source" "candidates/$pinned_name"
+            printf '%s  %s\n' "$PINNED_V06_READ_ONLY_SHA256" "$pinned_name" > "candidates/${pinned_name}.sha256"
+          fi
+
+          cat > README.md <<EOF
+          # EQ Library mobile test builds
+
+          Latest signed beta generated from commit ${GITHUB_SHA} for app version ${version_name}.
+
+          Latest convenience APK (moves as the development branch advances):
           https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/mobile-test-apk/${stable_name}
 
-          Versioned Android APK download:
+          Latest version convenience APK (also moves while version ${version_name} is under development):
           https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/mobile-test-apk/${versioned_name}
 
-          ZIP fallback for browsers that do not finalize direct APK downloads:
+          Exact immutable candidate for this commit:
+          https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/mobile-test-apk/candidates/${immutable_name}
+
+          Pinned v0.6 Black Pearl read-only qualification candidate:
+          https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/mobile-test-apk/candidates/${pinned_name}
+
+          ZIP fallback for the latest convenience build:
           https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/mobile-test-apk/${zip_name}
 
+          Files under candidates/ are append-only exact-commit test candidates. Stable/versioned convenience names are not qualification provenance.
           This branch is only a temporary hands-on testing surface. It is not a public release.
           EOF
 
-          cd "$publish_dir"
-          git init
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -b mobile-test-apk
-          git add README.md "$stable_name" "$stable_name.sha256" "$versioned_name" "$versioned_name.sha256" "$zip_name" "$zip_name.sha256"
-          git commit -m "Publish signed mobile test APK from ${GITHUB_SHA::7}"
-          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          git push --force origin HEAD:mobile-test-apk
+          git add README.md "$stable_name" "$stable_name.sha256" \
+            "$versioned_name" "$versioned_name.sha256" "$zip_name" "$zip_name.sha256" candidates/
+          if git diff --cached --quiet; then
+            echo "No mobile-test publication changes."
+          else
+            git commit -m "Publish signed mobile test APK from ${GITHUB_SHA::7}"
+            git push origin HEAD:mobile-test-apk
+          fi
 
           {
             echo "### Mobile test APK"
-            echo "https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/mobile-test-apk/${stable_name}"
+            echo "Latest convenience: https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/mobile-test-apk/${stable_name}"
             echo ""
-            echo "Versioned copy: https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/mobile-test-apk/${versioned_name}"
+            echo "Exact immutable candidate: https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/mobile-test-apk/candidates/${immutable_name}"
             echo ""
-            echo "ZIP fallback: https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/mobile-test-apk/${zip_name}"
+            echo "Pinned v0.6 read-only candidate: https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/mobile-test-apk/candidates/${pinned_name}"
           } >> "$GITHUB_STEP_SUMMARY"

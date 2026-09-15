@@ -1,6 +1,6 @@
 # EQ Library — Architecture
 
-This document supplements `docs/CHATGPT_PROJECT_RUNBOOK.md`. The runbook remains authoritative for product/UX rules. For current v0.5 output/device decisions also read `docs/V0.5_KT02H20_IMPLEMENTATION_PLAN.md`, `docs/V0.5_IMPORT_COMPATIBILITY_NOTES.md`, and the applicable protocol/hands-on notes.
+This document supplements `docs/CHATGPT_PROJECT_RUNBOOK.md`. The runbook remains authoritative for product/UX rules. For current v0.5 output/device decisions also read `docs/V0.5_KT02H20_IMPLEMENTATION_PLAN.md`, `docs/V0.5_IMPORT_COMPATIBILITY_NOTES.md`, and the applicable protocol/hands-on notes. For current v0.6 ownership/recovery semantics read `docs/V0.6_LIBRARY_OWNERSHIP_AND_RECOVERY.md`; for My DAC behavior read the maintained v0.6 design/status/checklist documents.
 
 ## Android baseline
 
@@ -32,7 +32,7 @@ The canonical EQ is never rewritten to fit a target. Preserve complete supported
 
 ### `com.weekssa.opraeqforuapp.ui`
 
-Compose screens, shell/navigation, active-output selector, My EQs, EQ Library, Settings, confirmation dialogs, accessibility, update UX, and presentation of Exact/Optimized/Not-suitable state.
+Compose screens, shell/navigation, target/action-context presentation, My EQs, My DAC, EQ Library, Settings, confirmation dialogs, accessibility, update UX, and presentation of Exact/Optimized/Not-suitable state.
 
 UI must not implement source parsing, DSP fitting, wire encoding, or storage ownership rules. Hardware confirmation preview must consume the same domain plan used by the transaction rather than recreating device logic in Compose.
 
@@ -63,6 +63,7 @@ Android/platform-backed state and I/O:
 - Preferences DataStore;
 - WorkManager scheduling;
 - SAF export ownership/currentness/cleanup;
+- persistent unresolved-artifact recovery derived from app-owned export ownership;
 - public release metadata;
 - Android USB transports/coordinators;
 - app-side hardware gain-state stores required for safe relative replacement/reset behavior.
@@ -112,19 +113,41 @@ Local Hide/Unhide is a presentation projection keyed by stable canonical identit
 
 ## Selection and My EQs architecture
 
-My EQs is output-specific while canonical source is shared.
+**My EQs ownership is device/output-agnostic while canonical source is shared.** Target-specific representation remains derived state.
 
 A never-managed headphone begins with no selected EQs. Selection is always explicit. The persisted legacy `autoIncludeNewProfiles` field is notification compatibility state only; **Notify me about new EQs** may create review attention but never auto-selects future profiles.
 
-Add/Save persists the active-output membership. For file-capable outputs it initiates normal initial export once SAF access exists. For hardware-only outputs it persists the local derived representation/currentness but performs no hardware write.
+Add/Save persists global local-library membership/selection only. It does not initiate file export, open a folder picker, or write hardware. Export and Flash are separate explicit actions that derive the active target representation when invoked.
 
-User-facing terminology keeps local membership, files, and USB actions separate: **Add to My EQs / Save** is local membership, **Export** is a verified external file, **Direct Flash** is an explicit USB write, and “saved to device/persists” is reserved for hardware whose persistence is established.
+Managed headphone/profile selection, Favorites, Personal EQs, captured DAC EQs, and General EQs remain the same My EQs items when the active target changes. A target change may alter compatibility, fidelity, currentness, file-export availability, connection controls, or Flash availability, but it must not alter library identity or dismiss an open My EQ detail.
+
+A DAC capture records the exact DAC/source-device identity as provenance only. After capture it is a normal Personal EQ and is not owned by that DAC.
+
+Legacy per-output selection tables and `outputId`-shaped repository parameters remain only for migration/source compatibility. Current repositories deliberately do not use them to decide My EQs membership. Target-derived currentness may still be keyed by output because derived artifacts are target-specific; that does not make local ownership output-specific.
+
+User-facing terminology keeps local membership, files, and USB actions separate: **Add to My EQs / Save** is local membership, **Export** is a verified external file, **Flash** is an explicit USB write, and “saved to device/persists” is reserved for hardware whose persistence is established.
 
 Favorites/personal imports/general EQs normalize into the same canonical/derived-output model rather than bypassing output capability rules.
 
+### Needs attention recovery
+
+Persisted app-managed artifacts cannot silently disappear merely because a current My EQ association is no longer confident.
+
+`UnclaimedEqRepository` derives unresolved items from persisted `export_ownership` exact document URIs. It does not crawl arbitrary user storage. An unresolved owned artifact remains visible across restart/rescan while its ownership record exists, unless the provider positively confirms the document is missing or the user resolves/deletes it explicitly.
+
+Recovery is strict and conservative:
+
+- only supported parametric EQ content is recoverable;
+- unsupported filters or malformed/incomplete content are never silently dropped;
+- required missing Manufacturer/Model/EQ name identity comes from the user;
+- recovered preamp/filter values and original-file provenance are preserved;
+- recovered content becomes a normal device-agnostic Personal EQ;
+- deletion is limited to the exact app-owned SAF document represented by the ownership URI;
+- provider/permission unavailability is not treated as evidence that the file is gone.
+
 ## Output registry
 
-`ExportDevice` is the authoritative UI/domain registry. An output declares:
+`ExportDevice` is the authoritative UI/domain output registry. An output declares:
 
 - stable enum identity;
 - display/folder name;
@@ -137,7 +160,7 @@ Favorites/personal imports/general EQs normalize into the same canonical/derived
 
 `ExportDevice.selectableOutputs` is the only list Settings/output-selector UI should expose. Nonselectable registry entries may exist for implementation/reference work without becoming product features.
 
-The active output is operating context only. It never filters canonical browse/search.
+The active output is an operating/action context only. It never filters canonical browse/search or My EQs ownership.
 
 ### File vs hardware semantics
 
@@ -145,7 +168,7 @@ File-capable outputs produce deterministic `DevicePresetVariant`/export candidat
 
 `OutputFormatKind.HARDWARE_ONLY` targets produce no export file. Their target representation is local derived state and is consumed only by explicit Direct Flash/Reset actions.
 
-Do not create a fake file interchange format just to make hardware-only targets fit a file API. FiiO JA11 and stock JCALLY JM12 remain fileless in v0.5 because no sufficiently verified preset interchange contract has been established; adding a future verified file path would be additive and would not remove Direct Flash.
+Do not create a fake file interchange format just to make hardware-only targets fit a file API. FiiO JA11 and the historical stock JCALLY JM12 implementation remain fileless because no sufficiently verified preset interchange contract has been established; adding a future verified file path would be additive and would not remove Direct Flash.
 
 ## Capability and fidelity model
 
@@ -201,7 +224,7 @@ The deterministic hardware response adapter currently serves:
 
 - `HardwareEqDeviceSpecs.TRN_BLACK_PEARL` — 10 bands;
 - `HardwareEqDeviceSpecs.FIIO_JA11` — 5 bands;
-- `HardwareEqDeviceSpecs.JCALLY_JM12_STOCK` — 5 bands.
+- `HardwareEqDeviceSpecs.JCALLY_JM12_STOCK` — 5 bands (historical/internal v0.5 path, not current/upcoming v0.6 product UX).
 
 The same response machinery may be reused by a finite app/file target such as TOPPING Tune, but hardware physical capability/quantization claims remain separate from file text precision.
 
@@ -257,6 +280,24 @@ Each device specification carries a representation version. Generated fingerprin
 
 The capability profile may distinguish physical wire ranges from conservative optimizer search ranges. A target may be able to encode a value that EQ Library does not choose during fitting; exact source-preserving transmission and optimizer search are not the same policy.
 
+## Shared My DAC session architecture
+
+Supported DACs use one ViewModel-scoped authoritative hardware session shared by My EQs, My DAC, and EQ Library. Navigation does not create independent USB connections or redundant reads.
+
+A successful connection/reconnection refreshes supported EQ + DEVICE state. Successful hardware-changing operations refresh the affected state after verification. Manual Refresh is an escape hatch for external changes rather than a normal second connection/read step.
+
+My DAC is a hardware-state surface:
+
+- **EQ** shows current/Last-read hardware EQ, response, editing/capture/reset actions;
+- **DEVICE** shows supported current values with capability-driven edits;
+- EQ selection/Flash belongs in My EQs or EQ Library where the EQ already lives;
+- routine qualified DEVICE choices apply through the safe write/readback transaction rather than staging a fake global Save state;
+- local full-EQ editor changes remain staged until Review -> Apply because those edits intentionally have not reached hardware yet.
+
+Once a recognized supported DAC makes My DAC visible in the current app session, the destination remains session-sticky across disconnect. Retained state is clearly stale/Last read until a fresh successful session/read replaces it.
+
+Automatic physical reattach is armed only after that exact DAC has connected successfully once in the current app/ViewModel lifetime. Initial mere detection does not silently open a USB session. Reattach uses the normal permission/open path, reads fresh hardware state, and never pushes cached EQ/DEVICE values to hardware.
+
 ## TRN Black Pearl architecture
 
 Black Pearl transport/protocol was qualified in v0.3 and flat reset in v0.4.
@@ -294,15 +335,15 @@ Flash preflights/readbacks device state, validates the entire target before dest
 
 Reset writes five flat bands/global 0 dB, Applies/verifies/Saves/verifies.
 
-No verified JA11 external preset-file format is exposed in v0.5. Direct Flash remains intact.
+No verified JA11 external preset-file format is exposed. Direct Flash remains intact.
 
 JA11 remains **Hardware validation pending** until its exact signed Pixel 9 checklist passes.
 
 ## Stock JCALLY JM12 architecture
 
-JM12 stock-firmware support is separate from JA11 despite chipset-family similarity.
+JM12 stock-firmware support is retained as historical/internal v0.5 reference and is not current/upcoming v0.6 product UX. Its behavior remains separate from JA11 despite chipset-family similarity.
 
-Current target:
+Historical target:
 
 - VID/PID `0x31B2:0x0111`;
 - HID report ID `0x4B`;
@@ -316,9 +357,7 @@ The protocol layer preserves unrelated register bytes. Flash tracks EQ Library's
 
 No independently corroborated explicit persist/save command is used. Power-cycle persistence remains a physical qualification question. If power loss resets the hardware while DataStore retains a prior app-side gain delta, the tracking contract must be hardened before qualification.
 
-No verified stock-JM12 external preset-file format is exposed in v0.5. Direct Flash remains intact.
-
-JM12 remains **Hardware validation pending** until its exact signed Pixel 9 checklist passes.
+No verified stock-JM12 external preset-file format is exposed. Direct Flash remains intact as historical implementation state.
 
 ## Android USB architecture
 
@@ -355,7 +394,11 @@ File export uses SAF and app-owned tracked identity:
 - cleanup deletes only proven app-owned files;
 - per-file failures do not roll back unrelated successes.
 
-`Export` / `Export all` are currentness-recovery controls and remain hidden when expected app-owned artifacts are present/current.
+Export ownership is target-specific artifact state, not My EQs membership. Switching output does not change the saved local item that an artifact was derived from.
+
+If an app-owned/persisted-access artifact no longer has a confident current My EQ association, it remains visible through **Needs attention** rather than being silently forgotten. Confirmed missing documents may have stale ownership removed; provider/permission unavailability must remain visible/unresolved.
+
+`Export` / `Export all` are explicit file actions/currentness-recovery controls. Save/Add to My EQs does not implicitly call them.
 
 Hardware-only outputs bypass file export entirely.
 
@@ -365,7 +408,7 @@ Public app updates use GitHub Release metadata at modest cadence with nonblockin
 
 Preserve OPRA and individual creator/source attribution. Do not imply endorsement by OPRA, Roon Labs, UAPP, ToneBoosters, TRN, FiiO, JCALLY, TOPPING, app-output vendors, or headphone manufacturers.
 
-No analytics or telemetry. Local selections/settings/generated state stay on-device.
+No analytics or telemetry. Local selections/settings/generated state/recovery state stay on-device.
 
 ## Validation architecture
 
@@ -373,7 +416,8 @@ Automated gates protect both canonical and target-specific behavior:
 
 - Kotlin UAPP parity/golden tests;
 - canonical identity/archive/reconciliation tests;
-- selection/review/visibility tests;
+- global My EQs selection/review/visibility tests across target changes;
+- strict unresolved-artifact parser/recovery/ownership/deletion-boundary tests;
 - export ownership/currentness tests;
 - output registry/capability/fidelity tests;
 - hardware response-adapter deterministic/golden/error-gate tests, including native-rounding vs response-fit behavior and generated-headroom fidelity;
@@ -387,4 +431,7 @@ Automated gates protect both canonical and target-specific behavior:
 
 Physical device support requires the exact signed candidate plus Pixel 9 hands-on checklist. A behavior-affecting change after a hardware PASS invalidates that candidate for the affected hardware.
 
-Because v0.5 changes Black Pearl DSP derivation through the shared adapter, the exact v0.5 candidate also requires a focused Black Pearl regression smoke even though its USB protocol was previously qualified.
+Documentation/library-ownership changes that do not alter qualified hardware session ownership, read timing, write sequencing, persistence, verification, or transport behavior do not invalidate the previously pinned hardware evidence for those unchanged transactions.
+## 2026-09-15 corrective checkpoint
+
+The owner-reported `431cbfa` test failed Restore defaults (premature stop at 0%) and page-density review. The current corrective work and genuine-failure policy are maintained at `docs/V0.6_MY_DAC_STATUS.md`. Restore completion is tied to the exact write cycle and original USB session; all final targets must match. No failed setting is automatically retried. Managed detail and General EQ headers/actions are compact and scrollable. A new exact signed beta needs focused physical review; historical PASS pins do not qualify these corrections. PR #16 remains open/draft and v0.5.0 remains public.

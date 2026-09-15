@@ -43,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.R
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
@@ -52,6 +53,7 @@ import com.weekssa.opraeqforuapp.domain.catalog.OpraProduct
 import com.weekssa.opraeqforuapp.domain.catalog.assessCompatibility
 import com.weekssa.opraeqforuapp.domain.catalog.isHistoricalRevision
 import com.weekssa.opraeqforuapp.domain.export.DeviceExportability
+import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.export.assessDeviceExportability
 import com.weekssa.opraeqforuapp.domain.export.deviceAdaptationSummary
@@ -64,6 +66,7 @@ import com.weekssa.opraeqforuapp.domain.model.ProfileCompatibility
 import com.weekssa.opraeqforuapp.domain.settings.ExportTargetPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityPreferences
 import com.weekssa.opraeqforuapp.ui.StringSetSaver
+import java.util.Locale
 import kotlinx.coroutines.launch
 
 private enum class ProfileFilterDimension(@param:StringRes val labelResId: Int) {
@@ -91,6 +94,10 @@ internal fun ProfileSelectionEditor(
     onMessage: (String) -> Unit,
     onOpenUrl: (String) -> Unit,
     onBack: () -> Unit,
+    blackPearlConnected: Boolean = false,
+    onFlashBlackPearlProfile: (suspend (OpraEqProfile) -> String)? = null,
+    fiioJa11Connected: Boolean = false,
+    onFlashFiioJa11Profile: (suspend (OpraEqProfile) -> String)? = null,
     modifier: Modifier = Modifier,
 ) {
     val vendor = catalog.vendor(product.vendorId)
@@ -114,7 +121,7 @@ internal fun ProfileSelectionEditor(
             .sortedWith(String.CASE_INSENSITIVE_ORDER)
     }
     val scope = rememberCoroutineScope()
-    val selectionContextKey = "${product.id}:${exportTargets.activeTarget.name}"
+    val selectionContextKey = product.id
 
     val databaseLabel = stringResource(R.string.filter_database)
     val creatorLabel = stringResource(R.string.filter_creator)
@@ -130,6 +137,9 @@ internal fun ProfileSelectionEditor(
     var targetFilter by rememberSaveable(product.id) { mutableStateOf<String?>(null) }
     var showHistoricalRevisions by rememberSaveable(product.id) { mutableStateOf(false) }
     var filterDialog by remember { mutableStateOf<ProfileFilterDimension?>(null) }
+    var pendingHardwareFlash by remember {
+        mutableStateOf<Pair<LibraryHardwareFlashDevice, OpraEqProfile>?>(null)
+    }
 
     LaunchedEffect(databaseOptions, creatorOptions, targetOptions) {
         if (databaseFilter != null && databaseFilter !in databaseOptions) databaseFilter = null
@@ -208,10 +218,10 @@ internal fun ProfileSelectionEditor(
             baselineSelectedIds = stagedSelectedIds
             baselineAutoInclude = autoInclude
             managedRecord = onLoadManagedHeadphone(product.id)
-            if (stagedSelectedIds.isNotEmpty()) {
-                onExportProduct(product.id)
-            } else {
+            if (stagedSelectedIds.isEmpty()) {
                 onBack()
+            } else {
+                onMessage("Saved to My EQs. Export or Flash when you want to send it somewhere.")
             }
         }
     }
@@ -254,6 +264,87 @@ internal fun ProfileSelectionEditor(
                 }
             },
         )
+    }
+
+    pendingHardwareFlash?.let { (device, profile) ->
+        when (val preview = remember(device, profile) { libraryHardwareFlashPreview(profile, device) }) {
+            is LibraryHardwareFlashPreview.Ready -> {
+                val fidelity = when (preview.fidelity) {
+                    DevicePresetFidelity.EXACT -> "Exact"
+                    DevicePresetFidelity.OPTIMIZED -> "Optimized"
+                }
+                val creator = profile.author?.takeIf(String::isNotBlank)
+                val gain = String.format(Locale.US, "%+.2f dB", preview.gainDb)
+                AlertDialog(
+                    onDismissRequest = { pendingHardwareFlash = null },
+                    title = { Text("Flash to ${device.displayName}?") },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(
+                                text = listOfNotNull(product.name, creator).joinToString(" · "),
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            Text("$fidelity · ${preview.adaptationSummary}")
+                            Text(
+                                when (device) {
+                                    LibraryHardwareFlashDevice.BLACK_PEARL -> "Playback adjustment: $gain"
+                                    LibraryHardwareFlashDevice.FIIO_JA11 -> "Global EQ gain: $gain"
+                                },
+                            )
+                            Text(
+                                text = when (device) {
+                                    LibraryHardwareFlashDevice.BLACK_PEARL ->
+                                        "The current hardware EQ slot will be overwritten and verified."
+                                    LibraryHardwareFlashDevice.FIIO_JA11 ->
+                                        "User 1 will be applied, saved, and verified."
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            preview.warning?.takeIf(String::isNotBlank)?.let { warning ->
+                                Text(
+                                    warning,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                pendingHardwareFlash = null
+                                when (device) {
+                                    LibraryHardwareFlashDevice.BLACK_PEARL ->
+                                        onFlashBlackPearlProfile?.let { flash ->
+                                            scope.launch { onMessage(flash(profile)) }
+                                        }
+                                    LibraryHardwareFlashDevice.FIIO_JA11 ->
+                                        onFlashFiioJa11Profile?.let { flash ->
+                                            scope.launch { onMessage(flash(profile)) }
+                                        }
+                                }
+                            },
+                        ) {
+                            Text(if (preview.warning.isNullOrBlank()) "Flash" else "Flash anyway")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { pendingHardwareFlash = null }) { Text("Cancel") }
+                    },
+                )
+            }
+            is LibraryHardwareFlashPreview.NotSuitable -> {
+                AlertDialog(
+                    onDismissRequest = { pendingHardwareFlash = null },
+                    title = { Text("Can't flash this EQ") },
+                    text = { Text(preview.reason) },
+                    confirmButton = {
+                        TextButton(onClick = { pendingHardwareFlash = null }) { Text("OK") }
+                    },
+                )
+            }
+        }
     }
 
     filterDialog?.let { dimension ->
@@ -320,11 +411,8 @@ internal fun ProfileSelectionEditor(
                 modifier = Modifier.weight(1f),
             ) {
                 Text(
-                    if (databaseFilter == null) {
-                        databaseLabel
-                    } else {
-                        stringResource(R.string.filter_selected_format, databaseLabel)
-                    },
+                    if (databaseFilter == null) databaseLabel
+                    else stringResource(R.string.filter_selected_format, databaseLabel),
                 )
             }
             OutlinedButton(
@@ -333,11 +421,8 @@ internal fun ProfileSelectionEditor(
                 modifier = Modifier.weight(1f),
             ) {
                 Text(
-                    if (creatorFilter == null) {
-                        creatorLabel
-                    } else {
-                        stringResource(R.string.filter_selected_format, creatorLabel)
-                    },
+                    if (creatorFilter == null) creatorLabel
+                    else stringResource(R.string.filter_selected_format, creatorLabel),
                 )
             }
             OutlinedButton(
@@ -346,11 +431,8 @@ internal fun ProfileSelectionEditor(
                 modifier = Modifier.weight(1f),
             ) {
                 Text(
-                    if (targetFilter == null) {
-                        targetLabel
-                    } else {
-                        stringResource(R.string.filter_selected_format, targetLabel)
-                    },
+                    if (targetFilter == null) targetLabel
+                    else stringResource(R.string.filter_selected_format, targetLabel),
                 )
             }
         }
@@ -394,11 +476,7 @@ internal fun ProfileSelectionEditor(
                     stringResource(
                         R.string.history_count_with_selected,
                         historicalProfileCount,
-                        pluralStringResource(
-                            R.plurals.selected_count,
-                            selectedHistoricalCount,
-                            selectedHistoricalCount,
-                        ),
+                        pluralStringResource(R.plurals.selected_count, selectedHistoricalCount, selectedHistoricalCount),
                     )
                 } else {
                     stringResource(R.string.history_count, historicalProfileCount)
@@ -413,21 +491,12 @@ internal fun ProfileSelectionEditor(
                 .padding(horizontal = 16.dp, vertical = 0.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            TextButton(
-                onClick = {
-                    stagedSelectedIds = stagedSelectedIds +
-                        selectableProfileIds(visibleProfiles, includeHistorical = true)
-                },
-            ) {
-                Text(stringResource(R.string.action_select_all))
-            }
-            TextButton(
-                onClick = {
-                    stagedSelectedIds = stagedSelectedIds - visibleProfiles.map(OpraEqProfile::id).toSet()
-                },
-            ) {
-                Text(stringResource(R.string.action_select_none))
-            }
+            TextButton(onClick = {
+                stagedSelectedIds = stagedSelectedIds + selectableProfileIds(visibleProfiles, includeHistorical = true)
+            }) { Text(stringResource(R.string.action_select_all)) }
+            TextButton(onClick = {
+                stagedSelectedIds = stagedSelectedIds - visibleProfiles.map(OpraEqProfile::id).toSet()
+            }) { Text(stringResource(R.string.action_select_none)) }
         }
 
         Text(
@@ -438,11 +507,7 @@ internal fun ProfileSelectionEditor(
         )
         if (filteredOutCount > 0) {
             Text(
-                text = pluralStringResource(
-                    R.plurals.profiles_hidden_by_filters,
-                    filteredOutCount,
-                    filteredOutCount,
-                ),
+                text = pluralStringResource(R.plurals.profiles_hidden_by_filters, filteredOutCount, filteredOutCount),
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -461,6 +526,11 @@ internal fun ProfileSelectionEditor(
             )
         }
 
+        val connectedHardwareFlashDevice = connectedLibraryHardwareFlashDevice(
+            blackPearlConnected = blackPearlConnected && onFlashBlackPearlProfile != null,
+            fiioJa11Connected = fiioJa11Connected && onFlashFiioJa11Profile != null,
+        )
+
         LazyColumn(modifier = Modifier.weight(1f)) {
             items(visibleProfiles, key = OpraEqProfile::id) { profile ->
                 val sourceAssessment = profile.assessCompatibility()
@@ -474,6 +544,9 @@ internal fun ProfileSelectionEditor(
                     append(statusLabel)
                     adaptation?.let { append(" · $it") }
                 }
+                val hardwareFlashReady = connectedHardwareFlashDevice?.let { device ->
+                    libraryHardwareFlashPreview(profile, device) is LibraryHardwareFlashPreview.Ready
+                } == true
                 ProfileSelectionRow(
                     profile = profile,
                     selected = profile.id in stagedSelectedIds,
@@ -481,29 +554,19 @@ internal fun ProfileSelectionEditor(
                     outputStatus = statusText,
                     outputStatusCategory = outputStatus,
                     onSelectionChange = { selected ->
-                        stagedSelectedIds = if (selected) {
-                            stagedSelectedIds + profile.id
-                        } else {
-                            stagedSelectedIds - profile.id
-                        }
+                        stagedSelectedIds = if (selected) stagedSelectedIds + profile.id else stagedSelectedIds - profile.id
                     },
                     onToggleFavorite = onToggleFavorite?.let { toggle ->
                         {
                             scope.launch {
-                                val favorited = toggle(
-                                    profile,
-                                    vendor?.name ?: unknownManufacturer,
-                                    product.name,
-                                )
+                                val favorited = toggle(profile, vendor?.name ?: unknownManufacturer, product.name)
                                 onMessage(if (favorited) favoriteSavedMessage else favoriteRemovedMessage)
                             }
                         }
                     },
                     onHide = {
                         scope.launch {
-                            if (profile.id !in baselineSelectedIds) {
-                                stagedSelectedIds = stagedSelectedIds - profile.id
-                            }
+                            if (profile.id !in baselineSelectedIds) stagedSelectedIds = stagedSelectedIds - profile.id
                             onHideCanonicalProfile(profile.canonicalProfileId)
                             onMessage(eqHiddenMessage)
                         }
@@ -512,6 +575,9 @@ internal fun ProfileSelectionEditor(
                     onExplainSourceProblem = {
                         sourceProblemExplanation = sourceAssessment.reason ?: sourceNotUsableDefault
                     },
+                    onFlashHardware = if (hardwareFlashReady && connectedHardwareFlashDevice != null) {
+                        { pendingHardwareFlash = connectedHardwareFlashDevice to profile }
+                    } else null,
                 )
                 HorizontalDivider()
             }
@@ -525,11 +591,8 @@ internal fun ProfileSelectionEditor(
                 .padding(horizontal = 16.dp, vertical = 6.dp),
         ) {
             Text(
-                if (managedRecord == null) {
-                    stringResource(R.string.add_to_my_eqs_count, stagedSelectedIds.size)
-                } else {
-                    stringResource(R.string.save_changes_count, stagedSelectedIds.size)
-                },
+                if (managedRecord == null) stringResource(R.string.add_to_my_eqs_count, stagedSelectedIds.size)
+                else stringResource(R.string.save_changes_count, stagedSelectedIds.size),
             )
         }
     }
@@ -550,38 +613,18 @@ private fun ProfileFilterDialog(
         title = { Text(stringResource(R.string.filter_by_format, dimensionLabel.lowercase())) },
         text = {
             Column {
-                TextButton(
-                    onClick = { onSelect(null) },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(
-                        if (selected == null) {
-                            stringResource(R.string.filter_selected_format, allLabel)
-                        } else {
-                            allLabel
-                        },
-                    )
+                TextButton(onClick = { onSelect(null) }, modifier = Modifier.fillMaxWidth()) {
+                    Text(if (selected == null) stringResource(R.string.filter_selected_format, allLabel) else allLabel)
                 }
                 options.forEach { option ->
-                    TextButton(
-                        onClick = { onSelect(option) },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(
-                            if (selected == option) {
-                                stringResource(R.string.filter_selected_format, option)
-                            } else {
-                                option
-                            },
-                        )
+                    TextButton(onClick = { onSelect(option) }, modifier = Modifier.fillMaxWidth()) {
+                        Text(if (selected == option) stringResource(R.string.filter_selected_format, option) else option)
                     }
                 }
             }
         },
         confirmButton = {},
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
-        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
 
@@ -597,33 +640,24 @@ internal fun ProfileSelectionRow(
     onHide: () -> Unit,
     onOpenSource: (() -> Unit)?,
     onExplainSourceProblem: () -> Unit,
+    onFlashHardware: (() -> Unit)? = null,
 ) {
     val compatibility = profile.assessCompatibility()
     val selectable = compatibility.category.isSelectable
     val displayDetails = profile.displayDetails()
     val rowModifier = if (selectable) {
-        Modifier
-            .fillMaxWidth()
-            .heightIn(min = 56.dp)
-            .toggleable(
-                value = selected,
-                role = Role.Checkbox,
-                onValueChange = onSelectionChange,
-            )
+        Modifier.fillMaxWidth().heightIn(min = 56.dp).toggleable(
+            value = selected,
+            role = Role.Checkbox,
+            onValueChange = onSelectionChange,
+        )
     } else {
-        Modifier
-            .fillMaxWidth()
-            .heightIn(min = 56.dp)
-            .clickable(onClick = onExplainSourceProblem)
+        Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable(onClick = onExplainSourceProblem)
     }
 
     ListItem(
         leadingContent = {
-            Checkbox(
-                checked = selected && selectable,
-                onCheckedChange = null,
-                enabled = selectable,
-            )
+            Checkbox(checked = selected && selectable, onCheckedChange = null, enabled = selectable)
         },
         headlineContent = {
             Text(
@@ -660,17 +694,9 @@ internal fun ProfileSelectionRow(
                     )
                 }
                 displayDetails.soundImpact?.let {
-                    Text(
-                        text = it,
-                        modifier = Modifier.padding(top = 4.dp),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
+                    Text(text = it, modifier = Modifier.padding(top = 4.dp), style = MaterialTheme.typography.bodyMedium)
                 }
-                onOpenSource?.let { openSource ->
-                    TextButton(onClick = openSource) {
-                        Text(stringResource(R.string.action_source))
-                    }
-                }
+                onOpenSource?.let { openSource -> TextButton(onClick = openSource) { Text(stringResource(R.string.action_source)) } }
                 if (compatibility.category == ProfileCompatibility.NotCompatible) {
                     Text(
                         text = stringResource(R.string.source_data_unavailable_for_selection),
@@ -683,7 +709,8 @@ internal fun ProfileSelectionRow(
             }
         },
         trailingContent = {
-            Row {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                onFlashHardware?.let { flash -> TextButton(onClick = flash) { Text("Flash") } }
                 IconButton(onClick = onHide) {
                     Icon(
                         Icons.Outlined.VisibilityOff,
@@ -695,11 +722,8 @@ internal fun ProfileSelectionRow(
                         Icon(
                             imageVector = if (isFavorite) Icons.Outlined.Star else Icons.Outlined.StarBorder,
                             contentDescription = stringResource(
-                                if (isFavorite) {
-                                    R.string.remove_favorite_content_description
-                                } else {
-                                    R.string.add_favorite_content_description
-                                },
+                                if (isFavorite) R.string.remove_favorite_content_description
+                                else R.string.add_favorite_content_description,
                             ),
                         )
                     }
@@ -725,10 +749,7 @@ private fun outputStatusLabel(status: DeviceExportability, device: ExportDevice)
 
 private fun outputShortName(device: ExportDevice): String = device.displayName
 
-private data class ProfileDisplayDetails(
-    val metadata: String?,
-    val soundImpact: String?,
-)
+private data class ProfileDisplayDetails(val metadata: String?, val soundImpact: String?)
 
 private fun OpraEqProfile.displayDetails(): ProfileDisplayDetails {
     val parts = details
@@ -737,10 +758,7 @@ private fun OpraEqProfile.displayDetails(): ProfileDisplayDetails {
         ?.filter(String::isNotEmpty)
         .orEmpty()
     val soundImpact = parts.lastOrNull(::isSoundImpactText)
-    val metadata = parts
-        .filterNot { it == soundImpact }
-        .joinToString(" · ")
-        .takeIf(String::isNotBlank)
+    val metadata = parts.filterNot { it == soundImpact }.joinToString(" · ").takeIf(String::isNotBlank)
     return ProfileDisplayDetails(metadata = metadata, soundImpact = soundImpact)
 }
 

@@ -14,12 +14,16 @@ import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshFailureReason
 import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshResult
 import com.weekssa.opraeqforuapp.data.export.PresetExportItemResult
 import com.weekssa.opraeqforuapp.data.export.PresetExportSummary
+import com.weekssa.opraeqforuapp.data.preferences.SessionExportTarget
 import com.weekssa.opraeqforuapp.data.sync.BackgroundSyncScheduler
 import com.weekssa.opraeqforuapp.data.sync.CatalogSyncOutcome
 import com.weekssa.opraeqforuapp.data.update.AppUpdateCheckResult
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditSpecs
+import com.weekssa.opraeqforuapp.domain.dac.normalizeHardwareEqUserInput
 import com.weekssa.opraeqforuapp.ui.EqLibraryActions
 import com.weekssa.opraeqforuapp.ui.EqLibraryApp
 import com.weekssa.opraeqforuapp.ui.EqLibraryViewModel
+import com.weekssa.opraeqforuapp.ui.UnclaimedEqViewModel
 import com.weekssa.opraeqforuapp.ui.resolve
 import com.weekssa.opraeqforuapp.ui.theme.OpraEqTheme
 import kotlinx.coroutines.Dispatchers
@@ -27,27 +31,42 @@ import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
     private lateinit var viewModel: EqLibraryViewModel
+    private lateinit var unclaimedEqViewModel: UnclaimedEqViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         BackgroundSyncScheduler.ensureScheduled(applicationContext)
 
+        val runtimeDependencies = createEqLibraryRuntimeDependencies(applicationContext)
         viewModel = ViewModelProvider(
             this,
-            EqLibraryViewModel.Factory {
-                createEqLibraryDependencies(applicationContext)
-            },
+            EqLibraryViewModel.Factory { runtimeDependencies.eqLibrary },
         )[EqLibraryViewModel::class.java]
+        unclaimedEqViewModel = ViewModelProvider(
+            this,
+            UnclaimedEqViewModel.Factory { runtimeDependencies.unclaimedEqRepository },
+        )[UnclaimedEqViewModel::class.java]
+
+        val initialMyDacOpenDeviceId = if (savedInstanceState == null) {
+            intent.supportedAttachedDacDeviceId()
+        } else {
+            null
+        }
 
         setContent {
             val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
+            val unclaimedEqs = unclaimedEqViewModel.items.collectAsStateWithLifecycle().value
             val actions = remember(viewModel) { createUiActions() }
 
             OpraEqTheme(themeMode = uiState.appPreferences.themeMode) {
                 EqLibraryApp(
                     state = uiState,
                     actions = actions,
+                    unclaimedEqs = unclaimedEqs,
+                    onRecoverUnclaimedEq = unclaimedEqViewModel::recover,
+                    onDeleteUnclaimedEq = unclaimedEqViewModel::delete,
+                    initialMyDacOpenDeviceId = initialMyDacOpenDeviceId,
                 )
             }
         }
@@ -59,6 +78,53 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun createUiActions(): EqLibraryActions = EqLibraryActions(
+        onConnectDacForMyDac = viewModel::connectDacForMyDac,
+        onOpenBlackPearlEditor = viewModel::openBlackPearlEditor,
+        onBackMyDacEditor = viewModel::backMyDacEditor,
+        onCloseMyDacEditor = viewModel::closeMyDacEditor,
+        onSelectBlackPearlEditorBand = viewModel::selectBlackPearlEditorBand,
+        onShowBlackPearlEditorAllBands = viewModel::showBlackPearlEditorAllBands,
+        onShowBlackPearlEditorReview = viewModel::showBlackPearlEditorReview,
+        onUpdateBlackPearlEditorBand = { bandIndex, type, frequencyHz, gainDb, q ->
+            val normalized = normalizeHardwareEqUserInput(
+                spec = HardwareEqEditSpecs.TRN_BLACK_PEARL,
+                frequencyHz = frequencyHz,
+                gainDb = gainDb,
+                q = q,
+            )
+            viewModel.updateBlackPearlEditorBand(
+                bandIndex = bandIndex,
+                type = type,
+                frequencyHz = normalized.frequencyHz,
+                gainDb = normalized.gainDb,
+                q = normalized.q,
+            )
+        },
+        onUseSafeBlackPearlEditorGain = viewModel::useSafeBlackPearlEditorGain,
+        onResetBlackPearlEditorLocalEdits = viewModel::resetBlackPearlEditorLocalEdits,
+        onApplyBlackPearlEditor = viewModel::applyBlackPearlEditor,
+        onCaptureBlackPearlDacEq = { displayName, association ->
+            resolve(viewModel.captureBlackPearlDacEq(displayName, association))
+        },
+        onFlashBlackPearlFromMyDac = { profile ->
+            resolve(viewModel.flashBlackPearlFromMyDac(profile))
+        },
+        onResetBlackPearlFromMyDac = {
+            resolve(viewModel.resetBlackPearlFromMyDacToFlat())
+        },
+        onReadBlackPearlQualificationControls = viewModel::readBlackPearlQualificationControls,
+        onSetBlackPearlDeviceControl = viewModel::setBlackPearlDeviceControl,
+        onReadFiioJa11DeviceControls = viewModel::readFiioJa11DeviceControls,
+        onSetFiioJa11OutputVolume = viewModel::setFiioJa11OutputVolume,
+        onSetFiioJa11EqProgram = viewModel::setFiioJa11EqProgram,
+        onSetFiioJa11HeadsetControl = viewModel::setFiioJa11HeadsetControl,
+        onSetFiioJa11UacMode = viewModel::setFiioJa11UacMode,
+        onFlashFiioJa11FromMyDac = { profile ->
+            resolve(viewModel.flashFiioJa11FromMyDac(profile))
+        },
+        onResetFiioJa11FromMyDac = {
+            resolve(viewModel.resetFiioJa11FromMyDacToFlat())
+        },
         onConnectBlackPearl = viewModel::connectBlackPearl,
         onResetBlackPearl = {
             resolve(viewModel.resetBlackPearlToFlat())
@@ -131,7 +197,9 @@ class MainActivity : ComponentActivity() {
         onDismissPostUpdate = viewModel::dismissPostUpdate,
         onOpenUrl = ::openExternalUrl,
         onThemeModeChange = viewModel::setThemeMode,
+        onOutputBehaviorChange = viewModel::setOutputBehavior,
         onExportTargetChange = viewModel::setExportTargetEnabled,
+        onSessionActiveExportTargetChange = SessionExportTarget::select,
         onActiveExportTargetChange = viewModel::setActiveExportTarget,
         onDirectBlackPearlFlashEnabledChange = viewModel::setDirectBlackPearlFlashEnabled,
         onDirectFiioJa11FlashEnabledChange = viewModel::setDirectFiioJa11FlashEnabled,
@@ -207,11 +275,7 @@ class MainActivity : ComponentActivity() {
             )
         }
         val device = summary.results.firstOrNull()?.candidate?.deviceName
-        return if (device == null) {
-            message
-        } else {
-            getString(R.string.device_prefixed_message, device, message)
-        }
+        return if (device == null) message else getString(R.string.device_prefixed_message, device, message)
     }
 
     private fun refreshCatalogMessage(outcome: CatalogSyncOutcome): String {
@@ -250,16 +314,13 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun updateCheckMessage(result: AppUpdateCheckResult): String = when (result) {
-        is AppUpdateCheckResult.UpdateAvailable ->
-            getString(R.string.update_available_message, result.release.version)
+        is AppUpdateCheckResult.UpdateAvailable -> getString(R.string.update_available_message, result.release.version)
         is AppUpdateCheckResult.UpToDate -> getString(R.string.update_up_to_date_message)
         AppUpdateCheckResult.Unavailable -> getString(R.string.update_check_unavailable_message)
     }
 
     private fun openExternalUrl(url: String) {
         val uri = runCatching { Uri.parse(url) }.getOrNull() ?: return
-        runCatching {
-            startActivity(Intent(Intent.ACTION_VIEW, uri))
-        }
+        runCatching { startActivity(Intent(Intent.ACTION_VIEW, uri)) }
     }
 }

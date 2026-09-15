@@ -120,22 +120,12 @@ private val FIIO_JA11_CURRENT_CAPABILITIES = DeviceEqCapabilities(
     maxPreampDb = 12.0,
 )
 
-private val JCALLY_JM12_CURRENT_CAPABILITIES = DeviceEqCapabilities(
-    maxBands = 5,
-    supportedBandTypes = setOf("peak_dip", "low_shelf", "high_shelf"),
-    minFrequencyHz = 20.0,
-    maxFrequencyHz = 20_000.0,
-    minGainDb = -30.0,
-    maxGainDb = 30.0,
-    minQ = 0.1,
-    maxQ = 20.0,
-    minPreampDb = -24.0,
-    maxPreampDb = 12.0,
-)
-
 /**
  * One registry drives Settings, the output selector, format generation, capability checks, and
  * expansion. Existing enum names are intentionally stable because they are persisted in DataStore.
+ *
+ * `JCALLY_JM12` remains only as a legacy persisted-enum migration token. It is deliberately not
+ * selectable and carries no current capability declaration, so it cannot reappear in normal UX.
  */
 enum class ExportDevice(
     val folderName: String,
@@ -188,10 +178,9 @@ enum class ExportDevice(
         mimeType = "text/plain",
         displayName = "JCALLY JM12",
         category = OutputCategory.HARDWARE_DAC,
-        settingsSubtitle = "5-band PEQ · Direct Flash · no verified import file",
+        settingsSubtitle = "Legacy migration entry",
         formatKind = OutputFormatKind.HARDWARE_ONLY,
-        validationStatus = "Hardware validation pending · persistence pending",
-        eqCapabilities = JCALLY_JM12_CURRENT_CAPABILITIES,
+        selectableInV03 = false,
         supportsFileExport = false,
     ),
     UNIVERSAL_PARAMETRIC(

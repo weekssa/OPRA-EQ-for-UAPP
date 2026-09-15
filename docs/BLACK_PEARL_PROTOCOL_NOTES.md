@@ -66,6 +66,8 @@ This v0.5 derivation change invalidates the old software candidate for final har
 
 The Black Pearl global playback gain is observable through command `0x03`. The reviewed Android controller uses raw range `-9472..6440` and derives gain/headroom in 1/256 dB units. Its AutoEq importer uses a convenience percentage approximation for negative preamp; EQ Library does **not** copy that approximation.
 
+The reviewed `cheesyserg/BlackPearlControl-Android` controller also presents ordinary playback level as a percentage. At reviewed commit `491e9d5131562d85b44ce9fd741f3e1ff5c4781c`, its presentation maps percentage linearly across the same raw range using `raw = VOL_MIN_RAW + (percent / 100) * (VOL_MAX_RAW - VOL_MIN_RAW)`. Therefore a device raw value of `512` corresponds to approximately `62.745%`, consistent with the controller displaying `63%`. EQ Library independently presents raw `512` as `+2.00 dB` because the protocol unit is 1/256 dB. These are two presentations of the same raw register; percentage is not a dB unit and this observation does not qualify any new playback-volume write behavior.
+
 EQ Library independently uses the protocol's raw 1/256 dB scale:
 
 - read the current signed little-endian raw gain;

@@ -283,6 +283,10 @@ class ManagedCatalogReconcilerTest {
         assertEquals(1L, migrated.firstSeenAtMillis)
         assertNotEquals("old xml", migrated.generatedXml)
         assertEquals(setOf("legacy-duplicate"), result.profileIdsToDelete)
+        assertEquals(
+            mapOf("legacy-duplicate" to "canonical-representative"),
+            result.profileIdMigrations,
+        )
         assertEquals(0, result.changes.newProfileCount)
         assertEquals(0, result.changes.removedSelectedProfileCount)
     }

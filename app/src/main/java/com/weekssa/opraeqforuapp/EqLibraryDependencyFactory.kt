@@ -5,18 +5,24 @@ import com.weekssa.opraeqforuapp.data.blackpearl.AndroidBlackPearlUsbTransport
 import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlGainStatePreferences
 import com.weekssa.opraeqforuapp.data.catalog.HttpOpraCatalogSource
 import com.weekssa.opraeqforuapp.data.catalog.OpraCatalogRepository
+import com.weekssa.opraeqforuapp.data.dac.BlackPearlSessionOperationGate
+import com.weekssa.opraeqforuapp.data.dac.DacControlRepository
+import com.weekssa.opraeqforuapp.data.dac.DacSessionRepository
+import com.weekssa.opraeqforuapp.data.dac.FiioJa11ControlRepository
+import com.weekssa.opraeqforuapp.data.dac.FiioJa11SessionOperationGate
+import com.weekssa.opraeqforuapp.data.dac.SessionBlackPearlDeviceControlReadSource
+import com.weekssa.opraeqforuapp.data.dac.SessionFiioJa11DeviceControlSource
 import com.weekssa.opraeqforuapp.data.export.AndroidSafDocumentStore
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupRepository
 import com.weekssa.opraeqforuapp.data.export.PresetExportRepository
 import com.weekssa.opraeqforuapp.data.hardware.HardwareEqRepository
 import com.weekssa.opraeqforuapp.data.kt02h20.AndroidFiioJa11UsbTransport
-import com.weekssa.opraeqforuapp.data.kt02h20.AndroidJcallyJm12UsbTransport
-import com.weekssa.opraeqforuapp.data.kt02h20.JcallyJm12GainStatePreferences
 import com.weekssa.opraeqforuapp.data.library.CanonicalCatalogRepository
 import com.weekssa.opraeqforuapp.data.library.CanonicalFirstCatalogRepository
 import com.weekssa.opraeqforuapp.data.library.HttpCanonicalCatalogSource
 import com.weekssa.opraeqforuapp.data.library.SavedEqRepository
 import com.weekssa.opraeqforuapp.data.library.SavedGeneralEqRepository
+import com.weekssa.opraeqforuapp.data.library.UnclaimedEqRepository
 import com.weekssa.opraeqforuapp.data.managed.ManagedHeadphonesRepository
 import com.weekssa.opraeqforuapp.data.managed.OpraEqDatabase
 import com.weekssa.opraeqforuapp.data.preferences.AppPreferencesRepository
@@ -26,20 +32,38 @@ import com.weekssa.opraeqforuapp.data.update.AppUpdateCoordinator
 import com.weekssa.opraeqforuapp.data.update.GitHubReleaseUpdateRepository
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlasher
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Flasher
-import com.weekssa.opraeqforuapp.domain.kt02h20.JcallyJm12Flasher
 import com.weekssa.opraeqforuapp.ui.EqLibraryViewModel
 import java.net.URL
+import kotlinx.coroutines.flow.map
+
+internal data class EqLibraryRuntimeDependencies(
+    val eqLibrary: EqLibraryViewModel.Dependencies,
+    val unclaimedEqRepository: UnclaimedEqRepository,
+)
 
 /**
  * Manual DI composition root. Android Context is consumed only while constructing platform data
  * sources; it is never passed to a ViewModel or repository.
  */
-internal fun createEqLibraryDependencies(context: Context): EqLibraryViewModel.Dependencies {
+internal fun createEqLibraryRuntimeDependencies(context: Context): EqLibraryRuntimeDependencies {
     val appContext = context.applicationContext
     val database = OpraEqDatabase.create(appContext)
-    val preferencesRepository = AppPreferencesRepository(appContext.eqLibraryPreferencesDataStore)
-    val userAgent = "${BuildConfig.APPLICATION_ID}/${BuildConfig.VERSION_NAME}"
 
+    // Physical presence is intentionally established before preferences so Automatic output can
+    // project one connected supported DAC over the user's durable manual fallback without requiring
+    // a Settings selection first. Current runtime hardware is Black Pearl + FiiO only.
+    val blackPearlTransport = AndroidBlackPearlUsbTransport(appContext)
+    val fiioJa11Transport = AndroidFiioJa11UsbTransport(appContext)
+    val dacSessionRepository = DacSessionRepository(
+        blackPearlTransport = blackPearlTransport,
+        fiioJa11Transport = fiioJa11Transport,
+    )
+    val preferencesRepository = AppPreferencesRepository(
+        dataStore = appContext.eqLibraryPreferencesDataStore,
+        presentSupportedDacs = dacSessionRepository.recognitionState.map { it.presentDeviceIds },
+    )
+
+    val userAgent = "${BuildConfig.APPLICATION_ID}/${BuildConfig.VERSION_NAME}"
     val catalogRepository = CanonicalFirstCatalogRepository(
         canonicalRepository = CanonicalCatalogRepository(
             filesDir = appContext.filesDir,
@@ -60,14 +84,9 @@ internal fun createEqLibraryDependencies(context: Context): EqLibraryViewModel.D
     val savedEqRepository = SavedEqRepository(database)
     val savedGeneralEqRepository = SavedGeneralEqRepository(database)
     val documentStore = AndroidSafDocumentStore(appContext)
-    val exportRepository = PresetExportRepository(
-        database = database,
-        documentStore = documentStore,
-    )
-    val cleanupRepository = PresetCleanupRepository(
-        database = database,
-        documentStore = documentStore,
-    )
+    val exportRepository = PresetExportRepository(database = database, documentStore = documentStore)
+    val cleanupRepository = PresetCleanupRepository(database = database, documentStore = documentStore)
+    val unclaimedEqRepository = UnclaimedEqRepository(database = database, documentStore = documentStore)
     val syncCoordinator = CatalogSyncCoordinator(
         catalogRepository = catalogRepository,
         managedHeadphonesRepository = managedHeadphonesRepository,
@@ -80,34 +99,42 @@ internal fun createEqLibraryDependencies(context: Context): EqLibraryViewModel.D
         ),
     )
 
-    val blackPearlTransport = AndroidBlackPearlUsbTransport(appContext)
-    val fiioJa11Transport = AndroidFiioJa11UsbTransport(appContext)
-    val jcallyJm12Transport = AndroidJcallyJm12UsbTransport(appContext)
+    val dacControlRepository = DacControlRepository(
+        blackPearlSource = SessionBlackPearlDeviceControlReadSource(dacSessionRepository),
+        operationGate = BlackPearlSessionOperationGate(dacSessionRepository),
+    )
+    val fiioJa11ControlRepository = FiioJa11ControlRepository(
+        source = SessionFiioJa11DeviceControlSource(dacSessionRepository),
+        operationGate = FiioJa11SessionOperationGate(dacSessionRepository),
+    )
     val hardwareRepository = HardwareEqRepository(
-        blackPearlTransport = blackPearlTransport,
+        dacSessionRepository = dacSessionRepository,
         blackPearlFlasher = BlackPearlFlasher(
             blackPearlTransport,
             BlackPearlGainStatePreferences(appContext),
         ),
-        fiioJa11Transport = fiioJa11Transport,
         fiioJa11Flasher = FiioJa11Flasher(fiioJa11Transport),
-        jcallyJm12Transport = jcallyJm12Transport,
-        jcallyJm12Flasher = JcallyJm12Flasher(
-            jcallyJm12Transport,
-            JcallyJm12GainStatePreferences(appContext),
-        ),
     )
 
-    return EqLibraryViewModel.Dependencies(
-        preferencesRepository = preferencesRepository,
-        catalogRepository = catalogRepository,
-        managedHeadphonesRepository = managedHeadphonesRepository,
-        savedEqRepository = savedEqRepository,
-        savedGeneralEqRepository = savedGeneralEqRepository,
-        exportRepository = exportRepository,
-        cleanupRepository = cleanupRepository,
-        syncCoordinator = syncCoordinator,
-        updateCoordinator = updateCoordinator,
-        hardwareRepository = hardwareRepository,
+    return EqLibraryRuntimeDependencies(
+        eqLibrary = EqLibraryViewModel.Dependencies(
+            preferencesRepository = preferencesRepository,
+            catalogRepository = catalogRepository,
+            managedHeadphonesRepository = managedHeadphonesRepository,
+            savedEqRepository = savedEqRepository,
+            savedGeneralEqRepository = savedGeneralEqRepository,
+            exportRepository = exportRepository,
+            cleanupRepository = cleanupRepository,
+            syncCoordinator = syncCoordinator,
+            updateCoordinator = updateCoordinator,
+            dacControlRepository = dacControlRepository,
+            fiioJa11ControlRepository = fiioJa11ControlRepository,
+            hardwareRepository = hardwareRepository,
+        ),
+        unclaimedEqRepository = unclaimedEqRepository,
     )
 }
+
+/** Compatibility helper for existing tests/callers that only need the primary ViewModel graph. */
+internal fun createEqLibraryDependencies(context: Context): EqLibraryViewModel.Dependencies =
+    createEqLibraryRuntimeDependencies(context).eqLibrary

@@ -10,9 +10,12 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import com.weekssa.opraeqforuapp.data.update.AppReleaseInfo
+import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
+import com.weekssa.opraeqforuapp.domain.settings.EffectiveOutputResolver
 import com.weekssa.opraeqforuapp.domain.settings.ExportTargetPreferences
+import com.weekssa.opraeqforuapp.domain.settings.OutputBehavior
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityCategory
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ThemeMode
@@ -25,21 +28,28 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 
+/** Process-lifetime action target chosen from My EQs / EQ Library. Never persisted. */
+internal object SessionExportTarget {
+    val activeTarget = MutableStateFlow<ExportDevice?>(null)
+
+    fun select(device: ExportDevice) {
+        if (device.selectableInV03) activeTarget.value = device
+    }
+
+    fun clear() {
+        activeTarget.value = null
+    }
+}
+
 class AppPreferencesRepository(
     private val dataStore: DataStore<Preferences>,
+    private val presentSupportedDacs: Flow<Set<DacDeviceId>> = flowOf(emptySet()),
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
-    /**
-     * Session overlay for the global output context.
-     *
-     * DataStore remains the durable source of truth, but a selector tap must affect every composed
-     * screen immediately instead of waiting for the asynchronous disk-backed flow to round-trip.
-     */
-    private val activeTargetOverride = MutableStateFlow<ExportDevice?>(null)
-
     val preferences: Flow<AppPreferences> = combine(
         dataStore.data.catch { exception ->
             if (exception is IOException) {
@@ -48,8 +58,9 @@ class AppPreferencesRepository(
                 throw exception
             }
         },
-        activeTargetOverride,
-    ) { preferences, sessionActiveTarget ->
+        SessionExportTarget.activeTarget,
+        presentSupportedDacs,
+    ) { preferences, sessionActiveTarget, presentDeviceIds ->
         val storedTargets = preferences[Keys.SelectedExportTargets]
         val selectedTargets = if (storedTargets == null) {
             setOf(ExportDevice.UAPP)
@@ -60,9 +71,20 @@ class AppPreferencesRepository(
         }
         val storedActive = preferences[Keys.ActiveExportTarget]
             ?.let { storedName -> ExportDevice.entries.firstOrNull { it.name == storedName } }
-        val outputPreferences = ExportTargetPreferences.normalize(
+        val manualOutputPreferences = ExportTargetPreferences.normalize(
             selectedTargets,
-            sessionActiveTarget ?: storedActive,
+            storedActive,
+        )
+        val outputBehavior = OutputBehavior.fromStorageValue(preferences[Keys.OutputBehavior])
+        val effective = EffectiveOutputResolver.resolve(
+            behavior = outputBehavior,
+            manualFallback = manualOutputPreferences.activeTarget,
+            presentDeviceIds = presentDeviceIds,
+            sessionOverride = sessionActiveTarget,
+        )
+        val effectiveOutputPreferences = ExportTargetPreferences.normalize(
+            selectedTargets = manualOutputPreferences.selectedTargets + effective.output,
+            activeTarget = effective.output,
         )
 
         AppPreferences(
@@ -72,9 +94,12 @@ class AppPreferencesRepository(
                 showCompatibleWithLimitation = preferences[Keys.ShowCompatibleWithLimitation] ?: true,
                 showNotCompatible = preferences[Keys.ShowNotCompatible] ?: true,
             ),
-            exportTargets = outputPreferences,
+            exportTargets = effectiveOutputPreferences,
+            manualExportTargets = manualOutputPreferences,
+            outputBehavior = outputBehavior,
             directBlackPearlFlashEnabled = preferences[Keys.DirectBlackPearlFlashEnabled] ?: false,
             directFiioJa11FlashEnabled = preferences[Keys.DirectFiioJa11FlashEnabled] ?: false,
+            // Legacy migration state only. JCALLY is no longer a current product output.
             directJcallyJm12FlashEnabled = preferences[Keys.DirectJcallyJm12FlashEnabled] ?: false,
             hiddenCanonicalProfileIds = preferences[Keys.HiddenCanonicalProfileIds].orEmpty(),
             exportTreeUri = preferences[Keys.ExportTreeUri],
@@ -97,6 +122,13 @@ class AppPreferencesRepository(
         preferences[Keys.ThemeMode] = themeMode.storageValue
     }
 
+    suspend fun setOutputBehavior(outputBehavior: OutputBehavior) {
+        SessionExportTarget.clear()
+        updatePreferences { preferences ->
+            preferences[Keys.OutputBehavior] = outputBehavior.storageValue
+        }
+    }
+
     suspend fun setProfileVisibility(category: ProfileVisibilityCategory, visible: Boolean) =
         updatePreferences { preferences ->
             when (category) {
@@ -108,7 +140,6 @@ class AppPreferencesRepository(
 
     suspend fun setExportTargetEnabled(device: ExportDevice, enabled: Boolean) {
         if (!device.selectableInV03) return
-        var nextActive: ExportDevice? = null
         updatePreferences { preferences ->
             val current = outputPreferences(
                 preferences[Keys.SelectedExportTargets],
@@ -117,15 +148,13 @@ class AppPreferencesRepository(
             val next = current.withTarget(device, enabled)
             preferences[Keys.SelectedExportTargets] = next.selectedTargets.mapTo(mutableSetOf()) { it.name }
             preferences[Keys.ActiveExportTarget] = next.activeTarget.name
-            nextActive = next.activeTarget
         }
-        nextActive?.let { activeTargetOverride.value = it }
     }
 
+    /** Persistent Settings choice for Default EQ target; this retains the approved Manual-mode action. */
     suspend fun setActiveExportTarget(device: ExportDevice) {
         if (!device.selectableInV03) return
-        // Publish first so My EQs, EQ Library, and every callback switch operating context together.
-        activeTargetOverride.value = device
+        SessionExportTarget.clear()
         updatePreferences { preferences ->
             val current = outputPreferences(
                 preferences[Keys.SelectedExportTargets],
@@ -134,6 +163,7 @@ class AppPreferencesRepository(
             val next = current.withActiveTarget(device)
             preferences[Keys.SelectedExportTargets] = next.selectedTargets.mapTo(mutableSetOf()) { it.name }
             preferences[Keys.ActiveExportTarget] = next.activeTarget.name
+            preferences[Keys.OutputBehavior] = OutputBehavior.Manual.storageValue
         }
     }
 
@@ -232,6 +262,7 @@ class AppPreferencesRepository(
 
     private object Keys {
         val ThemeMode = stringPreferencesKey("theme_mode")
+        val OutputBehavior = stringPreferencesKey("output_behavior")
         val ShowFullyCompatible = booleanPreferencesKey("show_fully_compatible")
         val ShowCompatibleWithLimitation = booleanPreferencesKey("show_compatible_with_limitation")
         val ShowNotCompatible = booleanPreferencesKey("show_not_compatible")

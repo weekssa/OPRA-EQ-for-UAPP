@@ -31,6 +31,10 @@ interface SavedGeneralEqDao {
     @Query("DELETE FROM output_general_eqs WHERE outputId = :outputId AND presetId = :presetId")
     suspend fun deleteSelection(outputId: String, presetId: String)
 
+    /** Legacy output memberships are no longer ownership; clear them with a global removal. */
+    @Query("DELETE FROM output_general_eqs WHERE presetId = :presetId")
+    suspend fun deleteAllSelections(presetId: String)
+
     @Query("DELETE FROM saved_general_eqs WHERE presetId = :presetId")
     suspend fun delete(presetId: String)
 }

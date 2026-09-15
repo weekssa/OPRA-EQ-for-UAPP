@@ -19,4 +19,5 @@ data class SavedEqEntity(
     val profileJson: String,
     val createdAtMillis: Long,
     val updatedAtMillis: Long,
+    val captureMetadataJson: String? = null,
 )

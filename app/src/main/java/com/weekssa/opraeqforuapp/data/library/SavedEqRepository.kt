@@ -3,11 +3,14 @@ package com.weekssa.opraeqforuapp.data.library
 import androidx.room.withTransaction
 import com.weekssa.opraeqforuapp.data.managed.ManagedProfileSnapshotCodec
 import com.weekssa.opraeqforuapp.data.managed.OpraEqDatabase
+import com.weekssa.opraeqforuapp.domain.blackpearl.buildBlackPearlCapturedEqDraft
 import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.conversion.ToneBoostersConverter
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotBundle
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 import com.weekssa.opraeqforuapp.domain.library.ParametricEqTextParser
+import com.weekssa.opraeqforuapp.domain.library.SavedEqHeadphoneAssociation
 import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
@@ -17,40 +20,32 @@ import java.util.UUID
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 class SavedEqRepository(
     private val database: OpraEqDatabase,
     private val snapshotCodec: ManagedProfileSnapshotCodec = ManagedProfileSnapshotCodec(),
+    private val captureMetadataCodec: SavedEqCaptureMetadataCodec = SavedEqCaptureMetadataCodec(),
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val nowMillis: () -> Long = System::currentTimeMillis,
 ) {
     private val dao = database.savedEqDao()
 
+    /** My EQs ownership is global; outputId remains only for source compatibility with older callers. */
+    @Suppress("UNUSED_PARAMETER")
     fun observeForOutput(outputId: String): Flow<List<SavedEqRecord>> =
-        combine(
-            dao.observeAll(),
-            dao.observeOutputSelections(outputId),
-        ) { saved, selections ->
-            val selectionById = selections.associateBy(OutputSavedEqEntity::entryId)
-            saved.asSequence()
-                .filter { it.entryId in selectionById }
-                .map(::toDomain)
-                .sortedWith(
-                    compareByDescending<SavedEqRecord> { selectionById[it.entryId]?.selectedAtMillis ?: 0L }
-                        .thenBy { it.entryId },
-                )
-                .toList()
-        }.flowOn(ioDispatcher)
+        dao.observeAll()
+            .map { saved -> saved.map(::toDomain) }
+            .flowOn(ioDispatcher)
 
+    @Suppress("UNUSED_PARAMETER")
     suspend fun getForOutput(outputId: String, entryId: String): SavedEqRecord? =
-        withContext(ioDispatcher) {
-            if (dao.getSelection(outputId, entryId) == null) return@withContext null
-            dao.get(entryId)?.let(::toDomain)
-        }
+        withContext(ioDispatcher) { dao.get(entryId)?.let(::toDomain) }
 
+    /** Favorites are library ownership/presentation state, not destination membership. */
+    @Suppress("UNUSED_PARAMETER")
     suspend fun toggleFavorite(
         outputId: String,
         profile: OpraEqProfile,
@@ -59,13 +54,12 @@ class SavedEqRepository(
     ): Boolean = withContext(ioDispatcher) {
         database.withTransaction {
             val entryId = favoriteEntryId(profile.id)
-            if (dao.getSelection(outputId, entryId) != null) {
-                dao.deleteSelection(outputId, entryId)
-                if (dao.selectionCount(entryId) == 0) dao.delete(entryId)
+            if (dao.get(entryId) != null) {
+                dao.deleteAllSelections(entryId)
+                dao.delete(entryId)
                 return@withTransaction false
             }
 
-            val existing = dao.get(entryId)
             val now = nowMillis()
             dao.upsert(
                 SavedEqEntity(
@@ -77,21 +71,15 @@ class SavedEqRepository(
                     model = model,
                     displayName = favoriteDisplayName(profile),
                     profileJson = snapshotCodec.encode(profile),
-                    createdAtMillis = existing?.createdAtMillis ?: now,
+                    createdAtMillis = now,
                     updatedAtMillis = now,
-                ),
-            )
-            dao.upsertSelection(
-                OutputSavedEqEntity(
-                    outputId = outputId,
-                    entryId = entryId,
-                    selectedAtMillis = now,
                 ),
             )
             true
         }
     }
 
+    @Suppress("UNUSED_PARAMETER")
     suspend fun importPersonal(
         outputId: String,
         manufacturer: String,
@@ -159,42 +147,71 @@ class SavedEqRepository(
             createdAtMillis = now,
             updatedAtMillis = now,
         )
-        database.withTransaction {
-            dao.upsert(entity)
-            dao.upsertSelection(
-                OutputSavedEqEntity(
-                    outputId = outputId,
-                    entryId = entity.entryId,
-                    selectedAtMillis = now,
-                ),
-            )
-        }
+        dao.upsert(entity)
         toDomain(entity)
     }
 
+    /**
+     * Saves a complete verified Black Pearl hardware EQ as an ordinary Personal EQ. Device identity
+     * is provenance only; the capture is not owned by Black Pearl and remains in My EQs regardless
+     * of the selected or connected destination.
+     */
+    suspend fun captureBlackPearlEq(
+        displayName: String,
+        snapshotBundle: HardwareEqSnapshotBundle,
+        association: SavedEqHeadphoneAssociation?,
+    ): SavedEqRecord = withContext(ioDispatcher) {
+        val name = displayName.trim()
+        require(name.isNotEmpty()) { "EQ name is required." }
+
+        val id = UUID.randomUUID().toString()
+        val draft = buildBlackPearlCapturedEqDraft(
+            captureId = id,
+            snapshotBundle = snapshotBundle,
+            association = association,
+        )
+        val now = nowMillis()
+        val entity = SavedEqEntity(
+            entryId = "personal:$id",
+            kind = KIND_PERSONAL,
+            sourceProfileId = null,
+            productId = draft.productId,
+            manufacturer = draft.manufacturer,
+            model = draft.model,
+            displayName = name,
+            profileJson = snapshotCodec.encode(draft.profile),
+            createdAtMillis = now,
+            updatedAtMillis = now,
+            captureMetadataJson = captureMetadataCodec.encode(draft.captureMetadata),
+        )
+        dao.upsert(entity)
+        toDomain(entity)
+    }
+
+    /** Removing from My EQs is global; old output memberships are cleared as migration debris. */
+    @Suppress("UNUSED_PARAMETER")
     suspend fun removeFromOutput(outputId: String, entryId: String) = withContext(ioDispatcher) {
         database.withTransaction {
-            dao.deleteSelection(outputId, entryId)
-            if (dao.selectionCount(entryId) == 0) dao.delete(entryId)
+            dao.deleteAllSelections(entryId)
+            dao.delete(entryId)
         }
     }
 
     fun toManagedHeadphone(record: SavedEqRecord): ManagedHeadphoneRecord {
         val fingerprint = snapshotCodec.fingerprint(record.profile)
+        val modelLabel = record.model.ifBlank { record.displayName }
+        val manufacturerLabel = record.manufacturer.ifBlank { "Personal EQ" }
         val presetName = ToneBoostersConverter.buildPresetName(
-            modelLabel = record.model,
+            modelLabel = modelLabel,
             creator = record.profile.author,
             details = record.displayName,
         )
-        // Keep the source profile available to text-device formatters even when UAPP cannot
-        // represent it. UAPP simply receives no XML candidate rather than preventing export to
-        // another compatible target.
         val uapp = runCatching { ToneBoostersConverter.convert(record.profile, presetName) }.getOrNull()
         return ManagedHeadphoneRecord(
             productId = record.productId,
-            vendorId = "saved-eq-vendor:${sha256(record.manufacturer)}",
-            vendorName = record.manufacturer,
-            productName = record.model,
+            vendorId = "saved-eq-vendor:${sha256(manufacturerLabel)}",
+            vendorName = manufacturerLabel,
+            productName = modelLabel,
             autoIncludeNewProfiles = false,
             createdAtMillis = record.createdAtMillis,
             updatedAtMillis = record.updatedAtMillis,
@@ -219,7 +236,7 @@ class SavedEqRepository(
         )
     }
 
-    private fun toDomain(entity: SavedEqEntity) = SavedEqRecord(
+    internal fun toDomain(entity: SavedEqEntity) = SavedEqRecord(
         entryId = entity.entryId,
         kind = when (entity.kind) {
             KIND_FAVORITE -> SavedEqKind.Favorite
@@ -234,11 +251,12 @@ class SavedEqRepository(
         profile = snapshotCodec.decode(entity.profileJson),
         createdAtMillis = entity.createdAtMillis,
         updatedAtMillis = entity.updatedAtMillis,
+        captureMetadata = entity.captureMetadataJson?.let(captureMetadataCodec::decode),
     )
 
     companion object {
-        private const val KIND_FAVORITE = "favorite"
-        private const val KIND_PERSONAL = "personal"
+        internal const val KIND_FAVORITE = "favorite"
+        internal const val KIND_PERSONAL = "personal"
         private val SUPPORTED_PERSONAL_TYPES = setOf(
             EqFilterType.PEAK,
             EqFilterType.LOW_SHELF,

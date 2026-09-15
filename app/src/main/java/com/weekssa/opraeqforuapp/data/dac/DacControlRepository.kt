@@ -1,0 +1,484 @@
+package com.weekssa.opraeqforuapp.data.dac
+
+import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceControlReadCodec
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceControls
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceQualificationSnapshot
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlProtocol
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlUsbAudioMode
+import com.weekssa.opraeqforuapp.domain.dac.DacControlId
+import com.weekssa.opraeqforuapp.domain.dac.DacControlValidation
+import com.weekssa.opraeqforuapp.domain.dac.DacControlValue
+import com.weekssa.opraeqforuapp.domain.dac.DacWriteIntent
+import com.weekssa.opraeqforuapp.domain.dac.validateForWrite
+import kotlinx.coroutines.delay
+
+interface BlackPearlDeviceControlReadSource {
+    val sessionGeneration: Long
+    fun isSessionCurrent(sessionGeneration: Long): Boolean
+    suspend fun readFirmwareVersion(): String?
+    suspend fun readFilterCode(): Int?
+    suspend fun readGainModeCode(): Int?
+    suspend fun readAmpTopologyCode(): Int?
+    suspend fun readMicGainDb(): Int?
+    suspend fun readLeftBalanceDb(): Int?
+    suspend fun readRightBalanceDb(): Int?
+    suspend fun readPlaybackGainRaw(): Int?
+    suspend fun readUsbAudioMode(): BlackPearlUsbAudioMode? = null
+    suspend fun writeFilterCode(value: Int): Boolean
+    suspend fun writeGainModeCode(value: Int): Boolean
+    suspend fun writeAmpTopologyCode(value: Int): Boolean
+    suspend fun writeMicGainDb(value: Int): Boolean
+    suspend fun writeBalanceDb(value: Int): Boolean
+    suspend fun writePlaybackGainRaw(value: Int): Boolean
+    suspend fun persistDeviceSettings(): Boolean
+}
+
+sealed interface BlackPearlQualificationReadResult {
+    data class Success(
+        val snapshot: BlackPearlDeviceQualificationSnapshot,
+    ) : BlackPearlQualificationReadResult
+
+    data object NotConnected : BlackPearlQualificationReadResult
+    data object SessionChanged : BlackPearlQualificationReadResult
+    data class ReadFailed(val field: String) : BlackPearlQualificationReadResult
+}
+
+sealed interface BlackPearlDeviceControlWriteResult {
+    data class Verified(
+        val controlId: DacControlId,
+        val requestedValue: DacControlValue,
+        val baseline: BlackPearlDeviceQualificationSnapshot,
+        val snapshot: BlackPearlDeviceQualificationSnapshot,
+    ) : BlackPearlDeviceControlWriteResult
+
+    data class InvalidRequest(
+        val controlId: DacControlId,
+        val validation: DacControlValidation?,
+    ) : BlackPearlDeviceControlWriteResult
+
+    data class NotConnected(val controlId: DacControlId) : BlackPearlDeviceControlWriteResult
+
+    data class StaleBaseline(
+        val controlId: DacControlId,
+        val expectedSessionGeneration: Long,
+        val actualSessionGeneration: Long,
+    ) : BlackPearlDeviceControlWriteResult
+
+    data class ReadFailed(
+        val controlId: DacControlId,
+        val field: String,
+    ) : BlackPearlDeviceControlWriteResult
+
+    data class TransferFailed(val controlId: DacControlId) : BlackPearlDeviceControlWriteResult
+
+    data class ReadbackMismatch(
+        val controlId: DacControlId,
+        val requestedValue: DacControlValue,
+        val actualValue: DacControlValue?,
+        val snapshot: BlackPearlDeviceQualificationSnapshot,
+    ) : BlackPearlDeviceControlWriteResult
+
+    data class UnrelatedStateChanged(
+        val controlId: DacControlId,
+        val changedFields: List<String>,
+        val snapshot: BlackPearlDeviceQualificationSnapshot,
+    ) : BlackPearlDeviceControlWriteResult
+}
+
+/**
+ * Device-control boundary kept separate from HardwareEqRepository.
+ *
+ * All operations run through the physical-session gate. Production injects the gate owned by
+ * [DacSessionRepository], which prevents DEVICE reads/writes from interleaving with EQ transactions
+ * on the same Black Pearl. Tests use an isolated mutex gate by default.
+ */
+class DacControlRepository(
+    private val blackPearlSource: BlackPearlDeviceControlReadSource,
+    private val operationGate: DacOperationGate = MutexDacOperationGate(),
+) {
+    suspend fun readBlackPearlQualificationSnapshot(): BlackPearlQualificationReadResult =
+        operationGate.withExclusiveOperation { readBlackPearlQualificationSnapshotUnlocked() }
+
+    suspend fun writeBlackPearlControl(intent: DacWriteIntent): BlackPearlDeviceControlWriteResult =
+        operationGate.withExclusiveOperation {
+            val descriptor = BlackPearlDeviceControls.descriptor(intent.controlId)
+                ?: return@withExclusiveOperation BlackPearlDeviceControlWriteResult.InvalidRequest(
+                    controlId = intent.controlId,
+                    validation = null,
+                )
+            val validation = descriptor.validateForWrite(intent.requestedValue)
+            if (validation !is DacControlValidation.Valid &&
+                validation !is DacControlValidation.CautionOutsideNormalRange
+            ) {
+                return@withExclusiveOperation BlackPearlDeviceControlWriteResult.InvalidRequest(intent.controlId, validation)
+            }
+
+            val generation = blackPearlSource.sessionGeneration
+            if (generation <= 0L || !blackPearlSource.isSessionCurrent(generation)) {
+                return@withExclusiveOperation BlackPearlDeviceControlWriteResult.NotConnected(intent.controlId)
+            }
+            if (generation != intent.expectedSessionGeneration) {
+                return@withExclusiveOperation BlackPearlDeviceControlWriteResult.StaleBaseline(
+                    controlId = intent.controlId,
+                    expectedSessionGeneration = intent.expectedSessionGeneration,
+                    actualSessionGeneration = generation,
+                )
+            }
+
+            val baseline = when (val read = readBlackPearlQualificationSnapshotUnlocked()) {
+                is BlackPearlQualificationReadResult.Success -> read.snapshot
+                is BlackPearlQualificationReadResult.NotConnected ->
+                    return@withExclusiveOperation BlackPearlDeviceControlWriteResult.NotConnected(intent.controlId)
+                is BlackPearlQualificationReadResult.SessionChanged ->
+                    return@withExclusiveOperation BlackPearlDeviceControlWriteResult.StaleBaseline(
+                        intent.controlId,
+                        intent.expectedSessionGeneration,
+                        blackPearlSource.sessionGeneration,
+                    )
+                is BlackPearlQualificationReadResult.ReadFailed ->
+                    return@withExclusiveOperation BlackPearlDeviceControlWriteResult.ReadFailed(intent.controlId, read.field)
+            }
+
+            if (baseline.sessionGeneration != intent.expectedSessionGeneration) {
+                return@withExclusiveOperation BlackPearlDeviceControlWriteResult.StaleBaseline(
+                    intent.controlId,
+                    intent.expectedSessionGeneration,
+                    baseline.sessionGeneration,
+                )
+            }
+
+            val baselineValue = BlackPearlDeviceControls.valueFromSnapshot(intent.controlId, baseline)
+            if (baselineValue == intent.requestedValue) {
+                return@withExclusiveOperation BlackPearlDeviceControlWriteResult.Verified(
+                    intent.controlId,
+                    intent.requestedValue,
+                    baseline,
+                    baseline,
+                )
+            }
+
+            if (!writeTarget(intent.controlId, intent.requestedValue)) {
+                return@withExclusiveOperation if (blackPearlSource.isSessionCurrent(generation)) {
+                    BlackPearlDeviceControlWriteResult.TransferFailed(intent.controlId)
+                } else {
+                    BlackPearlDeviceControlWriteResult.StaleBaseline(
+                        intent.controlId,
+                        intent.expectedSessionGeneration,
+                        blackPearlSource.sessionGeneration,
+                    )
+                }
+            }
+            if (!blackPearlSource.isSessionCurrent(generation)) {
+                return@withExclusiveOperation BlackPearlDeviceControlWriteResult.StaleBaseline(
+                    intent.controlId,
+                    intent.expectedSessionGeneration,
+                    blackPearlSource.sessionGeneration,
+                )
+            }
+
+            // Verify that the one requested target write has actually taken effect before saving it.
+            // This is especially important for controls whose live readback settles asynchronously:
+            // we never persist a value merely because the USB transfer itself returned success.
+            val liveVerification = verifyBlackPearlReadbackAfterWrite(
+                intent = intent,
+                baseline = baseline,
+                generation = generation,
+                allowSettling = true,
+            )
+            if (liveVerification !is BlackPearlDeviceControlWriteResult.Verified) {
+                return@withExclusiveOperation liveVerification
+            }
+            if (!blackPearlSource.isSessionCurrent(generation)) {
+                return@withExclusiveOperation BlackPearlDeviceControlWriteResult.StaleBaseline(
+                    intent.controlId,
+                    intent.expectedSessionGeneration,
+                    blackPearlSource.sessionGeneration,
+                )
+            }
+
+            // Black Pearl normal controls are volatile until the established device save command is
+            // issued. Persist exactly once only after the requested state has been verified live.
+            // This is not a write retry: a failed save is surfaced as failure and requires a fresh
+            // read before another user-requested attempt.
+            if (!blackPearlSource.persistDeviceSettings()) {
+                return@withExclusiveOperation if (blackPearlSource.isSessionCurrent(generation)) {
+                    BlackPearlDeviceControlWriteResult.TransferFailed(intent.controlId)
+                } else {
+                    BlackPearlDeviceControlWriteResult.StaleBaseline(
+                        intent.controlId,
+                        intent.expectedSessionGeneration,
+                        blackPearlSource.sessionGeneration,
+                    )
+                }
+            }
+            if (!blackPearlSource.isSessionCurrent(generation)) {
+                return@withExclusiveOperation BlackPearlDeviceControlWriteResult.StaleBaseline(
+                    intent.controlId,
+                    intent.expectedSessionGeneration,
+                    blackPearlSource.sessionGeneration,
+                )
+            }
+
+            // The save command has its own transport settle period. Read the complete state one more
+            // time and require the target plus every unrelated field to remain correct after saving.
+            verifyBlackPearlReadbackAfterWrite(
+                intent = intent,
+                baseline = baseline,
+                generation = generation,
+                allowSettling = false,
+            )
+        }
+
+    /**
+     * DAC-filter behavior uses one complete readback. Other normal DEVICE controls may use a bounded
+     * same-session settling window because physical testing showed that amplifier/output state can
+     * become visible only after the immediate readback. Settling is read-only: the requested hardware
+     * write is never resent, and a session replacement, read failure, unrelated-state mutation, or
+     * final mismatch remains a visible failure. Post-persistence verification disables settling and
+     * performs one complete fresh read after the save command's transport settle period.
+     */
+    private suspend fun verifyBlackPearlReadbackAfterWrite(
+        intent: DacWriteIntent,
+        baseline: BlackPearlDeviceQualificationSnapshot,
+        generation: Long,
+        allowSettling: Boolean,
+    ): BlackPearlDeviceControlWriteResult {
+        val settlingControl = allowSettling && intent.controlId != BlackPearlDeviceControls.DAC_FILTER
+        val attempts = if (settlingControl) CANDIDATE_READBACK_ATTEMPTS else 1
+        if (settlingControl) {
+            delay(CANDIDATE_INITIAL_SETTLE_MILLIS)
+        }
+
+        var lastSnapshot: BlackPearlDeviceQualificationSnapshot? = null
+        var lastActualValue: DacControlValue? = null
+
+        for (attempt in 0 until attempts) {
+            if (!blackPearlSource.isSessionCurrent(generation)) {
+                return BlackPearlDeviceControlWriteResult.StaleBaseline(
+                    intent.controlId,
+                    intent.expectedSessionGeneration,
+                    blackPearlSource.sessionGeneration,
+                )
+            }
+
+            val readback = when (val read = readBlackPearlQualificationSnapshotUnlocked()) {
+                is BlackPearlQualificationReadResult.Success -> read.snapshot
+                is BlackPearlQualificationReadResult.NotConnected ->
+                    return BlackPearlDeviceControlWriteResult.NotConnected(intent.controlId)
+                is BlackPearlQualificationReadResult.SessionChanged ->
+                    return BlackPearlDeviceControlWriteResult.StaleBaseline(
+                        intent.controlId,
+                        intent.expectedSessionGeneration,
+                        blackPearlSource.sessionGeneration,
+                    )
+                is BlackPearlQualificationReadResult.ReadFailed ->
+                    return BlackPearlDeviceControlWriteResult.ReadFailed(intent.controlId, read.field)
+            }
+
+            val unrelatedChanges = unrelatedChangedFields(intent.controlId, baseline, readback)
+            if (unrelatedChanges.isNotEmpty()) {
+                return BlackPearlDeviceControlWriteResult.UnrelatedStateChanged(
+                    controlId = intent.controlId,
+                    changedFields = unrelatedChanges,
+                    snapshot = readback,
+                )
+            }
+
+            val actualValue = BlackPearlDeviceControls.valueFromSnapshot(intent.controlId, readback)
+            if (actualValue == intent.requestedValue) {
+                return BlackPearlDeviceControlWriteResult.Verified(
+                    controlId = intent.controlId,
+                    requestedValue = intent.requestedValue,
+                    baseline = baseline,
+                    snapshot = readback,
+                )
+            }
+
+            lastSnapshot = readback
+            lastActualValue = actualValue
+            if (attempt < attempts - 1) {
+                delay(CANDIDATE_RETRY_SETTLE_MILLIS)
+            }
+        }
+
+        return BlackPearlDeviceControlWriteResult.ReadbackMismatch(
+            controlId = intent.controlId,
+            requestedValue = intent.requestedValue,
+            actualValue = lastActualValue,
+            snapshot = checkNotNull(lastSnapshot) { "At least one Black Pearl readback attempt is required." },
+        )
+    }
+
+    private suspend fun readBlackPearlQualificationSnapshotUnlocked(): BlackPearlQualificationReadResult {
+        val generation = blackPearlSource.sessionGeneration
+        if (generation <= 0L || !blackPearlSource.isSessionCurrent(generation)) {
+            return BlackPearlQualificationReadResult.NotConnected
+        }
+
+        suspend fun <T> read(field: String, block: suspend () -> T?): T? {
+            if (!blackPearlSource.isSessionCurrent(generation)) return null
+            return block()?.takeIf { blackPearlSource.isSessionCurrent(generation) }
+        }
+
+        val firmwareVersion = read("firmware version", blackPearlSource::readFirmwareVersion)
+            ?: return failedOrChanged(generation, "firmware version")
+        val filter = read("DAC filter", blackPearlSource::readFilterCode)
+            ?: return failedOrChanged(generation, "DAC filter")
+        val gainMode = read("gain mode", blackPearlSource::readGainModeCode)
+            ?: return failedOrChanged(generation, "gain mode")
+        val topology = read("amp topology", blackPearlSource::readAmpTopologyCode)
+            ?: return failedOrChanged(generation, "amp topology")
+        val micGain = read("mic gain", blackPearlSource::readMicGainDb)
+            ?: return failedOrChanged(generation, "mic gain")
+        val leftBalance = read("left balance", blackPearlSource::readLeftBalanceDb)
+            ?: return failedOrChanged(generation, "left balance")
+        val rightBalance = read("right balance", blackPearlSource::readRightBalanceDb)
+            ?: return failedOrChanged(generation, "right balance")
+        val playbackGain = read("playback gain", blackPearlSource::readPlaybackGainRaw)
+            ?: return failedOrChanged(generation, "playback gain")
+        val usbAudioMode = if (blackPearlSource.isSessionCurrent(generation)) {
+            blackPearlSource.readUsbAudioMode()?.takeIf { blackPearlSource.isSessionCurrent(generation) }
+        } else {
+            null
+        }
+
+        if (!blackPearlSource.isSessionCurrent(generation)) {
+            return BlackPearlQualificationReadResult.SessionChanged
+        }
+        return BlackPearlQualificationReadResult.Success(
+            BlackPearlDeviceQualificationSnapshot(
+                sessionGeneration = generation,
+                firmwareVersion = firmwareVersion,
+                filterCode = filter,
+                gainModeCode = gainMode,
+                ampTopologyCode = topology,
+                micGainDb = micGain,
+                leftBalanceDb = leftBalance,
+                rightBalanceDb = rightBalance,
+                playbackGainRaw = playbackGain,
+                usbAudioMode = usbAudioMode,
+            ),
+        )
+    }
+
+    private suspend fun writeTarget(controlId: DacControlId, value: DacControlValue): Boolean = when (controlId) {
+        BlackPearlDeviceControls.DAC_FILTER -> {
+            val valueId = (value as? DacControlValue.Discrete)?.valueId ?: return false
+            blackPearlSource.writeFilterCode(BlackPearlDeviceControls.filterCode(valueId) ?: return false)
+        }
+        BlackPearlDeviceControls.GAIN_MODE -> {
+            val valueId = (value as? DacControlValue.Discrete)?.valueId ?: return false
+            blackPearlSource.writeGainModeCode(BlackPearlDeviceControls.gainModeCode(valueId) ?: return false)
+        }
+        BlackPearlDeviceControls.AMP_TOPOLOGY -> {
+            val valueId = (value as? DacControlValue.Discrete)?.valueId ?: return false
+            blackPearlSource.writeAmpTopologyCode(BlackPearlDeviceControls.ampTopologyCode(valueId) ?: return false)
+        }
+        BlackPearlDeviceControls.BALANCE_DB -> {
+            val requested = (value as? DacControlValue.Numeric)?.value ?: return false
+            blackPearlSource.writeBalanceDb(requested.toInt())
+        }
+        BlackPearlDeviceControls.MIC_GAIN_DB -> {
+            val requested = (value as? DacControlValue.Numeric)?.value ?: return false
+            blackPearlSource.writeMicGainDb(requested.toInt())
+        }
+        BlackPearlDeviceControls.PLAYBACK_GAIN_DB -> {
+            val requested = (value as? DacControlValue.Numeric)?.value ?: return false
+            blackPearlSource.writePlaybackGainRaw(BlackPearlDeviceControls.playbackGainRaw(requested) ?: return false)
+        }
+        else -> false
+    }
+
+    private fun unrelatedChangedFields(
+        controlId: DacControlId,
+        before: BlackPearlDeviceQualificationSnapshot,
+        after: BlackPearlDeviceQualificationSnapshot,
+    ): List<String> = buildList {
+        if (before.firmwareVersion != after.firmwareVersion) add("firmware version")
+        if (controlId != BlackPearlDeviceControls.DAC_FILTER && before.filterCode != after.filterCode) add("DAC filter")
+        if (controlId != BlackPearlDeviceControls.GAIN_MODE && before.gainModeCode != after.gainModeCode) add("gain mode")
+        if (controlId != BlackPearlDeviceControls.AMP_TOPOLOGY && before.ampTopologyCode != after.ampTopologyCode) add("amp topology")
+        if (controlId != BlackPearlDeviceControls.MIC_GAIN_DB && before.micGainDb != after.micGainDb) add("mic gain")
+        if (controlId != BlackPearlDeviceControls.BALANCE_DB &&
+            (before.leftBalanceDb != after.leftBalanceDb || before.rightBalanceDb != after.rightBalanceDb)
+        ) add("balance")
+        if (controlId != BlackPearlDeviceControls.PLAYBACK_GAIN_DB && before.playbackGainRaw != after.playbackGainRaw) {
+            add("playback gain")
+        }
+        if (before.usbAudioMode != null && after.usbAudioMode != null && before.usbAudioMode != after.usbAudioMode) {
+            add("USB audio mode")
+        }
+    }
+
+    private fun failedOrChanged(
+        generation: Long,
+        field: String,
+    ): BlackPearlQualificationReadResult =
+        if (blackPearlSource.isSessionCurrent(generation)) {
+            BlackPearlQualificationReadResult.ReadFailed(field)
+        } else {
+            BlackPearlQualificationReadResult.SessionChanged
+        }
+
+    private companion object {
+        const val CANDIDATE_READBACK_ATTEMPTS = 4
+        const val CANDIDATE_INITIAL_SETTLE_MILLIS = 250L
+        const val CANDIDATE_RETRY_SETTLE_MILLIS = 250L
+    }
+}
+
+class SessionBlackPearlDeviceControlReadSource(
+    private val sessions: DacSessionRepository,
+) : BlackPearlDeviceControlReadSource {
+    override val sessionGeneration: Long
+        get() = sessions.blackPearlTransport.sessionGeneration
+
+    override fun isSessionCurrent(sessionGeneration: Long): Boolean =
+        sessions.blackPearlConnectionState.value is BlackPearlConnectionState.Connected &&
+            sessions.isBlackPearlSessionCurrent(sessionGeneration)
+
+    override suspend fun readFirmwareVersion(): String? =
+        sessions.blackPearlTransport.readDeviceFirmwareVersion()
+
+    override suspend fun readFilterCode(): Int? = sessions.blackPearlTransport.readDeviceFilterCode()
+    override suspend fun readGainModeCode(): Int? = sessions.blackPearlTransport.readDeviceGainModeCode()
+    override suspend fun readAmpTopologyCode(): Int? = sessions.blackPearlTransport.readDeviceAmpTopologyCode()
+    override suspend fun readMicGainDb(): Int? = sessions.blackPearlTransport.readDeviceMicGainDb()
+    override suspend fun readLeftBalanceDb(): Int? = sessions.blackPearlTransport.readDeviceLeftBalanceDb()
+    override suspend fun readRightBalanceDb(): Int? = sessions.blackPearlTransport.readDeviceRightBalanceDb()
+    override suspend fun readPlaybackGainRaw(): Int? = sessions.blackPearlTransport.readGlobalGainRaw()
+    override suspend fun readUsbAudioMode(): BlackPearlUsbAudioMode? = sessions.blackPearlTransport.readUsbAudioMode()
+
+    override suspend fun writeFilterCode(value: Int): Boolean =
+        sessions.blackPearlTransport.sendReport(BlackPearlDeviceControlReadCodec.filterWriteReport(value))
+
+    override suspend fun writeGainModeCode(value: Int): Boolean =
+        sessions.blackPearlTransport.sendReport(BlackPearlDeviceControlReadCodec.gainModeWriteReport(value))
+
+    override suspend fun writeAmpTopologyCode(value: Int): Boolean =
+        sessions.blackPearlTransport.sendReport(BlackPearlDeviceControlReadCodec.ampTopologyWriteReport(value))
+
+    override suspend fun writeMicGainDb(value: Int): Boolean =
+        sessions.blackPearlTransport.sendReport(BlackPearlDeviceControlReadCodec.micGainWriteReport(value)) &&
+            sessions.blackPearlTransport.sendReport(BlackPearlProtocol.latchReport())
+
+    override suspend fun writeBalanceDb(value: Int): Boolean {
+        val reports = BlackPearlDeviceControlReadCodec.balanceWriteReports(value)
+        if (!sessions.blackPearlTransport.sendReport(reports[0])) return false
+        delay(BALANCE_SIDE_SETTLE_MILLIS)
+        if (!sessions.blackPearlTransport.sendReport(reports[1])) return false
+        return sessions.blackPearlTransport.sendReport(BlackPearlProtocol.latchReport())
+    }
+
+    override suspend fun writePlaybackGainRaw(value: Int): Boolean =
+        sessions.blackPearlTransport.sendReport(BlackPearlProtocol.writeGlobalGainReport(value)) &&
+            sessions.blackPearlTransport.sendReport(BlackPearlProtocol.latchReport())
+
+    override suspend fun persistDeviceSettings(): Boolean =
+        sessions.blackPearlTransport.sendReport(BlackPearlProtocol.flashReport())
+
+    private companion object {
+        const val BALANCE_SIDE_SETTLE_MILLIS = 50L
+    }
+}

@@ -13,8 +13,12 @@ import android.hardware.usb.UsbInterface
 import android.hardware.usb.UsbManager
 import android.os.Build
 import androidx.core.content.ContextCompat
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceControlReadCodec
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlProtocol
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlReadCodec
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlTransport
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlUsbAudioDescriptorParser
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlUsbAudioMode
 import java.io.Closeable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -44,10 +48,18 @@ class AndroidBlackPearlUsbTransport(
     private val usbMutex = Mutex()
     private val mutableState = MutableStateFlow<BlackPearlConnectionState>(BlackPearlConnectionState.Disconnected)
     val state: StateFlow<BlackPearlConnectionState> = mutableState.asStateFlow()
+    private val mutablePresent = MutableStateFlow(false)
+    val present: StateFlow<Boolean> = mutablePresent.asStateFlow()
 
     @Volatile
     private var session: UsbSession? = null
+    @Volatile
+    private var currentSessionGeneration: Long = 0L
+    private var lastSessionGeneration: Long = 0L
     private var receiverRegistered = false
+
+    val sessionGeneration: Long
+        get() = currentSessionGeneration
 
     private val permissionAction = "${appContext.packageName}.BLACK_PEARL_USB_PERMISSION"
 
@@ -66,10 +78,12 @@ class AndroidBlackPearlUsbTransport(
                     }
                 }
                 UsbManager.ACTION_USB_DEVICE_DETACHED -> {
+                    mutablePresent.value = false
                     closeSession()
                     mutableState.value = BlackPearlConnectionState.Disconnected
                 }
                 UsbManager.ACTION_USB_DEVICE_ATTACHED -> {
+                    mutablePresent.value = true
                     if (mutableState.value is BlackPearlConnectionState.Connecting && usbManager.hasPermission(device)) {
                         openAsync(device)
                     }
@@ -80,16 +94,19 @@ class AndroidBlackPearlUsbTransport(
 
     init {
         registerReceiver()
+        mutablePresent.value = findDevice() != null
     }
 
     fun connect() {
         val device = findDevice()
         if (device == null) {
+            mutablePresent.value = false
             mutableState.value = BlackPearlConnectionState.Error(
                 "TRN Black Pearl not detected. Connect the DAC by USB and try again.",
             )
             return
         }
+        mutablePresent.value = true
         if (session != null) {
             mutableState.value = BlackPearlConnectionState.Connected
             return
@@ -125,6 +142,62 @@ class AndroidBlackPearlUsbTransport(
         parser = BlackPearlProtocol::globalGainRawFromResponse,
     )
 
+    override suspend fun readNativeBand(index: Int): BlackPearlReadCodec.NativeBand? = readParsedResponse(
+        request = BlackPearlProtocol.readBandReport(index),
+        parser = BlackPearlReadCodec::bandFromResponse,
+    )
+
+    suspend fun readDeviceFirmwareVersion(): String? = readParsedResponse(
+        request = BlackPearlDeviceControlReadCodec.firmwareVersionRequest(),
+        parser = BlackPearlDeviceControlReadCodec::firmwareVersionFromResponse,
+    )
+
+    suspend fun readDeviceFilterCode(): Int? = readParsedResponse(
+        request = BlackPearlDeviceControlReadCodec.filterRequest(),
+        parser = BlackPearlDeviceControlReadCodec::filterFromResponse,
+    )
+
+    suspend fun readDeviceGainModeCode(): Int? = readParsedResponse(
+        request = BlackPearlDeviceControlReadCodec.gainModeRequest(),
+        parser = BlackPearlDeviceControlReadCodec::gainModeFromResponse,
+    )
+
+    suspend fun readDeviceAmpTopologyCode(): Int? = readParsedResponse(
+        request = BlackPearlDeviceControlReadCodec.ampTopologyRequest(),
+        parser = BlackPearlDeviceControlReadCodec::ampTopologyFromResponse,
+    )
+
+    suspend fun readDeviceMicGainDb(): Int? = readParsedResponse(
+        request = BlackPearlDeviceControlReadCodec.micGainRequest(),
+        parser = BlackPearlDeviceControlReadCodec::micGainDbFromResponse,
+    )
+
+    suspend fun readDeviceLeftBalanceDb(): Int? = readParsedResponse(
+        request = BlackPearlDeviceControlReadCodec.balanceLeftRequest(),
+        parser = BlackPearlDeviceControlReadCodec::leftBalanceDbFromResponse,
+    )
+
+    suspend fun readDeviceRightBalanceDb(): Int? = readParsedResponse(
+        request = BlackPearlDeviceControlReadCodec.balanceRightRequest(),
+        parser = BlackPearlDeviceControlReadCodec::rightBalanceDbFromResponse,
+    )
+
+    /**
+     * Reads the currently enumerated USB Audio Class revision from standard USB descriptors.
+     * This intentionally does not issue a vendor HID command: no exact Black Pearl software UAC
+     * switch/read register has been independently established yet.
+     */
+    suspend fun readUsbAudioMode(): BlackPearlUsbAudioMode? = usbMutex.withLock {
+        val current = session ?: return@withLock null
+        val rawDescriptors = runCatching { current.connection.rawDescriptors }.getOrNull()
+            ?: return@withLock null
+        BlackPearlUsbAudioDescriptorParser.parse(rawDescriptors)
+    }
+
+    /**
+     * All Black Pearl USB traffic is serialized by [usbMutex]. A timed-out nondestructive READ may
+     * be reissued once in the same session; setting writes are never retried here or elsewhere.
+     */
     private suspend fun <T> readParsedResponse(
         request: ByteArray,
         parser: (ByteArray) -> T?,
@@ -132,22 +205,31 @@ class AndroidBlackPearlUsbTransport(
         val current = session ?: return@withLock null
         val endpoint = current.endpointIn ?: return@withLock null
 
-        val drain = ByteArray(BlackPearlProtocol.REPORT_SIZE)
-        repeat(8) {
-            if (current.connection.bulkTransfer(endpoint, drain, drain.size, 2) <= 0) return@repeat
+        suspend fun attemptRead(): T? {
+            val drain = ByteArray(BlackPearlProtocol.REPORT_SIZE)
+            repeat(8) {
+                if (current.connection.bulkTransfer(endpoint, drain, drain.size, 2) <= 0) return@repeat
+            }
+
+            if (!sendControlReport(current, request)) return null
+            val deadline = System.currentTimeMillis() + READ_TIMEOUT_MILLIS
+            val response = ByteArray(BlackPearlProtocol.REPORT_SIZE)
+            while (System.currentTimeMillis() < deadline) {
+                val read = current.connection.bulkTransfer(endpoint, response, response.size, READ_POLL_MILLIS)
+                if (read > 0) {
+                    parser(response)?.let { return it }
+                }
+                delay(READ_RETRY_DELAY_MILLIS)
+            }
+            return null
         }
 
-        if (!sendControlReport(current, request)) return@withLock null
-        val deadline = System.currentTimeMillis() + READ_TIMEOUT_MILLIS
-        val response = ByteArray(BlackPearlProtocol.REPORT_SIZE)
-        while (System.currentTimeMillis() < deadline) {
-            val read = current.connection.bulkTransfer(endpoint, response, response.size, READ_POLL_MILLIS)
-            if (read > 0) {
-                parser(response)?.let { return@withLock it }
-            }
-            delay(READ_RETRY_DELAY_MILLIS)
-        }
-        null
+        retryBlackPearlRead(
+            maxAttempts = READ_REQUEST_ATTEMPTS,
+            retryDelayMillis = READ_REQUEST_RETRY_DELAY_MILLIS,
+            isSessionCurrent = { session === current },
+            attempt = ::attemptRead,
+        )
     }
 
     override suspend fun sendReport(report: ByteArray): Boolean = usbMutex.withLock {
@@ -206,6 +288,8 @@ class AndroidBlackPearlUsbTransport(
                     return@withLock
                 }
                 session = UsbSession(connection, usbInterface, endpointIn)
+                lastSessionGeneration = nextSessionGeneration(lastSessionGeneration)
+                currentSessionGeneration = lastSessionGeneration
                 mutableState.value = BlackPearlConnectionState.Connected
             }
         }
@@ -217,9 +301,12 @@ class AndroidBlackPearlUsbTransport(
             if (mutableState.value !is BlackPearlConnectionState.Connecting) return@launch
             val device = findDevice()
             when {
-                device == null -> mutableState.value = BlackPearlConnectionState.Error(
-                    "TRN Black Pearl disconnected while Android was requesting USB permission.",
-                )
+                device == null -> {
+                    mutablePresent.value = false
+                    mutableState.value = BlackPearlConnectionState.Error(
+                        "TRN Black Pearl disconnected while Android was requesting USB permission.",
+                    )
+                }
                 usbManager.hasPermission(device) -> openAsync(device)
                 else -> mutableState.value = BlackPearlConnectionState.Error(
                     "USB permission request timed out. Disconnect and reconnect the Black Pearl, then try again.",
@@ -273,6 +360,7 @@ class AndroidBlackPearlUsbTransport(
     private fun closeSessionLocked() {
         val current = session ?: return
         session = null
+        currentSessionGeneration = 0L
         runCatching { current.connection.releaseInterface(current.usbInterface) }
         runCatching { current.connection.close() }
     }
@@ -310,9 +398,14 @@ class AndroidBlackPearlUsbTransport(
         private const val READ_TIMEOUT_MILLIS = 500L
         private const val READ_POLL_MILLIS = 60
         private const val READ_RETRY_DELAY_MILLIS = 5L
+        private const val READ_REQUEST_ATTEMPTS = 2
+        private const val READ_REQUEST_RETRY_DELAY_MILLIS = 20L
         private const val PEQ_WRITE_SETTLE_MILLIS = 100L
         private const val FLASH_SETTLE_MILLIS = 300L
         private const val COMMAND_SETTLE_MILLIS = 20L
         private const val PERMISSION_RESPONSE_TIMEOUT_MILLIS = 10_000L
+
+        private fun nextSessionGeneration(previous: Long): Long =
+            if (previous == Long.MAX_VALUE) 1L else previous + 1L
     }
 }
