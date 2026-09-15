@@ -432,3 +432,6 @@ Automated gates protect both canonical and target-specific behavior:
 Physical device support requires the exact signed candidate plus Pixel 9 hands-on checklist. A behavior-affecting change after a hardware PASS invalidates that candidate for the affected hardware.
 
 Documentation/library-ownership changes that do not alter qualified hardware session ownership, read timing, write sequencing, persistence, verification, or transport behavior do not invalidate the previously pinned hardware evidence for those unchanged transactions.
+## 2026-09-15 corrective checkpoint
+
+The owner-reported `431cbfa` test failed Restore defaults (premature stop at 0%) and page-density review. The current corrective work and genuine-failure policy are maintained at `docs/V0.6_MY_DAC_STATUS.md`. Restore completion is tied to the exact write cycle and original USB session; all final targets must match. No failed setting is automatically retried. Managed detail and General EQ headers/actions are compact and scrollable. A new exact signed beta needs focused physical review; historical PASS pins do not qualify these corrections. PR #16 remains open/draft and v0.5.0 remains public.

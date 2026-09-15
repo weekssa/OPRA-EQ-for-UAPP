@@ -13,7 +13,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Black Pearl **Restore defaults** using the physically qualified EQ Library-owned preset: 50% volume, FAST-LL, HIGH gain, CLASS AB, centered balance, and microphone gain 0 dB, with an optional OFF-by-default **Also reset EQ to flat** action. The preset is not presented as verified TRN factory state.
 - Capability-driven FiiO JA11 My DAC/session integration while preserving its independently established native device semantics; exact physical JA11 qualification remains pending.
 - Persistent **Needs attention** recovery for exact app-owned/persisted-access preset artifacts that no longer have a confident current My EQ association. Strict recovery preserves supported PEQ values and original-file provenance, requires user-supplied missing headphone/name identity, and never scans arbitrary external storage.
-- A design-only premium v0.6 UX audit/blueprint covering Apple, Material 3, a combined native-Android direction, information hierarchy, navigation, top bars, settings/list anatomy, spacing, typography, icons, feedback, and accessibility. Major visual implementation remains approval-gated.
+- An owner-approved premium v0.6 UX audit/blueprint covering Apple, Material 3, a combined native-Android direction, information hierarchy, navigation, top bars, settings/list anatomy, spacing, typography, icons, feedback, and accessibility. Implementation is approved; the latest corrective beta awaits physical review.
 - Scheduled public GitHub/Gist community ingestion now takes discovered headphone PEQ through exact source retrieval, strict PEQ parsing, canonical headphone identity, creator/source provenance, acoustic dedupe, living-archive validation, and Unverified publication instead of leaving mechanically valid community data indefinitely review-only.
 - Community-ingestion reports record fetched/parsed/published/deduplicated/quarantined counts and machine-readable quarantine reasons; one malformed or ambiguous record cannot block unrelated valid candidates.
 - Broad General GitHub discovery is actively audited for exact parametric structure. Fixed/graphic-EQ data without source-provided Q/filter types is rejected rather than converted by invention.
@@ -40,6 +40,9 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Reddit remains paused; no anonymous Reddit scanning, scraping, circumvention, or manual-currentness substitute was introduced.
 
 ### Fixed
+
+- Black Pearl Restore defaults waits for its exact verified write cycle rather than aborting on an older screen snapshot, checks the original USB session and all final values, and explains retained safety volume on genuine failure. No automatic write retry or speculative recovery command is introduced; physical retest is pending.
+- Managed-headphone details and General EQs use compact, scrollable headers and wrapping actions; notification/removal options and explanatory help move out of the main content area.
 
 - Removed the final save-to-auto-export coupling from General EQ batch Save.
 - Changing the active target no longer clears the currently open managed-headphone detail or drives selection reconciliation.
