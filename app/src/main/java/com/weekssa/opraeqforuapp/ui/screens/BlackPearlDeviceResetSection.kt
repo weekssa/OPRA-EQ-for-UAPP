@@ -113,7 +113,7 @@ internal fun BlackPearlDeviceResetSection(
 
         val snapshot = state.snapshot
         if (state.error != null || snapshot == null || !state.isCurrentSession) {
-            val safetyNote = if (resetStepIndex > 0) {
+            val safetyNote = if (issuedStepIndex >= 0) {
                 " Volume may remain at the 0% safety level; refresh the device state before retrying."
             } else {
                 ""
