@@ -23,9 +23,9 @@ The public v0.5.0 APK is `EQ-Library-v0.5.0.apk`. Its SHA-256 is:
 
 Android may ask you to allow installation from the browser or file manager used to open the APK because GitHub Releases are installed outside an app store. EQ Library itself does not request package-install permission and never silently installs updates.
 
-## v0.6 development preview
+## v0.6.0 release candidate
 
-The current `v0.6-my-dac` development branch is expanding EQ Library with **My DAC** while preserving the source-independent library model. It is not the public release yet.
+The `v0.6-my-dac` branch contains the release candidate for EQ Library v0.6.0. The exact signed candidate passed the focused Pixel 9 Black Pearl/UI smoke test; public publication is being completed from the validated source.
 
 The approved v0.6 direction includes:
 
@@ -33,13 +33,14 @@ The approved v0.6 direction includes:
 - automatic fresh EQ + supported DEVICE reads after connection/reconnection and after verified hardware changes;
 - Flash from the EQ's existing My EQs / EQ Library surface rather than a duplicate My DAC chooser;
 - one concise DEVICE settings surface with current verified values and direct row-level editing;
+- stable DEVICE connection context with shared bottom operation feedback for Applying, verification/reconnect, success, and recoverable failure;
 - Black Pearl **Restore defaults** using the qualified EQ Library-owned preset: 50% volume, FAST-LL, HIGH, CLASS AB, centered balance, and microphone gain 0 dB, with optional EQ reset to flat;
 - a single **device-agnostic My EQs** library whose saved headphones/EQs do not change when the output target changes;
 - Save/Add separated from **Export** and **Flash**—saving changes local library state only;
 - persistent **Needs attention** recovery for exact app-owned preset artifacts that can no longer be confidently associated with a current My EQ item;
 - conservative recovery into Personal EQs without scanning or deleting arbitrary external files.
 
-TRN Black Pearl automatic physical reattach and the EQ Library Restore-defaults behavior have both passed maintained focused Pixel 9 testing on their exact signed evidence candidates. Restore defaults is deliberately an **EQ Library preset**, not a claim about TRN factory defaults. FiiO/JadeAudio JA11 physical qualification remains pending. See the v0.6 status/checklist documents for exact evidence categories and release gates.
+TRN Black Pearl automatic physical reattach, Restore defaults, and the final DEVICE feedback/layout flow have passed maintained focused Pixel 9 testing on exact signed evidence candidates. Restore defaults is deliberately an **EQ Library preset**, not a claim about TRN factory defaults. FiiO/JadeAudio JA11 physical qualification is deferred and does not block this release. See the v0.6 status/checklist documents for exact evidence categories and release gates.
 
 ## What you can do
 
