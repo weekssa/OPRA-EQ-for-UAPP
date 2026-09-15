@@ -98,6 +98,7 @@ fun MyDacScreen(
     onReadBlackPearlQualification: () -> Unit,
     onSetBlackPearlDeviceControl: (DacControlId, DacControlValue) -> Unit,
     onMessage: (String) -> Unit,
+    onOperationStatus: (String, Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -323,6 +324,7 @@ fun MyDacScreen(
                         onSetDeviceControl = onSetBlackPearlDeviceControl,
                         onResetEqToFlat = onResetBlackPearlFromMyDac,
                         onMessage = onMessage,
+                        onOperationStatus = onOperationStatus,
                     )
                 }
             }
