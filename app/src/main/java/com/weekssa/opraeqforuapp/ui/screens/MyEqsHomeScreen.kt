@@ -19,7 +19,6 @@ import androidx.compose.material.icons.outlined.Restore
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -37,7 +36,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.export.ExportCurrentness
@@ -313,16 +311,75 @@ fun MyEqsHomeScreen(
                     )
                 }
                 Text(
-                    text = buildString {
-                        append("$selectedHeadphoneCount headphone EQs · ${savedGeneralEqs.size} General EQs")
-                        if (unclaimedEqs.isNotEmpty()) append(" · ${unclaimedEqs.size} need attention")
-                    },
+                    text = "$selectedHeadphoneCount headphone EQs · ${savedGeneralEqs.size} General EQs",
                     modifier = Modifier.padding(top = 2.dp),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             HorizontalDivider()
+        }
+
+        if (unclaimedEqs.isNotEmpty()) {
+            item(key = "unclaimed-heading") {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { unclaimedExpanded = !unclaimedExpanded }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            "Needs attention · ${unclaimedEqs.size}",
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                        Text(
+                            "App-created EQ files need review",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Icon(
+                        imageVector = if (unclaimedExpanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
+                        contentDescription = if (unclaimedExpanded) "Collapse Needs attention" else "Expand Needs attention",
+                    )
+                }
+                HorizontalDivider()
+            }
+            if (unclaimedExpanded) {
+                items(unclaimedEqs, key = { "unclaimed:${it.documentUri}" }) { record ->
+                    ListItem(
+                        headlineContent = { Text(record.originalFileName) },
+                        supportingContent = {
+                            Column {
+                                Text(unclaimedSummary(record))
+                                Text(
+                                    record.reason,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        },
+                        trailingContent = {
+                            Row {
+                                IconButton(
+                                    enabled = record.isRecoverable,
+                                    onClick = { pendingRecovery = record },
+                                ) {
+                                    Icon(
+                                        Icons.Outlined.Restore,
+                                        contentDescription = "Recover ${record.originalFileName}",
+                                    )
+                                }
+                                IconButton(onClick = { pendingUnclaimedDelete = record }) {
+                                    Icon(Icons.Outlined.Delete, contentDescription = "Delete ${record.originalFileName}")
+                                }
+                            }
+                        },
+                    )
+                    HorizontalDivider()
+                }
+            }
         }
 
         item(key = "headphones-heading") {
@@ -358,9 +415,9 @@ fun MyEqsHomeScreen(
                                 Column {
                                     Text(
                                         if (pendingCount > 0) {
-                                            "${headphone.selectedProfileCount} selected · $pendingCount ${if (pendingCount == 1) "preset needs" else "presets need"} export"
+                                            "${headphone.selectedProfileCount} EQs · $pendingCount to export"
                                         } else {
-                                            "${headphone.selectedProfileCount} selected profiles"
+                                            "${headphone.selectedProfileCount} EQs"
                                         },
                                     )
                                     newEqAttentionText(headphone)?.let { attention ->
@@ -507,72 +564,6 @@ fun MyEqsHomeScreen(
                 HorizontalDivider()
             }
         }
-
-        if (unclaimedEqs.isNotEmpty()) {
-            item(key = "unclaimed-heading") {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { unclaimedExpanded = !unclaimedExpanded }
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Needs attention (${unclaimedEqs.size})", style = MaterialTheme.typography.titleMedium)
-                        Text(
-                            "App-managed EQ files that no longer match a current My EQs item.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Icon(
-                        imageVector = if (unclaimedExpanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
-                        contentDescription = if (unclaimedExpanded) "Collapse Needs attention" else "Expand Needs attention",
-                    )
-                }
-                HorizontalDivider()
-            }
-            if (unclaimedExpanded) {
-                items(unclaimedEqs, key = { "unclaimed:${it.documentUri}" }) { record ->
-                    ListItem(
-                        headlineContent = { Text(record.originalFileName) },
-                        supportingContent = {
-                            Column {
-                                Text(unclaimedSummary(record))
-                                Text(
-                                    record.reason,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                                if (record.relativeDirectory.isNotBlank()) {
-                                    Text(
-                                        "Previous app path: ${record.relativeDirectory}",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            }
-                        },
-                        trailingContent = {
-                            Row {
-                                IconButton(
-                                    enabled = record.isRecoverable,
-                                    onClick = { pendingRecovery = record },
-                                ) {
-                                    Icon(
-                                        Icons.Outlined.Restore,
-                                        contentDescription = "Add ${record.originalFileName} to Personal EQs",
-                                    )
-                                }
-                                IconButton(onClick = { pendingUnclaimedDelete = record }) {
-                                    Icon(Icons.Outlined.Delete, contentDescription = "Delete ${record.originalFileName}")
-                                }
-                            }
-                        },
-                    )
-                    HorizontalDivider()
-                }
-            }
-        }
     }
 }
 
@@ -594,12 +585,12 @@ private fun UnclaimedRecoveryDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add to Personal EQs") },
+        title = { Text("Recover EQ") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    "EQ Library can recover the parsed EQ values from ${record.originalFileName}. " +
-                        "Confirm the headphone association and name; no filter values will be changed.",
+                    "Choose where ${record.originalFileName} belongs. Its EQ values will not be changed.",
+                    style = MaterialTheme.typography.bodyMedium,
                 )
                 OutlinedTextField(
                     value = manufacturer,
@@ -625,7 +616,7 @@ private fun UnclaimedRecoveryDialog(
             TextButton(
                 enabled = canRecover,
                 onClick = { onRecover(manufacturer, model, displayName) },
-            ) { Text("Add to Personal EQs") }
+            ) { Text("Recover") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
@@ -636,12 +627,11 @@ private fun unclaimedSummary(record: UnclaimedEqRecord): String = buildList {
     record.parsedContent?.preampGainDb?.let { preamp -> add("Preamp ${String.format(Locale.US, "%+.2f dB", preamp)}") }
     record.parsedContent?.bands?.let { bands -> add("${bands.size} ${if (bands.size == 1) "band" else "bands"}") }
     when (record.parseState) {
-        UnclaimedEqParseState.RECOVERABLE -> add("Recoverable")
-        UnclaimedEqParseState.INVALID -> add("Incomplete or malformed")
-        UnclaimedEqParseState.UNSUPPORTED -> add("Recovery unsupported")
+        UnclaimedEqParseState.RECOVERABLE -> add("Needs headphone association")
+        UnclaimedEqParseState.INVALID -> add("Can't recover automatically")
+        UnclaimedEqParseState.UNSUPPORTED -> add("Unsupported filter data")
         UnclaimedEqParseState.ACCESS_UNAVAILABLE -> add("File access unavailable")
     }
-    record.parseMessage?.takeIf(String::isNotBlank)?.let(::add)
 }.joinToString(" · ")
 
 private fun hardwareFlashPreview(profile: OpraEqProfile, device: ExportDevice): HardwareFlashPreview? = when (device) {
@@ -758,7 +748,6 @@ fun BlackPearlConnectionControl(
 
         val connected = state is BlackPearlConnectionState.Connected
         val connecting = state is BlackPearlConnectionState.Connecting
-        val containerColor = if (connected) CONNECTED_GREEN else MaterialTheme.colorScheme.error
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -767,12 +756,6 @@ fun BlackPearlConnectionControl(
                 onClick = onConnect,
                 enabled = !connected && !connecting,
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = containerColor,
-                    contentColor = Color.White,
-                    disabledContainerColor = if (connected) CONNECTED_GREEN else MaterialTheme.colorScheme.surfaceVariant,
-                    disabledContentColor = if (connected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                ),
             ) {
                 Text(
                     when {
@@ -824,7 +807,6 @@ private fun Kt02h20ConnectionControl(
 
         val connected = state is Kt02h20ConnectionState.Connected
         val connecting = state is Kt02h20ConnectionState.Connecting
-        val containerColor = if (connected) CONNECTED_GREEN else MaterialTheme.colorScheme.error
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -833,12 +815,6 @@ private fun Kt02h20ConnectionControl(
                 onClick = onConnect,
                 enabled = !connected && !connecting,
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = containerColor,
-                    contentColor = Color.White,
-                    disabledContainerColor = if (connected) CONNECTED_GREEN else MaterialTheme.colorScheme.surfaceVariant,
-                    disabledContentColor = if (connected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                ),
             ) {
                 Text(
                     when {
@@ -869,8 +845,8 @@ private fun Kt02h20ConnectionControl(
 private fun SectionHeading(title: String) {
     Text(
         text = title,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-        style = MaterialTheme.typography.titleMedium,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+        style = MaterialTheme.typography.titleSmall,
     )
 }
 
@@ -893,7 +869,7 @@ private fun SavedImportsHeading(onImport: () -> Unit) {
         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
     ) {
         Text(
-            text = "Saved snapshots & personal imports",
+            text = "Saved EQs",
             modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -933,5 +909,3 @@ private val HARDWARE_FLASH_OUTPUTS = setOf(
     ExportDevice.FIIO_JA11,
     ExportDevice.JCALLY_JM12,
 )
-
-private val CONNECTED_GREEN = Color(0xFF2E7D32)
