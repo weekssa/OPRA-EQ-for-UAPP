@@ -1,5 +1,27 @@
 # TRN Black Pearl v0.6 — factory-default/reset research
 
+## 2026-09-15 corrective candidate — PASS
+
+The project owner completed the focused Pixel 9 / TRN Black Pearl retest on exact signed source `eb1980076009001b5216ffbb531de8a28a4780eb` and reported **SUCCESS**.
+
+The retest confirmed:
+
+- Restore defaults completed normally on the first attempt and reached **50% / FAST-LL / HIGH / CLASS AB / Centered / microphone 0 dB**.
+- The optional EQ-flat behavior and saved My EQs remained protected as specified.
+- Reconnect persistence remained correct.
+- The revised My EQs managed-headphone detail and General EQs pages were materially less cramped, with the revised action/help hierarchy.
+
+Evidence category: **OWNER-REPORTED**.
+
+Exact signed APK: https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.6.0-beta-eb19800.apk
+
+APK SHA-256: `dabf4bcdddf69853b09793f5a94bec0a3af7efb430f1cdfe26ffc35a93b783ad`
+
+The exact candidate passed Android CI #1538, CodeQL #1420, Catalog currentness CI #1826, Priority community coverage CI #1311, and Signed EQ Library Beta Candidate #1213. The signing workflow verified the pinned certificate `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`.
+
+This PASS closes the corrective Black Pearl physical gate. It does not establish TRN factory-default semantics and does not qualify FiiO JA11 hardware behavior. PR #16 remains open and draft; merge, release, and publication remain explicit owner-authorization gates.
+
+
 Status: **TRUE TRN FACTORY-DEFAULT SEMANTICS REMAIN UNESTABLISHED; OWNER-SELECTED EQ LIBRARY RESTORE PRESET APPROVED, IMPLEMENTED, AND PHYSICALLY QUALIFIED**
 
 Purpose: preserve the research boundary around a true Black Pearl factory reset while documenting the later project-owner decision to expose a truthful EQ Library-owned **Restore defaults** action using an explicitly selected set of values.
