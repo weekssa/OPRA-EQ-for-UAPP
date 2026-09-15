@@ -58,6 +58,9 @@ import com.weekssa.opraeqforuapp.ui.screens.BrowseOpraScreen
 import com.weekssa.opraeqforuapp.ui.screens.ManagedHeadphoneDetailScreen
 import com.weekssa.opraeqforuapp.ui.screens.MyDacRootScreen
 import com.weekssa.opraeqforuapp.ui.screens.deviceOperationControlLabel
+import com.weekssa.opraeqforuapp.ui.screens.DeviceOperationPhase
+import com.weekssa.opraeqforuapp.ui.screens.deviceOperationFeedback
+import com.weekssa.opraeqforuapp.ui.screens.deviceOperationStateSignature
 import com.weekssa.opraeqforuapp.ui.screens.MyEqsHomeScreen
 import com.weekssa.opraeqforuapp.ui.screens.SettingsScreen
 import kotlinx.coroutines.launch
@@ -298,37 +301,50 @@ fun EqLibraryApp(
         state.blackPearlQualificationState.error,
     ) {
         val operationState = state.blackPearlQualificationState
-        val signature = listOf(
-            operationState.isWriting,
-            operationState.activeWriteControlId?.value,
-            operationState.lastVerifiedWriteControlId?.value,
-            operationState.error,
-        ).joinToString("|")
+        val signature = deviceOperationStateSignature(
+            isWriting = operationState.isWriting,
+            activeWriteControlId = operationState.activeWriteControlId,
+            pendingVerificationControlId = null,
+            lastVerifiedWriteControlId = operationState.lastVerifiedWriteControlId,
+            error = operationState.error,
+        )
+        val feedback = deviceOperationFeedback(
+            isWriting = operationState.isWriting,
+            activeWriteControlId = operationState.activeWriteControlId,
+            pendingVerificationControlId = null,
+            lastVerifiedWriteControlId = operationState.lastVerifiedWriteControlId,
+            error = operationState.error,
+        )
         val previousSignature = lastBlackPearlOperationSignature
         lastBlackPearlOperationSignature = signature
         if (previousSignature == null || previousSignature == signature) return@LaunchedEffect
 
-        when {
-            operationState.isWriting && operationState.activeWriteControlId != null -> {
+        when (feedback?.phase) {
+            DeviceOperationPhase.APPLYING -> feedback.controlId?.let { controlId ->
                 showDeviceOperation(
-                    message = "Applying ${deviceOperationControlLabel(operationState.activeWriteControlId)}…",
+                    message = "Applying ${deviceOperationControlLabel(controlId)}…",
                     duration = SnackbarDuration.Indefinite,
                 )
             }
-            operationState.lastVerifiedWriteControlId != null -> {
+            DeviceOperationPhase.RECONNECTING -> feedback.controlId?.let { controlId ->
                 showDeviceOperation(
-                    message = "✓ ${deviceOperationControlLabel(operationState.lastVerifiedWriteControlId)} updated",
+                    message = "Applying ${deviceOperationControlLabel(controlId)}… Reconnect the DAC to verify.",
+                    duration = SnackbarDuration.Indefinite,
+                )
+            }
+            DeviceOperationPhase.VERIFIED -> feedback.controlId?.let { controlId ->
+                showDeviceOperation(
+                    message = "✓ ${deviceOperationControlLabel(controlId)} updated",
                     duration = SnackbarDuration.Short,
                 )
             }
-            operationState.error != null -> {
-                showDeviceOperation(
-                    message = "Couldn’t update the DAC: ${operationState.error}",
-                    duration = SnackbarDuration.Indefinite,
-                    actionLabel = "Refresh",
-                    onAction = onReadBlackPearlQualificationControls,
-                )
-            }
+            DeviceOperationPhase.FAILED -> showDeviceOperation(
+                message = "Couldn’t update the DAC: ${feedback.error}",
+                duration = SnackbarDuration.Indefinite,
+                actionLabel = "Refresh",
+                onAction = onReadBlackPearlQualificationControls,
+            )
+            null -> Unit
         }
     }
 
@@ -341,46 +357,50 @@ fun EqLibraryApp(
         state.fiioJa11DeviceState.error,
     ) {
         val operationState = state.fiioJa11DeviceState
-        val signature = listOf(
-            operationState.isWriting,
-            operationState.activeWriteControlId?.value,
-            operationState.pendingRestartWrite?.controlId?.value,
-            operationState.lastVerifiedWriteControlId?.value,
-            operationState.error,
-        ).joinToString("|")
+        val signature = deviceOperationStateSignature(
+            isWriting = operationState.isWriting,
+            activeWriteControlId = operationState.activeWriteControlId,
+            pendingVerificationControlId = operationState.pendingRestartWrite?.controlId,
+            lastVerifiedWriteControlId = operationState.lastVerifiedWriteControlId,
+            error = operationState.error,
+        )
+        val feedback = deviceOperationFeedback(
+            isWriting = operationState.isWriting,
+            activeWriteControlId = operationState.activeWriteControlId,
+            pendingVerificationControlId = operationState.pendingRestartWrite?.controlId,
+            lastVerifiedWriteControlId = operationState.lastVerifiedWriteControlId,
+            error = operationState.error,
+        )
         val previousSignature = lastFiioJa11OperationSignature
         lastFiioJa11OperationSignature = signature
         if (previousSignature == null || previousSignature == signature) return@LaunchedEffect
 
-        when {
-            operationState.isWriting && operationState.activeWriteControlId != null -> {
+        when (feedback?.phase) {
+            DeviceOperationPhase.APPLYING -> feedback.controlId?.let { controlId ->
                 showDeviceOperation(
-                    message = "Applying ${deviceOperationControlLabel(operationState.activeWriteControlId)}…",
+                    message = "Applying ${deviceOperationControlLabel(controlId)}…",
                     duration = SnackbarDuration.Indefinite,
                 )
             }
-            operationState.pendingRestartWrite != null -> {
+            DeviceOperationPhase.RECONNECTING -> feedback.controlId?.let { controlId ->
                 showDeviceOperation(
-                    message = "Applying ${
-                        deviceOperationControlLabel(operationState.pendingRestartWrite.controlId)
-                    }… Reconnect the DAC to verify.",
+                    message = "Applying ${deviceOperationControlLabel(controlId)}… Reconnect the DAC to verify.",
                     duration = SnackbarDuration.Indefinite,
                 )
             }
-            operationState.lastVerifiedWriteControlId != null -> {
+            DeviceOperationPhase.VERIFIED -> feedback.controlId?.let { controlId ->
                 showDeviceOperation(
-                    message = "✓ ${deviceOperationControlLabel(operationState.lastVerifiedWriteControlId)} updated",
+                    message = "✓ ${deviceOperationControlLabel(controlId)} updated",
                     duration = SnackbarDuration.Short,
                 )
             }
-            operationState.error != null -> {
-                showDeviceOperation(
-                    message = "Couldn’t update the DAC: ${operationState.error}",
-                    duration = SnackbarDuration.Indefinite,
-                    actionLabel = "Refresh",
-                    onAction = onReadFiioJa11DeviceControls,
-                )
-            }
+            DeviceOperationPhase.FAILED -> showDeviceOperation(
+                message = "Couldn’t update the DAC: ${feedback.error}",
+                duration = SnackbarDuration.Indefinite,
+                actionLabel = "Refresh",
+                onAction = onReadFiioJa11DeviceControls,
+            )
+            null -> Unit
         }
     }
 
