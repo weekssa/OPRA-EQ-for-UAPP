@@ -24,7 +24,9 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -55,6 +57,7 @@ import com.weekssa.opraeqforuapp.ui.components.WhatsNewDialog
 import com.weekssa.opraeqforuapp.ui.screens.BrowseOpraScreen
 import com.weekssa.opraeqforuapp.ui.screens.ManagedHeadphoneDetailScreen
 import com.weekssa.opraeqforuapp.ui.screens.MyDacRootScreen
+import com.weekssa.opraeqforuapp.ui.screens.deviceOperationControlLabel
 import com.weekssa.opraeqforuapp.ui.screens.MyEqsHomeScreen
 import com.weekssa.opraeqforuapp.ui.screens.SettingsScreen
 import kotlinx.coroutines.launch
@@ -257,7 +260,119 @@ fun EqLibraryApp(
         ?.takeIf { it == BuildConfig.VERSION_NAME }
 
     fun showMessage(message: String) {
-        scope.launch { snackbarHostState.showSnackbar(message) }
+        scope.launch {
+            snackbarHostState.currentSnackbarData?.dismiss()
+            snackbarHostState.showSnackbar(message)
+        }
+    }
+
+    suspend fun showDeviceOperation(
+        message: String,
+        duration: SnackbarDuration,
+        actionLabel: String? = null,
+        onAction: (() -> Unit)? = null,
+    ) {
+        snackbarHostState.currentSnackbarData?.dismiss()
+        val result = snackbarHostState.showSnackbar(
+            message = message,
+            actionLabel = actionLabel,
+            duration = duration,
+        )
+        if (result == SnackbarResult.ActionPerformed) onAction?.invoke()
+    }
+
+    var lastBlackPearlOperationSignature by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(
+        state.blackPearlQualificationState.isWriting,
+        state.blackPearlQualificationState.activeWriteControlId,
+        state.blackPearlQualificationState.lastVerifiedWriteControlId,
+        state.blackPearlQualificationState.error,
+    ) {
+        val operationState = state.blackPearlQualificationState
+        val signature = listOf(
+            operationState.isWriting,
+            operationState.activeWriteControlId?.value,
+            operationState.lastVerifiedWriteControlId?.value,
+            operationState.error,
+        ).joinToString("|")
+        val previousSignature = lastBlackPearlOperationSignature
+        lastBlackPearlOperationSignature = signature
+        if (previousSignature == null || previousSignature == signature) return@LaunchedEffect
+
+        when {
+            operationState.isWriting && operationState.activeWriteControlId != null -> {
+                showDeviceOperation(
+                    message = "Applying ${deviceOperationControlLabel(operationState.activeWriteControlId)}…",
+                    duration = SnackbarDuration.Indefinite,
+                )
+            }
+            operationState.lastVerifiedWriteControlId != null -> {
+                showDeviceOperation(
+                    message = "✓ ${deviceOperationControlLabel(operationState.lastVerifiedWriteControlId)} updated",
+                    duration = SnackbarDuration.Short,
+                )
+            }
+            operationState.error != null -> {
+                showDeviceOperation(
+                    message = "Couldn’t update the DAC: ${operationState.error}",
+                    duration = SnackbarDuration.Indefinite,
+                    actionLabel = "Refresh",
+                    onAction = onReadBlackPearlQualificationControls,
+                )
+            }
+        }
+    }
+
+    var lastFiioJa11OperationSignature by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(
+        state.fiioJa11DeviceState.isWriting,
+        state.fiioJa11DeviceState.activeWriteControlId,
+        state.fiioJa11DeviceState.pendingRestartWrite,
+        state.fiioJa11DeviceState.lastVerifiedWriteControlId,
+        state.fiioJa11DeviceState.error,
+    ) {
+        val operationState = state.fiioJa11DeviceState
+        val signature = listOf(
+            operationState.isWriting,
+            operationState.activeWriteControlId?.value,
+            operationState.pendingRestartWrite?.controlId?.value,
+            operationState.lastVerifiedWriteControlId?.value,
+            operationState.error,
+        ).joinToString("|")
+        val previousSignature = lastFiioJa11OperationSignature
+        lastFiioJa11OperationSignature = signature
+        if (previousSignature == null || previousSignature == signature) return@LaunchedEffect
+
+        when {
+            operationState.isWriting && operationState.activeWriteControlId != null -> {
+                showDeviceOperation(
+                    message = "Applying ${deviceOperationControlLabel(operationState.activeWriteControlId)}…",
+                    duration = SnackbarDuration.Indefinite,
+                )
+            }
+            operationState.pendingRestartWrite != null -> {
+                showDeviceOperation(
+                    message = "Applying ${
+                        deviceOperationControlLabel(operationState.pendingRestartWrite.controlId)
+                    }… Reconnect the DAC to verify.",
+                    duration = SnackbarDuration.Indefinite,
+                )
+            }
+            operationState.lastVerifiedWriteControlId != null -> {
+                showDeviceOperation(
+                    message = "✓ ${deviceOperationControlLabel(operationState.lastVerifiedWriteControlId)} updated",
+                    duration = SnackbarDuration.Short,
+                )
+            }
+            operationState.error != null -> {
+                showDeviceOperation(
+                    message = "Couldn’t update the DAC: ${operationState.error}",
+                    duration = SnackbarDuration.Indefinite,
+                    actionLabel = "Refresh",
+                    onAction = onReadFiioJa11DeviceControls,
+                )
+            }
+        }
     }
 
     fun showWhatsNew(version: String?, notes: String?) {
