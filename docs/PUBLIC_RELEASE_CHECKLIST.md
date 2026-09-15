@@ -35,6 +35,39 @@ These apply to every installable GitHub release:
 - Never replace an already-published APK with differently signed or different-content bytes under the same version/tag.
 - Never commit signing keys, passwords, tokens, or credentials.
 
+# v0.6.0 — COMPLETE
+
+**Release source:** `eef5633e18a4ac311f110493e29633bf382675e3`  
+**Signed beta candidate:** `EQ-Library-v0.6.0-beta-eef5633.apk`  
+**Candidate SHA-256:** `4eee1f491971bd49ec72d10033b83a548c9b970c002befe79cc944f268a4cb59`  
+**Signing certificate:** `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`
+
+Status: **Implementation, automated gates, signed-candidate verification, and owner-reported Pixel 9 Black Pearl/UI smoke testing passed.**
+
+## Product and documentation
+
+- [x] `docs/releases/v0.6.0.md` contains curated release notes.
+- [x] `CHANGELOG.md` records the My DAC, operation-feedback, recovery, and validation changes.
+- [x] `README.md` describes the v0.6 candidate and current hardware-validation status.
+- [x] `docs/V0.6_MY_DAC_STATUS.md` records exact source, candidate, automated gates, and owner-reported Pixel 9 PASS.
+- [x] FiiO JA11 physical qualification is explicitly deferred and is not a release blocker.
+
+## Automated and physical validation
+
+- [x] Android unit tests and lint passed.
+- [x] Debug and unsigned release APK assembly passed.
+- [x] CodeQL passed.
+- [x] Catalog currentness and priority community coverage passed.
+- [x] Signed beta workflow passed certificate verification and published the exact candidate.
+- [x] Owner-reported Pixel 9 smoke passed routine Black Pearl DEVICE changes, stable header/bottom feedback, and Restore defaults with the approved EQ-flat behavior.
+
+## Publication
+
+- [ ] PR #16 marked ready and merged.
+- [ ] Signed GitHub Release workflow run in publish mode for `v0.6.0`.
+- [ ] Public release assets, checksum, signer verification, and latest-release metadata verified.
+- [ ] README current-release section updated to the published v0.6.0 APK.
+
 # v0.5.0 — COMPLETE
 
 **Published:** 2026-09-09  
