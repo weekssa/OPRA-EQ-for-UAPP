@@ -59,7 +59,7 @@ class DeviceOperationStatusTest {
     @Test
     fun controlLabelUsesCapabilityIdAsStableFallback() {
         assertThat(deviceOperationControlLabel(DacControlId("fiio.uac_mode")))
-            .isEqualTo("Uac mode")
+            .isEqualTo("Uac Mode")
     }
 
     @Test
