@@ -80,6 +80,7 @@ internal fun BlackPearlDeviceResetSection(
     onSetDeviceControl: (DacControlId, DacControlValue) -> Unit,
     onResetEqToFlat: suspend () -> String,
     onMessage: (String) -> Unit,
+    onOperationStatus: (String, Boolean) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     var dialogOpen by rememberSaveable { mutableStateOf(false) }
@@ -247,6 +248,10 @@ internal fun BlackPearlDeviceResetSection(
                     onClick = {
                         dialogOpen = false
                         eqResetResult = null
+                        onOperationStatus(
+                            if (includeEqReset) "Resetting EQ to flat…" else "Restoring device defaults…",
+                            true,
+                        )
                         restoreSessionGeneration = state.snapshot?.sessionGeneration
                         issuedStepIndex = IDLE_STEP
                         issuedFromWriteGeneration = null
