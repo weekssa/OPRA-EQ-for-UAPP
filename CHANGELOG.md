@@ -10,8 +10,6 @@ No changes yet.
 
 ## [0.6.0] - 2026-09-15
 
-## [Unreleased]
-
 ### Added
 
 - **My DAC** for supported hardware, with one ViewModel-scoped DAC session shared across My EQs, My DAC, and EQ Library; successful connection/reconnection automatically refreshes supported EQ + DEVICE state and later physical reattach can reopen the replacement session after one successful current-app-session connection.
