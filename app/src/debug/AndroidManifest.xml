@@ -2,7 +2,9 @@
 <manifest
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
-    <application android:label="EW300 USB evidence">
+    <application
+        android:label="EW300 USB evidence"
+        tools:replace="android:label">
         <activity
             android:name=".MainActivity"
             tools:node="remove" />
