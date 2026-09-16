@@ -31,13 +31,26 @@ The owner completed the standard descriptor capture on signed diagnostic source 
 
 The first report-descriptor request returned `-1`. The interface was not claimed first, so this is a host-side read failure and reveals no report format. Signed source `1786a0bc4afc8b88bc141f1fd30d44638198e568` then attempted a non-forced claim of HID interface 3. The owner's Pixel 9 reported `non-forced claim: false`, proving Android's driver retained that interface; the diagnostic correctly stopped without a transfer.
 
-The next diagnostic first repeats the non-forced claim. If Android still retains the interface, it uses Android's isolated forced-claim option on HID interface 3 only, reads exactly the 74 bytes declared by the standard HID descriptor, and releases the interface in a `finally` block before closing the connection. The owner is instructed to reconnect the cable afterward so Android resumes normal ownership. This remains a standard descriptor read and does not send a HID report, interrupt transfer, or vendor command.
+Signed source `77e64437953cbd38ceb21626ccd499d22216b021` repeated the non-forced claim (`false`), used Android's isolated forced-claim option on HID interface 3 (`true`), read all 74 declared bytes, and released the interface (`true`). The owner then reconnected the cable as instructed. No HID report, interrupt transfer, or vendor command was sent.
 
-Exact HID report format, protocol framing, firmware identity beyond the exposed strings/revision, and untouched EQ state remain pending.
+The exact report descriptor is:
+
+`05 0C 09 01 A1 01 85 01 15 00 25 01 75 01 95 02 09 E9 09 EA 81 02 95 04 09 CD 09 CE 09 B6 09 B5 81 02 95 02 81 01 06 01 FF 85 4B 75 08 95 0A 09 01 81 03 95 0A 09 02 91 02 85 54 75 08 95 0A 09 03 81 03 95 0A 09 04 91 02 C0`
+
+Evidence established directly by those bytes:
+
+- Consumer Control report ID `0x01` carries the standard volume-up, volume-down, play/pause and scan controls in one byte plus padding.
+- Vendor usage page `0xFF01` declares report ID `0x4B` with a 10-byte input payload and a 10-byte output payload.
+- The same vendor page declares report ID `0x54` with a 10-byte input payload and a 10-byte output payload.
+- The descriptor assigns vendor usages `0x01`/`0x02` to the `0x4B` input/output pair and `0x03`/`0x04` to the `0x54` pair. It does not define their semantics.
+
+No output report is safe merely because its size is known. The next diagnostic parses the descriptor, then issues only HID class `GET_REPORT` IN requests for the two exactly declared vendor input reports. It requests no feature report, sends no output data, and releases the interface. A stalled or empty response is evidence and does not justify an output probe.
+
+HID report IDs and sizes are exact. Protocol framing and semantics, firmware identity beyond the exposed strings/revision, and untouched EQ state remain pending.
 
 ## Current diagnostic boundary
 
-Scan uses Android enumeration only. The separately requested descriptor capture first tries a non-forced host claim of the HID interface. Evidence shows Android refuses it on the owner's Pixel 9, so the follow-up may briefly detach Android's driver from interface 3 using the platform's forced-claim option. It then performs only standard IN GET_DESCRIPTOR (`bRequest=0x06`, report type `0x22`, interface recipient), releases the interface, and closes the connection. It sends no HID report, interrupt transfer, vendor request, EQ write, save or reset. A descriptor report is not a backup of untouched EQ; that state still must be read and preserved before any write.
+Scan uses Android enumeration only. The separately requested capture first tries a non-forced host claim of the HID interface. Evidence shows Android refuses it on the owner's Pixel 9, so the follow-up may briefly detach Android's driver from interface 3 using the platform's forced-claim option. It performs standard IN GET_DESCRIPTOR (`bRequest=0x06`, report type `0x22`, interface recipient), parses only complete vendor input declarations, and uses HID class IN GET_REPORT (`bRequest=0x01`, input report type) for those exact IDs and sizes. It then releases the interface and closes the connection. It sends no output report, interrupt-OUT transfer, vendor request, EQ write, save or reset. A report read is not yet a proven backup of untouched EQ; any returned fields require evidence before interpretation and the complete state still must be preserved before any write.
 
 Protocol framing, filter count/types, limits, quantization, preamp, bypass, persistence, readback and reset semantics remain unresolved. Public leads in the approved implementation plan are unverified and no third-party protocol code has been adopted by this correction.
 

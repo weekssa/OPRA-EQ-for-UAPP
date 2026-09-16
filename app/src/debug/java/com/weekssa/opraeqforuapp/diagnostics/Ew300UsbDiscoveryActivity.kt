@@ -35,9 +35,10 @@ import com.weekssa.opraeqforuapp.ui.theme.OpraEqTheme
  * Debug-only, read-only enumeration for the EW300 discovery gate.
  *
  * The first scan never opens a USB connection. The separate descriptor capture asks Android for
- * permission, opens the cable only to read its descriptors, and sends no EQ, bulk, interrupt, or
- * vendor-defined command. Android may require the app to detach its HID driver briefly; only the
- * HID interface is claimed and it is always released before the connection is closed.
+ * permission, opens the cable only to read its descriptors and the input reports declared by that
+ * descriptor. It sends no output report, EQ, bulk, interrupt-OUT, or vendor-defined command.
+ * Android may require the app to detach its HID driver briefly; only the HID interface is claimed
+ * and it is always released before the connection is closed.
  */
 class Ew300UsbDiscoveryActivity : ComponentActivity() {
     private val usbManager by lazy { getSystemService(USB_SERVICE) as UsbManager }
@@ -85,7 +86,8 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                     Text("EW300 USB discovery", style = MaterialTheme.typography.headlineSmall)
                     Text(
                         "Scan lists USB information Android already exposes. Descriptor capture " +
-                            "asks Android for access only to read standard USB descriptors. It may " +
+                            "asks Android for access only to read USB descriptions and their declared " +
+                            "input reports. It sends no output report. It may " +
                             "briefly detach Android's media-button driver; it does not change EQ. " +
                             "Reconnect the cable after capture.",
                     )
@@ -217,13 +219,41 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                                 DESCRIPTOR_READ_TIMEOUT_MS,
                             )
                             appendLine("HID interface ${usbInterface.id} standard report descriptor read: $count bytes")
-                            if (count > 0) appendLine(descriptor.copyOf(count).toHex())
+                            if (count > 0) {
+                                val exactDescriptor = descriptor.copyOf(count)
+                                appendLine(exactDescriptor.toHex())
+                                val vendorInputs = HidReportDescriptorParser.vendorInputReports(exactDescriptor)
+                                if (vendorInputs.isEmpty()) {
+                                    appendLine("No complete vendor input report declaration was found; no input report read was attempted.")
+                                }
+                                vendorInputs.forEach { inputReport ->
+                                    val input = ByteArray(inputReport.payloadBytes + 1)
+                                    val inputCount = connection.controlTransfer(
+                                        UsbConstants.USB_DIR_IN or
+                                            UsbConstants.USB_TYPE_CLASS or
+                                            USB_RECIP_INTERFACE,
+                                        HID_REQUEST_GET_REPORT,
+                                        (HID_REPORT_TYPE_INPUT shl 8) or inputReport.reportId,
+                                        usbInterface.id,
+                                        input,
+                                        input.size,
+                                        INPUT_REPORT_READ_TIMEOUT_MS,
+                                    )
+                                    appendLine(
+                                        "HID input report 0x%02X read-only GET_REPORT: %d bytes".format(
+                                            inputReport.reportId,
+                                            inputCount,
+                                        ),
+                                    )
+                                    if (inputCount > 0) appendLine(input.copyOf(inputCount).toHex())
+                                }
+                            }
                         } finally {
                             appendLine("HID interface ${usbInterface.id} released: ${connection.releaseInterface(usbInterface)}")
                         }
                     }
                 }
-                append("Only standard descriptor reads were used. No HID report, EQ, save, reset, or vendor-defined command was sent. Reconnect the cable after capture so Android can resume normal ownership.")
+                append("Only descriptor and declared input-report reads were used. No output report, EQ, save, reset, or vendor-defined command was sent. Reconnect the cable after capture so Android can resume normal ownership.")
             }
         } finally {
             connection.close()
@@ -249,8 +279,11 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
         const val EW300_VENDOR_ID = 0x31B2
         const val EW300_PRODUCT_ID = 0x0111
         const val DESCRIPTOR_READ_TIMEOUT_MS = 1000
+        const val INPUT_REPORT_READ_TIMEOUT_MS = 1000
         const val USB_REQUEST_GET_DESCRIPTOR = 0x06
         const val USB_DESCRIPTOR_TYPE_REPORT = 0x22
+        const val HID_REQUEST_GET_REPORT = 0x01
+        const val HID_REPORT_TYPE_INPUT = 0x01
         const val USB_RECIP_INTERFACE = 0x01
     }
 }
