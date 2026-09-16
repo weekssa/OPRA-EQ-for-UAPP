@@ -67,6 +67,9 @@ jobs:
       - name: Run read-only discovery gate and build APK
         run: gradle :app:testDebugUnitTest :app:lintDiagnostic :app:assembleDiagnostic --stacktrace
 
+      - name: Require diagnostic launcher in APK bytecode
+        run: python3 tools/verify_ew300_apk.py app/build/outputs/apk/diagnostic/app-diagnostic-unsigned.apk
+
       - name: Align sign and verify discovery APK
         env:
           OPRA_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.OPRA_RELEASE_KEYSTORE_PASSWORD }}
@@ -95,7 +98,48 @@ jobs:
           expected_fingerprint="$(tr -d '[:space:]:' < release-signing-cert.sha256 | tr '[:upper:]' '[:lower:]')"
           test -n "$actual_fingerprint"
           test "$actual_fingerprint" = "$expected_fingerprint"
+          "$build_tools/zipalign" -c -v 4 "$output_apk" > dist/zipalign-verification.txt
           sha256sum "$output_apk" > "${output_apk}.sha256"
+          python3 tools/verify_ew300_apk.py "$output_apk" | tee dist/apk-content-verification.txt
+
+      - name: Install Android 36 emulator
+        run: |
+          sdkmanager "emulator" "system-images;android-36;google_apis;x86_64"
+          echo no | avdmanager create avd --name ew300-smoke --package "system-images;android-36;google_apis;x86_64"
+          sudo setfacl -m u:"$(id -un)":rw /dev/kvm
+
+      - name: Launch exact signed APK on Android 36
+        timeout-minutes: 10
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$ANDROID_HOME/emulator/emulator" -avd ew300-smoke -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect > "$RUNNER_TEMP/ew300-emulator.log" 2>&1 &
+          emulator_pid=$!
+          trap 'kill "$emulator_pid" || true' EXIT
+          timeout 180 adb wait-for-device
+          booted=false
+          for attempt in $(seq 1 90); do
+            if [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = 1 ]; then
+              booted=true
+              break
+            fi
+            sleep 2
+          done
+          test "$booted" = true
+          adb shell input keyevent 82
+          bash tools/smoke_ew300_apk.sh "dist/EW300-USB-Descriptor-Discovery-${GITHUB_SHA::7}.apk" dist/launch-verification
+          printf '%s\n' "$GITHUB_SHA" > dist/source-commit.txt
+
+      - name: Keep launch failure evidence
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: EW300-launch-failure-${{ github.sha }}
+          path: |
+            dist/launch-verification/
+            ${{ runner.temp }}/ew300-emulator.log
+          if-no-files-found: ignore
+          retention-days: 14
 
       - name: Upload signed read-only discovery candidate
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

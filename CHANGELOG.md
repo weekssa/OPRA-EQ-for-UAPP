@@ -6,6 +6,10 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed the separate signed EW300 USB diagnostic APK omitting its Kotlin launcher class under AGP 9. Added finished-APK class-definition validation and two cold launches of the exact signed APK on Android 36 before the diagnostic can be handed off. This is discovery tooling; EW300 hardware EQ support remains unqualified.
+
 ### Documentation
 
 - Added the approved v0.7 SIMGOT EW300 DSP implementation plan, including protocol-evidence gates, reuse of the scalable My DAC framework, automated validation, signed-candidate handoff, and the owner physical-test boundary.
@@ -305,4 +309,3 @@ APK SHA-256: `dabf4bcdddf69853b09793f5a94bec0a3af7efb430f1cdfe26ffc35a93b783ad`
 The exact candidate passed Android CI #1538, CodeQL #1420, Catalog currentness CI #1826, Priority community coverage CI #1311, and Signed EQ Library Beta Candidate #1213. The signing workflow verified the pinned certificate `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`.
 
 This PASS closes the corrective Black Pearl physical gate. It does not establish TRN factory-default semantics and does not qualify FiiO JA11 hardware behavior. PR #16 was merged and v0.6.0 publication is complete. FiiO JA11 physical qualification remains hardware-validation-pending.
-

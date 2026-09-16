@@ -51,7 +51,8 @@ android {
 
     sourceSets {
         getByName("diagnostic") {
-            java.srcDirs("src/debug/java")
+            // AGP 9's built-in Kotlin does not compile extra Java source directories as Kotlin.
+            kotlin.directories += "src/debug/java"
             manifest.srcFile("src/debug/AndroidManifest.xml")
         }
     }
