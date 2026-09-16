@@ -24,6 +24,21 @@ internal object Ew300ProvisionalProtocol {
         0x91.toByte(), 0x02, 0xC0.toByte(),
     )
 
+    val STOCK_RESPONSE_PAYLOADS: Map<Int, ByteArray> = linkedMapOf(
+        0x24 to hex("24 00 00 00 52 00 01 00 00 00"),
+        0x26 to hex("26 00 00 00 52 00 F5 FF 64 00"),
+        0x27 to hex("27 00 00 00 52 00 20 03 00 00"),
+        0x28 to hex("28 00 00 00 52 00 F7 FF C8 00"),
+        0x29 to hex("29 00 00 00 52 00 20 03 00 00"),
+        0x2A to hex("2A 00 00 00 52 00 FC FF 2C 01"),
+        0x2B to hex("2B 00 00 00 52 00 E8 03 00 00"),
+        0x2C to hex("2C 00 00 00 52 00 D0 FF 40 1F"),
+        0x2D to hex("2D 00 00 00 52 00 DC 05 00 00"),
+        0x2E to hex("2E 00 00 00 52 00 FB FF 58 1B"),
+        0x2F to hex("2F 00 00 00 52 00 F4 01 00 00"),
+        0x66 to hex("66 00 00 00 52 00 F8 F8 00 00"),
+    )
+
     fun readPayload(register: Int, slotHint: Int = 0): ByteArray = byteArrayOf(
         register.toByte(),
         0,
@@ -57,6 +72,11 @@ internal object Ew300ProvisionalProtocol {
         add(GLOBAL_GAIN_REGISTER)
     }
 
+    fun matchesStockSnapshot(responses: Map<Int, ByteArray>): Boolean =
+        STOCK_RESPONSE_PAYLOADS.all { (register, expected) ->
+            responses[register]?.contentEquals(expected) == true
+        }
+
     fun describe(register: Int, payload: ByteArray): String = when {
         register == CURRENT_SLOT_REGISTER -> "current slot=${payload[6].toUnsignedInt()}"
         register == GLOBAL_GAIN_REGISTER -> "global gain raw=${payload[6].toSignedInt()}"
@@ -84,4 +104,9 @@ internal object Ew300ProvisionalProtocol {
 
     private fun ByteArray.leSigned16(offset: Int): Int =
         leUnsigned16(offset).let { if (it > 0x7FFF) it - 0x10000 else it }
+
+    private fun hex(value: String): ByteArray = value
+        .split(" ")
+        .map { it.toInt(16).toByte() }
+        .toByteArray()
 }

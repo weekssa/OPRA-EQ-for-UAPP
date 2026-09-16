@@ -41,6 +41,23 @@ class Ew300ProvisionalProtocolTest {
     }
 
     @Test
+    fun `owner stock snapshot is preserved byte for byte`() {
+        assertEquals(
+            listOf(0x24, 0x26, 0x27, 0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x2E, 0x2F, 0x66),
+            Ew300ProvisionalProtocol.STOCK_RESPONSE_PAYLOADS.keys.toList(),
+        )
+        assertTrue(
+            Ew300ProvisionalProtocol.matchesStockSnapshot(
+                Ew300ProvisionalProtocol.STOCK_RESPONSE_PAYLOADS.mapValues { it.value.copyOf() },
+            ),
+        )
+        assertEquals(
+            "66 00 00 00 52 00 F8 F8 00 00",
+            Ew300ProvisionalProtocol.STOCK_RESPONSE_PAYLOADS.getValue(0x66).toHex(),
+        )
+    }
+
+    @Test
     fun `response requires exact report register and read echo`() {
         val valid = byteArrayOf(0x4B, 0x24, 0, 0, 0, 0x52, 0, 3, 0, 0, 0)
         assertEquals(3, Ew300ProvisionalProtocol.responsePayload(valid, 0x24)?.get(6)?.toInt())

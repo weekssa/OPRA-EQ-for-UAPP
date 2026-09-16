@@ -76,6 +76,29 @@ Reproducibility hashes for the fetched public assets:
 
 The next diagnostic is deliberately narrower than the web tool. It requires exact VID:PID, strings, interface, endpoints, and the already captured 74-byte HID descriptor. It sends only bounded command `0x52` reads and stops on the first missing or non-echoing response. It preserves every raw response and displays ambiguous frequency both raw and under the fallback's two-times interpretation. It sends no WRITE, COMMIT, CLEAR, save, reset, or firmware command. A successful response would establish framing on the owner's cable, but decoded meanings remain provisional until controlled physical evidence confirms them.
 
+### Owner stock-state capture
+
+On exact signed source `503ffe2226a12e9c4d426360098763bae1f760c5`, the owner completed the bounded snapshot. All 12 requests were accepted as 11-byte interrupt-OUT reports and all 12 responses were 11-byte interrupt-IN reports that exactly echoed report ID `0x4B`, the requested register, and READ command `0x52`. No WRITE, COMMIT, CLEAR, save, reset, or firmware command was sent. The exact untouched payloads are now preserved as a byte-for-byte regression fixture:
+
+```text
+24 00 00 00 52 00 01 00 00 00
+26 00 00 00 52 00 F5 FF 64 00
+27 00 00 00 52 00 20 03 00 00
+28 00 00 00 52 00 F7 FF C8 00
+29 00 00 00 52 00 20 03 00 00
+2A 00 00 00 52 00 FC FF 2C 01
+2B 00 00 00 52 00 E8 03 00 00
+2C 00 00 00 52 00 D0 FF 40 1F
+2D 00 00 00 52 00 DC 05 00 00
+2E 00 00 00 52 00 FB FF 58 1B
+2F 00 00 00 52 00 F4 01 00 00
+66 00 00 00 52 00 F8 F8 00 00
+```
+
+The public decoder yields current slot `1`, five PK filters with gains `-1.1`, `-0.9`, `-0.4`, `-4.8`, and `-0.5` dB; Q values `0.8`, `0.8`, `1.0`, `1.5`, and `0.5`; raw frequency words `100`, `200`, `300`, `8000`, and `7000`; and global-gain byte `-8`. Under the fallback's still-unverified two-times frequency rule those frequencies are `200`, `400`, `600`, `16000`, and `14000` Hz. These decoded meanings remain provisional; the raw bytes are authoritative.
+
+This completes non-mutating stock-state preservation and establishes exact READ transport/framing. It does not yet prove WRITE framing, field acoustics, quantization boundaries, persistence, or reset semantics. The narrow proposed next test would make a very small temporary change to band 1, read it back, restore the exact four stock bytes immediately, and read the restoration back, without COMMIT/CLEAR/save/reset. That is the first write-capable boundary and requires explicit owner approval after this captured backup.
+
 Public source locations:
 
 - <https://eq.hangout.audio/shared/plugins/devicePEQ/usbDeviceConfig.js>
