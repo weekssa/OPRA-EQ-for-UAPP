@@ -172,8 +172,8 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                             UsbConstants.USB_DIR_IN or
                                 UsbConstants.USB_TYPE_STANDARD or
                                 UsbConstants.USB_RECIP_INTERFACE,
-                            UsbConstants.USB_REQ_GET_DESCRIPTOR,
-                            UsbConstants.USB_DT_REPORT shl 8,
+                            USB_REQUEST_GET_DESCRIPTOR,
+                            USB_DESCRIPTOR_TYPE_REPORT shl 8,
                             usbInterface.id,
                             descriptor,
                             descriptor.size,
@@ -210,5 +210,7 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
         const val EW300_PRODUCT_ID = 0x0111
         const val HID_REPORT_DESCRIPTOR_MAX_BYTES = 4096
         const val DESCRIPTOR_READ_TIMEOUT_MS = 1000
+        const val USB_REQUEST_GET_DESCRIPTOR = 0x06
+        const val USB_DESCRIPTOR_TYPE_REPORT = 0x22
     }
 }
