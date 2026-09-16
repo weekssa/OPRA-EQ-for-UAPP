@@ -264,6 +264,8 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                                         val inputCount = connection.bulkTransfer(
                                             interruptIn,
                                             input,
+                                            0,
+                                            input.size,
                                             PASSIVE_INTERRUPT_READ_TIMEOUT_MS,
                                         )
                                         appendLine(
