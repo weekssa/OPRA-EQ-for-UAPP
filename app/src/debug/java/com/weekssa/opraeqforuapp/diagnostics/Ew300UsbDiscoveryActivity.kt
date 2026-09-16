@@ -32,30 +32,34 @@ import com.weekssa.opraeqforuapp.domain.settings.ThemeMode
 import com.weekssa.opraeqforuapp.ui.theme.OpraEqTheme
 
 /**
- * Debug-only, read-only enumeration for the EW300 discovery gate.
+ * Debug-only evidence capture for the EW300 discovery gate.
  *
  * The first scan never opens a USB connection. The separate descriptor capture asks Android for
  * permission, opens the cable only to read its descriptors and the input reports declared by that
  * descriptor. It can also listen briefly on the HID interrupt-IN endpoint after the descriptor
- * has established that endpoint. It sends no output report, EQ, bulk/interrupt-OUT, or
- * vendor-defined command.
+ * has established that endpoint. A separately gated provisional snapshot reproduces only the
+ * public web tool's KT Micro READ framing; it never sends WRITE, COMMIT, CLEAR, EQ, save, or reset.
  * Android may require the app to detach its HID driver briefly; only the HID interface is claimed
  * and it is always released before the connection is closed.
  */
 class Ew300UsbDiscoveryActivity : ComponentActivity() {
     private val usbManager by lazy { getSystemService(USB_SERVICE) as UsbManager }
     private val report = mutableStateOf("Tap Scan connected USB devices to begin.")
+    private var provisionalSnapshotReady by mutableStateOf(false)
     private var descriptorReceiverRegistered = false
 
     private val descriptorPermissionReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            if (intent.action != ACTION_CAPTURE_PERMISSION) return
+            if (intent.action != ACTION_CAPTURE_PERMISSION &&
+                intent.action != ACTION_PROVISIONAL_SNAPSHOT_PERMISSION
+            ) return
             val device = intent.getParcelableExtraCompat<UsbDevice>(UsbManager.EXTRA_DEVICE)
             val granted = intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)
             report.value = when {
                 device == null -> "Android did not identify a device for the descriptor capture."
                 !granted -> "USB permission was not granted. No connection was opened and no cable state changed."
-                else -> readDescriptors(device)
+                intent.action == ACTION_CAPTURE_PERMISSION -> readDescriptors(device)
+                else -> readProvisionalSnapshot(device)
             }
         }
     }
@@ -66,7 +70,10 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
             ContextCompat.registerReceiver(
                 this,
                 descriptorPermissionReceiver,
-                IntentFilter(ACTION_CAPTURE_PERMISSION),
+                IntentFilter().apply {
+                    addAction(ACTION_CAPTURE_PERMISSION)
+                    addAction(ACTION_PROVISIONAL_SNAPSHOT_PERMISSION)
+                },
                 ContextCompat.RECEIVER_NOT_EXPORTED,
             )
             descriptorReceiverRegistered = true
@@ -102,6 +109,22 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                         modifier = Modifier.fillMaxWidth(),
                         onClick = ::requestDescriptorCapture,
                     ) { Text("Request read-only descriptor capture") }
+                    Button(
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = provisionalSnapshotReady,
+                        onClick = ::requestProvisionalSnapshot,
+                    ) { Text("Capture provisional stock-EQ snapshot") }
+                    Text(
+                        if (provisionalSnapshotReady) {
+                            "The snapshot button sends only bounded READ requests reproduced from " +
+                                "the public 31B2 web-tool fallback. The mapping is provisional; no " +
+                                "WRITE, COMMIT, CLEAR, save, reset, or firmware command is present."
+                        } else {
+                            "Complete the descriptor capture first. The provisional snapshot remains " +
+                                "locked unless the exact previously captured EW300 HID descriptor matches."
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                    )
                     Text(reportText, style = MaterialTheme.typography.bodyMedium)
                 }
             }
@@ -137,6 +160,51 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
             PendingIntent.FLAG_MUTABLE,
         )
         report.value = "Waiting for Android's USB permission prompt. Approve it only to capture standard descriptors and passive input; no EQ command will be sent."
+        usbManager.requestPermission(device, permissionIntent)
+    }
+
+    private fun requestProvisionalSnapshot() {
+        if (!provisionalSnapshotReady) {
+            report.value = "The provisional snapshot is locked until this app confirms the exact EW300 HID descriptor."
+            return
+        }
+        requestPermissionOrRun(
+            action = ACTION_PROVISIONAL_SNAPSHOT_PERMISSION,
+            requestCode = 1,
+            waitingMessage = "Waiting for Android's USB permission prompt. This provisional capture sends " +
+                "only KT Micro READ requests; it sends no write, save, reset, clear, commit, or firmware command.",
+            onGranted = ::readProvisionalSnapshot,
+        )
+    }
+
+    private fun requestPermissionOrRun(
+        action: String,
+        requestCode: Int,
+        waitingMessage: String,
+        onGranted: (UsbDevice) -> String,
+    ) {
+        if (!descriptorReceiverRegistered) {
+            report.value = "USB capture could not be prepared on this Android setup. No connection was opened."
+            return
+        }
+        val device = usbManager.deviceList.values.singleOrNull {
+            it.vendorId == EW300_VENDOR_ID && it.productId == EW300_PRODUCT_ID
+        }
+        if (device == null) {
+            report.value = "EW300 DSP cable (31B2:0111) is not currently visible. Connect it, then try again."
+            return
+        }
+        if (usbManager.hasPermission(device)) {
+            report.value = onGranted(device)
+            return
+        }
+        val permissionIntent = PendingIntent.getBroadcast(
+            this,
+            requestCode,
+            Intent(action).setPackage(packageName),
+            PendingIntent.FLAG_MUTABLE,
+        )
+        report.value = waitingMessage
         usbManager.requestPermission(device, permissionIntent)
     }
 
@@ -225,6 +293,9 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                             if (count > 0) {
                                 val exactDescriptor = descriptor.copyOf(count)
                                 appendLine(exactDescriptor.toHex())
+                                val exactEw300Descriptor = exactDescriptor.contentEquals(EXPECTED_EW300_HID_DESCRIPTOR)
+                                appendLine("Exact previously captured EW300 HID descriptor match: $exactEw300Descriptor")
+                                provisionalSnapshotReady = exactEw300Descriptor
                                 val vendorInputs = HidReportDescriptorParser.vendorInputReports(exactDescriptor)
                                 if (vendorInputs.isEmpty()) {
                                     appendLine("No complete vendor input report declaration was found; no input report read was attempted.")
@@ -292,6 +363,116 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
         }
     }
 
+    private fun readProvisionalSnapshot(device: UsbDevice): String {
+        if (device.vendorId != EW300_VENDOR_ID || device.productId != EW300_PRODUCT_ID) {
+            return "The provisional snapshot stopped because the exact VID:PID did not match. No command was sent."
+        }
+        if (device.productName != EW300_PRODUCT_NAME || device.manufacturerName != EW300_MANUFACTURER_NAME) {
+            return "The provisional snapshot stopped because the exact manufacturer/product strings did not match. " +
+                "No command was sent."
+        }
+        val hidInterface = (0 until device.interfaceCount)
+            .map(device::getInterface)
+            .singleOrNull { usbInterface ->
+                usbInterface.id == EW300_HID_INTERFACE_ID &&
+                    usbInterface.interfaceClass == UsbConstants.USB_CLASS_HID
+            }
+            ?: return "The provisional snapshot stopped because exact HID interface 3 was unavailable. No command was sent."
+        val interruptIn = (0 until hidInterface.endpointCount)
+            .map(hidInterface::getEndpoint)
+            .singleOrNull { endpoint ->
+                endpoint.address == EW300_INTERRUPT_IN_ADDRESS &&
+                    endpoint.direction == UsbConstants.USB_DIR_IN &&
+                    endpoint.type == UsbConstants.USB_ENDPOINT_XFER_INT
+            }
+            ?: return "The provisional snapshot stopped because exact interrupt-IN 0x82 was unavailable. No command was sent."
+        val interruptOut = (0 until hidInterface.endpointCount)
+            .map(hidInterface::getEndpoint)
+            .singleOrNull { endpoint ->
+                endpoint.address == EW300_INTERRUPT_OUT_ADDRESS &&
+                    endpoint.direction == UsbConstants.USB_DIR_OUT &&
+                    endpoint.type == UsbConstants.USB_ENDPOINT_XFER_INT
+            }
+            ?: return "The provisional snapshot stopped because exact interrupt-OUT 0x02 was unavailable. No command was sent."
+        val connection = usbManager.openDevice(device)
+            ?: return "Android could not open the exact cable. No command was sent."
+        return try {
+            val claimed = connection.claimInterface(hidInterface, true)
+            if (!claimed) {
+                "Android did not grant the isolated HID-interface claim. No command was sent."
+            } else {
+                try {
+                    buildString {
+                        appendLine("Capture type: provisional bounded KT Micro READ snapshot")
+                        appendLine("VID:PID: %04X:%04X".format(device.vendorId, device.productId))
+                        appendLine("Manufacturer: ${device.manufacturerName}")
+                        appendLine("Product: ${device.productName}")
+                        appendLine("Source basis: public web-tool 31B2 fallback; not vendor-verified")
+                        appendLine("Transport: HID report 0x4B over interrupt-OUT 0x02; responses on interrupt-IN 0x82")
+                        var stopped = false
+                        Ew300ProvisionalProtocol.snapshotRegisters().forEachIndexed { index, register ->
+                            if (stopped) return@forEachIndexed
+                            val slotHint = if (register == Ew300ProvisionalProtocol.CURRENT_SLOT_REGISTER) 3 else 0
+                            val payload = Ew300ProvisionalProtocol.readPayload(register, slotHint)
+                            val wireReport = Ew300ProvisionalProtocol.wireReport(payload)
+                            appendLine()
+                            appendLine("READ ${index + 1}/${Ew300ProvisionalProtocol.snapshotRegisters().size} register 0x%02X".format(register))
+                            appendLine("OUT: ${wireReport.toHex()}")
+                            val sent = connection.bulkTransfer(
+                                interruptOut,
+                                wireReport,
+                                0,
+                                wireReport.size,
+                                PROVISIONAL_TRANSFER_TIMEOUT_MS,
+                            )
+                            appendLine("OUT result: $sent bytes")
+                            if (sent != wireReport.size) {
+                                appendLine("STOP: complete READ report was not accepted; no further request was sent.")
+                                stopped = true
+                                return@forEachIndexed
+                            }
+                            val incoming = ByteArray(interruptIn.maxPacketSize)
+                            val received = connection.bulkTransfer(
+                                interruptIn,
+                                incoming,
+                                0,
+                                incoming.size,
+                                PROVISIONAL_TRANSFER_TIMEOUT_MS,
+                            )
+                            appendLine("IN result: $received bytes")
+                            if (received > 0) appendLine("IN: ${incoming.copyOf(received).toHex()}")
+                            val response = if (received > 0) {
+                                Ew300ProvisionalProtocol.responsePayload(incoming.copyOf(received), register)
+                            } else {
+                                null
+                            }
+                            if (response == null) {
+                                appendLine("STOP: response did not exactly echo report 0x4B, register, and READ 0x52.")
+                                stopped = true
+                            } else {
+                                appendLine("Decoded provisionally: ${Ew300ProvisionalProtocol.describe(register, response)}")
+                            }
+                        }
+                        appendLine()
+                        appendLine("HID interface ${hidInterface.id} release follows this report.")
+                        append(
+                            if (stopped) {
+                                "Snapshot stopped at the first missing or unexpected response. "
+                            } else {
+                                "Provisional raw snapshot completed. "
+                            },
+                        )
+                        append("Only command byte READ 0x52 was sent. No WRITE 0x57, COMMIT 0x53, CLEAR 0x43, save, reset, or firmware command was sent. Reconnect the cable now.")
+                    }
+                } finally {
+                    connection.releaseInterface(hidInterface)
+                }
+            }
+        } finally {
+            connection.close()
+        }
+    }
+
     private fun endpointTypeName(type: Int): String = when (type) {
         0 -> "control"
         1 -> "isochronous"
@@ -308,16 +489,37 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
 
     private companion object {
         const val ACTION_CAPTURE_PERMISSION = "com.weekssa.opraeqforuapp.diagnostics.USB_CAPTURE_PERMISSION"
+        const val ACTION_PROVISIONAL_SNAPSHOT_PERMISSION =
+            "com.weekssa.opraeqforuapp.diagnostics.USB_PROVISIONAL_SNAPSHOT_PERMISSION"
         const val EW300_VENDOR_ID = 0x31B2
         const val EW300_PRODUCT_ID = 0x0111
+        const val EW300_MANUFACTURER_NAME = "LE XIAN"
+        const val EW300_PRODUCT_NAME = "SIMGOT EW300 DSP"
+        const val EW300_HID_INTERFACE_ID = 3
+        const val EW300_INTERRUPT_IN_ADDRESS = 0x82
+        const val EW300_INTERRUPT_OUT_ADDRESS = 0x02
         const val DESCRIPTOR_READ_TIMEOUT_MS = 1000
         const val INPUT_REPORT_READ_TIMEOUT_MS = 1000
         const val PASSIVE_INTERRUPT_READ_TIMEOUT_MS = 250
         const val PASSIVE_INTERRUPT_READ_ATTEMPTS = 3
+        const val PROVISIONAL_TRANSFER_TIMEOUT_MS = 1000
         const val USB_REQUEST_GET_DESCRIPTOR = 0x06
         const val USB_DESCRIPTOR_TYPE_REPORT = 0x22
         const val HID_REQUEST_GET_REPORT = 0x01
         const val HID_REPORT_TYPE_INPUT = 0x01
         const val USB_RECIP_INTERFACE = 0x01
+        val EXPECTED_EW300_HID_DESCRIPTOR = byteArrayOf(
+            0x05, 0x0C, 0x09, 0x01, 0xA1.toByte(), 0x01, 0x85.toByte(), 0x01,
+            0x15, 0x00, 0x25, 0x01, 0x75, 0x01, 0x95.toByte(), 0x02,
+            0x09, 0xE9.toByte(), 0x09, 0xEA.toByte(), 0x81.toByte(), 0x02,
+            0x95.toByte(), 0x04, 0x09, 0xCD.toByte(), 0x09, 0xCE.toByte(),
+            0x09, 0xB6.toByte(), 0x09, 0xB5.toByte(), 0x81.toByte(), 0x02,
+            0x95.toByte(), 0x02, 0x81.toByte(), 0x01, 0x06, 0x01, 0xFF.toByte(),
+            0x85.toByte(), 0x4B, 0x75, 0x08, 0x95.toByte(), 0x0A, 0x09, 0x01,
+            0x81.toByte(), 0x03, 0x95.toByte(), 0x0A, 0x09, 0x02, 0x91.toByte(),
+            0x02, 0x85.toByte(), 0x54, 0x75, 0x08, 0x95.toByte(), 0x0A,
+            0x09, 0x03, 0x81.toByte(), 0x03, 0x95.toByte(), 0x0A, 0x09, 0x04,
+            0x91.toByte(), 0x02, 0xC0.toByte(),
+        )
     }
 }

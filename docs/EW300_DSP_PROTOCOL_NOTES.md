@@ -60,6 +60,26 @@ Scan uses Android enumeration only. The separately requested capture first tries
 
 Protocol framing, filter count/types, limits, quantization, preamp, bypass, persistence, readback and reset semantics remain unresolved. Public leads in the approved implementation plan are unverified and no third-party protocol code has been adopted by this correction.
 
+## Provisional public web-tool evidence
+
+On 2026-09-16 the owner explicitly authorized a higher-risk, trial-and-error discovery strategy using public web information. The public Hangout.Audio Device PEQ assets fetched that day contain no EW300 product-name entry. Instead, `usbDeviceConfig.js` routes every USB vendor ID `0x31B2` device through a generic KT Micro fallback with five filters, report ID `0x4B`, a default first register `0x26`, and a two-times frequency compensation assumption. This is broad fallback behavior, not proof that every field is correct for EW300.
+
+The paired `ktmicroUsbHidHandler.js` expresses a read request as a 10-byte report-`0x4B` payload `[register, 00, 00, 00, 52, 00, hint, 00, 00, 00]`, expects a response echoing the register and command `0x52`, reads the current slot at register `0x24`, filter register pairs beginning at `0x26`, and global gain at `0x66`. The same source separately defines WRITE `0x57`, COMMIT `0x53`, and CLEAR `0x43`; those commands remain excluded from the provisional capture.
+
+Reproducibility hashes for the fetched public assets:
+
+- `usbDeviceConfig.js`: `711510cdb9c5ea31d043273acda7d0a571f259b74e5113125fb4738b47c2c808`
+- `ktmicroUsbHidHandler.js`: `546a46652767c527b203af30101405be1b74a0b1d04b60a8fd8b95920197205d`
+- `usbHidConnector.js`: `0332353195b3f409ba54b727cefd5d1ad920bf6eaf0d61868fabba1b9e3c043f`
+
+The next diagnostic is deliberately narrower than the web tool. It requires exact VID:PID, strings, interface, endpoints, and the already captured 74-byte HID descriptor. It sends only bounded command `0x52` reads and stops on the first missing or non-echoing response. It preserves every raw response and displays ambiguous frequency both raw and under the fallback's two-times interpretation. It sends no WRITE, COMMIT, CLEAR, save, reset, or firmware command. A successful response would establish framing on the owner's cable, but decoded meanings remain provisional until controlled physical evidence confirms them.
+
+Public source locations:
+
+- <https://eq.hangout.audio/shared/plugins/devicePEQ/usbDeviceConfig.js>
+- <https://eq.hangout.audio/shared/plugins/devicePEQ/ktmicroUsbHidHandler.js>
+- <https://eq.hangout.audio/shared/plugins/devicePEQ/usbHidConnector.js>
+
 ## Third-party browser connection observation
 
 On 2026-09-16, the owner directly connected the exact cable to a macOS Chrome session and selected the device shown by the browser as `SIMGOT EW300 DSP`. This is an exact-device connection observation, not a compatibility inference from VID:PID or another product. The page then displayed a write-only action labelled `Save To SIMGOT EW300 DSP`, a local prompt asking whether to adjust earphones to flat, and a page warning that its own profile supports five PEQ filters. It offered no labelled pull, backup, read, or stock-state export action.

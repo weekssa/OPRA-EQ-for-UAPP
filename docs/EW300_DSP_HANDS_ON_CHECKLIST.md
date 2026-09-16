@@ -25,6 +25,16 @@ Owner result for signed source `30ef7b2`: **PASS** for the input-only capture st
 
 Owner result for signed source `823c30f`: **PASS** for the bounded passive-observation stage. Each of the three 250 ms interrupt-IN reads on `0x82` returned `-1`, meaning no incoming bytes were available in the allowed window. The interface was released. No output report, vendor request, EQ write, save, or reset was sent. The current safe discovery checklist is complete; do not add output probes or write tests without an authoritative exact-device stock-state read/restoration sequence.
 
+## Provisional KT Micro READ snapshot
+
+The owner has authorized a higher-risk trial-and-error step based on public web-tool behavior. Use only a signed candidate that passes the existing automated gates. In one installation/session:
+
+1. Connect the untouched EW300 cable, tap **Request read-only descriptor capture**, and approve USB access. Confirm the report says the exact EW300 HID descriptor matches; this unlocks the next button.
+2. Tap **Capture provisional stock-EQ snapshot** once. This sends only report `0x4B` command `0x52` READ requests and stops at the first missing or unexpected response. It must not contain or send WRITE `0x57`, COMMIT `0x53`, CLEAR `0x43`, save, reset, or firmware commands.
+3. Send one full screenshot (or scrolling screenshots) of the raw report, then reconnect the cable. Do not use the web tool's Save action or any EQ control.
+
+If the first response fails validation, no further register request is sent. If all responses validate, the same session captures current slot, five provisional filter pairs, and provisional global gain so the next build can be based on the untouched raw snapshot rather than another discovery install.
+
 Browser-session observation: the owner connected the exact cable to a macOS Chrome third-party Device PEQ page. The page identified it as `SIMGOT EW300 DSP`, but offered only Save and no labelled stock-state Pull, Read, Backup, or Export function. The connection was closed without selecting flat adjustment, Save, reset, or EQ controls. Treat the page's five-filter warning as unverified third-party UI, not a qualified cable limit.
 
 The later hardware checklist remains the approved plan's Phase F checklist, gated on protocol evidence and a complete signed hardware candidate. No hardware PASS has been recorded.

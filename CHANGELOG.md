@@ -16,6 +16,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Recorded an exact-product third-party browser connection that exposes a Save action but no labelled stock-state read or backup. The session was disconnected without an EQ action; its displayed five-filter limit is not adopted as hardware evidence.
 - Added a bounded, descriptor-derived passive interrupt-IN observation to the separate EW300 diagnostic: three 250 ms incoming-only reads after the existing standard reads. It sends no HID output, vendor request, EQ, save, or reset command.
 - Recorded the owner result from that passive observation: all three exact-device interrupt-IN reads timed out with no bytes. The diagnostic released the HID interface; hardware EQ support remains disabled because this does not establish stock-state readback or protocol semantics.
+- Added an owner-authorized provisional stock-state diagnostic derived from the public Hangout.Audio `0x31B2` KT Micro fallback. It is gated on the exact EW300 identity, endpoints, and captured HID descriptor; sends only report `0x4B` command `0x52` READ requests; stops on the first invalid response; and records raw values. WRITE, COMMIT, CLEAR, save, reset, and firmware commands remain excluded.
 
 ### Documentation
 
