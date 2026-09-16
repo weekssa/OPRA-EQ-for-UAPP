@@ -12,6 +12,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Updated the read-only EW300 descriptor diagnostic to derive the exact HID report length from the standard descriptor, make a non-forced host claim of that interface, perform only the standard report-descriptor read, and release the interface. This addresses the owner-observed `-1` descriptor result without sending any HID report or vendor command.
 - Recorded the Pixel 9 refusal of the non-forced EW300 HID-interface claim. The next read-only diagnostic may briefly detach Android's driver from HID interface 3, reads only its standard 74-byte report descriptor, and immediately releases it; no HID report or EQ command is sent.
 - Recorded the complete owner-captured EW300 HID descriptor: vendor report IDs `0x4B` and `0x54` each declare 10-byte input and output payloads. Added descriptor-derived input-only GET_REPORT discovery; output reports remain prohibited until their semantics are evidenced.
+- Recorded that both exact EW300 vendor input reports return zero bytes to read-only HID GET_REPORT. Hardware EQ support remains disabled; no speculative output request was added.
 
 ### Documentation
 

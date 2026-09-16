@@ -44,13 +44,19 @@ Evidence established directly by those bytes:
 - The same vendor page declares report ID `0x54` with a 10-byte input payload and a 10-byte output payload.
 - The descriptor assigns vendor usages `0x01`/`0x02` to the `0x4B` input/output pair and `0x03`/`0x04` to the `0x54` pair. It does not define their semantics.
 
-No output report is safe merely because its size is known. The next diagnostic parses the descriptor, then issues only HID class `GET_REPORT` IN requests for the two exactly declared vendor input reports. It requests no feature report, sends no output data, and releases the interface. A stalled or empty response is evidence and does not justify an output probe.
+No output report is safe merely because its size is known. Signed source `30ef7b24e9c5c0945715e1f44e5ae2c60070a7fa` parsed the descriptor, issued only HID class `GET_REPORT` IN requests for the two exactly declared vendor input reports, and released the interface. The owner's Pixel 9 returned exactly `0 bytes` for both `0x4B` and `0x54`. It requested no feature report and sent no output data. This empty result is evidence and does not justify an output probe.
 
-HID report IDs and sizes are exact. Protocol framing and semantics, firmware identity beyond the exposed strings/revision, and untouched EQ state remain pending.
+HID report IDs and sizes are exact. Protocol framing and semantics, firmware identity beyond the exposed strings/revision, and untouched EQ state remain pending. The official SIMGOT Control compatibility page currently lists EG280 and DEW0S wired DACs, not EW300 DSP; it is therefore not used as EW300 compatibility or protocol evidence. The current public DevicePEQ registry likewise has no `SIMGOT`, `EW300`, or `31B2` entry. These absences prohibit compatibility inference; they do not establish that the cable lacks configurable DSP.
+
+Reference-only sources checked on 2026-09-16:
+
+- [SIMGOT Control compatibility page](https://app.simgot.com/index.php/home/web/appDownload)
+- [DevicePEQ USB-HID registry](https://github.com/jeromeof/devicePEQ/blob/master/devicePEQ/usbDeviceConfig.js) (0BSD; not adopted)
+- [KTMicro tools](https://github.com/gxcreator/ktmicro-tools) (BSD-3-Clause; unrelated chipset implementation, not adopted)
 
 ## Current diagnostic boundary
 
-Scan uses Android enumeration only. The separately requested capture first tries a non-forced host claim of the HID interface. Evidence shows Android refuses it on the owner's Pixel 9, so the follow-up may briefly detach Android's driver from interface 3 using the platform's forced-claim option. It performs standard IN GET_DESCRIPTOR (`bRequest=0x06`, report type `0x22`, interface recipient), parses only complete vendor input declarations, and uses HID class IN GET_REPORT (`bRequest=0x01`, input report type) for those exact IDs and sizes. It then releases the interface and closes the connection. It sends no output report, interrupt-OUT transfer, vendor request, EQ write, save or reset. A report read is not yet a proven backup of untouched EQ; any returned fields require evidence before interpretation and the complete state still must be preserved before any write.
+Scan uses Android enumeration only. The separately requested capture first tries a non-forced host claim of the HID interface. Evidence shows Android refuses it on the owner's Pixel 9, so the follow-up may briefly detach Android's driver from interface 3 using the platform's forced-claim option. It performs standard IN GET_DESCRIPTOR (`bRequest=0x06`, report type `0x22`, interface recipient), parses only complete vendor input declarations, and uses HID class IN GET_REPORT (`bRequest=0x01`, input report type) for those exact IDs and sizes. The exact-device result is zero bytes for both declared vendor input reports. It then releases the interface and closes the connection. It sends no output report, interrupt-OUT transfer, vendor request, EQ write, save or reset. A report read is not yet a proven backup of untouched EQ; any returned fields require evidence before interpretation and the complete state still must be preserved before any write.
 
 Protocol framing, filter count/types, limits, quantization, preamp, bypass, persistence, readback and reset semantics remain unresolved. Public leads in the approved implementation plan are unverified and no third-party protocol code has been adopted by this correction.
 

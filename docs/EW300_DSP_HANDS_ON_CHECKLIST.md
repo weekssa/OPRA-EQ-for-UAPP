@@ -21,4 +21,6 @@ Owner startup result for `c008345`: **FAIL**, app keeps stopping. Replacement so
 
 Owner result for signed source `77e6443`: **PASS** for the descriptor stage. The isolated claim succeeded, all 74 bytes were returned, and release succeeded. Exact vendor report IDs `0x4B` and `0x54` each declare 10-byte input and output payloads. Semantics and untouched EQ state are not yet known; no output report is authorized.
 
+Owner result for signed source `30ef7b2`: **PASS** for the input-only capture stage. HID `GET_REPORT` for the exact declared input reports `0x4B` and `0x54` returned zero bytes. No output report, vendor request, EQ write, save, or reset was sent. Do not proceed to a write test until a separately captured, exact-device request/response sequence establishes the stock-state read and restoration path.
+
 The later hardware checklist remains the approved plan's Phase F checklist, gated on protocol evidence and a complete signed hardware candidate. No hardware PASS has been recorded.
