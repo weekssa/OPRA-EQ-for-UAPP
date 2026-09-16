@@ -33,12 +33,26 @@ android {
             // Keep the Phase B USB discovery tool installable alongside the owner's signed EQ Library.
             applicationIdSuffix = ".ew300discovery"
         }
+        create("diagnostic") {
+            // This is a read-only, separately installable Phase B evidence-capture build.
+            // Its APK is signed only by the controlled candidate workflow, never by normal CI.
+            initWith(getByName("release"))
+            applicationIdSuffix = ".ew300discovery"
+            matchingFallbacks += listOf("release")
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+        }
+    }
+
+    sourceSets {
+        getByName("diagnostic") {
+            java.srcDirs("src/debug/java")
+            manifest.srcFile("src/debug/AndroidManifest.xml")
         }
     }
 
