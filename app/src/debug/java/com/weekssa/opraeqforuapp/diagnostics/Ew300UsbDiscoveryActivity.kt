@@ -175,24 +175,45 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                 appendLine("Manufacturer: ${device.manufacturerName ?: "unavailable"}")
                 appendLine("Product: ${device.productName ?: "unavailable"}")
                 appendLine("Serial: ${device.serialNumber ?: "unavailable"}")
-                appendLine("Raw descriptors (${connection.rawDescriptors.size} bytes): ${connection.rawDescriptors.toHex()}")
+                val rawDescriptors = connection.rawDescriptors
+                appendLine("Raw descriptors (${rawDescriptors.size} bytes): ${rawDescriptors.toHex()}")
                 repeat(device.interfaceCount) { interfaceIndex ->
                     val usbInterface = device.getInterface(interfaceIndex)
                     if (usbInterface.interfaceClass == UsbConstants.USB_CLASS_HID) {
-                        val descriptor = ByteArray(HID_REPORT_DESCRIPTOR_MAX_BYTES)
-                        val count = connection.controlTransfer(
-                            UsbConstants.USB_DIR_IN or
-                                UsbConstants.USB_TYPE_STANDARD or
-                                USB_RECIP_INTERFACE,
-                            USB_REQUEST_GET_DESCRIPTOR,
-                            USB_DESCRIPTOR_TYPE_REPORT shl 8,
-                            usbInterface.id,
-                            descriptor,
-                            descriptor.size,
-                            DESCRIPTOR_READ_TIMEOUT_MS,
+                        val declaredLength = UsbDescriptorParser.hidReportDescriptorLength(
+                            rawDescriptors = rawDescriptors,
+                            interfaceNumber = usbInterface.id,
                         )
-                        appendLine("HID interface ${usbInterface.id} standard report descriptor read: $count bytes")
-                        if (count > 0) appendLine(descriptor.copyOf(count).toHex())
+                        appendLine("HID interface ${usbInterface.id} declared report descriptor length: ${declaredLength ?: "unavailable"}")
+                        if (declaredLength == null || declaredLength <= 0) {
+                            appendLine("HID report descriptor was not read because its standard declared length was unavailable.")
+                            return@repeat
+                        }
+
+                        val claimed = connection.claimInterface(usbInterface, false)
+                        appendLine("HID interface ${usbInterface.id} non-forced claim: $claimed")
+                        if (!claimed) {
+                            appendLine("HID report descriptor was not read because Android did not grant the non-forced interface claim.")
+                            return@repeat
+                        }
+                        try {
+                            val descriptor = ByteArray(declaredLength)
+                            val count = connection.controlTransfer(
+                                UsbConstants.USB_DIR_IN or
+                                    UsbConstants.USB_TYPE_STANDARD or
+                                    USB_RECIP_INTERFACE,
+                                USB_REQUEST_GET_DESCRIPTOR,
+                                USB_DESCRIPTOR_TYPE_REPORT shl 8,
+                                usbInterface.id,
+                                descriptor,
+                                descriptor.size,
+                                DESCRIPTOR_READ_TIMEOUT_MS,
+                            )
+                            appendLine("HID interface ${usbInterface.id} standard report descriptor read: $count bytes")
+                            if (count > 0) appendLine(descriptor.copyOf(count).toHex())
+                        } finally {
+                            appendLine("HID interface ${usbInterface.id} released: ${connection.releaseInterface(usbInterface)}")
+                        }
                     }
                 }
                 append("Only standard descriptor reads were used. No HID report, EQ, save, reset, or vendor-defined command was sent.")
@@ -220,7 +241,6 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
         const val ACTION_CAPTURE_PERMISSION = "com.weekssa.opraeqforuapp.diagnostics.USB_CAPTURE_PERMISSION"
         const val EW300_VENDOR_ID = 0x31B2
         const val EW300_PRODUCT_ID = 0x0111
-        const val HID_REPORT_DESCRIPTOR_MAX_BYTES = 4096
         const val DESCRIPTOR_READ_TIMEOUT_MS = 1000
         const val USB_REQUEST_GET_DESCRIPTOR = 0x06
         const val USB_DESCRIPTOR_TYPE_REPORT = 0x22

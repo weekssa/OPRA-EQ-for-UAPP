@@ -9,6 +9,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 ### Fixed
 
 - Fixed the separate signed EW300 USB diagnostic APK omitting its Kotlin launcher class under AGP 9. Added finished-APK class-definition validation and two cold launches of the exact signed APK on Android 36 before the diagnostic can be handed off. This is discovery tooling; EW300 hardware EQ support remains unqualified.
+- Updated the read-only EW300 descriptor diagnostic to derive the exact HID report length from the standard descriptor, make a non-forced host claim of that interface, perform only the standard report-descriptor read, and release the interface. This addresses the owner-observed `-1` descriptor result without sending any HID report or vendor command.
 
 ### Documentation
 

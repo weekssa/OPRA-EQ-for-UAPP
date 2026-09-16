@@ -17,6 +17,6 @@ Phase B only. Full My DAC/Flash qualification remains blocked by missing protoco
 3. Tap **Request read-only descriptor capture**, approve Android USB permission, and send the full report screenshot. Stop if the app reports an error.
 4. Do not use EQ controls. This step does not read or preserve stock EQ; those operations need separately established protocol evidence.
 
-Owner startup result for `c008345`: **FAIL**, app keeps stopping. A replacement must pass the software launch gate before owner retry. Successful emulator startup does not substitute for the Pixel 9 USB capture.
+Owner startup result for `c008345`: **FAIL**, app keeps stopping. Replacement source `6ec2ce2` passed the software launch gate and opened successfully on the owner's Pixel 9. Enumeration and standard raw descriptors were captured. The HID report descriptor read returned `-1`; a bounded follow-up using a non-forced interface claim is pending. Successful emulator startup does not substitute for the Pixel 9 USB capture.
 
 The later hardware checklist remains the approved plan's Phase F checklist, gated on protocol evidence and a complete signed hardware candidate. No hardware PASS has been recorded.
