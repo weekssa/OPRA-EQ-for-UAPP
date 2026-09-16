@@ -23,6 +23,8 @@ Owner result for signed source `77e6443`: **PASS** for the descriptor stage. The
 
 Owner result for signed source `30ef7b2`: **PASS** for the input-only capture stage. HID `GET_REPORT` for the exact declared input reports `0x4B` and `0x54` returned zero bytes. No output report, vendor request, EQ write, save, or reset was sent. Do not proceed to a write test until a separately captured, exact-device request/response sequence establishes the stock-state read and restoration path.
 
+Owner result for signed source `823c30f`: **PASS** for the bounded passive-observation stage. Each of the three 250 ms interrupt-IN reads on `0x82` returned `-1`, meaning no incoming bytes were available in the allowed window. The interface was released. No output report, vendor request, EQ write, save, or reset was sent. The current safe discovery checklist is complete; do not add output probes or write tests without an authoritative exact-device stock-state read/restoration sequence.
+
 Browser-session observation: the owner connected the exact cable to a macOS Chrome third-party Device PEQ page. The page identified it as `SIMGOT EW300 DSP`, but offered only Save and no labelled stock-state Pull, Read, Backup, or Export function. The connection was closed without selecting flat adjustment, Save, reset, or EQ controls. Treat the page's five-filter warning as unverified third-party UI, not a qualified cable limit.
 
 The later hardware checklist remains the approved plan's Phase F checklist, gated on protocol evidence and a complete signed hardware candidate. No hardware PASS has been recorded.
