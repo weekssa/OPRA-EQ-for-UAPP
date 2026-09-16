@@ -35,7 +35,9 @@ Signed source `77e64437953cbd38ceb21626ccd499d22216b021` repeated the non-forced
 
 The exact report descriptor is:
 
-`05 0C 09 01 A1 01 85 01 15 00 25 01 75 01 95 02 09 E9 09 EA 81 02 95 04 09 CD 09 CE 09 B6 09 B5 81 02 95 02 81 01 06 01 FF 85 4B 75 08 95 0A 09 01 81 03 95 0A 09 02 91 02 85 54 75 08 95 0A 09 03 81 03 95 0A 09 04 91 02 C0`
+`05 0C 09 01 A1 01 85 01 15 00 25 01 75 01 95 02 09 E9 09 EA 81 02 95 04 09 CD 09 CF 09 B6 09 B5 81 02 95 02 81 01 06 01 FF 85 4B 75 08 95 0A 09 01 81 03 95 0A 09 02 91 02 85 54 75 08 95 0A 09 03 81 03 95 0A 09 04 91 02 C0`
+
+The first transcription of this evidence incorrectly recorded the second four-bit Consumer Control usage as `0xCE`. The owner's original capture and the later exact-gate result both show `0xCF`. Signed provisional source `fa1ed1a945a7ded5389fbaf50c939b8409bab449` therefore kept its READ button locked and sent no command. The corrected gate uses the captured `0xCF` byte and has an exact 74-byte regression test.
 
 Evidence established directly by those bytes:
 

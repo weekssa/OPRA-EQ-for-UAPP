@@ -293,7 +293,9 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                             if (count > 0) {
                                 val exactDescriptor = descriptor.copyOf(count)
                                 appendLine(exactDescriptor.toHex())
-                                val exactEw300Descriptor = exactDescriptor.contentEquals(EXPECTED_EW300_HID_DESCRIPTOR)
+                                val exactEw300Descriptor = exactDescriptor.contentEquals(
+                                    Ew300ProvisionalProtocol.EXPECTED_HID_DESCRIPTOR,
+                                )
                                 appendLine("Exact previously captured EW300 HID descriptor match: $exactEw300Descriptor")
                                 provisionalSnapshotReady = exactEw300Descriptor
                                 val vendorInputs = HidReportDescriptorParser.vendorInputReports(exactDescriptor)
@@ -508,18 +510,5 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
         const val HID_REQUEST_GET_REPORT = 0x01
         const val HID_REPORT_TYPE_INPUT = 0x01
         const val USB_RECIP_INTERFACE = 0x01
-        val EXPECTED_EW300_HID_DESCRIPTOR = byteArrayOf(
-            0x05, 0x0C, 0x09, 0x01, 0xA1.toByte(), 0x01, 0x85.toByte(), 0x01,
-            0x15, 0x00, 0x25, 0x01, 0x75, 0x01, 0x95.toByte(), 0x02,
-            0x09, 0xE9.toByte(), 0x09, 0xEA.toByte(), 0x81.toByte(), 0x02,
-            0x95.toByte(), 0x04, 0x09, 0xCD.toByte(), 0x09, 0xCE.toByte(),
-            0x09, 0xB6.toByte(), 0x09, 0xB5.toByte(), 0x81.toByte(), 0x02,
-            0x95.toByte(), 0x02, 0x81.toByte(), 0x01, 0x06, 0x01, 0xFF.toByte(),
-            0x85.toByte(), 0x4B, 0x75, 0x08, 0x95.toByte(), 0x0A, 0x09, 0x01,
-            0x81.toByte(), 0x03, 0x95.toByte(), 0x0A, 0x09, 0x02, 0x91.toByte(),
-            0x02, 0x85.toByte(), 0x54, 0x75, 0x08, 0x95.toByte(), 0x0A,
-            0x09, 0x03, 0x81.toByte(), 0x03, 0x95.toByte(), 0x0A, 0x09, 0x04,
-            0x91.toByte(), 0x02, 0xC0.toByte(),
-        )
     }
 }
