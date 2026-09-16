@@ -3,6 +3,7 @@ package com.weekssa.opraeqforuapp.diagnostics
 internal object Ew300ProvisionalProtocol {
     const val REPORT_ID = 0x4B
     const val COMMAND_READ = 0x52
+    const val COMMAND_WRITE = 0x57
     const val CURRENT_SLOT_REGISTER = 0x24
     const val FIRST_FILTER_REGISTER = 0x26
     const val GLOBAL_GAIN_REGISTER = 0x66
@@ -39,6 +40,8 @@ internal object Ew300ProvisionalProtocol {
         0x66 to hex("66 00 00 00 52 00 F8 F8 00 00"),
     )
 
+    val TEMPORARY_BAND_1_DATA = hex("F6 FF 64 00")
+
     fun readPayload(register: Int, slotHint: Int = 0): ByteArray = byteArrayOf(
         register.toByte(),
         0,
@@ -56,6 +59,25 @@ internal object Ew300ProvisionalProtocol {
         require(payload.size == PAYLOAD_SIZE)
         return byteArrayOf(REPORT_ID.toByte()) + payload
     }
+
+    fun writePayload(register: Int, data: ByteArray): ByteArray {
+        require(data.size == 4)
+        return byteArrayOf(
+            register.toByte(), 0, 0, 0, COMMAND_WRITE.toByte(), 0,
+            data[0], data[1], data[2], data[3],
+        )
+    }
+
+    fun expectedReadPayload(register: Int, data: ByteArray): ByteArray {
+        require(data.size == 4)
+        return byteArrayOf(
+            register.toByte(), 0, 0, 0, COMMAND_READ.toByte(), 0,
+            data[0], data[1], data[2], data[3],
+        )
+    }
+
+    fun stockData(register: Int): ByteArray =
+        requireNotNull(STOCK_RESPONSE_PAYLOADS[register]).copyOfRange(6, 10)
 
     fun responsePayload(wireReport: ByteArray, expectedRegister: Int): ByteArray? {
         if (wireReport.size != WIRE_REPORT_SIZE) return null

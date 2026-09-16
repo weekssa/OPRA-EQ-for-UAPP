@@ -99,6 +99,8 @@ The public decoder yields current slot `1`, five PK filters with gains `-1.1`, `
 
 This completes non-mutating stock-state preservation and establishes exact READ transport/framing. It does not yet prove WRITE framing, field acoustics, quantization boundaries, persistence, or reset semantics. The narrow proposed next test would make a very small temporary change to band 1, read it back, restore the exact four stock bytes immediately, and read the restoration back, without COMMIT/CLEAR/save/reset. That is the first write-capable boundary and requires explicit owner approval after this captured backup.
 
+The owner explicitly approved that reversible write/readback/restore test on 2026-09-16. Its implementation remains gated on an exact fresh match to the preserved register `0x26` payload. It changes only the signed gain word from `F5 FF` (-1.1 dB under the public decoder) to `F6 FF` (-1.0 dB), leaving the frequency bytes `64 00` unchanged. It reads the temporary value, always attempts restoration with the exact captured `F5 FF 64 00`, and reads restoration back. It sends no COMMIT, CLEAR, save, reset, slot, global-gain, or firmware command. This is a qualification diagnostic, not production EW300 support.
+
 Public source locations:
 
 - <https://eq.hangout.audio/shared/plugins/devicePEQ/usbDeviceConfig.js>

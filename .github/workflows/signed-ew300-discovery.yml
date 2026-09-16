@@ -1,4 +1,4 @@
-name: Signed EW300 Provisional READ Snapshot Candidate
+name: Signed EW300 Reversible Write Qualification Candidate
 
 on:
   push:
@@ -67,7 +67,7 @@ jobs:
           printf '%s' "$OPRA_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/eq-library-release.p12"
           chmod 600 "$RUNNER_TEMP/eq-library-release.p12"
 
-      - name: Run provisional READ snapshot gate and build APK
+      - name: Run reversible write qualification gate and build APK
         run: gradle :app:testDebugUnitTest :app:lintDiagnostic :app:assembleDiagnostic --stacktrace
 
       - name: Require diagnostic launcher in APK bytecode
@@ -146,10 +146,10 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-      - name: Upload signed provisional READ snapshot candidate
+      - name: Upload signed reversible write qualification candidate
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: EW300-signed-provisional-read-snapshot-${{ github.sha }}
+          name: EW300-signed-reversible-write-test-${{ github.sha }}
           path: dist/
           if-no-files-found: error
           retention-days: 14

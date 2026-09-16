@@ -20,6 +20,7 @@ for attempt in 1 2; do
   grep -q 'Scan connected USB devices' "$record_dir/window-$attempt.xml"
   grep -q 'Request read-only descriptor capture' "$record_dir/window-$attempt.xml"
   grep -q 'Capture provisional stock-EQ snapshot' "$record_dir/window-$attempt.xml"
+  grep -q 'Run reversible +0.1 dB write test' "$record_dir/window-$attempt.xml"
   grep -q 'Tap Scan connected USB devices to begin.' "$record_dir/window-$attempt.xml"
 done
 adb logcat -d -b crash > "$record_dir/crash-log.txt"
@@ -27,4 +28,4 @@ if grep -q 'FATAL EXCEPTION' "$record_dir/crash-log.txt"; then
   cat "$record_dir/crash-log.txt"
   exit 1
 fi
-printf 'PASS: exact signed APK launched twice and all three controls rendered on Android API 36. The provisional snapshot remained descriptor-gated; no USB connection or command was used.\n' | tee "$record_dir/result.txt"
+printf 'PASS: exact signed APK launched twice and all four controls rendered on Android API 36. The write test remained stock-snapshot-gated; no USB connection or command was used.\n' | tee "$record_dir/result.txt"

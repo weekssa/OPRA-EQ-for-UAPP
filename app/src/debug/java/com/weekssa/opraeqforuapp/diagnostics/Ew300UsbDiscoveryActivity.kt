@@ -9,6 +9,7 @@ import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbConstants
 import android.hardware.usb.UsbManager
 import android.os.Bundle
+import android.os.SystemClock
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -38,7 +39,9 @@ import com.weekssa.opraeqforuapp.ui.theme.OpraEqTheme
  * permission, opens the cable only to read its descriptors and the input reports declared by that
  * descriptor. It can also listen briefly on the HID interrupt-IN endpoint after the descriptor
  * has established that endpoint. A separately gated provisional snapshot reproduces only the
- * public web tool's KT Micro READ framing; it never sends WRITE, COMMIT, CLEAR, EQ, save, or reset.
+ * public web tool's KT Micro READ framing. After an exact stock snapshot, a separately approved
+ * diagnostic can make one temporary +0.1 dB Band 1 write, read it back, restore the captured bytes,
+ * and verify restoration. It never sends COMMIT, CLEAR, save, reset, or firmware commands.
  * Android may require the app to detach its HID driver briefly; only the HID interface is claimed
  * and it is always released before the connection is closed.
  */
@@ -46,12 +49,14 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
     private val usbManager by lazy { getSystemService(USB_SERVICE) as UsbManager }
     private val report = mutableStateOf("Tap Scan connected USB devices to begin.")
     private var provisionalSnapshotReady by mutableStateOf(false)
+    private var reversibleProbeReady by mutableStateOf(false)
     private var descriptorReceiverRegistered = false
 
     private val descriptorPermissionReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action != ACTION_CAPTURE_PERMISSION &&
-                intent.action != ACTION_PROVISIONAL_SNAPSHOT_PERMISSION
+                intent.action != ACTION_PROVISIONAL_SNAPSHOT_PERMISSION &&
+                intent.action != ACTION_REVERSIBLE_WRITE_PERMISSION
             ) return
             val device = intent.getParcelableExtraCompat<UsbDevice>(UsbManager.EXTRA_DEVICE)
             val granted = intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)
@@ -59,7 +64,8 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                 device == null -> "Android did not identify a device for the descriptor capture."
                 !granted -> "USB permission was not granted. No connection was opened and no cable state changed."
                 intent.action == ACTION_CAPTURE_PERMISSION -> readDescriptors(device)
-                else -> readProvisionalSnapshot(device)
+                intent.action == ACTION_PROVISIONAL_SNAPSHOT_PERMISSION -> readProvisionalSnapshot(device)
+                else -> runReversibleWriteTest(device)
             }
         }
     }
@@ -73,6 +79,7 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                 IntentFilter().apply {
                     addAction(ACTION_CAPTURE_PERMISSION)
                     addAction(ACTION_PROVISIONAL_SNAPSHOT_PERMISSION)
+                    addAction(ACTION_REVERSIBLE_WRITE_PERMISSION)
                 },
                 ContextCompat.RECEIVER_NOT_EXPORTED,
             )
@@ -125,6 +132,23 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                         },
                         style = MaterialTheme.typography.bodySmall,
                     )
+                    Button(
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = reversibleProbeReady,
+                        onClick = ::requestReversibleWriteTest,
+                    ) { Text("Run reversible +0.1 dB write test") }
+                    Text(
+                        if (reversibleProbeReady) {
+                            "This approved test first rechecks the exact stock Band 1 bytes, writes " +
+                                "only a +0.1 dB temporary gain, reads it back, immediately restores " +
+                                "the captured bytes, and verifies restoration. It sends no commit, " +
+                                "save, clear, reset, or firmware command."
+                        } else {
+                            "The reversible test remains locked until this installation reads the " +
+                                "complete preserved stock snapshot exactly."
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                    )
                     Text(reportText, style = MaterialTheme.typography.bodyMedium)
                 }
             }
@@ -174,6 +198,21 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
             waitingMessage = "Waiting for Android's USB permission prompt. This provisional capture sends " +
                 "only KT Micro READ requests; it sends no write, save, reset, clear, commit, or firmware command.",
             onGranted = ::readProvisionalSnapshot,
+        )
+    }
+
+    private fun requestReversibleWriteTest() {
+        if (!reversibleProbeReady) {
+            report.value = "The reversible test is locked until this app confirms the exact preserved stock snapshot."
+            return
+        }
+        requestPermissionOrRun(
+            action = ACTION_REVERSIBLE_WRITE_PERMISSION,
+            requestCode = 2,
+            waitingMessage = "Waiting for Android's USB permission prompt. This approved diagnostic " +
+                "makes one temporary +0.1 dB Band 1 write, reads it, restores the captured bytes, " +
+                "and verifies restoration. It does not commit or save.",
+            onGranted = ::runReversibleWriteTest,
         )
     }
 
@@ -412,6 +451,7 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                         appendLine("Source basis: public web-tool 31B2 fallback; not vendor-verified")
                         appendLine("Transport: HID report 0x4B over interrupt-OUT 0x02; responses on interrupt-IN 0x82")
                         var stopped = false
+                        val responses = linkedMapOf<Int, ByteArray>()
                         Ew300ProvisionalProtocol.snapshotRegisters().forEachIndexed { index, register ->
                             if (stopped) return@forEachIndexed
                             val slotHint = if (register == Ew300ProvisionalProtocol.CURRENT_SLOT_REGISTER) 3 else 0
@@ -452,9 +492,15 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                                 appendLine("STOP: response did not exactly echo report 0x4B, register, and READ 0x52.")
                                 stopped = true
                             } else {
+                                responses[register] = response
                                 appendLine("Decoded provisionally: ${Ew300ProvisionalProtocol.describe(register, response)}")
                             }
                         }
+                        val exactStockSnapshot = !stopped &&
+                            Ew300ProvisionalProtocol.matchesStockSnapshot(responses)
+                        appendLine()
+                        appendLine("Exact preserved stock snapshot match: $exactStockSnapshot")
+                        reversibleProbeReady = exactStockSnapshot
                         appendLine()
                         appendLine("HID interface ${hidInterface.id} release follows this report.")
                         append(
@@ -465,6 +511,172 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                             },
                         )
                         append("Only command byte READ 0x52 was sent. No WRITE 0x57, COMMIT 0x53, CLEAR 0x43, save, reset, or firmware command was sent. Reconnect the cable now.")
+                    }
+                } finally {
+                    connection.releaseInterface(hidInterface)
+                }
+            }
+        } finally {
+            connection.close()
+        }
+    }
+
+    private fun runReversibleWriteTest(device: UsbDevice): String {
+        reversibleProbeReady = false
+        if (device.vendorId != EW300_VENDOR_ID || device.productId != EW300_PRODUCT_ID ||
+            device.productName != EW300_PRODUCT_NAME ||
+            device.manufacturerName != EW300_MANUFACTURER_NAME
+        ) {
+            return "The reversible test stopped because the exact cable identity did not match. No write was sent."
+        }
+        val hidInterface = (0 until device.interfaceCount)
+            .map(device::getInterface)
+            .singleOrNull { usbInterface ->
+                usbInterface.id == EW300_HID_INTERFACE_ID &&
+                    usbInterface.interfaceClass == UsbConstants.USB_CLASS_HID
+            }
+            ?: return "The reversible test stopped because exact HID interface 3 was unavailable. No write was sent."
+        val interruptIn = (0 until hidInterface.endpointCount)
+            .map(hidInterface::getEndpoint)
+            .singleOrNull { endpoint ->
+                endpoint.address == EW300_INTERRUPT_IN_ADDRESS &&
+                    endpoint.direction == UsbConstants.USB_DIR_IN &&
+                    endpoint.type == UsbConstants.USB_ENDPOINT_XFER_INT
+            }
+            ?: return "The reversible test stopped because interrupt-IN 0x82 was unavailable. No write was sent."
+        val interruptOut = (0 until hidInterface.endpointCount)
+            .map(hidInterface::getEndpoint)
+            .singleOrNull { endpoint ->
+                endpoint.address == EW300_INTERRUPT_OUT_ADDRESS &&
+                    endpoint.direction == UsbConstants.USB_DIR_OUT &&
+                    endpoint.type == UsbConstants.USB_ENDPOINT_XFER_INT
+            }
+            ?: return "The reversible test stopped because interrupt-OUT 0x02 was unavailable. No write was sent."
+        val connection = usbManager.openDevice(device)
+            ?: return "Android could not open the exact cable. No write was sent."
+        return try {
+            if (!connection.claimInterface(hidInterface, true)) {
+                "Android did not grant the isolated HID-interface claim. No write was sent."
+            } else {
+                try {
+                    val log = StringBuilder()
+                    fun readRegister(label: String): ByteArray? {
+                        val payload = Ew300ProvisionalProtocol.readPayload(
+                            Ew300ProvisionalProtocol.FIRST_FILTER_REGISTER,
+                        )
+                        val reportBytes = Ew300ProvisionalProtocol.wireReport(payload)
+                        log.appendLine("$label READ OUT: ${reportBytes.toHex()}")
+                        val sent = connection.bulkTransfer(
+                            interruptOut,
+                            reportBytes,
+                            0,
+                            reportBytes.size,
+                            PROVISIONAL_TRANSFER_TIMEOUT_MS,
+                        )
+                        log.appendLine("$label READ OUT result: $sent bytes")
+                        if (sent != reportBytes.size) return null
+                        repeat(REVERSIBLE_RESPONSE_ATTEMPTS) { attempt ->
+                            val incoming = ByteArray(interruptIn.maxPacketSize)
+                            val received = connection.bulkTransfer(
+                                interruptIn,
+                                incoming,
+                                0,
+                                incoming.size,
+                                PROVISIONAL_TRANSFER_TIMEOUT_MS,
+                            )
+                            log.appendLine("$label IN ${attempt + 1}/$REVERSIBLE_RESPONSE_ATTEMPTS: $received bytes")
+                            if (received > 0) {
+                                val exact = incoming.copyOf(received)
+                                log.appendLine("$label IN: ${exact.toHex()}")
+                                val response = Ew300ProvisionalProtocol.responsePayload(
+                                    exact,
+                                    Ew300ProvisionalProtocol.FIRST_FILTER_REGISTER,
+                                )
+                                if (response != null) return response
+                                log.appendLine("$label ignored a non-READ response while waiting for the exact echo.")
+                            }
+                        }
+                        return null
+                    }
+
+                    fun writeBand1(label: String, data: ByteArray): Int {
+                        val reportBytes = Ew300ProvisionalProtocol.wireReport(
+                            Ew300ProvisionalProtocol.writePayload(
+                                Ew300ProvisionalProtocol.FIRST_FILTER_REGISTER,
+                                data,
+                            ),
+                        )
+                        log.appendLine("$label WRITE OUT: ${reportBytes.toHex()}")
+                        val sent = connection.bulkTransfer(
+                            interruptOut,
+                            reportBytes,
+                            0,
+                            reportBytes.size,
+                            PROVISIONAL_TRANSFER_TIMEOUT_MS,
+                        )
+                        log.appendLine("$label WRITE OUT result: $sent bytes")
+                        return sent
+                    }
+
+                    log.appendLine("Capture type: approved reversible EW300 Band 1 write/readback/restore")
+                    log.appendLine("Exact device: 31B2:0111 / LE XIAN / SIMGOT EW300 DSP")
+                    log.appendLine("Scope: register 0x26 gain -1.1 dB to -1.0 dB; frequency bytes unchanged")
+                    log.appendLine("No COMMIT, CLEAR, save, reset, slot, global-gain, or firmware command is present.")
+                    log.appendLine()
+
+                    val stockPayload = Ew300ProvisionalProtocol.STOCK_RESPONSE_PAYLOADS.getValue(
+                        Ew300ProvisionalProtocol.FIRST_FILTER_REGISTER,
+                    )
+                    val stockData = Ew300ProvisionalProtocol.stockData(
+                        Ew300ProvisionalProtocol.FIRST_FILTER_REGISTER,
+                    )
+                    val baseline = readRegister("BASELINE")
+                    val baselineExact = baseline?.contentEquals(stockPayload) == true
+                    log.appendLine("Exact preserved baseline match: $baselineExact")
+                    if (!baselineExact) {
+                        log.append("STOP: current Band 1 bytes differ from the preserved stock capture. No write was sent.")
+                        log.toString()
+                    } else {
+                        val temporarySent = writeBand1(
+                            "TEMPORARY",
+                            Ew300ProvisionalProtocol.TEMPORARY_BAND_1_DATA,
+                        )
+                        SystemClock.sleep(REVERSIBLE_SETTLE_MS)
+                        val temporaryRead = if (temporarySent == Ew300ProvisionalProtocol.WIRE_REPORT_SIZE) {
+                            readRegister("TEMPORARY")
+                        } else {
+                            null
+                        }
+                        val expectedTemporary = Ew300ProvisionalProtocol.expectedReadPayload(
+                            Ew300ProvisionalProtocol.FIRST_FILTER_REGISTER,
+                            Ew300ProvisionalProtocol.TEMPORARY_BAND_1_DATA,
+                        )
+                        val temporaryVerified = temporaryRead?.contentEquals(expectedTemporary) == true
+                        log.appendLine("Temporary +0.1 dB readback verified: $temporaryVerified")
+                        log.appendLine()
+
+                        val restoreSent = writeBand1("RESTORE", stockData)
+                        SystemClock.sleep(REVERSIBLE_SETTLE_MS)
+                        val restoredRead = if (restoreSent == Ew300ProvisionalProtocol.WIRE_REPORT_SIZE) {
+                            readRegister("RESTORE")
+                        } else {
+                            null
+                        }
+                        val restored = restoredRead?.contentEquals(stockPayload) == true
+                        log.appendLine("Exact preserved Band 1 restoration verified: $restored")
+                        log.appendLine("HID interface ${hidInterface.id} release follows this report.")
+                        log.append(
+                            if (restored) {
+                                "RESTORED: Band 1 exactly matches the untouched capture. "
+                            } else {
+                                "ATTENTION: exact restoration was not verified. Stop playback and retain this report. "
+                            },
+                        )
+                        log.append(
+                            "No COMMIT, CLEAR, save, reset, slot, global-gain, or firmware command was sent. " +
+                                "Reconnect the cable now.",
+                        )
+                        log.toString()
                     }
                 } finally {
                     connection.releaseInterface(hidInterface)
@@ -493,6 +705,8 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
         const val ACTION_CAPTURE_PERMISSION = "com.weekssa.opraeqforuapp.diagnostics.USB_CAPTURE_PERMISSION"
         const val ACTION_PROVISIONAL_SNAPSHOT_PERMISSION =
             "com.weekssa.opraeqforuapp.diagnostics.USB_PROVISIONAL_SNAPSHOT_PERMISSION"
+        const val ACTION_REVERSIBLE_WRITE_PERMISSION =
+            "com.weekssa.opraeqforuapp.diagnostics.USB_REVERSIBLE_WRITE_PERMISSION"
         const val EW300_VENDOR_ID = 0x31B2
         const val EW300_PRODUCT_ID = 0x0111
         const val EW300_MANUFACTURER_NAME = "LE XIAN"
@@ -505,6 +719,8 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
         const val PASSIVE_INTERRUPT_READ_TIMEOUT_MS = 250
         const val PASSIVE_INTERRUPT_READ_ATTEMPTS = 3
         const val PROVISIONAL_TRANSFER_TIMEOUT_MS = 1000
+        const val REVERSIBLE_SETTLE_MS = 200L
+        const val REVERSIBLE_RESPONSE_ATTEMPTS = 3
         const val USB_REQUEST_GET_DESCRIPTOR = 0x06
         const val USB_DESCRIPTOR_TYPE_REPORT = 0x22
         const val HID_REQUEST_GET_REPORT = 0x01

@@ -58,6 +58,26 @@ class Ew300ProvisionalProtocolTest {
     }
 
     @Test
+    fun `reversible probe changes only band one gain by one tenth`() {
+        assertEquals("F5 FF 64 00", Ew300ProvisionalProtocol.stockData(0x26).toHex())
+        assertEquals("F6 FF 64 00", Ew300ProvisionalProtocol.TEMPORARY_BAND_1_DATA.toHex())
+        assertEquals(
+            "26 00 00 00 57 00 F6 FF 64 00",
+            Ew300ProvisionalProtocol.writePayload(
+                0x26,
+                Ew300ProvisionalProtocol.TEMPORARY_BAND_1_DATA,
+            ).toHex(),
+        )
+        assertEquals(
+            "26 00 00 00 52 00 F6 FF 64 00",
+            Ew300ProvisionalProtocol.expectedReadPayload(
+                0x26,
+                Ew300ProvisionalProtocol.TEMPORARY_BAND_1_DATA,
+            ).toHex(),
+        )
+    }
+
+    @Test
     fun `response requires exact report register and read echo`() {
         val valid = byteArrayOf(0x4B, 0x24, 0, 0, 0, 0x52, 0, 3, 0, 0, 0)
         assertEquals(3, Ew300ProvisionalProtocol.responsePayload(valid, 0x24)?.get(6)?.toInt())
