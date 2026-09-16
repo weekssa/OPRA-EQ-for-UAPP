@@ -20,7 +20,7 @@ jobs:
     timeout-minutes: 40
     env:
       # Share an explicit AVD registry between avdmanager and emulator on hosted runners.
-      ANDROID_AVD_HOME: ${{ runner.temp }}/ew300-avd
+      ANDROID_AVD_HOME: ${{ github.workspace }}/../ew300-avd
 
     steps:
       - name: Check out exact source
