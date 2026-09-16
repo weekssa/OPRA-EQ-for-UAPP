@@ -2,7 +2,7 @@ name: Signed EW300 Read-Only Discovery Candidate
 
 on:
   push:
-    branches: [v0.7-ew300-discovery-candidate]
+    branches: [ew300-discovery-candidate]
   workflow_dispatch:
 
 permissions:

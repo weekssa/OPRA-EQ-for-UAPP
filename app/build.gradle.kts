@@ -37,7 +37,7 @@ android {
             // This is a read-only, separately installable Phase B evidence-capture build.
             // Its APK is signed only by the controlled candidate workflow, never by normal CI.
             initWith(getByName("release"))
-            applicationIdSuffix = ".ew300discovery"
+            applicationIdSuffix = ".ew300evidence"
             matchingFallbacks += listOf("release")
         }
         release {
