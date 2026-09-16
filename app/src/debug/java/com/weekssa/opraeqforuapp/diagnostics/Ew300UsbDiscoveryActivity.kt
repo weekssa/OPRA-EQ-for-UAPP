@@ -41,6 +41,7 @@ import com.weekssa.opraeqforuapp.ui.theme.OpraEqTheme
 class Ew300UsbDiscoveryActivity : ComponentActivity() {
     private val usbManager by lazy { getSystemService(USB_SERVICE) as UsbManager }
     private val report = mutableStateOf("Tap Scan connected USB devices to begin.")
+    private var descriptorReceiverRegistered = false
 
     private val descriptorPermissionReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -57,12 +58,18 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        ContextCompat.registerReceiver(
-            this,
-            descriptorPermissionReceiver,
-            IntentFilter(ACTION_CAPTURE_PERMISSION),
-            ContextCompat.RECEIVER_NOT_EXPORTED,
-        )
+        runCatching {
+            ContextCompat.registerReceiver(
+                this,
+                descriptorPermissionReceiver,
+                IntentFilter(ACTION_CAPTURE_PERMISSION),
+                ContextCompat.RECEIVER_NOT_EXPORTED,
+            )
+            descriptorReceiverRegistered = true
+        }.onFailure {
+            report.value = "USB descriptor capture is unavailable on this Android setup. " +
+                "The ordinary read-only scan remains available and does not open the cable."
+        }
         enableEdgeToEdge()
         setContent {
             val reportText by report
@@ -94,11 +101,16 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        unregisterReceiver(descriptorPermissionReceiver)
+        if (descriptorReceiverRegistered) unregisterReceiver(descriptorPermissionReceiver)
         super.onDestroy()
     }
 
     private fun requestDescriptorCapture() {
+        if (!descriptorReceiverRegistered) {
+            report.value = "USB descriptor capture could not be prepared on this Android setup. " +
+                "No connection was opened and no cable state changed."
+            return
+        }
         val device = usbManager.deviceList.values.singleOrNull {
             it.vendorId == EW300_VENDOR_ID && it.productId == EW300_PRODUCT_ID
         }
