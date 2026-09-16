@@ -171,7 +171,7 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                         val count = connection.controlTransfer(
                             UsbConstants.USB_DIR_IN or
                                 UsbConstants.USB_TYPE_STANDARD or
-                                UsbConstants.USB_RECIP_INTERFACE,
+                                USB_RECIP_INTERFACE,
                             USB_REQUEST_GET_DESCRIPTOR,
                             USB_DESCRIPTOR_TYPE_REPORT shl 8,
                             usbInterface.id,
@@ -212,5 +212,6 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
         const val DESCRIPTOR_READ_TIMEOUT_MS = 1000
         const val USB_REQUEST_GET_DESCRIPTOR = 0x06
         const val USB_DESCRIPTOR_TYPE_REPORT = 0x22
+        const val USB_RECIP_INTERFACE = 0x01
     }
 }
