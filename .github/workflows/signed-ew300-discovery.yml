@@ -18,6 +18,9 @@ jobs:
     if: github.repository == 'weekssa/OPRA-EQ-for-UAPP'
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    env:
+      # Share an explicit AVD registry between avdmanager and emulator on hosted runners.
+      ANDROID_AVD_HOME: ${{ runner.temp }}/ew300-avd
 
     steps:
       - name: Check out exact source
@@ -104,8 +107,10 @@ jobs:
 
       - name: Install Android 36 emulator
         run: |
+          mkdir -p "$ANDROID_AVD_HOME"
           sdkmanager "emulator" "system-images;android-36;google_apis;x86_64"
-          echo no | avdmanager create avd --name ew300-smoke --package "system-images;android-36;google_apis;x86_64"
+          echo no | avdmanager create avd --name ew300-smoke --path "$ANDROID_AVD_HOME/ew300-smoke.avd" --package "system-images;android-36;google_apis;x86_64"
+          "$ANDROID_HOME/emulator/emulator" -list-avds | grep -Fx ew300-smoke
           sudo setfacl -m u:"$(id -un)":rw /dev/kvm
 
       - name: Launch exact signed APK on Android 36
@@ -115,7 +120,7 @@ jobs:
           set -euo pipefail
           "$ANDROID_HOME/emulator/emulator" -avd ew300-smoke -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect > "$RUNNER_TEMP/ew300-emulator.log" 2>&1 &
           emulator_pid=$!
-          trap 'kill "$emulator_pid" || true' EXIT
+          trap 'cat "$RUNNER_TEMP/ew300-emulator.log"; kill "$emulator_pid" 2>/dev/null || true' EXIT
           timeout 180 adb wait-for-device
           booted=false
           for attempt in $(seq 1 90); do
