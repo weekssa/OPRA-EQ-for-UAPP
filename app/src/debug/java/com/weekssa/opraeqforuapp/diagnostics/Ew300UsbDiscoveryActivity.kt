@@ -36,7 +36,8 @@ import com.weekssa.opraeqforuapp.ui.theme.OpraEqTheme
  *
  * The first scan never opens a USB connection. The separate descriptor capture asks Android for
  * permission, opens the cable only to read its descriptors, and sends no EQ, bulk, interrupt, or
- * vendor-defined command.
+ * vendor-defined command. Android may require the app to detach its HID driver briefly; only the
+ * HID interface is claimed and it is always released before the connection is closed.
  */
 class Ew300UsbDiscoveryActivity : ComponentActivity() {
     private val usbManager by lazy { getSystemService(USB_SERVICE) as UsbManager }
@@ -84,7 +85,9 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                     Text("EW300 USB discovery", style = MaterialTheme.typography.headlineSmall)
                     Text(
                         "Scan lists USB information Android already exposes. Descriptor capture " +
-                            "asks Android for access only to read standard USB descriptors; it does not change EQ.",
+                            "asks Android for access only to read standard USB descriptors. It may " +
+                            "briefly detach Android's media-button driver; it does not change EQ. " +
+                            "Reconnect the cable after capture.",
                     )
                     Button(
                         modifier = Modifier.fillMaxWidth(),
@@ -190,10 +193,14 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                             return@repeat
                         }
 
-                        val claimed = connection.claimInterface(usbInterface, false)
-                        appendLine("HID interface ${usbInterface.id} non-forced claim: $claimed")
+                        val nonForcedClaim = connection.claimInterface(usbInterface, false)
+                        appendLine("HID interface ${usbInterface.id} non-forced claim: $nonForcedClaim")
+                        val claimed = nonForcedClaim || connection.claimInterface(usbInterface, true)
+                        if (!nonForcedClaim) {
+                            appendLine("HID interface ${usbInterface.id} isolated forced claim: $claimed")
+                        }
                         if (!claimed) {
-                            appendLine("HID report descriptor was not read because Android did not grant the non-forced interface claim.")
+                            appendLine("HID report descriptor was not read because Android did not grant the isolated interface claim.")
                             return@repeat
                         }
                         try {
@@ -216,7 +223,7 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                         }
                     }
                 }
-                append("Only standard descriptor reads were used. No HID report, EQ, save, reset, or vendor-defined command was sent.")
+                append("Only standard descriptor reads were used. No HID report, EQ, save, reset, or vendor-defined command was sent. Reconnect the cable after capture so Android can resume normal ownership.")
             }
         } finally {
             connection.close()

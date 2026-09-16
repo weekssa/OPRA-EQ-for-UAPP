@@ -29,13 +29,15 @@ The owner completed the standard descriptor capture on signed diagnostic source 
 - HID interface number 3, subclass/protocol `0/0`, interrupt IN `0x82` and OUT `0x02`, 16-byte maximum packets, interval 1;
 - HID 1.10 descriptor with one report descriptor declared as exactly 74 bytes (`09 21 10 01 21 01 22 4A 00`).
 
-The first report-descriptor request returned `-1`. The interface was not claimed first, so this is a host-side read failure and reveals no report format. The follow-up diagnostic performs a non-forced claim of HID interface 3, reads exactly the 74 bytes declared by the standard HID descriptor, and releases it. If Android refuses the non-forced claim, it stops without a transfer. This remains a standard descriptor read and does not send a HID report or vendor command.
+The first report-descriptor request returned `-1`. The interface was not claimed first, so this is a host-side read failure and reveals no report format. Signed source `1786a0bc4afc8b88bc141f1fd30d44638198e568` then attempted a non-forced claim of HID interface 3. The owner's Pixel 9 reported `non-forced claim: false`, proving Android's driver retained that interface; the diagnostic correctly stopped without a transfer.
+
+The next diagnostic first repeats the non-forced claim. If Android still retains the interface, it uses Android's isolated forced-claim option on HID interface 3 only, reads exactly the 74 bytes declared by the standard HID descriptor, and releases the interface in a `finally` block before closing the connection. The owner is instructed to reconnect the cable afterward so Android resumes normal ownership. This remains a standard descriptor read and does not send a HID report, interrupt transfer, or vendor command.
 
 Exact HID report format, protocol framing, firmware identity beyond the exposed strings/revision, and untouched EQ state remain pending.
 
 ## Current diagnostic boundary
 
-Scan uses Android enumeration only. The separately requested descriptor capture uses a non-forced host claim of the HID interface followed by standard IN GET_DESCRIPTOR (`bRequest=0x06`, report type `0x22`, interface recipient) after Android permission, then releases the interface. It sends no HID report, vendor request, EQ write, save or reset. A descriptor report is not a backup of untouched EQ; that state still must be read and preserved before any write.
+Scan uses Android enumeration only. The separately requested descriptor capture first tries a non-forced host claim of the HID interface. Evidence shows Android refuses it on the owner's Pixel 9, so the follow-up may briefly detach Android's driver from interface 3 using the platform's forced-claim option. It then performs only standard IN GET_DESCRIPTOR (`bRequest=0x06`, report type `0x22`, interface recipient), releases the interface, and closes the connection. It sends no HID report, interrupt transfer, vendor request, EQ write, save or reset. A descriptor report is not a backup of untouched EQ; that state still must be read and preserved before any write.
 
 Protocol framing, filter count/types, limits, quantization, preamp, bypass, persistence, readback and reset semantics remain unresolved. Public leads in the approved implementation plan are unverified and no third-party protocol code has been adopted by this correction.
 
