@@ -29,6 +29,10 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Keep the Phase B USB discovery tool installable alongside the owner's signed EQ Library.
+            applicationIdSuffix = ".ew300discovery"
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
