@@ -36,7 +36,9 @@ import com.weekssa.opraeqforuapp.ui.theme.OpraEqTheme
  *
  * The first scan never opens a USB connection. The separate descriptor capture asks Android for
  * permission, opens the cable only to read its descriptors and the input reports declared by that
- * descriptor. It sends no output report, EQ, bulk, interrupt-OUT, or vendor-defined command.
+ * descriptor. It can also listen briefly on the HID interrupt-IN endpoint after the descriptor
+ * has established that endpoint. It sends no output report, EQ, bulk/interrupt-OUT, or
+ * vendor-defined command.
  * Android may require the app to detach its HID driver briefly; only the HID interface is claimed
  * and it is always released before the connection is closed.
  */
@@ -86,8 +88,9 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                     Text("EW300 USB discovery", style = MaterialTheme.typography.headlineSmall)
                     Text(
                         "Scan lists USB information Android already exposes. Descriptor capture " +
-                            "asks Android for access only to read USB descriptions and their declared " +
-                            "input reports. It sends no output report. It may " +
+                            "asks Android for access only to read USB descriptions, their declared " +
+                            "input reports, and any unsolicited HID input briefly available. It sends no " +
+                            "output report. It may " +
                             "briefly detach Android's media-button driver; it does not change EQ. " +
                             "Reconnect the cable after capture.",
                     )
@@ -133,7 +136,7 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
             Intent(ACTION_CAPTURE_PERMISSION).setPackage(packageName),
             PendingIntent.FLAG_MUTABLE,
         )
-        report.value = "Waiting for Android's USB permission prompt. Approve it only to capture standard descriptors; no EQ command will be sent."
+        report.value = "Waiting for Android's USB permission prompt. Approve it only to capture standard descriptors and passive input; no EQ command will be sent."
         usbManager.requestPermission(device, permissionIntent)
     }
 
@@ -247,13 +250,40 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                                     )
                                     if (inputCount > 0) appendLine(input.copyOf(inputCount).toHex())
                                 }
+                                val interruptIn = (0 until usbInterface.endpointCount)
+                                    .map(usbInterface::getEndpoint)
+                                    .singleOrNull { endpoint ->
+                                        endpoint.direction == UsbConstants.USB_DIR_IN &&
+                                            endpoint.type == UsbConstants.USB_ENDPOINT_XFER_INT
+                                    }
+                                if (interruptIn == null) {
+                                    appendLine("No unique HID interrupt-IN endpoint was declared; no passive endpoint read was attempted.")
+                                } else {
+                                    repeat(PASSIVE_INTERRUPT_READ_ATTEMPTS) { attempt ->
+                                        val input = ByteArray(interruptIn.maxPacketSize)
+                                        val inputCount = connection.bulkTransfer(
+                                            interruptIn,
+                                            input,
+                                            PASSIVE_INTERRUPT_READ_TIMEOUT_MS,
+                                        )
+                                        appendLine(
+                                            "HID interrupt-IN 0x%02X passive read %d/%d: %d bytes".format(
+                                                interruptIn.address,
+                                                attempt + 1,
+                                                PASSIVE_INTERRUPT_READ_ATTEMPTS,
+                                                inputCount,
+                                            ),
+                                        )
+                                        if (inputCount > 0) appendLine(input.copyOf(inputCount).toHex())
+                                    }
+                                }
                             }
                         } finally {
                             appendLine("HID interface ${usbInterface.id} released: ${connection.releaseInterface(usbInterface)}")
                         }
                     }
                 }
-                append("Only descriptor and declared input-report reads were used. No output report, EQ, save, reset, or vendor-defined command was sent. Reconnect the cable after capture so Android can resume normal ownership.")
+                append("Only descriptor, declared input-report, and passive interrupt-IN reads were used. No output report, EQ, save, reset, or vendor-defined command was sent. Reconnect the cable after capture so Android can resume normal ownership.")
             }
         } finally {
             connection.close()
@@ -280,6 +310,8 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
         const val EW300_PRODUCT_ID = 0x0111
         const val DESCRIPTOR_READ_TIMEOUT_MS = 1000
         const val INPUT_REPORT_READ_TIMEOUT_MS = 1000
+        const val PASSIVE_INTERRUPT_READ_TIMEOUT_MS = 250
+        const val PASSIVE_INTERRUPT_READ_ATTEMPTS = 3
         const val USB_REQUEST_GET_DESCRIPTOR = 0x06
         const val USB_DESCRIPTOR_TYPE_REPORT = 0x22
         const val HID_REQUEST_GET_REPORT = 0x01
