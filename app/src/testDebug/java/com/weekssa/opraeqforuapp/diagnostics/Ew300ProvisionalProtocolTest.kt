@@ -172,7 +172,7 @@ class Ew300ProvisionalProtocolTest {
         val text = Ew300ProvisionalProtocol.describe(0x26, payload)
         assertTrue(text.contains("gain=-1.5 dB"))
         assertTrue(text.contains("frequency raw=50"))
-        assertTrue(text.contains("fallback interpretation=100 Hz"))
+        assertTrue(text.contains("public reference interpretation=50 Hz; unverified"))
     }
 
     private fun ByteArray.toHex(): String = joinToString(" ") { "%02X".format(it) }
