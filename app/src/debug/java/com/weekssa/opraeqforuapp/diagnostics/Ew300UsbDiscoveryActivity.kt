@@ -42,6 +42,8 @@ import com.weekssa.opraeqforuapp.ui.theme.OpraEqTheme
  * public web tool's KT Micro READ framing. After an exact stock snapshot, a separately approved
  * diagnostic can make a bounded batch of tiny temporary EQ-field writes. Each is read back and
  * restored before the next begins; it never sends COMMIT, CLEAR, save, reset, or firmware commands.
+ * The separate persistence qualification is a further explicit action: it sends one provisional
+ * COMMIT only after the complete volatile checks pass, then requires two physical reconnects.
  * Android may require the app to detach its HID driver briefly; only the HID interface is claimed
  * and it is always released before the connection is closed.
  */
@@ -51,6 +53,10 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
     private var provisionalSnapshotReady by mutableStateOf(false)
     private var reversibleProbeReady by mutableStateOf(false)
     private var filterTypeProbeReady by mutableStateOf(false)
+    /** 0=ready, 1=marker saved/reconnect pending, 2=restore saved/reconnect pending, 3=done. */
+    private var persistencePhase by mutableStateOf(0)
+    private var persistenceBaseline: Map<Int, ByteArray>? = null
+    private var persistenceMarker: Map<Int, ByteArray>? = null
     private var descriptorReceiverRegistered = false
 
     private val descriptorPermissionReceiver = object : BroadcastReceiver() {
@@ -58,7 +64,8 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
             if (intent.action != ACTION_CAPTURE_PERMISSION &&
                 intent.action != ACTION_PROVISIONAL_SNAPSHOT_PERMISSION &&
                 intent.action != ACTION_REVERSIBLE_WRITE_PERMISSION &&
-                intent.action != ACTION_FILTER_TYPE_PERMISSION
+                intent.action != ACTION_FILTER_TYPE_PERMISSION &&
+                intent.action != ACTION_PERSISTENCE_PERMISSION
             ) return
             val device = intent.getParcelableExtraCompat<UsbDevice>(UsbManager.EXTRA_DEVICE)
             val granted = intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)
@@ -68,7 +75,8 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                 intent.action == ACTION_CAPTURE_PERMISSION -> readDescriptors(device)
                 intent.action == ACTION_PROVISIONAL_SNAPSHOT_PERMISSION -> readProvisionalSnapshot(device)
                 intent.action == ACTION_REVERSIBLE_WRITE_PERMISSION -> runReversibleWriteTest(device)
-                else -> runFilterTypeTest(device)
+                intent.action == ACTION_FILTER_TYPE_PERMISSION -> runFilterTypeTest(device)
+                else -> runPersistenceQualification(device)
             }
         }
     }
@@ -84,6 +92,7 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                     addAction(ACTION_PROVISIONAL_SNAPSHOT_PERMISSION)
                     addAction(ACTION_REVERSIBLE_WRITE_PERMISSION)
                     addAction(ACTION_FILTER_TYPE_PERMISSION)
+                    addAction(ACTION_PERSISTENCE_PERMISSION)
                 },
                 ContextCompat.RECEIVER_NOT_EXPORTED,
             )
@@ -173,6 +182,29 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                         },
                         style = MaterialTheme.typography.bodySmall,
                     )
+                    Button(
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = persistencePhase in 0..2 && reversibleProbeReady,
+                        onClick = ::requestPersistenceQualification,
+                    ) {
+                        Text(
+                            when (persistencePhase) {
+                                1 -> "Reconnect, then verify saved marker"
+                                2 -> "Reconnect, then verify restored stock"
+                                3 -> "Persistence qualification complete"
+                                else -> "Run consolidated persistence qualification"
+                            },
+                        )
+                    }
+                    Text(
+                        when (persistencePhase) {
+                            1 -> "Reconnect the cable now, then tap this button. The app will verify that the temporary marker survived the public COMMIT command."
+                            2 -> "Reconnect the cable now, then tap this button. The app will verify the final untouched stock snapshot after restoration."
+                            3 -> "The marker survived reconnect, the captured stock state was restored and saved, and the final reconnect matched it exactly."
+                            else -> "This one consolidated test writes a reversible all-band marker, sends one provisional COMMIT, verifies it after reconnect, restores the captured stock bytes, and requires a final reconnect."
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                    )
                     Text(reportText, style = MaterialTheme.typography.bodyMedium)
                 }
             }
@@ -252,6 +284,29 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                 "tries four temporary Band 1 filter codes and restores the captured bytes after each one. " +
                 "It does not commit or save.",
             onGranted = ::runFilterTypeTest,
+        )
+    }
+
+    private fun requestPersistenceQualification() {
+        if (!reversibleProbeReady) {
+            report.value = "Persistence qualification is locked until the complete preserved stock snapshot matches."
+            return
+        }
+        val phaseMessage = when (persistencePhase) {
+            0 -> "This approved test will write a one-byte-per-field marker and send one provisional COMMIT. Keep listening volume low."
+            1 -> "Reconnect the cable before continuing. The app will verify whether the saved marker survived."
+            2 -> "Reconnect the cable before continuing. The app will verify the restored stock state."
+            else -> "Persistence qualification is already complete."
+        }
+        if (persistencePhase == 3) {
+            report.value = phaseMessage
+            return
+        }
+        requestPermissionOrRun(
+            action = ACTION_PERSISTENCE_PERMISSION,
+            requestCode = 4,
+            waitingMessage = "Waiting for Android's USB permission prompt. $phaseMessage",
+            onGranted = ::runPersistenceQualification,
         )
     }
 
@@ -567,6 +622,9 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                         }
                         reversibleProbeReady = exactStockSnapshot
                         filterTypeProbeReady = exactStockSnapshot
+                        persistencePhase = 0
+                        persistenceBaseline = null
+                        persistenceMarker = null
                         appendLine()
                         appendLine("HID interface ${hidInterface.id} release follows this report.")
                         append(
@@ -893,6 +951,199 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Debug-only consolidated persistence qualification. The first phase writes a one-byte-per-
+     * field marker and sends exactly one provisional COMMIT. The caller must reconnect between
+     * phases so the result cannot be satisfied by a cached in-memory state.
+     */
+    private fun runPersistenceQualification(device: UsbDevice): String {
+        if (persistencePhase !in 0..2) return "Persistence qualification is already complete."
+        if (device.vendorId != EW300_VENDOR_ID || device.productId != EW300_PRODUCT_ID ||
+            device.productName != EW300_PRODUCT_NAME || device.manufacturerName != EW300_MANUFACTURER_NAME
+        ) return "The persistence qualification stopped because the exact cable identity did not match. No command was sent."
+        val hidInterface = (0 until device.interfaceCount).map(device::getInterface).singleOrNull {
+            it.id == EW300_HID_INTERFACE_ID && it.interfaceClass == UsbConstants.USB_CLASS_HID
+        } ?: return "The persistence qualification stopped because exact HID interface 3 was unavailable. No command was sent."
+        val interruptIn = (0 until hidInterface.endpointCount).map(hidInterface::getEndpoint).singleOrNull {
+            it.address == EW300_INTERRUPT_IN_ADDRESS && it.direction == UsbConstants.USB_DIR_IN &&
+                it.type == UsbConstants.USB_ENDPOINT_XFER_INT
+        } ?: return "The persistence qualification stopped because interrupt-IN 0x82 was unavailable. No command was sent."
+        val interruptOut = (0 until hidInterface.endpointCount).map(hidInterface::getEndpoint).singleOrNull {
+            it.address == EW300_INTERRUPT_OUT_ADDRESS && it.direction == UsbConstants.USB_DIR_OUT &&
+                it.type == UsbConstants.USB_ENDPOINT_XFER_INT
+        } ?: return "The persistence qualification stopped because interrupt-OUT 0x02 was unavailable. No command was sent."
+        val connection = usbManager.openDevice(device)
+            ?: return "Android could not open the exact cable. No command was sent."
+        return try {
+            if (!connection.claimInterface(hidInterface, true)) {
+                "Android did not grant the isolated HID-interface claim. No command was sent."
+            } else try {
+                val log = StringBuilder()
+                fun readRegister(label: String, register: Int): ByteArray? {
+                    val reportBytes = Ew300ProvisionalProtocol.wireReport(
+                        Ew300ProvisionalProtocol.readPayload(register),
+                    )
+                    log.appendLine("$label READ 0x%02X OUT: %s".format(register, reportBytes.toHex()))
+                    val sent = connection.bulkTransfer(interruptOut, reportBytes, 0, reportBytes.size, PROVISIONAL_TRANSFER_TIMEOUT_MS)
+                    log.appendLine("$label READ OUT result: $sent bytes")
+                    if (sent != reportBytes.size) return null
+                    repeat(REVERSIBLE_RESPONSE_ATTEMPTS) { attempt ->
+                        val incoming = ByteArray(interruptIn.maxPacketSize)
+                        val received = connection.bulkTransfer(interruptIn, incoming, 0, incoming.size, PROVISIONAL_TRANSFER_TIMEOUT_MS)
+                        log.appendLine("$label IN ${attempt + 1}/$REVERSIBLE_RESPONSE_ATTEMPTS: $received bytes")
+                        if (received > 0) {
+                            val exact = incoming.copyOf(received)
+                            log.appendLine("$label IN: ${exact.toHex()}")
+                            Ew300ProvisionalProtocol.responsePayload(exact, register)?.let { return it }
+                            log.appendLine("$label ignored a non-READ response while waiting for the exact echo.")
+                        }
+                    }
+                    return null
+                }
+                fun readSnapshot(label: String): Map<Int, ByteArray>? {
+                    val responses = linkedMapOf<Int, ByteArray>()
+                    Ew300ProvisionalProtocol.snapshotRegisters().forEach { register ->
+                        val response = readRegister(label, register) ?: return null
+                        responses[register] = response
+                    }
+                    return responses
+                }
+                fun writeRegister(label: String, register: Int, data: ByteArray): Boolean {
+                    val reportBytes = Ew300ProvisionalProtocol.wireReport(
+                        Ew300ProvisionalProtocol.writePayload(register, data),
+                    )
+                    log.appendLine("$label WRITE 0x%02X OUT: %s".format(register, reportBytes.toHex()))
+                    val sent = connection.bulkTransfer(interruptOut, reportBytes, 0, reportBytes.size, PROVISIONAL_TRANSFER_TIMEOUT_MS)
+                    log.appendLine("$label WRITE OUT result: $sent bytes")
+                    return sent == reportBytes.size
+                }
+                fun sendCommit(): Boolean {
+                    val reportBytes = Ew300PersistenceQualification.commitReport()
+                    log.appendLine("COMMIT 0x53 OUT: ${reportBytes.toHex()}")
+                    val sent = connection.bulkTransfer(interruptOut, reportBytes, 0, reportBytes.size, PROVISIONAL_TRANSFER_TIMEOUT_MS)
+                    log.appendLine("COMMIT OUT result: $sent bytes")
+                    if (sent == reportBytes.size) SystemClock.sleep(COMMIT_SETTLE_MS)
+                    return sent == reportBytes.size
+                }
+                fun restoreBaseline(baseline: Map<Int, ByteArray>): Boolean {
+                    var restored = true
+                    Ew300PersistenceQualification.MARKER_FIELDS.keys.forEach { register ->
+                        if (!restored) return@forEach
+                        val payload = baseline[register]
+                        val data = payload?.copyOfRange(6, 10)
+                        if (data == null || !writeRegister("RESTORE", register, data)) {
+                            restored = false
+                            return@forEach
+                        }
+                        SystemClock.sleep(REVERSIBLE_SETTLE_MS)
+                        val readback = readRegister("RESTORE", register)
+                        val expected = Ew300ProvisionalProtocol.expectedReadPayload(register, data)
+                        val exact = readback?.contentEquals(expected) == true
+                        log.appendLine("RESTORE 0x%02X exact readback: $exact".format(register))
+                        restored = exact
+                    }
+                    restored
+                }
+
+                when (persistencePhase) {
+                    0 -> {
+                        log.appendLine("Capture type: consolidated EW300 persistence qualification")
+                        log.appendLine("Exact device: 31B2:0111 / LE XIAN / SIMGOT EW300 DSP")
+                        log.appendLine("Scope: all five band fields, Band 1 provisional type byte, and one raw global-gain byte")
+                        log.appendLine("The marker is temporary and must be restored. Keep listening volume low.")
+                        val baseline = readSnapshot("INITIAL")
+                        val baselineExact = baseline != null && Ew300ProvisionalProtocol.matchesStockSnapshot(baseline)
+                        log.appendLine("Exact preserved full baseline match: $baselineExact")
+                        if (!baselineExact || baseline == null) {
+                            log.append("STOP: baseline did not match the preserved stock capture. No marker write or COMMIT was sent.")
+                            return@try log.toString()
+                        }
+                        var markerPassed = true
+                        Ew300PersistenceQualification.MARKER_FIELDS.forEach { (register, markerData) ->
+                            if (!markerPassed) return@forEach
+                            val temporarySent = writeRegister("TEMPORARY", register, markerData)
+                            SystemClock.sleep(REVERSIBLE_SETTLE_MS)
+                            val temporaryRead = if (temporarySent) readRegister("TEMPORARY", register) else null
+                            val expected = Ew300ProvisionalProtocol.expectedReadPayload(register, markerData)
+                            markerPassed = temporaryRead?.contentEquals(expected) == true
+                            log.appendLine("Temporary 0x%02X exact readback: $markerPassed".format(register))
+                        }
+                        if (!markerPassed) {
+                            log.appendLine("ATTENTION: marker readback failed. Restoring the captured bytes without COMMIT.")
+                            restoreBaseline(baseline)
+                            persistencePhase = 0
+                            return@try log.append("No persistence result is claimed. Reconnect and run a fresh baseline.").let { log.toString() }
+                        }
+                        persistenceBaseline = baseline.mapValues { it.value.copyOf() }
+                        persistenceMarker = Ew300PersistenceQualification.MARKER_FIELDS.mapValues { it.value.copyOf() }
+                        if (!sendCommit()) {
+                            log.appendLine("ATTENTION: COMMIT report was not accepted. Restoring the captured bytes without retrying COMMIT.")
+                            restoreBaseline(baseline)
+                            persistenceBaseline = null
+                            persistenceMarker = null
+                            persistencePhase = 0
+                            return@try log.append("No persistence result is claimed. Reconnect and run a fresh baseline.").let { log.toString() }
+                        }
+                        persistencePhase = 1
+                        log.append("MARKER SAVED: disconnect and reconnect the cable, then tap Verify saved marker.")
+                        log.toString()
+                    }
+                    1 -> {
+                        val baseline = persistenceBaseline
+                        val marker = persistenceMarker
+                        if (baseline == null || marker == null) {
+                            persistencePhase = 0
+                            return@try "The saved marker is unavailable in this app session. Run a fresh baseline qualification."
+                        }
+                        log.appendLine("Phase 2: verify marker persistence after reconnect")
+                        val current = readSnapshot("PERSISTED")
+                        val markerPersisted = current != null && marker.all { (register, data) ->
+                            current[register]?.contentEquals(Ew300ProvisionalProtocol.expectedReadPayload(register, data)) == true
+                        }
+                        val unrelatedUnchanged = current != null && Ew300ProvisionalProtocol.snapshotRegisters()
+                            .filter { it !in marker.keys }
+                            .all { current[it]?.contentEquals(baseline[it]) == true }
+                        log.appendLine("Saved marker exact match after reconnect: $markerPersisted")
+                        log.appendLine("Slot and unrelated stock fields unchanged: $unrelatedUnchanged")
+                        val restored = restoreBaseline(baseline)
+                        log.appendLine("Captured stock bytes restored before second COMMIT: $restored")
+                        val commitRestored = restored && sendCommit()
+                        if (!commitRestored) {
+                            persistencePhase = 0
+                            log.append("ATTENTION: restoration or COMMIT failed. Stop and retain this report; no automatic retry was made.")
+                            return@try log.toString()
+                        }
+                        persistencePhase = 2
+                        log.append("STOCK RESTORE SAVED: disconnect and reconnect the cable, then tap Verify restored stock.")
+                        log.toString()
+                    }
+                    else -> {
+                        val baseline = persistenceBaseline
+                            ?: return@try "The original stock baseline is unavailable in this app session. Run a fresh qualification."
+                        log.appendLine("Phase 3: verify final restored stock after reconnect")
+                        val current = readSnapshot("FINAL")
+                        val finalExact = current != null && Ew300ProvisionalProtocol.matchesStockSnapshot(current) &&
+                            Ew300ProvisionalProtocol.snapshotRegisters().all { current[it]?.contentEquals(baseline[it]) == true }
+                        log.appendLine("Exact preserved final stock snapshot match: $finalExact")
+                        persistencePhase = if (finalExact) 3 else 2
+                        log.append(
+                            if (finalExact) {
+                                "PERSISTED AND RESTORED: marker survived reconnect, captured stock was saved again, and the final snapshot matches exactly."
+                            } else {
+                                "ATTENTION: final stock snapshot did not match exactly. Stop and retain this report; do not retry writes."
+                            },
+                        )
+                        log.toString()
+                    }
+                }
+            } finally {
+                connection.releaseInterface(hidInterface)
+            }
+        } finally {
+            connection.close()
+        }
+    }
+
     private fun endpointTypeName(type: Int): String = when (type) {
         0 -> "control"
         1 -> "isochronous"
@@ -915,6 +1166,8 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
             "com.weekssa.opraeqforuapp.diagnostics.USB_REVERSIBLE_WRITE_PERMISSION"
         const val ACTION_FILTER_TYPE_PERMISSION =
             "com.weekssa.opraeqforuapp.diagnostics.USB_FILTER_TYPE_PERMISSION"
+        const val ACTION_PERSISTENCE_PERMISSION =
+            "com.weekssa.opraeqforuapp.diagnostics.USB_PERSISTENCE_PERMISSION"
         const val EW300_VENDOR_ID = 0x31B2
         const val EW300_PRODUCT_ID = 0x0111
         const val EW300_MANUFACTURER_NAME = "LE XIAN"
@@ -927,6 +1180,7 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
         const val PASSIVE_INTERRUPT_READ_TIMEOUT_MS = 250
         const val PASSIVE_INTERRUPT_READ_ATTEMPTS = 3
         const val PROVISIONAL_TRANSFER_TIMEOUT_MS = 1000
+        const val COMMIT_SETTLE_MS = 1000L
         const val REVERSIBLE_SETTLE_MS = 200L
         const val REVERSIBLE_RESPONSE_ATTEMPTS = 3
         const val USB_REQUEST_GET_DESCRIPTOR = 0x06
