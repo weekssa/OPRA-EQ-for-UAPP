@@ -162,7 +162,7 @@ internal object Ew300ProvisionalProtocol {
             val gainRaw = payload.leSigned16(6)
             val frequencyRaw = payload.leUnsigned16(8)
             "band ${(register - FIRST_FILTER_REGISTER) / 2 + 1} gain=${gainRaw / 10.0} dB; " +
-                "frequency raw=$frequencyRaw (fallback interpretation=${frequencyRaw * 2} Hz)"
+                "frequency raw=$frequencyRaw (public reference interpretation=${frequencyRaw} Hz; unverified)"
         }
         (register - FIRST_FILTER_REGISTER) in 0 until FILTER_COUNT * 2 -> {
             val qRaw = payload.leUnsigned16(6)

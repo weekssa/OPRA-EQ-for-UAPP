@@ -52,7 +52,7 @@ class Ew300QualifiedVolatileProtocolTest {
     fun provisionalFilterMappingChangesOnlyObservedTypeByte() {
         val stock = bytes(0x20, 0x03, 0x00, 0x00)
         assertEquals(
-            listOf(1, 2, 3, 4),
+            listOf(0, 1, 2, 3, 4),
             Ew300QualifiedVolatileProtocol.ProvisionalFilterType.entries.map { it.rawCode },
         )
         Ew300QualifiedVolatileProtocol.ProvisionalFilterType.entries.forEach { type ->
@@ -63,7 +63,8 @@ class Ew300QualifiedVolatileProtocolTest {
             assertEquals(stock[3], changed[3])
             assertEquals(type, Ew300QualifiedVolatileProtocol.provisionalFilterType(type.rawCode))
         }
-        assertNull(Ew300QualifiedVolatileProtocol.provisionalFilterType(0))
+        assertEquals(Ew300QualifiedVolatileProtocol.ProvisionalFilterType.PEAK,
+            Ew300QualifiedVolatileProtocol.provisionalFilterType(0))
     }
 
     private fun assertFails(block: () -> Unit) {

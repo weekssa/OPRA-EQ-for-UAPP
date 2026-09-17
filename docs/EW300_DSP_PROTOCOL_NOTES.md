@@ -143,6 +143,8 @@ Public source locations:
 - <https://eq.hangout.audio/shared/plugins/devicePEQ/usbDeviceConfig.js>
 - <https://eq.hangout.audio/shared/plugins/devicePEQ/ktmicroUsbHidHandler.js>
 - <https://eq.hangout.audio/shared/plugins/devicePEQ/usbHidConnector.js>
+- <https://github.com/gxcreator/ktmicro-tools/blob/master/KT_USB_PROTOCOL.md> (third-party KT02H20
+  register-map reference; not treated as EW300 production proof)
 
 ### Owner filter-type qualification result
 
@@ -158,6 +160,18 @@ units, persistence, save semantics, reset, slot, global gain, or production supp
 The main-source `Ew300QualifiedVolatileProtocol` now owns the strict, Android-free framing boundary
 and the provisional type-byte helper. It remains intentionally unregistered as a production DAC
 until the remaining semantic and persistence gates pass.
+
+### Internal reuse boundary
+
+`Ew300VolatileTransaction` provides a shared, Android-free plan for the qualified sequence:
+baseline READ, one temporary WRITE, exact temporary READBACK, restore WRITE, and exact restore
+READBACK. It accepts only the ten qualified band registers (`0x26` through `0x2F`) and requires a
+complete, ordered stock snapshot before planning a transaction. `Ew300ProvisionalDecoder` keeps the
+public fallback's gain/frequency/Q word interpretation isolated and labelled provisional. The public
+KT02H20 reference describes the A-register frequency word as direct Hz, the gain word as signed
+tenths of a dB, and the B-register Q word as thousandths; the EW300 installation has not yet
+independently verified those units acoustically. Neither class is wired into the production DAC
+registry or exposes persistence, reset, slot, global-gain, or arbitrary EQ-application operations.
 
 ## Third-party browser connection observation
 

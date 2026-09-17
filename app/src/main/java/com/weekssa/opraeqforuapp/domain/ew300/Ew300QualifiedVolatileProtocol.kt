@@ -20,6 +20,7 @@ object Ew300QualifiedVolatileProtocol {
      * still provisional and must not be presented as production acoustic claims until measured.
      */
     enum class ProvisionalFilterType(val rawCode: Int, val label: String) {
+        PEAK(0, "peak"),
         LPF(1, "LPF"),
         HPF(2, "HPF"),
         LOW_SHELF(3, "low-shelf"),
