@@ -117,6 +117,8 @@ restore READ response:   4B 26 00 00 00 52 00 F5 FF 64 00
 
 Each write received an initial non-READ `0x57` response, which the diagnostic ignored while waiting for the exact expected READ echo. The temporary readback and exact preserved restoration both verified `true`. This is direct evidence that this one bounded volatile write/readback/restore sequence works on the owner's cable. It does not establish persistence, a save/commit command, acoustic scaling, broader filter semantics, global-gain semantics, reset behavior, or production support.
 
+After disconnecting and reconnecting the cable, the owner ran a separate read-only full snapshot. It again completed all 12 READ `0x52` requests and reported `Exact preserved stock snapshot match: true`. This confirms that the cable returned to the preserved stock bytes after the temporary transaction; it is not persistence evidence because neither the test nor this confirmation sent a save/commit command.
+
 Public source locations:
 
 - <https://eq.hangout.audio/shared/plugins/devicePEQ/usbDeviceConfig.js>
