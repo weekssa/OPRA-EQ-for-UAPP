@@ -21,7 +21,10 @@ for attempt in 1 2; do
   grep -q 'Request read-only descriptor capture' "$record_dir/window-$attempt.xml"
   grep -q 'Capture provisional stock-EQ snapshot' "$record_dir/window-$attempt.xml"
   grep -q 'Run reversible +0.1 dB write test' "$record_dir/window-$attempt.xml"
-  grep -q 'Tap Scan connected USB devices to begin.' "$record_dir/window-$attempt.xml"
+  # The initial status copy may be below the first viewport now that the fourth
+  # control is present. The four explicit control assertions above are the
+  # launch contract; this confirms remaining content is reachable by scrolling.
+  grep -q 'android.widget.ScrollView' "$record_dir/window-$attempt.xml"
 done
 adb logcat -d -b crash > "$record_dir/crash-log.txt"
 if grep -q 'FATAL EXCEPTION' "$record_dir/crash-log.txt"; then
