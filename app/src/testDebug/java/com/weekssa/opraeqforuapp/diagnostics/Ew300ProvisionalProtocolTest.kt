@@ -143,6 +143,22 @@ class Ew300ProvisionalProtocolTest {
     }
 
     @Test
+    fun `approved filter type probes change only Band 1 type byte`() {
+        assertEquals(listOf("LPF", "HPF", "low-shelf", "high-shelf"),
+            Ew300ProvisionalProtocol.FILTER_TYPE_PROBES.map { it.label })
+        assertEquals(listOf(1, 2, 3, 4),
+            Ew300ProvisionalProtocol.FILTER_TYPE_PROBES.map { it.code })
+        val stock = Ew300ProvisionalProtocol.stockData(0x27)
+        Ew300ProvisionalProtocol.FILTER_TYPE_PROBES.forEach { probe ->
+            val temporary = stock.copyOf().apply { this[2] = probe.code.toByte() }
+            assertEquals(1, stock.indices.count { stock[it] != temporary[it] })
+            assertEquals(stock[0], temporary[0])
+            assertEquals(stock[1], temporary[1])
+            assertEquals(stock[3], temporary[3])
+        }
+    }
+
+    @Test
     fun `response requires exact report register and read echo`() {
         val valid = byteArrayOf(0x4B, 0x24, 0, 0, 0, 0x52, 0, 3, 0, 0, 0)
         assertEquals(3, Ew300ProvisionalProtocol.responsePayload(valid, 0x24)?.get(6)?.toInt())

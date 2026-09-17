@@ -58,6 +58,19 @@ internal object Ew300ProvisionalProtocol {
         ReversibleProbe("Band 5 Q raw", 0x2F, hex("FE 01 00 00")),
     )
 
+    /** Public KT02H20 hypothesis; physical EW300 confirmation is required before production use. */
+    val FILTER_TYPE_PROBES = listOf(
+        FilterTypeProbe("LPF", 1),
+        FilterTypeProbe("HPF", 2),
+        FilterTypeProbe("low-shelf", 3),
+        FilterTypeProbe("high-shelf", 4),
+    )
+
+    data class FilterTypeProbe(
+        val label: String,
+        val code: Int,
+    )
+
     data class ReversibleProbe(
         val label: String,
         val register: Int,

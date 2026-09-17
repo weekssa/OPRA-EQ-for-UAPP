@@ -50,13 +50,15 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
     private val report = mutableStateOf("Tap Scan connected USB devices to begin.")
     private var provisionalSnapshotReady by mutableStateOf(false)
     private var reversibleProbeReady by mutableStateOf(false)
+    private var filterTypeProbeReady by mutableStateOf(false)
     private var descriptorReceiverRegistered = false
 
     private val descriptorPermissionReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action != ACTION_CAPTURE_PERMISSION &&
                 intent.action != ACTION_PROVISIONAL_SNAPSHOT_PERMISSION &&
-                intent.action != ACTION_REVERSIBLE_WRITE_PERMISSION
+                intent.action != ACTION_REVERSIBLE_WRITE_PERMISSION &&
+                intent.action != ACTION_FILTER_TYPE_PERMISSION
             ) return
             val device = intent.getParcelableExtraCompat<UsbDevice>(UsbManager.EXTRA_DEVICE)
             val granted = intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)
@@ -65,7 +67,8 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                 !granted -> "USB permission was not granted. No connection was opened and no cable state changed."
                 intent.action == ACTION_CAPTURE_PERMISSION -> readDescriptors(device)
                 intent.action == ACTION_PROVISIONAL_SNAPSHOT_PERMISSION -> readProvisionalSnapshot(device)
-                else -> runReversibleWriteTest(device)
+                intent.action == ACTION_REVERSIBLE_WRITE_PERMISSION -> runReversibleWriteTest(device)
+                else -> runFilterTypeTest(device)
             }
         }
     }
@@ -80,6 +83,7 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                     addAction(ACTION_CAPTURE_PERMISSION)
                     addAction(ACTION_PROVISIONAL_SNAPSHOT_PERMISSION)
                     addAction(ACTION_REVERSIBLE_WRITE_PERMISSION)
+                    addAction(ACTION_FILTER_TYPE_PERMISSION)
                 },
                 ContextCompat.RECEIVER_NOT_EXPORTED,
             )
@@ -153,6 +157,22 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                         },
                         style = MaterialTheme.typography.bodySmall,
                     )
+                    Button(
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = filterTypeProbeReady,
+                        onClick = ::requestFilterTypeTest,
+                    ) { Text("Run approved filter-type test") }
+                    Text(
+                        if (filterTypeProbeReady) {
+                            "This approved test tries Band 1 filter codes 1–4 one at a time, reads each " +
+                                "temporary value back, restores the captured stock bytes after every try, " +
+                                "and requires a final exact stock snapshot. It sends no persistence command."
+                        } else {
+                            "The filter-type test remains locked until this installation reads the " +
+                                "complete preserved stock snapshot exactly."
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                    )
                     Text(reportText, style = MaterialTheme.typography.bodyMedium)
                 }
             }
@@ -217,6 +237,21 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                 "runs bounded temporary EQ-field checks, restoring each captured value immediately. " +
                 "It does not commit or save.",
             onGranted = ::runReversibleWriteTest,
+        )
+    }
+
+    private fun requestFilterTypeTest() {
+        if (!filterTypeProbeReady) {
+            report.value = "The filter-type test is locked until this app confirms the exact preserved stock snapshot."
+            return
+        }
+        requestPermissionOrRun(
+            action = ACTION_FILTER_TYPE_PERMISSION,
+            requestCode = 3,
+            waitingMessage = "Waiting for Android's USB permission prompt. This approved diagnostic " +
+                "tries four temporary Band 1 filter codes and restores the captured bytes after each one. " +
+                "It does not commit or save.",
+            onGranted = ::runFilterTypeTest,
         )
     }
 
@@ -531,6 +566,7 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                             appendLine("The raw received payloads above remain authoritative; no WRITE is unlocked.")
                         }
                         reversibleProbeReady = exactStockSnapshot
+                        filterTypeProbeReady = exactStockSnapshot
                         appendLine()
                         appendLine("HID interface ${hidInterface.id} release follows this report.")
                         append(
@@ -545,6 +581,129 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                 } finally {
                     connection.releaseInterface(hidInterface)
                 }
+            }
+        } finally {
+            connection.close()
+        }
+    }
+
+    private fun runFilterTypeTest(device: UsbDevice): String {
+        filterTypeProbeReady = false
+        if (device.vendorId != EW300_VENDOR_ID || device.productId != EW300_PRODUCT_ID ||
+            device.productName != EW300_PRODUCT_NAME || device.manufacturerName != EW300_MANUFACTURER_NAME
+        ) return "The filter-type test stopped because the exact cable identity did not match. No write was sent."
+        val hidInterface = (0 until device.interfaceCount).map(device::getInterface).singleOrNull {
+            it.id == EW300_HID_INTERFACE_ID && it.interfaceClass == UsbConstants.USB_CLASS_HID
+        } ?: return "The filter-type test stopped because exact HID interface 3 was unavailable. No write was sent."
+        val interruptIn = (0 until hidInterface.endpointCount).map(hidInterface::getEndpoint).singleOrNull {
+            it.address == EW300_INTERRUPT_IN_ADDRESS && it.direction == UsbConstants.USB_DIR_IN &&
+                it.type == UsbConstants.USB_ENDPOINT_XFER_INT
+        } ?: return "The filter-type test stopped because interrupt-IN 0x82 was unavailable. No write was sent."
+        val interruptOut = (0 until hidInterface.endpointCount).map(hidInterface::getEndpoint).singleOrNull {
+            it.address == EW300_INTERRUPT_OUT_ADDRESS && it.direction == UsbConstants.USB_DIR_OUT &&
+                it.type == UsbConstants.USB_ENDPOINT_XFER_INT
+        } ?: return "The filter-type test stopped because interrupt-OUT 0x02 was unavailable. No write was sent."
+        val connection = usbManager.openDevice(device)
+            ?: return "Android could not open the exact cable. No write was sent."
+        return try {
+            if (!connection.claimInterface(hidInterface, true)) {
+                "Android did not grant the isolated HID-interface claim. No write was sent."
+            } else try {
+                val log = StringBuilder()
+                fun readRegister(label: String, register: Int): ByteArray? {
+                    val reportBytes = Ew300ProvisionalProtocol.wireReport(
+                        Ew300ProvisionalProtocol.readPayload(register),
+                    )
+                    log.appendLine("$label READ 0x%02X OUT: %s".format(register, reportBytes.toHex()))
+                    val sent = connection.bulkTransfer(interruptOut, reportBytes, 0, reportBytes.size, PROVISIONAL_TRANSFER_TIMEOUT_MS)
+                    log.appendLine("$label READ OUT result: $sent bytes")
+                    if (sent != reportBytes.size) return null
+                    repeat(REVERSIBLE_RESPONSE_ATTEMPTS) { attempt ->
+                        val incoming = ByteArray(interruptIn.maxPacketSize)
+                        val received = connection.bulkTransfer(interruptIn, incoming, 0, incoming.size, PROVISIONAL_TRANSFER_TIMEOUT_MS)
+                        log.appendLine("$label IN ${attempt + 1}/$REVERSIBLE_RESPONSE_ATTEMPTS: $received bytes")
+                        if (received > 0) {
+                            val exact = incoming.copyOf(received)
+                            log.appendLine("$label IN: ${exact.toHex()}")
+                            Ew300ProvisionalProtocol.responsePayload(exact, register)?.let { return it }
+                            log.appendLine("$label ignored a non-READ response while waiting for the exact echo.")
+                        }
+                    }
+                    return null
+                }
+                fun writeRegister(label: String, register: Int, data: ByteArray): Int {
+                    val reportBytes = Ew300ProvisionalProtocol.wireReport(
+                        Ew300ProvisionalProtocol.writePayload(register, data),
+                    )
+                    log.appendLine("$label WRITE 0x%02X OUT: %s".format(register, reportBytes.toHex()))
+                    val sent = connection.bulkTransfer(interruptOut, reportBytes, 0, reportBytes.size, PROVISIONAL_TRANSFER_TIMEOUT_MS)
+                    log.appendLine("$label WRITE OUT result: $sent bytes")
+                    return sent
+                }
+                log.appendLine("Capture type: approved reversible EW300 filter-type qualification")
+                log.appendLine("Exact device: 31B2:0111 / LE XIAN / SIMGOT EW300 DSP")
+                log.appendLine("Scope: Band 1 register 0x27 filter-type codes 1, 2, 3, and 4; each is restored immediately")
+                log.appendLine("Public KT02H20 mapping is provisional; this test validates raw field transport only.")
+                log.appendLine("No COMMIT, CLEAR, save, reset, slot, global-gain, or firmware command is present.")
+                log.appendLine()
+                val initial = linkedMapOf<Int, ByteArray>()
+                Ew300ProvisionalProtocol.snapshotRegisters().forEach { register ->
+                    readRegister("INITIAL", register)?.let { initial[register] = it }
+                }
+                var passed = Ew300ProvisionalProtocol.matchesStockSnapshot(initial)
+                log.appendLine("Exact preserved full baseline match: $passed")
+                if (passed) {
+                    val register = 0x27
+                    val stockPayload = Ew300ProvisionalProtocol.expectedStockPayload(register)
+                    val stockData = Ew300ProvisionalProtocol.stockData(register)
+                    Ew300ProvisionalProtocol.FILTER_TYPE_PROBES.forEachIndexed { index, probe ->
+                        if (!passed) return@forEachIndexed
+                        log.appendLine()
+                        log.appendLine("CHECK ${index + 1}/${Ew300ProvisionalProtocol.FILTER_TYPE_PROBES.size}: Band 1 ${probe.label} code ${probe.code}")
+                        val baseline = readRegister("BASELINE", register)
+                        val baselineExact = baseline?.contentEquals(stockPayload) == true
+                        log.appendLine("Exact preserved baseline match: $baselineExact")
+                        if (!baselineExact) {
+                            log.appendLine("STOP: Band 1 no longer matches the preserved stock capture. No write was sent for this code.")
+                            passed = false
+                            return@forEachIndexed
+                        }
+                        val temporaryData = stockData.copyOf().apply { this[2] = probe.code.toByte() }
+                        val tempSent = writeRegister("TEMPORARY", register, temporaryData)
+                        SystemClock.sleep(REVERSIBLE_SETTLE_MS)
+                        val tempRead = if (tempSent == Ew300ProvisionalProtocol.WIRE_REPORT_SIZE) readRegister("TEMPORARY", register) else null
+                        val tempVerified = tempRead?.contentEquals(Ew300ProvisionalProtocol.expectedReadPayload(register, temporaryData)) == true
+                        log.appendLine("Temporary ${probe.label} raw-code readback verified: $tempVerified")
+                        val restoreSent = writeRegister("RESTORE", register, stockData)
+                        SystemClock.sleep(REVERSIBLE_SETTLE_MS)
+                        val restoredRead = if (restoreSent == Ew300ProvisionalProtocol.WIRE_REPORT_SIZE) readRegister("RESTORE", register) else null
+                        val restored = restoredRead?.contentEquals(stockPayload) == true
+                        log.appendLine("Exact preserved restoration verified: $restored")
+                        if (!tempVerified || !restored) {
+                            log.appendLine("STOP: the filter-type batch will not continue after this check.")
+                            passed = false
+                        }
+                    }
+                }
+                if (passed) {
+                    val finalResponses = linkedMapOf<Int, ByteArray>()
+                    Ew300ProvisionalProtocol.snapshotRegisters().forEach { register ->
+                        readRegister("FINAL", register)?.let { finalResponses[register] = it }
+                    }
+                    passed = Ew300ProvisionalProtocol.matchesStockSnapshot(finalResponses)
+                    log.appendLine()
+                    log.appendLine("Exact preserved final full snapshot match: $passed")
+                }
+                log.appendLine("HID interface ${hidInterface.id} release follows this report.")
+                log.append(if (passed) {
+                    "RESTORED: every filter-code check and the final full snapshot match the untouched capture. "
+                } else {
+                    "ATTENTION: the filter-type batch did not complete an exact restoration. Stop playback and retain this report. "
+                })
+                log.append("No COMMIT, CLEAR, save, reset, slot, global-gain, or firmware command was sent. Reconnect the cable now.")
+                log.toString()
+            } finally {
+                connection.releaseInterface(hidInterface)
             }
         } finally {
             connection.close()
@@ -754,6 +913,8 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
             "com.weekssa.opraeqforuapp.diagnostics.USB_PROVISIONAL_SNAPSHOT_PERMISSION"
         const val ACTION_REVERSIBLE_WRITE_PERMISSION =
             "com.weekssa.opraeqforuapp.diagnostics.USB_REVERSIBLE_WRITE_PERMISSION"
+        const val ACTION_FILTER_TYPE_PERMISSION =
+            "com.weekssa.opraeqforuapp.diagnostics.USB_FILTER_TYPE_PERMISSION"
         const val EW300_VENDOR_ID = 0x31B2
         const val EW300_PRODUCT_ID = 0x0111
         const val EW300_MANUFACTURER_NAME = "LE XIAN"
