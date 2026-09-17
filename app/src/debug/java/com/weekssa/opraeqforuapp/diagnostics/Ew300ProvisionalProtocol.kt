@@ -1,7 +1,7 @@
 package com.weekssa.opraeqforuapp.diagnostics
 
 internal object Ew300ProvisionalProtocol {
-    const val DIAGNOSTIC_BUILD = "stock-gate-byte-compare-db6cbf2"
+    const val DIAGNOSTIC_BUILD = "stock-gate-band5-gain-05-00"
     const val REPORT_ID = 0x4B
     const val COMMAND_READ = 0x52
     const val COMMAND_WRITE = 0x57
@@ -36,7 +36,7 @@ internal object Ew300ProvisionalProtocol {
         0x2B to hex("2B 00 00 00 52 00 E8 03 00 00"),
         0x2C to hex("2C 00 00 00 52 00 D0 FF 40 1F"),
         0x2D to hex("2D 00 00 00 52 00 DC 05 00 00"),
-        0x2E to hex("2E 00 00 00 52 00 FB FF 58 1B"),
+        0x2E to hex("2E 00 00 00 52 00 05 00 58 1B"),
         0x2F to hex("2F 00 00 00 52 00 F4 01 00 00"),
         0x66 to hex("66 00 00 00 52 00 F8 F8 00 00"),
     )

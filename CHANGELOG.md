@@ -20,6 +20,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Corrected one transcribed Consumer Control usage in the EW300 descriptor safety gate (`0xCE` to the owner-captured `0xCF`). The mismatched candidate remained locked and sent no command; the complete 74-byte gate value now has direct regression coverage.
 - Recorded the successful exact-device EW300 stock-state pull: all 12 bounded report-`0x4B` READ requests returned correctly echoed responses. Preserved the untouched slot, five filter pairs, and global-gain payload byte-for-byte as a regression/restoration fixture; no write, commit, clear, save, reset, or firmware command was sent.
 - Added the owner-approved, stock-snapshot-gated EW300 reversible write qualification: Band 1 gain moves temporarily from -1.1 dB to -1.0 dB, is read back, then the exact captured four bytes are restored and read back. No commit, save, clear, reset, slot, global-gain, or firmware operation is included.
+- Corrected the EW300 preserved stock fixture for register `0x2E` from the transcribed `FB FF` to the repeatedly observed untouched bytes `05 00`; the fail-closed diagnostic sent no write while identifying the discrepancy.
 
 ### Documentation
 

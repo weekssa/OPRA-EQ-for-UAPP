@@ -90,12 +90,14 @@ On exact signed source `503ffe2226a12e9c4d426360098763bae1f760c5`, the owner com
 2B 00 00 00 52 00 E8 03 00 00
 2C 00 00 00 52 00 D0 FF 40 1F
 2D 00 00 00 52 00 DC 05 00 00
-2E 00 00 00 52 00 FB FF 58 1B
+2E 00 00 00 52 00 05 00 58 1B
 2F 00 00 00 52 00 F4 01 00 00
 66 00 00 00 52 00 F8 F8 00 00
 ```
 
-The public decoder yields current slot `1`, five PK filters with gains `-1.1`, `-0.9`, `-0.4`, `-4.8`, and `-0.5` dB; Q values `0.8`, `0.8`, `1.0`, `1.5`, and `0.5`; raw frequency words `100`, `200`, `300`, `8000`, and `7000`; and global-gain byte `-8`. Under the fallback's still-unverified two-times frequency rule those frequencies are `200`, `400`, `600`, `16000`, and `14000` Hz. These decoded meanings remain provisional; the raw bytes are authoritative.
+The public decoder yields current slot `1`, five PK filters with gains `-1.1`, `-0.9`, `-0.4`, `-4.8`, and `+0.5` dB; Q values `0.8`, `0.8`, `1.0`, `1.5`, and `0.5`; raw frequency words `100`, `200`, `300`, `8000`, and `7000`; and global-gain byte `-8`. Under the fallback's still-unverified two-times frequency rule those frequencies are `200`, `400`, `600`, `16000`, and `14000` Hz. These decoded meanings remain provisional; the raw bytes are authoritative.
+
+The original written fixture transcribed register `0x2E` as `FB FF` (`-0.5` dB). Repeated owner-device readback, including the fail-closed `stock-gate-byte-compare-db6cbf2` report, shows the untouched authoritative bytes are `05 00` (`+0.5` dB under the provisional decoder). The gate correctly stayed locked and sent no write while this discrepancy was resolved. The corrected fixture changes only those two bytes and remains exact-match gated.
 
 This completes non-mutating stock-state preservation and establishes exact READ transport/framing. It does not yet prove WRITE framing, field acoustics, quantization boundaries, persistence, or reset semantics. The narrow proposed next test would make a very small temporary change to band 1, read it back, restore the exact four stock bytes immediately, and read the restoration back, without COMMIT/CLEAR/save/reset. That is the first write-capable boundary and requires explicit owner approval after this captured backup.
 

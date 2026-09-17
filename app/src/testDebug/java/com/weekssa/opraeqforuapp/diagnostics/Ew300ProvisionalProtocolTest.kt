@@ -58,6 +58,10 @@ class Ew300ProvisionalProtocolTest {
             ),
         )
         assertEquals(
+            "2E 00 00 00 52 00 05 00 58 1B",
+            Ew300ProvisionalProtocol.STOCK_RESPONSE_PAYLOADS.getValue(0x2E).toHex(),
+        )
+        assertEquals(
             "66 00 00 00 52 00 F8 F8 00 00",
             Ew300ProvisionalProtocol.STOCK_RESPONSE_PAYLOADS.getValue(0x66).toHex(),
         )
