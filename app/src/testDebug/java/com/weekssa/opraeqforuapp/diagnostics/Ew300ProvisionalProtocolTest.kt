@@ -121,9 +121,9 @@ class Ew300ProvisionalProtocolTest {
             )
             val expectedChangedIndex = if (probe.register % 2 == 0) 2 else 0
             assertTrue(
+                "${probe.label} must leave gain and filter-type bytes untouched",
                 stock.indices.filter { index -> stock[index] != probe.temporaryData[index] }
                     .all { index -> index == expectedChangedIndex },
-                "${probe.label} must leave gain and filter-type bytes untouched",
             )
         }
         assertEquals(
