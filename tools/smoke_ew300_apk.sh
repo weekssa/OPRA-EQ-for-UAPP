@@ -34,7 +34,18 @@ for attempt in 1 2; do
   grep -q 'Run approved remaining EQ-field batch' "$record_dir/window-$attempt-scrolled.xml"
 done
 adb logcat -d -b crash > "$record_dir/crash-log.txt"
-if grep -q 'FATAL EXCEPTION' "$record_dir/crash-log.txt"; then
+# Preserve the complete crash buffer as evidence, but attribute a fatal crash
+# to this candidate only when the corresponding AndroidRuntime block names this
+# exact package. The emulator's preinstalled services are outside this APK's
+# process boundary and are separately retained in crash-log.txt.
+if awk -v target="$package" '
+  /FATAL EXCEPTION/ { remaining = 8 }
+  remaining > 0 {
+    if (index($0, "Process: " target) > 0) found = 1
+    remaining--
+  }
+  END { exit(found ? 0 : 1) }
+' "$record_dir/crash-log.txt"; then
   cat "$record_dir/crash-log.txt"
   exit 1
 fi
