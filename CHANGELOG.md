@@ -21,6 +21,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Recorded the successful exact-device EW300 stock-state pull: all 12 bounded report-`0x4B` READ requests returned correctly echoed responses. Preserved the untouched slot, five filter pairs, and global-gain payload byte-for-byte as a regression/restoration fixture; no write, commit, clear, save, reset, or firmware command was sent.
 - Added the owner-approved, stock-snapshot-gated EW300 reversible write qualification: Band 1 gain moves temporarily from -1.1 dB to -1.0 dB, is read back, then the exact captured four bytes are restored and read back. No commit, save, clear, reset, slot, global-gain, or firmware operation is included.
 - Corrected the EW300 preserved stock fixture for register `0x2E` from the transcribed `FB FF` to the repeatedly observed untouched bytes `05 00`; the fail-closed diagnostic sent no write while identifying the discrepancy.
+- The owner-qualified reversible EW300 Band 1 test completed: the exact stock snapshot gate passed, a temporary `-1.1 dB → -1.0 dB` gain-byte change was read back, and the original bytes were restored and read back exactly. This remains a diagnostic-only volatile-write qualification; persistence and production EW300 support are not claimed.
 
 ### Documentation
 
