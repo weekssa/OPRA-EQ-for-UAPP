@@ -52,9 +52,25 @@ class Ew300ProvisionalProtocolTest {
             ),
         )
         assertEquals(
+            emptyList<Int>(),
+            Ew300ProvisionalProtocol.stockSnapshotMismatchRegisters(
+                Ew300ProvisionalProtocol.STOCK_RESPONSE_PAYLOADS.mapValues { it.value.copyOf() },
+            ),
+        )
+        assertEquals(
             "66 00 00 00 52 00 F8 F8 00 00",
             Ew300ProvisionalProtocol.STOCK_RESPONSE_PAYLOADS.getValue(0x66).toHex(),
         )
+    }
+
+    @Test
+    fun `stock gate reports the exact mismatched register and remains fail closed`() {
+        val responses = Ew300ProvisionalProtocol.STOCK_RESPONSE_PAYLOADS.mapValues { it.value.copyOf() }
+            .toMutableMap()
+        responses[0x2C] = responses.getValue(0x2C).also { it[6] = 0 }
+
+        assertEquals(listOf(0x2C), Ew300ProvisionalProtocol.stockSnapshotMismatchRegisters(responses))
+        assertTrue(!Ew300ProvisionalProtocol.matchesStockSnapshot(responses))
     }
 
     @Test

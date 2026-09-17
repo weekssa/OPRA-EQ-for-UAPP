@@ -500,6 +500,14 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                             Ew300ProvisionalProtocol.matchesStockSnapshot(responses)
                         appendLine()
                         appendLine("Exact preserved stock snapshot match: $exactStockSnapshot")
+                        if (!exactStockSnapshot) {
+                            val mismatches = Ew300ProvisionalProtocol.stockSnapshotMismatchRegisters(responses)
+                            appendLine(
+                                "Stock-gate mismatch register(s): " +
+                                    mismatches.joinToString { "0x%02X".format(it) },
+                            )
+                            appendLine("The raw received payloads above remain authoritative; no WRITE is unlocked.")
+                        }
                         reversibleProbeReady = exactStockSnapshot
                         appendLine()
                         appendLine("HID interface ${hidInterface.id} release follows this report.")

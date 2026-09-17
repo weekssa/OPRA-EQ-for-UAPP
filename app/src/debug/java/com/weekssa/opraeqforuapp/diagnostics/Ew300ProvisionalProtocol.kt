@@ -95,8 +95,16 @@ internal object Ew300ProvisionalProtocol {
     }
 
     fun matchesStockSnapshot(responses: Map<Int, ByteArray>): Boolean =
-        STOCK_RESPONSE_PAYLOADS.all { (register, expected) ->
-            responses[register]?.contentEquals(expected) == true
+        stockSnapshotMismatchRegisters(responses).isEmpty()
+
+    /**
+     * Diagnostic-only explanation for a deliberately fail-closed write gate.
+     * The caller already prints every received payload; this exposes which
+     * comparison prevented a write without relaxing the exact-match rule.
+     */
+    fun stockSnapshotMismatchRegisters(responses: Map<Int, ByteArray>): List<Int> =
+        STOCK_RESPONSE_PAYLOADS.mapNotNull { (register, expected) ->
+            register.takeUnless { responses[register]?.contentEquals(expected) == true }
         }
 
     fun describe(register: Int, payload: ByteArray): String = when {
