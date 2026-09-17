@@ -103,6 +103,20 @@ This completes non-mutating stock-state preservation and establishes exact READ 
 
 The owner explicitly approved that reversible write/readback/restore test on 2026-09-16. Its implementation remains gated on an exact fresh match to the preserved register `0x26` payload. It changes only the signed gain word from `F5 FF` (-1.1 dB under the public decoder) to `F6 FF` (-1.0 dB), leaving the frequency bytes `64 00` unchanged. It reads the temporary value, always attempts restoration with the exact captured `F5 FF 64 00`, and reads restoration back. It sends no COMMIT, CLEAR, save, reset, slot, global-gain, or firmware command. This is a qualification diagnostic, not production EW300 support.
 
+### Owner reversible qualification result
+
+On signed source `eb8f16fcb8f8e0c38ebfafe8ce2c1cbfb78bbeec`, the corrected complete stock gate matched and the owner completed the authorized test. The owner-visible transaction evidence is:
+
+```text
+baseline READ response:  4B 26 00 00 00 52 00 F5 FF 64 00
+temporary WRITE payload: 4B 26 00 00 00 57 00 F6 FF 64 00
+temporary READ response: 4B 26 00 00 00 52 00 F6 FF 64 00
+restore WRITE payload:   4B 26 00 00 00 57 00 F5 FF 64 00
+restore READ response:   4B 26 00 00 00 52 00 F5 FF 64 00
+```
+
+Each write received an initial non-READ `0x57` response, which the diagnostic ignored while waiting for the exact expected READ echo. The temporary readback and exact preserved restoration both verified `true`. This is direct evidence that this one bounded volatile write/readback/restore sequence works on the owner's cable. It does not establish persistence, a save/commit command, acoustic scaling, broader filter semantics, global-gain semantics, reset behavior, or production support.
+
 Public source locations:
 
 - <https://eq.hangout.audio/shared/plugins/devicePEQ/usbDeviceConfig.js>
