@@ -23,7 +23,8 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Corrected the EW300 preserved stock fixture for register `0x2E` from the transcribed `FB FF` to the repeatedly observed untouched bytes `05 00`; the fail-closed diagnostic sent no write while identifying the discrepancy.
 - The owner-qualified reversible EW300 Band 1 test completed: the exact stock snapshot gate passed, a temporary `-1.1 dB → -1.0 dB` gain-byte change was read back, and the original bytes were restored and read back exactly. This remains a diagnostic-only volatile-write qualification; persistence and production EW300 support are not claimed.
 - A separate post-reconnect, read-only full snapshot again matched every preserved EW300 stock payload exactly, confirming the restored state without sending any command other than READ.
-- Prepared an owner-approved, fail-closed consolidated EW300 field-qualification diagnostic: it rechecks the complete stock snapshot, then performs seven tiny temporary gain/frequency/Q field checks with exact readback and immediate per-check restoration, stops on the first failure, and requires a final full exact snapshot. Persistence and all Save/Commit-style commands remain excluded.
+- The owner completed the seven-check consolidated EW300 field-qualification batch: all temporary values read back, each baseline restored, and the final full stock snapshot matched exactly. No persistence-style command was sent.
+- Prepared the owner-approved, fail-closed remaining-field qualification: eight temporary frequency/Q raw-word checks for Bands 2–5, with exact readback, immediate per-check restoration, first-failure stop, and a required final full exact snapshot. Persistence and all Save/Commit-style commands remain excluded.
 
 ### Documentation
 

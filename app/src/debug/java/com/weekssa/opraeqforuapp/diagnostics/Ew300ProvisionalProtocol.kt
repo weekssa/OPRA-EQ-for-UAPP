@@ -1,7 +1,7 @@
 package com.weekssa.opraeqforuapp.diagnostics
 
 internal object Ew300ProvisionalProtocol {
-    const val DIAGNOSTIC_BUILD = "batch-field-qualification-v1"
+    const val DIAGNOSTIC_BUILD = "remaining-field-qualification-v1"
     const val REPORT_ID = 0x4B
     const val COMMAND_READ = 0x52
     const val COMMAND_WRITE = 0x57
@@ -42,18 +42,20 @@ internal object Ew300ProvisionalProtocol {
     )
 
     /**
-     * Owner-approved volatile checks. Every value is a small one-step change from the captured
-     * stock bytes, is read back exactly, and is restored before the next check begins.
+     * Owner-approved volatile checks for the remaining unqualified per-band frequency and Q
+     * words. Every value is a small one-step change from the captured stock bytes, is read back
+     * exactly, and is restored before the next check begins.
      * Filter type, slot, global gain, persistence, and firmware controls are intentionally absent.
      */
     val APPROVED_REVERSIBLE_PROBES = listOf(
-        ReversibleProbe("Band 1 gain", 0x26, hex("F6 FF 64 00")),
-        ReversibleProbe("Band 1 frequency raw", 0x26, hex("F5 FF 65 00")),
-        ReversibleProbe("Band 1 Q raw", 0x27, hex("2A 03 00 00")),
-        ReversibleProbe("Band 2 gain", 0x28, hex("F8 FF C8 00")),
-        ReversibleProbe("Band 3 gain", 0x2A, hex("FD FF 2C 01")),
-        ReversibleProbe("Band 4 gain", 0x2C, hex("D1 FF 40 1F")),
-        ReversibleProbe("Band 5 gain", 0x2E, hex("06 00 58 1B")),
+        ReversibleProbe("Band 2 frequency raw", 0x28, hex("F7 FF C9 00")),
+        ReversibleProbe("Band 2 Q raw", 0x29, hex("2A 03 00 00")),
+        ReversibleProbe("Band 3 frequency raw", 0x2A, hex("FC FF 2D 01")),
+        ReversibleProbe("Band 3 Q raw", 0x2B, hex("F2 03 00 00")),
+        ReversibleProbe("Band 4 frequency raw", 0x2C, hex("D0 FF 41 1F")),
+        ReversibleProbe("Band 4 Q raw", 0x2D, hex("E6 05 00 00")),
+        ReversibleProbe("Band 5 frequency raw", 0x2E, hex("05 00 59 1B")),
+        ReversibleProbe("Band 5 Q raw", 0x2F, hex("FE 01 00 00")),
     )
 
     data class ReversibleProbe(

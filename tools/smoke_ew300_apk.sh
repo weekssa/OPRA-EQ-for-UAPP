@@ -21,7 +21,7 @@ for attempt in 1 2; do
   grep -q 'Request read-only descriptor capture' "$record_dir/window-$attempt.xml"
   grep -q 'Capture provisional stock-EQ snapshot' "$record_dir/window-$attempt.xml"
   grep -q 'android.widget.ScrollView' "$record_dir/window-$attempt.xml"
-  # The fourth, deliberately locked control is below the initial 320x640
+  # The fourth, deliberately locked batch control is below the initial 320x640
   # emulator viewport. Assert it after scrolling rather than treating it as
   # missing from the initial hierarchy.
   # Some API 36 emulator images return a non-zero status for an otherwise
@@ -31,7 +31,7 @@ for attempt in 1 2; do
   sleep 1
   adb shell uiautomator dump /sdcard/ew300-window-scrolled.xml
   adb pull /sdcard/ew300-window-scrolled.xml "$record_dir/window-$attempt-scrolled.xml"
-  grep -q 'Run approved reversible EQ-field batch' "$record_dir/window-$attempt-scrolled.xml"
+  grep -q 'Run approved remaining EQ-field batch' "$record_dir/window-$attempt-scrolled.xml"
 done
 adb logcat -d -b crash > "$record_dir/crash-log.txt"
 if grep -q 'FATAL EXCEPTION' "$record_dir/crash-log.txt"; then

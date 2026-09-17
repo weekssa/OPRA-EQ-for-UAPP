@@ -140,11 +140,11 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                         modifier = Modifier.fillMaxWidth(),
                         enabled = reversibleProbeReady,
                         onClick = ::requestReversibleWriteTest,
-                    ) { Text("Run approved reversible EQ-field batch") }
+                    ) { Text("Run approved remaining EQ-field batch") }
                     Text(
                         if (reversibleProbeReady) {
                             "This approved batch first rechecks the complete stock snapshot. It tests " +
-                                "small temporary gain, frequency, and Q field changes one at a time, " +
+                                "small temporary remaining frequency and Q field changes one at a time, " +
                                 "reads each back, restores it immediately, and stops on the first problem. " +
                                 "It sends no commit, save, clear, reset, or firmware command."
                         } else {
@@ -645,7 +645,7 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
 
                     log.appendLine("Capture type: approved reversible EW300 EQ-field batch write/readback/restore")
                     log.appendLine("Exact device: 31B2:0111 / LE XIAN / SIMGOT EW300 DSP")
-                    log.appendLine("Scope: seven small temporary field checks; each uses exact readback and immediate restoration")
+                    log.appendLine("Scope: eight small temporary remaining frequency/Q field checks; each uses exact readback and immediate restoration")
                     log.appendLine("No COMMIT, CLEAR, save, reset, slot, global-gain, or firmware command is present.")
                     log.appendLine()
 

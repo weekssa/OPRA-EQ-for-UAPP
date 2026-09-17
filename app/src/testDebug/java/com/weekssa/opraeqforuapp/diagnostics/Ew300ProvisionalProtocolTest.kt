@@ -88,42 +88,55 @@ class Ew300ProvisionalProtocolTest {
     }
 
     @Test
-    fun `approved reversible batch stays within captured EQ field bytes`() {
-        assertEquals(7, Ew300ProvisionalProtocol.APPROVED_REVERSIBLE_PROBES.size)
+    fun `approved remaining field batch stays within captured EQ field bytes`() {
+        assertEquals(8, Ew300ProvisionalProtocol.APPROVED_REVERSIBLE_PROBES.size)
         assertEquals(
-            listOf(0x26, 0x26, 0x27, 0x28, 0x2A, 0x2C, 0x2E),
+            listOf(0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x2E, 0x2F),
             Ew300ProvisionalProtocol.APPROVED_REVERSIBLE_PROBES.map { it.register },
         )
-        assertEquals("F5 FF 64 00", Ew300ProvisionalProtocol.stockData(0x26).toHex())
+        assertEquals("F7 FF C8 00", Ew300ProvisionalProtocol.stockData(0x28).toHex())
         assertEquals(
             listOf(
-                "F6 FF 64 00",
-                "F5 FF 65 00",
+                "F7 FF C9 00",
                 "2A 03 00 00",
-                "F8 FF C8 00",
-                "FD FF 2C 01",
-                "D1 FF 40 1F",
-                "06 00 58 1B",
+                "FC FF 2D 01",
+                "F2 03 00 00",
+                "D0 FF 41 1F",
+                "E6 05 00 00",
+                "05 00 59 1B",
+                "FE 01 00 00",
             ),
             Ew300ProvisionalProtocol.APPROVED_REVERSIBLE_PROBES.map { it.temporaryData.toHex() },
         )
         Ew300ProvisionalProtocol.APPROVED_REVERSIBLE_PROBES.forEach { probe ->
+            val stock = Ew300ProvisionalProtocol.stockData(probe.register)
             assertEquals(
-                Ew300ProvisionalProtocol.stockData(probe.register).size,
+                stock.size,
                 probe.temporaryData.size,
+            )
+            assertEquals(
+                1,
+                stock.indices.count { index -> stock[index] != probe.temporaryData[index] },
+                "${probe.label} must change exactly one raw field byte",
+            )
+            val expectedChangedIndex = if (probe.register % 2 == 0) 2 else 0
+            assertTrue(
+                stock.indices.filter { index -> stock[index] != probe.temporaryData[index] }
+                    .all { index -> index == expectedChangedIndex },
+                "${probe.label} must leave gain and filter-type bytes untouched",
             )
         }
         assertEquals(
-            "26 00 00 00 57 00 F6 FF 64 00",
+            "28 00 00 00 57 00 F7 FF C9 00",
             Ew300ProvisionalProtocol.writePayload(
-                0x26,
+                0x28,
                 Ew300ProvisionalProtocol.APPROVED_REVERSIBLE_PROBES.first().temporaryData,
             ).toHex(),
         )
         assertEquals(
-            "26 00 00 00 52 00 F6 FF 64 00",
+            "28 00 00 00 52 00 F7 FF C9 00",
             Ew300ProvisionalProtocol.expectedReadPayload(
-                0x26,
+                0x28,
                 Ew300ProvisionalProtocol.APPROVED_REVERSIBLE_PROBES.first().temporaryData,
             ).toHex(),
         )
