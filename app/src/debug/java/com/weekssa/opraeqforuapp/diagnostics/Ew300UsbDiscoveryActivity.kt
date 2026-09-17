@@ -1042,7 +1042,7 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                         log.appendLine("RESTORE 0x%02X exact readback: $exact".format(register))
                         restored = exact
                     }
-                    restored
+                    return restored
                 }
 
                 when (persistencePhase) {
