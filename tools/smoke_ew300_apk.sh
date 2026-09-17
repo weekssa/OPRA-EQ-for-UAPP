@@ -20,8 +20,10 @@ for attempt in 1 2; do
   grep -q 'Scan connected USB devices' "$record_dir/window-$attempt.xml"
   grep -q 'Request read-only descriptor capture' "$record_dir/window-$attempt.xml"
   grep -q 'Capture provisional stock-EQ snapshot' "$record_dir/window-$attempt.xml"
-  grep -q 'Run reversible +0.1 dB write test' "$record_dir/window-$attempt.xml"
   grep -q 'android.widget.ScrollView' "$record_dir/window-$attempt.xml"
+  # The fourth, deliberately locked control is below the initial 320x640
+  # emulator viewport. Assert it after scrolling rather than treating it as
+  # missing from the initial hierarchy.
   # Some API 36 emulator images return a non-zero status for an otherwise
   # successful synthetic gesture. The subsequent dump and button assertion
   # remain mandatory, so this only avoids discarding their evidence.
@@ -36,4 +38,5 @@ if grep -q 'FATAL EXCEPTION' "$record_dir/crash-log.txt"; then
   cat "$record_dir/crash-log.txt"
   exit 1
 fi
-printf 'PASS: exact signed APK launched twice and all four controls rendered on Android API 36. The write test remained stock-snapshot-gated; no USB connection or command was used.\n' | tee "$record_dir/result.txt"
+printf 'PASS: exact signed APK launched twice and all four controls rendered on Android API 36. The write test remained stock-snapshot-gated; no USB connection or command was used.
+' | tee "$record_dir/result.txt"
