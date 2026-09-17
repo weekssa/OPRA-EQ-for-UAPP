@@ -57,6 +57,7 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
     private var persistencePhase by mutableStateOf(0)
     private var persistenceBaseline: Map<Int, ByteArray>? = null
     private var persistenceMarker: Map<Int, ByteArray>? = null
+    private var persistenceSavedVerified by mutableStateOf(false)
     private var descriptorReceiverRegistered = false
 
     private val descriptorPermissionReceiver = object : BroadcastReceiver() {
@@ -625,6 +626,7 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                         persistencePhase = 0
                         persistenceBaseline = null
                         persistenceMarker = null
+                        persistenceSavedVerified = false
                         appendLine()
                         appendLine("HID interface ${hidInterface.id} release follows this report.")
                         append(
@@ -1072,6 +1074,7 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                             log.appendLine("ATTENTION: marker readback failed. Restoring the captured bytes without COMMIT.")
                             restoreBaseline(baseline)
                             persistencePhase = 0
+                            persistenceSavedVerified = false
                             log.append("No persistence result is claimed. Reconnect and run a fresh baseline.")
                             return log.toString()
                         }
@@ -1082,6 +1085,7 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                             restoreBaseline(baseline)
                             persistenceBaseline = null
                             persistenceMarker = null
+                            persistenceSavedVerified = false
                             persistencePhase = 0
                             log.append("No persistence result is claimed. Reconnect and run a fresh baseline.")
                             return log.toString()
@@ -1105,6 +1109,7 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                         val unrelatedUnchanged = current != null && Ew300ProvisionalProtocol.snapshotRegisters()
                             .filter { it !in marker.keys }
                             .all { current[it]?.contentEquals(baseline[it]) == true }
+                        persistenceSavedVerified = markerPersisted && unrelatedUnchanged
                         log.appendLine("Saved marker exact match after reconnect: $markerPersisted")
                         log.appendLine("Slot and unrelated stock fields unchanged: $unrelatedUnchanged")
                         val restored = restoreBaseline(baseline)
@@ -1112,6 +1117,7 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                         val commitRestored = restored && sendCommit()
                         if (!commitRestored) {
                             persistencePhase = 0
+                            persistenceSavedVerified = false
                             log.append("ATTENTION: restoration or COMMIT failed. Stop and retain this report; no automatic retry was made.")
                             return log.toString()
                         }
@@ -1124,7 +1130,7 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                             ?: return "The original stock baseline is unavailable in this app session. Run a fresh qualification."
                         log.appendLine("Phase 3: verify final restored stock after reconnect")
                         val current = readSnapshot("FINAL")
-                        val finalExact = current != null && Ew300ProvisionalProtocol.matchesStockSnapshot(current) &&
+                        val finalExact = persistenceSavedVerified && current != null && Ew300ProvisionalProtocol.matchesStockSnapshot(current) &&
                             Ew300ProvisionalProtocol.snapshotRegisters().all { current[it]?.contentEquals(baseline[it]) == true }
                         log.appendLine("Exact preserved final stock snapshot match: $finalExact")
                         persistencePhase = if (finalExact) 3 else 2
