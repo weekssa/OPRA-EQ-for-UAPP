@@ -115,9 +115,9 @@ class Ew300ProvisionalProtocolTest {
                 probe.temporaryData.size,
             )
             assertEquals(
+                "${probe.label} must change exactly one raw field byte",
                 1,
                 stock.indices.count { index -> stock[index] != probe.temporaryData[index] },
-                "${probe.label} must change exactly one raw field byte",
             )
             val expectedChangedIndex = if (probe.register % 2 == 0) 2 else 0
             assertTrue(
