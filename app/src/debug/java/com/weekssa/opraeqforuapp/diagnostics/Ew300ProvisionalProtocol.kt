@@ -1,7 +1,7 @@
 package com.weekssa.opraeqforuapp.diagnostics
 
 internal object Ew300ProvisionalProtocol {
-    const val DIAGNOSTIC_BUILD = "stock-gate-band5-gain-05-00"
+    const val DIAGNOSTIC_BUILD = "batch-field-qualification-v1"
     const val REPORT_ID = 0x4B
     const val COMMAND_READ = 0x52
     const val COMMAND_WRITE = 0x57
@@ -41,7 +41,30 @@ internal object Ew300ProvisionalProtocol {
         0x66 to hex("66 00 00 00 52 00 F8 F8 00 00"),
     )
 
-    val TEMPORARY_BAND_1_DATA = hex("F6 FF 64 00")
+    /**
+     * Owner-approved volatile checks. Every value is a small one-step change from the captured
+     * stock bytes, is read back exactly, and is restored before the next check begins.
+     * Filter type, slot, global gain, persistence, and firmware controls are intentionally absent.
+     */
+    val APPROVED_REVERSIBLE_PROBES = listOf(
+        ReversibleProbe("Band 1 gain", 0x26, hex("F6 FF 64 00")),
+        ReversibleProbe("Band 1 frequency raw", 0x26, hex("F5 FF 65 00")),
+        ReversibleProbe("Band 1 Q raw", 0x27, hex("2A 03 00 00")),
+        ReversibleProbe("Band 2 gain", 0x28, hex("F8 FF C8 00")),
+        ReversibleProbe("Band 3 gain", 0x2A, hex("FD FF 2C 01")),
+        ReversibleProbe("Band 4 gain", 0x2C, hex("D1 FF 40 1F")),
+        ReversibleProbe("Band 5 gain", 0x2E, hex("06 00 58 1B")),
+    )
+
+    data class ReversibleProbe(
+        val label: String,
+        val register: Int,
+        val temporaryData: ByteArray,
+    ) {
+        init {
+            require(temporaryData.size == 4)
+        }
+    }
 
     fun readPayload(register: Int, slotHint: Int = 0): ByteArray = byteArrayOf(
         register.toByte(),
@@ -79,6 +102,9 @@ internal object Ew300ProvisionalProtocol {
 
     fun stockData(register: Int): ByteArray =
         requireNotNull(STOCK_RESPONSE_PAYLOADS[register]).copyOfRange(6, 10)
+
+    fun expectedStockPayload(register: Int): ByteArray =
+        requireNotNull(STOCK_RESPONSE_PAYLOADS[register]).copyOf()
 
     fun responsePayload(wireReport: ByteArray, expectedRegister: Int): ByteArray? {
         if (wireReport.size != WIRE_REPORT_SIZE) return null

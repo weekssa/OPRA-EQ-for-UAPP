@@ -40,8 +40,8 @@ import com.weekssa.opraeqforuapp.ui.theme.OpraEqTheme
  * descriptor. It can also listen briefly on the HID interrupt-IN endpoint after the descriptor
  * has established that endpoint. A separately gated provisional snapshot reproduces only the
  * public web tool's KT Micro READ framing. After an exact stock snapshot, a separately approved
- * diagnostic can make one temporary +0.1 dB Band 1 write, read it back, restore the captured bytes,
- * and verify restoration. It never sends COMMIT, CLEAR, save, reset, or firmware commands.
+ * diagnostic can make a bounded batch of tiny temporary EQ-field writes. Each is read back and
+ * restored before the next begins; it never sends COMMIT, CLEAR, save, reset, or firmware commands.
  * Android may require the app to detach its HID driver briefly; only the HID interface is claimed
  * and it is always released before the connection is closed.
  */
@@ -140,13 +140,13 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                         modifier = Modifier.fillMaxWidth(),
                         enabled = reversibleProbeReady,
                         onClick = ::requestReversibleWriteTest,
-                    ) { Text("Run reversible +0.1 dB write test") }
+                    ) { Text("Run approved reversible EQ-field batch") }
                     Text(
                         if (reversibleProbeReady) {
-                            "This approved test first rechecks the exact stock Band 1 bytes, writes " +
-                                "only a +0.1 dB temporary gain, reads it back, immediately restores " +
-                                "the captured bytes, and verifies restoration. It sends no commit, " +
-                                "save, clear, reset, or firmware command."
+                            "This approved batch first rechecks the complete stock snapshot. It tests " +
+                                "small temporary gain, frequency, and Q field changes one at a time, " +
+                                "reads each back, restores it immediately, and stops on the first problem. " +
+                                "It sends no commit, save, clear, reset, or firmware command."
                         } else {
                             "The reversible test remains locked until this installation reads the " +
                                 "complete preserved stock snapshot exactly."
@@ -214,8 +214,8 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
             action = ACTION_REVERSIBLE_WRITE_PERMISSION,
             requestCode = 2,
             waitingMessage = "Waiting for Android's USB permission prompt. This approved diagnostic " +
-                "makes one temporary +0.1 dB Band 1 write, reads it, restores the captured bytes, " +
-                "and verifies restoration. It does not commit or save.",
+                "runs bounded temporary EQ-field checks, restoring each captured value immediately. " +
+                "It does not commit or save.",
             onGranted = ::runReversibleWriteTest,
         )
     }
@@ -590,12 +590,10 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
             } else {
                 try {
                     val log = StringBuilder()
-                    fun readRegister(label: String): ByteArray? {
-                        val payload = Ew300ProvisionalProtocol.readPayload(
-                            Ew300ProvisionalProtocol.FIRST_FILTER_REGISTER,
-                        )
+                    fun readRegister(label: String, register: Int): ByteArray? {
+                        val payload = Ew300ProvisionalProtocol.readPayload(register)
                         val reportBytes = Ew300ProvisionalProtocol.wireReport(payload)
-                        log.appendLine("$label READ OUT: ${reportBytes.toHex()}")
+                        log.appendLine("$label READ 0x%02X OUT: %s".format(register, reportBytes.toHex()))
                         val sent = connection.bulkTransfer(
                             interruptOut,
                             reportBytes,
@@ -620,7 +618,7 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                                 log.appendLine("$label IN: ${exact.toHex()}")
                                 val response = Ew300ProvisionalProtocol.responsePayload(
                                     exact,
-                                    Ew300ProvisionalProtocol.FIRST_FILTER_REGISTER,
+                                    register,
                                 )
                                 if (response != null) return response
                                 log.appendLine("$label ignored a non-READ response while waiting for the exact echo.")
@@ -629,14 +627,11 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                         return null
                     }
 
-                    fun writeBand1(label: String, data: ByteArray): Int {
+                    fun writeRegister(label: String, register: Int, data: ByteArray): Int {
                         val reportBytes = Ew300ProvisionalProtocol.wireReport(
-                            Ew300ProvisionalProtocol.writePayload(
-                                Ew300ProvisionalProtocol.FIRST_FILTER_REGISTER,
-                                data,
-                            ),
+                            Ew300ProvisionalProtocol.writePayload(register, data),
                         )
-                        log.appendLine("$label WRITE OUT: ${reportBytes.toHex()}")
+                        log.appendLine("$label WRITE 0x%02X OUT: %s".format(register, reportBytes.toHex()))
                         val sent = connection.bulkTransfer(
                             interruptOut,
                             reportBytes,
@@ -648,58 +643,80 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                         return sent
                     }
 
-                    log.appendLine("Capture type: approved reversible EW300 Band 1 write/readback/restore")
+                    log.appendLine("Capture type: approved reversible EW300 EQ-field batch write/readback/restore")
                     log.appendLine("Exact device: 31B2:0111 / LE XIAN / SIMGOT EW300 DSP")
-                    log.appendLine("Scope: register 0x26 gain -1.1 dB to -1.0 dB; frequency bytes unchanged")
+                    log.appendLine("Scope: seven small temporary field checks; each uses exact readback and immediate restoration")
                     log.appendLine("No COMMIT, CLEAR, save, reset, slot, global-gain, or firmware command is present.")
                     log.appendLine()
 
-                    val stockPayload = Ew300ProvisionalProtocol.STOCK_RESPONSE_PAYLOADS.getValue(
-                        Ew300ProvisionalProtocol.FIRST_FILTER_REGISTER,
-                    )
-                    val stockData = Ew300ProvisionalProtocol.stockData(
-                        Ew300ProvisionalProtocol.FIRST_FILTER_REGISTER,
-                    )
-                    val baseline = readRegister("BASELINE")
-                    val baselineExact = baseline?.contentEquals(stockPayload) == true
-                    log.appendLine("Exact preserved baseline match: $baselineExact")
-                    if (!baselineExact) {
-                        log.append("STOP: current Band 1 bytes differ from the preserved stock capture. No write was sent.")
+                    val initialResponses = linkedMapOf<Int, ByteArray>()
+                    Ew300ProvisionalProtocol.snapshotRegisters().forEach { register ->
+                        readRegister("INITIAL", register)?.let { initialResponses[register] = it }
+                    }
+                    val initialExact = Ew300ProvisionalProtocol.matchesStockSnapshot(initialResponses)
+                    log.appendLine("Exact preserved full baseline match: $initialExact")
+                    if (!initialExact) {
+                        log.append("STOP: the full current snapshot differs from the preserved stock capture. No write was sent.")
                         log.toString()
                     } else {
-                        val temporarySent = writeBand1(
-                            "TEMPORARY",
-                            Ew300ProvisionalProtocol.TEMPORARY_BAND_1_DATA,
-                        )
-                        SystemClock.sleep(REVERSIBLE_SETTLE_MS)
-                        val temporaryRead = if (temporarySent == Ew300ProvisionalProtocol.WIRE_REPORT_SIZE) {
-                            readRegister("TEMPORARY")
-                        } else {
-                            null
-                        }
-                        val expectedTemporary = Ew300ProvisionalProtocol.expectedReadPayload(
-                            Ew300ProvisionalProtocol.FIRST_FILTER_REGISTER,
-                            Ew300ProvisionalProtocol.TEMPORARY_BAND_1_DATA,
-                        )
-                        val temporaryVerified = temporaryRead?.contentEquals(expectedTemporary) == true
-                        log.appendLine("Temporary +0.1 dB readback verified: $temporaryVerified")
-                        log.appendLine()
+                        var batchPassed = true
+                        Ew300ProvisionalProtocol.APPROVED_REVERSIBLE_PROBES.forEachIndexed { index, probe ->
+                            if (!batchPassed) return@forEachIndexed
+                            val stockPayload = Ew300ProvisionalProtocol.expectedStockPayload(probe.register)
+                            val stockData = Ew300ProvisionalProtocol.stockData(probe.register)
+                            log.appendLine()
+                            log.appendLine("CHECK ${index + 1}/${Ew300ProvisionalProtocol.APPROVED_REVERSIBLE_PROBES.size}: ${probe.label} (0x%02X)".format(probe.register))
+                            val baseline = readRegister("BASELINE", probe.register)
+                            val baselineExact = baseline?.contentEquals(stockPayload) == true
+                            log.appendLine("Exact preserved baseline match: $baselineExact")
+                            if (!baselineExact) {
+                                log.appendLine("STOP: this field no longer matches the preserved stock capture. No write was sent for it.")
+                                batchPassed = false
+                                return@forEachIndexed
+                            }
+                            val temporarySent = writeRegister("TEMPORARY", probe.register, probe.temporaryData)
+                            SystemClock.sleep(REVERSIBLE_SETTLE_MS)
+                            val temporaryRead = if (temporarySent == Ew300ProvisionalProtocol.WIRE_REPORT_SIZE) {
+                                readRegister("TEMPORARY", probe.register)
+                            } else {
+                                null
+                            }
+                            val expectedTemporary = Ew300ProvisionalProtocol.expectedReadPayload(
+                                probe.register,
+                                probe.temporaryData,
+                            )
+                            val temporaryVerified = temporaryRead?.contentEquals(expectedTemporary) == true
+                            log.appendLine("Temporary readback verified: $temporaryVerified")
 
-                        val restoreSent = writeBand1("RESTORE", stockData)
-                        SystemClock.sleep(REVERSIBLE_SETTLE_MS)
-                        val restoredRead = if (restoreSent == Ew300ProvisionalProtocol.WIRE_REPORT_SIZE) {
-                            readRegister("RESTORE")
-                        } else {
-                            null
+                            val restoreSent = writeRegister("RESTORE", probe.register, stockData)
+                            SystemClock.sleep(REVERSIBLE_SETTLE_MS)
+                            val restoredRead = if (restoreSent == Ew300ProvisionalProtocol.WIRE_REPORT_SIZE) {
+                                readRegister("RESTORE", probe.register)
+                            } else {
+                                null
+                            }
+                            val restored = restoredRead?.contentEquals(stockPayload) == true
+                            log.appendLine("Exact preserved restoration verified: $restored")
+                            if (!restored || !temporaryVerified) {
+                                log.appendLine("STOP: the batch will not continue after this check.")
+                                batchPassed = false
+                            }
                         }
-                        val restored = restoredRead?.contentEquals(stockPayload) == true
-                        log.appendLine("Exact preserved Band 1 restoration verified: $restored")
+                        if (batchPassed) {
+                            val finalResponses = linkedMapOf<Int, ByteArray>()
+                            Ew300ProvisionalProtocol.snapshotRegisters().forEach { register ->
+                                readRegister("FINAL", register)?.let { finalResponses[register] = it }
+                            }
+                            batchPassed = Ew300ProvisionalProtocol.matchesStockSnapshot(finalResponses)
+                            log.appendLine()
+                            log.appendLine("Exact preserved final full snapshot match: $batchPassed")
+                        }
                         log.appendLine("HID interface ${hidInterface.id} release follows this report.")
                         log.append(
-                            if (restored) {
-                                "RESTORED: Band 1 exactly matches the untouched capture. "
+                            if (batchPassed) {
+                                "RESTORED: every completed check and the final full snapshot match the untouched capture. "
                             } else {
-                                "ATTENTION: exact restoration was not verified. Stop playback and retain this report. "
+                                "ATTENTION: the batch did not complete an exact restoration. Stop playback and retain this report. "
                             },
                         )
                         log.append(

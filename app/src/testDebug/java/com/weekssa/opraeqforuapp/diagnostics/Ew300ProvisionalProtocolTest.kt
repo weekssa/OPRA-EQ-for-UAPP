@@ -88,21 +88,43 @@ class Ew300ProvisionalProtocolTest {
     }
 
     @Test
-    fun `reversible probe changes only band one gain by one tenth`() {
+    fun `approved reversible batch stays within captured EQ field bytes`() {
+        assertEquals(7, Ew300ProvisionalProtocol.APPROVED_REVERSIBLE_PROBES.size)
+        assertEquals(
+            listOf(0x26, 0x26, 0x27, 0x28, 0x2A, 0x2C, 0x2E),
+            Ew300ProvisionalProtocol.APPROVED_REVERSIBLE_PROBES.map { it.register },
+        )
         assertEquals("F5 FF 64 00", Ew300ProvisionalProtocol.stockData(0x26).toHex())
-        assertEquals("F6 FF 64 00", Ew300ProvisionalProtocol.TEMPORARY_BAND_1_DATA.toHex())
+        assertEquals(
+            listOf(
+                "F6 FF 64 00",
+                "F5 FF 65 00",
+                "2A 03 00 00",
+                "F8 FF C8 00",
+                "FD FF 2C 01",
+                "D1 FF 40 1F",
+                "06 00 58 1B",
+            ),
+            Ew300ProvisionalProtocol.APPROVED_REVERSIBLE_PROBES.map { it.temporaryData.toHex() },
+        )
+        Ew300ProvisionalProtocol.APPROVED_REVERSIBLE_PROBES.forEach { probe ->
+            assertEquals(
+                Ew300ProvisionalProtocol.stockData(probe.register).size,
+                probe.temporaryData.size,
+            )
+        }
         assertEquals(
             "26 00 00 00 57 00 F6 FF 64 00",
             Ew300ProvisionalProtocol.writePayload(
                 0x26,
-                Ew300ProvisionalProtocol.TEMPORARY_BAND_1_DATA,
+                Ew300ProvisionalProtocol.APPROVED_REVERSIBLE_PROBES.first().temporaryData,
             ).toHex(),
         )
         assertEquals(
             "26 00 00 00 52 00 F6 FF 64 00",
             Ew300ProvisionalProtocol.expectedReadPayload(
                 0x26,
-                Ew300ProvisionalProtocol.TEMPORARY_BAND_1_DATA,
+                Ew300ProvisionalProtocol.APPROVED_REVERSIBLE_PROBES.first().temporaryData,
             ).toHex(),
         )
     }

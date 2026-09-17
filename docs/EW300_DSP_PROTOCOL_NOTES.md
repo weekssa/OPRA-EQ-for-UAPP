@@ -119,6 +119,8 @@ Each write received an initial non-READ `0x57` response, which the diagnostic ig
 
 After disconnecting and reconnecting the cable, the owner ran a separate read-only full snapshot. It again completed all 12 READ `0x52` requests and reported `Exact preserved stock snapshot match: true`. This confirms that the cable returned to the preserved stock bytes after the temporary transaction; it is not persistence evidence because neither the test nor this confirmation sent a save/commit command.
 
+The owner then approved one consolidated, volatile qualification session to avoid repeated hands-on rounds. Its next candidate is limited to seven one-step temporary data changes: Band 1 gain (`F6 FF 64 00`), Band 1 frequency raw word (`F5 FF 65 00`), Band 1 Q raw word (`2A 03 00 00`), and +0.1 gain-word steps for Bands 2–5. Before any write it must reread the full 12-register snapshot exactly. Every check reads the baseline, writes one temporary four-byte field value, requires the exact READ echo, restores the captured four bytes, requires the exact restoration echo, and stops after the first failure. A final full exact snapshot is required before success. Filter type, slot, global gain, persistence, COMMIT, CLEAR, save, reset, and firmware controls remain absent.
+
 Public source locations:
 
 - <https://eq.hangout.audio/shared/plugins/devicePEQ/usbDeviceConfig.js>
