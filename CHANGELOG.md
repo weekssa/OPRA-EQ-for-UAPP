@@ -25,6 +25,8 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - A separate post-reconnect, read-only full snapshot again matched every preserved EW300 stock payload exactly, confirming the restored state without sending any command other than READ.
 - The owner completed the seven-check consolidated EW300 field-qualification batch: all temporary values read back, each baseline restored, and the final full stock snapshot matched exactly. No persistence-style command was sent.
 - Prepared the owner-approved, fail-closed remaining-field qualification: eight temporary frequency/Q raw-word checks for Bands 2–5, with exact readback, immediate per-check restoration, first-failure stop, and a required final full exact snapshot. Persistence and all Save/Commit-style commands remain excluded.
+- The owner completed that final eight-check EW300 batch. Temporary frequency/Q writes for Bands 2–5 read back exactly, each baseline was restored, and the final full 12-register snapshot matched the untouched capture. Together with the prior batch, volatile gain/frequency/Q write/readback/restore transport is qualified across five observed bands; filter types, value semantics, persistence, reset, slot, and global-gain operations remain disabled.
+- The owner completed the consolidated EW300 Band 1 filter-type qualification: provisional raw codes 1–4 each read back exactly, restored the captured bytes, and passed the final full-snapshot gate. Added the Android-free EW300 volatile protocol boundary and regression coverage for changing only the observed filter-type byte. Production registration remains intentionally disabled pending acoustic, range, persistence, and reset qualification.
 
 ### Documentation
 

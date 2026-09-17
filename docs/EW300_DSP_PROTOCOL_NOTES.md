@@ -123,11 +123,41 @@ The owner completed the first consolidated volatile qualification session. All s
 
 The owner then approved one final consolidated volatile session for the remaining per-band fields: frequency and Q raw words for Bands 2–5. The candidate is limited to eight one-step temporary data changes: `0x28 F7 FF C9 00`, `0x29 2A 03 00 00`, `0x2A FC FF 2D 01`, `0x2B F2 03 00 00`, `0x2C D0 FF 41 1F`, `0x2D E6 05 00 00`, `0x2E 05 00 59 1B`, and `0x2F FE 01 00 00`. Before any write it must reread the full 12-register snapshot exactly. Every check reads the baseline, writes one temporary four-byte field value, requires the exact READ echo, restores the captured four bytes, requires the exact restoration echo, and stops after the first failure. A final full exact snapshot is required before success. Filter-type bytes, slot, global gain, persistence, COMMIT, CLEAR, save, reset, and firmware controls remain absent.
 
+### Owner final volatile field-qualification result
+
+On 2026-09-17 the owner completed the eight remaining temporary frequency/Q checks for Bands 2–5.
+Every temporary value returned the exact expected `0x52` READ echo, every original four-byte value
+was restored and read back exactly, and the final 12-register snapshot matched the untouched
+capture byte-for-byte. Combined with the earlier seven-check batch, this directly establishes the
+volatile `0x57` WRITE → `0x52` READ echo → exact restore path for gain, frequency, and Q raw fields
+in all five observed band register pairs on this exact cable.
+
+This is transport qualification, not a claim that the provisional public decoder's frequency scale,
+gain scale, Q scale, or filter type semantics are correct. Filter-type bytes, slot state, global gain,
+persistence, COMMIT, CLEAR, save, reset, and firmware operations remain untested and prohibited.
+The final report explicitly states that no COMMIT, CLEAR, save, reset, slot, global-gain, or firmware
+command was sent.
+
 Public source locations:
 
 - <https://eq.hangout.audio/shared/plugins/devicePEQ/usbDeviceConfig.js>
 - <https://eq.hangout.audio/shared/plugins/devicePEQ/ktmicroUsbHidHandler.js>
 - <https://eq.hangout.audio/shared/plugins/devicePEQ/usbHidConnector.js>
+
+### Owner filter-type qualification result
+
+On 2026-09-17 the owner completed the consolidated reversible Band 1 filter-type test on the
+exact cable. Codes `1`, `2`, `3`, and `4` were each written to the observed type byte at register
+`0x27`, read back through the exact `0x52` response echo, and restored to the captured stock bytes
+after the attempt. Every temporary readback and restoration verified, and the final 12-register
+snapshot matched the untouched capture exactly. The public labels are retained only as a provisional
+hypothesis: `1=LPF`, `2=HPF`, `3=low-shelf`, and `4=high-shelf`. This qualifies raw type-byte
+transport and restoration on this cable; it does not prove acoustic behavior, frequency/gain/Q
+units, persistence, save semantics, reset, slot, global gain, or production support.
+
+The main-source `Ew300QualifiedVolatileProtocol` now owns the strict, Android-free framing boundary
+and the provisional type-byte helper. It remains intentionally unregistered as a production DAC
+until the remaining semantic and persistence gates pass.
 
 ## Third-party browser connection observation
 
