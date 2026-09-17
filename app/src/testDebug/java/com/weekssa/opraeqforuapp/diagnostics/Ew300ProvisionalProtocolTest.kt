@@ -74,6 +74,16 @@ class Ew300ProvisionalProtocolTest {
     }
 
     @Test
+    fun `stock gate accepts the owner captured 0x2F response byte for byte`() {
+        val responses = Ew300ProvisionalProtocol.STOCK_RESPONSE_PAYLOADS.mapValues { it.value.copyOf() }
+            .toMutableMap()
+        responses[0x2F] = byteArrayOf(0x2F, 0, 0, 0, 0x52, 0, 0xF4.toByte(), 0x01, 0, 0)
+
+        assertTrue(Ew300ProvisionalProtocol.matchesStockSnapshot(responses))
+        assertEquals(emptyList<Int>(), Ew300ProvisionalProtocol.stockSnapshotMismatchRegisters(responses))
+    }
+
+    @Test
     fun `reversible probe changes only band one gain by one tenth`() {
         assertEquals("F5 FF 64 00", Ew300ProvisionalProtocol.stockData(0x26).toHex())
         assertEquals("F6 FF 64 00", Ew300ProvisionalProtocol.TEMPORARY_BAND_1_DATA.toHex())

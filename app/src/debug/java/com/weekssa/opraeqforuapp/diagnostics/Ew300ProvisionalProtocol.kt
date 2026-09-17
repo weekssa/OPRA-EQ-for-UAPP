@@ -104,8 +104,13 @@ internal object Ew300ProvisionalProtocol {
      */
     fun stockSnapshotMismatchRegisters(responses: Map<Int, ByteArray>): List<Int> =
         STOCK_RESPONSE_PAYLOADS.mapNotNull { (register, expected) ->
-            register.takeUnless { responses[register]?.contentEquals(expected) == true }
+            register.takeUnless { responseMatchesExactly(responses[register], expected) }
         }
+
+    private fun responseMatchesExactly(actual: ByteArray?, expected: ByteArray): Boolean =
+        actual != null &&
+            actual.size == expected.size &&
+            actual.indices.all { index -> actual[index] == expected[index] }
 
     fun describe(register: Int, payload: ByteArray): String = when {
         register == CURRENT_SLOT_REGISTER -> "current slot=${payload[6].toUnsignedInt()}"
