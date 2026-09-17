@@ -22,7 +22,10 @@ for attempt in 1 2; do
   grep -q 'Capture provisional stock-EQ snapshot' "$record_dir/window-$attempt.xml"
   grep -q 'Run reversible +0.1 dB write test' "$record_dir/window-$attempt.xml"
   grep -q 'android.widget.ScrollView' "$record_dir/window-$attempt.xml"
-  adb shell input swipe 160 580 160 120 300
+  # Some API 36 emulator images return a non-zero status for an otherwise
+  # successful synthetic gesture. The subsequent dump and button assertion
+  # remain mandatory, so this only avoids discarding their evidence.
+  adb shell input swipe 160 580 160 120 300 || true
   sleep 1
   adb shell uiautomator dump /sdcard/ew300-window-scrolled.xml
   adb pull /sdcard/ew300-window-scrolled.xml "$record_dir/window-$attempt-scrolled.xml"
