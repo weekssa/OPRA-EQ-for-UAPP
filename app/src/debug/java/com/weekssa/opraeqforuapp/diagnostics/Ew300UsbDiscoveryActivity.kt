@@ -1056,7 +1056,7 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                         log.appendLine("Exact preserved full baseline match: $baselineExact")
                         if (!baselineExact || baseline == null) {
                             log.append("STOP: baseline did not match the preserved stock capture. No marker write or COMMIT was sent.")
-                            return@try log.toString()
+                            return log.toString()
                         }
                         var markerPassed = true
                         Ew300PersistenceQualification.MARKER_FIELDS.forEach { (register, markerData) ->
@@ -1072,7 +1072,8 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                             log.appendLine("ATTENTION: marker readback failed. Restoring the captured bytes without COMMIT.")
                             restoreBaseline(baseline)
                             persistencePhase = 0
-                            return@try log.append("No persistence result is claimed. Reconnect and run a fresh baseline.").let { log.toString() }
+                            log.append("No persistence result is claimed. Reconnect and run a fresh baseline.")
+                            return log.toString()
                         }
                         persistenceBaseline = baseline.mapValues { it.value.copyOf() }
                         persistenceMarker = Ew300PersistenceQualification.MARKER_FIELDS.mapValues { it.value.copyOf() }
@@ -1082,7 +1083,8 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                             persistenceBaseline = null
                             persistenceMarker = null
                             persistencePhase = 0
-                            return@try log.append("No persistence result is claimed. Reconnect and run a fresh baseline.").let { log.toString() }
+                            log.append("No persistence result is claimed. Reconnect and run a fresh baseline.")
+                            return log.toString()
                         }
                         persistencePhase = 1
                         log.append("MARKER SAVED: disconnect and reconnect the cable, then tap Verify saved marker.")
@@ -1093,7 +1095,7 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                         val marker = persistenceMarker
                         if (baseline == null || marker == null) {
                             persistencePhase = 0
-                            return@try "The saved marker is unavailable in this app session. Run a fresh baseline qualification."
+                            return "The saved marker is unavailable in this app session. Run a fresh baseline qualification."
                         }
                         log.appendLine("Phase 2: verify marker persistence after reconnect")
                         val current = readSnapshot("PERSISTED")
@@ -1111,7 +1113,7 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                         if (!commitRestored) {
                             persistencePhase = 0
                             log.append("ATTENTION: restoration or COMMIT failed. Stop and retain this report; no automatic retry was made.")
-                            return@try log.toString()
+                            return log.toString()
                         }
                         persistencePhase = 2
                         log.append("STOCK RESTORE SAVED: disconnect and reconnect the cable, then tap Verify restored stock.")
@@ -1119,7 +1121,7 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                     }
                     else -> {
                         val baseline = persistenceBaseline
-                            ?: return@try "The original stock baseline is unavailable in this app session. Run a fresh qualification."
+                            ?: return "The original stock baseline is unavailable in this app session. Run a fresh qualification."
                         log.appendLine("Phase 3: verify final restored stock after reconnect")
                         val current = readSnapshot("FINAL")
                         val finalExact = current != null && Ew300ProvisionalProtocol.matchesStockSnapshot(current) &&
