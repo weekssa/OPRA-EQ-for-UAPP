@@ -1,6 +1,7 @@
 package com.weekssa.opraeqforuapp.diagnostics
 
 internal object Ew300ProvisionalProtocol {
+    const val DIAGNOSTIC_BUILD = "stock-gate-byte-compare-db6cbf2"
     const val REPORT_ID = 0x4B
     const val COMMAND_READ = 0x52
     const val COMMAND_WRITE = 0x57

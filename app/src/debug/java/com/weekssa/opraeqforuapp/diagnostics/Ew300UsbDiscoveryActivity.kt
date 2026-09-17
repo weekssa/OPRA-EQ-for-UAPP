@@ -101,6 +101,10 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                 ) {
                     Text("EW300 USB discovery", style = MaterialTheme.typography.headlineSmall)
                     Text(
+                        "Diagnostic build: ${Ew300ProvisionalProtocol.DIAGNOSTIC_BUILD}",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    Text(
                         "Scan lists USB information Android already exposes. Descriptor capture " +
                             "asks Android for access only to read USB descriptions, their declared " +
                             "input reports, and any unsolicited HID input briefly available. It sends no " +
@@ -506,6 +510,24 @@ class Ew300UsbDiscoveryActivity : ComponentActivity() {
                                 "Stock-gate mismatch register(s): " +
                                     mismatches.joinToString { "0x%02X".format(it) },
                             )
+                            mismatches.forEach { register ->
+                                val actual = responses[register]
+                                val expected = Ew300ProvisionalProtocol.STOCK_RESPONSE_PAYLOADS.getValue(register)
+                                appendLine(
+                                    "Stock-gate 0x%02X actual (%s bytes): %s".format(
+                                        register,
+                                        actual?.size ?: 0,
+                                        actual?.toHex() ?: "missing",
+                                    ),
+                                )
+                                appendLine(
+                                    "Stock-gate 0x%02X expected (%s bytes): %s".format(
+                                        register,
+                                        expected.size,
+                                        expected.toHex(),
+                                    ),
+                                )
+                            }
                             appendLine("The raw received payloads above remain authoritative; no WRITE is unlocked.")
                         }
                         reversibleProbeReady = exactStockSnapshot
