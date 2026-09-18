@@ -42,7 +42,7 @@ class Ew300ProtocolTest {
         )
 
         val readback = requireNotNull(deviceReadback)
-        assertEquals(0.7, readback.q)
+        assertEquals(0.7, readback.q, 1e-9)
         assertArrayEquals(
             Ew300Protocol.encodeBand(displayed).first,
             Ew300Protocol.encodeBand(readback).first,
