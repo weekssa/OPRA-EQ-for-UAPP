@@ -33,6 +33,27 @@ class Ew300ProtocolTest {
     }
 
     @Test
+    fun verificationUsesWireQuantizationForFloatingPointValues() {
+        val displayed = Kt02h20Band("peak_dip", 80.0, -1.0, 0.7000000000000001)
+        val deviceReadback = Ew300Protocol.decodeBand(
+            0,
+            Ew300Protocol.encodeBand(displayed).first,
+            Ew300Protocol.encodeBand(displayed).second,
+        )
+
+        val readback = requireNotNull(deviceReadback)
+        assertEquals(0.7, readback.q)
+        assertArrayEquals(
+            Ew300Protocol.encodeBand(displayed).first,
+            Ew300Protocol.encodeBand(readback).first,
+        )
+        assertArrayEquals(
+            Ew300Protocol.encodeBand(displayed).second,
+            Ew300Protocol.encodeBand(readback).second,
+        )
+    }
+
+    @Test
     fun unsupportedReportsAndFiltersAreRejected() {
         assertNull(Ew300Protocol.decodeRead(0x26, bytes(0x4B, 0x26, 0, 0, 0, 0x57, 0, 0, 0, 0, 0)))
         assertNull(Ew300Protocol.decodeBand(0, bytes(0, 0, 0, 0), bytes(0, 0, 1, 0)))

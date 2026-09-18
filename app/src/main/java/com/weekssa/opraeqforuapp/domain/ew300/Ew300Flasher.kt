@@ -104,7 +104,14 @@ class Ew300Flasher(private val transport: Ew300Transport) {
             val q = transport.readRegister(Ew300Protocol.bandRegister(index) + 1)
                 ?: return VerificationFailure(index, expected[index], null)
             val actual = Ew300Protocol.decodeBand(index, gain, q)
-            if (actual != expected[index]) return VerificationFailure(index, expected[index], actual)
+            // Verify the device's encoded fields, not the display-layer Double values. The
+            // EW300 stores integer tenths/thousandths, so 0.7 and 0.7000000000000001 are the
+            // same hardware value even though Kotlin data-class equality treats them as distinct.
+            val expectedWire = runCatching { Ew300Protocol.encodeBand(expected[index]) }.getOrNull()
+            val matchesWire = expectedWire != null &&
+                expectedWire.first.contentEquals(gain) &&
+                expectedWire.second.contentEquals(q)
+            if (!matchesWire) return VerificationFailure(index, expected[index], actual)
         }
         return null
     }
