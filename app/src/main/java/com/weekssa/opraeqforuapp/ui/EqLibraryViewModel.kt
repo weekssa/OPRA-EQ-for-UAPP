@@ -103,6 +103,13 @@ private data class ExportCurrentnessInput(
     val library: LibraryDataState,
 )
 
+private data class HardwareConnectionStates(
+    val blackPearl: BlackPearlConnectionState,
+    val fiioJa11: Kt02h20ConnectionState,
+    val ew300: Kt02h20ConnectionState,
+    val jcallyJm12: Kt02h20ConnectionState,
+)
+
 private data class HardwareConnectionUiState(
     val blackPearl: BlackPearlConnectionState,
     val fiioJa11: Kt02h20ConnectionState,
@@ -243,19 +250,25 @@ class EqLibraryViewModel(
         LibraryUiState(library, currentness)
     }
 
-    private val hardwareConnectionsWithoutEditor = combine(
+    private val hardwareConnectionStates = combine(
         hardwareRepository.blackPearlConnectionState,
         hardwareRepository.fiioJa11ConnectionState,
         hardwareRepository.ew300ConnectionState,
         hardwareRepository.jcallyJm12ConnectionState,
+    ) { blackPearl, fiioJa11, ew300, jcallyJm12 ->
+        HardwareConnectionStates(blackPearl, fiioJa11, ew300, jcallyJm12)
+    }
+
+    private val hardwareConnectionsWithoutEditor = combine(
+        hardwareConnectionStates,
         hardwareRepository.blackPearlSnapshotState,
         blackPearlHardwareEqMatch,
-    ) { blackPearl, fiioJa11, ew300, jcallyJm12, blackPearlHardwareEqState, blackPearlMatch ->
+    ) { connections, blackPearlHardwareEqState, blackPearlMatch ->
         HardwareConnectionUiState(
-            blackPearl = blackPearl,
-            fiioJa11 = fiioJa11,
-            ew300 = ew300,
-            jcallyJm12 = jcallyJm12,
+            blackPearl = connections.blackPearl,
+            fiioJa11 = connections.fiioJa11,
+            ew300 = connections.ew300,
+            jcallyJm12 = connections.jcallyJm12,
             blackPearlHardwareEqState = blackPearlHardwareEqState,
             fiioJa11HardwareEqState = HardwareEqSnapshotState(),
             blackPearlHardwareEqMatch = blackPearlMatch,

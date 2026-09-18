@@ -291,6 +291,7 @@ internal fun ProfileSelectionEditor(
                                 when (device) {
                                     LibraryHardwareFlashDevice.BLACK_PEARL -> "Playback adjustment: $gain"
                                     LibraryHardwareFlashDevice.FIIO_JA11 -> "Global EQ gain: $gain"
+                                    LibraryHardwareFlashDevice.SIMGOT_EW300 -> "EW300 PEQ gain field: $gain"
                                 },
                             )
                             Text(
@@ -299,6 +300,8 @@ internal fun ProfileSelectionEditor(
                                         "The current hardware EQ slot will be overwritten and verified."
                                     LibraryHardwareFlashDevice.FIIO_JA11 ->
                                         "User 1 will be applied, saved, and verified."
+                                    LibraryHardwareFlashDevice.SIMGOT_EW300 ->
+                                        "The EW300 five-band PEQ will be written, persisted, and verified."
                                 },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,

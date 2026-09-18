@@ -708,7 +708,6 @@ fun EqLibraryApp(
                         onSetFiioJa11HeadsetControl = onSetFiioJa11HeadsetControl,
                         onSetFiioJa11UacMode = onSetFiioJa11UacMode,
                         onResetFiioJa11FromMyDac = onResetFiioJa11FromMyDac,
-                        onFlashEw300FromMyDac = onFlashEw300FromMyDac,
                         onResetEw300FromMyDac = onResetEw300FromMyDac,
                         onMessage = ::showMessage,
                         onOperationStatus = ::showOperationStatus,
