@@ -8,6 +8,8 @@ import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
 import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
 import com.weekssa.opraeqforuapp.domain.dac.DacRecognitionState
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotBundle
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotFactory
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300Protocol
 import java.io.Closeable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -167,6 +169,29 @@ class DacSessionRepository(
         generation = { fiioJa11Transport.sessionGeneration },
         isConnected = { fiioJa11ConnectionState.value is Kt02h20ConnectionState.Connected },
         read = fiioJa11SnapshotReader::read,
+    )
+
+    suspend fun readEw300Snapshot(): HardwareEqSnapshotBundle? = readVerifiedSnapshot(
+        generation = { ew300Transport.sessionGeneration },
+        isConnected = { ew300ConnectionState.value is Kt02h20ConnectionState.Connected },
+        read = { generation ->
+            val bands = (0 until Ew300Protocol.BAND_COUNT).map { index ->
+                val gain = ew300Transport.readRegister(Ew300Protocol.bandRegister(index))
+                val q = ew300Transport.readRegister(Ew300Protocol.bandRegister(index) + 1)
+                if (gain == null || q == null) null else Ew300Protocol.decodeBand(index, gain, q)
+            }
+            val gain = ew300Transport.readRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER)
+            if (bands.any { it == null } || gain == null) {
+                null
+            } else {
+                HardwareEqSnapshotFactory.ew300(
+                    nativeBands = bands.filterNotNull(),
+                    globalGainDb = Ew300Protocol.globalGainDb(gain),
+                    sessionGeneration = generation,
+                    verifiedAtEpochMillis = System.currentTimeMillis(),
+                )
+            }
+        },
     )
 
     private fun currentPresentDeviceIds(): Set<DacDeviceId> = buildSet {

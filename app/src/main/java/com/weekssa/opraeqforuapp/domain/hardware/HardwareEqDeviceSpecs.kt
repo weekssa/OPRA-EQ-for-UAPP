@@ -24,18 +24,17 @@ object HardwareEqDeviceSpecs {
             maxGainDb = 12.0,
             minQ = 0.1,
             maxQ = 10.0,
-            // The EW300's dedicated global-gain field is not yet part of the production write
-            // surface; profiles that require source preamp are rejected rather than ignored.
-            minPreampDb = null,
-            maxPreampDb = null,
+            // The dedicated EW300 global-gain field is qualified in 0.5 dB steps.
+            minPreampDb = -64.0,
+            maxPreampDb = 63.5,
         ),
         quantization = FiveBandQuantization(
             frequencyStepHz = 1.0,
             gainStepDb = 0.1,
             qStep = 0.001,
-            preampStepDb = null,
+            preampStepDb = 0.5,
         ),
-        representationVersion = 1,
+        representationVersion = 2,
     )
 
     val FIIO_JA11 = FiveBandDeviceSpec(

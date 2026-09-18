@@ -101,6 +101,7 @@ fun EqLibraryApp(
     val onConnectDacForMyDac = actions.onConnectDacForMyDac
     val onOpenBlackPearlEditor = actions.onOpenBlackPearlEditor
     val onBackMyDacEditor = actions.onBackMyDacEditor
+    val onBackEw300Editor = actions.onBackEw300Editor
     val onCloseMyDacEditor = actions.onCloseMyDacEditor
     val onSelectBlackPearlEditorBand = actions.onSelectBlackPearlEditorBand
     val onShowBlackPearlEditorAllBands = actions.onShowBlackPearlEditorAllBands
@@ -109,6 +110,16 @@ fun EqLibraryApp(
     val onUseSafeBlackPearlEditorGain = actions.onUseSafeBlackPearlEditorGain
     val onResetBlackPearlEditorLocalEdits = actions.onResetBlackPearlEditorLocalEdits
     val onApplyBlackPearlEditor = actions.onApplyBlackPearlEditor
+    val onOpenEw300Editor = actions.onOpenEw300Editor
+    val onBackEw300Editor = actions.onBackEw300Editor
+    val onCloseEw300Editor = actions.onCloseEw300Editor
+    val onSelectEw300EditorBand = actions.onSelectEw300EditorBand
+    val onShowEw300EditorAllBands = actions.onShowEw300EditorAllBands
+    val onShowEw300EditorReview = actions.onShowEw300EditorReview
+    val onUpdateEw300EditorBand = actions.onUpdateEw300EditorBand
+    val onUseSafeEw300EditorGain = actions.onUseSafeEw300EditorGain
+    val onResetEw300EditorLocalEdits = actions.onResetEw300EditorLocalEdits
+    val onApplyEw300Editor = actions.onApplyEw300Editor
     val onCaptureBlackPearlDacEq = actions.onCaptureBlackPearlDacEq
     val onFlashBlackPearlFromMyDac = actions.onFlashBlackPearlFromMyDac
     val onResetBlackPearlFromMyDac = actions.onResetBlackPearlFromMyDac
@@ -494,7 +505,7 @@ fun EqLibraryApp(
         enabled = selectedDestination == EqLibraryDestination.Settings ||
             selectedDestination == EqLibraryDestination.MyDac,
     ) {
-        if (selectedDestination == EqLibraryDestination.MyDac && onBackMyDacEditor()) {
+        if (selectedDestination == EqLibraryDestination.MyDac && (onBackMyDacEditor() || onBackEw300Editor())) {
             return@BackHandler
         }
         onCloseMyDacEditor()
@@ -681,11 +692,13 @@ fun EqLibraryApp(
                         ew300ConnectionState = state.ew300ConnectionState,
                         blackPearlHardwareEqState = state.blackPearlHardwareEqState,
                         fiioJa11HardwareEqState = state.fiioJa11HardwareEqState,
+                        ew300HardwareEqState = state.ew300HardwareEqState,
                         blackPearlHardwareEqMatch = state.blackPearlHardwareEqMatch,
                         blackPearlManagedHeadphones = state.blackPearlManagedHeadphones,
                         blackPearlSavedEqs = state.blackPearlSavedEqs,
                         blackPearlSavedGeneralEqs = state.blackPearlSavedGeneralEqs,
                         blackPearlEditorState = state.blackPearlEditorState,
+                        ew300EditorState = state.ew300EditorState,
                         blackPearlQualificationState = state.blackPearlQualificationState,
                         fiioJa11DeviceState = state.fiioJa11DeviceState,
                         onConnectDac = onConnectDacForMyDac,
@@ -698,6 +711,16 @@ fun EqLibraryApp(
                         onUseSafeBlackPearlEditorGain = onUseSafeBlackPearlEditorGain,
                         onResetBlackPearlEditorLocalEdits = onResetBlackPearlEditorLocalEdits,
                         onApplyBlackPearlEditor = onApplyBlackPearlEditor,
+                        onOpenEw300Editor = onOpenEw300Editor,
+                        onBackEw300Editor = onBackEw300Editor,
+                        onCloseEw300Editor = onCloseEw300Editor,
+                        onSelectEw300EditorBand = onSelectEw300EditorBand,
+                        onShowEw300EditorAllBands = onShowEw300EditorAllBands,
+                        onShowEw300EditorReview = onShowEw300EditorReview,
+                        onUpdateEw300EditorBand = onUpdateEw300EditorBand,
+                        onUseSafeEw300EditorGain = onUseSafeEw300EditorGain,
+                        onResetEw300EditorLocalEdits = onResetEw300EditorLocalEdits,
+                        onApplyEw300Editor = onApplyEw300Editor,
                         onCaptureBlackPearlDacEq = onCaptureBlackPearlDacEq,
                         onFlashBlackPearlFromMyDac = onFlashBlackPearlFromMyDac,
                         onResetBlackPearlFromMyDac = onResetBlackPearlFromMyDac,

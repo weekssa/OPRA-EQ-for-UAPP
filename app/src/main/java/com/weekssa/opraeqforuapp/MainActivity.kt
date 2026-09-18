@@ -103,6 +103,24 @@ class MainActivity : ComponentActivity() {
         onUseSafeBlackPearlEditorGain = viewModel::useSafeBlackPearlEditorGain,
         onResetBlackPearlEditorLocalEdits = viewModel::resetBlackPearlEditorLocalEdits,
         onApplyBlackPearlEditor = viewModel::applyBlackPearlEditor,
+        onOpenEw300Editor = viewModel::openEw300Editor,
+        onBackEw300Editor = viewModel::backEw300Editor,
+        onCloseEw300Editor = viewModel::closeEw300Editor,
+        onSelectEw300EditorBand = viewModel::selectEw300EditorBand,
+        onShowEw300EditorAllBands = viewModel::showEw300EditorAllBands,
+        onShowEw300EditorReview = viewModel::showEw300EditorReview,
+        onUpdateEw300EditorBand = { bandIndex, type, frequencyHz, gainDb, q ->
+            val normalized = normalizeHardwareEqUserInput(
+                spec = HardwareEqEditSpecs.SIMGOT_EW300,
+                frequencyHz = frequencyHz,
+                gainDb = gainDb,
+                q = q,
+            )
+            viewModel.updateEw300EditorBand(bandIndex, type, normalized.frequencyHz, normalized.gainDb, normalized.q)
+        },
+        onUseSafeEw300EditorGain = viewModel::useSafeEw300EditorGain,
+        onResetEw300EditorLocalEdits = viewModel::resetEw300EditorLocalEdits,
+        onApplyEw300Editor = viewModel::applyEw300Editor,
         onCaptureBlackPearlDacEq = { displayName, association ->
             resolve(viewModel.captureBlackPearlDacEq(displayName, association))
         },

@@ -21,6 +21,16 @@ class Ew300Flasher(
     private val transport: Ew300Transport,
     private val gainStateStore: Ew300GainStateStore,
 ) {
+    suspend fun applyEditorWorkingCopy(
+        workingCopy: com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditWorkingCopy,
+        allowCautions: Boolean,
+        isSessionCurrent: (Long) -> Boolean,
+    ): Ew300EditorApplyResult = Ew300EditorApplier(transport).apply(
+        workingCopy = workingCopy,
+        allowCautions = allowCautions,
+        isSessionCurrent = isSessionCurrent,
+    )
+
     suspend fun flash(profile: OpraEqProfile): Kt02h20FlashResult {
         if (!gainStateStore.isGlobalGainQualified()) {
             return Kt02h20FlashResult.NotSuitable(

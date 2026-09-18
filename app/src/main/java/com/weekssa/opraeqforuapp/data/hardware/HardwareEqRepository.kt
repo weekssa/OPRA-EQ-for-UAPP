@@ -16,6 +16,7 @@ import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Flasher
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300Flasher
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300GainQualificationResult
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300GainQualifier
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300EditorApplyResult
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult
 import java.io.Closeable
@@ -70,6 +71,9 @@ class HardwareEqRepository(
     private val mutableFiioJa11SnapshotState = MutableStateFlow(HardwareEqSnapshotState())
     val fiioJa11SnapshotState: StateFlow<HardwareEqSnapshotState> =
         mutableFiioJa11SnapshotState.asStateFlow()
+    private val mutableEw300SnapshotState = MutableStateFlow(HardwareEqSnapshotState())
+    val ew300SnapshotState: StateFlow<HardwareEqSnapshotState> =
+        mutableEw300SnapshotState.asStateFlow()
 
     init {
         scope.launch {
@@ -87,6 +91,15 @@ class HardwareEqRepository(
                     refreshFiioJa11Snapshot()
                 } else {
                     mutableFiioJa11SnapshotState.update { it.markStale() }
+                }
+            }
+        }
+        scope.launch {
+            ew300ConnectionState.collectLatest { state ->
+                if (state is Kt02h20ConnectionState.Connected) {
+                    refreshEw300Snapshot()
+                } else {
+                    mutableEw300SnapshotState.update { it.markStale() }
                 }
             }
         }
@@ -117,6 +130,8 @@ class HardwareEqRepository(
     suspend fun readBlackPearlSnapshot(): HardwareEqSnapshotBundle? = refreshBlackPearlSnapshot()
 
     suspend fun readFiioJa11Snapshot(): HardwareEqSnapshotBundle? = refreshFiioJa11Snapshot()
+
+    suspend fun readEw300Snapshot(): HardwareEqSnapshotBundle? = refreshEw300Snapshot()
 
     @Deprecated("JCALLY is not part of the current product; remove remaining callers.")
     suspend fun readJcallyJm12Snapshot(): HardwareEqSnapshotBundle? = null
@@ -188,13 +203,31 @@ class HardwareEqRepository(
     }
 
     suspend fun flashEw300(profile: OpraEqProfile): Kt02h20FlashResult {
+        mutableEw300SnapshotState.update { it.markStale() }
         return try {
             dacSessionRepository.withExclusiveEw300Operation {
                 ew300Flasher.flash(profile)
             }
         } finally {
-            // EW300 does not yet expose a production snapshot reader; the next flash always
-            // performs its own complete preflight and final readback.
+            scheduleEw300SnapshotRefresh()
+        }
+    }
+
+    suspend fun applyEw300Editor(
+        workingCopy: HardwareEqEditWorkingCopy,
+        allowCautions: Boolean,
+    ): Ew300EditorApplyResult {
+        mutableEw300SnapshotState.update { it.markStale() }
+        return try {
+            dacSessionRepository.withExclusiveEw300Operation {
+                ew300Flasher.applyEditorWorkingCopy(
+                    workingCopy = workingCopy,
+                    allowCautions = allowCautions,
+                    isSessionCurrent = dacSessionRepository::isEw300SessionCurrent,
+                )
+            }
+        } finally {
+            refreshEw300Snapshot()
         }
     }
 
@@ -202,7 +235,9 @@ class HardwareEqRepository(
         dacSessionRepository.withExclusiveEw300Operation { ew300GainQualifier.qualify() }
 
     suspend fun resetEw300(): Kt02h20FlatResetResult =
-        dacSessionRepository.withExclusiveEw300Operation { ew300Flasher.resetToFlat() }
+        dacSessionRepository.withExclusiveEw300Operation { ew300Flasher.resetToFlat() }.also {
+            scheduleEw300SnapshotRefresh()
+        }
 
     @Deprecated("JCALLY is not part of the current product; remove remaining callers.")
     suspend fun flashJcallyJm12(profile: OpraEqProfile): Kt02h20FlashResult =
@@ -286,6 +321,42 @@ class HardwareEqRepository(
                 refreshFiioJa11Snapshot()
             } else {
                 mutableFiioJa11SnapshotState.update { it.markStale() }
+            }
+        }
+    }
+
+    private suspend fun refreshEw300Snapshot(): HardwareEqSnapshotBundle? =
+        dacSessionRepository.withExclusiveEw300Operation {
+            if (ew300ConnectionState.value !is Kt02h20ConnectionState.Connected) {
+                mutableEw300SnapshotState.update { it.markStale() }
+                return@withExclusiveEw300Operation null
+            }
+            mutableEw300SnapshotState.update { it.beginRead() }
+            val bundle = dacSessionRepository.readEw300Snapshot()
+            val stillCurrent = bundle != null &&
+                dacSessionRepository.isEw300SessionCurrent(bundle.snapshot.sessionGeneration)
+            when {
+                stillCurrent -> {
+                    mutableEw300SnapshotState.update { it.publishCurrent(requireNotNull(bundle)) }
+                    bundle
+                }
+                ew300ConnectionState.value !is Kt02h20ConnectionState.Connected -> {
+                    mutableEw300SnapshotState.update { it.markStale() }
+                    null
+                }
+                else -> {
+                    mutableEw300SnapshotState.update { it.markReadFailed() }
+                    null
+                }
+            }
+        }
+
+    private fun scheduleEw300SnapshotRefresh() {
+        scope.launch {
+            if (ew300ConnectionState.value is Kt02h20ConnectionState.Connected) {
+                refreshEw300Snapshot()
+            } else {
+                mutableEw300SnapshotState.update { it.markStale() }
             }
         }
     }
