@@ -43,8 +43,9 @@ class AndroidEw300UsbTransport(context: Context) : Ew300Transport, Closeable {
         // available. This also prevents the shared auto-reconnect policy from racing a stale
         // connection while the old handle is being closed.
         val previousGeneration = hid.sessionGeneration
+        val previousDetachGeneration = hid.detachGeneration
         if (!hid.send(Ew300Protocol.commitReport(), settleMillis = 1_000L)) return false
-        return hid.awaitReconnectAfterMutation(previousGeneration)
+        return hid.awaitReconnectAfterMutation(previousGeneration, previousDetachGeneration)
     }
 
     override fun close() = hid.close()

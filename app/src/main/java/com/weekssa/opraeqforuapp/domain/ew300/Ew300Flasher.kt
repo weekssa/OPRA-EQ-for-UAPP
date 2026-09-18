@@ -58,9 +58,11 @@ class Ew300Flasher(private val transport: Ew300Transport) {
                 "EW300 accepted the PEQ writes but did not accept the persistence command.",
             )
         }
-        if (!verify(target)) {
+        val verificationFailure = verify(target)
+        if (verificationFailure != null) {
             return Kt02h20FlashResult.VerificationFailed(
-                "EW300 final PEQ readback did not match the intended five-band preset.",
+                "EW300 final PEQ readback did not match band ${verificationFailure.band + 1}: " +
+                    "expected ${verificationFailure.expected}, read ${verificationFailure.actual}.",
             )
         }
         return Kt02h20FlashResult.Success(
@@ -82,7 +84,8 @@ class Ew300Flasher(private val transport: Ew300Transport) {
         if (!transport.commit()) {
             return Kt02h20FlatResetResult.TransferFailed("EW300 did not accept the flat-EQ persistence command.")
         }
-        if (!verify(flat)) {
+        val verificationFailure = verify(flat)
+        if (verificationFailure != null) {
             return Kt02h20FlatResetResult.VerificationFailed("EW300 final flat-EQ readback did not match.")
         }
         return Kt02h20FlatResetResult.Success(restoredPlaybackGainDb = 0.0, explicitPersistenceCommandUsed = true)
@@ -94,11 +97,23 @@ class Ew300Flasher(private val transport: Ew300Transport) {
         gain?.size == 4 && q?.size == 4
     }
 
-    private suspend fun verify(expected: List<Kt02h20Band>): Boolean = expected.indices.all { index ->
-        val gain = transport.readRegister(Ew300Protocol.bandRegister(index)) ?: return@all false
-        val q = transport.readRegister(Ew300Protocol.bandRegister(index) + 1) ?: return@all false
-        Ew300Protocol.decodeBand(index, gain, q) == expected[index]
+    private suspend fun verify(expected: List<Kt02h20Band>): VerificationFailure? {
+        expected.indices.forEach { index ->
+            val gain = transport.readRegister(Ew300Protocol.bandRegister(index))
+                ?: return VerificationFailure(index, expected[index], null)
+            val q = transport.readRegister(Ew300Protocol.bandRegister(index) + 1)
+                ?: return VerificationFailure(index, expected[index], null)
+            val actual = Ew300Protocol.decodeBand(index, gain, q)
+            if (actual != expected[index]) return VerificationFailure(index, expected[index], actual)
+        }
+        return null
     }
+
+    private data class VerificationFailure(
+        val band: Int,
+        val expected: Kt02h20Band,
+        val actual: Kt02h20Band?,
+    )
 
     private fun completeBands(bands: List<Kt02h20Band>): List<Kt02h20Band> =
         bands + List(Ew300Protocol.BAND_COUNT - bands.size) { Kt02h20Band("peak_dip", 1000.0, 0.0, 1.0) }

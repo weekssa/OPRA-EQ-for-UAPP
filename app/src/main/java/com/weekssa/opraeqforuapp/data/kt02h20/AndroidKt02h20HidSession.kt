@@ -69,12 +69,17 @@ internal class AndroidKt02h20HidSession(
     private var session: UsbSession? = null
     @Volatile
     private var currentSessionGeneration: Long = 0L
+    @Volatile
+    private var detachSequence: Long = 0L
     private var lastSessionGeneration: Long = 0L
     private var receiverRegistered = false
     private val permissionAction = "${appContext.packageName}.$permissionSuffix.USB_PERMISSION"
 
     val sessionGeneration: Long
         get() = currentSessionGeneration
+
+    val detachGeneration: Long
+        get() = detachSequence
 
     val connectedProductId: Int?
         get() = session?.productId
@@ -95,12 +100,16 @@ internal class AndroidKt02h20HidSession(
                 }
                 UsbManager.ACTION_USB_DEVICE_DETACHED -> {
                     // A device reset can emit DETACHED/ATTACHED during a mutating operation.
-                    // Close the old handle before publishing Disconnected so the reconnect
-                    // policy cannot observe a stale session and mark it Connected again.
+                    // Publish the physical absence immediately so the reconnect policy cannot
+                    // open a new handle against the old UsbDevice while the reset is in flight.
+                    // The actual close still runs under the session mutex before any replacement
+                    // session can be opened.
+                    detachSequence = nextSessionGeneration(detachSequence)
+                    mutablePresent.value = false
+                    mutableState.value = Kt02h20ConnectionState.Disconnected
                     scope.launch {
                         mutex.withLock { closeSessionLocked() }
                         mutablePresent.value = findDevice() != null
-                        mutableState.value = Kt02h20ConnectionState.Disconnected
                     }
                 }
                 UsbManager.ACTION_USB_DEVICE_ATTACHED -> {
@@ -207,27 +216,24 @@ internal class AndroidKt02h20HidSession(
      *
      * EW300's persistence command can re-enumerate the same VID/PID. The old UsbDeviceConnection
      * is no longer valid after that point, so callers must not immediately issue a readback on it.
-     * If no re-enumeration occurred, this returns after a short observation window and preserves
-     * the normal low-latency path. If it did occur, this waits for the ordinary session reconnect
-     * (including the Android permission prompt when the platform requires it).
+     * This waits for the observed detach and a fresh session generation (including the Android
+     * permission prompt when the platform requires it); a timeout is reported as a failed mutation
+     * rather than risking a readback against the old handle.
      */
     suspend fun awaitReconnectAfterMutation(
         previousGeneration: Long,
+        previousDetachGeneration: Long,
         observationMillis: Long = REENUMERATION_OBSERVATION_MILLIS,
         timeoutMillis: Long = RECONNECT_TIMEOUT_MILLIS,
     ): Boolean {
         if (previousGeneration <= 0L) return false
         delay(observationMillis)
-        if (
-            mutableState.value is Kt02h20ConnectionState.Connected &&
-            currentSessionGeneration != 0L
-        ) {
-            // The session is still usable, or it has already reopened with a new generation.
-            return true
-        }
         return withTimeoutOrNull(timeoutMillis) {
             state.first {
-                it is Kt02h20ConnectionState.Connected && currentSessionGeneration != 0L
+                it is Kt02h20ConnectionState.Connected &&
+                    currentSessionGeneration != 0L &&
+                    currentSessionGeneration != previousGeneration &&
+                    detachSequence != previousDetachGeneration
             }
             true
         } ?: false
