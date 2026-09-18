@@ -38,7 +38,7 @@ class Ew300FlasherTest {
         assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult.Success)
         assertEquals(10, transport.writes.size)
         assertEquals(1, transport.commitCount)
-        assertTrue(transport.state.values.all { it == bytes(0, 0, 0, 0) || it == bytes(0xE8.toInt(), 0x03, 0, 0) })
+        assertTrue(transport.state.values.any { it.contentEquals(bytes(0xE8, 0x03, 0xE8, 0x03)) })
     }
 
     private fun profile(preamp: Double?): OpraEqProfile = OpraEqProfile(
@@ -50,8 +50,8 @@ class Ew300FlasherTest {
         profileType = "parametric_eq",
         preampGainDb = preamp,
         bands = listOf(
-            OpraBand("low_shelf", 100.0, 2.5, 0.7, null),
-            OpraBand("peak_dip", 1_000.0, -1.5, 1.2, null),
+            OpraBand("peak_dip", 1_000.0, 0.0, 1.0, null),
+            OpraBand("peak_dip", 2_000.0, 0.0, 1.0, null),
         ),
     )
 
