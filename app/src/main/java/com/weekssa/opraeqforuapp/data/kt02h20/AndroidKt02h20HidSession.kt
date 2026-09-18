@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -144,46 +145,54 @@ internal class AndroidKt02h20HidSession(
         }
     }
 
-    suspend fun send(report: ByteArray, settleMillis: Long = 8L): Boolean = mutex.withLock {
-        val current = session ?: return@withLock false
-        val written = current.connection.bulkTransfer(
-            current.endpointOut,
-            report,
-            report.size,
-            TRANSFER_TIMEOUT_MILLIS,
-        )
-        if (written != report.size) return@withLock false
-        if (settleMillis > 0) delay(settleMillis)
-        true
+    suspend fun send(report: ByteArray, settleMillis: Long = 8L): Boolean = withContext(Dispatchers.IO) {
+        mutex.withLock {
+            val current = session ?: return@withLock false
+            val written = current.connection.bulkTransfer(
+                current.endpointOut,
+                report,
+                report.size,
+                TRANSFER_TIMEOUT_MILLIS,
+            )
+            if (written != report.size) return@withLock false
+            if (settleMillis > 0) delay(settleMillis)
+            true
+        }
     }
 
     suspend fun exchange(
         report: ByteArray,
         minResponseBytes: Int,
         timeoutMillis: Long = RESPONSE_TIMEOUT_MILLIS,
-    ): ByteArray? = mutex.withLock {
-        val current = session ?: return@withLock null
-        drainInput(current)
-        val written = current.connection.bulkTransfer(
-            current.endpointOut,
-            report,
-            report.size,
-            TRANSFER_TIMEOUT_MILLIS,
-        )
-        if (written != report.size) return@withLock null
-        val deadline = System.currentTimeMillis() + timeoutMillis
-        while (System.currentTimeMillis() < deadline) {
-            val response = ByteArray(maxOf(current.endpointIn.maxPacketSize, 64))
-            val read = current.connection.bulkTransfer(
-                current.endpointIn,
-                response,
-                response.size,
-                READ_POLL_MILLIS,
+        acceptResponse: (ByteArray) -> Boolean = { true },
+    ): ByteArray? = withContext(Dispatchers.IO) {
+        mutex.withLock {
+            val current = session ?: return@withLock null
+            drainInput(current)
+            val written = current.connection.bulkTransfer(
+                current.endpointOut,
+                report,
+                report.size,
+                TRANSFER_TIMEOUT_MILLIS,
             )
-            if (read >= minResponseBytes) return@withLock response.copyOf(read)
-            delay(READ_RETRY_DELAY_MILLIS)
+            if (written != report.size) return@withLock null
+            val deadline = System.currentTimeMillis() + timeoutMillis
+            while (System.currentTimeMillis() < deadline) {
+                val response = ByteArray(maxOf(current.endpointIn.maxPacketSize, 64))
+                val read = current.connection.bulkTransfer(
+                    current.endpointIn,
+                    response,
+                    response.size,
+                    READ_POLL_MILLIS,
+                )
+                if (read >= minResponseBytes) {
+                    val candidate = response.copyOf(read)
+                    if (acceptResponse(candidate)) return@withLock candidate
+                }
+                delay(READ_RETRY_DELAY_MILLIS)
+            }
+            null
         }
-        null
     }
 
     private fun drainInput(current: UsbSession) {

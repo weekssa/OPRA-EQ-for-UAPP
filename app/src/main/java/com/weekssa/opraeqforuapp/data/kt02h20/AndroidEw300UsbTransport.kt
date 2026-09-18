@@ -23,7 +23,13 @@ class AndroidEw300UsbTransport(context: Context) : Ew300Transport, Closeable {
     fun connect() = hid.connect()
 
     override suspend fun readRegister(register: Int): ByteArray? =
-        hid.exchange(Ew300Protocol.readRegisterReport(register), Ew300Protocol.REPORT_SIZE)
+        hid.exchange(
+            report = Ew300Protocol.readRegisterReport(register),
+            minResponseBytes = Ew300Protocol.REPORT_SIZE,
+            // The EW300 can expose unsolicited HID input after a write. Do not let a valid-sized
+            // non-read response satisfy this transaction; wait for the exact register read echo.
+            acceptResponse = { response -> Ew300Protocol.decodeRead(register, response) != null },
+        )
             ?.let { Ew300Protocol.decodeRead(register, it) }
 
     override suspend fun writeRegister(register: Int, data: ByteArray): Boolean =
