@@ -12,7 +12,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
@@ -57,7 +61,7 @@ internal fun Ew300MyDacContent(
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
-    var saveDacEqOpen by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    var saveDacEqOpen by remember { mutableStateOf(false) }
     if (saveDacEqOpen && connectionState == Kt02h20ConnectionState.Connected) {
         BlackPearlSaveDacEqDialog(
             catalogState = catalogState,
