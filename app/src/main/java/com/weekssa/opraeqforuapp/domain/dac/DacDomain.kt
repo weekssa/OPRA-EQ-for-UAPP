@@ -8,6 +8,7 @@ import kotlin.math.round
 enum class DacDeviceId {
     TRN_BLACK_PEARL,
     FIIO_JA11,
+    SIMGOT_EW300,
     JCALLY_JM12_STOCK,
 }
 

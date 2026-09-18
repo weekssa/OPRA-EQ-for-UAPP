@@ -1,0 +1,86 @@
+package com.weekssa.opraeqforuapp.domain.ew300
+
+import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
+import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
+import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20Band
+import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class Ew300FlasherTest {
+    @Test
+    fun flashWritesAllFiveBandsCommitsAndVerifiesReadback() = runBlocking {
+        val transport = FakeTransport()
+        val result = Ew300Flasher(transport).flash(profile(preamp = null))
+
+        assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.Success)
+        assertEquals(10, transport.writes.size)
+        assertEquals(1, transport.commitCount)
+        assertEquals(10, transport.readsAfterWrites)
+    }
+
+    @Test
+    fun sourcePreampIsRejectedBeforeAnyDeviceWrite() = runBlocking {
+        val transport = FakeTransport()
+        val result = Ew300Flasher(transport).flash(profile(preamp = -4.0))
+
+        assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.NotSuitable)
+        assertTrue(transport.writes.isEmpty())
+        assertEquals(0, transport.commitCount)
+    }
+
+    @Test
+    fun resetWritesFlatStateAndVerifiesIt() = runBlocking {
+        val transport = FakeTransport()
+        val result = Ew300Flasher(transport).resetToFlat()
+
+        assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult.Success)
+        assertEquals(10, transport.writes.size)
+        assertEquals(1, transport.commitCount)
+        assertTrue(transport.state.values.all { it == bytes(0, 0, 0, 0) || it == bytes(0xE8.toInt(), 0x03, 0, 0) })
+    }
+
+    private fun profile(preamp: Double?): OpraEqProfile = OpraEqProfile(
+        id = "ew300-test",
+        productId = "product",
+        author = "Test",
+        details = null,
+        link = null,
+        profileType = "parametric_eq",
+        preampGainDb = preamp,
+        bands = listOf(
+            OpraBand("low_shelf", 100.0, 2.5, 0.7, null),
+            OpraBand("peak_dip", 1_000.0, -1.5, 1.2, null),
+        ),
+    )
+
+    private class FakeTransport : Ew300Transport {
+        val state = (0 until Ew300Protocol.BAND_COUNT).associate { index ->
+            Ew300Protocol.bandRegister(index) to bytes(0, 0, 0, 0)
+        }.toMutableMap()
+        val writes = mutableListOf<Int>()
+        var commitCount = 0
+        var readsAfterWrites = 0
+
+        override suspend fun readRegister(register: Int): ByteArray? {
+            if (writes.isNotEmpty()) readsAfterWrites++
+            return state[register]
+        }
+
+        override suspend fun writeRegister(register: Int, data: ByteArray): Boolean {
+            writes += register
+            state[register] = data.copyOf()
+            return true
+        }
+
+        override suspend fun commit(): Boolean {
+            commitCount++
+            return true
+        }
+    }
+
+    private fun bytes(vararg values: Int): ByteArray = ByteArray(values.size) { index ->
+        (values[index] and 0xFF).toByte()
+    }
+}

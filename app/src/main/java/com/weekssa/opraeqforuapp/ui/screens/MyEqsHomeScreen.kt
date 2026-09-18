@@ -104,6 +104,10 @@ fun MyEqsHomeScreen(
     jcallyJm12ConnectionState: Kt02h20ConnectionState,
     onConnectJcallyJm12: () -> Unit,
     onResetJcallyJm12: suspend () -> String,
+    directEw300FlashEnabled: Boolean = false,
+    ew300ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
+    onConnectEw300: () -> Unit = {},
+    onResetEw300: suspend () -> String = { "Reset is not available for this output." },
     onExportAll: () -> Unit,
     onOpenHeadphone: (String) -> Unit,
     onImportPersonal: suspend (
@@ -139,6 +143,8 @@ fun MyEqsHomeScreen(
             blackPearlConnectionState is BlackPearlConnectionState.Connected
         ExportDevice.FIIO_JA11 -> directFiioJa11FlashEnabled &&
             fiioJa11ConnectionState is Kt02h20ConnectionState.Connected
+        ExportDevice.SIMGOT_EW300 -> directEw300FlashEnabled &&
+            ew300ConnectionState is Kt02h20ConnectionState.Connected
         ExportDevice.JCALLY_JM12 -> directJcallyJm12FlashEnabled &&
             jcallyJm12ConnectionState is Kt02h20ConnectionState.Connected
         else -> false
@@ -258,6 +264,7 @@ fun MyEqsHomeScreen(
                             val message = when (device) {
                                 ExportDevice.BLACK_PEARL -> onResetBlackPearl()
                                 ExportDevice.FIIO_JA11 -> onResetFiioJa11()
+                                ExportDevice.SIMGOT_EW300 -> onResetEw300()
                                 ExportDevice.JCALLY_JM12 -> onResetJcallyJm12()
                                 else -> "Reset is not available for this output."
                             }
@@ -288,6 +295,13 @@ fun MyEqsHomeScreen(
                         state = fiioJa11ConnectionState,
                         onConnect = onConnectFiioJa11,
                         onReset = { pendingResetDevice = ExportDevice.FIIO_JA11 },
+                    )
+                    ExportDevice.SIMGOT_EW300 -> Kt02h20ConnectionControl(
+                        device = ExportDevice.SIMGOT_EW300,
+                        enabled = directEw300FlashEnabled,
+                        state = ew300ConnectionState,
+                        onConnect = onConnectEw300,
+                        onReset = { pendingResetDevice = ExportDevice.SIMGOT_EW300 },
                     )
                     ExportDevice.JCALLY_JM12 -> Kt02h20ConnectionControl(
                         device = ExportDevice.JCALLY_JM12,
@@ -646,6 +660,7 @@ private fun hardwareFlashPreview(profile: OpraEqProfile, device: ExportDevice): 
         )
     }
     ExportDevice.FIIO_JA11 -> fiveBandFlashPreview(profile, device, Kt02h20DeviceSpecs.FIIO_JA11)
+    ExportDevice.SIMGOT_EW300 -> fiveBandFlashPreview(profile, device, com.weekssa.opraeqforuapp.domain.hardware.HardwareEqDeviceSpecs.SIMGOT_EW300)
     ExportDevice.JCALLY_JM12 -> fiveBandFlashPreview(profile, device, Kt02h20DeviceSpecs.JCALLY_JM12_STOCK)
     else -> null
 }
@@ -656,12 +671,19 @@ private fun fiveBandFlashPreview(
     spec: com.weekssa.opraeqforuapp.domain.kt02h20.FiveBandDeviceSpec,
 ): HardwareFlashPreview? = when (val result = Kt02h20FiveBandOptimizer.optimize(profile, spec)) {
     is FiveBandOptimizationResult.NotSuitable -> null
-    is FiveBandOptimizationResult.Ready -> HardwareFlashPreview(
-        device = device,
-        fidelity = result.representation.fidelity,
-        playbackGainDb = result.representation.playbackGainDb,
-        adaptationSummary = result.representation.adaptationSummary(),
-    )
+    is FiveBandOptimizationResult.Ready -> if (
+        device == ExportDevice.SIMGOT_EW300 &&
+        (profile.preampGainDb != null || kotlin.math.abs(result.representation.playbackGainDb) > 0.000_001)
+    ) {
+        null
+    } else {
+        HardwareFlashPreview(
+            device = device,
+            fidelity = result.representation.fidelity,
+            playbackGainDb = result.representation.playbackGainDb,
+            adaptationSummary = result.representation.adaptationSummary(),
+        )
+    }
 }
 
 private fun hardwareFlashConfirmation(displayName: String, preview: HardwareFlashPreview): String {
@@ -685,12 +707,14 @@ private fun hardwareFlashConfirmation(displayName: String, preview: HardwareFlas
     } else {
         when (preview.device) {
             ExportDevice.FIIO_JA11 -> "The JA11 global EQ gain will be set to $gain dB."
+            ExportDevice.SIMGOT_EW300 -> "The EW300 five-band PEQ will be written without changing its separate playback gain."
             ExportDevice.JCALLY_JM12 -> "EQ Library will apply a $gain dB tracked playback-gain adjustment for this preset."
             else -> ""
         }
     }
     val persistence = when (preview.device) {
         ExportDevice.FIIO_JA11 -> "The five-band PEQ will be applied, read back, and saved to the JA11."
+        ExportDevice.SIMGOT_EW300 -> "The five-band PEQ will be applied, read back, and persisted on the EW300."
         ExportDevice.JCALLY_JM12 -> "The five-band PEQ will be written and read back. Persistence across a full power cycle is still hardware-validation pending for stock JM12 firmware."
         else -> ""
     }
@@ -702,6 +726,8 @@ private fun hardwareResetConfirmation(device: ExportDevice): String = when (devi
         "This will overwrite all 10 EQ bands in the Black Pearl's current EQ slot with flat settings and remove any playback-gain adjustment previously applied by EQ Library. This may change listening volume. Other DAC settings will not be changed."
     ExportDevice.FIIO_JA11 ->
         "This will return all five JA11 PEQ bands and the global EQ gain to flat/0 dB, apply the result, verify it, and save it to the device. Listening volume may change. Other DAC settings will not be changed."
+    ExportDevice.SIMGOT_EW300 ->
+        "This will return all five EW300 PEQ bands to flat, persist the result, and verify it. Other DAC settings will not be changed."
     ExportDevice.JCALLY_JM12 ->
         "This will return all five stock JM12 PEQ bands to flat and remove EQ Library's tracked playback-gain adjustment. Listening volume may change. Persistence across a full power cycle is still hardware-validation pending. Other DAC settings will not be changed."
     else -> "Reset is not available for this output."
@@ -710,6 +736,7 @@ private fun hardwareResetConfirmation(device: ExportDevice): String = when (devi
 private fun hardwareDeviceTitle(device: ExportDevice): String = when (device) {
     ExportDevice.BLACK_PEARL -> "Black Pearl"
     ExportDevice.FIIO_JA11 -> "FiiO JA11"
+    ExportDevice.SIMGOT_EW300 -> "SIMGOT EW300 DSP"
     ExportDevice.JCALLY_JM12 -> "JCALLY JM12"
     else -> device.folderName
 }
@@ -907,5 +934,6 @@ private fun generalExportProductId(presetId: String): String = "general-export:$
 private val HARDWARE_FLASH_OUTPUTS = setOf(
     ExportDevice.BLACK_PEARL,
     ExportDevice.FIIO_JA11,
+    ExportDevice.SIMGOT_EW300,
     ExportDevice.JCALLY_JM12,
 )

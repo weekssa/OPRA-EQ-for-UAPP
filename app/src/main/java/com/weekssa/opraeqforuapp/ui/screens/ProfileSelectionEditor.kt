@@ -98,6 +98,8 @@ internal fun ProfileSelectionEditor(
     onFlashBlackPearlProfile: (suspend (OpraEqProfile) -> String)? = null,
     fiioJa11Connected: Boolean = false,
     onFlashFiioJa11Profile: (suspend (OpraEqProfile) -> String)? = null,
+    onFlashEw300Profile: (suspend (OpraEqProfile) -> String)? = null,
+    ew300Connected: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val vendor = catalog.vendor(product.vendorId)
@@ -323,6 +325,10 @@ internal fun ProfileSelectionEditor(
                                         onFlashFiioJa11Profile?.let { flash ->
                                             scope.launch { onMessage(flash(profile)) }
                                         }
+                                    LibraryHardwareFlashDevice.SIMGOT_EW300 ->
+                                        onFlashEw300Profile?.let { flash ->
+                                            scope.launch { onMessage(flash(profile)) }
+                                        }
                                 }
                             },
                         ) {
@@ -529,6 +535,7 @@ internal fun ProfileSelectionEditor(
         val connectedHardwareFlashDevice = connectedLibraryHardwareFlashDevice(
             blackPearlConnected = blackPearlConnected && onFlashBlackPearlProfile != null,
             fiioJa11Connected = fiioJa11Connected && onFlashFiioJa11Profile != null,
+            ew300Connected = ew300Connected && onFlashEw300Profile != null,
         )
 
         LazyColumn(modifier = Modifier.weight(1f)) {

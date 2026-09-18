@@ -1,6 +1,6 @@
 # EW300 DSP reversible write qualification
 
-Status: **INITIAL CONSOLIDATED BATCH PASSED; REMAINING-FIELD CANDIDATE PENDING SOFTWARE VALIDATION**
+Status: **COMPLETE — ALL VOLATILE GAIN/FREQUENCY/Q FIELD CHECKS PASSED 2026-09-17**
 
 This checklist covers the owner-approved exact-device volatile field-qualification batch. It is not production support and does not qualify persistence, reset, global gain, slot selection, firmware, or any other device-management function.
 
@@ -22,20 +22,27 @@ There is no COMMIT `0x53`, CLEAR `0x43`, save, reset, slot, global-gain, firmwar
 
 ## Owner procedure
 
-- [ ] Stop audio playback.
-- [ ] Install the exact signed candidate identified below.
-- [ ] Connect the EW300 DSP cable and open the diagnostic.
-- [ ] Complete **Request read-only descriptor capture**.
-- [ ] Complete **Capture provisional stock-EQ snapshot** and confirm `Exact preserved stock snapshot match: true`.
-- [ ] Keep the IEMs out of your ears and stop playback.
-- [ ] Tap **Run approved remaining EQ-field batch** once.
-- [ ] Confirm every temporary readback and exact restoration reports `true`.
-- [ ] Confirm the final report says `Exact preserved final full snapshot match: true` and `RESTORED`.
-- [ ] Reconnect the cable.
-- [ ] Send a screenshot of the complete result.
+- [x] Stop audio playback and keep the IEMs out of the owner's ears.
+- [x] Complete the exact descriptor and complete-stock gates.
+- [x] Run the eight remaining frequency/Q raw-word checks once, with first-failure stop behavior.
+- [x] Verify each temporary readback and exact restoration.
+- [x] Verify `Exact preserved final full snapshot match: true` and `RESTORED`.
+- [x] Reconnect the cable after the run.
+
+## Result
+
+The owner report from 2026-09-17 shows every remaining check passed and the final 12-register
+snapshot exactly matches the untouched capture. This completes volatile transport qualification for
+the observed gain, frequency, and Q fields across all five bands. It does **not** approve a
+production EQ feature, filter-type writes, persistence, reset, slots, or global-gain operations.
 
 If the report shows **ATTENTION**, stop playback, do not repeat the test, leave the cable otherwise untouched, and send the complete report.
 
 ## Exact candidate
 
-Source commit, workflow run, APK checksum, signer verification, and automated-gate result remain pending the signed workflow.
+Source commit: `6fa4539c3e7a7c9cac058ad700f097979f91bca3`
+
+Workflow run: `35245283713`
+
+Artifact: `10507417685`
+APK SHA-256: `70aa33db2e2b6b53797c9d9c5685cd6955874fdee52eac8801c97b2446af5e95`

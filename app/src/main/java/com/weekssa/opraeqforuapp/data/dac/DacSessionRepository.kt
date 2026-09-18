@@ -3,6 +3,7 @@ package com.weekssa.opraeqforuapp.data.dac
 import com.weekssa.opraeqforuapp.data.blackpearl.AndroidBlackPearlUsbTransport
 import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.kt02h20.AndroidFiioJa11UsbTransport
+import com.weekssa.opraeqforuapp.data.kt02h20.AndroidEw300UsbTransport
 import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
 import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
 import com.weekssa.opraeqforuapp.domain.dac.DacRecognitionState
@@ -49,9 +50,9 @@ internal class DacReconnectPolicy {
 /**
  * ViewModel-scoped owner/coordinator for current-product physical USB sessions.
  *
- * Current My DAC recognition and session ownership are intentionally limited to TRN Black Pearl
- * and FiiO. Historical JCALLY protocol knowledge may remain in research/reference files, but no
- * JCALLY transport is opened or owned by the current product.
+ * Current My DAC recognition and session ownership are intentionally limited to TRN Black Pearl,
+ * FiiO JA11, and SIMGOT EW300. Historical JCALLY protocol knowledge may remain in
+ * research/reference files, but no JCALLY transport is opened or owned by the current product.
  *
  * Per-device operation locks live here, at the physical-session owner, so EQ and DEVICE repositories
  * can share one serialization boundary rather than each believing it exclusively owns the same HID
@@ -60,9 +61,11 @@ internal class DacReconnectPolicy {
 class DacSessionRepository(
     internal val blackPearlTransport: AndroidBlackPearlUsbTransport,
     internal val fiioJa11Transport: AndroidFiioJa11UsbTransport,
+    internal val ew300Transport: AndroidEw300UsbTransport,
 ) : Closeable {
     val blackPearlConnectionState: StateFlow<BlackPearlConnectionState> = blackPearlTransport.state
     val fiioJa11ConnectionState: StateFlow<Kt02h20ConnectionState> = fiioJa11Transport.state
+    val ew300ConnectionState: StateFlow<Kt02h20ConnectionState> = ew300Transport.state
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val blackPearlOperationMutex = Mutex()
@@ -91,10 +94,12 @@ class DacSessionRepository(
             combine(
                 blackPearlTransport.present,
                 fiioJa11Transport.present,
-            ) { blackPearlPresent, fiioJa11Present ->
+                ew300Transport.present,
+            ) { blackPearlPresent, fiioJa11Present, ew300Present ->
                 buildSet {
                     if (blackPearlPresent) add(DacDeviceId.TRN_BLACK_PEARL)
                     if (fiioJa11Present) add(DacDeviceId.FIIO_JA11)
+                    if (ew300Present) add(DacDeviceId.SIMGOT_EW300)
                 }
             }.collect { presentDeviceIds ->
                 mutableRecognitionState.update { previous -> previous.withPresentDevices(presentDeviceIds) }
@@ -115,16 +120,27 @@ class DacSessionRepository(
             isDisconnected = { state -> state is Kt02h20ConnectionState.Disconnected },
             connect = fiioJa11Transport::connect,
         )
+        observeAutomaticReconnect(
+            present = ew300Transport.present,
+            connectionState = ew300ConnectionState,
+            isConnected = { state -> state is Kt02h20ConnectionState.Connected },
+            isDisconnected = { state -> state is Kt02h20ConnectionState.Disconnected },
+            connect = ew300Transport::connect,
+        )
     }
 
     fun connectBlackPearl() = blackPearlTransport.connect()
     fun connectFiioJa11() = fiioJa11Transport.connect()
+    fun connectEw300() = ew300Transport.connect()
 
     suspend fun <T> withExclusiveBlackPearlOperation(block: suspend () -> T): T =
         blackPearlOperationMutex.withLock { block() }
 
     suspend fun <T> withExclusiveFiioJa11Operation(block: suspend () -> T): T =
         fiioJa11OperationMutex.withLock { block() }
+
+    suspend fun <T> withExclusiveEw300Operation(block: suspend () -> T): T =
+        ew300OperationMutex.withLock { block() }
 
     fun isBlackPearlSessionCurrent(sessionGeneration: Long): Boolean =
         sessionGeneration > 0L &&
@@ -135,6 +151,11 @@ class DacSessionRepository(
         sessionGeneration > 0L &&
             fiioJa11ConnectionState.value is Kt02h20ConnectionState.Connected &&
             fiioJa11Transport.sessionGeneration == sessionGeneration
+
+    fun isEw300SessionCurrent(sessionGeneration: Long): Boolean =
+        sessionGeneration > 0L &&
+            ew300ConnectionState.value is Kt02h20ConnectionState.Connected &&
+            ew300Transport.sessionGeneration == sessionGeneration
 
     suspend fun readBlackPearlSnapshot(): HardwareEqSnapshotBundle? = readVerifiedSnapshot(
         generation = { blackPearlTransport.sessionGeneration },
@@ -151,6 +172,7 @@ class DacSessionRepository(
     private fun currentPresentDeviceIds(): Set<DacDeviceId> = buildSet {
         if (blackPearlTransport.present.value) add(DacDeviceId.TRN_BLACK_PEARL)
         if (fiioJa11Transport.present.value) add(DacDeviceId.FIIO_JA11)
+        if (ew300Transport.present.value) add(DacDeviceId.SIMGOT_EW300)
     }
 
     private fun <T> observeAutomaticReconnect(
@@ -193,5 +215,8 @@ class DacSessionRepository(
         scope.cancel()
         blackPearlTransport.close()
         fiioJa11Transport.close()
+        ew300Transport.close()
     }
+
+    private val ew300OperationMutex = Mutex()
 }

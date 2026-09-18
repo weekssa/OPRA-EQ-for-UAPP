@@ -106,6 +106,7 @@ private data class ExportCurrentnessInput(
 private data class HardwareConnectionUiState(
     val blackPearl: BlackPearlConnectionState,
     val fiioJa11: Kt02h20ConnectionState,
+    val ew300: Kt02h20ConnectionState,
     val jcallyJm12: Kt02h20ConnectionState,
     val blackPearlHardwareEqState: HardwareEqSnapshotState,
     val fiioJa11HardwareEqState: HardwareEqSnapshotState,
@@ -125,6 +126,7 @@ data class EqLibraryUiState(
     val dacRecognitionState: DacRecognitionState = DacRecognitionState(),
     val blackPearlConnectionState: BlackPearlConnectionState = BlackPearlConnectionState.Disconnected,
     val fiioJa11ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
+    val ew300ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
     val jcallyJm12ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
     val blackPearlHardwareEqState: HardwareEqSnapshotState = HardwareEqSnapshotState(),
     val fiioJa11HardwareEqState: HardwareEqSnapshotState = HardwareEqSnapshotState(),
@@ -244,13 +246,15 @@ class EqLibraryViewModel(
     private val hardwareConnectionsWithoutEditor = combine(
         hardwareRepository.blackPearlConnectionState,
         hardwareRepository.fiioJa11ConnectionState,
+        hardwareRepository.ew300ConnectionState,
         hardwareRepository.jcallyJm12ConnectionState,
         hardwareRepository.blackPearlSnapshotState,
         blackPearlHardwareEqMatch,
-    ) { blackPearl, fiioJa11, jcallyJm12, blackPearlHardwareEqState, blackPearlMatch ->
+    ) { blackPearl, fiioJa11, ew300, jcallyJm12, blackPearlHardwareEqState, blackPearlMatch ->
         HardwareConnectionUiState(
             blackPearl = blackPearl,
             fiioJa11 = fiioJa11,
+            ew300 = ew300,
             jcallyJm12 = jcallyJm12,
             blackPearlHardwareEqState = blackPearlHardwareEqState,
             fiioJa11HardwareEqState = HardwareEqSnapshotState(),
@@ -311,6 +315,7 @@ class EqLibraryViewModel(
             dacRecognitionState = recognition,
             blackPearlConnectionState = hardware.blackPearl,
             fiioJa11ConnectionState = hardware.fiioJa11,
+            ew300ConnectionState = hardware.ew300,
             jcallyJm12ConnectionState = hardware.jcallyJm12,
             blackPearlHardwareEqState = hardware.blackPearlHardwareEqState,
             fiioJa11HardwareEqState = hardware.fiioJa11HardwareEqState,
@@ -370,6 +375,7 @@ class EqLibraryViewModel(
         when (deviceId) {
             DacDeviceId.TRN_BLACK_PEARL -> hardwareRepository.connectBlackPearl()
             DacDeviceId.FIIO_JA11 -> hardwareRepository.connectFiioJa11()
+            DacDeviceId.SIMGOT_EW300 -> hardwareRepository.connectEw300()
             DacDeviceId.JCALLY_JM12_STOCK -> Unit
         }
     }
@@ -934,6 +940,9 @@ class EqLibraryViewModel(
         return fiioJa11ResetResultMessage(resetFiioJa11AndRefresh())
     }
 
+    suspend fun flashEw300FromMyDac(profile: OpraEqProfile): UiText =
+        flashEw300Profile(profile, preferencesRepository.snapshot())
+
     fun connectBlackPearl() {
         viewModelScope.launch {
             val preferences = preferencesRepository.snapshot()
@@ -948,6 +957,15 @@ class EqLibraryViewModel(
             val preferences = preferencesRepository.snapshot()
             if (preferences.directFiioJa11FlashEnabled && preferences.exportTargets.activeTarget == ExportDevice.FIIO_JA11) {
                 hardwareRepository.connectFiioJa11()
+            }
+        }
+    }
+
+    fun connectEw300() {
+        viewModelScope.launch {
+            val preferences = preferencesRepository.snapshot()
+            if (preferences.directEw300FlashEnabled && preferences.exportTargets.activeTarget == ExportDevice.SIMGOT_EW300) {
+                hardwareRepository.connectEw300()
             }
         }
     }
@@ -1228,6 +1246,10 @@ class EqLibraryViewModel(
         viewModelScope.launch { preferencesRepository.setDirectFiioJa11FlashEnabled(enabled) }
     }
 
+    fun setDirectEw300FlashEnabled(enabled: Boolean) {
+        viewModelScope.launch { preferencesRepository.setDirectEw300FlashEnabled(enabled) }
+    }
+
     fun setDirectJcallyJm12FlashEnabled(enabled: Boolean) = Unit
 
     override fun onCleared() {
@@ -1240,6 +1262,7 @@ class EqLibraryViewModel(
         return when (preferences.exportTargets.activeTarget) {
             ExportDevice.BLACK_PEARL -> flashBlackPearlProfile(profile, preferences)
             ExportDevice.FIIO_JA11 -> flashFiioJa11Profile(profile, preferences)
+            ExportDevice.SIMGOT_EW300 -> flashEw300Profile(profile, preferences)
             else -> resource(R.string.error_select_supported_hardware)
         }
     }
@@ -1314,6 +1337,40 @@ class EqLibraryViewModel(
         is Kt02h20FlatResetResult.DeviceUnavailable -> UiText.Dynamic(result.reason)
         is Kt02h20FlatResetResult.TransferFailed -> UiText.Dynamic(result.reason)
         is Kt02h20FlatResetResult.VerificationFailed -> resource(R.string.fiio_reset_verification_failed, result.reason)
+    }
+
+    private suspend fun flashEw300Profile(
+        profile: OpraEqProfile,
+        preferences: AppPreferences,
+    ): UiText {
+        if (!preferences.directEw300FlashEnabled) return UiText.Dynamic("Enable Direct Flash for SIMGOT EW300 DSP in Settings first.")
+        if (hardwareRepository.ew300ConnectionState.value !is Kt02h20ConnectionState.Connected) {
+            return UiText.Dynamic("Connect SIMGOT EW300 DSP before changing its EQ.")
+        }
+        return ew300FlashResultMessage(hardwareRepository.flashEw300(profile))
+    }
+
+    private fun ew300FlashResultMessage(result: Kt02h20FlashResult): UiText = when (result) {
+        is Kt02h20FlashResult.Success -> UiText.Dynamic("SIMGOT EW300 DSP EQ applied and verified on the device.")
+        is Kt02h20FlashResult.NotSuitable -> UiText.Dynamic(result.reason)
+        is Kt02h20FlashResult.DeviceUnavailable -> UiText.Dynamic(result.reason)
+        is Kt02h20FlashResult.TransferFailed -> UiText.Dynamic(result.reason)
+        is Kt02h20FlashResult.VerificationFailed -> UiText.Dynamic(result.reason)
+    }
+
+    suspend fun resetEw300ToFlat(): UiText {
+        val preferences = preferencesRepository.snapshot()
+        if (!preferences.directEw300FlashEnabled) return UiText.Dynamic("Enable Direct Flash for SIMGOT EW300 DSP in Settings first.")
+        if (hardwareRepository.ew300ConnectionState.value !is Kt02h20ConnectionState.Connected) {
+            return UiText.Dynamic("Connect SIMGOT EW300 DSP before resetting its EQ.")
+        }
+        return when (val result = hardwareRepository.resetEw300()) {
+            is Kt02h20FlatResetResult.Success -> UiText.Dynamic("SIMGOT EW300 DSP was restored to flat EQ and verified.")
+            is Kt02h20FlatResetResult.NotSuitable -> UiText.Dynamic(result.reason)
+            is Kt02h20FlatResetResult.DeviceUnavailable -> UiText.Dynamic(result.reason)
+            is Kt02h20FlatResetResult.TransferFailed -> UiText.Dynamic(result.reason)
+            is Kt02h20FlatResetResult.VerificationFailed -> UiText.Dynamic(result.reason)
+        }
     }
 
     private suspend fun flashBlackPearlAndRefresh(profile: OpraEqProfile): BlackPearlFlashResult {
