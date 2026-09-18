@@ -38,7 +38,7 @@ class Ew300FlasherTest {
         assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult.Success)
         assertEquals(10, transport.writes.size)
         assertEquals(1, transport.commitCount)
-        assertTrue(transport.state.values.any { it.contentEquals(bytes(0xE8, 0x03, 0xE8, 0x03)) })
+        assertTrue(transport.state.values.any { it.contentEquals(bytes(0, 0, 0xE8, 0x03)) })
     }
 
     private fun profile(preamp: Double?): OpraEqProfile = OpraEqProfile(
