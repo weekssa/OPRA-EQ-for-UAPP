@@ -56,9 +56,13 @@ class Ew300FlasherTest {
     )
 
     private inner class FakeTransport : Ew300Transport {
-        val state = (0 until Ew300Protocol.BAND_COUNT).associate { index ->
-            Ew300Protocol.bandRegister(index) to bytes(0, 0, 0, 0)
-        }.toMutableMap()
+        val state = (0 until Ew300Protocol.BAND_COUNT)
+            .flatMap { index ->
+                val register = Ew300Protocol.bandRegister(index)
+                listOf(register, register + 1)
+            }
+            .associateWith { bytes(0, 0, 0, 0) }
+            .toMutableMap()
         val writes = mutableListOf<Int>()
         var commitCount = 0
         var readsAfterWrites = 0

@@ -23,10 +23,10 @@ class SupportedDacUsbIdentityTest {
     }
 
     @Test
-    fun legacyJcallyIdentityFallsThroughToUnsupportedDeviceBehavior() {
+    fun sharedLegacyJcallyVidPidNowMapsToQualifiedEw300Identity() {
         assertThat(
             supportedDacDeviceId(JcallyJm12Protocol.VENDOR_ID, JcallyJm12Protocol.PRODUCT_ID),
-        ).isNull()
+        ).isEqualTo(DacDeviceId.SIMGOT_EW300)
     }
 
     @Test
