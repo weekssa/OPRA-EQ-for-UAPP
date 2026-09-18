@@ -127,6 +127,7 @@ internal class AndroidKt02h20HidSession(
         mutablePresent.value = findDevice() != null
     }
 
+    @Synchronized
     fun connect() {
         val device = findDevice()
         if (device == null) {
@@ -137,10 +138,15 @@ internal class AndroidKt02h20HidSession(
             return
         }
         mutablePresent.value = true
+        // Connect is intentionally idempotent. During an EW300 commit the USB function can
+        // disappear and re-enumerate; the permission callback, attach callback, and reconnect
+        // policy may all observe that transition. Do not queue duplicate permission requests or
+        // competing open jobs while one connection attempt is already in flight.
         if (session != null) {
             mutableState.value = Kt02h20ConnectionState.Connected
             return
         }
+        if (mutableState.value is Kt02h20ConnectionState.Connecting) return
         mutableState.value = Kt02h20ConnectionState.Connecting
         if (usbManager.hasPermission(device)) {
             openAsync(device)
@@ -164,12 +170,14 @@ internal class AndroidKt02h20HidSession(
     suspend fun send(report: ByteArray, settleMillis: Long = 8L): Boolean = withContext(Dispatchers.IO) {
         mutex.withLock {
             val current = session ?: return@withLock false
-            val written = current.connection.bulkTransfer(
-                current.endpointOut,
-                report,
-                report.size,
-                TRANSFER_TIMEOUT_MILLIS,
-            )
+            val written = runCatching {
+                current.connection.bulkTransfer(
+                    current.endpointOut,
+                    report,
+                    report.size,
+                    TRANSFER_TIMEOUT_MILLIS,
+                )
+            }.getOrDefault(-1)
             if (written != report.size) return@withLock false
             if (settleMillis > 0) delay(settleMillis)
             true
@@ -185,22 +193,26 @@ internal class AndroidKt02h20HidSession(
         mutex.withLock {
             val current = session ?: return@withLock null
             drainInput(current)
-            val written = current.connection.bulkTransfer(
-                current.endpointOut,
-                report,
-                report.size,
-                TRANSFER_TIMEOUT_MILLIS,
-            )
+            val written = runCatching {
+                current.connection.bulkTransfer(
+                    current.endpointOut,
+                    report,
+                    report.size,
+                    TRANSFER_TIMEOUT_MILLIS,
+                )
+            }.getOrDefault(-1)
             if (written != report.size) return@withLock null
             val deadline = System.currentTimeMillis() + timeoutMillis
             while (System.currentTimeMillis() < deadline) {
                 val response = ByteArray(maxOf(current.endpointIn.maxPacketSize, 64))
-                val read = current.connection.bulkTransfer(
-                    current.endpointIn,
-                    response,
-                    response.size,
-                    READ_POLL_MILLIS,
-                )
+                val read = runCatching {
+                    current.connection.bulkTransfer(
+                        current.endpointIn,
+                        response,
+                        response.size,
+                        READ_POLL_MILLIS,
+                    )
+                }.getOrDefault(-1)
                 if (read >= minResponseBytes) {
                     val candidate = response.copyOf(read)
                     if (acceptResponse(candidate)) return@withLock candidate
@@ -242,23 +254,36 @@ internal class AndroidKt02h20HidSession(
     private fun drainInput(current: UsbSession) {
         val buffer = ByteArray(maxOf(current.endpointIn.maxPacketSize, 64))
         repeat(8) {
-            if (current.connection.bulkTransfer(current.endpointIn, buffer, buffer.size, 2) <= 0) return
+            val read = runCatching {
+                current.connection.bulkTransfer(current.endpointIn, buffer, buffer.size, 2)
+            }.getOrDefault(-1)
+            if (read <= 0) return
         }
     }
 
     private fun openAsync(device: UsbDevice) {
         scope.launch {
             mutex.withLock {
+                // Permission and attach broadcasts can both request an open for the same
+                // UsbDevice. The first successful opener owns the session; later jobs must leave
+                // it alone instead of closing and replacing a live handle.
+                if (session != null) {
+                    mutableState.value = Kt02h20ConnectionState.Connected
+                    return@withLock
+                }
                 closeSessionLocked()
-                val connection = usbManager.openDevice(device)
+                val connection = runCatching { usbManager.openDevice(device) }.getOrNull()
                 if (connection == null) {
                     mutableState.value = Kt02h20ConnectionState.Error(
                         "Android could not open the $deviceLabel USB device.",
                     )
                     return@withLock
                 }
-                val descriptor = findHidInterface(device)
-                if (descriptor == null || !connection.claimInterface(descriptor.usbInterface, true)) {
+                val descriptor = runCatching { findHidInterface(device) }.getOrNull()
+                val claimed = descriptor != null && runCatching {
+                    connection.claimInterface(descriptor.usbInterface, true)
+                }.getOrDefault(false)
+                if (!claimed) {
                     connection.close()
                     mutableState.value = Kt02h20ConnectionState.Error(
                         "Android could not claim the $deviceLabel PEQ HID interface.",
