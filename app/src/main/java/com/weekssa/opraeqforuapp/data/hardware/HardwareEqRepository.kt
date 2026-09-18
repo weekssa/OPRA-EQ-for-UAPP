@@ -14,6 +14,8 @@ import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotBundle
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Flasher
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300Flasher
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300GainQualificationResult
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300GainQualifier
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult
 import java.io.Closeable
@@ -44,6 +46,7 @@ class HardwareEqRepository(
     private val blackPearlFlasher: BlackPearlFlasher,
     private val fiioJa11Flasher: FiioJa11Flasher,
     private val ew300Flasher: Ew300Flasher,
+    private val ew300GainQualifier: Ew300GainQualifier,
 ) : Closeable {
     val recognitionState: StateFlow<DacRecognitionState> = dacSessionRepository.recognitionState
     val blackPearlConnectionState: StateFlow<BlackPearlConnectionState> =
@@ -194,6 +197,9 @@ class HardwareEqRepository(
             // performs its own complete preflight and final readback.
         }
     }
+
+    suspend fun qualifyEw300GlobalGain(): Ew300GainQualificationResult =
+        dacSessionRepository.withExclusiveEw300Operation { ew300GainQualifier.qualify() }
 
     suspend fun resetEw300(): Kt02h20FlatResetResult =
         dacSessionRepository.withExclusiveEw300Operation { ew300Flasher.resetToFlat() }

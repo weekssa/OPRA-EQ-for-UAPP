@@ -490,34 +490,9 @@ private fun managedHardwareFlashAssessment(
         )
     }
     ExportDevice.FIIO_JA11 -> managedFiveBandAssessment(profile, Kt02h20DeviceSpecs.FIIO_JA11)
-    ExportDevice.SIMGOT_EW300 -> managedEw300Assessment(profile)
+    ExportDevice.SIMGOT_EW300 -> managedFiveBandAssessment(profile, com.weekssa.opraeqforuapp.domain.hardware.HardwareEqDeviceSpecs.SIMGOT_EW300)
     ExportDevice.JCALLY_JM12 -> managedFiveBandAssessment(profile, Kt02h20DeviceSpecs.JCALLY_JM12_STOCK)
     else -> ManagedHardwareFlashAssessment(ready = false)
-}
-
-private fun managedEw300Assessment(profile: OpraEqProfile): ManagedHardwareFlashAssessment {
-    if (profile.preampGainDb != null) {
-        return ManagedHardwareFlashAssessment(
-            ready = false,
-            reason = "This EW300 production path requires a profile without source preamp until the global-gain mapping is verified.",
-        )
-    }
-    return when (val result = Kt02h20FiveBandOptimizer.optimize(profile, com.weekssa.opraeqforuapp.domain.hardware.HardwareEqDeviceSpecs.SIMGOT_EW300)) {
-        is FiveBandOptimizationResult.NotSuitable -> ManagedHardwareFlashAssessment(ready = false, reason = result.reason)
-        is FiveBandOptimizationResult.Ready -> if (kotlin.math.abs(result.representation.playbackGainDb) > 0.000_001) {
-            ManagedHardwareFlashAssessment(
-                ready = false,
-                reason = "This EW300 production path cannot apply the profile's required playback headroom until the global-gain mapping is verified.",
-            )
-        } else {
-            ManagedHardwareFlashAssessment(
-                ready = true,
-                fidelity = result.representation.fidelity,
-                playbackGainDb = result.representation.playbackGainDb,
-                adaptationSummary = result.representation.adaptationSummary(),
-            )
-        }
-    }
 }
 
 private fun managedFiveBandAssessment(

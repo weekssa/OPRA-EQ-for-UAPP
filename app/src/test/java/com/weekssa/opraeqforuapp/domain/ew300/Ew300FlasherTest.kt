@@ -12,28 +12,29 @@ class Ew300FlasherTest {
     @Test
     fun flashWritesAllFiveBandsCommitsAndVerifiesReadback() = runBlocking {
         val transport = FakeTransport()
-        val result = Ew300Flasher(transport).flash(profile(preamp = null))
+        val result = Ew300Flasher(transport, QualifiedGainStore()).flash(profile(preamp = null))
 
         assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.Success)
         assertEquals(10, transport.writes.size)
         assertEquals(1, transport.commitCount)
-        assertEquals(10, transport.readsAfterWrites)
+        assertEquals(11, transport.readsAfterWrites)
     }
 
     @Test
-    fun sourcePreampIsRejectedBeforeAnyDeviceWrite() = runBlocking {
+    fun sourcePreampIsAppliedThroughGlobalGainRegister() = runBlocking {
         val transport = FakeTransport()
-        val result = Ew300Flasher(transport).flash(profile(preamp = -4.0))
+        val result = Ew300Flasher(transport, QualifiedGainStore()).flash(profile(preamp = -4.0))
 
-        assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.NotSuitable)
-        assertTrue(transport.writes.isEmpty())
-        assertEquals(0, transport.commitCount)
+        assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.Success)
+        assertEquals(-8, Ew300Protocol.globalGainSteps(transport.state.getValue(Ew300Protocol.GLOBAL_GAIN_REGISTER)))
+        assertEquals(11, transport.writes.size)
+        assertEquals(1, transport.commitCount)
     }
 
     @Test
     fun resetWritesFlatStateAndVerifiesIt() = runBlocking {
         val transport = FakeTransport()
-        val result = Ew300Flasher(transport).resetToFlat()
+        val result = Ew300Flasher(transport, QualifiedGainStore()).resetToFlat()
 
         assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult.Success)
         assertEquals(10, transport.writes.size)
@@ -45,7 +46,7 @@ class Ew300FlasherTest {
     fun commitFailureStopsBeforeReadbackVerification() = runBlocking {
         val transport = FakeTransport(commitSucceeds = false)
 
-        val result = Ew300Flasher(transport).flash(profile(preamp = null))
+        val result = Ew300Flasher(transport, QualifiedGainStore()).flash(profile(preamp = null))
 
         assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.TransferFailed)
         assertEquals(0, transport.readsAfterWrites)
@@ -75,6 +76,7 @@ class Ew300FlasherTest {
             }
             .associateWith { bytes(0, 0, 0, 0) }
             .toMutableMap()
+            .also { it[Ew300Protocol.GLOBAL_GAIN_REGISTER] = bytes(0, 0, 0, 0) }
         val writes = mutableListOf<Int>()
         var commitCount = 0
         var readsAfterWrites = 0
@@ -98,5 +100,13 @@ class Ew300FlasherTest {
 
     private fun bytes(vararg values: Int): ByteArray = ByteArray(values.size) { index ->
         (values[index] and 0xFF).toByte()
+    }
+
+    private class QualifiedGainStore : Ew300GainStateStore {
+        private var delta = 0
+        override fun isGlobalGainQualified(): Boolean = true
+        override fun markGlobalGainQualified(qualified: Boolean) = Unit
+        override fun readAppliedGainDeltaSteps(): Int = delta
+        override fun writeAppliedGainDeltaSteps(steps: Int) { delta = steps }
     }
 }

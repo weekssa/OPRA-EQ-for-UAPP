@@ -59,6 +59,16 @@ class Ew300ProtocolTest {
         assertNull(Ew300Protocol.decodeBand(0, bytes(0, 0, 0, 0), bytes(0, 0, 1, 0)))
     }
 
+    @Test
+    fun globalGainUsesSignedHalfDbStepsAndPreservesOtherBytes() {
+        val stock = bytes(0xF8, 0xF8, 0x00, 0x00)
+
+        assertEquals(-8, Ew300Protocol.globalGainSteps(stock))
+        assertEquals(-4.0, Ew300Protocol.globalGainDb(stock), 0.0)
+        assertEquals(2, Ew300Protocol.gainDbToSteps(1.0))
+        assertArrayEquals(bytes(0xF9, 0xF8, 0x00, 0x00), Ew300Protocol.withGlobalGainSteps(stock, -7))
+    }
+
     private fun bytes(vararg values: Int): ByteArray = ByteArray(values.size) { index ->
         (values[index] and 0xFF).toByte()
     }

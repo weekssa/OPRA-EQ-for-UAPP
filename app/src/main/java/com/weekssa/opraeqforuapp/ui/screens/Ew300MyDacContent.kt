@@ -20,6 +20,7 @@ internal fun Ew300MyDacContent(
     connectionState: Kt02h20ConnectionState,
     onConnect: () -> Unit,
     onResetEq: suspend () -> String,
+    onQualifyGlobalGain: suspend () -> String,
     onMessage: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -33,6 +34,15 @@ internal fun Ew300MyDacContent(
         when (connectionState) {
             Kt02h20ConnectionState.Connected -> {
                 Text("Connected. Use My EQs or EQ Library to flash a selected profile.")
+                Text(
+                    "Before the first library flash, run the one-time reversible global-gain qualification. " +
+                        "It briefly reconnects the USB device, restores the captured state, and unlocks gain-aware EW300 flashing only after exact readback.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Button(onClick = { scope.launch { onMessage(onQualifyGlobalGain()) } }) {
+                    Text("Qualify global gain")
+                }
                 Button(onClick = { onMessage("Use Reset to flat from My EQs to restore the EW300.") }) {
                     Text("Manage EQ from My EQs")
                 }

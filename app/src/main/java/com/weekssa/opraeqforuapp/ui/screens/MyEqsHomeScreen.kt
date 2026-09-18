@@ -671,19 +671,12 @@ private fun fiveBandFlashPreview(
     spec: com.weekssa.opraeqforuapp.domain.kt02h20.FiveBandDeviceSpec,
 ): HardwareFlashPreview? = when (val result = Kt02h20FiveBandOptimizer.optimize(profile, spec)) {
     is FiveBandOptimizationResult.NotSuitable -> null
-    is FiveBandOptimizationResult.Ready -> if (
-        device == ExportDevice.SIMGOT_EW300 &&
-        (profile.preampGainDb != null || kotlin.math.abs(result.representation.playbackGainDb) > 0.000_001)
-    ) {
-        null
-    } else {
-        HardwareFlashPreview(
-            device = device,
-            fidelity = result.representation.fidelity,
-            playbackGainDb = result.representation.playbackGainDb,
-            adaptationSummary = result.representation.adaptationSummary(),
-        )
-    }
+    is FiveBandOptimizationResult.Ready -> HardwareFlashPreview(
+        device = device,
+        fidelity = result.representation.fidelity,
+        playbackGainDb = result.representation.playbackGainDb,
+        adaptationSummary = result.representation.adaptationSummary(),
+    )
 }
 
 private fun hardwareFlashConfirmation(displayName: String, preview: HardwareFlashPreview): String {
@@ -707,7 +700,7 @@ private fun hardwareFlashConfirmation(displayName: String, preview: HardwareFlas
     } else {
         when (preview.device) {
             ExportDevice.FIIO_JA11 -> "The JA11 global EQ gain will be set to $gain dB."
-            ExportDevice.SIMGOT_EW300 -> "The EW300 five-band PEQ will be written without changing its separate playback gain."
+            ExportDevice.SIMGOT_EW300 -> "The EW300 five-band PEQ and the EQ-related global-gain adjustment will be written, persisted, and verified."
             ExportDevice.JCALLY_JM12 -> "EQ Library will apply a $gain dB tracked playback-gain adjustment for this preset."
             else -> ""
         }
@@ -727,7 +720,7 @@ private fun hardwareResetConfirmation(device: ExportDevice): String = when (devi
     ExportDevice.FIIO_JA11 ->
         "This will return all five JA11 PEQ bands and the global EQ gain to flat/0 dB, apply the result, verify it, and save it to the device. Listening volume may change. Other DAC settings will not be changed."
     ExportDevice.SIMGOT_EW300 ->
-        "This will return all five EW300 PEQ bands to flat, persist the result, and verify it. Other DAC settings will not be changed."
+        "This will return all five EW300 PEQ bands to flat, restore the captured baseline global gain, persist the result, and verify it. Other DAC settings will not be changed."
     ExportDevice.JCALLY_JM12 ->
         "This will return all five stock JM12 PEQ bands to flat and remove EQ Library's tracked playback-gain adjustment. Listening volume may change. Persistence across a full power cycle is still hardware-validation pending. Other DAC settings will not be changed."
     else -> "Reset is not available for this output."

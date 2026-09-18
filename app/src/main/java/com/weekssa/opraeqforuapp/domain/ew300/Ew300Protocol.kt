@@ -15,6 +15,9 @@ object Ew300Protocol {
     const val BAND_COUNT = 5
     const val FIRST_BAND_REGISTER = 0x26
     const val GLOBAL_GAIN_REGISTER = 0x66
+    const val GLOBAL_GAIN_MIN_STEPS = -128
+    const val GLOBAL_GAIN_MAX_STEPS = 127
+    const val GLOBAL_GAIN_STEPS_PER_DB = 2.0
 
     private val bandTypes = mapOf(
         "peak_dip" to 0,
@@ -39,6 +42,28 @@ object Ew300Protocol {
     fun commitReport(): ByteArray = wire(
         byteArrayOf(0, 0, 0, 0, COMMIT_COMMAND.byte(), 0, 0, 0, 0, 0),
     )
+
+    /** Gated EW300 gain qualification mapping: signed byte 0 in 0.5 dB steps. */
+    fun globalGainSteps(data: ByteArray): Int {
+        require(data.size == 4)
+        return data[0].toInt()
+    }
+
+    fun globalGainDb(data: ByteArray): Double =
+        globalGainSteps(data) / GLOBAL_GAIN_STEPS_PER_DB
+
+    fun gainDbToSteps(gainDb: Double): Int {
+        require(gainDb.isFinite())
+        val steps = (gainDb * GLOBAL_GAIN_STEPS_PER_DB).roundToInt()
+        require(steps in GLOBAL_GAIN_MIN_STEPS..GLOBAL_GAIN_MAX_STEPS)
+        return steps
+    }
+
+    fun withGlobalGainSteps(data: ByteArray, steps: Int): ByteArray {
+        require(data.size == 4)
+        require(steps in GLOBAL_GAIN_MIN_STEPS..GLOBAL_GAIN_MAX_STEPS)
+        return data.copyOf().also { it[0] = steps.toByte() }
+    }
 
     fun decodeRead(register: Int, report: ByteArray): ByteArray? {
         if (report.size != REPORT_SIZE || report[0].u8() != REPORT_ID) return null

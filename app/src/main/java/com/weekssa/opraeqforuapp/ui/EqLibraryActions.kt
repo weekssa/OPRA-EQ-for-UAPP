@@ -45,6 +45,7 @@ class EqLibraryActions(
     val onResetFiioJa11FromMyDac: suspend () -> String,
     val onFlashEw300FromMyDac: suspend (OpraEqProfile) -> String,
     val onResetEw300FromMyDac: suspend () -> String,
+    val onQualifyEw300GlobalGain: suspend () -> String,
     val onConnectBlackPearl: () -> Unit,
     val onResetBlackPearl: suspend () -> String,
     val onConnectFiioJa11: () -> Unit,

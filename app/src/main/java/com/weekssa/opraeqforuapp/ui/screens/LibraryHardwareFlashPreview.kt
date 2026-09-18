@@ -84,31 +84,18 @@ internal fun libraryHardwareFlashPreview(
         )
     }
 
-    LibraryHardwareFlashDevice.SIMGOT_EW300 -> when {
-        profile.preampGainDb != null -> LibraryHardwareFlashPreview.NotSuitable(
+    LibraryHardwareFlashDevice.SIMGOT_EW300 -> when (
+        val result = Kt02h20FiveBandOptimizer.optimize(profile, HardwareEqDeviceSpecs.SIMGOT_EW300)
+    ) {
+        is FiveBandOptimizationResult.Ready -> LibraryHardwareFlashPreview.Ready(
             device = device,
-            reason = "This EW300 production path currently requires a profile without source preamp; its global-gain mapping is not enabled yet.",
+            fidelity = result.representation.fidelity,
+            adaptationSummary = result.representation.adaptationSummary(),
+            gainDb = result.representation.playbackGainDb,
         )
-        else -> when (
-            val result = Kt02h20FiveBandOptimizer.optimize(profile, HardwareEqDeviceSpecs.SIMGOT_EW300)
-        ) {
-            is FiveBandOptimizationResult.Ready -> if (kotlin.math.abs(result.representation.playbackGainDb) > 0.000_001) {
-                LibraryHardwareFlashPreview.NotSuitable(
-                    device = device,
-                    reason = "This EW300 production path cannot apply the profile's required playback headroom until the global-gain mapping is verified.",
-                )
-            } else {
-                LibraryHardwareFlashPreview.Ready(
-                    device = device,
-                    fidelity = result.representation.fidelity,
-                    adaptationSummary = result.representation.adaptationSummary(),
-                    gainDb = result.representation.playbackGainDb,
-                )
-            }
-            is FiveBandOptimizationResult.NotSuitable -> LibraryHardwareFlashPreview.NotSuitable(
-                device = device,
-                reason = result.reason,
-            )
-        }
+        is FiveBandOptimizationResult.NotSuitable -> LibraryHardwareFlashPreview.NotSuitable(
+            device = device,
+            reason = result.reason,
+        )
     }
 }

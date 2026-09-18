@@ -8,6 +8,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ### Fixed
 
+- Added an owner-approved gated EW300 production candidate: one reversible global-gain qualification must pass with exact restoration before library flashing unlocks. The shared five-band optimizer now carries source/generated preamp as a tracked EW300 global-gain adjustment, writes and verifies all five bands plus gain, and restores the captured baseline gain on Reset to flat.
 - Prepared a stable-signed EW300 readback/UI-thread fix candidate for in-place device testing.
 
 - Fixed the separate signed EW300 USB diagnostic APK omitting its Kotlin launcher class under AGP 9. Added finished-APK class-definition validation and two cold launches of the exact signed APK on Android 36 before the diagnostic can be handed off. This is discovery tooling; EW300 hardware EQ support remains unqualified.

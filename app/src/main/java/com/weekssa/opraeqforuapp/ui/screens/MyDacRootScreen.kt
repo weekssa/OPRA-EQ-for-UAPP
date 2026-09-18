@@ -77,6 +77,7 @@ fun MyDacRootScreen(
     onSetFiioJa11UacMode: (FiioJa11Protocol.UacMode) -> Unit,
     onResetFiioJa11FromMyDac: suspend () -> String,
     onResetEw300FromMyDac: suspend () -> String = { "Reset is not available." },
+    onQualifyEw300GlobalGain: suspend () -> String = { "EW300 gain qualification is not available." },
     onMessage: (String) -> Unit,
     onOperationStatus: (String, Boolean) -> Unit,
     modifier: Modifier = Modifier,
@@ -193,6 +194,7 @@ fun MyDacRootScreen(
             connectionState = ew300ConnectionState,
             onConnect = { onConnectDac(DacDeviceId.SIMGOT_EW300) },
             onResetEq = onResetEw300FromMyDac,
+            onQualifyGlobalGain = onQualifyEw300GlobalGain,
             onMessage = onMessage,
             modifier = modifier,
         )

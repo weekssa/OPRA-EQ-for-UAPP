@@ -57,6 +57,7 @@ import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.dac.SavedHardwareEqRepresentation
 import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300GainQualificationResult
 import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceControls
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult
@@ -955,6 +956,22 @@ class EqLibraryViewModel(
 
     suspend fun flashEw300FromMyDac(profile: OpraEqProfile): UiText =
         flashEw300Profile(profile, preferencesRepository.snapshot())
+
+    suspend fun qualifyEw300GlobalGain(): UiText {
+        val preferences = preferencesRepository.snapshot()
+        if (!preferences.directEw300FlashEnabled) {
+            return UiText.Dynamic("Enable Direct Flash for SIMGOT EW300 DSP in Settings first.")
+        }
+        if (hardwareRepository.ew300ConnectionState.value !is Kt02h20ConnectionState.Connected) {
+            return UiText.Dynamic("Connect SIMGOT EW300 DSP before qualifying its global gain.")
+        }
+        return when (val result = hardwareRepository.qualifyEw300GlobalGain()) {
+            Ew300GainQualificationResult.Verified -> UiText.Dynamic(
+                "EW300 global-gain qualification passed. Gain-aware library flashing is now enabled.",
+            )
+            is Ew300GainQualificationResult.Failed -> UiText.Dynamic(result.reason)
+        }
+    }
 
     fun connectBlackPearl() {
         viewModelScope.launch {

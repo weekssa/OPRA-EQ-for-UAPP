@@ -291,7 +291,7 @@ internal fun ProfileSelectionEditor(
                                 when (device) {
                                     LibraryHardwareFlashDevice.BLACK_PEARL -> "Playback adjustment: $gain"
                                     LibraryHardwareFlashDevice.FIIO_JA11 -> "Global EQ gain: $gain"
-                                    LibraryHardwareFlashDevice.SIMGOT_EW300 -> "EW300 PEQ gain field: $gain"
+                                    LibraryHardwareFlashDevice.SIMGOT_EW300 -> "EW300 global-gain adjustment: $gain"
                                 },
                             )
                             Text(

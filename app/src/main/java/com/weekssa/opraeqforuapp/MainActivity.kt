@@ -127,6 +127,7 @@ class MainActivity : ComponentActivity() {
         },
         onFlashEw300FromMyDac = { profile -> resolve(viewModel.flashEw300FromMyDac(profile)) },
         onResetEw300FromMyDac = { resolve(viewModel.resetEw300ToFlat()) },
+        onQualifyEw300GlobalGain = { resolve(viewModel.qualifyEw300GlobalGain()) },
         onConnectBlackPearl = viewModel::connectBlackPearl,
         onResetBlackPearl = {
             resolve(viewModel.resetBlackPearlToFlat())
