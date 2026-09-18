@@ -55,7 +55,7 @@ class Ew300FlasherTest {
         ),
     )
 
-    private class FakeTransport : Ew300Transport {
+    private inner class FakeTransport : Ew300Transport {
         val state = (0 until Ew300Protocol.BAND_COUNT).associate { index ->
             Ew300Protocol.bandRegister(index) to bytes(0, 0, 0, 0)
         }.toMutableMap()
