@@ -101,7 +101,6 @@ fun EqLibraryApp(
     val onConnectDacForMyDac = actions.onConnectDacForMyDac
     val onOpenBlackPearlEditor = actions.onOpenBlackPearlEditor
     val onBackMyDacEditor = actions.onBackMyDacEditor
-    val onBackEw300Editor = actions.onBackEw300Editor
     val onCloseMyDacEditor = actions.onCloseMyDacEditor
     val onSelectBlackPearlEditorBand = actions.onSelectBlackPearlEditorBand
     val onShowBlackPearlEditorAllBands = actions.onShowBlackPearlEditorAllBands
