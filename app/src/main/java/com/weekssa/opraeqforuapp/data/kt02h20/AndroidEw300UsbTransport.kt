@@ -33,10 +33,14 @@ class AndroidEw300UsbTransport(context: Context) : Ew300Transport, Closeable {
             ?.let { Ew300Protocol.decodeRead(register, it) }
 
     override suspend fun writeRegister(register: Int, data: ByteArray): Boolean =
-        hid.send(Ew300Protocol.writeRegisterReport(register, data), settleMillis = 20L)
+        // Match the delay used by the physical qualification: the EW300 may emit an
+        // unsolicited input report before the register is ready for the next transaction.
+        hid.send(Ew300Protocol.writeRegisterReport(register, data), settleMillis = 200L)
 
     override suspend fun commit(): Boolean =
-        hid.send(Ew300Protocol.commitReport(), settleMillis = 100L)
+        // Persistence needs the full qualified settle window before final readback.
+        hid.send(Ew300Protocol.commitReport(), settleMillis = 1_000L)
 
     override fun close() = hid.close()
 }
+
