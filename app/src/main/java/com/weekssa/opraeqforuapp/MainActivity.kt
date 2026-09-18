@@ -124,6 +124,9 @@ class MainActivity : ComponentActivity() {
         onCaptureBlackPearlDacEq = { displayName, association ->
             resolve(viewModel.captureBlackPearlDacEq(displayName, association))
         },
+        onCaptureEw300DacEq = { displayName, association ->
+            resolve(viewModel.captureEw300DacEq(displayName, association))
+        },
         onFlashBlackPearlFromMyDac = { profile ->
             resolve(viewModel.flashBlackPearlFromMyDac(profile))
         },

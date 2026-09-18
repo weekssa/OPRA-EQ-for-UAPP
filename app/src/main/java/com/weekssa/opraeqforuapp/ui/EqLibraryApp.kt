@@ -120,6 +120,7 @@ fun EqLibraryApp(
     val onResetEw300EditorLocalEdits = actions.onResetEw300EditorLocalEdits
     val onApplyEw300Editor = actions.onApplyEw300Editor
     val onCaptureBlackPearlDacEq = actions.onCaptureBlackPearlDacEq
+    val onCaptureEw300DacEq = actions.onCaptureEw300DacEq
     val onFlashBlackPearlFromMyDac = actions.onFlashBlackPearlFromMyDac
     val onResetBlackPearlFromMyDac = actions.onResetBlackPearlFromMyDac
     val onReadBlackPearlQualificationControls = actions.onReadBlackPearlQualificationControls
@@ -721,6 +722,7 @@ fun EqLibraryApp(
                         onResetEw300EditorLocalEdits = onResetEw300EditorLocalEdits,
                         onApplyEw300Editor = onApplyEw300Editor,
                         onCaptureBlackPearlDacEq = onCaptureBlackPearlDacEq,
+                        onCaptureEw300DacEq = onCaptureEw300DacEq,
                         onFlashBlackPearlFromMyDac = onFlashBlackPearlFromMyDac,
                         onResetBlackPearlFromMyDac = onResetBlackPearlFromMyDac,
                         onReadBlackPearlQualification = onReadBlackPearlQualificationControls,

@@ -16,11 +16,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
+import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.domain.dac.DacStateFreshness
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqResponseEvaluator
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.dac.isAcousticallyActive
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
+import com.weekssa.opraeqforuapp.domain.library.SavedEqHeadphoneAssociation
+import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
+import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.ui.MyDacEditorApplyStatus
 import com.weekssa.opraeqforuapp.ui.MyDacEditorUiState
 import com.weekssa.opraeqforuapp.ui.components.DacEqResponseGraph
@@ -33,9 +37,13 @@ internal fun Ew300MyDacContent(
     connectionState: Kt02h20ConnectionState,
     hardwareEqState: HardwareEqSnapshotState,
     editorState: MyDacEditorUiState,
+    catalogState: CatalogState,
+    managedHeadphones: List<ManagedHeadphoneRecord>,
+    savedEqs: List<SavedEqRecord>,
     onConnect: () -> Unit,
     onResetEq: suspend () -> String,
     onQualifyGlobalGain: suspend () -> String,
+    onCaptureDacEq: suspend (String, SavedEqHeadphoneAssociation?) -> String,
     onOpenEditor: () -> Unit,
     onCloseEditor: () -> Unit,
     onSelectBand: (Int) -> Unit,
@@ -49,6 +57,19 @@ internal fun Ew300MyDacContent(
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
+    var saveDacEqOpen by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    if (saveDacEqOpen && connectionState == Kt02h20ConnectionState.Connected) {
+        BlackPearlSaveDacEqDialog(
+            catalogState = catalogState,
+            managedHeadphones = managedHeadphones,
+            savedEqs = savedEqs,
+            provenanceText = "The current five-band and global-gain values will be saved as a Personal EQ with SIMGOT EW300 DSP provenance.",
+            namePlaceholder = "My EW300 EQ",
+            onDismiss = { saveDacEqOpen = false },
+            onSave = onCaptureDacEq,
+            onMessage = onMessage,
+        )
+    }
     Column(
         modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -63,7 +84,7 @@ internal fun Ew300MyDacContent(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Button(onClick = { scope.launch { onMessage(onQualifyGlobalGain()) } }) { Text("Qualify global gain") }
+                    Button(onClick = { scope.launch { onMessage(onQualifyGlobalGain()) } }) { Text("Qualify global gain") }
                 if (editorState.isOpening || editorState.isOpen || editorState.error != null) {
                     BlackPearlEqEditorScreen(
                         state = editorState,
@@ -82,6 +103,7 @@ internal fun Ew300MyDacContent(
                         state = hardwareEqState,
                         canEdit = true,
                         onEdit = onOpenEditor,
+                        onCapture = { saveDacEqOpen = true },
                         onReset = { scope.launch { onMessage(onResetEq()) } },
                     )
                     if (editorState.applyStatus != MyDacEditorApplyStatus.IDLE) {
@@ -110,6 +132,7 @@ private fun Ew300EqStatus(
     state: HardwareEqSnapshotState,
     canEdit: Boolean,
     onEdit: () -> Unit,
+    onCapture: () -> Unit,
     onReset: () -> Unit,
 ) {
     if (state.isReading) Text("Reading the current EW300 EQ…", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -133,5 +156,6 @@ private fun Ew300EqStatus(
     }
     Text("${bundle.snapshot.filters.count { it.isAcousticallyActive() }} active bands · five-band native PEQ", style = MaterialTheme.typography.bodySmall)
     Button(onClick = onEdit, enabled = canEdit, modifier = Modifier.fillMaxWidth()) { Text("Edit current EQ") }
+    OutlinedButton(onClick = onCapture, enabled = canEdit, modifier = Modifier.fillMaxWidth()) { Text("Save current EQ to My EQs") }
     OutlinedButton(onClick = onReset, enabled = canEdit, modifier = Modifier.fillMaxWidth()) { Text("Reset EQ to flat") }
 }

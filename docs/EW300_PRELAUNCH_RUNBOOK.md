@@ -1,6 +1,6 @@
 # SIMGOT EW300 DSP — Pre-launch Candidate Runbook
 
-Status: owner-aligned execution plan, 2026-09-18  
+Status: owner-aligned execution plan, 2026-09-18
 Owner: project owner approval is required for the final merge.
 
 ## Objective

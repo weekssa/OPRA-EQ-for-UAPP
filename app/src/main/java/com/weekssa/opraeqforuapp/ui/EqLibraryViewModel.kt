@@ -59,6 +59,7 @@ import com.weekssa.opraeqforuapp.domain.dac.SavedHardwareEqRepresentation
 import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300GainQualificationResult
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300Protocol
 import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceControls
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult
@@ -921,6 +922,37 @@ class EqLibraryViewModel(
                 onFailure = { error -> UiText.Dynamic(error.message ?: "Could not save the current Black Pearl EQ.") },
             )
         }
+    }
+
+    suspend fun captureEw300DacEq(
+        displayName: String,
+        association: SavedEqHeadphoneAssociation?,
+    ): UiText {
+        val name = displayName.trim()
+        if (name.isEmpty()) return UiText.Dynamic("EQ name is required.")
+        if (hardwareRepository.ew300ConnectionState.value != Kt02h20ConnectionState.Connected) {
+            return UiText.Dynamic("Connect SIMGOT EW300 DSP before saving its EQ.")
+        }
+
+        val bundle = hardwareRepository.readEw300Snapshot()
+            ?: return UiText.Dynamic("Could not read the complete EW300 EQ. No Personal EQ was saved.")
+        if (bundle.snapshot.filters.size != Ew300Protocol.BAND_COUNT) {
+            return UiText.Dynamic("The EW300 readback did not contain all five bands. No Personal EQ was saved.")
+        }
+        if (!hardwareRepository.isEw300SessionCurrent(bundle.snapshot.sessionGeneration)) {
+            return UiText.Dynamic("The EW300 connection changed while reading. Reconnect and try again.")
+        }
+
+        return runCatching {
+            savedEqRepository.captureEw300Eq(
+                displayName = name,
+                snapshotBundle = bundle,
+                association = association,
+            )
+        }.fold(
+            onSuccess = { record -> UiText.Dynamic("Saved ${record.displayName} to SIMGOT EW300 DSP My EQs.") },
+            onFailure = { error -> UiText.Dynamic(error.message ?: "Could not save the current EW300 EQ.") },
+        )
     }
 
     fun readBlackPearlQualificationControls() {
