@@ -41,6 +41,16 @@ class Ew300FlasherTest {
         assertTrue(transport.state.values.any { it.contentEquals(bytes(0, 0, 0xE8, 0x03)) })
     }
 
+    @Test
+    fun commitFailureStopsBeforeReadbackVerification() = runBlocking {
+        val transport = FakeTransport(commitSucceeds = false)
+
+        val result = Ew300Flasher(transport).flash(profile(preamp = null))
+
+        assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.TransferFailed)
+        assertEquals(0, transport.readsAfterWrites)
+    }
+
     private fun profile(preamp: Double?): OpraEqProfile = OpraEqProfile(
         id = "ew300-test",
         productId = "product",
@@ -55,7 +65,9 @@ class Ew300FlasherTest {
         ),
     )
 
-    private inner class FakeTransport : Ew300Transport {
+    private inner class FakeTransport(
+        private val commitSucceeds: Boolean = true,
+    ) : Ew300Transport {
         val state = (0 until Ew300Protocol.BAND_COUNT)
             .flatMap { index ->
                 val register = Ew300Protocol.bandRegister(index)
@@ -80,7 +92,7 @@ class Ew300FlasherTest {
 
         override suspend fun commit(): Boolean {
             commitCount++
-            return true
+            return commitSucceeds
         }
     }
 

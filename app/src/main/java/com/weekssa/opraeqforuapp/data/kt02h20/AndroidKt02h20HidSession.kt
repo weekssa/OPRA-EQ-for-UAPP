@@ -21,7 +21,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -92,9 +94,14 @@ internal class AndroidKt02h20HidSession(
                     }
                 }
                 UsbManager.ACTION_USB_DEVICE_DETACHED -> {
-                    mutablePresent.value = findDevice() != null
-                    closeSession()
-                    mutableState.value = Kt02h20ConnectionState.Disconnected
+                    // A device reset can emit DETACHED/ATTACHED during a mutating operation.
+                    // Close the old handle before publishing Disconnected so the reconnect
+                    // policy cannot observe a stale session and mark it Connected again.
+                    scope.launch {
+                        mutex.withLock { closeSessionLocked() }
+                        mutablePresent.value = findDevice() != null
+                        mutableState.value = Kt02h20ConnectionState.Disconnected
+                    }
                 }
                 UsbManager.ACTION_USB_DEVICE_ATTACHED -> {
                     mutablePresent.value = true
@@ -193,6 +200,37 @@ internal class AndroidKt02h20HidSession(
             }
             null
         }
+    }
+
+    /**
+     * Allows a mutating command that may reset the USB function to finish its reconnect boundary.
+     *
+     * EW300's persistence command can re-enumerate the same VID/PID. The old UsbDeviceConnection
+     * is no longer valid after that point, so callers must not immediately issue a readback on it.
+     * If no re-enumeration occurred, this returns after a short observation window and preserves
+     * the normal low-latency path. If it did occur, this waits for the ordinary session reconnect
+     * (including the Android permission prompt when the platform requires it).
+     */
+    suspend fun awaitReconnectAfterMutation(
+        previousGeneration: Long,
+        observationMillis: Long = REENUMERATION_OBSERVATION_MILLIS,
+        timeoutMillis: Long = RECONNECT_TIMEOUT_MILLIS,
+    ): Boolean {
+        if (previousGeneration <= 0L) return false
+        delay(observationMillis)
+        if (
+            mutableState.value is Kt02h20ConnectionState.Connected &&
+            currentSessionGeneration != 0L
+        ) {
+            // The session is still usable, or it has already reopened with a new generation.
+            return true
+        }
+        return withTimeoutOrNull(timeoutMillis) {
+            state.first {
+                it is Kt02h20ConnectionState.Connected && currentSessionGeneration != 0L
+            }
+            true
+        } ?: false
     }
 
     private fun drainInput(current: UsbSession) {
@@ -335,6 +373,8 @@ internal class AndroidKt02h20HidSession(
         const val READ_POLL_MILLIS = 80
         const val READ_RETRY_DELAY_MILLIS = 5L
         const val PERMISSION_RESPONSE_TIMEOUT_MILLIS = 10_000L
+        const val REENUMERATION_OBSERVATION_MILLIS = 350L
+        const val RECONNECT_TIMEOUT_MILLIS = 20_000L
 
         fun nextSessionGeneration(previous: Long): Long =
             if (previous == Long.MAX_VALUE) 1L else previous + 1L
