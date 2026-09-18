@@ -1,1 +1,21 @@
-m«ëˆ§½©buªàºg§µªiþÊÜýØš‚z,¶'?wk¢'LjxŸzËqšU,j›jÇºà7an{¦Š)ßŠW¨¢ë_ŠW›n·š‘ºÞjG§r‡^v‹­¦ën¦)í¢X§zÊ•éà¶î˜7]yÊy×œ¡×¢ž›­†¥¥Ø¬¦V²¶¬™ë,j¢Šzn¶)éº×â•ç^}«¥µú+²×bžŠ.¶›­¢ëiº×â•ç^}«¥µú+²×hº
+<?xml version="1.0" encoding="utf-8"?>
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <application
+        android:label="EW300 USB evidence"
+        tools:replace="android:label">
+        <activity
+            android:name="com.weekssa.opraeqforuapp.MainActivity"
+            tools:node="remove" />
+        <activity
+            android:name="com.weekssa.opraeqforuapp.diagnostics.Ew300UsbDiscoveryActivity"
+            android:exported="true"
+            android:label="EW300 USB discovery">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
