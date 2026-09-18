@@ -37,10 +37,15 @@ class AndroidEw300UsbTransport(context: Context) : Ew300Transport, Closeable {
         // unsolicited input report before the register is ready for the next transaction.
         hid.send(Ew300Protocol.writeRegisterReport(register, data), settleMillis = 200L)
 
-    override suspend fun commit(): Boolean =
-        // Persistence needs the full qualified settle window before final readback.
-        hid.send(Ew300Protocol.commitReport(), settleMillis = 1_000L)
+    override suspend fun commit(): Boolean {
+        // Persistence may reset the EW300 USB function. Keep the operation alive across that
+        // expected re-enumeration and only let the flasher read back after a fresh HID handle is
+        // available. This also prevents the shared auto-reconnect policy from racing a stale
+        // connection while the old handle is being closed.
+        val previousGeneration = hid.sessionGeneration
+        if (!hid.send(Ew300Protocol.commitReport(), settleMillis = 1_000L)) return false
+        return hid.awaitReconnectAfterMutation(previousGeneration)
+    }
 
     override fun close() = hid.close()
 }
-
