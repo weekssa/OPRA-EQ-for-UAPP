@@ -4,6 +4,7 @@ import androidx.room.withTransaction
 import com.weekssa.opraeqforuapp.data.managed.ManagedProfileSnapshotCodec
 import com.weekssa.opraeqforuapp.data.managed.OpraEqDatabase
 import com.weekssa.opraeqforuapp.domain.blackpearl.buildBlackPearlCapturedEqDraft
+import com.weekssa.opraeqforuapp.domain.ew300.buildEw300CapturedEqDraft
 import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.conversion.ToneBoostersConverter
@@ -166,6 +167,39 @@ class SavedEqRepository(
 
         val id = UUID.randomUUID().toString()
         val draft = buildBlackPearlCapturedEqDraft(
+            captureId = id,
+            snapshotBundle = snapshotBundle,
+            association = association,
+        )
+        val now = nowMillis()
+        val entity = SavedEqEntity(
+            entryId = "personal:$id",
+            kind = KIND_PERSONAL,
+            sourceProfileId = null,
+            productId = draft.productId,
+            manufacturer = draft.manufacturer,
+            model = draft.model,
+            displayName = name,
+            profileJson = snapshotCodec.encode(draft.profile),
+            createdAtMillis = now,
+            updatedAtMillis = now,
+            captureMetadataJson = captureMetadataCodec.encode(draft.captureMetadata),
+        )
+        dao.upsert(entity)
+        toDomain(entity)
+    }
+
+    /** Saves a complete verified EW300 hardware EQ as an ordinary Personal EQ. */
+    suspend fun captureEw300Eq(
+        displayName: String,
+        snapshotBundle: HardwareEqSnapshotBundle,
+        association: SavedEqHeadphoneAssociation?,
+    ): SavedEqRecord = withContext(ioDispatcher) {
+        val name = displayName.trim()
+        require(name.isNotEmpty()) { "EQ name is required." }
+
+        val id = UUID.randomUUID().toString()
+        val draft = buildEw300CapturedEqDraft(
             captureId = id,
             snapshotBundle = snapshotBundle,
             association = association,
