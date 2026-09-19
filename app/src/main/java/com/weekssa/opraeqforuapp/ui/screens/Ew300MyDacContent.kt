@@ -88,7 +88,13 @@ internal fun Ew300MyDacContent(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                    Button(onClick = { scope.launch { onMessage(onQualifyGlobalGain()) } }) { Text("Qualify global gain") }
+                    Button(onClick = {
+                        // Qualification and editor reads are separate transactions. Clear any
+                        // stale editor error before starting the qualification read so its result
+                        // cannot be mistaken for a qualification failure.
+                        onCloseEditor()
+                        scope.launch { onMessage(onQualifyGlobalGain()) }
+                    }) { Text("Qualify global gain") }
                 if (editorState.isOpening || editorState.isOpen || editorState.error != null) {
                     BlackPearlEqEditorScreen(
                         state = editorState,
@@ -101,6 +107,7 @@ internal fun Ew300MyDacContent(
                         onUseSafeGain = onUseSafeGain,
                         onResetEdits = onResetEdits,
                         onApply = onApply,
+                        dacLabel = "SIMGOT EW300 DSP",
                     )
                 } else {
                     Ew300EqStatus(

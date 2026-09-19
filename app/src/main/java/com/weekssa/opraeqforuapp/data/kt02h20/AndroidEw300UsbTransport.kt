@@ -4,6 +4,7 @@ import android.content.Context
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300Protocol
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300Transport
 import java.io.Closeable
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 
 /** Android USB-host transport for the qualified SIMGOT EW300 DSP cable. */
@@ -22,15 +23,23 @@ class AndroidEw300UsbTransport(context: Context) : Ew300Transport, Closeable {
 
     fun connect() = hid.connect()
 
-    override suspend fun readRegister(register: Int): ByteArray? =
-        hid.exchange(
-            report = Ew300Protocol.readRegisterReport(register),
-            minResponseBytes = Ew300Protocol.REPORT_SIZE,
-            // The EW300 can expose unsolicited HID input after a write. Do not let a valid-sized
-            // non-read response satisfy this transaction; wait for the exact register read echo.
-            acceptResponse = { response -> Ew300Protocol.decodeRead(register, response) != null },
-        )
-            ?.let { Ew300Protocol.decodeRead(register, it) }
+    override suspend fun readRegister(register: Int): ByteArray? {
+        // A connected EW300 can occasionally drop one HID input report while Android is
+        // draining an unsolicited status report. Reads are idempotent, so retry only the
+        // exact register read; mutating writes remain deliberately non-retried.
+        repeat(3) { attempt ->
+            val value = hid.exchange(
+                report = Ew300Protocol.readRegisterReport(register),
+                minResponseBytes = Ew300Protocol.REPORT_SIZE,
+                // The EW300 can expose unsolicited HID input after a write. Do not let a valid-sized
+                // non-read response satisfy this transaction; wait for the exact register read echo.
+                acceptResponse = { response -> Ew300Protocol.decodeRead(register, response) != null },
+            )?.let { Ew300Protocol.decodeRead(register, it) }
+            if (value != null) return value
+            if (attempt < 2) delay(100L)
+        }
+        return null
+    }
 
     override suspend fun writeRegister(register: Int, data: ByteArray): Boolean =
         // Match the delay used by the physical qualification: the EW300 may emit an

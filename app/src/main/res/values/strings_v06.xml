@@ -116,9 +116,9 @@
 
     <string name="my_dac_action_edit_eq">Edit EQ</string>
     <string name="my_dac_editor_opening">Reading fresh hardware EQ…</string>
-    <string name="my_dac_editor_requires_connection">Connect the Black Pearl before editing its EQ.</string>
-    <string name="my_dac_editor_read_failed">Couldn’t get a fresh verified EQ read. Reconnect the Black Pearl and try again.</string>
-    <string name="my_dac_editor_wrong_device">The verified EQ belongs to a different DAC. Close the editor and reconnect the Black Pearl.</string>
+    <string name="my_dac_editor_requires_connection">Connect %1$s before editing its EQ.</string>
+    <string name="my_dac_editor_read_failed">Couldn’t get a fresh verified EQ read. Reconnect %1$s and try again.</string>
+    <string name="my_dac_editor_wrong_device">The verified EQ belongs to a different DAC. Close the editor and reconnect %1$s.</string>
     <string name="my_dac_editor_title">Edit DAC EQ</string>
     <string name="my_dac_editor_subtitle">TRN Black Pearl · Slot %1$d</string>
     <string name="my_dac_editor_local_only">Edits stay local until you review and explicitly apply them.</string>
