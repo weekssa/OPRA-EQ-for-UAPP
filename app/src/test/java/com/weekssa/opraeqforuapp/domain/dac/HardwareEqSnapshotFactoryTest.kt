@@ -9,6 +9,27 @@ import org.junit.Test
 
 class HardwareEqSnapshotFactoryTest {
     @Test
+    fun ew300RejectsUnqualifiedShelfTypeInsteadOfInventingItsAcousticMeaning() {
+        val bands = List(5) { index ->
+            Kt02h20Band(
+                type = if (index == 0) "low_shelf" else "peak_dip",
+                frequencyHz = 1_000.0,
+                gainDb = 0.0,
+                q = 1.0,
+            )
+        }
+
+        assertThat(
+            HardwareEqSnapshotFactory.ew300(
+                nativeBands = bands,
+                globalGainDb = 0.0,
+                sessionGeneration = 1L,
+                verifiedAtEpochMillis = 1L,
+            ),
+        ).isNull()
+    }
+
+    @Test
     fun blackPearlPreservesRawNativeUnitsAndKeepsPlaybackGainOutOfEqFingerprint() {
         val bundle = HardwareEqSnapshotFactory.blackPearl(
             nativeBands = blackPearlBands(gainRaw256 = -640, slot = 2),

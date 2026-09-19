@@ -24,6 +24,9 @@ object HardwareEqSnapshotFactory {
     ): HardwareEqSnapshotBundle? {
         if (nativeBands.size != Ew300Protocol.BAND_COUNT) return null
         if (!globalGainDb.isFinite() || globalGainDb !in -64.0..63.5) return null
+        // Codes 3/4 are reversible raw bytes, but their shelf acoustics are not qualified on the
+        // exact EW300 cable. Do not turn a provisional hypothesis into a user-visible filter type.
+        if (nativeBands.any { it.type != "peak_dip" }) return null
         val filters = nativeBands.mapIndexed { index, band -> band.toHardwareFilter(index) ?: return null }
         val fingerprint = HardwareEqNativeFingerprint(
             deviceId = DacDeviceId.SIMGOT_EW300,
