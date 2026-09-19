@@ -59,6 +59,7 @@ import com.weekssa.opraeqforuapp.domain.dac.SavedHardwareEqRepresentation
 import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300GainQualificationResult
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityReport
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300Protocol
 import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceControls
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
@@ -928,6 +929,11 @@ class EqLibraryViewModel(
         displayName: String,
         association: SavedEqHeadphoneAssociation?,
     ): UiText {
+        if (!Ew300Protocol.CANONICAL_CAPTURE_QUALIFIED) {
+            return UiText.Dynamic(
+                "EW300 Personal EQ capture remains locked until the cable's frequency scaling is verified. The read-only capability report is available in My DAC.",
+            )
+        }
         val name = displayName.trim()
         if (name.isEmpty()) return UiText.Dynamic("EQ name is required.")
         if (hardwareRepository.ew300ConnectionState.value != Kt02h20ConnectionState.Connected) {
@@ -1125,6 +1131,9 @@ class EqLibraryViewModel(
             is Ew300GainQualificationResult.Failed -> UiText.Dynamic(result.reason)
         }
     }
+
+    suspend fun runEw300CapabilityBatch(): Ew300CapabilityReport =
+        hardwareRepository.runEw300CapabilityBatch()
 
     fun connectBlackPearl() {
         viewModelScope.launch {

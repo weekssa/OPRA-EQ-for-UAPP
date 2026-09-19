@@ -135,6 +135,7 @@ fun EqLibraryApp(
     val onFlashEw300FromMyDac = actions.onFlashEw300FromMyDac
     val onResetEw300FromMyDac = actions.onResetEw300FromMyDac
     val onQualifyEw300GlobalGain = actions.onQualifyEw300GlobalGain
+    val onRunEw300CapabilityBatch = actions.onRunEw300CapabilityBatch
     val onConnectBlackPearl = actions.onConnectBlackPearl
     val onResetBlackPearl = actions.onResetBlackPearl
     val onConnectFiioJa11 = actions.onConnectFiioJa11
@@ -735,6 +736,7 @@ fun EqLibraryApp(
                         onResetFiioJa11FromMyDac = onResetFiioJa11FromMyDac,
                         onResetEw300FromMyDac = onResetEw300FromMyDac,
                         onQualifyEw300GlobalGain = onQualifyEw300GlobalGain,
+                        onRunEw300CapabilityBatch = onRunEw300CapabilityBatch,
                         onMessage = ::showMessage,
                         onOperationStatus = ::showOperationStatus,
                         modifier = Modifier.fillMaxSize(),

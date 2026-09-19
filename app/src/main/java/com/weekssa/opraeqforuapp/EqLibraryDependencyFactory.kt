@@ -35,6 +35,7 @@ import com.weekssa.opraeqforuapp.data.update.GitHubReleaseUpdateRepository
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlasher
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Flasher
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300Flasher
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityBatch
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300GainQualifier
 import com.weekssa.opraeqforuapp.ui.EqLibraryViewModel
 import java.net.URL
@@ -126,6 +127,7 @@ internal fun createEqLibraryRuntimeDependencies(context: Context): EqLibraryRunt
             gainStateStore = ew300GainStateStore,
         ),
         ew300GainQualifier = Ew300GainQualifier(ew300Transport, ew300GainStateStore),
+        ew300CapabilityBatch = Ew300CapabilityBatch(ew300Transport),
     )
 
     return EqLibraryRuntimeDependencies(

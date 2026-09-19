@@ -8,6 +8,10 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ### Fixed
 
+- Added a guided, read-only EW300 capability report in My DAC with readable and JSON sharing.
+- Serialized EW300 diagnostics through the device operation gate and retained first-failure safe-stop behavior.
+- Blocked EW300 Personal EQ capture until exact-device frequency scaling is qualified, preventing provisional register values from becoming canonical user EQs.
+
 - Added strict EW300 identity matching beyond VID/PID: expected USB strings, HID interface shape, and a session fingerprint now gate any device-scoped state.
 - Made EW300 qualification and applied-gain state fingerprint-scoped, fixed byte-array content comparison in editor readback, and added pre-commit restoration after partial band mutations.
 - Disabled persistent EW300 Flash and Reset in the product candidate until command `0x53` and full power-cycle behavior are proven on the exact cable. The default capability utility is read-only and exports a plain-language/JSON report.

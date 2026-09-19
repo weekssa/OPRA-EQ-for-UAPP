@@ -33,10 +33,39 @@ class Ew300CapabilityBatchTest {
         assertEquals(listOf(0x26), transport.reads)
     }
 
+    @Test
+    fun missingFingerprintSendsNoUsbOperationAndReportsInconclusive() = runBlocking {
+        val transport = FakeTransport(fingerprint = null)
+
+        val report = Ew300CapabilityBatch(transport).run()
+
+        assertEquals(Ew300CapabilityCaseResult.Status.INCONCLUSIVE, report.status)
+        assertTrue(transport.reads.isEmpty())
+        assertTrue(transport.writes.isEmpty())
+        assertTrue(report.stoppedAfterFailure)
+    }
+
+    @Test
+    fun mutationKindsRemainSkippedAndNeverWrite() = runBlocking {
+        val transport = FakeTransport()
+        val plan = listOf(
+            Ew300CapabilityTestCase("volatile", "Volatile", "reversible field", Ew300CapabilityTestKind.REVERSIBLE_VOLATILE_FIELD, 0x26),
+            Ew300CapabilityTestCase("persist", "Persistence", "save candidate", Ew300CapabilityTestKind.PERSISTENCE_CANDIDATE),
+        )
+
+        val report = Ew300CapabilityBatch(transport).run(plan)
+
+        assertEquals(Ew300CapabilityCaseResult.Status.INCONCLUSIVE, report.status)
+        assertTrue(report.cases.all { it.status == Ew300CapabilityCaseResult.Status.SKIPPED })
+        assertTrue(transport.reads.isEmpty())
+        assertTrue(transport.writes.isEmpty())
+    }
+
     private class FakeTransport(
         private val failRegister: Int? = null,
+        fingerprint: String? = "test-ew300|descriptor=fixture",
     ) : Ew300Transport {
-        override val deviceFingerprintKey: String = "test-ew300|descriptor=fixture"
+        override val deviceFingerprintKey: String? = fingerprint
         val reads = mutableListOf<Int>()
         val writes = mutableListOf<Int>()
 

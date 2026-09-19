@@ -25,6 +25,7 @@ import com.weekssa.opraeqforuapp.domain.dac.DacRecognitionState
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqMatchResolution
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityReport
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 import com.weekssa.opraeqforuapp.domain.library.SavedEqHeadphoneAssociation
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
@@ -91,6 +92,7 @@ fun MyDacRootScreen(
     onResetFiioJa11FromMyDac: suspend () -> String,
     onResetEw300FromMyDac: suspend () -> String = { "Reset is not available." },
     onQualifyEw300GlobalGain: suspend () -> String = { "EW300 gain qualification is not available." },
+    onRunEw300CapabilityBatch: suspend () -> Ew300CapabilityReport,
     onMessage: (String) -> Unit,
     onOperationStatus: (String, Boolean) -> Unit,
     modifier: Modifier = Modifier,
@@ -213,6 +215,7 @@ fun MyDacRootScreen(
             onConnect = { onConnectDac(DacDeviceId.SIMGOT_EW300) },
             onResetEq = onResetEw300FromMyDac,
             onQualifyGlobalGain = onQualifyEw300GlobalGain,
+            onRunCapabilityBatch = onRunEw300CapabilityBatch,
             onCaptureDacEq = onCaptureEw300DacEq,
             onOpenEditor = onOpenEw300Editor,
             onCloseEditor = onCloseEw300Editor,

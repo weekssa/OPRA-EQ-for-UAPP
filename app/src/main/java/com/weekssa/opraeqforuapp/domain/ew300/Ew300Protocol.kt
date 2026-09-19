@@ -5,6 +5,8 @@ import kotlin.math.roundToInt
 
 /** Guarded subset of the exact EW300 five-band HID protocol established by the evidence ledger. */
 object Ew300Protocol {
+    /** Raw register reads must not become canonical user EQs until exact-device scaling is proven. */
+    const val CANONICAL_CAPTURE_QUALIFIED = false
     const val VENDOR_ID = 0x31B2
     const val PRODUCT_ID = 0x0111
     const val REPORT_ID = 0x4B

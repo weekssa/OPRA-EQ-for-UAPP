@@ -5,6 +5,10 @@ The v0.7 candidate contains an Android-free, declarative capability runner in
 possible owner capability session bounded, repeatable, and understandable without asking the
 owner to interpret USB traffic.
 
+The runner is available in **My DAC → SIMGOT EW300 DSP → DEVICE → Run read-only report**. The app
+shows a plain-language result and can share either a readable report or the machine-readable JSON
+through Android's share sheet. Sharing is owner-initiated; the app does not upload the report.
+
 ## Default behavior
 
 - Require the exact EW300 fingerprint; VID/PID alone is rejected.
@@ -15,6 +19,15 @@ owner to interpret USB traffic.
   cross-flash command.
 - Export both a human-readable report and dependency-free JSON containing the plan version,
   fingerprint, case results, register values, stop state, and whether the post-run state is known.
+- Serialize the entire run through the same exclusive EW300 session gate used by EQ reads so a
+  report cannot interleave with another device operation.
+
+## Current product gates
+
+The report does not unlock a feature by itself. Raw EW300 frequency scaling, global-gain behavior,
+and persistence still require an evidence-backed decision. Until the frequency scale is resolved,
+the app may display the provisional readback for diagnostics but blocks saving it as a canonical
+Personal EQ. Normal Flash, Apply, Reset, and persistence also remain unavailable.
 
 Mutating or persistence cases are represented in the declarative model but are skipped unless a
 future signed diagnostic plan explicitly enables an exact operation after public research and
