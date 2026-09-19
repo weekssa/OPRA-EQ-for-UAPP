@@ -25,7 +25,7 @@ Android may ask you to allow installation from the browser or file manager used 
 
 ## EW300 DSP beta status
 
-The SIMGOT EW300 DSP cable is implemented on the v0.7 beta branch through the shared My DAC, finite-hardware, and Direct Flash framework. The exact five-band raw transport and software guards are covered by automated evidence; final gain, persistence, Reset, and complete-device behavior remain hardware-validation pending. It is not part of the public v0.6.0 release. See [EW300 status](docs/V0.7_EW300_DSP_STATUS.md) and [protocol notes](docs/EW300_DSP_PROTOCOL_NOTES.md).
+The SIMGOT EW300 DSP cable is implemented on the v0.7 beta branch through the shared My DAC, finite-hardware, and Direct Flash framework. The exact five-band raw transport and software guards are covered by automated evidence; final persistence, Reset, and complete-device behavior remain hardware-validation pending. Ordinary builds expose read-only diagnostics only. A controlled release-signed candidate can expose one exact-SHA, baseline-preserving, two-power-cycle Save qualification for the consolidated owner session. It is not part of the public v0.6.0 release. See [EW300 status](docs/V0.7_EW300_DSP_STATUS.md) and [protocol notes](docs/EW300_DSP_PROTOCOL_NOTES.md).
 
 ## v0.6.0 release
 
@@ -83,7 +83,7 @@ Exports use Android's system folder picker. EQ Library does not request broad st
 | **JCALLY JM12 (stock firmware)** | Hardware-only 5-band Direct Flash, readback verification, tracked playback-gain adjustment, Reset EQ to flat | **Hardware validation pending · power-cycle persistence unclaimed** |
 | **SIMGOT EW300 DSP cable** | v0.7 beta hardware-only EQ readback/capture through the existing My DAC framework; editor Apply, persistent Flash, and Reset remain capability-gated | **Beta candidate · hardware validation pending** |
 
-The SIMGOT EW300 DSP cable is not supported by v0.6.0. The v0.7 recovery candidate reuses the existing device registry, source-neutral canonical EQ pipeline, finite-hardware response adapter, authoritative DAC session, and My DAC/capture flows. Peak-only readback/capture is evidence-backed; non-Peak snapshots fail closed, and ordinary playback gain is excluded from captured EQs. Editor Apply, gain writes, persistence, Reset, and complete-device behavior remain hardware-validation pending. See the [v0.7 EW300 DSP implementation plan](docs/V0.7_EW300_DSP_IMPLEMENTATION_PLAN.md).
+The SIMGOT EW300 DSP cable is not supported by v0.6.0. The v0.7 recovery candidate reuses the existing device registry, source-neutral canonical EQ pipeline, finite-hardware response adapter, authoritative DAC session, and My DAC/capture flows. Peak-only readback/capture is evidence-backed; non-Peak snapshots fail closed, and ordinary playback gain is excluded from captured EQs. Editor Apply, gain writes, persistence, Reset, and complete-device behavior remain hardware-validation pending. The only mutating qualifier is compiled into a controlled signed candidate, requires a read-only PASS and explicit confirmation, and cannot unlock persistent features until temporary values and exact baseline restoration each survive full power removal. See the [v0.7 EW300 DSP implementation plan](docs/V0.7_EW300_DSP_IMPLEMENTATION_PLAN.md).
 
 Direct Flash is OFF by default for newly introduced hardware outputs. Add/Save never automatically writes to a DAC. Flash and Reset require explicit confirmation where the maintained device safety contract requires it.
 

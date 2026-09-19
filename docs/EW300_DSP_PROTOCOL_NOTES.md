@@ -264,3 +264,30 @@ digital DAC/playback gain rather than a dedicated EQ preamp, so the shared canon
 it from EQ identity and captured Personal EQ profiles, as it already does for Black Pearl playback
 gain. Peak-only Personal EQ capture is therefore enabled. This does **not** qualify writing `0x66`,
 persistence, Reset, or acoustic shelf labels; snapshots containing non-Peak codes remain rejected.
+
+### Signed-candidate persistence qualification boundary (2026-09-19)
+
+Public protocol implementations and third-party UI behavior support `0x53` only as a candidate Save
+command; they cannot demonstrate safe EW300 ordering, nonvolatile persistence, or restoration after
+complete power loss. The remaining question therefore requires the exact cable, but it does not
+justify another open-ended discovery loop.
+
+The recovery implementation contains one bounded qualifier with these constraints:
+
+- the action is hard-disabled and absent from the UI in ordinary builds, and enabled only by the controlled release-signing
+  workflow; the installed app must match the pinned release certificate and embed the exact
+  40-character source commit;
+- an allowlisted, exact-fingerprint read-only report must pass before the UI enables confirmation;
+- the complete 12-register baseline is captured and synchronously persisted before mutation;
+- only Band 1 Peak gain (`-0.1 dB`) and `0x66` playback gain (`-0.5 dB`) are reduced;
+- both temporary fields must read back exactly before one `0x53` Save is sent;
+- a detected physical detach and fresh full snapshot must prove the temporary values survived;
+- the two fields are restored to their exact baseline bytes, followed by one restoration Save;
+- a second detected physical detach and fresh full snapshot must prove exact baseline restoration;
+- a failed or uncertain mutation, Save, restoration, or verification becomes a terminal state and is
+  never automatically retried.
+
+A full PASS qualifies Save, Peak persistence, playback-gain persistence, and exact restoration only
+for the connected exact fingerprint. A first-cycle exact baseline result is reported as safely not
+persistent and leaves persistent features locked. No outcome qualifies shelf acoustics, firmware,
+bootloader, erase, calibration, recovery, cross-flash, or arbitrary KT02H20-family behavior.

@@ -16,8 +16,8 @@ import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Flasher
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300Flasher
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityBatch
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityReport
-import com.weekssa.opraeqforuapp.domain.ew300.Ew300GainQualificationResult
-import com.weekssa.opraeqforuapp.domain.ew300.Ew300GainQualifier
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300PersistenceQualificationResult
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300PersistenceQualifier
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300EditorApplyResult
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult
@@ -49,8 +49,8 @@ class HardwareEqRepository(
     private val blackPearlFlasher: BlackPearlFlasher,
     private val fiioJa11Flasher: FiioJa11Flasher,
     private val ew300Flasher: Ew300Flasher,
-    private val ew300GainQualifier: Ew300GainQualifier,
     private val ew300CapabilityBatch: Ew300CapabilityBatch,
+    private val ew300PersistenceQualifier: Ew300PersistenceQualifier,
 ) : Closeable {
     val recognitionState: StateFlow<DacRecognitionState> = dacSessionRepository.recognitionState
     val blackPearlConnectionState: StateFlow<BlackPearlConnectionState> =
@@ -234,12 +234,12 @@ class HardwareEqRepository(
         }
     }
 
-    suspend fun qualifyEw300GlobalGain(): Ew300GainQualificationResult =
-        dacSessionRepository.withExclusiveEw300Operation { ew300GainQualifier.qualify() }
-
     /** Runs the allowlisted read-only beta diagnostic under the shared EW300 operation gate. */
     suspend fun runEw300CapabilityBatch(): Ew300CapabilityReport =
         dacSessionRepository.withExclusiveEw300Operation { ew300CapabilityBatch.run() }
+
+    suspend fun advanceEw300PersistenceQualification(): Ew300PersistenceQualificationResult =
+        dacSessionRepository.withExclusiveEw300Operation { ew300PersistenceQualifier.advance() }
 
     suspend fun resetEw300(): Kt02h20FlatResetResult =
         dacSessionRepository.withExclusiveEw300Operation { ew300Flasher.resetToFlat() }.also {

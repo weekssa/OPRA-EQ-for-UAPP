@@ -26,6 +26,8 @@ class AndroidEw300UsbTransport(context: Context) : Ew300Transport, Closeable {
     val sessionGeneration: Long get() = hid.sessionGeneration
     override val deviceFingerprintKey: String?
         get() = hid.deviceFingerprintKey
+    override val detachGeneration: Long
+        get() = hid.detachGeneration
 
     fun connect() = hid.connect()
 
@@ -60,7 +62,7 @@ class AndroidEw300UsbTransport(context: Context) : Ew300Transport, Closeable {
         val previousGeneration = hid.sessionGeneration
         val previousDetachGeneration = hid.detachGeneration
         if (!hid.send(Ew300Protocol.commitReport(), settleMillis = 1_000L)) return false
-        return hid.awaitReconnectAfterMutation(previousGeneration, previousDetachGeneration)
+        return hid.awaitOptionalReconnectAfterMutation(previousGeneration, previousDetachGeneration)
     }
 
     override fun close() = hid.close()

@@ -148,8 +148,8 @@ class MainActivity : ComponentActivity() {
         },
         onFlashEw300FromMyDac = { profile -> resolve(viewModel.flashEw300FromMyDac(profile)) },
         onResetEw300FromMyDac = { resolve(viewModel.resetEw300ToFlat()) },
-        onQualifyEw300GlobalGain = { resolve(viewModel.qualifyEw300GlobalGain()) },
         onRunEw300CapabilityBatch = viewModel::runEw300CapabilityBatch,
+        onAdvanceEw300PersistenceQualification = viewModel::advanceEw300PersistenceQualification,
         onConnectBlackPearl = viewModel::connectBlackPearl,
         onResetBlackPearl = {
             resolve(viewModel.resetBlackPearlToFlat())

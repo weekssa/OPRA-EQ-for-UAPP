@@ -64,7 +64,10 @@ jobs:
           chmod 600 "$RUNNER_TEMP/eq-library-release.p12"
 
       - name: Run beta gate and build release APK
-        run: gradle :app:testDebugUnitTest :app:lintDebug :app:assembleRelease --stacktrace
+        run: >-
+          gradle :app:testDebugUnitTest :app:lintDebug :app:assembleRelease --stacktrace
+          -PEW300_PERSISTENCE_QUALIFICATION_ENABLED=true
+          -PCANDIDATE_SOURCE_SHA="$GITHUB_SHA"
 
       - name: Align sign and verify beta APK
         env:

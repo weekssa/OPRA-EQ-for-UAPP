@@ -2,6 +2,7 @@ package com.weekssa.opraeqforuapp.ui.screens
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertDoesNotExist
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -53,6 +54,7 @@ class Ew300DeviceStatusTest {
         composeRule.onNodeWithText("Result: PASS").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("Share readable report").performScrollTo().performClick()
         composeRule.onNodeWithText("Share technical report").performScrollTo().performClick()
+        composeRule.onNodeWithText("Start Save qualification").assertDoesNotExist()
 
         composeRule.runOnIdle {
             assertEquals(1, runCount)

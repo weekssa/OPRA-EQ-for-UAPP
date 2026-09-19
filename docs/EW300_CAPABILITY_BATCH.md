@@ -32,17 +32,30 @@ The report does not unlock a feature by itself. Public same-earpiece acoustic an
 raw EW300 frequency word as direct Hz. Independent KT02H20-family evidence classifies `0x66` as
 ordinary digital DAC/playback gain, so it is displayed but excluded from EQ identity and capture.
 Complete Peak-only readbacks can be saved as canonical Personal EQs; non-Peak snapshots fail closed
-because shelf acoustics remain unqualified. Normal Flash, Apply, Reset, and persistence remain
-unavailable.
+because shelf acoustics remain unqualified. Ordinary builds expose no persistence test and keep
+Flash, Apply, Reset, and persistence unavailable.
 
-Mutating or persistence cases are represented in the declarative model but are skipped unless a
-future signed diagnostic plan explicitly enables an exact operation after public research and
-automated analysis leave a necessary question unresolved. A skipped case is reported as
-inconclusive, not as a pass.
+The controlled signed-beta workflow is the only project build path that enables the bounded Save
+qualification. Ordinary builds hard-disable the UI gate. The installed app also verifies the repository-pinned release-signing certificate
+at runtime and embeds its exact 40-character source commit. The qualification remains
+locked until the read-only batch passes on the connected exact fingerprint, requires an explicit
+confirmation, lowers one Peak gain by 0.1 dB and playback gain by 0.5 dB, sends the provisional
+`0x53` Save once, and requires a complete unplug/reconnect before proceeding. It then restores the
+entire preserved baseline, sends Save once more, and requires a second complete unplug/reconnect
+before it can mark persistence qualified. A transfer or Save with an uncertain result becomes a
+terminal safe-stop; the app does not automatically retry it.
+
+Passing the first power-removal check qualifies only that the temporary Peak and playback-gain
+values persisted. Passing the second proves exact baseline restoration. Only the complete two-cycle
+PASS unlocks the existing Peak-only editor/Flash/Reset paths for that exact device fingerprint.
+If the temporary values do not survive the first power removal, the result is safely
+`NOT_PERSISTENT`, the baseline must match exactly, and persistent features remain locked.
 
 ## Hardware budget
 
 Run repository tests, public research, protocol comparison, emulator tests, and fault injection
-first. If a physical decision is still required, run this batch once in a guided session and share
-the exported reports. Do not repeat a failed mutation, and do not call a value persistent until a
-complete power-removal and fresh-read test passes on the exact signed candidate.
+first. The unresolved `0x53` persistence question is folded into the one consolidated signed-beta
+session; there is no separate exploratory loop. Run the read-only batch once, then follow the
+candidate's guided two-cycle qualification and share the combined readable/JSON report. Do not
+repeat a failed or uncertain mutation, and do not call a value persistent until both complete
+power-removal reads pass on the exact signed candidate.

@@ -2,6 +2,7 @@ package com.weekssa.opraeqforuapp.ui.screens
 
 import android.content.Context
 import android.content.Intent
+import androidx.compose.material3.AlertDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,6 +16,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -27,12 +29,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
+import com.weekssa.opraeqforuapp.BuildConfig
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
+import com.weekssa.opraeqforuapp.data.security.ReleaseSignatureGate
 import com.weekssa.opraeqforuapp.domain.dac.DacStateFreshness
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.dac.isAcousticallyActive
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityReport
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300Protocol
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300PersistenceQualificationResult
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300QualificationExport
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 import com.weekssa.opraeqforuapp.domain.library.SavedEqHeadphoneAssociation
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
@@ -53,8 +59,8 @@ internal fun Ew300MyDacContent(
     savedEqs: List<SavedEqRecord>,
     onConnect: () -> Unit,
     onResetEq: suspend () -> String,
-    onQualifyGlobalGain: suspend () -> String,
     onRunCapabilityBatch: suspend () -> Ew300CapabilityReport,
+    onAdvancePersistenceQualification: suspend () -> Ew300PersistenceQualificationResult,
     onCaptureDacEq: suspend (String, SavedEqHeadphoneAssociation?) -> String,
     onOpenEditor: () -> Unit,
     onCloseEditor: () -> Unit,
@@ -74,6 +80,44 @@ internal fun Ew300MyDacContent(
     var saveDacEqOpen by remember { mutableStateOf(false) }
     var capabilityReport by remember { mutableStateOf<Ew300CapabilityReport?>(null) }
     var capabilityBatchRunning by remember { mutableStateOf(false) }
+    var persistenceResult by remember { mutableStateOf<Ew300PersistenceQualificationResult?>(null) }
+    var persistenceRunning by remember { mutableStateOf(false) }
+    var persistenceConfirmationOpen by remember { mutableStateOf(false) }
+    val qualificationBuild = BuildConfig.EW300_PERSISTENCE_QUALIFICATION_ENABLED &&
+        BuildConfig.CANDIDATE_SOURCE_SHA.matches(Regex("[0-9a-fA-F]{40}")) &&
+        ReleaseSignatureGate.isPinnedReleaseSigner(context)
+    fun advancePersistenceQualification() {
+        if (!qualificationBuild || persistenceRunning) return
+        persistenceRunning = true
+        scope.launch {
+            runCatching { onAdvancePersistenceQualification() }
+                .onSuccess { persistenceResult = it }
+                .onFailure {
+                    onMessage("The EW300 qualification stopped before a result. Do not repeat the action; share the report.")
+                }
+            persistenceRunning = false
+        }
+    }
+    if (qualificationBuild && persistenceConfirmationOpen) {
+        AlertDialog(
+            onDismissRequest = { persistenceConfirmationOpen = false },
+            title = { Text("Start the one-time Save qualification?") },
+            text = {
+                Text(
+                    "Exact signed source: ${BuildConfig.CANDIDATE_SOURCE_SHA.take(12)}. The app will lower playback gain by 0.5 dB and one Peak band by 0.1 dB, verify both, send Save once, then preserve the complete baseline. You will unplug and reconnect twice to verify persistence and exact restoration. Stop immediately if the app reports uncertainty.",
+                )
+            },
+            confirmButton = {
+                Button(onClick = {
+                    persistenceConfirmationOpen = false
+                    advancePersistenceQualification()
+                }) { Text("Begin qualification") }
+            },
+            dismissButton = {
+                TextButton(onClick = { persistenceConfirmationOpen = false }) { Text("Cancel") }
+            },
+        )
+    }
     if (saveDacEqOpen && connectionState == Kt02h20ConnectionState.Connected) {
         BlackPearlSaveDacEqDialog(
             catalogState = catalogState,
@@ -156,11 +200,32 @@ internal fun Ew300MyDacContent(
                             }
                         },
                         onShareReadable = capabilityReport?.let { report ->
-                            { shareReport(context, "EW300 capability report", "text/plain", report.toReadableText()) }
+                            {
+                                shareReport(
+                                    context,
+                                    "EW300 capability report",
+                                    "text/plain",
+                                    Ew300QualificationExport(BuildConfig.CANDIDATE_SOURCE_SHA, report, persistenceResult).toReadableText(),
+                                )
+                            }
                         },
                         onShareJson = capabilityReport?.let { report ->
-                            { shareReport(context, "EW300 capability report JSON", "application/json", report.toJson()) }
+                            {
+                                shareReport(
+                                    context,
+                                    "EW300 capability report JSON",
+                                    "application/json",
+                                    Ew300QualificationExport(BuildConfig.CANDIDATE_SOURCE_SHA, report, persistenceResult).toJson(),
+                                )
+                            }
                         },
+                        qualificationBuild = qualificationBuild,
+                        candidateSourceSha = BuildConfig.CANDIDATE_SOURCE_SHA,
+                        persistenceResult = persistenceResult,
+                        persistenceRunning = persistenceRunning,
+                        persistenceEnabled = capabilityReport?.status == com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityCaseResult.Status.PASS,
+                        onStartPersistence = { persistenceConfirmationOpen = true },
+                        onContinuePersistence = ::advancePersistenceQualification,
                     )
                 }
             }
@@ -222,6 +287,13 @@ internal fun Ew300DeviceStatus(
     onRun: () -> Unit,
     onShareReadable: (() -> Unit)?,
     onShareJson: (() -> Unit)?,
+    qualificationBuild: Boolean = false,
+    candidateSourceSha: String = "local-unqualified",
+    persistenceResult: Ew300PersistenceQualificationResult? = null,
+    persistenceRunning: Boolean = false,
+    persistenceEnabled: Boolean = false,
+    onStartPersistence: () -> Unit = {},
+    onContinuePersistence: () -> Unit = {},
 ) {
     Text("SIMGOT EW300 DSP", style = MaterialTheme.typography.titleMedium)
     Text("USB 31B2:0111", style = MaterialTheme.typography.bodyMedium)
@@ -255,6 +327,55 @@ internal fun Ew300DeviceStatus(
         }
         OutlinedButton(onClick = requireNotNull(onShareJson), modifier = Modifier.fillMaxWidth()) {
             Text("Share technical report")
+        }
+    }
+    if (qualificationBuild) {
+        PremiumSectionLabel(text = "Signed-candidate Save qualification", divider = false)
+        Text(
+            "Candidate ${candidateSourceSha.take(12)}. This bounded flow makes two small safer changes and requires two complete power-removal checks before persistent Flash can unlock. It is absent from ordinary builds.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        val persistenceMessage = when (val result = persistenceResult) {
+            is Ew300PersistenceQualificationResult.AwaitingPowerCycle -> result.message
+            is Ew300PersistenceQualificationResult.Verified -> result.message
+            is Ew300PersistenceQualificationResult.NotPersistent -> result.message
+            is Ew300PersistenceQualificationResult.Failed -> result.message
+            null -> null
+        }
+        persistenceMessage?.let { message ->
+            Text(
+                message,
+                color = if (persistenceResult is Ew300PersistenceQualificationResult.Failed) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+            )
+        }
+        val awaitingPowerCycle = persistenceResult is Ew300PersistenceQualificationResult.AwaitingPowerCycle
+        val terminalResult = persistenceResult is Ew300PersistenceQualificationResult.Verified ||
+            persistenceResult is Ew300PersistenceQualificationResult.NotPersistent ||
+            persistenceResult is Ew300PersistenceQualificationResult.Failed
+        Button(
+            onClick = if (awaitingPowerCycle) onContinuePersistence else onStartPersistence,
+            enabled = !terminalResult && !persistenceRunning && (persistenceEnabled || awaitingPowerCycle),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(
+                when {
+                    persistenceRunning -> "Checking…"
+                    awaitingPowerCycle -> "Continue qualification"
+                    else -> "Start Save qualification"
+                },
+            )
+        }
+        if (!persistenceEnabled && !awaitingPowerCycle) {
+            Text(
+                "Run the read-only report successfully first.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

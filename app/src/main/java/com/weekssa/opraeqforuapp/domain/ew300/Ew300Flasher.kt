@@ -14,6 +14,9 @@ interface Ew300Transport {
     /** Strong identity for the currently open exact device/session. */
     val deviceFingerprintKey: String?
         get() = null
+    /** Monotonic physical detach evidence for power-removal qualification. */
+    val detachGeneration: Long
+        get() = 0L
     suspend fun readRegister(register: Int): ByteArray?
     suspend fun writeRegister(register: Int, data: ByteArray): Boolean
     suspend fun commit(): Boolean

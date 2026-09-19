@@ -11,6 +11,7 @@ import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityReport
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300PersistenceQualificationResult
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 import com.weekssa.opraeqforuapp.domain.library.SavedEqHeadphoneAssociation
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
@@ -57,8 +58,8 @@ class EqLibraryActions(
     val onResetFiioJa11FromMyDac: suspend () -> String,
     val onFlashEw300FromMyDac: suspend (OpraEqProfile) -> String,
     val onResetEw300FromMyDac: suspend () -> String,
-    val onQualifyEw300GlobalGain: suspend () -> String,
     val onRunEw300CapabilityBatch: suspend () -> Ew300CapabilityReport,
+    val onAdvanceEw300PersistenceQualification: suspend () -> Ew300PersistenceQualificationResult,
     val onConnectBlackPearl: () -> Unit,
     val onResetBlackPearl: suspend () -> String,
     val onConnectFiioJa11: () -> Unit,

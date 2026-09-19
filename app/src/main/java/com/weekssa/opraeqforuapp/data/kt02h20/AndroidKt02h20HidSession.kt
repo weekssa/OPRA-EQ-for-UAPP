@@ -256,6 +256,33 @@ internal class AndroidKt02h20HidSession(
         } ?: false
     }
 
+    /**
+     * Some exact-device Save implementations re-enumerate while others keep the HID session.
+     * Treat an unchanged healthy session as accepted; if detach was observed, require a fresh
+     * generation. The caller still owns value readback and power-removal verification.
+     */
+    suspend fun awaitOptionalReconnectAfterMutation(
+        previousGeneration: Long,
+        previousDetachGeneration: Long,
+        observationMillis: Long = REENUMERATION_OBSERVATION_MILLIS,
+        timeoutMillis: Long = RECONNECT_TIMEOUT_MILLIS,
+    ): Boolean {
+        if (previousGeneration <= 0L) return false
+        delay(observationMillis)
+        if (detachSequence == previousDetachGeneration) {
+            return currentSessionGeneration == previousGeneration &&
+                state.value is Kt02h20ConnectionState.Connected
+        }
+        return withTimeoutOrNull(timeoutMillis) {
+            state.first {
+                it is Kt02h20ConnectionState.Connected &&
+                    currentSessionGeneration != 0L &&
+                    currentSessionGeneration != previousGeneration
+            }
+            true
+        } ?: false
+    }
+
     private fun drainInput(current: UsbSession) {
         val buffer = ByteArray(maxOf(current.endpointIn.maxPacketSize, 64))
         repeat(8) {

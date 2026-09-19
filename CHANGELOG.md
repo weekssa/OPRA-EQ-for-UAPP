@@ -9,6 +9,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 ### Fixed
 
 - Added a guided, read-only EW300 capability report in My DAC with readable and JSON sharing.
+- Added a release-signed-candidate-only EW300 Save qualification tied to the exact source SHA and pinned installed signer. It preserves the complete baseline, uses two small safer reductions, requires two detected full unplug/reconnect checks, restores the baseline exactly, and makes every uncertain mutation a terminal no-retry stop. Ordinary builds hard-disable and omit the action from the UI.
 - Serialized EW300 diagnostics through the device operation gate and retained first-failure safe-stop behavior.
 - Gated EW300 Personal EQ capture until frequency scaling was resolved, then enabled peak-only capture while keeping ordinary playback gain out of the canonical EQ profile.
 - Added an Android emulator gate that verifies the EW300 diagnostic's safety wording, run action, result state, and both report-sharing actions.

@@ -11,6 +11,10 @@ val canonicalCatalogUrl = providers.gradleProperty("CANONICAL_CATALOG_URL")
     .orElse("https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/catalog-live/catalog/catalog.json")
 val latestReleaseApiUrl = providers.gradleProperty("LATEST_RELEASE_API_URL")
     .orElse("https://api.github.com/repos/weekssa/OPRA-EQ-for-UAPP/releases/latest")
+val ew300PersistenceQualificationEnabled = providers
+    .gradleProperty("EW300_PERSISTENCE_QUALIFICATION_ENABLED")
+    .orElse("false")
+val candidateSourceSha = providers.gradleProperty("CANDIDATE_SOURCE_SHA").orElse("local-unqualified")
 
 android {
     namespace = "com.weekssa.opraeqforuapp"
@@ -27,11 +31,15 @@ android {
         buildConfigField("String", "OPRA_CATALOG_URL", "\"${opraCatalogUrl.get()}\"")
         buildConfigField("String", "CANONICAL_CATALOG_URL", "\"${canonicalCatalogUrl.get()}\"")
         buildConfigField("String", "LATEST_RELEASE_API_URL", "\"${latestReleaseApiUrl.get()}\"")
+        buildConfigField("boolean", "EW300_PERSISTENCE_QUALIFICATION_ENABLED", "false")
+        buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"local-unqualified\"")
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
+            buildConfigField("boolean", "EW300_PERSISTENCE_QUALIFICATION_ENABLED", ew300PersistenceQualificationEnabled.get())
+            buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"${candidateSourceSha.get()}\"")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",

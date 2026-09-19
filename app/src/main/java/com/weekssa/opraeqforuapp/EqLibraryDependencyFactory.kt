@@ -29,6 +29,7 @@ import com.weekssa.opraeqforuapp.data.managed.ManagedHeadphonesRepository
 import com.weekssa.opraeqforuapp.data.managed.OpraEqDatabase
 import com.weekssa.opraeqforuapp.data.preferences.AppPreferencesRepository
 import com.weekssa.opraeqforuapp.data.preferences.eqLibraryPreferencesDataStore
+import com.weekssa.opraeqforuapp.data.security.ReleaseSignatureGate
 import com.weekssa.opraeqforuapp.data.sync.CatalogSyncCoordinator
 import com.weekssa.opraeqforuapp.data.update.AppUpdateCoordinator
 import com.weekssa.opraeqforuapp.data.update.GitHubReleaseUpdateRepository
@@ -36,7 +37,7 @@ import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlasher
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Flasher
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300Flasher
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityBatch
-import com.weekssa.opraeqforuapp.domain.ew300.Ew300GainQualifier
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300PersistenceQualifier
 import com.weekssa.opraeqforuapp.ui.EqLibraryViewModel
 import java.net.URL
 import kotlinx.coroutines.flow.map
@@ -125,9 +126,21 @@ internal fun createEqLibraryRuntimeDependencies(context: Context): EqLibraryRunt
         ew300Flasher = Ew300Flasher(
             transport = ew300Transport,
             gainStateStore = ew300GainStateStore,
+            persistenceQualified = {
+                ew300Transport.deviceFingerprintKey
+                    ?.let(ew300GainStateStore::isPersistenceQualified) == true
+            },
         ),
-        ew300GainQualifier = Ew300GainQualifier(ew300Transport, ew300GainStateStore),
         ew300CapabilityBatch = Ew300CapabilityBatch(ew300Transport),
+        ew300PersistenceQualifier = Ew300PersistenceQualifier(
+            transport = ew300Transport,
+            stateStore = ew300GainStateStore,
+            authorizationGate = {
+                BuildConfig.EW300_PERSISTENCE_QUALIFICATION_ENABLED &&
+                    BuildConfig.CANDIDATE_SOURCE_SHA.matches(Regex("[0-9a-fA-F]{40}")) &&
+                    ReleaseSignatureGate.isPinnedReleaseSigner(appContext)
+            },
+        ),
     )
 
     return EqLibraryRuntimeDependencies(
