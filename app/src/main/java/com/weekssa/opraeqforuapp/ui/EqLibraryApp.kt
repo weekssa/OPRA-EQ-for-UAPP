@@ -95,6 +95,7 @@ fun EqLibraryApp(
     val exportCurrentness = state.exportCurrentness
     val blackPearlConnectionState = state.blackPearlConnectionState
     val fiioJa11ConnectionState = state.fiioJa11ConnectionState
+    val ew300ConnectionState = state.ew300ConnectionState
     val jcallyJm12ConnectionState = state.jcallyJm12ConnectionState
 
     val onConnectDacForMyDac = actions.onConnectDacForMyDac
@@ -120,10 +121,14 @@ fun EqLibraryApp(
     val onSetFiioJa11UacMode = actions.onSetFiioJa11UacMode
     val onFlashFiioJa11FromMyDac = actions.onFlashFiioJa11FromMyDac
     val onResetFiioJa11FromMyDac = actions.onResetFiioJa11FromMyDac
+    val onFlashEw300FromMyDac = actions.onFlashEw300FromMyDac
+    val onResetEw300FromMyDac = actions.onResetEw300FromMyDac
     val onConnectBlackPearl = actions.onConnectBlackPearl
     val onResetBlackPearl = actions.onResetBlackPearl
     val onConnectFiioJa11 = actions.onConnectFiioJa11
     val onResetFiioJa11 = actions.onResetFiioJa11
+    val onConnectEw300 = actions.onConnectEw300
+    val onResetEw300 = actions.onResetEw300
     val onConnectJcallyJm12 = actions.onConnectJcallyJm12
     val onResetJcallyJm12 = actions.onResetJcallyJm12
     val onFlashManagedProfile = actions.onFlashManagedProfile
@@ -163,6 +168,7 @@ fun EqLibraryApp(
     val onActiveExportTargetChange = actions.onActiveExportTargetChange
     val onDirectBlackPearlFlashEnabledChange = actions.onDirectBlackPearlFlashEnabledChange
     val onDirectFiioJa11FlashEnabledChange = actions.onDirectFiioJa11FlashEnabledChange
+    val onDirectEw300FlashEnabledChange = actions.onDirectEw300FlashEnabledChange
 
     var selectedDestinationName by rememberSaveable { mutableStateOf(EqLibraryDestination.MyEqs.name) }
     var selectedManagedProductId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -598,6 +604,9 @@ fun EqLibraryApp(
                                 directFiioJa11FlashEnabled = appPreferences.directFiioJa11FlashEnabled,
                                 fiioJa11ConnectionState = fiioJa11ConnectionState,
                                 onConnectFiioJa11 = onConnectFiioJa11,
+                                directEw300FlashEnabled = appPreferences.directEw300FlashEnabled,
+                                ew300ConnectionState = ew300ConnectionState,
+                                onConnectEw300 = onConnectEw300,
                                 directJcallyJm12FlashEnabled = appPreferences.directJcallyJm12FlashEnabled,
                                 jcallyJm12ConnectionState = jcallyJm12ConnectionState,
                                 onConnectJcallyJm12 = onConnectJcallyJm12,
@@ -640,6 +649,10 @@ fun EqLibraryApp(
                                 fiioJa11ConnectionState = fiioJa11ConnectionState,
                                 onConnectFiioJa11 = onConnectFiioJa11,
                                 onResetFiioJa11 = onResetFiioJa11,
+                                directEw300FlashEnabled = appPreferences.directEw300FlashEnabled,
+                                ew300ConnectionState = ew300ConnectionState,
+                                onConnectEw300 = onConnectEw300,
+                                onResetEw300 = onResetEw300,
                                 directJcallyJm12FlashEnabled = appPreferences.directJcallyJm12FlashEnabled,
                                 jcallyJm12ConnectionState = jcallyJm12ConnectionState,
                                 onConnectJcallyJm12 = onConnectJcallyJm12,
@@ -664,6 +677,7 @@ fun EqLibraryApp(
                         catalogState = state.catalogState,
                         blackPearlConnectionState = state.blackPearlConnectionState,
                         fiioJa11ConnectionState = state.fiioJa11ConnectionState,
+                        ew300ConnectionState = state.ew300ConnectionState,
                         blackPearlHardwareEqState = state.blackPearlHardwareEqState,
                         fiioJa11HardwareEqState = state.fiioJa11HardwareEqState,
                         blackPearlHardwareEqMatch = state.blackPearlHardwareEqMatch,
@@ -694,6 +708,7 @@ fun EqLibraryApp(
                         onSetFiioJa11HeadsetControl = onSetFiioJa11HeadsetControl,
                         onSetFiioJa11UacMode = onSetFiioJa11UacMode,
                         onResetFiioJa11FromMyDac = onResetFiioJa11FromMyDac,
+                        onResetEw300FromMyDac = onResetEw300FromMyDac,
                         onMessage = ::showMessage,
                         onOperationStatus = ::showOperationStatus,
                         modifier = Modifier.fillMaxSize(),
@@ -711,6 +726,8 @@ fun EqLibraryApp(
                         onFlashBlackPearlProfile = onFlashBlackPearlFromMyDac,
                         fiioJa11ConnectionState = fiioJa11ConnectionState,
                         onFlashFiioJa11Profile = onFlashFiioJa11FromMyDac,
+                        ew300ConnectionState = ew300ConnectionState,
+                        onFlashEw300Profile = onFlashEw300FromMyDac,
                         onToggleFavorite = onToggleFavorite,
                         onSaveGeneralPresets = { presets ->
                             val presetIds = presets.mapTo(mutableSetOf(), GeneralEqPreset::id)
@@ -749,6 +766,7 @@ fun EqLibraryApp(
                         onActiveExportTargetChange = onActiveExportTargetChange,
                         onDirectBlackPearlFlashEnabledChange = onDirectBlackPearlFlashEnabledChange,
                         onDirectFiioJa11FlashEnabledChange = onDirectFiioJa11FlashEnabledChange,
+                        onDirectEw300FlashEnabledChange = onDirectEw300FlashEnabledChange,
                         hiddenCanonicalProfileIds = appPreferences.hiddenCanonicalProfileIds,
                         onUnhideCanonicalProfiles = onUnhideCanonicalProfiles,
                         onMessage = ::showMessage,

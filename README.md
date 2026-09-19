@@ -23,6 +23,10 @@ The public v0.6.0 APK is `EQ-Library-v0.6.0.apk`. Its SHA-256 is:
 
 Android may ask you to allow installation from the browser or file manager used to open the APK because GitHub Releases are installed outside an app store. EQ Library itself does not request package-install permission and never silently installs updates.
 
+## EW300 DSP discovery status
+
+EW300 DSP cable support is in evidence collection and is not available in the public app. The separate `EW300 USB evidence` diagnostic only enumerates USB and, after an explicit button press and Android permission, reads standard descriptors. Signed diagnostic artifacts must pass APK launcher-definition and Android 36 cold-launch checks in addition to build/signing checks. See [discovery status](docs/V0.7_EW300_DSP_STATUS.md) and [capture checklist](docs/EW300_DSP_HANDS_ON_CHECKLIST.md).
+
 ## v0.6.0 release
 
 v0.6.0 is publicly released from merge commit `e5ffa5d00862edc3b79bf52e1508db5244845e94`. The signed release build passed the controlled publication workflow; the focused Pixel 9 Black Pearl/UI smoke test passed on exact behavior evidence source `eef5633e18a4ac311f110493e29633bf382675e3`.

@@ -45,6 +45,7 @@ fun MyDacRootScreen(
     catalogState: CatalogState,
     blackPearlConnectionState: BlackPearlConnectionState,
     fiioJa11ConnectionState: Kt02h20ConnectionState,
+    ew300ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
     blackPearlHardwareEqState: HardwareEqSnapshotState,
     fiioJa11HardwareEqState: HardwareEqSnapshotState,
     blackPearlHardwareEqMatch: HardwareEqMatchResolution?,
@@ -75,12 +76,13 @@ fun MyDacRootScreen(
     onSetFiioJa11HeadsetControl: (Boolean) -> Unit,
     onSetFiioJa11UacMode: (FiioJa11Protocol.UacMode) -> Unit,
     onResetFiioJa11FromMyDac: suspend () -> String,
+    onResetEw300FromMyDac: suspend () -> String = { "Reset is not available." },
     onMessage: (String) -> Unit,
     onOperationStatus: (String, Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val recognized = recognitionState.recognizedDeviceIds
-        .filterTo(linkedSetOf()) { it == DacDeviceId.TRN_BLACK_PEARL || it == DacDeviceId.FIIO_JA11 }
+        .filterTo(linkedSetOf()) { it == DacDeviceId.TRN_BLACK_PEARL || it == DacDeviceId.FIIO_JA11 || it == DacDeviceId.SIMGOT_EW300 }
     var selectedName by rememberSaveable { mutableStateOf<String?>(null) }
 
     LaunchedEffect(recognized, selectedName) {
@@ -117,6 +119,7 @@ fun MyDacRootScreen(
                     title = when (deviceId) {
                         DacDeviceId.TRN_BLACK_PEARL -> "TRN Black Pearl"
                         DacDeviceId.FIIO_JA11 -> "FiiO JA11"
+                        DacDeviceId.SIMGOT_EW300 -> "SIMGOT EW300 DSP"
                         DacDeviceId.JCALLY_JM12_STOCK -> "Unsupported device"
                     },
                     supportingText = "Manage this DAC",
@@ -141,6 +144,7 @@ fun MyDacRootScreen(
                 catalogState = catalogState,
                 blackPearlConnectionState = blackPearlConnectionState,
                 fiioJa11ConnectionState = Kt02h20ConnectionState.Disconnected,
+                ew300ConnectionState = Kt02h20ConnectionState.Disconnected,
                 jcallyJm12ConnectionState = Kt02h20ConnectionState.Disconnected,
                 blackPearlHardwareEqState = blackPearlHardwareEqState,
                 blackPearlHardwareEqMatch = blackPearlHardwareEqMatch,
@@ -181,6 +185,14 @@ fun MyDacRootScreen(
             onSetHeadsetControl = onSetFiioJa11HeadsetControl,
             onSetUacMode = onSetFiioJa11UacMode,
             onResetEq = onResetFiioJa11FromMyDac,
+            onMessage = onMessage,
+            modifier = modifier,
+        )
+
+        DacDeviceId.SIMGOT_EW300 -> Ew300MyDacContent(
+            connectionState = ew300ConnectionState,
+            onConnect = { onConnectDac(DacDeviceId.SIMGOT_EW300) },
+            onResetEq = onResetEw300FromMyDac,
             onMessage = onMessage,
             modifier = modifier,
         )

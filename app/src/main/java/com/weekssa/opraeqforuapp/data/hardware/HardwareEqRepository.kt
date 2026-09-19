@@ -13,6 +13,7 @@ import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditWorkingCopy
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotBundle
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Flasher
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300Flasher
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult
 import java.io.Closeable
@@ -42,12 +43,15 @@ class HardwareEqRepository(
     private val dacSessionRepository: DacSessionRepository,
     private val blackPearlFlasher: BlackPearlFlasher,
     private val fiioJa11Flasher: FiioJa11Flasher,
+    private val ew300Flasher: Ew300Flasher,
 ) : Closeable {
     val recognitionState: StateFlow<DacRecognitionState> = dacSessionRepository.recognitionState
     val blackPearlConnectionState: StateFlow<BlackPearlConnectionState> =
         dacSessionRepository.blackPearlConnectionState
     val fiioJa11ConnectionState: StateFlow<Kt02h20ConnectionState> =
         dacSessionRepository.fiioJa11ConnectionState
+    val ew300ConnectionState: StateFlow<Kt02h20ConnectionState> =
+        dacSessionRepository.ew300ConnectionState
 
     private val mutableUnsupportedJcallyState = MutableStateFlow<Kt02h20ConnectionState>(
         Kt02h20ConnectionState.Disconnected,
@@ -87,6 +91,7 @@ class HardwareEqRepository(
 
     fun connectBlackPearl() = dacSessionRepository.connectBlackPearl()
     fun connectFiioJa11() = dacSessionRepository.connectFiioJa11()
+    fun connectEw300() = dacSessionRepository.connectEw300()
 
     @Deprecated("JCALLY is not part of the current product; remove remaining callers.")
     fun connectJcallyJm12() = Unit
@@ -96,6 +101,9 @@ class HardwareEqRepository(
 
     fun isFiioJa11SessionCurrent(sessionGeneration: Long): Boolean =
         dacSessionRepository.isFiioJa11SessionCurrent(sessionGeneration)
+
+    fun isEw300SessionCurrent(sessionGeneration: Long): Boolean =
+        dacSessionRepository.isEw300SessionCurrent(sessionGeneration)
 
     @Deprecated("JCALLY is not part of the current product; remove remaining callers.")
     fun isJcallyJm12SessionCurrent(sessionGeneration: Long): Boolean = false
@@ -175,6 +183,20 @@ class HardwareEqRepository(
             scheduleFiioJa11SnapshotRefresh()
         }
     }
+
+    suspend fun flashEw300(profile: OpraEqProfile): Kt02h20FlashResult {
+        return try {
+            dacSessionRepository.withExclusiveEw300Operation {
+                ew300Flasher.flash(profile)
+            }
+        } finally {
+            // EW300 does not yet expose a production snapshot reader; the next flash always
+            // performs its own complete preflight and final readback.
+        }
+    }
+
+    suspend fun resetEw300(): Kt02h20FlatResetResult =
+        dacSessionRepository.withExclusiveEw300Operation { ew300Flasher.resetToFlat() }
 
     @Deprecated("JCALLY is not part of the current product; remove remaining callers.")
     suspend fun flashJcallyJm12(profile: OpraEqProfile): Kt02h20FlashResult =
