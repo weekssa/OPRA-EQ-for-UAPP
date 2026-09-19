@@ -66,6 +66,13 @@ object HardwareEqEditSpecs {
         minimumVerifiedHeadroomGainDb = null,
     )
 
+    val SIMGOT_EW300: HardwareEqEditSpec = fromFiniteHardwareSpec(
+        deviceId = DacDeviceId.SIMGOT_EW300,
+        spec = HardwareEqDeviceSpecs.SIMGOT_EW300,
+        headroomMechanism = HardwareEqHeadroomMechanism.DEDICATED_EQ_PREAMP,
+        minimumVerifiedHeadroomGainDb = null,
+    )
+
     private fun fromFiniteHardwareSpec(
         deviceId: DacDeviceId,
         spec: FiveBandDeviceSpec,

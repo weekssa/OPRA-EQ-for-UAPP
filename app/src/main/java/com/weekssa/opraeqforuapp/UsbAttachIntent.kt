@@ -10,7 +10,12 @@ import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
 internal fun Intent.supportedAttachedDacDeviceId(): DacDeviceId? {
     if (action != UsbManager.ACTION_USB_DEVICE_ATTACHED) return null
     val device = attachedUsbDevice() ?: return null
-    return supportedDacDeviceId(device.vendorId, device.productId)
+    return supportedDacDeviceId(
+        vendorId = device.vendorId,
+        productId = device.productId,
+        manufacturer = runCatching { device.manufacturerName }.getOrNull(),
+        productName = runCatching { device.productName }.getOrNull(),
+    )
 }
 
 private fun Intent.attachedUsbDevice(): UsbDevice? =

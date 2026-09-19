@@ -12,6 +12,35 @@ import com.weekssa.opraeqforuapp.domain.kt02h20.FiveBandQuantization
  * changed to fit a device.
  */
 object HardwareEqDeviceSpecs {
+    val SIMGOT_EW300 = FiveBandDeviceSpec(
+        stableId = "simgot-ew300-dsp",
+        displayName = "SIMGOT EW300 DSP",
+        capabilities = DeviceEqCapabilities(
+            maxBands = 5,
+            // Public KT02H20 tools describe additional codes, but their acoustic meaning is not
+            // yet proven on the exact EW300 cable. Peak is the only production-exposed type until
+            // the bounded capability session confirms the shelf behavior.
+            supportedBandTypes = setOf("peak_dip"),
+            minFrequencyHz = 20.0,
+            maxFrequencyHz = 20_000.0,
+            minGainDb = -12.0,
+            maxGainDb = 12.0,
+            minQ = 0.1,
+            maxQ = 10.0,
+            // Candidate wire mapping observed in the evidence ledger; product exposure remains
+            // guarded until the exact-device beta gate qualifies gain and persistence semantics.
+            minPreampDb = -64.0,
+            maxPreampDb = 63.5,
+        ),
+        quantization = FiveBandQuantization(
+            frequencyStepHz = 1.0,
+            gainStepDb = 0.1,
+            qStep = 0.001,
+            preampStepDb = 0.5,
+        ),
+        representationVersion = 2,
+    )
+
     val FIIO_JA11 = FiveBandDeviceSpec(
         stableId = "fiio-ja11",
         displayName = "FiiO JA11",

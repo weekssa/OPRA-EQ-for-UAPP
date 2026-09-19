@@ -91,6 +91,8 @@ fun BrowseOpraScreen(
     onFlashBlackPearlProfile: (suspend (OpraEqProfile) -> String)? = null,
     fiioJa11ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
     onFlashFiioJa11Profile: (suspend (OpraEqProfile) -> String)? = null,
+    ew300ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
+    onFlashEw300Profile: (suspend (OpraEqProfile) -> String)? = null,
     onToggleFavorite: suspend (OpraEqProfile, String, String) -> Boolean,
     onSaveGeneralPresets: suspend (List<GeneralEqPreset>) -> Int = { 0 },
     onHideCanonicalProfiles: suspend (Set<String>) -> Unit = {},
@@ -195,6 +197,8 @@ fun BrowseOpraScreen(
                         onFlashBlackPearlProfile = onFlashBlackPearlProfile,
                         fiioJa11Connected = fiioJa11ConnectionState is Kt02h20ConnectionState.Connected,
                         onFlashFiioJa11Profile = onFlashFiioJa11Profile,
+                        onFlashEw300Profile = onFlashEw300Profile,
+                        ew300Connected = ew300ConnectionState is Kt02h20ConnectionState.Connected,
                         modifier = Modifier.weight(1f),
                     )
                     vendor != null -> VendorProducts(

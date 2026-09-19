@@ -10,6 +10,8 @@ import com.weekssa.opraeqforuapp.domain.dac.DacControlValue
 import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityReport
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300PersistenceQualificationResult
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 import com.weekssa.opraeqforuapp.domain.library.SavedEqHeadphoneAssociation
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
@@ -31,7 +33,18 @@ class EqLibraryActions(
     val onUseSafeBlackPearlEditorGain: () -> Unit,
     val onResetBlackPearlEditorLocalEdits: () -> Unit,
     val onApplyBlackPearlEditor: (Boolean) -> Unit,
+    val onOpenEw300Editor: () -> Unit,
+    val onBackEw300Editor: () -> Boolean,
+    val onCloseEw300Editor: () -> Unit,
+    val onSelectEw300EditorBand: (Int) -> Unit,
+    val onShowEw300EditorAllBands: () -> Unit,
+    val onShowEw300EditorReview: () -> Unit,
+    val onUpdateEw300EditorBand: (Int, EqFilterType, Double, Double, Double) -> Unit,
+    val onUseSafeEw300EditorGain: () -> Unit,
+    val onResetEw300EditorLocalEdits: () -> Unit,
+    val onApplyEw300Editor: (Boolean) -> Unit,
     val onCaptureBlackPearlDacEq: suspend (String, SavedEqHeadphoneAssociation?) -> String,
+    val onCaptureEw300DacEq: suspend (String, SavedEqHeadphoneAssociation?) -> String,
     val onFlashBlackPearlFromMyDac: suspend (OpraEqProfile) -> String,
     val onResetBlackPearlFromMyDac: suspend () -> String,
     val onReadBlackPearlQualificationControls: () -> Unit,
@@ -43,10 +56,16 @@ class EqLibraryActions(
     val onSetFiioJa11UacMode: (FiioJa11Protocol.UacMode) -> Unit,
     val onFlashFiioJa11FromMyDac: suspend (OpraEqProfile) -> String,
     val onResetFiioJa11FromMyDac: suspend () -> String,
+    val onFlashEw300FromMyDac: suspend (OpraEqProfile) -> String,
+    val onResetEw300FromMyDac: suspend () -> String,
+    val onRunEw300CapabilityBatch: suspend () -> Ew300CapabilityReport,
+    val onAdvanceEw300PersistenceQualification: suspend () -> Ew300PersistenceQualificationResult,
     val onConnectBlackPearl: () -> Unit,
     val onResetBlackPearl: suspend () -> String,
     val onConnectFiioJa11: () -> Unit,
     val onResetFiioJa11: suspend () -> String,
+    val onConnectEw300: () -> Unit,
+    val onResetEw300: suspend () -> String,
     val onConnectJcallyJm12: () -> Unit,
     val onResetJcallyJm12: suspend () -> String,
     val onFlashManagedProfile: suspend (String, String) -> String,
@@ -86,5 +105,6 @@ class EqLibraryActions(
     val onActiveExportTargetChange: (ExportDevice) -> Unit,
     val onDirectBlackPearlFlashEnabledChange: (Boolean) -> Unit,
     val onDirectFiioJa11FlashEnabledChange: (Boolean) -> Unit,
+    val onDirectEw300FlashEnabledChange: (Boolean) -> Unit,
     val onDirectJcallyJm12FlashEnabledChange: (Boolean) -> Unit,
 )

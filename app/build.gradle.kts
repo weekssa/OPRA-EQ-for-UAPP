@@ -11,6 +11,10 @@ val canonicalCatalogUrl = providers.gradleProperty("CANONICAL_CATALOG_URL")
     .orElse("https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/catalog-live/catalog/catalog.json")
 val latestReleaseApiUrl = providers.gradleProperty("LATEST_RELEASE_API_URL")
     .orElse("https://api.github.com/repos/weekssa/OPRA-EQ-for-UAPP/releases/latest")
+val ew300PersistenceQualificationEnabled = providers
+    .gradleProperty("EW300_PERSISTENCE_QUALIFICATION_ENABLED")
+    .orElse("false")
+val candidateSourceSha = providers.gradleProperty("CANDIDATE_SOURCE_SHA").orElse("local-unqualified")
 
 android {
     namespace = "com.weekssa.opraeqforuapp"
@@ -20,17 +24,22 @@ android {
         applicationId = "com.weekssa.opraeqforuapp"
         minSdk = 26
         targetSdk = 36
-        versionCode = 6
-        versionName = "0.6.0"
+        versionCode = 7
+        versionName = "0.7.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "OPRA_CATALOG_URL", "\"${opraCatalogUrl.get()}\"")
         buildConfigField("String", "CANONICAL_CATALOG_URL", "\"${canonicalCatalogUrl.get()}\"")
         buildConfigField("String", "LATEST_RELEASE_API_URL", "\"${latestReleaseApiUrl.get()}\"")
+        buildConfigField("boolean", "EW300_PERSISTENCE_QUALIFICATION_ENABLED", "false")
+        buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"local-unqualified\"")
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
+            buildConfigField("boolean", "EW300_PERSISTENCE_QUALIFICATION_ENABLED", ew300PersistenceQualificationEnabled.get())
+            buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"${candidateSourceSha.get()}\"")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
@@ -85,7 +94,12 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("com.google.truth:truth:1.4.4")
+    androidTestImplementation(composeBom)
+    androidTestImplementation("androidx.test:runner:1.7.0")
+    androidTestImplementation("androidx.test.ext:junit:1.3.0")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
 }
