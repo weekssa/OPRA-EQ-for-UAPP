@@ -39,9 +39,6 @@ fun buildEw300CapturedEqDraft(
     require(snapshot.filters.all { it.type in SUPPORTED_CAPTURE_TYPES }) {
         "This EW300 EQ contains an unsupported filter type."
     }
-    require(snapshot.dedicatedEqPreampDb != null) {
-        "The EW300 global EQ gain was not present in the verified snapshot."
-    }
     require(snapshotBundle.fingerprint.deviceId == snapshot.deviceId) {
         "The verified snapshot and native fingerprint belong to different devices."
     }
@@ -57,7 +54,9 @@ fun buildEw300CapturedEqDraft(
         },
         link = null,
         profileType = "parametric_eq",
-        preampGainDb = snapshot.dedicatedEqPreampDb,
+        // EW300 register 0x66 is playback gain. Like Black Pearl playback gain, it is device state
+        // rather than a dedicated PEQ preamp and must not be baked into a captured canonical EQ.
+        preampGainDb = null,
         bands = snapshot.filters.sortedBy { it.index }.map { filter ->
             OpraBand(
                 type = when (filter.type) {
@@ -90,6 +89,4 @@ fun buildEw300CapturedEqDraft(
 
 private val SUPPORTED_CAPTURE_TYPES = setOf(
     EqFilterType.PEAK,
-    EqFilterType.LOW_SHELF,
-    EqFilterType.HIGH_SHELF,
 )

@@ -227,3 +227,40 @@ References:
 - <https://github.com/jeromeof/devicePEQ>
 - <https://github.com/jeromeof/devicePEQ/blob/master/devicePEQ/ktmicroUsbHidHandler.js>
 - <https://github.com/Ircama/ja11-config>
+
+### Frequency-scale resolution by acoustic cross-check (2026-09-19)
+
+The broad Hangout.Audio fallback applies a two-times frequency compensation, while the independent
+`gxcreator/ktmicro-tools` KT02H20 reconstruction treats the stored word as Hz directly. Repository
+evidence alone could not choose safely between those interpretations.
+
+The recovery audit resolved that conflict without another owner hardware session by comparing the
+captured untouched stock filters with public same-earpiece measurements from AudioAmigo. The source
+set contains left/right measurements of **Simgot EW300 DSP Silver** through its stock USB-C DSP cable
+and the same DSP earpieces through a passive 3.5 mm cable. `tools/analyze_ew300_frequency_scale.py`
+averages channels, subtracts the passive-cable curve from the DSP-cable curve, removes only the
+measurement-level offset, and fits the captured five Peak filters using RBJ biquad response math.
+
+Fit over 30 Hz–10 kHz:
+
+| Raw-word scale | Correlation | RMS error |
+| --- | ---: | ---: |
+| 0.5× | -0.011 | 1.421 dB |
+| **1× (raw word = Hz)** | **0.989** | **0.152 dB** |
+| 2× | 0.050 | 1.156 dB |
+| 4× | -0.304 | 1.292 dB |
+
+The 1× interpretation is therefore the evidence-backed EW300 frequency mapping. This conclusion is
+specific to the captured EW300 stock profile and exact product family; it does not promote generic
+VID/PID fallback behavior. The raw measurement files are not redistributed. Reproduction uses the
+four public REW exports named in the AudioAmigo phone book:
+
+- `Simgot EW300 DSP Silver L/R` (stock USB-C DSP cable)
+- `Simgot EW300 DSP Silver 3.5mm L/R` (same earpieces, passive cable)
+- <https://audioamigo.squig.link/?share=Simgot_EW300_DSP_Silver%2CSimgot_EW300_DSP_Silver_3.5mm>
+
+This closes the frequency-scale question. Independent KT02H20-family evidence identifies `0x66` as
+digital DAC/playback gain rather than a dedicated EQ preamp, so the shared canonical model excludes
+it from EQ identity and captured Personal EQ profiles, as it already does for Black Pearl playback
+gain. Peak-only Personal EQ capture is therefore enabled. This does **not** qualify writing `0x66`,
+persistence, Reset, or acoustic shelf labels; snapshots containing non-Peak codes remain rejected.

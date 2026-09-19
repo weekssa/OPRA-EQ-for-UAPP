@@ -196,6 +196,7 @@ private fun Ew300EqStatus(
         divider = false,
     )
     bundle.snapshot.dedicatedEqPreampDb?.let { Text("Global EQ gain: ${"%.1f".format(it)} dB") }
+    bundle.snapshot.playbackGainDb?.let { Text("Playback gain: ${"%.1f".format(it)} dB") }
     Text(
         "${bundle.snapshot.filters.count { it.isAcousticallyActive() }} native bands were read. Acoustic filter labels and persistent writes remain pending exact-EW300 qualification.",
         style = MaterialTheme.typography.bodySmall,

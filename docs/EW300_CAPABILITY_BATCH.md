@@ -28,10 +28,12 @@ result presentation, and both share actions without requiring or simulating phys
 
 ## Current product gates
 
-The report does not unlock a feature by itself. Raw EW300 frequency scaling, global-gain behavior,
-and persistence still require an evidence-backed decision. Until the frequency scale is resolved,
-the app may display the provisional readback for diagnostics but blocks saving it as a canonical
-Personal EQ. Normal Flash, Apply, Reset, and persistence also remain unavailable.
+The report does not unlock a feature by itself. Public same-earpiece acoustic analysis resolves the
+raw EW300 frequency word as direct Hz. Independent KT02H20-family evidence classifies `0x66` as
+ordinary digital DAC/playback gain, so it is displayed but excluded from EQ identity and capture.
+Complete Peak-only readbacks can be saved as canonical Personal EQs; non-Peak snapshots fail closed
+because shelf acoustics remain unqualified. Normal Flash, Apply, Reset, and persistence remain
+unavailable.
 
 Mutating or persistence cases are represented in the declarative model but are skipped unless a
 future signed diagnostic plan explicitly enables an exact operation after public research and

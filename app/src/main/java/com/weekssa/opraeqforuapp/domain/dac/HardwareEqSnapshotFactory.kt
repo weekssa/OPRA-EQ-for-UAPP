@@ -41,15 +41,17 @@ object HardwareEqSnapshotFactory {
                     qUnits = (band.q * 1000.0).roundToLong(),
                 )
             },
-            dedicatedEqPreampUnits = (globalGainDb * Ew300Protocol.GLOBAL_GAIN_STEPS_PER_DB).roundToLong(),
+            // KT-family evidence identifies 0x66 as ordinary digital DAC/playback gain, not a
+            // dedicated EQ preamp. It must not change EQ identity or enter captured EQ profiles.
+            dedicatedEqPreampUnits = null,
         )
         return HardwareEqSnapshotBundle(
             snapshot = HardwareEqSnapshot(
                 deviceId = DacDeviceId.SIMGOT_EW300,
                 sessionGeneration = sessionGeneration,
                 filters = filters,
-                dedicatedEqPreampDb = globalGainDb,
-                playbackGainDb = null,
+                dedicatedEqPreampDb = null,
+                playbackGainDb = globalGainDb,
                 verifiedAtEpochMillis = verifiedAtEpochMillis,
             ),
             fingerprint = fingerprint,

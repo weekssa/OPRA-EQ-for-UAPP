@@ -10,8 +10,10 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 - Added a guided, read-only EW300 capability report in My DAC with readable and JSON sharing.
 - Serialized EW300 diagnostics through the device operation gate and retained first-failure safe-stop behavior.
-- Blocked EW300 Personal EQ capture until exact-device frequency scaling is qualified, preventing provisional register values from becoming canonical user EQs.
+- Gated EW300 Personal EQ capture until frequency scaling was resolved, then enabled peak-only capture while keeping ordinary playback gain out of the canonical EQ profile.
 - Added an Android emulator gate that verifies the EW300 diagnostic's safety wording, run action, result state, and both report-sharing actions.
+- Resolved EW300 frequency scaling without another hardware session by fitting the captured stock filters to same-earpiece DSP-versus-passive acoustic measurements; direct raw Hz fits at 0.989 correlation and 0.152 dB RMS, while the public 2× fallback does not.
+- Classified EW300 register `0x66` conservatively as digital DAC/playback gain rather than a dedicated EQ preamp, matching the shared framework rule already used for Black Pearl playback gain.
 
 - Added strict EW300 identity matching beyond VID/PID: expected USB strings, HID interface shape, and a session fingerprint now gate any device-scoped state.
 - Made EW300 qualification and applied-gain state fingerprint-scoped, fixed byte-array content comparison in editor readback, and added pre-commit restoration after partial band mutations.

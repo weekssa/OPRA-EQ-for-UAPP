@@ -36,8 +36,8 @@ Reuse the approved My DAC shell and shared session. The EW300 target must provid
 - exact device recognition and one authoritative connection/session;
 - normal Android permission handling and permission-loss recovery;
 - current versus Last read state;
-- global gain readback (editing remains gated);
-- five-band raw readback and capture, with only evidence-backed filter labels;
+- digital DAC/playback gain readback, excluded from EQ identity/capture (editing remains gated);
+- five-band direct-Hz Peak readback and capture; non-Peak snapshots fail closed;
 - response/headroom calculation using the shared hardware adapter for supported target representations;
 - a truthful pending state for editor Apply, persistent Flash, and Reset until their exact transactions are qualified;
 - Personal EQ capture with EW300 cable provenance;
