@@ -215,7 +215,7 @@ private fun Ew300EqStatus(
  * verified for this cable yet, so the tab is present but deliberately exposes no guessed writes.
  */
 @Composable
-private fun Ew300DeviceStatus(
+internal fun Ew300DeviceStatus(
     report: Ew300CapabilityReport?,
     running: Boolean,
     onRun: () -> Unit,

@@ -9,6 +9,10 @@ The runner is available in **My DAC → SIMGOT EW300 DSP → DEVICE → Run read
 shows a plain-language result and can share either a readable report or the machine-readable JSON
 through Android's share sheet. Sharing is owner-initiated; the app does not upload the report.
 
+CI runs the owner-facing report surface on an Android emulator in addition to the Android-free
+protocol and fault-path tests. The emulator test verifies the safety explanation, run action,
+result presentation, and both share actions without requiring or simulating physical USB writes.
+
 ## Default behavior
 
 - Require the exact EW300 fingerprint; VID/PID alone is rejected.
