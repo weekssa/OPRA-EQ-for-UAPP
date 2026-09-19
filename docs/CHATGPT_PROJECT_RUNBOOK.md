@@ -226,6 +226,8 @@ My DAC manual editing must reuse the same deterministic response/headroom princi
 
 ### Planned v0.7 SIMGOT EW300 DSP cable
 
+Current evidence and diagnostic status: `docs/V0.7_EW300_DSP_STATUS.md`, `docs/EW300_DSP_PROTOCOL_NOTES.md`, and `docs/EW300_DSP_HANDS_ON_CHECKLIST.md`. The signed Phase B diagnostic is separate from the production hardware candidate. Reject diagnostic artifacts without a defined launcher in DEX and two successful cold launches of the exact signed APK on an Android 36 emulator. Unit tests, assembly, lint and valid signing alone did not catch the missing-launcher regression in `c008345`.
+
 The next planned hardware addition is the USB-C DAC/DSP cable supplied with the SIMGOT EW300 DSP. It is **not supported by v0.6.0**. Work follows `docs/V0.7_EW300_DSP_IMPLEMENTATION_PLAN.md` and must reuse the current output registry, immutable device capabilities, shared finite-hardware response adapter, authoritative DAC session, and approved My DAC/Flash/capture/reset UX.
 
 The exact USB identity, protocol, ranges, quantization, persistence, and reset semantics remain discovery gates. Do not infer compatibility from a chipset, browser tool, community report, or similarity to FiiO/JCALLY behavior. No production write path is enabled until the exact supported command set is independently established and the owner's original cable state is preserved. Implementation stops at a signed testing candidate; merge and release require an exact-candidate physical PASS and explicit owner authorization.
@@ -287,4 +289,3 @@ APK SHA-256: `dabf4bcdddf69853b09793f5a94bec0a3af7efb430f1cdfe26ffc35a93b783ad`
 The exact candidate passed Android CI #1538, CodeQL #1420, Catalog currentness CI #1826, Priority community coverage CI #1311, and Signed EQ Library Beta Candidate #1213. The signing workflow verified the pinned certificate `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`.
 
 This PASS closes the corrective Black Pearl physical gate. It does not establish TRN factory-default semantics and does not qualify FiiO JA11 hardware behavior. PR #16 remains open and draft; merge, release, and publication remain explicit owner-authorization gates.
-

@@ -5,6 +5,7 @@ import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlReadCodec
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
 import com.weekssa.opraeqforuapp.domain.kt02h20.JcallyJm12Protocol
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20Band
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300Protocol
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 import kotlin.math.roundToLong
 
@@ -15,6 +16,43 @@ data class HardwareEqSnapshotBundle(
 
 /** Pure conversion from complete native readback values to My DAC domain state. */
 object HardwareEqSnapshotFactory {
+    fun ew300(
+        nativeBands: List<Kt02h20Band>,
+        globalGainDb: Double,
+        sessionGeneration: Long,
+        verifiedAtEpochMillis: Long,
+    ): HardwareEqSnapshotBundle? {
+        if (nativeBands.size != Ew300Protocol.BAND_COUNT) return null
+        if (!globalGainDb.isFinite() || globalGainDb !in -64.0..63.5) return null
+        val filters = nativeBands.mapIndexed { index, band -> band.toHardwareFilter(index) ?: return null }
+        val fingerprint = HardwareEqNativeFingerprint(
+            deviceId = DacDeviceId.SIMGOT_EW300,
+            eqEnabled = true,
+            bands = nativeBands.mapIndexed { index, band ->
+                HardwareEqNativeBandFingerprint(
+                    index = index,
+                    enabled = true,
+                    type = band.type.toEqFilterType() ?: return null,
+                    frequencyUnits = band.frequencyHz.roundToLong(),
+                    gainUnits = (band.gainDb * 10.0).roundToLong(),
+                    qUnits = (band.q * 1000.0).roundToLong(),
+                )
+            },
+            dedicatedEqPreampUnits = (globalGainDb * Ew300Protocol.GLOBAL_GAIN_STEPS_PER_DB).roundToLong(),
+        )
+        return HardwareEqSnapshotBundle(
+            snapshot = HardwareEqSnapshot(
+                deviceId = DacDeviceId.SIMGOT_EW300,
+                sessionGeneration = sessionGeneration,
+                filters = filters,
+                dedicatedEqPreampDb = globalGainDb,
+                playbackGainDb = null,
+                verifiedAtEpochMillis = verifiedAtEpochMillis,
+            ),
+            fingerprint = fingerprint,
+        )
+    }
+
     fun blackPearl(
         nativeBands: List<BlackPearlReadCodec.NativeBand>,
         globalGainRaw: Int,

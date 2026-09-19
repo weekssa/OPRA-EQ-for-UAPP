@@ -103,8 +103,29 @@ class MainActivity : ComponentActivity() {
         onUseSafeBlackPearlEditorGain = viewModel::useSafeBlackPearlEditorGain,
         onResetBlackPearlEditorLocalEdits = viewModel::resetBlackPearlEditorLocalEdits,
         onApplyBlackPearlEditor = viewModel::applyBlackPearlEditor,
+        onOpenEw300Editor = viewModel::openEw300Editor,
+        onBackEw300Editor = viewModel::backEw300Editor,
+        onCloseEw300Editor = viewModel::closeEw300Editor,
+        onSelectEw300EditorBand = viewModel::selectEw300EditorBand,
+        onShowEw300EditorAllBands = viewModel::showEw300EditorAllBands,
+        onShowEw300EditorReview = viewModel::showEw300EditorReview,
+        onUpdateEw300EditorBand = { bandIndex, type, frequencyHz, gainDb, q ->
+            val normalized = normalizeHardwareEqUserInput(
+                spec = HardwareEqEditSpecs.SIMGOT_EW300,
+                frequencyHz = frequencyHz,
+                gainDb = gainDb,
+                q = q,
+            )
+            viewModel.updateEw300EditorBand(bandIndex, type, normalized.frequencyHz, normalized.gainDb, normalized.q)
+        },
+        onUseSafeEw300EditorGain = viewModel::useSafeEw300EditorGain,
+        onResetEw300EditorLocalEdits = viewModel::resetEw300EditorLocalEdits,
+        onApplyEw300Editor = viewModel::applyEw300Editor,
         onCaptureBlackPearlDacEq = { displayName, association ->
             resolve(viewModel.captureBlackPearlDacEq(displayName, association))
+        },
+        onCaptureEw300DacEq = { displayName, association ->
+            resolve(viewModel.captureEw300DacEq(displayName, association))
         },
         onFlashBlackPearlFromMyDac = { profile ->
             resolve(viewModel.flashBlackPearlFromMyDac(profile))
@@ -125,6 +146,9 @@ class MainActivity : ComponentActivity() {
         onResetFiioJa11FromMyDac = {
             resolve(viewModel.resetFiioJa11FromMyDacToFlat())
         },
+        onFlashEw300FromMyDac = { profile -> resolve(viewModel.flashEw300FromMyDac(profile)) },
+        onResetEw300FromMyDac = { resolve(viewModel.resetEw300ToFlat()) },
+        onQualifyEw300GlobalGain = { resolve(viewModel.qualifyEw300GlobalGain()) },
         onConnectBlackPearl = viewModel::connectBlackPearl,
         onResetBlackPearl = {
             resolve(viewModel.resetBlackPearlToFlat())
@@ -133,6 +157,8 @@ class MainActivity : ComponentActivity() {
         onResetFiioJa11 = {
             resolve(viewModel.resetFiioJa11ToFlat())
         },
+        onConnectEw300 = viewModel::connectEw300,
+        onResetEw300 = { resolve(viewModel.resetEw300ToFlat()) },
         onConnectJcallyJm12 = viewModel::connectJcallyJm12,
         onResetJcallyJm12 = {
             resolve(viewModel.resetJcallyJm12ToFlat())
@@ -203,6 +229,7 @@ class MainActivity : ComponentActivity() {
         onActiveExportTargetChange = viewModel::setActiveExportTarget,
         onDirectBlackPearlFlashEnabledChange = viewModel::setDirectBlackPearlFlashEnabled,
         onDirectFiioJa11FlashEnabledChange = viewModel::setDirectFiioJa11FlashEnabled,
+        onDirectEw300FlashEnabledChange = viewModel::setDirectEw300FlashEnabled,
         onDirectJcallyJm12FlashEnabledChange = viewModel::setDirectJcallyJm12FlashEnabled,
     )
 
