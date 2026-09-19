@@ -10,12 +10,16 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -61,6 +65,7 @@ internal fun Ew300MyDacContent(
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
+    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     var saveDacEqOpen by remember { mutableStateOf(false) }
     if (saveDacEqOpen && connectionState == Kt02h20ConnectionState.Connected) {
         BlackPearlSaveDacEqDialog(
@@ -95,34 +100,42 @@ internal fun Ew300MyDacContent(
                         onCloseEditor()
                         scope.launch { onMessage(onQualifyGlobalGain()) }
                     }) { Text("Qualify global gain") }
-                if (editorState.isOpening || editorState.isOpen || editorState.error != null) {
-                    BlackPearlEqEditorScreen(
-                        state = editorState,
-                        onRetryOpen = onOpenEditor,
-                        onClose = onCloseEditor,
-                        onSelectBand = onSelectBand,
-                        onShowAllBands = onShowAllBands,
-                        onShowReview = onShowReview,
-                        onUpdateBand = onUpdateBand,
-                        onUseSafeGain = onUseSafeGain,
-                        onResetEdits = onResetEdits,
-                        onApply = onApply,
-                        dacLabel = "SIMGOT EW300 DSP",
-                    )
-                } else {
-                    Ew300EqStatus(
-                        state = hardwareEqState,
-                        canEdit = true,
-                        onEdit = onOpenEditor,
-                        onCapture = { saveDacEqOpen = true },
-                        onReset = { scope.launch { onMessage(onResetEq()) } },
-                    )
-                    if (editorState.applyStatus != MyDacEditorApplyStatus.IDLE) {
-                        Text(
-                            editorState.applyFailureReason ?: "EW300 EQ Apply verified.",
-                            color = if (editorState.applyFailureReason == null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                TabRow(selectedTabIndex = selectedTab) {
+                    Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("EQ") })
+                    Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("DEVICE") })
+                }
+                if (selectedTab == 0) {
+                    if (editorState.isOpening || editorState.isOpen || editorState.error != null) {
+                        BlackPearlEqEditorScreen(
+                            state = editorState,
+                            onRetryOpen = onOpenEditor,
+                            onClose = onCloseEditor,
+                            onSelectBand = onSelectBand,
+                            onShowAllBands = onShowAllBands,
+                            onShowReview = onShowReview,
+                            onUpdateBand = onUpdateBand,
+                            onUseSafeGain = onUseSafeGain,
+                            onResetEdits = onResetEdits,
+                            onApply = onApply,
+                            dacLabel = "SIMGOT EW300 DSP",
                         )
+                    } else {
+                        Ew300EqStatus(
+                            state = hardwareEqState,
+                            canEdit = true,
+                            onEdit = onOpenEditor,
+                            onCapture = { saveDacEqOpen = true },
+                            onReset = { scope.launch { onMessage(onResetEq()) } },
+                        )
+                        if (editorState.applyStatus != MyDacEditorApplyStatus.IDLE) {
+                            Text(
+                                editorState.applyFailureReason ?: "EW300 EQ Apply verified.",
+                                color = if (editorState.applyFailureReason == null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                            )
+                        }
                     }
+                } else {
+                    Ew300DeviceStatus()
                 }
             }
             Kt02h20ConnectionState.Connecting -> Text("Connecting to EW300…")
@@ -169,4 +182,23 @@ private fun Ew300EqStatus(
     Button(onClick = onEdit, enabled = canEdit, modifier = Modifier.fillMaxWidth()) { Text("Edit current EQ") }
     OutlinedButton(onClick = onCapture, enabled = canEdit, modifier = Modifier.fillMaxWidth()) { Text("Save current EQ to My EQs") }
     OutlinedButton(onClick = onReset, enabled = canEdit, modifier = Modifier.fillMaxWidth()) { Text("Reset EQ to flat") }
+}
+
+/**
+ * Truthful EW300 DEVICE surface. Unlike Black Pearl, no independent non-EQ controls have been
+ * verified for this cable yet, so the tab is present but deliberately exposes no guessed writes.
+ */
+@Composable
+private fun Ew300DeviceStatus() {
+    Text("SIMGOT EW300 DSP", style = MaterialTheme.typography.titleMedium)
+    Text("USB 31B2:0111", style = MaterialTheme.typography.bodyMedium)
+    Text(
+        "No additional EW300 device controls are verified in this candidate yet. Volume, headset, UAC, and other Black Pearl settings are not copied to this device without an exact EW300 protocol match.",
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Text(
+        "Verified in this candidate: five-band PEQ readback, gain-aware EQ operations, reset, capture, and reconnect recovery.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
 }

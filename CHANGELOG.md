@@ -8,6 +8,8 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ### Fixed
 
+- Added the complete EW300 My DAC shell to the pre-launch beta, including the shared EQ/DEVICE tab structure. The DEVICE tab is capability-driven and explicitly reports when no additional EW300 controls have been verified instead of silently omitting the surface or copying Black Pearl commands.
+- Hardened EW300 qualification reads with bounded idempotent retries, cleared stale editor errors before qualification, and corrected shared editor messaging to identify the EW300 device.
 - Added an owner-approved gated EW300 production candidate: one reversible global-gain qualification must pass with exact restoration before library flashing unlocks. The shared five-band optimizer now carries source/generated preamp as a tracked EW300 global-gain adjustment, writes and verifies all five bands plus gain, and restores the captured baseline gain on Reset to flat.
 - Prepared a stable-signed EW300 readback/UI-thread fix candidate for in-place device testing.
 
