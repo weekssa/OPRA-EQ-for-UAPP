@@ -9,21 +9,27 @@ class Ew300GainStatePreferences(context: Context) : Ew300GainStateStore {
         Context.MODE_PRIVATE,
     )
 
-    override fun isGlobalGainQualified(): Boolean = preferences.getBoolean(KEY_QUALIFIED, false)
+    override fun isGlobalGainQualified(deviceFingerprintKey: String): Boolean =
+        preferences.getBoolean(qualifiedKey(deviceFingerprintKey), false)
 
-    override fun markGlobalGainQualified(qualified: Boolean) {
-        preferences.edit().putBoolean(KEY_QUALIFIED, qualified).apply()
+    override fun markGlobalGainQualified(deviceFingerprintKey: String, qualified: Boolean) {
+        preferences.edit().putBoolean(qualifiedKey(deviceFingerprintKey), qualified).apply()
     }
 
-    override fun readAppliedGainDeltaSteps(): Int = preferences.getInt(KEY_APPLIED_DELTA, 0)
+    override fun readAppliedGainDeltaSteps(deviceFingerprintKey: String): Int =
+        preferences.getInt(deltaKey(deviceFingerprintKey), 0)
 
-    override fun writeAppliedGainDeltaSteps(steps: Int) {
-        preferences.edit().putInt(KEY_APPLIED_DELTA, steps).apply()
+    override fun writeAppliedGainDeltaSteps(deviceFingerprintKey: String, steps: Int) {
+        preferences.edit().putInt(deltaKey(deviceFingerprintKey), steps).apply()
     }
 
     companion object {
         private const val PREFERENCES_NAME = "ew300_flash_state"
-        private const val KEY_QUALIFIED = "global_gain_qualified"
-        private const val KEY_APPLIED_DELTA = "applied_gain_delta_steps"
+
+        private fun safeKey(prefix: String, fingerprint: String): String =
+            "$prefix:${fingerprint.take(160)}"
+
+        private fun qualifiedKey(fingerprint: String) = safeKey("global_gain_qualified", fingerprint)
+        private fun deltaKey(fingerprint: String) = safeKey("applied_gain_delta_steps", fingerprint)
     }
 }

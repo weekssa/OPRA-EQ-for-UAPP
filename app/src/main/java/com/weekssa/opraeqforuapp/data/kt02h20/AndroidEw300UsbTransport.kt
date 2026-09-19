@@ -1,6 +1,8 @@
 package com.weekssa.opraeqforuapp.data.kt02h20
 
 import android.content.Context
+import android.hardware.usb.UsbDevice
+import android.hardware.usb.UsbInterface
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300Protocol
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300Transport
 import java.io.Closeable
@@ -15,11 +17,15 @@ class AndroidEw300UsbTransport(context: Context) : Ew300Transport, Closeable {
         productIds = setOf(Ew300Protocol.PRODUCT_ID),
         deviceLabel = "SIMGOT EW300 DSP",
         permissionSuffix = "SIMGOT_EW300",
+        deviceIdentityMatcher = Ew300UsbIdentity::matches,
+        hidInterfaceMatcher = Ew300UsbIdentity::matchesHidInterface,
     )
 
     val state: StateFlow<Kt02h20ConnectionState> = hid.state
     val present: StateFlow<Boolean> = hid.present
     val sessionGeneration: Long get() = hid.sessionGeneration
+    override val deviceFingerprintKey: String?
+        get() = hid.deviceFingerprintKey
 
     fun connect() = hid.connect()
 
@@ -58,4 +64,31 @@ class AndroidEw300UsbTransport(context: Context) : Ew300Transport, Closeable {
     }
 
     override fun close() = hid.close()
+}
+
+/** Exact EW300 fingerprint boundary; VID/PID alone is intentionally insufficient. */
+private object Ew300UsbIdentity {
+    private const val EXPECTED_MANUFACTURER = "LE XIAN"
+    private const val EXPECTED_PRODUCT = "SIMGOT EW300 DSP"
+    private const val EXPECTED_INTERFACE_ID = 3
+    private const val EXPECTED_PACKET_SIZE = 16
+
+    fun matches(device: UsbDevice): Boolean {
+        val manufacturer = runCatching { device.manufacturerName }.getOrNull()
+        val product = runCatching { device.productName }.getOrNull()
+        return manufacturer.equals(EXPECTED_MANUFACTURER, ignoreCase = true) &&
+            product.equals(EXPECTED_PRODUCT, ignoreCase = true)
+    }
+
+    fun matchesHidInterface(usbInterface: UsbInterface): Boolean {
+        if (usbInterface.id != EXPECTED_INTERFACE_ID) return false
+        return (0 until usbInterface.endpointCount)
+            .map(usbInterface::getEndpoint)
+            .filter { it.type == android.hardware.usb.UsbConstants.USB_ENDPOINT_XFER_INT }
+            .any { it.direction == android.hardware.usb.UsbConstants.USB_DIR_IN && it.maxPacketSize == EXPECTED_PACKET_SIZE } &&
+            (0 until usbInterface.endpointCount)
+                .map(usbInterface::getEndpoint)
+                .filter { it.type == android.hardware.usb.UsbConstants.USB_ENDPOINT_XFER_INT }
+                .any { it.direction == android.hardware.usb.UsbConstants.USB_DIR_OUT && it.maxPacketSize == EXPECTED_PACKET_SIZE }
+    }
 }

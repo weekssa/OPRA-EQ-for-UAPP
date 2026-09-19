@@ -26,6 +26,9 @@ class Ew300EditorApplier(
         allowCautions: Boolean,
         isSessionCurrent: (Long) -> Boolean,
     ): Ew300EditorApplyResult {
+        if (transport.deviceFingerprintKey == null) {
+            return Ew300EditorApplyResult.DeviceUnavailable("The exact EW300 device fingerprint is unavailable.")
+        }
         if (workingCopy.baselineSnapshot.deviceId != DacDeviceId.SIMGOT_EW300) {
             return Ew300EditorApplyResult.InvalidPlan("This editor working copy does not belong to SIMGOT EW300 DSP.")
         }
@@ -68,21 +71,42 @@ class Ew300EditorApplier(
         if (!bandsChanged && !gainChanged) return Ew300EditorApplyResult.InvalidPlan("There are no reviewed hardware changes to apply.")
 
         if (gainChanged && targetGainSteps < expectedGainSteps) {
-            if (!writeGain(targetGainSteps)) return Ew300EditorApplyResult.TransferFailed("EW300 did not accept the safer global-gain adjustment. No EQ bands were written.")
+            if (!writeGain(targetGainSteps)) {
+                return restoreAfterFailure(
+                    baseline = expectedBaseline,
+                    baselineGain = baselineGain,
+                    reason = "EW300 did not accept the safer global-gain adjustment.",
+                )
+            }
         }
         if (bandsChanged) {
             target.forEachIndexed { index, filter ->
                 val wire = targetBands[index]
                 if (!isSessionCurrent(generation)) return stale()
-                if (!transport.writeRegister(Ew300Protocol.bandRegister(index), wire.first) ||
-                    !transport.writeRegister(Ew300Protocol.bandRegister(index) + 1, wire.second)
-                ) return Ew300EditorApplyResult.TransferFailed("EW300 stopped accepting the reviewed EQ at band ${index + 1}. Reconnect and read before retrying.")
+                if (!transport.writeRegister(Ew300Protocol.bandRegister(index), wire.gain) ||
+                    !transport.writeRegister(Ew300Protocol.bandRegister(index) + 1, wire.q)
+                ) {
+                    return restoreAfterFailure(
+                        baseline = expectedBaseline,
+                        baselineGain = baselineGain,
+                        reason = "EW300 stopped accepting the reviewed EQ at band ${index + 1}.",
+                    )
+                }
             }
-            if (!transport.commit()) return Ew300EditorApplyResult.TransferFailed("EW300 accepted the reviewed bands but did not accept the persistence command.")
-            if (readBands() != targetBands) return Ew300EditorApplyResult.VerificationFailed("EW300 final EQ readback did not match the reviewed values.")
+            if (readBands() != targetBands) {
+                return restoreAfterFailure(
+                    baseline = expectedBaseline,
+                    baselineGain = baselineGain,
+                    reason = "EW300 final EQ readback did not match the reviewed values.",
+                )
+            }
         }
         if (gainChanged && targetGainSteps > expectedGainSteps && !writeGain(targetGainSteps)) {
-            return Ew300EditorApplyResult.TransferFailed("The reviewed EQ is verified, but EW300 did not accept the final global-gain adjustment.")
+            return restoreAfterFailure(
+                baseline = expectedBaseline,
+                baselineGain = baselineGain,
+                reason = "EW300 did not accept the final global-gain adjustment.",
+            )
         }
         if (!isSessionCurrent(generation)) return stale()
         val finalGain = transport.readRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER)
@@ -94,19 +118,21 @@ class Ew300EditorApplier(
 
     private suspend fun writeGain(steps: Int): Boolean {
         val current = transport.readRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER) ?: return false
-        return transport.writeRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER, Ew300Protocol.withGlobalGainSteps(current, steps))
+        val target = Ew300Protocol.withGlobalGainSteps(current, steps)
+        return transport.writeRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER, target) &&
+            transport.readRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER)?.contentEquals(target) == true
     }
 
-    private suspend fun readBands(): List<Pair<ByteArray, ByteArray>>? = buildList {
+    private suspend fun readBands(): List<WireBandPair>? = buildList {
         repeat(Ew300Protocol.BAND_COUNT) { index ->
             val gain = transport.readRegister(Ew300Protocol.bandRegister(index)) ?: return null
             val q = transport.readRegister(Ew300Protocol.bandRegister(index) + 1) ?: return null
             if (gain.size != 4 || q.size != 4) return null
-            add(gain to q)
+            add(WireBandPair(gain, q))
         }
     }
 
-    private fun encode(filter: HardwareEqFilter): Pair<ByteArray, ByteArray>? = runCatching {
+    private fun encode(filter: HardwareEqFilter): WireBandPair? = runCatching {
         Ew300Protocol.encodeBand(
             Kt02h20Band(
                 type = when (filter.type) {
@@ -119,8 +145,40 @@ class Ew300EditorApplier(
                 gainDb = filter.gainDb,
                 q = filter.q,
             ),
-        )
+        ).let { (gain, q) -> WireBandPair(gain, q) }
     }.getOrNull()
+
+    private suspend fun restoreAfterFailure(
+        baseline: List<WireBandPair>,
+        baselineGain: ByteArray,
+        reason: String,
+    ): Ew300EditorApplyResult {
+        val restored = baseline.withIndex().all { (index, pair) ->
+            transport.writeRegister(Ew300Protocol.bandRegister(index), pair.gain) &&
+                transport.writeRegister(Ew300Protocol.bandRegister(index) + 1, pair.q)
+        } && transport.writeRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER, baselineGain)
+        if (!restored) {
+            return Ew300EditorApplyResult.TransferFailed("$reason Restoration of the original EW300 state also failed; reconnect and read before any retry.")
+        }
+        val verifiedBands = readBands() == baseline
+        val verifiedGain = transport.readRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER)
+            ?.contentEquals(baselineGain) == true
+        return if (verifiedBands && verifiedGain) {
+            Ew300EditorApplyResult.TransferFailed("$reason The original EW300 state was restored and verified.")
+        } else {
+            Ew300EditorApplyResult.VerificationFailed("$reason The original EW300 state could not be verified after restoration; reconnect before retrying.")
+        }
+    }
+
+    private data class WireBandPair(
+        val gain: ByteArray,
+        val q: ByteArray,
+    ) {
+        override fun equals(other: Any?): Boolean = other is WireBandPair &&
+            gain.contentEquals(other.gain) && q.contentEquals(other.q)
+
+        override fun hashCode(): Int = 31 * gain.contentHashCode() + q.contentHashCode()
+    }
 
     private fun ordered(filters: List<HardwareEqFilter>) = filters.sortedBy(HardwareEqFilter::index)
     private fun invalidBand(index: Int) = Ew300EditorApplyResult.InvalidPlan("EW300 band ${index + 1} cannot be encoded exactly.")

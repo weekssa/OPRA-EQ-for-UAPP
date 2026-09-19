@@ -127,8 +127,9 @@ fun ManagedHeadphoneDetailScreen(
             blackPearlConnectionState is BlackPearlConnectionState.Connected
         ExportDevice.FIIO_JA11 -> directFiioJa11FlashEnabled &&
             fiioJa11ConnectionState is Kt02h20ConnectionState.Connected
-        ExportDevice.SIMGOT_EW300 -> directEw300FlashEnabled &&
-            ew300ConnectionState is Kt02h20ConnectionState.Connected
+        // EW300 persistent Flash is intentionally absent until exact-device persistence is
+        // qualified; readback/capture remains available from My DAC.
+        ExportDevice.SIMGOT_EW300 -> false
         ExportDevice.JCALLY_JM12 -> directJcallyJm12FlashEnabled &&
             jcallyJm12ConnectionState is Kt02h20ConnectionState.Connected
         else -> false
@@ -572,10 +573,7 @@ private fun hardwareConnectionHelp(
         else -> null
     }
     ExportDevice.SIMGOT_EW300 -> when {
-        !directEw300FlashEnabled ->
-            "Enable direct Flash in Settings → SIMGOT EW300 DSP before connecting to the DAC." to false
-        ew300ConnectionState is Kt02h20ConnectionState.Error -> ew300ConnectionState.message to true
-        else -> null
+        else -> "SIMGOT EW300 persistent Flash is pending exact-device qualification; use My DAC readback/capture." to false
     }
     ExportDevice.JCALLY_JM12 -> when {
         !directJcallyJm12FlashEnabled ->

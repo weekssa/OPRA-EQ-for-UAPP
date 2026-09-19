@@ -26,7 +26,6 @@ import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.domain.dac.DacStateFreshness
-import com.weekssa.opraeqforuapp.domain.dac.HardwareEqResponseEvaluator
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.dac.isAcousticallyActive
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
@@ -35,7 +34,6 @@ import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.ui.MyDacEditorApplyStatus
 import com.weekssa.opraeqforuapp.ui.MyDacEditorUiState
-import com.weekssa.opraeqforuapp.ui.components.DacEqResponseGraph
 import com.weekssa.opraeqforuapp.ui.components.PremiumSectionLabel
 import kotlinx.coroutines.launch
 
@@ -93,13 +91,11 @@ internal fun Ew300MyDacContent(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                    Button(onClick = {
-                        // Qualification and editor reads are separate transactions. Clear any
-                        // stale editor error before starting the qualification read so its result
-                        // cannot be mistaken for a qualification failure.
-                        onCloseEditor()
-                        scope.launch { onMessage(onQualifyGlobalGain()) }
-                    }) { Text("Run one-time hardware qualification") }
+                    Text(
+                        "EW300 capability qualification is performed by the guided diagnostic utility, not by a normal device-setting action.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 TabRow(selectedTabIndex = selectedTab) {
                     Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("EQ") })
                     Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("DEVICE") })
@@ -122,7 +118,7 @@ internal fun Ew300MyDacContent(
                     } else {
                         Ew300EqStatus(
                             state = hardwareEqState,
-                            canEdit = true,
+                            canEdit = false,
                             onEdit = onOpenEditor,
                             onCapture = { saveDacEqOpen = true },
                             onReset = { scope.launch { onMessage(onResetEq()) } },
@@ -169,19 +165,16 @@ private fun Ew300EqStatus(
         divider = false,
     )
     bundle.snapshot.dedicatedEqPreampDb?.let { Text("Global EQ gain: ${"%.1f".format(it)} dB") }
-    val response = HardwareEqResponseEvaluator.evaluate(bundle.snapshot.filters)
-    if (response != null) {
-        DacEqResponseGraph(
-            curve = response,
-            filters = bundle.snapshot.filters,
-            accessibilityDescription = "EW300 five-band EQ response",
-            modifier = Modifier.fillMaxWidth(),
-        )
+    Text(
+        "${bundle.snapshot.filters.count { it.isAcousticallyActive() }} native bands were read. Acoustic filter labels and persistent writes remain pending exact-EW300 qualification.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    if (canEdit) {
+        Button(onClick = onEdit, modifier = Modifier.fillMaxWidth()) { Text("Edit current EQ") }
+        OutlinedButton(onClick = onReset, modifier = Modifier.fillMaxWidth()) { Text("Reset EQ to flat") }
     }
-    Text("${bundle.snapshot.filters.count { it.isAcousticallyActive() }} active bands · five-band native PEQ", style = MaterialTheme.typography.bodySmall)
-    Button(onClick = onEdit, enabled = canEdit, modifier = Modifier.fillMaxWidth()) { Text("Edit current EQ") }
-    OutlinedButton(onClick = onCapture, enabled = canEdit, modifier = Modifier.fillMaxWidth()) { Text("Save current EQ to My EQs") }
-    OutlinedButton(onClick = onReset, enabled = canEdit, modifier = Modifier.fillMaxWidth()) { Text("Reset EQ to flat") }
+    OutlinedButton(onClick = onCapture, modifier = Modifier.fillMaxWidth()) { Text("Save readback as Personal EQ") }
 }
 
 /**

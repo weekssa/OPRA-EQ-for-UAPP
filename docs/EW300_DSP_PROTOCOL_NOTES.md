@@ -198,3 +198,32 @@ non-authoritative. They do not close the global-gain, commit, power-cycle, or
 Reset gates. The shipping recovery branch therefore keeps those operations
 guarded and records the remaining facts in `V0.7_EW300_DSP_STATUS.md` rather
 than starting another exploratory write loop.
+
+### KT02H20-family cross-check (2026-09-19)
+
+The recovery audit compared the exact EW300 evidence with three independent public
+references. `gxcreator/ktmicro-tools` documents a generic KT02H20 five-band register
+protocol with VID:PID `31B2:0111`, HID report `0x4B`, READ `0x52`, WRITE `0x57`,
+register `0x24` EQ enable, band pairs `0x26..0x2F`, global gain `0x66`, and filter
+codes for Peak/LPF/HPF/low-shelf/high-shelf. The exact EW300 captures match this
+shape closely. `jeromeof/devicePEQ` independently implements a generic KT Micro
+browser handler and is useful corroboration. `Ircama/ja11-config` documents another
+KT02H20-family product, including five-band shelf filters and a distinct FiiO report
+protocol with separate Apply and Save operations.
+
+These sources establish a strong **KT02H20-family-compatible hypothesis**, not
+manufacturer confirmation of the EW300's silicon or permission to copy a family-wide
+command set. The repository uses independent behavior reconstruction, records the
+BSD-3-Clause/0BSD/EUPL-1.2 license boundaries, and keeps exact EW300 identity and
+firmware capabilities separate from FiiO/JCALLY protocol dialects. The public protocol
+notes do not establish EW300 `0x53` as a safe persistent-save command; production Flash
+and Reset therefore remain disabled until an exact-device capability plan proves
+command ordering and full power-cycle behavior.
+
+References:
+
+- <https://github.com/gxcreator/ktmicro-tools>
+- <https://github.com/gxcreator/ktmicro-tools/blob/master/KT_USB_PROTOCOL.md>
+- <https://github.com/jeromeof/devicePEQ>
+- <https://github.com/jeromeof/devicePEQ/blob/master/devicePEQ/ktmicroUsbHidHandler.js>
+- <https://github.com/Ircama/ja11-config>

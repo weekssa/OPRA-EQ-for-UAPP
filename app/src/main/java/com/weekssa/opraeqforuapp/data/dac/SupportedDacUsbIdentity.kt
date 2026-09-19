@@ -48,7 +48,15 @@ val supportedDacUsbIdentities: List<SupportedDacUsbIdentity> = buildList {
     )
 }
 
-fun supportedDacDeviceId(vendorId: Int, productId: Int): DacDeviceId? =
-    supportedDacUsbIdentities.firstOrNull { identity ->
-        identity.vendorId == vendorId && identity.productId == productId
-    }?.deviceId
+fun supportedDacDeviceId(
+    vendorId: Int,
+    productId: Int,
+    manufacturer: String? = null,
+    productName: String? = null,
+): DacDeviceId? = supportedDacUsbIdentities.firstOrNull { identity ->
+    identity.vendorId == vendorId &&
+        identity.productId == productId &&
+        (identity.deviceId != DacDeviceId.SIMGOT_EW300 ||
+            (manufacturer.equals("LE XIAN", ignoreCase = true) &&
+                productName.equals("SIMGOT EW300 DSP", ignoreCase = true)))
+}?.deviceId

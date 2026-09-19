@@ -1108,7 +1108,7 @@ class EqLibraryViewModel(
     }
 
     suspend fun flashEw300FromMyDac(profile: OpraEqProfile): UiText =
-        flashEw300Profile(profile, preferencesRepository.snapshot())
+        flashEw300Profile()
 
     suspend fun qualifyEw300GlobalGain(): UiText {
         val preferences = preferencesRepository.snapshot()
@@ -1445,7 +1445,7 @@ class EqLibraryViewModel(
         return when (preferences.exportTargets.activeTarget) {
             ExportDevice.BLACK_PEARL -> flashBlackPearlProfile(profile, preferences)
             ExportDevice.FIIO_JA11 -> flashFiioJa11Profile(profile, preferences)
-            ExportDevice.SIMGOT_EW300 -> flashEw300Profile(profile, preferences)
+            ExportDevice.SIMGOT_EW300 -> flashEw300Profile()
             else -> resource(R.string.error_select_supported_hardware)
         }
     }
@@ -1522,38 +1522,12 @@ class EqLibraryViewModel(
         is Kt02h20FlatResetResult.VerificationFailed -> resource(R.string.fiio_reset_verification_failed, result.reason)
     }
 
-    private suspend fun flashEw300Profile(
-        profile: OpraEqProfile,
-        preferences: AppPreferences,
-    ): UiText {
-        if (!preferences.directEw300FlashEnabled) return UiText.Dynamic("Enable Direct Flash for SIMGOT EW300 DSP in Settings first.")
-        if (hardwareRepository.ew300ConnectionState.value !is Kt02h20ConnectionState.Connected) {
-            return UiText.Dynamic("Connect SIMGOT EW300 DSP before changing its EQ.")
-        }
-        return ew300FlashResultMessage(hardwareRepository.flashEw300(profile))
-    }
-
-    private fun ew300FlashResultMessage(result: Kt02h20FlashResult): UiText = when (result) {
-        is Kt02h20FlashResult.Success -> UiText.Dynamic("SIMGOT EW300 DSP EQ applied and verified on the device. Persistence remains hardware-validation pending.")
-        is Kt02h20FlashResult.NotSuitable -> UiText.Dynamic(result.reason)
-        is Kt02h20FlashResult.DeviceUnavailable -> UiText.Dynamic(result.reason)
-        is Kt02h20FlashResult.TransferFailed -> UiText.Dynamic(result.reason)
-        is Kt02h20FlashResult.VerificationFailed -> UiText.Dynamic(result.reason)
+    private suspend fun flashEw300Profile(): UiText {
+        return UiText.Dynamic("SIMGOT EW300 persistent Flash is pending exact-device qualification. Use My DAC readback and Personal EQ capture until the signed capability gate passes.")
     }
 
     suspend fun resetEw300ToFlat(): UiText {
-        val preferences = preferencesRepository.snapshot()
-        if (!preferences.directEw300FlashEnabled) return UiText.Dynamic("Enable Direct Flash for SIMGOT EW300 DSP in Settings first.")
-        if (hardwareRepository.ew300ConnectionState.value !is Kt02h20ConnectionState.Connected) {
-            return UiText.Dynamic("Connect SIMGOT EW300 DSP before resetting its EQ.")
-        }
-        return when (val result = hardwareRepository.resetEw300()) {
-            is Kt02h20FlatResetResult.Success -> UiText.Dynamic("SIMGOT EW300 DSP was restored to flat EQ and verified.")
-            is Kt02h20FlatResetResult.NotSuitable -> UiText.Dynamic(result.reason)
-            is Kt02h20FlatResetResult.DeviceUnavailable -> UiText.Dynamic(result.reason)
-            is Kt02h20FlatResetResult.TransferFailed -> UiText.Dynamic(result.reason)
-            is Kt02h20FlatResetResult.VerificationFailed -> UiText.Dynamic(result.reason)
-        }
+        return UiText.Dynamic("SIMGOT EW300 Reset is pending exact-device persistence and reset qualification.")
     }
 
     private suspend fun flashBlackPearlAndRefresh(profile: OpraEqProfile): BlackPearlFlashResult {

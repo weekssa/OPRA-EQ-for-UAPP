@@ -11,6 +11,9 @@ import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult
 
 interface Ew300Transport {
+    /** Strong identity for the currently open exact device/session. */
+    val deviceFingerprintKey: String?
+        get() = null
     suspend fun readRegister(register: Int): ByteArray?
     suspend fun writeRegister(register: Int, data: ByteArray): Boolean
     suspend fun commit(): Boolean
@@ -20,19 +23,36 @@ interface Ew300Transport {
 class Ew300Flasher(
     private val transport: Ew300Transport,
     private val gainStateStore: Ew300GainStateStore,
+    private val persistenceQualified: () -> Boolean = { false },
 ) {
     suspend fun applyEditorWorkingCopy(
         workingCopy: com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditWorkingCopy,
         allowCautions: Boolean,
         isSessionCurrent: (Long) -> Boolean,
-    ): Ew300EditorApplyResult = Ew300EditorApplier(transport).apply(
-        workingCopy = workingCopy,
-        allowCautions = allowCautions,
-        isSessionCurrent = isSessionCurrent,
-    )
+    ): Ew300EditorApplyResult {
+        val deviceKey = transport.deviceFingerprintKey
+            ?: return Ew300EditorApplyResult.DeviceUnavailable("The exact EW300 device fingerprint is unavailable.")
+        if (!gainStateStore.isGlobalGainQualified(deviceKey)) {
+            return Ew300EditorApplyResult.InvalidPlan(
+                "EW300 editor Apply is locked until the exact device's gain capability is qualified.",
+            )
+        }
+        return Ew300EditorApplier(transport).apply(
+            workingCopy = workingCopy,
+            allowCautions = allowCautions,
+            isSessionCurrent = isSessionCurrent,
+        )
+    }
 
     suspend fun flash(profile: OpraEqProfile): Kt02h20FlashResult {
-        if (!gainStateStore.isGlobalGainQualified()) {
+        if (!persistenceQualified()) {
+            return Kt02h20FlashResult.NotSuitable(
+                "Persistent EW300 Flash is not enabled until the exact save command passes the capability and power-cycle gate.",
+            )
+        }
+        val deviceKey = transport.deviceFingerprintKey
+            ?: return Kt02h20FlashResult.DeviceUnavailable("The exact EW300 device fingerprint is unavailable.")
+        if (!gainStateStore.isGlobalGainQualified(deviceKey)) {
             return Kt02h20FlashResult.NotSuitable(
                 "Run the one-time EW300 global-gain qualification from My DAC before flashing library EQs.",
             )
@@ -43,13 +63,14 @@ class Ew300Flasher(
         }
         val target = completeBands(representation.bands)
         val currentGain = transport.readRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER)
-        if (currentGain == null || !readAndDecodeCurrent()) {
+        val baselineBands = readRawBands()
+        if (currentGain == null || baselineBands == null) {
             return Kt02h20FlashResult.DeviceUnavailable(
                 "Couldn’t read the EW300 PEQ state. Reconnect the DAC and try again.",
             )
         }
         val currentSteps = Ew300Protocol.globalGainSteps(currentGain)
-        val baselineSteps = currentSteps - gainStateStore.readAppliedGainDeltaSteps()
+        val baselineSteps = currentSteps - gainStateStore.readAppliedGainDeltaSteps(deviceKey)
         val requestedDeltaSteps = runCatching {
             Ew300Protocol.gainDbToSteps(representation.playbackGainDb)
         }.getOrElse {
@@ -63,26 +84,29 @@ class Ew300Flasher(
                 "Applying ${formatDb(representation.playbackGainDb)} dB of EW300 playback gain would exceed the qualified device range.",
             )
         }
+        val targetWires = target.map { band ->
+            runCatching { Ew300Protocol.encodeBand(band) }.getOrElse {
+                return Kt02h20FlashResult.NotSuitable(it.message ?: "EW300 band is not representable.")
+            }
+        }
         val targetGain = Ew300Protocol.withGlobalGainSteps(currentGain, targetGainSteps)
         if (!currentGain.contentEquals(targetGain) &&
             !transport.writeRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER, targetGain)
         ) {
-            return Kt02h20FlashResult.TransferFailed(
-                "EW300 did not accept the required global-gain adjustment. No EQ bands were written.",
+            return restoreBeforeCommit(
+                baselineBands = baselineBands,
+                baselineGain = currentGain,
+                reason = "EW300 did not accept the required global-gain adjustment.",
             )
         }
-        if (!currentGain.contentEquals(targetGain)) {
-            gainStateStore.writeAppliedGainDeltaSteps(requestedDeltaSteps)
-        }
-        target.forEachIndexed { index, band ->
-            val (gain, q) = runCatching { Ew300Protocol.encodeBand(band) }.getOrElse {
-                return Kt02h20FlashResult.NotSuitable(it.message ?: "EW300 band is not representable.")
-            }
+        targetWires.forEachIndexed { index, (gain, q) ->
             if (!transport.writeRegister(Ew300Protocol.bandRegister(index), gain) ||
                 !transport.writeRegister(Ew300Protocol.bandRegister(index) + 1, q)
             ) {
-                return Kt02h20FlashResult.TransferFailed(
-                    "EW300 stopped accepting PEQ data at band ${index + 1} of ${Ew300Protocol.BAND_COUNT}.",
+                return restoreBeforeCommit(
+                    baselineBands = baselineBands,
+                    baselineGain = currentGain,
+                    reason = "EW300 stopped accepting PEQ data at band ${index + 1} of ${Ew300Protocol.BAND_COUNT}.",
                 )
             }
         }
@@ -104,6 +128,7 @@ class Ew300Flasher(
                 "EW300 final global-gain readback did not match the requested adjustment.",
             )
         }
+        gainStateStore.writeAppliedGainDeltaSteps(deviceKey, requestedDeltaSteps)
         return Kt02h20FlashResult.Success(
             representation = representation,
             explicitPersistenceCommandUsed = true,
@@ -111,31 +136,48 @@ class Ew300Flasher(
     }
 
     suspend fun resetToFlat(): Kt02h20FlatResetResult {
+        if (!persistenceQualified()) {
+            return Kt02h20FlatResetResult.NotSuitable(
+                "EW300 Reset is not enabled until persistent save and reset semantics are qualified on this exact device.",
+            )
+        }
         val flat = completeBands(emptyList())
-        if (!gainStateStore.isGlobalGainQualified()) {
+        val deviceKey = transport.deviceFingerprintKey
+            ?: return Kt02h20FlatResetResult.DeviceUnavailable("The exact EW300 device fingerprint is unavailable.")
+        if (!gainStateStore.isGlobalGainQualified(deviceKey)) {
             return Kt02h20FlatResetResult.NotSuitable(
                 "Run the one-time EW300 global-gain qualification from My DAC before resetting its EQ.",
             )
         }
         val currentGain = transport.readRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER)
             ?: return Kt02h20FlatResetResult.DeviceUnavailable("Couldn’t read the EW300 global gain before reset.")
-        val baselineSteps = Ew300Protocol.globalGainSteps(currentGain) - gainStateStore.readAppliedGainDeltaSteps()
+        val baselineSteps = Ew300Protocol.globalGainSteps(currentGain) - gainStateStore.readAppliedGainDeltaSteps(deviceKey)
         if (baselineSteps !in Ew300Protocol.GLOBAL_GAIN_MIN_STEPS..Ew300Protocol.GLOBAL_GAIN_MAX_STEPS) {
             return Kt02h20FlatResetResult.NotSuitable("The EW300 baseline global gain is outside the qualified range.")
         }
         val baselineGain = Ew300Protocol.withGlobalGainSteps(currentGain, baselineSteps)
+        val baselineBands = readRawBands()
+            ?: return Kt02h20FlatResetResult.DeviceUnavailable("Couldn’t read the complete EW300 EQ before reset.")
         flat.forEachIndexed { index, band ->
             val (gain, q) = Ew300Protocol.encodeBand(band)
             if (!transport.writeRegister(Ew300Protocol.bandRegister(index), gain) ||
                 !transport.writeRegister(Ew300Protocol.bandRegister(index) + 1, q)
             ) {
-                return Kt02h20FlatResetResult.TransferFailed("EW300 stopped accepting the flat-EQ reset at band ${index + 1}.")
+                return restoreBeforeCommit(
+                    baselineBands = baselineBands,
+                    baselineGain = currentGain,
+                    reason = "EW300 stopped accepting the flat-EQ reset at band ${index + 1}.",
+                ).toFlatResetResult()
             }
         }
         if (!currentGain.contentEquals(baselineGain) &&
             !transport.writeRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER, baselineGain)
         ) {
-            return Kt02h20FlatResetResult.TransferFailed("EW300 flat EQ was prepared, but its prior gain could not be restored.")
+            return restoreBeforeCommit(
+                baselineBands = baselineBands,
+                baselineGain = currentGain,
+                reason = "EW300 flat EQ was prepared, but its prior gain could not be restored.",
+            ).toFlatResetResult()
         }
         if (!transport.commit()) {
             return Kt02h20FlatResetResult.TransferFailed("EW300 did not accept the flat-EQ persistence command.")
@@ -148,14 +190,45 @@ class Ew300Flasher(
         if (finalGain == null || !finalGain.contentEquals(baselineGain)) {
             return Kt02h20FlatResetResult.VerificationFailed("EW300 final flat-EQ gain readback did not match.")
         }
-        gainStateStore.writeAppliedGainDeltaSteps(0)
+        gainStateStore.writeAppliedGainDeltaSteps(deviceKey, 0)
         return Kt02h20FlatResetResult.Success(restoredPlaybackGainDb = 0.0, explicitPersistenceCommandUsed = true)
     }
 
-    private suspend fun readAndDecodeCurrent(): Boolean = (0 until Ew300Protocol.BAND_COUNT).all { index ->
-        val gain = transport.readRegister(Ew300Protocol.bandRegister(index))
-        val q = transport.readRegister(Ew300Protocol.bandRegister(index) + 1)
-        gain?.size == 4 && q?.size == 4
+    private suspend fun readRawBands(): List<RawBand>? = buildList {
+        repeat(Ew300Protocol.BAND_COUNT) { index ->
+            val gain = transport.readRegister(Ew300Protocol.bandRegister(index))
+            val q = transport.readRegister(Ew300Protocol.bandRegister(index) + 1)
+            if (gain == null || q == null || gain.size != 4 || q.size != 4) return null
+            add(RawBand(gain, q))
+        }
+    }
+
+    private suspend fun restoreBeforeCommit(
+        baselineBands: List<RawBand>,
+        baselineGain: ByteArray,
+        reason: String,
+    ): Kt02h20FlashResult {
+        val restored = baselineBands.withIndex().all { (index, raw) ->
+            transport.writeRegister(Ew300Protocol.bandRegister(index), raw.gain) &&
+                transport.writeRegister(Ew300Protocol.bandRegister(index) + 1, raw.q)
+        } && transport.writeRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER, baselineGain)
+        if (!restored) {
+            return Kt02h20FlashResult.TransferFailed("$reason Restoration also failed; reconnect and read before any retry.")
+        }
+        val restoredBands = readRawBands() == baselineBands
+        val restoredGain = transport.readRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER)
+            ?.contentEquals(baselineGain) == true
+        return if (restoredBands && restoredGain) {
+            Kt02h20FlashResult.TransferFailed("$reason The original EW300 state was restored and verified.")
+        } else {
+            Kt02h20FlashResult.VerificationFailed("$reason The original EW300 state could not be verified after restoration.")
+        }
+    }
+
+    private fun Kt02h20FlashResult.toFlatResetResult(): Kt02h20FlatResetResult = when (this) {
+        is Kt02h20FlashResult.TransferFailed -> Kt02h20FlatResetResult.TransferFailed(reason)
+        is Kt02h20FlashResult.VerificationFailed -> Kt02h20FlatResetResult.VerificationFailed(reason)
+        else -> Kt02h20FlatResetResult.TransferFailed("EW300 reset stopped before verification.")
     }
 
     private suspend fun verify(expected: List<Kt02h20Band>): VerificationFailure? {
@@ -182,6 +255,16 @@ class Ew300Flasher(
         val expected: Kt02h20Band,
         val actual: Kt02h20Band?,
     )
+
+    private data class RawBand(
+        val gain: ByteArray,
+        val q: ByteArray,
+    ) {
+        override fun equals(other: Any?): Boolean = other is RawBand &&
+            gain.contentEquals(other.gain) && q.contentEquals(other.q)
+
+        override fun hashCode(): Int = 31 * gain.contentHashCode() + q.contentHashCode()
+    }
 
     private fun completeBands(bands: List<Kt02h20Band>): List<Kt02h20Band> =
         bands + List(Ew300Protocol.BAND_COUNT - bands.size) { Kt02h20Band("peak_dip", 1000.0, 0.0, 1.0) }

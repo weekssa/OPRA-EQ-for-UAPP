@@ -17,7 +17,10 @@ object HardwareEqDeviceSpecs {
         displayName = "SIMGOT EW300 DSP",
         capabilities = DeviceEqCapabilities(
             maxBands = 5,
-            supportedBandTypes = setOf("peak_dip", "low_shelf", "high_shelf"),
+            // Public KT02H20 tools describe additional codes, but their acoustic meaning is not
+            // yet proven on the exact EW300 cable. Peak is the only production-exposed type until
+            // the bounded capability session confirms the shelf behavior.
+            supportedBandTypes = setOf("peak_dip"),
             minFrequencyHz = 20.0,
             maxFrequencyHz = 20_000.0,
             minGainDb = -12.0,

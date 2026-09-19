@@ -412,7 +412,13 @@ No analytics or telemetry. Local selections/settings/generated state/recovery st
 
 ## Validation architecture
 
-EW300 discovery evidence is maintained separately from shipping product behavior. The recovery branch does not include the diagnostic APK/tooling in its shipping build. If future discovery tooling is created, its launcher DEX definition and exact signed cold launch must be validated independently; those checks establish diagnostic startup only, not hardware EQ support.
+EW300 discovery evidence is maintained separately from shipping product behavior. The recovery branch
+includes only an Android-free, allowlisted capability-batch/report contract; the default batch is
+read-only and never probes persistence or undocumented commands. Any future mutating diagnostic APK
+must remain a separately signed development artifact with exact preflight, safe-stop, restoration,
+and cold-launch validation. Diagnostic startup establishes neither acoustic semantics nor production
+hardware support. The shipping EW300 UI remains capability-gated and does not expose persistent Flash,
+editor Apply, or Reset until exact-device qualification closes those gates.
 
 Automated gates protect both canonical and target-specific behavior:
 

@@ -143,8 +143,9 @@ fun MyEqsHomeScreen(
             blackPearlConnectionState is BlackPearlConnectionState.Connected
         ExportDevice.FIIO_JA11 -> directFiioJa11FlashEnabled &&
             fiioJa11ConnectionState is Kt02h20ConnectionState.Connected
-        ExportDevice.SIMGOT_EW300 -> directEw300FlashEnabled &&
-            ew300ConnectionState is Kt02h20ConnectionState.Connected
+        // Keep the EW300 target available for derived/source-neutral representations, but do not
+        // expose a persistent Flash action before its exact-device gate passes.
+        ExportDevice.SIMGOT_EW300 -> false
         ExportDevice.JCALLY_JM12 -> directJcallyJm12FlashEnabled &&
             jcallyJm12ConnectionState is Kt02h20ConnectionState.Connected
         else -> false
@@ -700,14 +701,14 @@ private fun hardwareFlashConfirmation(displayName: String, preview: HardwareFlas
     } else {
         when (preview.device) {
             ExportDevice.FIIO_JA11 -> "The JA11 global EQ gain will be set to $gain dB."
-            ExportDevice.SIMGOT_EW300 -> "The EW300 five-band PEQ and guarded global-gain adjustment will be written and verified. Persistence remains hardware-validation pending."
+            ExportDevice.SIMGOT_EW300 -> "EW300 hardware writes are pending exact-device qualification; this preview is informational only."
             ExportDevice.JCALLY_JM12 -> "EQ Library will apply a $gain dB tracked playback-gain adjustment for this preset."
             else -> ""
         }
     }
     val persistence = when (preview.device) {
         ExportDevice.FIIO_JA11 -> "The five-band PEQ will be applied, read back, and saved to the JA11."
-            ExportDevice.SIMGOT_EW300 -> "The five-band PEQ will be applied and read back on the EW300. Persistence remains hardware-validation pending."
+            ExportDevice.SIMGOT_EW300 -> "EW300 hardware writes are pending exact-device qualification."
         ExportDevice.JCALLY_JM12 -> "The five-band PEQ will be written and read back. Persistence across a full power cycle is still hardware-validation pending for stock JM12 firmware."
         else -> ""
     }

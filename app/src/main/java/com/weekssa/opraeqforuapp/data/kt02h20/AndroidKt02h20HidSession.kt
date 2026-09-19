@@ -50,6 +50,8 @@ internal class AndroidKt02h20HidSession(
     private val productIds: Set<Int>,
     private val deviceLabel: String,
     permissionSuffix: String,
+    private val deviceIdentityMatcher: (UsbDevice) -> Boolean = { true },
+    private val hidInterfaceMatcher: (UsbInterface) -> Boolean = { true },
 ) : Closeable {
     init {
         require(productIds.isNotEmpty()) { "At least one approved USB PID is required." }
@@ -83,6 +85,9 @@ internal class AndroidKt02h20HidSession(
 
     val connectedProductId: Int?
         get() = session?.productId
+
+    val deviceFingerprintKey: String?
+        get() = session?.fingerprintKey
 
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -296,6 +301,7 @@ internal class AndroidKt02h20HidSession(
                     endpointIn = descriptor.endpointIn,
                     endpointOut = descriptor.endpointOut,
                     productId = device.productId,
+                    fingerprintKey = fingerprintKey(device, descriptor.usbInterface),
                 )
                 lastSessionGeneration = nextSessionGeneration(lastSessionGeneration)
                 currentSessionGeneration = lastSessionGeneration
@@ -307,7 +313,7 @@ internal class AndroidKt02h20HidSession(
     private fun findHidInterface(device: UsbDevice): HidInterface? =
         (0 until device.interfaceCount)
             .map(device::getInterface)
-            .filter { it.interfaceClass == UsbConstants.USB_CLASS_HID }
+            .filter { it.interfaceClass == UsbConstants.USB_CLASS_HID && hidInterfaceMatcher(it) }
             .mapNotNull { intf ->
                 val endpoints = (0 until intf.endpointCount).map(intf::getEndpoint)
                 val input = endpoints.firstOrNull { endpoint ->
@@ -375,7 +381,22 @@ internal class AndroidKt02h20HidSession(
         mutableState.value = Kt02h20ConnectionState.Disconnected
     }
 
-    private fun UsbDevice.matchesTarget(): Boolean = this.vendorId == vendorId && this.productId in productIds
+    private fun UsbDevice.matchesTarget(): Boolean =
+        this.vendorId == vendorId && this.productId in productIds && deviceIdentityMatcher(this)
+
+    private fun fingerprintKey(device: UsbDevice, usbInterface: UsbInterface): String {
+        val manufacturer = runCatching { device.manufacturerName }.getOrNull().orEmpty()
+        val product = runCatching { device.productName }.getOrNull().orEmpty()
+        val serial = runCatching { device.serialNumber }.getOrNull().orEmpty()
+        return listOf(
+            "vid=${device.vendorId.toString(16)}",
+            "pid=${device.productId.toString(16)}",
+            "manufacturer=${manufacturer.trim()}",
+            "product=${product.trim()}",
+            "serial=${serial.trim()}",
+            "interface=${usbInterface.id}",
+        ).joinToString("|")
+    }
 
     @Suppress("DEPRECATION")
     private fun Intent.usbDevice(): UsbDevice? = if (Build.VERSION.SDK_INT >= 33) {
@@ -396,6 +417,7 @@ internal class AndroidKt02h20HidSession(
         val endpointIn: UsbEndpoint,
         val endpointOut: UsbEndpoint,
         val productId: Int,
+        val fingerprintKey: String,
     )
 
     private companion object {

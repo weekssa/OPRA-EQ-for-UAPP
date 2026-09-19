@@ -8,6 +8,10 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ### Fixed
 
+- Added strict EW300 identity matching beyond VID/PID: expected USB strings, HID interface shape, and a session fingerprint now gate any device-scoped state.
+- Made EW300 qualification and applied-gain state fingerprint-scoped, fixed byte-array content comparison in editor readback, and added pre-commit restoration after partial band mutations.
+- Disabled persistent EW300 Flash and Reset in the product candidate until command `0x53` and full power-cycle behavior are proven on the exact cable. The default capability utility is read-only and exports a plain-language/JSON report.
+- Updated the candidate to versionCode 7 / versionName 0.7.0 and standardized source-neutral wording around EQ profiles from OPRA, AutoEQ, community/general sources, imports, Personal EQs, and DAC captures.
 - Added the software-prepared EW300 My DAC shell to the recovery beta, including the shared EQ/DEVICE tab structure. The DEVICE tab is capability-driven and explicitly reports when no additional EW300 controls are verified instead of copying Black Pearl commands.
 - Added guarded EW300 five-band readback, editor, capture, reconnect, and Direct Flash paths through the shared registry/session/finite-hardware framework. Global gain, persistence, and Reset remain hardware-validation gated and are not claimed as qualified.
 
