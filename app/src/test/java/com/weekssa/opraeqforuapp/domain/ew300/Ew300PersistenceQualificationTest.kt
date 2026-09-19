@@ -182,7 +182,7 @@ class Ew300PersistenceQualificationTest {
                 else -> byteArrayOf(0, 0, 0, 0)
             }
         }
-        var state = baseline.deepCopy()
+        var state = baseline.mapValues { it.value.copyOf() }
         var commitCount = 0
         var writeCount = 0
         var readCount = 0

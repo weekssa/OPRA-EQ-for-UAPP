@@ -100,7 +100,11 @@ jobs:
         run: |
           set -euo pipefail
           sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0" "emulator" "system-images;android-35;google_apis;x86_64"
-          printf 'no\n' | avdmanager create avd --force --name opra_ci_api_35 --package "system-images;android-35;google_apis;x86_64"
+          avd_home="$RUNNER_TEMP/android-avd"
+          mkdir -p "$avd_home"
+          printf 'ANDROID_AVD_HOME=%s\n' "$avd_home" >> "$GITHUB_ENV"
+          ANDROID_AVD_HOME="$avd_home" avdmanager create avd --force --name opra_ci_api_35 --package "system-images;android-35;google_apis;x86_64" --device pixel_6
+          test -f "$avd_home/opra_ci_api_35.ini"
 
       - name: Start emulator
         shell: bash
