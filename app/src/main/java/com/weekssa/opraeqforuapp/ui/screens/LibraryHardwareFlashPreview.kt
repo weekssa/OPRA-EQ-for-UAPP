@@ -8,10 +8,12 @@ import com.weekssa.opraeqforuapp.domain.kt02h20.FiveBandOptimizationResult
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20DeviceSpecs
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FiveBandOptimizer
 import com.weekssa.opraeqforuapp.domain.kt02h20.adaptationSummary
+import com.weekssa.opraeqforuapp.domain.hardware.HardwareEqDeviceSpecs
 
 internal enum class LibraryHardwareFlashDevice(val displayName: String) {
     BLACK_PEARL("TRN Black Pearl"),
     FIIO_JA11("FiiO JA11"),
+    SIMGOT_EW300("SIMGOT EW300 DSP"),
 }
 
 internal sealed interface LibraryHardwareFlashPreview {
@@ -38,9 +40,12 @@ internal sealed interface LibraryHardwareFlashPreview {
 internal fun connectedLibraryHardwareFlashDevice(
     blackPearlConnected: Boolean,
     fiioJa11Connected: Boolean,
+    ew300Connected: Boolean = false,
 ): LibraryHardwareFlashDevice? = when {
-    blackPearlConnected && !fiioJa11Connected -> LibraryHardwareFlashDevice.BLACK_PEARL
-    fiioJa11Connected && !blackPearlConnected -> LibraryHardwareFlashDevice.FIIO_JA11
+    listOf(blackPearlConnected, fiioJa11Connected, ew300Connected).count { it } != 1 -> null
+    blackPearlConnected -> LibraryHardwareFlashDevice.BLACK_PEARL
+    fiioJa11Connected -> LibraryHardwareFlashDevice.FIIO_JA11
+    ew300Connected -> LibraryHardwareFlashDevice.SIMGOT_EW300
     else -> null
 }
 
@@ -66,6 +71,21 @@ internal fun libraryHardwareFlashPreview(
 
     LibraryHardwareFlashDevice.FIIO_JA11 -> when (
         val result = Kt02h20FiveBandOptimizer.optimize(profile, Kt02h20DeviceSpecs.FIIO_JA11)
+    ) {
+        is FiveBandOptimizationResult.Ready -> LibraryHardwareFlashPreview.Ready(
+            device = device,
+            fidelity = result.representation.fidelity,
+            adaptationSummary = result.representation.adaptationSummary(),
+            gainDb = result.representation.playbackGainDb,
+        )
+        is FiveBandOptimizationResult.NotSuitable -> LibraryHardwareFlashPreview.NotSuitable(
+            device = device,
+            reason = result.reason,
+        )
+    }
+
+    LibraryHardwareFlashDevice.SIMGOT_EW300 -> when (
+        val result = Kt02h20FiveBandOptimizer.optimize(profile, HardwareEqDeviceSpecs.SIMGOT_EW300)
     ) {
         is FiveBandOptimizationResult.Ready -> LibraryHardwareFlashPreview.Ready(
             device = device,

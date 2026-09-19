@@ -65,6 +65,10 @@ internal fun CapabilityDrivenDeviceStatus(
             onSetHeadsetControl = onSetFiioJa11HeadsetControl,
             onSetUacMode = onSetFiioJa11UacMode,
         )
+        DacDeviceId.SIMGOT_EW300 -> Text(
+            text = "EW300 five-band EQ is managed from My EQs / EQ Library.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         DacDeviceId.JCALLY_JM12_STOCK -> Text(
             text = "This USB device is not supported.",
             color = MaterialTheme.colorScheme.onSurfaceVariant,

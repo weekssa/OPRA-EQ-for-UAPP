@@ -125,6 +125,9 @@ class MainActivity : ComponentActivity() {
         onResetFiioJa11FromMyDac = {
             resolve(viewModel.resetFiioJa11FromMyDacToFlat())
         },
+        onFlashEw300FromMyDac = { profile -> resolve(viewModel.flashEw300FromMyDac(profile)) },
+        onResetEw300FromMyDac = { resolve(viewModel.resetEw300ToFlat()) },
+        onQualifyEw300GlobalGain = { resolve(viewModel.qualifyEw300GlobalGain()) },
         onConnectBlackPearl = viewModel::connectBlackPearl,
         onResetBlackPearl = {
             resolve(viewModel.resetBlackPearlToFlat())
@@ -133,6 +136,8 @@ class MainActivity : ComponentActivity() {
         onResetFiioJa11 = {
             resolve(viewModel.resetFiioJa11ToFlat())
         },
+        onConnectEw300 = viewModel::connectEw300,
+        onResetEw300 = { resolve(viewModel.resetEw300ToFlat()) },
         onConnectJcallyJm12 = viewModel::connectJcallyJm12,
         onResetJcallyJm12 = {
             resolve(viewModel.resetJcallyJm12ToFlat())
@@ -203,6 +208,7 @@ class MainActivity : ComponentActivity() {
         onActiveExportTargetChange = viewModel::setActiveExportTarget,
         onDirectBlackPearlFlashEnabledChange = viewModel::setDirectBlackPearlFlashEnabled,
         onDirectFiioJa11FlashEnabledChange = viewModel::setDirectFiioJa11FlashEnabled,
+        onDirectEw300FlashEnabledChange = viewModel::setDirectEw300FlashEnabled,
         onDirectJcallyJm12FlashEnabledChange = viewModel::setDirectJcallyJm12FlashEnabled,
     )
 
