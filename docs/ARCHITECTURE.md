@@ -412,6 +412,8 @@ No analytics or telemetry. Local selections/settings/generated state/recovery st
 
 ## Validation architecture
 
+EW300 discovery evidence is maintained separately from shipping product behavior. The recovery branch does not include the diagnostic APK/tooling in its shipping build. If future discovery tooling is created, its launcher DEX definition and exact signed cold launch must be validated independently; those checks establish diagnostic startup only, not hardware EQ support.
+
 Automated gates protect both canonical and target-specific behavior:
 
 - Kotlin UAPP parity/golden tests;

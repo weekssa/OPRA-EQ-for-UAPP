@@ -17,6 +17,8 @@ import com.weekssa.opraeqforuapp.data.export.PresetCleanupRepository
 import com.weekssa.opraeqforuapp.data.export.PresetExportRepository
 import com.weekssa.opraeqforuapp.data.hardware.HardwareEqRepository
 import com.weekssa.opraeqforuapp.data.kt02h20.AndroidFiioJa11UsbTransport
+import com.weekssa.opraeqforuapp.data.kt02h20.AndroidEw300UsbTransport
+import com.weekssa.opraeqforuapp.data.kt02h20.Ew300GainStatePreferences
 import com.weekssa.opraeqforuapp.data.library.CanonicalCatalogRepository
 import com.weekssa.opraeqforuapp.data.library.CanonicalFirstCatalogRepository
 import com.weekssa.opraeqforuapp.data.library.HttpCanonicalCatalogSource
@@ -32,6 +34,8 @@ import com.weekssa.opraeqforuapp.data.update.AppUpdateCoordinator
 import com.weekssa.opraeqforuapp.data.update.GitHubReleaseUpdateRepository
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlasher
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Flasher
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300Flasher
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300GainQualifier
 import com.weekssa.opraeqforuapp.ui.EqLibraryViewModel
 import java.net.URL
 import kotlinx.coroutines.flow.map
@@ -51,12 +55,14 @@ internal fun createEqLibraryRuntimeDependencies(context: Context): EqLibraryRunt
 
     // Physical presence is intentionally established before preferences so Automatic output can
     // project one connected supported DAC over the user's durable manual fallback without requiring
-    // a Settings selection first. Current runtime hardware is Black Pearl + FiiO only.
+    // a Settings selection first. Current runtime hardware is Black Pearl, FiiO, and EW300.
     val blackPearlTransport = AndroidBlackPearlUsbTransport(appContext)
     val fiioJa11Transport = AndroidFiioJa11UsbTransport(appContext)
+    val ew300Transport = AndroidEw300UsbTransport(appContext)
     val dacSessionRepository = DacSessionRepository(
         blackPearlTransport = blackPearlTransport,
         fiioJa11Transport = fiioJa11Transport,
+        ew300Transport = ew300Transport,
     )
     val preferencesRepository = AppPreferencesRepository(
         dataStore = appContext.eqLibraryPreferencesDataStore,
@@ -107,6 +113,7 @@ internal fun createEqLibraryRuntimeDependencies(context: Context): EqLibraryRunt
         source = SessionFiioJa11DeviceControlSource(dacSessionRepository),
         operationGate = FiioJa11SessionOperationGate(dacSessionRepository),
     )
+    val ew300GainStateStore = Ew300GainStatePreferences(appContext)
     val hardwareRepository = HardwareEqRepository(
         dacSessionRepository = dacSessionRepository,
         blackPearlFlasher = BlackPearlFlasher(
@@ -114,6 +121,11 @@ internal fun createEqLibraryRuntimeDependencies(context: Context): EqLibraryRunt
             BlackPearlGainStatePreferences(appContext),
         ),
         fiioJa11Flasher = FiioJa11Flasher(fiioJa11Transport),
+        ew300Flasher = Ew300Flasher(
+            transport = ew300Transport,
+            gainStateStore = ew300GainStateStore,
+        ),
+        ew300GainQualifier = Ew300GainQualifier(ew300Transport, ew300GainStateStore),
     )
 
     return EqLibraryRuntimeDependencies(

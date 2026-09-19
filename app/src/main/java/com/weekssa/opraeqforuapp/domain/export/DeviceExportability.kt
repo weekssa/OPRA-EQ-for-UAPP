@@ -32,6 +32,7 @@ fun assessDeviceExportability(
     }
     ExportDevice.BLACK_PEARL -> assessHardware(profile, HardwareEqDeviceSpecs.TRN_BLACK_PEARL)
     ExportDevice.FIIO_JA11 -> assessHardware(profile, HardwareEqDeviceSpecs.FIIO_JA11)
+    ExportDevice.SIMGOT_EW300 -> assessHardware(profile, HardwareEqDeviceSpecs.SIMGOT_EW300)
     ExportDevice.JCALLY_JM12 -> assessHardware(profile, HardwareEqDeviceSpecs.JCALLY_JM12_STOCK)
     else -> buildFileExportDeviceVariant(profile, device)?.let { variant ->
         when (variant.fidelity) {
@@ -51,6 +52,7 @@ fun deviceAdaptationSummary(
 ): String? = when (device) {
     ExportDevice.BLACK_PEARL -> hardwareSummary(profile, HardwareEqDeviceSpecs.TRN_BLACK_PEARL)
     ExportDevice.FIIO_JA11 -> hardwareSummary(profile, HardwareEqDeviceSpecs.FIIO_JA11)
+    ExportDevice.SIMGOT_EW300 -> hardwareSummary(profile, HardwareEqDeviceSpecs.SIMGOT_EW300)
     ExportDevice.JCALLY_JM12 -> hardwareSummary(profile, HardwareEqDeviceSpecs.JCALLY_JM12_STOCK)
     else -> null
 }
