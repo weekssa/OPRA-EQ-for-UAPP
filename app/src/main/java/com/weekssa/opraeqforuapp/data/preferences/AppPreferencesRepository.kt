@@ -99,6 +99,7 @@ class AppPreferencesRepository(
             outputBehavior = outputBehavior,
             directBlackPearlFlashEnabled = preferences[Keys.DirectBlackPearlFlashEnabled] ?: false,
             directFiioJa11FlashEnabled = preferences[Keys.DirectFiioJa11FlashEnabled] ?: false,
+            directEw300FlashEnabled = preferences[Keys.DirectEw300FlashEnabled] ?: false,
             // Legacy migration state only. JCALLY is no longer a current product output.
             directJcallyJm12FlashEnabled = preferences[Keys.DirectJcallyJm12FlashEnabled] ?: false,
             hiddenCanonicalProfileIds = preferences[Keys.HiddenCanonicalProfileIds].orEmpty(),
@@ -173,6 +174,10 @@ class AppPreferencesRepository(
 
     suspend fun setDirectFiioJa11FlashEnabled(enabled: Boolean) = updatePreferences { preferences ->
         preferences[Keys.DirectFiioJa11FlashEnabled] = enabled
+    }
+
+    suspend fun setDirectEw300FlashEnabled(enabled: Boolean) = updatePreferences { preferences ->
+        preferences[Keys.DirectEw300FlashEnabled] = enabled
     }
 
     suspend fun setDirectJcallyJm12FlashEnabled(enabled: Boolean) = updatePreferences { preferences ->
@@ -270,6 +275,7 @@ class AppPreferencesRepository(
         val ActiveExportTarget = stringPreferencesKey("active_export_target")
         val DirectBlackPearlFlashEnabled = booleanPreferencesKey("direct_black_pearl_flash_enabled")
         val DirectFiioJa11FlashEnabled = booleanPreferencesKey("direct_fiio_ja11_flash_enabled")
+        val DirectEw300FlashEnabled = booleanPreferencesKey("direct_ew300_flash_enabled")
         val DirectJcallyJm12FlashEnabled = booleanPreferencesKey("direct_jcally_jm12_flash_enabled")
         val HiddenCanonicalProfileIds = stringSetPreferencesKey("hidden_canonical_profile_ids")
         @Suppress("unused")

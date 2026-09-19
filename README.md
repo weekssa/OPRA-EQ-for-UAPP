@@ -23,6 +23,10 @@ The public v0.6.0 APK is `EQ-Library-v0.6.0.apk`. Its SHA-256 is:
 
 Android may ask you to allow installation from the browser or file manager used to open the APK because GitHub Releases are installed outside an app store. EQ Library itself does not request package-install permission and never silently installs updates.
 
+## EW300 DSP beta status
+
+The SIMGOT EW300 DSP cable is implemented on the v0.7 beta branch through the shared My DAC, finite-hardware, and Direct Flash framework. The exact five-band raw transport and software guards are covered by automated evidence; final gain, persistence, Reset, and complete-device behavior remain hardware-validation pending. It is not part of the public v0.6.0 release. See [EW300 status](docs/V0.7_EW300_DSP_STATUS.md) and [protocol notes](docs/EW300_DSP_PROTOCOL_NOTES.md).
+
 ## v0.6.0 release
 
 v0.6.0 is publicly released from merge commit `e5ffa5d00862edc3b79bf52e1508db5244845e94`. The signed release build passed the controlled publication workflow; the focused Pixel 9 Black Pearl/UI smoke test passed on exact behavior evidence source `eef5633e18a4ac311f110493e29633bf382675e3`.
@@ -77,9 +81,9 @@ Exports use Android's system folder picker. EQ Library does not request broad st
 | **TRN Black Pearl** | `.txt` export, 10-band Direct Flash, playback-gain/headroom handling, Reset EQ to flat | **Hardware-qualified for the v0.6.0 path** |
 | **FiiO JA11** | Hardware-only 5-band Direct Flash, global EQ gain, Apply/Save/readback, Reset EQ to flat | **Hardware validation pending** |
 | **JCALLY JM12 (stock firmware)** | Hardware-only 5-band Direct Flash, readback verification, tracked playback-gain adjustment, Reset EQ to flat | **Hardware validation pending · power-cycle persistence unclaimed** |
-| **SIMGOT EW300 DSP cable** | Planned hardware-only EQ read, edit, Flash, verification, capture, and qualified reset through the existing My DAC framework | **Planned for v0.7.0 · protocol discovery pending** |
+| **SIMGOT EW300 DSP cable** | v0.7 beta hardware-only EQ read, guarded edit/Flash, verification, capture, and pending reset through the existing My DAC framework | **Beta candidate · hardware validation pending** |
 
-The next planned hardware addition is the SIMGOT EW300 DSP cable. It is not supported by v0.6.0. The work will reuse the existing device registry, finite-hardware response adapter, authoritative DAC session, and My DAC/Flash/capture flows, then stop at a signed candidate for owner testing. See the [v0.7 EW300 DSP implementation plan](docs/V0.7_EW300_DSP_IMPLEMENTATION_PLAN.md).
+The SIMGOT EW300 DSP cable is not supported by v0.6.0. The v0.7 recovery candidate reuses the existing device registry, finite-hardware response adapter, authoritative DAC session, and My DAC/Flash/capture flows. Final gain, persistence, Reset, and complete-device behavior remain hardware-validation pending. See the [v0.7 EW300 DSP implementation plan](docs/V0.7_EW300_DSP_IMPLEMENTATION_PLAN.md).
 
 Direct Flash is OFF by default for newly introduced hardware outputs. Add/Save never automatically writes to a DAC. Flash and Reset require explicit confirmation where the maintained device safety contract requires it.
 
