@@ -40,10 +40,10 @@
     {
       "consecutive_failures": 0,
       "cursor": "0ec6103ee4c9ad055da7c5009e1d727e97ebe49cb37f5ebde731275eebc63902",
-      "last_attempt_at": "2026-09-20T15:57:48Z",
+      "last_attempt_at": "2026-09-21T18:11:01Z",
       "last_content_fingerprint": "df42356a0a3dfe8b715537097589a0772482a30994110b1446d6b9710140b11c",
       "last_error": null,
-      "last_successful_scan_at": "2026-09-20T15:57:48Z",
+      "last_successful_scan_at": "2026-09-21T18:11:01Z",
       "last_terms_review_at": "2026-08-29T19:35:00Z",
       "lifecycle": "active",
       "parser_version": "4",
@@ -182,5 +182,5 @@
       "source_id": "topping-community"
     }
   ],
-  "updated_at": "2026-09-21T17:07:42Z"
+  "updated_at": "2026-09-21T18:11:02Z"
 }
