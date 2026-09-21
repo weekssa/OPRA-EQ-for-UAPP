@@ -362,6 +362,20 @@ and cold-launch gates. The exact signed APK is
 No physical mutation has been attempted with this candidate. The one consolidated EW300 session
 remains pending, and merge, publication, and any public support claim remain owner-controlled.
 
+## 2026-09-21 EW300 trace-boundary follow-up — SOFTWARE PASS, HARDWARE GATE OPEN
+
+The bounded Extra-High review found one actionable evidence defect in the prior candidate: Apply
+did not mark the operation trace immediately before its first hardware write. The follow-up at
+source `d858cc56728ab3fd6deef0b158a35d1c04149f7e` adds that boundary and a direct regression test
+that a queued automatic reconnect rechecks the mutation gate before launching USB connection.
+Android unit/lint/build, emulator UI, CodeQL, catalog, priority-community, dependency, signing,
+alignment, installation, cold-launch, and signed-beta publication checks all passed. The exact APK
+is `EQ-Library-v0.7.0-beta-d858cc5.apk` with SHA-256
+`96b453674b2b5cea6cdc3c18ba33d60187f56520cb9abf44db79fb66089613db`; signed workflow #1270.
+This evidence-only follow-up was not physically tested; no further physical mutation is authorized.
+Replay/competing-job counters remain unmeasured zero fields, and PR #23 stays draft with no merge,
+publication, or public EW300 support claim authorized.
+
 ## [0.1.0] - 2026-08-16
 
 ### Added

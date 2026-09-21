@@ -24,6 +24,8 @@ merge, publication, or public support claim.
 | E014 | Exact candidate `7035518b042a7b19c0495869cf247359ee27b4a2`; owner screenshots at 12:07–12:08 and readable post-reconnect report `EW300 capability report (3)` | One guarded Apply attempt caused the EW300 to re-enumerate and Android displayed a USB permission request. The request timed out, but after the owner manually reconnected, the exact-device read-only report passed and confirmed Band 1 at `+4.00 dB` (`0x26` gain field changed from the prior `+4.50 dB` snapshot); global gain remained unchanged. This is evidence that the hardware value persisted, not an end-to-end Apply PASS. | No operation readable/JSON trace was attached, so Save count, write count, and final-readback completion are not independently established. Do not repeat the `+4.50 → +4.00 dB` mutation; one exact baseline-restoration transaction remains required. If the documented post-Save replacement permission appears during that restoration, approve it once and do not retry the mutation. |
 | E015 | Exact candidate `7035518b042a7b19c0495869cf247359ee27b4a2`; owner readable report `EW300 capability report (4)` and JSON `EW300 capability report JSON (8)` | After restoration, the exact-device read-only report passed with `stateKnown=true`; Band 1 returned to `+4.50 dB` and the complete register snapshot matched the original baseline, including unchanged global gain. This proves the owner’s EW300 state was restored after the observed persisted edit. | The candidate’s Apply operation report was not attached, so the app’s Save/readback counters and end-to-end operation outcome remain unverified. Hardware state is restored; no further physical mutation is authorized for this candidate. |
 | E016 | Section 7 bounded Extra-High release gate after candidate freeze and the single physical session | `EXTRA-HIGH GATE READY`: review whether the `DEVICE_GLOBAL_GAIN` mapping plus the pre-Save gate and invocation-time `connectAutomatically()` guard preserve no-replay, permission-before-write, single-Save, final-readback, and known-state invariants. | No Extra-High model override is available in this task. Smallest next action is one bounded Extra-High review of the current diff and targeted tests; do not repeat research, Save qualification, or hardware testing. |
+| E017 | Bounded Extra-High review of source `7035518b042a7b19c0495869cf247359ee27b4a2` and follow-up commit `d858cc56728ab3fd6deef0b158a35d1c04149f7e` | Conditional PASS. Source and targeted tests preserve the absolute `DEVICE_GLOBAL_GAIN` mapping, permission-before-write guard, single Save, no automatic mutation replay, final readback, and known-state handling. The smallest follow-up added the Apply `markBeforeFirstWrite` trace boundary and a queued `connectAutomatically()` gate regression test. | Two evidence limitations remain: replay/competing-job counters are still emitted as zero rather than measured, and no end-to-end Apply operation report was exported from the physical session. Keep PR #23 draft, do not request hardware, and do not make a public EW300 support claim. |
+| E018 | `d858cc56728ab3fd6deef0b158a35d1c04149f7e`; signed workflow [#1270](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/35633220078); artifact digest `sha256:a49eea384cee0ad769e8f5a1ef41c7cba43e3a153c7d2e995d1d74c3eaf8414d`; APK `EQ-Library-v0.7.0-beta-d858cc5.apk`; APK SHA-256 `96b453674b2b5cea6cdc3c18ba33d60187f56520cb9abf44db79fb66089613db`; signer `65C1C1256DAE3C49E3548F334C91F0BA991969E9BE9E0B223BA4E253D2114747` | Latest exact signed candidate passed Android unit/lint/build, emulator UI, CodeQL, dependency, catalog, priority-community, package/version, pinned-signer, alignment, installation, cold-launch, and signed-beta publication checks. | This is an evidence-only trace/test follow-up to the physically tested `7035518b` candidate. No physical retest is authorized; exact-candidate hardware qualification and release/public-support approval remain open. |
 
 ## Exact identity boundary
 
@@ -37,11 +39,12 @@ interface profile; VID/PID alone is insufficient.
 
 ## Candidate gate status
 
-The current replacement signed candidate at `7035518b042a7b19c0495869cf247359ee27b4a2` passed the
+The latest signed candidate at `d858cc56728ab3fd6deef0b158a35d1c04149f7e` passed the
 software, security, signing, installation, cold-launch, accessibility/emulator, and release-polish
-gates in one frozen workflow cycle. It has not yet been used for physical mutation. The generated
-candidate manifest is retained in signed workflow artifact
-`EQ-Library-signed-beta-7035518b042a7b19c0495869cf247359ee27b4a2`.
+gates in one frozen workflow cycle. It is an evidence-only follow-up to the physically tested
+`7035518b` candidate and has not been used for physical mutation. The generated candidate manifest is
+retained in signed workflow artifact
+`EQ-Library-signed-beta-d858cc56728ab3fd6deef0b158a35d1c04149f7e`.
 
 The physical session is complete as one consolidated session only, with no automatic mutation
 retry; the final hardware state was restored exactly. The remaining release review is to inspect
