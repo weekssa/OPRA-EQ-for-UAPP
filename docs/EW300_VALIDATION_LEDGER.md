@@ -15,6 +15,7 @@ merge, publication, or public support claim.
 | E005 | Current branch tests and protocol fixtures | Exact fingerprint, direct-Hz Peak path, strict four-byte baseline, no write retry, volatile restoration, and bounded failure behavior remain covered. | Does not qualify an unobserved retail revision or unsupported DEVICE controls. |
 | E006 | Section 7 Extra-High gate 1 | `EXTRA-HIGH GATE READY`: review whether the root cause, reconnect gate, Save release point, replacement authorization, race/idempotency behavior, and no-replay tests are sufficient. | Smallest action: perform one bounded Extra-High code review on the frozen diff; do not rerun hardware or restart research. |
 | E007 | Section 7 Extra-High gate 2 | `EXTRA-HIGH GATE READY`: after CI freezes the candidate, review release provenance, invariant report fields, software gates, and hardware stop conditions. | Smallest action: perform one bounded Extra-High release audit; then either request the single physical session or record the specific defect. |
+| E008 | `855364e8a9d758f12e7d2a48bdaf89f457e28070`; signed workflow #1258; artifact digest `sha256:151555c3d9bd8664e119a59f2b99d4ab4a3ac115dbb5cfa06ead2ee061589fc4` | Exact signed candidate passed the complete software/release gate: Android unit/UI/build validation, lint, CodeQL, dependency, catalog, priority-community, package/version, pinned-signer, alignment, install, and cold-launch checks. APK `EQ-Library-v0.7.0-beta-855364e.apk` SHA-256 is `bfcb77f4774e8f0a9e48c1da13a262e9033c8e0f42a7a18774e864c0b1774b44`; signer is `65C1C1256DAE3C49E3548F334C91F0BA991969E9BE9E0B223BA4E253D2114747`. | Candidate is ready for the one consolidated owner hardware session. No physical result is inferred, no merge/publication is authorized, and the temporary `mobile-test-apk` surface is not a release publication. |
 
 ## Exact identity boundary
 
@@ -28,8 +29,12 @@ interface profile; VID/PID alone is insufficient.
 
 ## Candidate gate status
 
-The current implementation branch is not yet a release candidate. Before the owner is asked for
-hardware, the exact signed candidate must pass targeted unit tests, the complete release workflow,
-security and dependency checks, lint, emulator install/upgrade/cold-launch checks, accessibility
-and release-polish checks, and manifest/checksum/signer verification on one frozen source commit.
-The physical session is one consolidated session only, with no automatic mutation retry.
+The exact signed candidate at `855364e8a9d758f12e7d2a48bdaf89f457e28070` has passed the software,
+security, signing, installation, cold-launch, accessibility/emulator, and release-polish gates in
+one frozen workflow cycle. The generated candidate manifest is retained in signed workflow
+artifact `EQ-Library-signed-beta-855364e8a9d758f12e7d2a48bdaf89f457e28070`.
+
+The physical session is one consolidated session only, with no automatic mutation retry. The
+bounded Extra-High release audit remains `EXTRA-HIGH GATE READY`: review whether the exact artifact
+provenance, operation-report invariants, software gates, and hardware stop conditions are complete;
+the smallest action is one focused review of the frozen diff and candidate record.

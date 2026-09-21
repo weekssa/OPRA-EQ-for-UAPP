@@ -297,6 +297,16 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Hands-on testing passed for in-place upgrade, OPRA browsing/selection, revised selection behavior, device-targeted export, app-owned file cleanup, UAPP import, and TRN Black Pearl import.
 - DX5 II and DX1 II export formats remain implemented but hardware-untested.
 
+## 2026-09-21 EW300 release-candidate gate — SOFTWARE PASS, HARDWARE PENDING
+
+The exact signed EW300 candidate from source `855364e8a9d758f12e7d2a48bdaf89f457e28070`
+passed the complete automated, security, signing, emulator installation, cold-launch,
+accessibility, and release-polish gates. APK SHA-256 is
+`bfcb77f4774e8f0a9e48c1da13a262e9033c8e0f42a7a18774e864c0b1774b44`; the pinned signer remains
+`65C1C1256DAE3C49E3548F334C91F0BA991969E9BE9E0B223BA4E253D2114747`. The one consolidated
+physical EW300 session remains outstanding. No merge, publication, or public support claim is
+authorized.
+
 ## [0.1.0] - 2026-08-16
 
 ### Added
