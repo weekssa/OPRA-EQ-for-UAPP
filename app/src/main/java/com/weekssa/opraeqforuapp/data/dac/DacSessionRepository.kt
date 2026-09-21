@@ -226,16 +226,16 @@ class DacSessionRepository(
             combine(connectionState, present, allowed) { state, isPresent, canReconnect ->
                 Triple(state, isPresent, canReconnect)
             }.collect { (state, isPresent, canReconnect) ->
-                    if (
-                        policy.shouldReconnect(
-                            isPresent = isPresent,
-                            isConnected = isConnected(state),
-                            isDisconnected = isDisconnected(state),
-                        )
-                    ) && canReconnect && allowReconnect()) {
-                        connect()
-                    }
+                if (
+                    policy.shouldReconnect(
+                        isPresent = isPresent,
+                        isConnected = isConnected(state),
+                        isDisconnected = isDisconnected(state),
+                    ) && canReconnect && allowReconnect()
+                ) {
+                    connect()
                 }
+            }
         }
     }
 
