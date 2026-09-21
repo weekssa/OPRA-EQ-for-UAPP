@@ -328,6 +328,17 @@ the immutable testing APK is [available here](https://raw.githubusercontent.com/
 No physical mutation has been attempted with this candidate. The one consolidated EW300 session
 remains pending, and merge, publication, and any public support claim remain owner-controlled.
 
+## 2026-09-21 EW300 physical session — HARDWARE STATE RESTORED, APP TELEMETRY INCOMPLETE
+
+On exact candidate `7035518b042a7b19c0495869cf247359ee27b4a2`, the EW300 re-enumerated after the
+reviewed edit and Android displayed the documented replacement USB permission request. The first
+attempt timed out because the replacement authorization was not completed, but a subsequent
+read-only report confirmed the edited `+4.00 dB` value. A required restoration transaction then
+returned Band 1 to `+4.50 dB`, and the final complete read-only snapshot matched the original
+baseline with global gain unchanged. The candidate Apply operation report was not exported, so
+the app’s Save/readback counters and end-to-end operation outcome remain unverified. No further
+physical mutation is authorized for this candidate.
+
 ## 2026-09-21 EW300 reconnect-gate candidate — SOFTWARE PASS, HARDWARE PENDING
 
 After the `8bb87aa` candidate repeatedly surfaced an Android USB permission prompt when a
