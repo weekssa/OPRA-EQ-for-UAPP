@@ -1,5 +1,6 @@
 package com.weekssa.opraeqforuapp.data.dac
 
+import com.google.common.truth.Truth.assertThat
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -43,5 +44,22 @@ class Ew300ReconnectGateTest {
         assertFalse(gate.canAutomaticReconnect())
         gate.beginManualConnect()
         assertTrue(gate.canAutomaticReconnect())
+    }
+
+    @Test
+    fun queuedAutomaticReconnectRechecksGateBeforeLaunchingConnection() {
+        val gate = Ew300ReconnectGate()
+        var connectionCount = 0
+        val queuedConnectAutomatically = {
+            if (gate.canAutomaticReconnect()) connectionCount++
+        }
+
+        gate.beginMutation()
+        queuedConnectAutomatically()
+        assertThat(connectionCount).isEqualTo(0)
+
+        gate.markSaveSent()
+        queuedConnectAutomatically()
+        assertThat(connectionCount).isEqualTo(1)
     }
 }

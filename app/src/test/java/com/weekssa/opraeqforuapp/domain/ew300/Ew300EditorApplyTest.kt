@@ -39,14 +39,17 @@ class Ew300EditorApplyTest {
         )
         val working = HardwareEqEditor.useSafeGain(edited, HardwareEqEditSpecs.SIMGOT_EW300)
         val transport = FakeTransport(bundle)
+        var beforeFirstWriteCount = -1
 
         val result = Ew300EditorApplier(transport).apply(
             workingCopy = working,
             allowCautions = false,
             isSessionCurrent = { it == 1L },
+            beforeFirstWrite = { beforeFirstWriteCount = transport.writeCount },
         )
 
         assertThat(result).isEqualTo(Ew300EditorApplyResult.Verified)
+        assertThat(beforeFirstWriteCount).isEqualTo(0)
         assertThat(transport.writeCount).isGreaterThan(0)
         assertThat(transport.commitCount).isEqualTo(1)
         assertThat(Ew300Protocol.globalGainDb(transport.state.getValue(Ew300Protocol.GLOBAL_GAIN_REGISTER)))

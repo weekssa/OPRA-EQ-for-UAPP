@@ -81,6 +81,10 @@ class Ew300Flasher(
             workingCopy = workingCopy,
             allowCautions = allowCautions,
             isSessionCurrent = isSessionCurrent,
+            beforeFirstWrite = {
+                trace.markBeforeFirstWrite(transport.permissionRequestCount)
+                trace.stage(Ew300OperationStage.WRITING)
+            },
         )
     }
 

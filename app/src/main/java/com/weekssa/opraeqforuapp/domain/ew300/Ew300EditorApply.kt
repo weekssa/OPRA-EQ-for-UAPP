@@ -27,6 +27,7 @@ class Ew300EditorApplier(
         workingCopy: HardwareEqEditWorkingCopy,
         allowCautions: Boolean,
         isSessionCurrent: (Long) -> Boolean,
+        beforeFirstWrite: () -> Unit = {},
     ): Ew300EditorApplyResult {
         if (transport.deviceFingerprintKey == null) {
             return Ew300EditorApplyResult.DeviceUnavailable("The exact EW300 device fingerprint is unavailable.")
@@ -74,6 +75,7 @@ class Ew300EditorApplier(
         val gainChanged = targetGainSteps != expectedGainSteps
         if (!bandsChanged && !gainChanged) return Ew300EditorApplyResult.InvalidPlan("There are no reviewed hardware changes to apply.")
 
+        beforeFirstWrite()
         if (gainChanged && targetGainSteps < expectedGainSteps) {
             if (!writeGain(targetGainSteps)) {
                 return restoreAfterFailure(
