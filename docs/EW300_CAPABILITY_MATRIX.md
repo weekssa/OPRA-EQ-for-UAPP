@@ -9,7 +9,7 @@ capability is classified so implementation does not imply unsupported hardware b
 | Five-band native register read | SUPPORTED_AND_IMPLEMENTED | E001 and protocol fixtures; strict four-byte reads. |
 | Direct-Hz frequency encoding | SUPPORTED_AND_IMPLEMENTED | Accepted acoustic/protocol evidence; bounded codec rejects out-of-range values. |
 | Peak-only capture and canonical conversion | SUPPORTED_AND_IMPLEMENTED | E001 and current capability profile; playback gain remains outside captured EQ identity. |
-| Peak Apply / Flash / Reset transaction | SUPPORTED_AND_IMPLEMENTED | Current guarded flasher, shared session gate, pre-Save volatile readback, one Save, final readback; current-head hardware edit and exact restoration were observed, but the candidate Apply operation trace is incomplete. |
+| Peak Apply / Flash / Reset transaction | SUPPORTED_AND_IMPLEMENTED | Current guarded flasher, shared session gate, pre-Save volatile readback, one Save, final readback, and replacement-session checks. E027 is a complete `APPLY` report with final readback match on candidate `676fadf`; no separate `FLASH` report is attached and the current UX follow-up has not been physically retested. |
 | Save persistence | SUPPORTED_AND_IMPLEMENTED | E001 frozen exact-candidate evidence; current candidate must still complete the consolidated session before release claim. |
 | Playback-gain device state | SUPPORTED_AND_IMPLEMENTED | E001 and bounded gain codec; tracked separately from canonical EQ. |
 | Low-shelf / high-shelf production capture or Flash | INSUFFICIENT_EVIDENCE | Raw experiments are not enough to establish acoustic semantics; product stays Peak-only. |
@@ -18,7 +18,7 @@ capability is classified so implementation does not imply unsupported hardware b
 | Erase, calibration, recovery, and cross-flash | UNSAFE_OR_OUT_OF_SCOPE | These destructive or vendor-level operations require separate exact protocol, safety, and restoration evidence; they are not part of the current EW300 release. |
 | Unknown EW300 revisions or VID/PID-only matches | UNSAFE_OR_OUT_OF_SCOPE | Exact identity and capability profile reject them. |
 | Automatic mutation retry | UNSAFE_OR_OUT_OF_SCOPE | No write or Save replay; uncertain state is terminal. |
-| Replacement-session reconnect after Save | SUPPORTED_AND_IMPLEMENTED | Reconnect gate plus exact session generation/fingerprint checks; the physically observed `7035518b` session showed re-enumeration and persisted readback after manual replacement authorization, while its candidate operation telemetry remains incomplete. |
+| Replacement-session reconnect after Save | SUPPORTED_AND_IMPLEMENTED | Reconnect gate plus exact session generation/fingerprint checks; E027 records replacement observed, exact identity matched, replacement authorization, and final readback match. Android permission remains OS-controlled for a re-enumerated USB instance. |
 | Readable/JSON operation evidence | SUPPORTED_AND_IMPLEMENTED | DEVICE surface shares privacy-safe `Ew300OperationTrace`; replay and competing-job counters are explicitly `unmeasured`/`null` when the build does not instrument them, not reported as measured zero. |
 
 Decision vocabulary is intentionally explicit: `SUPPORTED_AND_IMPLEMENTED`,

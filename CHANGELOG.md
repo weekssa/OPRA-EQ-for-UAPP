@@ -10,6 +10,9 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 - Added the EW300 reconnect mutation gate and privacy-safe readable/JSON operation report. Automatic reconnect is blocked before the single Save send, no mutation is replayed, and the report records permission-before-write, write, Save, replacement, restoration, and final-readback invariants. Current-head CI and the one consolidated owner hardware session remain pending.
 
+- Recorded the current signed candidate’s exported EW300 `APPLY` evidence: one Save, permission only after the first-write boundary during replacement reconnect, exact replacement identity verification, and final hardware readback match. The report is not a Flash result; replay and competing-job counters remain explicitly unmeasured.
+- Added truthful EW300 reconnect feedback: after a verified Apply/Flash/Reset, My DAC states that the DAC reconnected and final hardware readback matched; the connecting state explains that Android may require permission again after re-enumeration. Android’s OS permission prompt remains required when the USB instance is replaced.
+
 - Accepted the frozen signed-candidate evidence for exact fingerprint `vid=31b2|pid=111|manufacturer=LE XIAN|product=SIMGOT EW300 DSP|serial=2024-07-03-0000-0000-0000|interface=3`: read-only PASS and `VERIFIED` Save, Peak, playback-gain, exact restoration, and two power-removal checks.
 - Added the exact-fingerprint production capability profile and removed the completed Save qualification action from the normal product UI. The Save qualification must not be run again.
 - Added a shared strict EW300 baseline/restore coordinator and guarded persistent Apply, Flash, Reset, and reconnect-aware verification paths.
