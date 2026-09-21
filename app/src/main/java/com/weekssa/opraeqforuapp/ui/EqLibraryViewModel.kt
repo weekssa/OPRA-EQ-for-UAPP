@@ -60,6 +60,7 @@ import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityReport
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300PersistenceQualificationResult
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationTrace
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300Protocol
 import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceControls
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
@@ -125,6 +126,7 @@ private data class HardwareConnectionUiState(
     val blackPearlHardwareEqMatch: HardwareEqMatchResolution?,
     val blackPearlEditorState: MyDacEditorUiState,
     val ew300EditorState: MyDacEditorUiState,
+    val ew300OperationTrace: Ew300OperationTrace?,
     val blackPearlQualificationState: BlackPearlQualificationUiState,
     val fiioJa11DeviceState: FiioJa11DeviceUiState,
 )
@@ -150,6 +152,7 @@ data class EqLibraryUiState(
     val blackPearlSavedGeneralEqs: List<SavedGeneralEqRecord> = emptyList(),
     val blackPearlEditorState: MyDacEditorUiState = MyDacEditorUiState(),
     val ew300EditorState: MyDacEditorUiState = MyDacEditorUiState(),
+    val ew300OperationTrace: Ew300OperationTrace? = null,
     val blackPearlQualificationState: BlackPearlQualificationUiState = BlackPearlQualificationUiState(),
     val fiioJa11DeviceState: FiioJa11DeviceUiState = FiioJa11DeviceUiState(),
 )
@@ -273,7 +276,8 @@ class EqLibraryViewModel(
         hardwareRepository.blackPearlSnapshotState,
         hardwareRepository.ew300SnapshotState,
         blackPearlHardwareEqMatch,
-    ) { connections, blackPearlHardwareEqState, ew300HardwareEqState, blackPearlMatch ->
+        hardwareRepository.ew300OperationTrace,
+    ) { connections, blackPearlHardwareEqState, ew300HardwareEqState, blackPearlMatch, ew300OperationTrace ->
         HardwareConnectionUiState(
             blackPearl = connections.blackPearl,
             fiioJa11 = connections.fiioJa11,
@@ -285,6 +289,7 @@ class EqLibraryViewModel(
             blackPearlHardwareEqMatch = blackPearlMatch,
             blackPearlEditorState = MyDacEditorUiState(),
             ew300EditorState = MyDacEditorUiState(),
+            ew300OperationTrace = ew300OperationTrace,
             blackPearlQualificationState = BlackPearlQualificationUiState(),
             fiioJa11DeviceState = FiioJa11DeviceUiState(),
         )
@@ -352,6 +357,7 @@ class EqLibraryViewModel(
             blackPearlSavedGeneralEqs = blackPearlLibrary.savedGeneralEqs,
             blackPearlEditorState = hardware.blackPearlEditorState,
             ew300EditorState = hardware.ew300EditorState,
+            ew300OperationTrace = hardware.ew300OperationTrace,
             blackPearlQualificationState = hardware.blackPearlQualificationState,
             fiioJa11DeviceState = hardware.fiioJa11DeviceState,
         )

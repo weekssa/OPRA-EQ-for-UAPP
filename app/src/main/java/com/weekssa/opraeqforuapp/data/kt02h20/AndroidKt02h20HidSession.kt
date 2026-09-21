@@ -73,6 +73,8 @@ internal class AndroidKt02h20HidSession(
     private var currentSessionGeneration: Long = 0L
     @Volatile
     private var detachSequence: Long = 0L
+    @Volatile
+    private var permissionRequests: Long = 0L
     private var lastSessionGeneration: Long = 0L
     private var receiverRegistered = false
     private val permissionAction = "${appContext.packageName}.$permissionSuffix.USB_PERMISSION"
@@ -88,6 +90,9 @@ internal class AndroidKt02h20HidSession(
 
     val deviceFingerprintKey: String?
         get() = session?.fingerprintKey
+
+    val permissionRequestCount: Long
+        get() = permissionRequests
 
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -167,6 +172,7 @@ internal class AndroidKt02h20HidSession(
                 Intent(permissionAction).setPackage(appContext.packageName),
                 PendingIntent.FLAG_UPDATE_CURRENT or mutabilityFlag,
             )
+            permissionRequests += 1L
             usbManager.requestPermission(device, permissionIntent)
             startPermissionFallback()
         }

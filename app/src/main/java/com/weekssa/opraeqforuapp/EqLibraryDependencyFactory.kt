@@ -128,6 +128,9 @@ internal fun createEqLibraryRuntimeDependencies(context: Context): EqLibraryRunt
             transport = ew300Transport,
             gainStateStore = ew300GainStateStore,
             mutationAuthorized = Ew300CapabilityProfile::authorizesMutation,
+            sourceCommit = BuildConfig.CANDIDATE_SOURCE_SHA,
+            appVersion = BuildConfig.VERSION_NAME,
+            signerVerified = ReleaseSignatureGate.isPinnedReleaseSigner(appContext),
         ),
         ew300CapabilityBatch = Ew300CapabilityBatch(ew300Transport),
         ew300PersistenceQualifier = Ew300PersistenceQualifier(

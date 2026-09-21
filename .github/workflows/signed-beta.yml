@@ -3,6 +3,7 @@ name: Signed EQ Library Beta Candidate
 on:
   push:
     branches: [eq-library-beta, eq-library-community-v0.3, 'v0.*']
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -99,6 +100,20 @@ jobs:
           test -n "$actual_fingerprint"
           test "$actual_fingerprint" = "$expected_fingerprint"
           sha256sum "$output_apk" > "${output_apk}.sha256"
+          apk_sha256="$(cut -d ' ' -f 1 "${output_apk}.sha256")"
+          jq -n \
+            --arg sourceSha "$GITHUB_SHA" \
+            --arg apk "$(basename "$output_apk")" \
+            --arg apkSha256 "$apk_sha256" \
+            --arg packageId "com.weekssa.opraeqforuapp" \
+            --arg versionName "$version_name" \
+            --arg signerSha256 "$actual_fingerprint" \
+            --arg capabilityProfile "EW300 exact fingerprint; five-band direct-Hz Peak" \
+            --arg testPlan "docs/EW300_DSP_HANDS_ON_CHECKLIST.md" \
+            --arg evidence "E001,E004,E005" \
+            --arg outstanding "single consolidated owner hardware session; merge/publication approval" \
+            '{sourceSha:$sourceSha, apk:$apk, apkSha256:$apkSha256, packageId:$packageId, versionName:$versionName, signerSha256:$signerSha256, capabilityProfile:$capabilityProfile, testPlan:$testPlan, evidenceIds:($evidence|split(",")), outstanding:$outstanding}' \
+            > dist/candidate-manifest.json
 
       - name: Set up signed-beta emulator
         shell: bash

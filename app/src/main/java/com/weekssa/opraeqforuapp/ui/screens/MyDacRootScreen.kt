@@ -27,6 +27,7 @@ import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityReport
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300PersistenceQualificationResult
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationTrace
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 import com.weekssa.opraeqforuapp.domain.library.SavedEqHeadphoneAssociation
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
@@ -57,6 +58,7 @@ fun MyDacRootScreen(
     blackPearlSavedGeneralEqs: List<SavedGeneralEqRecord>,
     blackPearlEditorState: MyDacEditorUiState,
     ew300EditorState: MyDacEditorUiState = MyDacEditorUiState(),
+    ew300OperationTrace: Ew300OperationTrace? = null,
     blackPearlQualificationState: BlackPearlQualificationUiState,
     fiioJa11DeviceState: FiioJa11DeviceUiState,
     onConnectDac: (DacDeviceId) -> Unit,
@@ -210,6 +212,7 @@ fun MyDacRootScreen(
             connectionState = ew300ConnectionState,
             hardwareEqState = ew300HardwareEqState,
             editorState = ew300EditorState,
+            operationTrace = ew300OperationTrace,
             catalogState = catalogState,
             managedHeadphones = blackPearlManagedHeadphones,
             savedEqs = blackPearlSavedEqs,

@@ -38,6 +38,7 @@ import com.weekssa.opraeqforuapp.domain.dac.isAcousticallyActive
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityReport
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300Protocol
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300PersistenceQualificationResult
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationTrace
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300QualificationExport
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 import com.weekssa.opraeqforuapp.domain.library.SavedEqHeadphoneAssociation
@@ -54,6 +55,7 @@ internal fun Ew300MyDacContent(
     connectionState: Kt02h20ConnectionState,
     hardwareEqState: HardwareEqSnapshotState,
     editorState: MyDacEditorUiState,
+    operationTrace: Ew300OperationTrace?,
     catalogState: CatalogState,
     managedHeadphones: List<ManagedHeadphoneRecord>,
     savedEqs: List<SavedEqRecord>,
@@ -214,6 +216,13 @@ internal fun Ew300MyDacContent(
                                 )
                             }
                         },
+                        operationTrace = operationTrace,
+                        onShareTraceReadable = operationTrace?.let { trace ->
+                            { shareReport(context, "EW300 operation report", "text/plain", trace.toReadableText()) }
+                        },
+                        onShareTraceJson = operationTrace?.let { trace ->
+                            { shareReport(context, "EW300 operation report JSON", "application/json", trace.toJson()) }
+                        },
                         qualificationBuild = qualificationBuild,
                         candidateSourceSha = BuildConfig.CANDIDATE_SOURCE_SHA,
                         persistenceResult = persistenceResult,
@@ -282,6 +291,9 @@ internal fun Ew300DeviceStatus(
     onRun: () -> Unit,
     onShareReadable: (() -> Unit)?,
     onShareJson: (() -> Unit)?,
+    operationTrace: Ew300OperationTrace? = null,
+    onShareTraceReadable: (() -> Unit)? = null,
+    onShareTraceJson: (() -> Unit)? = null,
     qualificationBuild: Boolean = false,
     candidateSourceSha: String = "local-unqualified",
     persistenceResult: Ew300PersistenceQualificationResult? = null,
@@ -322,6 +334,20 @@ internal fun Ew300DeviceStatus(
         }
         OutlinedButton(onClick = requireNotNull(onShareJson), modifier = Modifier.fillMaxWidth()) {
             Text("Share technical report")
+        }
+    }
+    operationTrace?.let { trace ->
+        PremiumSectionLabel(text = "Last operation report", divider = false)
+        Text(
+            "${trace.operation} · ${trace.outcome}. Share this report after any guarded EW300 operation so the exact session, permission, Save, and readback evidence stays attached to the candidate.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        onShareTraceReadable?.let { share ->
+            OutlinedButton(onClick = share, modifier = Modifier.fillMaxWidth()) { Text("Share operation report") }
+        }
+        onShareTraceJson?.let { share ->
+            OutlinedButton(onClick = share, modifier = Modifier.fillMaxWidth()) { Text("Share operation JSON") }
         }
     }
     if (qualificationBuild) {

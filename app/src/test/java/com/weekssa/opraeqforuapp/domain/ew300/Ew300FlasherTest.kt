@@ -40,7 +40,7 @@ class Ew300FlasherTest {
         assertEquals(10, transport.writes.size)
         assertEquals(1, transport.commitCount)
         assertEquals(0, store.delta)
-        assertEquals(11, transport.readsAfterWrites)
+        assertEquals(21, transport.readsAfterWrites)
     }
 
     @Test
@@ -73,7 +73,7 @@ class Ew300FlasherTest {
         val result = Ew300Flasher(transport, store, mutationAuthorized = { true }).flash(profile(preamp = null))
 
         assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.TransferFailed)
-        assertEquals(0, transport.readsAfterWrites)
+        assertEquals(10, transport.readsAfterWrites)
         assertEquals(0, store.delta)
     }
 

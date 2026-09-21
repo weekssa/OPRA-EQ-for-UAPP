@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -64,6 +65,7 @@ class DacSessionRepository(
     internal val blackPearlTransport: AndroidBlackPearlUsbTransport,
     internal val fiioJa11Transport: AndroidFiioJa11UsbTransport,
     internal val ew300Transport: AndroidEw300UsbTransport,
+    private val ew300ReconnectGate: Ew300ReconnectGate = ew300Transport.reconnectGate,
 ) : Closeable {
     val blackPearlConnectionState: StateFlow<BlackPearlConnectionState> = blackPearlTransport.state
     val fiioJa11ConnectionState: StateFlow<Kt02h20ConnectionState> = fiioJa11Transport.state
@@ -128,6 +130,8 @@ class DacSessionRepository(
             isConnected = { state -> state is Kt02h20ConnectionState.Connected },
             isDisconnected = { state -> state is Kt02h20ConnectionState.Disconnected },
             connect = ew300Transport::connect,
+            allowReconnect = ew300ReconnectGate::canAutomaticReconnect,
+            allowReconnectState = ew300ReconnectGate.automaticReconnectAllowed,
         )
     }
 
@@ -142,7 +146,14 @@ class DacSessionRepository(
         fiioJa11OperationMutex.withLock { block() }
 
     suspend fun <T> withExclusiveEw300Operation(block: suspend () -> T): T =
-        ew300OperationMutex.withLock { block() }
+        ew300OperationMutex.withLock {
+            ew300ReconnectGate.beginMutation()
+            try {
+                block()
+            } finally {
+                ew300ReconnectGate.endMutation()
+            }
+        }
 
     fun isBlackPearlSessionCurrent(sessionGeneration: Long): Boolean =
         sessionGeneration > 0L &&
@@ -206,18 +217,22 @@ class DacSessionRepository(
         isConnected: (T) -> Boolean,
         isDisconnected: (T) -> Boolean,
         connect: () -> Unit,
+        allowReconnect: () -> Boolean = { true },
+        allowReconnectState: StateFlow<Boolean>? = null,
     ) {
         scope.launch {
             val policy = DacReconnectPolicy()
-            combine(connectionState, present) { state, isPresent -> state to isPresent }
-                .collect { (state, isPresent) ->
+            val allowed = allowReconnectState ?: flowOf(true)
+            combine(connectionState, present, allowed) { state, isPresent, canReconnect ->
+                Triple(state, isPresent, canReconnect)
+            }.collect { (state, isPresent, canReconnect) ->
                     if (
                         policy.shouldReconnect(
                             isPresent = isPresent,
                             isConnected = isConnected(state),
                             isDisconnected = isDisconnected(state),
                         )
-                    ) {
+                    ) && canReconnect && allowReconnect()) {
                         connect()
                     }
                 }

@@ -700,6 +700,7 @@ fun EqLibraryApp(
                         blackPearlSavedGeneralEqs = state.blackPearlSavedGeneralEqs,
                         blackPearlEditorState = state.blackPearlEditorState,
                         ew300EditorState = state.ew300EditorState,
+                        ew300OperationTrace = state.ew300OperationTrace,
                         blackPearlQualificationState = state.blackPearlQualificationState,
                         fiioJa11DeviceState = state.fiioJa11DeviceState,
                         onConnectDac = onConnectDacForMyDac,

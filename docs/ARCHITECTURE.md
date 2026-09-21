@@ -413,12 +413,13 @@ No analytics or telemetry. Local selections/settings/generated state/recovery st
 ## Validation architecture
 
 EW300 discovery evidence is maintained separately from shipping product behavior. The recovery branch
-includes only an Android-free, allowlisted capability-batch/report contract; the default batch is
-read-only and never probes persistence or undocumented commands. Any future mutating diagnostic APK
-must remain a separately signed development artifact with exact preflight, safe-stop, restoration,
-and cold-launch validation. Diagnostic startup establishes neither acoustic semantics nor production
-hardware support. The shipping EW300 UI remains capability-gated and does not expose persistent Flash,
-editor Apply, or Reset until exact-device qualification closes those gates.
+includes an Android-free, allowlisted capability-batch/report contract plus the guarded product
+transaction. The default batch is read-only and never probes persistence or undocumented commands.
+The product transaction requires the exact capability fingerprint, strict baseline, one Save, fresh
+readback, and no automatic mutation retry; its operation report is readable/JSON and privacy-safe.
+Diagnostic startup establishes neither acoustic semantics nor production hardware support. The
+shipping EW300 UI remains capability-gated, and public release/support remains blocked until the
+exact signed candidate completes the consolidated physical gate.
 
 Automated gates protect both canonical and target-specific behavior:
 

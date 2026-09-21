@@ -3,6 +3,7 @@ package com.weekssa.opraeqforuapp.data.kt02h20
 import android.content.Context
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbInterface
+import com.weekssa.opraeqforuapp.data.dac.Ew300ReconnectGate
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300Protocol
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300Transport
 import java.io.Closeable
@@ -10,7 +11,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 
 /** Android USB-host transport for the exact SIMGOT EW300 DSP beta identity. */
-class AndroidEw300UsbTransport(context: Context) : Ew300Transport, Closeable {
+class AndroidEw300UsbTransport(
+    context: Context,
+    internal val reconnectGate: Ew300ReconnectGate = Ew300ReconnectGate(),
+) : Ew300Transport, Closeable {
     private val hid = AndroidKt02h20HidSession(
         context = context,
         vendorId = Ew300Protocol.VENDOR_ID,
@@ -20,18 +24,30 @@ class AndroidEw300UsbTransport(context: Context) : Ew300Transport, Closeable {
         deviceIdentityMatcher = Ew300UsbIdentity::matches,
         hidInterfaceMatcher = Ew300UsbIdentity::matchesHidInterface,
     )
+    private var reads: Long = 0L
+    private var writes: Long = 0L
+    private var saves: Long = 0L
 
     val state: StateFlow<Kt02h20ConnectionState> = hid.state
     val present: StateFlow<Boolean> = hid.present
-    val sessionGeneration: Long get() = hid.sessionGeneration
+    override val sessionGeneration: Long get() = hid.sessionGeneration
     override val deviceFingerprintKey: String?
         get() = hid.deviceFingerprintKey
     override val detachGeneration: Long
         get() = hid.detachGeneration
+    override val permissionRequestCount: Long
+        get() = hid.permissionRequestCount
+    override val registerReadCount: Long
+        get() = reads
+    override val registerWriteCount: Long
+        get() = writes
+    override val saveCommandCount: Long
+        get() = saves
 
     fun connect() = hid.connect()
 
     override suspend fun readRegister(register: Int): ByteArray? {
+        reads += 1L
         // A connected EW300 can occasionally drop one HID input report while Android is
         // draining an unsolicited status report. Reads are idempotent, so retry only the
         // exact register read; mutating writes remain deliberately non-retried.
@@ -49,10 +65,12 @@ class AndroidEw300UsbTransport(context: Context) : Ew300Transport, Closeable {
         return null
     }
 
-    override suspend fun writeRegister(register: Int, data: ByteArray): Boolean =
+    override suspend fun writeRegister(register: Int, data: ByteArray): Boolean {
+        writes += 1L
         // Match the delay used by the physical qualification: the EW300 may emit an
         // unsolicited input report before the register is ready for the next transaction.
-        hid.send(Ew300Protocol.writeRegisterReport(register, data), settleMillis = 200L)
+        return hid.send(Ew300Protocol.writeRegisterReport(register, data), settleMillis = 200L)
+    }
 
     override suspend fun commit(): Boolean {
         // Persistence may reset the EW300 USB function. Keep the operation alive across that
@@ -61,7 +79,9 @@ class AndroidEw300UsbTransport(context: Context) : Ew300Transport, Closeable {
         // connection while the old handle is being closed.
         val previousGeneration = hid.sessionGeneration
         val previousDetachGeneration = hid.detachGeneration
+        saves += 1L
         if (!hid.send(Ew300Protocol.commitReport(), settleMillis = 1_000L)) return false
+        reconnectGate.markSaveSent()
         return hid.awaitOptionalReconnectAfterMutation(previousGeneration, previousDetachGeneration)
     }
 
