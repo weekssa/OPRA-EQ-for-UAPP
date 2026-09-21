@@ -13,7 +13,7 @@ class Ew300OperationStatusTest {
 
         assertTrue(presentation.verified)
         assertTrue(presentation.message.contains("reconnected"))
-        assertTrue(presentation.message.contains("final hardware readback matched"))
+        assertTrue(presentation.message.contains("Final hardware readback matched"))
     }
 
     @Test
