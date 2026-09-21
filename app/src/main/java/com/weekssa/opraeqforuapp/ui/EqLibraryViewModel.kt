@@ -1536,9 +1536,17 @@ class EqLibraryViewModel(
             return UiText.Dynamic("Connect SIMGOT EW300 DSP before flashing its EQ.")
         }
         return when (val result = hardwareRepository.flashEw300(profile)) {
-            is Kt02h20FlashResult.Success -> UiText.Dynamic(
-                "SIMGOT EW300 DSP EQ was saved and verified. Playback-gain adjustment: ${"%+.1f".format(result.representation.playbackGainDb)} dB.",
-            )
+            is Kt02h20FlashResult.Success -> {
+                val trace = hardwareRepository.ew300OperationTrace.value
+                val reconnectMessage = if (trace?.replacementObserved == true && trace.replacementIdentityMatched) {
+                    " The DAC reconnected and the replacement session was verified."
+                } else {
+                    ""
+                }
+                UiText.Dynamic(
+                    "SIMGOT EW300 DSP EQ was saved and verified.$reconnectMessage Final hardware readback matched. Playback-gain adjustment: ${"%+.1f".format(result.representation.playbackGainDb)} dB.",
+                )
+            }
             is Kt02h20FlashResult.NotSuitable -> UiText.Dynamic(
                 "This EQ cannot be safely flashed to the EW300: ${result.reason}",
             )
@@ -1562,9 +1570,17 @@ class EqLibraryViewModel(
             return UiText.Dynamic("Connect SIMGOT EW300 DSP before resetting its EQ.")
         }
         return when (val result = hardwareRepository.resetEw300()) {
-            is Kt02h20FlatResetResult.Success -> UiText.Dynamic(
-                "SIMGOT EW300 DSP EQ was reset to flat and verified. Underlying playback gain was preserved.",
-            )
+            is Kt02h20FlatResetResult.Success -> {
+                val trace = hardwareRepository.ew300OperationTrace.value
+                val reconnectMessage = if (trace?.replacementObserved == true && trace.replacementIdentityMatched) {
+                    " The DAC reconnected and the replacement session was verified."
+                } else {
+                    ""
+                }
+                UiText.Dynamic(
+                    "SIMGOT EW300 DSP EQ was reset to flat and verified.$reconnectMessage Final hardware readback matched. Underlying playback gain was preserved.",
+                )
+            }
             is Kt02h20FlatResetResult.NotSuitable -> UiText.Dynamic(
                 "EW300 reset is unavailable: ${result.reason}",
             )

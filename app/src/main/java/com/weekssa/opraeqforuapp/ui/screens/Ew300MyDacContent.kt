@@ -141,6 +141,17 @@ internal fun Ew300MyDacContent(
         when (connectionState) {
             Kt02h20ConnectionState.Connected -> {
                 Text("Connected. Use My EQs or EQ Library to apply a verified Peak-only EQ profile.")
+                operationTrace?.let { trace ->
+                    val status = ew300OperationStatusPresentation(trace)
+                    Text(
+                        status.message,
+                        color = if (status.verified) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.error
+                        },
+                    )
+                }
                 Text(
                     "This exact EW300 profile supports five Peak bands, readback, capture, Apply, Flash, Reset EQ to flat, and reconnect recovery. Volume, headset, UAC, microphone, firmware, bootloader, and unrelated DAC controls must be exposed when this exact profile supports them and safe protocol evidence is established; none is established for EW300.",
                     style = MaterialTheme.typography.bodySmall,
@@ -233,7 +244,14 @@ internal fun Ew300MyDacContent(
                     )
                 }
             }
-            Kt02h20ConnectionState.Connecting -> Text("Connecting to EW300…")
+            Kt02h20ConnectionState.Connecting -> {
+                Text("Connecting to EW300…")
+                Text(
+                    "After Apply or Flash, the EW300 may briefly disconnect and Android may ask for USB permission again. Approve it so final hardware readback can complete.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             Kt02h20ConnectionState.Disconnected -> {
                 Text("Connect the EW300 USB cable to manage its EQ.")
                 Button(onClick = onConnect) { Text("Connect") }
@@ -243,6 +261,45 @@ internal fun Ew300MyDacContent(
                 Button(onClick = onConnect) { Text("Try again") }
             }
         }
+    }
+}
+
+internal data class Ew300OperationStatusPresentation(
+    val message: String,
+    val verified: Boolean,
+)
+
+internal fun ew300OperationStatusPresentation(
+    trace: Ew300OperationTrace,
+): Ew300OperationStatusPresentation {
+    val operation = trace.operation
+        .lowercase()
+        .replace('_', ' ')
+        .replaceFirstChar { it.uppercase() }
+    return if (
+        trace.stateKnown &&
+        trace.finalReadbackMatched &&
+        trace.outcome in setOf("Success", "Verified")
+    ) {
+        val reconnectMessage = if (trace.replacementObserved && trace.replacementIdentityMatched) {
+            " The DAC reconnected and the replacement session was verified."
+        } else {
+            ""
+        }
+        Ew300OperationStatusPresentation(
+            message = "✓ Last EW300 $operation verified.$reconnectMessage Final hardware readback matched.",
+            verified = true,
+        )
+    } else {
+        val reconnectMessage = if (trace.replacementObserved) {
+            " after USB reconnect"
+        } else {
+            ""
+        }
+        Ew300OperationStatusPresentation(
+            message = "Last EW300 $operation was not verified$reconnectMessage. Open DEVICE and share the operation report before retrying.",
+            verified = false,
+        )
     }
 }
 
