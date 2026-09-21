@@ -316,6 +316,18 @@ global-gain register as a dedicated EQ preamp; the recovery branch now maps it a
 device-global-gain headroom mechanism. The old APK must not be retried. A replacement signed
 candidate and complete gates are required before the consolidated physical session resumes.
 
+## 2026-09-21 EW300 replacement candidate — SOFTWARE PASS, HARDWARE PENDING
+
+Corrected the EW300 editor’s headroom mapping so the verified absolute device-global-gain
+register is used as the baseline instead of an unavailable dedicated EQ preamp. Replacement
+source `8bb87aac689ce28b1e92e115a3f83f1b59ad1f65` passed Android unit/lint/build, emulator UI,
+CodeQL, catalog, priority-community, dependency, signing, alignment, installation, and cold-launch
+gates. The exact signed APK is `EQ-Library-v0.7.0-beta-8bb87aa.apk` with SHA-256
+`f470a3d330951705f8bd94450f9adaa813040d8717541eeed75956f43b97607d`; signed workflow #1260;
+the immutable testing APK is [available here](https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-8bb87aa.apk).
+No physical mutation has been attempted with this candidate. The one consolidated EW300 session
+remains pending, and merge, publication, and any public support claim remain owner-controlled.
+
 ## [0.1.0] - 2026-08-16
 
 ### Added
