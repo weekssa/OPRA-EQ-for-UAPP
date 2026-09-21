@@ -3,11 +3,11 @@
   "sources": [
     {
       "consecutive_failures": 0,
-      "cursor": "5227ebcb1dd1a87755ce18713a2a866dfa1ce44be34b0c968391b55233bd3d6e",
-      "last_attempt_at": "2026-09-14T18:10:29Z",
-      "last_content_fingerprint": "a63cfb31d0aa7bb299b153d9cd48ac1becc5096096289c910dfeed520e93fd77",
+      "cursor": "2655811b975e93139d006b33f8d6889923e9c3e21f7a7cf2f1b8678ab717288e",
+      "last_attempt_at": "2026-09-21T18:18:36Z",
+      "last_content_fingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
       "last_error": null,
-      "last_successful_scan_at": "2026-09-14T18:10:29Z",
+      "last_successful_scan_at": "2026-09-21T18:18:36Z",
       "last_terms_review_at": "2026-08-29T19:35:00Z",
       "lifecycle": "active",
       "parser_version": "4",
@@ -51,11 +51,11 @@
     },
     {
       "consecutive_failures": 0,
-      "cursor": "510d5a789cc289b1f6bae9d3c25458c6df2f8895f6e40dc956782086e4033961",
-      "last_attempt_at": "2026-09-14T18:10:23Z",
+      "cursor": "a1d9f1a24536071f19733d27a7d36e1885c942ebd721c44e3bf67ec0729b1e42",
+      "last_attempt_at": "2026-09-21T18:18:30Z",
       "last_content_fingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
       "last_error": null,
-      "last_successful_scan_at": "2026-09-14T18:10:23Z",
+      "last_successful_scan_at": "2026-09-21T18:18:30Z",
       "last_terms_review_at": "2026-08-29T19:35:00Z",
       "lifecycle": "active",
       "parser_version": "3",
@@ -160,10 +160,10 @@
     {
       "consecutive_failures": 0,
       "cursor": "1b43a7e1136303ccac9025d781cf552df29d682f3226ed172bfa60e4b7e2c41a",
-      "last_attempt_at": "2026-09-14T18:10:31Z",
+      "last_attempt_at": "2026-09-21T18:18:38Z",
       "last_content_fingerprint": "1b43a7e1136303ccac9025d781cf552df29d682f3226ed172bfa60e4b7e2c41a",
       "last_error": null,
-      "last_successful_scan_at": "2026-09-14T18:10:31Z",
+      "last_successful_scan_at": "2026-09-21T18:18:38Z",
       "last_terms_review_at": "2026-09-06T23:18:42Z",
       "lifecycle": "active",
       "parser_version": "4",
@@ -182,5 +182,5 @@
       "source_id": "topping-community"
     }
   ],
-  "updated_at": "2026-09-21T18:11:02Z"
+  "updated_at": "2026-09-21T18:18:38Z"
 }
