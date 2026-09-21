@@ -61,7 +61,7 @@ class Ew300EditorApplyTest {
         Kt02h20Band("peak_dip", 12_000.0, 0.0, 1.0),
     )
 
-    private class FakeTransport(
+    private inner class FakeTransport(
         bundle: com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotBundle,
     ) : Ew300Transport {
         override val deviceFingerprintKey: String =
