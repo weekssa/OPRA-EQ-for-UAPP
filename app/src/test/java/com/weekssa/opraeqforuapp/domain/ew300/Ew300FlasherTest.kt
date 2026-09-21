@@ -10,7 +10,7 @@ import org.junit.Test
 
 class Ew300FlasherTest {
     @Test
-    fun persistentFlashIsBlockedUntilExactDevicePersistenceIsQualified() = runBlocking {
+    fun persistentFlashIsBlockedForAnUnrecognizedDeviceIdentity() = runBlocking {
         val transport = FakeTransport()
         val result = Ew300Flasher(transport, QualifiedGainStore()).flash(profile(preamp = null))
 
@@ -20,10 +20,21 @@ class Ew300FlasherTest {
     }
 
     @Test
+    fun incompleteStrictBaselinePreventsEveryWrite() = runBlocking {
+        val transport = FakeTransport(missingRegister = 0x24)
+        val result = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
+            .flash(profile(preamp = null))
+
+        assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.DeviceUnavailable)
+        assertTrue(transport.writes.isEmpty())
+        assertEquals(0, transport.commitCount)
+    }
+
+    @Test
     fun flashWritesAllFiveBandsCommitsAndVerifiesReadback() = runBlocking {
         val transport = FakeTransport()
         val store = QualifiedGainStore()
-        val result = Ew300Flasher(transport, store, persistenceQualified = { true }).flash(profile(preamp = null))
+        val result = Ew300Flasher(transport, store, mutationAuthorized = { true }).flash(profile(preamp = null))
 
         assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.Success)
         assertEquals(10, transport.writes.size)
@@ -35,7 +46,7 @@ class Ew300FlasherTest {
     @Test
     fun sourcePreampIsAppliedThroughGlobalGainRegister() = runBlocking {
         val transport = FakeTransport()
-        val result = Ew300Flasher(transport, QualifiedGainStore(), persistenceQualified = { true }).flash(profile(preamp = -4.0))
+        val result = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true }).flash(profile(preamp = -4.0))
 
         assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.Success)
         assertEquals(-8, Ew300Protocol.globalGainSteps(transport.state.getValue(Ew300Protocol.GLOBAL_GAIN_REGISTER)))
@@ -46,7 +57,7 @@ class Ew300FlasherTest {
     @Test
     fun resetWritesFlatStateAndVerifiesIt() = runBlocking {
         val transport = FakeTransport()
-        val result = Ew300Flasher(transport, QualifiedGainStore(), persistenceQualified = { true }).resetToFlat()
+        val result = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true }).resetToFlat()
 
         assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult.Success)
         assertEquals(10, transport.writes.size)
@@ -59,7 +70,7 @@ class Ew300FlasherTest {
         val transport = FakeTransport(commitSucceeds = false)
         val store = QualifiedGainStore()
 
-        val result = Ew300Flasher(transport, store, persistenceQualified = { true }).flash(profile(preamp = null))
+        val result = Ew300Flasher(transport, store, mutationAuthorized = { true }).flash(profile(preamp = null))
 
         assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.TransferFailed)
         assertEquals(0, transport.readsAfterWrites)
@@ -72,7 +83,7 @@ class Ew300FlasherTest {
         val result = Ew300Flasher(
             transport,
             QualifiedGainStore(),
-            persistenceQualified = { true },
+            mutationAuthorized = { true },
         ).flash(profile(preamp = null))
 
         assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.TransferFailed)
@@ -97,6 +108,7 @@ class Ew300FlasherTest {
     private inner class FakeTransport(
         private val commitSucceeds: Boolean = true,
         private val failWriteRegister: Int? = null,
+        private val missingRegister: Int? = null,
     ) : Ew300Transport {
         override val deviceFingerprintKey: String = "test-ew300"
         val state = (0 until Ew300Protocol.BAND_COUNT)
@@ -106,12 +118,16 @@ class Ew300FlasherTest {
             }
             .associateWith { bytes(0, 0, 0, 0) }
             .toMutableMap()
-            .also { it[Ew300Protocol.GLOBAL_GAIN_REGISTER] = bytes(0, 0, 0, 0) }
+            .also {
+                it[0x24] = bytes(0, 0, 0, 0)
+                it[Ew300Protocol.GLOBAL_GAIN_REGISTER] = bytes(0, 0, 0, 0)
+            }
         val writes = mutableListOf<Int>()
         var commitCount = 0
         var readsAfterWrites = 0
         override suspend fun readRegister(register: Int): ByteArray? {
             if (writes.isNotEmpty()) readsAfterWrites++
+            if (register == missingRegister) return null
             return state[register]
         }
 

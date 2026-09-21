@@ -83,9 +83,9 @@ internal fun Ew300MyDacContent(
     var persistenceResult by remember { mutableStateOf<Ew300PersistenceQualificationResult?>(null) }
     var persistenceRunning by remember { mutableStateOf(false) }
     var persistenceConfirmationOpen by remember { mutableStateOf(false) }
-    val qualificationBuild = BuildConfig.EW300_PERSISTENCE_QUALIFICATION_ENABLED &&
-        BuildConfig.CANDIDATE_SOURCE_SHA.matches(Regex("[0-9a-fA-F]{40}")) &&
-        ReleaseSignatureGate.isPinnedReleaseSigner(context)
+    // The Save qualification was a bounded development gate and is not a product action. Its
+    // verified result is now represented by the immutable EW300 capability profile.
+    val qualificationBuild = false
     fun advancePersistenceQualification() {
         if (!qualificationBuild || persistenceRunning) return
         persistenceRunning = true
@@ -138,17 +138,12 @@ internal fun Ew300MyDacContent(
         Text("USB 31B2:0111 · five-band PEQ", style = MaterialTheme.typography.bodyMedium)
         when (connectionState) {
             Kt02h20ConnectionState.Connected -> {
-                Text("Connected. Use My EQs or EQ Library to flash a selected profile after the beta hardware gate passes.")
+                Text("Connected. Use My EQs or EQ Library to apply a verified Peak-only EQ profile.")
                 Text(
-                    "EW300 software support is ready for the final exact-device gate. Global gain, persistence, and Reset remain locked until the one-time reversible qualification passes on this cable.",
+                    "This exact EW300 profile supports five Peak bands, readback, capture, Apply, Flash, Reset EQ to flat, and reconnect recovery. Other device controls remain unsupported.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                    Text(
-                        "EW300 capability qualification is performed by the guided diagnostic utility, not by a normal device-setting action.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
                 TabRow(selectedTabIndex = selectedTab) {
                     Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("EQ") })
                     Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("DEVICE") })
@@ -171,7 +166,7 @@ internal fun Ew300MyDacContent(
                     } else {
                         Ew300EqStatus(
                             state = hardwareEqState,
-                            canEdit = false,
+                            canEdit = true,
                             canCapture = Ew300Protocol.CANONICAL_CAPTURE_QUALIFIED,
                             onEdit = onOpenEditor,
                             onCapture = { saveDacEqOpen = true },
@@ -263,7 +258,7 @@ private fun Ew300EqStatus(
     bundle.snapshot.dedicatedEqPreampDb?.let { Text("Global EQ gain: ${"%.1f".format(it)} dB") }
     bundle.snapshot.playbackGainDb?.let { Text("Playback gain: ${"%.1f".format(it)} dB") }
     Text(
-        "${bundle.snapshot.filters.count { it.isAcousticallyActive() }} native bands were read. Acoustic filter labels and persistent writes remain pending exact-EW300 qualification.",
+        "${bundle.snapshot.filters.count { it.isAcousticallyActive() }} Peak bands were read. Playback gain is device state and is not included in captured Personal EQs.",
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -272,7 +267,7 @@ private fun Ew300EqStatus(
         OutlinedButton(onClick = onReset, modifier = Modifier.fillMaxWidth()) { Text("Reset EQ to flat") }
     }
     OutlinedButton(onClick = onCapture, enabled = canCapture, modifier = Modifier.fillMaxWidth()) {
-        Text(if (canCapture) "Save readback as Personal EQ" else "Personal EQ capture pending qualification")
+        Text(if (canCapture) "Save readback as Personal EQ" else "Personal EQ capture is unavailable for this readback")
     }
 }
 

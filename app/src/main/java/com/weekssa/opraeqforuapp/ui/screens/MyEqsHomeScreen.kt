@@ -701,14 +701,14 @@ private fun hardwareFlashConfirmation(displayName: String, preview: HardwareFlas
     } else {
         when (preview.device) {
             ExportDevice.FIIO_JA11 -> "The JA11 global EQ gain will be set to $gain dB."
-            ExportDevice.SIMGOT_EW300 -> "EW300 hardware writes are pending exact-device qualification; this preview is informational only."
+            ExportDevice.SIMGOT_EW300 -> "EW300 hardware writes are verified only for the exact device profile recognized by this build."
             ExportDevice.JCALLY_JM12 -> "EQ Library will apply a $gain dB tracked playback-gain adjustment for this preset."
             else -> ""
         }
     }
     val persistence = when (preview.device) {
         ExportDevice.FIIO_JA11 -> "The five-band PEQ will be applied, read back, and saved to the JA11."
-            ExportDevice.SIMGOT_EW300 -> "EW300 hardware writes are pending exact-device qualification."
+        ExportDevice.SIMGOT_EW300 -> "EW300 writes are available only for the exact verified device profile."
         ExportDevice.JCALLY_JM12 -> "The five-band PEQ will be written and read back. Persistence across a full power cycle is still hardware-validation pending for stock JM12 firmware."
         else -> ""
     }
@@ -721,7 +721,7 @@ private fun hardwareResetConfirmation(device: ExportDevice): String = when (devi
     ExportDevice.FIIO_JA11 ->
         "This will return all five JA11 PEQ bands and the global EQ gain to flat/0 dB, apply the result, verify it, and save it to the device. Listening volume may change. Other DAC settings will not be changed."
     ExportDevice.SIMGOT_EW300 ->
-        "This will attempt to return all five EW300 PEQ bands to flat, restore the captured baseline global gain, and verify the result. Persistence remains hardware-validation pending. Other DAC settings will not be changed."
+        "This will return all five EW300 PEQ bands to flat, preserve the underlying playback gain, and verify the result. Other DAC settings will not be changed."
     ExportDevice.JCALLY_JM12 ->
         "This will return all five stock JM12 PEQ bands to flat and remove EQ Library's tracked playback-gain adjustment. Listening volume may change. Persistence across a full power cycle is still hardware-validation pending. Other DAC settings will not be changed."
     else -> "Reset is not available for this output."

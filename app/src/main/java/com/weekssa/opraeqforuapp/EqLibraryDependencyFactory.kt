@@ -38,6 +38,7 @@ import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Flasher
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300Flasher
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityBatch
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300PersistenceQualifier
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityProfile
 import com.weekssa.opraeqforuapp.ui.EqLibraryViewModel
 import java.net.URL
 import kotlinx.coroutines.flow.map
@@ -126,10 +127,7 @@ internal fun createEqLibraryRuntimeDependencies(context: Context): EqLibraryRunt
         ew300Flasher = Ew300Flasher(
             transport = ew300Transport,
             gainStateStore = ew300GainStateStore,
-            persistenceQualified = {
-                ew300Transport.deviceFingerprintKey
-                    ?.let(ew300GainStateStore::isPersistenceQualified) == true
-            },
+            mutationAuthorized = Ew300CapabilityProfile::authorizesMutation,
         ),
         ew300CapabilityBatch = Ew300CapabilityBatch(ew300Transport),
         ew300PersistenceQualifier = Ew300PersistenceQualifier(

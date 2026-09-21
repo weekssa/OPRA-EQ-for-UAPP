@@ -21,6 +21,8 @@ sealed interface Ew300EditorApplyResult {
 class Ew300EditorApplier(
     private val transport: Ew300Transport,
 ) {
+    private val transactionCoordinator = Ew300TransactionCoordinator(transport)
+
     suspend fun apply(
         workingCopy: HardwareEqEditWorkingCopy,
         allowCautions: Boolean,
@@ -44,21 +46,23 @@ class Ew300EditorApplier(
         }
         val generation = workingCopy.baselineSnapshot.sessionGeneration
         if (!isSessionCurrent(generation)) return stale()
-        val baseline = ordered(workingCopy.baselineSnapshot.filters)
+        val baselineFilters = ordered(workingCopy.baselineSnapshot.filters)
         val target = ordered(workingCopy.filters)
-        if (baseline.map(HardwareEqFilter::index) != (0 until Ew300Protocol.BAND_COUNT).toList()) {
+        if (baselineFilters.map(HardwareEqFilter::index) != (0 until Ew300Protocol.BAND_COUNT).toList()) {
             return Ew300EditorApplyResult.InvalidPlan("The EW300 editor baseline does not contain all five bands.")
         }
-        if (target.map(HardwareEqFilter::index) != baseline.map(HardwareEqFilter::index)) {
+        if (target.map(HardwareEqFilter::index) != baselineFilters.map(HardwareEqFilter::index)) {
             return Ew300EditorApplyResult.InvalidPlan("The reviewed EQ changed the EW300 band layout.")
         }
-        val expectedBaseline = baseline.map { encode(it) ?: return invalidBand(it.index) }
-        val fresh = readBands() ?: return Ew300EditorApplyResult.DeviceUnavailable("Could not re-read all EW300 bands before Apply. No changes were written.")
+        val expectedBaseline = baselineFilters.map { encode(it) ?: return invalidBand(it.index) }
+        val rawBaseline = transactionCoordinator.captureBaseline()
+            ?: return Ew300EditorApplyResult.DeviceUnavailable("Could not re-read the complete EW300 state before Apply. No changes were written.")
         if (!isSessionCurrent(generation)) return stale()
+        val fresh = rawBaseline.bands().map { (gain, q) -> WireBandPair(gain, q) }
         if (fresh != expectedBaseline) {
             return Ew300EditorApplyResult.StaleBaseline("The EW300 EQ changed after the editor was opened. No changes were written; read the DAC again.")
         }
-        val baselineGain = transport.readRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER)
+        val baselineGain = rawBaseline.value(Ew300Protocol.GLOBAL_GAIN_REGISTER)
             ?: return Ew300EditorApplyResult.DeviceUnavailable("Could not re-read EW300 global gain before Apply. No changes were written.")
         val expectedGainSteps = Ew300Protocol.gainDbToSteps(workingCopy.baselineHeadroomGainDb ?: return invalidGain())
         if (Ew300Protocol.globalGainSteps(baselineGain) != expectedGainSteps) {
@@ -73,8 +77,7 @@ class Ew300EditorApplier(
         if (gainChanged && targetGainSteps < expectedGainSteps) {
             if (!writeGain(targetGainSteps)) {
                 return restoreAfterFailure(
-                    baseline = expectedBaseline,
-                    baselineGain = baselineGain,
+                    baseline = rawBaseline,
                     reason = "EW300 did not accept the safer global-gain adjustment.",
                 )
             }
@@ -87,31 +90,38 @@ class Ew300EditorApplier(
                     !transport.writeRegister(Ew300Protocol.bandRegister(index) + 1, wire.q)
                 ) {
                     return restoreAfterFailure(
-                        baseline = expectedBaseline,
-                        baselineGain = baselineGain,
+                        baseline = rawBaseline,
                         reason = "EW300 stopped accepting the reviewed EQ at band ${index + 1}.",
                     )
                 }
             }
             if (readBands() != targetBands) {
                 return restoreAfterFailure(
-                    baseline = expectedBaseline,
-                    baselineGain = baselineGain,
+                    baseline = rawBaseline,
                     reason = "EW300 final EQ readback did not match the reviewed values.",
                 )
             }
         }
         if (gainChanged && targetGainSteps > expectedGainSteps && !writeGain(targetGainSteps)) {
             return restoreAfterFailure(
-                baseline = expectedBaseline,
-                baselineGain = baselineGain,
+                baseline = rawBaseline,
                 reason = "EW300 did not accept the final global-gain adjustment.",
             )
         }
-        if (!isSessionCurrent(generation)) return stale()
+
+        // Apply is a persistent product transaction. The Save command may re-enumerate the USB
+        // function, so the old session generation is intentionally not reused after commit.
+        if (!transport.commit()) {
+            return Ew300EditorApplyResult.TransferFailed(
+                "EW300 Save was not confirmed. Reconnect and read the DAC before any retry; the app will not retry automatically.",
+            )
+        }
+        val finalBands = readBands()
         val finalGain = transport.readRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER)
-        if (finalGain == null || Ew300Protocol.globalGainSteps(finalGain) != targetGainSteps) {
-            return Ew300EditorApplyResult.VerificationFailed("EW300 final global-gain readback did not match the reviewed value.")
+        if (finalBands != targetBands || finalGain == null || Ew300Protocol.globalGainSteps(finalGain) != targetGainSteps) {
+            return Ew300EditorApplyResult.VerificationFailed(
+                "EW300 final readback did not match the reviewed values after Save.",
+            )
         }
         return Ew300EditorApplyResult.Verified
     }
@@ -149,25 +159,13 @@ class Ew300EditorApplier(
     }.getOrNull()
 
     private suspend fun restoreAfterFailure(
-        baseline: List<WireBandPair>,
-        baselineGain: ByteArray,
+        baseline: Ew300RawBaseline,
         reason: String,
     ): Ew300EditorApplyResult {
-        val restored = baseline.withIndex().all { (index, pair) ->
-            transport.writeRegister(Ew300Protocol.bandRegister(index), pair.gain) &&
-                transport.writeRegister(Ew300Protocol.bandRegister(index) + 1, pair.q)
-        } && transport.writeRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER, baselineGain)
-        if (!restored) {
+        if (!transactionCoordinator.restoreVolatile(baseline)) {
             return Ew300EditorApplyResult.TransferFailed("$reason Restoration of the original EW300 state also failed; reconnect and read before any retry.")
         }
-        val verifiedBands = readBands() == baseline
-        val verifiedGain = transport.readRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER)
-            ?.contentEquals(baselineGain) == true
-        return if (verifiedBands && verifiedGain) {
-            Ew300EditorApplyResult.TransferFailed("$reason The original EW300 state was restored and verified.")
-        } else {
-            Ew300EditorApplyResult.VerificationFailed("$reason The original EW300 state could not be verified after restoration; reconnect before retrying.")
-        }
+        return Ew300EditorApplyResult.TransferFailed("$reason The original EW300 state was restored and verified.")
     }
 
     private data class WireBandPair(

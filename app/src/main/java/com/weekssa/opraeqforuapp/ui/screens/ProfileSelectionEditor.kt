@@ -301,7 +301,7 @@ internal fun ProfileSelectionEditor(
                                     LibraryHardwareFlashDevice.FIIO_JA11 ->
                                         "User 1 will be applied, saved, and verified."
                                     LibraryHardwareFlashDevice.SIMGOT_EW300 ->
-                                        "The EW300 five-band PEQ will be written and verified. Persistence remains hardware-validation pending."
+                                        "The EW300 five-band PEQ will be written and verified for this exact device profile."
                                 },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,

@@ -28,6 +28,16 @@ class DacCapabilityCatalogTest {
     }
 
     @Test
+    fun ew300IsQualifiedOnlyForTheExactProfileAndDoesNotExposeUnrelatedControls() {
+        val capabilities = DacCapabilityCatalog.forDevice(DacDeviceId.SIMGOT_EW300)
+
+        assertEquals(DacValidationStatus.HARDWARE_QUALIFIED, capabilities.identity.validationStatus)
+        assertEquals(0x31B2, capabilities.identity.usbVendorId)
+        assertEquals(0x0111, capabilities.identity.usbProductId)
+        assertTrue(capabilities.exposedControls.isEmpty())
+    }
+
+    @Test
     fun legacyJcallyIdentityHasNoCurrentProductControls() {
         val capabilities = DacCapabilityCatalog.forDevice(DacDeviceId.JCALLY_JM12_STOCK)
 

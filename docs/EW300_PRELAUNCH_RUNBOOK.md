@@ -1,6 +1,6 @@
 # SIMGOT EW300 DSP — Pre-launch Candidate Runbook
 
-Status: replacement-beta execution plan, hardware validation pending, 2026-09-19
+Status: full-build continuation; frozen exact-device persistence evidence accepted; 2026-09-20
 Owner: project owner approval is required for the final merge.
 
 ## Objective
@@ -12,7 +12,7 @@ The deliverable is an installable pre-launch beta candidate using the existing E
 ## Product decisions already confirmed
 
 - My DAC mirrors Black Pearl behavior wherever the EW300 supports the same operation and public/device evidence supports it.
-- EW300 exposes the five observed raw bands for guarded readback and Personal EQ capture. Ordinary builds do not expose editor Apply, persistent Flash, Reset, or a mutating qualification action while their exact semantics remain unqualified.
+- EW300 exposes the five observed raw bands for guarded readback and Personal EQ capture. The historical Save qualification is not a product action. Apply, persistent Flash, and Reset are available only to the exact qualified fingerprint through the guarded product transaction.
 - The canonical EQ pipeline is source-neutral; “EQ profile” includes OPRA, AutoEQ, community/general, imports, Personal EQs, and captured DAC EQs.
 - The shared filter-capability model is reusable across EW300, Black Pearl, FiiO, and future targets; no DAC-specific filter semantics are inferred from a chip family.
 - The normal Android USB permission prompt remains; the app must reuse permission and avoid duplicate prompts or reconnect loops.
@@ -36,10 +36,10 @@ Reuse the approved My DAC shell and shared session. The EW300 target must provid
 - exact device recognition and one authoritative connection/session;
 - normal Android permission handling and permission-loss recovery;
 - current versus Last read state;
-- digital DAC/playback gain readback, excluded from EQ identity/capture (editing remains gated);
+- digital DAC/playback gain readback, excluded from EQ identity/capture;
 - five-band direct-Hz Peak readback and capture; non-Peak snapshots fail closed;
 - response/headroom calculation using the shared hardware adapter for supported target representations;
-- a truthful pending state for editor Apply, persistent Flash, and Reset until their exact transactions are qualified;
+- exact-profile Apply, persistent Flash, and Reset with complete baseline, one Save maximum, fresh readback, and no automatic retry;
 - Personal EQ capture with EW300 cable provenance;
 - disconnect, reconnect, stale-session protection, and no automatic mutating retry.
 
@@ -53,7 +53,7 @@ Unsupported or unverified Black Pearl controls must not appear for EW300.
 - Use the qualified write/commit settle timing and require a fresh replacement session plus readback after a device restart/re-enumeration.
 - Never report success from a stale or incomplete readback.
 - Run the allowlisted Android-free read-only capability batch before any mutating plan. It must record the exact fingerprint, read-only register values, strict lengths, first-failure stop, state-known flag, and human-readable/JSON reports.
-- Do not probe `0x53` or any other persistence candidate automatically. Only the controlled signed-beta workflow may expose the exact-commit, pinned-release-signer, confirmation-gated Save qualification described in `EW300_CAPABILITY_BATCH.md`; ordinary builds must hard-disable and omit the action from the UI.
+- Do not run the completed Save qualification again. The frozen exact signed-candidate report is the authoritative persistence evidence; the normal product build must omit the qualification action.
 - Require a passing read-only batch before that action. Preserve the complete baseline before mutation, use only the two documented safer reductions, send at most one Save in each phase, detect a real physical detach before advancing, and require two fresh full-state reads: temporary persistence and exact restoration.
 - Treat an uncertain write, Save, restoration, or readback as terminal. Persist the recovery stage synchronously and never retry an uncertain mutation automatically.
 
@@ -76,10 +76,10 @@ The owner should only be asked to test after the complete candidate is ready. Th
 1. Install the beta candidate as an in-place update and confirm existing EQ Library data remains present.
 2. Connect EW300 and approve USB access if Android asks.
 3. Confirm My DAC shows the device and reads playback gain plus all five bands; run and share the read-only report.
-4. In the signed-only Save qualification, confirm the displayed source commit, approve the two small safer reductions, and follow its first 10-second unplug/reconnect instruction.
-5. Continue once. If temporary values did not persist, stop with the safe `NOT_PERSISTENT` result; Flash/Reset stay locked and no product persistence claim is made.
-6. If they persisted, allow exact baseline restoration, perform the second instructed 10-second unplug/reconnect, and finish. Stop immediately on any uncertain result; never tap the action again.
-7. Only after a two-cycle PASS, edit one small Peak value, review, Apply, and confirm readback; Flash one known five-band profile and verify the result after power removal; then Reset and verify the defined flat state after power removal.
+4. Use the already recorded persistence result; do not tap or rerun Save qualification.
+5. Edit one small Peak value, review, Apply, and confirm readback only if the app marks Apply available.
+6. Flash one known five-band profile only if the app marks Flash available, then verify its readback and reconnect behavior.
+7. Reset only if the app marks Reset available, and verify the defined flat state without changing underlying playback gain.
 8. Confirm the readback/capture result can be saved as a Personal EQ with exact EW300 provenance, and confirm reconnect state remains truthful/current with no crash, ANR, repeated prompt, or manual reconnect loop.
 9. Run one focused Black Pearl connect/Flash/reset regression check.
 

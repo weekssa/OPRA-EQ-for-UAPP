@@ -27,8 +27,8 @@ object HardwareEqDeviceSpecs {
             maxGainDb = 12.0,
             minQ = 0.1,
             maxQ = 10.0,
-            // Candidate wire mapping observed in the evidence ledger; product exposure remains
-            // guarded until the exact-device beta gate qualifies gain and persistence semantics.
+            // Direct-Hz and the native codec bounds are qualified by the exact signed-candidate
+            // persistence result for the verified EW300 capability profile.
             minPreampDb = -64.0,
             maxPreampDb = 63.5,
         ),

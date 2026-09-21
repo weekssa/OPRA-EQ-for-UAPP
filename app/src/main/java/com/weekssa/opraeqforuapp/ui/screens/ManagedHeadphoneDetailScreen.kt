@@ -542,7 +542,7 @@ private fun managedHardwareFlashConfirmation(
     val persistence = if (device == ExportDevice.FIIO_JA11) {
         "The five-band PEQ will be applied, read back, and saved to the JA11."
     } else if (device == ExportDevice.SIMGOT_EW300) {
-        "The five-band PEQ will be applied and read back on the EW300. Persistence remains hardware-validation pending."
+        "The five-band Peak EQ will be applied and read back on the exact verified EW300 profile."
     } else {
         "The five-band PEQ will be written and read back. Persistence across a full power cycle is still hardware-validation pending for stock JM12 firmware."
     }
@@ -573,7 +573,10 @@ private fun hardwareConnectionHelp(
         else -> null
     }
     ExportDevice.SIMGOT_EW300 -> when {
-        else -> "SIMGOT EW300 persistent Flash is pending exact-device qualification; use My DAC readback/capture." to false
+        !directEw300FlashEnabled ->
+            "Enable direct Flash in Settings → SIMGOT EW300 DSP before connecting to the DAC." to false
+        ew300ConnectionState is Kt02h20ConnectionState.Error -> ew300ConnectionState.message to true
+        else -> null
     }
     ExportDevice.JCALLY_JM12 -> when {
         !directJcallyJm12FlashEnabled ->

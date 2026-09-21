@@ -6,6 +6,13 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ## [Unreleased]
 
+### v0.7 EW300 full-build continuation
+
+- Accepted the frozen signed-candidate evidence for exact fingerprint `vid=31b2|pid=111|manufacturer=LE XIAN|product=SIMGOT EW300 DSP|serial=2024-07-03-0000-0000-0000|interface=3`: read-only PASS and `VERIFIED` Save, Peak, playback-gain, exact restoration, and two power-removal checks.
+- Added the exact-fingerprint production capability profile and removed the completed Save qualification action from the normal product UI. The Save qualification must not be run again.
+- Added a shared strict EW300 baseline/restore coordinator and guarded persistent Apply, Flash, Reset, and reconnect-aware verification paths.
+- Added focused authorization and transaction test coverage; complete CI, signing, installation, launch, and final consolidated hardware validation remain required before PR #23 can be considered for approval.
+
 ### Fixed
 
 - Added a guided, read-only EW300 capability report in My DAC with readable and JSON sharing.

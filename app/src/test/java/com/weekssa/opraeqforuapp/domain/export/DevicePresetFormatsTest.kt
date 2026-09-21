@@ -186,6 +186,7 @@ class DevicePresetFormatsTest {
         assertEquals("Untested", ExportDevice.TOPPING_DX1_II.validationStatus)
         assertEquals("Official AutoEq import path", ExportDevice.TOPPING_TUNE.validationStatus)
         assertEquals("Hardware validation pending", ExportDevice.FIIO_JA11.validationStatus)
+        assertEquals("Verified only for the qualified EW300 fingerprint", ExportDevice.SIMGOT_EW300.validationStatus)
         assertNull(ExportDevice.JCALLY_JM12.validationStatus)
         assertTrue(ExportDevice.JCALLY_JM12 !in ExportDevice.selectableOutputs)
         assertTrue(ExportDevice.UAPP.validationStatus == null)

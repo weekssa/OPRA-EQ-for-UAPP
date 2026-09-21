@@ -192,16 +192,13 @@ fun SettingsScreen(
                     val directFlashChecked = when (device) {
                         ExportDevice.BLACK_PEARL -> appPreferences.directBlackPearlFlashEnabled
                         ExportDevice.FIIO_JA11 -> appPreferences.directFiioJa11FlashEnabled
-                        // EW300 persistent Flash is not enabled in this candidate. Keep the
-                        // target selectable for source-neutral representations, but do not expose
-                        // a toggle that suggests an unsupported write path.
-                        ExportDevice.SIMGOT_EW300 -> null
+                        ExportDevice.SIMGOT_EW300 -> appPreferences.directEw300FlashEnabled
                         else -> null
                     }
                     val onDirectFlashChange: ((Boolean) -> Unit)? = when (device) {
                         ExportDevice.BLACK_PEARL -> onDirectBlackPearlFlashEnabledChange
                         ExportDevice.FIIO_JA11 -> onDirectFiioJa11FlashEnabledChange
-                        ExportDevice.SIMGOT_EW300 -> null
+                        ExportDevice.SIMGOT_EW300 -> onDirectEw300FlashEnabledChange
                         else -> null
                     }
                     OutputOption(

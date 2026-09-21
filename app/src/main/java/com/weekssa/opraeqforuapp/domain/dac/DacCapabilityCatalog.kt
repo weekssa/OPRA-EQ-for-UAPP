@@ -53,9 +53,10 @@ object DacCapabilityCatalog {
                 model = DacMetadataValue("SIMGOT EW300 DSP", DacMetadataOrigin.USB_REPORTED),
                 usbVendorId = 0x31B2,
                 usbProductId = 0x0111,
-                // Raw transport and software integration are complete enough for the beta
-                // candidate, but the exact-device gain/persistence/reset gate is still pending.
-                validationStatus = DacValidationStatus.HARDWARE_VALIDATION_PENDING,
+                // The bounded Save qualification is complete for this exact model/profile. The
+                // product still exposes only the independently qualified Peak EQ operations; it
+                // does not infer unrelated DEVICE controls from this status.
+                validationStatus = DacValidationStatus.HARDWARE_QUALIFIED,
             ),
             exposedControls = emptyList(),
         )
