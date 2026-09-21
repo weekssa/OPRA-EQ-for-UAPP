@@ -56,12 +56,16 @@ class Ew300DeviceStatusTest {
 
         composeRule.onNodeWithText("It never writes, saves, resets, or retries a mutation.", substring = true)
             .assertIsDisplayed()
+        composeRule.onNodeWithText("Available for this exact EW300 profile", substring = true)
+            .assertIsDisplayed()
+        composeRule.onNodeWithText("Flash, persistence, and Reset remain hardware-validation pending.", substring = true)
+            .assertDoesNotExist()
+        composeRule.onNodeWithText("Start Save qualification", substring = true)
+            .assertDoesNotExist()
         composeRule.onNodeWithText("Run read-only report").performScrollTo().assertIsEnabled().performClick()
         composeRule.onNodeWithText("Result: PASS").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("Share readable report").performScrollTo().performClick()
         composeRule.onNodeWithText("Share technical report").performScrollTo().performClick()
-        composeRule.onNodeWithText("Start Save qualification").assertDoesNotExist()
-
         composeRule.runOnIdle {
             assertEquals(1, runCount)
             assertEquals(1, readableShareCount)

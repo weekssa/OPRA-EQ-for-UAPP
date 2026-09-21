@@ -293,11 +293,11 @@ internal fun Ew300DeviceStatus(
     Text("SIMGOT EW300 DSP", style = MaterialTheme.typography.titleMedium)
     Text("USB 31B2:0111", style = MaterialTheme.typography.bodyMedium)
     Text(
-        "No additional EW300 device controls are verified in this candidate yet. Volume, headset, UAC, and other Black Pearl settings are not copied to this device without an exact EW300 protocol match.",
+        "Unrelated EW300 device controls are not verified here. Volume, headset, UAC, and other Black Pearl controls are not available without a separate exact EW300 protocol match.",
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
     Text(
-        "Software-prepared in this candidate: five-band PEQ readback, guarded gain-aware EQ operations, capture, and reconnect recovery. Flash, persistence, and Reset remain hardware-validation pending.",
+        "Available for this exact EW300 profile: five Peak-band readback, guarded Apply, capture, Flash, Reset EQ to flat, and reconnect recovery. The signed Save qualification is already complete for this validation and must not be run again.",
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )

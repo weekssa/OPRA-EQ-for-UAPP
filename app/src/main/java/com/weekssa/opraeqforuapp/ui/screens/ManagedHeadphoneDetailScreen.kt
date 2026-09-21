@@ -74,6 +74,24 @@ private data class ManagedHardwareFlashAssessment(
     val warning: String? = null,
 )
 
+internal fun isManagedHardwareFlashEnabled(
+    activeOutput: ExportDevice,
+    directBlackPearlFlashEnabled: Boolean,
+    blackPearlConnected: Boolean,
+    directFiioJa11FlashEnabled: Boolean,
+    fiioJa11Connected: Boolean,
+    directJcallyJm12FlashEnabled: Boolean,
+    jcallyJm12Connected: Boolean,
+    directEw300FlashEnabled: Boolean,
+    ew300Connected: Boolean,
+): Boolean = when (activeOutput) {
+    ExportDevice.BLACK_PEARL -> directBlackPearlFlashEnabled && blackPearlConnected
+    ExportDevice.FIIO_JA11 -> directFiioJa11FlashEnabled && fiioJa11Connected
+    ExportDevice.SIMGOT_EW300 -> directEw300FlashEnabled && ew300Connected
+    ExportDevice.JCALLY_JM12 -> directJcallyJm12FlashEnabled && jcallyJm12Connected
+    else -> false
+}
+
 @Composable
 fun ManagedHeadphoneDetailScreen(
     headphone: ManagedHeadphoneRecord,
@@ -122,18 +140,17 @@ fun ManagedHeadphoneDetailScreen(
     }
     val activeOutput = exportTargets.activeTarget
     val isHardwareOutput = activeOutput in MANAGED_HARDWARE_FLASH_OUTPUTS
-    val flashEnabled = when (activeOutput) {
-        ExportDevice.BLACK_PEARL -> directBlackPearlFlashEnabled &&
-            blackPearlConnectionState is BlackPearlConnectionState.Connected
-        ExportDevice.FIIO_JA11 -> directFiioJa11FlashEnabled &&
-            fiioJa11ConnectionState is Kt02h20ConnectionState.Connected
-        // EW300 persistent Flash is intentionally absent until exact-device persistence is
-        // qualified; readback/capture remains available from My DAC.
-        ExportDevice.SIMGOT_EW300 -> false
-        ExportDevice.JCALLY_JM12 -> directJcallyJm12FlashEnabled &&
-            jcallyJm12ConnectionState is Kt02h20ConnectionState.Connected
-        else -> false
-    }
+    val flashEnabled = isManagedHardwareFlashEnabled(
+        activeOutput = activeOutput,
+        directBlackPearlFlashEnabled = directBlackPearlFlashEnabled,
+        blackPearlConnected = blackPearlConnectionState is BlackPearlConnectionState.Connected,
+        directFiioJa11FlashEnabled = directFiioJa11FlashEnabled,
+        fiioJa11Connected = fiioJa11ConnectionState is Kt02h20ConnectionState.Connected,
+        directJcallyJm12FlashEnabled = directJcallyJm12FlashEnabled,
+        jcallyJm12Connected = jcallyJm12ConnectionState is Kt02h20ConnectionState.Connected,
+        directEw300FlashEnabled = directEw300FlashEnabled,
+        ew300Connected = ew300ConnectionState is Kt02h20ConnectionState.Connected,
+    )
 
     val pendingNewCount = headphone.profiles.count { it.isNewUnreviewed && !it.noLongerAvailable }
     val pendingUpdatedCount = headphone.profiles.count {
