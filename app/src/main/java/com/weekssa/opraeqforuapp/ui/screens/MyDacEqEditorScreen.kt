@@ -41,7 +41,7 @@ import com.weekssa.opraeqforuapp.ui.components.DacEqResponseGraph
 import java.util.Locale
 
 @Composable
-internal fun BlackPearlEqEditorScreen(
+internal fun DacEqEditorScreen(
     state: MyDacEditorUiState,
     onRetryOpen: () -> Unit,
     onClose: () -> Unit,
@@ -81,6 +81,7 @@ internal fun BlackPearlEqEditorScreen(
     val working = requireNotNull(state.workingCopy)
     EditorHeader(
         working = working,
+        dacLabel = dacLabel,
         onClose = onClose,
         closeEnabled = state.applyStatus != MyDacEditorApplyStatus.APPLYING,
     )
@@ -116,6 +117,7 @@ internal fun BlackPearlEqEditorScreen(
 @Composable
 private fun EditorHeader(
     working: HardwareEqEditWorkingCopy,
+    dacLabel: String,
     onClose: () -> Unit,
     closeEnabled: Boolean,
 ) {
@@ -132,6 +134,7 @@ private fun EditorHeader(
             Text(
                 stringResource(
                     R.string.my_dac_editor_subtitle,
+                    dacLabel,
                     working.baselineSnapshot.activeSlot ?: 0,
                 ),
             )

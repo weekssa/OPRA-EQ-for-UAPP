@@ -282,7 +282,7 @@ fun MyDacScreen(
                         blackPearlEditorState.isOpen ||
                         blackPearlEditorState.error != null
                     ) {
-                        BlackPearlEqEditorScreen(
+                        DacEqEditorScreen(
                             state = blackPearlEditorState,
                             onRetryOpen = onOpenBlackPearlEditor,
                             onClose = onCloseBlackPearlEditor,

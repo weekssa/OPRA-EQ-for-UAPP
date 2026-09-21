@@ -3,13 +3,16 @@ package com.weekssa.opraeqforuapp.ui.screens
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import com.weekssa.opraeqforuapp.R
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityCaseResult
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityReport
 import org.junit.Assert.assertEquals
@@ -64,5 +67,15 @@ class Ew300DeviceStatusTest {
             assertEquals(1, readableShareCount)
             assertEquals(1, jsonShareCount)
         }
+    }
+
+    @Test
+    fun ew300EditorSubtitleUsesTheProvidedDeviceName() {
+        composeRule.setContent {
+            Text(stringResource(R.string.my_dac_editor_subtitle, "SIMGOT EW300 DSP", 0))
+        }
+
+        composeRule.onNodeWithText("SIMGOT EW300 DSP · Slot 0").assertIsDisplayed()
+        composeRule.onNodeWithText("TRN Black Pearl", substring = true).assertDoesNotExist()
     }
 }

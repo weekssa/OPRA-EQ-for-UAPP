@@ -150,7 +150,7 @@ internal fun Ew300MyDacContent(
                 }
                 if (selectedTab == 0) {
                     if (editorState.isOpening || editorState.isOpen || editorState.error != null) {
-                        BlackPearlEqEditorScreen(
+                        DacEqEditorScreen(
                             state = editorState,
                             onRetryOpen = onOpenEditor,
                             onClose = onCloseEditor,
