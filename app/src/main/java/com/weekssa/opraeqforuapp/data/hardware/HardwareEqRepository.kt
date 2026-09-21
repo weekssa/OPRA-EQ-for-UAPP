@@ -210,7 +210,7 @@ class HardwareEqRepository(
     suspend fun flashEw300(profile: OpraEqProfile): Kt02h20FlashResult {
         mutableEw300SnapshotState.update { it.markStale() }
         return try {
-            dacSessionRepository.withExclusiveEw300Operation {
+            dacSessionRepository.withExclusiveEw300Mutation {
                 ew300Flasher.flash(profile)
             }
         } finally {
@@ -224,7 +224,7 @@ class HardwareEqRepository(
     ): Ew300EditorApplyResult {
         mutableEw300SnapshotState.update { it.markStale() }
         return try {
-            dacSessionRepository.withExclusiveEw300Operation {
+            dacSessionRepository.withExclusiveEw300Mutation {
                 ew300Flasher.applyEditorWorkingCopy(
                     workingCopy = workingCopy,
                     allowCautions = allowCautions,
@@ -241,10 +241,10 @@ class HardwareEqRepository(
         dacSessionRepository.withExclusiveEw300Operation { ew300CapabilityBatch.run() }
 
     suspend fun advanceEw300PersistenceQualification(): Ew300PersistenceQualificationResult =
-        dacSessionRepository.withExclusiveEw300Operation { ew300PersistenceQualifier.advance() }
+        dacSessionRepository.withExclusiveEw300Mutation { ew300PersistenceQualifier.advance() }
 
     suspend fun resetEw300(): Kt02h20FlatResetResult =
-        dacSessionRepository.withExclusiveEw300Operation { ew300Flasher.resetToFlat() }.also {
+        dacSessionRepository.withExclusiveEw300Mutation { ew300Flasher.resetToFlat() }.also {
             scheduleEw300SnapshotRefresh()
         }
 

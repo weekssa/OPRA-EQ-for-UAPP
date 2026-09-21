@@ -10,6 +10,7 @@ import com.weekssa.opraeqforuapp.domain.dac.HardwareEqFilter
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20Band
 import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class Ew300EditorApplyTest {
@@ -56,6 +57,44 @@ class Ew300EditorApplyTest {
             .isEqualTo(working.plannedHeadroomGainDb)
     }
 
+    @Test
+    fun applyRejectsAnUnverifiedReplacementSessionBeforeFinalReadback() = runBlocking {
+        val bundle = requireNotNull(
+            HardwareEqSnapshotFactory.ew300(
+                nativeBands = stockBands(),
+                globalGainDb = -29.0,
+                sessionGeneration = 1L,
+                verifiedAtEpochMillis = 1L,
+            ),
+        )
+        val state = HardwareEqSnapshotState().publishCurrent(bundle)
+        val started = HardwareEqEditor.startFromCurrent(
+            snapshotState = state,
+            spec = HardwareEqEditSpecs.SIMGOT_EW300,
+        ) as HardwareEqEditorStartResult.Ready
+        val edited = HardwareEqEditor.updateFilter(
+            workingCopy = started.workingCopy,
+            spec = HardwareEqEditSpecs.SIMGOT_EW300,
+            bandIndex = 0,
+            type = EqFilterType.PEAK,
+            frequencyHz = 2_500.0,
+            gainDb = 4.0,
+            q = 1.4,
+        )
+        val working = HardwareEqEditor.useSafeGain(edited, HardwareEqEditSpecs.SIMGOT_EW300)
+        val transport = FakeTransport(bundle, replacementFingerprint = "other-ew300")
+
+        val result = Ew300EditorApplier(transport).apply(
+            workingCopy = working,
+            allowCautions = false,
+            isSessionCurrent = { it == 1L },
+        )
+
+        assertTrue(result is Ew300EditorApplyResult.VerificationFailed)
+        assertThat(transport.commitCount).isEqualTo(1)
+        assertThat(transport.finalReadCount).isEqualTo(0)
+    }
+
     private fun stockBands(): List<Kt02h20Band> = listOf(
         Kt02h20Band("peak_dip", 2_500.0, 4.5, 1.4),
         Kt02h20Band("peak_dip", 120.0, 0.0, 1.0),
@@ -66,9 +105,12 @@ class Ew300EditorApplyTest {
 
     private inner class FakeTransport(
         bundle: com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotBundle,
+        private val replacementFingerprint: String? = null,
     ) : Ew300Transport {
-        override val deviceFingerprintKey: String =
+        override var deviceFingerprintKey: String =
             "vid=31b2|pid=111|manufacturer=LE XIAN|product=SIMGOT EW300 DSP|serial=2024-07-03-0000-0000-0000|interface=3"
+        override var sessionGeneration: Long = 1L
+        override var detachGeneration: Long = 0L
         val state = mutableMapOf<Int, ByteArray>().apply {
             put(0x24, bytes(0, 0, 0, 0))
             put(
@@ -85,8 +127,12 @@ class Ew300EditorApplyTest {
         }
         var writeCount = 0
         var commitCount = 0
+        var finalReadCount = 0
 
-        override suspend fun readRegister(register: Int): ByteArray? = state[register]?.copyOf()
+        override suspend fun readRegister(register: Int): ByteArray? {
+            if (commitCount > 0) finalReadCount++
+            return state[register]?.copyOf()
+        }
 
         override suspend fun writeRegister(register: Int, data: ByteArray): Boolean {
             writeCount++
@@ -96,6 +142,11 @@ class Ew300EditorApplyTest {
 
         override suspend fun commit(): Boolean {
             commitCount++
+            if (replacementFingerprint != null) {
+                deviceFingerprintKey = replacementFingerprint
+                sessionGeneration = 2L
+                detachGeneration = 1L
+            }
             return true
         }
     }

@@ -21,6 +21,7 @@ class Ew300OperationTraceTest {
         )
         builder.stage(Ew300OperationStage.AUTHORIZED_SESSION)
         builder.stage(Ew300OperationStage.BASELINE_CAPTURED)
+        builder.markBeforeFirstWrite(8L)
         builder.stage(Ew300OperationStage.WRITING)
         builder.stage(Ew300OperationStage.VOLATILE_VERIFIED)
         builder.stage(Ew300OperationStage.SAVE_SENT_ONCE)
@@ -30,6 +31,8 @@ class Ew300OperationTraceTest {
 
         assertTrue(report.toReadableText().contains("permissionRequestsBeforeFirstWrite=0"))
         assertTrue(report.toJson().contains("\"saveCommandCount\":1"))
+        assertTrue(report.toReadableText().contains("mutationReplayCount=unmeasured"))
+        assertTrue(report.toJson().contains("\"competingConnectionJobCount\":null"))
         assertTrue(report.toJson().contains("\"finalReadbackMatched\":true"))
         assertFalse(report.toReadableText().contains("accountNumber"))
     }

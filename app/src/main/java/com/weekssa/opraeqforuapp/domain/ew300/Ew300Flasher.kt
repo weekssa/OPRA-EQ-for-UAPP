@@ -55,9 +55,6 @@ class Ew300Flasher(
         trace.stage(Ew300OperationStage.AUTHORIZED_SESSION)
         val result = applyEditorWorkingCopyInternal(workingCopy, allowCautions, isSessionCurrent, trace)
         if (result == Ew300EditorApplyResult.Verified) {
-            trace.stage(Ew300OperationStage.WRITING)
-            trace.stage(Ew300OperationStage.VOLATILE_VERIFIED)
-            trace.stage(Ew300OperationStage.SAVE_SENT_ONCE)
             trace.stage(Ew300OperationStage.FINAL_READBACK)
         }
         result
@@ -84,6 +81,19 @@ class Ew300Flasher(
             beforeFirstWrite = {
                 trace.markBeforeFirstWrite(transport.permissionRequestCount)
                 trace.stage(Ew300OperationStage.WRITING)
+            },
+            beforeSave = { trace.stage(Ew300OperationStage.VOLATILE_VERIFIED) },
+            afterSave = { observation ->
+                trace.stage(Ew300OperationStage.SAVE_SENT_ONCE)
+                if (observation.replacementObserved) {
+                    trace.stage(Ew300OperationStage.WAITING_FOR_REPLACEMENT)
+                    if (observation.replacementIdentityMatched) {
+                        trace.stage(Ew300OperationStage.REPLACEMENT_IDENTITY_VERIFIED)
+                        trace.stage(Ew300OperationStage.REPLACEMENT_AUTHORIZED)
+                    }
+                } else if (observation.replacementIdentityMatched) {
+                    trace.stage(Ew300OperationStage.SAME_SESSION_READBACK)
+                }
             },
         )
     }
@@ -169,6 +179,7 @@ class Ew300Flasher(
             )
         }
         trace.stage(Ew300OperationStage.VOLATILE_VERIFIED)
+        val sessionGenerationBeforeSave = transport.sessionGeneration
         val detachBeforeSave = transport.detachGeneration
         if (!transport.commit()) {
             return Kt02h20FlashResult.TransferFailed(
@@ -176,12 +187,16 @@ class Ew300Flasher(
             )
         }
         trace.stage(Ew300OperationStage.SAVE_SENT_ONCE)
-        if (transport.detachGeneration != detachBeforeSave) {
-            trace.stage(Ew300OperationStage.WAITING_FOR_REPLACEMENT)
-            trace.stage(Ew300OperationStage.REPLACEMENT_IDENTITY_VERIFIED)
-            trace.stage(Ew300OperationStage.REPLACEMENT_AUTHORIZED)
-        } else {
-            trace.stage(Ew300OperationStage.SAME_SESSION_READBACK)
+        if (!recordCommitBoundary(
+                trace = trace,
+                expectedFingerprint = deviceKey,
+                sessionGenerationBeforeSave = sessionGenerationBeforeSave,
+                detachGenerationBeforeSave = detachBeforeSave,
+            )
+        ) {
+            return Kt02h20FlashResult.VerificationFailed(
+                "EW300 Save returned on a different or unverified USB session. No readback was accepted.",
+            )
         }
         trace.stage(Ew300OperationStage.FINAL_READBACK)
         val verificationFailure = verify(target)
@@ -263,17 +278,22 @@ class Ew300Flasher(
             ).toFlatResetResult()
         }
         trace.stage(Ew300OperationStage.VOLATILE_VERIFIED)
+        val sessionGenerationBeforeSave = transport.sessionGeneration
         val detachBeforeSave = transport.detachGeneration
         if (!transport.commit()) {
             return Kt02h20FlatResetResult.TransferFailed("EW300 did not accept the flat-EQ persistence command.")
         }
         trace.stage(Ew300OperationStage.SAVE_SENT_ONCE)
-        if (transport.detachGeneration != detachBeforeSave) {
-            trace.stage(Ew300OperationStage.WAITING_FOR_REPLACEMENT)
-            trace.stage(Ew300OperationStage.REPLACEMENT_IDENTITY_VERIFIED)
-            trace.stage(Ew300OperationStage.REPLACEMENT_AUTHORIZED)
-        } else {
-            trace.stage(Ew300OperationStage.SAME_SESSION_READBACK)
+        if (!recordCommitBoundary(
+                trace = trace,
+                expectedFingerprint = deviceKey,
+                sessionGenerationBeforeSave = sessionGenerationBeforeSave,
+                detachGenerationBeforeSave = detachBeforeSave,
+            )
+        ) {
+            return Kt02h20FlatResetResult.VerificationFailed(
+                "EW300 Save returned on a different or unverified USB session. No readback was accepted.",
+            )
         }
         trace.stage(Ew300OperationStage.FINAL_READBACK)
         val verificationFailure = verify(flat)
@@ -298,6 +318,27 @@ class Ew300Flasher(
         }
         trace.restored()
         return Kt02h20FlashResult.TransferFailed("$reason The original EW300 state was restored and verified.")
+    }
+
+    private fun recordCommitBoundary(
+        trace: Ew300OperationTraceBuilder,
+        expectedFingerprint: String,
+        sessionGenerationBeforeSave: Long,
+        detachGenerationBeforeSave: Long,
+    ): Boolean {
+        val replacementObserved = transport.detachGeneration != detachGenerationBeforeSave
+        val identityMatched = transport.deviceFingerprintKey == expectedFingerprint &&
+            (!replacementObserved || transport.sessionGeneration != sessionGenerationBeforeSave)
+        if (replacementObserved) {
+            trace.stage(Ew300OperationStage.WAITING_FOR_REPLACEMENT)
+            if (identityMatched) {
+                trace.stage(Ew300OperationStage.REPLACEMENT_IDENTITY_VERIFIED)
+                trace.stage(Ew300OperationStage.REPLACEMENT_AUTHORIZED)
+            }
+        } else if (identityMatched) {
+            trace.stage(Ew300OperationStage.SAME_SESSION_READBACK)
+        }
+        return identityMatched
     }
 
     private suspend fun <T> record(

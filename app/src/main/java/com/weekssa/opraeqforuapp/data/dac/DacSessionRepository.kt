@@ -149,6 +149,9 @@ class DacSessionRepository(
         fiioJa11OperationMutex.withLock { block() }
 
     suspend fun <T> withExclusiveEw300Operation(block: suspend () -> T): T =
+        ew300OperationMutex.withLock { block() }
+
+    suspend fun <T> withExclusiveEw300Mutation(block: suspend () -> T): T =
         ew300OperationMutex.withLock {
             ew300ReconnectGate.beginMutation()
             try {

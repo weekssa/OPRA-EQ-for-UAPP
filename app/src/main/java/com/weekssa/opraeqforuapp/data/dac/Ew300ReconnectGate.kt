@@ -49,8 +49,9 @@ class Ew300ReconnectGate {
     fun canAutomaticReconnect(): Boolean = mutableAutomaticReconnectAllowed.value
 
     /** Invoke a queued automatic reconnect only if the gate is still open at invocation time. */
+    @Synchronized
     internal fun runAutomaticReconnectIfAllowed(connect: () -> Unit) {
-        if (canAutomaticReconnect()) connect()
+        if (mutableAutomaticReconnectAllowed.value) connect()
     }
 
     @Synchronized

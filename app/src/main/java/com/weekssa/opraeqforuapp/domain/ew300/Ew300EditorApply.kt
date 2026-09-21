@@ -17,6 +17,11 @@ sealed interface Ew300EditorApplyResult {
     data class VerificationFailed(val reason: String) : Ew300EditorApplyResult
 }
 
+data class Ew300CommitObservation(
+    val replacementObserved: Boolean,
+    val replacementIdentityMatched: Boolean,
+)
+
 /** Applies the shared My DAC editor working copy through the guarded EW300 transaction. */
 class Ew300EditorApplier(
     private val transport: Ew300Transport,
@@ -28,8 +33,11 @@ class Ew300EditorApplier(
         allowCautions: Boolean,
         isSessionCurrent: (Long) -> Boolean,
         beforeFirstWrite: () -> Unit = {},
+        beforeSave: () -> Unit = {},
+        afterSave: (Ew300CommitObservation) -> Unit = {},
     ): Ew300EditorApplyResult {
-        if (transport.deviceFingerprintKey == null) {
+        val expectedFingerprint = transport.deviceFingerprintKey
+        if (expectedFingerprint == null) {
             return Ew300EditorApplyResult.DeviceUnavailable("The exact EW300 device fingerprint is unavailable.")
         }
         if (workingCopy.baselineSnapshot.deviceId != DacDeviceId.SIMGOT_EW300) {
@@ -113,9 +121,21 @@ class Ew300EditorApplier(
 
         // Apply is a persistent product transaction. The Save command may re-enumerate the USB
         // function, so the old session generation is intentionally not reused after commit.
+        beforeSave()
+        val sessionGenerationBeforeSave = transport.sessionGeneration
+        val detachGenerationBeforeSave = transport.detachGeneration
         if (!transport.commit()) {
             return Ew300EditorApplyResult.TransferFailed(
                 "EW300 Save was not confirmed. Reconnect and read the DAC before any retry; the app will not retry automatically.",
+            )
+        }
+        val replacementObserved = transport.detachGeneration != detachGenerationBeforeSave
+        val replacementIdentityMatched = transport.deviceFingerprintKey == expectedFingerprint &&
+            (!replacementObserved || transport.sessionGeneration != sessionGenerationBeforeSave)
+        afterSave(Ew300CommitObservation(replacementObserved, replacementIdentityMatched))
+        if (!replacementIdentityMatched) {
+            return Ew300EditorApplyResult.VerificationFailed(
+                "EW300 Save returned on a different or unverified USB session. No readback was accepted.",
             )
         }
         val finalBands = readBands()

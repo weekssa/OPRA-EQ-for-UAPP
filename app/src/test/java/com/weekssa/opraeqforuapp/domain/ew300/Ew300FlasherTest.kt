@@ -78,6 +78,21 @@ class Ew300FlasherTest {
     }
 
     @Test
+    fun flashRejectsAnUnverifiedReplacementSessionBeforeFinalReadback() = runBlocking {
+        val transport = FakeTransport(replacementFingerprint = "other-ew300")
+
+        val result = Ew300Flasher(
+            transport,
+            QualifiedGainStore(),
+            mutationAuthorized = { true },
+        ).flash(profile(preamp = null))
+
+        assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.VerificationFailed)
+        assertEquals(1, transport.commitCount)
+        assertEquals(0, transport.readsAfterCommit)
+    }
+
+    @Test
     fun partialBandFailureRestoresTheCapturedVolatileStateBeforeStopping() = runBlocking {
         val transport = FakeTransport(failWriteRegister = Ew300Protocol.bandRegister(0) + 1)
         val result = Ew300Flasher(
@@ -109,8 +124,11 @@ class Ew300FlasherTest {
         private val commitSucceeds: Boolean = true,
         private val failWriteRegister: Int? = null,
         private val missingRegister: Int? = null,
+        private val replacementFingerprint: String? = null,
     ) : Ew300Transport {
-        override val deviceFingerprintKey: String = "test-ew300"
+        override var deviceFingerprintKey: String = "test-ew300"
+        override var sessionGeneration: Long = 1L
+        override var detachGeneration: Long = 0L
         val state = (0 until Ew300Protocol.BAND_COUNT)
             .flatMap { index ->
                 val register = Ew300Protocol.bandRegister(index)
@@ -125,8 +143,10 @@ class Ew300FlasherTest {
         val writes = mutableListOf<Int>()
         var commitCount = 0
         var readsAfterWrites = 0
+        var readsAfterCommit = 0
         override suspend fun readRegister(register: Int): ByteArray? {
             if (writes.isNotEmpty()) readsAfterWrites++
+            if (commitCount > 0) readsAfterCommit++
             if (register == missingRegister) return null
             return state[register]
         }
@@ -140,6 +160,11 @@ class Ew300FlasherTest {
 
         override suspend fun commit(): Boolean {
             commitCount++
+            if (replacementFingerprint != null) {
+                deviceFingerprintKey = replacementFingerprint
+                sessionGeneration = 2L
+                detachGeneration = 1L
+            }
             return commitSucceeds
         }
     }

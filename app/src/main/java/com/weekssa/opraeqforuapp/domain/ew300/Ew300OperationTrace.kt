@@ -23,11 +23,14 @@ data class Ew300OperationTrace(
     val sessionGeneration: Long,
     val detachGeneration: Long,
     val permissionRequestCount: Long,
-    val permissionRequestsBeforeFirstWrite: Long,
+    /** Null means the operation stopped before a first-write boundary was observed. */
+    val permissionRequestsBeforeFirstWrite: Long?,
     val registerWriteCount: Long,
     val saveCommandCount: Long,
-    val mutationReplayCount: Long,
-    val competingConnectionJobCount: Long,
+    /** Null means this build did not instrument mutation replay attempts. */
+    val mutationReplayCount: Long?,
+    /** Null means this build did not instrument competing connection jobs. */
+    val competingConnectionJobCount: Long?,
     val replacementObserved: Boolean,
     val replacementIdentityMatched: Boolean,
     val baselineCaptured: Boolean,
@@ -49,11 +52,11 @@ data class Ew300OperationTrace(
         appendLine("sessionGeneration=$sessionGeneration")
         appendLine("detachGeneration=$detachGeneration")
         appendLine("permissionRequestCount=$permissionRequestCount")
-        appendLine("permissionRequestsBeforeFirstWrite=$permissionRequestsBeforeFirstWrite")
+        appendLine("permissionRequestsBeforeFirstWrite=${permissionRequestsBeforeFirstWrite ?: "unmeasured"}")
         appendLine("registerWriteCount=$registerWriteCount")
         appendLine("saveCommandCount=$saveCommandCount")
-        appendLine("mutationReplayCount=$mutationReplayCount")
-        appendLine("competingConnectionJobCount=$competingConnectionJobCount")
+        appendLine("mutationReplayCount=${mutationReplayCount ?: "unmeasured"}")
+        appendLine("competingConnectionJobCount=${competingConnectionJobCount ?: "unmeasured"}")
         appendLine("replacementObserved=$replacementObserved")
         appendLine("replacementIdentityMatched=$replacementIdentityMatched")
         appendLine("baselineCaptured=$baselineCaptured")
@@ -109,7 +112,7 @@ data class Ew300OperationTrace(
         append('"').append(name).append("\":").append(value)
     }
 
-    private fun StringBuilder.numberField(name: String, value: Long) {
+    private fun StringBuilder.numberField(name: String, value: Long?) {
         if (length > 1) append(',')
         append('"').append(name).append("\":").append(value)
     }
@@ -183,12 +186,13 @@ class Ew300OperationTraceBuilder(
         sessionGeneration = sessionGeneration,
         detachGeneration = detachGeneration,
         permissionRequestCount = permissionRequestCount - initialPermissionRequestCount,
-        permissionRequestsBeforeFirstWrite =
-            (permissionCountBeforeFirstWrite ?: permissionRequestCount) - initialPermissionRequestCount,
+        permissionRequestsBeforeFirstWrite = permissionCountBeforeFirstWrite?.let {
+            it - initialPermissionRequestCount
+        },
         registerWriteCount = registerWriteCount - initialRegisterWriteCount,
         saveCommandCount = saveCommandCount - initialSaveCommandCount,
-        mutationReplayCount = 0L,
-        competingConnectionJobCount = 0L,
+        mutationReplayCount = null,
+        competingConnectionJobCount = null,
         replacementObserved = replacementObserved,
         replacementIdentityMatched = replacementIdentityMatched,
         baselineCaptured = baselineCaptured,
