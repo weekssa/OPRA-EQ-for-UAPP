@@ -4,7 +4,7 @@ import android.content.Intent
 import android.hardware.usb.UsbManager
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.google.common.truth.Truth.assertThat
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -22,6 +22,6 @@ class UsbAttachmentIntentManifestTest {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val intent = Intent(UsbManager.ACTION_USB_DEVICE_ATTACHED).setPackage(context.packageName)
 
-        assertThat(context.packageManager.queryIntentActivities(intent, 0)).isEmpty()
+        assertTrue(context.packageManager.queryIntentActivities(intent, 0).isEmpty())
     }
 }
