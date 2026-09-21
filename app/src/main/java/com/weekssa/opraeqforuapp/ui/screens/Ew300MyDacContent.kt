@@ -142,7 +142,7 @@ internal fun Ew300MyDacContent(
             Kt02h20ConnectionState.Connected -> {
                 Text("Connected. Use My EQs or EQ Library to apply a verified Peak-only EQ profile.")
                 Text(
-                    "This exact EW300 profile supports five Peak bands, readback, capture, Apply, Flash, Reset EQ to flat, and reconnect recovery. Other device controls remain unsupported.",
+                    "This exact EW300 profile supports five Peak bands, readback, capture, Apply, Flash, Reset EQ to flat, and reconnect recovery. Volume, headset, UAC, microphone, firmware, bootloader, and unrelated DAC controls must be exposed when this exact profile supports them and safe protocol evidence is established; none is established for EW300.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -305,7 +305,7 @@ internal fun Ew300DeviceStatus(
     Text("SIMGOT EW300 DSP", style = MaterialTheme.typography.titleMedium)
     Text("USB 31B2:0111", style = MaterialTheme.typography.bodyMedium)
     Text(
-        "Unrelated EW300 device controls are not verified here. Volume, headset, UAC, and other Black Pearl controls are not available without a separate exact EW300 protocol match.",
+        "Additional EW300 device controls are not verified here. Volume, headset, UAC, microphone, firmware, bootloader, and unrelated DAC controls require a separate exact EW300 capability and protocol match; none is claimed for this profile.",
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
     Text(
