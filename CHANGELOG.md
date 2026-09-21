@@ -12,6 +12,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Added the exact-fingerprint production capability profile and removed the completed Save qualification action from the normal product UI. The Save qualification must not be run again.
 - Added a shared strict EW300 baseline/restore coordinator and guarded persistent Apply, Flash, Reset, and reconnect-aware verification paths.
 - Added focused authorization and transaction test coverage; complete CI, signing, installation, launch, and final consolidated hardware validation remain required before PR #23 can be considered for approval.
+- Final software commit `7887b0795ba3802368f77808a9ff2851e2fd7bdd` passed the complete CI, security, signed-APK, alignment, installation, and cold-launch gates. The exact signed beta artifact is `EQ-Library-v0.7.0-beta-7887b07.apk` with SHA-256 `714500157de686fe82d768dc71fe2bdab28694ba24899a6684854bdc3ae680d1`; one consolidated owner hardware session remains.
 
 ### Fixed
 
