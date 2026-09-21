@@ -32,4 +32,16 @@ class Ew300ReconnectGateTest {
         gate.endMutation()
         assertTrue(gate.canAutomaticReconnect())
     }
+
+    @Test
+    fun failedMutationStaysBlockedUntilExplicitManualConnect() {
+        val gate = Ew300ReconnectGate()
+
+        gate.beginMutation()
+        gate.endMutation()
+
+        assertFalse(gate.canAutomaticReconnect())
+        gate.beginManualConnect()
+        assertTrue(gate.canAutomaticReconnect())
+    }
 }

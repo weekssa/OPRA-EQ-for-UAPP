@@ -11,6 +11,9 @@ import kotlinx.coroutines.flow.asStateFlow
  * DSP. Before Save has been accepted, reconnecting is unsafe: a replacement UsbDevice may not
  * yet have permission and connect() would legitimately ask Android for it. Once Save has been
  * sent, reconnect is allowed so the normal replacement-session path can continue to read back.
+ * If a mutation stops before Save, automatic reconnect remains blocked until the owner explicitly
+ * asks to connect again; a failed pre-Save operation must not immediately launch another Android
+ * permission prompt.
  */
 class Ew300ReconnectGate {
     private val mutableAutomaticReconnectAllowed = MutableStateFlow(true)
@@ -33,15 +36,25 @@ class Ew300ReconnectGate {
         }
     }
 
+    /** Re-arms automatic reconnect only after an explicit owner connect action. */
     @Synchronized
-    fun canAutomaticReconnect(): Boolean = mutationDepth == 0 || replacementReconnectReleased
-
-    @Synchronized
-    fun endMutation() {
-        mutationDepth = (mutationDepth - 1).coerceAtLeast(0)
+    fun beginManualConnect() {
         if (mutationDepth == 0) {
             replacementReconnectReleased = false
             mutableAutomaticReconnectAllowed.value = true
+        }
+    }
+
+    @Synchronized
+    fun canAutomaticReconnect(): Boolean = mutableAutomaticReconnectAllowed.value
+
+    @Synchronized
+    fun endMutation() {
+        val saveSent = replacementReconnectReleased
+        mutationDepth = (mutationDepth - 1).coerceAtLeast(0)
+        if (mutationDepth == 0) {
+            replacementReconnectReleased = false
+            mutableAutomaticReconnectAllowed.value = saveSent
         }
     }
 

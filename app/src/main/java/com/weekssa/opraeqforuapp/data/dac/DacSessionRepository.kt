@@ -137,7 +137,10 @@ class DacSessionRepository(
 
     fun connectBlackPearl() = blackPearlTransport.connect()
     fun connectFiioJa11() = fiioJa11Transport.connect()
-    fun connectEw300() = ew300Transport.connect()
+    fun connectEw300() {
+        ew300ReconnectGate.beginManualConnect()
+        ew300Transport.connect()
+    }
 
     suspend fun <T> withExclusiveBlackPearlOperation(block: suspend () -> T): T =
         blackPearlOperationMutex.withLock { block() }
