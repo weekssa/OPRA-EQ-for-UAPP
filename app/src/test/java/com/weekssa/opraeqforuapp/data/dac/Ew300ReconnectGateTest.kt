@@ -50,9 +50,7 @@ class Ew300ReconnectGateTest {
     fun queuedAutomaticReconnectRechecksGateBeforeLaunchingConnection() {
         val gate = Ew300ReconnectGate()
         var connectionCount = 0
-        val queuedConnectAutomatically = {
-            if (gate.canAutomaticReconnect()) connectionCount++
-        }
+        val queuedConnectAutomatically = { gate.runAutomaticReconnectIfAllowed { connectionCount++ } }
 
         gate.beginMutation()
         queuedConnectAutomatically()

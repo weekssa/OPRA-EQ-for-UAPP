@@ -53,7 +53,7 @@ class AndroidEw300UsbTransport(
      * permission prompt before Save has released replacement-session reconnect.
      */
     fun connectAutomatically() {
-        if (reconnectGate.canAutomaticReconnect()) hid.connect()
+        reconnectGate.runAutomaticReconnectIfAllowed { hid.connect() }
     }
 
     override suspend fun readRegister(register: Int): ByteArray? {
