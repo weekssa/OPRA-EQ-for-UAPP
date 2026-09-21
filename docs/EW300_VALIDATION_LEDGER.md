@@ -36,6 +36,8 @@ merge, publication, or public support claim.
 | E026 | Current candidate `676fadf1dfe6fa1b23a7aa2ee11e9457e72e7ca4`; owner screenshots `Screenshot (Sep 21, 2026 5:59:03 PM).png` (SHA-256 `093df3b701b7dc12eb28b716a3f1b93bd8208624e462189606cd93731ccc3099`), `Screenshot_20260921-175913.png` (SHA-256 `37e3a37b5df0ec1e0ec2f335e66cba755d36134442be4670b7d81506b5796f55`), and `Screenshot (Sep 21, 2026 5:59:30 PM).png` (SHA-256 `5faad5bdf5a61b9de2b283b5282d40ff84fbb8ec81c3b1f95462563ca009a29c)` | Physical Apply sequence evidence: the review screen showed one Band 1 Peak gain change from `+4.50 dB` to `+4.00 dB`; after the device re-enumerated, Android showed EQ Library’s USB permission prompt while reconnecting; the reopened EQ read Band 1 at `+4.00 dB`. This supports persisted hardware value/readback after reconnect. | No readable/JSON operation trace was attached, so Save count, pre-write permission count, replay/competing-job status, and app final-readback completion are not independently established. This is not a Flash result. Do not repeat the `+4.50 → +4.00 dB` mutation; restore the original baseline once and export the complete reports. |
 | E027 | Current candidate `676fadf1dfe6fa1b23a7aa2ee11e9457e72e7ca4`; owner `EW300 operation report JSON (1)` (SHA-256 `22305d8601f16385f25fa546814aab0b14572eed9c247f9292167eff3ff2bffe`) and screenshots `Screenshot (Sep 21, 2026 6:04:58 PM)` (SHA-256 `2f3f8772817ae5bdcb354bd2d1f8ed9a549ae5389cffd55ada005b20de105bf2`), `Screenshot (Sep 21, 2026 6:05:21 PM)` (SHA-256 `b2471a8b3410e251e03b7ac90fb7cfd207d437c97e9c287301f9dbed5a3649c5`), and `Screenshot_20260921-180510.png` (SHA-256 `569357548a6c4f963a35548f3a8ee56962c51aa51a1d5b305fbeffc46201c332`) | Physical `APPLY` transaction, not `FLASH`: outcome `Verified`; `permissionRequestsBeforeFirstWrite=0`; `registerWriteCount=10`; `saveCommandCount=1`; `replacementObserved=true`; exact replacement identity matched; `volatileReadbackMatched=true`; `finalReadbackMatched=true`; `stateKnown=true`. Screenshots show the review change `+4.00 → +4.50 dB`, the Android permission prompt during replacement reconnect, and final EQ readback at `+4.50 dB`. | `mutationReplayCount=null` and `competingConnectionJobCount=null` are explicitly unmeasured, not measured zero. `restorationVerified=false` is the operation trace’s restoration-coordinator flag, so this record does not by itself claim a full restoration-coordinator PASS. The report is not a Flash result; no Flash operation report is attached. |
 
+| E028 | Current PR head `48fb2d6df4cdf59e6d5f7fe48718c9e82a0ef665`; signed workflow [#1283](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/35668208370); artifact `EQ-Library-signed-beta-48fb2d6df4cdf59e6d5f7fe48718c9e82a0ef665` (artifact id `10670446802`, digest `sha256:b4737a791d029548e59e743db812f8d624023481db0bf53daa69c19ffe5ed1d7`); APK `EQ-Library-v0.7.0-beta-48fb2d6.apk`; APK SHA-256 `96e094258d186da68555945d389c17817f1687e820beaa04f47917eb36ce6525`; signer `65C1C1256DAE3C49E3548F334C91F0BA991969E9BE9E0B223BA4E253D2114747` | Documentation/evidence-only current-head follow-up after the reconnect-verification UX candidate. Android CI #1677, CodeQL #1562, catalog #1975, priority coverage #1460, dependency #1977, signed-beta alignment/signature verification, install, and cold-launch all passed. The immutable APK and SHA-256 sidecar are publicly available on the temporary `mobile-test-apk` branch. | No production behavior changed after `d634d25b`; no physical retest is inferred. E027 remains the latest physical `APPLY` evidence, not a `FLASH` result. PR #23 remains draft; merge, publication, and public EW300 support remain owner-controlled. |
+
 ## Exact identity boundary
 
 ```text
@@ -48,12 +50,12 @@ interface profile; VID/PID alone is insufficient.
 
 ## Candidate gate status
 
-The latest current-head candidate at `49d7250b88d2eb31f5b8c0097e4b84eec5d8c5fd` passed the
+The latest current-head candidate at `48fb2d6df4cdf59e6d5f7fe48718c9e82a0ef665` passed the
 software, security, signing, installation, cold-launch, and source-sensitive release gates. Its
 connected Android emulator UI workflow also passed. It is a documentation-only follow-up to the
-bounded-review source `6c41d9f` and the physically tested `7035518b` candidate; it has not been used
-for physical mutation. The generated candidate is retained in signed workflow artifact
-`EQ-Library-signed-beta-49d7250b88d2eb31f5b8c0097e4b84eec5d8c5fd`.
+bounded reconnect-verification UX source `d634d25b` and the physically tested `7035518b` candidate;
+it has not been used for physical mutation. The generated candidate is retained in signed workflow
+artifact `EQ-Library-signed-beta-48fb2d6df4cdf59e6d5f7fe48718c9e82a0ef665`.
 
 The physical session is complete as one consolidated session only, with no automatic mutation
 retry; the final hardware state was restored exactly. The remaining release review is to inspect
