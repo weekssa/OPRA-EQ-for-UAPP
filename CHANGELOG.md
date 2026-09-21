@@ -307,6 +307,15 @@ accessibility, and release-polish gates. APK SHA-256 is
 physical EW300 session remains outstanding. No merge, publication, or public support claim is
 authorized.
 
+## 2026-09-21 EW300 signed candidate Apply stop — NO WRITE
+
+The owner’s exact-candidate Apply attempt stopped safely before mutation. The exported operation
+report records `InvalidPlan`, zero register writes, zero Save commands, zero permission requests,
+and known device state. Source diagnosis found that the shared editor treated EW300’s verified
+global-gain register as a dedicated EQ preamp; the recovery branch now maps it as an absolute
+device-global-gain headroom mechanism. The old APK must not be retried. A replacement signed
+candidate and complete gates are required before the consolidated physical session resumes.
+
 ## [0.1.0] - 2026-08-16
 
 ### Added

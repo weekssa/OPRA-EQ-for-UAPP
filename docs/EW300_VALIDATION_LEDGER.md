@@ -16,6 +16,7 @@ merge, publication, or public support claim.
 | E006 | Section 7 Extra-High gate 1 | `EXTRA-HIGH GATE READY`: review whether the root cause, reconnect gate, Save release point, replacement authorization, race/idempotency behavior, and no-replay tests are sufficient. | Smallest action: perform one bounded Extra-High code review on the frozen diff; do not rerun hardware or restart research. |
 | E007 | Section 7 Extra-High gate 2 | `EXTRA-HIGH GATE READY`: after CI freezes the candidate, review release provenance, invariant report fields, software gates, and hardware stop conditions. | Smallest action: perform one bounded Extra-High release audit; then either request the single physical session or record the specific defect. |
 | E008 | `855364e8a9d758f12e7d2a48bdaf89f457e28070`; signed workflow #1258; artifact digest `sha256:151555c3d9bd8664e119a59f2b99d4ab4a3ac115dbb5cfa06ead2ee061589fc4` | Exact signed candidate passed the complete software/release gate: Android unit/UI/build validation, lint, CodeQL, dependency, catalog, priority-community, package/version, pinned-signer, alignment, install, and cold-launch checks. APK `EQ-Library-v0.7.0-beta-855364e.apk` SHA-256 is `bfcb77f4774e8f0a9e48c1da13a262e9033c8e0f42a7a18774e864c0b1774b44`; signer is `65C1C1256DAE3C49E3548F334C91F0BA991969E9BE9E0B223BA4E253D2114747`. | Candidate is ready for the one consolidated owner hardware session. No physical result is inferred, no merge/publication is authorized, and the temporary `mobile-test-apk` surface is not a release publication. |
+| E009 | Candidate `855364e8a9d758f12e7d2a48bdaf89f457e28070`; APPLY operation `afbfc691-8eab-4680-b160-3b6a9552c8d3`; readable and JSON reports exported from the exact signed APK | The consolidated session stopped safely at Apply preflight with `outcome=InvalidPlan`: `baselineCaptured=true`, `stateKnown=true`, `registerWriteCount=0`, `saveCommandCount=0`, `permissionRequestCount=0`, `mutationReplayCount=0`, and `competingConnectionJobCount=0`. The red UI warning identified a software headroom-baseline mapping defect; no hardware mutation occurred. | Do not retry this APK. The exact EW300 device state is known and no write was sent. A replacement candidate must correct the editor’s use of the verified global-gain register, pass targeted and complete gates, and only then return to the single physical session. |
 
 ## Exact identity boundary
 
@@ -29,12 +30,14 @@ interface profile; VID/PID alone is insufficient.
 
 ## Candidate gate status
 
-The exact signed candidate at `855364e8a9d758f12e7d2a48bdaf89f457e28070` has passed the software,
+The exact signed candidate at `855364e8a9d758f12e7d2a48bdaf89f457e28070` passed the software,
 security, signing, installation, cold-launch, accessibility/emulator, and release-polish gates in
-one frozen workflow cycle. The generated candidate manifest is retained in signed workflow
-artifact `EQ-Library-signed-beta-855364e8a9d758f12e7d2a48bdaf89f457e28070`.
+one frozen workflow cycle. Its single owner session then stopped safely before any write because
+the editor mapped the EW300 global-gain baseline incorrectly. The generated candidate manifest is
+retained in signed workflow artifact
+`EQ-Library-signed-beta-855364e8a9d758f12e7d2a48bdaf89f457e28070`.
 
-The physical session is one consolidated session only, with no automatic mutation retry. The
-bounded Extra-High release audit remains `EXTRA-HIGH GATE READY`: review whether the exact artifact
-provenance, operation-report invariants, software gates, and hardware stop conditions are complete;
-the smallest action is one focused review of the frozen diff and candidate record.
+The physical session remains one consolidated session only, with no automatic mutation retry. The
+current candidate is not eligible for another hardware attempt. The bounded Extra-High review must
+now examine the corrected global-gain mapping and the no-write report; the smallest action is one
+focused review of the fix and its targeted tests before creating a replacement signed candidate.
