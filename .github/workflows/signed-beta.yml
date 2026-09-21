@@ -100,6 +100,50 @@ jobs:
           test "$actual_fingerprint" = "$expected_fingerprint"
           sha256sum "$output_apk" > "${output_apk}.sha256"
 
+      - name: Install signed beta and verify cold launch
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdkmanager "emulator" "system-images;android-35;google_apis;x86_64"
+          avd_home="$RUNNER_TEMP/avd"
+          mkdir -p "$avd_home"
+          export ANDROID_AVD_HOME="$avd_home"
+          echo "no" | avdmanager create avd --force --name opra_signed_beta --package "system-images;android-35;google_apis;x86_64" --device pixel_6
+          nohup "$ANDROID_SDK_ROOT/emulator/emulator" \
+            -avd opra_signed_beta -no-window -noaudio -no-boot-anim -no-snapshot -wipe-data \
+            -gpu swiftshader_indirect > "$RUNNER_TEMP/signed-beta-emulator.log" 2>&1 &
+          emulator_pid=$!
+          for attempt in $(seq 1 90); do
+            if ! kill -0 "$emulator_pid" 2>/dev/null; then
+              cat "$RUNNER_TEMP/signed-beta-emulator.log"
+              exit 1
+            fi
+            if adb get-state 2>/dev/null | grep -qx device; then break; fi
+            if [[ "$attempt" -eq 90 ]]; then
+              cat "$RUNNER_TEMP/signed-beta-emulator.log"
+              exit 1
+            fi
+            sleep 2
+          done
+          timeout 240 bash -c 'until [[ "$(adb shell getprop sys.boot_completed | tr -d "\r")" == "1" ]]; do sleep 5; done'
+          output_apk="dist/$(find dist -maxdepth 1 -type f -name 'EQ-Library-v*.apk' -printf '%f\n' -quit)"
+          test -f "$output_apk"
+          adb install "$output_apk"
+          adb shell am force-stop com.weekssa.opraeqforuapp
+          adb shell monkey -p com.weekssa.opraeqforuapp 1
+          timeout 60 bash -c 'until adb shell pidof com.weekssa.opraeqforuapp >/dev/null 2>&1; do sleep 2; done'
+          adb shell dumpsys package com.weekssa.opraeqforuapp | grep -q 'versionCode=7'
+          adb shell dumpsys package com.weekssa.opraeqforuapp | grep -q 'versionName=0.7.0'
+
+      - name: Upload signed-beta emulator diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: signed-beta-emulator-diagnostics-${{ github.sha }}
+          path: ${{ runner.temp }}/signed-beta-emulator.log
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Upload signed beta candidate
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
