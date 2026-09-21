@@ -100,7 +100,7 @@ jobs:
           test "$actual_fingerprint" = "$expected_fingerprint"
           sha256sum "$output_apk" > "${output_apk}.sha256"
 
-      - name: Install signed beta and verify cold launch
+      - name: Set up signed-beta emulator
         shell: bash
         run: |
           set -euo pipefail
@@ -127,6 +127,11 @@ jobs:
           done
           adb wait-for-device
           timeout 240 bash -c 'until [[ "$(adb shell getprop sys.boot_completed | tr -d "\r")" == "1" ]]; do sleep 5; done'
+
+      - name: Install signed beta APK
+        shell: bash
+        run: |
+          set -euo pipefail
           output_apk="dist/$(find dist -maxdepth 1 -type f -name 'EQ-Library-v*.apk' -printf '%f\n' -quit)"
           test -f "$output_apk"
           if ! install_output="$(adb install -r "$output_apk" 2>&1)"; then
@@ -135,10 +140,15 @@ jobs:
             exit 1
           fi
           echo "$install_output"
-          adb shell am force-stop com.weekssa.opraeqforuapp
           package_dump="$(adb shell dumpsys package com.weekssa.opraeqforuapp)"
           echo "$package_dump" | grep -q 'versionCode=7'
           echo "$package_dump" | grep -q 'versionName=0.7.0'
+
+      - name: Cold-launch signed beta APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          adb shell am force-stop com.weekssa.opraeqforuapp
           if ! launch_output="$(adb shell am start -W -n com.weekssa.opraeqforuapp/.MainActivity 2>&1)"; then
             echo "$launch_output"
             adb logcat -d > "$RUNNER_TEMP/signed-beta-logcat.txt" || true
@@ -147,7 +157,6 @@ jobs:
           echo "$launch_output"
           echo "$launch_output" | grep -q 'Status: ok'
           sleep 5
-          adb shell dumpsys activity activities | grep -q 'com.weekssa.opraeqforuapp'
           adb logcat -d > "$RUNNER_TEMP/signed-beta-logcat.txt"
 
       - name: Upload signed-beta emulator diagnostics
