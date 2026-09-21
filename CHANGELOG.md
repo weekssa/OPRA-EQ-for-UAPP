@@ -339,6 +339,18 @@ signing, emulator, installation, and release gates. The exact signed APK is
 `0f70d9f290c487691992ac657d8f2dae1ccba844a99749c6b44e37895ce4c345`; signed workflow #1261.
 The previous physical attempt remains a permission-denied stop with no verified Apply result.
 
+## 2026-09-21 EW300 queued-reconnect guard candidate — SOFTWARE PASS, HARDWARE PENDING
+
+The EW300 automatic reconnect path now rechecks the reconnect gate at invocation time, preventing
+a stale queued callback from requesting Android USB permission after a pre-Save stop has closed
+the gate. Source `7035518b042a7b19c0495869cf247359ee27b4a2` passed Android unit/lint/build,
+emulator UI, CodeQL, catalog, priority-community, dependency, signing, alignment, installation,
+and cold-launch gates. The exact signed APK is
+`EQ-Library-v0.7.0-beta-7035518.apk` with SHA-256
+`661ca49488939c15f290868f1be05ab24dfb1b1a870b977455dabfedce409c66`; signed workflow #1262.
+No physical mutation has been attempted with this candidate. The one consolidated EW300 session
+remains pending, and merge, publication, and any public support claim remain owner-controlled.
+
 ## [0.1.0] - 2026-08-16
 
 ### Added
