@@ -9,8 +9,9 @@
 | Mutation safety | Shared strict baseline/restore and fail-closed result types | EW300 one-Save commit and pre-Save volatile readback | Current code and flasher tests; hardware edit and exact restoration observed, but candidate Apply telemetry is incomplete. |
 | Re-enumeration | Shared generation/detach observation | Save releases replacement reconnect only after accepted commit | New gate plus physical observation; persisted readback and exact restoration passed, while candidate operation trace is incomplete. |
 | UI shell | Shared My DAC, editor, readback, feedback and report affordances | Peak-only capability wording and EW300 operation-report sharing | Emulator/accessibility gate required. |
-| DEVICE controls | Capability-driven surface | No guessed Black Pearl controls; report only | Matrix above; no extra hardware session. |
+| DEVICE controls | Capability-driven surface | Expose every control established for the exact profile; do not guess or inherit Black Pearl controls | EW300 matrix currently has no additional established controls; no extra hardware session. |
 | Release provenance | Shared signed workflow, pinned signer, package/version checks | Candidate manifest includes EW300 profile and evidence IDs | Full signed workflow on frozen head. |
 
 No Black Pearl command bytes, filter meanings, limits, persistence semantics, reset semantics, or
-DEVICE controls are reused as EW300 behavior.
+DEVICE controls are reused as EW300 behavior. Exact-profile DEVICE controls remain required
+product scope when their hardware support and safe protocol evidence are established.

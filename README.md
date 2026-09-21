@@ -87,7 +87,10 @@ The SIMGOT EW300 DSP cable is not supported by v0.6.0. The v0.7 recovery candida
 
 Direct Flash is OFF by default for newly introduced hardware outputs. Add/Save never automatically writes to a DAC. Flash and Reset require explicit confirmation where the maintained device safety contract requires it.
 
-EQ Library does **not** include firmware update, bootloader, cross-flash, or unrelated DAC-management commands in v0.6.0.
+The v0.6.0 hardware scope does **not** include firmware update, bootloader, cross-flash, or
+unrelated DAC-management commands. More generally, any such control must be exposed when the
+exact hardware profile genuinely supports it and safe protocol evidence is established; an
+unverified control is kept absent and unclaimed until then.
 
 ### TRN Black Pearl
 

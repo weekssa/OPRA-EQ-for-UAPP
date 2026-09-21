@@ -14,7 +14,8 @@ capability is classified so implementation does not imply unsupported hardware b
 | Playback-gain device state | SUPPORTED_AND_IMPLEMENTED | E001 and bounded gain codec; tracked separately from canonical EQ. |
 | Low-shelf / high-shelf production capture or Flash | INSUFFICIENT_EVIDENCE | Raw experiments are not enough to establish acoustic semantics; product stays Peak-only. |
 | Disabled/unused-band semantics | INSUFFICIENT_EVIDENCE | Complete five-band representation required; no guessed disabled state. |
-| Volume, headset, microphone, UAC, balance, firmware, bootloader, erase, calibration | HARDWARE_DOES_NOT_PROVIDE | No exact EW300 evidence; Black Pearl controls are not copied. |
+| Volume, headset, microphone, UAC, balance, firmware, bootloader, and other DAC controls | INSUFFICIENT_EVIDENCE | These controls are required for any exact hardware profile that genuinely supports them and has safe protocol evidence. No such support is established for this EW300 fingerprint, so the controls remain absent and unclaimed in this release; Black Pearl controls are not copied. |
+| Erase, calibration, recovery, and cross-flash | UNSAFE_OR_OUT_OF_SCOPE | These destructive or vendor-level operations require separate exact protocol, safety, and restoration evidence; they are not part of the current EW300 release. |
 | Unknown EW300 revisions or VID/PID-only matches | UNSAFE_OR_OUT_OF_SCOPE | Exact identity and capability profile reject them. |
 | Automatic mutation retry | UNSAFE_OR_OUT_OF_SCOPE | No write or Save replay; uncertain state is terminal. |
 | Replacement-session reconnect after Save | SUPPORTED_AND_IMPLEMENTED | Reconnect gate plus exact session generation/fingerprint checks; current hardware behavior showed expected re-enumeration and persisted readback after manual replacement authorization, while candidate operation telemetry remains incomplete. |
