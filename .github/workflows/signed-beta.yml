@@ -109,6 +109,8 @@ jobs:
           mkdir -p "$avd_home"
           export ANDROID_AVD_HOME="$avd_home"
           echo "no" | avdmanager create avd --force --name opra_signed_beta --package "system-images;android-35;google_apis;x86_64" --device pixel_6
+          sudo chown "$(id -un)" /dev/kvm
+          "$ANDROID_SDK_ROOT/emulator/emulator" -accel-check
           nohup "$ANDROID_SDK_ROOT/emulator/emulator" \
             -avd opra_signed_beta -no-window -noaudio -no-boot-anim -no-snapshot -wipe-data \
             -gpu swiftshader_indirect > "$RUNNER_TEMP/signed-beta-emulator.log" 2>&1 &
