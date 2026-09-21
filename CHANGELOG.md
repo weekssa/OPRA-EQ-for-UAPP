@@ -376,6 +376,19 @@ This evidence-only follow-up was not physically tested; no further physical muta
 Replay/competing-job counters remain unmeasured zero fields, and PR #23 stays draft with no merge,
 publication, or public EW300 support claim authorized.
 
+## 2026-09-21 EW300 final guard-seam candidate — SOFTWARE PASS, HARDWARE GATE OPEN
+
+The final bounded Extra-High review found that the reconnect regression should exercise the
+production guard path rather than duplicate its condition in a local test lambda. Source
+`95e5e3597ce3bc7d3c1011bd0a79e978fc9a6e64` adds the minimal `runAutomaticReconnectIfAllowed` seam,
+routes `connectAutomatically()` through it, and tests zero launches before Save release and one
+afterward. The complete Android, emulator, security, catalog, coverage, dependency, signing,
+installation, cold-launch, and signed-beta checks passed. The exact APK is
+`EQ-Library-v0.7.0-beta-95e5e35.apk` with SHA-256
+`adb672e09c0fb2237814bb05451df7fe9f1785008de082bda225f5efe5157914`; signed workflow #1272.
+This final code candidate was not physically tested; no further physical mutation is authorized.
+Replay/competing-job counters remain unmeasured zero fields, and PR #23 stays draft.
+
 ## [0.1.0] - 2026-08-16
 
 ### Added
