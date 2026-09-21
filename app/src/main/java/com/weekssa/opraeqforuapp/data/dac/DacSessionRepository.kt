@@ -129,7 +129,7 @@ class DacSessionRepository(
             connectionState = ew300ConnectionState,
             isConnected = { state -> state is Kt02h20ConnectionState.Connected },
             isDisconnected = { state -> state is Kt02h20ConnectionState.Disconnected },
-            connect = ew300Transport::connect,
+            connect = ew300Transport::connectAutomatically,
             allowReconnect = ew300ReconnectGate::canAutomaticReconnect,
             allowReconnectState = ew300ReconnectGate.automaticReconnectAllowed,
         )

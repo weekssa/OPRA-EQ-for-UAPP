@@ -46,6 +46,16 @@ class AndroidEw300UsbTransport(
 
     fun connect() = hid.connect()
 
+    /**
+     * Automatic reconnect has a second, invocation-time guard in addition to the repository
+     * observer's StateFlow check. The observer can already have queued a connect callback when a
+     * mutation begins; re-checking here prevents that stale callback from launching Android's USB
+     * permission prompt before Save has released replacement-session reconnect.
+     */
+    fun connectAutomatically() {
+        if (reconnectGate.canAutomaticReconnect()) hid.connect()
+    }
+
     override suspend fun readRegister(register: Int): ByteArray? {
         reads += 1L
         // A connected EW300 can occasionally drop one HID input report while Android is
