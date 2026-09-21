@@ -125,22 +125,39 @@ jobs:
             fi
             sleep 2
           done
+          adb wait-for-device
           timeout 240 bash -c 'until [[ "$(adb shell getprop sys.boot_completed | tr -d "\r")" == "1" ]]; do sleep 5; done'
           output_apk="dist/$(find dist -maxdepth 1 -type f -name 'EQ-Library-v*.apk' -printf '%f\n' -quit)"
           test -f "$output_apk"
-          adb install "$output_apk"
+          if ! install_output="$(adb install -r "$output_apk" 2>&1)"; then
+            echo "$install_output"
+            adb logcat -d > "$RUNNER_TEMP/signed-beta-logcat.txt" || true
+            exit 1
+          fi
+          echo "$install_output"
           adb shell am force-stop com.weekssa.opraeqforuapp
-          adb shell monkey -p com.weekssa.opraeqforuapp 1
-          timeout 60 bash -c 'until adb shell pidof com.weekssa.opraeqforuapp >/dev/null 2>&1; do sleep 2; done'
-          adb shell dumpsys package com.weekssa.opraeqforuapp | grep -q 'versionCode=7'
-          adb shell dumpsys package com.weekssa.opraeqforuapp | grep -q 'versionName=0.7.0'
+          package_dump="$(adb shell dumpsys package com.weekssa.opraeqforuapp)"
+          echo "$package_dump" | grep -q 'versionCode=7'
+          echo "$package_dump" | grep -q 'versionName=0.7.0'
+          if ! launch_output="$(adb shell am start -W -n com.weekssa.opraeqforuapp/.MainActivity 2>&1)"; then
+            echo "$launch_output"
+            adb logcat -d > "$RUNNER_TEMP/signed-beta-logcat.txt" || true
+            exit 1
+          fi
+          echo "$launch_output"
+          echo "$launch_output" | grep -q 'Status: ok'
+          sleep 5
+          adb shell dumpsys activity activities | grep -q 'com.weekssa.opraeqforuapp'
+          adb logcat -d > "$RUNNER_TEMP/signed-beta-logcat.txt"
 
       - name: Upload signed-beta emulator diagnostics
         if: ${{ always() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: signed-beta-emulator-diagnostics-${{ github.sha }}
-          path: ${{ runner.temp }}/signed-beta-emulator.log
+          path: |
+            ${{ runner.temp }}/signed-beta-emulator.log
+            ${{ runner.temp }}/signed-beta-logcat.txt
           if-no-files-found: ignore
           retention-days: 14
 
