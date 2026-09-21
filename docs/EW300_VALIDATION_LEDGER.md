@@ -31,6 +31,7 @@ merge, publication, or public support claim.
 | E021 | Documentation policy commit `197ca6aa6ae7c1c1bf64f87a39f992c66de4f86c` on `feature/v0.7-ew300-luna-high` | Owner policy clarification: volume, headset, UAC, microphone, firmware, bootloader, and other DAC controls are required product scope whenever the exact hardware profile genuinely supports them and safe protocol evidence is established. For the qualified EW300 fingerprint, no such additional support is established, so those controls remain absent and unclaimed rather than classified as hardware-provided absence. | Documentation-only clarification; no code, APK, hardware result, release gate, merge, or public EW300 support claim is changed. |
 | E022 | Bounded review source `6c41d9f78f7fc34f064309564dd3f7eb9f75562e`; targeted EW300 tests; remote source checks | PASS with the following corrections: read-only EW300 operations no longer enter the mutation reconnect gate; the invocation-time automatic reconnect check is atomic; replacement sessions are accepted only when the exact fingerprint matches and a detached session has a new generation; final readback is not accepted after an unverified replacement; one-time Save and permission-before-write ordering remain guarded; and replay/competing-job telemetry is explicitly `unmeasured`/`null` when not instrumented. | No physical retest. The physical Apply report remains unavailable; accepted Save qualification remains frozen in E001. |
 | E023 | `6c41d9f78f7fc34f064309564dd3f7eb9f75562e`; signed workflow [#1276](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/35656347565); signed artifact `EQ-Library-signed-beta-6c41d9f78f7fc34f064309564dd3f7eb9f75562e` (artifact id `10666121029`); APK `EQ-Library-v0.7.0-beta-6c41d9f.apk`; APK SHA-256 `118bb5cbb7244fba6b17a9fc45f70fee0e14bdd6114774cbaffa96f6b94f7524`; signer `65C1C1256DAE3C49E3548F334C91F0BA991969E9BE9E0B223BA4E253D2114747` | Source-sensitive software/security/signing/install/cold-launch gates passed, including unit tests, lint, build, CodeQL, dependency, catalog, and priority-community checks. The separate Android emulator UI job failed while installing its emulator image before any UI test ran. | Evidence-only candidate; no physical retest, merge, publication, or public EW300 support claim. |
+| E024 | `49d7250b88d2eb31f5b8c0097e4b84eec5d8c5fd`; signed workflow [#1277](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/35657693668); signed artifact `EQ-Library-signed-beta-49d7250b88d2eb31f5b8c0097e4b84eec5d8c5fd` (artifact id `10666323360`); APK `EQ-Library-v0.7.0-beta-49d7250.apk`; APK SHA-256 `1d5d08195b0c237edf247cc7da194cd89cc196f873f4ef32f851b13228f5002f`; signer `65C1C1256DAE3C49E3548F334C91F0BA991969E9BE9E0B223BA4E253D2114747` | Documentation-only current-head follow-up to E022/E023; complete current-head Android unit/lint/build, connected emulator UI, CodeQL, dependency, catalog, priority-community, signing, installation, and cold-launch gates passed. | No production behavior changed after the bounded code review; no physical retest, merge, publication, or public EW300 support claim. |
 
 ## Exact identity boundary
 
@@ -44,13 +45,12 @@ interface profile; VID/PID alone is insufficient.
 
 ## Candidate gate status
 
-The latest bounded-review code candidate at `6c41d9f78f7fc34f064309564dd3f7eb9f75562e` passed the
+The latest current-head candidate at `49d7250b88d2eb31f5b8c0097e4b84eec5d8c5fd` passed the
 software, security, signing, installation, cold-launch, and source-sensitive release gates. Its
-standalone Android emulator UI workflow failed before tests at emulator-image installation, so no UI
-test result is inferred from that job. It is an evidence-only follow-up to the physically tested
-`7035518b` candidate and has not been used for physical mutation. The generated candidate is retained
-in signed workflow artifact
-`EQ-Library-signed-beta-6c41d9f78f7fc34f064309564dd3f7eb9f75562e`.
+connected Android emulator UI workflow also passed. It is a documentation-only follow-up to the
+bounded-review source `6c41d9f` and the physically tested `7035518b` candidate; it has not been used
+for physical mutation. The generated candidate is retained in signed workflow artifact
+`EQ-Library-signed-beta-49d7250b88d2eb31f5b8c0097e4b84eec5d8c5fd`.
 
 The physical session is complete as one consolidated session only, with no automatic mutation
 retry; the final hardware state was restored exactly. The remaining release review is to inspect
