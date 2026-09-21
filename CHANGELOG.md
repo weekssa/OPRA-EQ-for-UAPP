@@ -328,6 +328,17 @@ the immutable testing APK is [available here](https://raw.githubusercontent.com/
 No physical mutation has been attempted with this candidate. The one consolidated EW300 session
 remains pending, and merge, publication, and any public support claim remain owner-controlled.
 
+## 2026-09-21 EW300 reconnect-gate candidate — SOFTWARE PASS, HARDWARE PENDING
+
+After the `8bb87aa` candidate repeatedly surfaced an Android USB permission prompt when a
+pre-Save operation stopped, automatic EW300 reconnect is now held until the owner explicitly
+connects again. A Save-sent operation still releases the documented replacement-session readback
+path. Source `f41f985cb9f7a5d1622bc2e85ddfe5d14777e25d` passed the complete software, security,
+signing, emulator, installation, and release gates. The exact signed APK is
+`EQ-Library-v0.7.0-beta-f41f985.apk` with SHA-256
+`0f70d9f290c487691992ac657d8f2dae1ccba844a99749c6b44e37895ce4c345`; signed workflow #1261.
+The previous physical attempt remains a permission-denied stop with no verified Apply result.
+
 ## [0.1.0] - 2026-08-16
 
 ### Added
