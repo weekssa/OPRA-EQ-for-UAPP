@@ -6,6 +6,13 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ## [Unreleased]
 
+### Current v0.7 closeout snapshot — 2026-09-22
+
+- Physical evidence E043-E046 remains tied to signed executable source `7599dd52fc9e8c58c96e021f581b86a669dcc148`; the later pre-criteria source `b11190f9bbc08326f963190ad8b5a9f4b0872b2c` changed documentation only. E048 records that all six exact-head workflows and signed candidate passed on b11190, with APK `EQ-Library-v0.7.0-beta-b11190f.apk`, SHA-256 `2f26cc8b82be25c54e2f7bd58c7880261c992ac66f42bae9385150f28053b6fd`, signer `65C1C1256DAE3C49E3548F334C91F0BA991969E9BE9E0B223BA4E253D2114747`, and artifact digest `sha256:8f78382d1b0673d12e8364832037a3263723e6a14e7862337b83839bfba0daf7`.
+- This product-success-criteria documentation commit creates a new source SHA; current-head checks/signing must pass again. It changes no runtime behavior, so no physical retest is needed.
+- Remaining product scope includes EW300 EQ-overview graph/status parity, manual Refresh, concise DEVICE copy, a per-control Black Pearl crosswalk without inherited controls, and representative low/high-shelf conversion corpus tests. Personal EQ capture/provenance is not yet evidenced; My EQs review/cancel is conditional on the verified Flash entry surface. Do not repeat read-only, Apply, Flash, Restore, Reset, or E001 Save qualification.
+- The testable product/release definition is `docs/V0.7_PRODUCT_SUCCESS_CRITERIA.md`. Earlier v0.7 candidate entries below are preserved as historical snapshots, not as current-head status. PR #23 remains draft and v0.7.0 NO-GO pending product closure, current-head gates, final review, and explicit owner approval.
+
 - Owner reports E043-E046 add read-only PASS plus Flash, exact-baseline Restore, and Reset PASS on signed candidate source `7599dd52fc9e8c58c96e021f581b86a669dcc148`; E037-E040 remain the source-381 Apply/Flash/Restore/Reset evidence. Do not repeat any mutation or E001 Save qualification. All six gates passed on report-source 7599; this docs-only closeout makes that artifact stale for new-head provenance, so refresh gates/signing on the exact docs head. The only possible remaining owner check is non-mutating Personal EQ capture/value/provenance, plus My EQs review/cancel only if the successful Flash was not launched from My EQs. Release remains NO-GO pending scope closure and explicit approval.
 - Aligned the EW300 My DAC surface with the shared DAC UX: the verified EQ path is presented as usable
   readback/edit/Apply/capture/Flash/Reset/reconnect functionality, while the exact profile's

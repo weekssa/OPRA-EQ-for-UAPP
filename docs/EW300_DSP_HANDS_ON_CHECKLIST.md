@@ -1,34 +1,28 @@
 # EW300 v0.7 bounded hands-on checklist
 
-## Current evidence and no-repeat boundary
+## Accepted physical evidence and no-repeat boundary
 
-Owner-provided capability JSON (17) and operation JSON (11), (12), and (13) are tied to exact signed candidate source `7599dd52fc9e8c58c96e021f581b86a669dcc148`. They record a passing exact-device read-only report, successful Flash, exact-baseline Restore, and Reset. Each mutation report records one Save, zero permission requests before the first write, matching replacement identity, final readback, and known state; Restore explicitly records `restorationVerified=true`. The reports' replay/competing-job fields are unmeasured/null.
+The exact-fingerprint reports are tied to signed executable source `7599dd52fc9e8c58c96e021f581b86a669dcc148`: E043 read-only PASS, E044 Flash PASS, E045 exact-baseline Restore PASS (`restorationVerified=true`), and E046 Reset PASS. E037-E040 preserve the earlier source-381 Apply/Flash/Restore/Reset results. Each reported mutation used 11 writes, one Save, zero permission requests before first write, exact replacement identity/generation, final readback, and known state. Replay/competing-job telemetry remains null/unmeasured.
 
-Do not repeat Apply, Flash, Restore, Reset, or the accepted E001 Save qualification. The RESTORE operation verified the original baseline at its completion; a separate later Reset then completed and may leave the device at flat rather than an arbitrary original state. The current report set does not prove My EQs was the Flash entrypoint, and it does not prove end-to-end Personal EQ capture UX.
+The physical reports do not identify whether Flash was launched from My EQs or EQ Library and do not establish end-to-end Personal EQ capture. Restore was exact when it completed; a separate later Reset then completed. Do not claim the later state still equals an arbitrary pre-Flash baseline.
 
-The documentation-only closeout creates a new PR head. Do not use source 7599 as if it were the new head's signed provenance. If an owner UI check is still required, wait for PR #23 to show a fresh candidate whose source exactly matches the head and whose Android CI, CodeQL, catalog currentness, priority coverage, dependency submission, and signed-candidate workflow all pass. The exact APK/checksum/signer/artifact digest are in the live PR manifest. The docs-only delta does not require repeating hardware mutations.
+**Do not repeat Apply, Flash, Restore, Reset, E001 Save qualification, or the already-passing read-only report.** No further hardware mutation is authorized or needed for this closeout.
 
-## Authorized device boundary
+## Candidate gate before any owner check
 
-The only qualified fingerprint is:
+Before an owner is asked to use a candidate, verify in live PR #23 that its source SHA equals the PR head and that Android CI, CodeQL, catalog currentness, priority coverage, dependency submission, and signed-candidate workflow all pass on that exact SHA. The pre-criteria head `b11190f9bbc08326f963190ad8b5a9f4b0872b2c` passed all six; its exact APK/checksum/signer/artifact evidence is E048. A later documentation or code commit is a new candidate and needs fresh provenance. Never use source 7599 or b11190 APK as if it were a later head's artifact.
 
-```text
-vid=31b2|pid=111|manufacturer=LE XIAN|product=SIMGOT EW300 DSP|serial=2024-07-03-0000-0000-0000|interface=3
-```
+## Only possible owner checks — non-hardware-mutating
 
-If any future non-mutating owner check is performed and the app reports another identity, stale/unknown state, or interface, stop. Do not test another revision.
+Only after applicable gates pass on the final candidate, and only if existing evidence does not already answer the question:
 
-## The only possible remaining owner check — non-mutating
+1. In My DAC → EQ, save one captured five-band Peak state as a Personal EQ; verify the five values and exact device provenance. This is a local library operation, not a hardware write.
+2. Open the My EQs Flash review only if the verified Flash was not already launched from My EQs. Verify target/review details and cancel before final write confirmation.
 
-Do this only after the fresh exact-head candidate is available, and only if existing evidence does not already answer it:
+Stop without any final write if values/provenance or the review path are unclear. Do not collect another read-only report.
 
-1. If the app still needs a state refresh for capture, confirm the exact fingerprint and known state. The supplied read-only report already passed, so do not repeat it just to recreate the same evidence.
-2. Capture one Personal EQ from the known five-band Peak state. Confirm the saved item appears in My EQs and that the five frequency/gain/Q values and device provenance are correct. If you already captured and saved it on the matching candidate, use the existing evidence; do not capture it again.
-3. The operation JSON does not identify whether Flash came from My EQs or EQ Library. If you know the successful Flash was launched from My EQs, no extra Flash-path check is needed. Otherwise, open the saved My EQ's Flash review, confirm expected profile/target, and cancel before final write confirmation.
-4. Share only the saved-item/capture evidence and, if needed, screenshot of the canceled review. No operation report or broad logs are requested.
+## Product closeout before requesting the owner
 
-## Stop conditions
+The candidate must also meet `docs/V0.7_PRODUCT_SUCCESS_CRITERIA.md`: shared My DAC design/flow parity; EW300 compact response graph and truthful EQ status; manual Refresh; concise DEVICE presentation; a capability-by-capability Black Pearl crosswalk; source-neutral low/high-shelf corpus coverage; accessibility/error-state and shared-DAC regression coverage; and exact-source software/security/signing/install/upgrade gates.
 
-Stop without writing if identity/state is unclear, capture values/provenance do not match, Flash targets the wrong profile/device, a system chooser appears, a screen asks for final write confirmation, or any unexpected warning appears. Do not press Apply, Flash, Reset, Restore, or Save; do not run persistence qualification.
-
-This check can establish only Personal EQ capture UX and, if not already demonstrated by the successful entrypoint, My EQs Flash-review availability. It does not create additional physical mutation evidence. Release remains NO-GO pending the current-head software/signing gates, remaining UI evidence if needed, final review, synchronized docs, and explicit owner approval.
+Keep PR #23 draft and v0.7.0 NO-GO. Do not request mutation testing, merge, publication, or a public EW300 support claim without explicit owner approval.
