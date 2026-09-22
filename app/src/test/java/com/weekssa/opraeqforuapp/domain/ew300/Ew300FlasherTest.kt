@@ -121,7 +121,8 @@ class Ew300FlasherTest {
         val restoration = flasher.restoreLastFlashBaseline()
         assertTrue(restoration is Ew300RestorationResult.Verified)
         assertEquals(2, transport.commitCount)
-        assertEquals(21, transport.writes.size)
+        // Flash and exact restoration each write the ten band fields plus global gain.
+        assertEquals(22, transport.writes.size)
         original.forEach { (register, value) ->
             assertTrue(transport.state.getValue(register).contentEquals(value))
         }
