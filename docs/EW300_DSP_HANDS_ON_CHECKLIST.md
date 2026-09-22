@@ -32,9 +32,20 @@ Use only this exact candidate for the bounded session:
 | Immutable APK | `https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-381286e.apk` |
 
 This candidate passed the complete software, security, signing, installation, cold-launch, and
-temporary candidate-publication gates. That does not establish a physical Flash or restoration
-result. The EW300 Device tab’s additional state is read-only; do not use it as evidence for
+temporary candidate-publication gates. The owner has now completed the bounded source-381
+operation set: Apply, Flash, exact-baseline Restore, and Reset, recorded in E037-E040. Do not
+repeat those mutations or the accepted E001 Save qualification. The EW300 Device tab’s additional state is read-only; do not use it as evidence for
 unsupported Black Pearl-style controls or native shelf hardware support.
+
+## Completed source-381 evidence
+
+The paired readable/JSON reports show:
+- `APPLY`: 10 writes, one Save, zero permission requests before the first write, replacement identity matched, final readback matched, `outcome=Verified`.
+- `FLASH`: 11 writes, one Save, zero permission requests before the first write, replacement identity matched, final readback matched, `outcome=Success`.
+- exact-baseline `RESTORE`: 11 writes, one Save, exact replacement/generation, final exact readback, `restorationVerified=true`.
+- `RESET`: 11 writes, one Save, exact replacement/generation, final readback matched, `outcome=Success`.
+
+Replay and competing-job values are unmeasured/null. The Reset report does not contain raw before/after register values, so do not claim independent playback/global-gain preservation from it alone. No further Flash, Restore, Apply, Reset, or Save qualification is authorized merely to improve the evidence.
 
 ## Before the single mutation
 

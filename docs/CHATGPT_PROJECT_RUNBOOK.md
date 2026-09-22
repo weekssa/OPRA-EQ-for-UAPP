@@ -31,6 +31,12 @@ Before substantive work, read this file and the current documents relevant to th
 
 Historical plans remain useful context, but this runbook, current architecture, current release-specific plan, and later explicit decisions control where wording conflicts.
 
+## 2026-09-22 EW300 physical evidence continuation
+
+The exact signed source `381286eb7ea29b0707e6da75f3565bada1d73928` now has readable/JSON physical reports for `APPLY`, `FLASH`, exact-baseline post-Save `RESTORE`, and `RESET` (ledger E037-E040). Each report is limited to the authorized fingerprint `vid=31b2|pid=111|manufacturer=LE XIAN|product=SIMGOT EW300 DSP|serial=2024-07-03-0000-0000-0000|interface=3`, records zero permission requests before the first write, exactly one Save, replacement identity/generation handling, final readback, and a known verified terminal outcome. Replay and competing-job fields remain unmeasured/null and must not be described as zero.
+
+Do not repeat Flash, exact restoration, Apply, Reset, or E001 Save qualification. Personal EQ capture is not evidenced by these operation reports. The current PR head `e9e7a6f628c211134c6451cfe3155c9804b506de` is a documentation-only follow-up with signed/software gates green; physical evidence remains tied to source 381. Keep PR #23 draft, keep v0.7.0 NO-GO, and require explicit owner approval before merge/publication/public support.
+
 ## 2. Repository boundary
 
 ### Only writable repository

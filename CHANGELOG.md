@@ -6,6 +6,12 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ## [Unreleased]
 
+### v0.7 EW300 physical evidence continuation
+
+- Recorded current-source physical `APPLY` report E039 (10 writes, one Save, replacement identity and final readback verified) and `RESET` report E040 (11 writes, one Save, replacement identity and final readback verified) on `381286eb7ea29b0707e6da75f3565bada1d73928`. Replay and competing-job fields remain unmeasured/null; the Reset report does not independently export before/after playback-gain bytes.
+- Recorded E037/E038 as the same-source physical `FLASH` and exact-baseline post-Save `RESTORE` passes. No further Flash, Restore, Apply, Reset, or Save qualification is authorized from these results alone.
+- Recorded current signed documentation head `e9e7a6f628c211134c6451cfe3155c9804b506de` and workflow #1304; all current-head software/security/signed-artifact gates passed. Release remains NO-GO pending applicable remaining evidence, review, and explicit owner approval.
+
 ### v0.7 EW300 full-build continuation
 
 - Extended the exact EW300 My DAC Device tab with read-only playback/global-gain state, active Peak-band count, connection freshness, and readable/JSON operation status. The surface remains capability-driven and does not copy unverified Black Pearl controls.
