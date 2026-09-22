@@ -6,7 +6,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ## [Unreleased]
 
-- Physical E037-E040 already verify EW300 Apply, Flash, exact-baseline post-Save Restore, and Reset on source 381; do not repeat those mutations or E001 Save qualification. The last signed candidate before documentation reconciliation was source `3fbb9688d2774ca78b2c9dc943e00020046ed1f7` and passed its exact-head gates. This docs reconciliation requires a fresh exact-head candidate and gates; afterward only non-mutating Personal EQ capture and My EQs Flash-review/cancel confirmation remain before final review. Release stays NO-GO pending scope closure and explicit owner approval.
+- Owner reports E043-E046 add read-only PASS plus Flash, exact-baseline Restore, and Reset PASS on signed candidate source `7599dd52fc9e8c58c96e021f581b86a669dcc148`; E037-E040 remain the source-381 Apply/Flash/Restore/Reset evidence. Do not repeat any mutation or E001 Save qualification. All six gates passed on report-source 7599; this docs-only closeout makes that artifact stale for new-head provenance, so refresh gates/signing on the exact docs head. The only possible remaining owner check is non-mutating Personal EQ capture/value/provenance, plus My EQs review/cancel only if the successful Flash was not launched from My EQs. Release remains NO-GO pending scope closure and explicit approval.
 - Aligned the EW300 My DAC surface with the shared DAC UX: the verified EQ path is presented as usable
   readback/edit/Apply/capture/Flash/Reset/reconnect functionality, while the exact profile's
   playback/global-gain value remains an honest reported device state rather than an unqualified
@@ -21,6 +21,13 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Recorded current-source physical `APPLY` report E039 (10 writes, one Save, replacement identity and final readback verified) and `RESET` report E040 (11 writes, one Save, replacement identity and final readback verified) on `381286eb7ea29b0707e6da75f3565bada1d73928`. Replay and competing-job fields remain unmeasured/null; the Reset report does not independently export before/after playback-gain bytes.
 - Recorded E037/E038 as the same-source physical `FLASH` and exact-baseline post-Save `RESTORE` passes. No further Flash, Restore, Apply, Reset, or Save qualification is authorized from these results alone.
 - Recorded latest verified signed documentation head before this documentation-only synchronization `2f99bc7bf183a556bbe9466266abb44cdc02079b` and workflow #1305; APK `EQ-Library-v0.7.0-beta-2f99bc7.apk`, APK SHA-256 `59accf6953dc34f3fdf56efcaa4665b5a29bcaebe9351d18552e2146d4398f64`, artifact digest `sha256:8805075d990eb7ac6c6dc5b7a70ccf14d78309098e81099a3f46f4e318745eb6`. All current-head software/security/signed-artifact gates passed. This synchronization changes documentation only and requires fresh gates; physical E037-E040 remains tied to source 381. Personal EQ capture remains unevidenced; release remains NO-GO pending applicable remaining scope, review, and explicit owner approval.
+
+### 2026-09-22 owner reports on signed source 7599dd5
+
+- Capability JSON (17) passed read-only identity/state validation for the exact fingerprint. Operation JSON (11) verified Flash, JSON (12) verified exact-baseline Restore (`restorationVerified=true`), and JSON (13) verified Reset. Each operation used one Save, had zero permission requests before its first write, matched the replacement session, passed final readback, and ended with known state. Replay and competing-job telemetry remain null/unmeasured.
+- The Restore report proves exact baseline restoration at its completion; a separate later Reset then completed, so do not claim the device remained at an arbitrary original baseline. No further Apply, Flash, Restore, Reset, or Save qualification is requested.
+- The reports do not identify whether Flash originated from My EQs or EQ Library; they also do not demonstrate end-to-end Personal EQ capture UX. These are presentation/evidence gaps, not unsupported hardware claims.
+- Source 7599 passed Android CI #1712, CodeQL #1597, catalog #2010, priority coverage #1495, dependency submission #2017, and signed candidate #1316. This documentation-only follow-up creates a new head and requires fresh exact-head gates and provenance. PR #23 remains draft; v0.7.0 remains NO-GO pending final review and explicit owner approval.
 
 ### v0.7 EW300 full-build continuation
 
