@@ -10,7 +10,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 - Recorded current-source physical `APPLY` report E039 (10 writes, one Save, replacement identity and final readback verified) and `RESET` report E040 (11 writes, one Save, replacement identity and final readback verified) on `381286eb7ea29b0707e6da75f3565bada1d73928`. Replay and competing-job fields remain unmeasured/null; the Reset report does not independently export before/after playback-gain bytes.
 - Recorded E037/E038 as the same-source physical `FLASH` and exact-baseline post-Save `RESTORE` passes. No further Flash, Restore, Apply, Reset, or Save qualification is authorized from these results alone.
-- Recorded current signed documentation head `e9e7a6f628c211134c6451cfe3155c9804b506de` and workflow #1304; all current-head software/security/signed-artifact gates passed. Release remains NO-GO pending applicable remaining evidence, review, and explicit owner approval.
+- Recorded latest verified signed documentation head before this documentation-only synchronization `2f99bc7bf183a556bbe9466266abb44cdc02079b` and workflow #1305; APK `EQ-Library-v0.7.0-beta-2f99bc7.apk`, APK SHA-256 `59accf6953dc34f3fdf56efcaa4665b5a29bcaebe9351d18552e2146d4398f64`, artifact digest `sha256:8805075d990eb7ac6c6dc5b7a70ccf14d78309098e81099a3f46f4e318745eb6`. All current-head software/security/signed-artifact gates passed. This synchronization changes documentation only and requires fresh gates; physical E037-E040 remains tied to source 381. Personal EQ capture remains unevidenced; release remains NO-GO pending applicable remaining scope, review, and explicit owner approval.
 
 ### v0.7 EW300 full-build continuation
 

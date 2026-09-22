@@ -32,7 +32,7 @@ Use only this exact candidate for the bounded session:
 | Immutable APK | `https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-381286e.apk` |
 
 This candidate passed the complete software, security, signing, installation, cold-launch, and
-temporary candidate-publication gates. The owner has now completed the bounded source-381
+temporary candidate-publication gates. The physical evidence below is tied specifically to source 381; later documentation-only heads are not physical retests. The owner has now completed the bounded source-381
 operation set: Apply, Flash, exact-baseline Restore, and Reset, recorded in E037-E040. Do not
 repeat those mutations or the accepted E001 Save qualification. The EW300 Device tab’s additional state is read-only; do not use it as evidence for
 unsupported Black Pearl-style controls or native shelf hardware support.
