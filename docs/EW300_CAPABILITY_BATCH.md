@@ -28,34 +28,12 @@ result presentation, and both share actions without requiring or simulating phys
 
 ## Current product gates
 
-The report does not unlock a feature by itself. Public same-earpiece acoustic analysis resolves the
-raw EW300 frequency word as direct Hz. Independent KT02H20-family evidence classifies `0x66` as
-ordinary digital DAC/playback gain, so it is displayed but excluded from EQ identity and capture.
-Complete Peak-only readbacks can be saved as canonical Personal EQs; non-Peak snapshots fail closed
-because shelf acoustics remain unqualified. Ordinary builds expose no persistence test and keep
-Flash, Apply, Reset, and persistence unavailable.
+This report is read-only and does not itself authorize or unlock a hardware action. The exact fingerprint's five-band Peak path is implemented; E001 records accepted Save/persistence qualification, and E037-E040 record physical Apply, Flash, exact-baseline Restore, and Reset verification. Do not repeat Save qualification or any of those mutation operations.
 
-The controlled signed-beta workflow is the only project build path that enables the bounded Save
-qualification. Ordinary builds hard-disable the UI gate. The installed app also verifies the repository-pinned release-signing certificate
-at runtime and embeds its exact 40-character source commit. The qualification remains
-locked until the read-only batch passes on the connected exact fingerprint, requires an explicit
-confirmation, lowers one Peak gain by 0.1 dB and playback gain by 0.5 dB, sends the provisional
-`0x53` Save once, and requires a complete unplug/reconnect before proceeding. It then restores the
-entire preserved baseline, sends Save once more, and requires a second complete unplug/reconnect
-before it can mark persistence qualified. A transfer or Save with an uncertain result becomes a
-terminal safe-stop; the app does not automatically retry it.
+The five-band read path supports a Personal EQ representation, but the end-to-end Personal EQ capture UX remains not yet physically evidenced. This is an evidence gap, not a finding that the hardware is unsupported. After a new exact-head signed candidate passes every applicable software/security gate, the remaining owner check is limited to read-only identity/state, one Personal EQ capture and value/provenance confirmation, then opening and canceling the My EQs Flash review before final write confirmation. No Apply, Flash, Reset, Restore, or Save is part of that check.
 
-Passing the first power-removal check qualifies only that the temporary Peak and playback-gain
-values persisted. Passing the second proves exact baseline restoration. Only the complete two-cycle
-PASS unlocks the existing Peak-only editor/Flash/Reset paths for that exact device fingerprint.
-If the temporary values do not survive the first power removal, the result is safely
-`NOT_PERSISTENT`, the baseline must match exactly, and persistent features remain locked.
+The release-signing workflow embeds the exact source commit and verifies the pinned signer. Signed-candidate-only validation controls stay out of public release builds. PR #23 remains draft and v0.7.0 NO-GO pending the remaining evidence/review and explicit owner approval.
 
 ## Hardware budget
 
-Run repository tests, public research, protocol comparison, emulator tests, and fault injection
-first. The unresolved `0x53` persistence question is folded into the one consolidated signed-beta
-session; there is no separate exploratory loop. Run the read-only batch once, then follow the
-candidate's guided two-cycle qualification and share the combined readable/JSON report. Do not
-repeat a failed or uncertain mutation, and do not call a value persistent until both complete
-power-removal reads pass on the exact signed candidate.
+No additional protocol research or physical mutation is in scope. E001 is accepted Save qualification; E037-E040 close Apply, Flash, exact-baseline Restore, and Reset. The current owner check, after a fresh exact-head candidate passes all gates, is read-only report + one Personal EQ capture/value/provenance check + My EQs Flash-review open/cancel. Follow the current hands-on checklist and stop without writing if any identity, state, or UI result is unclear.

@@ -1,11 +1,13 @@
 # SIMGOT EW300 DSP — Pre-launch Candidate Runbook
 
-Status: full-build continuation; frozen exact-device persistence evidence accepted; 2026-09-20
-Owner: project owner approval is required for the final merge.
+Status: 2026-09-22 continuation — E037-E040 close the exact-device physical mutation set; remaining owner check is non-mutating Personal EQ capture and Flash-review UI confirmation after a fresh signed candidate passes all gates.
+Owner: project owner approval is required for merge/publication.
+
+Current sections 5 and 6 control this closeout; older execution-phase wording is historical. The physical mutation set is accepted in E037-E040, so do not repeat it.
 
 ## Objective
 
-Complete the SIMGOT EW300 DSP cable as an additive extension of EQ Library. The EW300 experience must use the same My DAC, My EQs, EQ Library, connection, permission, recovery, capture, and operation-feedback framework already established for the TRN Black Pearl. EW300-specific differences are capability-driven: five observed native PEQ bands, conservative filter exposure, and a global-gain/persistence contract that remains pending until exact-device qualification.
+Complete the SIMGOT EW300 DSP cable as an additive extension of EQ Library. The EW300 experience must use the same My DAC, My EQs, EQ Library, connection, permission, recovery, capture, and operation-feedback framework already established for the TRN Black Pearl. EW300-specific differences are capability-driven: five observed native PEQ bands, conservative filter exposure, and a playback/global-gain state that is transactionally covered by the exact-device qualification (E001, E037-E040).
 
 The deliverable is an installable pre-launch beta candidate using the existing EQ Library application identity. It is intended to replace the currently installed app during one consolidated owner validation session after all software gates pass. It is not merged to the production branch until the owner explicitly approves the merge.
 
@@ -16,7 +18,7 @@ The deliverable is an installable pre-launch beta candidate using the existing E
 - The canonical EQ pipeline is source-neutral; “EQ profile” includes OPRA, AutoEQ, community/general, imports, Personal EQs, and captured DAC EQs.
 - The shared filter-capability model is reusable across EW300, Black Pearl, FiiO, and future targets; no DAC-specific filter semantics are inferred from a chip family.
 - The normal Android USB permission prompt remains; the app must reuse permission and avoid duplicate prompts or reconnect loops.
-- The final owner session is a complete pre-launch functional test, not another isolated diagnostic test.
+- The remaining owner check is narrowly non-mutating; do not repeat any physical Apply, Flash, Reset, Restore, or Save qualification already accepted in E001/E037-E040.
 - Existing Black Pearl behavior must pass a focused regression check.
 - Final merge is an explicit owner-approval gate.
 
@@ -69,21 +71,16 @@ Run the full repository gates on one exact candidate head:
 
 No candidate is handed to the owner until all required software gates pass.
 
-### 5. Owner's single consolidated test session
+### 5. Owner's bounded non-mutating evidence check
 
-The owner should only be asked to test after the complete candidate is ready. The session should cover:
+Run only after the latest signed candidate's exact source SHA and all applicable Android CI, CodeQL, catalog, priority-coverage, dependency-submission, signing, installation, and cold-launch gates are verified in PR #23.
 
-1. Install the beta candidate as an in-place update and confirm existing EQ Library data remains present.
-2. Connect EW300 and approve USB access if Android asks.
-3. Confirm My DAC shows the device and reads playback gain plus all five bands; run and share the read-only report.
-4. Use the already recorded persistence result; do not tap or rerun Save qualification.
-5. Edit one small Peak value, review, Apply, and confirm readback only if the app marks Apply available.
-6. Flash one known five-band profile only if the app marks Flash available, then verify its readback and reconnect behavior.
-7. Reset only if the app marks Reset available, and verify the defined flat state without changing underlying playback gain.
-8. Confirm the readback/capture result can be saved as a Personal EQ with exact EW300 provenance, and confirm reconnect state remains truthful/current with no crash, ANR, repeated prompt, or manual reconnect loop.
-9. Run one focused Black Pearl connect/Flash/reset regression check.
+The accepted physical mutation set is E037-E040; do not repeat Apply, Flash, Reset, or exact-baseline Restore. Do not repeat E001 Save qualification. Use `docs/EW300_DSP_HANDS_ON_CHECKLIST.md` to:
+- confirm the exact fingerprint and known read-only five-band/global-gain state;
+- capture one Personal EQ and verify all five values and device provenance;
+- open the saved EQ's My EQs Flash review and cancel before final write confirmation.
 
-If any step fails, capture the exact on-screen message and stop; do not repeat writes until a new candidate is provided.
+Stop on identity/state/provenance/UI uncertainty. No hardware write is authorized by this closeout step. Personal EQ capture remains not yet evidenced until that workflow is observed; do not describe it as unsupported hardware.
 
 ### 6. Merge handoff
 
@@ -99,11 +96,6 @@ Until then, the candidate remains a beta/testing build and no public production 
 
 ## Definition of ready
 
-The owner is needed only when all of the following are true:
+The owner is needed only after the current PR #23 head has one matching signed APK and all applicable software/security/signing/install/launch gates pass on that same SHA. The remaining owner check is non-mutating and limited to exact-device read-only state, Personal EQ capture with value/provenance confirmation, and open/cancel of the My EQs Flash review. Physical Apply, Flash, Reset, exact-baseline Restore, and E001 Save qualification are already accepted and must not be repeated.
 
-- the shared My DAC/capture flow is implemented;
-- EW300 five-band values are visible and safely read back; ordinary-build writes are absent and the signed-only qualification is exact-commit gated;
-- crash/ANR and repeated permission/reconnect behavior is resolved in automated and candidate testing;
-- Black Pearl regression remains green;
-- the signed beta APK and one-session checklist are available;
-- the merge remains blocked only on the owner's final physical PASS and explicit approval.
+After that check, close the remaining evidence/scope and final review work. PR #23 remains draft and the release remains NO-GO until explicit owner approval for merge, publication, and any public EW300 support claim.

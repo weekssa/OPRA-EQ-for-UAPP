@@ -1,20 +1,12 @@
-## Active continuation candidate — current-head software/signed gates passed; physical evidence remains tied to source 381
+## Active continuation — physical operation set accepted; current candidate must be re-gated
 
-The current branch head `02f2697e20dda0c33f72973cb140a3be5d592cef` is a public My DAC UX and validation-control follow-up. It keeps
-the qualified EW300 transaction implementation unchanged while aligning My DAC with the shared DAC
-flow and covering removal of capability-report, operation-report, and exact-restoration controls
-from public builds.
+Physical records E037-E040 establish exact-fingerprint Apply, Flash, exact-baseline post-Save Restore, and Reset on source `381286eb7ea29b0707e6da75f3565bada1d73928`. Each operation's report and restoration result are preserved below. Do not repeat these physical mutations or E001 Save qualification. Replay and competing-connection-job fields remain null/unmeasured, not zero.
 
-Android CI #1710, CodeQL #1595, catalog currentness #2008, priority-community coverage #1493, dependency submission #2015, and Signed EQ Library Beta Candidate #1314 passed on this exact source. The signed workflow also passed pinned-signer
-verification, alignment, installation, cold launch, and immutable candidate publication. The
-current candidate is ready for one bounded owner session to verify the final Flash UI availability
-and current-head evidence path. This does not repeat Save qualification or broaden protocol scope.
+The last verified signed candidate before this documentation reconciliation was `3fbb9688d2774ca78b2c9dc943e00020046ed1f7`; its six current-head software/security/signed-artifact gates passed. This documentation change creates a new source head and requires all applicable gates plus a new signed artifact on that exact head. PR #23 is authoritative for the current candidate manifest and fresh checks.
 
-The physical source-381 operation set is already recorded in E037-E040: verified Flash, exact
-post-Save restoration, Apply, and Reset. Those results remain tied to source 381; no current-head
-physical result is inferred for `02f2697e20dda0c33f72973cb140a3be5d592cef`. Release remains NO-GO pending the bounded owner session,
-Personal EQ capture scope decision, final review, synchronized release records, and explicit owner
-approval.
+Personal EQ capture UX has not yet been physically evidenced. Once the new exact-head candidate passes all gates, the only requested owner check is the non-mutating checklist in `EW300_DSP_HANDS_ON_CHECKLIST.md`: exact-device read-only report, capture one Personal EQ and verify values/provenance, then open and cancel the My EQs Flash review before final write confirmation. No hardware write is requested. Release remains NO-GO pending this bounded check, final review, synchronized records, and explicit owner approval.
+
+The evidence rows below are append-only contemporaneous records. Earlier rows correctly describe the state at their recording time; E037-E040 are the later controlling physical mutation evidence and supersede earlier pending/failure status for those operations.
 
 ## Evidence records
 

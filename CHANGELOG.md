@@ -6,7 +6,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ## [Unreleased]
 
-- Current branch head `02f2697e20dda0c33f72973cb140a3be5d592cef` passed the complete software, security, signing, installation, cold-launch, and candidate-publication gates. The public-UX/control-visibility follow-up is not a physical retest; source-381 E037-E040 remain the accepted EW300 transaction evidence, and the release remains NO-GO pending the bounded owner session, final review, and explicit approval.
+- Physical E037-E040 already verify EW300 Apply, Flash, exact-baseline post-Save Restore, and Reset on source 381; do not repeat those mutations or E001 Save qualification. The last signed candidate before documentation reconciliation was source `3fbb9688d2774ca78b2c9dc943e00020046ed1f7` and passed its exact-head gates. This docs reconciliation requires a fresh exact-head candidate and gates; afterward only non-mutating Personal EQ capture and My EQs Flash-review/cancel confirmation remain before final review. Release stays NO-GO pending scope closure and explicit owner approval.
 - Aligned the EW300 My DAC surface with the shared DAC UX: the verified EQ path is presented as usable
   readback/edit/Apply/capture/Flash/Reset/reconnect functionality, while the exact profile's
   playback/global-gain value remains an honest reported device state rather than an unqualified
