@@ -16,6 +16,25 @@ vid=31b2|pid=111|manufacturer=LE XIAN|product=SIMGOT EW300 DSP|serial=2024-07-03
 Any different VID/PID, manufacturer, product, serial, interface, revision evidence, or unexplained
 identity mismatch is a stop condition. Do not test an unknown revision.
 
+## Current authorized signed candidate
+
+Use only this exact candidate for the bounded session:
+
+| Item | Value |
+| --- | --- |
+| Source commit | `dea8439956f41cbf83cda314f5f9f53d878c6181` |
+| APK | `EQ-Library-v0.7.0-beta-dea8439.apk` |
+| APK SHA-256 | `72c95bfaedae0f03303c7aac975aa67ca1e7af63b6c40b95809c022238971792` |
+| Package/version | `com.weekssa.opraeqforuapp`, `versionCode 7`, `versionName 0.7.0` |
+| Signer SHA-256 | `65C1C1256DAE3C49E3548F334C91F0BA991969E9BE9E0B223BA4E253D2114747` |
+| Signed artifact digest | `sha256:59b15d4a0a726613452b923cdf6bfda483f43974be1510bdf85f636f80bcb559` |
+| Signed workflow | [#1296](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/35696584387) |
+| Immutable APK | `https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-dea8439.apk` |
+
+This candidate passed the complete software, security, signing, installation, cold-launch, and
+temporary candidate-publication gates. That does not establish a physical Flash or restoration
+result.
+
 ## Before the single mutation
 
 1. Verify the exact candidate provenance: source SHA, APK filename, APK SHA-256, artifact digest,
