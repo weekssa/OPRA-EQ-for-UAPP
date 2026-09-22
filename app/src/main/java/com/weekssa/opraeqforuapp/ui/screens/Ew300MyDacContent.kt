@@ -81,6 +81,9 @@ internal fun Ew300MyDacContent(
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val validationEvidenceEnabled = BuildConfig.EW300_FLASH_VALIDATION_ENABLED &&
+        BuildConfig.CANDIDATE_SOURCE_SHA.matches(Regex("[0-9a-fA-F]{40}")) &&
+        ReleaseSignatureGate.isPinnedReleaseSigner(context)
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     var saveDacEqOpen by remember { mutableStateOf(false) }
     var capabilityReport by remember { mutableStateOf<Ew300CapabilityReport?>(null) }
@@ -146,7 +149,10 @@ internal fun Ew300MyDacContent(
             Kt02h20ConnectionState.Connected -> {
                 Text("Connected. Use My EQs or EQ Library to apply a verified Peak-only EQ profile.")
                 operationTrace?.let { trace ->
-                    val status = ew300OperationStatusPresentation(trace)
+                    val status = ew300OperationStatusPresentation(
+                        trace = trace,
+                        includeEvidenceAction = validationEvidenceEnabled,
+                    )
                     Text(
                         status.message,
                         color = if (status.verified) {
@@ -157,7 +163,7 @@ internal fun Ew300MyDacContent(
                     )
                 }
                 Text(
-                    "This exact EW300 profile supports five Peak bands, readback, capture, Apply, Flash, Reset EQ to flat, and reconnect recovery. Volume, headset, UAC, microphone, firmware, bootloader, and unrelated DAC controls must be exposed when this exact profile supports them and safe protocol evidence is established; none is established for EW300.",
+                    "This exact EW300 profile provides an active five-band Peak EQ path with readback, local editing, Apply, capture, Flash, Reset EQ to flat, and reconnect recovery. Global gain is reported as device state used by guarded EQ transactions; no standalone volume or unrelated device controls are qualified for this profile.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -197,9 +203,6 @@ internal fun Ew300MyDacContent(
                         }
                     }
                 } else {
-                    val flashValidationBuild = BuildConfig.EW300_FLASH_VALIDATION_ENABLED &&
-                        BuildConfig.CANDIDATE_SOURCE_SHA.matches(Regex("[0-9a-fA-F]{40}")) &&
-                        ReleaseSignatureGate.isPinnedReleaseSigner(context)
                     Ew300DeviceStatus(
                         report = capabilityReport,
                         hardwareEqState = hardwareEqState,
@@ -236,7 +239,7 @@ internal fun Ew300MyDacContent(
                             }
                         },
                         operationTrace = operationTrace,
-                        flashValidationBuild = flashValidationBuild,
+                        validationEvidenceEnabled = validationEvidenceEnabled,
                         restorationRunning = restorationRunning,
                         onRestoreBaseline = {
                             if (!restorationRunning) {
@@ -294,6 +297,7 @@ internal data class Ew300OperationStatusPresentation(
 
 internal fun ew300OperationStatusPresentation(
     trace: Ew300OperationTrace,
+    includeEvidenceAction: Boolean = false,
 ): Ew300OperationStatusPresentation {
     val operation = trace.operation
         .lowercase()
@@ -319,8 +323,13 @@ internal fun ew300OperationStatusPresentation(
         } else {
             ""
         }
+        val recoveryMessage = if (includeEvidenceAction) {
+            " Open DEVICE and share the operation report before any later write."
+        } else {
+            " Stop and reconnect or refresh before any later write."
+        }
         Ew300OperationStatusPresentation(
-            message = "Last EW300 $operation was not verified$reconnectMessage. Open DEVICE and share the operation report before retrying.",
+            message = "Last EW300 $operation was not verified$reconnectMessage.$recoveryMessage",
             verified = false,
         )
     }
@@ -382,7 +391,7 @@ internal fun Ew300DeviceStatus(
     persistenceEnabled: Boolean = false,
     onStartPersistence: () -> Unit = {},
     onContinuePersistence: () -> Unit = {},
-    flashValidationBuild: Boolean = false,
+    validationEvidenceEnabled: Boolean = false,
     restorationRunning: Boolean = false,
     onRestoreBaseline: () -> Unit = {},
 ) {
@@ -402,8 +411,16 @@ internal fun Ew300DeviceStatus(
             hardwareEqState.isReading -> "Refreshing the verified EW300 readback…"
             hardwareBundle != null && hardwareEqState.freshness == DacStateFreshness.CURRENT ->
                 "Values verified from the connected EW300."
-            hardwareBundle != null -> "Reconnect or run the read-only report to update these values."
-            else -> "Run the read-only report to populate the verified device state."
+            hardwareBundle != null -> if (validationEvidenceEnabled) {
+                "Reconnect or run the validation report to update these values."
+            } else {
+                "Reconnect to update these values."
+            }
+            else -> if (validationEvidenceEnabled) {
+                "Run the validation report to populate the verified device state."
+            } else {
+                "Connect to read the verified device state."
+            }
         },
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -413,14 +430,14 @@ internal fun Ew300DeviceStatus(
         value = hardwareBundle?.snapshot?.playbackGainDb?.let {
             String.format(Locale.US, "%.1f dB", it)
         } ?: "Not read",
-        supportingText = "Read-only device state; it is not included in captured Personal EQs.",
+        supportingText = "Reported hardware state used by guarded EQ transactions; it is not included in captured Personal EQs. No standalone volume control is qualified.",
     )
     PremiumValueRow(
         title = "Equalizer",
         value = hardwareBundle?.snapshot?.filters?.let { filters ->
             "${filters.count { filter -> filter.isAcousticallyActive() }} Peak bands"
         } ?: "Not read",
-        supportingText = "Five Peak bands with readback, capture, Apply, Flash, Reset, and reconnect verification.",
+        supportingText = "Use the EQ tab to edit and Apply the five Peak bands; capture, Flash, Reset, and reconnect verification are available.",
     )
     PremiumValueRow(
         title = "Connection",
@@ -429,18 +446,19 @@ internal fun Ew300DeviceStatus(
             hardwareBundle != null -> "Last read"
             else -> "Awaiting read"
         },
-        supportingText = "Exact-fingerprint reconnect recovery is verified for this profile.",
+        supportingText = "Shared current session; reconnect refreshes the verified hardware state.",
     )
     Text(
-        "Additional EW300 device controls are not verified here. Volume, headset, UAC, microphone, firmware, bootloader, and unrelated DAC controls require a separate exact EW300 capability and protocol match; none is claimed for this profile.",
+        "Only verified EW300 functions are shown. Standalone volume, headset, UAC, microphone, firmware, bootloader, and unrelated DAC controls are not part of this profile.",
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
     Text(
-        "Available for this exact EW300 profile: five Peak-band readback, guarded Apply, capture, Flash, Reset EQ to flat, and reconnect recovery. The signed Save qualification is already complete for this validation and must not be run again.",
+        "Available for this exact EW300 profile: five Peak-band readback, local editing, guarded Apply, Peak-only capture, Flash, Reset EQ to flat, and reconnect recovery. The one-time Save qualification is internal release evidence, not a user action.",
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
-    PremiumSectionLabel(text = "Read-only capability report", divider = false)
+    if (validationEvidenceEnabled) {
+        PremiumSectionLabel(text = "Validation capability report", divider = false)
     Text(
         "This automated check reads the exact EW300 identity, EQ registers, and gain register. It never writes, saves, resets, or retries a mutation.",
         style = MaterialTheme.typography.bodySmall,
@@ -476,7 +494,7 @@ internal fun Ew300DeviceStatus(
         onShareTraceJson?.let { share ->
             OutlinedButton(onClick = share, modifier = Modifier.fillMaxWidth()) { Text("Share operation JSON") }
         }
-        if (flashValidationBuild &&
+        if (validationEvidenceEnabled &&
             trace.operation == "FLASH" &&
             trace.stateKnown &&
             trace.finalReadbackMatched &&
@@ -497,6 +515,9 @@ internal fun Ew300DeviceStatus(
             }
         }
     }
+        }
+    }
+
     if (qualificationBuild) {
         PremiumSectionLabel(text = "Signed-candidate Save qualification", divider = false)
         Text(
