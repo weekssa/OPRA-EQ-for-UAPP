@@ -6,6 +6,12 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ## [Unreleased]
 
+- Aligned the EW300 My DAC surface with the shared DAC UX: the verified EQ path is presented as usable
+  readback/edit/Apply/capture/Flash/Reset/reconnect functionality, while the exact profile's
+  playback/global-gain value remains an honest reported device state rather than an unqualified
+  standalone volume control.
+- Gated EW300 capability-report, operation-report, and exact-baseline-restoration controls to the
+  signed validation candidate; public release builds no longer expose testing-only buttons.
 - Fixed the My EQs hardware Flash availability gate for the exact EW300 path by reusing the tested Direct Flash plus connected-session predicate; this exposes Flash for a saved EQ only when the existing safety gate passes and does not change protocol or mutation behavior.
 
 
