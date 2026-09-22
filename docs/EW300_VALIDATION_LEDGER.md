@@ -48,10 +48,12 @@ merge, publication, or public support claim.
 
 | E033 | Signed candidate source `33566e0dba835d356fd6c90231a5c144802643c6`; operation report `EW300 operation report (1)` (SHA-256 `524f114ebf399f37378d226b335f27bd9b05b4c506ed3cc336938108204a72a9`); before read-only JSON/report `EW300 capability report JSON (12)` (SHA-256 `c88df7de18351f6a2b34b06fe201793949b08b141016c72209f2f59a8bd0f7d0` / `EW300 capability report (7)` SHA-256 `0b97e57db177380b0078c6e6f2fb9f53501a27cb6952c030536b1b16a32177ac`); after read-only JSON/report `EW300 capability report JSON (13)` (SHA-256 `ad612cedcbf82ea13ed1ede6b44e70aa21234e94bd00f6ef9ef551414547aac2` / `EW300 capability report (8)` SHA-256 `8bdee9434343d096321e4790ef45d02ef08f3c94323b3f78951f81625b5b6c4e`) and screenshot (SHA-256 `583023d9ddac7ab5e9247d3144bebb14a25af8921310a140be8b74433ee207b5`) | Physical `FLASH` attempt on the exact fingerprint: `operationId=a3f6c221-8f19-4bfe-8165-e98e80e71faa`; 11 register writes; one Save; volatile readback matched; detach generation advanced to 1; then `EXCEPTION:ForgottenCoroutineScopeException`. The operation ended at `VOLATILE_VERIFIED`/`STATE_UNCERTAIN` before replacement-session handling and final readback. The before/after read-only reports both passed and show the five band values unchanged, while register `0x66` changed from `96F80000` (−53.0 dB) to `8EF80000` (−57.0 dB), matching the screenshot. | `permissionRequestsBeforeFirstWrite=0` and `saveCommandCount=1` are measured. `mutationReplayCount` and `competingConnectionJobCount` are explicitly unmeasured, not zero. `replacementObserved=false`, `replacementIdentityMatched=false`, `finalReadbackMatched=false`, `restorationVerified=false`, and `stateKnown=false` in the operation report. This is not a Flash PASS, does not prove persistence, and does not prove original-state restoration. Do not run another mutation until the lifecycle owner is moved out of Compose scopes and the exact state is read/restored through a new signed candidate. |
 
+| E034 | Lifecycle recovery source `41aa0b0aca879d8d9b7844e8574a68a5949cc8c8`; targeted `Ew300MutationExecutorTest` coverage and ViewModel-event boundary | Software-only recovery after E033: EW300 mutation runs in the authoritative DAC-session owner instead of Compose lifetime; the EQ Library callback is non-suspending and only initiates the ViewModel operation. Tests simulate UI caller cancellation during detach and require one Save, new replacement generation, exact fingerprint, final readback, durable verified trace, and no false measured replay/competing-job counters. Final-readback mismatch remains `STATE_UNCERTAIN` and `finalReadbackMatched=false`. | No physical EW300 mutation was performed for E034. E033 remains the controlling physical Flash failure. Current-head CI/security/signing/install/cold-launch gates are required before any bounded hardware session, and no retry is authorized by this entry. |
+
 ## Exact identity boundary
 
 ```text
-vid=31b2|pid=111|manufacturer=LE XIAN|product=SIMGOT EW300 DSP|interface=3
+vid=31b2|pid=111|manufacturer=LE XIAN|product=SIMGOT EW300 DSP|serial=2024-07-03-0000-0000-0000|interface=3
 ```
 
 Serial values are retained only in the private accepted hardware evidence and are not exported by
@@ -60,17 +62,12 @@ interface profile; VID/PID alone is insufficient.
 
 ## Candidate gate status
 
-The latest current-head candidate at `dbc86b638982465ad498556fb23a150aef537ebd` passed the
-software, security, signing, installation, cold-launch, and source-sensitive release gates. Its
-connected Android emulator UI workflow also passed. It is a documentation-only follow-up to the
-bounded reconnect-verification UX source `d634d25b` and the physically tested `7035518b` candidate;
-it has been used for the E030 physical Flash attempt recorded above. The generated candidate is
-retained in signed workflow artifact
-`EQ-Library-signed-beta-dbc86b638982465ad498556fb23a150aef537ebd`.
+Lifecycle recovery source `41aa0b0aca879d8d9b7844e8574a68a5949cc8c8` supersedes the old Compose-owned Flash path in software. It does
+not supersede E033 as physical evidence. E033 ended uncertain after Save/detach and did **not**
+reach replacement-session verification, final readback, or restoration; therefore no statement that
+the E033 final hardware state was restored is valid.
 
-The physical session is complete as one consolidated session only, with no automatic mutation
-retry; the final hardware state was restored exactly. The remaining release review is to inspect
-whether the `DEVICE_GLOBAL_GAIN` mapping, the pre-Save automatic-reconnect block, the
-invocation-time `connectAutomatically()` guard, targeted gate tests, exact candidate provenance,
-and the incomplete operation telemetry preserve the no-replay and state-known invariants; do not
-restart research or repeat the accepted Save qualification.
+A new physical session is prohibited until one exact signed APK from this lifecycle recovery passes
+unit/lint/build, emulator UI, CodeQL, dependency, catalog, priority coverage, alignment/signature,
+installation, cold-launch, and candidate-publication gates. The accepted E001 Save qualification
+must not be repeated, and an uncertain mutation must never be automatically retried.

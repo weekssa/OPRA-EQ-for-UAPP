@@ -8,6 +8,8 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ### v0.7 EW300 full-build continuation
 
+- E034 lifecycle recovery: source `41aa0b0aca879d8d9b7844e8574a68a5949cc8c8` moves EW300 hardware mutation ownership into the authoritative DAC-session scope, changes EQ Library Flash to a non-suspending ViewModel event, and surfaces terminal Flash feedback from durable operation-trace state rather than Compose coroutine lifetime.
+- Added cancellation/re-enumeration regressions covering UI-caller disposal during detach, one Save, exact replacement generation/fingerprint, final readback, uncertain mismatch handling, and truthful unmeasured telemetry. No protocol command, identity scope, Save qualification, or automatic mutation retry was added. Physical Flash remains unverified after E033.
 - Added the EW300 reconnect mutation gate and privacy-safe readable/JSON operation report. Automatic reconnect is blocked before the single Save send, no mutation is replayed, and the report records permission-before-write, write, Save, replacement, restoration, and final-readback invariants. Current-head CI and the one consolidated owner hardware session remain pending.
 
 - Recorded the current signed candidate’s exported EW300 `APPLY` evidence: one Save, permission only after the first-write boundary during replacement reconnect, exact replacement identity verification, and final hardware readback match. The report is not a Flash result; replay and competing-job counters remain explicitly unmeasured.
