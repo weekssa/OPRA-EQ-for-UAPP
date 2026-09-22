@@ -50,6 +50,7 @@ class Ew300DeviceStatusTest {
                     onRun = { runCount += 1 },
                     onShareReadable = { readableShareCount += 1 },
                     onShareJson = { jsonShareCount += 1 },
+                    validationEvidenceEnabled = true,
                 )
             }
         }
@@ -71,6 +72,37 @@ class Ew300DeviceStatusTest {
             assertEquals(1, readableShareCount)
             assertEquals(1, jsonShareCount)
         }
+    }
+
+    @Test
+    fun publicDeviceStatusOmitsValidationEvidenceControls() {
+        val report = Ew300CapabilityReport(
+            planVersion = "test-plan",
+            deviceFingerprintKey = "test-device",
+            cases = emptyList(),
+            stateKnown = true,
+            stoppedAfterFailure = false,
+        )
+
+        composeRule.setContent {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                Ew300DeviceStatus(
+                    report = report,
+                    running = false,
+                    onRun = {},
+                    onShareReadable = {},
+                    onShareJson = {},
+                    validationEvidenceEnabled = false,
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Playback / global gain").assertIsDisplayed()
+        composeRule.onNodeWithText("Equalizer").assertIsDisplayed()
+        composeRule.onNodeWithText("Validation capability report").assertDoesNotExist()
+        composeRule.onNodeWithText("Run read-only report").assertDoesNotExist()
+        composeRule.onNodeWithText("Share readable report").assertDoesNotExist()
+        composeRule.onNodeWithText("Share technical report").assertDoesNotExist()
     }
 
     @Test
