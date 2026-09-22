@@ -515,7 +515,6 @@ internal fun Ew300DeviceStatus(
             }
         }
     }
-        }
     }
 
     if (qualificationBuild) {
