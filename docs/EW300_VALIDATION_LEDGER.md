@@ -38,6 +38,8 @@ merge, publication, or public support claim.
 
 | E028 | Current PR head `48fb2d6df4cdf59e6d5f7fe48718c9e82a0ef665`; signed workflow [#1283](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/35668208370); artifact `EQ-Library-signed-beta-48fb2d6df4cdf59e6d5f7fe48718c9e82a0ef665` (artifact id `10670446802`, digest `sha256:b4737a791d029548e59e743db812f8d624023481db0bf53daa69c19ffe5ed1d7`); APK `EQ-Library-v0.7.0-beta-48fb2d6.apk`; APK SHA-256 `96e094258d186da68555945d389c17817f1687e820beaa04f47917eb36ce6525`; signer `65C1C1256DAE3C49E3548F334C91F0BA991969E9BE9E0B223BA4E253D2114747` | Documentation/evidence-only current-head follow-up after the reconnect-verification UX candidate. Android CI #1677, CodeQL #1562, catalog #1975, priority coverage #1460, dependency #1977, signed-beta alignment/signature verification, install, and cold-launch all passed. The immutable APK and SHA-256 sidecar are publicly available on the temporary `mobile-test-apk` branch. | No production behavior changed after `d634d25b`; no physical retest is inferred. E027 remains the latest physical `APPLY` evidence, not a `FLASH` result. PR #23 remains draft; merge, publication, and public EW300 support remain owner-controlled. |
 
+| E029 | Signed candidate source `9e49876cdd5c49ae9263637204b02407f8e36c32`; signed workflow [#1284](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/35669428443); artifact `EQ-Library-signed-beta-9e49876cdd5c49ae9263637204b02407f8e36c32` (artifact id `10670478909`, digest `sha256:d48d0559489438693e42f8ffeea05ef22adab0a1de05b3cb9b6f298dfc86a754`); APK `EQ-Library-v0.7.0-beta-9e49876.apk`; APK SHA-256 `cbeb840f712f83c8a742566603d615b4e466319ec9bbfa51117a80e01c1c7d37`; signer `65C1C1256DAE3C49E3548F334C91F0BA991969E9BE9E0B223BA4E253D2114747` | Final documentation/evidence-only current-head follow-up. Android CI #1678, CodeQL #1563, catalog #1976, priority coverage #1461, dependency #1978, signed-beta alignment/signature verification, install, cold-launch, and temporary candidate publication all passed. The public APK sidecar independently matches the downloaded APK. | No production behavior changed after `d634d25b`; no physical retest is inferred. E027 remains the latest physical `APPLY` evidence, not a `FLASH` result. PR #23 remains draft; merge, publication, and public EW300 support remain owner-controlled. |
+
 ## Exact identity boundary
 
 ```text
@@ -50,12 +52,12 @@ interface profile; VID/PID alone is insufficient.
 
 ## Candidate gate status
 
-The latest current-head candidate at `48fb2d6df4cdf59e6d5f7fe48718c9e82a0ef665` passed the
+The latest current-head candidate at `9e49876cdd5c49ae9263637204b02407f8e36c32` passed the
 software, security, signing, installation, cold-launch, and source-sensitive release gates. Its
 connected Android emulator UI workflow also passed. It is a documentation-only follow-up to the
 bounded reconnect-verification UX source `d634d25b` and the physically tested `7035518b` candidate;
 it has not been used for physical mutation. The generated candidate is retained in signed workflow
-artifact `EQ-Library-signed-beta-48fb2d6df4cdf59e6d5f7fe48718c9e82a0ef665`.
+artifact `EQ-Library-signed-beta-9e49876cdd5c49ae9263637204b02407f8e36c32`.
 
 The physical session is complete as one consolidated session only, with no automatic mutation
 retry; the final hardware state was restored exactly. The remaining release review is to inspect
