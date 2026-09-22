@@ -15,6 +15,8 @@ import androidx.compose.ui.test.performScrollTo
 import com.weekssa.opraeqforuapp.R
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityCaseResult
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityReport
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationStage
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationTrace
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -92,6 +94,31 @@ class Ew300DeviceStatusTest {
                     onRun = {},
                     onShareReadable = {},
                     onShareJson = {},
+                    operationTrace = Ew300OperationTrace(
+                        operationId = "operation-1",
+                        operation = "FLASH",
+                        sourceCommit = "candidate",
+                        appVersion = "0.7.0",
+                        signerVerified = true,
+                        deviceFingerprintKey = "test-device",
+                        sessionGeneration = 2L,
+                        detachGeneration = 1L,
+                        permissionRequestCount = 1L,
+                        permissionRequestsBeforeFirstWrite = 0L,
+                        registerWriteCount = 11L,
+                        saveCommandCount = 1L,
+                        mutationReplayCount = null,
+                        competingConnectionJobCount = null,
+                        replacementObserved = true,
+                        replacementIdentityMatched = true,
+                        baselineCaptured = true,
+                        volatileReadbackMatched = true,
+                        finalReadbackMatched = true,
+                        restorationVerified = false,
+                        stateKnown = true,
+                        outcome = "Success",
+                        stages = listOf(Ew300OperationStage.FINAL_READBACK),
+                    ),
                     validationEvidenceEnabled = false,
                 )
             }
@@ -103,6 +130,9 @@ class Ew300DeviceStatusTest {
         composeRule.onNodeWithText("Run read-only report").assertDoesNotExist()
         composeRule.onNodeWithText("Share readable report").assertDoesNotExist()
         composeRule.onNodeWithText("Share technical report").assertDoesNotExist()
+        composeRule.onNodeWithText("Last operation report").assertDoesNotExist()
+        composeRule.onNodeWithText("Share operation report").assertDoesNotExist()
+        composeRule.onNodeWithText("Restore exact pre-test baseline").assertDoesNotExist()
     }
 
     @Test
