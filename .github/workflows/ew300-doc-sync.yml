@@ -1,0 +1,121 @@
+name: Synchronize EW300 lifecycle evidence
+
+on:
+  push:
+    branches: [feature/v0.7-ew300-luna-high]
+    paths:
+      - .github/workflows/ew300-doc-sync.yml
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: feature/v0.7-ew300-luna-high
+          fetch-depth: 0
+
+      - name: Synchronize maintained EW300 records
+        shell: python
+        run: |
+          from pathlib import Path
+
+          CODE = "41aa0b0aca879d8d9b7844e8574a68a5949cc8c8"
+          FP = "vid=31b2|pid=111|manufacturer=LE XIAN|product=SIMGOT EW300 DSP|serial=2024-07-03-0000-0000-0000|interface=3"
+
+          def replace(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              if old not in text:
+                  raise SystemExit(f"Expected block missing in {path}")
+              p.write_text(text.replace(old, new, 1))
+
+          # Current status: replace stale top-level candidate statement and stale next-fix paragraph.
+          replace(
+              "docs/V0.7_EW300_DSP_STATUS.md",
+              "**Product state:** signed PR head `83c12674ce8830a0f06f3a1ef96f0bcde910f391` passes the current software and signed-candidate gates, but the physical E033 Flash report on its unchanged code ancestor `33566e0dba835d356fd6c90231a5c144802643c6` reproduced `ForgottenCoroutineScopeException` after 11 writes, one Save, and volatile readback. E027 remains the only complete verified physical operation and is an Apply. E033 proves the app-level Compose-scope fix was insufficient; replacement-session handling, final readback, and restoration remain unverified.\n",
+              f"**Product state:** lifecycle recovery source `{CODE}` moves EW300 Flash initiation to a non-suspending ViewModel event and executes the mutation in the authoritative DAC-session owner. E033 remains the controlling physical Flash result: 11 writes, one Save, volatile readback, detach, then `ForgottenCoroutineScopeException` before replacement-session verification/final readback/restoration. Current-head software/signing gates must pass before any new physical session; no hardware action is authorized by this record.\n",
+          )
+          replace(
+              "docs/V0.7_EW300_DSP_STATUS.md",
+              "The E032 source fix moved the EQ Library Flash launch out of the disappearing profile-screen\ncoroutine scope, but E033 reproduced the same lifecycle exception from the physical session. The\nnext source fix must move mutation execution to the ViewModel/session owner and expose completion\nthrough state or an event that does not depend on a Compose coroutine scope. No further physical\nmutation is authorized until that fix passes targeted cancellation/reconnect tests and a new\nsigned candidate is produced.\nSee\n`docs/V0.7_EW300_FULL_BUILD_STATUS.md` for the current execution record. The current signed PR head\nis the signed-candidate-source snapshot `83c12674`; it does not change the physical evidence boundary.\n",
+              f"The E032 app-level Compose-scope change was disproved by E033. Source `{CODE}` now moves the\nhardware mutation into the authoritative DAC-session owner and makes the Compose callback only\ninitiate a non-suspending ViewModel event. Durable `Ew300OperationTrace` state carries terminal\nsuccess/failure/uncertainty, replacement-session evidence, final-readback truth, and restoration\nstatus. Focused tests cancel the initiating UI caller during simulated detach and require the owned\ntransaction to continue through exact replacement verification and final readback; separate tests\nreject stale generation/fingerprint replacements and keep a failed final readback uncertain. The\nexisting reconnect gate, permission-before-write ordering, one-Save policy, no write retry, exact\nfingerprint gate, and final-readback requirement are unchanged. No physical mutation is authorized\nuntil a signed candidate from this lifecycle recovery passes the complete current-head gates.\nSee `docs/V0.7_EW300_FULL_BUILD_STATUS.md` for the execution record.\n",
+          )
+
+          # Ledger: append software recovery evidence and replace stale candidate-gate prose.
+          ledger = Path("docs/EW300_VALIDATION_LEDGER.md")
+          text = ledger.read_text()
+          marker = "\n## Exact identity boundary\n"
+          if marker not in text or "| E034 |" in text:
+              raise SystemExit("Ledger insertion marker missing or E034 already present")
+          e034 = f'''\n| E034 | Lifecycle recovery source `{CODE}`; targeted `Ew300MutationExecutorTest` coverage and ViewModel-event boundary | Software-only recovery after E033: EW300 mutation runs in the authoritative DAC-session owner instead of Compose lifetime; the EQ Library callback is non-suspending and only initiates the ViewModel operation. Tests simulate UI caller cancellation during detach and require one Save, new replacement generation, exact fingerprint, final readback, durable verified trace, and no false measured replay/competing-job counters. Final-readback mismatch remains `STATE_UNCERTAIN` and `finalReadbackMatched=false`. | No physical EW300 mutation was performed for E034. E033 remains the controlling physical Flash failure. Current-head CI/security/signing/install/cold-launch gates are required before any bounded hardware session, and no retry is authorized by this entry. |\n'''
+          text = text.replace(marker, e034 + marker, 1)
+          old_gate = '''## Candidate gate status\n\nThe latest current-head candidate at `dbc86b638982465ad498556fb23a150aef537ebd` passed the\nsoftware, security, signing, installation, cold-launch, and source-sensitive release gates. Its\nconnected Android emulator UI workflow also passed. It is a documentation-only follow-up to the\nbounded reconnect-verification UX source `d634d25b` and the physically tested `7035518b` candidate;\nit has been used for the E030 physical Flash attempt recorded above. The generated candidate is\nretained in signed workflow artifact\n`EQ-Library-signed-beta-dbc86b638982465ad498556fb23a150aef537ebd`.\n\nThe physical session is complete as one consolidated session only, with no automatic mutation\nretry; the final hardware state was restored exactly. The remaining release review is to inspect\nwhether the `DEVICE_GLOBAL_GAIN` mapping, the pre-Save automatic-reconnect block, the\ninvocation-time `connectAutomatically()` guard, targeted gate tests, exact candidate provenance,\nand the incomplete operation telemetry preserve the no-replay and state-known invariants; do not\nrestart research or repeat the accepted Save qualification.'''
+          new_gate = f'''## Candidate gate status\n\nLifecycle recovery source `{CODE}` supersedes the old Compose-owned Flash path in software. It does\nnot supersede E033 as physical evidence. E033 ended uncertain after Save/detach and did **not**\nreach replacement-session verification, final readback, or restoration; therefore no statement that\nthe E033 final hardware state was restored is valid.\n\nA new physical session is prohibited until one exact signed APK from this lifecycle recovery passes\nunit/lint/build, emulator UI, CodeQL, dependency, catalog, priority coverage, alignment/signature,\ninstallation, cold-launch, and candidate-publication gates. The accepted E001 Save qualification\nmust not be repeated, and an uncertain mutation must never be automatically retried.'''
+          if old_gate not in text:
+              raise SystemExit("Stale candidate-gate block not found")
+          text = text.replace(old_gate, new_gate, 1)
+          text = text.replace(
+              "vid=31b2|pid=111|manufacturer=LE XIAN|product=SIMGOT EW300 DSP|interface=3",
+              FP,
+              1,
+          )
+          ledger.write_text(text)
+
+          # Capability matrix: implementation is fixed in software, but Flash remains physically unverified.
+          replace(
+              "docs/EW300_CAPABILITY_MATRIX.md",
+              "| Peak Apply / Flash / Reset transaction | SUPPORTED_AND_IMPLEMENTED | Current guarded flasher, shared session gate, pre-Save volatile readback, one Save, final readback, and replacement-session checks. E027 is a complete `APPLY` report with final readback match on candidate `676fadf`; E031 and E033 are exact-device `FLASH` reports showing 11 writes, one Save, volatile readback match, then `ForgottenCoroutineScopeException` during the disconnect boundary before replacement-session handling and final readback. E033 shows the app-level Compose-scope change was insufficient; the lifecycle owner must move to the ViewModel/session owner before another physical mutation. |\n",
+              f"| Peak Apply / Flash / Reset transaction | SUPPORTED_AND_IMPLEMENTED | Guarded flasher, shared session gate, pre-Save volatile readback, one Save, final readback, and replacement-session checks remain intact. E027 is a complete physical `APPLY` report only. E031/E033 are physical `FLASH` failures after Save/volatile match. Source `{CODE}` moves mutation ownership to the authoritative session scope and makes UI initiation non-suspending, with targeted cancellation/replacement/final-readback tests. **Physical Flash remains NOT VERIFIED** until a new signed candidate completes exact replacement verification, final readback, and restoration. |\n",
+          )
+
+          # Full-build record: correct the stale current-candidate claim and prepend the lifecycle recovery record.
+          replace(
+              "docs/V0.7_EW300_FULL_BUILD_STATUS.md",
+              "**Current signed candidate:** `83c12674ce8830a0f06f3a1ef96f0bcde910f391` (documentation-synchronized head; complete current-head software/release PASS; E033 reproduced the Flash lifecycle failure on unchanged code ancestor `33566e0d` after the app-level Compose-scope fix)\n",
+              f"**Current lifecycle implementation:** `{CODE}` (session-owned mutation + non-suspending ViewModel event; physical Flash not yet requalified; signed-candidate provenance pending current-head gates)\n",
+          )
+          full = Path("docs/V0.7_EW300_FULL_BUILD_STATUS.md")
+          text = full.read_text()
+          marker = "\n## Frozen evidence accepted\n"
+          if marker not in text or "## Current lifecycle recovery — E034" in text:
+              raise SystemExit("Full-build insertion marker missing or duplicate")
+          current = f'''\n## Current lifecycle recovery — E034\n\nProduction recovery source `{CODE}` addresses the E033 lifecycle defect without changing EW300\nprotocol bytes, identity scope, reconnect gate semantics, Save count, or write-retry policy.\n`Ew300MutationExecutor` runs the mutation under the authoritative `DacSessionRepository` scope;\n`EqLibraryViewModel.flashEw300FromMyDac()` is now a non-suspending event; Compose only initiates and\nrenders durable terminal trace feedback. `finalReadbackMatched` is no longer inferred from merely\nentering the final-readback stage; it is true only for a known verified completion.\n\nTargeted tests cover caller cancellation during simulated USB detach, exactly one Save, replacement\ngeneration advance, exact replacement fingerprint, final readback, uncertain mismatch reporting,\nand truthful `null`/`unmeasured` replay and competing-job telemetry. The software change does not\nauthorize hardware use by itself. E033 remains the latest physical Flash result and is NO-GO. A\nnew signed artifact must pass the complete gate set before one bounded owner session can be proposed.\n'''
+          full.write_text(text.replace(marker, current + marker, 1))
+
+          # Changelog and draft release notes.
+          changelog = Path("CHANGELOG.md")
+          text = changelog.read_text()
+          anchor = "### v0.7 EW300 full-build continuation\n\n"
+          if anchor not in text:
+              raise SystemExit("Changelog anchor missing")
+          bullets = f'''- E034 lifecycle recovery: source `{CODE}` moves EW300 hardware mutation ownership into the authoritative DAC-session scope, changes EQ Library Flash to a non-suspending ViewModel event, and surfaces terminal Flash feedback from durable operation-trace state rather than Compose coroutine lifetime.\n- Added cancellation/re-enumeration regressions covering UI-caller disposal during detach, one Save, exact replacement generation/fingerprint, final readback, uncertain mismatch handling, and truthful unmeasured telemetry. No protocol command, identity scope, Save qualification, or automatic mutation retry was added. Physical Flash remains unverified after E033.\n'''
+          changelog.write_text(text.replace(anchor, anchor + bullets, 1))
+
+          release = Path("docs/releases/v0.7.0.md")
+          text = release.read_text()
+          anchor = "claim is authorized.\n\n"
+          if anchor not in text:
+              raise SystemExit("Release note anchor missing")
+          current = f'''Current lifecycle recovery source `{CODE}` moves EW300 Flash execution out of Compose lifetime and\ninto the authoritative DAC-session owner. The UI now issues a non-suspending ViewModel event and\nobserves durable operation-trace state. Automated coverage exercises caller cancellation during\ndetach, one Save, exact replacement generation/fingerprint, final readback, and uncertain-state\ntelemetry. This is software evidence only: E033 remains the latest physical Flash result, and no\nnew hardware mutation is authorized until an exact signed candidate passes the complete gates.\n\n'''
+          release.write_text(text.replace(anchor, anchor + current, 1))
+
+      - name: Remove one-shot workflow and commit evidence synchronization
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm .github/workflows/ew300-doc-sync.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/V0.7_EW300_DSP_STATUS.md \
+                  docs/EW300_VALIDATION_LEDGER.md \
+                  docs/EW300_CAPABILITY_MATRIX.md \
+                  docs/V0.7_EW300_FULL_BUILD_STATUS.md \
+                  docs/releases/v0.7.0.md \
+                  CHANGELOG.md
+          git commit -m "docs: record EW300 lifecycle recovery"
+          git push origin HEAD:feature/v0.7-ew300-luna-high
