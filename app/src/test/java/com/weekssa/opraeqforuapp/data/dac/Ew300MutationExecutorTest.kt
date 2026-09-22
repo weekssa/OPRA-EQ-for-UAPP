@@ -84,6 +84,57 @@ class Ew300MutationExecutorTest {
     }
 
     @Test
+    fun cancellingUiCallerDuringDetachDoesNotCancelOwnedRestoration() = runBlocking {
+        val ownerScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        val reconnectGate = Ew300ReconnectGate()
+        val executor = Ew300MutationExecutor(ownerScope, Mutex(), reconnectGate)
+        val transport = FakeTransport(
+            reconnectGate = reconnectGate,
+            detachOnCommit = true,
+            pauseAtCommit = 2,
+            replacementFingerprint = QUALIFIED_TEST_FINGERPRINT,
+            replacementGeneration = 2L,
+        )
+        val flasher = Ew300Flasher(
+            transport = transport,
+            gainStateStore = QualifiedGainStore(),
+            mutationAuthorized = { true },
+        )
+
+        try {
+            val flash = executor.execute { flasher.flash(profile(preamp = -4.0)) }
+            assertTrue(flash is Kt02h20FlashResult.Success)
+
+            val uiCaller = launch {
+                executor.execute { flasher.restoreLastFlashBaseline() }
+            }
+
+            withTimeout(2_000L) { transport.secondDetachObserved.await() }
+            assertTrue(reconnectGate.canAutomaticReconnect())
+
+            uiCaller.cancelAndJoin()
+            assertTrue(uiCaller.isCancelled)
+
+            transport.allowCommitToReturn.complete(Unit)
+            val trace = withTimeout(2_000L) {
+                flasher.lastOperationTrace.first { it?.let { trace -> trace.operation == "RESTORE" && trace.stateKnown } == true }
+            }!!
+
+            assertEquals(11L, trace.registerWriteCount)
+            assertEquals(1L, trace.saveCommandCount)
+            assertTrue(trace.replacementObserved)
+            assertTrue(trace.replacementIdentityMatched)
+            assertTrue(trace.finalReadbackMatched)
+            assertTrue(trace.restorationVerified)
+            assertTrue(trace.stateKnown)
+            assertNull(trace.mutationReplayCount)
+            assertNull(trace.competingConnectionJobCount)
+        } finally {
+            ownerScope.cancel()
+        }
+    }
+
+    @Test
     fun detachedReplacementMustAdvanceSessionGenerationBeforeFinalReadback() = runBlocking {
         val transport = FakeTransport(
             detachOnCommit = true,
@@ -174,6 +225,7 @@ class Ew300MutationExecutorTest {
         private val reconnectGate: Ew300ReconnectGate? = null,
         private val detachOnCommit: Boolean,
         private val pauseAfterDetach: Boolean = false,
+        private val pauseAtCommit: Int? = null,
         private val replacementFingerprint: String = QUALIFIED_TEST_FINGERPRINT,
         private val replacementGeneration: Long = 2L,
         private val corruptFinalRegister: Int? = null,
@@ -188,6 +240,7 @@ class Ew300MutationExecutorTest {
             get() = saveCount.toLong()
 
         val detachObserved = CompletableDeferred<Unit>()
+        val secondDetachObserved = CompletableDeferred<Unit>()
         val allowCommitToReturn = CompletableDeferred<Unit>()
         var writeCount = 0
         var saveCount = 0
@@ -223,11 +276,13 @@ class Ew300MutationExecutorTest {
             saveCount += 1
             reconnectGate?.markSaveSent()
             if (detachOnCommit) {
-                detachGeneration = 1L
-                sessionGeneration = replacementGeneration
+                detachGeneration += 1L
+                sessionGeneration = if (saveCount == 1) replacementGeneration else sessionGeneration + 1L
                 deviceFingerprintKey = replacementFingerprint
-                detachObserved.complete(Unit)
-                if (pauseAfterDetach) allowCommitToReturn.await()
+                if (saveCount == 1) detachObserved.complete(Unit) else secondDetachObserved.complete(Unit)
+                if (pauseAtCommit == saveCount || (pauseAfterDetach && saveCount == 1)) {
+                    allowCommitToReturn.await()
+                }
             }
             return true
         }

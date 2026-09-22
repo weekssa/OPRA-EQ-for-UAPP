@@ -4,6 +4,23 @@ Append-only release evidence for the v0.7 EW300 candidate. This ledger distingui
 historical qualification from the current implementation candidate. It does not authorize a
 merge, publication, or public support claim.
 
+## Active continuation candidate — software only, not yet frozen
+
+The current recovery work adds the exact-baseline post-Save restoration transaction identified
+after E033. It reuses the existing EW300 flasher and authoritative DAC-session owner, restores the
+captured five Peak-band register pairs plus playback/global gain (`0x66`), performs one guarded
+restoration Save, requires an exact replacement fingerprint and strictly newer session generation
+after detach, and verifies a complete byte-for-byte final readback before setting
+`restorationVerified=true`. Baseline fingerprint/session provenance and explicit failure reasons
+are included in `Ew300OperationTrace`; ordinary builds do not expose the validation action.
+
+Focused tests cover successful restoration, UI-caller cancellation during detach, one Save, no
+replay, wrong identity, stale/lower generation, final-readback mismatch, exception-after-Save
+uncertainty, and null/unmeasured telemetry. The exact source SHA, signed APK checksum, signer,
+artifact digest, and remote gate results will be appended when this substantive candidate is
+frozen. Until then, E033 remains the controlling physical Flash failure and no hardware mutation
+is authorized.
+
 ## Evidence records
 
 | ID | Exact source / artifact | Result and claim | Restoration / limits |

@@ -44,6 +44,8 @@ class Ew300Flasher(
     private val signerVerified: Boolean = false,
 ) {
     private val transactionCoordinator = Ew300TransactionCoordinator(transport)
+    @Volatile
+    private var lastSuccessfulFlashBaseline: Ew300RawBaseline? = null
 
     val lastOperationTrace: StateFlow<Ew300OperationTrace?> = traceStore.lastTrace
 
@@ -52,6 +54,7 @@ class Ew300Flasher(
         allowCautions: Boolean,
         isSessionCurrent: (Long) -> Boolean,
     ): Ew300EditorApplyResult = record("APPLY") { trace ->
+        lastSuccessfulFlashBaseline = null
         trace.stage(Ew300OperationStage.AUTHORIZED_SESSION)
         val result = applyEditorWorkingCopyInternal(workingCopy, allowCautions, isSessionCurrent, trace)
         if (result == Ew300EditorApplyResult.Verified) {
@@ -99,8 +102,29 @@ class Ew300Flasher(
     }
 
     suspend fun flash(profile: OpraEqProfile): Kt02h20FlashResult = record("FLASH") { trace ->
+        lastSuccessfulFlashBaseline = null
         trace.stage(Ew300OperationStage.AUTHORIZED_SESSION)
         flashInternal(profile, trace)
+    }
+
+    /**
+     * Restores the complete baseline captured by the last verified Flash.
+     *
+     * This is intentionally a separate transaction: Flash and restoration each have at most one
+     * Save, their evidence remains truthful, and an uncertain restoration is never replayed.
+     * The signed validation candidate is the only caller exposed to the owner; ordinary builds do
+     * not surface this action.
+     */
+    suspend fun restoreLastFlashBaseline(): Ew300RestorationResult = record("RESTORE") { trace ->
+        val baseline = lastSuccessfulFlashBaseline
+        lastSuccessfulFlashBaseline = null
+        trace.stage(Ew300OperationStage.AUTHORIZED_SESSION)
+        if (baseline == null) {
+            return@record Ew300RestorationResult.NoBaseline(
+                "No verified EW300 Flash baseline is available for restoration. No operation was sent.",
+            )
+        }
+        restoreExactBaselineInternal(baseline, trace)
     }
 
     private suspend fun flashInternal(
@@ -127,7 +151,7 @@ class Ew300Flasher(
                 "Couldn’t read the EW300 PEQ state. Reconnect the DAC and try again.",
             )
         }
-        trace.stage(Ew300OperationStage.BASELINE_CAPTURED)
+        trace.recordBaseline(baseline)
         val currentSteps = Ew300Protocol.globalGainSteps(currentGain)
         val baselineSteps = currentSteps - gainStateStore.readAppliedGainDeltaSteps(deviceKey)
         val requestedDeltaSteps = runCatching {
@@ -213,6 +237,7 @@ class Ew300Flasher(
             )
         }
         gainStateStore.writeAppliedGainDeltaSteps(deviceKey, requestedDeltaSteps)
+        lastSuccessfulFlashBaseline = baseline
         return Kt02h20FlashResult.Success(
             representation = representation,
             explicitPersistenceCommandUsed = true,
@@ -220,6 +245,7 @@ class Ew300Flasher(
     }
 
     suspend fun resetToFlat(): Kt02h20FlatResetResult = record("RESET") { trace ->
+        lastSuccessfulFlashBaseline = null
         trace.stage(Ew300OperationStage.AUTHORIZED_SESSION)
         resetToFlatInternal(trace)
     }
@@ -246,7 +272,7 @@ class Ew300Flasher(
         if (baselineBands.size != Ew300Protocol.BAND_COUNT) {
             return Kt02h20FlatResetResult.DeviceUnavailable("Couldn’t read the complete EW300 EQ before reset.")
         }
-        trace.stage(Ew300OperationStage.BASELINE_CAPTURED)
+        trace.recordBaseline(baseline)
         trace.markBeforeFirstWrite(transport.permissionRequestCount)
         trace.stage(Ew300OperationStage.WRITING)
         flat.forEachIndexed { index, band ->
@@ -320,6 +346,70 @@ class Ew300Flasher(
         return Kt02h20FlashResult.TransferFailed("$reason The original EW300 state was restored and verified.")
     }
 
+    private suspend fun restoreExactBaselineInternal(
+        baseline: Ew300RawBaseline,
+        trace: Ew300OperationTraceBuilder,
+    ): Ew300RestorationResult {
+        val deviceKey = transport.deviceFingerprintKey
+            ?: return Ew300RestorationResult.DeviceUnavailable(
+                "The exact EW300 fingerprint is unavailable; no restoration write was sent.",
+            )
+        if (!mutationAuthorized(deviceKey) || baseline.deviceFingerprintKey != deviceKey) {
+            return Ew300RestorationResult.NotSuitable(
+                "The saved EW300 baseline does not belong to the exact authorized device; no restoration write was sent.",
+            )
+        }
+        if (!baseline.isComplete()) {
+            return Ew300RestorationResult.DeviceUnavailable(
+                "The saved EW300 baseline is incomplete; no restoration write was sent.",
+            )
+        }
+        trace.recordBaseline(baseline)
+        trace.markBeforeFirstWrite(transport.permissionRequestCount)
+        trace.stage(Ew300OperationStage.WRITING)
+        val writesAccepted = baseline.restorableRegisters().all { register ->
+            baseline.value(register)?.let { value -> transport.writeRegister(register, value) } == true
+        }
+        if (!writesAccepted) {
+            return Ew300RestorationResult.TransferFailed(
+                "EW300 did not accept the complete exact-baseline restoration before Save. Stop; do not retry.",
+            )
+        }
+        if (!transactionCoordinator.verifyExact(baseline)) {
+            return Ew300RestorationResult.VerificationFailed(
+                "EW300 exact-baseline volatile readback did not match before Save. Stop; do not retry.",
+            )
+        }
+        trace.stage(Ew300OperationStage.VOLATILE_VERIFIED)
+        val sessionGenerationBeforeSave = transport.sessionGeneration
+        val detachGenerationBeforeSave = transport.detachGeneration
+        if (!transport.commit()) {
+            return Ew300RestorationResult.TransferFailed(
+                "EW300 restoration Save returned uncertain. Stop; do not retry.",
+            )
+        }
+        trace.stage(Ew300OperationStage.SAVE_SENT_ONCE)
+        if (!recordCommitBoundary(
+                trace = trace,
+                expectedFingerprint = deviceKey,
+                sessionGenerationBeforeSave = sessionGenerationBeforeSave,
+                detachGenerationBeforeSave = detachGenerationBeforeSave,
+            )
+        ) {
+            return Ew300RestorationResult.VerificationFailed(
+                "EW300 restoration Save returned on a different or unverified USB session. Stop; do not retry.",
+            )
+        }
+        trace.stage(Ew300OperationStage.FINAL_READBACK)
+        if (!transactionCoordinator.verifyExact(baseline)) {
+            return Ew300RestorationResult.VerificationFailed(
+                "EW300 final exact-baseline readback did not match byte-for-byte. Stop; do not retry.",
+            )
+        }
+        trace.restored()
+        return Ew300RestorationResult.Verified
+    }
+
     private fun recordCommitBoundary(
         trace: Ew300OperationTraceBuilder,
         expectedFingerprint: String,
@@ -328,7 +418,7 @@ class Ew300Flasher(
     ): Boolean {
         val replacementObserved = transport.detachGeneration != detachGenerationBeforeSave
         val identityMatched = transport.deviceFingerprintKey == expectedFingerprint &&
-            (!replacementObserved || transport.sessionGeneration != sessionGenerationBeforeSave)
+            (!replacementObserved || transport.sessionGeneration > sessionGenerationBeforeSave)
         if (replacementObserved) {
             trace.stage(Ew300OperationStage.WAITING_FOR_REPLACEMENT)
             if (identityMatched) {
@@ -359,16 +449,33 @@ class Ew300Flasher(
         )
         try {
             val result = block(trace)
-            val known = result !is Kt02h20FlashResult.TransferFailed &&
-                result !is Kt02h20FlashResult.VerificationFailed &&
-                result !is Kt02h20FlatResetResult.TransferFailed &&
-                result !is Kt02h20FlatResetResult.VerificationFailed &&
-                result !is Ew300EditorApplyResult.TransferFailed &&
-                result !is Ew300EditorApplyResult.VerificationFailed
-            trace.complete(result!!::class.simpleName ?: "COMPLETED", known)
+            val known = when (result) {
+                is Kt02h20FlashResult.TransferFailed,
+                is Kt02h20FlashResult.VerificationFailed,
+                is Kt02h20FlatResetResult.TransferFailed,
+                is Kt02h20FlatResetResult.VerificationFailed,
+                is Ew300EditorApplyResult.TransferFailed,
+                is Ew300EditorApplyResult.VerificationFailed,
+                is Ew300RestorationResult.NoBaseline,
+                is Ew300RestorationResult.DeviceUnavailable,
+                is Ew300RestorationResult.NotSuitable,
+                is Ew300RestorationResult.TransferFailed,
+                is Ew300RestorationResult.VerificationFailed,
+                -> false
+                else -> true
+            }
+            trace.complete(
+                result!!::class.simpleName ?: "COMPLETED",
+                known,
+                result.failureReason(),
+            )
             return result
         } catch (error: Throwable) {
-            trace.complete("EXCEPTION:${error::class.simpleName}", false)
+            trace.complete(
+                "EXCEPTION:${error::class.simpleName}",
+                false,
+                error.message ?: "The EW300 operation terminated with an exception.",
+            )
             throw error
         } finally {
             traceStore.publish(
@@ -387,6 +494,28 @@ class Ew300Flasher(
         is Kt02h20FlashResult.TransferFailed -> Kt02h20FlatResetResult.TransferFailed(reason)
         is Kt02h20FlashResult.VerificationFailed -> Kt02h20FlatResetResult.VerificationFailed(reason)
         else -> Kt02h20FlatResetResult.TransferFailed("EW300 reset stopped before verification.")
+    }
+
+    private fun Any?.failureReason(): String? = when (this) {
+        is Kt02h20FlashResult.NotSuitable -> reason
+        is Kt02h20FlashResult.DeviceUnavailable -> reason
+        is Kt02h20FlashResult.TransferFailed -> reason
+        is Kt02h20FlashResult.VerificationFailed -> reason
+        is Kt02h20FlatResetResult.NotSuitable -> reason
+        is Kt02h20FlatResetResult.DeviceUnavailable -> reason
+        is Kt02h20FlatResetResult.TransferFailed -> reason
+        is Kt02h20FlatResetResult.VerificationFailed -> reason
+        is Ew300EditorApplyResult.InvalidPlan -> reason
+        is Ew300EditorApplyResult.StaleBaseline -> reason
+        is Ew300EditorApplyResult.DeviceUnavailable -> reason
+        is Ew300EditorApplyResult.TransferFailed -> reason
+        is Ew300EditorApplyResult.VerificationFailed -> reason
+        is Ew300RestorationResult.NoBaseline -> reason
+        is Ew300RestorationResult.DeviceUnavailable -> reason
+        is Ew300RestorationResult.NotSuitable -> reason
+        is Ew300RestorationResult.TransferFailed -> reason
+        is Ew300RestorationResult.VerificationFailed -> reason
+        else -> null
     }
 
     private suspend fun verify(expected: List<Kt02h20Band>): VerificationFailure? {

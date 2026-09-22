@@ -40,6 +40,10 @@ data class Ew300OperationTrace(
     val stateKnown: Boolean,
     val outcome: String,
     val stages: List<Ew300OperationStage>,
+    val baselineFingerprintKey: String? = null,
+    val baselineSessionGeneration: Long? = null,
+    val baselineDetachGeneration: Long? = null,
+    val failureReason: String? = null,
 ) {
     fun toReadableText(): String = buildString {
         appendLine("EW300 operation report")
@@ -65,6 +69,10 @@ data class Ew300OperationTrace(
         appendLine("restorationVerified=$restorationVerified")
         appendLine("stateKnown=$stateKnown")
         appendLine("outcome=$outcome")
+        appendLine("baselineFingerprintKey=${baselineFingerprintKey ?: "unavailable"}")
+        appendLine("baselineSessionGeneration=${baselineSessionGeneration ?: "unavailable"}")
+        appendLine("baselineDetachGeneration=${baselineDetachGeneration ?: "unavailable"}")
+        appendLine("failureReason=${failureReason ?: "none"}")
         appendLine("stages=${stages.joinToString(",")}")
         appendLine("privacyNote=No account, phone, or private device data is included.")
     }
@@ -93,6 +101,10 @@ data class Ew300OperationTrace(
         boolField("restorationVerified", restorationVerified)
         boolField("stateKnown", stateKnown)
         field("outcome", outcome)
+        field("baselineFingerprintKey", baselineFingerprintKey)
+        numberField("baselineSessionGeneration", baselineSessionGeneration)
+        numberField("baselineDetachGeneration", baselineDetachGeneration)
+        field("failureReason", failureReason)
         append(",\"stages\":[")
         stages.forEachIndexed { index, stage ->
             if (index > 0) append(',')
@@ -143,6 +155,10 @@ class Ew300OperationTraceBuilder(
     private var outcome = "NOT_COMPLETED"
     private var stateKnown = false
     private var permissionCountBeforeFirstWrite: Long? = null
+    private var baselineFingerprintKey: String? = null
+    private var baselineSessionGeneration: Long? = null
+    private var baselineDetachGeneration: Long? = null
+    private var failureReason: String? = null
 
     fun stage(stage: Ew300OperationStage) {
         if (stages.lastOrNull() != stage) stages += stage
@@ -157,12 +173,24 @@ class Ew300OperationTraceBuilder(
     }
 
     fun complete(outcome: String, stateKnown: Boolean) {
+        complete(outcome, stateKnown, null)
+    }
+
+    fun complete(outcome: String, stateKnown: Boolean, failureReason: String?) {
         this.outcome = outcome
         this.stateKnown = stateKnown
+        this.failureReason = failureReason
         stage(if (stateKnown) Ew300OperationStage.VERIFIED else Ew300OperationStage.STATE_UNCERTAIN)
     }
 
     fun restored() { restorationVerified = true }
+
+    fun recordBaseline(baseline: Ew300RawBaseline) {
+        baselineFingerprintKey = baseline.deviceFingerprintKey
+        baselineSessionGeneration = baseline.sessionGeneration
+        baselineDetachGeneration = baseline.detachGeneration
+        stage(Ew300OperationStage.BASELINE_CAPTURED)
+    }
 
     fun markBeforeFirstWrite(permissionRequestCount: Long) {
         if (permissionCountBeforeFirstWrite == null) {
@@ -204,6 +232,10 @@ class Ew300OperationTraceBuilder(
         stateKnown = stateKnown,
         outcome = outcome,
         stages = stages.toList(),
+        baselineFingerprintKey = baselineFingerprintKey,
+        baselineSessionGeneration = baselineSessionGeneration,
+        baselineDetachGeneration = baselineDetachGeneration,
+        failureReason = failureReason,
     )
 }
 

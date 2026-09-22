@@ -71,11 +71,15 @@ After any uncertain mutation, preserve the reports and stop. Do not retry automa
 
 ## Restoration and session close
 
-Only after the Flash itself reaches verified final readback, restore the exact recorded pre-test
-hardware state through the already-qualified restoration path. Restoration is a recovery requirement,
-not a second qualification experiment. Verify the complete final state byte-for-byte/readback-for-
-readback against the recorded baseline, including playback/global gain. If exact restoration cannot
-be verified, the physical gate fails and the release remains NO-GO.
+Only after the Flash itself reaches verified final readback, use the signed-candidate-only
+**Restore exact pre-test baseline** action shown on the EW300 DEVICE tab. This is a separate
+architecture-owned restoration transaction, not a second qualification experiment: it writes the
+recorded five-band pairs and playback/global gain, sends exactly one restoration Save, handles the
+authorized replacement session, and performs complete final readback. Require
+`restorationVerified=true`, `stateKnown=true`, `finalReadbackMatched=true`, one restoration Save,
+exact replacement identity, and a strictly newer replacement generation when detach occurs. If
+the action is absent, the operation report is uncertain, or any byte differs from the recorded
+baseline, stop without retry; the physical gate fails and the release remains NO-GO.
 
 Record the exact candidate provenance, device fingerprint, operation report, final readback, and
 restoration result. Do not merge PR #23, publish v0.7.0, or make a public EW300 support claim from

@@ -62,6 +62,7 @@ import com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityReport
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300PersistenceQualificationResult
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationTrace
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300Protocol
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300RestorationResult
 import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceControls
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult
@@ -1125,6 +1126,24 @@ class EqLibraryViewModel(
 
     suspend fun runEw300CapabilityBatch(): Ew300CapabilityReport =
         hardwareRepository.runEw300CapabilityBatch()
+
+    suspend fun restoreEw300LastFlashBaseline(): UiText {
+        if (hardwareRepository.ew300ConnectionState.value !is Kt02h20ConnectionState.Connected) {
+            return UiText.Dynamic("Reconnect the exact SIMGOT EW300 DSP before restoring its recorded baseline.")
+        }
+        return when (val result = hardwareRepository.restoreEw300LastFlashBaseline()) {
+            Ew300RestorationResult.Verified -> UiText.Dynamic(
+                "The exact original EW300 baseline was restored and verified by final hardware readback.",
+            )
+            is Ew300RestorationResult.NoBaseline -> UiText.Dynamic(result.reason)
+            is Ew300RestorationResult.DeviceUnavailable -> UiText.Dynamic(result.reason)
+            is Ew300RestorationResult.NotSuitable -> UiText.Dynamic(result.reason)
+            is Ew300RestorationResult.TransferFailed -> UiText.Dynamic(result.reason)
+            is Ew300RestorationResult.VerificationFailed -> UiText.Dynamic(
+                "EW300 baseline restoration was not verified: ${result.reason}",
+            )
+        }
+    }
 
     suspend fun advanceEw300PersistenceQualification(): Ew300PersistenceQualificationResult =
         hardwareRepository.advanceEw300PersistenceQualification()

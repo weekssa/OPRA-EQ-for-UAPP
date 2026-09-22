@@ -68,6 +68,7 @@ jobs:
         run: >-
           gradle :app:testDebugUnitTest :app:lintDebug :app:assembleRelease --stacktrace
           -PEW300_PERSISTENCE_QUALIFICATION_ENABLED=true
+          -PEW300_FLASH_VALIDATION_ENABLED=true
           -PCANDIDATE_SOURCE_SHA="$GITHUB_SHA"
 
       - name: Align sign and verify beta APK

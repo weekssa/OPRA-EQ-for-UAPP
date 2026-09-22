@@ -5,6 +5,8 @@ import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20Band
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -106,6 +108,125 @@ class Ew300FlasherTest {
         assertEquals(0, transport.commitCount)
     }
 
+    @Test
+    fun verifiedFlashBaselineCanBeRestoredExactlyAfterAReplacementSession() = runBlocking {
+        val transport = FakeTransport(detachOnCommitNumber = 2)
+        val original = transport.state.mapValues { it.value.copyOf() }
+        val flasher = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
+
+        val flash = flasher.flash(profile(preamp = -4.0))
+        assertTrue(flash is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.Success)
+        assertEquals(1, transport.commitCount)
+
+        val restoration = flasher.restoreLastFlashBaseline()
+        assertTrue(restoration is Ew300RestorationResult.Verified)
+        assertEquals(2, transport.commitCount)
+        assertEquals(21, transport.writes.size)
+        original.forEach { (register, value) ->
+            assertTrue(transport.state.getValue(register).contentEquals(value))
+        }
+
+        val trace = requireNotNull(flasher.lastOperationTrace.value)
+        assertEquals("RESTORE", trace.operation)
+        assertEquals(11L, trace.registerWriteCount)
+        assertEquals(1L, trace.saveCommandCount)
+        assertEquals(0L, trace.permissionRequestsBeforeFirstWrite)
+        assertTrue(trace.replacementObserved)
+        assertTrue(trace.replacementIdentityMatched)
+        assertTrue(trace.finalReadbackMatched)
+        assertTrue(trace.restorationVerified)
+        assertTrue(trace.stateKnown)
+        assertNull(trace.failureReason)
+        assertEquals(transport.deviceFingerprintKey, trace.baselineFingerprintKey)
+        assertEquals(1L, trace.baselineSessionGeneration)
+    }
+
+    @Test
+    fun restorationWithoutAVerifiedFlashBaselineSendsNoWrites() = runBlocking {
+        val transport = FakeTransport()
+        val flasher = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
+        val result = flasher.restoreLastFlashBaseline()
+
+        assertTrue(result is Ew300RestorationResult.NoBaseline)
+        assertTrue(transport.writes.isEmpty())
+        assertEquals(0, transport.commitCount)
+        val trace = requireNotNull(flasher.lastOperationTrace.value)
+        assertFalse(trace.stateKnown)
+        assertFalse(trace.restorationVerified)
+    }
+
+    @Test
+    fun restorationRejectsWrongReplacementFingerprintWithoutFinalReadback() = runBlocking {
+        val transport = FakeTransport(detachOnCommitNumber = 2)
+        val flasher = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
+        assertTrue(flasher.flash(profile(preamp = null)) is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.Success)
+        transport.deviceFingerprintKey = "other-ew300"
+
+        val result = flasher.restoreLastFlashBaseline()
+        val trace = requireNotNull(flasher.lastOperationTrace.value)
+
+        assertTrue(result is Ew300RestorationResult.NotSuitable)
+        assertEquals(0, transport.commitCount - 1)
+        assertFalse(trace.finalReadbackMatched)
+        assertFalse(trace.restorationVerified)
+        assertFalse(trace.stateKnown)
+    }
+
+    @Test
+    fun restorationRejectsStaleReplacementGeneration() = runBlocking {
+        val transport = FakeTransport(detachOnCommitNumber = 2, replacementGeneration = 1L)
+        val flasher = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
+        assertTrue(flasher.flash(profile(preamp = null)) is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.Success)
+        transport.sessionGeneration = 2L
+
+        val result = flasher.restoreLastFlashBaseline()
+        val trace = requireNotNull(flasher.lastOperationTrace.value)
+
+        assertTrue(result is Ew300RestorationResult.VerificationFailed)
+        assertEquals(2, transport.commitCount)
+        assertFalse(trace.finalReadbackMatched)
+        assertFalse(trace.stateKnown)
+    }
+
+    @Test
+    fun restorationFinalReadbackMismatchIsDurableUncertainty() = runBlocking {
+        val transport = FakeTransport(
+            detachOnCommitNumber = 2,
+            corruptOnCommitNumber = 2,
+            corruptRegister = Ew300Protocol.bandRegister(0),
+        )
+        val flasher = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
+        assertTrue(flasher.flash(profile(preamp = null)) is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.Success)
+
+        val result = flasher.restoreLastFlashBaseline()
+        val trace = requireNotNull(flasher.lastOperationTrace.value)
+
+        assertTrue(result is Ew300RestorationResult.VerificationFailed)
+        assertTrue(Ew300OperationStage.FINAL_READBACK in trace.stages)
+        assertFalse(trace.finalReadbackMatched)
+        assertFalse(trace.restorationVerified)
+        assertFalse(trace.stateKnown)
+    }
+
+    @Test
+    fun exceptionAfterRestorationSaveRemainsDurableUncertainty() = runBlocking {
+        val transport = FakeTransport(throwOnCommitNumber = 2)
+        val flasher = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
+        assertTrue(flasher.flash(profile(preamp = null)) is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.Success)
+
+        try {
+            flasher.restoreLastFlashBaseline()
+            assertTrue("restoration should throw after the Save boundary", false)
+        } catch (_: IllegalStateException) {
+            // The durable operation trace is the result of the uncertain transaction.
+        }
+        val trace = requireNotNull(flasher.lastOperationTrace.value)
+        assertEquals("EXCEPTION:IllegalStateException", trace.outcome)
+        assertFalse(trace.stateKnown)
+        assertFalse(trace.restorationVerified)
+        assertTrue(trace.failureReason?.contains("after Save") == true)
+    }
+
     private fun profile(preamp: Double?): OpraEqProfile = OpraEqProfile(
         id = "ew300-test",
         productId = "product",
@@ -125,10 +246,19 @@ class Ew300FlasherTest {
         private val failWriteRegister: Int? = null,
         private val missingRegister: Int? = null,
         private val replacementFingerprint: String? = null,
+        private val detachOnCommitNumber: Int? = null,
+        private val replacementGeneration: Long = 2L,
+        private val corruptOnCommitNumber: Int? = null,
+        private val corruptRegister: Int? = null,
+        private val throwOnCommitNumber: Int? = null,
     ) : Ew300Transport {
         override var deviceFingerprintKey: String = "test-ew300"
         override var sessionGeneration: Long = 1L
         override var detachGeneration: Long = 0L
+        override val registerWriteCount: Long
+            get() = writes.size.toLong()
+        override val saveCommandCount: Long
+            get() = commitCount.toLong()
         val state = (0 until Ew300Protocol.BAND_COUNT)
             .flatMap { index ->
                 val register = Ew300Protocol.bandRegister(index)
@@ -148,6 +278,9 @@ class Ew300FlasherTest {
             if (writes.isNotEmpty()) readsAfterWrites++
             if (commitCount > 0) readsAfterCommit++
             if (register == missingRegister) return null
+            if (commitCount >= (corruptOnCommitNumber ?: Int.MAX_VALUE) && register == corruptRegister) {
+                return bytes(0x7F, 0, 0, 0)
+            }
             return state[register]
         }
 
@@ -160,10 +293,13 @@ class Ew300FlasherTest {
 
         override suspend fun commit(): Boolean {
             commitCount++
-            if (replacementFingerprint != null) {
-                deviceFingerprintKey = replacementFingerprint
-                sessionGeneration = 2L
+            if (detachOnCommitNumber == commitCount || (detachOnCommitNumber == null && replacementFingerprint != null)) {
+                deviceFingerprintKey = replacementFingerprint ?: deviceFingerprintKey
+                sessionGeneration = replacementGeneration
                 detachGeneration = 1L
+            }
+            if (throwOnCommitNumber == commitCount) {
+                throw IllegalStateException("transport failed after Save")
             }
             return commitSucceeds
         }

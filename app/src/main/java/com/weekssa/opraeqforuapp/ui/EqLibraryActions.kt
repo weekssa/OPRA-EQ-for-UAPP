@@ -58,6 +58,7 @@ class EqLibraryActions(
     val onResetFiioJa11FromMyDac: suspend () -> String,
     val onFlashEw300FromMyDac: (OpraEqProfile) -> Unit,
     val onResetEw300FromMyDac: suspend () -> String,
+    val onRestoreEw300Baseline: suspend () -> String,
     val onRunEw300CapabilityBatch: suspend () -> Ew300CapabilityReport,
     val onAdvanceEw300PersistenceQualification: suspend () -> Ew300PersistenceQualificationResult,
     val onConnectBlackPearl: () -> Unit,

@@ -8,8 +8,30 @@ package com.weekssa.opraeqforuapp.domain.ew300
  */
 data class Ew300RawBaseline(
     val registers: Map<Int, ByteArray>,
+    val deviceFingerprintKey: String,
+    val sessionGeneration: Long,
+    val detachGeneration: Long,
 ) {
+    init {
+        require(deviceFingerprintKey.isNotBlank()) { "EW300 baseline fingerprint must not be blank" }
+        require(sessionGeneration > 0L) { "EW300 baseline session generation must be positive" }
+        require(detachGeneration >= 0L) { "EW300 baseline detach generation must not be negative" }
+    }
+
     fun value(register: Int): ByteArray? = registers[register]?.copyOf()
+
+    fun isComplete(): Boolean =
+        registers.keys == Ew300CapabilityBatch.snapshotRegisters().toSet() &&
+            registers.values.all { it.size == 4 }
+
+    /** Only these registers have qualified restoration semantics; the identity/current-slot read is read-only. */
+    fun restorableRegisters(): List<Int> = buildList {
+        repeat(Ew300Protocol.BAND_COUNT) { index ->
+            add(Ew300Protocol.bandRegister(index))
+            add(Ew300Protocol.bandRegister(index) + 1)
+        }
+        add(Ew300Protocol.GLOBAL_GAIN_REGISTER)
+    }
 
     fun bands(): List<Pair<ByteArray, ByteArray>> {
         val result = mutableListOf<Pair<ByteArray, ByteArray>>()
@@ -29,29 +51,36 @@ class Ew300TransactionCoordinator(
     private val transport: Ew300Transport,
 ) {
     suspend fun captureBaseline(): Ew300RawBaseline? {
+        val fingerprint = transport.deviceFingerprintKey ?: return null
+        val sessionGeneration = transport.sessionGeneration
+        if (sessionGeneration <= 0L) return null
         val values = linkedMapOf<Int, ByteArray>()
         for (register in Ew300CapabilityBatch.snapshotRegisters()) {
             val value = transport.readRegister(register)
             if (value == null || value.size != 4) return null
             values[register] = value.copyOf()
         }
-        return Ew300RawBaseline(values)
+        return Ew300RawBaseline(
+            registers = values,
+            deviceFingerprintKey = fingerprint,
+            sessionGeneration = sessionGeneration,
+            detachGeneration = transport.detachGeneration,
+        )
     }
 
     suspend fun restoreVolatile(baseline: Ew300RawBaseline): Boolean {
-        val writesAccepted = baseline.bands().withIndex().all { (index, pair) ->
-            transport.writeRegister(Ew300Protocol.bandRegister(index), pair.first) &&
-                transport.writeRegister(Ew300Protocol.bandRegister(index) + 1, pair.second)
-        } && baseline.value(Ew300Protocol.GLOBAL_GAIN_REGISTER)?.let {
-            transport.writeRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER, it)
-        } == true
+        if (!baseline.isComplete()) return false
+        val writesAccepted = baseline.restorableRegisters().all { register ->
+            baseline.value(register)?.let { value -> transport.writeRegister(register, value) } == true
+        }
         if (!writesAccepted) return false
-        return baseline.bands().withIndex().all { (index, pair) ->
-            baseline.matches(Ew300Protocol.bandRegister(index), transport.readRegister(Ew300Protocol.bandRegister(index))) &&
-                baseline.matches(Ew300Protocol.bandRegister(index) + 1, transport.readRegister(Ew300Protocol.bandRegister(index) + 1))
-        } && baseline.matches(
-            Ew300Protocol.GLOBAL_GAIN_REGISTER,
-            transport.readRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER),
-        )
+        return verifyExact(baseline)
+    }
+
+    suspend fun verifyExact(baseline: Ew300RawBaseline): Boolean {
+        if (!baseline.isComplete()) return false
+        return baseline.registers.keys.all { register ->
+            baseline.matches(register, transport.readRegister(register))
+        }
     }
 }

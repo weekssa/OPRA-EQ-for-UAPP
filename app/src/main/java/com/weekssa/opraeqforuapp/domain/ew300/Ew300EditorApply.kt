@@ -131,7 +131,7 @@ class Ew300EditorApplier(
         }
         val replacementObserved = transport.detachGeneration != detachGenerationBeforeSave
         val replacementIdentityMatched = transport.deviceFingerprintKey == expectedFingerprint &&
-            (!replacementObserved || transport.sessionGeneration != sessionGenerationBeforeSave)
+            (!replacementObserved || transport.sessionGeneration > sessionGenerationBeforeSave)
         afterSave(Ew300CommitObservation(replacementObserved, replacementIdentityMatched))
         if (!replacementIdentityMatched) {
             return Ew300EditorApplyResult.VerificationFailed(

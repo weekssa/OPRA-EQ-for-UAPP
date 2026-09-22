@@ -148,6 +148,7 @@ class MainActivity : ComponentActivity() {
         },
         onFlashEw300FromMyDac = viewModel::flashEw300FromMyDac,
         onResetEw300FromMyDac = { resolve(viewModel.resetEw300ToFlat()) },
+        onRestoreEw300Baseline = { resolve(viewModel.restoreEw300LastFlashBaseline()) },
         onRunEw300CapabilityBatch = viewModel::runEw300CapabilityBatch,
         onAdvanceEw300PersistenceQualification = viewModel::advanceEw300PersistenceQualification,
         onConnectBlackPearl = viewModel::connectBlackPearl,

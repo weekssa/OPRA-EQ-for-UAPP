@@ -20,6 +20,7 @@ import com.weekssa.opraeqforuapp.domain.ew300.Ew300PersistenceQualificationResul
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300PersistenceQualifier
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300EditorApplyResult
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationTrace
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300RestorationResult
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult
 import java.io.Closeable
@@ -212,6 +213,18 @@ class HardwareEqRepository(
         return try {
             dacSessionRepository.withExclusiveEw300Mutation {
                 ew300Flasher.flash(profile)
+            }
+        } finally {
+            scheduleEw300SnapshotRefresh()
+        }
+    }
+
+    /** Restores the exact baseline captured by the last verified EW300 Flash. */
+    suspend fun restoreEw300LastFlashBaseline(): Ew300RestorationResult {
+        mutableEw300SnapshotState.update { it.markStale() }
+        return try {
+            dacSessionRepository.withExclusiveEw300Mutation {
+                ew300Flasher.restoreLastFlashBaseline()
             }
         } finally {
             scheduleEw300SnapshotRefresh()

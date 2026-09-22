@@ -14,6 +14,9 @@ val latestReleaseApiUrl = providers.gradleProperty("LATEST_RELEASE_API_URL")
 val ew300PersistenceQualificationEnabled = providers
     .gradleProperty("EW300_PERSISTENCE_QUALIFICATION_ENABLED")
     .orElse("false")
+val ew300FlashValidationEnabled = providers
+    .gradleProperty("EW300_FLASH_VALIDATION_ENABLED")
+    .orElse("false")
 val candidateSourceSha = providers.gradleProperty("CANDIDATE_SOURCE_SHA").orElse("local-unqualified")
 
 android {
@@ -32,6 +35,7 @@ android {
         buildConfigField("String", "CANONICAL_CATALOG_URL", "\"${canonicalCatalogUrl.get()}\"")
         buildConfigField("String", "LATEST_RELEASE_API_URL", "\"${latestReleaseApiUrl.get()}\"")
         buildConfigField("boolean", "EW300_PERSISTENCE_QUALIFICATION_ENABLED", "false")
+        buildConfigField("boolean", "EW300_FLASH_VALIDATION_ENABLED", "false")
         buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"local-unqualified\"")
     }
 
@@ -39,6 +43,7 @@ android {
         release {
             isMinifyEnabled = false
             buildConfigField("boolean", "EW300_PERSISTENCE_QUALIFICATION_ENABLED", ew300PersistenceQualificationEnabled.get())
+            buildConfigField("boolean", "EW300_FLASH_VALIDATION_ENABLED", ew300FlashValidationEnabled.get())
             buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"${candidateSourceSha.get()}\"")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

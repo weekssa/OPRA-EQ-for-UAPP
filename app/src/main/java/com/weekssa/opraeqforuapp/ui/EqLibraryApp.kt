@@ -134,6 +134,7 @@ fun EqLibraryApp(
     val onResetFiioJa11FromMyDac = actions.onResetFiioJa11FromMyDac
     val onFlashEw300FromMyDac = actions.onFlashEw300FromMyDac
     val onResetEw300FromMyDac = actions.onResetEw300FromMyDac
+    val onRestoreEw300Baseline = actions.onRestoreEw300Baseline
     val onRunEw300CapabilityBatch = actions.onRunEw300CapabilityBatch
     val onAdvanceEw300PersistenceQualification = actions.onAdvanceEw300PersistenceQualification
     val onConnectBlackPearl = actions.onConnectBlackPearl
@@ -762,6 +763,7 @@ fun EqLibraryApp(
                         onSetFiioJa11UacMode = onSetFiioJa11UacMode,
                         onResetFiioJa11FromMyDac = onResetFiioJa11FromMyDac,
                         onResetEw300FromMyDac = onResetEw300FromMyDac,
+                        onRestoreEw300Baseline = onRestoreEw300Baseline,
                         onRunEw300CapabilityBatch = onRunEw300CapabilityBatch,
                         onAdvanceEw300PersistenceQualification = onAdvanceEw300PersistenceQualification,
                         onMessage = ::showMessage,

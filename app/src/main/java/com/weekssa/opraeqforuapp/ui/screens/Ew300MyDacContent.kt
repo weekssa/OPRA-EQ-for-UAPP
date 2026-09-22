@@ -61,6 +61,7 @@ internal fun Ew300MyDacContent(
     savedEqs: List<SavedEqRecord>,
     onConnect: () -> Unit,
     onResetEq: suspend () -> String,
+    onRestoreBaseline: suspend () -> String,
     onRunCapabilityBatch: suspend () -> Ew300CapabilityReport,
     onAdvancePersistenceQualification: suspend () -> Ew300PersistenceQualificationResult,
     onCaptureDacEq: suspend (String, SavedEqHeadphoneAssociation?) -> String,
@@ -85,6 +86,7 @@ internal fun Ew300MyDacContent(
     var persistenceResult by remember { mutableStateOf<Ew300PersistenceQualificationResult?>(null) }
     var persistenceRunning by remember { mutableStateOf(false) }
     var persistenceConfirmationOpen by remember { mutableStateOf(false) }
+    var restorationRunning by remember { mutableStateOf(false) }
     // The Save qualification was a bounded development gate and is not a product action. Its
     // verified result is now represented by the immutable EW300 capability profile.
     val qualificationBuild = false
@@ -193,6 +195,9 @@ internal fun Ew300MyDacContent(
                         }
                     }
                 } else {
+                    val flashValidationBuild = BuildConfig.EW300_FLASH_VALIDATION_ENABLED &&
+                        BuildConfig.CANDIDATE_SOURCE_SHA.matches(Regex("[0-9a-fA-F]{40}")) &&
+                        ReleaseSignatureGate.isPinnedReleaseSigner(context)
                     Ew300DeviceStatus(
                         report = capabilityReport,
                         running = capabilityBatchRunning,
@@ -228,6 +233,21 @@ internal fun Ew300MyDacContent(
                             }
                         },
                         operationTrace = operationTrace,
+                        flashValidationBuild = flashValidationBuild,
+                        restorationRunning = restorationRunning,
+                        onRestoreBaseline = {
+                            if (!restorationRunning) {
+                                restorationRunning = true
+                                scope.launch {
+                                    runCatching { onRestoreBaseline() }
+                                        .onSuccess(onMessage)
+                                        .onFailure {
+                                            onMessage("EW300 baseline restoration stopped before a verified result. Do not retry; share the operation report.")
+                                        }
+                                    restorationRunning = false
+                                }
+                            }
+                        },
                         onShareTraceReadable = operationTrace?.let { trace ->
                             { shareReport(context, "EW300 operation report", "text/plain", trace.toReadableText()) }
                         },
@@ -358,6 +378,9 @@ internal fun Ew300DeviceStatus(
     persistenceEnabled: Boolean = false,
     onStartPersistence: () -> Unit = {},
     onContinuePersistence: () -> Unit = {},
+    flashValidationBuild: Boolean = false,
+    restorationRunning: Boolean = false,
+    onRestoreBaseline: () -> Unit = {},
 ) {
     Text("SIMGOT EW300 DSP", style = MaterialTheme.typography.titleMedium)
     Text("USB 31B2:0111", style = MaterialTheme.typography.bodyMedium)
@@ -405,6 +428,26 @@ internal fun Ew300DeviceStatus(
         }
         onShareTraceJson?.let { share ->
             OutlinedButton(onClick = share, modifier = Modifier.fillMaxWidth()) { Text("Share operation JSON") }
+        }
+        if (flashValidationBuild &&
+            trace.operation == "FLASH" &&
+            trace.stateKnown &&
+            trace.finalReadbackMatched &&
+            !trace.restorationVerified
+        ) {
+            PremiumSectionLabel(text = "Signed-candidate physical validation", divider = false)
+            Text(
+                "This validation-only action restores the exact pre-test EW300 baseline captured before the verified Flash. It is not a normal product control. Use it once after the bounded Flash test; do not retry after uncertainty.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Button(
+                onClick = onRestoreBaseline,
+                enabled = !restorationRunning,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(if (restorationRunning) "Restoring exact baseline…" else "Restore exact pre-test baseline")
+            }
         }
     }
     if (qualificationBuild) {
