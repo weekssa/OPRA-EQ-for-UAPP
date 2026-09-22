@@ -38,7 +38,10 @@ object HardwareEqDeviceSpecs {
             qStep = 0.001,
             preampStepDb = 0.5,
         ),
-        representationVersion = 2,
+        // v3 enables source low/high shelves to be approximated as Peak-only response fits.
+        // Native EW300 readback and editor controls remain Peak-only.
+        representationVersion = 3,
+        responseFitSourceBandTypes = setOf("low_shelf", "high_shelf"),
     )
 
     val FIIO_JA11 = FiveBandDeviceSpec(
