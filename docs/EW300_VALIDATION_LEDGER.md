@@ -1,24 +1,20 @@
-# EW300 validation ledger
+## Active continuation candidate — current-head software/signed gates passed; physical evidence remains tied to source 381
 
-Append-only release evidence for the v0.7 EW300 candidate. This ledger distinguishes accepted
-historical qualification from the current implementation candidate. It does not authorize a
-merge, publication, or public support claim.
+The current branch head `02f2697e20dda0c33f72973cb140a3be5d592cef` is a public My DAC UX and validation-control follow-up. It keeps
+the qualified EW300 transaction implementation unchanged while aligning My DAC with the shared DAC
+flow and covering removal of capability-report, operation-report, and exact-restoration controls
+from public builds.
 
-## Active continuation candidate — software/signed gates passed; bounded physical operations verified on source 381
+Android CI #1710, CodeQL #1595, catalog currentness #2008, priority-community coverage #1493, dependency submission #2015, and Signed EQ Library Beta Candidate #1314 passed on this exact source. The signed workflow also passed pinned-signer
+verification, alignment, installation, cold launch, and immutable candidate publication. The
+current candidate is ready for one bounded owner session to verify the final Flash UI availability
+and current-head evidence path. This does not repeat Save qualification or broaden protocol scope.
 
-The current recovery work adds the exact-baseline post-Save restoration transaction identified
-after E033. It reuses the existing EW300 flasher and authoritative DAC-session owner, restores the
-captured five Peak-band register pairs plus playback/global gain (`0x66`), performs one guarded
-restoration Save, requires an exact replacement fingerprint and strictly newer session generation
-after detach, and verifies a complete byte-for-byte final readback before setting
-`restorationVerified=true`. Baseline fingerprint/session provenance and explicit failure reasons
-are included in `Ew300OperationTrace`; ordinary builds do not expose the validation action.
-
-Focused tests cover successful restoration, UI-caller cancellation during detach, one Save, no
-replay, wrong identity, stale/lower generation, final-readback mismatch, exception-after-Save
-uncertainty, and null/unmeasured telemetry. The same candidate also adds the read-only Device tab
-state surface and bounded source shelf response fitting. Until a current-head physical result is
-recorded, E033 remains the controlling physical Flash failure and release remains NO-GO.
+The physical source-381 operation set is already recorded in E037-E040: verified Flash, exact
+post-Save restoration, Apply, and Reset. Those results remain tied to source 381; no current-head
+physical result is inferred for `02f2697e20dda0c33f72973cb140a3be5d592cef`. Release remains NO-GO pending the bounded owner session,
+Personal EQ capture scope decision, final review, synchronized release records, and explicit owner
+approval.
 
 ## Evidence records
 
@@ -96,3 +92,5 @@ reach replacement-session verification, final readback, or restoration; therefor
 the E033 final hardware state was restored is valid.
 
 The source-381 physical Flash-plus-restoration gate is closed by E037-E040: the exact fingerprint reached verified Flash, exact-baseline Restore, Apply, and Reset terminal states with final readback where reported. No additional physical mutation is requested by this cycle. The latest signed documentation head before this documentation-only synchronization was `2f99bc7bf183a556bbe9466266abb44cdc02079b`; this new documentation head requires its own software/signed gates but does not require a physical retest. The accepted E001 Save qualification must not be repeated, and an uncertain mutation must never be automatically retried.
+
+| E041 | Current branch head `02f2697e20dda0c33f72973cb140a3be5d592cef`; signed workflow [#1314](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/35761742008); artifact `EQ-Library-signed-beta-02f2697e20dda0c33f72973cb140a3be5d592cef` (artifact id `10710314946`, digest `sha256:0b2460e79d09d915c770f6d609e80706772ed86c0dea3856a36c4188da7e623e`); APK `EQ-Library-v0.7.0-beta-02f2697.apk` (SHA-256 `39737d9a2aeddc6c2db1e4724c3875286bf2c2236cf858f88f5b98e854ed8314`); signer `65C1C1256DAE3C49E3548F334C91F0BA991969E9BE9E0B223BA4E253D2114747` | Complete exact-head software/security/signing/install/launch/publication gates passed for the public My DAC UX alignment and validation-control visibility coverage. The change does not alter EW300 transport or mutation sequencing. | No current-head physical retest is inferred. E037-E040 remain the accepted source-381 physical transaction evidence. Current head is ready for one bounded owner session; PR #23 remains draft and release remains NO-GO. |

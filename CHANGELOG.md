@@ -6,6 +6,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ## [Unreleased]
 
+- Current branch head `02f2697e20dda0c33f72973cb140a3be5d592cef` passed the complete software, security, signing, installation, cold-launch, and candidate-publication gates. The public-UX/control-visibility follow-up is not a physical retest; source-381 E037-E040 remain the accepted EW300 transaction evidence, and the release remains NO-GO pending the bounded owner session, final review, and explicit approval.
 - Aligned the EW300 My DAC surface with the shared DAC UX: the verified EQ path is presented as usable
   readback/edit/Apply/capture/Flash/Reset/reconnect functionality, while the exact profile's
   playback/global-gain value remains an honest reported device state rather than an unqualified
@@ -135,7 +136,8 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ### Fixed
 
-- Corrective Black Pearl Restore-defaults retest passed on exact signed `eb19800`; the restore reached all approved DEVICE targets and the compact My EQs / General EQs layouts passed owner review.\n
+- Corrective Black Pearl Restore-defaults retest passed on exact signed `eb19800`; the restore reached all approved DEVICE targets and the compact My EQs / General EQs layouts passed owner review.
+
 - Black Pearl Restore defaults waits for its exact verified write cycle rather than aborting on an older screen snapshot, checks the original USB session and all final values, and explains retained safety volume on genuine failure. No automatic write retry or speculative recovery command is introduced; physical retest is pending.
 - Managed-headphone details and General EQs use compact, scrollable headers and wrapping actions; notification/removal options and explanatory help move out of the main content area.
 

@@ -295,3 +295,18 @@ APK SHA-256: `dabf4bcdddf69853b09793f5a94bec0a3af7efb430f1cdfe26ffc35a93b783ad`
 The exact candidate passed Android CI #1538, CodeQL #1420, Catalog currentness CI #1826, Priority community coverage CI #1311, and Signed EQ Library Beta Candidate #1213. The signing workflow verified the pinned certificate `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`.
 
 This PASS closes the corrective Black Pearl physical gate. It does not establish TRN factory-default semantics and does not qualify FiiO JA11 hardware behavior. PR #16 remains open and draft; merge, release, and publication remain explicit owner-authorization gates.
+
+## 2026-09-22 current EW300 v0.7 candidate checkpoint
+
+The current recovery branch head is `02f2697e20dda0c33f72973cb140a3be5d592cef` on PR #23. It is the signed public-UX/validation-control
+candidate `EQ-Library-v0.7.0-beta-02f2697.apk`, SHA-256 `39737d9a2aeddc6c2db1e4724c3875286bf2c2236cf858f88f5b98e854ed8314`, artifact digest `sha256:0b2460e79d09d915c770f6d609e80706772ed86c0dea3856a36c4188da7e623e`, package
+`com.weekssa.opraeqforuapp` version `0.7.0`, signer `65C1C1256DAE3C49E3548F334C91F0BA991969E9BE9E0B223BA4E253D2114747`, signed workflow #1314.
+Android CI #1710, CodeQL #1595, catalog currentness #2008, priority-community coverage #1493, dependency submission #2015, and Signed EQ Library Beta Candidate #1314 passed on this exact source, including signed alignment, installation, cold launch,
+and immutable candidate publication.
+
+Source-381 E037-E040 remain the accepted physical EW300 transaction evidence. The current head has
+not been physically retested because it changes only My DAC UX/control visibility and regression
+coverage; no transport, register, Save, reconnect, replay, or final-readback semantics changed.
+The next owner action is one bounded current-head Flash UI/evidence session using the EW300 checklist.
+Do not repeat Save qualification, broaden protocol research, merge PR #23, publish v0.7.0, or make a
+public EW300 support claim without explicit owner approval.

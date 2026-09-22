@@ -22,30 +22,36 @@ Use only this exact candidate for the bounded session:
 
 | Item | Value |
 | --- | --- |
-| Source commit | `381286eb7ea29b0707e6da75f3565bada1d73928` |
-| APK | `EQ-Library-v0.7.0-beta-381286e.apk` |
-| APK SHA-256 | `12ae91cb9f9eed88bba45c17f56322c526133ce5de61bbd68d108eacbb84bb9f` |
+| Source commit | `02f2697e20dda0c33f72973cb140a3be5d592cef` |
+| APK | `EQ-Library-v0.7.0-beta-02f2697.apk` |
+| APK SHA-256 | `39737d9a2aeddc6c2db1e4724c3875286bf2c2236cf858f88f5b98e854ed8314` |
 | Package/version | `com.weekssa.opraeqforuapp`, `versionCode 7`, `versionName 0.7.0` |
 | Signer SHA-256 | `65C1C1256DAE3C49E3548F334C91F0BA991969E9BE9E0B223BA4E253D2114747` |
-| Signed artifact digest | `sha256:4672b6c03153f56d00a3aceab1f49a4d8f83f4e78acb5584a9fbee35087789f1` |
-| Signed workflow | [#1303](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/35704011756) |
-| Immutable APK | `https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-381286e.apk` |
+| Signed artifact digest | `sha256:0b2460e79d09d915c770f6d609e80706772ed86c0dea3856a36c4188da7e623e` |
+| Signed workflow | [#1314](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/35761742008) |
+| Immutable APK | `https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-02f2697.apk` |
 
 This candidate passed the complete software, security, signing, installation, cold-launch, and
-temporary candidate-publication gates. The physical evidence below is tied specifically to source 381; later documentation-only heads are not physical retests. The owner has now completed the bounded source-381
-operation set: Apply, Flash, exact-baseline Restore, and Reset, recorded in E037-E040. Do not
-repeat those mutations or the accepted E001 Save qualification. The EW300 Device tab’s additional state is read-only; do not use it as evidence for
-unsupported Black Pearl-style controls or native shelf hardware support.
+temporary candidate-publication gates. The accepted physical E037-E040 operation set is tied to
+source 381; this current UX/control-visibility follow-up has not been physically retested and
+does not alter the EW300 transaction implementation. Use this candidate for one bounded final
+session to verify current Flash UI availability and export current operation evidence. Do not
+repeat Save qualification or broaden the protocol scope. The EW300 Device tab’s additional state
+is read-only; do not use it as evidence for unsupported Black Pearl-style controls or native
+shelf hardware support.
 
-## Completed source-381 evidence
+## Accepted source-381 evidence (historical; not current-head retest)
 
-The paired readable/JSON reports show:
+The paired readable/JSON reports already accepted in E037-E040 show:
 - `APPLY`: 10 writes, one Save, zero permission requests before the first write, replacement identity matched, final readback matched, `outcome=Verified`.
 - `FLASH`: 11 writes, one Save, zero permission requests before the first write, replacement identity matched, final readback matched, `outcome=Success`.
-- exact-baseline `RESTORE`: 11 writes, one Save, exact replacement/generation, final exact readback, `restorationVerified=true`.
+- exact-baseline `RESTORE`: 11 writes, one restoration Save, exact replacement/generation, final exact readback, `restorationVerified=true`.
 - `RESET`: 11 writes, one Save, exact replacement/generation, final readback matched, `outcome=Success`.
 
-Replay and competing-job values are unmeasured/null. The Reset report does not contain raw before/after register values, so do not claim independent playback/global-gain preservation from it alone. No further Flash, Restore, Apply, Reset, or Save qualification is authorized merely to improve the evidence.
+Replay and competing-job values are unmeasured/null. The Reset report does not contain raw before/after
+register values, so do not claim independent playback/global-gain preservation from it alone. The
+current candidate is the final UX/validation candidate for one bounded owner session; no additional
+Save qualification is authorized.
 
 ## Before the single mutation
 
