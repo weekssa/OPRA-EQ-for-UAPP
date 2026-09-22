@@ -56,7 +56,7 @@ class EqLibraryActions(
     val onSetFiioJa11UacMode: (FiioJa11Protocol.UacMode) -> Unit,
     val onFlashFiioJa11FromMyDac: suspend (OpraEqProfile) -> String,
     val onResetFiioJa11FromMyDac: suspend () -> String,
-    val onFlashEw300FromMyDac: suspend (OpraEqProfile) -> String,
+    val onFlashEw300FromMyDac: (OpraEqProfile) -> Unit,
     val onResetEw300FromMyDac: suspend () -> String,
     val onRunEw300CapabilityBatch: suspend () -> Ew300CapabilityReport,
     val onAdvanceEw300PersistenceQualification: suspend () -> Ew300PersistenceQualificationResult,

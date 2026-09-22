@@ -146,7 +146,7 @@ class MainActivity : ComponentActivity() {
         onResetFiioJa11FromMyDac = {
             resolve(viewModel.resetFiioJa11FromMyDacToFlat())
         },
-        onFlashEw300FromMyDac = { profile -> resolve(viewModel.flashEw300FromMyDac(profile)) },
+        onFlashEw300FromMyDac = viewModel::flashEw300FromMyDac,
         onResetEw300FromMyDac = { resolve(viewModel.resetEw300ToFlat()) },
         onRunEw300CapabilityBatch = viewModel::runEw300CapabilityBatch,
         onAdvanceEw300PersistenceQualification = viewModel::advanceEw300PersistenceQualification,

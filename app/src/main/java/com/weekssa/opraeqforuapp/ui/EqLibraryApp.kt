@@ -312,6 +312,32 @@ fun EqLibraryApp(
         }
     }
 
+    var lastEw300FlashOperationId by remember {
+        mutableStateOf(state.ew300OperationTrace?.operationId)
+    }
+    LaunchedEffect(state.ew300OperationTrace?.operationId) {
+        val trace = state.ew300OperationTrace ?: return@LaunchedEffect
+        if (trace.operation != "FLASH" || trace.operationId == lastEw300FlashOperationId) {
+            return@LaunchedEffect
+        }
+        lastEw300FlashOperationId = trace.operationId
+        when {
+            trace.stateKnown && trace.outcome == "Success" && trace.finalReadbackMatched ->
+                showDeviceOperation(
+                    message = "SIMGOT EW300 DSP EQ was saved and verified. Final hardware readback matched.",
+                    duration = SnackbarDuration.Short,
+                )
+            !trace.stateKnown -> showDeviceOperation(
+                message = "EW300 Flash did not finish with a verified state. Do not retry this operation; review the operation report.",
+                duration = SnackbarDuration.Indefinite,
+            )
+            else -> showDeviceOperation(
+                message = "EW300 Flash stopped before verified persistence (${trace.outcome}).",
+                duration = SnackbarDuration.Short,
+            )
+        }
+    }
+
     var lastBlackPearlOperationSignature by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(
         state.blackPearlQualificationState.isWriting,
@@ -756,9 +782,7 @@ fun EqLibraryApp(
                         fiioJa11ConnectionState = fiioJa11ConnectionState,
                         onFlashFiioJa11Profile = onFlashFiioJa11FromMyDac,
                         ew300ConnectionState = ew300ConnectionState,
-                        onFlashEw300Profile = { profile ->
-                            scope.launch { showMessage(onFlashEw300FromMyDac(profile)) }
-                        },
+                        onFlashEw300Profile = onFlashEw300FromMyDac,
                         onToggleFavorite = onToggleFavorite,
                         onSaveGeneralPresets = { presets ->
                             val presetIds = presets.mapTo(mutableSetOf(), GeneralEqPreset::id)

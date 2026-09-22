@@ -1119,8 +1119,9 @@ class EqLibraryViewModel(
         return fiioJa11ResetResultMessage(resetFiioJa11AndRefresh())
     }
 
-    suspend fun flashEw300FromMyDac(profile: OpraEqProfile): UiText =
-        flashEw300Profile(profile)
+    fun flashEw300FromMyDac(profile: OpraEqProfile) {
+        viewModelScope.launch { flashEw300Profile(profile) }
+    }
 
     suspend fun runEw300CapabilityBatch(): Ew300CapabilityReport =
         hardwareRepository.runEw300CapabilityBatch()
