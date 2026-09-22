@@ -4,7 +4,7 @@ Append-only release evidence for the v0.7 EW300 candidate. This ledger distingui
 historical qualification from the current implementation candidate. It does not authorize a
 merge, publication, or public support claim.
 
-## Active continuation candidate — software only, not yet frozen
+## Active continuation candidate — software/signed gates passed; physical gate open
 
 The current recovery work adds the exact-baseline post-Save restoration transaction identified
 after E033. It reuses the existing EW300 flasher and authoritative DAC-session owner, restores the
@@ -16,10 +16,9 @@ are included in `Ew300OperationTrace`; ordinary builds do not expose the validat
 
 Focused tests cover successful restoration, UI-caller cancellation during detach, one Save, no
 replay, wrong identity, stale/lower generation, final-readback mismatch, exception-after-Save
-uncertainty, and null/unmeasured telemetry. The exact source SHA, signed APK checksum, signer,
-artifact digest, and remote gate results will be appended when this substantive candidate is
-frozen. Until then, E033 remains the controlling physical Flash failure and no hardware mutation
-is authorized.
+uncertainty, and null/unmeasured telemetry. The same candidate also adds the read-only Device tab
+state surface and bounded source shelf response fitting. Until a current-head physical result is
+recorded, E033 remains the controlling physical Flash failure and release remains NO-GO.
 
 ## Evidence records
 
@@ -68,6 +67,8 @@ is authorized.
 | E034 | Lifecycle recovery source `41aa0b0aca879d8d9b7844e8574a68a5949cc8c8`; targeted `Ew300MutationExecutorTest` coverage and ViewModel-event boundary | Software-only recovery after E033: EW300 mutation runs in the authoritative DAC-session owner instead of Compose lifetime; the EQ Library callback is non-suspending and only initiates the ViewModel operation. Tests simulate UI caller cancellation during detach and require one Save, new replacement generation, exact fingerprint, final readback, durable verified trace, and no false measured replay/competing-job counters. Final-readback mismatch remains `STATE_UNCERTAIN` and `finalReadbackMatched=false`. | No physical EW300 mutation was performed for E034. E033 remains the controlling physical Flash failure. Current-head CI/security/signing/install/cold-launch gates are required before any bounded hardware session, and no retry is authorized by this entry. |
 
 | E035 | Exact signed candidate source `dea8439956f41cbf83cda314f5f9f53d878c6181`; signed workflow [#1296](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/35696584387); artifact `EQ-Library-signed-beta-dea8439956f41cbf83cda314f5f9f53d878c6181` (artifact id `10681185577`, digest `sha256:59b15d4a0a726613452b923cdf6bfda483f43974be1510bdf85f636f80bcb559`); APK `EQ-Library-v0.7.0-beta-dea8439.apk`; APK SHA-256 `72c95bfaedae0f03303c7aac975aa67ca1e7af63b6c40b95809c022238971792`; signer `65C1C1256DAE3C49E3548F334C91F0BA991969E9BE9E0B223BA4E253D2114747` | Complete coherent software/security/signed-artifact gate passed for the exact-baseline restoration implementation: Android CI #1692, CodeQL #1577, catalog #1990, priority coverage #1475, dependency submission #1992, signed v2/v3 verification, signed APK installation, cold launch, and temporary immutable candidate publication. The only source change after the restoration implementation was the CI-corrected test expectation of 22 combined Flash/restoration writes. | No physical mutation was performed with E035. E033 remains the controlling physical Flash failure; the exact candidate is now eligible for one bounded Flash-plus-restoration session. Do not repeat E001 Save qualification, retry uncertain mutation, merge PR #23, publish v0.7.0, or make a public EW300 support claim. |
+
+| E036 | Implementation candidate `381286eb7ea29b0707e6da75f3565bada1d73928`; signed workflow [#1303](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/35704011756); artifact `EQ-Library-signed-beta-381286eb7ea29b0707e6da75f3565bada1d73928` (artifact id `10683972284`, digest `sha256:4672b6c03153f56d00a3aceab1f49a4d8f83f4e78acb5584a9fbee35087789f1`); APK `EQ-Library-v0.7.0-beta-381286e.apk`; APK SHA-256 `12ae91cb9f9eed88bba45c17f56322c526133ce5de61bbd68d108eacbb84bb9f`; signer `65C1C1256DAE3C49E3548F334C91F0BA991969E9BE9E0B223BA4E253D2114747` | Complete coherent software/security/signed-artifact gate passed for the read-only EW300 Device state surface and bounded source low/high-shelf response fitting: Android CI #1690, CodeQL #1575, catalog #1988, priority coverage #1473, dependency submission #1990, signed v2/v3 verification, signed APK installation, cold launch, and temporary immutable candidate publication. Targeted EW300 optimizer, Device surface, lifecycle, restoration, and telemetry tests are green. | No physical mutation was performed with E036. E033 remains the controlling physical Flash failure; the exact candidate is eligible for one bounded Flash-plus-restoration session only after the owner chooses to run it. Native EW300 shelf support is not claimed. Do not repeat E001 Save qualification, merge PR #23, publish v0.7.0, or make a public EW300 support claim. |
 
 ## Exact identity boundary
 

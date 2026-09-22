@@ -22,18 +22,19 @@ Use only this exact candidate for the bounded session:
 
 | Item | Value |
 | --- | --- |
-| Source commit | `dea8439956f41cbf83cda314f5f9f53d878c6181` |
-| APK | `EQ-Library-v0.7.0-beta-dea8439.apk` |
-| APK SHA-256 | `72c95bfaedae0f03303c7aac975aa67ca1e7af63b6c40b95809c022238971792` |
+| Source commit | `381286eb7ea29b0707e6da75f3565bada1d73928` |
+| APK | `EQ-Library-v0.7.0-beta-381286e.apk` |
+| APK SHA-256 | `12ae91cb9f9eed88bba45c17f56322c526133ce5de61bbd68d108eacbb84bb9f` |
 | Package/version | `com.weekssa.opraeqforuapp`, `versionCode 7`, `versionName 0.7.0` |
 | Signer SHA-256 | `65C1C1256DAE3C49E3548F334C91F0BA991969E9BE9E0B223BA4E253D2114747` |
-| Signed artifact digest | `sha256:59b15d4a0a726613452b923cdf6bfda483f43974be1510bdf85f636f80bcb559` |
-| Signed workflow | [#1296](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/35696584387) |
-| Immutable APK | `https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-dea8439.apk` |
+| Signed artifact digest | `sha256:4672b6c03153f56d00a3aceab1f49a4d8f83f4e78acb5584a9fbee35087789f1` |
+| Signed workflow | [#1303](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/35704011756) |
+| Immutable APK | `https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-381286e.apk` |
 
 This candidate passed the complete software, security, signing, installation, cold-launch, and
 temporary candidate-publication gates. That does not establish a physical Flash or restoration
-result.
+result. The EW300 Device tab’s additional state is read-only; do not use it as evidence for
+unsupported Black Pearl-style controls or native shelf hardware support.
 
 ## Before the single mutation
 
