@@ -756,7 +756,9 @@ fun EqLibraryApp(
                         fiioJa11ConnectionState = fiioJa11ConnectionState,
                         onFlashFiioJa11Profile = onFlashFiioJa11FromMyDac,
                         ew300ConnectionState = ew300ConnectionState,
-                        onFlashEw300Profile = onFlashEw300FromMyDac,
+                        onFlashEw300Profile = { profile ->
+                            scope.launch { showMessage(onFlashEw300FromMyDac(profile)) }
+                        },
                         onToggleFavorite = onToggleFavorite,
                         onSaveGeneralPresets = { presets ->
                             val presetIds = presets.mapTo(mutableSetOf(), GeneralEqPreset::id)

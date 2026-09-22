@@ -92,7 +92,7 @@ fun BrowseOpraScreen(
     fiioJa11ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
     onFlashFiioJa11Profile: (suspend (OpraEqProfile) -> String)? = null,
     ew300ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
-    onFlashEw300Profile: (suspend (OpraEqProfile) -> String)? = null,
+    onFlashEw300Profile: ((OpraEqProfile) -> Unit)? = null,
     onToggleFavorite: suspend (OpraEqProfile, String, String) -> Boolean,
     onSaveGeneralPresets: suspend (List<GeneralEqPreset>) -> Int = { 0 },
     onHideCanonicalProfiles: suspend (Set<String>) -> Unit = {},

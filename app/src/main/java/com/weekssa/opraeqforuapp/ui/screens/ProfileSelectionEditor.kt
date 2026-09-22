@@ -98,7 +98,7 @@ internal fun ProfileSelectionEditor(
     onFlashBlackPearlProfile: (suspend (OpraEqProfile) -> String)? = null,
     fiioJa11Connected: Boolean = false,
     onFlashFiioJa11Profile: (suspend (OpraEqProfile) -> String)? = null,
-    onFlashEw300Profile: (suspend (OpraEqProfile) -> String)? = null,
+    onFlashEw300Profile: ((OpraEqProfile) -> Unit)? = null,
     ew300Connected: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
@@ -329,9 +329,7 @@ internal fun ProfileSelectionEditor(
                                             scope.launch { onMessage(flash(profile)) }
                                         }
                                     LibraryHardwareFlashDevice.SIMGOT_EW300 ->
-                                        onFlashEw300Profile?.let { flash ->
-                                            scope.launch { onMessage(flash(profile)) }
-                                        }
+                                        onFlashEw300Profile?.invoke(profile)
                                 }
                             },
                         ) {
