@@ -47,6 +47,7 @@ import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.ui.MyDacEditorApplyStatus
 import com.weekssa.opraeqforuapp.ui.MyDacEditorUiState
 import com.weekssa.opraeqforuapp.ui.components.PremiumSectionLabel
+import java.util.Locale
 import kotlinx.coroutines.launch
 
 /** EW300 uses the same editor, graph, readback and operation semantics as Black Pearl. */
@@ -200,6 +201,7 @@ internal fun Ew300MyDacContent(
                         ReleaseSignatureGate.isPinnedReleaseSigner(context)
                     Ew300DeviceStatus(
                         report = capabilityReport,
+                        hardwareEqState = hardwareEqState,
                         running = capabilityBatchRunning,
                         onRun = {
                             if (!capabilityBatchRunning) {
@@ -364,6 +366,7 @@ private fun Ew300EqStatus(
 @Composable
 internal fun Ew300DeviceStatus(
     report: Ew300CapabilityReport?,
+    hardwareEqState: HardwareEqSnapshotState,
     running: Boolean,
     onRun: () -> Unit,
     onShareReadable: (() -> Unit)?,
@@ -384,6 +387,49 @@ internal fun Ew300DeviceStatus(
 ) {
     Text("SIMGOT EW300 DSP", style = MaterialTheme.typography.titleMedium)
     Text("USB 31B2:0111", style = MaterialTheme.typography.bodyMedium)
+    val hardwareBundle = hardwareEqState.bundle
+    PremiumSectionLabel(
+        text = when (hardwareEqState.freshness) {
+            DacStateFreshness.CURRENT -> "Current device state"
+            DacStateFreshness.LAST_READ_STALE -> "Last read device state"
+            null -> "Device state"
+        },
+        divider = false,
+    )
+    Text(
+        when {
+            hardwareEqState.isReading -> "Refreshing the verified EW300 readback…"
+            hardwareBundle != null && hardwareEqState.freshness == DacStateFreshness.CURRENT ->
+                "Values verified from the connected EW300."
+            hardwareBundle != null -> "Reconnect or run the read-only report to update these values."
+            else -> "Run the read-only report to populate the verified device state."
+        },
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    PremiumValueRow(
+        title = "Playback / global gain",
+        value = hardwareBundle?.snapshot?.playbackGainDb?.let {
+            String.format(Locale.US, "%.1f dB", it)
+        } ?: "Not read",
+        supportingText = "Read-only device state; it is not included in captured Personal EQs.",
+    )
+    PremiumValueRow(
+        title = "Equalizer",
+        value = hardwareBundle?.snapshot?.filters?.let { filters ->
+            "${filters.count { filter -> filter.isAcousticallyActive() }} Peak bands"
+        } ?: "Not read",
+        supportingText = "Five Peak bands with readback, capture, Apply, Flash, Reset, and reconnect verification.",
+    )
+    PremiumValueRow(
+        title = "Connection",
+        value = when {
+            hardwareEqState.freshness == DacStateFreshness.CURRENT -> "Current session"
+            hardwareBundle != null -> "Last read"
+            else -> "Awaiting read"
+        },
+        supportingText = "Exact-fingerprint reconnect recovery is verified for this profile.",
+    )
     Text(
         "Additional EW300 device controls are not verified here. Volume, headset, UAC, microphone, firmware, bootloader, and unrelated DAC controls require a separate exact EW300 capability and protocol match; none is claimed for this profile.",
         color = MaterialTheme.colorScheme.onSurfaceVariant,
