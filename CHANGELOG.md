@@ -6,6 +6,9 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ## [Unreleased]
 
+- Fixed the My EQs hardware Flash availability gate for the exact EW300 path by reusing the tested Direct Flash plus connected-session predicate; this exposes Flash for a saved EQ only when the existing safety gate passes and does not change protocol or mutation behavior.
+
+
 ### v0.7 EW300 physical evidence continuation
 
 - Recorded current-source physical `APPLY` report E039 (10 writes, one Save, replacement identity and final readback verified) and `RESET` report E040 (11 writes, one Save, replacement identity and final readback verified) on `381286eb7ea29b0707e6da75f3565bada1d73928`. Replay and competing-job fields remain unmeasured/null; the Reset report does not independently export before/after playback-gain bytes.

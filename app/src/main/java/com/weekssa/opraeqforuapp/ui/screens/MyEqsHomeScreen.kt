@@ -138,18 +138,17 @@ fun MyEqsHomeScreen(
     val selectedHeadphoneCount = managedHeadphones.sumOf(ManagedHeadphoneRecord::selectedProfileCount)
     val headphoneSavedEqs = remember(savedEqs) { savedEqs.toList() }
     val hardwareFlashOutput = activeOutput in HARDWARE_FLASH_OUTPUTS
-    val flashActionsEnabled = when (activeOutput) {
-        ExportDevice.BLACK_PEARL -> directBlackPearlFlashEnabled &&
-            blackPearlConnectionState is BlackPearlConnectionState.Connected
-        ExportDevice.FIIO_JA11 -> directFiioJa11FlashEnabled &&
-            fiioJa11ConnectionState is Kt02h20ConnectionState.Connected
-        // Keep the EW300 target available for derived/source-neutral representations, but do not
-        // expose a persistent Flash action before its exact-device gate passes.
-        ExportDevice.SIMGOT_EW300 -> false
-        ExportDevice.JCALLY_JM12 -> directJcallyJm12FlashEnabled &&
-            jcallyJm12ConnectionState is Kt02h20ConnectionState.Connected
-        else -> false
-    }
+    val flashActionsEnabled = isManagedHardwareFlashEnabled(
+        activeOutput = activeOutput,
+        directBlackPearlFlashEnabled = directBlackPearlFlashEnabled,
+        blackPearlConnected = blackPearlConnectionState is BlackPearlConnectionState.Connected,
+        directFiioJa11FlashEnabled = directFiioJa11FlashEnabled,
+        fiioJa11Connected = fiioJa11ConnectionState is Kt02h20ConnectionState.Connected,
+        directJcallyJm12FlashEnabled = directJcallyJm12FlashEnabled,
+        jcallyJm12Connected = jcallyJm12ConnectionState is Kt02h20ConnectionState.Connected,
+        directEw300FlashEnabled = directEw300FlashEnabled,
+        ew300Connected = ew300ConnectionState is Kt02h20ConnectionState.Connected,
+    )
 
     if (importOpen) {
         PersonalEqImportScreen(
