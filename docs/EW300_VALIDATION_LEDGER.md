@@ -40,6 +40,8 @@ merge, publication, or public support claim.
 
 | E029 | Signed candidate source `9e49876cdd5c49ae9263637204b02407f8e36c32`; signed workflow [#1284](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/35669428443); artifact `EQ-Library-signed-beta-9e49876cdd5c49ae9263637204b02407f8e36c32` (artifact id `10670478909`, digest `sha256:d48d0559489438693e42f8ffeea05ef22adab0a1de05b3cb9b6f298dfc86a754`); APK `EQ-Library-v0.7.0-beta-9e49876.apk`; APK SHA-256 `cbeb840f712f83c8a742566603d615b4e466319ec9bbfa51117a80e01c1c7d37`; signer `65C1C1256DAE3C49E3548F334C91F0BA991969E9BE9E0B223BA4E253D2114747` | Final documentation/evidence-only current-head follow-up. Android CI #1678, CodeQL #1563, catalog #1976, priority coverage #1461, dependency #1978, signed-beta alignment/signature verification, install, cold-launch, and temporary candidate publication all passed. The public APK sidecar independently matches the downloaded APK. | No production behavior changed after `d634d25b`; no physical retest is inferred. E027 remains the latest physical `APPLY` evidence, not a `FLASH` result. PR #23 remains draft; merge, publication, and public EW300 support remain owner-controlled. |
 
+| E030 | Exact signed candidate source `dbc86b638982465ad498556fb23a150aef537ebd`; owner `EW300 capability report JSON (11)` (SHA-256 `90619d5c7bb6fc8b62ee13c1e7354569f5b28147746e768a914cad632e168705`), readable report `EW300 capability report (6)` (SHA-256 `176535a7f2e55adc654e84c212b94d1e74d996fb39aaa315f3f7308002f0c8e0`), and screenshot `Screenshot (Sep 21, 2026 10:00:50 PM)` (SHA-256 `6b9173c4cec074bdc2cbfcd8ac0e75f2d859c56911883aa0d53c4c5e82d076f5`) | Physical Flash attempt stopped as unverified. The My DAC surface reports `Last EW300 Flash was not verified`; a subsequent exact-device read-only capability batch passed with strict four-byte validation and `stateKnown=true`. | The attached files are read-only capability evidence, not the requested Flash operation report. They do not establish register-write count, Save count, permission-before-write ordering, replacement identity, final mutation readback, replay status, or original-state restoration. Do not retry until the operation JSON is exported from DEVICE; persistence qualification remains `NOT_STARTED`. |
+
 ## Exact identity boundary
 
 ```text
@@ -52,12 +54,13 @@ interface profile; VID/PID alone is insufficient.
 
 ## Candidate gate status
 
-The latest current-head candidate at `9e49876cdd5c49ae9263637204b02407f8e36c32` passed the
+The latest current-head candidate at `dbc86b638982465ad498556fb23a150aef537ebd` passed the
 software, security, signing, installation, cold-launch, and source-sensitive release gates. Its
 connected Android emulator UI workflow also passed. It is a documentation-only follow-up to the
 bounded reconnect-verification UX source `d634d25b` and the physically tested `7035518b` candidate;
-it has not been used for physical mutation. The generated candidate is retained in signed workflow
-artifact `EQ-Library-signed-beta-9e49876cdd5c49ae9263637204b02407f8e36c32`.
+it has been used for the E030 physical Flash attempt recorded above. The generated candidate is
+retained in signed workflow artifact
+`EQ-Library-signed-beta-dbc86b638982465ad498556fb23a150aef537ebd`.
 
 The physical session is complete as one consolidated session only, with no automatic mutation
 retry; the final hardware state was restored exactly. The remaining release review is to inspect
