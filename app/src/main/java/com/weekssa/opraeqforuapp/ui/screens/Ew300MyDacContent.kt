@@ -367,7 +367,7 @@ private fun Ew300EqStatus(
 @Composable
 internal fun Ew300DeviceStatus(
     report: Ew300CapabilityReport?,
-    hardwareEqState: HardwareEqSnapshotState,
+    hardwareEqState: HardwareEqSnapshotState = HardwareEqSnapshotState(),
     running: Boolean,
     onRun: () -> Unit,
     onShareReadable: (() -> Unit)?,
