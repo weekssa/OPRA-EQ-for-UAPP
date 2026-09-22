@@ -197,7 +197,9 @@ class Ew300OperationTraceBuilder(
         replacementIdentityMatched = replacementIdentityMatched,
         baselineCaptured = baselineCaptured,
         volatileReadbackMatched = volatileReadbackMatched,
-        finalReadbackMatched = finalReadbackMatched,
+        // FINAL_READBACK means verification was attempted. A match is truthful only when the
+        // operation also completed with a known verified state.
+        finalReadbackMatched = finalReadbackMatched && stateKnown,
         restorationVerified = restorationVerified,
         stateKnown = stateKnown,
         outcome = outcome,

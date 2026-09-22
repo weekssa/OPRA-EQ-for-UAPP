@@ -74,6 +74,12 @@ class DacSessionRepository(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val blackPearlOperationMutex = Mutex()
     private val fiioJa11OperationMutex = Mutex()
+    private val ew300OperationMutex = Mutex()
+    private val ew300MutationExecutor = Ew300MutationExecutor(
+        scope = scope,
+        operationMutex = ew300OperationMutex,
+        reconnectGate = ew300ReconnectGate,
+    )
     private val mutableRecognitionState = MutableStateFlow(
         DacRecognitionState().withPresentDevices(currentPresentDeviceIds()),
     )
@@ -151,15 +157,12 @@ class DacSessionRepository(
     suspend fun <T> withExclusiveEw300Operation(block: suspend () -> T): T =
         ew300OperationMutex.withLock { block() }
 
+    /**
+     * Hardware mutation execution belongs to this session owner, not to the calling Compose scope.
+     * Cancelling a UI waiter therefore cannot abort an in-flight Save/replacement verification.
+     */
     suspend fun <T> withExclusiveEw300Mutation(block: suspend () -> T): T =
-        ew300OperationMutex.withLock {
-            ew300ReconnectGate.beginMutation()
-            try {
-                block()
-            } finally {
-                ew300ReconnectGate.endMutation()
-            }
-        }
+        ew300MutationExecutor.execute(block)
 
     fun isBlackPearlSessionCurrent(sessionGeneration: Long): Boolean =
         sessionGeneration > 0L &&
@@ -263,6 +266,4 @@ class DacSessionRepository(
         fiioJa11Transport.close()
         ew300Transport.close()
     }
-
-    private val ew300OperationMutex = Mutex()
 }
