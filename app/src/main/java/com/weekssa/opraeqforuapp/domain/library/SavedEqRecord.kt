@@ -5,6 +5,7 @@ import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 enum class SavedEqKind {
     Favorite,
     Personal,
+    Unreadable,
 }
 
 data class SavedEqRecord(

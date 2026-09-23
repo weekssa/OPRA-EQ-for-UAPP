@@ -54,6 +54,7 @@ fun MyEqsScreen(
 ) {
     val favorites = remember(savedEqs) { savedEqs.filter { it.kind == SavedEqKind.Favorite } }
     val personal = remember(savedEqs) { savedEqs.filter { it.kind == SavedEqKind.Personal } }
+    val unreadable = remember(savedEqs) { savedEqs.filter { it.kind == SavedEqKind.Unreadable } }
     var importOpen by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
@@ -136,6 +137,26 @@ fun MyEqsScreen(
                             scope.launch {
                                 onDeleteSavedEq(record.entryId)
                                 onMessage("Personal EQ deleted. Existing exported files were kept.")
+                            }
+                        },
+                    )
+                    HorizontalDivider()
+                }
+            }
+
+            if (unreadable.isNotEmpty()) {
+                item(key = "unreadable-heading") {
+                    SectionHeading(stringResource(R.string.my_eqs_unreadable_heading), unreadable.size)
+                }
+                items(unreadable, key = { it.entryId }) { record ->
+                    SavedEqRow(
+                        record = record,
+                        leadingFavorite = false,
+                        onExport = { onExportSavedEq(record.entryId) },
+                        onDelete = {
+                            scope.launch {
+                                onDeleteSavedEq(record.entryId)
+                                onMessage("Unreadable saved EQ removed. Existing exported files were kept.")
                             }
                         },
                     )

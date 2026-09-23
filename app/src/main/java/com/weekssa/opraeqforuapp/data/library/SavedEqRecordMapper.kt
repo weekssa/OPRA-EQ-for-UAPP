@@ -2,9 +2,11 @@ package com.weekssa.opraeqforuapp.data.library
 
 import com.weekssa.opraeqforuapp.data.managed.ManagedProfileSnapshotCodec
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
+import com.weekssa.opraeqforuapp.domain.catalog.isUsableParametricSource
 import com.weekssa.opraeqforuapp.domain.library.LocalSavedEqAdapter
 import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
+import java.util.Locale
 
 /** Canonical local snapshots take precedence; legacy rows remain readable without fabricated data. */
 internal object SavedEqRecordMapper {
@@ -49,14 +51,19 @@ internal object SavedEqRecordMapper {
                 null
             }
         }
+        if (!profile.hasValidSavedEqStructure()) savedEqDataInvalid = true
+        val kind = when (entity.kind) {
+            SavedEqRepository.KIND_FAVORITE -> SavedEqKind.Favorite
+            SavedEqRepository.KIND_PERSONAL -> SavedEqKind.Personal
+            else -> {
+                savedEqDataInvalid = true
+                SavedEqKind.Unreadable
+            }
+        }
 
         return SavedEqRecord(
             entryId = entity.entryId,
-            kind = when (entity.kind) {
-                SavedEqRepository.KIND_FAVORITE -> SavedEqKind.Favorite
-                SavedEqRepository.KIND_PERSONAL -> SavedEqKind.Personal
-                else -> error("Unknown saved EQ kind ${entity.kind}")
-            },
+            kind = kind,
             sourceProfileId = entity.sourceProfileId,
             productId = entity.productId,
             manufacturer = canonical?.let { it.headphone?.manufacturer.orEmpty() } ?: entity.manufacturer,
@@ -82,4 +89,21 @@ internal object SavedEqRecordMapper {
         bands = emptyList(),
         isVerified = false,
     )
+
+    private fun OpraEqProfile.hasValidSavedEqStructure(): Boolean {
+        if (id.isBlank() || productId.isBlank()) return false
+        if (preampGainDb?.isFinite() == false) return false
+        if (eqLibrarySafetyHeadroomDb?.isFinite() == false) return false
+        val type = profileType?.trim()?.lowercase(Locale.ROOT)?.takeIf(String::isNotEmpty) ?: return false
+        if (bands.orEmpty().any { band ->
+                listOf(band.frequency, band.gainDb, band.q, band.slope)
+                    .any { value -> value?.isFinite() == false }
+            }
+        ) {
+            return false
+        }
+        // Non-parametric source profiles remain intact and are classified by each target adapter;
+        // they are not corrupt merely because this app cannot currently transform them.
+        return type != "parametric_eq" || isUsableParametricSource()
+    }
 }

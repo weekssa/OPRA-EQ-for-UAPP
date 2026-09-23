@@ -136,6 +136,58 @@ class SavedEqCanonicalSnapshotCodecTest {
     }
 
     @Test
+    fun semanticallyInvalidLegacyProfileIsQuarantinedWithoutDiscardingItsDisplayValues() {
+        val legacyCodec = ManagedProfileSnapshotCodec()
+        val invalidProfile = profile("legacy-invalid", 0.0)
+        val record = SavedEqRecordMapper.toDomain(
+            entity = entity(invalidProfile, null, legacyCodec),
+            legacyCodec = legacyCodec,
+            canonicalCodec = codec,
+            captureMetadataCodec = SavedEqCaptureMetadataCodec(),
+        )
+
+        assertTrue(record.savedEqDataInvalid)
+        assertEquals(0.0, record.profile.bands!!.single().frequency!!, 0.0)
+    }
+
+    @Test
+    fun parametricLegacyProfileMissingRequiredQIsQuarantined() {
+        val legacyCodec = ManagedProfileSnapshotCodec()
+        val invalidProfile = profile("legacy-missing-q", 1_000.0).copy(
+            bands = listOf(OpraBand("peak_dip", 1_000.0, 1.0, null, null)),
+        )
+
+        val record = SavedEqRecordMapper.toDomain(
+            entity = entity(invalidProfile, null, legacyCodec),
+            legacyCodec = legacyCodec,
+            canonicalCodec = codec,
+            captureMetadataCodec = SavedEqCaptureMetadataCodec(),
+        )
+
+        assertTrue(record.savedEqDataInvalid)
+        assertNull(record.profile.bands!!.single().q)
+    }
+
+    @Test
+    fun validUnsupportedLegacyProfileIsPreservedWithoutBeingMisreportedAsCorrupt() {
+        val legacyCodec = ManagedProfileSnapshotCodec()
+        val unsupportedProfile = profile("legacy-graphic", 1_000.0).copy(
+            profileType = "graphic_eq",
+            bands = listOf(OpraBand("graphic_band", null, 1.0, null, null)),
+        )
+
+        val record = SavedEqRecordMapper.toDomain(
+            entity = entity(unsupportedProfile, null, legacyCodec),
+            legacyCodec = legacyCodec,
+            canonicalCodec = codec,
+            captureMetadataCodec = SavedEqCaptureMetadataCodec(),
+        )
+
+        assertEquals(false, record.savedEqDataInvalid)
+        assertEquals(unsupportedProfile, record.profile)
+    }
+
+    @Test
     fun canonicalUnassociatedEqDoesNotInheritStaleLegacyHeadphoneMetadata() {
         val legacyCodec = ManagedProfileSnapshotCodec()
         val canonical = requireNotNull(

@@ -107,6 +107,7 @@
     <string name="export_folder_access_lost">Export folder access was lost. Choose the folder again.</string>
     <string name="export_none_ready">No selected presets are ready to export.</string>
     <string name="saved_eq_invalid_data_notice">Saved EQ data could not be verified. Export and Flash are disabled; remove this item only if you no longer need it.</string>
+    <string name="my_eqs_unreadable_heading">Unreadable saved EQs</string>
     <string name="error_saved_eq_invalid_data">This saved EQ data could not be verified, so it cannot be flashed.</string>
     <plurals name="export_saved_current_count">
         <item quantity="one">%1$d preset saved/current</item>

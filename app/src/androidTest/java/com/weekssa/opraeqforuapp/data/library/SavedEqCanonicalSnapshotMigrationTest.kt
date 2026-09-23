@@ -15,6 +15,7 @@ import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotFactory
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20Band
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 import com.weekssa.opraeqforuapp.domain.library.EqSourceKind
+import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
 import com.weekssa.opraeqforuapp.domain.library.EqTargetKind
 import com.weekssa.opraeqforuapp.domain.library.VerificationStatus
 import java.util.UUID
@@ -233,6 +234,50 @@ class SavedEqCanonicalSnapshotMigrationTest {
             assertEquals("Unreadable saved EQ", record.displayName)
             assertTrue(record.profile.bands.isNullOrEmpty())
             assertNull(record.captureMetadata)
+            assertTrue(repository.toManagedHeadphones(listOf(record)).isEmpty())
+        } finally {
+            database.close()
+        }
+    }
+
+    @Test
+    fun unknownSavedEqKindStaysVisibleAndCannotEnterExportOrFlash() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val database = Room.inMemoryDatabaseBuilder(context, OpraEqDatabase::class.java)
+            .allowMainThreadQueries()
+            .build()
+        try {
+            val legacyCodec = ManagedProfileSnapshotCodec()
+            val profile = OpraEqProfile(
+                id = "future-kind-profile",
+                productId = "future-kind-product",
+                author = "Future",
+                details = null,
+                link = null,
+                profileType = "parametric_eq",
+                preampGainDb = null,
+                bands = listOf(OpraBand("peak_dip", 1_000.0, 1.0, 1.0, null)),
+            )
+            database.savedEqDao().upsert(
+                SavedEqEntity(
+                    entryId = "saved:future-kind",
+                    kind = "future-kind",
+                    sourceProfileId = profile.id,
+                    productId = profile.productId,
+                    manufacturer = "Acme",
+                    model = "Headphone",
+                    displayName = "Future saved EQ",
+                    profileJson = legacyCodec.encode(profile),
+                    createdAtMillis = 1L,
+                    updatedAtMillis = 2L,
+                ),
+            )
+
+            val repository = SavedEqRepository(database)
+            val record = repository.observeForOutput("UAPP").first().single()
+            assertEquals(SavedEqKind.Unreadable, record.kind)
+            assertTrue(record.savedEqDataInvalid)
+            assertEquals("Future saved EQ", record.displayName)
             assertTrue(repository.toManagedHeadphones(listOf(record)).isEmpty())
         } finally {
             database.close()
