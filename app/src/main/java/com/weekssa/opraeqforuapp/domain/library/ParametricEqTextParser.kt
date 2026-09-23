@@ -4,8 +4,9 @@ import java.util.Locale
 
 /**
  * Parses the de-facto Equalizer APO / AutoEq parametric text format used by
- * AutoEq and many community presets. Unknown lines are ignored; malformed
- * filter lines are rejected rather than partially interpreted.
+ * AutoEq and many community presets. Unknown prose is ignored, but malformed
+ * or incomplete active filter lines fail the whole parse closed so a source EQ
+ * can never silently become a partial EQ.
  */
 object ParametricEqTextParser {
     data class ParsedEq(
@@ -41,6 +42,7 @@ object ParametricEqTextParser {
     fun parse(text: String): ParsedEq {
         var preamp: Double? = null
         val filters = mutableListOf<EqFilter>()
+        var invalidActiveFilter = false
 
         text.lineSequence().forEach { rawLine ->
             val line = rawLine.trim()
@@ -51,24 +53,55 @@ object ParametricEqTextParser {
                 return@forEach
             }
 
-            val filterMatch = filterPrefixRegex.matchEntire(line) ?: return@forEach
+            if (!line.startsWith("Filter", ignoreCase = true)) return@forEach
+            val filterMatch = filterPrefixRegex.matchEntire(line)
+            if (filterMatch == null) {
+                invalidActiveFilter = true
+                return@forEach
+            }
             if (!filterMatch.groupValues[1].equals("ON", ignoreCase = true)) return@forEach
 
             val type = parseType(filterMatch.groupValues[2])
+            if (type == EqFilterType.OTHER) {
+                invalidActiveFilter = true
+                return@forEach
+            }
+
             val body = filterMatch.groupValues[3]
             val frequency = frequencyRegex.find(body)?.groupValues?.get(1)?.toDoubleOrNull()
-                ?: return@forEach
-            if (frequency <= 0.0) return@forEach
+            if (frequency == null || !frequency.isFinite() || frequency <= 0.0) {
+                invalidActiveFilter = true
+                return@forEach
+            }
 
             val gain = gainRegex.find(body)?.groupValues?.get(1)?.toDoubleOrNull()
             val q = qRegex.find(body)?.groupValues?.get(1)?.toDoubleOrNull()
+            if (gain != null && !gain.isFinite()) {
+                invalidActiveFilter = true
+                return@forEach
+            }
+            if (q != null && (!q.isFinite() || q <= 0.0)) {
+                invalidActiveFilter = true
+                return@forEach
+            }
 
             when (type) {
                 EqFilterType.PEAK,
                 EqFilterType.LOW_SHELF,
-                EqFilterType.HIGH_SHELF -> if (gain == null) return@forEach
+                EqFilterType.HIGH_SHELF,
+                -> if (gain == null || q == null) {
+                    invalidActiveFilter = true
+                    return@forEach
+                }
 
-                else -> Unit
+                EqFilterType.LOW_PASS,
+                EqFilterType.HIGH_PASS,
+                -> if (q == null) {
+                    invalidActiveFilter = true
+                    return@forEach
+                }
+
+                EqFilterType.OTHER -> error("handled above")
             }
 
             filters += EqFilter(
@@ -81,7 +114,7 @@ object ParametricEqTextParser {
 
         return ParsedEq(
             preampGainDb = preamp,
-            filters = filters,
+            filters = if (invalidActiveFilter) emptyList() else filters,
         )
     }
 
