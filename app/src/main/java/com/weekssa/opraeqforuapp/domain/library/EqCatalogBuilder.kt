@@ -48,8 +48,7 @@ class EqCatalogBuilder {
     ): RevisionCluster {
         val primary = candidates.minWithOrNull(primaryCandidateComparator)
             ?: error("Revision cluster cannot be empty")
-        val references = candidates
-            .map(EqCandidate::sourceReference)
+        val references = (listOf(primary.sourceReference) + candidates.map(EqCandidate::sourceReference))
             .distinctBy(::sourceReferenceKey)
             .sortedWith(
                 compareBy<EqSourceReference> { provenanceRank(it.provenanceTier) }

@@ -3,10 +3,13 @@ package com.weekssa.opraeqforuapp.data.managed
 import androidx.room.withTransaction
 import com.weekssa.opraeqforuapp.data.export.ExportOwnershipDao
 import com.weekssa.opraeqforuapp.domain.catalog.OpraCatalog
+import com.weekssa.opraeqforuapp.domain.catalog.assessUappCompatibility
+import com.weekssa.opraeqforuapp.domain.catalog.isUsableParametricSource
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneSelection
 import com.weekssa.opraeqforuapp.domain.managed.ManagedProfileRecord
 import com.weekssa.opraeqforuapp.domain.managed.selectionUpdatesForSave
+import com.weekssa.opraeqforuapp.domain.model.ProfileCompatibility
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -124,10 +127,13 @@ class ManagedHeadphonesRepository(
                 val existing = existingProfiles[profile.id]
                 val selection = requireNotNull(selectionUpdates[profile.id])
                 val fingerprint = snapshotCodec.fingerprint(profile)
+                val uappRepresentable =
+                    profile.assessUappCompatibility().category != ProfileCompatibility.NotCompatible
                 val generated = if (
                     selection.selected && (
                         existing?.generatedPresetName == null ||
-                            existing.generatedFromFingerprint != fingerprint
+                            existing.generatedFromFingerprint != fingerprint ||
+                            (existing.generatedXml == null && uappRepresentable)
                         )
                 ) {
                     generateManagedPreset(
@@ -139,6 +145,13 @@ class ManagedHeadphonesRepository(
                 } else {
                     null
                 }
+                val presetArtifacts = reconcileManagedPresetArtifacts(
+                    existing = existing,
+                    currentFingerprint = fingerprint,
+                    sourceUsable = profile.isUsableParametricSource(),
+                    uappRepresentable = uappRepresentable,
+                    generated = generated,
+                )
                 ManagedProfileEntity(
                     profileId = profile.id,
                     productId = canonicalProductId,
@@ -151,10 +164,10 @@ class ManagedHeadphonesRepository(
                     isNewUnreviewed = existing?.isNewUnreviewed ?: false,
                     isUpdatedUnreviewed = existing?.isUpdatedUnreviewed ?: false,
                     noLongerAvailable = false,
-                    generatedPresetName = generated?.presetName ?: existing?.generatedPresetName,
-                    generatedXml = generated?.xml ?: existing?.generatedXml,
-                    generatedFromFingerprint = generated?.fingerprint ?: existing?.generatedFromFingerprint,
-                    generatedAtMillis = generated?.generatedAtMillis ?: existing?.generatedAtMillis,
+                    generatedPresetName = presetArtifacts.presetName,
+                    generatedXml = presetArtifacts.xml,
+                    generatedFromFingerprint = presetArtifacts.fromFingerprint,
+                    generatedAtMillis = presetArtifacts.generatedAtMillis,
                 )
             }
             if (sourceEntities.isNotEmpty()) dao.upsertProfiles(sourceEntities)

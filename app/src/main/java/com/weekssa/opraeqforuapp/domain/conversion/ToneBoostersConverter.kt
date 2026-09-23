@@ -61,7 +61,7 @@ object ToneBoostersConverter {
             )
         val bands = profile.bands
             ?: throw ToneBoostersConversionException("This profile is missing its parametric EQ band list.")
-        val converted = buildXml(
+        val converted = buildXmlInternal(
             presetName = presetName,
             gainDb = gainDb,
             bands = bands,
@@ -82,7 +82,18 @@ object ToneBoostersConverter {
         presetName: String,
         gainDb: Double,
         bands: List<OpraBand>,
-        bandOrderProvenance: EqBandOrderProvenance? = null,
+    ): ToneBoostersConversionResult = buildXmlInternal(
+        presetName = presetName,
+        gainDb = gainDb,
+        bands = bands,
+        bandOrderProvenance = null,
+    )
+
+    private fun buildXmlInternal(
+        presetName: String,
+        gainDb: Double,
+        bands: List<OpraBand>,
+        bandOrderProvenance: EqBandOrderProvenance?,
     ): ToneBoostersConversionResult {
         val overBandLimit = bands.size > MAX_BANDS
         if (overBandLimit && bandOrderProvenance != EqBandOrderProvenance.OPRA_SOURCE_PRIORITY) {

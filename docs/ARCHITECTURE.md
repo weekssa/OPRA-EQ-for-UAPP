@@ -68,6 +68,13 @@ Android/platform-backed state and I/O:
 - Android USB transports/coordinators;
 - app-side hardware gain-state stores required for safe relative replacement/reset behavior.
 
+An app-owned target export remains tied to the canonical source and target representation that
+produced it. If a still-current managed source can no longer be represented by UAPP/ToneBoosters,
+do not reuse or resurrect older generated XML. Keep any exact previously exported app-owned UAPP
+document visible under My EQs **Needs attention** as unsupported and non-recoverable until the user
+explicitly removes that exact document; do not silently delete it or drop ownership. This
+target-specific stale-artifact handling must not affect other export targets.
+
 Repository-side source discovery/crawling/qualification/publication remains outside Android runtime.
 
 ## Android runtime state and platform boundaries

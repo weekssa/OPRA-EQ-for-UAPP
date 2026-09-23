@@ -5,6 +5,7 @@ import com.weekssa.opraeqforuapp.domain.conversion.ToneBoostersConverter
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class EqCatalogVerificationTest {
@@ -43,6 +44,31 @@ class EqCatalogVerificationTest {
         val revision = EqCatalogBuilder().build(candidates).single().latestRevision
 
         assertEquals("z-filter-source", revision.sourceReferences.single { it.isPrimary }.sourceId)
+    }
+
+    @Test
+    fun `deduplicated source reference retains the chosen primary candidate metadata`() {
+        val earlierReference = candidate(VerificationStatus.VERIFIED, "same-source").copy(
+            sourceReference = candidate(VerificationStatus.VERIFIED, "same-source").sourceReference.copy(
+                sourceRecordId = "same-record",
+                url = "https://example.com/same-record",
+                sourceDataset = "stale-dataset-label",
+                isPrimary = false,
+            ),
+        )
+        val selectedPrimary = earlierReference.copy(
+            sourceReference = earlierReference.sourceReference.copy(
+                sourceDataset = "selected-primary-dataset",
+                isPrimary = true,
+            ),
+        )
+
+        val references = EqCatalogBuilder().build(listOf(earlierReference, selectedPrimary))
+            .single().latestRevision.sourceReferences
+
+        assertEquals(1, references.size)
+        assertEquals("selected-primary-dataset", references.single().sourceDataset)
+        assertTrue(references.single().isPrimary)
     }
 
     @Test

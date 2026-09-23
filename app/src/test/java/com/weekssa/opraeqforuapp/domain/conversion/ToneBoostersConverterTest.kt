@@ -163,12 +163,9 @@ class ToneBoostersConverterTest {
             ToneBoostersConverter.convert(verifiedOpraOrder, "Over-budget source")
         }
         assertThrows(ToneBoostersConversionException::class.java) {
-            ToneBoostersConverter.buildXml(
-                "Over-budget source",
-                0.0,
-                requireNotNull(profile.bands),
-                EqBandOrderProvenance.OPRA_SOURCE_PRIORITY,
-            )
+            // The public XML renderer has no source-order authority parameter. Only convert()
+            // may use provenance already attached to the verified source profile.
+            ToneBoostersConverter.buildXml("Over-budget source", 0.0, requireNotNull(profile.bands))
         }
     }
 

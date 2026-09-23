@@ -135,6 +135,7 @@ fun MyEqsHomeScreen(
     var pendingFlash by remember { mutableStateOf<PendingHardwareFlash?>(null) }
     var pendingResetDevice by remember { mutableStateOf<ExportDevice?>(null) }
     var pendingRecovery by remember { mutableStateOf<UnclaimedEqRecord?>(null) }
+    var recoveryInProgress by remember { mutableStateOf(false) }
     var pendingUnclaimedDelete by remember { mutableStateOf<UnclaimedEqRecord?>(null) }
     var unclaimedExpanded by rememberSaveable { mutableStateOf(false) }
     val selectedHeadphoneCount = managedHeadphones.sumOf(ManagedHeadphoneRecord::selectedProfileCount)
@@ -169,16 +170,24 @@ fun MyEqsHomeScreen(
     pendingRecovery?.let { record ->
         UnclaimedRecoveryDialog(
             record = record,
-            onDismiss = { pendingRecovery = null },
+            isRecovering = recoveryInProgress,
+            onDismiss = { if (!recoveryInProgress) pendingRecovery = null },
             onRecover = { manufacturer, model, displayName ->
-                scope.launch {
-                    runCatching {
-                        unclaimedFeature.onRecover(record.documentUri, manufacturer, model, displayName)
-                    }.onSuccess {
-                        pendingRecovery = null
-                        onMessage("Recovered as a Personal EQ in My EQs.")
-                    }.onFailure { error ->
-                        onMessage(error.message ?: "This EQ could not be recovered safely.")
+                if (!recoveryInProgress) {
+                    recoveryInProgress = true
+                    scope.launch {
+                        try {
+                            runCatching {
+                                unclaimedFeature.onRecover(record.documentUri, manufacturer, model, displayName)
+                            }.onSuccess {
+                                pendingRecovery = null
+                                onMessage("Recovered as a Personal EQ in My EQs.")
+                            }.onFailure { error ->
+                                onMessage(error.message ?: "This EQ could not be recovered safely.")
+                            }
+                        } finally {
+                            recoveryInProgress = false
+                        }
                     }
                 }
             },
@@ -599,6 +608,7 @@ fun MyEqsHomeScreen(
 @Composable
 private fun UnclaimedRecoveryDialog(
     record: UnclaimedEqRecord,
+    isRecovering: Boolean,
     onDismiss: () -> Unit,
     onRecover: (manufacturer: String, model: String, displayName: String) -> Unit,
 ) {
@@ -613,7 +623,7 @@ private fun UnclaimedRecoveryDialog(
     val canRecover = manufacturer.isNotBlank() && model.isNotBlank() && displayName.isNotBlank()
 
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!isRecovering) onDismiss() },
         title = { Text("Recover EQ") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -625,29 +635,34 @@ private fun UnclaimedRecoveryDialog(
                     value = manufacturer,
                     onValueChange = { manufacturer = it },
                     label = { Text("Manufacturer") },
+                    enabled = !isRecovering,
                     singleLine = true,
                 )
                 OutlinedTextField(
                     value = model,
                     onValueChange = { model = it },
                     label = { Text("Model") },
+                    enabled = !isRecovering,
                     singleLine = true,
                 )
                 OutlinedTextField(
                     value = displayName,
                     onValueChange = { displayName = it },
                     label = { Text("EQ name") },
+                    enabled = !isRecovering,
                     singleLine = true,
                 )
             }
         },
         confirmButton = {
             TextButton(
-                enabled = canRecover,
+                enabled = canRecover && !isRecovering,
                 onClick = { onRecover(manufacturer, model, displayName) },
-            ) { Text("Recover") }
+            ) { Text(if (isRecovering) "Recovering…" else "Recover") }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = {
+            TextButton(enabled = !isRecovering, onClick = onDismiss) { Text("Cancel") }
+        },
     )
 }
 
@@ -658,7 +673,8 @@ private fun unclaimedSummary(record: UnclaimedEqRecord): String = buildList {
     when (record.parseState) {
         UnclaimedEqParseState.RECOVERABLE -> add("Needs headphone association")
         UnclaimedEqParseState.INVALID -> add("Can't recover automatically")
-        UnclaimedEqParseState.UNSUPPORTED -> add("Unsupported filter data")
+        UnclaimedEqParseState.UNSUPPORTED -> add("Unsupported or outdated data")
+        UnclaimedEqParseState.SOURCE_UNVERIFIED -> add("Current source not verified")
         UnclaimedEqParseState.ACCESS_UNAVAILABLE -> add("File access unavailable")
     }
 }.joinToString(" · ")

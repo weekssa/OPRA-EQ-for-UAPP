@@ -132,6 +132,27 @@ class CanonicalLegacyCatalogAdapterTest {
         assertThrows(ToneBoostersConversionException::class.java) {
             ToneBoostersConverter.convert(latest, "Mismatched OPRA vendor")
         }
+
+        val wrongProductPrimary = expectedSource.copy(
+            sourceRecordId = "newer-wrong-product-record",
+            sourceProductId = "different-product",
+            isPrimary = true,
+        )
+        val wrongProductCanonical = canonical.copy(
+            revisions = canonical.revisions.map { revision ->
+                if (revision.isLatest) revision.copy(sourceReferences = listOf(wrongProductPrimary)) else revision
+            },
+        )
+        val wrongProductProjection = CanonicalLegacyCatalogAdapter.adapt(
+            CatalogSnapshot(1, "2026-09-23T00:00:00Z", "test", listOf(wrongProductCanonical)),
+        )
+        val wrongProductLatest = wrongProductProjection.profiles.single { it.bands?.size == 11 }
+
+        assertThat(wrongProductProjection.products.single().id).isEqualTo("shared-product-id")
+        assertThat(wrongProductLatest.bandOrderProvenance).isNull()
+        assertThrows(ToneBoostersConversionException::class.java) {
+            ToneBoostersConverter.convert(wrongProductLatest, "Mismatched OPRA product")
+        }
     }
 
     @Test

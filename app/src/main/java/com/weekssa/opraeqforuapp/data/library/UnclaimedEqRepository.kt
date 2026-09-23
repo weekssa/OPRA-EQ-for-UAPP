@@ -8,6 +8,8 @@ import com.weekssa.opraeqforuapp.data.managed.ManagedProfileEntity
 import com.weekssa.opraeqforuapp.data.managed.ManagedProfileSnapshotCodec
 import com.weekssa.opraeqforuapp.data.managed.OpraEqDatabase
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
+import com.weekssa.opraeqforuapp.domain.catalog.assessUappCompatibility
+import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.library.EqSourceKind
 import com.weekssa.opraeqforuapp.domain.library.EqSourceReference
 import com.weekssa.opraeqforuapp.domain.library.EqTarget
@@ -23,6 +25,7 @@ import com.weekssa.opraeqforuapp.domain.library.UnclaimedEqParseState
 import com.weekssa.opraeqforuapp.domain.library.UnclaimedEqParsedContent
 import com.weekssa.opraeqforuapp.domain.library.UnclaimedEqParser
 import com.weekssa.opraeqforuapp.domain.library.UnclaimedEqRecord
+import com.weekssa.opraeqforuapp.domain.model.ProfileCompatibility
 import java.util.UUID
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -67,11 +70,19 @@ class UnclaimedEqRepository(
                 }
                 generalEqs.forEach { add(it.presetId) }
             },
+            unrepresentableUappProfiles = unrepresentableManagedUappProfiles(managedProfiles, snapshotCodec),
         )
     }.mapLatest { index ->
         withContext(ioDispatcher) {
-            unresolvedOwnedArtifacts(index.ownerships, index.claimedProfileIds)
-                .mapNotNull { inspectOwnership(it) }
+            unresolvedOwnedArtifacts(
+                ownerships = index.ownerships,
+                claimedProfileIds = index.claimedProfileIds,
+                unrepresentableUappProfiles = index.unrepresentableUappProfiles,
+            ).mapNotNull { ownership ->
+                val staleUappExport = ownership.isUappExport() &&
+                    ManagedUappExportIdentity(ownership.productId, ownership.profileId) in index.unrepresentableUappProfiles
+                inspectOwnership(ownership, sourceNoLongerRepresentable = staleUappExport)
+            }
                 .sortedWith(
                     compareByDescending<UnclaimedEqRecord> { it.exportedAtMillis }
                         .thenBy(String.CASE_INSENSITIVE_ORDER) { it.originalFileName },
@@ -94,6 +105,15 @@ class UnclaimedEqRepository(
 
         val ownership = requireNotNull(ownershipDao.getByDocumentUri(documentUri)) {
             "This managed file is no longer available for recovery."
+        }
+        previouslyRecoveredPersonalEntity(ownership)?.let { existing ->
+            return@withContext toSavedEqRecord(existing)
+        }
+        val currentManagedProfile = managedDao.getProfiles(ownership.productId)
+            .firstOrNull { it.profileId == ownership.profileId }
+        require(!shouldBlockUappExportRecovery(ownership, currentManagedProfile, snapshotCodec)) {
+            "This older UAPP EQ may not match the current complete source filters, so it cannot be " +
+                "recovered as a complete EQ. You may keep or delete the file."
         }
         val document = when (val lookup = documentStore.openDocument(documentUri)) {
             is ExportLookup.Found -> lookup.value
@@ -157,22 +177,35 @@ class UnclaimedEqRepository(
             captureMetadataJson = null,
             canonicalSnapshotJson = canonicalSnapshotCodec.encode(canonicalSnapshot),
         )
-        database.withTransaction {
+        val savedEntity = database.withTransaction {
+            val ownershipAtCommit = requireNotNull(ownershipDao.getByDocumentUri(documentUri)) {
+                "This managed file is no longer available for recovery."
+            }
+            previouslyRecoveredPersonalEntity(ownershipAtCommit)?.let { existing ->
+                return@withTransaction existing
+            }
+            require(ownershipAtCommit == ownership) {
+                "This managed file's ownership changed while it was being recovered. Refresh My EQs and review it again."
+            }
+            // Recheck in the write transaction so catalog reconciliation cannot make the export
+            // stale between the initial read and creation of a recovered Personal EQ.
+            val currentManagedProfileAtCommit = managedDao.getProfiles(ownershipAtCommit.productId)
+                .firstOrNull { it.profileId == ownershipAtCommit.profileId }
+            require(!shouldBlockUappExportRecovery(ownershipAtCommit, currentManagedProfileAtCommit, snapshotCodec)) {
+                "This older UAPP EQ may no longer match the current complete source filters, so it cannot be " +
+                    "recovered as a complete EQ. You may keep or delete the file."
+            }
             savedEqDao.upsert(entity)
             // Retain the exact owned file and make its recovered Personal EQ association explicit.
             ownershipDao.upsert(
-                ownership.copy(
+                ownershipAtCommit.copy(
                     profileId = profileId,
                     productId = productId,
                 ),
             )
+            entity
         }
-        SavedEqRecordMapper.toDomain(
-            entity = entity,
-            legacyCodec = snapshotCodec,
-            canonicalCodec = canonicalSnapshotCodec,
-            captureMetadataCodec = SavedEqCaptureMetadataCodec(),
-        )
+        toSavedEqRecord(savedEntity)
     }
 
     /**
@@ -195,8 +228,16 @@ class UnclaimedEqRepository(
         }
     }
 
-    private suspend fun inspectOwnership(ownership: ExportOwnershipEntity): UnclaimedEqRecord? {
-        val reason = "This app-managed EQ file no longer matches an item currently claimed by My EQs."
+    private suspend fun inspectOwnership(
+        ownership: ExportOwnershipEntity,
+        sourceNoLongerRepresentable: Boolean,
+    ): UnclaimedEqRecord? {
+        val reason = if (sourceNoLongerRepresentable) {
+            "This previously exported UAPP EQ may not represent the complete current source filters. " +
+                "It is kept for review; don't use or recover it as a complete EQ."
+        } else {
+            "This app-managed EQ file no longer matches an item currently claimed by My EQs."
+        }
         return when (val lookup = documentStore.openDocument(ownership.documentUri)) {
             ExportLookup.Missing -> {
                 // Existing storage policy permits forgetting ownership only after confirmed absence.
@@ -217,6 +258,21 @@ class UnclaimedEqRepository(
                 exportedAtMillis = ownership.exportedAtMillis,
             )
             is ExportLookup.Found -> {
+                if (sourceNoLongerRepresentable) {
+                    return UnclaimedEqRecord(
+                        documentUri = ownership.documentUri,
+                        originalFileName = ownership.fileName,
+                        relativeDirectory = ownership.relativeDirectory,
+                        previousProfileId = ownership.profileId,
+                        previousProductId = ownership.productId,
+                        format = UnclaimedEqFormat.TONEBOOSTERS_XML,
+                        parseState = UnclaimedEqParseState.SOURCE_UNVERIFIED,
+                        reason = reason,
+                        parseMessage = reason,
+                        parsedContent = null,
+                        exportedAtMillis = ownership.exportedAtMillis,
+                    )
+                }
                 val bytes = documentStore.readBytes(lookup.value, MAX_RECOVERY_BYTES)
                 val parsed = if (bytes == null) null else UnclaimedEqParser.parse(ownership.fileName, bytes)
                 UnclaimedEqRecord(
@@ -236,9 +292,47 @@ class UnclaimedEqRepository(
         }
     }
 
+    /**
+     * A completed recovery is linked to its exact owned URI by the ownership row's generated
+     * Personal profile identity. Return that row rather than creating a duplicate when a tap is
+     * repeated or two recovery requests race before either reaches the write transaction.
+     */
+    private suspend fun previouslyRecoveredPersonalEntity(
+        ownership: ExportOwnershipEntity,
+    ): SavedEqEntity? {
+        val personalPrefix = "personal-eq:"
+        if (!ownership.profileId.startsWith(personalPrefix)) return null
+        val recoveryId = ownership.profileId.removePrefix(personalPrefix)
+        val canonicalUuid = runCatching { UUID.fromString(recoveryId).toString() == recoveryId }.getOrDefault(false)
+        require(canonicalUuid) {
+            "This managed file has a malformed Personal EQ association and cannot be recovered safely."
+        }
+        val entryId = "personal:$recoveryId"
+        // A canonical dangling UUID may be left by an intentional Personal EQ deletion. This
+        // helper runs only inside an explicit owner-initiated recovery action, so the owned file
+        // may be re-imported as a new Personal EQ instead of being silently restored.
+        val entity = savedEqDao.get(entryId) ?: return null
+        require(entity.kind == SavedEqRepository.KIND_PERSONAL && entity.productId == ownership.productId) {
+            "This managed file is already associated with a Personal EQ that cannot be verified safely."
+        }
+        val profile = runCatching { snapshotCodec.decode(entity.profileJson) }.getOrNull()
+        require(profile != null && profile.id == ownership.profileId && profile.productId == ownership.productId) {
+            "This managed file is already associated with a Personal EQ that cannot be verified safely."
+        }
+        return entity
+    }
+
+    private fun toSavedEqRecord(entity: SavedEqEntity): SavedEqRecord = SavedEqRecordMapper.toDomain(
+        entity = entity,
+        legacyCodec = snapshotCodec,
+        canonicalCodec = canonicalSnapshotCodec,
+        captureMetadataCodec = SavedEqCaptureMetadataCodec(),
+    )
+
     private data class RecoveryIndex(
         val ownerships: List<ExportOwnershipEntity>,
         val claimedProfileIds: Set<String>,
+        val unrepresentableUappProfiles: Set<ManagedUappExportIdentity>,
     )
 
     companion object {
@@ -254,9 +348,53 @@ class UnclaimedEqRepository(
 internal fun unresolvedOwnedArtifacts(
     ownerships: List<ExportOwnershipEntity>,
     claimedProfileIds: Set<String>,
+    unrepresentableUappProfiles: Set<ManagedUappExportIdentity> = emptySet(),
 ): List<ExportOwnershipEntity> = ownerships
     .distinctBy(ExportOwnershipEntity::documentUri)
-    .filter { it.profileId !in claimedProfileIds }
+    .filter { ownership ->
+        ownership.profileId !in claimedProfileIds || (
+            ownership.isUappExport() &&
+                ManagedUappExportIdentity(ownership.productId, ownership.profileId) in unrepresentableUappProfiles
+            )
+    }
+
+internal data class ManagedUappExportIdentity(
+    val productId: String,
+    val profileId: String,
+)
+
+internal fun unrepresentableManagedUappProfiles(
+    profiles: List<ManagedProfileEntity>,
+    snapshotCodec: ManagedProfileSnapshotCodec,
+): Set<ManagedUappExportIdentity> = profiles.asSequence()
+    .filterNot(ManagedProfileEntity::noLongerAvailable)
+    // A current identity whose snapshot cannot be decoded or identity-checked is not safe to
+    // treat as UAPP-representable. Keep its exact owned export visible for review.
+    .filterNot { it.isUappSourceRepresentable(snapshotCodec) }
+    .map { ManagedUappExportIdentity(it.productId, it.profileId) }
+    .toSet()
+
+internal fun shouldBlockUappExportRecovery(
+    ownership: ExportOwnershipEntity,
+    currentManagedProfile: ManagedProfileEntity?,
+    snapshotCodec: ManagedProfileSnapshotCodec,
+): Boolean = ownership.isUappExport() &&
+    currentManagedProfile != null &&
+    !currentManagedProfile.noLongerAvailable &&
+    !currentManagedProfile.isUappSourceRepresentable(snapshotCodec)
+
+private fun ManagedProfileEntity.isUappSourceRepresentable(
+    snapshotCodec: ManagedProfileSnapshotCodec,
+): Boolean {
+    val profile = runCatching { snapshotCodec.decode(snapshotJson) }.getOrNull() ?: return false
+    return profile.id == profileId &&
+        profile.productId == productId &&
+        profile.assessUappCompatibility().category != ProfileCompatibility.NotCompatible
+}
+
+private fun ExportOwnershipEntity.isUappExport(): Boolean =
+    relativeDirectory == ExportDevice.UAPP.folderName ||
+        relativeDirectory.startsWith("${ExportDevice.UAPP.folderName}/")
 
 /** Builds an ordinary Personal EQ while preserving every parsed filter/preamp value verbatim. */
 internal fun buildRecoveredPersonalProfile(

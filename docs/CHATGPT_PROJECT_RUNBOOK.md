@@ -217,6 +217,13 @@ Only include deeper variant/configuration identity when the source genuinely ver
 
 ToneBoosters XML must remain ISO-8859-1-safe while full Unicode metadata remains local.
 
+The upstream OPRA schema defines `parameters.bands` as priority-sorted and directs limited-band
+software to truncate: [pinned `eq_info.json` at OPRA commit
+`0b88ecd4e2bef7cf69fd5d50f1d06fb586c10865`](https://github.com/opra-project/OPRA/blob/0b88ecd4e2bef7cf69fd5d50f1d06fb586c10865/schemas/eq_info.json).
+Apply the first-ten rule only when the trusted OPRA adapter supplies verified source-priority
+provenance. Never apply it to arbitrary flattened/legacy, imported, Personal, or mixed-source bands;
+reject those over-budget cases unless an independently established ordering contract exists.
+
 ## 10. Shared finite-hardware response adapter
 
 Finite PEQ hardware derivation for **TRN Black Pearl (10 bands)**, **FiiO JA11 (5 bands)**, and the historical stock JCALLY JM12 implementation uses the shared deterministic hardware response adapter described in `docs/V0.5_KT02H20_IMPLEMENTATION_PLAN.md`.
@@ -311,3 +318,17 @@ PR #23 is the authoritative location for the current exact branch SHA, signed AP
 Physical transaction qualification is complete on sources 381 and 7599 (E037-E046); retain those tested SHAs in the ledger and do not repeat any mutation or read-only report. After all product work and exact-head gates pass, the only possible owner checks are non-hardware-mutating Personal EQ capture/value/provenance confirmation and opening/canceling My EQs Flash review only if the verified Flash did not already originate from My EQs. No Apply, Flash, Reset, Restore, or Save is requested.
 
 Keep PR #23 draft and v0.7.0 NO-GO until scope and final review are closed and the owner explicitly approves merge/publication/public support.
+
+### 2026-09-23 source-review continuation
+
+The follow-up review found that unsupported or failed UAPP conversion could revive old generated
+XML, unselected profiles could retain stale UAPP output, exact app-owned stale UAPP documents could
+disappear from **Needs attention**, and caller-supplied provenance could authorize ten-band
+truncation. It also found a same-key canonical source-reference collision and missing product-only
+provenance coverage. The follow-up centralizes managed export-artifact state, keeps stale exact UAPP
+files visible but non-recoverable until explicit deletion, makes source-order authority private to
+the verified conversion path, preserves the selected source reference during deduplication, and
+adds focused regressions. This does not change EW300 protocol behavior or accepted physical
+evidence. Check all remote gates and artifacts on the live exact PR head. The trusted-main-only
+signed candidate cannot be produced from this feature branch without explicit owner-authorized
+integration; do not merge, sign or publish under the guise of a test run.

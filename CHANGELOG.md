@@ -6,6 +6,40 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ## [Unreleased]
 
+### 2026-09-23 source-review follow-up
+
+- Prevented catalog refresh and selection-save from reviving obsolete UAPP/ToneBoosters XML after
+  the current source is no longer representable or a fresh conversion returns no artifact.
+- Keep the exact app-owned old UAPP document visible under My EQs **Needs attention** as
+  source-unverified/non-recoverable, including when its current managed snapshot cannot be decoded
+  or disagrees with the stored product/profile identity. Recovery rechecks this at the repository
+  boundary and in the save transaction; removal remains explicit and exact-file scoped, unrelated
+  export targets are unaffected, and the row no longer overstates every case as an unsupported
+  filter.
+- Removed caller-provided source-order authority from the public ToneBoosters XML builder and
+  preserved the selected canonical source's metadata when duplicate provenance keys collide.
+- Added focused regressions for failed conversion, unselected stale exports, exact UAPP ownership
+  identity/path, primary-reference collision, and product-only OPRA identity mismatch. Exact-head
+  CI is pending on the live PR; no hardware operation was repeated.
+- Added an Android Room instrumentation regression for a current UAPP source becoming
+  unrepresentable after recovery preflight but before the save transaction; it asserts that no
+  Personal EQ is saved and the exact ownership row is unchanged. Exact-head CI must execute it.
+- Made owned-file recovery idempotent at its repository transaction boundary and disabled the
+  dialog while a recovery is in flight. Repeated taps/requests return the already-associated
+  Personal EQ instead of inserting duplicates; instrumented coverage checks the saved row and
+  ownership link remain singular. An explicitly selected orphan whose Personal EQ was deleted may
+  be recovered as a new item; malformed or mismatched associations fail closed.
+- Clarified that historical “unmeasured zero” replay/competing-job telemetry wording does not mean
+  zero was measured; the values remain null/unmeasured.
+- Corrected the stale UAPP >10-band test expectation: optimization requires verified OPRA
+  source-priority provenance; ambiguous band order remains Not representable and canonical bands
+  remain untouched.
+- Pinned the upstream OPRA band-priority rule to schema commit
+  `0b88ecd4e2bef7cf69fd5d50f1d06fb586c10865`, while clarifying that the rule does not generalize
+  to arbitrary non-OPRA or mixed-source lists. Narrowed the remaining canonical-persistence gap to
+  Favorites, General EQs, and pre-canonical legacy rows; Personal imports, DAC captures, recovered
+  imports, and catalog snapshots already persist canonical data.
+
 ### Current v0.7 closeout snapshot — independent release audit
 
 - Corrected the stale beta-testing handoff: the live PR baseline when rechecked was `a09d442be728b77dc83b1487814f2428159ddf19`, not the older SHA labeled frozen in that handoff. Earlier signed APKs are not test artifacts for later source changes.
