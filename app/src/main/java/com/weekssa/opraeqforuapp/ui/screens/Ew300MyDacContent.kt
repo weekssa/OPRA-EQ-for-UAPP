@@ -2,7 +2,6 @@ package com.weekssa.opraeqforuapp.ui.screens
 
 import android.content.Context
 import android.content.Intent
-import androidx.compose.material3.AlertDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -21,31 +21,39 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
 import com.weekssa.opraeqforuapp.BuildConfig
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
+import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
 import com.weekssa.opraeqforuapp.data.security.ReleaseSignatureGate
+import com.weekssa.opraeqforuapp.domain.dac.AmbiguousExactHardwareEqMatch
 import com.weekssa.opraeqforuapp.domain.dac.DacStateFreshness
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqMatch
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqResponseEvaluator
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.dac.isAcousticallyActive
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityReport
-import com.weekssa.opraeqforuapp.domain.ew300.Ew300Protocol
-import com.weekssa.opraeqforuapp.domain.ew300.Ew300PersistenceQualificationResult
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationTrace
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300PersistenceQualificationResult
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300Protocol
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300QualificationExport
+import com.weekssa.opraeqforuapp.domain.ew300.resolveEw300HardwareEq
+import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 import com.weekssa.opraeqforuapp.domain.library.SavedEqHeadphoneAssociation
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
+import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.ui.MyDacEditorApplyStatus
 import com.weekssa.opraeqforuapp.ui.MyDacEditorUiState
+import com.weekssa.opraeqforuapp.ui.components.DacEqResponseGraph
 import com.weekssa.opraeqforuapp.ui.components.PremiumSectionLabel
 import com.weekssa.opraeqforuapp.ui.components.PremiumValueRow
 import java.util.Locale
@@ -61,6 +69,7 @@ internal fun Ew300MyDacContent(
     catalogState: CatalogState,
     managedHeadphones: List<ManagedHeadphoneRecord>,
     savedEqs: List<SavedEqRecord>,
+    savedGeneralEqs: List<SavedGeneralEqRecord> = emptyList(),
     onConnect: () -> Unit,
     onResetEq: suspend () -> String,
     onRestoreBaseline: suspend () -> String,
@@ -95,6 +104,7 @@ internal fun Ew300MyDacContent(
     // The Save qualification was a bounded development gate and is not a product action. Its
     // verified result is now represented by the immutable EW300 capability profile.
     val qualificationBuild = false
+
     fun advancePersistenceQualification() {
         if (!qualificationBuild || persistenceRunning) return
         persistenceRunning = true
@@ -107,6 +117,7 @@ internal fun Ew300MyDacContent(
             persistenceRunning = false
         }
     }
+
     if (qualificationBuild && persistenceConfirmationOpen) {
         AlertDialog(
             onDismissRequest = { persistenceConfirmationOpen = false },
@@ -127,6 +138,7 @@ internal fun Ew300MyDacContent(
             },
         )
     }
+
     if (saveDacEqOpen && connectionState == Kt02h20ConnectionState.Connected) {
         BlackPearlSaveDacEqDialog(
             catalogState = catalogState,
@@ -139,15 +151,22 @@ internal fun Ew300MyDacContent(
             onMessage = onMessage,
         )
     }
+
     Column(
-        modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text("SIMGOT EW300 DSP", style = MaterialTheme.typography.titleLarge)
         Text("USB 31B2:0111 · five-band PEQ", style = MaterialTheme.typography.bodyMedium)
         when (connectionState) {
             Kt02h20ConnectionState.Connected -> {
-                Text("Connected. Use My EQs or EQ Library to apply a verified Peak-only EQ profile.")
+                Text(
+                    "Connected. EQ and DEVICE share one verified hardware session.",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
                 operationTrace?.let { trace ->
                     val status = ew300OperationStatusPresentation(
                         trace = trace,
@@ -162,11 +181,6 @@ internal fun Ew300MyDacContent(
                         },
                     )
                 }
-                Text(
-                    "This exact EW300 profile provides an active five-band Peak EQ path with readback, local editing, Apply, capture, Flash, Reset EQ to flat, and reconnect recovery. Global gain is reported as device state used by guarded EQ transactions; no standalone volume or unrelated device controls are qualified for this profile.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
                 TabRow(selectedTabIndex = selectedTab) {
                     Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("EQ") })
                     Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("DEVICE") })
@@ -189,8 +203,12 @@ internal fun Ew300MyDacContent(
                     } else {
                         Ew300EqStatus(
                             state = hardwareEqState,
+                            managedHeadphones = managedHeadphones,
+                            savedEqs = savedEqs,
+                            savedGeneralEqs = savedGeneralEqs,
                             canEdit = true,
                             canCapture = Ew300Protocol.CANONICAL_CAPTURE_QUALIFIED,
+                            onRefresh = onConnect,
                             onEdit = onOpenEditor,
                             onCapture = { saveDacEqOpen = true },
                             onReset = { scope.launch { onMessage(onResetEq()) } },
@@ -198,7 +216,11 @@ internal fun Ew300MyDacContent(
                         if (editorState.applyStatus != MyDacEditorApplyStatus.IDLE) {
                             Text(
                                 editorState.applyFailureReason ?: "EW300 EQ Apply verified.",
-                                color = if (editorState.applyFailureReason == null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                                color = if (editorState.applyFailureReason == null) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.error
+                                },
                             )
                         }
                     }
@@ -207,13 +229,16 @@ internal fun Ew300MyDacContent(
                         report = capabilityReport,
                         hardwareEqState = hardwareEqState,
                         running = capabilityBatchRunning,
+                        onRefresh = onConnect,
                         onRun = {
                             if (!capabilityBatchRunning) {
                                 capabilityBatchRunning = true
                                 scope.launch {
                                     runCatching { onRunCapabilityBatch() }
                                         .onSuccess { capabilityReport = it }
-                                        .onFailure { onMessage("The read-only EW300 report could not be completed. No write was sent.") }
+                                        .onFailure {
+                                            onMessage("The read-only EW300 report could not be completed. No write was sent.")
+                                        }
                                     capabilityBatchRunning = false
                                 }
                             }
@@ -224,7 +249,11 @@ internal fun Ew300MyDacContent(
                                     context,
                                     "EW300 capability report",
                                     "text/plain",
-                                    Ew300QualificationExport(BuildConfig.CANDIDATE_SOURCE_SHA, report, persistenceResult).toReadableText(),
+                                    Ew300QualificationExport(
+                                        BuildConfig.CANDIDATE_SOURCE_SHA,
+                                        report,
+                                        persistenceResult,
+                                    ).toReadableText(),
                                 )
                             }
                         },
@@ -234,7 +263,11 @@ internal fun Ew300MyDacContent(
                                     context,
                                     "EW300 capability report JSON",
                                     "application/json",
-                                    Ew300QualificationExport(BuildConfig.CANDIDATE_SOURCE_SHA, report, persistenceResult).toJson(),
+                                    Ew300QualificationExport(
+                                        BuildConfig.CANDIDATE_SOURCE_SHA,
+                                        report,
+                                        persistenceResult,
+                                    ).toJson(),
                                 )
                             }
                         },
@@ -264,12 +297,14 @@ internal fun Ew300MyDacContent(
                         candidateSourceSha = BuildConfig.CANDIDATE_SOURCE_SHA,
                         persistenceResult = persistenceResult,
                         persistenceRunning = persistenceRunning,
-                        persistenceEnabled = capabilityReport?.status == com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityCaseResult.Status.PASS,
+                        persistenceEnabled = capabilityReport?.status ==
+                            com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityCaseResult.Status.PASS,
                         onStartPersistence = { persistenceConfirmationOpen = true },
                         onContinuePersistence = ::advancePersistenceQualification,
                     )
                 }
             }
+
             Kt02h20ConnectionState.Connecting -> {
                 Text("Connecting to EW300…")
                 Text(
@@ -278,10 +313,12 @@ internal fun Ew300MyDacContent(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+
             Kt02h20ConnectionState.Disconnected -> {
                 Text("Connect the EW300 USB cable to manage its EQ.")
                 Button(onClick = onConnect) { Text("Connect") }
             }
+
             is Kt02h20ConnectionState.Error -> {
                 Text(connectionState.message, color = MaterialTheme.colorScheme.error)
                 Button(onClick = onConnect) { Text("Try again") }
@@ -338,33 +375,151 @@ internal fun ew300OperationStatusPresentation(
 @Composable
 private fun Ew300EqStatus(
     state: HardwareEqSnapshotState,
+    managedHeadphones: List<ManagedHeadphoneRecord>,
+    savedEqs: List<SavedEqRecord>,
+    savedGeneralEqs: List<SavedGeneralEqRecord>,
     canEdit: Boolean,
     canCapture: Boolean,
+    onRefresh: () -> Unit,
     onEdit: () -> Unit,
     onCapture: () -> Unit,
     onReset: () -> Unit,
 ) {
-    if (state.isReading) Text("Reading the current EW300 EQ…", color = MaterialTheme.colorScheme.onSurfaceVariant)
-    val bundle = state.bundle ?: run {
-        Text("No verified EW300 EQ readback is available yet.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+    if (state.isReading) {
+        Text(
+            "Reading the current EW300 EQ…",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+
+    val bundle = state.bundle
+    OutlinedButton(
+        onClick = onRefresh,
+        enabled = !state.isReading,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text(if (state.isReading) "Refreshing…" else "Refresh")
+    }
+
+    if (bundle == null) {
+        Text(
+            if (state.readFailed) {
+                "The EW300 read failed. The app is not treating an unknown state as current; refresh or reconnect before editing."
+            } else {
+                "No verified EW300 EQ readback is available yet."
+            },
+            color = if (state.readFailed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         return
     }
+
     PremiumSectionLabel(
-        text = if (state.freshness == DacStateFreshness.CURRENT) "Current hardware EQ" else "Last read hardware EQ",
+        text = if (state.freshness == DacStateFreshness.CURRENT) {
+            "Current hardware EQ"
+        } else {
+            "Last read hardware EQ"
+        },
         divider = false,
     )
-    bundle.snapshot.dedicatedEqPreampDb?.let { Text("Global EQ gain: ${"%.1f".format(it)} dB") }
-    bundle.snapshot.playbackGainDb?.let { Text("Playback gain: ${"%.1f".format(it)} dB") }
+
+    val matchResolution = remember(bundle.fingerprint, managedHeadphones, savedEqs, savedGeneralEqs) {
+        resolveEw300HardwareEq(
+            bundle = bundle,
+            managedHeadphones = managedHeadphones,
+            savedEqs = savedEqs,
+            savedGeneralEqs = savedGeneralEqs,
+        )
+    }
+    val match = matchResolution.match
     Text(
-        "${bundle.snapshot.filters.count { it.isAcousticallyActive() }} Peak bands were read. Playback gain is device state and is not included in captured Personal EQs.",
+        text = when (match) {
+            HardwareEqMatch.Flat -> "Flat"
+            is HardwareEqMatch.Exact -> "Exact saved match"
+            is AmbiguousExactHardwareEqMatch -> "Multiple exact saved matches"
+            is HardwareEqMatch.ModifiedKnown -> "Modified known EQ"
+            HardwareEqMatch.Unknown -> "Unknown EQ"
+        },
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.SemiBold,
+    )
+    when (match) {
+        is HardwareEqMatch.Exact -> {
+            Text(match.savedEq.displayName, style = MaterialTheme.typography.bodyLarge)
+            matchResolution.representation(match.savedEq.savedEqKey)?.let { representation ->
+                val fidelity = if (representation.fidelity == DevicePresetFidelity.EXACT) "Exact" else "Optimized"
+                Text(
+                    "$fidelity · ${representation.adaptationSummary}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        is AmbiguousExactHardwareEqMatch -> Text(
+            "More than one saved EQ resolves to the same native EW300 bytes, so the app will not invent a single source.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        is HardwareEqMatch.ModifiedKnown -> Text(
+            "This state has explicit saved-EQ lineage but no longer matches its complete native representation.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        HardwareEqMatch.Unknown -> Text(
+            "The current non-flat hardware EQ does not exactly match a saved derived EW300 representation.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        HardwareEqMatch.Flat -> Unit
+    }
+
+    val responseCurve = remember(bundle.snapshot.filters) {
+        HardwareEqResponseEvaluator.evaluate(bundle.snapshot.filters)
+    }
+    PremiumSectionLabel(text = "EQ response", divider = false)
+    if (responseCurve == null) {
+        Text(
+            "The current hardware response could not be evaluated safely.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    } else {
+        val activeBandCount = bundle.snapshot.filters.count { it.isAcousticallyActive() }
+        DacEqResponseGraph(
+            curve = responseCurve,
+            filters = bundle.snapshot.filters,
+            accessibilityDescription = String.format(
+                Locale.US,
+                "EW300 EQ response graph from 20 hertz to 20 kilohertz with %d active Peak bands. Response ranges from %.1f to %.1f decibels, with a zero-decibel reference line.",
+                activeBandCount,
+                responseCurve.minimumGainDb,
+                responseCurve.maximumGainDb,
+            ),
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+
+    bundle.snapshot.playbackGainDb?.let { gainDb ->
+        Text(
+            String.format(Locale.US, "Playback / global gain: %.1f dB", gainDb),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+    Text(
+        "${bundle.snapshot.filters.count { it.isAcousticallyActive() }} active Peak bands. Playback/global gain is device state and is not included in captured Personal EQ identity.",
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
+
     if (canEdit) {
         Button(onClick = onEdit, modifier = Modifier.fillMaxWidth()) { Text("Edit current EQ") }
         OutlinedButton(onClick = onReset, modifier = Modifier.fillMaxWidth()) { Text("Reset EQ to flat") }
     }
-    OutlinedButton(onClick = onCapture, enabled = canCapture, modifier = Modifier.fillMaxWidth()) {
+    OutlinedButton(
+        onClick = onCapture,
+        enabled = canCapture,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
         Text(if (canCapture) "Save readback as Personal EQ" else "Personal EQ capture is unavailable for this readback")
     }
 }
@@ -378,6 +533,7 @@ internal fun Ew300DeviceStatus(
     report: Ew300CapabilityReport?,
     hardwareEqState: HardwareEqSnapshotState = HardwareEqSnapshotState(),
     running: Boolean,
+    onRefresh: () -> Unit = {},
     onRun: () -> Unit,
     onShareReadable: (() -> Unit)?,
     onShareJson: (() -> Unit)?,
@@ -395,8 +551,6 @@ internal fun Ew300DeviceStatus(
     restorationRunning: Boolean = false,
     onRestoreBaseline: () -> Unit = {},
 ) {
-    Text("SIMGOT EW300 DSP", style = MaterialTheme.typography.titleMedium)
-    Text("USB 31B2:0111", style = MaterialTheme.typography.bodyMedium)
     val hardwareBundle = hardwareEqState.bundle
     PremiumSectionLabel(
         text = when (hardwareEqState.freshness) {
@@ -409,35 +563,35 @@ internal fun Ew300DeviceStatus(
     Text(
         when {
             hardwareEqState.isReading -> "Refreshing the verified EW300 readback…"
+            hardwareEqState.readFailed -> "The latest device-state read failed; cached values are not current."
             hardwareBundle != null && hardwareEqState.freshness == DacStateFreshness.CURRENT ->
                 "Values verified from the connected EW300."
-            hardwareBundle != null -> if (validationEvidenceEnabled) {
-                "Reconnect or run the validation report to update these values."
-            } else {
-                "Reconnect to update these values."
-            }
-            else -> if (validationEvidenceEnabled) {
-                "Run the validation report to populate the verified device state."
-            } else {
-                "Connect to read the verified device state."
-            }
+            hardwareBundle != null -> "Showing the last verified readback. Refresh before relying on it as current."
+            else -> "No verified device-state readback is available yet."
         },
         style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        color = if (hardwareEqState.readFailed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
     )
+    OutlinedButton(
+        onClick = onRefresh,
+        enabled = !hardwareEqState.isReading,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text(if (hardwareEqState.isReading) "Refreshing…" else "Refresh")
+    }
     PremiumValueRow(
         title = "Playback / global gain",
         value = hardwareBundle?.snapshot?.playbackGainDb?.let {
             String.format(Locale.US, "%.1f dB", it)
         } ?: "Not read",
-        supportingText = "Reported hardware state used by guarded EQ transactions; it is not included in captured Personal EQs. No standalone volume control is qualified.",
+        supportingText = "Verified state used by guarded EQ transactions and restoration; not a standalone volume control.",
     )
     PremiumValueRow(
         title = "Equalizer",
         value = hardwareBundle?.snapshot?.filters?.let { filters ->
-            "${filters.count { filter -> filter.isAcousticallyActive() }} Peak bands"
+            "${filters.count { filter -> filter.isAcousticallyActive() }} active Peak bands"
         } ?: "Not read",
-        supportingText = "Use the EQ tab to edit and Apply the five Peak bands; capture, Flash, Reset, and reconnect verification are available.",
+        supportingText = "The EQ tab owns response, editing, Apply, capture, and Reset.",
     )
     PremiumValueRow(
         title = "Connection",
@@ -446,75 +600,72 @@ internal fun Ew300DeviceStatus(
             hardwareBundle != null -> "Last read"
             else -> "Awaiting read"
         },
-        supportingText = "Shared current session; reconnect refreshes the verified hardware state.",
+        supportingText = "One shared My DAC session. Refresh rereads it without opening a second USB path.",
     )
-    Text(
-        "Only verified EW300 functions are shown. Standalone volume, headset, UAC, microphone, firmware, bootloader, and unrelated DAC controls are not part of this profile.",
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-    Text(
-        "Available for this exact EW300 profile: five Peak-band readback, local editing, guarded Apply, Peak-only capture, Flash, Reset EQ to flat, and reconnect recovery. The one-time Save qualification is internal release evidence, not a user action.",
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
+
     if (validationEvidenceEnabled) {
         PremiumSectionLabel(text = "Validation capability report", divider = false)
-    Text(
-        "This automated check reads the exact EW300 identity, EQ registers, and gain register. It never writes, saves, resets, or retries a mutation.",
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-    Button(onClick = onRun, enabled = !running, modifier = Modifier.fillMaxWidth()) {
-        Text(if (running) "Reading…" else "Run read-only report")
-    }
-    report?.let {
-        Text("Result: ${it.status}", style = MaterialTheme.typography.titleSmall)
         Text(
-            if (it.stateKnown) "The device state remained known after the check." else "The check stopped safely because device state could not be confirmed.",
-            style = MaterialTheme.typography.bodySmall,
-            color = if (it.stateKnown) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
-        )
-        OutlinedButton(onClick = requireNotNull(onShareReadable), modifier = Modifier.fillMaxWidth()) {
-            Text("Share readable report")
-        }
-        OutlinedButton(onClick = requireNotNull(onShareJson), modifier = Modifier.fillMaxWidth()) {
-            Text("Share technical report")
-        }
-    }
-    operationTrace?.let { trace ->
-        PremiumSectionLabel(text = "Last operation report", divider = false)
-        Text(
-            "${trace.operation} · ${trace.outcome}. Share this report after any guarded EW300 operation so the exact session, permission, Save, and readback evidence stays attached to the candidate.",
+            "This automated check reads the exact EW300 identity, EQ registers, and gain register. It never writes, saves, resets, or retries a mutation.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        onShareTraceReadable?.let { share ->
-            OutlinedButton(onClick = share, modifier = Modifier.fillMaxWidth()) { Text("Share operation report") }
+        Button(onClick = onRun, enabled = !running, modifier = Modifier.fillMaxWidth()) {
+            Text(if (running) "Reading…" else "Run read-only report")
         }
-        onShareTraceJson?.let { share ->
-            OutlinedButton(onClick = share, modifier = Modifier.fillMaxWidth()) { Text("Share operation JSON") }
-        }
-        if (validationEvidenceEnabled &&
-            trace.operation == "FLASH" &&
-            trace.stateKnown &&
-            trace.finalReadbackMatched &&
-            !trace.restorationVerified
-        ) {
-            PremiumSectionLabel(text = "Signed-candidate physical validation", divider = false)
+        report?.let {
+            Text("Result: ${it.status}", style = MaterialTheme.typography.titleSmall)
             Text(
-                "This validation-only action restores the exact pre-test EW300 baseline captured before the verified Flash. It is not a normal product control. Use it once after the bounded Flash test; do not retry after uncertainty.",
+                if (it.stateKnown) {
+                    "The device state remained known after the check."
+                } else {
+                    "The check stopped safely because device state could not be confirmed."
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = if (it.stateKnown) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
+            )
+            OutlinedButton(onClick = requireNotNull(onShareReadable), modifier = Modifier.fillMaxWidth()) {
+                Text("Share readable report")
+            }
+            OutlinedButton(onClick = requireNotNull(onShareJson), modifier = Modifier.fillMaxWidth()) {
+                Text("Share technical report")
+            }
+        }
+        operationTrace?.let { trace ->
+            PremiumSectionLabel(text = "Last operation report", divider = false)
+            Text(
+                "${trace.operation} · ${trace.outcome}. Share this report after any guarded EW300 operation so the exact session, permission, Save, and readback evidence stays attached to the candidate.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Button(
-                onClick = onRestoreBaseline,
-                enabled = !restorationRunning,
-                modifier = Modifier.fillMaxWidth(),
+            onShareTraceReadable?.let { share ->
+                OutlinedButton(onClick = share, modifier = Modifier.fillMaxWidth()) { Text("Share operation report") }
+            }
+            onShareTraceJson?.let { share ->
+                OutlinedButton(onClick = share, modifier = Modifier.fillMaxWidth()) { Text("Share operation JSON") }
+            }
+            if (
+                validationEvidenceEnabled &&
+                trace.operation == "FLASH" &&
+                trace.stateKnown &&
+                trace.finalReadbackMatched &&
+                !trace.restorationVerified
             ) {
-                Text(if (restorationRunning) "Restoring exact baseline…" else "Restore exact pre-test baseline")
+                PremiumSectionLabel(text = "Signed-candidate physical validation", divider = false)
+                Text(
+                    "This validation-only action restores the exact pre-test EW300 baseline captured before the verified Flash. It is not a normal product control. Use it once after the bounded Flash test; do not retry after uncertainty.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Button(
+                    onClick = onRestoreBaseline,
+                    enabled = !restorationRunning,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(if (restorationRunning) "Restoring exact baseline…" else "Restore exact pre-test baseline")
+                }
             }
         }
-    }
     }
 
     if (qualificationBuild) {
