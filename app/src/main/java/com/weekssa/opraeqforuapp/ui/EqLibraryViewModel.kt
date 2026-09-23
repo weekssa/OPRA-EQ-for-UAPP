@@ -48,6 +48,7 @@ import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
 import com.weekssa.opraeqforuapp.domain.dac.DacRecognitionState
 import com.weekssa.opraeqforuapp.domain.dac.DacWriteIntent
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditSpecs
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300EditorApplyResult
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditor
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditorStartResult
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqMatch
@@ -57,6 +58,8 @@ import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.dac.SavedHardwareEqRepresentation
 import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300GainQualificationResult
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300Protocol
 import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceControls
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult
@@ -103,14 +106,24 @@ private data class ExportCurrentnessInput(
     val library: LibraryDataState,
 )
 
+private data class HardwareConnectionStates(
+    val blackPearl: BlackPearlConnectionState,
+    val fiioJa11: Kt02h20ConnectionState,
+    val ew300: Kt02h20ConnectionState,
+    val jcallyJm12: Kt02h20ConnectionState,
+)
+
 private data class HardwareConnectionUiState(
     val blackPearl: BlackPearlConnectionState,
     val fiioJa11: Kt02h20ConnectionState,
+    val ew300: Kt02h20ConnectionState,
     val jcallyJm12: Kt02h20ConnectionState,
     val blackPearlHardwareEqState: HardwareEqSnapshotState,
     val fiioJa11HardwareEqState: HardwareEqSnapshotState,
+    val ew300HardwareEqState: HardwareEqSnapshotState,
     val blackPearlHardwareEqMatch: HardwareEqMatchResolution?,
     val blackPearlEditorState: MyDacEditorUiState,
+    val ew300EditorState: MyDacEditorUiState,
     val blackPearlQualificationState: BlackPearlQualificationUiState,
     val fiioJa11DeviceState: FiioJa11DeviceUiState,
 )
@@ -125,14 +138,17 @@ data class EqLibraryUiState(
     val dacRecognitionState: DacRecognitionState = DacRecognitionState(),
     val blackPearlConnectionState: BlackPearlConnectionState = BlackPearlConnectionState.Disconnected,
     val fiioJa11ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
+    val ew300ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
     val jcallyJm12ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
     val blackPearlHardwareEqState: HardwareEqSnapshotState = HardwareEqSnapshotState(),
     val fiioJa11HardwareEqState: HardwareEqSnapshotState = HardwareEqSnapshotState(),
+    val ew300HardwareEqState: HardwareEqSnapshotState = HardwareEqSnapshotState(),
     val blackPearlHardwareEqMatch: HardwareEqMatchResolution? = null,
     val blackPearlManagedHeadphones: List<ManagedHeadphoneRecord> = emptyList(),
     val blackPearlSavedEqs: List<SavedEqRecord> = emptyList(),
     val blackPearlSavedGeneralEqs: List<SavedGeneralEqRecord> = emptyList(),
     val blackPearlEditorState: MyDacEditorUiState = MyDacEditorUiState(),
+    val ew300EditorState: MyDacEditorUiState = MyDacEditorUiState(),
     val blackPearlQualificationState: BlackPearlQualificationUiState = BlackPearlQualificationUiState(),
     val fiioJa11DeviceState: FiioJa11DeviceUiState = FiioJa11DeviceUiState(),
 )
@@ -156,6 +172,7 @@ class EqLibraryViewModel(
     private var lastForegroundRefreshAttemptMillis: Long = 0L
     private val exportInvalidation = MutableStateFlow(0L)
     private val mutableBlackPearlEditorState = MutableStateFlow(MyDacEditorUiState())
+    private val mutableEw300EditorState = MutableStateFlow(MyDacEditorUiState())
     private val mutableBlackPearlQualificationState = MutableStateFlow(BlackPearlQualificationUiState())
     private val mutableFiioJa11DeviceState = MutableStateFlow(FiioJa11DeviceUiState())
     private val mutableBlackPearlKnownLineage = MutableStateFlow<BlackPearlKnownLineage?>(null)
@@ -241,21 +258,32 @@ class EqLibraryViewModel(
         LibraryUiState(library, currentness)
     }
 
-    private val hardwareConnectionsWithoutEditor = combine(
+    private val hardwareConnectionStates = combine(
         hardwareRepository.blackPearlConnectionState,
         hardwareRepository.fiioJa11ConnectionState,
+        hardwareRepository.ew300ConnectionState,
         hardwareRepository.jcallyJm12ConnectionState,
+    ) { blackPearl, fiioJa11, ew300, jcallyJm12 ->
+        HardwareConnectionStates(blackPearl, fiioJa11, ew300, jcallyJm12)
+    }
+
+    private val hardwareConnectionsWithoutEditor = combine(
+        hardwareConnectionStates,
         hardwareRepository.blackPearlSnapshotState,
+        hardwareRepository.ew300SnapshotState,
         blackPearlHardwareEqMatch,
-    ) { blackPearl, fiioJa11, jcallyJm12, blackPearlHardwareEqState, blackPearlMatch ->
+    ) { connections, blackPearlHardwareEqState, ew300HardwareEqState, blackPearlMatch ->
         HardwareConnectionUiState(
-            blackPearl = blackPearl,
-            fiioJa11 = fiioJa11,
-            jcallyJm12 = jcallyJm12,
+            blackPearl = connections.blackPearl,
+            fiioJa11 = connections.fiioJa11,
+            ew300 = connections.ew300,
+            jcallyJm12 = connections.jcallyJm12,
             blackPearlHardwareEqState = blackPearlHardwareEqState,
+            ew300HardwareEqState = ew300HardwareEqState,
             fiioJa11HardwareEqState = HardwareEqSnapshotState(),
             blackPearlHardwareEqMatch = blackPearlMatch,
             blackPearlEditorState = MyDacEditorUiState(),
+            ew300EditorState = MyDacEditorUiState(),
             blackPearlQualificationState = BlackPearlQualificationUiState(),
             fiioJa11DeviceState = FiioJa11DeviceUiState(),
         )
@@ -269,7 +297,8 @@ class EqLibraryViewModel(
     private val hardwareConnectionsWithEditor = combine(
         hardwareConnectionsWithFiioEq,
         mutableBlackPearlEditorState,
-    ) { hardware, editor -> hardware.copy(blackPearlEditorState = editor) }
+        mutableEw300EditorState,
+    ) { hardware, editor, ew300Editor -> hardware.copy(blackPearlEditorState = editor, ew300EditorState = ew300Editor) }
 
     private val hardwareConnectionsWithQualification = combine(
         hardwareConnectionsWithEditor,
@@ -311,14 +340,17 @@ class EqLibraryViewModel(
             dacRecognitionState = recognition,
             blackPearlConnectionState = hardware.blackPearl,
             fiioJa11ConnectionState = hardware.fiioJa11,
+            ew300ConnectionState = hardware.ew300,
             jcallyJm12ConnectionState = hardware.jcallyJm12,
             blackPearlHardwareEqState = hardware.blackPearlHardwareEqState,
             fiioJa11HardwareEqState = hardware.fiioJa11HardwareEqState,
+            ew300HardwareEqState = hardware.ew300HardwareEqState,
             blackPearlHardwareEqMatch = hardware.blackPearlHardwareEqMatch,
             blackPearlManagedHeadphones = blackPearlLibrary.managedHeadphones,
             blackPearlSavedEqs = blackPearlLibrary.savedEqs,
             blackPearlSavedGeneralEqs = blackPearlLibrary.savedGeneralEqs,
             blackPearlEditorState = hardware.blackPearlEditorState,
+            ew300EditorState = hardware.ew300EditorState,
             blackPearlQualificationState = hardware.blackPearlQualificationState,
             fiioJa11DeviceState = hardware.fiioJa11DeviceState,
         )
@@ -370,6 +402,7 @@ class EqLibraryViewModel(
         when (deviceId) {
             DacDeviceId.TRN_BLACK_PEARL -> hardwareRepository.connectBlackPearl()
             DacDeviceId.FIIO_JA11 -> hardwareRepository.connectFiioJa11()
+            DacDeviceId.SIMGOT_EW300 -> hardwareRepository.connectEw300()
             DacDeviceId.JCALLY_JM12_STOCK -> Unit
         }
     }
@@ -539,6 +572,115 @@ class EqLibraryViewModel(
                     blackPearlEditorLineageRepresentation = null
                     MyDacEditorUiState(error = MyDacEditorError.WRONG_DEVICE)
                 }
+            }
+        }
+    }
+
+    fun openEw300Editor() {
+        val current = mutableEw300EditorState.value
+        if (current.isOpening || current.applyStatus == MyDacEditorApplyStatus.APPLYING) return
+        if (hardwareRepository.ew300ConnectionState.value !is Kt02h20ConnectionState.Connected) {
+            mutableEw300EditorState.value = MyDacEditorUiState(error = MyDacEditorError.NOT_CONNECTED)
+            return
+        }
+        mutableEw300EditorState.value = MyDacEditorUiState(isOpening = true)
+        viewModelScope.launch {
+            val refreshed = hardwareRepository.readEw300Snapshot()
+            if (refreshed == null) {
+                mutableEw300EditorState.value = MyDacEditorUiState(error = MyDacEditorError.READ_FAILED)
+                return@launch
+            }
+            val result = withContext(computationDispatcher) {
+                HardwareEqEditor.startFromCurrent(
+                    snapshotState = hardwareRepository.ew300SnapshotState.value,
+                    spec = HardwareEqEditSpecs.SIMGOT_EW300,
+                )
+            }
+            mutableEw300EditorState.value = when (result) {
+                is HardwareEqEditorStartResult.Ready -> MyDacEditorUiState(
+                    stage = MyDacEditorStage.EDIT,
+                    workingCopy = result.workingCopy,
+                    selectedBandIndex = result.workingCopy.filters.firstOrNull()?.index,
+                )
+                HardwareEqEditorStartResult.CurrentSnapshotRequired -> MyDacEditorUiState(error = MyDacEditorError.READ_FAILED)
+                HardwareEqEditorStartResult.WrongDevice -> MyDacEditorUiState(error = MyDacEditorError.WRONG_DEVICE)
+            }
+        }
+    }
+
+    fun closeEw300Editor() {
+        if (mutableEw300EditorState.value.applyStatus != MyDacEditorApplyStatus.APPLYING) {
+            mutableEw300EditorState.value = MyDacEditorUiState()
+        }
+    }
+
+    fun backEw300Editor(): Boolean {
+        val current = mutableEw300EditorState.value
+        if (current.applyStatus == MyDacEditorApplyStatus.APPLYING) return true
+        mutableEw300EditorState.value = when {
+            current.isOpening || current.stage == MyDacEditorStage.EDIT -> MyDacEditorUiState()
+            current.stage == MyDacEditorStage.REVIEW || current.stage == MyDacEditorStage.ALL_BANDS -> current.copy(
+                stage = MyDacEditorStage.EDIT,
+                applyStatus = MyDacEditorApplyStatus.IDLE,
+                applyFailureReason = null,
+            )
+            else -> return false
+        }
+        return true
+    }
+
+    fun selectEw300EditorBand(index: Int) = mutableEw300EditorState.update { current ->
+        if (current.workingCopy?.filters?.none { it.index == index } != false) current else current.copy(
+            stage = MyDacEditorStage.EDIT,
+            selectedBandIndex = index,
+            applyStatus = MyDacEditorApplyStatus.IDLE,
+            applyFailureReason = null,
+        )
+    }
+
+    fun showEw300EditorAllBands() = mutableEw300EditorState.update { current ->
+        if (current.workingCopy == null || current.applyStatus == MyDacEditorApplyStatus.APPLYING) current else current.copy(stage = MyDacEditorStage.ALL_BANDS, applyStatus = MyDacEditorApplyStatus.IDLE, applyFailureReason = null)
+    }
+
+    fun showEw300EditorReview() = mutableEw300EditorState.update { current ->
+        if (current.workingCopy == null || current.applyStatus == MyDacEditorApplyStatus.APPLYING) current else current.copy(stage = MyDacEditorStage.REVIEW, applyStatus = MyDacEditorApplyStatus.IDLE, applyFailureReason = null)
+    }
+
+    fun updateEw300EditorBand(index: Int, type: EqFilterType, frequencyHz: Double, gainDb: Double, q: Double) = mutableEw300EditorState.update { current ->
+        val working = current.workingCopy ?: return@update current
+        current.copy(
+            workingCopy = HardwareEqEditor.updateFilter(working, HardwareEqEditSpecs.SIMGOT_EW300, index, type, frequencyHz, gainDb, q),
+            selectedBandIndex = index,
+            applyStatus = MyDacEditorApplyStatus.IDLE,
+            applyFailureReason = null,
+        )
+    }
+
+    fun useSafeEw300EditorGain() = mutableEw300EditorState.update { current ->
+        val working = current.workingCopy ?: return@update current
+        current.copy(workingCopy = HardwareEqEditor.useSafeGain(working, HardwareEqEditSpecs.SIMGOT_EW300), applyStatus = MyDacEditorApplyStatus.IDLE, applyFailureReason = null)
+    }
+
+    fun resetEw300EditorLocalEdits() = mutableEw300EditorState.update { current ->
+        val working = current.workingCopy ?: return@update current
+        current.copy(stage = MyDacEditorStage.EDIT, workingCopy = HardwareEqEditor.resetLocalEdits(working, HardwareEqEditSpecs.SIMGOT_EW300), applyStatus = MyDacEditorApplyStatus.IDLE, applyFailureReason = null)
+    }
+
+    fun applyEw300Editor(allowCautions: Boolean) {
+        val current = mutableEw300EditorState.value
+        val working = current.workingCopy ?: return
+        if (current.stage != MyDacEditorStage.REVIEW || current.applyStatus == MyDacEditorApplyStatus.APPLYING) return
+        mutableEw300EditorState.value = current.copy(applyStatus = MyDacEditorApplyStatus.APPLYING, applyFailureReason = null)
+        viewModelScope.launch {
+            val result = hardwareRepository.applyEw300Editor(working, allowCautions)
+            mutableEw300EditorState.value = when (result) {
+                Ew300EditorApplyResult.Verified -> MyDacEditorUiState(applyStatus = MyDacEditorApplyStatus.VERIFIED)
+                is Ew300EditorApplyResult.ConfirmationRequired -> current.copy(applyStatus = MyDacEditorApplyStatus.CONFIRMATION_REQUIRED)
+                is Ew300EditorApplyResult.InvalidPlan -> MyDacEditorUiState(applyStatus = MyDacEditorApplyStatus.FAILED, applyFailureReason = result.reason)
+                is Ew300EditorApplyResult.StaleBaseline -> MyDacEditorUiState(applyStatus = MyDacEditorApplyStatus.FAILED, applyFailureReason = result.reason)
+                is Ew300EditorApplyResult.DeviceUnavailable -> MyDacEditorUiState(applyStatus = MyDacEditorApplyStatus.FAILED, applyFailureReason = result.reason)
+                is Ew300EditorApplyResult.TransferFailed -> MyDacEditorUiState(applyStatus = MyDacEditorApplyStatus.FAILED, applyFailureReason = result.reason)
+                is Ew300EditorApplyResult.VerificationFailed -> MyDacEditorUiState(applyStatus = MyDacEditorApplyStatus.FAILED, applyFailureReason = result.reason)
             }
         }
     }
@@ -782,6 +924,37 @@ class EqLibraryViewModel(
         }
     }
 
+    suspend fun captureEw300DacEq(
+        displayName: String,
+        association: SavedEqHeadphoneAssociation?,
+    ): UiText {
+        val name = displayName.trim()
+        if (name.isEmpty()) return UiText.Dynamic("EQ name is required.")
+        if (hardwareRepository.ew300ConnectionState.value != Kt02h20ConnectionState.Connected) {
+            return UiText.Dynamic("Connect SIMGOT EW300 DSP before saving its EQ.")
+        }
+
+        val bundle = hardwareRepository.readEw300Snapshot()
+            ?: return UiText.Dynamic("Could not read the complete EW300 EQ. No Personal EQ was saved.")
+        if (bundle.snapshot.filters.size != Ew300Protocol.BAND_COUNT) {
+            return UiText.Dynamic("The EW300 readback did not contain all five bands. No Personal EQ was saved.")
+        }
+        if (!hardwareRepository.isEw300SessionCurrent(bundle.snapshot.sessionGeneration)) {
+            return UiText.Dynamic("The EW300 connection changed while reading. Reconnect and try again.")
+        }
+
+        return runCatching {
+            savedEqRepository.captureEw300Eq(
+                displayName = name,
+                snapshotBundle = bundle,
+                association = association,
+            )
+        }.fold(
+            onSuccess = { record -> UiText.Dynamic("Saved ${record.displayName} to SIMGOT EW300 DSP My EQs.") },
+            onFailure = { error -> UiText.Dynamic(error.message ?: "Could not save the current EW300 EQ.") },
+        )
+    }
+
     fun readBlackPearlQualificationControls() {
         if (mutableBlackPearlQualificationState.value.isBusy) return
         viewModelScope.launch { refreshBlackPearlDeviceState() }
@@ -934,6 +1107,25 @@ class EqLibraryViewModel(
         return fiioJa11ResetResultMessage(resetFiioJa11AndRefresh())
     }
 
+    suspend fun flashEw300FromMyDac(profile: OpraEqProfile): UiText =
+        flashEw300Profile(profile, preferencesRepository.snapshot())
+
+    suspend fun qualifyEw300GlobalGain(): UiText {
+        val preferences = preferencesRepository.snapshot()
+        if (!preferences.directEw300FlashEnabled) {
+            return UiText.Dynamic("Enable Direct Flash for SIMGOT EW300 DSP in Settings first.")
+        }
+        if (hardwareRepository.ew300ConnectionState.value !is Kt02h20ConnectionState.Connected) {
+            return UiText.Dynamic("Connect SIMGOT EW300 DSP before qualifying its global gain.")
+        }
+        return when (val result = hardwareRepository.qualifyEw300GlobalGain()) {
+            Ew300GainQualificationResult.Verified -> UiText.Dynamic(
+                "EW300 global-gain qualification passed. Gain-aware library flashing is now enabled.",
+            )
+            is Ew300GainQualificationResult.Failed -> UiText.Dynamic(result.reason)
+        }
+    }
+
     fun connectBlackPearl() {
         viewModelScope.launch {
             val preferences = preferencesRepository.snapshot()
@@ -948,6 +1140,15 @@ class EqLibraryViewModel(
             val preferences = preferencesRepository.snapshot()
             if (preferences.directFiioJa11FlashEnabled && preferences.exportTargets.activeTarget == ExportDevice.FIIO_JA11) {
                 hardwareRepository.connectFiioJa11()
+            }
+        }
+    }
+
+    fun connectEw300() {
+        viewModelScope.launch {
+            val preferences = preferencesRepository.snapshot()
+            if (preferences.directEw300FlashEnabled && preferences.exportTargets.activeTarget == ExportDevice.SIMGOT_EW300) {
+                hardwareRepository.connectEw300()
             }
         }
     }
@@ -1228,6 +1429,10 @@ class EqLibraryViewModel(
         viewModelScope.launch { preferencesRepository.setDirectFiioJa11FlashEnabled(enabled) }
     }
 
+    fun setDirectEw300FlashEnabled(enabled: Boolean) {
+        viewModelScope.launch { preferencesRepository.setDirectEw300FlashEnabled(enabled) }
+    }
+
     fun setDirectJcallyJm12FlashEnabled(enabled: Boolean) = Unit
 
     override fun onCleared() {
@@ -1240,6 +1445,7 @@ class EqLibraryViewModel(
         return when (preferences.exportTargets.activeTarget) {
             ExportDevice.BLACK_PEARL -> flashBlackPearlProfile(profile, preferences)
             ExportDevice.FIIO_JA11 -> flashFiioJa11Profile(profile, preferences)
+            ExportDevice.SIMGOT_EW300 -> flashEw300Profile(profile, preferences)
             else -> resource(R.string.error_select_supported_hardware)
         }
     }
@@ -1314,6 +1520,40 @@ class EqLibraryViewModel(
         is Kt02h20FlatResetResult.DeviceUnavailable -> UiText.Dynamic(result.reason)
         is Kt02h20FlatResetResult.TransferFailed -> UiText.Dynamic(result.reason)
         is Kt02h20FlatResetResult.VerificationFailed -> resource(R.string.fiio_reset_verification_failed, result.reason)
+    }
+
+    private suspend fun flashEw300Profile(
+        profile: OpraEqProfile,
+        preferences: AppPreferences,
+    ): UiText {
+        if (!preferences.directEw300FlashEnabled) return UiText.Dynamic("Enable Direct Flash for SIMGOT EW300 DSP in Settings first.")
+        if (hardwareRepository.ew300ConnectionState.value !is Kt02h20ConnectionState.Connected) {
+            return UiText.Dynamic("Connect SIMGOT EW300 DSP before changing its EQ.")
+        }
+        return ew300FlashResultMessage(hardwareRepository.flashEw300(profile))
+    }
+
+    private fun ew300FlashResultMessage(result: Kt02h20FlashResult): UiText = when (result) {
+        is Kt02h20FlashResult.Success -> UiText.Dynamic("SIMGOT EW300 DSP EQ applied and verified on the device.")
+        is Kt02h20FlashResult.NotSuitable -> UiText.Dynamic(result.reason)
+        is Kt02h20FlashResult.DeviceUnavailable -> UiText.Dynamic(result.reason)
+        is Kt02h20FlashResult.TransferFailed -> UiText.Dynamic(result.reason)
+        is Kt02h20FlashResult.VerificationFailed -> UiText.Dynamic(result.reason)
+    }
+
+    suspend fun resetEw300ToFlat(): UiText {
+        val preferences = preferencesRepository.snapshot()
+        if (!preferences.directEw300FlashEnabled) return UiText.Dynamic("Enable Direct Flash for SIMGOT EW300 DSP in Settings first.")
+        if (hardwareRepository.ew300ConnectionState.value !is Kt02h20ConnectionState.Connected) {
+            return UiText.Dynamic("Connect SIMGOT EW300 DSP before resetting its EQ.")
+        }
+        return when (val result = hardwareRepository.resetEw300()) {
+            is Kt02h20FlatResetResult.Success -> UiText.Dynamic("SIMGOT EW300 DSP was restored to flat EQ and verified.")
+            is Kt02h20FlatResetResult.NotSuitable -> UiText.Dynamic(result.reason)
+            is Kt02h20FlatResetResult.DeviceUnavailable -> UiText.Dynamic(result.reason)
+            is Kt02h20FlatResetResult.TransferFailed -> UiText.Dynamic(result.reason)
+            is Kt02h20FlatResetResult.VerificationFailed -> UiText.Dynamic(result.reason)
+        }
     }
 
     private suspend fun flashBlackPearlAndRefresh(profile: OpraEqProfile): BlackPearlFlashResult {

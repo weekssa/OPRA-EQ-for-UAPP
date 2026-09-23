@@ -3,6 +3,7 @@ package com.weekssa.opraeqforuapp.data.dac
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlProtocol
 import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300Protocol
 
 data class SupportedDacUsbIdentity(
     val deviceId: DacDeviceId,
@@ -38,6 +39,13 @@ val supportedDacUsbIdentities: List<SupportedDacUsbIdentity> = buildList {
             ),
         )
     }
+    add(
+        SupportedDacUsbIdentity(
+            deviceId = DacDeviceId.SIMGOT_EW300,
+            vendorId = Ew300Protocol.VENDOR_ID,
+            productId = Ew300Protocol.PRODUCT_ID,
+        ),
+    )
 }
 
 fun supportedDacDeviceId(vendorId: Int, productId: Int): DacDeviceId? =
