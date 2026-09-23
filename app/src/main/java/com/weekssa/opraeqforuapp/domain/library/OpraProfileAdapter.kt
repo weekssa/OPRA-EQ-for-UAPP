@@ -78,9 +78,9 @@ object OpraProfileAdapter {
     private fun parseBand(band: OpraBand): EqFilter? {
         val type = parseFilterType(band.type) ?: return null
         val frequency = band.frequency?.takeIf { it.isFinite() && it > 0.0 } ?: return null
-        val gain = band.gainDb?.takeIf(Double::isFinite)
+        val gain = band.gainDb?.takeIf { it.isFinite() }
         val q = band.q?.takeIf { it.isFinite() && it > 0.0 }
-        val slope = band.slope?.takeIf(Double::isFinite)
+        val slope = band.slope?.takeIf { it.isFinite() }
 
         if (band.gainDb != null && gain == null) return null
         if (band.q != null && q == null) return null
