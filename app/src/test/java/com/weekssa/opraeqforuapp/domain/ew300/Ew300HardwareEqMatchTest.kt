@@ -86,8 +86,8 @@ class Ew300HardwareEqMatchTest {
     @Test
     fun shelfSourceDerivesPeakOnlyOptimizedIdentityWithoutMutatingSource() {
         val sourceBands = listOf(
-            OpraBand(type = "low_shelf", frequency = 120.0, gainDb = 3.0, q = 0.7),
-            OpraBand(type = "high_shelf", frequency = 8_000.0, gainDb = -2.0, q = 0.8),
+            OpraBand(type = "low_shelf", frequency = 120.0, gainDb = 3.0, q = 0.7, slope = null),
+            OpraBand(type = "high_shelf", frequency = 8_000.0, gainDb = -2.0, q = 0.8, slope = null),
         )
         val profile = OpraEqProfile(
             id = "shelf-profile",
@@ -120,11 +120,11 @@ class Ew300HardwareEqMatchTest {
         profileType = "parametric_eq",
         preampGainDb = 0.0,
         bands = listOf(
-            OpraBand(type = "peak_dip", frequency = 80.0, gainDb = 1.0, q = 0.7),
-            OpraBand(type = "peak_dip", frequency = 250.0, gainDb = -1.5, q = 1.0),
-            OpraBand(type = "peak_dip", frequency = 1_000.0, gainDb = 2.0, q = 1.2),
-            OpraBand(type = "peak_dip", frequency = 4_000.0, gainDb = -2.5, q = 0.9),
-            OpraBand(type = "peak_dip", frequency = 12_000.0, gainDb = 1.5, q = 0.8),
+            OpraBand(type = "peak_dip", frequency = 80.0, gainDb = 1.0, q = 0.7, slope = null),
+            OpraBand(type = "peak_dip", frequency = 250.0, gainDb = -1.5, q = 1.0, slope = null),
+            OpraBand(type = "peak_dip", frequency = 1_000.0, gainDb = 2.0, q = 1.2, slope = null),
+            OpraBand(type = "peak_dip", frequency = 4_000.0, gainDb = -2.5, q = 0.9, slope = null),
+            OpraBand(type = "peak_dip", frequency = 12_000.0, gainDb = 1.5, q = 0.8, slope = null),
         ),
     )
 }
