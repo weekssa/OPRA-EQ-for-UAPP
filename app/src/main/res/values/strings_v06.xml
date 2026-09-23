@@ -175,5 +175,6 @@
 
     <string name="dac_trn_black_pearl">TRN Black Pearl</string>
     <string name="dac_fiio_ja11">FiiO JA11</string>
+    <string name="dac_simgot_ew300">SIMGOT EW300 DSP</string>
     <string name="dac_jcally_jm12">JCALLY JM12</string>
 </resources>

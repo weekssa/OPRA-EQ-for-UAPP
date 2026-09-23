@@ -98,6 +98,8 @@ internal fun ProfileSelectionEditor(
     onFlashBlackPearlProfile: (suspend (OpraEqProfile) -> String)? = null,
     fiioJa11Connected: Boolean = false,
     onFlashFiioJa11Profile: (suspend (OpraEqProfile) -> String)? = null,
+    onFlashEw300Profile: (suspend (OpraEqProfile) -> String)? = null,
+    ew300Connected: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val vendor = catalog.vendor(product.vendorId)
@@ -289,6 +291,7 @@ internal fun ProfileSelectionEditor(
                                 when (device) {
                                     LibraryHardwareFlashDevice.BLACK_PEARL -> "Playback adjustment: $gain"
                                     LibraryHardwareFlashDevice.FIIO_JA11 -> "Global EQ gain: $gain"
+                                    LibraryHardwareFlashDevice.SIMGOT_EW300 -> "EW300 global-gain adjustment: $gain"
                                 },
                             )
                             Text(
@@ -297,6 +300,8 @@ internal fun ProfileSelectionEditor(
                                         "The current hardware EQ slot will be overwritten and verified."
                                     LibraryHardwareFlashDevice.FIIO_JA11 ->
                                         "User 1 will be applied, saved, and verified."
+                                    LibraryHardwareFlashDevice.SIMGOT_EW300 ->
+                                        "The EW300 five-band PEQ will be written, persisted, and verified."
                                 },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -321,6 +326,10 @@ internal fun ProfileSelectionEditor(
                                         }
                                     LibraryHardwareFlashDevice.FIIO_JA11 ->
                                         onFlashFiioJa11Profile?.let { flash ->
+                                            scope.launch { onMessage(flash(profile)) }
+                                        }
+                                    LibraryHardwareFlashDevice.SIMGOT_EW300 ->
+                                        onFlashEw300Profile?.let { flash ->
                                             scope.launch { onMessage(flash(profile)) }
                                         }
                                 }
@@ -529,6 +538,7 @@ internal fun ProfileSelectionEditor(
         val connectedHardwareFlashDevice = connectedLibraryHardwareFlashDevice(
             blackPearlConnected = blackPearlConnected && onFlashBlackPearlProfile != null,
             fiioJa11Connected = fiioJa11Connected && onFlashFiioJa11Profile != null,
+            ew300Connected = ew300Connected && onFlashEw300Profile != null,
         )
 
         LazyColumn(modifier = Modifier.weight(1f)) {
