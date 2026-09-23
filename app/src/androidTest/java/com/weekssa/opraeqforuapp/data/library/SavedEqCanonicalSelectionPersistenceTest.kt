@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.google.common.truth.Truth.assertThat
 import com.weekssa.opraeqforuapp.data.managed.ManagedProfileSnapshotCodec
 import com.weekssa.opraeqforuapp.data.managed.OpraEqDatabase
 import com.weekssa.opraeqforuapp.domain.library.CanonicalEqProfile
@@ -27,6 +26,7 @@ import com.weekssa.opraeqforuapp.domain.library.RedistributionPolicy
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -71,19 +71,21 @@ class SavedEqCanonicalSelectionPersistenceTest {
             canonicalSelection = selection,
         )
 
-        assertThat(saved).isEqualTo(FavoriteToggleResult.SAVED)
+        assertEquals(FavoriteToggleResult.SAVED, saved)
         val entity = requireNotNull(database.savedEqDao().observeAll().first().singleOrNull())
         val stored = CanonicalEqSelectionCodec().decode(requireNotNull(entity.canonicalSelectionJson))
-        assertThat(stored).isEqualTo(selection)
-        assertThat(stored.profile.revisions.map { it.revisionId }).containsExactly("headphone-old", "headphone-new").inOrder()
-        assertThat(stored.selectedRevisionId).isEqualTo("headphone-new")
-        assertThat(stored.profile.revisions.flatMap { it.sourceReferences }.mapNotNull { it.sourceRecordId })
-            .containsExactly("headphone-source-old", "headphone-source-new").inOrder()
+        assertEquals(selection, stored)
+        assertEquals(listOf("headphone-old", "headphone-new"), stored.profile.revisions.map { it.revisionId })
+        assertEquals("headphone-new", stored.selectedRevisionId)
+        assertEquals(
+            listOf("headphone-source-old", "headphone-source-new"),
+            stored.profile.revisions.flatMap { it.sourceReferences }.mapNotNull { it.sourceRecordId },
+        )
 
         val record = savedEqRepository.observeForOutput("UAPP").first().single()
         assertFalse(record.savedEqDataInvalid)
-        assertThat(record.canonicalSelection).isEqualTo(selection)
-        assertThat(record.actionProfileOrNull()).isEqualTo(legacyProfile)
+        assertEquals(selection, record.canonicalSelection)
+        assertEquals(legacyProfile, record.actionProfileOrNull())
     }
 
     @Test
@@ -100,19 +102,20 @@ class SavedEqCanonicalSelectionPersistenceTest {
             "Headphone",
             selection,
         )
-        assertThat(rejected).isEqualTo(FavoriteToggleResult.CANONICAL_SOURCE_UNAVAILABLE)
-        assertThat(database.savedEqDao().observeAll().first()).isEmpty()
+        assertEquals(FavoriteToggleResult.CANONICAL_SOURCE_UNAVAILABLE, rejected)
+        assertTrue(database.savedEqDao().observeAll().first().isEmpty())
 
-        assertThat(
+        assertEquals(
+            FavoriteToggleResult.SAVED,
             savedEqRepository.toggleFavorite("UAPP", legacyProfile, "Maker", "Headphone", selection),
-        ).isEqualTo(FavoriteToggleResult.SAVED)
+        )
         val saved = requireNotNull(database.savedEqDao().observeAll().first().singleOrNull())
         database.savedEqDao().upsert(saved.copy(canonicalSelectionJson = "{invalid-json"))
 
         val damaged = savedEqRepository.observeForOutput("UAPP").first().single()
         assertTrue(damaged.savedEqDataInvalid)
         assertNull(damaged.actionProfileOrNull())
-        assertThat(savedEqRepository.toManagedHeadphones(listOf(damaged))).isEmpty()
+        assertTrue(savedEqRepository.toManagedHeadphones(listOf(damaged)).isEmpty())
     }
 
     @Test
@@ -128,18 +131,19 @@ class SavedEqCanonicalSelectionPersistenceTest {
                 listOf(savedPreset to selection, stale to selection),
             ),
         )
-        assertThat(savedGeneralEqRepository.observeForOutput("UAPP").first()).isEmpty()
+        assertTrue(savedGeneralEqRepository.observeForOutput("UAPP").first().isEmpty())
 
         assertTrue(savedGeneralEqRepository.saveForOutput("UAPP", savedPreset, selection))
         val entity = requireNotNull(database.savedGeneralEqDao().observeAll().first().singleOrNull())
         val stored = CanonicalEqSelectionCodec().decode(requireNotNull(entity.canonicalSelectionJson))
-        assertThat(stored).isEqualTo(selection)
-        assertThat(stored.profile.revisions.map { it.revisionId }).containsExactly("general-old", "general-new").inOrder()
+        assertEquals(selection, stored)
+        assertEquals(listOf("general-old", "general-new"), stored.profile.revisions.map { it.revisionId })
 
         val record = savedGeneralEqRepository.observeForOutput("UAPP").first().single()
         assertFalse(record.savedEqDataInvalid)
-        assertThat(record.actionProfileOrNull()).isEqualTo(
+        assertEquals(
             CanonicalLegacyCatalogAdapter.projectGeneralSelection(selection, savedPreset.id),
+            record.actionProfileOrNull(),
         )
 
         database.savedGeneralEqDao().upsert(entity.copy(canonicalSelectionJson = "{invalid-json"))
