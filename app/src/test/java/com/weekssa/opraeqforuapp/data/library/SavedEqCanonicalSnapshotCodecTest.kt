@@ -151,6 +151,43 @@ class SavedEqCanonicalSnapshotCodecTest {
     }
 
     @Test
+    fun legacyProfileWithMismatchedProductIdentityIsQuarantinedButRemainsReadable() {
+        val legacyCodec = ManagedProfileSnapshotCodec()
+        val validProfile = profile("legacy-product-mismatch", 2_000.0)
+
+        val record = SavedEqRecordMapper.toDomain(
+            entity = entity(validProfile, null, legacyCodec).copy(productId = "different-product"),
+            legacyCodec = legacyCodec,
+            canonicalCodec = codec,
+            captureMetadataCodec = SavedEqCaptureMetadataCodec(),
+        )
+
+        assertTrue(record.savedEqDataInvalid)
+        assertEquals("different-product", record.productId)
+        assertEquals(validProfile, record.profile)
+    }
+
+    @Test
+    fun favoriteProfileWithMismatchedSourceIdentityIsQuarantinedButRemainsReadable() {
+        val legacyCodec = ManagedProfileSnapshotCodec()
+        val validProfile = profile("favorite-profile", 2_000.0)
+
+        val record = SavedEqRecordMapper.toDomain(
+            entity = entity(validProfile, null, legacyCodec).copy(
+                kind = SavedEqRepository.KIND_FAVORITE,
+                sourceProfileId = "different-profile",
+            ),
+            legacyCodec = legacyCodec,
+            canonicalCodec = codec,
+            captureMetadataCodec = SavedEqCaptureMetadataCodec(),
+        )
+
+        assertTrue(record.savedEqDataInvalid)
+        assertEquals("favorite-profile", record.profile.id)
+        assertEquals("different-profile", record.sourceProfileId)
+    }
+
+    @Test
     fun parametricLegacyProfileMissingRequiredQIsQuarantined() {
         val legacyCodec = ManagedProfileSnapshotCodec()
         val invalidProfile = profile("legacy-missing-q", 1_000.0).copy(

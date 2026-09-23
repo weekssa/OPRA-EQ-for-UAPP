@@ -51,6 +51,14 @@ internal object SavedEqRecordMapper {
                 null
             }
         }
+        if (profile.productId != entity.productId) savedEqDataInvalid = true
+        if (
+            entity.kind == SavedEqRepository.KIND_FAVORITE &&
+            entity.sourceProfileId != null &&
+            profile.id != entity.sourceProfileId
+        ) {
+            savedEqDataInvalid = true
+        }
         if (!profile.hasValidSavedEqStructure()) savedEqDataInvalid = true
         val kind = when (entity.kind) {
             SavedEqRepository.KIND_FAVORITE -> SavedEqKind.Favorite
