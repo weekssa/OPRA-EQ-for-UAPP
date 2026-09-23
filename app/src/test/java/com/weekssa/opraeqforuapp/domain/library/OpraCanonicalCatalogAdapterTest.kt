@@ -146,6 +146,36 @@ class OpraCanonicalCatalogAdapterTest {
         assertThat(reversed.latestRevision.filters.map(EqFilter::frequencyHz)).containsExactly(1_000.0, 100.0).inOrder()
     }
 
+    @Test
+    fun `priority variant identity is stable when a competing order is added or catalog order changes`() {
+        val orderedBands = listOf(
+            OpraBand("peak_dip", 100.0, 2.0, 1.0, null),
+            OpraBand("peak_dip", 1_000.0, -2.0, 1.0, null),
+        )
+        val ordered = profile("ordered", "Same author").copy(bands = orderedBands)
+        val reordered = profile("reordered", "Same author").copy(bands = orderedBands.reversed())
+
+        fun canonicalId(vararg sourceProfiles: OpraEqProfile): String =
+            OpraCanonicalCatalogAdapter.adapt(
+                catalog = OpraCatalog(
+                    vendors = listOf(OpraVendor("v1", "HIFIMAN")),
+                    products = listOf(OpraProduct("p1", "v1", "Edition XS", "headphone", "over-ear")),
+                    profiles = sourceProfiles.toList(),
+                ),
+                generatedAt = "2026-09-23T00:00:00Z",
+                sourceRegistryVersion = "test",
+            ).snapshot.profiles.single { snapshot ->
+                snapshot.latestRevision.filters.first().frequencyHz == orderedBands.first().frequency
+            }.canonicalProfileId
+
+        val orderedAlone = canonicalId(ordered)
+        val orderedWithReorderedFirst = canonicalId(reordered, ordered)
+        val orderedWithReorderedLast = canonicalId(ordered, reordered)
+
+        assertThat(orderedWithReorderedFirst).isEqualTo(orderedAlone)
+        assertThat(orderedWithReorderedLast).isEqualTo(orderedAlone)
+    }
+
     private fun profile(id: String, author: String) = OpraEqProfile(
         id = id,
         productId = "p1",

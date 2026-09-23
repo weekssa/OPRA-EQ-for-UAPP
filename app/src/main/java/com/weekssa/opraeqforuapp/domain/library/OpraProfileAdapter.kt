@@ -33,6 +33,7 @@ object OpraProfileAdapter {
             creator,
             targetName,
             fingerprint,
+            sourcePriority,
         )
         val revisionId = "$canonicalId-${fingerprint.take(12)}-priority-${sourcePriority.take(12)}"
         val sourceReference = EqSourceReference(
@@ -132,12 +133,14 @@ object OpraProfileAdapter {
         creator: String?,
         target: String?,
         fingerprint: String,
+        sourcePriority: String,
     ): String = listOf(
         slug(manufacturer),
         slug(model),
         slug(creator ?: "unknown"),
         slug(target ?: "custom"),
         fingerprint.take(16),
+        "priority-$sourcePriority",
     ).joinToString(":")
 
     private fun slug(value: String): String = value

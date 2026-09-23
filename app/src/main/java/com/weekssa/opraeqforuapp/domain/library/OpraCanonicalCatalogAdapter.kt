@@ -75,29 +75,7 @@ object OpraCanonicalCatalogAdapter {
                 AcousticFingerprint.sourcePriority(revision.filters),
             )
         }
-        val usedCanonicalIds = mutableSetOf<String>()
         val snapshotProfiles = priorityDistinctProfiles
-            .map { profile ->
-                val baseId = profile.canonicalProfileId
-                if (usedCanonicalIds.add(baseId)) {
-                    profile
-                } else {
-                    val revision = profile.latestRevision
-                    val identitySuffix = AcousticFingerprint.sourcePriority(revision.filters).take(16)
-                    val uniqueId = "$baseId:order-$identitySuffix"
-                    require(usedCanonicalIds.add(uniqueId)) {
-                        "OPRA canonical identity collision for $uniqueId"
-                    }
-                    profile.copy(
-                        canonicalProfileId = uniqueId,
-                        revisions = profile.revisions.map { existingRevision ->
-                            existingRevision.copy(
-                                revisionId = "$uniqueId-${existingRevision.acousticFingerprint.take(12)}",
-                            )
-                        },
-                    )
-                }
-            }
             .sortedWith(
                 compareBy<CanonicalEqProfile> { requireNotNull(it.headphone).manufacturer.lowercase() }
                     .thenBy { requireNotNull(it.headphone).model.lowercase() }
