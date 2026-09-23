@@ -49,6 +49,7 @@ class UnclaimedEqRepository(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val nowMillis: () -> Long = System::currentTimeMillis,
     private val canonicalSnapshotCodec: SavedEqCanonicalSnapshotCodec = SavedEqCanonicalSnapshotCodec(),
+    private val canonicalSelectionCodec: CanonicalEqSelectionCodec = CanonicalEqSelectionCodec(),
 ) {
     private val ownershipDao = database.exportOwnershipDao()
     private val managedDao = database.managedHeadphonesDao()
@@ -326,6 +327,7 @@ class UnclaimedEqRepository(
         entity = entity,
         legacyCodec = snapshotCodec,
         canonicalCodec = canonicalSnapshotCodec,
+        selectionCodec = canonicalSelectionCodec,
         captureMetadataCodec = SavedEqCaptureMetadataCodec(),
     )
 

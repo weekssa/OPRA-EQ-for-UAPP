@@ -73,6 +73,118 @@ object CanonicalLegacyCatalogAdapter {
         )
     }
 
+    /** Resolve only when a displayed legacy view exactly matches one current canonical revision. */
+    fun resolveSelection(snapshot: CatalogSnapshot, legacy: OpraEqProfile): CanonicalEqSelection? {
+        val matches = snapshot.profiles.asSequence()
+            .filter(CanonicalEqProfile::isHeadphoneProfile)
+            .filter { it.canonicalProfileId == legacy.canonicalProfileId }
+            .flatMap { profile ->
+                val headphone = requireNotNull(profile.headphone)
+                val group = snapshot.profiles.filter { candidate ->
+                    candidate.isHeadphoneProfile && candidate.headphone?.normalizedKey == headphone.normalizedKey
+                }
+                val identity = legacyIdentity(group)
+                profile.revisions.asSequence().map { revision ->
+                    val selection = CanonicalEqSelection(
+                        profile = profile,
+                        selectedRevisionId = revision.revisionId,
+                        compatibilityVendorId = identity.vendorId,
+                        compatibilityProductId = identity.productId,
+                    )
+                    val projected = revisionProfile(profile, revision, identity.vendorId, identity.productId)
+                    selection to projected
+                }
+            }
+            .filter { (_, projected) -> projected.matchesCanonicalProjection(legacy) }
+            .map { it.first }
+            .distinct()
+            .toList()
+        return matches.singleOrNull()
+    }
+
+    /** Resolve General EQ only against the exact current canonical preset/revision projection. */
+    fun resolveSelection(snapshot: CatalogSnapshot, preset: GeneralEqPreset): CanonicalEqSelection? {
+        val matches = snapshot.profiles.asSequence()
+            .filter(CanonicalEqProfile::isGeneralPreset)
+            .flatMap { profile ->
+                profile.revisions.asSequence().map { revision ->
+                    val selection = CanonicalEqSelection(profile, revision.revisionId)
+                    selection to generalRevisionPreset(profile, revision)
+                }
+            }
+            .filter { (_, projected) -> projected == preset }
+            .map { it.first }
+            .distinct()
+            .toList()
+        return matches.singleOrNull()
+    }
+
+    /** Compatibility view for existing consumers, derived from the canonical selection on read. */
+    fun projectSelection(selection: CanonicalEqSelection, productId: String): OpraEqProfile {
+        require(selection.profile.isHeadphoneProfile) { "Headphone action requires a canonical headphone profile" }
+        require(productId.isNotBlank()) { "Compatibility product identity must not be blank" }
+        require(selection.compatibilityProductId == null || selection.compatibilityProductId == productId) {
+            "Compatibility product identity does not match the canonical selection"
+        }
+        val revision = selection.selectedRevision
+        val primary = revision.sourceReferences.filter(EqSourceReference::isPrimary).singleOrNull()
+        val vendorId = selection.compatibilityVendorId
+            ?: primary?.sourceVendorId
+            ?: "eq-library-vendor:${slug(requireNotNull(selection.profile.headphone).manufacturer)}"
+        return revisionProfile(selection.profile, revision, vendorId, productId)
+    }
+
+    fun matchesSelection(
+        selection: CanonicalEqSelection,
+        legacy: OpraEqProfile,
+        productId: String = legacy.productId,
+    ): Boolean {
+        if (selection.profile.canonicalProfileId != legacy.canonicalProfileId) return false
+        val projected = runCatching { projectSelection(selection, productId) }.getOrNull() ?: return false
+        return legacy.matchesCanonicalProjection(projected)
+    }
+
+    /** Compatibility view for existing General EQ export/action consumers. */
+    fun projectGeneralSelection(
+        selection: CanonicalEqSelection,
+        presetId: String,
+    ): OpraEqProfile {
+        require(selection.profile.isGeneralPreset) { "General EQ action requires a canonical general preset" }
+        require(presetId.isNotBlank()) { "General EQ preset identity must not be blank" }
+        val preset = generalRevisionPreset(selection.profile, selection.selectedRevision)
+        return OpraEqProfile(
+            id = presetId,
+            productId = GENERAL_PRODUCT_ID,
+            canonicalProfileId = selection.profile.canonicalProfileId,
+            author = preset.creator,
+            details = preset.soundImpactSummary,
+            link = preset.sourceUrl,
+            profileType = "parametric_eq",
+            preampGainDb = preset.preampGainDb,
+            bands = preset.bands,
+            eqLibrarySafetyHeadroomDb = preset.eqLibrarySafetyHeadroomDb,
+            isVerified = preset.isVerified,
+        )
+    }
+
+    fun matchesGeneralSelection(
+        selection: CanonicalEqSelection,
+        legacy: OpraEqProfile,
+        presetId: String,
+    ): Boolean {
+        if (!selection.profile.isGeneralPreset) return false
+        val projected = runCatching { projectGeneralSelection(selection, presetId) }.getOrNull() ?: return false
+        return legacy.matchesCanonicalProjection(projected)
+    }
+
+    fun projectGeneralPreset(selection: CanonicalEqSelection): GeneralEqPreset {
+        require(selection.profile.isGeneralPreset) { "General EQ action requires a canonical general preset" }
+        return generalRevisionPreset(selection.profile, selection.selectedRevision)
+    }
+
+    fun isSameGeneralSelection(selection: CanonicalEqSelection, preset: GeneralEqPreset): Boolean =
+        selection.profile.isGeneralPreset && projectGeneralPreset(selection) == preset
+
     private fun revisionProfiles(
         profile: CanonicalEqProfile,
         vendorId: String,
@@ -96,44 +208,63 @@ object CanonicalLegacyCatalogAdapter {
                     },
             )
             .map { revision ->
-                val primary = revision.sourceReferences.firstOrNull { it.isPrimary }
-                    ?: revision.sourceReferences.firstOrNull()
-                val baseName = profile.tuningLabel?.takeIf(String::isNotBlank)
-                    ?: profile.target.name?.takeIf(String::isNotBlank)
-                    ?: when (profile.purpose) {
-                        EqPresetPurpose.GENRE -> "Genre EQ"
-                        else -> "Sound EQ"
-                    }
-                val displayName = if (revision.isLatest) {
-                    baseName
-                } else {
-                    "$baseName · Previous revision${revisionDisplayDate(revision, primary)?.let { " · $it" }.orEmpty()}"
-                }
-                GeneralEqPreset(
-                    id = "eq-library-general:${profile.canonicalProfileId}@${revision.revisionId}",
-                    displayName = displayName,
-                    canonicalProfileId = profile.canonicalProfileId,
-                    category = generalCategory(profile, revision),
-                    creator = profile.creator ?: primary?.creator,
-                    soundImpactSummary = revision.soundImpactSummary
-                        ?: SoundImpactSummary.fromFilters(revision.filters)
-                            ?.let { "EQ Library summary: $it" },
-                    sourceUrl = primary?.url,
-                    preampGainDb = revision.preampGainDb,
-                    bands = revision.filters.map { filter ->
-                        OpraBand(
-                            type = filter.type.toLegacyType(filter.sourceType),
-                            frequency = filter.frequencyHz,
-                            gainDb = filter.gainDb,
-                            q = filter.q,
-                            slope = filter.slope,
-                        )
-                    },
-                    eqLibrarySafetyHeadroomDb = revision.eqLibrarySafetyHeadroomDb,
-                    isVerified = revision.verificationStatus == VerificationStatus.VERIFIED,
-                    isLatestRevision = revision.isLatest,
-                )
+                generalRevisionPreset(profile, revision)
             }
+
+    private fun generalRevisionPreset(profile: CanonicalEqProfile, revision: EqRevision): GeneralEqPreset {
+        val primary = revision.sourceReferences.firstOrNull { it.isPrimary }
+            ?: revision.sourceReferences.firstOrNull()
+        val baseName = profile.tuningLabel?.takeIf(String::isNotBlank)
+            ?: profile.target.name?.takeIf(String::isNotBlank)
+            ?: when (profile.purpose) {
+                EqPresetPurpose.GENRE -> "Genre EQ"
+                else -> "Sound EQ"
+            }
+        val displayName = if (revision.isLatest) {
+            baseName
+        } else {
+            "$baseName · Previous revision${revisionDisplayDate(revision, primary)?.let { " · $it" }.orEmpty()}"
+        }
+        return GeneralEqPreset(
+            id = generalPresetId(profile, revision),
+            displayName = displayName,
+            canonicalProfileId = profile.canonicalProfileId,
+            category = generalCategory(profile, revision),
+            creator = profile.creator ?: primary?.creator,
+            soundImpactSummary = revision.soundImpactSummary
+                ?: SoundImpactSummary.fromFilters(revision.filters)
+                    ?.let { "EQ Library summary: $it" },
+            sourceUrl = primary?.url,
+            preampGainDb = revision.preampGainDb,
+            bands = revision.filters.map { filter ->
+                OpraBand(
+                    type = filter.type.toLegacyType(filter.sourceType),
+                    frequency = filter.frequencyHz,
+                    gainDb = filter.gainDb,
+                    q = filter.q,
+                    slope = filter.slope,
+                )
+            },
+            eqLibrarySafetyHeadroomDb = revision.eqLibrarySafetyHeadroomDb,
+            isVerified = revision.verificationStatus == VerificationStatus.VERIFIED,
+            isLatestRevision = revision.isLatest,
+        )
+    }
+
+    private fun generalPresetId(profile: CanonicalEqProfile, revision: EqRevision): String =
+        "$GENERAL_PRODUCT_ID:${profile.canonicalProfileId}@${revision.revisionId}"
+
+    private fun OpraEqProfile.matchesCanonicalProjection(candidate: OpraEqProfile): Boolean =
+        id == candidate.id &&
+            canonicalProfileId == candidate.canonicalProfileId &&
+            author == candidate.author &&
+            link == candidate.link &&
+            profileType == candidate.profileType &&
+            preampGainDb == candidate.preampGainDb &&
+            bands == candidate.bands &&
+            eqLibrarySafetyHeadroomDb == candidate.eqLibrarySafetyHeadroomDb &&
+            isVerified == candidate.isVerified &&
+            bandOrderProvenance == candidate.bandOrderProvenance
 
     private fun generalCategory(
         profile: CanonicalEqProfile,
@@ -285,7 +416,7 @@ object CanonicalLegacyCatalogAdapter {
             .ifBlank { value }
     }
 
-    private fun displayProductName(headphone: HeadphoneIdentity): String = buildList {
+    fun displayProductName(headphone: HeadphoneIdentity): String = buildList {
         add(headphone.model)
         headphone.variant?.takeIf(String::isNotBlank)?.let(::add)
         headphone.padsOrMode?.takeIf(String::isNotBlank)?.let(::add)
@@ -323,4 +454,6 @@ object CanonicalLegacyCatalogAdapter {
         "dialogue",
         "voice",
     )
+
+    private const val GENERAL_PRODUCT_ID = "eq-library-general"
 }

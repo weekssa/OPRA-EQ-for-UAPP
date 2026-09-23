@@ -97,6 +97,40 @@ class BlackPearlMyEqsCandidatesTest {
     }
 
     @Test
+    fun invalidSavedSourceRowsStayOutOfBlackPearlHardwareMatchCandidates() {
+        val invalidFavorite = SavedEqRecord(
+            entryId = "favorite-invalid",
+            kind = SavedEqKind.Favorite,
+            sourceProfileId = "invalid-canonical",
+            productId = "headphone",
+            manufacturer = "Maker",
+            model = "Headphone X",
+            displayName = "Invalid favorite",
+            profile = profile("invalid-canonical"),
+            createdAtMillis = 1,
+            updatedAtMillis = 1,
+            savedEqDataInvalid = true,
+        )
+        val invalidGeneral = SavedGeneralEqRecord(
+            presetId = "invalid-general",
+            displayName = "Invalid General",
+            category = GeneralEqCategory.SOUND,
+            profile = profile("invalid-general"),
+            createdAtMillis = 1,
+            updatedAtMillis = 1,
+            savedEqDataInvalid = true,
+        )
+
+        val candidates = buildBlackPearlMyEqsCandidates(
+            managedHeadphones = emptyList(),
+            savedEqs = listOf(invalidFavorite),
+            savedGeneralEqs = listOf(invalidGeneral),
+        )
+
+        assertThat(candidates).isEmpty()
+    }
+
+    @Test
     fun invalidCanonicalSavedEqIsExcludedFromHardwareCandidates() {
         val profile = profile("personal-invalid")
         val invalid = SavedEqRecord(

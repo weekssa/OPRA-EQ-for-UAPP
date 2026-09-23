@@ -68,6 +68,7 @@ import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
+import com.weekssa.opraeqforuapp.domain.library.FavoriteToggleResult
 import com.weekssa.opraeqforuapp.domain.library.SavedEqHeadphoneAssociation
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
 import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
@@ -1229,7 +1230,9 @@ class EqLibraryViewModel(
         val outputId = activeOutputId()
         val record = savedGeneralEqRepository.getForOutput(outputId, presetId)
             ?: return resource(R.string.error_general_eq_not_saved)
-        return flashHardwareProfile(record.profile)
+        val profile = record.actionProfileOrNull()
+            ?: return resource(R.string.error_saved_eq_invalid_data)
+        return flashHardwareProfile(profile)
     }
 
     suspend fun refreshCatalog(): CatalogSyncOutcome = syncCoordinator.refresh()
@@ -1330,12 +1333,26 @@ class EqLibraryViewModel(
         profile: OpraEqProfile,
         manufacturer: String,
         model: String,
-    ): Boolean = savedEqRepository.toggleFavorite(
-        activeOutputId(), profile, manufacturer, model,
+    ): FavoriteToggleResult = savedEqRepository.toggleFavorite(
+        activeOutputId(),
+        profile,
+        manufacturer,
+        model,
+        catalogRepository.resolveCanonicalSelection(profile),
     )
 
     suspend fun saveGeneralPreset(preset: GeneralEqPreset): Boolean =
-        savedGeneralEqRepository.saveForOutput(activeOutputId(), preset)
+        catalogRepository.resolveCanonicalSelection(preset)?.let { selection ->
+            savedGeneralEqRepository.saveForOutput(activeOutputId(), preset, selection)
+        } ?: false
+
+    suspend fun saveGeneralPresets(presets: List<GeneralEqPreset>): Boolean {
+        val selections = presets.map { preset ->
+            val selection = catalogRepository.resolveCanonicalSelection(preset) ?: return false
+            preset to selection
+        }
+        return savedGeneralEqRepository.saveAllForOutput(activeOutputId(), selections)
+    }
 
     suspend fun hideCanonicalProfiles(profileIds: Set<String>) =
         preferencesRepository.hideCanonicalProfiles(profileIds)
@@ -1412,6 +1429,7 @@ class EqLibraryViewModel(
     ): PresetExportSummary {
         val record = savedGeneralEqRepository.getForOutput(device.name, presetId)
             ?: return PresetExportSummary(emptyList())
+        if (record.actionProfileOrNull() == null) return PresetExportSummary(emptyList())
         val exportRecord = withContext(computationDispatcher) { savedGeneralEqRepository.toExportRecord(record) }
         return exportWithInvalidation { exportRepository.exportSelected(treeUri, listOf(exportRecord), device) }
     }
@@ -1421,7 +1439,9 @@ class EqLibraryViewModel(
         presetIds: Set<String>,
         device: ExportDevice,
     ): PresetExportSummary {
-        val records = presetIds.sorted().mapNotNull { presetId -> savedGeneralEqRepository.getForOutput(device.name, presetId) }
+        val records = presetIds.sorted().mapNotNull { presetId ->
+            savedGeneralEqRepository.getForOutput(device.name, presetId)?.takeIf { it.actionProfileOrNull() != null }
+        }
         val exportRecords = withContext(computationDispatcher) { records.map(savedGeneralEqRepository::toExportRecord) }
         return exportWithInvalidation { exportRepository.exportSelected(treeUri, exportRecords, device) }
     }
@@ -1695,7 +1715,7 @@ class EqLibraryViewModel(
     private fun LibraryDataState.toExportRecords(): List<ManagedHeadphoneRecord> = buildList {
         addAll(managedHeadphones)
         addAll(savedEqRepository.toManagedHeadphones(savedEqs))
-        addAll(savedGeneralEqs.map(savedGeneralEqRepository::toExportRecord))
+        addAll(savedGeneralEqs.filter { it.actionProfileOrNull() != null }.map(savedGeneralEqRepository::toExportRecord))
     }
 
     private suspend fun exportWithInvalidation(export: suspend () -> PresetExportSummary): PresetExportSummary {

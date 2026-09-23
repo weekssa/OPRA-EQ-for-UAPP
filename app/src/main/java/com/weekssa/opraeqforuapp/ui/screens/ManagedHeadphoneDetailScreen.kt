@@ -50,6 +50,7 @@ import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlashPlan
 import com.weekssa.opraeqforuapp.domain.blackpearl.buildBlackPearlFlashPlan
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
+import com.weekssa.opraeqforuapp.domain.library.FavoriteToggleResult
 import com.weekssa.opraeqforuapp.domain.export.DeviceExportability
 import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
@@ -113,7 +114,7 @@ fun ManagedHeadphoneDetailScreen(
     ew300ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
     onConnectEw300: () -> Unit = {},
     onFlashManagedProfile: suspend (String) -> String,
-    onToggleFavorite: suspend (OpraEqProfile, String, String) -> Boolean,
+    onToggleFavorite: suspend (OpraEqProfile, String, String) -> FavoriteToggleResult,
     onHideCanonicalProfile: suspend (String) -> Unit,
     onLoadManagedHeadphone: suspend (String) -> ManagedHeadphoneRecord?,
     onSaveSelection: suspend (String, Set<String>, Boolean) -> Unit,
@@ -223,6 +224,7 @@ fun ManagedHeadphoneDetailScreen(
     var showHeadphoneRemoval by remember { mutableStateOf(false) }
     var deleteSavedFiles by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val favoriteSourceUnavailableMessage = stringResource(R.string.favorite_source_unavailable_message)
     var headphoneMenuOpen by remember(headphone.productId) { mutableStateOf(false) }
 
     val onNotifyChanged: (Boolean) -> Unit = { enabled ->
@@ -468,14 +470,17 @@ fun ManagedHeadphoneDetailScreen(
                 onOpenSource = profile.lastKnownProfile.link?.let { sourceUrl -> { onOpenUrl(sourceUrl) } },
                 onToggleFavorite = {
                     scope.launch {
-                        val favorited = onToggleFavorite(
+                        val result = onToggleFavorite(
                             profile.lastKnownProfile,
                             headphone.vendorName,
                             headphone.productName,
                         )
                         onMessage(
-                            if (favorited) "Saved to My EQs favorites."
-                            else "Removed from My EQs favorites.",
+                            when (result) {
+                                FavoriteToggleResult.SAVED -> "Saved to My EQs favorites."
+                                FavoriteToggleResult.REMOVED -> "Removed from My EQs favorites."
+                                FavoriteToggleResult.CANONICAL_SOURCE_UNAVAILABLE -> favoriteSourceUnavailableMessage
+                            },
                         )
                     }
                 },

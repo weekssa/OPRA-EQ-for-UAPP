@@ -405,6 +405,134 @@ class CanonicalLegacyCatalogAdapterTest {
         assertThat(legacy.profiles.any { it.id == "eq-library:opra-history@old" }).isTrue()
     }
 
+    @Test
+    fun resolvesExactHeadphoneProjectionToFullProfileAndSelectedRevision() {
+        val primary = EqSourceReference(
+            sourceId = "community",
+            sourceKind = EqSourceKind.COMMUNITY,
+            sourceRecordId = "source-record",
+            url = "https://example.com/source-record",
+            creator = "Tester",
+            provenanceTier = ProvenanceTier.TRACEABLE_COMMUNITY,
+            redistributionPolicy = RedistributionPolicy.LINK_ONLY,
+            isPrimary = true,
+        )
+        val latest = revision("new", 200.0, primary, isLatest = true)
+        val older = revision("old", 100.0, primary.copy(sourceRecordId = "source-record-old"), isLatest = false)
+        val canonical = profile("canonical-headphone", HeadphoneIdentity("Maker", "Model"), "Tester", primary)
+            .copy(revisions = listOf(older, latest))
+        val snapshot = CatalogSnapshot(1, "2026-09-23T00:00:00Z", "test", listOf(canonical))
+        val displayed = CanonicalLegacyCatalogAdapter.adapt(snapshot).profiles.single { it.id == "eq-library:canonical-headphone@new" }
+
+        val selection = CanonicalLegacyCatalogAdapter.resolveSelection(snapshot, displayed)
+
+        assertThat(selection?.profile).isEqualTo(canonical)
+        assertThat(selection?.selectedRevisionId).isEqualTo("new")
+        assertThat(selection?.profile?.revisions?.map { it.revisionId }).containsExactly("old", "new").inOrder()
+        assertThat(selection?.selectedRevision?.sourceReferences).containsExactly(latest.sourceReferences.single())
+        assertThat(
+            CanonicalLegacyCatalogAdapter.resolveSelection(
+                snapshot,
+                displayed.copy(bands = displayed.bands!!.map { it.copy(gainDb = requireNotNull(it.gainDb) + 0.25) }),
+            ),
+        ).isNull()
+    }
+
+    @Test
+    fun resolvesGeneralPresetOnlyWhenAllProjectedValuesMatch() {
+        val source = EqSourceReference(
+            sourceId = "community",
+            sourceKind = EqSourceKind.COMMUNITY,
+            sourceRecordId = "general-record",
+            url = "https://example.com/general-record",
+            creator = "Tester",
+            provenanceTier = ProvenanceTier.TRACEABLE_COMMUNITY,
+            redistributionPolicy = RedistributionPolicy.LINK_ONLY,
+            isPrimary = true,
+        )
+        val canonical = CanonicalEqProfile(
+            canonicalProfileId = "general-bass-boost",
+            scope = EqProfileScope.GENERAL,
+            purpose = EqPresetPurpose.EFFECT,
+            creator = "Tester",
+            target = EqTarget(null, EqTargetKind.UNKNOWN),
+            tuningLabel = "Bass Boost",
+            revisions = listOf(revision("general-r1", 120.0, source, isLatest = true)),
+        )
+        val snapshot = CatalogSnapshot(1, "2026-09-23T00:00:00Z", "test", listOf(canonical))
+        val preset = CanonicalLegacyCatalogAdapter.adapt(snapshot).generalPresets.single()
+
+        val selection = CanonicalLegacyCatalogAdapter.resolveSelection(snapshot, preset)
+
+        assertThat(selection?.profile).isEqualTo(canonical)
+        assertThat(selection?.selectedRevisionId).isEqualTo("general-r1")
+        assertThat(selection).isNotNull()
+        assertThat(CanonicalLegacyCatalogAdapter.projectGeneralSelection(requireNotNull(selection), preset.id).bands)
+            .isEqualTo(preset.bands)
+        assertThat(CanonicalLegacyCatalogAdapter.resolveSelection(snapshot, preset.copy(preampGainDb = 1.0))).isNull()
+    }
+
+    @Test
+    fun selectedProjectionRetainsCompatibilityIdentityFromAnotherRevisionWithoutGrantingPriority() {
+        val community = EqSourceReference(
+            sourceId = "community",
+            sourceKind = EqSourceKind.COMMUNITY,
+            sourceRecordId = "community-revision",
+            url = "https://example.com/community-revision",
+            creator = "Community author",
+            provenanceTier = ProvenanceTier.TRACEABLE_COMMUNITY,
+            redistributionPolicy = RedistributionPolicy.LINK_ONLY,
+            isPrimary = true,
+        )
+        val opra = EqSourceReference(
+            sourceId = "opra",
+            sourceKind = EqSourceKind.STRUCTURED_CATALOG,
+            sourceRecordId = "opra-revision",
+            sourceVendorId = "opra-vendor",
+            sourceProductId = "shared-product",
+            url = "https://example.com/opra-revision",
+            creator = "OPRA",
+            provenanceTier = ProvenanceTier.AUTHORITATIVE,
+            redistributionPolicy = RedistributionPolicy.STRUCTURED_DATA_ONLY,
+            isPrimary = false,
+        )
+        val olderOpraRevision = EqRevision(
+            revisionId = "mixed-r0",
+            acousticFingerprint = "mixed-fingerprint-r0",
+            preampGainDb = 0.0,
+            filters = listOf(EqFilter(EqFilterType.PEAK, 800.0, 0.5, 1.0)),
+            sourceReferences = listOf(opra),
+            isLatest = false,
+        )
+        val currentCommunityRevision = EqRevision(
+            revisionId = "mixed-r1",
+            acousticFingerprint = "mixed-fingerprint-r1",
+            preampGainDb = 0.0,
+            filters = listOf(EqFilter(EqFilterType.PEAK, 1000.0, 1.0, 1.0)),
+            sourceReferences = listOf(community),
+            isLatest = true,
+        )
+        val canonical = CanonicalEqProfile(
+            canonicalProfileId = "mixed-source-headphone",
+            headphone = HeadphoneIdentity("Maker", "Mixed source model"),
+            creator = "Community author",
+            target = EqTarget(null, EqTargetKind.UNKNOWN),
+            tuningLabel = "Mixed source",
+            revisions = listOf(olderOpraRevision, currentCommunityRevision),
+        )
+        val snapshot = CatalogSnapshot(1, "2026-09-23T00:00:00Z", "test", listOf(canonical))
+        val displayed = CanonicalLegacyCatalogAdapter.adapt(snapshot).profiles.single()
+        val selection = requireNotNull(CanonicalLegacyCatalogAdapter.resolveSelection(snapshot, displayed))
+
+        assertThat(selection.compatibilityVendorId).isEqualTo("opra-vendor")
+        assertThat(selection.compatibilityProductId).isEqualTo("shared-product")
+        assertThat(CanonicalLegacyCatalogAdapter.matchesSelection(selection, displayed)).isTrue()
+        assertThat(displayed.id).isEqualTo("eq-library:mixed-source-headphone@mixed-r1")
+        assertThat(displayed.bandOrderProvenance).isNull()
+        assertThat(CanonicalLegacyCatalogAdapter.projectSelection(selection, displayed.productId).bandOrderProvenance)
+            .isNull()
+    }
+
     private fun profile(
         id: String,
         headphone: HeadphoneIdentity,

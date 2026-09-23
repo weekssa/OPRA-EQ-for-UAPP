@@ -52,6 +52,7 @@ import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.OpraProduct
 import com.weekssa.opraeqforuapp.domain.catalog.assessCompatibility
 import com.weekssa.opraeqforuapp.domain.catalog.isHistoricalRevision
+import com.weekssa.opraeqforuapp.domain.library.FavoriteToggleResult
 import com.weekssa.opraeqforuapp.domain.export.DeviceExportability
 import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
@@ -83,7 +84,7 @@ internal fun ProfileSelectionEditor(
     profileVisibility: ProfileVisibilityPreferences,
     exportTargets: ExportTargetPreferences = ExportTargetPreferences(),
     favoriteProfileIds: Set<String>,
-    onToggleFavorite: (suspend (OpraEqProfile, String, String) -> Boolean)?,
+    onToggleFavorite: (suspend (OpraEqProfile, String, String) -> FavoriteToggleResult)?,
     onHideCanonicalProfile: suspend (String) -> Unit,
     onLoadManagedHeadphone: suspend (String) -> ManagedHeadphoneRecord?,
     onSaveSelection: suspend (String, Set<String>, Boolean) -> Unit,
@@ -131,6 +132,7 @@ internal fun ProfileSelectionEditor(
     val unknownManufacturer = stringResource(R.string.unknown_manufacturer)
     val favoriteSavedMessage = stringResource(R.string.favorite_saved_message)
     val favoriteRemovedMessage = stringResource(R.string.favorite_removed_message)
+    val favoriteSourceUnavailableMessage = stringResource(R.string.favorite_source_unavailable_message)
     val eqHiddenMessage = stringResource(R.string.eq_hidden_from_library_message)
     val sourceNotUsableDefault = stringResource(R.string.source_not_usable_default)
 
@@ -567,8 +569,15 @@ internal fun ProfileSelectionEditor(
                     onToggleFavorite = onToggleFavorite?.let { toggle ->
                         {
                             scope.launch {
-                                val favorited = toggle(profile, vendor?.name ?: unknownManufacturer, product.name)
-                                onMessage(if (favorited) favoriteSavedMessage else favoriteRemovedMessage)
+                                val result = toggle(profile, vendor?.name ?: unknownManufacturer, product.name)
+                                onMessage(
+                                    when (result) {
+                                        FavoriteToggleResult.SAVED -> favoriteSavedMessage
+                                        FavoriteToggleResult.REMOVED -> favoriteRemovedMessage
+                                        FavoriteToggleResult.CANONICAL_SOURCE_UNAVAILABLE ->
+                                            favoriteSourceUnavailableMessage
+                                    },
+                                )
                             }
                         }
                     },

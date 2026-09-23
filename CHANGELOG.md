@@ -6,6 +6,18 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ## [Unreleased]
 
+### 2026-09-23 canonical Favorite and General EQ persistence
+
+- Added full canonical profile/revision/source-reference persistence for newly saved catalog
+  Favorites and General EQs; legacy `OpraEqProfile` records remain derived compatibility views.
+- Added nullable Room 8→9 columns only. Existing Favorites and General EQ rows are preserved
+  unchanged with no guessed canonical provenance or backfill.
+- Resolve saves only against the exact current canonical projection, make a General EQ batch
+  atomic, and keep malformed new canonical rows visible but ineligible for Flash/export actions.
+- Added focused canonical round-trip, mixed-source identity, atomic-save, fail-closed corruption,
+  and non-destructive migration coverage. These changes still require exact-head CI; no Android
+  test or build result is implied by the test additions.
+
 ### 2026-09-23 source-review follow-up
 
 - Prevented catalog refresh and selection-save from reviving obsolete UAPP/ToneBoosters XML after

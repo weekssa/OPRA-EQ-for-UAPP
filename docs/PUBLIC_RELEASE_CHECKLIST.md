@@ -24,7 +24,7 @@ The checklist is organized around the **current release state**. Detailed histor
 
 - [ ] Exact current-head software, security, dependency, and signed-artifact gates complete.
 - [ ] Corrected-source signed APK, checksum, signer verification, artifact digest, install, and cold launch recorded.
-- [ ] Remaining source-neutral parsing/canonical-storage/ToneBoosters parity and product verification blockers closed.
+- [ ] Favorite/General canonical persistence, source-neutral/ToneBoosters parity, and product verification blockers closed.
 - [ ] Exact-candidate promotion workflow reviewed; it is currently disabled to prevent rebuilding a different APK during publication.
 - [ ] Final owner approval to merge and publish received.
 

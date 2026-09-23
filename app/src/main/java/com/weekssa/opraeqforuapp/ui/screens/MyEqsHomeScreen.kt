@@ -555,14 +555,22 @@ fun MyEqsHomeScreen(
             }
         } else {
             items(savedGeneralEqs, key = { "general:${it.presetId}" }) { record ->
-                val needsExport = exportCurrentness.needsExport(generalExportProductId(record.presetId), record.presetId)
-                val flashPreview = hardwareFlashPreview(record.profile, activeOutput)
+                val actionProfile = record.actionProfileOrNull()
+                val needsExport = actionProfile != null &&
+                    exportCurrentness.needsExport(generalExportProductId(record.presetId), record.presetId)
+                val flashPreview = actionProfile?.let { hardwareFlashPreview(it, activeOutput) }
                 ListItem(
                     headlineContent = { Text(record.displayName) },
                     supportingContent = {
                         Column {
                             Text(generalCategoryLabel(record.category))
                             record.profile.details?.takeIf(String::isNotBlank)?.let { Text(it) }
+                            if (record.savedEqDataInvalid) {
+                                Text(
+                                    text = stringResource(R.string.saved_eq_invalid_data_notice),
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                            }
                         }
                     },
                     trailingContent = {

@@ -242,6 +242,33 @@ data class CanonicalEqProfile(
         get() = scope == EqProfileScope.GENERAL
 }
 
+/** A complete canonical profile plus the exact revision selected by a library action. */
+@Serializable
+data class CanonicalEqSelection(
+    val profile: CanonicalEqProfile,
+    @SerialName("selected_revision_id") val selectedRevisionId: String,
+    /** Compatibility-only product identity used to reproduce the exact legacy projection. */
+    @SerialName("compatibility_vendor_id") val compatibilityVendorId: String? = null,
+    @SerialName("compatibility_product_id") val compatibilityProductId: String? = null,
+) {
+    init {
+        require(profile.hasValidClassification()) { "Canonical EQ selection has an invalid classification" }
+        require(selectedRevisionId.isNotBlank()) { "Canonical EQ selection must identify a revision" }
+        require(profile.revisions.count { it.revisionId == selectedRevisionId } == 1) {
+            "Canonical EQ selection must identify exactly one profile revision"
+        }
+        require((compatibilityVendorId == null) == (compatibilityProductId == null)) {
+            "Compatibility vendor and product identity must be stored together"
+        }
+        require(compatibilityVendorId?.isNotBlank() != false && compatibilityProductId?.isNotBlank() != false) {
+            "Compatibility identity must not be blank"
+        }
+    }
+
+    val selectedRevision: EqRevision
+        get() = profile.revisions.single { it.revisionId == selectedRevisionId }
+}
+
 data class EqCandidate(
     val headphone: HeadphoneIdentity? = null,
     val scope: EqProfileScope = EqProfileScope.HEADPHONE,

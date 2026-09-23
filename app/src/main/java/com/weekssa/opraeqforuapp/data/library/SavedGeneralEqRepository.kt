@@ -5,8 +5,9 @@ import com.weekssa.opraeqforuapp.data.managed.ManagedProfileSnapshotCodec
 import com.weekssa.opraeqforuapp.data.managed.OpraEqDatabase
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqCategory
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqPreset
-import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.conversion.ToneBoostersConverter
+import com.weekssa.opraeqforuapp.domain.library.CanonicalEqSelection
+import com.weekssa.opraeqforuapp.domain.library.CanonicalLegacyCatalogAdapter
 import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedProfileRecord
@@ -20,6 +21,7 @@ import kotlinx.coroutines.withContext
 class SavedGeneralEqRepository(
     private val database: OpraEqDatabase,
     private val snapshotCodec: ManagedProfileSnapshotCodec = ManagedProfileSnapshotCodec(),
+    private val selectionCodec: CanonicalEqSelectionCodec = CanonicalEqSelectionCodec(),
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val nowMillis: () -> Long = System::currentTimeMillis,
 ) {
@@ -37,46 +39,44 @@ class SavedGeneralEqRepository(
         withContext(ioDispatcher) { dao.get(presetId)?.let(::toDomain) }
 
     @Suppress("UNUSED_PARAMETER")
-    suspend fun saveForOutput(outputId: String, preset: GeneralEqPreset): Boolean =
-        withContext(ioDispatcher) {
-            database.withTransaction {
-                val existing = dao.get(preset.id)
-                val now = nowMillis()
-                dao.upsert(
-                    SavedGeneralEqEntity(
-                        presetId = preset.id,
-                        displayName = preset.displayName,
-                        category = preset.category.name,
-                        profileJson = snapshotCodec.encode(preset.toExportProfile()),
-                        createdAtMillis = existing?.createdAtMillis ?: now,
-                        updatedAtMillis = now,
-                    ),
-                )
-                existing == null
-            }
-        }
+    suspend fun saveForOutput(
+        outputId: String,
+        preset: GeneralEqPreset,
+        selection: CanonicalEqSelection,
+    ): Boolean = saveAllForOutput(outputId, listOf(preset to selection))
 
+    /** All-or-nothing save so a stale/missing canonical source cannot partially save a batch. */
     @Suppress("UNUSED_PARAMETER")
-    suspend fun toggleForOutput(outputId: String, preset: GeneralEqPreset): Boolean =
+    suspend fun saveAllForOutput(
+        outputId: String,
+        selections: List<Pair<GeneralEqPreset, CanonicalEqSelection>>,
+    ): Boolean =
         withContext(ioDispatcher) {
-            database.withTransaction {
-                if (dao.get(preset.id) != null) {
-                    dao.deleteAllSelections(preset.id)
-                    dao.delete(preset.id)
-                    return@withTransaction false
+            if (selections.isEmpty()) return@withContext true
+            if (selections.any { (preset, selection) ->
+                    !CanonicalLegacyCatalogAdapter.isSameGeneralSelection(selection, preset)
                 }
-
-                val now = nowMillis()
-                dao.upsert(
-                    SavedGeneralEqEntity(
-                        presetId = preset.id,
-                        displayName = preset.displayName,
-                        category = preset.category.name,
-                        profileJson = snapshotCodec.encode(preset.toExportProfile()),
-                        createdAtMillis = now,
-                        updatedAtMillis = now,
-                    ),
-                )
+            ) return@withContext false
+            database.withTransaction {
+                selections.forEach { (preset, selection) ->
+                    val existing = dao.get(preset.id)
+                    val now = nowMillis()
+                    val canonicalProfile = CanonicalLegacyCatalogAdapter.projectGeneralSelection(
+                        selection,
+                        preset.id,
+                    )
+                    dao.upsert(
+                        SavedGeneralEqEntity(
+                            presetId = preset.id,
+                            displayName = preset.displayName,
+                            category = preset.category.name,
+                            profileJson = snapshotCodec.encode(canonicalProfile),
+                            createdAtMillis = existing?.createdAtMillis ?: now,
+                            updatedAtMillis = now,
+                            canonicalSelectionJson = selectionCodec.encode(selection),
+                        ),
+                    )
+                }
                 true
             }
         }
@@ -90,13 +90,16 @@ class SavedGeneralEqRepository(
     }
 
     fun toExportRecord(record: SavedGeneralEqRecord): ManagedHeadphoneRecord {
-        val fingerprint = snapshotCodec.fingerprint(record.profile)
+        val profile = requireNotNull(record.actionProfileOrNull()) {
+            "This saved General EQ has invalid or incomplete source data and cannot be exported."
+        }
+        val fingerprint = snapshotCodec.fingerprint(profile)
         val presetName = ToneBoostersConverter.buildPresetName(
             modelLabel = record.displayName,
-            creator = record.profile.author,
+            creator = profile.author,
             details = null,
         )
-        val uapp = runCatching { ToneBoostersConverter.convert(record.profile, presetName) }.getOrNull()
+        val uapp = runCatching { ToneBoostersConverter.convert(profile, presetName) }.getOrNull()
         return ManagedHeadphoneRecord(
             productId = "general-export:${record.presetId}",
             vendorId = "general-eqs",
@@ -110,7 +113,7 @@ class SavedGeneralEqRepository(
                     profileId = record.presetId,
                     selected = true,
                     explicitlyExcluded = false,
-                    lastKnownProfile = record.profile,
+                    lastKnownProfile = profile,
                     fingerprint = fingerprint,
                     firstSeenAtMillis = record.createdAtMillis,
                     lastSeenAtMillis = record.updatedAtMillis,
@@ -126,32 +129,47 @@ class SavedGeneralEqRepository(
         )
     }
 
-    private fun toDomain(entity: SavedGeneralEqEntity): SavedGeneralEqRecord = SavedGeneralEqRecord(
-        presetId = entity.presetId,
-        displayName = entity.displayName,
-        category = GeneralEqCategory.valueOf(entity.category),
-        profile = snapshotCodec.decode(entity.profileJson),
-        createdAtMillis = entity.createdAtMillis,
-        updatedAtMillis = entity.updatedAtMillis,
-    )
-
-    private fun GeneralEqPreset.toExportProfile(): OpraEqProfile = OpraEqProfile(
-        id = id,
-        productId = INTERNAL_GENERAL_PRODUCT_ID,
-        canonicalProfileId = canonicalProfileId,
-        author = creator,
-        details = soundImpactSummary,
-        link = sourceUrl,
-        profileType = "parametric_eq",
-        preampGainDb = preampGainDb,
-        bands = bands,
-        eqLibrarySafetyHeadroomDb = eqLibrarySafetyHeadroomDb,
-        isVerified = isVerified,
-    )
+    private fun toDomain(entity: SavedGeneralEqEntity): SavedGeneralEqRecord {
+        val profile = snapshotCodec.decode(entity.profileJson)
+        var invalid = false
+        val selection = entity.canonicalSelectionJson?.let { encoded ->
+            runCatching {
+                selectionCodec.decode(encoded).also { decoded ->
+                    require(decoded.profile.isGeneralPreset) {
+                        "Saved General EQ selection has the wrong canonical scope"
+                    }
+                    val projectedPreset = CanonicalLegacyCatalogAdapter.projectGeneralPreset(decoded)
+                    require(projectedPreset.id == entity.presetId) {
+                        "Saved General EQ ID does not match its canonical profile/revision"
+                    }
+                    require(projectedPreset.displayName == entity.displayName) {
+                        "Saved General EQ name does not match its canonical revision"
+                    }
+                    require(projectedPreset.category.name == entity.category) {
+                        "Saved General EQ category does not match its canonical purpose"
+                    }
+                    require(CanonicalLegacyCatalogAdapter.matchesGeneralSelection(decoded, profile, entity.presetId)) {
+                        "Saved General EQ projection does not match its canonical selection"
+                    }
+                }
+            }.getOrElse {
+                invalid = true
+                null
+            }
+        }
+        return SavedGeneralEqRecord(
+            presetId = entity.presetId,
+            displayName = entity.displayName,
+            category = GeneralEqCategory.valueOf(entity.category),
+            profile = profile,
+            createdAtMillis = entity.createdAtMillis,
+            updatedAtMillis = entity.updatedAtMillis,
+            canonicalSelection = selection,
+            savedEqDataInvalid = invalid,
+        )
+    }
 
     companion object {
-        private const val INTERNAL_GENERAL_PRODUCT_ID = "eq-library-general"
-
         private fun categoryLabel(category: GeneralEqCategory): String = when (category) {
             GeneralEqCategory.SOUND -> "Sound"
             GeneralEqCategory.GENRE -> "Genre"

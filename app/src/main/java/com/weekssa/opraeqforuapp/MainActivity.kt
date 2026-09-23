@@ -186,7 +186,7 @@ class MainActivity : ComponentActivity() {
         onDeleteSavedFilesForProduct = viewModel::deleteSavedFilesForProduct,
         onMarkReviewed = viewModel::markReviewed,
         onToggleFavorite = viewModel::toggleFavorite,
-        onSaveGeneralPreset = viewModel::saveGeneralPreset,
+        onSaveGeneralPresets = viewModel::saveGeneralPresets,
         onHideCanonicalProfiles = viewModel::hideCanonicalProfiles,
         onUnhideCanonicalProfiles = viewModel::unhideCanonicalProfiles,
         onImportPersonal = viewModel::importPersonal,

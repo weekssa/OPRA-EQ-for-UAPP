@@ -15,6 +15,7 @@ import com.weekssa.opraeqforuapp.domain.ew300.Ew300PersistenceQualificationResul
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 import com.weekssa.opraeqforuapp.domain.library.SavedEqHeadphoneAssociation
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
+import com.weekssa.opraeqforuapp.domain.library.FavoriteToggleResult
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.settings.OutputBehavior
 import com.weekssa.opraeqforuapp.domain.settings.ThemeMode
@@ -81,8 +82,8 @@ class EqLibraryActions(
     val onDeleteSavedFilesForProfiles: suspend (Set<String>) -> PresetCleanupSummary,
     val onDeleteSavedFilesForProduct: suspend (String) -> PresetCleanupSummary,
     val onMarkReviewed: suspend (String) -> Unit,
-    val onToggleFavorite: suspend (OpraEqProfile, String, String) -> Boolean,
-    val onSaveGeneralPreset: suspend (GeneralEqPreset) -> Boolean,
+    val onToggleFavorite: suspend (OpraEqProfile, String, String) -> FavoriteToggleResult,
+    val onSaveGeneralPresets: suspend (List<GeneralEqPreset>) -> Boolean,
     val onHideCanonicalProfiles: suspend (Set<String>) -> Unit,
     val onUnhideCanonicalProfiles: suspend (Set<String>) -> Unit,
     val onImportPersonal: suspend (String, String, String, String?, String) -> SavedEqRecord,

@@ -285,7 +285,7 @@ class SavedEqCanonicalSnapshotMigrationTest {
     }
 
     @Test
-    fun roomOpensVersion7RowsAfterAdditiveVersion8Migration() {
+    fun roomOpensVersion7RowsAfterAdditiveVersion8And9Migrations() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val databaseName = "saved-eq-migration-${UUID.randomUUID()}.db"
         val original = SavedEqEntity(
@@ -303,29 +303,110 @@ class SavedEqCanonicalSnapshotMigrationTest {
         )
 
         try {
-            val version8 = Room.databaseBuilder(context, OpraEqDatabase::class.java, databaseName)
+            val latest = Room.databaseBuilder(context, OpraEqDatabase::class.java, databaseName)
                 .allowMainThreadQueries()
                 .build()
             try {
-                runBlocking { version8.savedEqDao().upsert(original) }
+                runBlocking { latest.savedEqDao().upsert(original) }
             } finally {
-                version8.close()
+                latest.close()
             }
 
             val databasePath = context.getDatabasePath(databaseName).absolutePath
             SQLiteDatabase.openDatabase(databasePath, null, SQLiteDatabase.OPEN_READWRITE).use { raw ->
                 raw.execSQL("ALTER TABLE saved_eqs DROP COLUMN canonicalSnapshotJson")
+                raw.execSQL("ALTER TABLE saved_eqs DROP COLUMN canonicalSelectionJson")
+                raw.execSQL("ALTER TABLE saved_general_eqs DROP COLUMN canonicalSelectionJson")
                 raw.execSQL("PRAGMA user_version=7")
             }
 
             val migrated = Room.databaseBuilder(context, OpraEqDatabase::class.java, databaseName)
-                .addMigrations(OpraEqDatabase.MIGRATION_7_8)
+                .addMigrations(OpraEqDatabase.MIGRATION_7_8, OpraEqDatabase.MIGRATION_8_9)
                 .allowMainThreadQueries()
                 .build()
             try {
                 val restored = runBlocking { migrated.savedEqDao().get(original.entryId) }
                 assertEquals(original, restored)
                 assertNull(restored?.canonicalSnapshotJson)
+                assertNull(restored?.canonicalSelectionJson)
+            } finally {
+                migrated.close()
+            }
+        } finally {
+            context.deleteDatabase(databaseName)
+        }
+    }
+
+    @Test
+    fun roomVersion8MigrationPreservesFavoriteAndGeneralRowsWithoutInventingSelections() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val databaseName = "canonical-selection-migration-${UUID.randomUUID()}.db"
+        val legacyCodec = ManagedProfileSnapshotCodec()
+        val favoriteProfile = OpraEqProfile(
+            id = "legacy-favorite-profile",
+            productId = "legacy-product",
+            author = "Tester",
+            details = null,
+            link = "https://example.com/legacy",
+            profileType = "parametric_eq",
+            preampGainDb = -1.0,
+            bands = listOf(com.weekssa.opraeqforuapp.domain.catalog.OpraBand("peak_dip", 1000.0, 1.0, 1.0, null)),
+        )
+        val favorite = SavedEqEntity(
+            entryId = "favorite:legacy",
+            kind = SavedEqRepository.KIND_FAVORITE,
+            sourceProfileId = favoriteProfile.id,
+            productId = favoriteProfile.productId,
+            manufacturer = "Legacy Maker",
+            model = "Legacy Model",
+            displayName = "Legacy Favorite",
+            profileJson = legacyCodec.encode(favoriteProfile),
+            createdAtMillis = 3L,
+            updatedAtMillis = 4L,
+        )
+        val general = SavedGeneralEqEntity(
+            presetId = "legacy-general",
+            displayName = "Legacy General",
+            category = "SOUND",
+            profileJson = legacyCodec.encode(favoriteProfile.copy(id = "legacy-general", productId = "eq-library-general")),
+            createdAtMillis = 5L,
+            updatedAtMillis = 6L,
+        )
+
+        try {
+            val latest = Room.databaseBuilder(context, OpraEqDatabase::class.java, databaseName)
+                .allowMainThreadQueries()
+                .build()
+            try {
+                runBlocking {
+                    latest.savedEqDao().upsert(favorite)
+                    latest.savedGeneralEqDao().upsert(general)
+                }
+            } finally {
+                latest.close()
+            }
+
+            SQLiteDatabase.openDatabase(
+                context.getDatabasePath(databaseName).absolutePath,
+                null,
+                SQLiteDatabase.OPEN_READWRITE,
+            ).use { raw ->
+                raw.execSQL("ALTER TABLE saved_eqs DROP COLUMN canonicalSelectionJson")
+                raw.execSQL("ALTER TABLE saved_general_eqs DROP COLUMN canonicalSelectionJson")
+                raw.execSQL("PRAGMA user_version=8")
+            }
+
+            val migrated = Room.databaseBuilder(context, OpraEqDatabase::class.java, databaseName)
+                .addMigrations(OpraEqDatabase.MIGRATION_8_9)
+                .allowMainThreadQueries()
+                .build()
+            try {
+                val favoriteAfter = runBlocking { migrated.savedEqDao().get(favorite.entryId) }
+                val generalAfter = runBlocking { migrated.savedGeneralEqDao().get(general.presetId) }
+                assertEquals(favorite, favoriteAfter)
+                assertEquals(general, generalAfter)
+                assertNull(favoriteAfter?.canonicalSelectionJson)
+                assertNull(generalAfter?.canonicalSelectionJson)
             } finally {
                 migrated.close()
             }

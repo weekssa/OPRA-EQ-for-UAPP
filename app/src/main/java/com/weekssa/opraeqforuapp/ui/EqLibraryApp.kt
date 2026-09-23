@@ -158,7 +158,7 @@ fun EqLibraryApp(
     val onDeleteSavedFilesForProduct = actions.onDeleteSavedFilesForProduct
     val onMarkReviewed = actions.onMarkReviewed
     val onToggleFavorite = actions.onToggleFavorite
-    val onSaveGeneralPreset = actions.onSaveGeneralPreset
+    val onSaveGeneralPresets = actions.onSaveGeneralPresets
     val onHideCanonicalProfiles = actions.onHideCanonicalProfiles
     val onUnhideCanonicalProfiles = actions.onUnhideCanonicalProfiles
     val onImportPersonal = actions.onImportPersonal
@@ -786,11 +786,7 @@ fun EqLibraryApp(
                         ew300ConnectionState = ew300ConnectionState,
                         onFlashEw300Profile = onFlashEw300FromMyDac,
                         onToggleFavorite = onToggleFavorite,
-                        onSaveGeneralPresets = { presets ->
-                            val presetIds = presets.mapTo(mutableSetOf(), GeneralEqPreset::id)
-                            presets.forEach { preset -> onSaveGeneralPreset(preset) }
-                            presetIds.size
-                        },
+                        onSaveGeneralPresets = onSaveGeneralPresets,
                         onHideCanonicalProfiles = onHideCanonicalProfiles,
                         onLoadManagedHeadphone = onLoadManagedHeadphone,
                         onSaveSelection = onSaveSelection,

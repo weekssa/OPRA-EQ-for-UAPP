@@ -61,13 +61,14 @@ fun buildBlackPearlMyEqsCandidates(
 
     val general = savedGeneralEqs
         .sortedBy { it.presetId }
-        .map { record ->
+        .mapNotNull { record ->
+            val profile = record.actionProfileOrNull() ?: return@mapNotNull null
             BlackPearlSavedEqCandidate(
                 identity = SavedHardwareEqIdentity(
                     savedEqKey = "general:${record.presetId}",
                     displayName = record.displayName,
                 ),
-                profile = record.profile,
+                profile = profile,
             )
         }
 

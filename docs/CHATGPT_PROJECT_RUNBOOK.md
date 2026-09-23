@@ -163,6 +163,12 @@ The persisted compatibility field name `autoIncludeNewProfiles` may remain inter
 
 **My EQs ownership and selection are device/output-agnostic.** A headphone, Favorite, Personal EQ, captured DAC EQ, or General EQ saved to My EQs remains the same local item when the active target changes. Saving to My EQs does not itself export a file, download anything, or Flash hardware. Target-specific representations/currentness remain derived state and are created/used only by explicit Export/Flash paths.
 
+New catalog Favorites and General EQs retain the full canonical profile, exact selected revision,
+and source references. Legacy `OpraEqProfile` values are derived compatibility views, not saved
+source authority. Saving requires exact resolution against the current canonical catalog; General
+EQ batch saves are all-or-nothing. Room migrations add nullable columns only: older projection-only
+rows remain unchanged and must never receive inferred canonical provenance.
+
 Legacy output-selection tables/`outputId` parameters may remain temporarily for migration/source compatibility, but they must not be used to decide current My EQs identity or visibility. A DAC capture records device identity as provenance only; after capture it behaves like any other Personal EQ.
 
 Persisted app-managed exported artifacts that no longer have a confident current My EQ association remain visible under **Needs attention** rather than disappearing. Recovery is limited to exact app-owned/persisted-access artifacts, uses strict parsing, requires the user to provide any missing headphone/name association, preserves decoded EQ values and original-file provenance, and never scans or deletes arbitrary external files. Malformed/unsupported artifacts remain visible but are not falsely recoverable. An unresolved artifact remains present across restart/rescan until recovered, explicitly removed, or confirmed missing according to the storage ownership rules.

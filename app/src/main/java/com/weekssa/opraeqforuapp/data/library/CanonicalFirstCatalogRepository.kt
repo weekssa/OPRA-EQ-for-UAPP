@@ -6,6 +6,7 @@ import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshResult
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.domain.catalog.OpraCatalog
 import com.weekssa.opraeqforuapp.domain.library.CanonicalLegacyCatalogAdapter
+import com.weekssa.opraeqforuapp.domain.library.CanonicalEqSelection
 import com.weekssa.opraeqforuapp.domain.library.CatalogSnapshot
 import com.weekssa.opraeqforuapp.domain.library.overlayCanonicalCatalog
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -69,6 +70,16 @@ class CanonicalFirstCatalogRepository(
             else -> CatalogRefreshResult.Failure(CatalogRefreshFailureReason.InvalidCatalog, usingSavedCatalog = false)
         }
     }
+
+    override fun resolveCanonicalSelection(profile: com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile): CanonicalEqSelection? =
+        (canonicalRepository.state.value as? CanonicalCatalogState.Ready)
+            ?.snapshot
+            ?.let { CanonicalLegacyCatalogAdapter.resolveSelection(it, profile) }
+
+    override fun resolveCanonicalSelection(preset: com.weekssa.opraeqforuapp.domain.catalog.GeneralEqPreset): CanonicalEqSelection? =
+        (canonicalRepository.state.value as? CanonicalCatalogState.Ready)
+            ?.snapshot
+            ?.let { CanonicalLegacyCatalogAdapter.resolveSelection(it, preset) }
 
     private fun renderAvailableCatalog(): CatalogState.Ready? {
         val canonicalReady = canonicalRepository.state.value as? CanonicalCatalogState.Ready

@@ -136,6 +136,14 @@ User-facing terminology keeps local membership, files, and USB actions separate:
 
 Favorites/personal imports/general EQs normalize into the same canonical/derived-output model rather than bypassing output capability rules.
 
+New catalog Favorites and General EQs persist the complete immutable `CanonicalEqProfile` together
+with the exact selected revision ID and its source references. The legacy `OpraEqProfile` used by
+existing render/export/Flash consumers is derived from that selection at the adapter boundary; it
+is not the authoritative saved source. Saving is allowed only when the current canonical catalog
+proves the exact displayed projection, and a multi-item General EQ save is atomic. A nullable Room
+migration adds this data without reconstructing or rewriting older projection-only rows. Those
+legacy rows remain distinguishable as legacy; missing source provenance is never invented.
+
 ### Needs attention recovery
 
 Persisted app-managed artifacts cannot silently disappear merely because a current My EQ association is no longer confident.

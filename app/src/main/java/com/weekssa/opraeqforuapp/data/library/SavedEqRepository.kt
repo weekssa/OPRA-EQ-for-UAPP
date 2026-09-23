@@ -10,6 +10,8 @@ import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.conversion.ToneBoostersConverter
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotBundle
 import com.weekssa.opraeqforuapp.domain.library.EqSourceKind
+import com.weekssa.opraeqforuapp.domain.library.CanonicalEqSelection
+import com.weekssa.opraeqforuapp.domain.library.CanonicalLegacyCatalogAdapter
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 import com.weekssa.opraeqforuapp.domain.library.EqSourceReference
 import com.weekssa.opraeqforuapp.domain.library.EqTarget
@@ -21,6 +23,7 @@ import com.weekssa.opraeqforuapp.domain.library.RedistributionPolicy
 import com.weekssa.opraeqforuapp.domain.library.ParametricEqTextParser
 import com.weekssa.opraeqforuapp.domain.library.SavedEqHeadphoneAssociation
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
+import com.weekssa.opraeqforuapp.domain.library.FavoriteToggleResult
 import com.weekssa.opraeqforuapp.domain.library.VerificationStatus
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedProfileRecord
@@ -40,6 +43,7 @@ class SavedEqRepository(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val nowMillis: () -> Long = System::currentTimeMillis,
     private val canonicalSnapshotCodec: SavedEqCanonicalSnapshotCodec = SavedEqCanonicalSnapshotCodec(),
+    private val canonicalSelectionCodec: CanonicalEqSelectionCodec = CanonicalEqSelectionCodec(),
 ) {
     private val dao = database.savedEqDao()
 
@@ -61,31 +65,40 @@ class SavedEqRepository(
         profile: OpraEqProfile,
         manufacturer: String,
         model: String,
-    ): Boolean = withContext(ioDispatcher) {
+        canonicalSelection: CanonicalEqSelection?,
+    ): FavoriteToggleResult = withContext(ioDispatcher) {
         database.withTransaction {
             val entryId = favoriteEntryId(profile.id)
             if (dao.get(entryId) != null) {
                 dao.deleteAllSelections(entryId)
                 dao.delete(entryId)
-                return@withTransaction false
+                return@withTransaction FavoriteToggleResult.REMOVED
             }
+
+            val selection = canonicalSelection
+                ?.takeIf { CanonicalLegacyCatalogAdapter.matchesSelection(it, profile) }
+                ?: return@withTransaction FavoriteToggleResult.CANONICAL_SOURCE_UNAVAILABLE
+            val headphone = selection.profile.headphone
+                ?: return@withTransaction FavoriteToggleResult.CANONICAL_SOURCE_UNAVAILABLE
+            val projection = CanonicalLegacyCatalogAdapter.projectSelection(selection, profile.productId)
 
             val now = nowMillis()
             dao.upsert(
                 SavedEqEntity(
                     entryId = entryId,
                     kind = KIND_FAVORITE,
-                    sourceProfileId = profile.id,
-                    productId = profile.productId,
-                    manufacturer = manufacturer,
-                    model = model,
+                    sourceProfileId = projection.id,
+                    productId = projection.productId,
+                    manufacturer = headphone.manufacturer,
+                    model = CanonicalLegacyCatalogAdapter.displayProductName(headphone),
                     displayName = favoriteDisplayName(profile),
-                    profileJson = snapshotCodec.encode(profile),
+                    profileJson = snapshotCodec.encode(projection),
                     createdAtMillis = now,
                     updatedAtMillis = now,
+                    canonicalSelectionJson = canonicalSelectionCodec.encode(selection),
                 ),
             )
-            true
+            FavoriteToggleResult.SAVED
         }
     }
 
@@ -341,6 +354,7 @@ class SavedEqRepository(
         entity = entity,
         legacyCodec = snapshotCodec,
         canonicalCodec = canonicalSnapshotCodec,
+        selectionCodec = canonicalSelectionCodec,
         captureMetadataCodec = captureMetadataCodec,
     )
 

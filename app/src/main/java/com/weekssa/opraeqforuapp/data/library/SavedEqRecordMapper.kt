@@ -3,6 +3,8 @@ package com.weekssa.opraeqforuapp.data.library
 import com.weekssa.opraeqforuapp.data.managed.ManagedProfileSnapshotCodec
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.isUsableParametricSource
+import com.weekssa.opraeqforuapp.domain.library.CanonicalEqSelection
+import com.weekssa.opraeqforuapp.domain.library.CanonicalLegacyCatalogAdapter
 import com.weekssa.opraeqforuapp.domain.library.LocalSavedEqAdapter
 import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
@@ -15,6 +17,7 @@ internal object SavedEqRecordMapper {
         legacyCodec: ManagedProfileSnapshotCodec,
         canonicalCodec: SavedEqCanonicalSnapshotCodec,
         captureMetadataCodec: SavedEqCaptureMetadataCodec,
+        selectionCodec: CanonicalEqSelectionCodec = CanonicalEqSelectionCodec(),
     ): SavedEqRecord {
         var savedEqDataInvalid = false
         val canonical = entity.canonicalSnapshotJson?.let { encoded ->
@@ -29,6 +32,32 @@ internal object SavedEqRecordMapper {
                 null
             }
         }
+        val canonicalSelection = entity.canonicalSelectionJson?.let { encoded ->
+            try {
+                require(entity.kind == SavedEqRepository.KIND_FAVORITE) {
+                    "Canonical catalog selections are valid only for Favorites"
+                }
+                require(canonical == null) { "Favorite row cannot also contain a local Personal EQ snapshot" }
+                selectionCodec.decode(encoded).also { selection ->
+                    require(selection.profile.isHeadphoneProfile) {
+                        "Favorite must retain a canonical headphone profile"
+                    }
+                    require(selection.profile.headphone?.manufacturer == entity.manufacturer) {
+                        "Favorite manufacturer no longer matches its canonical profile"
+                    }
+                    require(CanonicalLegacyCatalogAdapter.displayProductName(requireNotNull(selection.profile.headphone)) == entity.model) {
+                        "Favorite model no longer matches its canonical profile"
+                    }
+                    val projected = CanonicalLegacyCatalogAdapter.projectSelection(selection, entity.productId)
+                    require(projected.id == entity.sourceProfileId) {
+                        "Favorite ID no longer matches its canonical revision"
+                    }
+                }
+            } catch (_: IllegalArgumentException) {
+                savedEqDataInvalid = true
+                null
+            }
+        }
         val projectedCanonical = canonical?.let { snapshot ->
             try {
                 LocalSavedEqAdapter.projectToLegacy(snapshot, entity.productId)
@@ -37,7 +66,15 @@ internal object SavedEqRecordMapper {
                 null
             }
         }
-        val profile = projectedCanonical ?: try {
+        val projectedSelection = canonicalSelection?.let { selection ->
+            runCatching {
+                CanonicalLegacyCatalogAdapter.projectSelection(selection, entity.productId)
+            }.getOrElse {
+                savedEqDataInvalid = true
+                null
+            }
+        }
+        val profile = projectedSelection ?: projectedCanonical ?: try {
             legacyCodec.decode(entity.profileJson)
         } catch (_: IllegalArgumentException) {
             savedEqDataInvalid = true
@@ -74,8 +111,12 @@ internal object SavedEqRecordMapper {
             kind = kind,
             sourceProfileId = entity.sourceProfileId,
             productId = entity.productId,
-            manufacturer = canonical?.let { it.headphone?.manufacturer.orEmpty() } ?: entity.manufacturer,
-            model = canonical?.let { it.headphone?.model.orEmpty() } ?: entity.model,
+            manufacturer = canonical?.let { it.headphone?.manufacturer.orEmpty() }
+                ?: canonicalSelection?.profile?.headphone?.manufacturer
+                ?: entity.manufacturer,
+            model = canonical?.let { it.headphone?.model.orEmpty() }
+                ?: canonicalSelection?.profile?.headphone?.let(CanonicalLegacyCatalogAdapter::displayProductName)
+                ?: entity.model,
             displayName = canonical?.displayName ?: entity.displayName,
             profile = profile,
             createdAtMillis = entity.createdAtMillis,
@@ -83,6 +124,7 @@ internal object SavedEqRecordMapper {
             captureMetadata = captureMetadata,
             canonicalSnapshot = canonical,
             savedEqDataInvalid = savedEqDataInvalid,
+            canonicalSelection = canonicalSelection,
         )
     }
 
