@@ -8,8 +8,16 @@ import com.weekssa.opraeqforuapp.data.managed.ManagedProfileEntity
 import com.weekssa.opraeqforuapp.data.managed.ManagedProfileSnapshotCodec
 import com.weekssa.opraeqforuapp.data.managed.OpraEqDatabase
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
-import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
+import com.weekssa.opraeqforuapp.domain.library.EqSourceKind
+import com.weekssa.opraeqforuapp.domain.library.EqSourceReference
+import com.weekssa.opraeqforuapp.domain.library.EqTarget
+import com.weekssa.opraeqforuapp.domain.library.EqTargetKind
+import com.weekssa.opraeqforuapp.domain.library.HeadphoneIdentity
+import com.weekssa.opraeqforuapp.domain.library.LocalSavedEqAdapter
+import com.weekssa.opraeqforuapp.domain.library.ProvenanceTier
+import com.weekssa.opraeqforuapp.domain.library.RedistributionPolicy
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
+import com.weekssa.opraeqforuapp.domain.library.VerificationStatus
 import com.weekssa.opraeqforuapp.domain.library.UnclaimedEqFormat
 import com.weekssa.opraeqforuapp.domain.library.UnclaimedEqParseState
 import com.weekssa.opraeqforuapp.domain.library.UnclaimedEqParsedContent
@@ -37,6 +45,7 @@ class UnclaimedEqRepository(
     private val snapshotCodec: ManagedProfileSnapshotCodec = ManagedProfileSnapshotCodec(),
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val nowMillis: () -> Long = System::currentTimeMillis,
+    private val canonicalSnapshotCodec: SavedEqCanonicalSnapshotCodec = SavedEqCanonicalSnapshotCodec(),
 ) {
     private val ownershipDao = database.exportOwnershipDao()
     private val managedDao = database.managedHeadphonesDao()
@@ -111,6 +120,29 @@ class UnclaimedEqRepository(
         val productId = profile.productId
         val profileId = profile.id
         val now = nowMillis()
+        val observedAtEpochSeconds = now / 1_000L
+        val canonicalSnapshot = requireNotNull(
+            LocalSavedEqAdapter.adapt(
+                profile = profile,
+                displayName = name,
+                headphone = HeadphoneIdentity(manufacturer = maker, model = headphoneModel),
+                target = EqTarget(name = null, kind = EqTargetKind.UNKNOWN),
+                sourceReference = EqSourceReference(
+                    sourceId = "personal_import",
+                    sourceKind = EqSourceKind.PERSONAL_IMPORT,
+                    sourceRecordId = ownership.fileName,
+                    url = null,
+                    creator = null,
+                    provenanceTier = ProvenanceTier.NEEDS_REVIEW,
+                    redistributionPolicy = RedistributionPolicy.UNKNOWN_REVIEW,
+                    discoveredAtEpochSeconds = observedAtEpochSeconds,
+                    isPrimary = true,
+                ),
+                verificationStatus = VerificationStatus.UNVERIFIED,
+                observedAtEpochSeconds = observedAtEpochSeconds,
+            ),
+        ) { "Recovered EQ could not be represented without dropping filter data." }
+        val legacyProjection = LocalSavedEqAdapter.projectToLegacy(canonicalSnapshot, productId)
         val entity = SavedEqEntity(
             entryId = "personal:$id",
             kind = SavedEqRepository.KIND_PERSONAL,
@@ -119,10 +151,11 @@ class UnclaimedEqRepository(
             manufacturer = maker,
             model = headphoneModel,
             displayName = name,
-            profileJson = snapshotCodec.encode(profile),
+            profileJson = snapshotCodec.encode(legacyProjection),
             createdAtMillis = now,
             updatedAtMillis = now,
             captureMetadataJson = null,
+            canonicalSnapshotJson = canonicalSnapshotCodec.encode(canonicalSnapshot),
         )
         database.withTransaction {
             savedEqDao.upsert(entity)
@@ -134,18 +167,11 @@ class UnclaimedEqRepository(
                 ),
             )
         }
-        SavedEqRecord(
-            entryId = entity.entryId,
-            kind = SavedEqKind.Personal,
-            sourceProfileId = null,
-            productId = productId,
-            manufacturer = maker,
-            model = headphoneModel,
-            displayName = name,
-            profile = profile,
-            createdAtMillis = now,
-            updatedAtMillis = now,
-            captureMetadata = null,
+        SavedEqRecordMapper.toDomain(
+            entity = entity,
+            legacyCodec = snapshotCodec,
+            canonicalCodec = canonicalSnapshotCodec,
+            captureMetadataCodec = SavedEqCaptureMetadataCodec(),
         )
     }
 

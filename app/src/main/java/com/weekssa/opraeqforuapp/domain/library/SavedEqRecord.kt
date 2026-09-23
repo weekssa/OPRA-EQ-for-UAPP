@@ -19,6 +19,7 @@ data class SavedEqRecord(
     val createdAtMillis: Long,
     val updatedAtMillis: Long,
     val captureMetadata: SavedEqCaptureMetadata? = null,
+    val canonicalSnapshot: LocalSavedEqSnapshot? = null,
 ) {
     val hasHeadphoneAssociation: Boolean
         get() = manufacturer.isNotBlank() && model.isNotBlank()

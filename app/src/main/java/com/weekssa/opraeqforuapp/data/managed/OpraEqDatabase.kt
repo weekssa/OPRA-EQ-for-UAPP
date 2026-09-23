@@ -27,7 +27,7 @@ import com.weekssa.opraeqforuapp.data.library.SavedGeneralEqEntity
         SavedGeneralEqEntity::class,
         OutputGeneralEqEntity::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = false,
 )
 abstract class OpraEqDatabase : RoomDatabase() {
@@ -207,6 +207,13 @@ abstract class OpraEqDatabase : RoomDatabase() {
             }
         }
 
+        /** Adds optional canonical local-EQ data without rewriting or inferring legacy records. */
+        internal val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE saved_eqs ADD COLUMN canonicalSnapshotJson TEXT")
+            }
+        }
+
         fun create(context: Context): OpraEqDatabase =
             Room.databaseBuilder(
                 context.applicationContext,
@@ -220,6 +227,7 @@ abstract class OpraEqDatabase : RoomDatabase() {
                     MIGRATION_4_5,
                     MIGRATION_5_6,
                     MIGRATION_6_7,
+                    MIGRATION_7_8,
                 )
                 .build()
     }

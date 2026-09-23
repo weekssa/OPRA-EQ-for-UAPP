@@ -11,6 +11,7 @@ enum class EqSourceKind {
     @SerialName("community") COMMUNITY,
     @SerialName("repository") REPOSITORY,
     @SerialName("device_community") DEVICE_COMMUNITY,
+    @SerialName("device_capture") DEVICE_CAPTURE,
     @SerialName("user_submission") USER_SUBMISSION,
     @SerialName("personal_import") PERSONAL_IMPORT,
 }
@@ -152,6 +153,54 @@ data class EqRevision(
      */
     @SerialName("eq_library_safety_headroom_db") val eqLibrarySafetyHeadroomDb: Double? = null,
 )
+
+/**
+ * Source-neutral local Personal EQ data. Unlike catalog profiles, a saved personal EQ may have no
+ * headphone association; it therefore deliberately does not inherit catalog scope constraints.
+ */
+@Serializable
+data class LocalSavedEqSnapshot(
+    @SerialName("profile_id") val profileId: String,
+    @SerialName("display_name") val displayName: String,
+    val headphone: HeadphoneIdentity? = null,
+    val creator: String? = null,
+    val target: EqTarget = EqTarget(name = null, kind = EqTargetKind.UNKNOWN),
+    @SerialName("tuning_label") val tuningLabel: String? = null,
+    val revision: EqRevision,
+    @SerialName("schema_version") val schemaVersion: Int = 1,
+) {
+    init {
+        require(profileId.isNotBlank()) { "Saved EQ profile ID must not be blank" }
+        require(displayName.isNotBlank()) { "Saved EQ display name must not be blank" }
+        require(schemaVersion == CURRENT_SCHEMA_VERSION) { "Unsupported local EQ snapshot version" }
+        require(headphone == null || (headphone.manufacturer.isNotBlank() && headphone.model.isNotBlank())) {
+            "Saved EQ headphone association must be complete"
+        }
+        require(revision.revisionId.isNotBlank() && revision.acousticFingerprint.isNotBlank()) {
+            "Saved EQ revision identity must not be blank"
+        }
+        require(revision.filters.isNotEmpty()) { "Saved EQ must preserve at least one active filter" }
+        require(revision.sourceReferences.isNotEmpty()) { "Saved EQ provenance must not be empty" }
+        require(revision.sourceReferences.all { it.sourceId.isNotBlank() }) {
+            "Saved EQ provenance must include a source identity"
+        }
+        require(revision.isLatest) { "The local saved EQ revision must be marked latest" }
+        require(revision.preampGainDb?.isFinite() != false) { "Saved EQ preamp must be finite" }
+        require(revision.eqLibrarySafetyHeadroomDb?.isFinite() != false) {
+            "Saved EQ derived headroom must be finite"
+        }
+        require(revision.filters.all { filter ->
+            filter.frequencyHz.isFinite() && filter.frequencyHz > 0.0 &&
+                filter.gainDb?.isFinite() != false && filter.q?.let { it.isFinite() && it > 0.0 } != false &&
+                filter.slope?.let { it.isFinite() && it > 0.0 } != false &&
+                (filter.type != EqFilterType.OTHER || !filter.sourceType.isNullOrBlank())
+        }) { "Saved EQ contains malformed filter data" }
+    }
+
+    companion object {
+        const val CURRENT_SCHEMA_VERSION = 1
+    }
+}
 
 @Serializable
 data class CanonicalEqProfile(

@@ -9,11 +9,19 @@ import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.conversion.ToneBoostersConverter
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotBundle
+import com.weekssa.opraeqforuapp.domain.library.EqSourceKind
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
+import com.weekssa.opraeqforuapp.domain.library.EqSourceReference
+import com.weekssa.opraeqforuapp.domain.library.EqTarget
+import com.weekssa.opraeqforuapp.domain.library.EqTargetKind
+import com.weekssa.opraeqforuapp.domain.library.HeadphoneIdentity
+import com.weekssa.opraeqforuapp.domain.library.LocalSavedEqAdapter
+import com.weekssa.opraeqforuapp.domain.library.ProvenanceTier
+import com.weekssa.opraeqforuapp.domain.library.RedistributionPolicy
 import com.weekssa.opraeqforuapp.domain.library.ParametricEqTextParser
 import com.weekssa.opraeqforuapp.domain.library.SavedEqHeadphoneAssociation
-import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
+import com.weekssa.opraeqforuapp.domain.library.VerificationStatus
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedProfileRecord
 import java.security.MessageDigest
@@ -31,6 +39,7 @@ class SavedEqRepository(
     private val captureMetadataCodec: SavedEqCaptureMetadataCodec = SavedEqCaptureMetadataCodec(),
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val nowMillis: () -> Long = System::currentTimeMillis,
+    private val canonicalSnapshotCodec: SavedEqCanonicalSnapshotCodec = SavedEqCanonicalSnapshotCodec(),
 ) {
     private val dao = database.savedEqDao()
 
@@ -136,6 +145,23 @@ class SavedEqRepository(
             },
         )
         val now = nowMillis()
+        val observedAtEpochSeconds = now / 1_000L
+        val targetName = target?.trim()?.takeIf(String::isNotEmpty)
+        val canonicalSnapshot = canonicalSnapshot(
+            profile = profile,
+            displayName = name,
+            headphone = HeadphoneIdentity(manufacturer = maker, model = headphoneModel),
+            target = EqTarget(
+                name = targetName,
+                kind = if (targetName != null) EqTargetKind.CUSTOM_USER else EqTargetKind.UNKNOWN,
+            ),
+            sourceKind = EqSourceKind.PERSONAL_IMPORT,
+            sourceRecordId = profileId,
+            provenanceTier = ProvenanceTier.NEEDS_REVIEW,
+            verificationStatus = VerificationStatus.UNVERIFIED,
+            observedAtEpochSeconds = observedAtEpochSeconds,
+        )
+        val legacyProjection = LocalSavedEqAdapter.projectToLegacy(canonicalSnapshot, productId)
         val entity = SavedEqEntity(
             entryId = "personal:$id",
             kind = KIND_PERSONAL,
@@ -144,9 +170,10 @@ class SavedEqRepository(
             manufacturer = maker,
             model = headphoneModel,
             displayName = name,
-            profileJson = snapshotCodec.encode(profile),
+            profileJson = snapshotCodec.encode(legacyProjection),
             createdAtMillis = now,
             updatedAtMillis = now,
+            canonicalSnapshotJson = canonicalSnapshotCodec.encode(canonicalSnapshot),
         )
         dao.upsert(entity)
         toDomain(entity)
@@ -172,6 +199,20 @@ class SavedEqRepository(
             association = association,
         )
         val now = nowMillis()
+        val captureEpochSeconds = draft.captureMetadata.verifiedAtEpochMillis / 1_000L
+        val canonicalSnapshot = canonicalSnapshot(
+            profile = draft.profile,
+            displayName = name,
+            headphone = association?.let { HeadphoneIdentity(it.manufacturer, it.model) },
+            target = EqTarget(name = null, kind = EqTargetKind.UNKNOWN),
+            sourceKind = EqSourceKind.DEVICE_CAPTURE,
+            sourceRecordId = id,
+            provenanceTier = ProvenanceTier.AUTHORITATIVE,
+            verificationStatus = VerificationStatus.VERIFIED,
+            observedAtEpochSeconds = captureEpochSeconds,
+            lastVerifiedAtEpochSeconds = captureEpochSeconds,
+        )
+        val legacyProjection = LocalSavedEqAdapter.projectToLegacy(canonicalSnapshot, draft.productId)
         val entity = SavedEqEntity(
             entryId = "personal:$id",
             kind = KIND_PERSONAL,
@@ -180,10 +221,11 @@ class SavedEqRepository(
             manufacturer = draft.manufacturer,
             model = draft.model,
             displayName = name,
-            profileJson = snapshotCodec.encode(draft.profile),
+            profileJson = snapshotCodec.encode(legacyProjection),
             createdAtMillis = now,
             updatedAtMillis = now,
             captureMetadataJson = captureMetadataCodec.encode(draft.captureMetadata),
+            canonicalSnapshotJson = canonicalSnapshotCodec.encode(canonicalSnapshot),
         )
         dao.upsert(entity)
         toDomain(entity)
@@ -205,6 +247,20 @@ class SavedEqRepository(
             association = association,
         )
         val now = nowMillis()
+        val captureEpochSeconds = draft.captureMetadata.verifiedAtEpochMillis / 1_000L
+        val canonicalSnapshot = canonicalSnapshot(
+            profile = draft.profile,
+            displayName = name,
+            headphone = association?.let { HeadphoneIdentity(it.manufacturer, it.model) },
+            target = EqTarget(name = null, kind = EqTargetKind.UNKNOWN),
+            sourceKind = EqSourceKind.DEVICE_CAPTURE,
+            sourceRecordId = id,
+            provenanceTier = ProvenanceTier.AUTHORITATIVE,
+            verificationStatus = VerificationStatus.VERIFIED,
+            observedAtEpochSeconds = captureEpochSeconds,
+            lastVerifiedAtEpochSeconds = captureEpochSeconds,
+        )
+        val legacyProjection = LocalSavedEqAdapter.projectToLegacy(canonicalSnapshot, draft.productId)
         val entity = SavedEqEntity(
             entryId = "personal:$id",
             kind = KIND_PERSONAL,
@@ -213,10 +269,11 @@ class SavedEqRepository(
             manufacturer = draft.manufacturer,
             model = draft.model,
             displayName = name,
-            profileJson = snapshotCodec.encode(draft.profile),
+            profileJson = snapshotCodec.encode(legacyProjection),
             createdAtMillis = now,
             updatedAtMillis = now,
             captureMetadataJson = captureMetadataCodec.encode(draft.captureMetadata),
+            canonicalSnapshotJson = canonicalSnapshotCodec.encode(canonicalSnapshot),
         )
         dao.upsert(entity)
         toDomain(entity)
@@ -270,23 +327,48 @@ class SavedEqRepository(
         )
     }
 
-    internal fun toDomain(entity: SavedEqEntity) = SavedEqRecord(
-        entryId = entity.entryId,
-        kind = when (entity.kind) {
-            KIND_FAVORITE -> SavedEqKind.Favorite
-            KIND_PERSONAL -> SavedEqKind.Personal
-            else -> error("Unknown saved EQ kind ${entity.kind}")
-        },
-        sourceProfileId = entity.sourceProfileId,
-        productId = entity.productId,
-        manufacturer = entity.manufacturer,
-        model = entity.model,
-        displayName = entity.displayName,
-        profile = snapshotCodec.decode(entity.profileJson),
-        createdAtMillis = entity.createdAtMillis,
-        updatedAtMillis = entity.updatedAtMillis,
-        captureMetadata = entity.captureMetadataJson?.let(captureMetadataCodec::decode),
+    internal fun toDomain(entity: SavedEqEntity): SavedEqRecord = SavedEqRecordMapper.toDomain(
+        entity = entity,
+        legacyCodec = snapshotCodec,
+        canonicalCodec = canonicalSnapshotCodec,
+        captureMetadataCodec = captureMetadataCodec,
     )
+
+    private fun canonicalSnapshot(
+        profile: OpraEqProfile,
+        displayName: String,
+        headphone: HeadphoneIdentity?,
+        target: EqTarget,
+        sourceKind: EqSourceKind,
+        sourceRecordId: String,
+        provenanceTier: ProvenanceTier,
+        verificationStatus: VerificationStatus,
+        observedAtEpochSeconds: Long?,
+        lastVerifiedAtEpochSeconds: Long? = null,
+    ) = LocalSavedEqAdapter.adapt(
+        profile = profile,
+        displayName = displayName,
+        headphone = headphone,
+        target = target,
+        sourceReference = EqSourceReference(
+            sourceId = when (sourceKind) {
+                EqSourceKind.PERSONAL_IMPORT -> "personal_import"
+                EqSourceKind.DEVICE_CAPTURE -> "device_capture"
+                else -> error("Unsupported local Personal EQ source kind: $sourceKind")
+            },
+            sourceKind = sourceKind,
+            sourceRecordId = sourceRecordId,
+            url = null,
+            creator = null,
+            provenanceTier = provenanceTier,
+            redistributionPolicy = RedistributionPolicy.UNKNOWN_REVIEW,
+            discoveredAtEpochSeconds = observedAtEpochSeconds,
+            lastVerifiedAtEpochSeconds = lastVerifiedAtEpochSeconds,
+            isPrimary = true,
+        ),
+        verificationStatus = verificationStatus,
+        observedAtEpochSeconds = observedAtEpochSeconds,
+    ) ?: error("Validated Personal EQ could not be represented in the canonical local model")
 
     companion object {
         internal const val KIND_FAVORITE = "favorite"
