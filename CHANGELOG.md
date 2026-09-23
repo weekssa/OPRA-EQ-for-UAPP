@@ -19,7 +19,8 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
   `b57b2466160bc9464d1cb16a004d1522940c553a` passed Android CI #1772 (including connected
   instrumentation, R8, and API-26 minified install/cold-launch), CodeQL #1657, catalog #2070, and
   priority coverage #1555. The documentation synchronization following that snapshot creates a
-  new source SHA and requires fresh exact-head gates; no signed APK is available.
+  new source SHA; consult the live PR for that SHA's own gate results and never carry these results
+  forward to another SHA. No signed APK is available.
 
 ### 2026-09-23 source-review follow-up
 
