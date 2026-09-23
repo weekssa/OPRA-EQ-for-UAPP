@@ -146,7 +146,7 @@ class SavedEqCanonicalSnapshotMigrationTest {
     }
 
     @Test
-    fun corruptCanonicalRowDoesNotBreakMyEqsListAndCannotBeAdaptedForExport() = runBlocking {
+    fun corruptCanonicalRowDoesNotBreakMyEqsListAndCannotBeAdaptedForExport() = runBlocking<Unit> {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val database = Room.inMemoryDatabaseBuilder(context, OpraEqDatabase::class.java)
             .allowMainThreadQueries()
@@ -191,12 +191,49 @@ class SavedEqCanonicalSnapshotMigrationTest {
             assertEquals(2, records.size)
             val validRow = requireNotNull(records.singleOrNull { it.entryId == valid.entryId })
             val damagedRow = requireNotNull(records.singleOrNull { it.entryId == "personal:damaged" })
-            assertFalse(validRow.canonicalSnapshotInvalid)
-            assertTrue(damagedRow.canonicalSnapshotInvalid)
+            assertFalse(validRow.savedEqDataInvalid)
+            assertTrue(damagedRow.savedEqDataInvalid)
             assertEquals("legacy-damaged-row", damagedRow.profile.id)
             assertThrows(IllegalStateException::class.java) {
                 repository.toManagedHeadphone(damagedRow)
             }
+            assertEquals(1, repository.toManagedHeadphones(records).size)
+        } finally {
+            database.close()
+        }
+    }
+
+    @Test
+    fun corruptLegacyAndCaptureMetadataStayVisibleAsRemovalOnlyRow() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val database = Room.inMemoryDatabaseBuilder(context, OpraEqDatabase::class.java)
+            .allowMainThreadQueries()
+            .build()
+        try {
+            val repository = SavedEqRepository(database, nowMillis = { 789_000L })
+            database.savedEqDao().upsert(
+                SavedEqEntity(
+                    entryId = "personal:unreadable",
+                    kind = SavedEqRepository.KIND_PERSONAL,
+                    sourceProfileId = null,
+                    productId = "personal-product:unreadable",
+                    manufacturer = "Acme",
+                    model = "Headphone",
+                    displayName = "Unreadable saved EQ",
+                    profileJson = "{not-json}",
+                    createdAtMillis = 1L,
+                    updatedAtMillis = 2L,
+                    captureMetadataJson = "{also-not-json}",
+                    canonicalSnapshotJson = "{not-json}",
+                ),
+            )
+
+            val record = repository.observeForOutput("UAPP").first().single()
+            assertTrue(record.savedEqDataInvalid)
+            assertEquals("Unreadable saved EQ", record.displayName)
+            assertTrue(record.profile.bands.isNullOrEmpty())
+            assertNull(record.captureMetadata)
+            assertTrue(repository.toManagedHeadphones(listOf(record)).isEmpty())
         } finally {
             database.close()
         }

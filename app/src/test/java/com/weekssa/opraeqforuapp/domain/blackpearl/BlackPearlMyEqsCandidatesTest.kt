@@ -102,7 +102,7 @@ class BlackPearlMyEqsCandidatesTest {
             profile = profile,
             createdAtMillis = 1,
             updatedAtMillis = 1,
-            canonicalSnapshotInvalid = true,
+            savedEqDataInvalid = true,
         )
 
         val candidates = buildBlackPearlMyEqsCandidates(

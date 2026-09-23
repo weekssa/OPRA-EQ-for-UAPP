@@ -124,7 +124,7 @@ class Ew300HardwareEqMatchTest {
             profile = exactFiveBandProfile(),
             createdAtMillis = 1,
             updatedAtMillis = 1,
-            canonicalSnapshotInvalid = true,
+            savedEqDataInvalid = true,
         )
 
         val candidates = buildEw300MyEqsCandidates(

@@ -1,6 +1,7 @@
 package com.weekssa.opraeqforuapp.data.library
 
 import com.weekssa.opraeqforuapp.data.managed.ManagedProfileSnapshotCodec
+import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.library.LocalSavedEqAdapter
 import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
@@ -13,7 +14,7 @@ internal object SavedEqRecordMapper {
         canonicalCodec: SavedEqCanonicalSnapshotCodec,
         captureMetadataCodec: SavedEqCaptureMetadataCodec,
     ): SavedEqRecord {
-        var canonicalSnapshotInvalid = false
+        var savedEqDataInvalid = false
         val canonical = entity.canonicalSnapshotJson?.let { encoded ->
             try {
                 require(entity.kind == SavedEqRepository.KIND_PERSONAL) {
@@ -22,12 +23,32 @@ internal object SavedEqRecordMapper {
                 canonicalCodec.decode(encoded)
             } catch (_: IllegalArgumentException) {
                 // Keep the row visible using its legacy projection, but mark it unusable for actions.
-                canonicalSnapshotInvalid = true
+                savedEqDataInvalid = true
                 null
             }
         }
-        val profile = canonical?.let { LocalSavedEqAdapter.projectToLegacy(it, entity.productId) }
-            ?: legacyCodec.decode(entity.profileJson)
+        val projectedCanonical = canonical?.let { snapshot ->
+            try {
+                LocalSavedEqAdapter.projectToLegacy(snapshot, entity.productId)
+            } catch (_: IllegalArgumentException) {
+                savedEqDataInvalid = true
+                null
+            }
+        }
+        val profile = projectedCanonical ?: try {
+            legacyCodec.decode(entity.profileJson)
+        } catch (_: IllegalArgumentException) {
+            savedEqDataInvalid = true
+            displayOnlyProfile(entity)
+        }
+        val captureMetadata = entity.captureMetadataJson?.let { encoded ->
+            try {
+                captureMetadataCodec.decode(encoded)
+            } catch (_: IllegalArgumentException) {
+                savedEqDataInvalid = true
+                null
+            }
+        }
 
         return SavedEqRecord(
             entryId = entity.entryId,
@@ -44,9 +65,21 @@ internal object SavedEqRecordMapper {
             profile = profile,
             createdAtMillis = entity.createdAtMillis,
             updatedAtMillis = entity.updatedAtMillis,
-            captureMetadata = entity.captureMetadataJson?.let(captureMetadataCodec::decode),
+            captureMetadata = captureMetadata,
             canonicalSnapshot = canonical,
-            canonicalSnapshotInvalid = canonicalSnapshotInvalid,
+            savedEqDataInvalid = savedEqDataInvalid,
         )
     }
+
+    private fun displayOnlyProfile(entity: SavedEqEntity) = OpraEqProfile(
+        id = entity.sourceProfileId ?: entity.entryId,
+        productId = entity.productId,
+        author = null,
+        details = null,
+        link = null,
+        profileType = null,
+        preampGainDb = null,
+        bands = emptyList(),
+        isVerified = false,
+    )
 }

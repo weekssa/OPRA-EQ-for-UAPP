@@ -130,7 +130,7 @@ class SavedEqCanonicalSnapshotCodecTest {
             captureMetadataCodec = SavedEqCaptureMetadataCodec(),
         )
 
-        assertTrue(record.canonicalSnapshotInvalid)
+        assertTrue(record.savedEqDataInvalid)
         assertNull(record.canonicalSnapshot)
         assertEquals("legacy", record.profile.id)
     }

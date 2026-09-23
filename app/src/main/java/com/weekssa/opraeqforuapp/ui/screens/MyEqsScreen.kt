@@ -183,7 +183,7 @@ private fun SavedEqRow(
             Column {
                 Text("${record.manufacturer} · ${record.model}")
                 record.profile.details?.takeIf(String::isNotBlank)?.let { Text(it) }
-                if (record.canonicalSnapshotInvalid) {
+                if (record.savedEqDataInvalid) {
                     Text(
                         text = stringResource(R.string.saved_eq_invalid_data_notice),
                         color = MaterialTheme.colorScheme.error,
@@ -193,7 +193,7 @@ private fun SavedEqRow(
         },
         trailingContent = {
             Row {
-                IconButton(onClick = onExport, enabled = !record.canonicalSnapshotInvalid) {
+                IconButton(onClick = onExport, enabled = !record.savedEqDataInvalid) {
                     Icon(Icons.Outlined.FileUpload, contentDescription = "Export ${record.displayName}")
                 }
                 IconButton(onClick = onDelete) {

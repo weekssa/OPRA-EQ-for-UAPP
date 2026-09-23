@@ -253,7 +253,8 @@ jobs:
             "${release_apks[0]}"
           "$ANDROID_SDK_ROOT/build-tools/36.0.0/apksigner" verify --verbose "$smoke_apk"
           adb install "$smoke_apk"
-          adb logcat -c
+          # The emulator is freshly wiped and this app has not launched in this job; preserve
+          # its clean log baseline without depending on logcat buffer-clear permissions.
           launch_output="$(adb shell am start -W -n com.weekssa.opraeqforuapp/.MainActivity 2>&1)"
           printf '%s\n' "$launch_output" | tee "$RUNNER_TEMP/min-api-launch.txt"
           grep -q '^Status: ok$' "$RUNNER_TEMP/min-api-launch.txt"

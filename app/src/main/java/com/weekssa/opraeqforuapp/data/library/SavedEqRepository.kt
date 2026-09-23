@@ -289,8 +289,8 @@ class SavedEqRepository(
     }
 
     fun toManagedHeadphone(record: SavedEqRecord): ManagedHeadphoneRecord {
-        check(!record.canonicalSnapshotInvalid) {
-            "Saved EQ canonical data is invalid and cannot be exported or flashed."
+        check(!record.savedEqDataInvalid) {
+            "Saved EQ data could not be verified and cannot be exported or flashed."
         }
         val fingerprint = snapshotCodec.fingerprint(record.profile)
         val modelLabel = record.model.ifBlank { record.displayName }
@@ -329,6 +329,13 @@ class SavedEqRepository(
             ),
         )
     }
+
+    /** Invalid saved rows remain visible/removable but are excluded from export-currentness work. */
+    fun toManagedHeadphones(records: List<SavedEqRecord>): List<ManagedHeadphoneRecord> =
+        records.asSequence()
+            .filterNot(SavedEqRecord::savedEqDataInvalid)
+            .map(::toManagedHeadphone)
+            .toList()
 
     internal fun toDomain(entity: SavedEqEntity): SavedEqRecord = SavedEqRecordMapper.toDomain(
         entity = entity,

@@ -163,7 +163,7 @@ fun buildEw300MyEqsCandidates(
         }
 
     val saved = savedEqs
-        .filterNot { it.canonicalSnapshotInvalid }
+        .filterNot { it.savedEqDataInvalid }
         .sortedBy { it.entryId }
         .map { record ->
             Ew300SavedEqCandidate(
