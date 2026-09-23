@@ -175,7 +175,7 @@ jobs:
           cache-provider: basic
 
       - name: Assemble minified release APK
-        run: gradle :app:assembleRelease --stacktrace
+        run: gradle :app:assembleDebug :app:assembleRelease --stacktrace
 
       - name: Verify minified release output
         run: bash tools/verify-r8-mapping.sh
@@ -224,7 +224,16 @@ jobs:
             find app/build/outputs/apk/release -maxdepth 1 -type f -print >&2 || true
             exit 1
           fi
-          adb install "${release_apks[0]}"
+          test -s "$HOME/.android/debug.keystore"
+          smoke_apk="$RUNNER_TEMP/app-release-smoke-debug-signed.apk"
+          "$ANDROID_SDK_ROOT/build-tools/36.0.0/apksigner" sign \
+            --ks "$HOME/.android/debug.keystore" \
+            --ks-pass pass:android \
+            --key-pass pass:android \
+            --out "$smoke_apk" \
+            "${release_apks[0]}"
+          "$ANDROID_SDK_ROOT/build-tools/36.0.0/apksigner" verify --verbose "$smoke_apk"
+          adb install "$smoke_apk"
           adb logcat -c
           launch_output="$(adb shell am start -W -n com.weekssa.opraeqforuapp/.MainActivity 2>&1)"
           printf '%s\n' "$launch_output" | tee "$RUNNER_TEMP/min-api-launch.txt"

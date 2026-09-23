@@ -110,12 +110,14 @@ class SavedEqCanonicalSnapshotMigrationTest {
         )
 
         try {
-            Room.databaseBuilder(context, OpraEqDatabase::class.java, databaseName)
+            val version8 = Room.databaseBuilder(context, OpraEqDatabase::class.java, databaseName)
                 .allowMainThreadQueries()
                 .build()
-                .use { version8 ->
-                    runBlocking { version8.savedEqDao().upsert(original) }
-                }
+            try {
+                runBlocking { version8.savedEqDao().upsert(original) }
+            } finally {
+                version8.close()
+            }
 
             val databasePath = context.getDatabasePath(databaseName).absolutePath
             SQLiteDatabase.openDatabase(databasePath, null, SQLiteDatabase.OPEN_READWRITE).use { raw ->
@@ -123,15 +125,17 @@ class SavedEqCanonicalSnapshotMigrationTest {
                 raw.execSQL("PRAGMA user_version=7")
             }
 
-            Room.databaseBuilder(context, OpraEqDatabase::class.java, databaseName)
+            val migrated = Room.databaseBuilder(context, OpraEqDatabase::class.java, databaseName)
                 .addMigrations(OpraEqDatabase.MIGRATION_7_8)
                 .allowMainThreadQueries()
                 .build()
-                .use { migrated ->
-                    val restored = runBlocking { migrated.savedEqDao().get(original.entryId) }
-                    assertEquals(original, restored)
-                    assertNull(restored?.canonicalSnapshotJson)
-                }
+            try {
+                val restored = runBlocking { migrated.savedEqDao().get(original.entryId) }
+                assertEquals(original, restored)
+                assertNull(restored?.canonicalSnapshotJson)
+            } finally {
+                migrated.close()
+            }
         } finally {
             context.deleteDatabase(databaseName)
         }
