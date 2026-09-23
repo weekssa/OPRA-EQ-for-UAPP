@@ -67,9 +67,11 @@ class UnclaimedEqRecoveryRaceTest {
 
             val changedDuringRead = profile(bandCount = 11)
             val changedProfileRow = managedProfile(changedDuringRead, codec)
-            val documentStore = RecoveryDocumentStore {
-                database.managedHeadphonesDao().upsertProfiles(listOf(changedProfileRow))
-            }
+            val documentStore = RecoveryDocumentStore(
+                onRead = {
+                    database.managedHeadphonesDao().upsertProfiles(listOf(changedProfileRow))
+                },
+            )
             val repository = UnclaimedEqRepository(
                 database = database,
                 documentStore = documentStore,

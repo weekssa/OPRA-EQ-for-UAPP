@@ -23,7 +23,9 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
   CI is pending on the live PR; no hardware operation was repeated.
 - Added an Android Room instrumentation regression for a current UAPP source becoming
   unrepresentable after recovery preflight but before the save transaction; it asserts that no
-  Personal EQ is saved and the exact ownership row is unchanged. Exact-head CI must execute it.
+  Personal EQ is saved and the exact ownership row is unchanged. Android CI #1767 caught a
+  compile-time callback-argument issue in the test fixture before any connected test ran; the
+  callback now uses an explicit named argument and requires a fresh exact-head run.
 - Made owned-file recovery idempotent at its repository transaction boundary and disabled the
   dialog while a recovery is in flight. Repeated taps/requests return the already-associated
   Personal EQ instead of inserting duplicates; instrumented coverage checks the saved row and
