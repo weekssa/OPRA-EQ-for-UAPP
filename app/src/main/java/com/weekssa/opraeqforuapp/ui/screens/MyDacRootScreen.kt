@@ -217,6 +217,7 @@ fun MyDacRootScreen(
             catalogState = catalogState,
             managedHeadphones = blackPearlManagedHeadphones,
             savedEqs = blackPearlSavedEqs,
+            savedGeneralEqs = blackPearlSavedGeneralEqs,
             onConnect = { onConnectDac(DacDeviceId.SIMGOT_EW300) },
             onResetEq = onResetEw300FromMyDac,
             onRestoreBaseline = onRestoreEw300Baseline,
