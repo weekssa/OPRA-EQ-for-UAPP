@@ -2,6 +2,7 @@ package com.weekssa.opraeqforuapp.domain.library
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ParametricEqTextParserTest {
@@ -41,7 +42,7 @@ class ParametricEqTextParserTest {
     }
 
     @Test
-    fun `rejects malformed gain filters without poisoning valid lines`() {
+    fun `malformed active filter fails the whole parse closed`() {
         val parsed = ParametricEqTextParser.parse(
             """
             Filter 1: ON PK Fc 100 Hz Q 1.0
@@ -51,8 +52,31 @@ class ParametricEqTextParserTest {
         )
 
         assertNull(parsed.preampGainDb)
-        assertEquals(1, parsed.filters.size)
-        assertEquals(1000.0, parsed.filters.single().frequencyHz, 0.0001)
+        assertTrue(parsed.filters.isEmpty())
+    }
+
+    @Test
+    fun `active peak missing q fails the whole parse closed`() {
+        val parsed = ParametricEqTextParser.parse(
+            """
+            Filter 1: ON PK Fc 100 Hz Gain 2 dB
+            Filter 2: ON PK Fc 1000 Hz Gain -2 dB Q 2.0
+            """.trimIndent(),
+        )
+
+        assertTrue(parsed.filters.isEmpty())
+    }
+
+    @Test
+    fun `unsupported active filter fails the whole parse closed`() {
+        val parsed = ParametricEqTextParser.parse(
+            """
+            Filter 1: ON PK Fc 100 Hz Gain 2 dB Q 1.0
+            Filter 2: ON AP Fc 1000 Hz Gain -2 dB Q 2.0
+            """.trimIndent(),
+        )
+
+        assertTrue(parsed.filters.isEmpty())
     }
 
     @Test
