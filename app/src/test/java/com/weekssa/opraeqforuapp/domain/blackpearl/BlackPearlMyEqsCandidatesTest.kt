@@ -89,6 +89,32 @@ class BlackPearlMyEqsCandidatesTest {
     }
 
     @Test
+    fun invalidCanonicalSavedEqIsExcludedFromHardwareCandidates() {
+        val profile = profile("personal-invalid")
+        val invalid = SavedEqRecord(
+            entryId = "personal:invalid",
+            kind = SavedEqKind.Personal,
+            sourceProfileId = null,
+            productId = profile.productId,
+            manufacturer = "Custom",
+            model = "My Headphone",
+            displayName = "Unverified local row",
+            profile = profile,
+            createdAtMillis = 1,
+            updatedAtMillis = 1,
+            canonicalSnapshotInvalid = true,
+        )
+
+        val candidates = buildBlackPearlMyEqsCandidates(
+            managedHeadphones = emptyList(),
+            savedEqs = listOf(invalid),
+            savedGeneralEqs = emptyList(),
+        )
+
+        assertThat(candidates).isEmpty()
+    }
+
+    @Test
     fun changeEqChoicesUseTheDeterministicBlackPearlRepresentation() {
         val canonical = profile("canonical-ready")
 

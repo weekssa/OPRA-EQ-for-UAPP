@@ -175,7 +175,7 @@ jobs:
           cache-provider: basic
 
       - name: Assemble minified release APK
-        run: gradle :app:assembleDebug :app:assembleRelease --stacktrace
+        run: gradle :app:assembleRelease --stacktrace
 
       - name: Verify minified release output
         run: bash tools/verify-r8-mapping.sh
@@ -195,6 +195,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          umask 077
           sudo chown "$(id -un)" /dev/kvm
           "$ANDROID_SDK_ROOT/emulator/emulator" -accel-check
           nohup "$ANDROID_SDK_ROOT/emulator/emulator" -avd opra_ci_api_26 -no-window -noaudio -no-boot-anim -no-snapshot -wipe-data -gpu swiftshader_indirect > "$RUNNER_TEMP/emulator-api-26.log" 2>&1 &
@@ -214,7 +215,12 @@ jobs:
             sleep 2
           done
           timeout 300 bash -c 'until [[ "$(adb shell getprop sys.boot_completed | tr -d "\r")" == "1" ]]; do sleep 5; done'
-          test "$(adb shell getprop ro.build.version.sdk | tr -d "\r")" = "26"
+          api_level="$(adb shell getprop ro.build.version.sdk | tr -d "\r")"
+          printf 'Booted emulator API level: %s\n' "$api_level"
+          if [[ "$api_level" != "26" ]]; then
+            printf 'Expected API 26 emulator, received API %s.\n' "$api_level" >&2
+            exit 1
+          fi
           release_apks=()
           while IFS= read -r -d '' apk_path; do
             release_apks+=("$apk_path")
@@ -224,10 +230,23 @@ jobs:
             find app/build/outputs/apk/release -maxdepth 1 -type f -print >&2 || true
             exit 1
           fi
-          test -s "$HOME/.android/debug.keystore"
-          smoke_apk="$RUNNER_TEMP/app-release-smoke-debug-signed.apk"
+          printf 'Minified release APK: %s\n' "${release_apks[0]}"
+          smoke_keystore="$RUNNER_TEMP/api-26-smoke.jks"
+          smoke_apk="$RUNNER_TEMP/app-release-api26-smoke.apk"
+          trap 'rm -f -- "$smoke_keystore" "$smoke_apk"' EXIT
+          keytool -genkeypair -noprompt \
+            -alias api-26-smoke \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 2 \
+            -dname 'CN=EQ Library API 26 smoke only' \
+            -storetype JKS \
+            -keystore "$smoke_keystore" \
+            -storepass android \
+            -keypass android
           "$ANDROID_SDK_ROOT/build-tools/36.0.0/apksigner" sign \
-            --ks "$HOME/.android/debug.keystore" \
+            --ks "$smoke_keystore" \
+            --ks-key-alias api-26-smoke \
             --ks-pass pass:android \
             --key-pass pass:android \
             --out "$smoke_apk" \

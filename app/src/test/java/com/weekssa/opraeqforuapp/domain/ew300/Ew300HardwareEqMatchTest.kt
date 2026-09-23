@@ -111,6 +111,31 @@ class Ew300HardwareEqMatchTest {
         assertThat(profile.bands).isEqualTo(sourceBands)
     }
 
+    @Test
+    fun invalidCanonicalSavedEqIsExcludedFromHardwareMatchingCandidates() {
+        val invalid = SavedEqRecord(
+            entryId = "personal:invalid",
+            kind = SavedEqKind.Personal,
+            sourceProfileId = null,
+            productId = "personal-product:invalid",
+            manufacturer = "Test",
+            model = "Headphone",
+            displayName = "Invalid saved source",
+            profile = exactFiveBandProfile(),
+            createdAtMillis = 1,
+            updatedAtMillis = 1,
+            canonicalSnapshotInvalid = true,
+        )
+
+        val candidates = buildEw300MyEqsCandidates(
+            managedHeadphones = emptyList(),
+            savedEqs = listOf(invalid),
+            savedGeneralEqs = emptyList(),
+        )
+
+        assertThat(candidates).isEmpty()
+    }
+
     private fun exactFiveBandProfile(): OpraEqProfile = OpraEqProfile(
         id = "exact-profile",
         productId = "test-product",

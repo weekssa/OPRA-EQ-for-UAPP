@@ -20,6 +20,8 @@ data class SavedEqRecord(
     val updatedAtMillis: Long,
     val captureMetadata: SavedEqCaptureMetadata? = null,
     val canonicalSnapshot: LocalSavedEqSnapshot? = null,
+    /** A non-null persisted canonical payload failed validation; legacy data is display-only. */
+    val canonicalSnapshotInvalid: Boolean = false,
 ) {
     val hasHeadphoneAssociation: Boolean
         get() = manufacturer.isNotBlank() && model.isNotBlank()

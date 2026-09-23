@@ -7,16 +7,25 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.weekssa.opraeqforuapp.data.managed.ManagedProfileSnapshotCodec
 import com.weekssa.opraeqforuapp.data.managed.OpraEqDatabase
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlProtocol
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlReadCodec
+import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
+import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotFactory
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20Band
+import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 import com.weekssa.opraeqforuapp.domain.library.EqSourceKind
 import com.weekssa.opraeqforuapp.domain.library.EqTargetKind
 import com.weekssa.opraeqforuapp.domain.library.VerificationStatus
 import java.util.UUID
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -86,6 +95,108 @@ class SavedEqCanonicalSnapshotMigrationTest {
             assertNull(captured.profile.preampGainDb)
             assertEquals("", captured.manufacturer)
             assertEquals("", captured.model)
+
+            val blackPearlBundle = requireNotNull(
+                HardwareEqSnapshotFactory.blackPearl(
+                    nativeBands = (0 until BlackPearlProtocol.BAND_COUNT).map { index ->
+                        BlackPearlReadCodec.NativeBand(
+                            index = index,
+                            type = when (index) {
+                                1 -> EqFilterType.LOW_SHELF
+                                8 -> EqFilterType.HIGH_SHELF
+                                else -> EqFilterType.PEAK
+                            },
+                            frequencyRawHz = 100 + index * 700,
+                            gainRaw256 = if (index == 0) 2 * 256 else 0,
+                            qRaw256 = 256,
+                            activeSlot = 2,
+                        )
+                    },
+                    globalGainRaw = -18 * 256,
+                    sessionGeneration = 8L,
+                    verifiedAtEpochMillis = 1_235L,
+                ),
+            )
+            val blackPearlCapture = repository.captureBlackPearlEq(
+                displayName = "Black Pearl capture",
+                snapshotBundle = blackPearlBundle,
+                association = null,
+            )
+            val blackPearlEntity = requireNotNull(database.savedEqDao().get(blackPearlCapture.entryId))
+            val blackPearlCanonical = SavedEqCanonicalSnapshotCodec().decode(
+                requireNotNull(blackPearlEntity.canonicalSnapshotJson),
+            )
+            assertEquals(10, blackPearlCanonical.revision.filters.size)
+            assertEquals(
+                listOf(EqFilterType.PEAK, EqFilterType.LOW_SHELF, EqFilterType.HIGH_SHELF),
+                blackPearlCanonical.revision.filters.map { it.type }.distinct(),
+            )
+            assertEquals(
+                EqSourceKind.DEVICE_CAPTURE,
+                blackPearlCanonical.revision.sourceReferences.single().sourceKind,
+            )
+            assertEquals(
+                blackPearlBundle.fingerprint,
+                SavedEqCaptureMetadataCodec().decode(blackPearlEntity.captureMetadataJson!!).nativeFingerprint,
+            )
+            assertEquals(10, blackPearlCapture.profile.bands!!.size)
+        } finally {
+            database.close()
+        }
+    }
+
+    @Test
+    fun corruptCanonicalRowDoesNotBreakMyEqsListAndCannotBeAdaptedForExport() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val database = Room.inMemoryDatabaseBuilder(context, OpraEqDatabase::class.java)
+            .allowMainThreadQueries()
+            .build()
+        try {
+            val repository = SavedEqRepository(database, nowMillis = { 456_000L })
+            val valid = repository.importPersonal(
+                outputId = "UAPP",
+                manufacturer = "Acme",
+                model = "Headphone",
+                displayName = "Valid row",
+                target = null,
+                peqText = "Filter 1: ON PK Fc 1000 Hz Gain 2 dB Q 1.0",
+            )
+            val legacyProfile = OpraEqProfile(
+                id = "legacy-damaged-row",
+                productId = "personal-product:damaged",
+                author = "Personal",
+                details = null,
+                link = null,
+                profileType = "parametric_eq",
+                preampGainDb = null,
+                bands = listOf(OpraBand("peak_dip", 2_000.0, 1.0, 1.0, null)),
+            )
+            database.savedEqDao().upsert(
+                SavedEqEntity(
+                    entryId = "personal:damaged",
+                    kind = SavedEqRepository.KIND_PERSONAL,
+                    sourceProfileId = null,
+                    productId = legacyProfile.productId,
+                    manufacturer = "Acme",
+                    model = "Headphone",
+                    displayName = "Damaged canonical row",
+                    profileJson = ManagedProfileSnapshotCodec().encode(legacyProfile),
+                    createdAtMillis = 1L,
+                    updatedAtMillis = 2L,
+                    canonicalSnapshotJson = "{not-json}",
+                ),
+            )
+
+            val records = repository.observeForOutput("UAPP").first()
+            assertEquals(2, records.size)
+            val validRow = requireNotNull(records.singleOrNull { it.entryId == valid.entryId })
+            val damagedRow = requireNotNull(records.singleOrNull { it.entryId == "personal:damaged" })
+            assertFalse(validRow.canonicalSnapshotInvalid)
+            assertTrue(damagedRow.canonicalSnapshotInvalid)
+            assertEquals("legacy-damaged-row", damagedRow.profile.id)
+            assertThrows(IllegalStateException::class.java) {
+                repository.toManagedHeadphone(damagedRow)
+            }
         } finally {
             database.close()
         }

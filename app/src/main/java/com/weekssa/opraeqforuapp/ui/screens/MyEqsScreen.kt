@@ -30,7 +30,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.weekssa.opraeqforuapp.R
 import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
 import kotlinx.coroutines.launch
@@ -181,11 +183,17 @@ private fun SavedEqRow(
             Column {
                 Text("${record.manufacturer} · ${record.model}")
                 record.profile.details?.takeIf(String::isNotBlank)?.let { Text(it) }
+                if (record.canonicalSnapshotInvalid) {
+                    Text(
+                        text = stringResource(R.string.saved_eq_invalid_data_notice),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
             }
         },
         trailingContent = {
             Row {
-                IconButton(onClick = onExport) {
+                IconButton(onClick = onExport, enabled = !record.canonicalSnapshotInvalid) {
                     Icon(Icons.Outlined.FileUpload, contentDescription = "Export ${record.displayName}")
                 }
                 IconButton(onClick = onDelete) {

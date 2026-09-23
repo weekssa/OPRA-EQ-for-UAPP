@@ -289,6 +289,9 @@ class SavedEqRepository(
     }
 
     fun toManagedHeadphone(record: SavedEqRecord): ManagedHeadphoneRecord {
+        check(!record.canonicalSnapshotInvalid) {
+            "Saved EQ canonical data is invalid and cannot be exported or flashed."
+        }
         val fingerprint = snapshotCodec.fingerprint(record.profile)
         val modelLabel = record.model.ifBlank { record.displayName }
         val manufacturerLabel = record.manufacturer.ifBlank { "Personal EQ" }

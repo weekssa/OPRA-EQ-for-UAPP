@@ -65,6 +65,7 @@ class Ew300ShelfCorpusRegressionTest {
                 band("high_shelf", 10_000.0, -1.0, 0.71),
             ),
         )
+        val originalSourceBands = source.bands.orEmpty().map { it.copy() }
         val canonical = requireNotNull(
             com.weekssa.opraeqforuapp.domain.library.OpraProfileAdapter.adapt(
                 vendor = OpraVendor("austrian_audio", "Austrian Audio"),
@@ -85,8 +86,9 @@ class Ew300ShelfCorpusRegressionTest {
             EqFilterType.LOW_SHELF,
             EqFilterType.HIGH_SHELF,
         )
+        assertThat(canonical.latestRevision.filters).hasSize(originalSourceBands.size)
         assertDeterministicShelfContract(projected)
-        assertThat(source.bands).containsExactlyElementsIn(source.bands.orEmpty()).inOrder()
+        assertThat(source.bands).containsExactlyElementsIn(originalSourceBands).inOrder()
     }
 
     @Test
@@ -303,6 +305,7 @@ class Ew300ShelfCorpusRegressionTest {
         val ready = first as FiveBandOptimizationResult.Ready
         assertThat(ready.representation.fidelity).isEqualTo(DevicePresetFidelity.OPTIMIZED)
         assertThat(ready.representation.usedResponseFit).isTrue()
+        assertThat(ready.representation.sourceBandCount).isEqualTo(profile.bands.orEmpty().size)
         assertThat(ready.representation.bands.size).isAtMost(5)
         assertThat(ready.representation.bands.map { it.type }.distinct()).containsExactly("peak_dip")
         assertThat(ready.representation.rmsErrorDb)
@@ -318,6 +321,7 @@ class Ew300ShelfCorpusRegressionTest {
         when (first) {
             is FiveBandOptimizationResult.Ready -> {
                 assertThat(first.representation.fidelity).isEqualTo(DevicePresetFidelity.OPTIMIZED)
+                assertThat(first.representation.sourceBandCount).isEqualTo(profile.bands.orEmpty().size)
                 assertThat(first.representation.bands.size).isAtMost(5)
                 assertThat(first.representation.bands.map { it.type }.distinct()).containsExactly("peak_dip")
                 assertThat(first.representation.rmsErrorDb)

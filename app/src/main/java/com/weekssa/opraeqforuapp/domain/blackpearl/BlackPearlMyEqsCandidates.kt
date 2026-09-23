@@ -43,6 +43,7 @@ fun buildBlackPearlMyEqsCandidates(
         }
 
     val saved = savedEqs
+        .filterNot { it.canonicalSnapshotInvalid }
         .sortedBy { it.entryId }
         .map { record ->
             val key = record.sourceProfileId

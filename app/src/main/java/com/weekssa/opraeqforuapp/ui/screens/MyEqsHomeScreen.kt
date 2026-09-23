@@ -456,11 +456,27 @@ fun MyEqsHomeScreen(
                     SavedImportsHeading(onImport = { importOpen = true })
                 }
                 items(headphoneSavedEqs, key = { "saved:${it.entryId}" }) { record ->
-                    val needsExport = exportCurrentness.needsExport(record.productId, record.profile.id)
-                    val flashPreview = hardwareFlashPreview(record.profile, activeOutput)
+                    val savedEqUsable = !record.canonicalSnapshotInvalid
+                    val needsExport = savedEqUsable &&
+                        exportCurrentness.needsExport(record.productId, record.profile.id)
+                    val flashPreview = if (savedEqUsable) {
+                        hardwareFlashPreview(record.profile, activeOutput)
+                    } else {
+                        null
+                    }
                     ListItem(
                         headlineContent = { Text(record.displayName) },
-                        supportingContent = { Text("${record.manufacturer} · ${record.model}") },
+                        supportingContent = {
+                            Column {
+                                Text("${record.manufacturer} · ${record.model}")
+                                if (record.canonicalSnapshotInvalid) {
+                                    Text(
+                                        text = stringResource(R.string.saved_eq_invalid_data_notice),
+                                        color = MaterialTheme.colorScheme.error,
+                                    )
+                                }
+                            }
+                        },
                         trailingContent = {
                             Row {
                                 if (needsExport) {

@@ -13,11 +13,18 @@ internal object SavedEqRecordMapper {
         canonicalCodec: SavedEqCanonicalSnapshotCodec,
         captureMetadataCodec: SavedEqCaptureMetadataCodec,
     ): SavedEqRecord {
+        var canonicalSnapshotInvalid = false
         val canonical = entity.canonicalSnapshotJson?.let { encoded ->
-            require(entity.kind == SavedEqRepository.KIND_PERSONAL) {
-                "Canonical local EQ data is valid only for Personal EQ records"
+            try {
+                require(entity.kind == SavedEqRepository.KIND_PERSONAL) {
+                    "Canonical local EQ data is valid only for Personal EQ records"
+                }
+                canonicalCodec.decode(encoded)
+            } catch (_: IllegalArgumentException) {
+                // Keep the row visible using its legacy projection, but mark it unusable for actions.
+                canonicalSnapshotInvalid = true
+                null
             }
-            canonicalCodec.decode(encoded)
         }
         val profile = canonical?.let { LocalSavedEqAdapter.projectToLegacy(it, entity.productId) }
             ?: legacyCodec.decode(entity.profileJson)
@@ -39,6 +46,7 @@ internal object SavedEqRecordMapper {
             updatedAtMillis = entity.updatedAtMillis,
             captureMetadata = entity.captureMetadataJson?.let(captureMetadataCodec::decode),
             canonicalSnapshot = canonical,
+            canonicalSnapshotInvalid = canonicalSnapshotInvalid,
         )
     }
 }

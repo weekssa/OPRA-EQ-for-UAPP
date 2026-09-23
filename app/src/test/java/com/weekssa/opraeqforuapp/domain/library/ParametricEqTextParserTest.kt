@@ -79,6 +79,30 @@ class ParametricEqTextParserTest {
     }
 
     @Test
+    fun `numeric overflow in preamp or active filter parameters fails closed`() {
+        val overflow = "9".repeat(400)
+
+        assertEquals(
+            false,
+            ParametricEqTextParser.parseStrictSource(
+                "Preamp: $overflow dB\nFilter 1: ON PK Fc 100 Hz Gain 1 dB Q 1.0",
+            ).isValid,
+        )
+        assertEquals(
+            false,
+            ParametricEqTextParser.parseStrictSource(
+                "Filter 1: ON PK Fc $overflow Hz Gain 1 dB Q 1.0",
+            ).isValid,
+        )
+        assertEquals(
+            false,
+            ParametricEqTextParser.parseStrictSource(
+                "Filter 1: ON PK Fc 100 Hz Gain 1 dB Q $overflow",
+            ).isValid,
+        )
+    }
+
+    @Test
     fun `unsupported non-filter directive invalidates candidate instead of producing partial EQ`() {
         val result = ParametricEqTextParser.parseStrictSource(
             "Filter 1: ON PK Fc 100 Hz Gain -2 dB Q 1.0\nGraphicEQ: 20 0; 30 1",

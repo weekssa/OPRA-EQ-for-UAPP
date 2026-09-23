@@ -115,7 +115,7 @@ class SavedEqCanonicalSnapshotCodecTest {
     }
 
     @Test
-    fun malformedCanonicalPayloadDoesNotSilentlyFallBackToLegacyProjection() {
+    fun malformedCanonicalPayloadIsQuarantinedAndLegacyProjectionIsDisplayOnly() {
         val legacyCodec = ManagedProfileSnapshotCodec()
         val entity = entity(
             profile = profile("legacy", 2_000.0),
@@ -123,14 +123,16 @@ class SavedEqCanonicalSnapshotCodecTest {
             legacyCodec = legacyCodec,
         )
 
-        org.junit.Assert.assertThrows(IllegalArgumentException::class.java) {
-            SavedEqRecordMapper.toDomain(
-                entity = entity,
-                legacyCodec = legacyCodec,
-                canonicalCodec = codec,
-                captureMetadataCodec = SavedEqCaptureMetadataCodec(),
-            )
-        }
+        val record = SavedEqRecordMapper.toDomain(
+            entity = entity,
+            legacyCodec = legacyCodec,
+            canonicalCodec = codec,
+            captureMetadataCodec = SavedEqCaptureMetadataCodec(),
+        )
+
+        assertTrue(record.canonicalSnapshotInvalid)
+        assertNull(record.canonicalSnapshot)
+        assertEquals("legacy", record.profile.id)
     }
 
     @Test

@@ -1220,6 +1220,9 @@ class EqLibraryViewModel(
         val outputId = activeOutputId()
         val record = savedEqRepository.getForOutput(outputId, entryId)
             ?: return resource(R.string.error_eq_not_saved)
+        if (record.canonicalSnapshotInvalid) {
+            return resource(R.string.error_saved_eq_invalid_data)
+        }
         return flashHardwareProfile(record.profile)
     }
 
@@ -1398,6 +1401,7 @@ class EqLibraryViewModel(
     ): PresetExportSummary {
         val record = savedEqRepository.getForOutput(device.name, entryId)
             ?: return PresetExportSummary(emptyList())
+        if (record.canonicalSnapshotInvalid) return PresetExportSummary(emptyList())
         val exportRecord = withContext(computationDispatcher) { savedEqRepository.toManagedHeadphone(record) }
         return exportWithInvalidation { exportRepository.exportSelected(treeUri, listOf(exportRecord), device) }
     }
