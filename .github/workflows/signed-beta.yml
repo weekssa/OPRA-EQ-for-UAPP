@@ -111,10 +111,18 @@ jobs:
             --arg signerSha256 "$actual_fingerprint" \
             --arg capabilityProfile "EW300 exact fingerprint; five-band direct-Hz Peak" \
             --arg testPlan "docs/EW300_DSP_HANDS_ON_CHECKLIST.md" \
-            --arg evidence "E001,E004,E005" \
-            --arg outstanding "single consolidated owner hardware session; merge/publication approval" \
+            --arg evidence "E001,E043,E044,E045,E046,E047,E048" \
+            --arg outstanding "final beta clean-install/upgrade/accessibility/offline/error validation; owner merge/publication approval" \
             '{sourceSha:$sourceSha, apk:$apk, apkSha256:$apkSha256, packageId:$packageId, versionName:$versionName, signerSha256:$signerSha256, capabilityProfile:$capabilityProfile, testPlan:$testPlan, evidenceIds:($evidence|split(",")), outstanding:$outstanding}' \
             > dist/candidate-manifest.json
+          jq -e --arg sourceSha "$GITHUB_SHA" '
+            .sourceSha == $sourceSha and
+            .packageId == "com.weekssa.opraeqforuapp" and
+            .versionName == "0.7.0" and
+            .evidenceIds == ["E001","E043","E044","E045","E046","E047","E048"] and
+            (.outstanding | contains("hardware session") | not) and
+            (.outstanding | contains("merge/publication approval"))
+          ' dist/candidate-manifest.json > /dev/null
 
       - name: Set up signed-beta emulator
         shell: bash
