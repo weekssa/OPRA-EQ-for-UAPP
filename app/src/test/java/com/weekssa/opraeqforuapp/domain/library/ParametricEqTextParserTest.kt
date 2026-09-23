@@ -2,6 +2,7 @@ package com.weekssa.opraeqforuapp.domain.library
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class ParametricEqTextParserTest {
@@ -41,18 +42,109 @@ class ParametricEqTextParserTest {
     }
 
     @Test
-    fun `rejects malformed gain filters without poisoning valid lines`() {
-        val parsed = ParametricEqTextParser.parse(
+    fun `malformed active filter invalidates whole source instead of returning partial EQ`() {
+        val text =
             """
             Filter 1: ON PK Fc 100 Hz Q 1.0
             Filter 2: ON PK Fc 1000 Hz Gain -2 dB Q 2.0
             nonsense
-            """.trimIndent(),
+            """.trimIndent()
+
+        val result = ParametricEqTextParser.parseStrictPersonal(text)
+        assertEquals(false, result.isValid)
+        assertEquals(1, result.parsedEq.filters.size)
+        assertThrows(IllegalArgumentException::class.java) {
+            ParametricEqTextParser.parse(text)
+        }
+    }
+
+    @Test
+    fun `duplicate or malformed active parameters invalidate the candidate`() {
+        val result = ParametricEqTextParser.parseStrictPersonal(
+            "Filter 1: ON PK Fc 100 Hz Gain -2 dB Gain -3 dB Q 1.0",
         )
 
-        assertNull(parsed.preampGainDb)
-        assertEquals(1, parsed.filters.size)
-        assertEquals(1000.0, parsed.filters.single().frequencyHz, 0.0001)
+        assertEquals(false, result.isValid)
+        assertNull(result.parsedEq.preampGainDb)
+    }
+
+    @Test
+    fun `malformed numeric residue and unexpected active-filter tokens fail closed`() {
+        listOf(
+            "Filter 1: ON PK Fc 100 Hz Gain -2 dB Q 1.0.2",
+            "Filter 1: ON PK Fc 100 Hz Gain -2 dB Q 1.0 Extra 2",
+        ).forEach { text ->
+            assertEquals(false, ParametricEqTextParser.parseStrictSource(text).isValid)
+        }
+    }
+
+    @Test
+    fun `unsupported non-filter directive invalidates candidate instead of producing partial EQ`() {
+        val result = ParametricEqTextParser.parseStrictSource(
+            "Filter 1: ON PK Fc 100 Hz Gain -2 dB Q 1.0\nGraphicEQ: 20 0; 30 1",
+        )
+
+        assertEquals(false, result.isValid)
+        assertEquals(1, result.parsedEq.filters.size)
+    }
+
+    @Test
+    fun `source parser preserves supported non-shelf filter identities while personal import rejects them`() {
+        val text = "Filter 1: ON LP Fc 1000 Hz Gain 0 dB Q 0.707"
+
+        val source = ParametricEqTextParser.parseStrictSource(text)
+        assertEquals(true, source.isValid)
+        assertEquals(EqFilterType.LOW_PASS, source.parsedEq.filters.single().type)
+        assertEquals(false, ParametricEqTextParser.parseStrictPersonal(text).isValid)
+    }
+
+    @Test
+    fun `source parser retains an unknown complete filter as unsupported canonical data`() {
+        val source = ParametricEqTextParser.parseStrictSource(
+            "Filter 1: ON NO Fc 1000 Hz Gain -2 dB Q 1.2",
+        )
+
+        assertEquals(true, source.isValid)
+        assertEquals(EqFilterType.OTHER, source.parsedEq.filters.single().type)
+        assertEquals("NO", source.parsedEq.filters.single().sourceType)
+        assertEquals(false, ParametricEqTextParser.parseStrictPersonal(
+            "Filter 1: ON NO Fc 1000 Hz Gain -2 dB Q 1.2",
+        ).isValid)
+    }
+
+    @Test
+    fun `AutoEq and community adapters reject an incomplete source instead of adapting valid siblings`() {
+        val malformed = """
+            Filter 1: ON PK Fc 100 Hz Gain -2 dB Q 1.0
+            Filter 2: ON PK Fc 1000 Hz Q 2.0
+        """.trimIndent()
+
+        assertNull(
+            AutoEqProfileAdapter.adapt(
+                metadata = AutoEqProfileAdapter.Metadata(
+                    manufacturer = "Fixture",
+                    model = "Malformed",
+                    sourceRecordId = "broken-autoeq",
+                    sourceUrl = null,
+                    measurementSource = null,
+                    targetName = null,
+                ),
+                parametricEqText = malformed,
+            ),
+        )
+        assertNull(
+            CommunityProfileAdapter.adapt(
+                metadata = CommunityProfileAdapter.Metadata(
+                    sourceId = "community",
+                    sourceRecordId = "broken-community",
+                    sourceUrl = "https://example.invalid/eq",
+                    manufacturer = "Fixture",
+                    model = "Malformed",
+                    creator = "Test",
+                ),
+                parametricEqText = malformed,
+            ),
+        )
     }
 
     @Test

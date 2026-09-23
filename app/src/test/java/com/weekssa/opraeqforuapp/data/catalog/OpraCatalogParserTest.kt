@@ -88,6 +88,20 @@ class OpraCatalogParserTest {
         )
     }
 
+    @Test
+    fun malformedBandRemainsVisibleButCannotBeSelectedAsAUsableSource() {
+        val rawBands = """
+            {"type":"peak_dip","frequency":1000.0,"gain_db":-2.0,"q":1.0},
+            {"type":"peak_dip","gain_db":0.0,"q":1.0}
+        """.trimIndent()
+        val profile = parser.parse(sampleCatalog(rawBands = rawBands).reader()).profiles.single()
+
+        assertEquals(
+            ProfileCompatibility.NotCompatible,
+            profile.assessCompatibility().category,
+        )
+    }
+
     private fun sampleCatalog(
         filterType: String = "peak_dip",
         rawBands: String = "{\"type\":\"$filterType\",\"frequency\":1000.0,\"gain_db\":-2.0,\"q\":1.0}",

@@ -41,8 +41,9 @@ object CommunityProfileAdapter {
             manufacturer.isEmpty() || model.isEmpty() || creator.isEmpty()
         ) return null
 
-        val parsed = ParametricEqTextParser.parse(parametricEqText)
-        if (parsed.filters.isEmpty()) return null
+        val parseResult = ParametricEqTextParser.parseStrictSource(parametricEqText)
+        if (!parseResult.isValid) return null
+        val parsed = parseResult.parsedEq
 
         val fingerprint = AcousticFingerprint.of(parsed.preampGainDb, parsed.filters)
         val target = metadata.targetName?.trim()?.takeIf(String::isNotEmpty)

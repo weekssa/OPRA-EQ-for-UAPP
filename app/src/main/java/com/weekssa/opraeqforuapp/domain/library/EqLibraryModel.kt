@@ -96,6 +96,8 @@ data class EqFilter(
     @SerialName("gain_db") val gainDb: Double? = null,
     val q: Double? = null,
     val slope: Double? = null,
+    /** Exact upstream filter token when [type] is OTHER, so distinct unsupported filters stay distinct. */
+    @SerialName("source_type") val sourceType: String? = null,
 )
 
 @Serializable

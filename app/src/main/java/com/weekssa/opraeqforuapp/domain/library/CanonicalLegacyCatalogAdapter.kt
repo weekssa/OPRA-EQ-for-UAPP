@@ -117,7 +117,7 @@ object CanonicalLegacyCatalogAdapter {
                     preampGainDb = revision.preampGainDb,
                     bands = revision.filters.map { filter ->
                         OpraBand(
-                            type = filter.type.toLegacyType(),
+                            type = filter.type.toLegacyType(filter.sourceType),
                             frequency = filter.frequencyHz,
                             gainDb = filter.gainDb,
                             q = filter.q,
@@ -174,7 +174,7 @@ object CanonicalLegacyCatalogAdapter {
             preampGainDb = revision.preampGainDb,
             bands = revision.filters.map { filter ->
                 OpraBand(
-                    type = filter.type.toLegacyType(),
+                    type = filter.type.toLegacyType(filter.sourceType),
                     frequency = filter.frequencyHz,
                     gainDb = filter.gainDb,
                     q = filter.q,
@@ -281,13 +281,13 @@ object CanonicalLegacyCatalogAdapter {
         headphone.padsOrMode?.takeIf(String::isNotBlank)?.let(::add)
     }.joinToString(" · ")
 
-    private fun EqFilterType.toLegacyType(): String = when (this) {
+    private fun EqFilterType.toLegacyType(sourceType: String?): String = when (this) {
         EqFilterType.PEAK -> "peak_dip"
         EqFilterType.LOW_SHELF -> "low_shelf"
         EqFilterType.HIGH_SHELF -> "high_shelf"
         EqFilterType.LOW_PASS -> "low_pass"
         EqFilterType.HIGH_PASS -> "high_pass"
-        EqFilterType.OTHER -> "other"
+        EqFilterType.OTHER -> sourceType?.trim()?.takeIf(String::isNotEmpty) ?: "other"
     }
 
     private fun slug(value: String): String = value

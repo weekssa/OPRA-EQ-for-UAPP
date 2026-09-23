@@ -2,6 +2,7 @@ package com.weekssa.opraeqforuapp.domain.conversion
 
 import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
+import com.weekssa.opraeqforuapp.domain.catalog.OpraFilterTypeNormalizer
 import com.weekssa.opraeqforuapp.domain.catalog.assessUappCompatibility
 import com.weekssa.opraeqforuapp.domain.model.ProfileCompatibility
 import java.math.BigDecimal
@@ -75,7 +76,7 @@ object ToneBoostersConverter {
     ): ToneBoostersConversionResult {
         val warnings = if (bands.size > MAX_BANDS) {
             listOf(
-                "Source has ${bands.size} bands; the current UAPP/ToneBoosters target supports 10, so only the first 10 priority-sorted bands were used.",
+                "Source has ${bands.size} bands; the current UAPP/ToneBoosters target supports 10, so only the first 10 in the supplied source order were used.",
             )
         } else {
             emptyList()
@@ -202,7 +203,9 @@ object ToneBoostersConverter {
     }
 
     private fun normalizeFilter(band: OpraBand): NormalizedFilter {
-        val typeName = band.type
+        val rawTypeName = band.type
+            ?: throw ToneBoostersConversionException("filter is missing its OPRA type")
+        val typeName = OpraFilterTypeNormalizer.normalize(rawTypeName)
             ?: throw ToneBoostersConversionException("filter is missing its OPRA type")
         val type = filterTypes[typeName]
             ?: throw ToneBoostersConversionException(

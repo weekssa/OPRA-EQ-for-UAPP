@@ -2,6 +2,7 @@ package com.weekssa.opraeqforuapp.domain.catalog
 
 import com.weekssa.opraeqforuapp.domain.model.ProfileCompatibility
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityCategory
+import java.util.Locale
 
 data class ProfileCompatibilityAssessment(
     val category: ProfileCompatibility,
@@ -16,15 +17,27 @@ data class ProfileCompatibilityAssessment(
  * Not representable.
  */
 fun OpraEqProfile.isUsableParametricSource(): Boolean {
-    if (profileType != "parametric_eq") return false
+    if (profileType?.trim()?.lowercase(Locale.ROOT) != "parametric_eq") return false
+    if (preampGainDb?.isFinite() == false) return false
     val sourceBands = bands ?: return false
     if (sourceBands.isEmpty()) return false
     return sourceBands.all { band ->
-        !band.type.isNullOrBlank() &&
-            band.frequency?.let { it.isFinite() && it > 0.0 } == true &&
-            band.gainDb?.isFinite() != false &&
-            band.q?.isFinite() != false &&
-            band.slope?.isFinite() != false
+        val type = OpraFilterTypeNormalizer.normalize(band.type)
+        val frequencyValid = band.frequency?.let { it.isFinite() && it > 0.0 } == true
+        val gainValid = band.gainDb?.isFinite() != false
+        val qValid = band.q?.let { it.isFinite() && it >= MIN_OPRA_Q } != false
+        val effectiveSlope = band.slope ?: if (type != null && OpraFilterTypeNormalizer.requiresSlope(type)) {
+            DEFAULT_OPRA_SLOPE
+        } else {
+            null
+        }
+        val slopeValid = effectiveSlope?.let { it.isFinite() && it in OPRA_SLOPES } != false
+        val requiredShapeValid = when {
+            type != null && OpraFilterTypeNormalizer.requiresQ(type) -> band.q != null && qValid
+            type != null && OpraFilterTypeNormalizer.requiresSlope(type) -> effectiveSlope != null && slopeValid
+            else -> !type.isNullOrBlank()
+        }
+        frequencyValid && gainValid && qValid && slopeValid && requiredShapeValid
     }
 }
 
@@ -45,8 +58,11 @@ fun OpraEqProfile.assessCompatibility(): ProfileCompatibilityAssessment =
 
 /** UAPP/ToneBoosters-specific compatibility retained only for that output's export details. */
 fun OpraEqProfile.assessUappCompatibility(): ProfileCompatibilityAssessment {
-    if (profileType != "parametric_eq") {
+    if (profileType?.trim()?.lowercase(Locale.ROOT) != "parametric_eq") {
         return notCompatible("This profile is not a parametric EQ profile.")
+    }
+    if (!isUsableParametricSource()) {
+        return notCompatible("The profile contains malformed or incomplete source filter data.")
     }
 
     val playbackPreamp = effectivePlaybackPreampDb()
@@ -62,12 +78,13 @@ fun OpraEqProfile.assessUappCompatibility(): ProfileCompatibilityAssessment {
         return notCompatible("The $origin is outside the proven UAPP/ToneBoosters range of -20 dB to +20 dB.")
     }
 
-    val profileBands = bands
-        ?: return notCompatible("The profile is missing its parametric EQ band list.")
+    val profileBands = requireNotNull(bands)
 
-    profileBands.forEachIndexed { index, band ->
+    // Source adapters preserve any source-defined priority in list order. Validate only the first
+    // ten rows that this constrained target will actually receive, after full structural validation.
+    profileBands.take(MAX_UAPP_BANDS).forEachIndexed { index, band ->
         val bandNumber = index + 1
-        val type = band.type
+        val type = OpraFilterTypeNormalizer.normalize(band.type)
             ?: return notCompatible("Band $bandNumber is missing its filter type.")
         if (type !in SUPPORTED_FILTER_TYPES) {
             return notCompatible(
@@ -96,7 +113,7 @@ fun OpraEqProfile.assessUappCompatibility(): ProfileCompatibilityAssessment {
     return if (profileBands.size > MAX_UAPP_BANDS) {
         ProfileCompatibilityAssessment(
             category = ProfileCompatibility.CompatibleWithLimitation,
-            reason = "This source has ${profileBands.size} priority-sorted bands. The current UAPP/ToneBoosters target supports 10, so only the first 10 priority bands will be used for that device export.",
+            reason = "This source has ${profileBands.size} bands. UAPP/ToneBoosters supports 10, so this export uses the first 10 in the supplied source order.",
         )
     } else {
         ProfileCompatibilityAssessment(ProfileCompatibility.FullyCompatible)
@@ -117,5 +134,8 @@ private fun notCompatible(reason: String) = ProfileCompatibilityAssessment(
 private val FREQUENCY_RANGE = 16.0..20_000.0
 private val GAIN_RANGE = -20.0..20.0
 private val Q_RANGE = 0.1..10.0
+private const val MIN_OPRA_Q = 0.1
+private const val DEFAULT_OPRA_SLOPE = 12.0
+private val OPRA_SLOPES = setOf(6.0, 12.0, 18.0, 24.0, 30.0, 36.0)
 private const val MAX_UAPP_BANDS = 10
 private val SUPPORTED_FILTER_TYPES = setOf("peak_dip", "low_shelf", "high_shelf")

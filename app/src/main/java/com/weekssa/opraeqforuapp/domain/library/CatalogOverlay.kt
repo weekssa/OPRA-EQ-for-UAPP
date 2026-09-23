@@ -385,6 +385,9 @@ private fun OpraEqProfile.soundImpactFromLegacyBands(): String? {
             gainDb = band.gainDb,
             q = band.q,
             slope = band.slope,
+            sourceType = band.type
+                ?.takeIf { it.toEqFilterType() == EqFilterType.OTHER }
+                ?.trim(),
         )
     }
     if (filters.isEmpty()) return null

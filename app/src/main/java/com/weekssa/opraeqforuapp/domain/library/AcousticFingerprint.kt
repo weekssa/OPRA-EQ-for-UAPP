@@ -20,21 +20,30 @@ object AcousticFingerprint {
         return sha256(normalized)
     }
 
+    /** Identity of the source's filter-priority sequence, separate from acoustic equivalence. */
+    fun sourcePriority(filters: List<EqFilter>): String = sha256(
+        filters.joinToString(separator = ";") { normalize(it) },
+    )
+
     private fun normalize(filter: EqFilter): String = listOf(
-        normalizeType(filter.type),
+        normalizeType(filter),
         format(filter.frequencyHz, 3),
         format(filter.gainDb ?: 0.0, 3),
         format(filter.q ?: 0.0, 4),
         format(filter.slope ?: 0.0, 4),
     ).joinToString("|")
 
-    private fun normalizeType(value: EqFilterType): String = when (value) {
+    private fun normalizeType(filter: EqFilter): String = when (filter.type) {
         EqFilterType.PEAK -> "PK"
         EqFilterType.LOW_SHELF -> "LS"
         EqFilterType.HIGH_SHELF -> "HS"
         EqFilterType.LOW_PASS -> "LP"
         EqFilterType.HIGH_PASS -> "HP"
-        EqFilterType.OTHER -> "OTHER"
+        EqFilterType.OTHER -> filter.sourceType
+            ?.trim()
+            ?.takeIf(String::isNotEmpty)
+            ?.let { "OTHER:${it.lowercase(Locale.ROOT)}" }
+            ?: "OTHER"
     }
 
     private fun format(value: Double, decimals: Int): String =
