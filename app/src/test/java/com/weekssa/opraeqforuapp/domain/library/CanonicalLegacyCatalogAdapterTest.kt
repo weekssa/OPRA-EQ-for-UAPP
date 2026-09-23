@@ -521,7 +521,8 @@ class CanonicalLegacyCatalogAdapterTest {
             revisions = listOf(olderOpraRevision, currentCommunityRevision),
         )
         val snapshot = CatalogSnapshot(1, "2026-09-23T00:00:00Z", "test", listOf(canonical))
-        val displayed = CanonicalLegacyCatalogAdapter.adapt(snapshot).profiles.single()
+        val displayed = CanonicalLegacyCatalogAdapter.adapt(snapshot).profiles
+            .single { it.id == "eq-library:mixed-source-headphone@mixed-r1" }
         val selection = requireNotNull(CanonicalLegacyCatalogAdapter.resolveSelection(snapshot, displayed))
 
         assertThat(selection.compatibilityVendorId).isEqualTo("opra-vendor")
