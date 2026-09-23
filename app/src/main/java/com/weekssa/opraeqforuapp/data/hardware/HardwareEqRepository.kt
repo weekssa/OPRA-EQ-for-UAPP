@@ -113,7 +113,19 @@ class HardwareEqRepository(
 
     fun connectBlackPearl() = dacSessionRepository.connectBlackPearl()
     fun connectFiioJa11() = dacSessionRepository.connectFiioJa11()
-    fun connectEw300() = dacSessionRepository.connectEw300()
+
+    /**
+     * Connects EW300 when closed; when the authoritative session is already open, this is the
+     * My DAC manual Refresh escape hatch and performs a read-only snapshot refresh instead of
+     * opening/replacing the USB session.
+     */
+    fun connectEw300() {
+        if (ew300ConnectionState.value is Kt02h20ConnectionState.Connected) {
+            scheduleEw300SnapshotRefresh()
+        } else {
+            dacSessionRepository.connectEw300()
+        }
+    }
 
     @Deprecated("JCALLY is not part of the current product; remove remaining callers.")
     fun connectJcallyJm12() = Unit
