@@ -1,25 +1,12 @@
-name: Signed GitHub Release
+name: Signed Release Candidate
 
 on:
   workflow_dispatch:
     inputs:
-      mode:
-        description: Build a signed candidate for device testing, or publish after that candidate passes.
-        required: true
-        default: candidate
-        type: choice
-        options:
-          - candidate
-          - publish
       tag:
         description: Release tag in exact vMAJOR.MINOR.PATCH form.
         required: true
-        default: v0.1.0
-        type: string
-      confirm_publish:
-        description: For publish mode only, type PUBLISH. Leave blank for candidate mode.
-        required: false
-        default: ""
+        default: v0.7.0
         type: string
 
 permissions:
@@ -40,8 +27,6 @@ jobs:
     steps:
       - name: Check out exact source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          persist-credentials: false
         with:
           persist-credentials: false
 
@@ -173,66 +158,4 @@ jobs:
           name: EQ-Library-${{ inputs.tag }}-signed-${{ github.sha }}
           path: dist/
           if-no-files-found: error
-          retention-days: 7
-
-  publish-release:
-    if: inputs.mode == 'publish'
-    needs: build-signed-apk
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: write
-
-    steps:
-      - name: Check out exact source
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          persist-credentials: false
-
-      - name: Download verified signed artifact
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
-        with:
-          name: EQ-Library-${{ inputs.tag }}-signed-${{ github.sha }}
-          path: dist
-
-      - name: Confirm publication and ensure tag is new
-        env:
-          RELEASE_TAG: ${{ inputs.tag }}
-          CONFIRM_PUBLISH: ${{ inputs.confirm_publish }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "$CONFIRM_PUBLISH" = "PUBLISH" || {
-            echo "Publish mode requires confirm_publish to equal PUBLISH" >&2
-            exit 1
-          }
-          if git ls-remote --exit-code --tags origin "refs/tags/$RELEASE_TAG" >/dev/null 2>&1; then
-            echo "Tag $RELEASE_TAG already exists; refusing to replace an existing release identity" >&2
-            exit 1
-          fi
-          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo "Release $RELEASE_TAG already exists; refusing to replace it" >&2
-            exit 1
-          fi
-
-      - name: Publish GitHub Release and create immutable version tag
-        env:
-          RELEASE_TAG: ${{ inputs.tag }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          output_apk="dist/EQ-Library-${RELEASE_TAG}.apk"
-          test -f "$output_apk"
-          test -f "${output_apk}.sha256"
-          gh release create "$RELEASE_TAG" \
-            "$output_apk" \
-            "${output_apk}.sha256" \
-            "dist/apksigner-verification.txt" \
-            "dist/zipalign-verification.txt" \
-            "dist/candidate-manifest.json" \
-            --repo "$GITHUB_REPOSITORY" \
-            --target "$GITHUB_SHA" \
-            --title "EQ Library ${RELEASE_TAG}" \
-            --notes-file "docs/releases/${RELEASE_TAG}.md"
+          retention-days: 90

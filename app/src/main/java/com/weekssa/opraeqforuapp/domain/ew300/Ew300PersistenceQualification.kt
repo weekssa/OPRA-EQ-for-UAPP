@@ -18,6 +18,7 @@ class Ew300PersistenceQualifier(
     private val transport: Ew300Transport,
     private val stateStore: Ew300GainStateStore,
     private val authorizationGate: () -> Boolean = { false },
+    private val mutationAuthorized: (String?) -> Boolean = Ew300CapabilityProfile::authorizesMutation,
 ) {
     suspend fun advance(): Ew300PersistenceQualificationResult {
         if (!authorizationGate()) {
@@ -25,6 +26,9 @@ class Ew300PersistenceQualifier(
         }
         val key = transport.deviceFingerprintKey
             ?: return failed("The exact EW300 fingerprint is unavailable; no operation was sent.", true)
+        if (!mutationAuthorized(key)) {
+            return failed("This EW300 hardware revision is not authorized for persistence qualification. No operation was sent.", true)
+        }
         return when (val pending = stateStore.readPersistencePending(key)) {
             null -> begin(key)
             else -> when (pending.stage) {
@@ -44,6 +48,10 @@ class Ew300PersistenceQualifier(
         val baseline = readSnapshot()
             ?: return failed("Could not read the complete EW300 baseline. No write was sent.", true)
         val bandRegister = Ew300Protocol.FIRST_BAND_REGISTER
+        val firstBandType = baseline.getValue(bandRegister + 1).getOrNull(2)?.toInt()?.and(0xFF)
+        if (firstBandType != 0) {
+            return failed("The first EW300 band is not a verified Peak filter. No write was sent.", true)
+        }
         val baselineBand = baseline.getValue(bandRegister)
         val baselineGain = baseline.getValue(Ew300Protocol.GLOBAL_GAIN_REGISTER)
         val temporaryBand = adjustSigned16(baselineBand, -1)

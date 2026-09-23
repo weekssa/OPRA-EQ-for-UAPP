@@ -59,7 +59,7 @@ data class Ew300CapabilityReport(
         cases.forEach { result ->
             appendLine()
             appendLine("${result.caseId}: ${result.status}")
-            appendLine(result.message)
+            appendLine(result.message.redactedForEw300Report(deviceFingerprintKey))
             result.registerValues.toSortedMap().forEach { (register, value) ->
                 appendLine("register 0x${register.toString(16).padStart(2, '0')}: ${value.hex()}")
             }
@@ -78,7 +78,7 @@ data class Ew300CapabilityReport(
             if (index > 0) append(',')
             append("{\"id\":\"${result.caseId.jsonEscape()}\",")
             append("\"status\":\"${result.status}\",")
-            append("\"message\":\"${result.message.jsonEscape()}\",")
+            append("\"message\":\"${requireNotNull(result.message.redactedForEw300Report(deviceFingerprintKey)).jsonEscape()}\",")
             append("\"registerValues\":{")
             result.registerValues.toSortedMap().entries.forEachIndexed { valueIndex, (register, value) ->
                 if (valueIndex > 0) append(',')

@@ -72,7 +72,7 @@ data class Ew300OperationTrace(
         appendLine("baselineFingerprintKey=${baselineFingerprintKey.redactedForEw300Report() ?: "unavailable"}")
         appendLine("baselineSessionGeneration=${baselineSessionGeneration ?: "unavailable"}")
         appendLine("baselineDetachGeneration=${baselineDetachGeneration ?: "unavailable"}")
-        appendLine("failureReason=${failureReason ?: "none"}")
+        appendLine("failureReason=${failureReason.redactedForEw300Report(deviceFingerprintKey ?: baselineFingerprintKey) ?: "none"}")
         appendLine("stages=${stages.joinToString(",")}")
         appendLine("privacyNote=No account, phone, or private device data is included.")
     }
@@ -104,7 +104,7 @@ data class Ew300OperationTrace(
         field("baselineFingerprintKey", baselineFingerprintKey.redactedForEw300Report())
         numberField("baselineSessionGeneration", baselineSessionGeneration)
         numberField("baselineDetachGeneration", baselineDetachGeneration)
-        field("failureReason", failureReason)
+        field("failureReason", failureReason.redactedForEw300Report(deviceFingerprintKey ?: baselineFingerprintKey))
         append(",\"stages\":[")
         stages.forEachIndexed { index, stage ->
             if (index > 0) append(',')

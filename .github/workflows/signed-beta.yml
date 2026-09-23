@@ -46,12 +46,14 @@ jobs:
       - name: Run beta gate and build release APK
         run: >-
           gradle :app:testDebugUnitTest :app:lintDebug :app:assembleRelease --stacktrace
-          -PEW300_PERSISTENCE_QUALIFICATION_ENABLED=true
-          -PEW300_FLASH_VALIDATION_ENABLED=true
           -PCANDIDATE_SOURCE_SHA="$GITHUB_SHA"
 
       - name: Verify minified release output
-        run: bash tools/verify-r8-mapping.sh
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapping="app/build/outputs/mapping/release/mapping.txt"
+          bash tools/verify-r8-mapping.sh "$mapping"
 
       - name: Verify unsigned APK identity before signing
         shell: bash
@@ -78,7 +80,6 @@ jobs:
           output_apk="dist/EQ-Library-v${version_name}-beta-${GITHUB_SHA::7}.apk"
           build_tools="$ANDROID_HOME/build-tools/36.0.0"
           mapping="app/build/outputs/mapping/release/mapping.txt"
-          bash tools/verify-r8-mapping.sh "$mapping"
           r8_mapping_sha256="$(sha256sum "$mapping" | cut -d ' ' -f 1)"
           : "${OPRA_RELEASE_KEYSTORE_BASE64:?Missing release keystore secret}"
           : "${OPRA_RELEASE_KEYSTORE_PASSWORD:?Missing release keystore password}"

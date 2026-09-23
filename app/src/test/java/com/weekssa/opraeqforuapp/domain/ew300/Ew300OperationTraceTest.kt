@@ -37,5 +37,23 @@ class Ew300OperationTraceTest {
         assertTrue(report.toReadableText().contains("serial=[redacted]"))
         assertFalse(report.toReadableText().contains("private-test-value"))
         assertFalse(report.toJson().contains("private-test-value"))
+
+        val failedBuilder = Ew300OperationTraceBuilder(
+            operation = "FLASH",
+            sourceCommit = "abcdef123456",
+            appVersion = "0.7.0",
+            signerVerified = true,
+            deviceFingerprintKey = "vid=31b2|pid=111|manufacturer=LE XIAN|product=SIMGOT EW300 DSP|serial=private-test-value|deviceRevision=1.01|interface=3",
+            sessionGeneration = 4L,
+            detachGeneration = 2L,
+            initialPermissionRequestCount = 0L,
+            initialRegisterWriteCount = 0L,
+            initialSaveCommandCount = 0L,
+        )
+        failedBuilder.complete("Failure", stateKnown = false, failureReason = "transport exception for private-test-value")
+        val failureReport = failedBuilder.build(0L, 0L, 0L, 4L, 2L)
+        assertTrue(failureReport.toReadableText().contains("failureReason=transport exception for [redacted]"))
+        assertTrue(failureReport.toJson().contains("transport exception for [redacted]"))
+        assertFalse(failureReport.toJson().contains("private-test-value"))
     }
 }

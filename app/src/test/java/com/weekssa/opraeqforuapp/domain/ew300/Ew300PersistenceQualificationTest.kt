@@ -23,6 +23,37 @@ class Ew300PersistenceQualificationTest {
     }
 
     @Test
+    fun unqualifiedHardwareRevisionSendsNoReadWriteOrCommit() = runBlocking {
+        val transport = FakeTransport()
+        val store = FakeStore()
+        val result = Ew300PersistenceQualifier(
+            transport = transport,
+            stateStore = store,
+            authorizationGate = { true },
+        ).advance()
+
+        assertTrue(result is Ew300PersistenceQualificationResult.Failed)
+        assertTrue((result as Ew300PersistenceQualificationResult.Failed).stateKnown)
+        assertEquals(0, transport.readCount)
+        assertEquals(0, transport.writeCount)
+        assertEquals(0, transport.commitCount)
+        assertNull(store.pending)
+    }
+
+    @Test
+    fun shelfCodedFirstBandStopsBeforeAnyWriteOrSave() = runBlocking {
+        val transport = FakeTransport(firstBandType = 3)
+        val store = FakeStore()
+        val result = qualifier(transport, store).advance()
+
+        assertTrue(result is Ew300PersistenceQualificationResult.Failed)
+        assertTrue((result as Ew300PersistenceQualificationResult.Failed).stateKnown)
+        assertEquals(0, transport.writeCount)
+        assertEquals(0, transport.commitCount)
+        assertNull(store.pending)
+    }
+
+    @Test
     fun twoPowerCycleFlowQualifiesPersistenceAndRestoresExactBaseline() = runBlocking {
         val transport = FakeTransport()
         val store = FakeStore()
@@ -166,18 +197,25 @@ class Ew300PersistenceQualificationTest {
     }
 
     private fun qualifier(transport: Ew300Transport, store: Ew300GainStateStore) =
-        Ew300PersistenceQualifier(transport, store, authorizationGate = { true })
+        Ew300PersistenceQualifier(
+            transport = transport,
+            stateStore = store,
+            authorizationGate = { true },
+            mutationAuthorized = { it == "exact-ew300-test" },
+        )
 
     private class FakeTransport(
         private val commitAccepted: Boolean = true,
         private val failWriteAt: Set<Int> = emptySet(),
         private val mutateOnFailedWrite: Boolean = false,
+        private val firstBandType: Int = 0,
     ) : Ew300Transport {
         override val deviceFingerprintKey = "exact-ew300-test"
         override var detachGeneration = 0L
         val baseline = Ew300CapabilityBatch.snapshotRegisters().associateWith { register ->
             when (register) {
                 Ew300Protocol.FIRST_BAND_REGISTER -> byteArrayOf(0xF5.toByte(), 0xFF.toByte(), 0x64, 0)
+                Ew300Protocol.FIRST_BAND_REGISTER + 1 -> byteArrayOf(0, 0, firstBandType.toByte(), 0)
                 Ew300Protocol.GLOBAL_GAIN_REGISTER -> byteArrayOf(0xF8.toByte(), 0xF8.toByte(), 0, 0)
                 else -> byteArrayOf(0, 0, 0, 0)
             }

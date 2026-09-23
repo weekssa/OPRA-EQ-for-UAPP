@@ -17,8 +17,20 @@ The checklist is organized around the **current release state**. Detailed histor
 - [x] Normal Android CI validates unit tests, Android lint, debug assembly, and unsigned release assembly without publishing development APKs.
 - [x] GitHub Actions dependencies are pinned and repository security/dependency checks are enabled.
 - [x] One permanent Android release-signing identity is established and its public certificate fingerprint is pinned in `release-signing-cert.sha256`.
-- [x] Candidate signing is separate from public publication, and publish mode requires an explicit controlled release action.
+- [x] Candidate signing is separate from public publication; the v0.7 candidate workflow cannot create a public tag or release while exact-artifact promotion is unimplemented.
 - [x] The repository front page describes the current **EQ Library** product rather than the original OPRA-only workflow.
+
+## Current v0.7.0 state
+
+- [ ] Exact current-head software, security, dependency, and signed-artifact gates complete.
+- [ ] Corrected-source signed APK, checksum, signer verification, artifact digest, install, and cold launch recorded.
+- [ ] Remaining source-neutral parsing/canonical-storage/ToneBoosters parity and product verification blockers closed.
+- [ ] Exact-candidate promotion workflow reviewed; it is currently disabled to prevent rebuilding a different APK during publication.
+- [ ] Final owner approval to merge and publish received.
+
+PR #23 remains draft and v0.7.0 remains NO-GO. Historical physical E001 and E043–E046 are
+accepted; do not repeat Save qualification, Apply, Flash, Restore, Reset, or read-only reports.
+Current source/gate status is maintained in `docs/V0.7_RELEASE_READINESS_AUDIT.md`.
 
 ## Continuing release invariants
 

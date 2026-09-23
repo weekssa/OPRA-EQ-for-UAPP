@@ -136,6 +136,7 @@ internal fun createEqLibraryRuntimeDependencies(context: Context): EqLibraryRunt
         ew300PersistenceQualifier = Ew300PersistenceQualifier(
             transport = ew300Transport,
             stateStore = ew300GainStateStore,
+            mutationAuthorized = Ew300CapabilityProfile::authorizesMutation,
             authorizationGate = {
                 BuildConfig.EW300_PERSISTENCE_QUALIFICATION_ENABLED &&
                     BuildConfig.CANDIDATE_SOURCE_SHA.matches(Regex("[0-9a-fA-F]{40}")) &&

@@ -11,9 +11,6 @@ val canonicalCatalogUrl = providers.gradleProperty("CANONICAL_CATALOG_URL")
     .orElse("https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/catalog-live/catalog/catalog.json")
 val latestReleaseApiUrl = providers.gradleProperty("LATEST_RELEASE_API_URL")
     .orElse("https://api.github.com/repos/weekssa/OPRA-EQ-for-UAPP/releases/latest")
-val ew300PersistenceQualificationEnabled = providers
-    .gradleProperty("EW300_PERSISTENCE_QUALIFICATION_ENABLED")
-    .orElse("false")
 val ew300FlashValidationEnabled = providers
     .gradleProperty("EW300_FLASH_VALIDATION_ENABLED")
     .orElse("false")
@@ -42,7 +39,8 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = true
-            buildConfigField("boolean", "EW300_PERSISTENCE_QUALIFICATION_ENABLED", ew300PersistenceQualificationEnabled.get())
+            // Save qualification is already physically accepted and is never a production action.
+            buildConfigField("boolean", "EW300_PERSISTENCE_QUALIFICATION_ENABLED", "false")
             buildConfigField("boolean", "EW300_FLASH_VALIDATION_ENABLED", ew300FlashValidationEnabled.get())
             buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"${candidateSourceSha.get()}\"")
             proguardFiles(
