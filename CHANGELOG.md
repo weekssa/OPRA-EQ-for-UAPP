@@ -6,6 +6,21 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed the separate signed EW300 USB diagnostic APK omitting its Kotlin launcher class under AGP 9. Added finished-APK class-definition validation and two cold launches of the exact signed APK on Android 36 before the diagnostic can be handed off. This is discovery tooling; EW300 hardware EQ support remains unqualified.
+- Updated the read-only EW300 descriptor diagnostic to derive the exact HID report length from the standard descriptor, make a non-forced host claim of that interface, perform only the standard report-descriptor read, and release the interface. This addresses the owner-observed `-1` descriptor result without sending any HID report or vendor command.
+- Recorded the Pixel 9 refusal of the non-forced EW300 HID-interface claim. The next read-only diagnostic may briefly detach Android's driver from HID interface 3, reads only its standard 74-byte report descriptor, and immediately releases it; no HID report or EQ command is sent.
+- Recorded the complete owner-captured EW300 HID descriptor: vendor report IDs `0x4B` and `0x54` each declare 10-byte input and output payloads. Added descriptor-derived input-only GET_REPORT discovery; output reports remain prohibited until their semantics are evidenced.
+- Recorded that both exact EW300 vendor input reports return zero bytes to read-only HID GET_REPORT. Hardware EQ support remains disabled; no speculative output request was added.
+- Recorded an exact-product third-party browser connection that exposes a Save action but no labelled stock-state read or backup. The session was disconnected without an EQ action; its displayed five-filter limit is not adopted as hardware evidence.
+- Added a bounded, descriptor-derived passive interrupt-IN observation to the separate EW300 diagnostic: three 250 ms incoming-only reads after the existing standard reads. It sends no HID output, vendor request, EQ, save, or reset command.
+- Recorded the owner result from that passive observation: all three exact-device interrupt-IN reads timed out with no bytes. The diagnostic released the HID interface; hardware EQ support remains disabled because this does not establish stock-state readback or protocol semantics.
+- Added an owner-authorized provisional stock-state diagnostic derived from the public Hangout.Audio `0x31B2` KT Micro fallback. It is gated on the exact EW300 identity, endpoints, and captured HID descriptor; sends only report `0x4B` command `0x52` READ requests; stops on the first invalid response; and records raw values. WRITE, COMMIT, CLEAR, save, reset, and firmware commands remain excluded.
+- Corrected one transcribed Consumer Control usage in the EW300 descriptor safety gate (`0xCE` to the owner-captured `0xCF`). The mismatched candidate remained locked and sent no command; the complete 74-byte gate value now has direct regression coverage.
+- Recorded the successful exact-device EW300 stock-state pull: all 12 bounded report-`0x4B` READ requests returned correctly echoed responses. Preserved the untouched slot, five filter pairs, and global-gain payload byte-for-byte as a regression/restoration fixture; no write, commit, clear, save, reset, or firmware command was sent.
+- Added the owner-approved, stock-snapshot-gated EW300 reversible write qualification: Band 1 gain moves temporarily from -1.1 dB to -1.0 dB, is read back, then the exact captured four bytes are restored and read back. No commit, save, clear, reset, slot, global-gain, or firmware operation is included.
+
 ### Documentation
 
 - Added the approved v0.7 SIMGOT EW300 DSP implementation plan, including protocol-evidence gates, reuse of the scalable My DAC framework, automated validation, signed-candidate handoff, and the owner physical-test boundary.
@@ -305,4 +320,3 @@ APK SHA-256: `dabf4bcdddf69853b09793f5a94bec0a3af7efb430f1cdfe26ffc35a93b783ad`
 The exact candidate passed Android CI #1538, CodeQL #1420, Catalog currentness CI #1826, Priority community coverage CI #1311, and Signed EQ Library Beta Candidate #1213. The signing workflow verified the pinned certificate `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`.
 
 This PASS closes the corrective Black Pearl physical gate. It does not establish TRN factory-default semantics and does not qualify FiiO JA11 hardware behavior. PR #16 was merged and v0.6.0 publication is complete. FiiO JA11 physical qualification remains hardware-validation-pending.
-

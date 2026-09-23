@@ -29,12 +29,31 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Keep the Phase B USB discovery tool installable alongside the owner's signed EQ Library.
+            applicationIdSuffix = ".ew300discovery"
+        }
+        create("diagnostic") {
+            // This is a read-only, separately installable Phase B evidence-capture build.
+            // Its APK is signed only by the controlled candidate workflow, never by normal CI.
+            initWith(getByName("release"))
+            applicationIdSuffix = ".ew300evidence"
+            matchingFallbacks += listOf("release")
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+        }
+    }
+
+    sourceSets {
+        getByName("diagnostic") {
+            // AGP 9's built-in Kotlin does not compile extra Java source directories as Kotlin.
+            kotlin.directories += "src/debug/java"
+            manifest.srcFile("src/debug/AndroidManifest.xml")
         }
     }
 

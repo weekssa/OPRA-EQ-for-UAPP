@@ -412,6 +412,8 @@ No analytics or telemetry. Local selections/settings/generated state/recovery st
 
 ## Validation architecture
 
+The separate EW300 Phase B diagnostic uses the `diagnostic` build type and package suffix `.ew300evidence`. Its shared diagnostic Kotlin directory must be registered through `android.sourceSets.diagnostic.kotlin`, not the Java source-directory API: AGP 9 built-in Kotlin does not compile Kotlin from additional Java-only directories. The manifest alone cannot establish that a launcher exists. The candidate workflow validates the launcher's DEX class definition, then installs and cold-launches the exact signed APK twice on an Android 36 emulator, requiring its initial text and both controls to render. No USB action runs in this smoke test. These gates qualify diagnostic startup, not physical USB behavior or hardware EQ support.
+
 Automated gates protect both canonical and target-specific behavior:
 
 - Kotlin UAPP parity/golden tests;
