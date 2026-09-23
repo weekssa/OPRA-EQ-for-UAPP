@@ -56,6 +56,7 @@ object EffectiveOutputResolver {
     private fun DacDeviceId.toCurrentProductOutput(): ExportDevice? = when (this) {
         DacDeviceId.TRN_BLACK_PEARL -> ExportDevice.BLACK_PEARL
         DacDeviceId.FIIO_JA11 -> ExportDevice.FIIO_JA11
+        DacDeviceId.SIMGOT_EW300 -> ExportDevice.SIMGOT_EW300
         DacDeviceId.JCALLY_JM12_STOCK -> null
     }
 }

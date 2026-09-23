@@ -46,6 +46,18 @@ object DacCapabilityCatalog {
             exposedControls = FiioJa11DeviceControls.descriptors,
         )
 
+        DacDeviceId.SIMGOT_EW300 -> DacCapabilitySet(
+            identity = DacDeviceIdentity(
+                deviceId = deviceId,
+                manufacturer = DacMetadataValue("LE XIAN", DacMetadataOrigin.USB_REPORTED),
+                model = DacMetadataValue("SIMGOT EW300 DSP", DacMetadataOrigin.USB_REPORTED),
+                usbVendorId = 0x31B2,
+                usbProductId = 0x0111,
+                validationStatus = DacValidationStatus.HARDWARE_QUALIFIED,
+            ),
+            exposedControls = emptyList(),
+        )
+
         DacDeviceId.JCALLY_JM12_STOCK -> DacCapabilitySet(
             // Historical/internal compatibility identity only. Current recognition never returns
             // this device and no current product surface may expose it.

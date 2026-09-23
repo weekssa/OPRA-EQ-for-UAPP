@@ -6,6 +6,7 @@ import com.weekssa.opraeqforuapp.domain.kt02h20.FiveBandDeviceSpec
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiveBandOptimizationResult
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiveBandQuantization
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FiveBandOptimizer
+import com.weekssa.opraeqforuapp.domain.hardware.HardwareEqDeviceSpecs
 import java.util.Locale
 import kotlin.math.PI
 import kotlin.math.cos
@@ -172,6 +173,17 @@ enum class ExportDevice(
         eqCapabilities = FIIO_JA11_CURRENT_CAPABILITIES,
         supportsFileExport = false,
     ),
+    SIMGOT_EW300(
+        folderName = "SIMGOT EW300 DSP",
+        extension = "txt",
+        mimeType = "text/plain",
+        displayName = "SIMGOT EW300 DSP",
+        category = OutputCategory.HARDWARE_DAC,
+        settingsSubtitle = "5-band PEQ · Direct Flash · saved and verified on device",
+        formatKind = OutputFormatKind.HARDWARE_ONLY,
+        eqCapabilities = HardwareEqDeviceSpecs.SIMGOT_EW300.capabilities,
+        supportsFileExport = false,
+    ),
     JCALLY_JM12(
         folderName = "JCALLY JM12",
         extension = "txt",
@@ -309,6 +321,7 @@ fun buildTextDeviceVariant(
     ExportDevice.UAPP,
     ExportDevice.BLACK_PEARL,
     ExportDevice.FIIO_JA11,
+    ExportDevice.SIMGOT_EW300,
     ExportDevice.JCALLY_JM12 -> null
 
     ExportDevice.UNIVERSAL_PARAMETRIC,

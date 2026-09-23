@@ -91,6 +91,9 @@ fun ManagedHeadphoneDetailScreen(
     directJcallyJm12FlashEnabled: Boolean,
     jcallyJm12ConnectionState: Kt02h20ConnectionState,
     onConnectJcallyJm12: () -> Unit,
+    directEw300FlashEnabled: Boolean = false,
+    ew300ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
+    onConnectEw300: () -> Unit = {},
     onFlashManagedProfile: suspend (String) -> String,
     onToggleFavorite: suspend (OpraEqProfile, String, String) -> Boolean,
     onHideCanonicalProfile: suspend (String) -> Unit,
@@ -124,6 +127,8 @@ fun ManagedHeadphoneDetailScreen(
             blackPearlConnectionState is BlackPearlConnectionState.Connected
         ExportDevice.FIIO_JA11 -> directFiioJa11FlashEnabled &&
             fiioJa11ConnectionState is Kt02h20ConnectionState.Connected
+        ExportDevice.SIMGOT_EW300 -> directEw300FlashEnabled &&
+            ew300ConnectionState is Kt02h20ConnectionState.Connected
         ExportDevice.JCALLY_JM12 -> directJcallyJm12FlashEnabled &&
             jcallyJm12ConnectionState is Kt02h20ConnectionState.Connected
         else -> false
@@ -371,6 +376,13 @@ fun ManagedHeadphoneDetailScreen(
                             connectedLabel = "FiiO JA11 · Connected",
                             modifier = Modifier.weight(1f),
                         )
+                        ExportDevice.SIMGOT_EW300 -> CompactKt02h20ConnectionAction(
+                            enabled = directEw300FlashEnabled,
+                            state = ew300ConnectionState,
+                            onConnect = onConnectEw300,
+                            connectedLabel = "SIMGOT EW300 DSP · Connected",
+                            modifier = Modifier.weight(1f),
+                        )
                         ExportDevice.JCALLY_JM12 -> CompactKt02h20ConnectionAction(
                             enabled = directJcallyJm12FlashEnabled,
                             state = jcallyJm12ConnectionState,
@@ -394,6 +406,8 @@ fun ManagedHeadphoneDetailScreen(
                 blackPearlConnectionState = blackPearlConnectionState,
                 directFiioJa11FlashEnabled = directFiioJa11FlashEnabled,
                 fiioJa11ConnectionState = fiioJa11ConnectionState,
+                directEw300FlashEnabled = directEw300FlashEnabled,
+                ew300ConnectionState = ew300ConnectionState,
                 directJcallyJm12FlashEnabled = directJcallyJm12FlashEnabled,
                 jcallyJm12ConnectionState = jcallyJm12ConnectionState,
             )?.let { (message, isError) ->
@@ -476,8 +490,34 @@ private fun managedHardwareFlashAssessment(
         )
     }
     ExportDevice.FIIO_JA11 -> managedFiveBandAssessment(profile, Kt02h20DeviceSpecs.FIIO_JA11)
+    ExportDevice.SIMGOT_EW300 -> managedEw300Assessment(profile)
     ExportDevice.JCALLY_JM12 -> managedFiveBandAssessment(profile, Kt02h20DeviceSpecs.JCALLY_JM12_STOCK)
     else -> ManagedHardwareFlashAssessment(ready = false)
+}
+
+private fun managedEw300Assessment(profile: OpraEqProfile): ManagedHardwareFlashAssessment {
+    if (profile.preampGainDb != null) {
+        return ManagedHardwareFlashAssessment(
+            ready = false,
+            reason = "This EW300 production path requires a profile without source preamp until the global-gain mapping is verified.",
+        )
+    }
+    return when (val result = Kt02h20FiveBandOptimizer.optimize(profile, com.weekssa.opraeqforuapp.domain.hardware.HardwareEqDeviceSpecs.SIMGOT_EW300)) {
+        is FiveBandOptimizationResult.NotSuitable -> ManagedHardwareFlashAssessment(ready = false, reason = result.reason)
+        is FiveBandOptimizationResult.Ready -> if (kotlin.math.abs(result.representation.playbackGainDb) > 0.000_001) {
+            ManagedHardwareFlashAssessment(
+                ready = false,
+                reason = "This EW300 production path cannot apply the profile's required playback headroom until the global-gain mapping is verified.",
+            )
+        } else {
+            ManagedHardwareFlashAssessment(
+                ready = true,
+                fidelity = result.representation.fidelity,
+                playbackGainDb = result.representation.playbackGainDb,
+                adaptationSummary = result.representation.adaptationSummary(),
+            )
+        }
+    }
 }
 
 private fun managedFiveBandAssessment(
@@ -525,6 +565,8 @@ private fun managedHardwareFlashConfirmation(
     }
     val persistence = if (device == ExportDevice.FIIO_JA11) {
         "The five-band PEQ will be applied, read back, and saved to the JA11."
+    } else if (device == ExportDevice.SIMGOT_EW300) {
+        "The five-band PEQ will be applied, read back, and persisted on the EW300."
     } else {
         "The five-band PEQ will be written and read back. Persistence across a full power cycle is still hardware-validation pending for stock JM12 firmware."
     }
@@ -537,6 +579,8 @@ private fun hardwareConnectionHelp(
     blackPearlConnectionState: BlackPearlConnectionState,
     directFiioJa11FlashEnabled: Boolean,
     fiioJa11ConnectionState: Kt02h20ConnectionState,
+    directEw300FlashEnabled: Boolean = false,
+    ew300ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
     directJcallyJm12FlashEnabled: Boolean,
     jcallyJm12ConnectionState: Kt02h20ConnectionState,
 ): Pair<String, Boolean>? = when (activeOutput) {
@@ -550,6 +594,12 @@ private fun hardwareConnectionHelp(
         !directFiioJa11FlashEnabled ->
             "Enable direct Flash in Settings → FiiO JA11 before connecting to the DAC." to false
         fiioJa11ConnectionState is Kt02h20ConnectionState.Error -> fiioJa11ConnectionState.message to true
+        else -> null
+    }
+    ExportDevice.SIMGOT_EW300 -> when {
+        !directEw300FlashEnabled ->
+            "Enable direct Flash in Settings → SIMGOT EW300 DSP before connecting to the DAC." to false
+        ew300ConnectionState is Kt02h20ConnectionState.Error -> ew300ConnectionState.message to true
         else -> null
     }
     ExportDevice.JCALLY_JM12 -> when {
@@ -722,6 +772,7 @@ private fun outputShortName(device: ExportDevice): String = device.displayName
 private fun managedHardwareTitle(device: ExportDevice): String = when (device) {
     ExportDevice.BLACK_PEARL -> "Black Pearl"
     ExportDevice.FIIO_JA11 -> "FiiO JA11"
+    ExportDevice.SIMGOT_EW300 -> "SIMGOT EW300 DSP"
     ExportDevice.JCALLY_JM12 -> "JCALLY JM12"
     else -> device.folderName
 }
@@ -769,5 +820,6 @@ private fun RemovalDialog(
 private val MANAGED_HARDWARE_FLASH_OUTPUTS = setOf(
     ExportDevice.BLACK_PEARL,
     ExportDevice.FIIO_JA11,
+    ExportDevice.SIMGOT_EW300,
     ExportDevice.JCALLY_JM12,
 )
