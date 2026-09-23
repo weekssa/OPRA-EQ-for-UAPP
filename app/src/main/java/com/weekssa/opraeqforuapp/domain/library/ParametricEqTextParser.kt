@@ -4,8 +4,9 @@ import java.util.Locale
 
 /**
  * Parses the de-facto Equalizer APO / AutoEq parametric text format used by
- * AutoEq and many community presets. Unknown lines are ignored; malformed
- * filter lines are rejected rather than partially interpreted.
+ * AutoEq and many community presets. Unknown prose is ignored, but malformed
+ * preamp or active filter lines fail the whole parse closed so a source EQ can
+ * never silently become a partial EQ.
  */
 object ParametricEqTextParser {
     data class ParsedEq(
@@ -41,34 +42,72 @@ object ParametricEqTextParser {
     fun parse(text: String): ParsedEq {
         var preamp: Double? = null
         val filters = mutableListOf<EqFilter>()
+        var invalidEqLine = false
 
         text.lineSequence().forEach { rawLine ->
             val line = rawLine.trim()
             if (line.isEmpty() || line.startsWith("#")) return@forEach
 
-            preampRegex.matchEntire(line)?.let { match ->
-                preamp = match.groupValues[1].toDoubleOrNull()
+            if (line.startsWith("Preamp", ignoreCase = true)) {
+                val match = preampRegex.matchEntire(line)
+                val parsedPreamp = match?.groupValues?.get(1)?.toDoubleOrNull()
+                if (parsedPreamp == null || !parsedPreamp.isFinite()) {
+                    invalidEqLine = true
+                } else {
+                    preamp = parsedPreamp
+                }
                 return@forEach
             }
 
-            val filterMatch = filterPrefixRegex.matchEntire(line) ?: return@forEach
+            if (!line.startsWith("Filter", ignoreCase = true)) return@forEach
+            val filterMatch = filterPrefixRegex.matchEntire(line)
+            if (filterMatch == null) {
+                invalidEqLine = true
+                return@forEach
+            }
             if (!filterMatch.groupValues[1].equals("ON", ignoreCase = true)) return@forEach
 
             val type = parseType(filterMatch.groupValues[2])
+            if (type == EqFilterType.OTHER) {
+                invalidEqLine = true
+                return@forEach
+            }
+
             val body = filterMatch.groupValues[3]
             val frequency = frequencyRegex.find(body)?.groupValues?.get(1)?.toDoubleOrNull()
-                ?: return@forEach
-            if (frequency <= 0.0) return@forEach
+            if (frequency == null || !frequency.isFinite() || frequency <= 0.0) {
+                invalidEqLine = true
+                return@forEach
+            }
 
             val gain = gainRegex.find(body)?.groupValues?.get(1)?.toDoubleOrNull()
             val q = qRegex.find(body)?.groupValues?.get(1)?.toDoubleOrNull()
+            if (gain != null && !gain.isFinite()) {
+                invalidEqLine = true
+                return@forEach
+            }
+            if (q != null && (!q.isFinite() || q <= 0.0)) {
+                invalidEqLine = true
+                return@forEach
+            }
 
             when (type) {
                 EqFilterType.PEAK,
                 EqFilterType.LOW_SHELF,
-                EqFilterType.HIGH_SHELF -> if (gain == null) return@forEach
+                EqFilterType.HIGH_SHELF,
+                -> if (gain == null || q == null) {
+                    invalidEqLine = true
+                    return@forEach
+                }
 
-                else -> Unit
+                EqFilterType.LOW_PASS,
+                EqFilterType.HIGH_PASS,
+                -> if (q == null) {
+                    invalidEqLine = true
+                    return@forEach
+                }
+
+                EqFilterType.OTHER -> error("handled above")
             }
 
             filters += EqFilter(
@@ -80,8 +119,8 @@ object ParametricEqTextParser {
         }
 
         return ParsedEq(
-            preampGainDb = preamp,
-            filters = filters,
+            preampGainDb = preamp.takeUnless { invalidEqLine },
+            filters = if (invalidEqLine) emptyList() else filters,
         )
     }
 
@@ -112,8 +151,12 @@ object ParametricEqTextParser {
                 if (match == null) {
                     errors += "Line $lineNumber: malformed Preamp line."
                 } else {
-                    preamp = match.groupValues[1].toDoubleOrNull()
-                    if (preamp == null) errors += "Line $lineNumber: invalid Preamp value."
+                    val parsedPreamp = match.groupValues[1].toDoubleOrNull()
+                    if (parsedPreamp == null || !parsedPreamp.isFinite()) {
+                        errors += "Line $lineNumber: invalid Preamp value."
+                    } else {
+                        preamp = parsedPreamp
+                    }
                 }
                 return@forEachIndexed
             }
@@ -137,17 +180,17 @@ object ParametricEqTextParser {
 
             val body = filterMatch.groupValues[3]
             val frequency = frequencyRegex.find(body)?.groupValues?.get(1)?.toDoubleOrNull()
-            if (frequency == null || frequency <= 0.0) {
+            if (frequency == null || !frequency.isFinite() || frequency <= 0.0) {
                 errors += "Line $lineNumber: filter frequency must be a positive number."
                 return@forEachIndexed
             }
             val gain = gainRegex.find(body)?.groupValues?.get(1)?.toDoubleOrNull()
-            if (gain == null) {
+            if (gain == null || !gain.isFinite()) {
                 errors += "Line $lineNumber: filter Gain is required."
                 return@forEachIndexed
             }
             val q = qRegex.find(body)?.groupValues?.get(1)?.toDoubleOrNull()
-            if (q == null || q <= 0.0) {
+            if (q == null || !q.isFinite() || q <= 0.0) {
                 errors += "Line $lineNumber: filter Q must be a positive number."
                 return@forEachIndexed
             }

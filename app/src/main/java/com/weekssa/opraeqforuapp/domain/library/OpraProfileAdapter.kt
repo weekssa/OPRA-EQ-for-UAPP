@@ -1,5 +1,6 @@
 package com.weekssa.opraeqforuapp.domain.library
 
+import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.OpraProduct
 import com.weekssa.opraeqforuapp.domain.catalog.OpraVendor
@@ -12,23 +13,17 @@ object OpraProfileAdapter {
         profile: OpraEqProfile,
         discoveredAtEpochSeconds: Long? = null,
     ): CanonicalEqProfile? {
-        val filters = profile.bands
-            .orEmpty()
-            .mapNotNull { band ->
-                val type = parseFilterType(band.type) ?: return@mapNotNull null
-                val frequency = band.frequency ?: return@mapNotNull null
-                EqFilter(
-                    type = type,
-                    frequencyHz = frequency,
-                    gainDb = band.gainDb,
-                    q = band.q,
-                    slope = band.slope,
-                )
-            }
-        if (filters.isEmpty()) return null
+        if (profile.profileType != OPRA_PARAMETRIC_EQ_TYPE) return null
+        val creator = profile.author?.trim()?.takeIf(String::isNotEmpty) ?: return null
+        val preampGainDb = profile.preampGainDb?.takeIf { it.isFinite() } ?: return null
+        val sourceBands = profile.bands ?: return null
+        if (sourceBands.isEmpty()) return null
 
-        val fingerprint = AcousticFingerprint.of(profile.preampGainDb, filters)
-        val creator = profile.author?.trim()?.takeIf(String::isNotEmpty)
+        val filters = sourceBands.map { band ->
+            parseBand(band) ?: return null
+        }
+
+        val fingerprint = AcousticFingerprint.of(preampGainDb, filters)
         val details = profile.details?.trim()?.takeIf(String::isNotEmpty)
         val targetName = inferExplicitTarget(details)
         val target = EqTarget(
@@ -65,7 +60,7 @@ object OpraProfileAdapter {
                 EqRevision(
                     revisionId = revisionId,
                     acousticFingerprint = fingerprint,
-                    preampGainDb = profile.preampGainDb,
+                    preampGainDb = preampGainDb,
                     filters = filters,
                     sourceReferences = listOf(sourceReference),
                     soundImpactSummary = SoundImpactSummary.fromFilters(filters),
@@ -76,14 +71,53 @@ object OpraProfileAdapter {
         )
     }
 
-    private fun parseFilterType(value: String?): EqFilterType? = when (value?.trim()?.uppercase(Locale.ROOT)) {
-        "PK", "PEQ", "PEAK", "PEAKING" -> EqFilterType.PEAK
-        "LS", "LSC", "LOW_SHELF", "LOWSHELF" -> EqFilterType.LOW_SHELF
-        "HS", "HSC", "HIGH_SHELF", "HIGHSHELF" -> EqFilterType.HIGH_SHELF
-        "LP", "LPF", "LOW_PASS", "LOWPASS" -> EqFilterType.LOW_PASS
-        "HP", "HPF", "HIGH_PASS", "HIGHPASS" -> EqFilterType.HIGH_PASS
+    /**
+     * OPRA bands are source data, not optional hints. Any unsupported type, missing required field,
+     * or non-finite value rejects the whole profile so canonical ingestion cannot silently drop or
+     * partially reinterpret an active source filter.
+     */
+    private fun parseBand(band: OpraBand): EqFilter? {
+        val type = parseFilterType(band.type) ?: return null
+        val frequency = band.frequency?.takeIf { it.isFinite() && it > 0.0 } ?: return null
+        // The OPRA schema defines an omitted per-band gain_db as 0 dB.
+        val gain = band.gainDb?.takeIf { it.isFinite() }
+            ?: if (band.gainDb == null) 0.0 else return null
+        val q = band.q?.takeIf { it.isFinite() && it >= MIN_OPRA_Q }
+        val slope = band.slope?.takeIf { it in OPRA_PASS_SLOPES }
+
+        if (band.q != null && q == null) return null
+        if (band.slope != null && slope == null) return null
+
+        when (type) {
+            EqFilterType.PEAK,
+            EqFilterType.LOW_SHELF,
+            EqFilterType.HIGH_SHELF,
+            -> if (q == null) return null
+
+            EqFilterType.LOW_PASS,
+            EqFilterType.HIGH_PASS,
+            -> if (slope == null || slope !in OPRA_PASS_SLOPES) return null
+
+            EqFilterType.OTHER -> return null
+        }
+
+        return EqFilter(
+            type = type,
+            frequencyHz = frequency,
+            gainDb = gain,
+            q = q,
+            slope = slope,
+        )
+    }
+
+    private fun parseFilterType(value: String?): EqFilterType? = when (value) {
+        "peak_dip" -> EqFilterType.PEAK
+        "low_shelf" -> EqFilterType.LOW_SHELF
+        "high_shelf" -> EqFilterType.HIGH_SHELF
+        "low_pass" -> EqFilterType.LOW_PASS
+        "high_pass" -> EqFilterType.HIGH_PASS
         null, "" -> null
-        else -> EqFilterType.OTHER
+        else -> null
     }
 
     private fun inferExplicitTarget(details: String?): String? {
@@ -114,4 +148,8 @@ object OpraProfileAdapter {
         .lowercase(Locale.ROOT)
         .replace(Regex("[^\\p{L}\\p{N}]+"), "-")
         .trim('-')
+
+    private const val OPRA_PARAMETRIC_EQ_TYPE = "parametric_eq"
+    private const val MIN_OPRA_Q = 0.1
+    private val OPRA_PASS_SLOPES = setOf(6.0, 12.0, 18.0, 24.0, 30.0, 36.0)
 }

@@ -2,6 +2,7 @@ package com.weekssa.opraeqforuapp.domain.library
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ParametricEqTextParserTest {
@@ -41,7 +42,7 @@ class ParametricEqTextParserTest {
     }
 
     @Test
-    fun `rejects malformed gain filters without poisoning valid lines`() {
+    fun `malformed active filter fails the whole parse closed`() {
         val parsed = ParametricEqTextParser.parse(
             """
             Filter 1: ON PK Fc 100 Hz Q 1.0
@@ -51,8 +52,63 @@ class ParametricEqTextParserTest {
         )
 
         assertNull(parsed.preampGainDb)
-        assertEquals(1, parsed.filters.size)
-        assertEquals(1000.0, parsed.filters.single().frequencyHz, 0.0001)
+        assertTrue(parsed.filters.isEmpty())
+    }
+
+    @Test
+    fun `malformed or overflowing preamp fails the whole parse closed`() {
+        val validFilter = "Filter 1: ON PK Fc 100 Hz Gain 2 dB Q 1.0"
+        val malformed = ParametricEqTextParser.parse("Preamp: -Infinity dB\n$validFilter")
+        val overflowing = ParametricEqTextParser.parse("Preamp: ${"9".repeat(400)} dB\n$validFilter")
+        val strictOverflow = ParametricEqTextParser.parseStrictPersonal(
+            "Preamp: ${"9".repeat(400)} dB\n$validFilter",
+        )
+
+        assertTrue(malformed.filters.isEmpty())
+        assertTrue(overflowing.filters.isEmpty())
+        assertNull(malformed.preampGainDb)
+        assertNull(overflowing.preampGainDb)
+        assertTrue(strictOverflow.errors.isNotEmpty())
+        assertNull(strictOverflow.parsedEq.preampGainDb)
+    }
+
+    @Test
+    fun `strict personal parser rejects overflowing numeric fields`() {
+        val huge = "9".repeat(400)
+        val inputs = listOf(
+            "Preamp: $huge dB\nFilter 1: ON PK Fc 100 Hz Gain 2 dB Q 1.0",
+            "Filter 1: ON PK Fc $huge Hz Gain 2 dB Q 1.0",
+            "Filter 1: ON PK Fc 100 Hz Gain $huge dB Q 1.0",
+            "Filter 1: ON PK Fc 100 Hz Gain 2 dB Q $huge",
+        )
+
+        inputs.forEach { input ->
+            assertTrue(ParametricEqTextParser.parseStrictPersonal(input).errors.isNotEmpty())
+        }
+    }
+
+    @Test
+    fun `active peak missing q fails the whole parse closed`() {
+        val parsed = ParametricEqTextParser.parse(
+            """
+            Filter 1: ON PK Fc 100 Hz Gain 2 dB
+            Filter 2: ON PK Fc 1000 Hz Gain -2 dB Q 2.0
+            """.trimIndent(),
+        )
+
+        assertTrue(parsed.filters.isEmpty())
+    }
+
+    @Test
+    fun `unsupported active filter fails the whole parse closed`() {
+        val parsed = ParametricEqTextParser.parse(
+            """
+            Filter 1: ON PK Fc 100 Hz Gain 2 dB Q 1.0
+            Filter 2: ON AP Fc 1000 Hz Gain -2 dB Q 2.0
+            """.trimIndent(),
+        )
+
+        assertTrue(parsed.filters.isEmpty())
     }
 
     @Test
