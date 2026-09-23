@@ -37,6 +37,8 @@ internal fun BlackPearlSaveDacEqDialog(
     catalogState: CatalogState,
     managedHeadphones: List<ManagedHeadphoneRecord>,
     savedEqs: List<SavedEqRecord>,
+    provenanceText: String? = null,
+    namePlaceholder: String? = null,
     onDismiss: () -> Unit,
     onSave: suspend (String, SavedEqHeadphoneAssociation?) -> String,
     onMessage: (String) -> Unit,
@@ -109,7 +111,7 @@ internal fun BlackPearlSaveDacEqDialog(
                     .verticalScroll(rememberScrollState()),
             ) {
                 Text(
-                    text = stringResource(R.string.my_dac_save_provenance),
+                    text = provenanceText ?: stringResource(R.string.my_dac_save_provenance),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -117,7 +119,7 @@ internal fun BlackPearlSaveDacEqDialog(
                     value = displayName,
                     onValueChange = { displayName = it },
                     label = { Text(stringResource(R.string.my_dac_save_name)) },
-                    placeholder = { Text(stringResource(R.string.my_dac_save_name_placeholder)) },
+                    placeholder = { Text(namePlaceholder ?: stringResource(R.string.my_dac_save_name_placeholder)) },
                     singleLine = true,
                     enabled = !saving,
                     modifier = Modifier
