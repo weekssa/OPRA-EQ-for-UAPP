@@ -43,9 +43,9 @@ class AcousticFingerprintTest {
                 author = "Example Author",
                 details = "Harman target",
                 link = "https://example.com/eq",
-                profileType = "parametric",
+                profileType = "parametric_eq",
                 preampGainDb = -5.0,
-                bands = listOf(OpraBand("PK", 1000.0, -2.0, 1.4, null)),
+                bands = listOf(OpraBand("peak_dip", 1000.0, -2.0, 1.4, null)),
             ),
             discoveredAtEpochSeconds = 1_788_134_400L,
         )

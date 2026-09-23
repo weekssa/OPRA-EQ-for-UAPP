@@ -8,6 +8,13 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ### Current v0.7 closeout snapshot — independent release audit
 
+- Reviewed the separately supplied implementation-handoff branch at `6fb8c14`; it is six
+  commits ahead of PR #23's verified `f485b6c` head, but had no PR-triggered Android CI, CodeQL,
+  catalog, or priority-coverage run. Its dependency-submission run is not application validation.
+  The current OPRA schema resolves source band priority/order; a follow-up adds strict schema
+  value handling and rejects numeric overflow in text imports. Focused tests are authored but not
+  yet run on CI. No APK is available for this follow-up source; signed-beta remains trusted-main
+  only. See the dated snapshot in `docs/V0.7_RELEASE_READINESS_AUDIT.md`.
 - Corrected the stale beta-testing handoff: the live PR baseline when rechecked was `a09d442be728b77dc83b1487814f2428159ddf19`, not the older SHA labeled frozen in that handoff. Earlier signed APKs are not test artifacts for later source changes.
 - The a09d baseline's Android CI #1745, CodeQL #1630, catalog #2043, priority coverage #1528, dependency #2052, and signed beta #1350 passed on that exact source. Audit found release minification disabled and no post-sign alignment check; therefore those passes do not close the stricter current release gate.
 - Added fail-closed EW300 revision authorization, Peak-only hardware write encoding, and serial redaction in shareable reports. Enabled R8 with a mapping check that requires an application class to be renamed, restricted signing workflows to manual trusted-main execution, delayed secrets until signing, disabled checkout-persisted credentials, and added post-sign alignment/provenance outputs.

@@ -56,6 +56,38 @@ class ParametricEqTextParserTest {
     }
 
     @Test
+    fun `malformed or overflowing preamp fails the whole parse closed`() {
+        val validFilter = "Filter 1: ON PK Fc 100 Hz Gain 2 dB Q 1.0"
+        val malformed = ParametricEqTextParser.parse("Preamp: -Infinity dB\n$validFilter")
+        val overflowing = ParametricEqTextParser.parse("Preamp: ${"9".repeat(400)} dB\n$validFilter")
+        val strictOverflow = ParametricEqTextParser.parseStrictPersonal(
+            "Preamp: ${"9".repeat(400)} dB\n$validFilter",
+        )
+
+        assertTrue(malformed.filters.isEmpty())
+        assertTrue(overflowing.filters.isEmpty())
+        assertNull(malformed.preampGainDb)
+        assertNull(overflowing.preampGainDb)
+        assertTrue(strictOverflow.errors.isNotEmpty())
+        assertNull(strictOverflow.parsedEq.preampGainDb)
+    }
+
+    @Test
+    fun `strict personal parser rejects overflowing numeric fields`() {
+        val huge = "9".repeat(400)
+        val inputs = listOf(
+            "Preamp: $huge dB\nFilter 1: ON PK Fc 100 Hz Gain 2 dB Q 1.0",
+            "Filter 1: ON PK Fc $huge Hz Gain 2 dB Q 1.0",
+            "Filter 1: ON PK Fc 100 Hz Gain $huge dB Q 1.0",
+            "Filter 1: ON PK Fc 100 Hz Gain 2 dB Q $huge",
+        )
+
+        inputs.forEach { input ->
+            assertTrue(ParametricEqTextParser.parseStrictPersonal(input).errors.isNotEmpty())
+        }
+    }
+
+    @Test
     fun `active peak missing q fails the whole parse closed`() {
         val parsed = ParametricEqTextParser.parse(
             """

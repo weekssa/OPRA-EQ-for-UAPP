@@ -39,8 +39,8 @@ class OpraCanonicalCatalogAdapterTest {
         author = author,
         details = "Harman",
         link = "https://example.com/$id",
-        profileType = "parametric",
+        profileType = "parametric_eq",
         preampGainDb = -5.0,
-        bands = listOf(OpraBand("PK", 100.0, 2.0, 1.0, null)),
+        bands = listOf(OpraBand("peak_dip", 100.0, 2.0, 1.0, null)),
     )
 }

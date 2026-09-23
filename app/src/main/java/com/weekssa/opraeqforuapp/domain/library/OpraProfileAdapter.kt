@@ -13,7 +13,9 @@ object OpraProfileAdapter {
         profile: OpraEqProfile,
         discoveredAtEpochSeconds: Long? = null,
     ): CanonicalEqProfile? {
-        if (profile.preampGainDb?.isFinite() == false) return null
+        if (profile.profileType != OPRA_PARAMETRIC_EQ_TYPE) return null
+        val creator = profile.author?.trim()?.takeIf(String::isNotEmpty) ?: return null
+        val preampGainDb = profile.preampGainDb?.takeIf { it.isFinite() } ?: return null
         val sourceBands = profile.bands ?: return null
         if (sourceBands.isEmpty()) return null
 
@@ -21,8 +23,7 @@ object OpraProfileAdapter {
             parseBand(band) ?: return null
         }
 
-        val fingerprint = AcousticFingerprint.of(profile.preampGainDb, filters)
-        val creator = profile.author?.trim()?.takeIf(String::isNotEmpty)
+        val fingerprint = AcousticFingerprint.of(preampGainDb, filters)
         val details = profile.details?.trim()?.takeIf(String::isNotEmpty)
         val targetName = inferExplicitTarget(details)
         val target = EqTarget(
@@ -59,7 +60,7 @@ object OpraProfileAdapter {
                 EqRevision(
                     revisionId = revisionId,
                     acousticFingerprint = fingerprint,
-                    preampGainDb = profile.preampGainDb,
+                    preampGainDb = preampGainDb,
                     filters = filters,
                     sourceReferences = listOf(sourceReference),
                     soundImpactSummary = SoundImpactSummary.fromFilters(filters),
@@ -78,11 +79,12 @@ object OpraProfileAdapter {
     private fun parseBand(band: OpraBand): EqFilter? {
         val type = parseFilterType(band.type) ?: return null
         val frequency = band.frequency?.takeIf { it.isFinite() && it > 0.0 } ?: return null
+        // The OPRA schema defines an omitted per-band gain_db as 0 dB.
         val gain = band.gainDb?.takeIf { it.isFinite() }
-        val q = band.q?.takeIf { it.isFinite() && it > 0.0 }
-        val slope = band.slope?.takeIf { it.isFinite() }
+            ?: if (band.gainDb == null) 0.0 else return null
+        val q = band.q?.takeIf { it.isFinite() && it >= MIN_OPRA_Q }
+        val slope = band.slope?.takeIf { it in OPRA_PASS_SLOPES }
 
-        if (band.gainDb != null && gain == null) return null
         if (band.q != null && q == null) return null
         if (band.slope != null && slope == null) return null
 
@@ -90,11 +92,11 @@ object OpraProfileAdapter {
             EqFilterType.PEAK,
             EqFilterType.LOW_SHELF,
             EqFilterType.HIGH_SHELF,
-            -> if (gain == null || q == null) return null
+            -> if (q == null) return null
 
             EqFilterType.LOW_PASS,
             EqFilterType.HIGH_PASS,
-            -> if (slope == null) return null
+            -> if (slope == null || slope !in OPRA_PASS_SLOPES) return null
 
             EqFilterType.OTHER -> return null
         }
@@ -108,12 +110,12 @@ object OpraProfileAdapter {
         )
     }
 
-    private fun parseFilterType(value: String?): EqFilterType? = when (value?.trim()?.uppercase(Locale.ROOT)) {
-        "PK", "PEQ", "PEAK", "PEAKING", "PEAK_DIP" -> EqFilterType.PEAK
-        "LS", "LSC", "LOW_SHELF", "LOWSHELF" -> EqFilterType.LOW_SHELF
-        "HS", "HSC", "HIGH_SHELF", "HIGHSHELF" -> EqFilterType.HIGH_SHELF
-        "LP", "LPF", "LOW_PASS", "LOWPASS" -> EqFilterType.LOW_PASS
-        "HP", "HPF", "HIGH_PASS", "HIGHPASS" -> EqFilterType.HIGH_PASS
+    private fun parseFilterType(value: String?): EqFilterType? = when (value) {
+        "peak_dip" -> EqFilterType.PEAK
+        "low_shelf" -> EqFilterType.LOW_SHELF
+        "high_shelf" -> EqFilterType.HIGH_SHELF
+        "low_pass" -> EqFilterType.LOW_PASS
+        "high_pass" -> EqFilterType.HIGH_PASS
         null, "" -> null
         else -> null
     }
@@ -146,4 +148,8 @@ object OpraProfileAdapter {
         .lowercase(Locale.ROOT)
         .replace(Regex("[^\\p{L}\\p{N}]+"), "-")
         .trim('-')
+
+    private const val OPRA_PARAMETRIC_EQ_TYPE = "parametric_eq"
+    private const val MIN_OPRA_Q = 0.1
+    private val OPRA_PASS_SLOPES = setOf(6.0, 12.0, 18.0, 24.0, 30.0, 36.0)
 }
