@@ -109,6 +109,81 @@ class LocalSavedEqAdapterTest {
         assertNull(snapshot)
     }
 
+    @Test
+    fun actionProfilePrefersValidatedCanonicalSnapshotAndRetainsLegacyFallback() {
+        val canonicalProfile = profile(
+            listOf(
+                OpraBand("low_shelf", 90.0, 2.5, 0.7, null),
+                OpraBand("peak_dip", 2_000.0, -1.0, 1.0, null),
+            ),
+        )
+        val staleLegacyProfile = canonicalProfile.copy(
+            bands = canonicalProfile.bands!!.mapIndexed { index, band ->
+                if (index == 0) band.copy(gainDb = -8.0) else band
+            },
+        )
+        val canonicalSnapshot = adapt(canonicalProfile)
+        val record = SavedEqRecord(
+            entryId = "personal:canonical-action",
+            kind = SavedEqKind.Personal,
+            sourceProfileId = null,
+            productId = canonicalProfile.productId,
+            manufacturer = "",
+            model = "Local EQ",
+            displayName = "Canonical action source",
+            profile = staleLegacyProfile,
+            createdAtMillis = 1,
+            updatedAtMillis = 1,
+            canonicalSnapshot = canonicalSnapshot,
+        )
+
+        assertEquals(canonicalProfile.bands, record.actionProfileOrNull()?.bands)
+        assertEquals(canonicalProfile.preampGainDb, record.actionProfileOrNull()?.preampGainDb)
+        assertEquals(staleLegacyProfile, record.copy(canonicalSnapshot = null).actionProfileOrNull())
+        assertNull(record.copy(savedEqDataInvalid = true).actionProfileOrNull())
+    }
+
+    @Test
+    fun locallySavedSnapshotCannotSelfAssertOpraPriorityFromCollidingProductId() {
+        val productId = "shared-product-id"
+        val source = OpraEqProfile(
+            id = "local-over-budget",
+            productId = productId,
+            author = "Local",
+            details = null,
+            link = null,
+            profileType = "parametric_eq",
+            preampGainDb = 0.0,
+            bands = (1..11).map { index ->
+                OpraBand("peak_dip", index * 100.0, 0.0, 1.0, null)
+            },
+        )
+        val snapshot = requireNotNull(
+            LocalSavedEqAdapter.adapt(
+                profile = source,
+                displayName = "Locally saved source",
+                headphone = HeadphoneIdentity("Maker", "Model"),
+                target = EqTarget(null, EqTargetKind.UNKNOWN),
+                sourceReference = EqSourceReference(
+                    sourceId = "opra",
+                    sourceKind = EqSourceKind.STRUCTURED_CATALOG,
+                    sourceRecordId = "unverified-local-claim",
+                    sourceVendorId = "unverified-vendor",
+                    sourceProductId = productId,
+                    url = null,
+                    creator = "OPRA",
+                    provenanceTier = ProvenanceTier.AUTHORITATIVE,
+                    redistributionPolicy = RedistributionPolicy.STRUCTURED_DATA_ONLY,
+                    isPrimary = true,
+                ),
+                verificationStatus = VerificationStatus.VERIFIED,
+                observedAtEpochSeconds = 1L,
+            ),
+        )
+
+        assertNull(LocalSavedEqAdapter.projectToLegacy(snapshot, productId).bandOrderProvenance)
+    }
+
     private fun adapt(profile: OpraEqProfile) = requireNotNull(
         LocalSavedEqAdapter.adapt(
             profile = profile,

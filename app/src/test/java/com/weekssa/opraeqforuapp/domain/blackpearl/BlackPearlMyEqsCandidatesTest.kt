@@ -5,9 +5,17 @@ import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqCategory
 import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
+import com.weekssa.opraeqforuapp.domain.library.EqSourceKind
+import com.weekssa.opraeqforuapp.domain.library.EqSourceReference
+import com.weekssa.opraeqforuapp.domain.library.EqTarget
+import com.weekssa.opraeqforuapp.domain.library.EqTargetKind
+import com.weekssa.opraeqforuapp.domain.library.LocalSavedEqAdapter
+import com.weekssa.opraeqforuapp.domain.library.ProvenanceTier
+import com.weekssa.opraeqforuapp.domain.library.RedistributionPolicy
 import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
 import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
+import com.weekssa.opraeqforuapp.domain.library.VerificationStatus
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedProfileRecord
 import org.junit.Test
@@ -113,6 +121,57 @@ class BlackPearlMyEqsCandidatesTest {
 
         assertThat(candidates).isEmpty()
     }
+
+    @Test
+    fun hardwareCandidateUsesCanonicalSnapshotInsteadOfStaleLegacyProjection() {
+        val canonical = profile("personal-canonical")
+        val staleProjection = canonical.copy(
+            bands = canonical.bands.orEmpty().mapIndexed { index, band ->
+                if (index == 0) band.copy(gainDb = -8.0) else band
+            },
+        )
+        val record = SavedEqRecord(
+            entryId = "personal:canonical-action",
+            kind = SavedEqKind.Personal,
+            sourceProfileId = null,
+            productId = canonical.productId,
+            manufacturer = "Custom",
+            model = "Headphone",
+            displayName = "Canonical source",
+            profile = staleProjection,
+            createdAtMillis = 1,
+            updatedAtMillis = 1,
+            canonicalSnapshot = canonicalSnapshot(canonical),
+        )
+
+        val candidate = buildBlackPearlMyEqsCandidates(
+            managedHeadphones = emptyList(),
+            savedEqs = listOf(record),
+            savedGeneralEqs = emptyList(),
+        ).single()
+
+        assertThat(candidate.profile.bands).isEqualTo(canonical.bands)
+    }
+
+    private fun canonicalSnapshot(profile: OpraEqProfile) = requireNotNull(
+        LocalSavedEqAdapter.adapt(
+            profile = profile,
+            displayName = "Canonical source",
+            headphone = null,
+            target = EqTarget(name = null, kind = EqTargetKind.UNKNOWN),
+            sourceReference = EqSourceReference(
+                sourceId = "personal_import",
+                sourceKind = EqSourceKind.PERSONAL_IMPORT,
+                sourceRecordId = profile.id,
+                url = null,
+                creator = null,
+                provenanceTier = ProvenanceTier.NEEDS_REVIEW,
+                redistributionPolicy = RedistributionPolicy.UNKNOWN_REVIEW,
+            ),
+            verificationStatus = VerificationStatus.UNVERIFIED,
+            observedAtEpochSeconds = 1,
+        ),
+    )
 
     @Test
     fun changeEqChoicesUseTheDeterministicBlackPearlRepresentation() {

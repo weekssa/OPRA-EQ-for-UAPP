@@ -165,13 +165,14 @@ fun buildEw300MyEqsCandidates(
     val saved = savedEqs
         .filterNot { it.savedEqDataInvalid }
         .sortedBy { it.entryId }
-        .map { record ->
+        .mapNotNull { record ->
+            val profile = record.actionProfileOrNull() ?: return@mapNotNull null
             Ew300SavedEqCandidate(
                 identity = SavedHardwareEqIdentity(
                     savedEqKey = record.sourceProfileId?.let(::canonicalKey) ?: "saved:${record.entryId}",
                     displayName = displayName(record.model, record.displayName),
                 ),
-                profile = record.profile,
+                profile = profile,
             )
         }
 

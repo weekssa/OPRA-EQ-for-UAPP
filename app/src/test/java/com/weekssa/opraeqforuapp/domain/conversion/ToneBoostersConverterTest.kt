@@ -5,6 +5,7 @@ import com.weekssa.opraeqforuapp.domain.catalog.OpraCatalog
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.OpraProduct
 import com.weekssa.opraeqforuapp.domain.catalog.OpraVendor
+import com.weekssa.opraeqforuapp.domain.catalog.EqBandOrderProvenance
 import com.weekssa.opraeqforuapp.domain.catalog.assessCompatibility
 import com.weekssa.opraeqforuapp.domain.catalog.assessUappCompatibility
 import com.weekssa.opraeqforuapp.domain.library.CanonicalLegacyCatalogAdapter
@@ -62,30 +63,21 @@ class ToneBoostersConverterTest {
     }
 
     @Test
-    fun moreThanTenBandsUsesFirstTenAndWarns() {
+    fun moreThanTenBandsIsRejectedWithoutDroppingSourceFilters() {
         val bands = (1..12).map { index ->
             OpraBand("peak_dip", 100.0 * index, index / 10.0, 1.0, null)
         }
-        val result = ToneBoostersConverter.buildXml("Twelve", -2.0, bands)
+        val originalBands = bands.toList()
+        val error = assertThrows(ToneBoostersConversionException::class.java) {
+            ToneBoostersConverter.buildXml("Twelve", -2.0, bands)
+        }
 
-        assertEquals(12, result.sourceBandCount)
-        assertEquals(10, result.convertedBandCount)
-        assertEquals(
-            listOf(
-                "Source has 12 bands; the current UAPP/ToneBoosters target supports 10, so only the first 10 in the supplied source order were used.",
-            ),
-            result.warnings,
-        )
-        assertEquals(66, Regex("<Value>").findAll(result.xml).count())
-        val values = Regex("<Value>(.*?)</Value>").findAll(result.xml)
-            .map { it.groupValues[1].toDouble() }
-            .toList()
-        assertEquals(ToneBoostersConverter.normalizeFrequency(bands.first().frequency!!), values[0], 0.0000001)
-        assertEquals(ToneBoostersConverter.normalizeFrequency(bands[9].frequency!!), values[54], 0.0000001)
+        assertTrue(error.message.orEmpty().contains("will not drop filters"))
+        assertEquals(originalBands, bands)
     }
 
     @Test
-    fun opraPriorityOrderSurvivesCanonicalProjectionAndToneBoostersExport() {
+    fun opraPrioritySourceExportsTenWithExplicitWarning() {
         val orderedSourceBands = (1..12).map { index ->
             OpraBand("peak_dip", 100.0 * index, index / 10.0, 1.0, null)
         }
@@ -111,20 +103,41 @@ class ToneBoostersConverterTest {
         )
         val legacy = CanonicalLegacyCatalogAdapter.adapt(canonical.snapshot).profiles.single()
 
-        val exported = ToneBoostersConverter.convert(legacy, "Priority test")
+        assertEquals(EqBandOrderProvenance.OPRA_SOURCE_PRIORITY, legacy.bandOrderProvenance)
+        assertEquals(ProfileCompatibility.CompatibleWithLimitation, legacy.assessUappCompatibility().category)
+        val exported = ToneBoostersConverter.convert(legacy, "Over-budget OPRA source")
         val values = Regex("<Value>(.*?)</Value>").findAll(exported.xml)
             .map { it.groupValues[1].toDouble() }
             .toList()
-
         assertEquals(12, exported.sourceBandCount)
         assertEquals(10, exported.convertedBandCount)
-        assertEquals(ToneBoostersConverter.normalizeFrequency(orderedSourceBands.first().frequency!!), values[0], 0.0000001)
-        assertEquals(ToneBoostersConverter.normalizeFrequency(orderedSourceBands[9].frequency!!), values[54], 0.0000001)
-        assertTrue(exported.warnings.single().contains("supplied source order"))
+        assertTrue(exported.warnings.single().contains("first 10 priority-sorted bands"))
+        assertEquals(
+            ToneBoostersConverter.normalizeFrequency(orderedSourceBands.first().frequency!!),
+            values[0],
+            0.0000001,
+        )
+        assertEquals(
+            ToneBoostersConverter.normalizeFrequency(orderedSourceBands[9].frequency!!),
+            values[54],
+            0.0000001,
+        )
+
+        val withoutSourcePreamp = legacy.copy(
+            preampGainDb = null,
+            eqLibrarySafetyHeadroomDb = -2.0,
+        )
+        val safetyHeadroomExport = ToneBoostersConverter.convert(
+            withoutSourcePreamp,
+            "Priority and safety warnings",
+        )
+        assertEquals(2, safetyHeadroomExport.warnings.size)
+        assertTrue(safetyHeadroomExport.warnings[0].contains("safety headroom of -2 dB"))
+        assertTrue(safetyHeadroomExport.warnings[1].contains("first 10 priority-sorted bands"))
     }
 
     @Test
-    fun `unsupported band outside the explicit ten-band source-priority budget is not mis-exported`() {
+    fun `unsupported band outside the target budget is still not exported`() {
         val profile = OpraEqProfile(
             id = "over-budget-unsupported",
             productId = "product",
@@ -138,10 +151,25 @@ class ToneBoostersConverterTest {
             } + OpraBand("band_stop", 2_000.0, 0.0, 1.0, null),
         )
 
-        assertEquals(ProfileCompatibility.CompatibleWithLimitation, profile.assessUappCompatibility().category)
-        val converted = ToneBoostersConverter.convert(profile, "Ten-band source-priority boundary")
-        assertEquals(10, converted.convertedBandCount)
-        assertEquals(11, converted.sourceBandCount)
+        assertEquals(ProfileCompatibility.NotCompatible, profile.assessUappCompatibility().category)
+        val verifiedOpraOrder = profile.copy(
+            bandOrderProvenance = EqBandOrderProvenance.OPRA_SOURCE_PRIORITY,
+        )
+        assertEquals(ProfileCompatibility.NotCompatible, verifiedOpraOrder.assessUappCompatibility().category)
+        assertThrows(ToneBoostersConversionException::class.java) {
+            ToneBoostersConverter.convert(profile, "Over-budget source")
+        }
+        assertThrows(ToneBoostersConversionException::class.java) {
+            ToneBoostersConverter.convert(verifiedOpraOrder, "Over-budget source")
+        }
+        assertThrows(ToneBoostersConversionException::class.java) {
+            ToneBoostersConverter.buildXml(
+                "Over-budget source",
+                0.0,
+                requireNotNull(profile.bands),
+                EqBandOrderProvenance.OPRA_SOURCE_PRIORITY,
+            )
+        }
     }
 
     @Test
@@ -160,8 +188,15 @@ class ToneBoostersConverterTest {
         )
 
         assertEquals(ProfileCompatibility.NotCompatible, profile.assessUappCompatibility().category)
+        val verifiedOpraOrder = profile.copy(
+            bandOrderProvenance = EqBandOrderProvenance.OPRA_SOURCE_PRIORITY,
+        )
+        assertEquals(ProfileCompatibility.NotCompatible, verifiedOpraOrder.assessUappCompatibility().category)
         assertThrows(ToneBoostersConversionException::class.java) {
             ToneBoostersConverter.convert(profile, "Malformed over-budget filter")
+        }
+        assertThrows(ToneBoostersConversionException::class.java) {
+            ToneBoostersConverter.convert(verifiedOpraOrder, "Malformed over-budget filter")
         }
     }
 

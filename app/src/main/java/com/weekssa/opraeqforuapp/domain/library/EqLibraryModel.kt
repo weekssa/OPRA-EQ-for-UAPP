@@ -155,6 +155,20 @@ data class EqRevision(
 )
 
 /**
+ * True only when the unique source marked primary—the source that supplied revision filters—is a
+ * complete, authoritative OPRA structured-catalog record for the projected product.
+ */
+internal fun EqRevision.hasVerifiedOpraBandOrderFor(vendorId: String, productId: String): Boolean {
+    val primary = sourceReferences.filter(EqSourceReference::isPrimary).singleOrNull() ?: return false
+    return primary.sourceId == "opra" &&
+        primary.sourceKind == EqSourceKind.STRUCTURED_CATALOG &&
+        primary.provenanceTier == ProvenanceTier.AUTHORITATIVE &&
+        !primary.sourceRecordId.isNullOrBlank() &&
+        primary.sourceVendorId == vendorId &&
+        primary.sourceProductId == productId
+}
+
+/**
  * Source-neutral local Personal EQ data. Unlike catalog profiles, a saved personal EQ may have no
  * headphone association; it therefore deliberately does not inherit catalog scope constraints.
  */

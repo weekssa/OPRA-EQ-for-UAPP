@@ -45,7 +45,8 @@ fun buildBlackPearlMyEqsCandidates(
     val saved = savedEqs
         .filterNot { it.savedEqDataInvalid }
         .sortedBy { it.entryId }
-        .map { record ->
+        .mapNotNull { record ->
+            val profile = record.actionProfileOrNull() ?: return@mapNotNull null
             val key = record.sourceProfileId
                 ?.let(::canonicalKey)
                 ?: "saved:${record.entryId}"
@@ -54,7 +55,7 @@ fun buildBlackPearlMyEqsCandidates(
                     savedEqKey = key,
                     displayName = displayName(record.model, record.displayName),
                 ),
-                profile = record.profile,
+                profile = profile,
             )
         }
 

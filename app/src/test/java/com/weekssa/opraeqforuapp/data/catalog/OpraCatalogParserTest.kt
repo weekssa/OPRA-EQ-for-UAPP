@@ -2,11 +2,13 @@ package com.weekssa.opraeqforuapp.data.catalog
 
 import com.weekssa.opraeqforuapp.domain.catalog.assessCompatibility
 import com.weekssa.opraeqforuapp.domain.catalog.assessUappCompatibility
+import com.weekssa.opraeqforuapp.domain.catalog.EqBandOrderProvenance
 import com.weekssa.opraeqforuapp.domain.model.ProfileCompatibility
 import java.io.BufferedReader
 import java.io.StringReader
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class OpraCatalogParserTest {
@@ -60,7 +62,7 @@ class OpraCatalogParserTest {
     }
 
     @Test
-    fun moreThanTenPriorityBandsRemainCanonicalWhileUappReportsLimitation() {
+    fun moreThanTenParsedOpraBandsRetainVerifiedPriorityProvenance() {
         val bands = (1..11).joinToString(",") { index ->
             "{\"type\":\"peak_dip\",\"frequency\":${100 + index},\"gain_db\":0.0,\"q\":1.0}"
         }
@@ -71,10 +73,8 @@ class OpraCatalogParserTest {
             ProfileCompatibility.FullyCompatible,
             profile.assessCompatibility().category,
         )
-        assertEquals(
-            ProfileCompatibility.CompatibleWithLimitation,
-            profile.assessUappCompatibility().category,
-        )
+        assertEquals(EqBandOrderProvenance.OPRA_SOURCE_PRIORITY, profile.bandOrderProvenance)
+        assertEquals(ProfileCompatibility.CompatibleWithLimitation, profile.assessUappCompatibility().category)
     }
 
     @Test

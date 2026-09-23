@@ -1,11 +1,139 @@
 package com.weekssa.opraeqforuapp.domain.library
 
 import com.google.common.truth.Truth.assertThat
+import com.weekssa.opraeqforuapp.domain.catalog.EqBandOrderProvenance
+import com.weekssa.opraeqforuapp.domain.conversion.ToneBoostersConversionException
+import com.weekssa.opraeqforuapp.domain.conversion.ToneBoostersConverter
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneSelection
 import com.weekssa.opraeqforuapp.domain.managed.StoredProfileSelection
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class CanonicalLegacyCatalogAdapterTest {
+    @Test
+    fun canonicalNonOpraOverBudgetSourceCannotUseOpraPriorityTruncation() {
+        val source = EqSourceReference(
+            sourceId = "community",
+            sourceKind = EqSourceKind.COMMUNITY,
+            sourceRecordId = "community-11-band",
+            url = "https://example.com/community-11-band",
+            creator = "Community author",
+            provenanceTier = ProvenanceTier.TRACEABLE_COMMUNITY,
+            redistributionPolicy = RedistributionPolicy.LINK_ONLY,
+            isPrimary = true,
+        )
+        val canonical = CanonicalEqProfile(
+            canonicalProfileId = "community-11-band",
+            headphone = HeadphoneIdentity("Maker", "Over Budget Model"),
+            creator = "Community author",
+            target = EqTarget(null, EqTargetKind.UNKNOWN),
+            tuningLabel = "Eleven-band community profile",
+            revisions = listOf(
+                EqRevision(
+                    revisionId = "r1",
+                    acousticFingerprint = "fingerprint-11-band",
+                    preampGainDb = -3.0,
+                    filters = (1..11).map { index ->
+                        EqFilter(EqFilterType.PEAK, 100.0 + index, 0.0, 1.0)
+                    },
+                    sourceReferences = listOf(source),
+                    isLatest = true,
+                ),
+            ),
+        )
+
+        val projected = CanonicalLegacyCatalogAdapter.adapt(
+            CatalogSnapshot(1, "2026-09-23T00:00:00Z", "test", listOf(canonical)),
+        ).profiles.single()
+
+        assertThat(projected.bandOrderProvenance).isNull()
+        assertThrows(ToneBoostersConversionException::class.java) {
+            ToneBoostersConverter.convert(projected, "Over-budget community profile")
+        }
+
+        val opraReference = source.copy(
+            sourceId = "opra",
+            sourceKind = EqSourceKind.STRUCTURED_CATALOG,
+            sourceRecordId = "opra-record",
+            sourceVendorId = "opra-vendor",
+            sourceProductId = "opra-product",
+            provenanceTier = ProvenanceTier.AUTHORITATIVE,
+            redistributionPolicy = RedistributionPolicy.STRUCTURED_DATA_ONLY,
+        )
+        val mixedSource = canonical.copy(
+            revisions = listOf(
+                canonical.latestRevision.copy(sourceReferences = listOf(source, opraReference)),
+            ),
+        )
+        val mixedProjection = CanonicalLegacyCatalogAdapter.adapt(
+            CatalogSnapshot(1, "2026-09-23T00:00:00Z", "test", listOf(mixedSource)),
+        ).profiles.single()
+        assertThat(mixedProjection.bandOrderProvenance).isNull()
+        assertThrows(ToneBoostersConversionException::class.java) {
+            ToneBoostersConverter.convert(mixedProjection, "Over-budget mixed-source profile")
+        }
+    }
+
+    @Test
+    fun opraPriorityRequiresPrimaryVendorAndProductToMatchProjectedIdentity() {
+        val expectedSource = EqSourceReference(
+            sourceId = "opra",
+            sourceKind = EqSourceKind.STRUCTURED_CATALOG,
+            sourceRecordId = "older-opra-record",
+            sourceVendorId = "expected-vendor",
+            sourceProductId = "shared-product-id",
+            url = "https://example.com/older-opra-record",
+            creator = "OPRA",
+            provenanceTier = ProvenanceTier.AUTHORITATIVE,
+            redistributionPolicy = RedistributionPolicy.STRUCTURED_DATA_ONLY,
+            isPrimary = true,
+        )
+        val wrongVendorPrimary = expectedSource.copy(
+            sourceRecordId = "newer-wrong-vendor-record",
+            sourceVendorId = "different-vendor",
+            isPrimary = true,
+        )
+        val canonical = CanonicalEqProfile(
+            canonicalProfileId = "same-headphone",
+            headphone = HeadphoneIdentity("Maker", "Model"),
+            creator = "OPRA",
+            target = EqTarget(null, EqTargetKind.UNKNOWN),
+            tuningLabel = "Over-budget tuning",
+            revisions = listOf(
+                EqRevision(
+                    revisionId = "older",
+                    acousticFingerprint = "older-fingerprint",
+                    preampGainDb = 0.0,
+                    filters = listOf(EqFilter(EqFilterType.PEAK, 100.0, 0.0, 1.0)),
+                    sourceReferences = listOf(expectedSource),
+                    isLatest = false,
+                ),
+                EqRevision(
+                    revisionId = "newer",
+                    acousticFingerprint = "newer-fingerprint",
+                    preampGainDb = 0.0,
+                    filters = (1..11).map { index ->
+                        EqFilter(EqFilterType.PEAK, index * 100.0, 0.0, 1.0)
+                    },
+                    sourceReferences = listOf(wrongVendorPrimary),
+                    isLatest = true,
+                ),
+            ),
+        )
+
+        val projected = CanonicalLegacyCatalogAdapter.adapt(
+            CatalogSnapshot(1, "2026-09-23T00:00:00Z", "test", listOf(canonical)),
+        )
+        val latest = projected.profiles.single { it.bands?.size == 11 }
+
+        assertThat(projected.products.single().vendorId).isEqualTo("expected-vendor")
+        assertThat(projected.products.single().id).isEqualTo("shared-product-id")
+        assertThat(latest.bandOrderProvenance).isNull()
+        assertThrows(ToneBoostersConversionException::class.java) {
+            ToneBoostersConverter.convert(latest, "Mismatched OPRA vendor")
+        }
+    }
+
     @Test
     fun preservesOpraIdsAndAddsOtherSourcesToSameHeadphone() {
         val headphone = HeadphoneIdentity("Sennheiser", "HD 650")
@@ -204,10 +332,14 @@ class CanonicalLegacyCatalogAdapterTest {
             CatalogSnapshot(1, "2026-08-29T17:00:00Z", "test", listOf(profile)),
         )
 
-        assertThat(legacy.profiles.first { it.bands!!.single().frequency == 110.0 }.id)
+        val latest = legacy.profiles.first { it.bands!!.single().frequency == 110.0 }
+        val historical = legacy.profiles.first { it.bands!!.single().frequency == 100.0 }
+        assertThat(latest.id)
             .isEqualTo("legacy-profile-id")
-        assertThat(legacy.profiles.first { it.bands!!.single().frequency == 100.0 }.id)
+        assertThat(historical.id)
             .isEqualTo("eq-library:opra-history@old")
+        assertThat(latest.bandOrderProvenance).isEqualTo(EqBandOrderProvenance.OPRA_SOURCE_PRIORITY)
+        assertThat(historical.bandOrderProvenance).isEqualTo(EqBandOrderProvenance.OPRA_SOURCE_PRIORITY)
     }
 
     @Test

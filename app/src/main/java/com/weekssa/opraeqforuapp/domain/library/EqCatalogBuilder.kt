@@ -50,13 +50,18 @@ class EqCatalogBuilder {
             ?: error("Revision cluster cannot be empty")
         val references = candidates
             .map(EqCandidate::sourceReference)
-            .distinctBy { reference -> listOf(reference.sourceId, reference.sourceRecordId, reference.url) }
+            .distinctBy(::sourceReferenceKey)
             .sortedWith(
                 compareBy<EqSourceReference> { provenanceRank(it.provenanceTier) }
                     .thenByDescending(EqSourceReference::isPrimary)
                     .thenBy { it.sourceId },
             )
-            .mapIndexed { index, reference -> reference.copy(isPrimary = index == 0) }
+            // The filter list is copied from `primary`; mark that exact source as primary too.
+            // Sorting references independently can otherwise assign provenance to a different
+            // candidate than the one that supplied the canonical filter order.
+            .map { reference ->
+                reference.copy(isPrimary = reference == primary.sourceReference)
+            }
         val verificationStatus = if (candidates.any { it.verificationStatus == VerificationStatus.VERIFIED }) {
             VerificationStatus.VERIFIED
         } else {
@@ -145,6 +150,12 @@ class EqCatalogBuilder {
     private fun revisionTimestamp(cluster: RevisionCluster): Long? = cluster.sourceReferences
         .mapNotNull { it.updatedAtEpochSeconds ?: it.publishedAtEpochSeconds ?: it.discoveredAtEpochSeconds }
         .maxOrNull()
+
+    private fun sourceReferenceKey(reference: EqSourceReference): List<String?> = listOf(
+        reference.sourceId,
+        reference.sourceRecordId,
+        reference.url,
+    )
 
     private val primaryCandidateComparator =
         compareBy<EqCandidate> { provenanceRank(it.sourceReference.provenanceTier) }

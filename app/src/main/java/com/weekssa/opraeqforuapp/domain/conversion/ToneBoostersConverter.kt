@@ -1,5 +1,6 @@
 package com.weekssa.opraeqforuapp.domain.conversion
 
+import com.weekssa.opraeqforuapp.domain.catalog.EqBandOrderProvenance
 import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.OpraFilterTypeNormalizer
@@ -44,7 +45,10 @@ object ToneBoostersConverter {
         type = filterTypes.getValue("peak_dip"),
     )
 
-    fun convert(profile: OpraEqProfile, presetName: String): ToneBoostersConversionResult {
+    fun convert(
+        profile: OpraEqProfile,
+        presetName: String,
+    ): ToneBoostersConversionResult {
         val compatibility = profile.assessUappCompatibility()
         if (compatibility.category == ProfileCompatibility.NotCompatible) {
             throw ToneBoostersConversionException(
@@ -57,7 +61,12 @@ object ToneBoostersConverter {
             )
         val bands = profile.bands
             ?: throw ToneBoostersConversionException("This profile is missing its parametric EQ band list.")
-        val converted = buildXml(presetName = presetName, gainDb = gainDb, bands = bands)
+        val converted = buildXml(
+            presetName = presetName,
+            gainDb = gainDb,
+            bands = bands,
+            bandOrderProvenance = profile.bandOrderProvenance,
+        )
         return if (profile.usesEqLibrarySafetyHeadroom()) {
             converted.copy(
                 warnings = listOf(
@@ -73,15 +82,21 @@ object ToneBoostersConverter {
         presetName: String,
         gainDb: Double,
         bands: List<OpraBand>,
+        bandOrderProvenance: EqBandOrderProvenance? = null,
     ): ToneBoostersConversionResult {
-        val warnings = if (bands.size > MAX_BANDS) {
-            listOf(
-                "Source has ${bands.size} bands; the current UAPP/ToneBoosters target supports 10, so only the first 10 in the supplied source order were used.",
+        val overBandLimit = bands.size > MAX_BANDS
+        if (overBandLimit && bandOrderProvenance != EqBandOrderProvenance.OPRA_SOURCE_PRIORITY) {
+            throw ToneBoostersConversionException(
+                "This source has ${bands.size} bands, but UAPP/ToneBoosters can store only $MAX_BANDS. " +
+                    "EQ Library will not drop filters or guess their priority.",
             )
-        } else {
-            emptyList()
         }
-        val convertedBands = bands.take(MAX_BANDS)
+        if (overBandLimit) {
+            // Even when OPRA source priority is known, omitted tail bands must not hide malformed,
+            // unsupported, or out-of-range filters from the caller.
+            bands.forEach(::normalizeFilter)
+        }
+        val convertedBands = if (overBandLimit) bands.take(MAX_BANDS) else bands
         val filters = convertedBands.map(::normalizeFilter).toMutableList()
         while (filters.size < MAX_BANDS) filters += disabledFilter
 
@@ -119,7 +134,13 @@ object ToneBoostersConverter {
         return ToneBoostersConversionResult(
             presetName = safePresetName,
             xml = xml,
-            warnings = warnings,
+            warnings = if (overBandLimit) {
+                listOf(
+                    "OPRA has ${bands.size} bands; UAPP supports $MAX_BANDS, so only the first $MAX_BANDS priority-sorted bands were used.",
+                )
+            } else {
+                emptyList()
+            },
             sourceBandCount = bands.size,
             convertedBandCount = convertedBands.size,
         )

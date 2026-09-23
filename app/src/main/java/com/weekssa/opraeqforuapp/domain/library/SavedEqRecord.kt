@@ -26,4 +26,14 @@ data class SavedEqRecord(
 ) {
     val hasHeadphoneAssociation: Boolean
         get() = manufacturer.isNotBlank() && model.isNotBlank()
+
+    /**
+     * Validated compatibility view for an action boundary. Source-neutral local snapshots remain
+     * authoritative when present; legacy-only rows keep their existing read/action path.
+     */
+    fun actionProfileOrNull(): OpraEqProfile? {
+        if (savedEqDataInvalid) return null
+        val snapshot = canonicalSnapshot ?: return profile
+        return runCatching { LocalSavedEqAdapter.projectToLegacy(snapshot, productId) }.getOrNull()
+    }
 }

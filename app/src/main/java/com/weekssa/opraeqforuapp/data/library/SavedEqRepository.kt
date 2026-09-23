@@ -289,18 +289,18 @@ class SavedEqRepository(
     }
 
     fun toManagedHeadphone(record: SavedEqRecord): ManagedHeadphoneRecord {
-        check(!record.savedEqDataInvalid) {
+        val profile = checkNotNull(record.actionProfileOrNull()) {
             "Saved EQ data could not be verified and cannot be exported or flashed."
         }
-        val fingerprint = snapshotCodec.fingerprint(record.profile)
+        val fingerprint = snapshotCodec.fingerprint(profile)
         val modelLabel = record.model.ifBlank { record.displayName }
         val manufacturerLabel = record.manufacturer.ifBlank { "Personal EQ" }
         val presetName = ToneBoostersConverter.buildPresetName(
             modelLabel = modelLabel,
-            creator = record.profile.author,
+            creator = profile.author,
             details = record.displayName,
         )
-        val uapp = runCatching { ToneBoostersConverter.convert(record.profile, presetName) }.getOrNull()
+        val uapp = runCatching { ToneBoostersConverter.convert(profile, presetName) }.getOrNull()
         return ManagedHeadphoneRecord(
             productId = record.productId,
             vendorId = "saved-eq-vendor:${sha256(manufacturerLabel)}",
@@ -311,10 +311,10 @@ class SavedEqRepository(
             updatedAtMillis = record.updatedAtMillis,
             profiles = listOf(
                 ManagedProfileRecord(
-                    profileId = record.profile.id,
+                    profileId = profile.id,
                     selected = true,
                     explicitlyExcluded = false,
-                    lastKnownProfile = record.profile,
+                    lastKnownProfile = profile,
                     fingerprint = fingerprint,
                     firstSeenAtMillis = record.createdAtMillis,
                     lastSeenAtMillis = record.updatedAtMillis,

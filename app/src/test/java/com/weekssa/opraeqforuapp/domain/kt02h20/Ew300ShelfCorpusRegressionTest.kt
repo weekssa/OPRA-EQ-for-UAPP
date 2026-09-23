@@ -87,7 +87,8 @@ class Ew300ShelfCorpusRegressionTest {
             EqFilterType.HIGH_SHELF,
         )
         assertThat(canonical.latestRevision.filters).hasSize(originalSourceBands.size)
-        assertDeterministicShelfContract(projected)
+        val ready = assertReadyShelfContract(projected)
+        assertThat(ready.representation.sourceBandCount).isEqualTo(originalSourceBands.size)
         assertThat(source.bands).containsExactlyElementsIn(originalSourceBands).inOrder()
     }
 
@@ -299,8 +300,78 @@ class Ew300ShelfCorpusRegressionTest {
         assertThat(source.bands.orEmpty().single().type).isEqualTo("low_pass")
     }
 
+    @Test
+    fun shelfParameterEdgesRemainSafeAcrossEverySharedFiniteHardwareOptimizer() {
+        val sources = listOf(
+            sourceProfile("low-minimum-edge", listOf(band("low_shelf", 20.0, -12.0, 0.1))),
+            sourceProfile("low-mid-positive", listOf(band("low_shelf", 120.0, 6.0, 0.71))),
+            sourceProfile("low-maximum-edge", listOf(band("low_shelf", 1_000.0, 12.0, 10.0))),
+            sourceProfile("high-minimum-edge", listOf(band("high_shelf", 1_000.0, -12.0, 10.0))),
+            sourceProfile("high-mid-positive", listOf(band("high_shelf", 8_000.0, 6.0, 0.71))),
+            sourceProfile("high-maximum-edge", listOf(band("high_shelf", 20_000.0, 12.0, 0.1))),
+            sourceProfile(
+                "mixed-moderate-shelves-and-peaks",
+                listOf(
+                    band("low_shelf", 80.0, 8.0, 0.5),
+                    band("peak_dip", 450.0, -3.0, 1.2),
+                    band("peak_dip", 1_800.0, 2.5, 1.0),
+                    band("high_shelf", 10_000.0, -5.0, 1.2),
+                ),
+            ),
+            sourceProfile(
+                "mixed-edge-shelves-and-peaks",
+                listOf(
+                    band("low_shelf", 500.0, -10.0, 3.0),
+                    band("peak_dip", 120.0, 4.0, 0.5),
+                    band("peak_dip", 2_500.0, -4.0, 2.0),
+                    band("high_shelf", 5_000.0, 10.0, 3.0),
+                ),
+            ),
+        )
+        val specs = listOf(
+            HardwareEqDeviceSpecs.SIMGOT_EW300,
+            HardwareEqDeviceSpecs.TRN_BLACK_PEARL,
+            Kt02h20DeviceSpecs.FIIO_JA11,
+            Kt02h20DeviceSpecs.JCALLY_JM12_STOCK,
+        )
+
+        sources.forEach { source ->
+            val original = source.copy(bands = source.bands?.map { it.copy() })
+            specs.forEach { spec ->
+                Kt02h20FiveBandOptimizer.clearCache()
+                when (val result = Kt02h20FiveBandOptimizer.optimize(source, spec)) {
+                    is FiveBandOptimizationResult.Ready -> {
+                        val representation = result.representation
+                        assertThat(
+                            representation.fidelity == DevicePresetFidelity.EXACT ||
+                                representation.fidelity == DevicePresetFidelity.OPTIMIZED,
+                        ).isTrue()
+                        assertThat(representation.bands).isNotEmpty()
+                        assertThat(representation.bands.size)
+                            .isAtMost(requireNotNull(spec.capabilities.maxBands))
+                        assertThat(representation.rmsErrorDb)
+                            .isAtMost(spec.maxRmsErrorDb)
+                        assertThat(representation.maxAbsoluteErrorDb)
+                            .isAtMost(spec.maxAbsoluteErrorDb)
+                        assertThat(representation.bands.all { candidate ->
+                            candidate.type in spec.capabilities.supportedBandTypes &&
+                                candidate.frequencyHz in spec.capabilities.minFrequencyHz..spec.capabilities.maxFrequencyHz &&
+                                candidate.gainDb.isFinite() &&
+                                candidate.gainDb in spec.capabilities.minGainDb..spec.capabilities.maxGainDb &&
+                                candidate.q.isFinite() &&
+                                candidate.q in spec.capabilities.minQ..spec.capabilities.maxQ
+                        }).isTrue()
+                    }
+                    is FiveBandOptimizationResult.NotSuitable -> assertThat(result.reason).isNotEmpty()
+                }
+            }
+            assertThat(source).isEqualTo(original)
+        }
+    }
+
     private fun assertReadyShelfContract(profile: OpraEqProfile): FiveBandOptimizationResult.Ready {
-        val first = deterministicPair(profile).first
+        val (first, second) = deterministicPair(profile)
+        assertThat(second).isEqualTo(first)
         assertThat(first).isInstanceOf(FiveBandOptimizationResult.Ready::class.java)
         val ready = first as FiveBandOptimizationResult.Ready
         assertThat(ready.representation.fidelity).isEqualTo(DevicePresetFidelity.OPTIMIZED)
@@ -406,4 +477,15 @@ class Ew300ShelfCorpusRegressionTest {
 
     private fun band(type: String, frequency: Double, gain: Double, q: Double): OpraBand =
         OpraBand(type = type, frequency = frequency, gainDb = gain, q = q, slope = null)
+
+    private fun sourceProfile(id: String, bands: List<OpraBand>): OpraEqProfile = OpraEqProfile(
+        id = id,
+        productId = "shelf-matrix:$id",
+        author = "Sanitized shelf matrix",
+        details = "Boundary and mixed-shelf regression fixture",
+        link = null,
+        profileType = "parametric_eq",
+        preampGainDb = -3.0,
+        bands = bands,
+    )
 }

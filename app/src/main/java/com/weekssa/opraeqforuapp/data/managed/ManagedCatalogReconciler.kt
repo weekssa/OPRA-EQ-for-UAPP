@@ -176,11 +176,15 @@ internal fun reconcileManagedProfiles(
                 },
                 noLongerAvailable = false,
                 generatedPresetName = generated?.presetName ?: existing.generatedPresetName,
-                // A changed current source that is no longer UAPP-representable must not keep a stale
-                // XML artifact. Removed/source-unusable rows retain their prior generated state.
+                // A selected current source that is no longer UAPP-representable must not keep a
+                // stale XML artifact, including one produced under an older conversion policy.
+                // Removed/source-unusable rows retain their prior generated state.
                 generatedXml = when {
                     generated != null -> generated.xml
-                    selected && sourceUsable && changed && !uappNowRepresentable -> null
+                    // A stored artifact may have been produced under an older, more permissive
+                    // band-limit policy even when the acoustic fingerprint is unchanged. Never
+                    // keep that artifact selectable once the current source is not representable.
+                    selected && sourceUsable && !uappNowRepresentable -> null
                     else -> existing.generatedXml
                 },
                 generatedFromFingerprint = when {

@@ -1220,10 +1220,9 @@ class EqLibraryViewModel(
         val outputId = activeOutputId()
         val record = savedEqRepository.getForOutput(outputId, entryId)
             ?: return resource(R.string.error_eq_not_saved)
-        if (record.savedEqDataInvalid) {
-            return resource(R.string.error_saved_eq_invalid_data)
-        }
-        return flashHardwareProfile(record.profile)
+        val profile = record.actionProfileOrNull()
+            ?: return resource(R.string.error_saved_eq_invalid_data)
+        return flashHardwareProfile(profile)
     }
 
     suspend fun flashGeneralEq(presetId: String): UiText {

@@ -2,6 +2,7 @@ package com.weekssa.opraeqforuapp.domain.library
 
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqCategory
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqPreset
+import com.weekssa.opraeqforuapp.domain.catalog.EqBandOrderProvenance
 import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraCatalog
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
@@ -50,7 +51,7 @@ object CanonicalLegacyCatalogAdapter {
                         .distinct(),
                 )
                 canonicalProfiles.forEach { canonical ->
-                    profiles += revisionProfiles(canonical, identity.productId)
+                    profiles += revisionProfiles(canonical, identity.vendorId, identity.productId)
                 }
             }
 
@@ -72,7 +73,11 @@ object CanonicalLegacyCatalogAdapter {
         )
     }
 
-    private fun revisionProfiles(profile: CanonicalEqProfile, productId: String): List<OpraEqProfile> =
+    private fun revisionProfiles(
+        profile: CanonicalEqProfile,
+        vendorId: String,
+        productId: String,
+    ): List<OpraEqProfile> =
         profile.revisions
             .sortedWith(
                 compareByDescending<EqRevision> { it.isLatest }
@@ -80,7 +85,7 @@ object CanonicalLegacyCatalogAdapter {
                         it.sourceUpdatedAtEpochSeconds ?: it.firstSeenAtEpochSeconds ?: Long.MIN_VALUE
                     },
             )
-            .map { revision -> revisionProfile(profile, revision, productId) }
+            .map { revision -> revisionProfile(profile, revision, vendorId, productId) }
 
     private fun generalRevisionPresets(profile: CanonicalEqProfile): List<GeneralEqPreset> =
         profile.revisions
@@ -150,15 +155,19 @@ object CanonicalLegacyCatalogAdapter {
     private fun revisionProfile(
         profile: CanonicalEqProfile,
         revision: EqRevision,
+        vendorId: String,
         productId: String,
     ): OpraEqProfile {
-        val primary = revision.sourceReferences.firstOrNull { it.isPrimary }
-            ?: revision.sourceReferences.firstOrNull()
+        val primaryReference = revision.sourceReferences.filter(EqSourceReference::isPrimary).singleOrNull()
+        val primary = primaryReference ?: revision.sourceReferences.firstOrNull()
         val opra = revision.sourceReferences.firstOrNull {
             it.sourceId == "opra" && !it.sourceRecordId.isNullOrBlank()
         }
-        val legacyProfileId = if (revision.isLatest && opra != null) {
-            requireNotNull(opra.sourceRecordId)
+        val verifiedOpraPriority = revision.hasVerifiedOpraBandOrderFor(vendorId, productId)
+        val idSource = primaryReference?.takeIf { it.sourceId == "opra" && !it.sourceRecordId.isNullOrBlank() }
+            ?: opra
+        val legacyProfileId = if (revision.isLatest && idSource != null) {
+            requireNotNull(idSource.sourceRecordId)
         } else {
             "eq-library:${profile.canonicalProfileId}@${revision.revisionId}"
         }
@@ -183,6 +192,7 @@ object CanonicalLegacyCatalogAdapter {
             },
             eqLibrarySafetyHeadroomDb = revision.eqLibrarySafetyHeadroomDb,
             isVerified = revision.verificationStatus == VerificationStatus.VERIFIED,
+            bandOrderProvenance = EqBandOrderProvenance.OPRA_SOURCE_PRIORITY.takeIf { verifiedOpraPriority },
         )
     }
 

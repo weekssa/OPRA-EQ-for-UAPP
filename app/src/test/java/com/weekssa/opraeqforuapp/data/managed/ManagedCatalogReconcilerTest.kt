@@ -177,6 +177,36 @@ class ManagedCatalogReconcilerTest {
     }
 
     @Test
+    fun unchangedOverLimitProfileClearsArtifactCreatedByOlderPermissivePolicy() {
+        val overLimitWithoutVerifiedSourcePriority = compatibleProfile("legacy-over-limit").copy(
+            bands = (1..11).map { index ->
+                OpraBand("peak_dip", index * 100.0, 1.0, 1.0, null)
+            },
+        )
+        val existing = existingEntity(
+            overLimitWithoutVerifiedSourcePriority,
+            selected = true,
+            generatedXml = "legacy first-ten export",
+        )
+
+        val result = reconcileManagedProfiles(
+            productId = "product",
+            productName = "Headphone",
+            currentProfiles = listOf(overLimitWithoutVerifiedSourcePriority),
+            existingProfiles = listOf(existing),
+            autoIncludeNewProfiles = false,
+            nowMillis = 200L,
+            snapshotCodec = codec,
+        )
+
+        val reconciled = result.profiles.single()
+        assertTrue(reconciled.selected)
+        assertNull(reconciled.generatedXml)
+        assertEquals(codec.fingerprint(overLimitWithoutVerifiedSourcePriority), reconciled.fingerprint)
+        assertEquals(0, result.changes.updatedSelectedProfileCount)
+    }
+
+    @Test
     fun selectedProfileBecomingSourceUnusableIsUnselectedAndKeepsLastGoodArtifact() {
         val oldProfile = compatibleProfile("profile")
         val existing = existingEntity(oldProfile, selected = true, generatedXml = "last good xml")

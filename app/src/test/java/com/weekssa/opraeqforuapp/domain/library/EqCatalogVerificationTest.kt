@@ -1,6 +1,10 @@
 package com.weekssa.opraeqforuapp.domain.library
 
+import com.weekssa.opraeqforuapp.domain.conversion.ToneBoostersConversionException
+import com.weekssa.opraeqforuapp.domain.conversion.ToneBoostersConverter
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class EqCatalogVerificationTest {
@@ -27,6 +31,66 @@ class EqCatalogVerificationTest {
         assertEquals(1, profiles.single().revisions.size)
         assertEquals(VerificationStatus.VERIFIED, revision.verificationStatus)
         assertEquals(2, revision.sourceReferences.size)
+    }
+
+    @Test
+    fun `primary provenance matches the candidate that supplied revision filters`() {
+        val candidates = listOf(
+            candidate(VerificationStatus.VERIFIED, "a-reference-sorts-first").copy(creator = null),
+            candidate(VerificationStatus.VERIFIED, "z-filter-source"),
+        )
+
+        val revision = EqCatalogBuilder().build(candidates).single().latestRevision
+
+        assertEquals("z-filter-source", revision.sourceReferences.single { it.isPrimary }.sourceId)
+    }
+
+    @Test
+    fun `secondary OPRA reference cannot authorize truncation of another source filter order`() {
+        val bands = (1..11).map { index ->
+            EqFilter(EqFilterType.PEAK, 100.0 + index, 0.0, 1.0)
+        }
+        val nonOpra = candidate(VerificationStatus.VERIFIED, "a-structured-source").copy(
+            filters = bands,
+            sourceReference = EqSourceReference(
+                sourceId = "a-structured-source",
+                sourceKind = EqSourceKind.STRUCTURED_CATALOG,
+                sourceRecordId = "source-record",
+                sourceVendorId = "other-vendor",
+                sourceProductId = "other-product",
+                url = "https://example.com/source",
+                creator = "Creator",
+                provenanceTier = ProvenanceTier.AUTHORITATIVE,
+                redistributionPolicy = RedistributionPolicy.STRUCTURED_DATA_ONLY,
+                isPrimary = true,
+            ),
+        )
+        val opra = candidate(VerificationStatus.VERIFIED, "opra").copy(
+            filters = bands,
+            sourceReference = EqSourceReference(
+                sourceId = "opra",
+                sourceKind = EqSourceKind.STRUCTURED_CATALOG,
+                sourceRecordId = "opra-record",
+                sourceVendorId = "opra-vendor",
+                sourceProductId = "opra-product",
+                url = "https://example.com/opra",
+                creator = "Creator",
+                provenanceTier = ProvenanceTier.AUTHORITATIVE,
+                redistributionPolicy = RedistributionPolicy.STRUCTURED_DATA_ONLY,
+                isPrimary = true,
+            ),
+        )
+
+        val canonical = EqCatalogBuilder().build(listOf(nonOpra, opra)).single()
+        val projected = CanonicalLegacyCatalogAdapter.adapt(
+            CatalogSnapshot(1, "2026-09-23T00:00:00Z", "test", listOf(canonical)),
+        ).profiles.single()
+
+        assertEquals("a-structured-source", canonical.latestRevision.sourceReferences.single { it.isPrimary }.sourceId)
+        assertNull(projected.bandOrderProvenance)
+        assertThrows(ToneBoostersConversionException::class.java) {
+            ToneBoostersConverter.convert(projected, "Mixed-source over-budget profile")
+        }
     }
 
     private fun candidate(

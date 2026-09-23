@@ -80,9 +80,15 @@ fun OpraEqProfile.assessUappCompatibility(): ProfileCompatibilityAssessment {
 
     val profileBands = requireNotNull(bands)
 
-    // Source adapters preserve any source-defined priority in list order. Validate only the first
-    // ten rows that this constrained target will actually receive, after full structural validation.
-    profileBands.take(MAX_UAPP_BANDS).forEachIndexed { index, band ->
+    val overBandLimit = profileBands.size > MAX_UAPP_BANDS
+    if (overBandLimit && bandOrderProvenance != EqBandOrderProvenance.OPRA_SOURCE_PRIORITY) {
+        return notCompatible(
+            "This source has ${profileBands.size} bands, but UAPP/ToneBoosters can store only 10. " +
+                "EQ Library will not drop filters or guess their priority.",
+        )
+    }
+
+    profileBands.forEachIndexed { index, band ->
         val bandNumber = index + 1
         val type = OpraFilterTypeNormalizer.normalize(band.type)
             ?: return notCompatible("Band $bandNumber is missing its filter type.")
@@ -110,10 +116,11 @@ fun OpraEqProfile.assessUappCompatibility(): ProfileCompatibilityAssessment {
         }
     }
 
-    return if (profileBands.size > MAX_UAPP_BANDS) {
+    return if (overBandLimit) {
         ProfileCompatibilityAssessment(
             category = ProfileCompatibility.CompatibleWithLimitation,
-            reason = "This source has ${profileBands.size} bands. UAPP/ToneBoosters supports 10, so this export uses the first 10 in the supplied source order.",
+            reason = "OPRA source order provides the priority for this 10-band UAPP/ToneBoosters target; " +
+                "the export uses the first $MAX_UAPP_BANDS bands and keeps all source bands unchanged.",
         )
     } else {
         ProfileCompatibilityAssessment(ProfileCompatibility.FullyCompatible)

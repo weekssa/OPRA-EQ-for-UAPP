@@ -88,6 +88,35 @@ class ProfileCompatibilityEvaluatorTest {
     }
 
     @Test
+    fun overBudgetSourceRequiresProvenanceAndValidatesEveryBand() {
+        val nonOpraSource = profile(
+            sourcePreamp = -3.0,
+            safetyHeadroom = null,
+        ).copy(
+            bands = (1..11).map { index ->
+                OpraBand("peak_dip", 100.0 + index, 0.0, 1.0, null)
+            },
+        )
+
+        assertEquals(ProfileCompatibility.NotCompatible, nonOpraSource.assessUappCompatibility().category)
+        val orderedOpra = nonOpraSource.copy(
+            bandOrderProvenance = EqBandOrderProvenance.OPRA_SOURCE_PRIORITY,
+        )
+        assertEquals(
+            ProfileCompatibility.CompatibleWithLimitation,
+            orderedOpra.assessUappCompatibility().category,
+        )
+
+        val unsupportedTail = orderedOpra.copy(
+            bands = orderedOpra.bands!!.dropLast(1) + OpraBand("band_stop", 1_200.0, 0.0, 1.0, null),
+        )
+        assertEquals(
+            ProfileCompatibility.NotCompatible,
+            unsupportedTail.assessUappCompatibility().category,
+        )
+    }
+
+    @Test
     fun nonParametricRowRemainsUnusableForSelection() {
         val profile = profile(
             sourcePreamp = -3.0,
