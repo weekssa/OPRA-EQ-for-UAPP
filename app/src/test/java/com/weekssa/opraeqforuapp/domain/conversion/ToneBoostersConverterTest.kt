@@ -57,6 +57,42 @@ class ToneBoostersConverterTest {
     }
 
     @Test
+    fun tenBandLimitPreservesAuthoritativeSourcePriorityOrderWithoutResorting() {
+        val frequencies = listOf(
+            1_000.0,
+            80.0,
+            9_000.0,
+            250.0,
+            4_500.0,
+            120.0,
+            2_200.0,
+            60.0,
+            7_000.0,
+            500.0,
+            16_000.0,
+            32.0,
+        )
+        val result = ToneBoostersConverter.buildXml(
+            presetName = "Priority order",
+            gainDb = -2.0,
+            bands = frequencies.mapIndexed { index, frequency ->
+                OpraBand("peak_dip", frequency, index / 10.0, 1.0, null)
+            },
+        )
+        val values = Regex("<Value>([^<]+)</Value>")
+            .findAll(result.xml)
+            .map { it.groupValues[1] }
+            .toList()
+        val exportedFrequencies = (0 until 10).map { bandIndex ->
+            values[bandIndex * 6].toDouble()
+        }
+
+        frequencies.take(10).map(ToneBoostersConverter::normalizeFrequency)
+            .zip(exportedFrequencies)
+            .forEach { (expected, actual) -> assertEquals(expected, actual, 0.00000001) }
+    }
+
+    @Test
     fun generatedSafetyHeadroomIsUsedForPlaybackButSourcePreampStaysNull() {
         val bands = listOf(OpraBand("peak_dip", 1_000.0, 4.0, 1.0, null))
         val profile = OpraEqProfile(
