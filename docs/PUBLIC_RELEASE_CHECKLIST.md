@@ -24,9 +24,17 @@ The checklist is organized around the **current release state**. Detailed histor
 
 - [ ] Exact current-head software, security, dependency, and signed-artifact gates complete.
 - [ ] Corrected-source signed APK, checksum, signer verification, artifact digest, install, and cold launch recorded.
-- [ ] Favorite/General canonical persistence, source-neutral/ToneBoosters parity, and product verification blockers closed.
+- [x] New Favorite and General EQ saves persist full canonical profile, selected revision, and source references; Room 8→9 migration preserves old projection-only rows without fabricated backfill. Exact implementation snapshot `b57b2466160bc9464d1cb16a004d1522940c553a` passed Android CI #1772, including unit and connected instrumentation tests.
+- [ ] Source-neutral/ToneBoosters parity, clean install, v0.6.0 upgrade/data preservation, accessibility/offline/error/reconnect, Personal EQ capture/provenance, and cross-DAC product verification complete on the exact signed candidate.
 - [ ] Exact-candidate promotion workflow reviewed; it is currently disabled to prevent rebuilding a different APK during publication.
 - [ ] Final owner approval to merge and publish received.
+
+Dependency submission did not run for the feature-branch source. The signed-beta workflow is
+restricted to trusted `main`; no exact-current-source signed APK, checksum, signer result, artifact
+digest, signed install, or cold-launch provenance is available. The last exact implementation
+snapshot’s gates and the new live PR head are recorded separately in
+`docs/V0.7_RELEASE_READINESS_AUDIT.md`; documentation-only source changes require fresh exact-head
+gates. Do not use an earlier APK.
 
 PR #23 remains draft and v0.7.0 remains NO-GO. Historical physical E001 and E043–E046 are
 accepted; do not repeat Save qualification, Apply, Flash, Restore, Reset, or read-only reports.

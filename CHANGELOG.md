@@ -15,8 +15,11 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Resolve saves only against the exact current canonical projection, make a General EQ batch
   atomic, and keep malformed new canonical rows visible but ineligible for Flash/export actions.
 - Added focused canonical round-trip, mixed-source identity, atomic-save, fail-closed corruption,
-  and non-destructive migration coverage. These changes still require exact-head CI; no Android
-  test or build result is implied by the test additions.
+  and non-destructive migration coverage. Implementation snapshot
+  `b57b2466160bc9464d1cb16a004d1522940c553a` passed Android CI #1772 (including connected
+  instrumentation, R8, and API-26 minified install/cold-launch), CodeQL #1657, catalog #2070, and
+  priority coverage #1555. The documentation synchronization following that snapshot creates a
+  new source SHA and requires fresh exact-head gates; no signed APK is available.
 
 ### 2026-09-23 source-review follow-up
 
@@ -37,7 +40,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
   unrepresentable after recovery preflight but before the save transaction; it asserts that no
   Personal EQ is saved and the exact ownership row is unchanged. Android CI #1767 caught a
   compile-time callback-argument issue in the test fixture before any connected test ran; the
-  callback now uses an explicit named argument and requires a fresh exact-head run.
+  explicit named-argument correction is covered by the passing connected tests in #1772.
 - Made owned-file recovery idempotent at its repository transaction boundary and disabled the
   dialog while a recovery is in flight. Repeated taps/requests return the already-associated
   Personal EQ instead of inserting duplicates; instrumented coverage checks the saved row and
@@ -54,15 +57,15 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
   Favorites, General EQs, and pre-canonical legacy rows; Personal imports, DAC captures, recovered
   imports, and catalog snapshots already persist canonical data.
 
-### Current v0.7 closeout snapshot — independent release audit
+### Historical v0.7 closeout audit snapshot — superseded by the latest implementation result above
 
 - Corrected the stale beta-testing handoff: the live PR baseline when rechecked was `a09d442be728b77dc83b1487814f2428159ddf19`, not the older SHA labeled frozen in that handoff. Earlier signed APKs are not test artifacts for later source changes.
 - The a09d baseline's Android CI #1745, CodeQL #1630, catalog #2043, priority coverage #1528, dependency #2052, and signed beta #1350 passed on that exact source. Audit found release minification disabled and no post-sign alignment check; therefore those passes do not close the stricter current release gate.
 - Added fail-closed EW300 revision authorization, Peak-only hardware write encoding, and serial redaction in shareable reports. Enabled R8 with a mapping check that requires an application class to be renamed, restricted signing workflows to manual trusted-main execution, delayed secrets until signing, disabled checkout-persisted credentials, and added post-sign alignment/provenance outputs.
 - A second independent code review found the dormant Save-qualification service did not itself enforce exact revision or Peak filter authorization, failure text could leak the unit serial, the signed beta still enabled the already-completed Save-qualification flag, and the release workflow had a duplicate YAML key plus a publisher that rebuilt rather than promoted the exact tested APK. Added service-level authorization/Peak guards, hard-disabled that test action in release builds, expanded report redaction, moved R8 mapping verification ahead of signing secrets, fixed the workflow key, and disabled public publication until an exact-artifact promotion workflow is separately reviewed.
 - On exact code source `01d524228ec02199e9f41d1dd2c72df5d9e72f66`, Android CI #1748 (unit tests, lint, debug/release assembly, R8 mapping, and connected emulator UI), CodeQL #1633, catalog #2046, and priority coverage #1531 passed. Dependency submission and signed beta did not run on that PR source; no corrected signed APK or immutable artifact provenance is available. No physical test is requested. The status-document update itself is documentation-only and creates a new head requiring fresh exact-head gates.
-- The corrected-source tests, CI/security/catalog/dependency gates, signed artifact, and product verification remain pending exact-head evidence. The local environment has no Gradle wrapper/system Gradle or Android SDK/ADB, so no local Android build or emulator run is claimed. No previous APK may be reused to fill this gap.
-- The acceptance audit also leaves canonical persistence/legacy projections, malformed active-filter handling, ToneBoosters ten-band ordering/parity, API-26 and v0.6 upgrade checks, accessibility/offline/error/cross-DAC product validation unresolved. See `docs/V0.7_RELEASE_READINESS_AUDIT.md`.
+- At that audit snapshot, corrected-source tests, CI/security/catalog/dependency gates, signed artifact, and product verification remained pending exact-head evidence. The local environment had no Gradle wrapper/system Gradle or Android SDK/ADB, so no local Android build or emulator run was claimed. No previous APK could be reused to fill that gap.
+- At that snapshot, the acceptance audit also left canonical persistence/legacy projections, malformed active-filter handling, ToneBoosters ten-band ordering/parity, API-26 and v0.6 upgrade checks, accessibility/offline/error/cross-DAC product validation unresolved. The current implementation result is recorded in `docs/V0.7_RELEASE_READINESS_AUDIT.md`.
 - E001 and E043–E046 remain accepted historical physical evidence; no new Apply, Flash, Restore, Reset, Save qualification, or read-only report is requested. PR #23 remains draft; v0.7.0 remains NO-GO pending blocker closure, exact-source gates/signing, final review, and explicit owner approval.
 
 - Owner reports E043-E046 add read-only PASS plus Flash, exact-baseline Restore, and Reset PASS on signed candidate source `7599dd52fc9e8c58c96e021f581b86a669dcc148`; E037-E040 remain the source-381 Apply/Flash/Restore/Reset evidence. Do not repeat any mutation or E001 Save qualification. All six gates passed on report-source 7599; this docs-only closeout makes that artifact stale for new-head provenance, so refresh gates/signing on the exact docs head. The only possible remaining owner check is non-mutating Personal EQ capture/value/provenance, plus My EQs review/cancel only if the successful Flash was not launched from My EQs. Release remains NO-GO pending scope closure and explicit approval.
