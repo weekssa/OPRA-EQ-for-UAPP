@@ -144,7 +144,7 @@ internal fun Ew300MyDacContent(
             catalogState = catalogState,
             managedHeadphones = managedHeadphones,
             savedEqs = savedEqs,
-            provenanceText = "The current five-band and global-gain values will be saved as a Personal EQ with SIMGOT EW300 DSP provenance.",
+            provenanceText = "The current verified five-band EQ will be saved as a Personal EQ with SIMGOT EW300 DSP provenance. Playback/global gain remains device state and is not included in the captured EQ.",
             namePlaceholder = "My EW300 EQ",
             onDismiss = { saveDacEqOpen = false },
             onSave = onCaptureDacEq,
