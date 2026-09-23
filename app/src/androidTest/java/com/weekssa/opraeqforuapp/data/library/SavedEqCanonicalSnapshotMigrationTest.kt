@@ -113,7 +113,9 @@ class SavedEqCanonicalSnapshotMigrationTest {
             Room.databaseBuilder(context, OpraEqDatabase::class.java, databaseName)
                 .allowMainThreadQueries()
                 .build()
-                .use { version8 -> version8.savedEqDao().upsert(original) }
+                .use { version8 ->
+                    runBlocking { version8.savedEqDao().upsert(original) }
+                }
 
             val databasePath = context.getDatabasePath(databaseName).absolutePath
             SQLiteDatabase.openDatabase(databasePath, null, SQLiteDatabase.OPEN_READWRITE).use { raw ->
@@ -126,7 +128,7 @@ class SavedEqCanonicalSnapshotMigrationTest {
                 .allowMainThreadQueries()
                 .build()
                 .use { migrated ->
-                    val restored = migrated.savedEqDao().get(original.entryId)
+                    val restored = runBlocking { migrated.savedEqDao().get(original.entryId) }
                     assertEquals(original, restored)
                     assertNull(restored?.canonicalSnapshotJson)
                 }

@@ -215,7 +215,16 @@ jobs:
           done
           timeout 300 bash -c 'until [[ "$(adb shell getprop sys.boot_completed | tr -d "\r")" == "1" ]]; do sleep 5; done'
           test "$(adb shell getprop ro.build.version.sdk | tr -d "\r")" = "26"
-          adb install app/build/outputs/apk/release/app-release.apk
+          release_apks=()
+          while IFS= read -r -d '' apk_path; do
+            release_apks+=("$apk_path")
+          done < <(find app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' -print0)
+          if [[ "${#release_apks[@]}" -ne 1 ]]; then
+            printf 'Expected exactly one release APK for API-26 smoke install; found %s.\n' "${#release_apks[@]}" >&2
+            find app/build/outputs/apk/release -maxdepth 1 -type f -print >&2 || true
+            exit 1
+          fi
+          adb install "${release_apks[0]}"
           adb logcat -c
           launch_output="$(adb shell am start -W -n com.weekssa.opraeqforuapp/.MainActivity 2>&1)"
           printf '%s\n' "$launch_output" | tee "$RUNNER_TEMP/min-api-launch.txt"
