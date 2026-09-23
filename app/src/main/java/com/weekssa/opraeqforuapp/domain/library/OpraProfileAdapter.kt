@@ -1,5 +1,6 @@
 package com.weekssa.opraeqforuapp.domain.library
 
+import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.OpraProduct
 import com.weekssa.opraeqforuapp.domain.catalog.OpraVendor
@@ -12,20 +13,13 @@ object OpraProfileAdapter {
         profile: OpraEqProfile,
         discoveredAtEpochSeconds: Long? = null,
     ): CanonicalEqProfile? {
-        val filters = profile.bands
-            .orEmpty()
-            .mapNotNull { band ->
-                val type = parseFilterType(band.type) ?: return@mapNotNull null
-                val frequency = band.frequency ?: return@mapNotNull null
-                EqFilter(
-                    type = type,
-                    frequencyHz = frequency,
-                    gainDb = band.gainDb,
-                    q = band.q,
-                    slope = band.slope,
-                )
-            }
-        if (filters.isEmpty()) return null
+        if (profile.preampGainDb?.isFinite() == false) return null
+        val sourceBands = profile.bands ?: return null
+        if (sourceBands.isEmpty()) return null
+
+        val filters = sourceBands.map { band ->
+            parseBand(band) ?: return null
+        }
 
         val fingerprint = AcousticFingerprint.of(profile.preampGainDb, filters)
         val creator = profile.author?.trim()?.takeIf(String::isNotEmpty)
@@ -76,14 +70,52 @@ object OpraProfileAdapter {
         )
     }
 
+    /**
+     * OPRA bands are source data, not optional hints. Any unsupported type, missing required field,
+     * or non-finite value rejects the whole profile so canonical ingestion cannot silently drop or
+     * partially reinterpret an active source filter.
+     */
+    private fun parseBand(band: OpraBand): EqFilter? {
+        val type = parseFilterType(band.type) ?: return null
+        val frequency = band.frequency?.takeIf { it.isFinite() && it > 0.0 } ?: return null
+        val gain = band.gainDb?.takeIf(Double::isFinite)
+        val q = band.q?.takeIf { it.isFinite() && it > 0.0 }
+        val slope = band.slope?.takeIf(Double::isFinite)
+
+        if (band.gainDb != null && gain == null) return null
+        if (band.q != null && q == null) return null
+        if (band.slope != null && slope == null) return null
+
+        when (type) {
+            EqFilterType.PEAK,
+            EqFilterType.LOW_SHELF,
+            EqFilterType.HIGH_SHELF,
+            -> if (gain == null || q == null) return null
+
+            EqFilterType.LOW_PASS,
+            EqFilterType.HIGH_PASS,
+            -> if (slope == null) return null
+
+            EqFilterType.OTHER -> return null
+        }
+
+        return EqFilter(
+            type = type,
+            frequencyHz = frequency,
+            gainDb = gain,
+            q = q,
+            slope = slope,
+        )
+    }
+
     private fun parseFilterType(value: String?): EqFilterType? = when (value?.trim()?.uppercase(Locale.ROOT)) {
-        "PK", "PEQ", "PEAK", "PEAKING" -> EqFilterType.PEAK
+        "PK", "PEQ", "PEAK", "PEAKING", "PEAK_DIP" -> EqFilterType.PEAK
         "LS", "LSC", "LOW_SHELF", "LOWSHELF" -> EqFilterType.LOW_SHELF
         "HS", "HSC", "HIGH_SHELF", "HIGHSHELF" -> EqFilterType.HIGH_SHELF
         "LP", "LPF", "LOW_PASS", "LOWPASS" -> EqFilterType.LOW_PASS
         "HP", "HPF", "HIGH_PASS", "HIGHPASS" -> EqFilterType.HIGH_PASS
         null, "" -> null
-        else -> EqFilterType.OTHER
+        else -> null
     }
 
     private fun inferExplicitTarget(details: String?): String? {
