@@ -303,7 +303,7 @@ class Ew300ShelfCorpusRegressionTest {
         val ready = first as FiveBandOptimizationResult.Ready
         assertThat(ready.representation.fidelity).isEqualTo(DevicePresetFidelity.OPTIMIZED)
         assertThat(ready.representation.usedResponseFit).isTrue()
-        assertThat(ready.representation.bands).hasSizeAtMost(5)
+        assertThat(ready.representation.bands.size).isAtMost(5)
         assertThat(ready.representation.bands.map { it.type }.distinct()).containsExactly("peak_dip")
         assertThat(ready.representation.rmsErrorDb)
             .isAtMost(HardwareEqDeviceSpecs.SIMGOT_EW300.maxRmsErrorDb)
@@ -318,7 +318,7 @@ class Ew300ShelfCorpusRegressionTest {
         when (first) {
             is FiveBandOptimizationResult.Ready -> {
                 assertThat(first.representation.fidelity).isEqualTo(DevicePresetFidelity.OPTIMIZED)
-                assertThat(first.representation.bands).hasSizeAtMost(5)
+                assertThat(first.representation.bands.size).isAtMost(5)
                 assertThat(first.representation.bands.map { it.type }.distinct()).containsExactly("peak_dip")
                 assertThat(first.representation.rmsErrorDb)
                     .isAtMost(HardwareEqDeviceSpecs.SIMGOT_EW300.maxRmsErrorDb)
