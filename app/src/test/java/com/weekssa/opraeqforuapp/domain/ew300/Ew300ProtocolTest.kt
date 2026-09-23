@@ -4,6 +4,7 @@ import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20Band
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class Ew300ProtocolTest {
@@ -24,12 +25,22 @@ class Ew300ProtocolTest {
     }
 
     @Test
-    fun bandRoundTripPreservesWireQuantizationAndFilterCode() {
-        val source = Kt02h20Band("high_shelf", 7_000.0, 0.5, 0.9)
+    fun peakBandRoundTripPreservesWireQuantizationAndFilterCode() {
+        val source = Kt02h20Band("peak_dip", 7_000.0, 0.5, 0.9)
         val (gain, q) = Ew300Protocol.encodeBand(source)
 
         assertEquals(source, Ew300Protocol.decodeBand(4, gain, q))
-        assertEquals(0x04, q[2].toInt() and 0xFF)
+        assertEquals(0x00, q[2].toInt() and 0xFF)
+    }
+
+    @Test
+    fun unqualifiedNativeShelfWritesAreRejected() {
+        assertThrows(IllegalStateException::class.java) {
+            Ew300Protocol.encodeBand(Kt02h20Band("low_shelf", 120.0, 2.0, 0.7))
+        }
+        assertThrows(IllegalStateException::class.java) {
+            Ew300Protocol.encodeBand(Kt02h20Band("high_shelf", 7_000.0, 0.5, 0.9))
+        }
     }
 
     @Test

@@ -164,21 +164,19 @@ class Ew300EditorApplier(
         }
     }
 
-    private fun encode(filter: HardwareEqFilter): WireBandPair? = runCatching {
-        Ew300Protocol.encodeBand(
-            Kt02h20Band(
-                type = when (filter.type) {
-                    EqFilterType.PEAK -> "peak_dip"
-                    EqFilterType.LOW_SHELF -> "low_shelf"
-                    EqFilterType.HIGH_SHELF -> "high_shelf"
-                    else -> error("Unsupported EW300 editor filter type: ${filter.type}")
-                },
-                frequencyHz = filter.frequencyHz,
-                gainDb = filter.gainDb,
-                q = filter.q,
-            ),
-        ).let { (gain, q) -> WireBandPair(gain, q) }
-    }.getOrNull()
+    private fun encode(filter: HardwareEqFilter): WireBandPair? {
+        if (filter.type != EqFilterType.PEAK) return null
+        return runCatching {
+            Ew300Protocol.encodeBand(
+                Kt02h20Band(
+                    type = "peak_dip",
+                    frequencyHz = filter.frequencyHz,
+                    gainDb = filter.gainDb,
+                    q = filter.q,
+                ),
+            ).let { (gain, q) -> WireBandPair(gain, q) }
+        }.getOrNull()
+    }
 
     private suspend fun restoreAfterFailure(
         baseline: Ew300RawBaseline,

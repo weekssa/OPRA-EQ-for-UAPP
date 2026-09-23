@@ -1,6 +1,7 @@
 package com.weekssa.opraeqforuapp.domain.ew300
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlinx.coroutines.runBlocking
@@ -15,6 +16,9 @@ class Ew300CapabilityBatchTest {
         assertTrue(transport.writes.isEmpty())
         assertTrue(report.toReadableText().contains("Read-only EW300 state"))
         assertTrue(report.toJson().contains("identity-and-eq-snapshot"))
+        assertTrue(report.toReadableText().contains("serial=[redacted]"))
+        assertFalse(report.toReadableText().contains("private-test-value"))
+        assertFalse(report.toJson().contains("private-test-value"))
     }
 
     @Test
@@ -63,7 +67,7 @@ class Ew300CapabilityBatchTest {
 
     private class FakeTransport(
         private val failRegister: Int? = null,
-        fingerprint: String? = "test-ew300|descriptor=fixture",
+        fingerprint: String? = "test-ew300|serial=private-test-value|descriptor=fixture",
     ) : Ew300Transport {
         override val deviceFingerprintKey: String? = fingerprint
         val reads = mutableListOf<Int>()

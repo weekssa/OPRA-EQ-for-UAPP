@@ -23,11 +23,7 @@ object Ew300Protocol {
     const val GLOBAL_GAIN_MAX_STEPS = 127
     const val GLOBAL_GAIN_STEPS_PER_DB = 2.0
 
-    private val bandTypes = mapOf(
-        "peak_dip" to 0,
-        "low_shelf" to 3,
-        "high_shelf" to 4,
-    )
+    private val bandTypes = mapOf("peak_dip" to 0)
 
     fun bandRegister(index: Int): Int {
         require(index in 0 until BAND_COUNT)

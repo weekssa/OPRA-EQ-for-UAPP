@@ -12,7 +12,7 @@ class Ew300OperationTraceTest {
             sourceCommit = "abcdef123456",
             appVersion = "0.7.0",
             signerVerified = true,
-            deviceFingerprintKey = "vid=31b2|pid=111|manufacturer=LE XIAN|product=SIMGOT EW300 DSP|interface=3",
+            deviceFingerprintKey = "vid=31b2|pid=111|manufacturer=LE XIAN|product=SIMGOT EW300 DSP|serial=private-test-value|deviceRevision=1.01|interface=3",
             sessionGeneration = 4L,
             detachGeneration = 2L,
             initialPermissionRequestCount = 8L,
@@ -34,6 +34,8 @@ class Ew300OperationTraceTest {
         assertTrue(report.toReadableText().contains("mutationReplayCount=unmeasured"))
         assertTrue(report.toJson().contains("\"competingConnectionJobCount\":null"))
         assertTrue(report.toJson().contains("\"finalReadbackMatched\":true"))
-        assertFalse(report.toReadableText().contains("accountNumber"))
+        assertTrue(report.toReadableText().contains("serial=[redacted]"))
+        assertFalse(report.toReadableText().contains("private-test-value"))
+        assertFalse(report.toJson().contains("private-test-value"))
     }
 }

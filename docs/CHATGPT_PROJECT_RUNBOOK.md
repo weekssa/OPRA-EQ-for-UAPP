@@ -19,6 +19,7 @@ Before substantive work, read this file and the current documents relevant to th
 - `docs/V0.6_MY_DAC_IMPLEMENTATION_PLAN.md` for the current v0.6 architecture, sequencing, tests, and release gates
 - `docs/V0.7_EW300_DSP_IMPLEMENTATION_PLAN.md` for the approved next-hardware scope, evidence gates, additive framework contract, automated validation, and signed owner-testing handoff
 - `docs/V0.7_PRODUCT_SUCCESS_CRITERIA.md` for the testable v0.7 finished-product, cross-DAC parity, low/high-shelf, and release acceptance contract
+- `docs/V0.7_RELEASE_READINESS_AUDIT.md` for the independently verified current v0.7 release blockers, fail-closed implementation corrections, and exact-source gate boundary
 - `docs/V0.6_MY_DAC_STATUS.md` for the concise current v0.6 branch/hardware/UX state
 - `docs/V0.6_LIBRARY_OWNERSHIP_AND_RECOVERY.md` for the current device-agnostic My EQs ownership and Needs attention recovery contract; where older architecture text still says My EQs is output-specific, this newer authority wins
 - `docs/BLACK_PEARL_PROTOCOL_NOTES.md` when Black Pearl behavior is involved
@@ -42,7 +43,7 @@ The Restore proves exact baseline restoration when it completed. A separate late
 
 No further Apply, Flash, Restore, Reset, Save qualification, or read-only report is needed. If still unverified, the only possible owner check is non-hardware-mutating Personal EQ capture/value/provenance confirmation; open/cancel My EQs Flash review only if the successful Flash was not already launched there. Stop before final write confirmation. Capture remains “not yet evidenced,” not unsupported hardware.
 
-The approved cross-DAC product acceptance—including the graph/state/manual Refresh gaps found on EW300, capability-by-capability Black Pearl comparison, and corpus validation of low/high-shelf conversion—is defined in `docs/V0.7_PRODUCT_SUCCESS_CRITERIA.md`. PR #23 remains draft, v0.7.0 remains NO-GO, and merge/publication/public-support claims require explicit owner approval.
+The approved cross-DAC product acceptance—including the shared graph/state/manual Refresh flow, capability-by-capability Black Pearl comparison, and low/high-shelf corpus behavior—is defined in `docs/V0.7_PRODUCT_SUCCESS_CRITERIA.md`. The current independent release audit is `docs/V0.7_RELEASE_READINESS_AUDIT.md`; earlier green gates and candidate provenance do not transfer to later source SHAs. PR #23 remains draft, v0.7.0 remains NO-GO, and merge/publication/public-support claims require explicit owner approval.
 
 ## 2. Repository boundary
 

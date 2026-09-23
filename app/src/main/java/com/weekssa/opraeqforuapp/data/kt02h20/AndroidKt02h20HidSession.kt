@@ -52,6 +52,7 @@ internal class AndroidKt02h20HidSession(
     permissionSuffix: String,
     private val deviceIdentityMatcher: (UsbDevice) -> Boolean = { true },
     private val hidInterfaceMatcher: (UsbInterface) -> Boolean = { true },
+    private val additionalFingerprintFields: (UsbDevice) -> List<Pair<String, String>> = { emptyList() },
 ) : Closeable {
     init {
         require(productIds.isNotEmpty()) { "At least one approved USB PID is required." }
@@ -421,14 +422,14 @@ internal class AndroidKt02h20HidSession(
         val manufacturer = runCatching { device.manufacturerName }.getOrNull().orEmpty()
         val product = runCatching { device.productName }.getOrNull().orEmpty()
         val serial = runCatching { device.serialNumber }.getOrNull().orEmpty()
-        return listOf(
+        return (listOf(
             "vid=${device.vendorId.toString(16)}",
             "pid=${device.productId.toString(16)}",
             "manufacturer=${manufacturer.trim()}",
             "product=${product.trim()}",
             "serial=${serial.trim()}",
-            "interface=${usbInterface.id}",
-        ).joinToString("|")
+        ) + additionalFingerprintFields(device).map { (key, value) -> "$key=${value.trim()}" } +
+            "interface=${usbInterface.id}").joinToString("|")
     }
 
     @Suppress("DEPRECATION")

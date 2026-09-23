@@ -53,7 +53,7 @@ data class Ew300CapabilityReport(
         appendLine("EQ Library EW300 capability report")
         appendLine("Plan: $planVersion")
         appendLine("Result: $status")
-        appendLine("Device fingerprint: $deviceFingerprintKey")
+        appendLine("Device fingerprint: ${deviceFingerprintKey.redactedForEw300Report()}")
         appendLine("Device state known after run: $stateKnown")
         appendLine("Stopped after first failure: $stoppedAfterFailure")
         cases.forEach { result ->
@@ -69,7 +69,7 @@ data class Ew300CapabilityReport(
     /** Small dependency-free JSON export for Android's share-sheet/report path. */
     fun toJson(): String = buildString {
         append("{\"planVersion\":\"${planVersion.jsonEscape()}\",")
-        append("\"deviceFingerprintKey\":\"${deviceFingerprintKey.jsonEscape()}\",")
+        append("\"deviceFingerprintKey\":\"${requireNotNull(deviceFingerprintKey.redactedForEw300Report()).jsonEscape()}\",")
         append("\"status\":\"$status\",")
         append("\"stateKnown\":$stateKnown,")
         append("\"stoppedAfterFailure\":$stoppedAfterFailure,")

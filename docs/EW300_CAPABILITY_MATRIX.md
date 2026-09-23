@@ -16,6 +16,12 @@ The testable v0.7 finished-product and cross-DAC acceptance contract is
 `docs/V0.7_PRODUCT_SUCCESS_CRITERIA.md`. Do not interpret “Black Pearl parity” as permission to
 copy hardware controls; classify each category for this exact EW300 profile.
 
+Mutation also requires the internally allowlisted recorded USB device revision. The revised code
+must pass exact-source tests before this guard is considered software-verified; unknown revisions
+remain read-only. Shelf filters may be approximated by the source-response optimizer but are not
+authorized as native EW300 write filters. See `docs/V0.7_RELEASE_READINESS_AUDIT.md` for open
+canonical-source, parser, parity, R8, and exact-candidate gates.
+
 ## 2026-09-22 independent capability research close-out
 
 The Black Pearl-to-EW300 category crosswalk was re-audited against exact-product material and

@@ -22,7 +22,7 @@ The owner completed the standard descriptor capture on signed diagnostic source 
 
 - manufacturer string `LE XIAN`;
 - product string `SIMGOT EW300 DSP`;
-- serial string `2024-07-03-0000-0000-0000` (uniqueness is not established);
+- a serial string was present (its value is intentionally omitted from protocol notes and shareable reports);
 - device descriptor: USB 2.00, EP0 maximum packet 64, VID:PID `31B2:0111`, device revision `0101`, one configuration;
 - configuration total length 303 bytes, four interface numbers, self-powered/remote-wakeup attributes `0xA0`, maximum power 100 mA;
 - USB Audio Class 1.0 AudioControl plus streaming alternates for mono capture and stereo playback at 16/24 bits and advertised 44.1/48/96 kHz rates;

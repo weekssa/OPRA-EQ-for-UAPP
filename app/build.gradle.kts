@@ -41,7 +41,7 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             buildConfigField("boolean", "EW300_PERSISTENCE_QUALIFICATION_ENABLED", ew300PersistenceQualificationEnabled.get())
             buildConfigField("boolean", "EW300_FLASH_VALIDATION_ENABLED", ew300FlashValidationEnabled.get())
             buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"${candidateSourceSha.get()}\"")

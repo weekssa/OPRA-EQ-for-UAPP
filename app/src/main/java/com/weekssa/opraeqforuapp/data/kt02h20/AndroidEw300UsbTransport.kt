@@ -23,6 +23,7 @@ class AndroidEw300UsbTransport(
         permissionSuffix = "SIMGOT_EW300",
         deviceIdentityMatcher = Ew300UsbIdentity::matches,
         hidInterfaceMatcher = Ew300UsbIdentity::matchesHidInterface,
+        additionalFingerprintFields = { device -> listOf("deviceRevision" to device.version) },
     )
     private var reads: Long = 0L
     private var writes: Long = 0L

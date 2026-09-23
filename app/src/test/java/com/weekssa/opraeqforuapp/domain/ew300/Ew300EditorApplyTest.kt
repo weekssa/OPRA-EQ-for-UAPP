@@ -15,6 +15,48 @@ import org.junit.Test
 
 class Ew300EditorApplyTest {
     @Test
+    fun unqualifiedShelfEditorFilterIsRejectedBeforeAnyWriteOrSave() = runBlocking {
+        val bundle = requireNotNull(
+            HardwareEqSnapshotFactory.ew300(
+                nativeBands = stockBands(),
+                globalGainDb = -29.0,
+                sessionGeneration = 1L,
+                verifiedAtEpochMillis = 1L,
+            ),
+        )
+        val started = HardwareEqEditor.startFromCurrent(
+            snapshotState = HardwareEqSnapshotState().publishCurrent(bundle),
+            spec = HardwareEqEditSpecs.SIMGOT_EW300,
+        ) as HardwareEqEditorStartResult.Ready
+        val edited = HardwareEqEditor.updateFilter(
+            workingCopy = started.workingCopy,
+            spec = HardwareEqEditSpecs.SIMGOT_EW300,
+            bandIndex = 0,
+            type = EqFilterType.PEAK,
+            frequencyHz = 2_500.0,
+            gainDb = 4.0,
+            q = 1.4,
+        )
+        val safeWorkingCopy = HardwareEqEditor.useSafeGain(edited, HardwareEqEditSpecs.SIMGOT_EW300)
+        val invalidWorkingCopy = safeWorkingCopy.copy(
+            filters = safeWorkingCopy.filters.map { filter ->
+                if (filter.index == 0) filter.copy(type = EqFilterType.HIGH_SHELF) else filter
+            },
+        )
+        val transport = FakeTransport(bundle)
+
+        val result = Ew300EditorApplier(transport).apply(
+            workingCopy = invalidWorkingCopy,
+            allowCautions = false,
+            isSessionCurrent = { it == 1L },
+        )
+
+        assertTrue(result is Ew300EditorApplyResult.InvalidPlan)
+        assertThat(transport.writeCount).isEqualTo(0)
+        assertThat(transport.commitCount).isEqualTo(0)
+    }
+
+    @Test
     fun applyUsesAbsoluteGlobalGainBaselineAndWritesOnlyAfterFreshValidation() = runBlocking {
         val bundle = requireNotNull(
             HardwareEqSnapshotFactory.ew300(

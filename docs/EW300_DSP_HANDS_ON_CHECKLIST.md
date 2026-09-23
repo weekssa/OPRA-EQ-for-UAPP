@@ -10,6 +10,12 @@ The physical reports do not establish end-to-end Personal EQ capture. Restore wa
 
 ## Candidate gate before any owner/next-agent check
 
+**Current state: BLOCKED.** Do not install the prior a09d or older candidate. The revised signing
+workflow is manual/main-only and no corrected-source APK is available. Testing can begin only
+after owner-authorized integration, exact-head software/security checks, pinned-signature and
+post-sign-alignment verification, and an immutable artifact manifest all pass. The remaining
+physical mutation/read-only work is closed; this checklist never asks to repeat it.
+
 Before anyone installs the final beta, verify in live PR #23 that its source SHA equals the candidate source recorded in the handoff and that Android CI, CodeQL, catalog currentness, priority-community coverage, dependency submission, and the signed-beta workflow all pass on that exact SHA. The signed artifact must preserve package `com.weekssa.opraeqforuapp`, version 0.7.0/code 7, and the pinned release-signing identity. Never use an older candidate as if it were a later head's artifact.
 
 The signed candidate manifest must point to accepted physical evidence E001 and E043-E048 rather than obsolete pre-qualification placeholders, and it must not claim that another consolidated hardware mutation session is outstanding.

@@ -33,7 +33,21 @@ class Ew300CapabilityProfileTest {
     fun blankSerialDoesNotAuthorizeMutation() {
         assertFalse(
             Ew300CapabilityProfile.authorizesMutation(
-                exactFingerprint().replace("serial=2024-07-03-0000-0000-0000", "serial="),
+                exactFingerprint().replace(Regex("serial=[^|]*"), "serial="),
+            ),
+        )
+    }
+
+    @Test
+    fun unknownOrMissingDeviceRevisionDoesNotAuthorizeMutation() {
+        assertFalse(
+            Ew300CapabilityProfile.authorizesMutation(
+                exactFingerprint().replace("deviceRevision=${Ew300CapabilityProfile.DEVICE_REVISION}", "deviceRevision=1.02"),
+            ),
+        )
+        assertFalse(
+            Ew300CapabilityProfile.authorizesMutation(
+                exactFingerprint().replace("|deviceRevision=${Ew300CapabilityProfile.DEVICE_REVISION}", ""),
             ),
         )
     }
