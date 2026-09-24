@@ -49,6 +49,7 @@ import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqPreset
 import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationStatus
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationTrace
 import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
 import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
 import com.weekssa.opraeqforuapp.domain.managed.withHiddenReviewPromptsSuppressed
@@ -82,6 +83,10 @@ private sealed interface ActiveOutputExportRequest {
     data class GeneralEq(val presetId: String, override val device: ExportDevice) : ActiveOutputExportRequest
     data class GeneralEqBatch(val presetIds: Set<String>, override val device: ExportDevice) : ActiveOutputExportRequest
 }
+
+private fun ew300OperationSignature(trace: Ew300OperationTrace): String =
+    listOf(trace.operationId, trace.outcome, trace.stateKnown, trace.finalReadbackMatched)
+        .joinToString("|")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -323,11 +328,11 @@ fun EqLibraryApp(
     var lastEw300StartedOperationId by remember {
         mutableStateOf<String?>(null)
     }
-    var lastEw300CompletedOperationId by remember {
+    var lastEw300CompletedOperationSignature by remember {
         mutableStateOf(
             when (val status = state.ew300OperationStatus) {
                 is Ew300OperationStatus.Running -> null
-                is Ew300OperationStatus.Completed -> status.trace.operationId
+                is Ew300OperationStatus.Completed -> ew300OperationSignature(status.trace)
                 Ew300OperationStatus.Idle -> null
             },
         )
@@ -346,8 +351,9 @@ fun EqLibraryApp(
             }
             is Ew300OperationStatus.Completed -> {
                 val trace = status.trace
-                if (trace.operationId == lastEw300CompletedOperationId) return@LaunchedEffect
-                lastEw300CompletedOperationId = trace.operationId
+                val signature = ew300OperationSignature(trace)
+                if (signature == lastEw300CompletedOperationSignature) return@LaunchedEffect
+                lastEw300CompletedOperationSignature = signature
                 when {
                     trace.operation == "FLASH" && trace.stateKnown && trace.outcome == "Success" && trace.finalReadbackMatched ->
                         showDeviceOperation(
