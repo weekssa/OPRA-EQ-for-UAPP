@@ -48,6 +48,7 @@ class Ew300Flasher(
     private var lastSuccessfulFlashBaseline: Ew300RawBaseline? = null
 
     val lastOperationTrace: StateFlow<Ew300OperationTrace?> = traceStore.lastTrace
+    val operationStatus: StateFlow<Ew300OperationStatus> = traceStore.status
 
     suspend fun applyEditorWorkingCopy(
         workingCopy: com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditWorkingCopy,
@@ -435,7 +436,9 @@ class Ew300Flasher(
         operation: String,
         block: suspend (Ew300OperationTraceBuilder) -> T,
     ): T {
+        val operationId = traceStore.begin(operation)
         val trace = Ew300OperationTraceBuilder(
+            operationId = operationId,
             operation = operation,
             sourceCommit = sourceCommit,
             appVersion = appVersion,

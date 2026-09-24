@@ -176,7 +176,7 @@ class Ew300DeviceStatusTest {
                 savedEqs = emptyList(),
                 savedGeneralEqs = emptyList(),
                 onConnect = { refreshCount += 1 },
-                onResetEq = { "" },
+                onResetEq = {},
                 onRestoreBaseline = { "" },
                 onRunCapabilityBatch = { error("not invoked") },
                 onAdvancePersistenceQualification = { error("not invoked") },

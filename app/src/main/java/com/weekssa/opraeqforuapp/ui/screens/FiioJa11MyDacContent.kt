@@ -98,7 +98,14 @@ internal fun FiioJa11MyDacContent(
             Button(
                 onClick = onConnect,
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text(if (connectionState is Kt02h20ConnectionState.Error) "Retry connect" else "Connect") }
+            ) {
+                Text(
+                    if (
+                        connectionState is Kt02h20ConnectionState.Error ||
+                        connectionState is Kt02h20ConnectionState.PermissionRequired
+                    ) "Retry connect" else "Connect",
+                )
+            }
         }
 
         TabRow(selectedTabIndex = selectedTab) {
@@ -220,4 +227,5 @@ private fun connectionLabel(state: Kt02h20ConnectionState): String = when (state
     Kt02h20ConnectionState.Connecting -> "Connecting…"
     Kt02h20ConnectionState.Disconnected -> "Disconnected"
     is Kt02h20ConnectionState.Error -> "Connection problem"
+    is Kt02h20ConnectionState.PermissionRequired -> "USB permission required"
 }

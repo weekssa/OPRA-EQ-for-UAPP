@@ -33,6 +33,7 @@ sealed interface Kt02h20ConnectionState {
     data object Connecting : Kt02h20ConnectionState
     data object Connected : Kt02h20ConnectionState
     data class Error(val message: String) : Kt02h20ConnectionState
+    data class PermissionRequired(val message: String) : Kt02h20ConnectionState
 }
 
 /**
@@ -104,8 +105,8 @@ internal class AndroidKt02h20HidSession(
                     if (usbManager.hasPermission(device)) {
                         openAsync(device)
                     } else {
-                        mutableState.value = Kt02h20ConnectionState.Error(
-                            "USB permission was not granted for $deviceLabel.",
+                        mutableState.value = Kt02h20ConnectionState.PermissionRequired(
+                            "Android USB permission is required for $deviceLabel. Approve the prompt, then tap Connect to verify the DAC.",
                         )
                     }
                 }
@@ -375,8 +376,8 @@ internal class AndroidKt02h20HidSession(
                     )
                 }
                 usbManager.hasPermission(device) -> openAsync(device)
-                else -> mutableState.value = Kt02h20ConnectionState.Error(
-                    "USB permission request timed out. Disconnect and reconnect $deviceLabel, then try again.",
+                else -> mutableState.value = Kt02h20ConnectionState.PermissionRequired(
+                    "Android USB permission is required for $deviceLabel. Approve it, then tap Connect to verify the DAC.",
                 )
             }
         }

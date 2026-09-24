@@ -889,7 +889,10 @@ private fun Kt02h20ConnectionControl(
                 modifier = Modifier.weight(1.25f),
             ) { Text("Reset EQ to flat") }
         }
-        if (state is Kt02h20ConnectionState.Error) {
+        if (
+            state is Kt02h20ConnectionState.Error ||
+            state is Kt02h20ConnectionState.PermissionRequired
+        ) {
             Text(
                 text = state.message,
                 modifier = Modifier.padding(top = 4.dp),
