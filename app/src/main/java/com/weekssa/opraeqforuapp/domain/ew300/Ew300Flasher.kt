@@ -224,15 +224,15 @@ class Ew300Flasher(
             )
         }
         trace.stage(Ew300OperationStage.FINAL_READBACK)
-        val verificationFailure = verify(target)
-        if (verificationFailure != null) {
+        val finalReadback = reconcileFinalReadback(target, targetGain)
+        if (finalReadback.bandFailure != null) {
+            val verificationFailure = finalReadback.bandFailure
             return Kt02h20FlashResult.VerificationFailed(
                 "EW300 final PEQ readback did not match band ${verificationFailure.band + 1}: " +
                     "expected ${verificationFailure.expected}, read ${verificationFailure.actual}.",
             )
         }
-        val finalGain = transport.readRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER)
-        if (finalGain == null || !finalGain.contentEquals(targetGain)) {
+        if (finalReadback.gain == null || !finalReadback.gain.contentEquals(targetGain)) {
             return Kt02h20FlashResult.VerificationFailed(
                 "EW300 final global-gain readback did not match the requested adjustment.",
             )
@@ -323,12 +323,11 @@ class Ew300Flasher(
             )
         }
         trace.stage(Ew300OperationStage.FINAL_READBACK)
-        val verificationFailure = verify(flat)
-        if (verificationFailure != null) {
+        val finalReadback = reconcileFinalReadback(flat, baselineGain)
+        if (finalReadback.bandFailure != null) {
             return Kt02h20FlatResetResult.VerificationFailed("EW300 final flat-EQ readback did not match.")
         }
-        val finalGain = transport.readRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER)
-        if (finalGain == null || !finalGain.contentEquals(baselineGain)) {
+        if (finalReadback.gain == null || !finalReadback.gain.contentEquals(baselineGain)) {
             return Kt02h20FlatResetResult.VerificationFailed("EW300 final flat-EQ gain readback did not match.")
         }
         gainStateStore.writeAppliedGainDeltaSteps(deviceKey, 0)
@@ -402,7 +401,11 @@ class Ew300Flasher(
             )
         }
         trace.stage(Ew300OperationStage.FINAL_READBACK)
-        if (!transactionCoordinator.verifyExact(baseline)) {
+        val restored = Ew300ReadbackRetry.read(
+            read = { transactionCoordinator.verifyExact(baseline) },
+            matches = { it },
+        )
+        if (!restored) {
             return Ew300RestorationResult.VerificationFailed(
                 "EW300 final exact-baseline readback did not match byte-for-byte. Stop; do not retry.",
             )
@@ -539,6 +542,35 @@ class Ew300Flasher(
         }
         return null
     }
+
+    /**
+     * Reconciles the complete post-Save state while the replacement HID session settles.
+     *
+     * A transient read failure or stale unsolicited report must not turn a successful Save into
+     * a false warning when the exact authorized session becomes readable milliseconds later. The
+     * retry is deliberately read-only and bounded; identity/session checks have already passed at
+     * [recordCommitBoundary].
+     */
+    private suspend fun reconcileFinalReadback(
+        expected: List<Kt02h20Band>,
+        expectedGain: ByteArray,
+    ): FinalReadback = Ew300ReadbackRetry.read(
+        read = {
+            FinalReadback(
+                bandFailure = verify(expected),
+                gain = transport.readRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER),
+            )
+        },
+        matches = { observation ->
+            observation.bandFailure == null &&
+                observation.gain?.contentEquals(expectedGain) == true
+        },
+    )
+
+    private data class FinalReadback(
+        val bandFailure: VerificationFailure?,
+        val gain: ByteArray?,
+    )
 
     private data class VerificationFailure(
         val band: Int,

@@ -46,6 +46,24 @@ class Ew300FlasherTest {
     }
 
     @Test
+    fun flashReconcilesATransientPostSaveReadFailureWithoutASecondSave() = runBlocking {
+        val transport = FakeTransport(
+            detachOnCommitNumber = 1,
+            transientReadFailuresAfterCommit = 1,
+        )
+
+        val result = Ew300Flasher(
+            transport,
+            QualifiedGainStore(),
+            mutationAuthorized = { true },
+        ).flash(profile(preamp = null))
+
+        assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.Success)
+        assertEquals(1, transport.commitCount)
+        assertTrue(transport.readsAfterCommit > 11)
+    }
+
+    @Test
     fun sourcePreampIsAppliedThroughGlobalGainRegister() = runBlocking {
         val transport = FakeTransport()
         val result = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true }).flash(profile(preamp = -4.0))
@@ -252,6 +270,7 @@ class Ew300FlasherTest {
         private val corruptOnCommitNumber: Int? = null,
         private val corruptRegister: Int? = null,
         private val throwOnCommitNumber: Int? = null,
+        private var transientReadFailuresAfterCommit: Int = 0,
     ) : Ew300Transport {
         override var deviceFingerprintKey: String = "test-ew300"
         override var sessionGeneration: Long = 1L
@@ -278,6 +297,10 @@ class Ew300FlasherTest {
         override suspend fun readRegister(register: Int): ByteArray? {
             if (writes.isNotEmpty()) readsAfterWrites++
             if (commitCount > 0) readsAfterCommit++
+            if (commitCount > 0 && transientReadFailuresAfterCommit > 0) {
+                transientReadFailuresAfterCommit--
+                return null
+            }
             if (register == missingRegister) return null
             if (commitCount >= (corruptOnCommitNumber ?: Int.MAX_VALUE) && register == corruptRegister) {
                 return bytes(0x7F, 0, 0, 0)
