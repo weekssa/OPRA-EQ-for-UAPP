@@ -49,6 +49,11 @@ The owner reported a right-channel-only symptom and crackling on the left at hig
 2026-09-24. Follow `docs/V0.7_EW300_AUDIO_CHANNEL_INVESTIGATION.md` for the controlled isolation
 matrix. This is a diagnostic addition, not a request to repeat accepted EW300 mutation evidence.
 
+The owner has now reproduced the symptom with the EW300 DSP cable on a computer while the
+alternate cable/DAC works. Treat the runtime Android/UAPP/EQ Library audio-routing hypothesis as
+excluded; only a read-only comparison of persistent EW300 state remains relevant to an app-related
+cause.
+
 - Start at minimum volume with a known left/right stereo recording.
 - Do not Flash, Reset, Save, Restore, send exploratory output reports, or test at maximum volume.
 - Record Android/UAPP balance and mono settings, the behavior with EQ Library closed, the behavior
