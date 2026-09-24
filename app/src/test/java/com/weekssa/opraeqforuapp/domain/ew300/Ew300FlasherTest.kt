@@ -158,7 +158,13 @@ class Ew300FlasherTest {
 
     @Test
     fun alreadyMatchingStateIsNotPromotedAfterAnUncertainSave() = runBlocking {
-        val transport = FakeTransport(commitSucceeds = false, detachOnCommitNumber = 1)
+        val transport = FakeTransport(commitSucceeds = false, detachOnCommitNumber = 1).apply {
+            val (flatGain, flatQ) = Ew300Protocol.encodeBand(Kt02h20Band("peak_dip", 1_000.0, 0.0, 1.0))
+            repeat(Ew300Protocol.BAND_COUNT) { index ->
+                state[Ew300Protocol.bandRegister(index)] = flatGain.copyOf()
+                state[Ew300Protocol.bandRegister(index) + 1] = flatQ.copyOf()
+            }
+        }
         val flasher = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
 
         val result = flasher.resetToFlat()
