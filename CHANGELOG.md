@@ -6,6 +6,19 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ## [Unreleased]
 
+### 2026-09-23 release-readiness corrective candidate
+
+- Refreshed the v0.7 candidate against live `main` and recorded the PR #24 review: its stale
+  diverged adapter variant is not integrated because it would reject valid source-neutral records;
+  the current lineage already contains the useful fail-closed parser behavior.
+- Added canonical-catalog promotion validation for finite/positive filter semantics, finite
+  preamp/headroom, required provenance, and unsupported-filter source identity.
+- Prevented malformed saved General EQ rows from entering EW300 hardware matching and quarantined
+  malformed profile/category data as visible but non-actionable.
+- Exact source `fdc60bb2443aed00c6e58ea8806e4735272e00d9` passed Android CI #1776, CodeQL #1661,
+  catalog currentness #2074, priority coverage #1559, and dependency submission #2097. No signed
+  APK is available until trusted-main signing; accepted EW300 physical evidence is unchanged.
+
 ### 2026-09-23 canonical Favorite and General EQ persistence
 
 - Added full canonical profile/revision/source-reference persistence for newly saved catalog
