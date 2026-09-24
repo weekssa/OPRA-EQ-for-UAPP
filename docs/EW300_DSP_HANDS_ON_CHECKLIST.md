@@ -10,17 +10,27 @@ The physical reports do not establish end-to-end Personal EQ capture. Restore wa
 
 ## Candidate gate before any owner/next-agent check
 
-**Current state: SOURCE GATES PASSED; SIGNED CANDIDATE BLOCKED.** Do not install the prior a09d or
-older candidate. PR #30 exact head `889d25570e56d521714e9109db8332d12b561152` passed Android CI,
-CodeQL, catalog-currentness, priority-community, emulator UI, API-26 smoke, lint, R8, and release
-assembly. The revised signing workflow is manual/main-only, so owner-authorized integration into
-trusted `main`, pinned-signature/post-sign-alignment verification, and an immutable artifact manifest
-are still required. The remaining physical mutation/read-only work is closed; this checklist never
-asks to repeat it.
+**Current state: AUTOMATED GATES PASSED; SIGNED CANDIDATE PENDING TRUSTED-MAIN INTEGRATION.** Do not
+install the prior a09d or older candidate. PR #31 exact head `b6c30d399caee9f6d14d1327b640726c92ea8684`
+passed Android CI #1799, CodeQL #1683, catalog currentness #2091, priority-community coverage
+#1576, and dependency submission #2120. Android CI included unit/lint/debug/release/R8, connected
+emulator UI, and API-26 minified install/cold launch. The revised signing workflow is manual/main-only,
+so owner-authorized integration into trusted `main`, pinned-signature/post-alignment verification,
+and an immutable artifact manifest are still required. The remaining physical mutation/read-only work
+is closed; this checklist never asks to repeat it.
 
-Before anyone installs the final beta, verify in live PR #30 that its source SHA equals the candidate source recorded in the handoff and that Android CI, CodeQL, catalog currentness, priority-community coverage, dependency submission, and the signed-beta workflow all pass on that exact SHA. The signed artifact must preserve package `com.weekssa.opraeqforuapp`, version 0.7.0/code 7, and the pinned release-signing identity. Never use an older candidate as if it were a later head's artifact.
+Before anyone installs the final beta, verify in live PR #31 that its source SHA equals the candidate source recorded in the handoff and that Android CI, CodeQL, catalog currentness, priority-community coverage, dependency submission, and the signed-beta workflow all pass on that exact SHA. The signed artifact must preserve package `com.weekssa.opraeqforuapp`, version 0.7.0/code 7, and the pinned release-signing identity. Never use an older candidate as if it were a later head's artifact.
 
 The signed candidate manifest must point to accepted physical evidence E001 and E043-E048 rather than obsolete pre-qualification placeholders, and it must not claim that another consolidated hardware mutation session is outstanding.
+
+### Release-ready physical checkpoint after signed APK
+
+Only after exact signed APK provenance is available:
+
+1. Install the exact signed APK and begin at minimum volume.
+2. Use read-only Refresh and verify a coherent EW300 state; if the stereo `0x66` gain bytes are unequal, stop.
+3. Play a known left/right stereo signal at a safe level and confirm both channels without crackle; stop immediately on crackle, heat, or unsafe loudness.
+4. Do not repeat Apply, Flash, Restore, Reset, Save qualification, or exploratory writes.
 
 ## Required final beta validation — product behavior, not protocol requalification
 
@@ -76,4 +86,4 @@ routing, mono/stereo, UAC, or volume control without exact EW300 evidence.
 
 The implementation/review work has closed the previously listed product gaps: shared EW300 graph/status, authoritative-session manual Refresh, concise DEVICE presentation, the capability-by-capability Black Pearl comparison, and cross-source low/high-shelf regression coverage. These closures do not broaden the qualified EW300 hardware-control boundary.
 
-Keep PR #30 draft and v0.7.0 NO-GO until the exact beta validation, final review, and explicit owner approval are complete. Do not request mutation testing, merge, publication, or a public EW300 support claim from this checklist alone.
+Keep PR #31 draft and v0.7.0 NO-GO until the exact beta validation, final review, and explicit owner approval are complete. Do not request mutation testing, merge, publication, or a public EW300 support claim from this checklist alone.
