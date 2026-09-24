@@ -78,7 +78,9 @@ object EqFingerprint {
         sha256("$lineageFingerprint|$acousticFingerprint")
 
     private fun normalizeFilter(filter: EqFilter): String = listOf(
-        filter.type.name,
+        if (filter.type == EqFilterType.OTHER && !filter.sourceType.isNullOrBlank()) {
+            "${filter.type.name}:${filter.sourceType.trim().lowercase(Locale.ROOT)}"
+        } else filter.type.name,
         format(filter.frequencyHz, 2),
         format(filter.gainDb, 2),
         format(filter.q, 3),

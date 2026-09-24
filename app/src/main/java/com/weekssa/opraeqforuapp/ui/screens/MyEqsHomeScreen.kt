@@ -36,7 +36,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.weekssa.opraeqforuapp.R
 import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.export.ExportCurrentness
 import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
@@ -104,6 +106,10 @@ fun MyEqsHomeScreen(
     jcallyJm12ConnectionState: Kt02h20ConnectionState,
     onConnectJcallyJm12: () -> Unit,
     onResetJcallyJm12: suspend () -> String,
+    directEw300FlashEnabled: Boolean = false,
+    ew300ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
+    onConnectEw300: () -> Unit = {},
+    onResetEw300: suspend () -> String = { "Reset is not available for this output." },
     onExportAll: () -> Unit,
     onOpenHeadphone: (String) -> Unit,
     onImportPersonal: suspend (
@@ -129,20 +135,23 @@ fun MyEqsHomeScreen(
     var pendingFlash by remember { mutableStateOf<PendingHardwareFlash?>(null) }
     var pendingResetDevice by remember { mutableStateOf<ExportDevice?>(null) }
     var pendingRecovery by remember { mutableStateOf<UnclaimedEqRecord?>(null) }
+    var recoveryInProgress by remember { mutableStateOf(false) }
     var pendingUnclaimedDelete by remember { mutableStateOf<UnclaimedEqRecord?>(null) }
     var unclaimedExpanded by rememberSaveable { mutableStateOf(false) }
     val selectedHeadphoneCount = managedHeadphones.sumOf(ManagedHeadphoneRecord::selectedProfileCount)
     val headphoneSavedEqs = remember(savedEqs) { savedEqs.toList() }
     val hardwareFlashOutput = activeOutput in HARDWARE_FLASH_OUTPUTS
-    val flashActionsEnabled = when (activeOutput) {
-        ExportDevice.BLACK_PEARL -> directBlackPearlFlashEnabled &&
-            blackPearlConnectionState is BlackPearlConnectionState.Connected
-        ExportDevice.FIIO_JA11 -> directFiioJa11FlashEnabled &&
-            fiioJa11ConnectionState is Kt02h20ConnectionState.Connected
-        ExportDevice.JCALLY_JM12 -> directJcallyJm12FlashEnabled &&
-            jcallyJm12ConnectionState is Kt02h20ConnectionState.Connected
-        else -> false
-    }
+    val flashActionsEnabled = isManagedHardwareFlashEnabled(
+        activeOutput = activeOutput,
+        directBlackPearlFlashEnabled = directBlackPearlFlashEnabled,
+        blackPearlConnected = blackPearlConnectionState is BlackPearlConnectionState.Connected,
+        directFiioJa11FlashEnabled = directFiioJa11FlashEnabled,
+        fiioJa11Connected = fiioJa11ConnectionState is Kt02h20ConnectionState.Connected,
+        directJcallyJm12FlashEnabled = directJcallyJm12FlashEnabled,
+        jcallyJm12Connected = jcallyJm12ConnectionState is Kt02h20ConnectionState.Connected,
+        directEw300FlashEnabled = directEw300FlashEnabled,
+        ew300Connected = ew300ConnectionState is Kt02h20ConnectionState.Connected,
+    )
 
     if (importOpen) {
         PersonalEqImportScreen(
@@ -161,16 +170,24 @@ fun MyEqsHomeScreen(
     pendingRecovery?.let { record ->
         UnclaimedRecoveryDialog(
             record = record,
-            onDismiss = { pendingRecovery = null },
+            isRecovering = recoveryInProgress,
+            onDismiss = { if (!recoveryInProgress) pendingRecovery = null },
             onRecover = { manufacturer, model, displayName ->
-                scope.launch {
-                    runCatching {
-                        unclaimedFeature.onRecover(record.documentUri, manufacturer, model, displayName)
-                    }.onSuccess {
-                        pendingRecovery = null
-                        onMessage("Recovered as a Personal EQ in My EQs.")
-                    }.onFailure { error ->
-                        onMessage(error.message ?: "This EQ could not be recovered safely.")
+                if (!recoveryInProgress) {
+                    recoveryInProgress = true
+                    scope.launch {
+                        try {
+                            runCatching {
+                                unclaimedFeature.onRecover(record.documentUri, manufacturer, model, displayName)
+                            }.onSuccess {
+                                pendingRecovery = null
+                                onMessage("Recovered as a Personal EQ in My EQs.")
+                            }.onFailure { error ->
+                                onMessage(error.message ?: "This EQ could not be recovered safely.")
+                            }
+                        } finally {
+                            recoveryInProgress = false
+                        }
                     }
                 }
             },
@@ -258,6 +275,7 @@ fun MyEqsHomeScreen(
                             val message = when (device) {
                                 ExportDevice.BLACK_PEARL -> onResetBlackPearl()
                                 ExportDevice.FIIO_JA11 -> onResetFiioJa11()
+                                ExportDevice.SIMGOT_EW300 -> onResetEw300()
                                 ExportDevice.JCALLY_JM12 -> onResetJcallyJm12()
                                 else -> "Reset is not available for this output."
                             }
@@ -288,6 +306,13 @@ fun MyEqsHomeScreen(
                         state = fiioJa11ConnectionState,
                         onConnect = onConnectFiioJa11,
                         onReset = { pendingResetDevice = ExportDevice.FIIO_JA11 },
+                    )
+                    ExportDevice.SIMGOT_EW300 -> Kt02h20ConnectionControl(
+                        device = ExportDevice.SIMGOT_EW300,
+                        enabled = directEw300FlashEnabled,
+                        state = ew300ConnectionState,
+                        onConnect = onConnectEw300,
+                        onReset = { pendingResetDevice = ExportDevice.SIMGOT_EW300 },
                     )
                     ExportDevice.JCALLY_JM12 -> Kt02h20ConnectionControl(
                         device = ExportDevice.JCALLY_JM12,
@@ -442,11 +467,24 @@ fun MyEqsHomeScreen(
                     SavedImportsHeading(onImport = { importOpen = true })
                 }
                 items(headphoneSavedEqs, key = { "saved:${it.entryId}" }) { record ->
-                    val needsExport = exportCurrentness.needsExport(record.productId, record.profile.id)
-                    val flashPreview = hardwareFlashPreview(record.profile, activeOutput)
+                    val actionProfile = record.actionProfileOrNull()
+                    val needsExport = actionProfile?.let {
+                        exportCurrentness.needsExport(record.productId, it.id)
+                    } == true
+                    val flashPreview = actionProfile?.let { hardwareFlashPreview(it, activeOutput) }
                     ListItem(
                         headlineContent = { Text(record.displayName) },
-                        supportingContent = { Text("${record.manufacturer} · ${record.model}") },
+                        supportingContent = {
+                            Column {
+                                Text("${record.manufacturer} · ${record.model}")
+                                if (record.savedEqDataInvalid) {
+                                    Text(
+                                        text = stringResource(R.string.saved_eq_invalid_data_notice),
+                                        color = MaterialTheme.colorScheme.error,
+                                    )
+                                }
+                            }
+                        },
                         trailingContent = {
                             Row {
                                 if (needsExport) {
@@ -517,14 +555,22 @@ fun MyEqsHomeScreen(
             }
         } else {
             items(savedGeneralEqs, key = { "general:${it.presetId}" }) { record ->
-                val needsExport = exportCurrentness.needsExport(generalExportProductId(record.presetId), record.presetId)
-                val flashPreview = hardwareFlashPreview(record.profile, activeOutput)
+                val actionProfile = record.actionProfileOrNull()
+                val needsExport = actionProfile != null &&
+                    exportCurrentness.needsExport(generalExportProductId(record.presetId), record.presetId)
+                val flashPreview = actionProfile?.let { hardwareFlashPreview(it, activeOutput) }
                 ListItem(
                     headlineContent = { Text(record.displayName) },
                     supportingContent = {
                         Column {
                             Text(generalCategoryLabel(record.category))
                             record.profile.details?.takeIf(String::isNotBlank)?.let { Text(it) }
+                            if (record.savedEqDataInvalid) {
+                                Text(
+                                    text = stringResource(R.string.saved_eq_invalid_data_notice),
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                            }
                         }
                     },
                     trailingContent = {
@@ -570,6 +616,7 @@ fun MyEqsHomeScreen(
 @Composable
 private fun UnclaimedRecoveryDialog(
     record: UnclaimedEqRecord,
+    isRecovering: Boolean,
     onDismiss: () -> Unit,
     onRecover: (manufacturer: String, model: String, displayName: String) -> Unit,
 ) {
@@ -584,7 +631,7 @@ private fun UnclaimedRecoveryDialog(
     val canRecover = manufacturer.isNotBlank() && model.isNotBlank() && displayName.isNotBlank()
 
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!isRecovering) onDismiss() },
         title = { Text("Recover EQ") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -596,29 +643,34 @@ private fun UnclaimedRecoveryDialog(
                     value = manufacturer,
                     onValueChange = { manufacturer = it },
                     label = { Text("Manufacturer") },
+                    enabled = !isRecovering,
                     singleLine = true,
                 )
                 OutlinedTextField(
                     value = model,
                     onValueChange = { model = it },
                     label = { Text("Model") },
+                    enabled = !isRecovering,
                     singleLine = true,
                 )
                 OutlinedTextField(
                     value = displayName,
                     onValueChange = { displayName = it },
                     label = { Text("EQ name") },
+                    enabled = !isRecovering,
                     singleLine = true,
                 )
             }
         },
         confirmButton = {
             TextButton(
-                enabled = canRecover,
+                enabled = canRecover && !isRecovering,
                 onClick = { onRecover(manufacturer, model, displayName) },
-            ) { Text("Recover") }
+            ) { Text(if (isRecovering) "Recovering…" else "Recover") }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = {
+            TextButton(enabled = !isRecovering, onClick = onDismiss) { Text("Cancel") }
+        },
     )
 }
 
@@ -629,7 +681,8 @@ private fun unclaimedSummary(record: UnclaimedEqRecord): String = buildList {
     when (record.parseState) {
         UnclaimedEqParseState.RECOVERABLE -> add("Needs headphone association")
         UnclaimedEqParseState.INVALID -> add("Can't recover automatically")
-        UnclaimedEqParseState.UNSUPPORTED -> add("Unsupported filter data")
+        UnclaimedEqParseState.UNSUPPORTED -> add("Unsupported or outdated data")
+        UnclaimedEqParseState.SOURCE_UNVERIFIED -> add("Current source not verified")
         UnclaimedEqParseState.ACCESS_UNAVAILABLE -> add("File access unavailable")
     }
 }.joinToString(" · ")
@@ -646,6 +699,7 @@ private fun hardwareFlashPreview(profile: OpraEqProfile, device: ExportDevice): 
         )
     }
     ExportDevice.FIIO_JA11 -> fiveBandFlashPreview(profile, device, Kt02h20DeviceSpecs.FIIO_JA11)
+    ExportDevice.SIMGOT_EW300 -> fiveBandFlashPreview(profile, device, com.weekssa.opraeqforuapp.domain.hardware.HardwareEqDeviceSpecs.SIMGOT_EW300)
     ExportDevice.JCALLY_JM12 -> fiveBandFlashPreview(profile, device, Kt02h20DeviceSpecs.JCALLY_JM12_STOCK)
     else -> null
 }
@@ -685,12 +739,14 @@ private fun hardwareFlashConfirmation(displayName: String, preview: HardwareFlas
     } else {
         when (preview.device) {
             ExportDevice.FIIO_JA11 -> "The JA11 global EQ gain will be set to $gain dB."
+            ExportDevice.SIMGOT_EW300 -> "EW300 hardware writes are verified only for the exact device profile recognized by this build."
             ExportDevice.JCALLY_JM12 -> "EQ Library will apply a $gain dB tracked playback-gain adjustment for this preset."
             else -> ""
         }
     }
     val persistence = when (preview.device) {
         ExportDevice.FIIO_JA11 -> "The five-band PEQ will be applied, read back, and saved to the JA11."
+        ExportDevice.SIMGOT_EW300 -> "EW300 writes are available only for the exact verified device profile."
         ExportDevice.JCALLY_JM12 -> "The five-band PEQ will be written and read back. Persistence across a full power cycle is still hardware-validation pending for stock JM12 firmware."
         else -> ""
     }
@@ -702,6 +758,8 @@ private fun hardwareResetConfirmation(device: ExportDevice): String = when (devi
         "This will overwrite all 10 EQ bands in the Black Pearl's current EQ slot with flat settings and remove any playback-gain adjustment previously applied by EQ Library. This may change listening volume. Other DAC settings will not be changed."
     ExportDevice.FIIO_JA11 ->
         "This will return all five JA11 PEQ bands and the global EQ gain to flat/0 dB, apply the result, verify it, and save it to the device. Listening volume may change. Other DAC settings will not be changed."
+    ExportDevice.SIMGOT_EW300 ->
+        "This will return all five EW300 PEQ bands to flat, preserve the underlying playback gain, and verify the result. Other DAC settings will not be changed."
     ExportDevice.JCALLY_JM12 ->
         "This will return all five stock JM12 PEQ bands to flat and remove EQ Library's tracked playback-gain adjustment. Listening volume may change. Persistence across a full power cycle is still hardware-validation pending. Other DAC settings will not be changed."
     else -> "Reset is not available for this output."
@@ -710,6 +768,7 @@ private fun hardwareResetConfirmation(device: ExportDevice): String = when (devi
 private fun hardwareDeviceTitle(device: ExportDevice): String = when (device) {
     ExportDevice.BLACK_PEARL -> "Black Pearl"
     ExportDevice.FIIO_JA11 -> "FiiO JA11"
+    ExportDevice.SIMGOT_EW300 -> "SIMGOT EW300 DSP"
     ExportDevice.JCALLY_JM12 -> "JCALLY JM12"
     else -> device.folderName
 }
@@ -907,5 +966,6 @@ private fun generalExportProductId(presetId: String): String = "general-export:$
 private val HARDWARE_FLASH_OUTPUTS = setOf(
     ExportDevice.BLACK_PEARL,
     ExportDevice.FIIO_JA11,
+    ExportDevice.SIMGOT_EW300,
     ExportDevice.JCALLY_JM12,
 )

@@ -5,6 +5,7 @@ import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlReadCodec
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
 import com.weekssa.opraeqforuapp.domain.kt02h20.JcallyJm12Protocol
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20Band
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300Protocol
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 import kotlin.math.roundToLong
 
@@ -15,6 +16,48 @@ data class HardwareEqSnapshotBundle(
 
 /** Pure conversion from complete native readback values to My DAC domain state. */
 object HardwareEqSnapshotFactory {
+    fun ew300(
+        nativeBands: List<Kt02h20Band>,
+        globalGainDb: Double,
+        sessionGeneration: Long,
+        verifiedAtEpochMillis: Long,
+    ): HardwareEqSnapshotBundle? {
+        if (nativeBands.size != Ew300Protocol.BAND_COUNT) return null
+        if (!globalGainDb.isFinite() || globalGainDb !in -64.0..63.5) return null
+        // Codes 3/4 are reversible raw bytes, but their shelf acoustics are not qualified on the
+        // exact EW300 cable. Do not turn a provisional hypothesis into a user-visible filter type.
+        if (nativeBands.any { it.type != "peak_dip" }) return null
+        val filters = nativeBands.mapIndexed { index, band -> band.toHardwareFilter(index) ?: return null }
+        val fingerprint = HardwareEqNativeFingerprint(
+            deviceId = DacDeviceId.SIMGOT_EW300,
+            eqEnabled = true,
+            bands = nativeBands.mapIndexed { index, band ->
+                HardwareEqNativeBandFingerprint(
+                    index = index,
+                    enabled = true,
+                    type = band.type.toEqFilterType() ?: return null,
+                    frequencyUnits = band.frequencyHz.roundToLong(),
+                    gainUnits = (band.gainDb * 10.0).roundToLong(),
+                    qUnits = (band.q * 1000.0).roundToLong(),
+                )
+            },
+            // KT-family evidence identifies 0x66 as ordinary digital DAC/playback gain, not a
+            // dedicated EQ preamp. It must not change EQ identity or enter captured EQ profiles.
+            dedicatedEqPreampUnits = null,
+        )
+        return HardwareEqSnapshotBundle(
+            snapshot = HardwareEqSnapshot(
+                deviceId = DacDeviceId.SIMGOT_EW300,
+                sessionGeneration = sessionGeneration,
+                filters = filters,
+                dedicatedEqPreampDb = null,
+                playbackGainDb = globalGainDb,
+                verifiedAtEpochMillis = verifiedAtEpochMillis,
+            ),
+            fingerprint = fingerprint,
+        )
+    }
+
     fun blackPearl(
         nativeBands: List<BlackPearlReadCodec.NativeBand>,
         globalGainRaw: Int,

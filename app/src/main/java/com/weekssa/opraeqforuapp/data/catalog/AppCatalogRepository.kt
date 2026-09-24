@@ -1,5 +1,8 @@
 package com.weekssa.opraeqforuapp.data.catalog
 
+import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqPreset
+import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
+import com.weekssa.opraeqforuapp.domain.library.CanonicalEqSelection
 import kotlinx.coroutines.flow.StateFlow
 
 /**
@@ -14,4 +17,10 @@ interface AppCatalogRepository {
     suspend fun initialize()
 
     suspend fun refresh(): CatalogRefreshResult
+
+    /** Returns complete source data only when the current catalog can prove this exact projection. */
+    fun resolveCanonicalSelection(profile: OpraEqProfile): CanonicalEqSelection? = null
+
+    /** Returns complete source data only when the current catalog can prove this exact preset. */
+    fun resolveCanonicalSelection(preset: GeneralEqPreset): CanonicalEqSelection? = null
 }

@@ -20,4 +20,8 @@ data class SavedEqEntity(
     val createdAtMillis: Long,
     val updatedAtMillis: Long,
     val captureMetadataJson: String? = null,
+    /** Source-neutral local EQ is authoritative when present; null preserves legacy records. */
+    val canonicalSnapshotJson: String? = null,
+    /** Full catalog profile/revision selection for new Favorites; null preserves legacy rows. */
+    val canonicalSelectionJson: String? = null,
 )

@@ -65,6 +65,58 @@ class ProfileCompatibilityEvaluatorTest {
     }
 
     @Test
+    fun opraDefaultPassSlopeKeepsSourceUsableButDoesNotMakeItUappExportable() {
+        val profile = profile(
+            sourcePreamp = -3.0,
+            safetyHeadroom = null,
+        ).copy(bands = listOf(OpraBand("low_pass", 8_000.0, 0.0, null, null)))
+
+        assertTrue(profile.isUsableParametricSource())
+        assertEquals(ProfileCompatibility.FullyCompatible, profile.assessCompatibility().category)
+        assertEquals(ProfileCompatibility.NotCompatible, profile.assessUappCompatibility().category)
+    }
+
+    @Test
+    fun recognizedFilterAliasesUseOneConsistentCanonicalInterpretation() {
+        val profile = profile(
+            sourcePreamp = -3.0,
+            safetyHeadroom = null,
+        ).copy(bands = listOf(OpraBand(" PK ", 1_000.0, -2.0, 1.0, null)))
+
+        assertTrue(profile.isUsableParametricSource())
+        assertEquals(ProfileCompatibility.FullyCompatible, profile.assessUappCompatibility().category)
+    }
+
+    @Test
+    fun overBudgetSourceRequiresProvenanceAndValidatesEveryBand() {
+        val nonOpraSource = profile(
+            sourcePreamp = -3.0,
+            safetyHeadroom = null,
+        ).copy(
+            bands = (1..11).map { index ->
+                OpraBand("peak_dip", 100.0 + index, 0.0, 1.0, null)
+            },
+        )
+
+        assertEquals(ProfileCompatibility.NotCompatible, nonOpraSource.assessUappCompatibility().category)
+        val orderedOpra = nonOpraSource.copy(
+            bandOrderProvenance = EqBandOrderProvenance.OPRA_SOURCE_PRIORITY,
+        )
+        assertEquals(
+            ProfileCompatibility.CompatibleWithLimitation,
+            orderedOpra.assessUappCompatibility().category,
+        )
+
+        val unsupportedTail = orderedOpra.copy(
+            bands = orderedOpra.bands!!.dropLast(1) + OpraBand("band_stop", 1_200.0, 0.0, 1.0, null),
+        )
+        assertEquals(
+            ProfileCompatibility.NotCompatible,
+            unsupportedTail.assessUappCompatibility().category,
+        )
+    }
+
+    @Test
     fun nonParametricRowRemainsUnusableForSelection() {
         val profile = profile(
             sourcePreamp = -3.0,
@@ -73,6 +125,17 @@ class ProfileCompatibilityEvaluatorTest {
 
         assertTrue(!profile.isUsableParametricSource())
         assertEquals(ProfileCompatibility.NotCompatible, profile.assessCompatibility().category)
+    }
+
+    @Test
+    fun nonFinitePreampMakesSourceMalformedRatherThanSelectable() {
+        val profile = profile(
+            sourcePreamp = Double.NaN,
+            safetyHeadroom = null,
+        )
+
+        assertEquals(ProfileCompatibility.NotCompatible, profile.assessCompatibility().category)
+        assertEquals(ProfileCompatibility.NotCompatible, profile.assessUappCompatibility().category)
     }
 
     @Test

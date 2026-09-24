@@ -10,4 +10,16 @@ data class SavedGeneralEqRecord(
     val profile: OpraEqProfile,
     val createdAtMillis: Long,
     val updatedAtMillis: Long,
-)
+    val canonicalSelection: CanonicalEqSelection? = null,
+    val savedEqDataInvalid: Boolean = false,
+) {
+    fun actionProfileOrNull(): OpraEqProfile? {
+        if (savedEqDataInvalid) return null
+        canonicalSelection?.let { selection ->
+            return runCatching {
+                CanonicalLegacyCatalogAdapter.projectGeneralSelection(selection, presetId)
+            }.getOrNull()
+        }
+        return profile
+    }
+}

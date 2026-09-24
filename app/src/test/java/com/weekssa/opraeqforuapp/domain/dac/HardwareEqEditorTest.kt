@@ -48,6 +48,27 @@ class HardwareEqEditorTest {
     }
 
     @Test
+    fun ew300UsesVerifiedDeviceGlobalGainAsHeadroomBaseline() {
+        val result = HardwareEqEditor.startFromCurrent(
+            snapshotState = currentState(ew300Snapshot()),
+            spec = HardwareEqEditSpecs.SIMGOT_EW300,
+        ) as HardwareEqEditorStartResult.Ready
+
+        val working = result.workingCopy
+        assertThat(working.headroomMechanism)
+            .isEqualTo(HardwareEqHeadroomMechanism.DEVICE_GLOBAL_GAIN)
+        assertThat(working.baselineHeadroomGainDb).isEqualTo(-29.0)
+        assertThat(working.plannedHeadroomGainDb).isEqualTo(-29.0)
+        assertThat(working.baselineSnapshot.dedicatedEqPreampDb).isNull()
+        assertThat(working.baselineSnapshot.playbackGainDb).isEqualTo(-29.0)
+
+        val safer = HardwareEqEditor.useSafeGain(working, HardwareEqEditSpecs.SIMGOT_EW300)
+        assertThat(safer.baselineHeadroomGainDb).isEqualTo(-29.0)
+        assertThat(safer.plannedHeadroomGainDb).isNotNull()
+        assertThat(requireNotNull(safer.headroomAssessment).status).isEqualTo(DacHeadroomStatus.SAFE)
+    }
+
+    @Test
     fun positiveDedicatedPreampReadbackIsPreservedAndNotCalledAnEdit() {
         val spec = dedicatedSpec()
         val result = HardwareEqEditor.startFromCurrent(
@@ -317,6 +338,21 @@ class HardwareEqEditorTest {
             verifiedAtEpochMillis = 1_000L,
         )
     }
+
+    private fun ew300Snapshot(): HardwareEqSnapshot = HardwareEqSnapshot(
+        deviceId = DacDeviceId.SIMGOT_EW300,
+        sessionGeneration = 1,
+        filters = listOf(
+            hardwareFilter(index = 0, frequencyHz = 2_500.0, gainDb = 4.5, q = 1.4),
+            hardwareFilter(index = 1, frequencyHz = 120.0),
+            hardwareFilter(index = 2, frequencyHz = 500.0),
+            hardwareFilter(index = 3, frequencyHz = 2_000.0),
+            hardwareFilter(index = 4, frequencyHz = 12_000.0),
+        ),
+        dedicatedEqPreampDb = null,
+        playbackGainDb = -29.0,
+        verifiedAtEpochMillis = 1_000L,
+    )
 
     private fun dedicatedPreampSnapshot(
         preampDb: Double = 0.0,

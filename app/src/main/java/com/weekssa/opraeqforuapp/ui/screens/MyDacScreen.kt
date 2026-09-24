@@ -74,6 +74,7 @@ fun MyDacScreen(
     catalogState: CatalogState,
     blackPearlConnectionState: BlackPearlConnectionState,
     fiioJa11ConnectionState: Kt02h20ConnectionState,
+    ew300ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
     jcallyJm12ConnectionState: Kt02h20ConnectionState,
     blackPearlHardwareEqState: HardwareEqSnapshotState,
     blackPearlHardwareEqMatch: HardwareEqMatchResolution?,
@@ -208,6 +209,7 @@ fun MyDacScreen(
                     presentNow = selectedDevice in recognitionState.presentDeviceIds,
                     blackPearl = blackPearlConnectionState,
                     fiioJa11 = fiioJa11ConnectionState,
+                    ew300 = ew300ConnectionState,
                     jcallyJm12 = jcallyJm12ConnectionState,
                 ),
                 style = MaterialTheme.typography.bodyMedium,
@@ -221,6 +223,7 @@ fun MyDacScreen(
                 recognitionState = recognitionState,
                 blackPearl = blackPearlConnectionState,
                 fiioJa11 = fiioJa11ConnectionState,
+                ew300 = ew300ConnectionState,
                 jcallyJm12 = jcallyJm12ConnectionState,
             )
         ) {
@@ -240,6 +243,7 @@ fun MyDacScreen(
                                 deviceId = selectedDevice,
                                 blackPearl = blackPearlConnectionState,
                                 fiioJa11 = fiioJa11ConnectionState,
+                                ew300 = ew300ConnectionState,
                                 jcallyJm12 = jcallyJm12ConnectionState,
                             )
                         ) {
@@ -278,7 +282,7 @@ fun MyDacScreen(
                         blackPearlEditorState.isOpen ||
                         blackPearlEditorState.error != null
                     ) {
-                        BlackPearlEqEditorScreen(
+                        DacEqEditorScreen(
                             state = blackPearlEditorState,
                             onRetryOpen = onOpenBlackPearlEditor,
                             onClose = onCloseBlackPearlEditor,
@@ -303,6 +307,7 @@ fun MyDacScreen(
                     }
                 }
                 DacDeviceId.FIIO_JA11,
+                DacDeviceId.SIMGOT_EW300,
                 DacDeviceId.JCALLY_JM12_STOCK,
                 -> Text(stringResource(R.string.my_dac_hardware_pending_eq))
             }
@@ -355,7 +360,8 @@ internal fun shouldOfferMyDacConnect(
     recognitionState: DacRecognitionState,
     blackPearl: BlackPearlConnectionState,
     fiioJa11: Kt02h20ConnectionState,
-    jcallyJm12: Kt02h20ConnectionState,
+    ew300: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
+    jcallyJm12: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
 ): Boolean {
     if (deviceId !in recognitionState.presentDeviceIds) return false
     return when (deviceId) {
@@ -365,6 +371,8 @@ internal fun shouldOfferMyDacConnect(
         DacDeviceId.FIIO_JA11 ->
             fiioJa11 is Kt02h20ConnectionState.Disconnected ||
                 fiioJa11 is Kt02h20ConnectionState.Error
+        DacDeviceId.SIMGOT_EW300 ->
+            ew300 is Kt02h20ConnectionState.Disconnected || ew300 is Kt02h20ConnectionState.Error
         DacDeviceId.JCALLY_JM12_STOCK ->
             jcallyJm12 is Kt02h20ConnectionState.Disconnected ||
                 jcallyJm12 is Kt02h20ConnectionState.Error
@@ -375,10 +383,12 @@ internal fun hasMyDacConnectionError(
     deviceId: DacDeviceId,
     blackPearl: BlackPearlConnectionState,
     fiioJa11: Kt02h20ConnectionState,
-    jcallyJm12: Kt02h20ConnectionState,
+    ew300: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
+    jcallyJm12: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
 ): Boolean = when (deviceId) {
     DacDeviceId.TRN_BLACK_PEARL -> blackPearl is BlackPearlConnectionState.Error
     DacDeviceId.FIIO_JA11 -> fiioJa11 is Kt02h20ConnectionState.Error
+    DacDeviceId.SIMGOT_EW300 -> ew300 is Kt02h20ConnectionState.Error
     DacDeviceId.JCALLY_JM12_STOCK -> jcallyJm12 is Kt02h20ConnectionState.Error
 }
 
@@ -607,6 +617,7 @@ private fun deviceLabel(deviceId: DacDeviceId): String = stringResource(
     when (deviceId) {
         DacDeviceId.TRN_BLACK_PEARL -> R.string.dac_trn_black_pearl
         DacDeviceId.FIIO_JA11 -> R.string.dac_fiio_ja11
+        DacDeviceId.SIMGOT_EW300 -> R.string.dac_simgot_ew300
         DacDeviceId.JCALLY_JM12_STOCK -> R.string.dac_jcally_jm12
     },
 )
@@ -617,7 +628,8 @@ private fun connectionStatus(
     presentNow: Boolean,
     blackPearl: BlackPearlConnectionState,
     fiioJa11: Kt02h20ConnectionState,
-    jcallyJm12: Kt02h20ConnectionState,
+    ew300: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
+    jcallyJm12: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
 ): String = when (deviceId) {
     DacDeviceId.TRN_BLACK_PEARL -> when (blackPearl) {
         BlackPearlConnectionState.Connected -> stringResource(R.string.my_dac_connected)
@@ -629,6 +641,7 @@ private fun connectionStatus(
     }
 
     DacDeviceId.FIIO_JA11 -> ktConnectionStatus(fiioJa11, presentNow)
+    DacDeviceId.SIMGOT_EW300 -> ktConnectionStatus(ew300, presentNow)
     DacDeviceId.JCALLY_JM12_STOCK -> ktConnectionStatus(jcallyJm12, presentNow)
 }
 

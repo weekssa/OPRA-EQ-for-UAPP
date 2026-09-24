@@ -52,6 +52,7 @@ import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.OpraProduct
 import com.weekssa.opraeqforuapp.domain.catalog.assessCompatibility
 import com.weekssa.opraeqforuapp.domain.catalog.isHistoricalRevision
+import com.weekssa.opraeqforuapp.domain.library.FavoriteToggleResult
 import com.weekssa.opraeqforuapp.domain.export.DeviceExportability
 import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
@@ -83,7 +84,7 @@ internal fun ProfileSelectionEditor(
     profileVisibility: ProfileVisibilityPreferences,
     exportTargets: ExportTargetPreferences = ExportTargetPreferences(),
     favoriteProfileIds: Set<String>,
-    onToggleFavorite: (suspend (OpraEqProfile, String, String) -> Boolean)?,
+    onToggleFavorite: (suspend (OpraEqProfile, String, String) -> FavoriteToggleResult)?,
     onHideCanonicalProfile: suspend (String) -> Unit,
     onLoadManagedHeadphone: suspend (String) -> ManagedHeadphoneRecord?,
     onSaveSelection: suspend (String, Set<String>, Boolean) -> Unit,
@@ -98,6 +99,8 @@ internal fun ProfileSelectionEditor(
     onFlashBlackPearlProfile: (suspend (OpraEqProfile) -> String)? = null,
     fiioJa11Connected: Boolean = false,
     onFlashFiioJa11Profile: (suspend (OpraEqProfile) -> String)? = null,
+    onFlashEw300Profile: ((OpraEqProfile) -> Unit)? = null,
+    ew300Connected: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val vendor = catalog.vendor(product.vendorId)
@@ -129,6 +132,7 @@ internal fun ProfileSelectionEditor(
     val unknownManufacturer = stringResource(R.string.unknown_manufacturer)
     val favoriteSavedMessage = stringResource(R.string.favorite_saved_message)
     val favoriteRemovedMessage = stringResource(R.string.favorite_removed_message)
+    val favoriteSourceUnavailableMessage = stringResource(R.string.favorite_source_unavailable_message)
     val eqHiddenMessage = stringResource(R.string.eq_hidden_from_library_message)
     val sourceNotUsableDefault = stringResource(R.string.source_not_usable_default)
 
@@ -289,6 +293,7 @@ internal fun ProfileSelectionEditor(
                                 when (device) {
                                     LibraryHardwareFlashDevice.BLACK_PEARL -> "Playback adjustment: $gain"
                                     LibraryHardwareFlashDevice.FIIO_JA11 -> "Global EQ gain: $gain"
+                                    LibraryHardwareFlashDevice.SIMGOT_EW300 -> "EW300 global-gain adjustment: $gain"
                                 },
                             )
                             Text(
@@ -297,6 +302,8 @@ internal fun ProfileSelectionEditor(
                                         "The current hardware EQ slot will be overwritten and verified."
                                     LibraryHardwareFlashDevice.FIIO_JA11 ->
                                         "User 1 will be applied, saved, and verified."
+                                    LibraryHardwareFlashDevice.SIMGOT_EW300 ->
+                                        "The EW300 five-band PEQ will be written and verified for this exact device profile."
                                 },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -323,6 +330,8 @@ internal fun ProfileSelectionEditor(
                                         onFlashFiioJa11Profile?.let { flash ->
                                             scope.launch { onMessage(flash(profile)) }
                                         }
+                                    LibraryHardwareFlashDevice.SIMGOT_EW300 ->
+                                        onFlashEw300Profile?.invoke(profile)
                                 }
                             },
                         ) {
@@ -529,6 +538,7 @@ internal fun ProfileSelectionEditor(
         val connectedHardwareFlashDevice = connectedLibraryHardwareFlashDevice(
             blackPearlConnected = blackPearlConnected && onFlashBlackPearlProfile != null,
             fiioJa11Connected = fiioJa11Connected && onFlashFiioJa11Profile != null,
+            ew300Connected = ew300Connected && onFlashEw300Profile != null,
         )
 
         LazyColumn(modifier = Modifier.weight(1f)) {
@@ -559,8 +569,15 @@ internal fun ProfileSelectionEditor(
                     onToggleFavorite = onToggleFavorite?.let { toggle ->
                         {
                             scope.launch {
-                                val favorited = toggle(profile, vendor?.name ?: unknownManufacturer, product.name)
-                                onMessage(if (favorited) favoriteSavedMessage else favoriteRemovedMessage)
+                                val result = toggle(profile, vendor?.name ?: unknownManufacturer, product.name)
+                                onMessage(
+                                    when (result) {
+                                        FavoriteToggleResult.SAVED -> favoriteSavedMessage
+                                        FavoriteToggleResult.REMOVED -> favoriteRemovedMessage
+                                        FavoriteToggleResult.CANONICAL_SOURCE_UNAVAILABLE ->
+                                            favoriteSourceUnavailableMessage
+                                    },
+                                )
                             }
                         }
                     },

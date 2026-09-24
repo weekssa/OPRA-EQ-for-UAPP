@@ -64,6 +64,8 @@ data class FiveBandDeviceSpec(
     val representationVersion: Int = 1,
     val optimizerMinGainDb: Double = capabilities.minGainDb,
     val optimizerMaxGainDb: Double = capabilities.maxGainDb,
+    /** Source filter types explicitly permitted for complete-response adaptation. */
+    val responseFitSourceBandTypes: Set<String> = emptySet(),
 ) {
     init {
         require(capabilities.maxBands != null && capabilities.maxBands > 0) {
@@ -75,6 +77,9 @@ data class FiveBandDeviceSpec(
         require(optimizerMinGainDb <= optimizerMaxGainDb)
         require(optimizerMinGainDb >= capabilities.minGainDb)
         require(optimizerMaxGainDb <= capabilities.maxGainDb)
+        require(responseFitSourceBandTypes.all { it in setOf("peak_dip", "low_shelf", "high_shelf") }) {
+            "Response-fit source filter types must use the supported PEQ response model."
+        }
     }
 }
 
@@ -166,8 +171,12 @@ object Kt02h20FiveBandOptimizer {
         if (sourceBands.isEmpty()) {
             return FiveBandOptimizationResult.NotSuitable("This profile does not contain parametric EQ bands.")
         }
-        if (sourceBands.any { it.type !in capabilities.supportedBandTypes }) {
-            val unsupported = sourceBands.firstOrNull { it.type !in capabilities.supportedBandTypes }?.type ?: "unknown"
+        if (sourceBands.any {
+                it.type !in capabilities.supportedBandTypes && it.type !in spec.responseFitSourceBandTypes
+            }) {
+            val unsupported = sourceBands.firstOrNull {
+                it.type !in capabilities.supportedBandTypes && it.type !in spec.responseFitSourceBandTypes
+            }?.type ?: "unknown"
             return FiveBandOptimizationResult.NotSuitable(
                 "${spec.displayName} cannot represent the source filter type $unsupported.",
             )
@@ -234,8 +243,7 @@ object Kt02h20FiveBandOptimizer {
             }
         }
 
-        val seeds = parsedSource
-            .map { indexed -> indexed.copy(band = quantizeBand(indexed.band.coerceToFitRange(spec), spec)) }
+        val seeds = buildFitSeeds(parsedSource, spec)
             .distinctBy { it.band }
         if (seeds.isEmpty()) {
             return FiveBandOptimizationResult.NotSuitable(
@@ -272,6 +280,45 @@ object Kt02h20FiveBandOptimizer {
                 usesNativeQuantization = false,
             ),
         )
+    }
+
+    private fun buildFitSeeds(
+        parsedSource: List<IndexedBand>,
+        spec: FiveBandDeviceSpec,
+    ): List<IndexedBand> = parsedSource.flatMapIndexed { sourceIndex, indexed ->
+        val fittedBase = indexed.band.coerceToFitRange(spec)
+        when {
+            fittedBase.type in spec.capabilities.supportedBandTypes -> listOf(
+                indexed.copy(band = quantizeBand(fittedBase, spec)),
+            )
+            fittedBase.type in spec.responseFitSourceBandTypes -> shelfFitSeeds(
+                sourceIndex = sourceIndex,
+                shelf = fittedBase,
+                spec = spec,
+            )
+            else -> emptyList()
+        }
+    }
+
+    private fun shelfFitSeeds(
+        sourceIndex: Int,
+        shelf: Kt02h20Band,
+        spec: FiveBandDeviceSpec,
+    ): List<IndexedBand> {
+        val cap = spec.capabilities
+        val factors = listOf(0.25, 0.5, 0.70710678, 1.0, 1.41421356, 2.0, 4.0)
+        val frequencies = factors
+            .map { factor -> (shelf.frequencyHz * factor).coerceIn(cap.minFrequencyHz, cap.maxFrequencyHz) }
+            .plus(cap.minFrequencyHz)
+            .plus(cap.maxFrequencyHz)
+            .distinct()
+        val syntheticIndexBase = 100_000 + (sourceIndex * 100)
+        return frequencies.mapIndexed { candidateIndex, frequency ->
+            IndexedBand(
+                sourceIndex = syntheticIndexBase + candidateIndex,
+                band = quantizeBand(shelf.copy(type = "peak_dip", frequencyHz = frequency), spec),
+            )
+        }
     }
 
     private fun playbackGainFor(

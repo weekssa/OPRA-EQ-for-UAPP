@@ -9,6 +9,39 @@ import org.junit.Test
 
 class OpraEqDatabaseMigrationTest {
     @Test
+    fun migration7To8AddsNullableCanonicalSnapshotWithoutRewritingSavedRows() {
+        val migration = OpraEqDatabase.MIGRATION_7_8
+        assertEquals(7, migration.startVersion)
+        assertEquals(8, migration.endVersion)
+
+        val executedSql = recordMigration(migration)
+
+        assertEquals(
+            listOf("ALTER TABLE saved_eqs ADD COLUMN canonicalSnapshotJson TEXT"),
+            executedSql,
+        )
+        assertNoDestructiveSql(executedSql)
+    }
+
+    @Test
+    fun migration8To9AddsNullableCanonicalSelectionsWithoutBackfillingOrDeletingRows() {
+        val migration = OpraEqDatabase.MIGRATION_8_9
+        assertEquals(8, migration.startVersion)
+        assertEquals(9, migration.endVersion)
+
+        val executedSql = recordMigration(migration)
+
+        assertEquals(
+            listOf(
+                "ALTER TABLE saved_eqs ADD COLUMN canonicalSelectionJson TEXT",
+                "ALTER TABLE saved_general_eqs ADD COLUMN canonicalSelectionJson TEXT",
+            ),
+            executedSql,
+        )
+        assertNoDestructiveSql(executedSql)
+    }
+
+    @Test
     fun migration2To3AddsSavedEqsWithoutDestructiveSql() {
         val executedSql = recordMigration(OpraEqDatabase.MIGRATION_2_3)
 

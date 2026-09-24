@@ -30,7 +30,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.weekssa.opraeqforuapp.R
 import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
 import kotlinx.coroutines.launch
@@ -52,6 +54,7 @@ fun MyEqsScreen(
 ) {
     val favorites = remember(savedEqs) { savedEqs.filter { it.kind == SavedEqKind.Favorite } }
     val personal = remember(savedEqs) { savedEqs.filter { it.kind == SavedEqKind.Personal } }
+    val unreadable = remember(savedEqs) { savedEqs.filter { it.kind == SavedEqKind.Unreadable } }
     var importOpen by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
@@ -140,6 +143,26 @@ fun MyEqsScreen(
                     HorizontalDivider()
                 }
             }
+
+            if (unreadable.isNotEmpty()) {
+                item(key = "unreadable-heading") {
+                    SectionHeading(stringResource(R.string.my_eqs_unreadable_heading), unreadable.size)
+                }
+                items(unreadable, key = { it.entryId }) { record ->
+                    SavedEqRow(
+                        record = record,
+                        leadingFavorite = false,
+                        onExport = { onExportSavedEq(record.entryId) },
+                        onDelete = {
+                            scope.launch {
+                                onDeleteSavedEq(record.entryId)
+                                onMessage("Unreadable saved EQ removed. Existing exported files were kept.")
+                            }
+                        },
+                    )
+                    HorizontalDivider()
+                }
+            }
         }
     }
 }
@@ -181,11 +204,17 @@ private fun SavedEqRow(
             Column {
                 Text("${record.manufacturer} · ${record.model}")
                 record.profile.details?.takeIf(String::isNotBlank)?.let { Text(it) }
+                if (record.savedEqDataInvalid) {
+                    Text(
+                        text = stringResource(R.string.saved_eq_invalid_data_notice),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
             }
         },
         trailingContent = {
             Row {
-                IconButton(onClick = onExport) {
+                IconButton(onClick = onExport, enabled = !record.savedEqDataInvalid) {
                     Icon(Icons.Outlined.FileUpload, contentDescription = "Export ${record.displayName}")
                 }
                 IconButton(onClick = onDelete) {

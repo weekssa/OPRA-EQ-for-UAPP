@@ -65,6 +65,6 @@ class PersonalEqStrictImportTest {
     fun `unsupported file contents fail clearly`() {
         val parsed = ParametricEqTextParser.parseStrictPersonal("{\"filters\": []}")
         assertFalse(parsed.isValid)
-        assertTrue(parsed.errors.single().contains("isn't supported yet"))
+        assertTrue(parsed.errors.single().contains("unsupported EQ directive"))
     }
 }

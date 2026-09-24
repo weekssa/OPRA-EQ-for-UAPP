@@ -28,6 +28,18 @@ class LibraryHardwareFlashPreviewTest {
     }
 
     @Test
+    fun oneConnectedEw300IsSelected() {
+        assertEquals(
+            LibraryHardwareFlashDevice.SIMGOT_EW300,
+            connectedLibraryHardwareFlashDevice(
+                blackPearlConnected = false,
+                fiioJa11Connected = false,
+                ew300Connected = true,
+            ),
+        )
+    }
+
+    @Test
     fun noConnectedDacDoesNotGuess() {
         assertNull(
             connectedLibraryHardwareFlashDevice(
@@ -43,6 +55,17 @@ class LibraryHardwareFlashPreviewTest {
             connectedLibraryHardwareFlashDevice(
                 blackPearlConnected = true,
                 fiioJa11Connected = true,
+            ),
+        )
+    }
+
+    @Test
+    fun ew300AndAnotherConnectedDacDoNotGuess() {
+        assertNull(
+            connectedLibraryHardwareFlashDevice(
+                blackPearlConnected = true,
+                fiioJa11Connected = false,
+                ew300Connected = true,
             ),
         )
     }

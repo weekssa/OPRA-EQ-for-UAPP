@@ -43,10 +43,11 @@
     <string name="action_select_all">Select all</string>
     <string name="action_select_none">Select none</string>
     <string name="save_selected_count">Save selected (%1$d)</string>
+    <string name="general_eq_save_source_unavailable">Nothing was saved. The selected EQs no longer match complete source data; refresh the library and select them again.</string>
     <string name="action_hide_selected">Hide selected</string>
     <plurals name="general_eq_saved_message">
-        <item quantity="one">%1$d General EQ saved to My EQs. Initial export started.</item>
-        <item quantity="other">%1$d General EQs saved to My EQs. Initial export started.</item>
+        <item quantity="one">%1$d General EQ saved to My EQs. Export or Flash it separately.</item>
+        <item quantity="other">%1$d General EQs saved to My EQs. Export or Flash them separately.</item>
     </plurals>
     <plurals name="eq_hidden_message">
         <item quantity="one">%1$d EQ hidden. Restore it in Settings → Hidden EQs.</item>
@@ -87,6 +88,7 @@
     <string name="unknown_manufacturer">Unknown manufacturer</string>
     <string name="favorite_saved_message">Saved to My EQs favorites.</string>
     <string name="favorite_removed_message">Removed from My EQs favorites.</string>
+    <string name="favorite_source_unavailable_message">This EQ could not be saved because its exact source revision is unavailable. Refresh the library and try again.</string>
     <string name="eq_hidden_from_library_message">EQ hidden from EQ Library. Restore it in Settings → Hidden EQs.</string>
     <string name="source_not_usable_default">This catalog row is not a usable parametric EQ source.</string>
     <string name="add_to_my_eqs_count">Add to My EQs (%1$d)</string>
@@ -106,6 +108,9 @@
     <string name="export_folder_permission_failed">Couldn’t retain access to that folder. Choose another folder.</string>
     <string name="export_folder_access_lost">Export folder access was lost. Choose the folder again.</string>
     <string name="export_none_ready">No selected presets are ready to export.</string>
+    <string name="saved_eq_invalid_data_notice">Saved EQ data could not be verified. Export and Flash are disabled; remove this item only if you no longer need it.</string>
+    <string name="my_eqs_unreadable_heading">Unreadable saved EQs</string>
+    <string name="error_saved_eq_invalid_data">This saved EQ data could not be verified, so it cannot be flashed.</string>
     <plurals name="export_saved_current_count">
         <item quantity="one">%1$d preset saved/current</item>
         <item quantity="other">%1$d presets saved/current</item>

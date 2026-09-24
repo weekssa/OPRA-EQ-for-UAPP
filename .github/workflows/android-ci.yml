@@ -62,10 +62,221 @@ jobs:
       - name: Assemble release APK
         run: gradle :app:assembleRelease --stacktrace
 
+      - name: Verify minified release output
+        run: bash tools/verify-r8-mapping.sh
+
       - name: Upload debug APK for device testing
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: EQ-Library-beta-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+          retention-days: 14
+
+  emulator-ui-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK tools
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
+        with:
+          packages: platform-tools
+
+      - name: Set up Gradle 9.4.1
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
+        with:
+          gradle-version: "9.4.1"
+          cache-provider: basic
+
+      - name: Install emulator image
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0" "emulator" "system-images;android-35;google_apis;x86_64"
+          avd_home="$RUNNER_TEMP/android-avd"
+          mkdir -p "$avd_home"
+          printf 'ANDROID_AVD_HOME=%s\n' "$avd_home" >> "$GITHUB_ENV"
+          ANDROID_AVD_HOME="$avd_home" avdmanager create avd --force --name opra_ci_api_35 --package "system-images;android-35;google_apis;x86_64" --device pixel_6
+          test -f "$avd_home/opra_ci_api_35.ini"
+
+      - name: Start emulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo chown "$(id -un)" /dev/kvm
+          "$ANDROID_SDK_ROOT/emulator/emulator" -accel-check
+          nohup "$ANDROID_SDK_ROOT/emulator/emulator" -avd opra_ci_api_35 -no-window -noaudio -no-boot-anim -no-snapshot -wipe-data -gpu swiftshader_indirect > "$RUNNER_TEMP/emulator.log" 2>&1 &
+          emulator_pid=$!
+          for attempt in $(seq 1 60); do
+            if ! kill -0 "$emulator_pid" 2>/dev/null; then
+              cat "$RUNNER_TEMP/emulator.log"
+              exit 1
+            fi
+            if adb get-state 2>/dev/null | grep -qx device; then
+              break
+            fi
+            if [[ "$attempt" -eq 60 ]]; then
+              cat "$RUNNER_TEMP/emulator.log"
+              exit 1
+            fi
+            sleep 2
+          done
+          timeout 240 bash -c 'until [[ "$(adb shell getprop sys.boot_completed | tr -d "\r")" == "1" ]]; do sleep 5; done'
+          adb shell input keyevent 82
+
+      - name: Run connected UI tests
+        run: gradle :app:connectedDebugAndroidTest --stacktrace
+
+      - name: Upload emulator diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: android-emulator-ui-test-reports
+          path: |
+            ${{ runner.temp }}/emulator.log
+            app/build/reports/androidTests/
+            app/build/outputs/androidTest-results/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  min-api-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK tools
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
+        with:
+          packages: platform-tools
+
+      - name: Set up Gradle 9.4.1
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
+        with:
+          gradle-version: "9.4.1"
+          cache-provider: basic
+
+      - name: Assemble minified release APK
+        run: gradle :app:assembleRelease --stacktrace
+
+      - name: Verify minified release output
+        run: bash tools/verify-r8-mapping.sh
+
+      - name: Install Android 8.0 emulator image
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdkmanager "platforms;android-36" "build-tools;36.0.0" "platform-tools" "emulator" "system-images;android-26;google_apis;x86_64"
+          avd_home="$RUNNER_TEMP/android-avd-api-26"
+          mkdir -p "$avd_home"
+          printf 'ANDROID_AVD_HOME=%s\n' "$avd_home" >> "$GITHUB_ENV"
+          ANDROID_AVD_HOME="$avd_home" avdmanager create avd --force --name opra_ci_api_26 --package "system-images;android-26;google_apis;x86_64" --device pixel_2
+          test -f "$avd_home/opra_ci_api_26.ini"
+
+      - name: Start API-26 emulator and cold-install app
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          sudo chown "$(id -un)" /dev/kvm
+          "$ANDROID_SDK_ROOT/emulator/emulator" -accel-check
+          nohup "$ANDROID_SDK_ROOT/emulator/emulator" -avd opra_ci_api_26 -no-window -noaudio -no-boot-anim -no-snapshot -wipe-data -gpu swiftshader_indirect > "$RUNNER_TEMP/emulator-api-26.log" 2>&1 &
+          emulator_pid=$!
+          for attempt in $(seq 1 60); do
+            if ! kill -0 "$emulator_pid" 2>/dev/null; then
+              cat "$RUNNER_TEMP/emulator-api-26.log"
+              exit 1
+            fi
+            if adb get-state 2>/dev/null | grep -qx device; then
+              break
+            fi
+            if [[ "$attempt" -eq 60 ]]; then
+              cat "$RUNNER_TEMP/emulator-api-26.log"
+              exit 1
+            fi
+            sleep 2
+          done
+          timeout 300 bash -c 'until [[ "$(adb shell getprop sys.boot_completed | tr -d "\r")" == "1" ]]; do sleep 5; done'
+          api_level="$(adb shell getprop ro.build.version.sdk | tr -d "\r")"
+          printf 'Booted emulator API level: %s\n' "$api_level"
+          if [[ "$api_level" != "26" ]]; then
+            printf 'Expected API 26 emulator, received API %s.\n' "$api_level" >&2
+            exit 1
+          fi
+          release_apks=()
+          while IFS= read -r -d '' apk_path; do
+            release_apks+=("$apk_path")
+          done < <(find app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' -print0)
+          if [[ "${#release_apks[@]}" -ne 1 ]]; then
+            printf 'Expected exactly one release APK for API-26 smoke install; found %s.\n' "${#release_apks[@]}" >&2
+            find app/build/outputs/apk/release -maxdepth 1 -type f -print >&2 || true
+            exit 1
+          fi
+          printf 'Minified release APK: %s\n' "${release_apks[0]}"
+          smoke_keystore="$RUNNER_TEMP/api-26-smoke.jks"
+          smoke_apk="$RUNNER_TEMP/app-release-api26-smoke.apk"
+          trap 'rm -f -- "$smoke_keystore" "$smoke_apk"' EXIT
+          keytool -genkeypair -noprompt \
+            -alias api-26-smoke \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 2 \
+            -dname 'CN=EQ Library API 26 smoke only' \
+            -storetype JKS \
+            -keystore "$smoke_keystore" \
+            -storepass android \
+            -keypass android
+          "$ANDROID_SDK_ROOT/build-tools/36.0.0/apksigner" sign \
+            --ks "$smoke_keystore" \
+            --ks-key-alias api-26-smoke \
+            --ks-pass pass:android \
+            --key-pass pass:android \
+            --out "$smoke_apk" \
+            "${release_apks[0]}"
+          "$ANDROID_SDK_ROOT/build-tools/36.0.0/apksigner" verify --verbose "$smoke_apk"
+          adb install "$smoke_apk"
+          # The emulator is freshly wiped and this app has not launched in this job; preserve
+          # its clean log baseline without depending on logcat buffer-clear permissions.
+          launch_output="$(adb shell am start -W -n com.weekssa.opraeqforuapp/.MainActivity 2>&1)"
+          printf '%s\n' "$launch_output" | tee "$RUNNER_TEMP/min-api-launch.txt"
+          grep -q '^Status: ok$' "$RUNNER_TEMP/min-api-launch.txt"
+          sleep 3
+          adb shell pidof com.weekssa.opraeqforuapp
+          adb shell dumpsys activity activities > "$RUNNER_TEMP/min-api-activities.txt"
+          grep -F 'mResumedActivity' "$RUNNER_TEMP/min-api-activities.txt" | grep -F 'com.weekssa.opraeqforuapp'
+          adb logcat -d -v brief -s AndroidRuntime:E > "$RUNNER_TEMP/min-api-logcat.txt"
+          if grep -Fq 'Process: com.weekssa.opraeqforuapp' "$RUNNER_TEMP/min-api-logcat.txt"; then
+            cat "$RUNNER_TEMP/min-api-logcat.txt"
+            exit 1
+          fi
+
+      - name: Upload API-26 smoke diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: android-api-26-smoke-reports
+          path: |
+            ${{ runner.temp }}/emulator-api-26.log
+            ${{ runner.temp }}/min-api-launch.txt
+            ${{ runner.temp }}/min-api-activities.txt
+            ${{ runner.temp }}/min-api-logcat.txt
+          if-no-files-found: ignore
           retention-days: 14

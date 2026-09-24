@@ -68,6 +68,13 @@ Android/platform-backed state and I/O:
 - Android USB transports/coordinators;
 - app-side hardware gain-state stores required for safe relative replacement/reset behavior.
 
+An app-owned target export remains tied to the canonical source and target representation that
+produced it. If a still-current managed source can no longer be represented by UAPP/ToneBoosters,
+do not reuse or resurrect older generated XML. Keep any exact previously exported app-owned UAPP
+document visible under My EQs **Needs attention** as unsupported and non-recoverable until the user
+explicitly removes that exact document; do not silently delete it or drop ownership. This
+target-specific stale-artifact handling must not affect other export targets.
+
 Repository-side source discovery/crawling/qualification/publication remains outside Android runtime.
 
 ## Android runtime state and platform boundaries
@@ -128,6 +135,14 @@ Legacy per-output selection tables and `outputId`-shaped repository parameters r
 User-facing terminology keeps local membership, files, and USB actions separate: **Add to My EQs / Save** is local membership, **Export** is a verified external file, **Flash** is an explicit USB write, and “saved to device/persists” is reserved for hardware whose persistence is established.
 
 Favorites/personal imports/general EQs normalize into the same canonical/derived-output model rather than bypassing output capability rules.
+
+New catalog Favorites and General EQs persist the complete immutable `CanonicalEqProfile` together
+with the exact selected revision ID and its source references. The legacy `OpraEqProfile` used by
+existing render/export/Flash consumers is derived from that selection at the adapter boundary; it
+is not the authoritative saved source. Saving is allowed only when the current canonical catalog
+proves the exact displayed projection, and a multi-item General EQ save is atomic. A nullable Room
+migration adds this data without reconstructing or rewriting older projection-only rows. Those
+legacy rows remain distinguishable as legacy; missing source provenance is never invented.
 
 ### Needs attention recovery
 
@@ -411,6 +426,15 @@ Preserve OPRA and individual creator/source attribution. Do not imply endorsemen
 No analytics or telemetry. Local selections/settings/generated state/recovery state stay on-device.
 
 ## Validation architecture
+
+EW300 discovery evidence is maintained separately from shipping product behavior. The recovery branch
+includes an Android-free, allowlisted capability-batch/report contract plus the guarded product
+transaction. The default batch is read-only and never probes persistence or undocumented commands.
+The product transaction requires the exact capability fingerprint, strict baseline, one Save, fresh
+readback, and no automatic mutation retry; its operation report is readable/JSON and privacy-safe.
+Diagnostic startup establishes neither acoustic semantics nor production hardware support. The
+shipping EW300 UI remains capability-gated, and public release/support remains blocked until the
+exact signed candidate completes the consolidated physical gate.
 
 Automated gates protect both canonical and target-specific behavior:
 

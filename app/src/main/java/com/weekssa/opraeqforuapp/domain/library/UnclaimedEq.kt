@@ -12,6 +12,7 @@ enum class UnclaimedEqParseState {
     RECOVERABLE,
     INVALID,
     UNSUPPORTED,
+    SOURCE_UNVERIFIED,
     ACCESS_UNAVAILABLE,
 }
 

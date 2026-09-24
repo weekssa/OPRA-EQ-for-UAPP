@@ -153,6 +153,13 @@ internal fun reconcileManagedProfiles(
             } else {
                 null
             }
+            val presetArtifacts = reconcileManagedPresetArtifacts(
+                existing = existing,
+                currentFingerprint = fingerprint,
+                sourceUsable = sourceUsable,
+                uappRepresentable = uappNowRepresentable,
+                generated = generated,
+            )
 
             existing.copy(
                 profileId = profile.id,
@@ -175,20 +182,10 @@ internal fun reconcileManagedProfiles(
                         (autoIncludeNewProfiles && changed && selectedBeforeMigration)
                 },
                 noLongerAvailable = false,
-                generatedPresetName = generated?.presetName ?: existing.generatedPresetName,
-                // A changed current source that is no longer UAPP-representable must not keep a stale
-                // XML artifact. Removed/source-unusable rows retain their prior generated state.
-                generatedXml = when {
-                    generated != null -> generated.xml
-                    selected && sourceUsable && changed && !uappNowRepresentable -> null
-                    else -> existing.generatedXml
-                },
-                generatedFromFingerprint = when {
-                    generated != null -> generated.fingerprint
-                    selected && sourceUsable && changed -> fingerprint
-                    else -> existing.generatedFromFingerprint
-                },
-                generatedAtMillis = generated?.generatedAtMillis ?: existing.generatedAtMillis,
+                generatedPresetName = presetArtifacts.presetName,
+                generatedXml = presetArtifacts.xml,
+                generatedFromFingerprint = presetArtifacts.fromFingerprint,
+                generatedAtMillis = presetArtifacts.generatedAtMillis,
             )
         }
     }
@@ -261,5 +258,43 @@ internal fun generateManagedPreset(
         xml = result?.xml,
         fingerprint = fingerprint,
         generatedAtMillis = nowMillis,
+    )
+}
+
+internal data class ManagedPresetArtifactState(
+    val presetName: String?,
+    val xml: String?,
+    val fromFingerprint: String?,
+    val generatedAtMillis: Long?,
+)
+
+/**
+ * Keeps a last-good artifact only while it is still a valid representation of the current source.
+ * A failed generation is authoritative: never fall back to stale XML through an Elvis expression.
+ */
+internal fun reconcileManagedPresetArtifacts(
+    existing: ManagedProfileEntity?,
+    currentFingerprint: String,
+    sourceUsable: Boolean,
+    uappRepresentable: Boolean,
+    generated: GeneratedManagedPreset?,
+): ManagedPresetArtifactState = when {
+    generated != null -> ManagedPresetArtifactState(
+        presetName = generated.presetName,
+        xml = generated.xml,
+        fromFingerprint = generated.fingerprint,
+        generatedAtMillis = generated.generatedAtMillis,
+    )
+    sourceUsable && !uappRepresentable -> ManagedPresetArtifactState(
+        presetName = existing?.generatedPresetName,
+        xml = null,
+        fromFingerprint = currentFingerprint,
+        generatedAtMillis = null,
+    )
+    else -> ManagedPresetArtifactState(
+        presetName = existing?.generatedPresetName,
+        xml = existing?.generatedXml,
+        fromFingerprint = existing?.generatedFromFingerprint,
+        generatedAtMillis = existing?.generatedAtMillis,
     )
 }

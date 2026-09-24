@@ -227,6 +227,53 @@ class CanonicalCatalogRepositoryTest {
         }
     }
 
+    @Test
+    fun malformedRevisionSemanticsCannotReplaceLastKnownGoodSnapshot() = runBlocking {
+        val root = createTempDirectory(prefix = "canonical-catalog-").toFile()
+        try {
+            var candidate = sampleSnapshot("rev-1")
+            val source = CanonicalCatalogSource { destination ->
+                destination.writeText(json.encodeToString(candidate))
+            }
+            val repository = CanonicalCatalogRepository(root, source, nowMillis = { 1234L })
+            assertTrue(repository.refresh() is CanonicalCatalogRefreshResult.Success)
+
+            val invalidCandidates = listOf(
+                sampleSnapshot("rev-2").withRevision {
+                    it.copy(filters = listOf(EqFilter(EqFilterType.PEAK, 1_000.0, 0.0, -1.0)))
+                },
+                sampleSnapshot("rev-3").withRevision {
+                    it.copy(filters = listOf(EqFilter(EqFilterType.PEAK, 0.0, 0.0, 1.0)))
+                },
+                sampleSnapshot("rev-4").withRevision { it.copy(sourceReferences = emptyList()) },
+                sampleSnapshot("rev-5").withRevision {
+                    it.copy(filters = listOf(EqFilter(EqFilterType.OTHER, 1_000.0, 0.0, 1.0)))
+                },
+            )
+
+            invalidCandidates.forEach { invalid ->
+                candidate = invalid
+                val failed = repository.refresh() as CanonicalCatalogRefreshResult.Failure
+                assertEquals(CanonicalCatalogFailureReason.InvalidCatalog, failed.reason)
+                assertTrue(failed.usingLastKnownGood)
+                assertEquals(
+                    "rev-1",
+                    (repository.state.value as CanonicalCatalogState.Ready)
+                        .snapshot.profiles.single().latestRevision.revisionId,
+                )
+            }
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    private fun CatalogSnapshot.withRevision(transform: (EqRevision) -> EqRevision): CatalogSnapshot =
+        copy(
+            profiles = profiles.map { profile ->
+                profile.copy(revisions = profile.revisions.map(transform))
+            },
+        )
+
     private fun sampleSnapshot(revisionId: String) = CatalogSnapshot(
         schemaVersion = 1,
         generatedAt = "2026-08-29T00:00:00Z",

@@ -1,5 +1,6 @@
 package com.weekssa.opraeqforuapp.domain.export
 
+import com.weekssa.opraeqforuapp.domain.catalog.EqBandOrderProvenance
 import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import org.junit.Assert.assertEquals
@@ -14,12 +15,23 @@ class DeviceExportabilityTest {
     }
 
     @Test
-    fun `UAPP reports optimized when canonical source exceeds ten bands`() {
+    fun `UAPP reports optimized for over ten bands only with verified OPRA priority order`() {
+        val source = profile().copy(
+            bands = (1..14).map { index -> OpraBand("peak_dip", 100.0 * index, 0.5, 1.0, null) },
+            bandOrderProvenance = EqBandOrderProvenance.OPRA_SOURCE_PRIORITY,
+        )
+
+        assertEquals(DeviceExportability.OPTIMIZED, assessDeviceExportability(source, ExportDevice.UAPP))
+        assertEquals(14, source.bands?.size)
+    }
+
+    @Test
+    fun `UAPP refuses over ten bands without verified source priority instead of dropping by guess`() {
         val source = profile().copy(
             bands = (1..14).map { index -> OpraBand("peak_dip", 100.0 * index, 0.5, 1.0, null) },
         )
 
-        assertEquals(DeviceExportability.OPTIMIZED, assessDeviceExportability(source, ExportDevice.UAPP))
+        assertEquals(DeviceExportability.NOT_REPRESENTABLE, assessDeviceExportability(source, ExportDevice.UAPP))
         assertEquals(14, source.bands?.size)
     }
 

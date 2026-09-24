@@ -12,6 +12,38 @@ import com.weekssa.opraeqforuapp.domain.kt02h20.FiveBandQuantization
  * changed to fit a device.
  */
 object HardwareEqDeviceSpecs {
+    val SIMGOT_EW300 = FiveBandDeviceSpec(
+        stableId = "simgot-ew300-dsp",
+        displayName = "SIMGOT EW300 DSP",
+        capabilities = DeviceEqCapabilities(
+            maxBands = 5,
+            // Public KT02H20 tools describe additional codes, but their acoustic meaning is not
+            // yet proven on the exact EW300 cable. Peak is the only production-exposed type until
+            // the bounded capability session confirms the shelf behavior.
+            supportedBandTypes = setOf("peak_dip"),
+            minFrequencyHz = 20.0,
+            maxFrequencyHz = 20_000.0,
+            minGainDb = -12.0,
+            maxGainDb = 12.0,
+            minQ = 0.1,
+            maxQ = 10.0,
+            // Direct-Hz and the native codec bounds are qualified by the exact signed-candidate
+            // persistence result for the verified EW300 capability profile.
+            minPreampDb = -64.0,
+            maxPreampDb = 63.5,
+        ),
+        quantization = FiveBandQuantization(
+            frequencyStepHz = 1.0,
+            gainStepDb = 0.1,
+            qStep = 0.001,
+            preampStepDb = 0.5,
+        ),
+        // v3 enables source low/high shelves to be approximated as Peak-only response fits.
+        // Native EW300 readback and editor controls remain Peak-only.
+        representationVersion = 3,
+        responseFitSourceBandTypes = setOf("low_shelf", "high_shelf"),
+    )
+
     val FIIO_JA11 = FiveBandDeviceSpec(
         stableId = "fiio-ja11",
         displayName = "FiiO JA11",

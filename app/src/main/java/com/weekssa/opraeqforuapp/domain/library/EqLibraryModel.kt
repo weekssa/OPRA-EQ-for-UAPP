@@ -11,6 +11,7 @@ enum class EqSourceKind {
     @SerialName("community") COMMUNITY,
     @SerialName("repository") REPOSITORY,
     @SerialName("device_community") DEVICE_COMMUNITY,
+    @SerialName("device_capture") DEVICE_CAPTURE,
     @SerialName("user_submission") USER_SUBMISSION,
     @SerialName("personal_import") PERSONAL_IMPORT,
 }
@@ -96,6 +97,8 @@ data class EqFilter(
     @SerialName("gain_db") val gainDb: Double? = null,
     val q: Double? = null,
     val slope: Double? = null,
+    /** Exact upstream filter token when [type] is OTHER, so distinct unsupported filters stay distinct. */
+    @SerialName("source_type") val sourceType: String? = null,
 )
 
 @Serializable
@@ -151,6 +154,68 @@ data class EqRevision(
     @SerialName("eq_library_safety_headroom_db") val eqLibrarySafetyHeadroomDb: Double? = null,
 )
 
+/**
+ * True only when the unique source marked primary—the source that supplied revision filters—is a
+ * complete, authoritative OPRA structured-catalog record for the projected product.
+ */
+internal fun EqRevision.hasVerifiedOpraBandOrderFor(vendorId: String, productId: String): Boolean {
+    val primary = sourceReferences.filter(EqSourceReference::isPrimary).singleOrNull() ?: return false
+    return primary.sourceId == "opra" &&
+        primary.sourceKind == EqSourceKind.STRUCTURED_CATALOG &&
+        primary.provenanceTier == ProvenanceTier.AUTHORITATIVE &&
+        !primary.sourceRecordId.isNullOrBlank() &&
+        primary.sourceVendorId == vendorId &&
+        primary.sourceProductId == productId
+}
+
+/**
+ * Source-neutral local Personal EQ data. Unlike catalog profiles, a saved personal EQ may have no
+ * headphone association; it therefore deliberately does not inherit catalog scope constraints.
+ */
+@Serializable
+data class LocalSavedEqSnapshot(
+    @SerialName("profile_id") val profileId: String,
+    @SerialName("display_name") val displayName: String,
+    val headphone: HeadphoneIdentity? = null,
+    val creator: String? = null,
+    val target: EqTarget = EqTarget(name = null, kind = EqTargetKind.UNKNOWN),
+    @SerialName("tuning_label") val tuningLabel: String? = null,
+    val revision: EqRevision,
+    @SerialName("schema_version") val schemaVersion: Int = 1,
+) {
+    init {
+        require(profileId.isNotBlank()) { "Saved EQ profile ID must not be blank" }
+        require(displayName.isNotBlank()) { "Saved EQ display name must not be blank" }
+        require(schemaVersion == CURRENT_SCHEMA_VERSION) { "Unsupported local EQ snapshot version" }
+        require(headphone == null || (headphone.manufacturer.isNotBlank() && headphone.model.isNotBlank())) {
+            "Saved EQ headphone association must be complete"
+        }
+        require(revision.revisionId.isNotBlank() && revision.acousticFingerprint.isNotBlank()) {
+            "Saved EQ revision identity must not be blank"
+        }
+        require(revision.filters.isNotEmpty()) { "Saved EQ must preserve at least one active filter" }
+        require(revision.sourceReferences.isNotEmpty()) { "Saved EQ provenance must not be empty" }
+        require(revision.sourceReferences.all { it.sourceId.isNotBlank() }) {
+            "Saved EQ provenance must include a source identity"
+        }
+        require(revision.isLatest) { "The local saved EQ revision must be marked latest" }
+        require(revision.preampGainDb?.isFinite() != false) { "Saved EQ preamp must be finite" }
+        require(revision.eqLibrarySafetyHeadroomDb?.isFinite() != false) {
+            "Saved EQ derived headroom must be finite"
+        }
+        require(revision.filters.all { filter ->
+            filter.frequencyHz.isFinite() && filter.frequencyHz > 0.0 &&
+                filter.gainDb?.isFinite() != false && filter.q?.let { it.isFinite() && it > 0.0 } != false &&
+                filter.slope?.let { it.isFinite() && it > 0.0 } != false &&
+                (filter.type != EqFilterType.OTHER || !filter.sourceType.isNullOrBlank())
+        }) { "Saved EQ contains malformed filter data" }
+    }
+
+    companion object {
+        const val CURRENT_SCHEMA_VERSION = 1
+    }
+}
+
 @Serializable
 data class CanonicalEqProfile(
     @SerialName("canonical_profile_id") val canonicalProfileId: String,
@@ -175,6 +240,33 @@ data class CanonicalEqProfile(
 
     val isGeneralPreset: Boolean
         get() = scope == EqProfileScope.GENERAL
+}
+
+/** A complete canonical profile plus the exact revision selected by a library action. */
+@Serializable
+data class CanonicalEqSelection(
+    val profile: CanonicalEqProfile,
+    @SerialName("selected_revision_id") val selectedRevisionId: String,
+    /** Compatibility-only product identity used to reproduce the exact legacy projection. */
+    @SerialName("compatibility_vendor_id") val compatibilityVendorId: String? = null,
+    @SerialName("compatibility_product_id") val compatibilityProductId: String? = null,
+) {
+    init {
+        require(profile.hasValidClassification()) { "Canonical EQ selection has an invalid classification" }
+        require(selectedRevisionId.isNotBlank()) { "Canonical EQ selection must identify a revision" }
+        require(profile.revisions.count { it.revisionId == selectedRevisionId } == 1) {
+            "Canonical EQ selection must identify exactly one profile revision"
+        }
+        require((compatibilityVendorId == null) == (compatibilityProductId == null)) {
+            "Compatibility vendor and product identity must be stored together"
+        }
+        require(compatibilityVendorId?.isNotBlank() != false && compatibilityProductId?.isNotBlank() != false) {
+            "Compatibility identity must not be blank"
+        }
+    }
+
+    val selectedRevision: EqRevision
+        get() = profile.revisions.single { it.revisionId == selectedRevisionId }
 }
 
 data class EqCandidate(

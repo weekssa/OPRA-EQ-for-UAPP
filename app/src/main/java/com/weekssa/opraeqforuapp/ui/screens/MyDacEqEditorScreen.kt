@@ -41,7 +41,7 @@ import com.weekssa.opraeqforuapp.ui.components.DacEqResponseGraph
 import java.util.Locale
 
 @Composable
-internal fun BlackPearlEqEditorScreen(
+internal fun DacEqEditorScreen(
     state: MyDacEditorUiState,
     onRetryOpen: () -> Unit,
     onClose: () -> Unit,
@@ -52,6 +52,7 @@ internal fun BlackPearlEqEditorScreen(
     onUseSafeGain: () -> Unit,
     onResetEdits: () -> Unit,
     onApply: (Boolean) -> Unit,
+    dacLabel: String = "TRN Black Pearl",
 ) {
     when {
         state.isOpening -> {
@@ -66,7 +67,7 @@ internal fun BlackPearlEqEditorScreen(
         !state.isOpen -> {
             state.error?.let { error ->
                 Text(
-                    text = editorErrorText(error),
+                    text = editorErrorText(error, dacLabel),
                     color = MaterialTheme.colorScheme.error,
                 )
                 Button(onClick = onRetryOpen, modifier = Modifier.fillMaxWidth()) {
@@ -80,6 +81,7 @@ internal fun BlackPearlEqEditorScreen(
     val working = requireNotNull(state.workingCopy)
     EditorHeader(
         working = working,
+        dacLabel = dacLabel,
         onClose = onClose,
         closeEnabled = state.applyStatus != MyDacEditorApplyStatus.APPLYING,
     )
@@ -115,6 +117,7 @@ internal fun BlackPearlEqEditorScreen(
 @Composable
 private fun EditorHeader(
     working: HardwareEqEditWorkingCopy,
+    dacLabel: String,
     onClose: () -> Unit,
     closeEnabled: Boolean,
 ) {
@@ -131,6 +134,7 @@ private fun EditorHeader(
             Text(
                 stringResource(
                     R.string.my_dac_editor_subtitle,
+                    dacLabel,
                     working.baselineSnapshot.activeSlot ?: 0,
                 ),
             )
@@ -554,12 +558,13 @@ private fun ReviewChanges(
 }
 
 @Composable
-private fun editorErrorText(error: MyDacEditorError): String = stringResource(
+private fun editorErrorText(error: MyDacEditorError, dacLabel: String): String = stringResource(
     when (error) {
         MyDacEditorError.NOT_CONNECTED -> R.string.my_dac_editor_requires_connection
         MyDacEditorError.READ_FAILED -> R.string.my_dac_editor_read_failed
         MyDacEditorError.WRONG_DEVICE -> R.string.my_dac_editor_wrong_device
     },
+    dacLabel,
 )
 
 @Composable

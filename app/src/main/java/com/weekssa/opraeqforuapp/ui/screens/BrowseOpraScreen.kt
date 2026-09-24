@@ -91,8 +91,10 @@ fun BrowseOpraScreen(
     onFlashBlackPearlProfile: (suspend (OpraEqProfile) -> String)? = null,
     fiioJa11ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
     onFlashFiioJa11Profile: (suspend (OpraEqProfile) -> String)? = null,
-    onToggleFavorite: suspend (OpraEqProfile, String, String) -> Boolean,
-    onSaveGeneralPresets: suspend (List<GeneralEqPreset>) -> Int = { 0 },
+    ew300ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
+    onFlashEw300Profile: ((OpraEqProfile) -> Unit)? = null,
+    onToggleFavorite: suspend (OpraEqProfile, String, String) -> com.weekssa.opraeqforuapp.domain.library.FavoriteToggleResult,
+    onSaveGeneralPresets: suspend (List<GeneralEqPreset>) -> Boolean = { false },
     onHideCanonicalProfiles: suspend (Set<String>) -> Unit = {},
     onLoadManagedHeadphone: suspend (String) -> ManagedHeadphoneRecord?,
     onSaveSelection: suspend (String, Set<String>, Boolean) -> Unit,
@@ -195,6 +197,8 @@ fun BrowseOpraScreen(
                         onFlashBlackPearlProfile = onFlashBlackPearlProfile,
                         fiioJa11Connected = fiioJa11ConnectionState is Kt02h20ConnectionState.Connected,
                         onFlashFiioJa11Profile = onFlashFiioJa11Profile,
+                        onFlashEw300Profile = onFlashEw300Profile,
+                        ew300Connected = ew300ConnectionState is Kt02h20ConnectionState.Connected,
                         modifier = Modifier.weight(1f),
                     )
                     vendor != null -> VendorProducts(
@@ -342,7 +346,7 @@ private fun GeneralEqBrowse(
     savedPresetIds: Set<String>,
     onSearchQueryChange: (String) -> Unit,
     onFilterSelected: (Int) -> Unit,
-    onSavePresets: suspend (List<GeneralEqPreset>) -> Int,
+    onSavePresets: suspend (List<GeneralEqPreset>) -> Boolean,
     onHideCanonicalProfiles: suspend (Set<String>) -> Unit,
     onMessage: (String) -> Unit,
     onOpenUrl: (String) -> Unit,
@@ -371,6 +375,7 @@ private fun GeneralEqBrowse(
         selectedCanonicalIds.size,
         selectedCanonicalIds.size,
     )
+    val unavailableSaveMessage = stringResource(R.string.general_eq_save_source_unavailable)
 
     if (showHelp) {
         AlertDialog(
@@ -423,9 +428,12 @@ private fun GeneralEqBrowse(
                         onClick = {
                             val toSave = selectedPresets.toList()
                             scope.launch {
-                                onSavePresets(toSave)
-                                batchSelectedIds = emptySet()
-                                onMessage(savedMessage)
+                                if (onSavePresets(toSave)) {
+                                    batchSelectedIds = emptySet()
+                                    onMessage(savedMessage)
+                                } else {
+                                    onMessage(unavailableSaveMessage)
+                                }
                             }
                         },
                         modifier = Modifier.heightIn(min = 48.dp),

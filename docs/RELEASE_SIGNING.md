@@ -64,35 +64,34 @@ Secrets are scoped only to the workflow steps that need them. The checkout/setup
 
 ## Signed candidate and release workflow
 
-`.github/workflows/github-release.yml` is manually dispatched from `main`. It has two explicit modes:
+`.github/workflows/github-release.yml` is now a candidate-only workflow manually dispatched from `main`. The signed beta workflow is also manual and main-only; neither signing workflow accepts a PR/feature-branch ref. This keeps branch-controlled Gradle and workflow code away from the release key. Checkout credentials are disabled, and signing secrets are introduced only in the post-build signing step. The candidate workflow:
 
-- **candidate** — builds the real signed APK, verifies it, and uploads a short-lived GitHub Actions artifact for device smoke testing. It does not create a tag or GitHub Release.
-- **publish** — repeats the same signed build and verification after the candidate passes, then creates the version tag at that exact `main` commit and publishes the GitHub Release.
+1. requires exact `vMAJOR.MINOR.PATCH` tag syntax;
+2. requires the requested version to equal Android `versionName`;
+3. requires curated `docs/releases/<tag>.md` release notes;
+4. requires the public pinned signing-certificate SHA-256 fingerprint;
+5. runs unit tests, Android lint, and the release build from the exact selected `main` commit;
+6. requires R8 to produce a mapping with at least one renamed application class;
+7. aligns and signs the unsigned APK with Android build tools;
+8. verifies the APK signature and runs `zipalign -c` on the signed APK;
+9. refuses to continue if the actual signing certificate does not match the pinned public fingerprint;
+10. creates a SHA-256 checksum and source/package/version/signer/R8 candidate manifest; and
+11. uploads the signed outputs as a 90-day Actions artifact.
 
-Both modes:
-
-1. require exact `vMAJOR.MINOR.PATCH` tag syntax;
-2. require the requested version to equal Android `versionName`;
-3. require curated `docs/releases/<tag>.md` release notes;
-4. require the public pinned signing-certificate SHA-256 fingerprint;
-5. run unit tests, Android lint, and the release build from the exact selected `main` commit;
-6. align and sign the unsigned APK with Android build tools;
-7. verify the APK signature;
-8. refuse to continue if the actual signing certificate does not match the pinned public fingerprint;
-9. create a SHA-256 checksum file for the APK; and
-10. upload the signed outputs as a short-lived Actions artifact.
-
-Publish mode additionally requires the literal confirmation value `PUBLISH`, refuses to replace an existing tag/release, and uses the repository-provided `GITHUB_TOKEN` only in the final publication job. That final job creates the requested tag at the exact workflow commit and publishes the APK, APK checksum, and public `apksigner` verification output through GitHub Releases.
+Public tag/release publication is deliberately unavailable in this workflow. The previous publisher rebuilt and re-signed instead of promoting the exact candidate that passed human testing, so source equality could not establish APK byte identity. A future publisher must accept an immutable candidate artifact identity, verify its source SHA, manifest, recomputed checksum, package/version, signer, alignment, and artifact digest, and publish those exact bytes. It must be separately reviewed and explicitly owner-approved before use.
 
 Normal Android CI never receives the release-signing key and never publishes a development APK.
+No workflow action here creates a public release or version tag. Candidate preparation remains a
+main-only owner action after merge approval; do not dispatch it from the feature branch or infer
+hardware qualification from its build/install/cold-launch result.
 
-## First-release gate
+## Public release gate (not yet implemented for exact-candidate promotion)
 
-For `v0.1.0`:
+For `v0.7.0`, only after every release gate and explicit owner approval:
 
-1. Run **Signed GitHub Release** in `candidate` mode from the finalized `main` commit.
+1. Run **Signed Release Candidate** from the finalized `main` commit.
 2. Download and install the signed candidate on the Pixel 9.
 3. Perform the short signed-release smoke test recorded in `docs/PUBLIC_RELEASE_CHECKLIST.md`.
 4. If the candidate passes, make no source changes that would alter the release commit.
-5. Run the same workflow from `main` in `publish` mode with tag `v0.1.0` and confirmation `PUBLISH`.
-6. Verify the public release page, assets, checksum, and in-app update metadata path.
+5. Obtain explicit owner approval and use a separately reviewed exact-artifact promotion workflow (not yet implemented).
+6. Verify the public release page, assets, checksum, signer, source provenance, and in-app update metadata path.

@@ -18,6 +18,8 @@ Before substantive work, read this file and the current documents relevant to th
 - `docs/V0.6_MY_DAC_APPROVED_DESIGN.md` for the approved v0.6 My DAC UX/behavior contract
 - `docs/V0.6_MY_DAC_IMPLEMENTATION_PLAN.md` for the current v0.6 architecture, sequencing, tests, and release gates
 - `docs/V0.7_EW300_DSP_IMPLEMENTATION_PLAN.md` for the approved next-hardware scope, evidence gates, additive framework contract, automated validation, and signed owner-testing handoff
+- `docs/V0.7_PRODUCT_SUCCESS_CRITERIA.md` for the testable v0.7 finished-product, cross-DAC parity, low/high-shelf, and release acceptance contract
+- `docs/V0.7_RELEASE_READINESS_AUDIT.md` for the independently verified current v0.7 release blockers, fail-closed implementation corrections, and exact-source gate boundary
 - `docs/V0.6_MY_DAC_STATUS.md` for the concise current v0.6 branch/hardware/UX state
 - `docs/V0.6_LIBRARY_OWNERSHIP_AND_RECOVERY.md` for the current device-agnostic My EQs ownership and Needs attention recovery contract; where older architecture text still says My EQs is output-specific, this newer authority wins
 - `docs/BLACK_PEARL_PROTOCOL_NOTES.md` when Black Pearl behavior is involved
@@ -30,6 +32,18 @@ Before substantive work, read this file and the current documents relevant to th
 - `CHANGELOG.md`
 
 Historical plans remain useful context, but this runbook, current architecture, current release-specific plan, and later explicit decisions control where wording conflicts.
+
+## 2026-09-22 EW300 evidence and release continuation
+
+Owner reports E043-E046 are tied to signed executable source `7599dd52fc9e8c58c96e021f581b86a669dcc148`: E043 read-only capability PASS, E044 Flash PASS, E045 exact-baseline Restore PASS (`restorationVerified=true`), and E046 Reset PASS for the exact fingerprint. Each mutation recorded 11 writes, exactly one Save, zero permission requests before the first write, matching replacement identity/generation, final readback, and known state. Total permission requests were one per operation. Replay and competing-job telemetry remain null/unmeasured, not zero. Do not repeat these operations or the accepted E001 Save qualification.
+
+The nine commits from 7599 to `b11190f9bbc08326f963190ad8b5a9f4b0872b2c` changed documentation files only; no executable source changed. Physical results remain attached to 7599, not relabeled. On exact source b11190, the applicable Android CI, CodeQL, catalog, priority-coverage, dependency-submission, and signed-candidate workflows all passed. The exact artifact provenance is recorded in E048 and live PR #23. Any later commit—including this documentation acceptance update—creates a new candidate SHA and needs fresh exact-head gates and signed provenance before that SHA is treated as ready.
+
+The Restore proves exact baseline restoration when it completed. A separate later Reset also completed; do not claim the post-Reset state is byte-for-byte the earlier arbitrary baseline. The read-only report proves a known snapshot only. E001 remains accepted and is not repeated.
+
+No further Apply, Flash, Restore, Reset, Save qualification, or read-only report is needed. If still unverified, the only possible owner check is non-hardware-mutating Personal EQ capture/value/provenance confirmation; open/cancel My EQs Flash review only if the successful Flash was not already launched there. Stop before final write confirmation. Capture remains “not yet evidenced,” not unsupported hardware.
+
+The approved cross-DAC product acceptance—including the shared graph/state/manual Refresh flow, capability-by-capability Black Pearl comparison, and low/high-shelf corpus behavior—is defined in `docs/V0.7_PRODUCT_SUCCESS_CRITERIA.md`. The current independent release audit is `docs/V0.7_RELEASE_READINESS_AUDIT.md`; earlier green gates and candidate provenance do not transfer to later source SHAs. PR #23 remains draft, v0.7.0 remains NO-GO, and merge/publication/public-support claims require explicit owner approval.
 
 ## 2. Repository boundary
 
@@ -149,6 +163,12 @@ The persisted compatibility field name `autoIncludeNewProfiles` may remain inter
 
 **My EQs ownership and selection are device/output-agnostic.** A headphone, Favorite, Personal EQ, captured DAC EQ, or General EQ saved to My EQs remains the same local item when the active target changes. Saving to My EQs does not itself export a file, download anything, or Flash hardware. Target-specific representations/currentness remain derived state and are created/used only by explicit Export/Flash paths.
 
+New catalog Favorites and General EQs retain the full canonical profile, exact selected revision,
+and source references. Legacy `OpraEqProfile` values are derived compatibility views, not saved
+source authority. Saving requires exact resolution against the current canonical catalog; General
+EQ batch saves are all-or-nothing. Room migrations add nullable columns only: older projection-only
+rows remain unchanged and must never receive inferred canonical provenance.
+
 Legacy output-selection tables/`outputId` parameters may remain temporarily for migration/source compatibility, but they must not be used to decide current My EQs identity or visibility. A DAC capture records device identity as provenance only; after capture it behaves like any other Personal EQ.
 
 Persisted app-managed exported artifacts that no longer have a confident current My EQ association remain visible under **Needs attention** rather than disappearing. Recovery is limited to exact app-owned/persisted-access artifacts, uses strict parsing, requires the user to provide any missing headphone/name association, preserves decoded EQ values and original-file provenance, and never scans or deletes arbitrary external files. Malformed/unsupported artifacts remain visible but are not falsely recoverable. An unresolved artifact remains present across restart/rescan until recovered, explicitly removed, or confirmed missing according to the storage ownership rules.
@@ -203,6 +223,13 @@ Only include deeper variant/configuration identity when the source genuinely ver
 
 ToneBoosters XML must remain ISO-8859-1-safe while full Unicode metadata remains local.
 
+The upstream OPRA schema defines `parameters.bands` as priority-sorted and directs limited-band
+software to truncate: [pinned `eq_info.json` at OPRA commit
+`0b88ecd4e2bef7cf69fd5d50f1d06fb586c10865`](https://github.com/opra-project/OPRA/blob/0b88ecd4e2bef7cf69fd5d50f1d06fb586c10865/schemas/eq_info.json).
+Apply the first-ten rule only when the trusted OPRA adapter supplies verified source-priority
+provenance. Never apply it to arbitrary flattened/legacy, imported, Personal, or mixed-source bands;
+reject those over-budget cases unless an independently established ordering contract exists.
+
 ## 10. Shared finite-hardware response adapter
 
 Finite PEQ hardware derivation for **TRN Black Pearl (10 bands)**, **FiiO JA11 (5 bands)**, and the historical stock JCALLY JM12 implementation uses the shared deterministic hardware response adapter described in `docs/V0.5_KT02H20_IMPLEMENTATION_PLAN.md`.
@@ -224,11 +251,13 @@ Historical internal class names containing `Kt02h20` or `FiveBand` are implement
 
 My DAC manual editing must reuse the same deterministic response/headroom principles. Do not create a Compose-only clipping heuristic. A local edit plan evaluates the complete planned native response, determines required safe headroom using verified device semantics, separates headroom warnings from device-limit/unsupported-value warnings, and requires review before any hardware write.
 
-### Planned v0.7 SIMGOT EW300 DSP cable
+### v0.7 SIMGOT EW300 DSP cable — current capability and evidence boundary
 
-The next planned hardware addition is the USB-C DAC/DSP cable supplied with the SIMGOT EW300 DSP. It is **not supported by v0.6.0**. Work follows `docs/V0.7_EW300_DSP_IMPLEMENTATION_PLAN.md` and must reuse the current output registry, immutable device capabilities, shared finite-hardware response adapter, authoritative DAC session, and approved My DAC/Flash/capture/reset UX.
+The exact EW300 USB identity, five-band raw transport, direct-Hz Peak decoding, and bounded transaction behavior are maintained in the EW300 protocol/status documents. The recovery implementation uses the shared output registry, finite-hardware adapter, authoritative DAC session, and My DAC shell; it does not copy Black Pearl commands or controls. The exact profile currently exposes native five-band Peak readback, local edit/review, guarded Apply/Flash, Peak-only Personal EQ capture, qualified Reset-to-flat, reconnect/final-readback feedback, and the evidenced read-only Device state/report surface. Source low/high shelves may be represented only by a complete-response Optimized fit to the five-Peak target when the shared quality gates pass; native EW300 shelf readback/capture/edit/write is not established. Other controls remain unclaimed unless exact-profile evidence establishes them.
 
-The exact USB identity, protocol, ranges, quantization, persistence, and reset semantics remain discovery gates. Do not infer compatibility from a chipset, browser tool, community report, or similarity to FiiO/JCALLY behavior. No production write path is enabled until the exact supported command set is independently established and the owner's original cable state is preserved. Implementation stops at a signed testing candidate; merge and release require an exact-candidate physical PASS and explicit owner authorization.
+On signed candidate source `7599dd52fc9e8c58c96e021f581b86a669dcc148`, capability report JSON (17) passed; operation reports JSON (11)–(13) verified Flash, exact-baseline Restore, and Reset. These reports are E043-E046. E001 Save qualification remains accepted and is not repeated. Their replay/competing-job fields are null/unmeasured. The pre-criteria head b11190's six exact-head gates passed (E048); the current criteria documentation commit creates a newer source that needs its own same-head gates/signing, not a physical retest.
+
+No unknown revision is authorized. VID/PID alone is insufficient. Firmware, bootloader, erase, calibration, recovery, and cross-flash remain outside scope. Android permission for a re-enumerated USB instance remains OS-controlled. PR #23 remains draft; release/public-support approval is owner-controlled.
 
 ## 11. TRN Black Pearl
 
@@ -288,3 +317,24 @@ The exact candidate passed Android CI #1538, CodeQL #1420, Catalog currentness C
 
 This PASS closes the corrective Black Pearl physical gate. It does not establish TRN factory-default semantics and does not qualify FiiO JA11 hardware behavior. PR #16 remains open and draft; merge, release, and publication remain explicit owner-authorization gates.
 
+## 2026-09-22 current EW300 v0.7 checkpoint
+
+PR #23 is the authoritative location for the current exact branch SHA, signed APK filename, SHA-256, package/version, signer, artifact digest, artifact ID, and gate links. Use only the candidate whose source SHA matches the live PR head and whose Android CI, CodeQL, catalog, priority coverage, dependency submission, and signed-candidate workflow all pass on that same SHA.
+
+Physical transaction qualification is complete on sources 381 and 7599 (E037-E046); retain those tested SHAs in the ledger and do not repeat any mutation or read-only report. After all product work and exact-head gates pass, the only possible owner checks are non-hardware-mutating Personal EQ capture/value/provenance confirmation and opening/canceling My EQs Flash review only if the verified Flash did not already originate from My EQs. No Apply, Flash, Reset, Restore, or Save is requested.
+
+Keep PR #23 draft and v0.7.0 NO-GO until scope and final review are closed and the owner explicitly approves merge/publication/public support.
+
+### 2026-09-23 source-review continuation
+
+The follow-up review found that unsupported or failed UAPP conversion could revive old generated
+XML, unselected profiles could retain stale UAPP output, exact app-owned stale UAPP documents could
+disappear from **Needs attention**, and caller-supplied provenance could authorize ten-band
+truncation. It also found a same-key canonical source-reference collision and missing product-only
+provenance coverage. The follow-up centralizes managed export-artifact state, keeps stale exact UAPP
+files visible but non-recoverable until explicit deletion, makes source-order authority private to
+the verified conversion path, preserves the selected source reference during deduplication, and
+adds focused regressions. This does not change EW300 protocol behavior or accepted physical
+evidence. Check all remote gates and artifacts on the live exact PR head. The trusted-main-only
+signed candidate cannot be produced from this feature branch without explicit owner-authorized
+integration; do not merge, sign or publish under the guise of a test run.

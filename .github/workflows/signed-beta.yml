@@ -1,8 +1,7 @@
 name: Signed EQ Library Beta Candidate
 
 on:
-  push:
-    branches: [eq-library-beta, eq-library-community-v0.3, 'v0.*']
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -14,13 +13,15 @@ concurrency:
 
 jobs:
   build-signed-beta:
-    if: github.repository == 'weekssa/OPRA-EQ-for-UAPP'
+    if: github.repository == 'weekssa/OPRA-EQ-for-UAPP' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 40
 
     steps:
       - name: Check out exact source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
       - name: Set up JDK 17
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
@@ -42,32 +43,30 @@ jobs:
           gradle-version: "9.4.1"
           cache-provider: basic
 
-      - name: Validate signing secrets
-        env:
-          OPRA_RELEASE_KEYSTORE_BASE64: ${{ secrets.OPRA_RELEASE_KEYSTORE_BASE64 }}
-          OPRA_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.OPRA_RELEASE_KEYSTORE_PASSWORD }}
-          OPRA_RELEASE_KEY_ALIAS: ${{ secrets.OPRA_RELEASE_KEY_ALIAS }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          : "${OPRA_RELEASE_KEYSTORE_BASE64:?Missing release keystore secret}"
-          : "${OPRA_RELEASE_KEYSTORE_PASSWORD:?Missing release keystore password}"
-          : "${OPRA_RELEASE_KEY_ALIAS:?Missing release key alias}"
-
-      - name: Restore release keystore
-        env:
-          OPRA_RELEASE_KEYSTORE_BASE64: ${{ secrets.OPRA_RELEASE_KEYSTORE_BASE64 }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          printf '%s' "$OPRA_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/eq-library-release.p12"
-          chmod 600 "$RUNNER_TEMP/eq-library-release.p12"
-
       - name: Run beta gate and build release APK
-        run: gradle :app:testDebugUnitTest :app:lintDebug :app:assembleRelease --stacktrace
+        run: >-
+          gradle :app:testDebugUnitTest :app:lintDebug :app:assembleRelease --stacktrace
+          -PCANDIDATE_SOURCE_SHA="$GITHUB_SHA"
+
+      - name: Verify minified release output
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapping="app/build/outputs/mapping/release/mapping.txt"
+          bash tools/verify-r8-mapping.sh "$mapping"
+
+      - name: Verify unsigned APK identity before signing
+        shell: bash
+        run: |
+          set -euo pipefail
+          unsigned_apk="app/build/outputs/apk/release/app-release-unsigned.apk"
+          test -f "$unsigned_apk"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$unsigned_apk" |
+            grep -F "package: name='com.weekssa.opraeqforuapp' versionCode='7' versionName='0.7.0'" >/dev/null
 
       - name: Align sign and verify beta APK
         env:
+          OPRA_RELEASE_KEYSTORE_BASE64: ${{ secrets.OPRA_RELEASE_KEYSTORE_BASE64 }}
           OPRA_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.OPRA_RELEASE_KEYSTORE_PASSWORD }}
           OPRA_RELEASE_KEY_ALIAS: ${{ secrets.OPRA_RELEASE_KEY_ALIAS }}
         shell: bash
@@ -80,6 +79,14 @@ jobs:
           mkdir -p dist
           output_apk="dist/EQ-Library-v${version_name}-beta-${GITHUB_SHA::7}.apk"
           build_tools="$ANDROID_HOME/build-tools/36.0.0"
+          mapping="app/build/outputs/mapping/release/mapping.txt"
+          r8_mapping_sha256="$(sha256sum "$mapping" | cut -d ' ' -f 1)"
+          : "${OPRA_RELEASE_KEYSTORE_BASE64:?Missing release keystore secret}"
+          : "${OPRA_RELEASE_KEYSTORE_PASSWORD:?Missing release keystore password}"
+          : "${OPRA_RELEASE_KEY_ALIAS:?Missing release key alias}"
+          printf '%s' "$OPRA_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/eq-library-release.p12"
+          chmod 600 "$RUNNER_TEMP/eq-library-release.p12"
+          trap 'rm -f "$RUNNER_TEMP/eq-library-release.p12"' EXIT
 
           "$build_tools/zipalign" -p -f 4 "$unsigned_apk" "$aligned_apk"
           "$build_tools/apksigner" sign \
@@ -91,11 +98,111 @@ jobs:
             "$aligned_apk"
 
           "$build_tools/apksigner" verify --verbose --print-certs "$output_apk" | tee dist/apksigner-verification.txt
+          "$build_tools/zipalign" -c -v 4 "$output_apk" | tee dist/zipalign-verification.txt
           actual_fingerprint="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' dist/apksigner-verification.txt | head -n 1 | tr -d '[:space:]:' | tr '[:upper:]' '[:lower:]')"
           expected_fingerprint="$(tr -d '[:space:]:' < release-signing-cert.sha256 | tr '[:upper:]' '[:lower:]')"
           test -n "$actual_fingerprint"
           test "$actual_fingerprint" = "$expected_fingerprint"
           sha256sum "$output_apk" > "${output_apk}.sha256"
+          apk_sha256="$(cut -d ' ' -f 1 "${output_apk}.sha256")"
+          jq -n \
+            --arg sourceSha "$GITHUB_SHA" \
+            --arg apk "$(basename "$output_apk")" \
+            --arg apkSha256 "$apk_sha256" \
+            --arg packageId "com.weekssa.opraeqforuapp" \
+            --arg versionName "$version_name" \
+            --arg versionCode "7" \
+            --arg signerSha256 "$actual_fingerprint" \
+            --arg r8MappingSha256 "$r8_mapping_sha256" \
+            --arg capabilityProfile "EW300 exact fingerprint; five-band direct-Hz Peak" \
+            --arg testPlan "docs/EW300_DSP_HANDS_ON_CHECKLIST.md" \
+            --arg evidence "E001,E043,E044,E045,E046,E047,E048" \
+            --arg outstanding "final beta clean-install/upgrade/accessibility/offline/error validation; owner merge/publication approval" \
+            '{sourceSha:$sourceSha, apk:$apk, apkSha256:$apkSha256, packageId:$packageId, versionName:$versionName, versionCode:($versionCode|tonumber), signerSha256:$signerSha256, r8MinificationEnabled:true, r8MappingSha256:$r8MappingSha256, capabilityProfile:$capabilityProfile, testPlan:$testPlan, evidenceIds:($evidence|split(",")), outstanding:$outstanding}' \
+            > dist/candidate-manifest.json
+          jq -e --arg sourceSha "$GITHUB_SHA" '
+            .sourceSha == $sourceSha and
+            .packageId == "com.weekssa.opraeqforuapp" and
+            .versionName == "0.7.0" and
+            .versionCode == 7 and
+            .r8MinificationEnabled == true and
+            (.r8MappingSha256 | test("^[a-f0-9]{64}$")) and
+            .evidenceIds == ["E001","E043","E044","E045","E046","E047","E048"] and
+            (.outstanding | contains("hardware session") | not) and
+            (.outstanding | contains("merge/publication approval"))
+          ' dist/candidate-manifest.json > /dev/null
+
+      - name: Set up signed-beta emulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdkmanager "emulator" "system-images;android-35;google_apis;x86_64"
+          avd_home="$RUNNER_TEMP/avd"
+          mkdir -p "$avd_home"
+          export ANDROID_AVD_HOME="$avd_home"
+          echo "no" | avdmanager create avd --force --name opra_signed_beta --package "system-images;android-35;google_apis;x86_64" --device pixel_6
+          sudo chown "$(id -un)" /dev/kvm
+          "$ANDROID_SDK_ROOT/emulator/emulator" -accel-check
+          nohup "$ANDROID_SDK_ROOT/emulator/emulator" \
+            -avd opra_signed_beta -no-window -noaudio -no-boot-anim -no-snapshot -wipe-data \
+            -gpu swiftshader_indirect > "$RUNNER_TEMP/signed-beta-emulator.log" 2>&1 &
+          emulator_pid=$!
+          for attempt in $(seq 1 90); do
+            if ! kill -0 "$emulator_pid" 2>/dev/null; then
+              cat "$RUNNER_TEMP/signed-beta-emulator.log"
+              exit 1
+            fi
+            if adb get-state 2>/dev/null | grep -qx device; then break; fi
+            if [[ "$attempt" -eq 90 ]]; then
+              cat "$RUNNER_TEMP/signed-beta-emulator.log"
+              exit 1
+            fi
+            sleep 2
+          done
+          adb wait-for-device
+          timeout 240 bash -c 'until [[ "$(adb shell getprop sys.boot_completed | tr -d "\r")" == "1" ]]; do sleep 5; done'
+
+      - name: Install signed beta APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          output_apk="dist/$(find dist -maxdepth 1 -type f -name 'EQ-Library-v*.apk' -printf '%f\n' -quit)"
+          test -f "$output_apk"
+          if ! install_output="$(adb install -r "$output_apk" 2>&1)"; then
+            echo "$install_output"
+            adb logcat -d > "$RUNNER_TEMP/signed-beta-logcat.txt" || true
+            exit 1
+          fi
+          echo "$install_output"
+          package_dump="$(adb shell dumpsys package com.weekssa.opraeqforuapp)"
+          echo "$package_dump" | grep -q 'versionCode=7'
+          echo "$package_dump" | grep -q 'versionName=0.7.0'
+
+      - name: Cold-launch signed beta APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          adb shell am force-stop com.weekssa.opraeqforuapp
+          if ! launch_output="$(adb shell am start -W -n com.weekssa.opraeqforuapp/.MainActivity 2>&1)"; then
+            echo "$launch_output"
+            adb logcat -d > "$RUNNER_TEMP/signed-beta-logcat.txt" || true
+            exit 1
+          fi
+          echo "$launch_output"
+          echo "$launch_output" | grep -q 'Status: ok'
+          sleep 5
+          adb logcat -d > "$RUNNER_TEMP/signed-beta-logcat.txt"
+
+      - name: Upload signed-beta emulator diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: signed-beta-emulator-diagnostics-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/signed-beta-emulator.log
+            ${{ runner.temp }}/signed-beta-logcat.txt
+          if-no-files-found: ignore
+          retention-days: 14
 
       - name: Upload signed beta candidate
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

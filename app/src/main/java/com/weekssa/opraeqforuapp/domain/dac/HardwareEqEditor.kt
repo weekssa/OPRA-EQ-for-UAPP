@@ -51,6 +51,9 @@ enum class HardwareEqHeadroomMechanism {
     /** A dedicated EQ/preamp control whose semantics belong to the EQ path. */
     DEDICATED_EQ_PREAMP,
 
+    /** An absolute device EQ/global-gain register, distinct from ordinary app audio volume. */
+    DEVICE_GLOBAL_GAIN,
+
     /** A separately tracked relative playback-gain adjustment; never relabel absolute volume as preamp. */
     TRACKED_PLAYBACK_GAIN_DELTA,
 }
@@ -63,6 +66,13 @@ object HardwareEqEditSpecs {
         headroomMechanism = HardwareEqHeadroomMechanism.TRACKED_PLAYBACK_GAIN_DELTA,
         // Black Pearl final absolute representability depends on the fresh playback baseline and the
         // previously tracked EQ Library delta, so there is deliberately no static minimum here.
+        minimumVerifiedHeadroomGainDb = null,
+    )
+
+    val SIMGOT_EW300: HardwareEqEditSpec = fromFiniteHardwareSpec(
+        deviceId = DacDeviceId.SIMGOT_EW300,
+        spec = HardwareEqDeviceSpecs.SIMGOT_EW300,
+        headroomMechanism = HardwareEqHeadroomMechanism.DEVICE_GLOBAL_GAIN,
         minimumVerifiedHeadroomGainDb = null,
     )
 
@@ -235,6 +245,7 @@ object HardwareEqEditor {
 
         val baselineHeadroomGainDb = when (spec.headroomMechanism) {
             HardwareEqHeadroomMechanism.DEDICATED_EQ_PREAMP -> snapshot.dedicatedEqPreampDb
+            HardwareEqHeadroomMechanism.DEVICE_GLOBAL_GAIN -> snapshot.playbackGainDb
             HardwareEqHeadroomMechanism.TRACKED_PLAYBACK_GAIN_DELTA -> trackedPlaybackGainDeltaDb
         }
         return HardwareEqEditorStartResult.Ready(

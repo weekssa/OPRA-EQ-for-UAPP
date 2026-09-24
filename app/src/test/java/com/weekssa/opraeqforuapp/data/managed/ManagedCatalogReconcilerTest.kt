@@ -177,6 +177,85 @@ class ManagedCatalogReconcilerTest {
     }
 
     @Test
+    fun unchangedOverLimitProfileClearsArtifactCreatedByOlderPermissivePolicy() {
+        val overLimitWithoutVerifiedSourcePriority = compatibleProfile("legacy-over-limit").copy(
+            bands = (1..11).map { index ->
+                OpraBand("peak_dip", index * 100.0, 1.0, 1.0, null)
+            },
+        )
+        val existing = existingEntity(
+            overLimitWithoutVerifiedSourcePriority,
+            selected = true,
+            generatedXml = "legacy first-ten export",
+        )
+
+        val result = reconcileManagedProfiles(
+            productId = "product",
+            productName = "Headphone",
+            currentProfiles = listOf(overLimitWithoutVerifiedSourcePriority),
+            existingProfiles = listOf(existing),
+            autoIncludeNewProfiles = false,
+            nowMillis = 200L,
+            snapshotCodec = codec,
+        )
+
+        val reconciled = result.profiles.single()
+        assertTrue(reconciled.selected)
+        assertNull(reconciled.generatedXml)
+        assertEquals(codec.fingerprint(overLimitWithoutVerifiedSourcePriority), reconciled.fingerprint)
+        assertEquals(0, result.changes.updatedSelectedProfileCount)
+    }
+
+    @Test
+    fun unselectedCurrentProfileBecomingUappUnsupportedClearsStaleArtifact() {
+        val oldProfile = compatibleProfile("unselected-over-limit")
+        val unsupported = oldProfile.copy(
+            bands = (1..11).map { index -> OpraBand("peak_dip", index * 100.0, 1.0, 1.0, null) },
+        )
+        val existing = existingEntity(oldProfile, selected = false, generatedXml = "legacy first-ten export")
+
+        val result = reconcileManagedProfiles(
+            productId = "product",
+            productName = "Headphone",
+            currentProfiles = listOf(unsupported),
+            existingProfiles = listOf(existing),
+            autoIncludeNewProfiles = false,
+            nowMillis = 200L,
+            snapshotCodec = codec,
+        )
+
+        val reconciled = result.profiles.single()
+        assertFalse(reconciled.selected)
+        assertNull(reconciled.generatedXml)
+        assertEquals(codec.fingerprint(unsupported), reconciled.generatedFromFingerprint)
+    }
+
+    @Test
+    fun attemptedGenerationWithNoXmlNeverFallsBackToThePreviousArtifact() {
+        val profile = compatibleProfile("over-limit")
+        val existing = existingEntity(profile, selected = true, generatedXml = "stale xml")
+        val currentFingerprint = codec.fingerprint(profile)
+
+        val state = reconcileManagedPresetArtifacts(
+            existing = existing,
+            currentFingerprint = currentFingerprint,
+            sourceUsable = true,
+            uappRepresentable = true,
+            generated = GeneratedManagedPreset(
+                presetName = "Current name",
+                xml = null,
+                fingerprint = currentFingerprint,
+                generatedAtMillis = 2L,
+            ),
+        )
+
+        assertEquals("Current name", state.presetName)
+        assertNull(state.xml)
+        assertEquals(currentFingerprint, state.fromFingerprint)
+        assertEquals(2L, state.generatedAtMillis)
+    }
+
+    @Test
     fun selectedProfileBecomingSourceUnusableIsUnselectedAndKeepsLastGoodArtifact() {
         val oldProfile = compatibleProfile("profile")
         val existing = existingEntity(oldProfile, selected = true, generatedXml = "last good xml")

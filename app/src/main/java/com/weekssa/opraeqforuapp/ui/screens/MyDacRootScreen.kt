@@ -25,6 +25,9 @@ import com.weekssa.opraeqforuapp.domain.dac.DacRecognitionState
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqMatchResolution
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityReport
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300PersistenceQualificationResult
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationTrace
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 import com.weekssa.opraeqforuapp.domain.library.SavedEqHeadphoneAssociation
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
@@ -45,13 +48,17 @@ fun MyDacRootScreen(
     catalogState: CatalogState,
     blackPearlConnectionState: BlackPearlConnectionState,
     fiioJa11ConnectionState: Kt02h20ConnectionState,
+    ew300ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
     blackPearlHardwareEqState: HardwareEqSnapshotState,
     fiioJa11HardwareEqState: HardwareEqSnapshotState,
+    ew300HardwareEqState: HardwareEqSnapshotState = HardwareEqSnapshotState(),
     blackPearlHardwareEqMatch: HardwareEqMatchResolution?,
     blackPearlManagedHeadphones: List<ManagedHeadphoneRecord>,
     blackPearlSavedEqs: List<SavedEqRecord>,
     blackPearlSavedGeneralEqs: List<SavedGeneralEqRecord>,
     blackPearlEditorState: MyDacEditorUiState,
+    ew300EditorState: MyDacEditorUiState = MyDacEditorUiState(),
+    ew300OperationTrace: Ew300OperationTrace? = null,
     blackPearlQualificationState: BlackPearlQualificationUiState,
     fiioJa11DeviceState: FiioJa11DeviceUiState,
     onConnectDac: (DacDeviceId) -> Unit,
@@ -64,7 +71,18 @@ fun MyDacRootScreen(
     onUseSafeBlackPearlEditorGain: () -> Unit,
     onResetBlackPearlEditorLocalEdits: () -> Unit,
     onApplyBlackPearlEditor: (Boolean) -> Unit,
+    onOpenEw300Editor: () -> Unit = {},
+    onBackEw300Editor: () -> Boolean = { false },
+    onCloseEw300Editor: () -> Unit = {},
+    onSelectEw300EditorBand: (Int) -> Unit = {},
+    onShowEw300EditorAllBands: () -> Unit = {},
+    onShowEw300EditorReview: () -> Unit = {},
+    onUpdateEw300EditorBand: (Int, EqFilterType, Double, Double, Double) -> Unit = { _, _, _, _, _ -> },
+    onUseSafeEw300EditorGain: () -> Unit = {},
+    onResetEw300EditorLocalEdits: () -> Unit = {},
+    onApplyEw300Editor: (Boolean) -> Unit = {},
     onCaptureBlackPearlDacEq: suspend (String, SavedEqHeadphoneAssociation?) -> String,
+    onCaptureEw300DacEq: suspend (String, SavedEqHeadphoneAssociation?) -> String = { _, _ -> "Capture is not available." },
     onFlashBlackPearlFromMyDac: suspend (OpraEqProfile) -> String,
     onResetBlackPearlFromMyDac: suspend () -> String,
     onReadBlackPearlQualification: () -> Unit,
@@ -75,12 +93,16 @@ fun MyDacRootScreen(
     onSetFiioJa11HeadsetControl: (Boolean) -> Unit,
     onSetFiioJa11UacMode: (FiioJa11Protocol.UacMode) -> Unit,
     onResetFiioJa11FromMyDac: suspend () -> String,
+    onResetEw300FromMyDac: suspend () -> String = { "Reset is not available." },
+    onRestoreEw300Baseline: suspend () -> String = { "EW300 baseline restoration is not available." },
+    onRunEw300CapabilityBatch: suspend () -> Ew300CapabilityReport,
+    onAdvanceEw300PersistenceQualification: suspend () -> Ew300PersistenceQualificationResult,
     onMessage: (String) -> Unit,
     onOperationStatus: (String, Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val recognized = recognitionState.recognizedDeviceIds
-        .filterTo(linkedSetOf()) { it == DacDeviceId.TRN_BLACK_PEARL || it == DacDeviceId.FIIO_JA11 }
+        .filterTo(linkedSetOf()) { it == DacDeviceId.TRN_BLACK_PEARL || it == DacDeviceId.FIIO_JA11 || it == DacDeviceId.SIMGOT_EW300 }
     var selectedName by rememberSaveable { mutableStateOf<String?>(null) }
 
     LaunchedEffect(recognized, selectedName) {
@@ -117,6 +139,7 @@ fun MyDacRootScreen(
                     title = when (deviceId) {
                         DacDeviceId.TRN_BLACK_PEARL -> "TRN Black Pearl"
                         DacDeviceId.FIIO_JA11 -> "FiiO JA11"
+                        DacDeviceId.SIMGOT_EW300 -> "SIMGOT EW300 DSP"
                         DacDeviceId.JCALLY_JM12_STOCK -> "Unsupported device"
                     },
                     supportingText = "Manage this DAC",
@@ -141,6 +164,7 @@ fun MyDacRootScreen(
                 catalogState = catalogState,
                 blackPearlConnectionState = blackPearlConnectionState,
                 fiioJa11ConnectionState = Kt02h20ConnectionState.Disconnected,
+                ew300ConnectionState = Kt02h20ConnectionState.Disconnected,
                 jcallyJm12ConnectionState = Kt02h20ConnectionState.Disconnected,
                 blackPearlHardwareEqState = blackPearlHardwareEqState,
                 blackPearlHardwareEqMatch = blackPearlHardwareEqMatch,
@@ -181,6 +205,34 @@ fun MyDacRootScreen(
             onSetHeadsetControl = onSetFiioJa11HeadsetControl,
             onSetUacMode = onSetFiioJa11UacMode,
             onResetEq = onResetFiioJa11FromMyDac,
+            onMessage = onMessage,
+            modifier = modifier,
+        )
+
+        DacDeviceId.SIMGOT_EW300 -> Ew300MyDacContent(
+            connectionState = ew300ConnectionState,
+            hardwareEqState = ew300HardwareEqState,
+            editorState = ew300EditorState,
+            operationTrace = ew300OperationTrace,
+            catalogState = catalogState,
+            managedHeadphones = blackPearlManagedHeadphones,
+            savedEqs = blackPearlSavedEqs,
+            savedGeneralEqs = blackPearlSavedGeneralEqs,
+            onConnect = { onConnectDac(DacDeviceId.SIMGOT_EW300) },
+            onResetEq = onResetEw300FromMyDac,
+            onRestoreBaseline = onRestoreEw300Baseline,
+            onRunCapabilityBatch = onRunEw300CapabilityBatch,
+            onAdvancePersistenceQualification = onAdvanceEw300PersistenceQualification,
+            onCaptureDacEq = onCaptureEw300DacEq,
+            onOpenEditor = onOpenEw300Editor,
+            onCloseEditor = onCloseEw300Editor,
+            onSelectBand = onSelectEw300EditorBand,
+            onShowAllBands = onShowEw300EditorAllBands,
+            onShowReview = onShowEw300EditorReview,
+            onUpdateBand = onUpdateEw300EditorBand,
+            onUseSafeGain = onUseSafeEw300EditorGain,
+            onResetEdits = onResetEw300EditorLocalEdits,
+            onApply = onApplyEw300Editor,
             onMessage = onMessage,
             modifier = modifier,
         )

@@ -9,6 +9,43 @@ import org.junit.Test
 
 class HardwareEqSnapshotFactoryTest {
     @Test
+    fun ew300RejectsUnqualifiedShelfTypeInsteadOfInventingItsAcousticMeaning() {
+        val bands = List(5) { index ->
+            Kt02h20Band(
+                type = if (index == 0) "low_shelf" else "peak_dip",
+                frequencyHz = 1_000.0,
+                gainDb = 0.0,
+                q = 1.0,
+            )
+        }
+
+        assertThat(
+            HardwareEqSnapshotFactory.ew300(
+                nativeBands = bands,
+                globalGainDb = 0.0,
+                sessionGeneration = 1L,
+                verifiedAtEpochMillis = 1L,
+            ),
+        ).isNull()
+    }
+
+    @Test
+    fun ew300KeepsDigitalDacGainOutOfEqPreampAndFingerprint() {
+        val bands = List(5) { index ->
+            Kt02h20Band("peak_dip", 100.0 * (index + 1), if (index == 0) -1.1 else 0.0, 0.8)
+        }
+        val first = HardwareEqSnapshotFactory.ew300(bands, -4.0, 1L, 2L)
+        val second = HardwareEqSnapshotFactory.ew300(bands, -6.0, 1L, 2L)
+
+        assertThat(first).isNotNull()
+        assertThat(second).isNotNull()
+        assertThat(first!!.snapshot.dedicatedEqPreampDb).isNull()
+        assertThat(first.snapshot.playbackGainDb).isEqualTo(-4.0)
+        assertThat(first.fingerprint.dedicatedEqPreampUnits).isNull()
+        assertThat(first.fingerprint).isEqualTo(second!!.fingerprint)
+    }
+
+    @Test
     fun blackPearlPreservesRawNativeUnitsAndKeepsPlaybackGainOutOfEqFingerprint() {
         val bundle = HardwareEqSnapshotFactory.blackPearl(
             nativeBands = blackPearlBands(gainRaw256 = -640, slot = 2),

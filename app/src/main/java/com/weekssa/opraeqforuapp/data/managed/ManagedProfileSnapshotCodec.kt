@@ -1,5 +1,6 @@
 package com.weekssa.opraeqforuapp.data.managed
 
+import com.weekssa.opraeqforuapp.domain.catalog.EqBandOrderProvenance
 import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import java.security.MessageDigest
@@ -40,6 +41,8 @@ private data class StoredProfileSnapshot(
     val eqLibrarySafetyHeadroomDb: Double? = null,
     /** Publication trust metadata; old snapshots default to verified for v0.2 compatibility. */
     val isVerified: Boolean = true,
+    /** Source-order authority; old snapshots remain strict when this field is absent. */
+    val bandOrderProvenance: EqBandOrderProvenance? = null,
 )
 
 @Serializable
@@ -72,6 +75,7 @@ private fun OpraEqProfile.toStoredSnapshot() = StoredProfileSnapshot(
     bands = bands?.map(OpraBand::toStoredSnapshot),
     eqLibrarySafetyHeadroomDb = eqLibrarySafetyHeadroomDb,
     isVerified = isVerified,
+    bandOrderProvenance = bandOrderProvenance,
 )
 
 private fun OpraEqProfile.toSemanticFingerprintSnapshot() = StoredProfileFingerprintSnapshot(
@@ -110,4 +114,5 @@ private fun StoredProfileSnapshot.toDomain() = OpraEqProfile(
     },
     eqLibrarySafetyHeadroomDb = eqLibrarySafetyHeadroomDb,
     isVerified = isVerified,
+    bandOrderProvenance = bandOrderProvenance,
 )

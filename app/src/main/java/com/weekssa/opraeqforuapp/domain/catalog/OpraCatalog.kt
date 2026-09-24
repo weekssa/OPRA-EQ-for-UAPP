@@ -1,6 +1,8 @@
 package com.weekssa.opraeqforuapp.domain.catalog
 
 import java.util.Locale
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 data class OpraVendor(
     val id: String,
@@ -24,6 +26,14 @@ data class OpraBand(
     val slope: Double?,
 )
 
+/** Source-order authority retained only when an adapter verifies the source provenance. */
+@Serializable
+enum class EqBandOrderProvenance {
+    /** OPRA catalog order is the documented priority order for constrained UAPP exports. */
+    @SerialName("opra_source_priority")
+    OPRA_SOURCE_PRIORITY,
+}
+
 data class OpraEqProfile(
     val id: String,
     val productId: String,
@@ -46,6 +56,8 @@ data class OpraEqProfile(
     /** Stable canonical tuning lineage identity used by local Hide/Unhide. */
     val canonicalProfileId: String = id,
     val isVerified: Boolean = true,
+    /** Null unless a trusted source adapter verified the band ordering provenance. */
+    val bandOrderProvenance: EqBandOrderProvenance? = null,
 ) {
     fun effectivePlaybackPreampDb(): Double? = preampGainDb ?: eqLibrarySafetyHeadroomDb
 

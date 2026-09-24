@@ -73,6 +73,7 @@ data class AppPreferences(
     val outputBehavior: OutputBehavior = OutputBehavior.Automatic,
     val directBlackPearlFlashEnabled: Boolean = false,
     val directFiioJa11FlashEnabled: Boolean = false,
+    val directEw300FlashEnabled: Boolean = false,
     val directJcallyJm12FlashEnabled: Boolean = false,
     val hiddenCanonicalProfileIds: Set<String> = emptySet(),
     val exportTreeUri: String? = null,

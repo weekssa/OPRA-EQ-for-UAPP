@@ -40,8 +40,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import com.weekssa.opraeqforuapp.R
 import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.data.export.ExportCurrentness
@@ -50,6 +52,7 @@ import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlashPlan
 import com.weekssa.opraeqforuapp.domain.blackpearl.buildBlackPearlFlashPlan
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
+import com.weekssa.opraeqforuapp.domain.library.FavoriteToggleResult
 import com.weekssa.opraeqforuapp.domain.export.DeviceExportability
 import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
@@ -74,6 +77,24 @@ private data class ManagedHardwareFlashAssessment(
     val warning: String? = null,
 )
 
+internal fun isManagedHardwareFlashEnabled(
+    activeOutput: ExportDevice,
+    directBlackPearlFlashEnabled: Boolean,
+    blackPearlConnected: Boolean,
+    directFiioJa11FlashEnabled: Boolean,
+    fiioJa11Connected: Boolean,
+    directJcallyJm12FlashEnabled: Boolean,
+    jcallyJm12Connected: Boolean,
+    directEw300FlashEnabled: Boolean,
+    ew300Connected: Boolean,
+): Boolean = when (activeOutput) {
+    ExportDevice.BLACK_PEARL -> directBlackPearlFlashEnabled && blackPearlConnected
+    ExportDevice.FIIO_JA11 -> directFiioJa11FlashEnabled && fiioJa11Connected
+    ExportDevice.SIMGOT_EW300 -> directEw300FlashEnabled && ew300Connected
+    ExportDevice.JCALLY_JM12 -> directJcallyJm12FlashEnabled && jcallyJm12Connected
+    else -> false
+}
+
 @Composable
 fun ManagedHeadphoneDetailScreen(
     headphone: ManagedHeadphoneRecord,
@@ -91,8 +112,11 @@ fun ManagedHeadphoneDetailScreen(
     directJcallyJm12FlashEnabled: Boolean,
     jcallyJm12ConnectionState: Kt02h20ConnectionState,
     onConnectJcallyJm12: () -> Unit,
+    directEw300FlashEnabled: Boolean = false,
+    ew300ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
+    onConnectEw300: () -> Unit = {},
     onFlashManagedProfile: suspend (String) -> String,
-    onToggleFavorite: suspend (OpraEqProfile, String, String) -> Boolean,
+    onToggleFavorite: suspend (OpraEqProfile, String, String) -> FavoriteToggleResult,
     onHideCanonicalProfile: suspend (String) -> Unit,
     onLoadManagedHeadphone: suspend (String) -> ManagedHeadphoneRecord?,
     onSaveSelection: suspend (String, Set<String>, Boolean) -> Unit,
@@ -119,15 +143,17 @@ fun ManagedHeadphoneDetailScreen(
     }
     val activeOutput = exportTargets.activeTarget
     val isHardwareOutput = activeOutput in MANAGED_HARDWARE_FLASH_OUTPUTS
-    val flashEnabled = when (activeOutput) {
-        ExportDevice.BLACK_PEARL -> directBlackPearlFlashEnabled &&
-            blackPearlConnectionState is BlackPearlConnectionState.Connected
-        ExportDevice.FIIO_JA11 -> directFiioJa11FlashEnabled &&
-            fiioJa11ConnectionState is Kt02h20ConnectionState.Connected
-        ExportDevice.JCALLY_JM12 -> directJcallyJm12FlashEnabled &&
-            jcallyJm12ConnectionState is Kt02h20ConnectionState.Connected
-        else -> false
-    }
+    val flashEnabled = isManagedHardwareFlashEnabled(
+        activeOutput = activeOutput,
+        directBlackPearlFlashEnabled = directBlackPearlFlashEnabled,
+        blackPearlConnected = blackPearlConnectionState is BlackPearlConnectionState.Connected,
+        directFiioJa11FlashEnabled = directFiioJa11FlashEnabled,
+        fiioJa11Connected = fiioJa11ConnectionState is Kt02h20ConnectionState.Connected,
+        directJcallyJm12FlashEnabled = directJcallyJm12FlashEnabled,
+        jcallyJm12Connected = jcallyJm12ConnectionState is Kt02h20ConnectionState.Connected,
+        directEw300FlashEnabled = directEw300FlashEnabled,
+        ew300Connected = ew300ConnectionState is Kt02h20ConnectionState.Connected,
+    )
 
     val pendingNewCount = headphone.profiles.count { it.isNewUnreviewed && !it.noLongerAvailable }
     val pendingUpdatedCount = headphone.profiles.count {
@@ -200,6 +226,7 @@ fun ManagedHeadphoneDetailScreen(
     var showHeadphoneRemoval by remember { mutableStateOf(false) }
     var deleteSavedFiles by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val favoriteSourceUnavailableMessage = stringResource(R.string.favorite_source_unavailable_message)
     var headphoneMenuOpen by remember(headphone.productId) { mutableStateOf(false) }
 
     val onNotifyChanged: (Boolean) -> Unit = { enabled ->
@@ -371,6 +398,13 @@ fun ManagedHeadphoneDetailScreen(
                             connectedLabel = "FiiO JA11 · Connected",
                             modifier = Modifier.weight(1f),
                         )
+                        ExportDevice.SIMGOT_EW300 -> CompactKt02h20ConnectionAction(
+                            enabled = directEw300FlashEnabled,
+                            state = ew300ConnectionState,
+                            onConnect = onConnectEw300,
+                            connectedLabel = "SIMGOT EW300 DSP · Connected",
+                            modifier = Modifier.weight(1f),
+                        )
                         ExportDevice.JCALLY_JM12 -> CompactKt02h20ConnectionAction(
                             enabled = directJcallyJm12FlashEnabled,
                             state = jcallyJm12ConnectionState,
@@ -394,6 +428,8 @@ fun ManagedHeadphoneDetailScreen(
                 blackPearlConnectionState = blackPearlConnectionState,
                 directFiioJa11FlashEnabled = directFiioJa11FlashEnabled,
                 fiioJa11ConnectionState = fiioJa11ConnectionState,
+                directEw300FlashEnabled = directEw300FlashEnabled,
+                ew300ConnectionState = ew300ConnectionState,
                 directJcallyJm12FlashEnabled = directJcallyJm12FlashEnabled,
                 jcallyJm12ConnectionState = jcallyJm12ConnectionState,
             )?.let { (message, isError) ->
@@ -436,14 +472,17 @@ fun ManagedHeadphoneDetailScreen(
                 onOpenSource = profile.lastKnownProfile.link?.let { sourceUrl -> { onOpenUrl(sourceUrl) } },
                 onToggleFavorite = {
                     scope.launch {
-                        val favorited = onToggleFavorite(
+                        val result = onToggleFavorite(
                             profile.lastKnownProfile,
                             headphone.vendorName,
                             headphone.productName,
                         )
                         onMessage(
-                            if (favorited) "Saved to My EQs favorites."
-                            else "Removed from My EQs favorites.",
+                            when (result) {
+                                FavoriteToggleResult.SAVED -> "Saved to My EQs favorites."
+                                FavoriteToggleResult.REMOVED -> "Removed from My EQs favorites."
+                                FavoriteToggleResult.CANONICAL_SOURCE_UNAVAILABLE -> favoriteSourceUnavailableMessage
+                            },
                         )
                     }
                 },
@@ -476,6 +515,7 @@ private fun managedHardwareFlashAssessment(
         )
     }
     ExportDevice.FIIO_JA11 -> managedFiveBandAssessment(profile, Kt02h20DeviceSpecs.FIIO_JA11)
+    ExportDevice.SIMGOT_EW300 -> managedFiveBandAssessment(profile, com.weekssa.opraeqforuapp.domain.hardware.HardwareEqDeviceSpecs.SIMGOT_EW300)
     ExportDevice.JCALLY_JM12 -> managedFiveBandAssessment(profile, Kt02h20DeviceSpecs.JCALLY_JM12_STOCK)
     else -> ManagedHardwareFlashAssessment(ready = false)
 }
@@ -525,6 +565,8 @@ private fun managedHardwareFlashConfirmation(
     }
     val persistence = if (device == ExportDevice.FIIO_JA11) {
         "The five-band PEQ will be applied, read back, and saved to the JA11."
+    } else if (device == ExportDevice.SIMGOT_EW300) {
+        "The five-band Peak EQ will be applied and read back on the exact verified EW300 profile."
     } else {
         "The five-band PEQ will be written and read back. Persistence across a full power cycle is still hardware-validation pending for stock JM12 firmware."
     }
@@ -537,6 +579,8 @@ private fun hardwareConnectionHelp(
     blackPearlConnectionState: BlackPearlConnectionState,
     directFiioJa11FlashEnabled: Boolean,
     fiioJa11ConnectionState: Kt02h20ConnectionState,
+    directEw300FlashEnabled: Boolean = false,
+    ew300ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
     directJcallyJm12FlashEnabled: Boolean,
     jcallyJm12ConnectionState: Kt02h20ConnectionState,
 ): Pair<String, Boolean>? = when (activeOutput) {
@@ -550,6 +594,12 @@ private fun hardwareConnectionHelp(
         !directFiioJa11FlashEnabled ->
             "Enable direct Flash in Settings → FiiO JA11 before connecting to the DAC." to false
         fiioJa11ConnectionState is Kt02h20ConnectionState.Error -> fiioJa11ConnectionState.message to true
+        else -> null
+    }
+    ExportDevice.SIMGOT_EW300 -> when {
+        !directEw300FlashEnabled ->
+            "Enable direct Flash in Settings → SIMGOT EW300 DSP before connecting to the DAC." to false
+        ew300ConnectionState is Kt02h20ConnectionState.Error -> ew300ConnectionState.message to true
         else -> null
     }
     ExportDevice.JCALLY_JM12 -> when {
@@ -722,6 +772,7 @@ private fun outputShortName(device: ExportDevice): String = device.displayName
 private fun managedHardwareTitle(device: ExportDevice): String = when (device) {
     ExportDevice.BLACK_PEARL -> "Black Pearl"
     ExportDevice.FIIO_JA11 -> "FiiO JA11"
+    ExportDevice.SIMGOT_EW300 -> "SIMGOT EW300 DSP"
     ExportDevice.JCALLY_JM12 -> "JCALLY JM12"
     else -> device.folderName
 }
@@ -769,5 +820,6 @@ private fun RemovalDialog(
 private val MANAGED_HARDWARE_FLASH_OUTPUTS = setOf(
     ExportDevice.BLACK_PEARL,
     ExportDevice.FIIO_JA11,
+    ExportDevice.SIMGOT_EW300,
     ExportDevice.JCALLY_JM12,
 )

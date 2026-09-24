@@ -3,10 +3,13 @@ package com.weekssa.opraeqforuapp.data.dac
 import com.weekssa.opraeqforuapp.data.blackpearl.AndroidBlackPearlUsbTransport
 import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.kt02h20.AndroidFiioJa11UsbTransport
+import com.weekssa.opraeqforuapp.data.kt02h20.AndroidEw300UsbTransport
 import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
 import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
 import com.weekssa.opraeqforuapp.domain.dac.DacRecognitionState
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotBundle
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotFactory
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300Protocol
 import java.io.Closeable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -17,6 +20,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -49,9 +53,9 @@ internal class DacReconnectPolicy {
 /**
  * ViewModel-scoped owner/coordinator for current-product physical USB sessions.
  *
- * Current My DAC recognition and session ownership are intentionally limited to TRN Black Pearl
- * and FiiO. Historical JCALLY protocol knowledge may remain in research/reference files, but no
- * JCALLY transport is opened or owned by the current product.
+ * Current My DAC recognition and session ownership are intentionally limited to TRN Black Pearl,
+ * FiiO JA11, and SIMGOT EW300. Historical JCALLY protocol knowledge may remain in
+ * research/reference files, but no JCALLY transport is opened or owned by the current product.
  *
  * Per-device operation locks live here, at the physical-session owner, so EQ and DEVICE repositories
  * can share one serialization boundary rather than each believing it exclusively owns the same HID
@@ -60,13 +64,22 @@ internal class DacReconnectPolicy {
 class DacSessionRepository(
     internal val blackPearlTransport: AndroidBlackPearlUsbTransport,
     internal val fiioJa11Transport: AndroidFiioJa11UsbTransport,
+    internal val ew300Transport: AndroidEw300UsbTransport,
+    private val ew300ReconnectGate: Ew300ReconnectGate = ew300Transport.reconnectGate,
 ) : Closeable {
     val blackPearlConnectionState: StateFlow<BlackPearlConnectionState> = blackPearlTransport.state
     val fiioJa11ConnectionState: StateFlow<Kt02h20ConnectionState> = fiioJa11Transport.state
+    val ew300ConnectionState: StateFlow<Kt02h20ConnectionState> = ew300Transport.state
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val blackPearlOperationMutex = Mutex()
     private val fiioJa11OperationMutex = Mutex()
+    private val ew300OperationMutex = Mutex()
+    private val ew300MutationExecutor = Ew300MutationExecutor(
+        scope = scope,
+        operationMutex = ew300OperationMutex,
+        reconnectGate = ew300ReconnectGate,
+    )
     private val mutableRecognitionState = MutableStateFlow(
         DacRecognitionState().withPresentDevices(currentPresentDeviceIds()),
     )
@@ -91,10 +104,12 @@ class DacSessionRepository(
             combine(
                 blackPearlTransport.present,
                 fiioJa11Transport.present,
-            ) { blackPearlPresent, fiioJa11Present ->
+                ew300Transport.present,
+            ) { blackPearlPresent, fiioJa11Present, ew300Present ->
                 buildSet {
                     if (blackPearlPresent) add(DacDeviceId.TRN_BLACK_PEARL)
                     if (fiioJa11Present) add(DacDeviceId.FIIO_JA11)
+                    if (ew300Present) add(DacDeviceId.SIMGOT_EW300)
                 }
             }.collect { presentDeviceIds ->
                 mutableRecognitionState.update { previous -> previous.withPresentDevices(presentDeviceIds) }
@@ -115,16 +130,39 @@ class DacSessionRepository(
             isDisconnected = { state -> state is Kt02h20ConnectionState.Disconnected },
             connect = fiioJa11Transport::connect,
         )
+        observeAutomaticReconnect(
+            present = ew300Transport.present,
+            connectionState = ew300ConnectionState,
+            isConnected = { state -> state is Kt02h20ConnectionState.Connected },
+            isDisconnected = { state -> state is Kt02h20ConnectionState.Disconnected },
+            connect = ew300Transport::connectAutomatically,
+            allowReconnect = ew300ReconnectGate::canAutomaticReconnect,
+            allowReconnectState = ew300ReconnectGate.automaticReconnectAllowed,
+        )
     }
 
     fun connectBlackPearl() = blackPearlTransport.connect()
     fun connectFiioJa11() = fiioJa11Transport.connect()
+    fun connectEw300() {
+        ew300ReconnectGate.beginManualConnect()
+        ew300Transport.connect()
+    }
 
     suspend fun <T> withExclusiveBlackPearlOperation(block: suspend () -> T): T =
         blackPearlOperationMutex.withLock { block() }
 
     suspend fun <T> withExclusiveFiioJa11Operation(block: suspend () -> T): T =
         fiioJa11OperationMutex.withLock { block() }
+
+    suspend fun <T> withExclusiveEw300Operation(block: suspend () -> T): T =
+        ew300OperationMutex.withLock { block() }
+
+    /**
+     * Hardware mutation execution belongs to this session owner, not to the calling Compose scope.
+     * Cancelling a UI waiter therefore cannot abort an in-flight Save/replacement verification.
+     */
+    suspend fun <T> withExclusiveEw300Mutation(block: suspend () -> T): T =
+        ew300MutationExecutor.execute(block)
 
     fun isBlackPearlSessionCurrent(sessionGeneration: Long): Boolean =
         sessionGeneration > 0L &&
@@ -135,6 +173,11 @@ class DacSessionRepository(
         sessionGeneration > 0L &&
             fiioJa11ConnectionState.value is Kt02h20ConnectionState.Connected &&
             fiioJa11Transport.sessionGeneration == sessionGeneration
+
+    fun isEw300SessionCurrent(sessionGeneration: Long): Boolean =
+        sessionGeneration > 0L &&
+            ew300ConnectionState.value is Kt02h20ConnectionState.Connected &&
+            ew300Transport.sessionGeneration == sessionGeneration
 
     suspend fun readBlackPearlSnapshot(): HardwareEqSnapshotBundle? = readVerifiedSnapshot(
         generation = { blackPearlTransport.sessionGeneration },
@@ -148,9 +191,33 @@ class DacSessionRepository(
         read = fiioJa11SnapshotReader::read,
     )
 
+    suspend fun readEw300Snapshot(): HardwareEqSnapshotBundle? = readVerifiedSnapshot(
+        generation = { ew300Transport.sessionGeneration },
+        isConnected = { ew300ConnectionState.value is Kt02h20ConnectionState.Connected },
+        read = { generation ->
+            val bands = (0 until Ew300Protocol.BAND_COUNT).map { index ->
+                val gain = ew300Transport.readRegister(Ew300Protocol.bandRegister(index))
+                val q = ew300Transport.readRegister(Ew300Protocol.bandRegister(index) + 1)
+                if (gain == null || q == null) null else Ew300Protocol.decodeBand(index, gain, q)
+            }
+            val gain = ew300Transport.readRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER)
+            if (bands.any { it == null } || gain == null) {
+                null
+            } else {
+                HardwareEqSnapshotFactory.ew300(
+                    nativeBands = bands.filterNotNull(),
+                    globalGainDb = Ew300Protocol.globalGainDb(gain),
+                    sessionGeneration = generation,
+                    verifiedAtEpochMillis = System.currentTimeMillis(),
+                )
+            }
+        },
+    )
+
     private fun currentPresentDeviceIds(): Set<DacDeviceId> = buildSet {
         if (blackPearlTransport.present.value) add(DacDeviceId.TRN_BLACK_PEARL)
         if (fiioJa11Transport.present.value) add(DacDeviceId.FIIO_JA11)
+        if (ew300Transport.present.value) add(DacDeviceId.SIMGOT_EW300)
     }
 
     private fun <T> observeAutomaticReconnect(
@@ -159,21 +226,25 @@ class DacSessionRepository(
         isConnected: (T) -> Boolean,
         isDisconnected: (T) -> Boolean,
         connect: () -> Unit,
+        allowReconnect: () -> Boolean = { true },
+        allowReconnectState: StateFlow<Boolean>? = null,
     ) {
         scope.launch {
             val policy = DacReconnectPolicy()
-            combine(connectionState, present) { state, isPresent -> state to isPresent }
-                .collect { (state, isPresent) ->
-                    if (
-                        policy.shouldReconnect(
-                            isPresent = isPresent,
-                            isConnected = isConnected(state),
-                            isDisconnected = isDisconnected(state),
-                        )
-                    ) {
-                        connect()
-                    }
+            val allowed = allowReconnectState ?: flowOf(true)
+            combine(connectionState, present, allowed) { state, isPresent, canReconnect ->
+                Triple(state, isPresent, canReconnect)
+            }.collect { (state, isPresent, canReconnect) ->
+                if (
+                    policy.shouldReconnect(
+                        isPresent = isPresent,
+                        isConnected = isConnected(state),
+                        isDisconnected = isDisconnected(state),
+                    ) && canReconnect && allowReconnect()
+                ) {
+                    connect()
                 }
+            }
         }
     }
 
@@ -193,5 +264,6 @@ class DacSessionRepository(
         scope.cancel()
         blackPearlTransport.close()
         fiioJa11Transport.close()
+        ew300Transport.close()
     }
 }

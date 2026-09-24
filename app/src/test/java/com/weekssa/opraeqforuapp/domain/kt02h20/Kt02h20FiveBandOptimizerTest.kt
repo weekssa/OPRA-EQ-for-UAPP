@@ -123,6 +123,50 @@ class Kt02h20FiveBandOptimizerTest {
     }
 
     @Test
+    fun ew300ApproximatesLowShelfAsPeakOnlyFullResponseFit() {
+        val source = profile(
+            preamp = -4.0,
+            bands = listOf(band("low_shelf", 105.0, 4.0, 0.71)),
+        )
+
+        Kt02h20FiveBandOptimizer.clearCache()
+        val result = Kt02h20FiveBandOptimizer.optimize(source, HardwareEqDeviceSpecs.SIMGOT_EW300)
+            as FiveBandOptimizationResult.Ready
+
+        assertEquals(DevicePresetFidelity.OPTIMIZED, result.representation.fidelity)
+        assertTrue(result.representation.usedResponseFit)
+        assertEquals(1, result.representation.sourceBandCount)
+        assertTrue(result.representation.bands.size <= 5)
+        assertTrue(result.representation.bands.all { it.type == "peak_dip" })
+        assertTrue(result.representation.adaptationSummary().contains("full-response fit"))
+        assertTrue(result.representation.rmsErrorDb <= HardwareEqDeviceSpecs.SIMGOT_EW300.maxRmsErrorDb)
+        assertTrue(result.representation.maxAbsoluteErrorDb <= HardwareEqDeviceSpecs.SIMGOT_EW300.maxAbsoluteErrorDb)
+        assertEquals("low_shelf", source.bands!!.single().type)
+    }
+
+    @Test
+    fun ew300ApproximatesHighShelfAlongsidePeaksWithoutChangingCanonicalSource() {
+        val sourceBands = listOf(
+            band("peak_dip", 120.0, 2.0, 1.0),
+            band("peak_dip", 1_000.0, -1.5, 1.2),
+            band("high_shelf", 8_000.0, -3.0, 0.71),
+        )
+        val source = profile(preamp = -3.0, bands = sourceBands)
+
+        Kt02h20FiveBandOptimizer.clearCache()
+        val result = Kt02h20FiveBandOptimizer.optimize(source, HardwareEqDeviceSpecs.SIMGOT_EW300)
+            as FiveBandOptimizationResult.Ready
+
+        assertEquals(DevicePresetFidelity.OPTIMIZED, result.representation.fidelity)
+        assertTrue(result.representation.usedResponseFit)
+        assertTrue(result.representation.bands.size <= 5)
+        assertTrue(result.representation.bands.all { it.type == "peak_dip" })
+        assertTrue(result.representation.rmsErrorDb <= HardwareEqDeviceSpecs.SIMGOT_EW300.maxRmsErrorDb)
+        assertTrue(result.representation.maxAbsoluteErrorDb <= HardwareEqDeviceSpecs.SIMGOT_EW300.maxAbsoluteErrorDb)
+        assertEquals(sourceBands, source.bands)
+    }
+
+    @Test
     fun missingSourcePreampGeneratesSafeHeadroomFromFinalTargetResponseAndIsOptimized() {
         val source = profile(
             preamp = null,

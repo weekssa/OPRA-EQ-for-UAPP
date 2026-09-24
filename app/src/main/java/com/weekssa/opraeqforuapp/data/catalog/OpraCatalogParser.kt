@@ -1,5 +1,6 @@
 package com.weekssa.opraeqforuapp.data.catalog
 
+import com.weekssa.opraeqforuapp.domain.catalog.EqBandOrderProvenance
 import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraCatalog
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
@@ -143,6 +144,7 @@ class OpraCatalogParser(
             profileType = data.string("type"),
             preampGainDb = parameters?.number("gain_db"),
             bands = bands,
+            bandOrderProvenance = EqBandOrderProvenance.OPRA_SOURCE_PRIORITY,
         )
     }
 

@@ -2,6 +2,7 @@ package com.weekssa.opraeqforuapp.data.managed
 
 import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
+import com.weekssa.opraeqforuapp.domain.catalog.EqBandOrderProvenance
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
@@ -30,6 +31,15 @@ class ManagedProfileSnapshotCodecTest {
     }
 
     @Test
+    fun snapshotRoundTripPreservesVerifiedSourceBandOrderProvenance() {
+        val profile = sampleProfile(details = "OPRA source").copy(
+            bandOrderProvenance = EqBandOrderProvenance.OPRA_SOURCE_PRIORITY,
+        )
+
+        assertEquals(profile, codec.decode(codec.encode(profile)))
+    }
+
+    @Test
     fun oldStoredSnapshotWithoutVerificationFieldDefaultsToVerified() {
         val encoded = """
             {
@@ -47,6 +57,7 @@ class ManagedProfileSnapshotCodecTest {
         val restored = codec.decode(encoded)
 
         assertTrue(restored.isVerified)
+        assertNull(restored.bandOrderProvenance)
     }
 
     @Test
@@ -101,6 +112,14 @@ class ManagedProfileSnapshotCodecTest {
         val verified = unverified.copy(isVerified = true)
 
         assertEquals(codec.fingerprint(unverified), codec.fingerprint(verified))
+    }
+
+    @Test
+    fun sourceOrderProvenanceDoesNotChangeSemanticFingerprint() {
+        val source = sampleProfile(details = "Source")
+        val classified = source.copy(bandOrderProvenance = EqBandOrderProvenance.OPRA_SOURCE_PRIORITY)
+
+        assertEquals(codec.fingerprint(source), codec.fingerprint(classified))
     }
 
     @Test

@@ -2,7 +2,11 @@ package com.weekssa.opraeqforuapp.data.library
 
 import com.google.common.truth.Truth.assertThat
 import com.weekssa.opraeqforuapp.data.export.ExportOwnershipEntity
+import com.weekssa.opraeqforuapp.data.managed.ManagedProfileEntity
+import com.weekssa.opraeqforuapp.data.managed.ManagedProfileSnapshotCodec
+import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
+import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.library.UnclaimedEqParsedContent
 import org.junit.Test
 
@@ -72,6 +76,100 @@ class UnclaimedEqOwnershipPolicyTest {
     }
 
     @Test
+    fun `stale UAPP export remains visible without making another target recoverable`() {
+        val profileId = "profile:claimed-but-not-uapp-representable"
+        val productId = "product:exact"
+        val staleUapp = ownership(
+            documentUri = "content://eq-library/stale-uapp",
+            profileId = profileId,
+            productId = productId,
+            relativeDirectory = "${ExportDevice.UAPP.folderName}/Maker/Model",
+        )
+        val otherTarget = staleUapp.copy(
+            documentUri = "content://eq-library/other-target",
+            relativeDirectory = "TRN Black Pearl/Maker/Model",
+        )
+        val anotherProduct = staleUapp.copy(
+            documentUri = "content://eq-library/other-product",
+            productId = "product:other",
+        )
+
+        val unresolved = unresolvedOwnedArtifacts(
+            ownerships = listOf(staleUapp, otherTarget, anotherProduct),
+            claimedProfileIds = setOf(profileId),
+            unrepresentableUappProfiles = setOf(ManagedUappExportIdentity(productId, profileId)),
+        )
+
+        assertThat(unresolved).containsExactly(staleUapp)
+    }
+
+    @Test
+    fun `only current unsupported undecodable or identity-mismatched snapshots flag stale exports`() {
+        val codec = ManagedProfileSnapshotCodec()
+        val unsupported = profile("unsupported", productId = "product:current", overUappLimit = true)
+        val usable = profile("usable", productId = "product:current", overUappLimit = false)
+        val removed = profile("removed", productId = "product:current", overUappLimit = true)
+        val undecodable = managedProfile(usable, codec).copy(
+            profileId = "undecodable",
+            snapshotJson = "{malformed snapshot",
+        )
+        val mismatchedProfileId = managedProfile(usable, codec).copy(
+            profileId = "stored-profile-id",
+        )
+        val mismatchedProductId = managedProfile(usable, codec).copy(
+            productId = "stored-product-id",
+        )
+
+        val identities = unrepresentableManagedUappProfiles(
+            profiles = listOf(
+                managedProfile(unsupported, codec),
+                managedProfile(usable, codec),
+                managedProfile(removed, codec).copy(noLongerAvailable = true),
+                undecodable,
+                mismatchedProfileId,
+                mismatchedProductId,
+            ),
+            snapshotCodec = codec,
+        )
+
+        assertThat(identities).containsExactly(
+            ManagedUappExportIdentity("product:current", "unsupported"),
+            ManagedUappExportIdentity("product:current", "undecodable"),
+            ManagedUappExportIdentity("product:current", "stored-profile-id"),
+            ManagedUappExportIdentity("stored-product-id", "usable"),
+        )
+    }
+
+    @Test
+    fun `recovery is blocked only for exact UAPP artifacts with current unrepresentable source`() {
+        val codec = ManagedProfileSnapshotCodec()
+        val usable = profile("usable", productId = "product:current", overUappLimit = false)
+        val unsupported = profile("unsupported", productId = "product:current", overUappLimit = true)
+        val currentUnsupported = managedProfile(unsupported, codec)
+        val oldProfile = currentUnsupported.copy(noLongerAvailable = true)
+        val uapp = ownership(
+            documentUri = "content://eq-library/uapp",
+            profileId = "unsupported",
+            productId = "product:current",
+            relativeDirectory = "${ExportDevice.UAPP.folderName}/Maker/Model",
+        )
+        val otherTarget = uapp.copy(relativeDirectory = "TRN Black Pearl/Maker/Model")
+
+        assertThat(shouldBlockUappExportRecovery(uapp, currentUnsupported, codec)).isTrue()
+        assertThat(shouldBlockUappExportRecovery(otherTarget, currentUnsupported, codec)).isFalse()
+        assertThat(shouldBlockUappExportRecovery(uapp, null, codec)).isFalse()
+        assertThat(shouldBlockUappExportRecovery(uapp, oldProfile, codec)).isFalse()
+        assertThat(shouldBlockUappExportRecovery(uapp, managedProfile(usable, codec), codec)).isFalse()
+        assertThat(
+            shouldBlockUappExportRecovery(
+                uapp,
+                managedProfile(usable, codec).copy(snapshotJson = "{malformed snapshot"),
+                codec,
+            ),
+        ).isTrue()
+    }
+
+    @Test
     fun `recovered Personal EQ preserves preamp and every parsed band value`() {
         val bands = listOf(
             OpraBand(type = "peak_dip", frequency = 123.456, gainDb = -3.21, q = 1.234, slope = null),
@@ -103,16 +201,51 @@ class UnclaimedEqOwnershipPolicyTest {
         profileId: String,
         fileName: String = "Preset.xml",
         productId: String = "product:1",
+        relativeDirectory: String = "Manufacturer/Model",
         exportedAtMillis: Long = 1,
     ) = ExportOwnershipEntity(
         documentUri = documentUri,
         treeUri = "content://eq-library/tree",
-        relativeDirectory = "Manufacturer/Model",
+        relativeDirectory = relativeDirectory,
         profileId = profileId,
         productId = productId,
         fileName = fileName,
         exportedFingerprint = "fingerprint",
         exportedContentHash = "hash",
         exportedAtMillis = exportedAtMillis,
+    )
+
+    private fun profile(id: String, productId: String, overUappLimit: Boolean) = OpraEqProfile(
+        id = id,
+        productId = productId,
+        author = "Creator",
+        details = null,
+        link = null,
+        profileType = "parametric_eq",
+        preampGainDb = 0.0,
+        bands = (1..(if (overUappLimit) 11 else 1)).map { index ->
+            OpraBand("peak_dip", 100.0 * index, 0.0, 1.0, null)
+        },
+    )
+
+    private fun managedProfile(
+        profile: OpraEqProfile,
+        codec: ManagedProfileSnapshotCodec,
+    ) = ManagedProfileEntity(
+        profileId = profile.id,
+        productId = profile.productId,
+        selected = true,
+        explicitlyExcluded = false,
+        snapshotJson = codec.encode(profile),
+        fingerprint = codec.fingerprint(profile),
+        firstSeenAtMillis = 1L,
+        lastSeenAtMillis = 1L,
+        isNewUnreviewed = false,
+        isUpdatedUnreviewed = false,
+        noLongerAvailable = false,
+        generatedPresetName = "${profile.id} preset",
+        generatedXml = null,
+        generatedFromFingerprint = codec.fingerprint(profile),
+        generatedAtMillis = null,
     )
 }

@@ -1,7 +1,10 @@
 package com.weekssa.opraeqforuapp.data.library
 
 import com.weekssa.opraeqforuapp.domain.library.CatalogSnapshot
+import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 import com.weekssa.opraeqforuapp.domain.library.HeadphoneIdentity
+import com.weekssa.opraeqforuapp.domain.library.EqFilter
+import com.weekssa.opraeqforuapp.domain.library.EqRevision
 import com.weekssa.opraeqforuapp.domain.library.hasValidClassification
 import java.io.File
 import java.io.IOException
@@ -197,13 +200,30 @@ class CanonicalCatalogRepository(
                 profile.headphone?.let(::validHeadphoneAliases) != false &&
                 profile.revisions.isNotEmpty() &&
                 profile.revisions.count { it.isLatest } == 1 &&
-                profile.revisions.all { revision ->
-                    revision.revisionId.isNotBlank() &&
-                        revision.acousticFingerprint.isNotBlank() &&
-                        revision.filters.isNotEmpty()
-                }
+                profile.revisions.all(::isValidRevision)
         }
     }
+
+    private fun isValidRevision(revision: EqRevision): Boolean {
+        val sourceReferences = revision.sourceReferences
+        return revision.revisionId.isNotBlank() &&
+            revision.acousticFingerprint.isNotBlank() &&
+            revision.preampGainDb?.isFinite() != false &&
+            revision.eqLibrarySafetyHeadroomDb?.isFinite() != false &&
+            revision.filters.isNotEmpty() &&
+            revision.filters.all(::isValidFilter) &&
+            sourceReferences.isNotEmpty() &&
+            sourceReferences.count { it.isPrimary } > 0 &&
+            sourceReferences.all { it.sourceId.isNotBlank() }
+    }
+
+    private fun isValidFilter(filter: EqFilter): Boolean =
+        filter.frequencyHz.isFinite() &&
+            filter.frequencyHz > 0.0 &&
+            filter.gainDb?.isFinite() != false &&
+            filter.q?.let { it.isFinite() && it > 0.0 } != false &&
+            filter.slope?.let { it.isFinite() && it > 0.0 } != false &&
+            (filter.type != EqFilterType.OTHER || !filter.sourceType.isNullOrBlank())
 
     private fun validAliasGroups(snapshot: CatalogSnapshot): Boolean {
         val groupKeys = mutableSetOf<String>()

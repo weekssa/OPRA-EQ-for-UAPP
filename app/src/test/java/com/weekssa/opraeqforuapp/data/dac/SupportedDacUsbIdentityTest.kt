@@ -3,6 +3,7 @@ package com.weekssa.opraeqforuapp.data.dac
 import com.google.common.truth.Truth.assertThat
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlProtocol
 import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300Protocol
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
 import com.weekssa.opraeqforuapp.domain.kt02h20.JcallyJm12Protocol
 import org.junit.Test
@@ -22,9 +23,28 @@ class SupportedDacUsbIdentityTest {
     }
 
     @Test
-    fun legacyJcallyIdentityFallsThroughToUnsupportedDeviceBehavior() {
+    fun sharedVidPidRequiresExactEw300Strings() {
         assertThat(
-            supportedDacDeviceId(JcallyJm12Protocol.VENDOR_ID, JcallyJm12Protocol.PRODUCT_ID),
+            supportedDacDeviceId(
+                JcallyJm12Protocol.VENDOR_ID,
+                JcallyJm12Protocol.PRODUCT_ID,
+            ),
+        ).isNull()
+        assertThat(
+            supportedDacDeviceId(
+                JcallyJm12Protocol.VENDOR_ID,
+                JcallyJm12Protocol.PRODUCT_ID,
+                manufacturer = "LE XIAN",
+                productName = "SIMGOT EW300 DSP",
+            ),
+        ).isEqualTo(DacDeviceId.SIMGOT_EW300)
+        assertThat(
+            supportedDacDeviceId(
+                JcallyJm12Protocol.VENDOR_ID,
+                JcallyJm12Protocol.PRODUCT_ID,
+                manufacturer = "JCALLY",
+                productName = "JM12",
+            ),
         ).isNull()
     }
 
@@ -43,10 +63,20 @@ class SupportedDacUsbIdentityTest {
     }
 
     @Test
-    fun registryContainsBlackPearlAndBothFiioEnumerationsOnly() {
-        assertThat(supportedDacUsbIdentities).hasSize(3)
+    fun registryContainsBlackPearlBothFiioEnumerationsAndEw300() {
+        assertThat(supportedDacUsbIdentities).hasSize(4)
         assertThat(supportedDacUsbIdentities.count { it.deviceId == DacDeviceId.TRN_BLACK_PEARL }).isEqualTo(1)
         assertThat(supportedDacUsbIdentities.count { it.deviceId == DacDeviceId.FIIO_JA11 }).isEqualTo(2)
+        assertThat(supportedDacUsbIdentities.count { it.deviceId == DacDeviceId.SIMGOT_EW300 }).isEqualTo(1)
+        assertThat(
+            supportedDacDeviceId(
+                Ew300Protocol.VENDOR_ID,
+                Ew300Protocol.PRODUCT_ID,
+                manufacturer = "LE XIAN",
+                productName = "SIMGOT EW300 DSP",
+            ),
+        )
+            .isEqualTo(DacDeviceId.SIMGOT_EW300)
         assertThat(supportedDacUsbIdentities.any { it.deviceId == DacDeviceId.JCALLY_JM12_STOCK }).isFalse()
     }
 }

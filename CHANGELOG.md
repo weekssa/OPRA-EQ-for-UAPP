@@ -6,6 +6,177 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ## [Unreleased]
 
+### 2026-09-23 release-readiness corrective candidate
+
+- Refreshed the v0.7 candidate against live `main` and recorded the PR #24 review: its stale
+  diverged adapter variant is not integrated because it would reject valid source-neutral records;
+  the current lineage already contains the useful fail-closed parser behavior.
+- Added canonical-catalog promotion validation for finite/positive filter semantics, finite
+  preamp/headroom, required provenance, and unsupported-filter source identity.
+- Prevented malformed saved General EQ rows from entering EW300 hardware matching and quarantined
+  malformed profile/category data as visible but non-actionable.
+- Exact source `fdc60bb2443aed00c6e58ea8806e4735272e00d9` passed Android CI #1776, CodeQL #1661,
+  catalog currentness #2074, priority coverage #1559, and dependency submission #2097. No signed
+  APK is available until trusted-main signing; accepted EW300 physical evidence is unchanged.
+
+### 2026-09-23 canonical Favorite and General EQ persistence
+
+- Added full canonical profile/revision/source-reference persistence for newly saved catalog
+  Favorites and General EQs; legacy `OpraEqProfile` records remain derived compatibility views.
+- Added nullable Room 8→9 columns only. Existing Favorites and General EQ rows are preserved
+  unchanged with no guessed canonical provenance or backfill.
+- Resolve saves only against the exact current canonical projection, make a General EQ batch
+  atomic, and keep malformed new canonical rows visible but ineligible for Flash/export actions.
+- Added focused canonical round-trip, mixed-source identity, atomic-save, fail-closed corruption,
+  and non-destructive migration coverage. Implementation snapshot
+  `b57b2466160bc9464d1cb16a004d1522940c553a` passed Android CI #1772 (including connected
+  instrumentation, R8, and API-26 minified install/cold-launch), CodeQL #1657, catalog #2070, and
+  priority coverage #1555. The documentation synchronization following that snapshot creates a
+  new source SHA; consult the live PR for that SHA's own gate results and never carry these results
+  forward to another SHA. No signed APK is available.
+
+### 2026-09-23 source-review follow-up
+
+- Prevented catalog refresh and selection-save from reviving obsolete UAPP/ToneBoosters XML after
+  the current source is no longer representable or a fresh conversion returns no artifact.
+- Keep the exact app-owned old UAPP document visible under My EQs **Needs attention** as
+  source-unverified/non-recoverable, including when its current managed snapshot cannot be decoded
+  or disagrees with the stored product/profile identity. Recovery rechecks this at the repository
+  boundary and in the save transaction; removal remains explicit and exact-file scoped, unrelated
+  export targets are unaffected, and the row no longer overstates every case as an unsupported
+  filter.
+- Removed caller-provided source-order authority from the public ToneBoosters XML builder and
+  preserved the selected canonical source's metadata when duplicate provenance keys collide.
+- Added focused regressions for failed conversion, unselected stale exports, exact UAPP ownership
+  identity/path, primary-reference collision, and product-only OPRA identity mismatch. Exact-head
+  CI is pending on the live PR; no hardware operation was repeated.
+- Added an Android Room instrumentation regression for a current UAPP source becoming
+  unrepresentable after recovery preflight but before the save transaction; it asserts that no
+  Personal EQ is saved and the exact ownership row is unchanged. Android CI #1767 caught a
+  compile-time callback-argument issue in the test fixture before any connected test ran; the
+  explicit named-argument correction is covered by the passing connected tests in #1772.
+- Made owned-file recovery idempotent at its repository transaction boundary and disabled the
+  dialog while a recovery is in flight. Repeated taps/requests return the already-associated
+  Personal EQ instead of inserting duplicates; instrumented coverage checks the saved row and
+  ownership link remain singular. An explicitly selected orphan whose Personal EQ was deleted may
+  be recovered as a new item; malformed or mismatched associations fail closed.
+- Clarified that historical “unmeasured zero” replay/competing-job telemetry wording does not mean
+  zero was measured; the values remain null/unmeasured.
+- Corrected the stale UAPP >10-band test expectation: optimization requires verified OPRA
+  source-priority provenance; ambiguous band order remains Not representable and canonical bands
+  remain untouched.
+- Pinned the upstream OPRA band-priority rule to schema commit
+  `0b88ecd4e2bef7cf69fd5d50f1d06fb586c10865`, while clarifying that the rule does not generalize
+  to arbitrary non-OPRA or mixed-source lists. Narrowed the remaining canonical-persistence gap to
+  Favorites, General EQs, and pre-canonical legacy rows; Personal imports, DAC captures, recovered
+  imports, and catalog snapshots already persist canonical data.
+
+### Historical v0.7 closeout audit snapshot — superseded by the latest implementation result above
+
+- Corrected the stale beta-testing handoff: the live PR baseline when rechecked was `a09d442be728b77dc83b1487814f2428159ddf19`, not the older SHA labeled frozen in that handoff. Earlier signed APKs are not test artifacts for later source changes.
+- The a09d baseline's Android CI #1745, CodeQL #1630, catalog #2043, priority coverage #1528, dependency #2052, and signed beta #1350 passed on that exact source. Audit found release minification disabled and no post-sign alignment check; therefore those passes do not close the stricter current release gate.
+- Added fail-closed EW300 revision authorization, Peak-only hardware write encoding, and serial redaction in shareable reports. Enabled R8 with a mapping check that requires an application class to be renamed, restricted signing workflows to manual trusted-main execution, delayed secrets until signing, disabled checkout-persisted credentials, and added post-sign alignment/provenance outputs.
+- A second independent code review found the dormant Save-qualification service did not itself enforce exact revision or Peak filter authorization, failure text could leak the unit serial, the signed beta still enabled the already-completed Save-qualification flag, and the release workflow had a duplicate YAML key plus a publisher that rebuilt rather than promoted the exact tested APK. Added service-level authorization/Peak guards, hard-disabled that test action in release builds, expanded report redaction, moved R8 mapping verification ahead of signing secrets, fixed the workflow key, and disabled public publication until an exact-artifact promotion workflow is separately reviewed.
+- On exact code source `01d524228ec02199e9f41d1dd2c72df5d9e72f66`, Android CI #1748 (unit tests, lint, debug/release assembly, R8 mapping, and connected emulator UI), CodeQL #1633, catalog #2046, and priority coverage #1531 passed. Dependency submission and signed beta did not run on that PR source; no corrected signed APK or immutable artifact provenance is available. No physical test is requested. The status-document update itself is documentation-only and creates a new head requiring fresh exact-head gates.
+- At that audit snapshot, corrected-source tests, CI/security/catalog/dependency gates, signed artifact, and product verification remained pending exact-head evidence. The local environment had no Gradle wrapper/system Gradle or Android SDK/ADB, so no local Android build or emulator run was claimed. No previous APK could be reused to fill that gap.
+- At that snapshot, the acceptance audit also left canonical persistence/legacy projections, malformed active-filter handling, ToneBoosters ten-band ordering/parity, API-26 and v0.6 upgrade checks, accessibility/offline/error/cross-DAC product validation unresolved. The current implementation result is recorded in `docs/V0.7_RELEASE_READINESS_AUDIT.md`.
+- E001 and E043–E046 remain accepted historical physical evidence; no new Apply, Flash, Restore, Reset, Save qualification, or read-only report is requested. PR #23 remains draft; v0.7.0 remains NO-GO pending blocker closure, exact-source gates/signing, final review, and explicit owner approval.
+
+- Owner reports E043-E046 add read-only PASS plus Flash, exact-baseline Restore, and Reset PASS on signed candidate source `7599dd52fc9e8c58c96e021f581b86a669dcc148`; E037-E040 remain the source-381 Apply/Flash/Restore/Reset evidence. Do not repeat any mutation or E001 Save qualification. All six gates passed on report-source 7599; this docs-only closeout makes that artifact stale for new-head provenance, so refresh gates/signing on the exact docs head. The only possible remaining owner check is non-mutating Personal EQ capture/value/provenance, plus My EQs review/cancel only if the successful Flash was not launched from My EQs. Release remains NO-GO pending scope closure and explicit approval.
+- Aligned the EW300 My DAC surface with the shared DAC UX: the verified EQ path is presented as usable
+  readback/edit/Apply/capture/Flash/Reset/reconnect functionality, while the exact profile's
+  playback/global-gain value remains an honest reported device state rather than an unqualified
+  standalone volume control.
+- Gated EW300 capability-report, operation-report, and exact-baseline-restoration controls to the
+  signed validation candidate; public release builds no longer expose testing-only buttons.
+- Fixed the My EQs hardware Flash availability gate for the exact EW300 path by reusing the tested Direct Flash plus connected-session predicate; this exposes Flash for a saved EQ only when the existing safety gate passes and does not change protocol or mutation behavior.
+
+
+### v0.7 EW300 physical evidence continuation
+
+- Recorded current-source physical `APPLY` report E039 (10 writes, one Save, replacement identity and final readback verified) and `RESET` report E040 (11 writes, one Save, replacement identity and final readback verified) on `381286eb7ea29b0707e6da75f3565bada1d73928`. Replay and competing-job fields remain unmeasured/null; the Reset report does not independently export before/after playback-gain bytes.
+- Recorded E037/E038 as the same-source physical `FLASH` and exact-baseline post-Save `RESTORE` passes. No further Flash, Restore, Apply, Reset, or Save qualification is authorized from these results alone.
+- Recorded latest verified signed documentation head before this documentation-only synchronization `2f99bc7bf183a556bbe9466266abb44cdc02079b` and workflow #1305; APK `EQ-Library-v0.7.0-beta-2f99bc7.apk`, APK SHA-256 `59accf6953dc34f3fdf56efcaa4665b5a29bcaebe9351d18552e2146d4398f64`, artifact digest `sha256:8805075d990eb7ac6c6dc5b7a70ccf14d78309098e81099a3f46f4e318745eb6`. All current-head software/security/signed-artifact gates passed. This synchronization changes documentation only and requires fresh gates; physical E037-E040 remains tied to source 381. Personal EQ capture remains unevidenced; release remains NO-GO pending applicable remaining scope, review, and explicit owner approval.
+
+### 2026-09-22 owner reports on signed source 7599dd5
+
+- Capability JSON (17) passed read-only identity/state validation for the exact fingerprint. Operation JSON (11) verified Flash, JSON (12) verified exact-baseline Restore (`restorationVerified=true`), and JSON (13) verified Reset. Each operation used one Save, had zero permission requests before its first write, matched the replacement session, passed final readback, and ended with known state. Replay and competing-job telemetry remain null/unmeasured.
+- The Restore report proves exact baseline restoration at its completion; a separate later Reset then completed, so do not claim the device remained at an arbitrary original baseline. No further Apply, Flash, Restore, Reset, or Save qualification is requested.
+- The reports do not identify whether Flash originated from My EQs or EQ Library; they also do not demonstrate end-to-end Personal EQ capture UX. These are presentation/evidence gaps, not unsupported hardware claims.
+- Source 7599 passed Android CI #1712, CodeQL #1597, catalog #2010, priority coverage #1495, dependency submission #2017, and signed candidate #1316. This documentation-only follow-up creates a new head and requires fresh exact-head gates and provenance. PR #23 remains draft; v0.7.0 remains NO-GO pending final review and explicit owner approval.
+
+### v0.7 EW300 full-build continuation
+
+- Extended the exact EW300 My DAC Device tab with read-only playback/global-gain state, active Peak-band count, connection freshness, and readable/JSON operation status. The surface remains capability-driven and does not copy unverified Black Pearl controls.
+- Added explicit full-response low/high-shelf adaptation for EW300 source conversion. When the existing RMS/max-error gates pass, source shelves produce an `Optimized` five-band Peak representation; native EW300 readback, capture, editor, and Flash remain Peak-only.
+- Recorded implementation candidate `381286eb7ea29b0707e6da75f3565bada1d73928`: `EQ-Library-v0.7.0-beta-381286e.apk`, APK SHA-256 `12ae91cb9f9eed88bba45c17f56322c526133ce5de61bbd68d108eacbb84bb9f`, signer `65C1C1256DAE3C49E3548F334C91F0BA991969E9BE9E0B223BA4E253D2114747`, signed workflow #1303, and artifact digest `sha256:4672b6c03153f56d00a3aceab1f49a4d8f83f4e78acb5584a9fbee35087789f1`. Android CI #1690, CodeQL #1575, catalog #1988, priority-community #1473, dependency #1990, signed alignment/signature, install, cold-launch, and temporary candidate-publication gates passed. Current-head physical Flash/restoration, merge, publication, and public EW300 support remain unverified or unauthorized.
+
+- Recorded the current exact signed restoration candidate `dea8439956f41cbf83cda314f5f9f53d878c6181`: `EQ-Library-v0.7.0-beta-dea8439.apk`, APK SHA-256 `72c95bfaedae0f03303c7aac975aa67ca1e7af63b6c40b95809c022238971792`, signer `65C1C1256DAE3C49E3548F334C91F0BA991969E9BE9E0B223BA4E253D2114747`, signed workflow #1296, and artifact digest `sha256:59b15d4a0a726613452b923cdf6bfda483f43974be1510bdf85f636f80bcb559`. Android CI, CodeQL, catalog, priority-community, dependency, signed alignment/signature, install, cold-launch, and temporary candidate-publication gates passed. Physical Flash/restoration, merge, publication, and public EW300 support remain unverified or unauthorized.
+- Corrected the restoration success regression assertion after CI showed that Flash and exact restoration each perform 11 qualified register writes; the expected combined count is 22. No production protocol or transaction behavior changed.
+- Added the architecture-aligned exact-baseline post-Save restoration transaction for the exact qualified EW300 fingerprint. A verified Flash now retains the complete pre-test five-band/global-gain raw baseline for the signed validation candidate; restoration performs one guarded Save, exact replacement fingerprint/generation validation, and byte-for-byte final readback before reporting `restorationVerified=true`. Ordinary builds do not expose the validation action, and physical Flash/restoration remain unverified.
+- Added restoration operation evidence for baseline provenance and explicit failure/uncertainty reasons, plus focused tests for exact restoration, one Save, caller cancellation during detach, wrong identity/generation, final-readback mismatch, exception after Save, no replay, and truthful unmeasured telemetry. Replacement generation checks now require a strictly newer generation after detach.
+- Updated the EW300 status, full-build status, capability matrix, hands-on checklist, project runbook, validation ledger, and maintained recovery handoff to distinguish the new software implementation from the still-open physical Flash gate. No Save qualification was repeated.
+
+- E034 lifecycle recovery: source `41aa0b0aca879d8d9b7844e8574a68a5949cc8c8` moves EW300 hardware mutation ownership into the authoritative DAC-session scope, changes EQ Library Flash to a non-suspending ViewModel event, and surfaces terminal Flash feedback from durable operation-trace state rather than Compose coroutine lifetime.
+- Added cancellation/re-enumeration regressions covering UI-caller disposal during detach, one Save, exact replacement generation/fingerprint, final readback, uncertain mismatch handling, and truthful unmeasured telemetry. No protocol command, identity scope, Save qualification, or automatic mutation retry was added. Physical Flash remains unverified after E033.
+- Added the EW300 reconnect mutation gate and privacy-safe readable/JSON operation report. Automatic reconnect is blocked before the single Save send, no mutation is replayed, and the report records permission-before-write, write, Save, replacement, restoration, and final-readback invariants. Current-head CI and the one consolidated owner hardware session remain pending.
+
+- Recorded the current signed candidate’s exported EW300 `APPLY` evidence: one Save, permission only after the first-write boundary during replacement reconnect, exact replacement identity verification, and final hardware readback match. The report is not a Flash result; replay and competing-job counters remain explicitly unmeasured.
+- Added truthful EW300 reconnect feedback: after a verified Apply/Flash/Reset, My DAC states that the DAC reconnected and final hardware readback matched; the connecting state explains that Android may require permission again after re-enumeration. Android’s OS permission prompt remains required when the USB instance is replaced.
+- Synchronized the current signed documentation-head candidate `48fb2d6df4cdf59e6d5f7fe48718c9e82a0ef665`: `EQ-Library-v0.7.0-beta-48fb2d6.apk`, SHA-256 `96e094258d186da68555945d389c17817f1687e820beaa04f47917eb36ce6525`, signed workflow #1283. All current-head software, security, signing, installation, launch, and emulator gates passed; no physical retest or release approval is inferred.
+- Recorded the final pushed PR head `9e49876cdd5c49ae9263637204b02407f8e36c32`: `EQ-Library-v0.7.0-beta-9e49876.apk`, SHA-256 `cbeb840f712f83c8a742566603d615b4e466319ec9bbfa51117a80e01c1c7d37`, signed workflow #1284. All current-head software, security, signing, installation, launch, emulator, and temporary-candidate publication gates passed; no physical retest or release approval is inferred.
+- Recorded E030 from signed candidate `dbc86b638982465ad498556fb23a150aef537ebd`: the exact-device read-only report passed after the app reported an unverified Flash, but the attached files did not include the required Flash operation JSON. No write, Save, final-readback, or restoration claim is inferred.
+- Recorded E031 from signed candidate `dbc86b638982465ad498556fb23a150aef537ebd`: the exported Flash report proves 11 writes, one Save, and volatile readback, then reports `ForgottenCoroutineScopeException` after detach before replacement-session handling and final readback. The bounded follow-up moves the EW300 Flash launch to the app-level scope; it remains pending CI and physical retest.
+- Recorded E032 from signed candidate `33566e0dba835d356fd6c90231a5c144802643c6`: the targeted EW300 Flash lifecycle fix passed all current-head software and signed-candidate gates and is ready for one bounded physical Flash retest. No physical PASS or release approval is inferred.
+- Recorded E033 from the exact-device Flash report on signed candidate `33566e0dba835d356fd6c90231a5c144802643c6`: the app still raised `ForgottenCoroutineScopeException` after 11 writes, one Save, volatile readback, and USB detach; final readback and restoration were not reached. Before/after read-only reports show the global playback gain changed from -53.0 dB to -57.0 dB, so no further mutation is authorized until the lifecycle owner is moved beyond Compose scopes.
+
+- Accepted the frozen signed-candidate evidence for the exact allowlisted EW300 fingerprint (unit serial omitted from this changelog): read-only PASS and `VERIFIED` Save, Peak, playback-gain, exact restoration, and two power-removal checks.
+- Added the exact-fingerprint production capability profile and removed the completed Save qualification action from the normal product UI. The Save qualification must not be run again.
+- Added a shared strict EW300 baseline/restore coordinator and guarded persistent Apply, Flash, Reset, and reconnect-aware verification paths.
+- Added focused authorization and transaction test coverage; complete CI, signing, installation, launch, and final consolidated hardware validation remain required before PR #23 can be considered for approval.
+- Final software commit `7887b0795ba3802368f77808a9ff2851e2fd7bdd` passed the complete CI, security, signed-APK, alignment, installation, and cold-launch gates. The exact signed beta artifact is `EQ-Library-v0.7.0-beta-7887b07.apk` with SHA-256 `714500157de686fe82d768dc71fe2bdab28694ba24899a6684854bdc3ae680d1`; one consolidated owner hardware session remains.
+- Corrected the shared EW300 editor label so the exact device is shown instead of the legacy Black Pearl label, added regression coverage, and produced signed candidate `048465f4a7ea6ae62b89076de1ecafc0c5dc8bce`. The artifact is `EQ-Library-v0.7.0-beta-048465f.apk` with SHA-256 `e1beeaec461a449d0f3a01df5ec9861f0ff6aa0dc508e295e2c6e6870295d8b0`; all software, security, signing, installation, and launch gates passed.
+- Follow-up review fixed stale EW300 DEVICE-tab wording and enabled the exact-profile managed EW300 Flash entry only when Direct Flash, the active EW300 output, and the connected exact session all agree. The fix adds no new USB commands and preserves the no-guess multi-DAC guard. Signed candidate `f8707788531cfdef33cd46d79c5c53e649480232` is `EQ-Library-v0.7.0-beta-f870778.apk` with SHA-256 `b512a949c22848ad991b38831c082c59d9ea223ed3099108c39e1aaec353f033`; all software, security, signing, installation, and launch gates passed.
+- The first owner Flash attempt on that candidate was stopped as unconfirmed when Android showed a USB permission prompt and a competing-app chooser during EW300 reconnect. Removed the manifest-wide USB attachment handler that could relaunch EQ Library as a system USB choice; retained exact in-app identity checks, scoped permission, and dynamic reconnect handling. A replacement signed candidate and full gates are required before any Flash retry.
+- Replacement candidate `6b3a35c6e8901c89f52ec3588d0feac744cba017` removes the manifest-wide USB attachment handler that caused the competing-app chooser during EW300 reconnect. Android’s normal in-app USB permission flow and exact identity checks remain. Signed workflow #1257 passed all software, security, signing, installation, alignment, source-SHA, and cold-launch gates. The exact APK is `EQ-Library-v0.7.0-beta-6b3a35c.apk` with SHA-256 `810db843cd989a4277978e58749dea215ca5f9c0593927db9c26922505a0d8e8`. The prior `f870778` Flash attempt remains unconfirmed; no hardware PASS is inferred.
+
+### Fixed
+
+- Added a guided, read-only EW300 capability report in My DAC with readable and JSON sharing.
+- Added a release-signed-candidate-only EW300 Save qualification tied to the exact source SHA and pinned installed signer. It preserves the complete baseline, uses two small safer reductions, requires two detected full unplug/reconnect checks, restores the baseline exactly, and makes every uncertain mutation a terminal no-retry stop. Ordinary builds hard-disable and omit the action from the UI.
+- Serialized EW300 diagnostics through the device operation gate and retained first-failure safe-stop behavior.
+- Gated EW300 Personal EQ capture until frequency scaling was resolved, then enabled peak-only capture while keeping ordinary playback gain out of the canonical EQ profile.
+- Added an Android emulator gate that verifies the EW300 diagnostic's safety wording, run action, result state, and both report-sharing actions.
+- Resolved EW300 frequency scaling without another hardware session by fitting the captured stock filters to same-earpiece DSP-versus-passive acoustic measurements; direct raw Hz fits at 0.989 correlation and 0.152 dB RMS, while the public 2× fallback does not.
+- Classified EW300 register `0x66` conservatively as digital DAC/playback gain rather than a dedicated EQ preamp, matching the shared framework rule already used for Black Pearl playback gain.
+
+- Added strict EW300 identity matching beyond VID/PID: expected USB strings, HID interface shape, and a session fingerprint now gate any device-scoped state.
+- Made EW300 qualification and applied-gain state fingerprint-scoped, fixed byte-array content comparison in editor readback, and added pre-commit restoration after partial band mutations.
+- Disabled persistent EW300 Flash and Reset in the product candidate until command `0x53` and full power-cycle behavior are proven on the exact cable. The default capability utility is read-only and exports a plain-language/JSON report.
+- Updated the candidate to versionCode 7 / versionName 0.7.0 and standardized source-neutral wording around EQ profiles from OPRA, AutoEQ, community/general sources, imports, Personal EQs, and DAC captures.
+- Added the software-prepared EW300 My DAC shell to the recovery beta, including the shared EQ/DEVICE tab structure. The DEVICE tab is capability-driven and explicitly reports when no additional EW300 controls are verified instead of copying Black Pearl commands.
+- Added guarded EW300 five-band readback, editor, capture, reconnect, and Direct Flash paths through the shared registry/session/finite-hardware framework. Global gain, persistence, and Reset remain hardware-validation gated and are not claimed as qualified.
+
+- Preserved the separate EW300 discovery results as protocol evidence while keeping discovery APK/tooling out of the shipping recovery branch.
+- Updated the read-only EW300 descriptor diagnostic to derive the exact HID report length from the standard descriptor, make a non-forced host claim of that interface, perform only the standard report-descriptor read, and release the interface. This addresses the owner-observed `-1` descriptor result without sending any HID report or vendor command.
+- Recorded the Pixel 9 refusal of the non-forced EW300 HID-interface claim. The next read-only diagnostic may briefly detach Android's driver from HID interface 3, reads only its standard 74-byte report descriptor, and immediately releases it; no HID report or EQ command is sent.
+- Recorded the complete owner-captured EW300 HID descriptor: vendor report IDs `0x4B` and `0x54` each declare 10-byte input and output payloads. Added descriptor-derived input-only GET_REPORT discovery; output reports remain prohibited until their semantics are evidenced.
+- Recorded that both exact EW300 vendor input reports return zero bytes to read-only HID GET_REPORT. Hardware EQ support remains disabled; no speculative output request was added.
+- Recorded an exact-product third-party browser connection that exposes a Save action but no labelled stock-state read or backup. The session was disconnected without an EQ action; its displayed five-filter limit is not adopted as hardware evidence.
+- Added a bounded, descriptor-derived passive interrupt-IN observation to the separate EW300 diagnostic: three 250 ms incoming-only reads after the existing standard reads. It sends no HID output, vendor request, EQ, save, or reset command.
+- Recorded the owner result from that passive observation: all three exact-device interrupt-IN reads timed out with no bytes. The diagnostic released the HID interface; hardware EQ support remains disabled because this does not establish stock-state readback or protocol semantics.
+- Added an owner-authorized provisional stock-state diagnostic derived from the public Hangout.Audio `0x31B2` KT Micro fallback. It is gated on the exact EW300 identity, endpoints, and captured HID descriptor; sends only report `0x4B` command `0x52` READ requests; stops on the first invalid response; and records raw values. WRITE, COMMIT, CLEAR, save, reset, and firmware commands remain excluded.
+- Corrected one transcribed Consumer Control usage in the EW300 descriptor safety gate (`0xCE` to the owner-captured `0xCF`). The mismatched candidate remained locked and sent no command; the complete 74-byte gate value now has direct regression coverage.
+- Recorded the successful exact-device EW300 stock-state pull: all 12 bounded report-`0x4B` READ requests returned correctly echoed responses. Preserved the untouched slot, five filter pairs, and global-gain payload byte-for-byte as a regression/restoration fixture; no write, commit, clear, save, reset, or firmware command was sent.
+- Added the owner-approved, stock-snapshot-gated EW300 reversible write qualification: Band 1 gain moves temporarily from -1.1 dB to -1.0 dB, is read back, then the exact captured four bytes are restored and read back. No commit, save, clear, reset, slot, global-gain, or firmware operation is included.
+- Corrected the EW300 preserved stock fixture for register `0x2E` from the transcribed `FB FF` to the repeatedly observed untouched bytes `05 00`; the fail-closed diagnostic sent no write while identifying the discrepancy.
+- The owner-qualified reversible EW300 Band 1 test completed: the exact stock snapshot gate passed, a temporary `-1.1 dB → -1.0 dB` gain-byte change was read back, and the original bytes were restored and read back exactly. This remains a diagnostic-only volatile-write qualification; persistence and production EW300 support are not claimed.
+- A separate post-reconnect, read-only full snapshot again matched every preserved EW300 stock payload exactly, confirming the restored state without sending any command other than READ.
+- The owner completed the seven-check consolidated EW300 field-qualification batch: all temporary values read back, each baseline restored, and the final full stock snapshot matched exactly. No persistence-style command was sent.
+- Prepared the owner-approved, fail-closed remaining-field qualification: eight temporary frequency/Q raw-word checks for Bands 2–5, with exact readback, immediate per-check restoration, first-failure stop, and a required final full exact snapshot. Persistence and all Save/Commit-style commands remain excluded.
+- The owner completed that final eight-check EW300 batch. Temporary frequency/Q writes for Bands 2–5 read back exactly, each baseline was restored, and the final full 12-register snapshot matched the untouched capture. Together with the prior batch, volatile gain/frequency/Q write/readback/restore transport is qualified across five observed bands; filter types, value semantics, persistence, reset, slot, and global-gain operations remain disabled.
+- The owner completed the consolidated EW300 Band 1 filter-type qualification: provisional raw codes 1–4 each read back exactly, restored the captured bytes, and passed the final full-snapshot gate. Added the Android-free EW300 volatile protocol boundary and regression coverage for changing only the observed filter-type byte. Production registration remains intentionally disabled pending acoustic, range, persistence, and reset qualification.
+
 ### Documentation
 
 - Added the approved v0.7 SIMGOT EW300 DSP implementation plan, including protocol-evidence gates, reuse of the scalable My DAC framework, automated validation, signed-candidate handoff, and the owner physical-test boundary.
@@ -48,7 +219,8 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ### Fixed
 
-- Corrective Black Pearl Restore-defaults retest passed on exact signed `eb19800`; the restore reached all approved DEVICE targets and the compact My EQs / General EQs layouts passed owner review.\n
+- Corrective Black Pearl Restore-defaults retest passed on exact signed `eb19800`; the restore reached all approved DEVICE targets and the compact My EQs / General EQs layouts passed owner review.
+
 - Black Pearl Restore defaults waits for its exact verified write cycle rather than aborting on an older screen snapshot, checks the original USB session and all final values, and explains retained safety volume on genuine failure. No automatic write retry or speculative recovery command is introduced; physical retest is pending.
 - Managed-headphone details and General EQs use compact, scrollable headers and wrapping actions; notification/removal options and explanatory help move out of the main content area.
 
@@ -246,6 +418,98 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Hands-on testing passed for in-place upgrade, OPRA browsing/selection, revised selection behavior, device-targeted export, app-owned file cleanup, UAPP import, and TRN Black Pearl import.
 - DX5 II and DX1 II export formats remain implemented but hardware-untested.
 
+## 2026-09-21 EW300 release-candidate gate — SOFTWARE PASS, HARDWARE PENDING
+
+The exact signed EW300 candidate from source `855364e8a9d758f12e7d2a48bdaf89f457e28070`
+passed the complete automated, security, signing, emulator installation, cold-launch,
+accessibility, and release-polish gates. APK SHA-256 is
+`bfcb77f4774e8f0a9e48c1da13a262e9033c8e0f42a7a18774e864c0b1774b44`; the pinned signer remains
+`65C1C1256DAE3C49E3548F334C91F0BA991969E9BE9E0B223BA4E253D2114747`. The one consolidated
+physical EW300 session remains outstanding. No merge, publication, or public support claim is
+authorized.
+
+## 2026-09-21 EW300 signed candidate Apply stop — NO WRITE
+
+The owner’s exact-candidate Apply attempt stopped safely before mutation. The exported operation
+report records `InvalidPlan`, zero register writes, zero Save commands, zero permission requests,
+and known device state. Source diagnosis found that the shared editor treated EW300’s verified
+global-gain register as a dedicated EQ preamp; the recovery branch now maps it as an absolute
+device-global-gain headroom mechanism. The old APK must not be retried. A replacement signed
+candidate and complete gates are required before the consolidated physical session resumes.
+
+## 2026-09-21 EW300 replacement candidate — SOFTWARE PASS, HARDWARE PENDING
+
+Corrected the EW300 editor’s headroom mapping so the verified absolute device-global-gain
+register is used as the baseline instead of an unavailable dedicated EQ preamp. Replacement
+source `8bb87aac689ce28b1e92e115a3f83f1b59ad1f65` passed Android unit/lint/build, emulator UI,
+CodeQL, catalog, priority-community, dependency, signing, alignment, installation, and cold-launch
+gates. The exact signed APK is `EQ-Library-v0.7.0-beta-8bb87aa.apk` with SHA-256
+`f470a3d330951705f8bd94450f9adaa813040d8717541eeed75956f43b97607d`; signed workflow #1260;
+the immutable testing APK is [available here](https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-8bb87aa.apk).
+No physical mutation has been attempted with this candidate. The one consolidated EW300 session
+remains pending, and merge, publication, and any public support claim remain owner-controlled.
+
+## 2026-09-21 EW300 physical session — HARDWARE STATE RESTORED, APP TELEMETRY INCOMPLETE
+
+On exact candidate `7035518b042a7b19c0495869cf247359ee27b4a2`, the EW300 re-enumerated after the
+reviewed edit and Android displayed the documented replacement USB permission request. The first
+attempt timed out because the replacement authorization was not completed, but a subsequent
+read-only report confirmed the edited `+4.00 dB` value. A required restoration transaction then
+returned Band 1 to `+4.50 dB`, and the final complete read-only snapshot matched the original
+baseline with global gain unchanged. The candidate Apply operation report was not exported, so
+the app’s Save/readback counters and end-to-end operation outcome remain unverified. No further
+physical mutation is authorized for this candidate.
+
+## 2026-09-21 EW300 reconnect-gate candidate — SOFTWARE PASS, HARDWARE PENDING
+
+After the `8bb87aa` candidate repeatedly surfaced an Android USB permission prompt when a
+pre-Save operation stopped, automatic EW300 reconnect is now held until the owner explicitly
+connects again. A Save-sent operation still releases the documented replacement-session readback
+path. Source `f41f985cb9f7a5d1622bc2e85ddfe5d14777e25d` passed the complete software, security,
+signing, emulator, installation, and release gates. The exact signed APK is
+`EQ-Library-v0.7.0-beta-f41f985.apk` with SHA-256
+`0f70d9f290c487691992ac657d8f2dae1ccba844a99749c6b44e37895ce4c345`; signed workflow #1261.
+The previous physical attempt remains a permission-denied stop with no verified Apply result.
+
+## 2026-09-21 EW300 queued-reconnect guard candidate — SOFTWARE PASS, HARDWARE PENDING
+
+The EW300 automatic reconnect path now rechecks the reconnect gate at invocation time, preventing
+a stale queued callback from requesting Android USB permission after a pre-Save stop has closed
+the gate. Source `7035518b042a7b19c0495869cf247359ee27b4a2` passed Android unit/lint/build,
+emulator UI, CodeQL, catalog, priority-community, dependency, signing, alignment, installation,
+and cold-launch gates. The exact signed APK is
+`EQ-Library-v0.7.0-beta-7035518.apk` with SHA-256
+`661ca49488939c15f290868f1be05ab24dfb1b1a870b977455dabfedce409c66`; signed workflow #1262.
+No physical mutation has been attempted with this candidate. The one consolidated EW300 session
+remains pending, and merge, publication, and any public support claim remain owner-controlled.
+
+## 2026-09-21 EW300 trace-boundary follow-up — SOFTWARE PASS, HARDWARE GATE OPEN
+
+The bounded Extra-High review found one actionable evidence defect in the prior candidate: Apply
+did not mark the operation trace immediately before its first hardware write. The follow-up at
+source `d858cc56728ab3fd6deef0b158a35d1c04149f7e` adds that boundary and a direct regression test
+that a queued automatic reconnect rechecks the mutation gate before launching USB connection.
+Android unit/lint/build, emulator UI, CodeQL, catalog, priority-community, dependency, signing,
+alignment, installation, cold-launch, and signed-beta publication checks all passed. The exact APK
+is `EQ-Library-v0.7.0-beta-d858cc5.apk` with SHA-256
+`96b453674b2b5cea6cdc3c18ba33d60187f56520cb9abf44db79fb66089613db`; signed workflow #1270.
+This evidence-only follow-up was not physically tested; no further physical mutation is authorized.
+Replay/competing-job counters remain unmeasured zero fields, and PR #23 stays draft with no merge,
+publication, or public EW300 support claim authorized.
+
+## 2026-09-21 EW300 final guard-seam candidate — SOFTWARE PASS, HARDWARE GATE OPEN
+
+The final bounded Extra-High review found that the reconnect regression should exercise the
+production guard path rather than duplicate its condition in a local test lambda. Source
+`95e5e3597ce3bc7d3c1011bd0a79e978fc9a6e64` adds the minimal `runAutomaticReconnectIfAllowed` seam,
+routes `connectAutomatically()` through it, and tests zero launches before Save release and one
+afterward. The complete Android, emulator, security, catalog, coverage, dependency, signing,
+installation, cold-launch, and signed-beta checks passed. The exact APK is
+`EQ-Library-v0.7.0-beta-95e5e35.apk` with SHA-256
+`adb672e09c0fb2237814bb05451df7fe9f1785008de082bda225f5efe5157914`; signed workflow #1272.
+This final code candidate was not physically tested; no further physical mutation is authorized.
+Replay/competing-job counters remain unmeasured zero fields, and PR #23 stays draft.
+
 ## [0.1.0] - 2026-08-16
 
 ### Added
@@ -305,4 +569,3 @@ APK SHA-256: `dabf4bcdddf69853b09793f5a94bec0a3af7efb430f1cdfe26ffc35a93b783ad`
 The exact candidate passed Android CI #1538, CodeQL #1420, Catalog currentness CI #1826, Priority community coverage CI #1311, and Signed EQ Library Beta Candidate #1213. The signing workflow verified the pinned certificate `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`.
 
 This PASS closes the corrective Black Pearl physical gate. It does not establish TRN factory-default semantics and does not qualify FiiO JA11 hardware behavior. PR #16 was merged and v0.6.0 publication is complete. FiiO JA11 physical qualification remains hardware-validation-pending.
-

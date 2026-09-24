@@ -15,6 +15,8 @@ data class SavedGeneralEqEntity(
     val profileJson: String,
     val createdAtMillis: Long,
     val updatedAtMillis: Long,
+    /** Full catalog profile/revision selection; null preserves legacy rows without reconstruction. */
+    val canonicalSelectionJson: String? = null,
 )
 
 @Entity(
