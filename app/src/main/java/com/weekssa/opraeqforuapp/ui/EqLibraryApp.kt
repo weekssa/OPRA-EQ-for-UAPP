@@ -326,6 +326,21 @@ fun EqLibraryApp(
         }
     }
 
+    fun ew300UnverifiedOperationMessage(trace: Ew300OperationTrace): String {
+        val operation = "EW300 ${trace.operation.lowercase()}"
+        val reason = trace.failureReason?.takeIf { it.isNotBlank() }
+        return when (trace.outcome) {
+            Ew300OperationOutcome.NOT_SUITABLE,
+            Ew300OperationOutcome.DEVICE_UNAVAILABLE,
+            Ew300OperationOutcome.INVALID_PLAN,
+            Ew300OperationOutcome.STALE_BASELINE,
+            Ew300OperationOutcome.CONFIRMATION_REQUIRED,
+            Ew300OperationOutcome.NO_BASELINE,
+            -> "$operation was not applied${reason?.let { ": $it" } ?: "."}"
+            else -> "$operation did not finish with a verified state. Do not retry this operation; review the operation report${reason?.let { ": $it" } ?: "."}"
+        }
+    }
+
     var lastEw300StartedOperationId by remember {
         mutableStateOf<String?>(null)
     }
@@ -381,21 +396,6 @@ fun EqLibraryApp(
                 }
             }
             Ew300OperationStatus.Idle -> Unit
-        }
-    }
-
-    fun ew300UnverifiedOperationMessage(trace: Ew300OperationTrace): String {
-        val operation = "EW300 ${trace.operation.lowercase()}"
-        val reason = trace.failureReason?.takeIf { it.isNotBlank() }
-        return when (trace.outcome) {
-            Ew300OperationOutcome.NOT_SUITABLE,
-            Ew300OperationOutcome.DEVICE_UNAVAILABLE,
-            Ew300OperationOutcome.INVALID_PLAN,
-            Ew300OperationOutcome.STALE_BASELINE,
-            Ew300OperationOutcome.CONFIRMATION_REQUIRED,
-            Ew300OperationOutcome.NO_BASELINE,
-            -> "$operation was not applied${reason?.let { ": $it" } ?: "."}"
-            else -> "$operation did not finish with a verified state. Do not retry this operation; review the operation report${reason?.let { ": $it" } ?: "."}"
         }
     }
 
