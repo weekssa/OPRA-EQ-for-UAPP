@@ -2,12 +2,12 @@
   "candidate_count": 2,
   "candidates": [
     {
-      "candidate_id": "github-general-90902e40d9317c277646be44",
-      "content_sha": "74c113a0bfb64759dc41f040a10449c267d109b0",
+      "candidate_id": "github-general-cfa93aaaeb3c5cbb8f6e158e",
+      "content_sha": "e892a225b7a6d824c3cfc6de02885aa6ff9c3497",
       "creator": null,
       "creator_is_explicit": false,
       "license_review_required": false,
-      "path": "data/www/eq.html",
+      "path": "src/stores/eqStore.ts",
       "platform": "github_code",
       "publication_eligible": false,
       "qualification_required": [
@@ -17,14 +17,14 @@
         "canonical_dedupe"
       ],
       "redistribution": "structured-data-only",
-      "repository": "rbouteiller/airplay-esp32",
+      "repository": "ddmoney420/vibrdrome-web",
       "scope_hint": "general",
-      "source_account": "rbouteiller",
+      "source_account": "ddmoney420",
       "source_id": "github-community",
       "source_kind": "community_repository",
-      "source_record_id": "rbouteiller/airplay-esp32:data/www/eq.html:74c113a0bfb64759dc41f040a10449c267d109b0",
+      "source_record_id": "ddmoney420/vibrdrome-web:src/stores/eqStore.ts:e892a225b7a6d824c3cfc6de02885aa6ff9c3497",
       "status": "new_candidate",
-      "url": "https://github.com/rbouteiller/airplay-esp32/blob/9ef96118e5ed149958c7913d9708824f5b97cb13/data/www/eq.html"
+      "url": "https://github.com/ddmoney420/vibrdrome-web/blob/b5a7082c8c98ad687658fcbe3acbcb5a637a59e0/src/stores/eqStore.ts"
     },
     {
       "candidate_id": "github-general-ac2c67035d63fbf17fa87e7a",
