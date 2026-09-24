@@ -43,6 +43,24 @@ Only after the exact candidate gates pass, and only if existing evidence does no
 
 Stop without any final write if values/provenance or the review path are unclear. Do not collect another read-only capability report.
 
+## New audio-channel investigation — non-mutating only
+
+The owner reported a right-channel-only symptom and crackling on the left at high level on
+2026-09-24. Follow `docs/V0.7_EW300_AUDIO_CHANNEL_INVESTIGATION.md` for the controlled isolation
+matrix. This is a diagnostic addition, not a request to repeat accepted EW300 mutation evidence.
+
+- Start at minimum volume with a known left/right stereo recording.
+- Do not Flash, Reset, Save, Restore, send exploratory output reports, or test at maximum volume.
+- Record Android/UAPP balance and mono settings, the behavior with EQ Library closed, the behavior
+  after read-only Refresh, and the result with the same IEMs/adapter/source on another DAC.
+- If safe and mechanically applicable, swapping the detachable earpiece sides helps distinguish an
+  earbud/connector fault from an EW300 output-channel fault.
+- Capture the existing read-only EW300 register report, including `0x66`, without changing state.
+- Stop immediately on crackle, heat, unsafe loudness, or any unexpected hardware state change.
+
+Do not treat a successful EQ readback as proof of stereo-channel health. Do not add a balance,
+routing, mono/stereo, UAC, or volume control without exact EW300 evidence.
+
 ## Product closeout already completed before this checklist
 
 The implementation/review work has closed the previously listed product gaps: shared EW300 graph/status, authoritative-session manual Refresh, concise DEVICE presentation, the capability-by-capability Black Pearl comparison, and cross-source low/high-shelf regression coverage. These closures do not broaden the qualified EW300 hardware-control boundary.
