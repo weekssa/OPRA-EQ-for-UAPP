@@ -889,12 +889,14 @@ private fun Kt02h20ConnectionControl(
                 modifier = Modifier.weight(1.25f),
             ) { Text("Reset EQ to flat") }
         }
-        if (
-            state is Kt02h20ConnectionState.Error ||
-            state is Kt02h20ConnectionState.PermissionRequired
-        ) {
+        val connectionMessage = when (state) {
+            is Kt02h20ConnectionState.Error -> state.message
+            is Kt02h20ConnectionState.PermissionRequired -> state.message
+            else -> null
+        }
+        if (connectionMessage != null) {
             Text(
-                text = state.message,
+                text = connectionMessage,
                 modifier = Modifier.padding(top = 4.dp),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error,
