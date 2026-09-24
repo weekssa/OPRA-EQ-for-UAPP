@@ -13,6 +13,21 @@ enum class Ew300OperationStage {
     VERIFIED, FAILED, STATE_UNCERTAIN,
 }
 
+/** Stable, release-safe values for operation reports and user-facing status mapping. */
+object Ew300OperationOutcome {
+    const val SUCCESS = "Success"
+    const val NOT_SUITABLE = "NotSuitable"
+    const val DEVICE_UNAVAILABLE = "DeviceUnavailable"
+    const val TRANSFER_FAILED = "TransferFailed"
+    const val VERIFICATION_FAILED = "VerificationFailed"
+    const val INVALID_PLAN = "InvalidPlan"
+    const val STALE_BASELINE = "StaleBaseline"
+    const val CONFIRMATION_REQUIRED = "ConfirmationRequired"
+    const val NO_BASELINE = "NoBaseline"
+    const val EXCEPTION = "Exception"
+    const val UNKNOWN = "Unknown"
+}
+
 /** Lifecycle state for the most recent EW300 mutation or editor operation. */
 sealed interface Ew300OperationStatus {
     data object Idle : Ew300OperationStatus

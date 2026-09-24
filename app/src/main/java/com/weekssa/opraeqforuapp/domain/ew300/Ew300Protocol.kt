@@ -71,10 +71,15 @@ object Ew300Protocol {
         }
     }
 
-    fun globalGainSteps(data: ByteArray, protocolFlags: ByteArray): Int {
+    /**
+     * Returns one scalar only when every active digital-gain channel agrees.
+     * An unequal stereo pair is unsafe to use as a mutation baseline because collapsing it to
+     * byte 0 can silently attenuate one channel or overwrite the other channel's state.
+     */
+    fun globalGainSteps(data: ByteArray, protocolFlags: ByteArray): Int? {
         require(data.size == 4)
-        globalGainLayout(protocolFlags)
-        return data[0].toInt()
+        val channels = globalGainChannelSteps(data, protocolFlags)
+        return channels.firstOrNull()?.takeIf { channels.all { channel -> channel == it } }
     }
 
     /** Returns null when a stereo device has unequal channel gains and cannot be represented as one value. */

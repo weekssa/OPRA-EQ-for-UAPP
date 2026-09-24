@@ -89,12 +89,12 @@ class Ew300OperationTraceTest {
         val reconciled = uncertain.copy(
             stateKnown = true,
             finalReadbackMatched = true,
-            outcome = "Verified",
+            outcome = Ew300OperationOutcome.SUCCESS,
             failureReason = null,
         )
 
         assertTrue(store.reconcile(reconciled))
-        assertEquals("Verified", (store.status.value as Ew300OperationStatus.Completed).trace.outcome)
+        assertEquals(Ew300OperationOutcome.SUCCESS, (store.status.value as Ew300OperationStatus.Completed).trace.outcome)
         assertFalse(store.reconcile(reconciled))
 
         val newerId = store.begin("RESET")

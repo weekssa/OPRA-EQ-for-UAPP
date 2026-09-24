@@ -76,7 +76,11 @@ class Ew300EditorApplier(
         val protocolFlags = rawBaseline.value(Ew300Protocol.PROTOCOL_FLAGS_REGISTER)
             ?: return Ew300EditorApplyResult.DeviceUnavailable("Could not re-read EW300 protocol layout before Apply. No changes were written.")
         val expectedGainSteps = Ew300Protocol.gainDbToSteps(workingCopy.baselineHeadroomGainDb ?: return invalidGain())
-        if (Ew300Protocol.globalGainSteps(baselineGain, protocolFlags) != expectedGainSteps) {
+        val actualBaselineGainSteps = Ew300Protocol.globalGainSteps(baselineGain, protocolFlags)
+            ?: return Ew300EditorApplyResult.StaleBaseline(
+                "The EW300 stereo playback-gain channels differ. No changes were written; refresh the DAC before applying.",
+            )
+        if (actualBaselineGainSteps != expectedGainSteps) {
             return Ew300EditorApplyResult.StaleBaseline("The EW300 global gain changed after the editor was opened. No changes were written; read the DAC again.")
         }
         val targetBands = target.map { encode(it) ?: return invalidBand(it.index) }
