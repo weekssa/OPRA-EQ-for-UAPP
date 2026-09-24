@@ -6,6 +6,22 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ## [Unreleased]
 
+### 2026-09-23 trusted-main v0.7 signed beta candidate
+
+- Merged the justified PR #23 implementation into trusted `main` at
+  `a255641ccde50b39ed0aa5956aee3d6e6a1eaf5` after the exact-head Android, CodeQL, catalog,
+  priority-community, and dependency gates passed.
+- Produced the exact signed beta through workflow #1351. The immutable APK is
+  `EQ-Library-v0.7.0-beta-a255641.apk` with SHA-256
+  `81a3b584ccf231be33feb01294c6cb8a6d2b8b699a2c35458764ce4a7a7df560`, package
+  `com.weekssa.opraeqforuapp`, version `0.7.0`/code `7`, pinned signer
+  `65C1C1256DAE3C49E3548F334C91F0BA991969E9BE9E0B223BA4E253D2114747`, and embedded source
+  revision equal to the merge SHA. Signed install, cold launch, and immutable publication passed.
+- The APK is for bounded non-mutating owner testing only. No accepted EW300 physical test was
+  repeated; no public v0.7 release or public EW300 support claim is made. The refreshed 51-alert
+  Dependabot inventory remains documented as stale/unresolvable historical coordinates; CodeQL
+  and dependency submission are green.
+
 ### 2026-09-23 release-readiness corrective candidate
 
 - Refreshed the v0.7 candidate against live `main` and recorded the PR #24 review: its stale

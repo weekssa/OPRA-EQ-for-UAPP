@@ -10,13 +10,23 @@ The physical reports do not establish end-to-end Personal EQ capture. Restore wa
 
 ## Candidate gate before any owner/next-agent check
 
-**Current state: BLOCKED.** Do not install the prior a09d or older candidate. The revised signing
-workflow is manual/main-only and no corrected-source APK is available. Testing can begin only
-after owner-authorized integration, exact-head software/security checks, pinned-signature and
-post-sign-alignment verification, and an immutable artifact manifest all pass. The remaining
-physical mutation/read-only work is closed; this checklist never asks to repeat it.
+**Current state: READY FOR BOUNDED NON-MUTATING HANDS-ON TESTING.** Do not install the prior a09d
+or older candidate. The owner-authorized manual/main-only signed workflow passed on trusted-main
+merge `a255641ccde50b39ed0aa5956aee3d6e6a1eaf5`; the exact candidate is
+`EQ-Library-v0.7.0-beta-a255641.apk`, SHA-256
+`81a3b584ccf231be33feb01294c6cb8a6d2b8b699a2c35458764ce4a7a7df560`, artifact ID `10784793604`,
+artifact digest `sha256:002ab041cac92ef73465d2824a56812900e63f776116bb2794bfe9ababe458f1`, package
+`com.weekssa.opraeqforuapp`, version `0.7.0`/code `7`, and pinned signer
+`65C1C1256DAE3C49E3548F334C91F0BA991969E9BE9E0B223BA4E253D2114747`. Signed install, cold
+launch, and immutable publication passed. The remaining physical mutation/read-only work is
+closed; this checklist never asks to repeat it.
 
-Before anyone installs the final beta, verify in live PR #23 that its source SHA equals the candidate source recorded in the handoff and that Android CI, CodeQL, catalog currentness, priority-community coverage, dependency submission, and the signed-beta workflow all pass on that exact SHA. The signed artifact must preserve package `com.weekssa.opraeqforuapp`, version 0.7.0/code 7, and the pinned release-signing identity. Never use an older candidate as if it were a later head's artifact.
+Before anyone installs the final beta, verify that its source SHA is
+`a255641ccde50b39ed0aa5956aee3d6e6a1eaf5` and that Android CI, CodeQL, catalog currentness,
+priority-community coverage, dependency submission, and signed workflow #1351 all pass on that
+exact SHA. The signed artifact must preserve package `com.weekssa.opraeqforuapp`, version
+0.7.0/code 7, and the pinned release-signing identity. Never use an older candidate as if it were
+a later head's artifact.
 
 The signed candidate manifest must point to accepted physical evidence E001 and E043-E048 rather than obsolete pre-qualification placeholders, and it must not claim that another consolidated hardware mutation session is outstanding.
 
@@ -47,4 +57,7 @@ Stop without any final write if values/provenance or the review path are unclear
 
 The implementation/review work has closed the previously listed product gaps: shared EW300 graph/status, authoritative-session manual Refresh, concise DEVICE presentation, the capability-by-capability Black Pearl comparison, and cross-source low/high-shelf regression coverage. These closures do not broaden the qualified EW300 hardware-control boundary.
 
-Keep PR #23 draft and v0.7.0 NO-GO until the exact beta validation, final review, and explicit owner approval are complete. Do not request mutation testing, merge, publication, or a public EW300 support claim from this checklist alone.
+PR #23 is merged, but v0.7.0 remains NO-GO until the exact beta validation, final review, and
+explicit owner approval are complete. Do not request mutation testing, another capability read,
+or any accepted Apply/Flash/Restore/Reset/Save-qualification operation. Do not publish a public
+release or make a public EW300 support claim from this checklist alone.
