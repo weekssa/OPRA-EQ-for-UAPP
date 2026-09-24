@@ -56,6 +56,22 @@ Reference-only sources checked on 2026-09-16:
 - [DevicePEQ USB-HID registry](https://github.com/jeromeof/devicePEQ/blob/master/devicePEQ/usbDeviceConfig.js) (0BSD; not adopted)
 - [KTMicro tools](https://github.com/gxcreator/ktmicro-tools) (BSD-3-Clause; unrelated chipset implementation, not adopted)
 
+## Digital-gain channel layout finding — 2026-09-24
+
+The preserved untouched EW300 stock capture contains `0x66 = F8 F8 00 00`. The physical E033
+Flash attempt later recorded `0x66 = 96 F8 00 00`, with only the first byte changed by the old
+EQ Library path. The descriptor evidence above establishes stereo USB playback, and the reviewed
+KT02H20 reference map defines the two low bytes as left/right digital DAC gain for stereo layouts
+(with protocol flag `0x0200` identifying a single-DAC layout). The exact device's layout must still
+be read from register `0x01`; it is not inferred from VID/PID alone.
+
+This evidence identifies the prior EW300 implementation's gain scope as unsafe: it changed only
+byte 0 while presenting the field as one global value. The corrected implementation reads `0x01`
+as part of the strict baseline, writes both low bytes for a stereo layout, preserves byte 1 for a
+single-DAC layout, verifies both channel bytes after Save, and refuses to present unequal stereo
+gains as one current global value. This is a protocol-state correction, not a new balance or audio
+routing control. The exact signed candidate and safe physical audio confirmation remain pending.
+
 ## Current diagnostic boundary
 
 Scan uses Android enumeration only. The separately requested capture first tries a non-forced host claim of the HID interface. Evidence shows Android refuses it on the owner's Pixel 9, so the follow-up may briefly detach Android's driver from interface 3 using the platform's forced-claim option. It performs standard IN GET_DESCRIPTOR (`bRequest=0x06`, report type `0x22`, interface recipient), parses only complete vendor input declarations, and uses HID class IN GET_REPORT (`bRequest=0x01`, input report type) for those exact IDs and sizes. The exact-device result is zero bytes for both declared vendor input reports. Signed source `823c30fefcc70c2a0e804bba6f7771a564b48613` additionally made exactly three 250 ms passive reads on the descriptor-declared interrupt-IN `0x82`, sending no data; all three returned `-1` (timeout/no incoming bytes). It released the interface successfully. Therefore this passive observation did not expose stock EQ or any vendor message. It sends no output report, interrupt-OUT transfer, vendor request, EQ write, save or reset. A report read is not yet a proven backup of untouched EQ; any returned fields require evidence before interpretation and the complete state still must be preserved before any write.

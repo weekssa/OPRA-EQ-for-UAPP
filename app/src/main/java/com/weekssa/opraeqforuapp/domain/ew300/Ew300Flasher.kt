@@ -155,7 +155,11 @@ class Ew300Flasher(
             )
         }
         trace.recordBaseline(baseline)
-        val currentSteps = Ew300Protocol.globalGainSteps(currentGain)
+        val protocolFlags = baseline.value(Ew300Protocol.PROTOCOL_FLAGS_REGISTER)
+            ?: return Kt02h20FlashResult.DeviceUnavailable(
+                "Couldn’t read the EW300 protocol layout. Reconnect the DAC and try again.",
+            )
+        val currentSteps = Ew300Protocol.globalGainSteps(currentGain, protocolFlags)
         val baselineSteps = currentSteps - gainStateStore.readAppliedGainDeltaSteps(deviceKey)
         val requestedDeltaSteps = runCatching {
             Ew300Protocol.gainDbToSteps(representation.playbackGainDb)
@@ -175,7 +179,7 @@ class Ew300Flasher(
                 return Kt02h20FlashResult.NotSuitable(it.message ?: "EW300 band is not representable.")
             }
         }
-        val targetGain = Ew300Protocol.withGlobalGainSteps(currentGain, targetGainSteps)
+        val targetGain = Ew300Protocol.withGlobalGainSteps(currentGain, targetGainSteps, protocolFlags)
         trace.markBeforeFirstWrite(transport.permissionRequestCount)
         trace.stage(Ew300OperationStage.WRITING)
         if (!currentGain.contentEquals(targetGain) &&
@@ -281,11 +285,13 @@ class Ew300Flasher(
             ?: return Kt02h20FlatResetResult.DeviceUnavailable("Couldn’t read the complete EW300 state before reset.")
         val currentGain = baseline.value(Ew300Protocol.GLOBAL_GAIN_REGISTER)
             ?: return Kt02h20FlatResetResult.DeviceUnavailable("Couldn’t read the EW300 global gain before reset.")
-        val baselineSteps = Ew300Protocol.globalGainSteps(currentGain) - gainStateStore.readAppliedGainDeltaSteps(deviceKey)
+        val protocolFlags = baseline.value(Ew300Protocol.PROTOCOL_FLAGS_REGISTER)
+            ?: return Kt02h20FlatResetResult.DeviceUnavailable("Couldn’t read the EW300 protocol layout before reset.")
+        val baselineSteps = Ew300Protocol.globalGainSteps(currentGain, protocolFlags) - gainStateStore.readAppliedGainDeltaSteps(deviceKey)
         if (baselineSteps !in Ew300Protocol.GLOBAL_GAIN_MIN_STEPS..Ew300Protocol.GLOBAL_GAIN_MAX_STEPS) {
             return Kt02h20FlatResetResult.NotSuitable("The EW300 baseline global gain is outside the qualified range.")
         }
-        val baselineGain = Ew300Protocol.withGlobalGainSteps(currentGain, baselineSteps)
+        val baselineGain = Ew300Protocol.withGlobalGainSteps(currentGain, baselineSteps, protocolFlags)
         val baselineBands = baseline.bands()
         if (baselineBands.size != Ew300Protocol.BAND_COUNT) {
             return Kt02h20FlatResetResult.DeviceUnavailable("Couldn’t read the complete EW300 EQ before reset.")

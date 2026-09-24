@@ -188,6 +188,7 @@ class Ew300CapabilityBatch(
         )
 
         fun snapshotRegisters(): List<Int> = buildList {
+            add(Ew300Protocol.PROTOCOL_FLAGS_REGISTER)
             add(0x24)
             repeat(Ew300Protocol.BAND_COUNT * 2) { add(Ew300Protocol.FIRST_BAND_REGISTER + it) }
             add(Ew300Protocol.GLOBAL_GAIN_REGISTER)

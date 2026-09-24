@@ -154,10 +154,15 @@ class Ew300EditorApplyTest {
         override var sessionGeneration: Long = 1L
         override var detachGeneration: Long = 0L
         val state = mutableMapOf<Int, ByteArray>().apply {
+            put(Ew300Protocol.PROTOCOL_FLAGS_REGISTER, bytes(0, 0, 0, 0))
             put(0x24, bytes(0, 0, 0, 0))
             put(
                 Ew300Protocol.GLOBAL_GAIN_REGISTER,
-                Ew300Protocol.withGlobalGainSteps(bytes(0, 0, 0, 0), -58),
+                Ew300Protocol.withGlobalGainSteps(
+                    bytes(0, 0, 0, 0),
+                    -58,
+                    bytes(0, 0, 0, 0),
+                ),
             )
             bundle.snapshot.filters.sortedBy(HardwareEqFilter::index).forEach { filter ->
                 val (gain, q) = Ew300Protocol.encodeBand(
