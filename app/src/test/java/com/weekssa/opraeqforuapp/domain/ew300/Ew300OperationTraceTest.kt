@@ -56,4 +56,51 @@ class Ew300OperationTraceTest {
         assertTrue(failureReport.toJson().contains("transport exception for [redacted]"))
         assertFalse(failureReport.toJson().contains("private-test-value"))
     }
+
+    @Test
+    fun newerOperationOwnsStatusAndLateOlderCompletionIsIgnored() {
+        val store = Ew300OperationTraceStore()
+        val firstId = store.begin("RESET")
+        val firstTrace = trace(firstId, "RESET", verified = false)
+        val secondId = store.begin("RESET")
+
+        store.publish(firstTrace)
+
+        assertTrue(store.status.value is Ew300OperationStatus.Running)
+        assertTrue((store.status.value as Ew300OperationStatus.Running).operationId == secondId)
+
+        val secondTrace = trace(secondId, "RESET", verified = true)
+        store.publish(secondTrace)
+
+        val completed = store.status.value as Ew300OperationStatus.Completed
+        assertTrue(completed.trace.operationId == secondId)
+        assertTrue(completed.trace.stateKnown)
+        assertTrue(completed.trace.finalReadbackMatched)
+    }
+
+    private fun trace(operationId: String, operation: String, verified: Boolean) = Ew300OperationTrace(
+        operationId = operationId,
+        operation = operation,
+        sourceCommit = "candidate",
+        appVersion = "0.7.0",
+        signerVerified = true,
+        deviceFingerprintKey = "vid=31b2|pid=111|interface=3",
+        sessionGeneration = 2L,
+        detachGeneration = 1L,
+        permissionRequestCount = 0L,
+        permissionRequestsBeforeFirstWrite = 0L,
+        registerWriteCount = 10L,
+        saveCommandCount = 1L,
+        mutationReplayCount = null,
+        competingConnectionJobCount = null,
+        replacementObserved = true,
+        replacementIdentityMatched = true,
+        baselineCaptured = true,
+        volatileReadbackMatched = true,
+        finalReadbackMatched = verified,
+        restorationVerified = false,
+        stateKnown = verified,
+        outcome = if (verified) "Success" else "VerificationFailed",
+        stages = listOf(Ew300OperationStage.FINAL_READBACK),
+    )
 }

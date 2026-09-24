@@ -43,9 +43,12 @@ import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.BuildConfig
 import com.weekssa.opraeqforuapp.R
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
+import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
+import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqPreset
 import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationStatus
 import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
 import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
 import com.weekssa.opraeqforuapp.domain.managed.withHiddenReviewPromptsSuppressed
@@ -251,6 +254,10 @@ fun EqLibraryApp(
         snackbarHostState = snackbarHostState,
         detectedMessage = myDacDetectedMessage,
         openActionLabel = openMyDacActionLabel,
+        isAnyDacConnected = state.blackPearlConnectionState is BlackPearlConnectionState.Connected ||
+            state.fiioJa11ConnectionState is Kt02h20ConnectionState.Connected ||
+            state.ew300ConnectionState is Kt02h20ConnectionState.Connected,
+        suppressWhileOperationRunning = state.ew300OperationStatus is Ew300OperationStatus.Running,
         onOpenMyDac = {
             selectedManagedProductId = null
             selectedDestinationName = EqLibraryDestination.MyDac.name
@@ -313,29 +320,60 @@ fun EqLibraryApp(
         }
     }
 
-    var lastEw300FlashOperationId by remember {
-        mutableStateOf(state.ew300OperationTrace?.operationId)
+    var lastEw300StartedOperationId by remember {
+        mutableStateOf<String?>(null)
     }
-    LaunchedEffect(state.ew300OperationTrace?.operationId) {
-        val trace = state.ew300OperationTrace ?: return@LaunchedEffect
-        if (trace.operation != "FLASH" || trace.operationId == lastEw300FlashOperationId) {
-            return@LaunchedEffect
-        }
-        lastEw300FlashOperationId = trace.operationId
-        when {
-            trace.stateKnown && trace.outcome == "Success" && trace.finalReadbackMatched ->
-                showDeviceOperation(
-                    message = "SIMGOT EW300 DSP EQ was saved and verified. Final hardware readback matched.",
-                    duration = SnackbarDuration.Short,
-                )
-            !trace.stateKnown -> showDeviceOperation(
-                message = "EW300 Flash did not finish with a verified state. Do not retry this operation; review the operation report.",
-                duration = SnackbarDuration.Indefinite,
-            )
-            else -> showDeviceOperation(
-                message = "EW300 Flash stopped before verified persistence (${trace.outcome}).",
-                duration = SnackbarDuration.Short,
-            )
+    var lastEw300CompletedOperationId by remember {
+        mutableStateOf(
+            when (val status = state.ew300OperationStatus) {
+                is Ew300OperationStatus.Running -> null
+                is Ew300OperationStatus.Completed -> status.trace.operationId
+                Ew300OperationStatus.Idle -> null
+            },
+        )
+    }
+    LaunchedEffect(state.ew300OperationStatus) {
+        when (val status = state.ew300OperationStatus) {
+            is Ew300OperationStatus.Running -> {
+                if (status.operationId == lastEw300StartedOperationId) return@LaunchedEffect
+                lastEw300StartedOperationId = status.operationId
+                if (status.operation == "FLASH" || status.operation == "RESET") {
+                    showDeviceOperation(
+                        message = "EW300 ${status.operation.lowercase()} started. Approve Android USB permission if it appears so the final state can be verified.",
+                        duration = SnackbarDuration.Short,
+                    )
+                }
+            }
+            is Ew300OperationStatus.Completed -> {
+                val trace = status.trace
+                if (trace.operationId == lastEw300CompletedOperationId) return@LaunchedEffect
+                lastEw300CompletedOperationId = trace.operationId
+                when {
+                    trace.operation == "FLASH" && trace.stateKnown && trace.outcome == "Success" && trace.finalReadbackMatched ->
+                        showDeviceOperation(
+                            message = "SIMGOT EW300 DSP EQ was saved and verified. Final hardware readback matched.",
+                            duration = SnackbarDuration.Short,
+                        )
+                    trace.operation == "RESET" && trace.stateKnown && trace.outcome == "Success" && trace.finalReadbackMatched ->
+                        showDeviceOperation(
+                            message = "SIMGOT EW300 DSP EQ was reset to flat and verified. Final hardware readback matched.",
+                            duration = SnackbarDuration.Short,
+                        )
+                    trace.operation == "FLASH" && !trace.stateKnown -> showDeviceOperation(
+                        message = "EW300 Flash did not finish with a verified state. Do not retry this operation; review the operation report.",
+                        duration = SnackbarDuration.Indefinite,
+                    )
+                    trace.operation == "RESET" && !trace.stateKnown -> showDeviceOperation(
+                        message = "EW300 Reset did not finish with a verified state. Do not retry this operation; review the operation report.",
+                        duration = SnackbarDuration.Indefinite,
+                    )
+                    trace.operation == "FLASH" || trace.operation == "RESET" -> showDeviceOperation(
+                        message = "EW300 ${trace.operation.lowercase()} stopped before verified persistence (${trace.outcome}).",
+                        duration = SnackbarDuration.Short,
+                    )
+                }
+            }
+            Ew300OperationStatus.Idle -> Unit
         }
     }
 
@@ -728,6 +766,7 @@ fun EqLibraryApp(
                         blackPearlEditorState = state.blackPearlEditorState,
                         ew300EditorState = state.ew300EditorState,
                         ew300OperationTrace = state.ew300OperationTrace,
+                        ew300OperationStatus = state.ew300OperationStatus,
                         blackPearlQualificationState = state.blackPearlQualificationState,
                         fiioJa11DeviceState = state.fiioJa11DeviceState,
                         onConnectDac = onConnectDacForMyDac,

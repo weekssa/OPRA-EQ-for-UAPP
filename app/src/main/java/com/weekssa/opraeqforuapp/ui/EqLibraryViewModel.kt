@@ -61,6 +61,7 @@ import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityReport
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300PersistenceQualificationResult
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationTrace
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationStatus
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300Protocol
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300RestorationResult
 import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceControls
@@ -129,6 +130,7 @@ private data class HardwareConnectionUiState(
     val blackPearlEditorState: MyDacEditorUiState,
     val ew300EditorState: MyDacEditorUiState,
     val ew300OperationTrace: Ew300OperationTrace?,
+    val ew300OperationStatus: Ew300OperationStatus,
     val blackPearlQualificationState: BlackPearlQualificationUiState,
     val fiioJa11DeviceState: FiioJa11DeviceUiState,
 )
@@ -155,6 +157,7 @@ data class EqLibraryUiState(
     val blackPearlEditorState: MyDacEditorUiState = MyDacEditorUiState(),
     val ew300EditorState: MyDacEditorUiState = MyDacEditorUiState(),
     val ew300OperationTrace: Ew300OperationTrace? = null,
+    val ew300OperationStatus: Ew300OperationStatus = Ew300OperationStatus.Idle,
     val blackPearlQualificationState: BlackPearlQualificationUiState = BlackPearlQualificationUiState(),
     val fiioJa11DeviceState: FiioJa11DeviceUiState = FiioJa11DeviceUiState(),
 )
@@ -278,8 +281,8 @@ class EqLibraryViewModel(
         hardwareRepository.blackPearlSnapshotState,
         hardwareRepository.ew300SnapshotState,
         blackPearlHardwareEqMatch,
-        hardwareRepository.ew300OperationTrace,
-    ) { connections, blackPearlHardwareEqState, ew300HardwareEqState, blackPearlMatch, ew300OperationTrace ->
+        hardwareRepository.ew300OperationStatus,
+    ) { connections, blackPearlHardwareEqState, ew300HardwareEqState, blackPearlMatch, ew300OperationStatus ->
         HardwareConnectionUiState(
             blackPearl = connections.blackPearl,
             fiioJa11 = connections.fiioJa11,
@@ -291,7 +294,8 @@ class EqLibraryViewModel(
             blackPearlHardwareEqMatch = blackPearlMatch,
             blackPearlEditorState = MyDacEditorUiState(),
             ew300EditorState = MyDacEditorUiState(),
-            ew300OperationTrace = ew300OperationTrace,
+            ew300OperationTrace = (ew300OperationStatus as? Ew300OperationStatus.Completed)?.trace,
+            ew300OperationStatus = ew300OperationStatus,
             blackPearlQualificationState = BlackPearlQualificationUiState(),
             fiioJa11DeviceState = FiioJa11DeviceUiState(),
         )
@@ -360,6 +364,7 @@ class EqLibraryViewModel(
             blackPearlEditorState = hardware.blackPearlEditorState,
             ew300EditorState = hardware.ew300EditorState,
             ew300OperationTrace = hardware.ew300OperationTrace,
+            ew300OperationStatus = hardware.ew300OperationStatus,
             blackPearlQualificationState = hardware.blackPearlQualificationState,
             fiioJa11DeviceState = hardware.fiioJa11DeviceState,
         )
@@ -1123,6 +1128,11 @@ class EqLibraryViewModel(
 
     fun flashEw300FromMyDac(profile: OpraEqProfile) {
         viewModelScope.launch { flashEw300Profile(profile) }
+    }
+
+    /** Owns the full EW300 reset across USB detach/re-enumeration independently of Compose. */
+    fun resetEw300FromMyDac() {
+        viewModelScope.launch { resetEw300ToFlat() }
     }
 
     suspend fun runEw300CapabilityBatch(): Ew300CapabilityReport =

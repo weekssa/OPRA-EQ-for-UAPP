@@ -18,6 +18,12 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Exact source `fdc60bb2443aed00c6e58ea8806e4735272e00d9` passed Android CI #1776, CodeQL #1661,
   catalog currentness #2074, priority coverage #1559, and dependency submission #2097. No signed
   APK is available until trusted-main signing; accepted EW300 physical evidence is unchanged.
+- Corrected EW300 operation lifecycle presentation so a verified Reset/Flash terminal trace replaces
+  an older reconnect warning, and Reset execution remains owned by the ViewModel across USB
+  re-enumeration. Detection snackbars now dismiss when My DAC opens or a supported DAC connects,
+  expire explicitly, and remain suppressed during an active EW300 reconnect. Android USB permission
+  denial/timeout is presented as an explicit recovery state; the platform prompt is still required
+  when Android has revoked permission for the replacement USB instance.
 
 ### 2026-09-23 canonical Favorite and General EQ persistence
 

@@ -593,19 +593,22 @@ private fun hardwareConnectionHelp(
     ExportDevice.FIIO_JA11 -> when {
         !directFiioJa11FlashEnabled ->
             "Enable direct Flash in Settings → FiiO JA11 before connecting to the DAC." to false
-        fiioJa11ConnectionState is Kt02h20ConnectionState.Error -> fiioJa11ConnectionState.message to true
+        fiioJa11ConnectionState is Kt02h20ConnectionState.Error ||
+            fiioJa11ConnectionState is Kt02h20ConnectionState.PermissionRequired -> fiioJa11ConnectionState.connectionMessage() to true
         else -> null
     }
     ExportDevice.SIMGOT_EW300 -> when {
         !directEw300FlashEnabled ->
             "Enable direct Flash in Settings → SIMGOT EW300 DSP before connecting to the DAC." to false
-        ew300ConnectionState is Kt02h20ConnectionState.Error -> ew300ConnectionState.message to true
+        ew300ConnectionState is Kt02h20ConnectionState.Error ||
+            ew300ConnectionState is Kt02h20ConnectionState.PermissionRequired -> ew300ConnectionState.connectionMessage() to true
         else -> null
     }
     ExportDevice.JCALLY_JM12 -> when {
         !directJcallyJm12FlashEnabled ->
             "Enable direct Flash in Settings → JCALLY JM12 before connecting to the DAC." to false
-        jcallyJm12ConnectionState is Kt02h20ConnectionState.Error -> jcallyJm12ConnectionState.message to true
+        jcallyJm12ConnectionState is Kt02h20ConnectionState.Error ||
+            jcallyJm12ConnectionState is Kt02h20ConnectionState.PermissionRequired -> jcallyJm12ConnectionState.connectionMessage() to true
         else -> null
     }
     else -> null
@@ -815,6 +818,12 @@ private fun RemovalDialog(
         confirmButton = { TextButton(onClick = onConfirm) { Text(confirmLabel) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
+}
+
+private fun Kt02h20ConnectionState.connectionMessage(): String = when (this) {
+    is Kt02h20ConnectionState.Error -> message
+    is Kt02h20ConnectionState.PermissionRequired -> message
+    else -> "Connection unavailable."
 }
 
 private val MANAGED_HARDWARE_FLASH_OUTPUTS = setOf(
