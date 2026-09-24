@@ -12,6 +12,20 @@ enum class Ew300OperationStage {
     VERIFIED, FAILED, STATE_UNCERTAIN,
 }
 
+/** Lifecycle state for the most recent EW300 mutation or editor operation. */
+sealed interface Ew300OperationStatus {
+    data object Idle : Ew300OperationStatus
+
+    data class Running(
+        val operationId: String,
+        val operation: String,
+    ) : Ew300OperationStatus
+
+    data class Completed(
+        val trace: Ew300OperationTrace,
+    ) : Ew300OperationStatus
+}
+
 /** Privacy-safe, shareable evidence for one EW300 Apply, Flash, or Reset operation. */
 data class Ew300OperationTrace(
     val operationId: String,
@@ -143,8 +157,8 @@ class Ew300OperationTraceBuilder(
     private val initialPermissionRequestCount: Long,
     private val initialRegisterWriteCount: Long,
     private val initialSaveCommandCount: Long,
+    private val operationId: String = UUID.randomUUID().toString(),
 ) {
-    private val operationId = UUID.randomUUID().toString()
     private val stages = mutableListOf(Ew300OperationStage.IDLE)
     private var baselineCaptured = false
     private var volatileReadbackMatched = false
@@ -243,5 +257,29 @@ class Ew300OperationTraceStore {
     private val mutableLastTrace = MutableStateFlow<Ew300OperationTrace?>(null)
     val lastTrace: StateFlow<Ew300OperationTrace?> = mutableLastTrace.asStateFlow()
 
-    fun publish(trace: Ew300OperationTrace) { mutableLastTrace.value = trace }
+    private val mutableStatus = MutableStateFlow<Ew300OperationStatus>(Ew300OperationStatus.Idle)
+    val status: StateFlow<Ew300OperationStatus> = mutableStatus.asStateFlow()
+
+    fun begin(operation: String): String {
+        val operationId = UUID.randomUUID().toString()
+        mutableStatus.value = Ew300OperationStatus.Running(operationId, operation)
+        return operationId
+    }
+
+    fun publish(trace: Ew300OperationTrace) {
+        val current = mutableStatus.value
+        when (current) {
+            is Ew300OperationStatus.Running -> if (current.operationId != trace.operationId) {
+                // A late completion from an older operation must not replace the newer
+                // operation's terminal state or make its warning/success presentation stale.
+                return
+            }
+            is Ew300OperationStatus.Completed -> if (current.trace.operationId != trace.operationId) {
+                return
+            }
+            Ew300OperationStatus.Idle -> Unit
+        }
+        mutableLastTrace.value = trace
+        mutableStatus.value = Ew300OperationStatus.Completed(trace)
+    }
 }

@@ -20,6 +20,7 @@ import com.weekssa.opraeqforuapp.domain.ew300.Ew300PersistenceQualificationResul
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300PersistenceQualifier
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300EditorApplyResult
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationTrace
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationStatus
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300RestorationResult
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult
@@ -62,6 +63,7 @@ class HardwareEqRepository(
     val ew300ConnectionState: StateFlow<Kt02h20ConnectionState> =
         dacSessionRepository.ew300ConnectionState
     val ew300OperationTrace: StateFlow<Ew300OperationTrace?> = ew300Flasher.lastOperationTrace
+    val ew300OperationStatus: StateFlow<Ew300OperationStatus> = ew300Flasher.operationStatus
 
     private val mutableUnsupportedJcallyState = MutableStateFlow<Kt02h20ConnectionState>(
         Kt02h20ConnectionState.Disconnected,

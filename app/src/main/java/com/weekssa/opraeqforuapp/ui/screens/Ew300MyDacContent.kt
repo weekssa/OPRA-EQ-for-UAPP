@@ -41,6 +41,7 @@ import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.dac.isAcousticallyActive
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityReport
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationTrace
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationStatus
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300PersistenceQualificationResult
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300Protocol
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300QualificationExport
@@ -66,12 +67,13 @@ internal fun Ew300MyDacContent(
     hardwareEqState: HardwareEqSnapshotState,
     editorState: MyDacEditorUiState,
     operationTrace: Ew300OperationTrace?,
+    operationStatus: Ew300OperationStatus = Ew300OperationStatus.Idle,
     catalogState: CatalogState,
     managedHeadphones: List<ManagedHeadphoneRecord>,
     savedEqs: List<SavedEqRecord>,
     savedGeneralEqs: List<SavedGeneralEqRecord> = emptyList(),
     onConnect: () -> Unit,
-    onResetEq: suspend () -> String,
+    onResetEq: () -> Unit,
     onRestoreBaseline: suspend () -> String,
     onRunCapabilityBatch: suspend () -> Ew300CapabilityReport,
     onAdvancePersistenceQualification: suspend () -> Ew300PersistenceQualificationResult,
@@ -167,19 +169,41 @@ internal fun Ew300MyDacContent(
                     "Connected. EQ and DEVICE share one verified hardware session.",
                     style = MaterialTheme.typography.bodyMedium,
                 )
-                operationTrace?.let { trace ->
-                    val status = ew300OperationStatusPresentation(
-                        trace = trace,
-                        includeEvidenceAction = validationEvidenceEnabled,
-                    )
-                    Text(
-                        status.message,
-                        color = if (status.verified) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.error
-                        },
-                    )
+                when (val currentOperation = operationStatus) {
+                    is Ew300OperationStatus.Running -> {
+                        Text(
+                            "EW300 ${currentOperation.operation.lowercase().replace('_', ' ')} is still being verified. Approve Android USB permission if it appears.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    is Ew300OperationStatus.Completed -> {
+                        val status = ew300OperationStatusPresentation(
+                            trace = currentOperation.trace,
+                            includeEvidenceAction = validationEvidenceEnabled,
+                        )
+                        Text(
+                            status.message,
+                            color = if (status.verified) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.error
+                            },
+                        )
+                    }
+                    Ew300OperationStatus.Idle -> operationTrace?.let { trace ->
+                        val status = ew300OperationStatusPresentation(
+                            trace = trace,
+                            includeEvidenceAction = validationEvidenceEnabled,
+                        )
+                        Text(
+                            status.message,
+                            color = if (status.verified) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.error
+                            },
+                        )
+                    }
                 }
                 TabRow(selectedTabIndex = selectedTab) {
                     Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("EQ") })
@@ -211,7 +235,7 @@ internal fun Ew300MyDacContent(
                             onRefresh = onConnect,
                             onEdit = onOpenEditor,
                             onCapture = { saveDacEqOpen = true },
-                            onReset = { scope.launch { onMessage(onResetEq()) } },
+                            onReset = onResetEq,
                         )
                         if (editorState.applyStatus != MyDacEditorApplyStatus.IDLE) {
                             Text(
@@ -322,6 +346,11 @@ internal fun Ew300MyDacContent(
             is Kt02h20ConnectionState.Error -> {
                 Text(connectionState.message, color = MaterialTheme.colorScheme.error)
                 Button(onClick = onConnect) { Text("Try again") }
+            }
+
+            is Kt02h20ConnectionState.PermissionRequired -> {
+                Text(connectionState.message, color = MaterialTheme.colorScheme.error)
+                Button(onClick = onConnect) { Text("Grant USB permission") }
             }
         }
     }

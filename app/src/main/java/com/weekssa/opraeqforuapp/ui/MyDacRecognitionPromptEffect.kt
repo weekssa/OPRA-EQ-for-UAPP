@@ -1,6 +1,7 @@
 package com.weekssa.opraeqforuapp.ui
 
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -18,6 +19,8 @@ internal fun MyDacRecognitionPromptEffect(
     snackbarHostState: SnackbarHostState,
     detectedMessage: String,
     openActionLabel: String,
+    isAnyDacConnected: Boolean = false,
+    suppressWhileOperationRunning: Boolean = false,
     onOpenMyDac: () -> Unit,
 ) {
     var previousPresentDeviceNames by rememberSaveable {
@@ -29,18 +32,30 @@ internal fun MyDacRecognitionPromptEffect(
         .map { deviceId -> deviceId.name }
         .sorted()
 
-    LaunchedEffect(currentPresentDeviceNames) {
+    LaunchedEffect(isMyDacOpen, isAnyDacConnected) {
+        if (isMyDacOpen || isAnyDacConnected) {
+            snackbarHostState.currentSnackbarData?.dismiss()
+        }
+    }
+
+    LaunchedEffect(currentPresentDeviceNames, isMyDacOpen, isAnyDacConnected, suppressWhileOperationRunning) {
         val newlyPresent = newlyPresentDac(
             previousPresentDeviceNames = previousPresentDeviceNames,
             currentPresentDeviceIds = recognitionState.presentDeviceIds,
         )
         previousPresentDeviceNames = ArrayList(currentPresentDeviceNames)
 
-        if (newlyPresent != null && !isMyDacOpen) {
+        if (
+            newlyPresent != null &&
+            !isMyDacOpen &&
+            !isAnyDacConnected &&
+            !suppressWhileOperationRunning
+        ) {
             val result = snackbarHostState.showSnackbar(
                 message = detectedMessage,
                 actionLabel = openActionLabel,
                 withDismissAction = true,
+                duration = SnackbarDuration.Short,
             )
             if (result == SnackbarResult.ActionPerformed) {
                 onOpenMyDac()
