@@ -184,7 +184,7 @@ class Ew300EditorApplyTest {
     private inner class FakeTransport(
         bundle: com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotBundle,
         private val replacementFingerprint: String? = null,
-        initialGain: ByteArray = bytes(0, 0, 0, 0),
+        initialGain: ByteArray = bytes(0xC6, 0xC6, 0, 0),
     ) : Ew300Transport {
         override var deviceFingerprintKey: String =
             "vid=31b2|pid=111|manufacturer=LE XIAN|product=SIMGOT EW300 DSP|serial=2024-07-03-0000-0000-0000|interface=3"
