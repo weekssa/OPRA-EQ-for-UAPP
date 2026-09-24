@@ -138,9 +138,23 @@ class Ew300EditorApplier(
                 "EW300 Save returned on a different or unverified USB session. No readback was accepted.",
             )
         }
-        val finalBands = readBands()
-        val finalGain = transport.readRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER)
-        if (finalBands != targetBands || finalGain == null || Ew300Protocol.globalGainSteps(finalGain) != targetGainSteps) {
+        val finalReadback = Ew300ReadbackRetry.read(
+            read = {
+                FinalReadback(
+                    bands = readBands(),
+                    gain = transport.readRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER),
+                )
+            },
+            matches = { observation ->
+                observation.bands == targetBands &&
+                    observation.gain != null &&
+                    Ew300Protocol.globalGainSteps(observation.gain) == targetGainSteps
+            },
+        )
+        if (finalReadback.bands != targetBands ||
+            finalReadback.gain == null ||
+            Ew300Protocol.globalGainSteps(finalReadback.gain) != targetGainSteps
+        ) {
             return Ew300EditorApplyResult.VerificationFailed(
                 "EW300 final readback did not match the reviewed values after Save.",
             )
@@ -197,6 +211,11 @@ class Ew300EditorApplier(
 
         override fun hashCode(): Int = 31 * gain.contentHashCode() + q.contentHashCode()
     }
+
+    private data class FinalReadback(
+        val bands: List<WireBandPair>?,
+        val gain: ByteArray?,
+    )
 
     private fun ordered(filters: List<HardwareEqFilter>) = filters.sortedBy(HardwareEqFilter::index)
     private fun invalidBand(index: Int) = Ew300EditorApplyResult.InvalidPlan("EW300 band ${index + 1} cannot be encoded exactly.")

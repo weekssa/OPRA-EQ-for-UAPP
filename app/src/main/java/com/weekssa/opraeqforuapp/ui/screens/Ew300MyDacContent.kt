@@ -395,7 +395,7 @@ internal fun ew300OperationStatusPresentation(
             " Stop and reconnect or refresh before any later write."
         }
         Ew300OperationStatusPresentation(
-            message = "Last EW300 $operation was not verified$reconnectMessage.$recoveryMessage",
+            message = "Last EW300 $operation was not verified$reconnectMessage. The previous Save may have completed, but final hardware readback was not verified.$recoveryMessage",
             verified = false,
         )
     }

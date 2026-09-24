@@ -24,6 +24,7 @@ class Ew300OperationStatusTest {
 
         assertFalse(presentation.verified)
         assertTrue(presentation.message.contains("not verified"))
+        assertTrue(presentation.message.contains("previous Save may have completed"))
         assertFalse(presentation.message.contains("final hardware readback matched"))
     }
 
