@@ -70,6 +70,10 @@ class Ew300FlasherTest {
 
         assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.Success)
         assertEquals(-8, Ew300Protocol.globalGainSteps(transport.state.getValue(Ew300Protocol.GLOBAL_GAIN_REGISTER)))
+        assertTrue(
+            transport.state.getValue(Ew300Protocol.GLOBAL_GAIN_REGISTER)
+                .contentEquals(bytes(0xF8, 0xF8, 0, 0)),
+        )
         assertEquals(11, transport.writes.size)
         assertEquals(1, transport.commitCount)
     }
@@ -364,6 +368,7 @@ class Ew300FlasherTest {
             .associateWith { bytes(0, 0, 0, 0) }
             .toMutableMap()
             .also {
+                it[Ew300Protocol.PROTOCOL_FLAGS_REGISTER] = bytes(0, 0, 0, 0)
                 it[0x24] = bytes(0, 0, 0, 0)
                 it[Ew300Protocol.GLOBAL_GAIN_REGISTER] = bytes(0, 0, 0, 0)
             }

@@ -51,8 +51,9 @@ matrix. This is a diagnostic addition, not a request to repeat accepted EW300 mu
 
 The owner has now reproduced the symptom with the EW300 DSP cable on a computer while the
 alternate cable/DAC works. Treat the runtime Android/UAPP/EQ Library audio-routing hypothesis as
-excluded; only a read-only comparison of persistent EW300 state remains relevant to an app-related
-cause.
+excluded. The preserved E033 raw state now identifies a likely app-owned stereo-gain write defect:
+the old path changed only byte 0 of `0x66`. The corrected candidate must be tested only after exact
+source/signing gates pass; the remaining physical check is corrected readback plus safe audio.
 
 - Start at minimum volume with a known left/right stereo recording.
 - Do not Flash, Reset, Save, Restore, send exploratory output reports, or test at maximum volume.
@@ -61,6 +62,9 @@ cause.
 - If safe and mechanically applicable, swapping the detachable earpiece sides helps distinguish an
   earbud/connector fault from an EW300 output-channel fault.
 - Capture the existing read-only EW300 register report, including `0x66`, without changing state.
+- Confirm the report includes protocol-layout register `0x01` and that the two stereo `0x66` gain
+  bytes agree before listening. If they do not agree, stop and share the report; do not improvise a
+  recovery write.
 - Stop immediately on crackle, heat, unsafe loudness, or any unexpected hardware state change.
 
 Do not treat a successful EQ readback as proof of stereo-channel health. Do not add a balance,

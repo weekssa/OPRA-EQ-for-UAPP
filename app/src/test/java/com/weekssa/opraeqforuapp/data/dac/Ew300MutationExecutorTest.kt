@@ -254,6 +254,7 @@ class Ew300MutationExecutorTest {
             .associateWith { bytes(0, 0, 0, 0) }
             .toMutableMap()
             .also {
+                it[Ew300Protocol.PROTOCOL_FLAGS_REGISTER] = bytes(0, 0, 0, 0)
                 it[0x24] = bytes(0, 0, 0, 0)
                 it[Ew300Protocol.GLOBAL_GAIN_REGISTER] = bytes(0, 0, 0, 0)
             }
