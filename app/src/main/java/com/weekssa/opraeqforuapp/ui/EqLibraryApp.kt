@@ -49,6 +49,7 @@ import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqPreset
 import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationStatus
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationTrace
 import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
 import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
 import com.weekssa.opraeqforuapp.domain.managed.withHiddenReviewPromptsSuppressed
@@ -82,6 +83,10 @@ private sealed interface ActiveOutputExportRequest {
     data class GeneralEq(val presetId: String, override val device: ExportDevice) : ActiveOutputExportRequest
     data class GeneralEqBatch(val presetIds: Set<String>, override val device: ExportDevice) : ActiveOutputExportRequest
 }
+
+private fun ew300OperationSignature(trace: Ew300OperationTrace): String =
+    listOf(trace.operationId, trace.outcome, trace.stateKnown, trace.finalReadbackMatched)
+        .joinToString("|")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -377,9 +382,6 @@ fun EqLibraryApp(
             Ew300OperationStatus.Idle -> Unit
         }
     }
-
-    fun ew300OperationSignature(trace: com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationTrace): String =
-        listOf(trace.operationId, trace.outcome, trace.stateKnown, trace.finalReadbackMatched).joinToString("|")
 
     var lastBlackPearlOperationSignature by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(
