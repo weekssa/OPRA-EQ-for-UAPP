@@ -89,12 +89,83 @@ class Ew300FlasherTest {
     fun commitFailureStopsBeforeReadbackVerification() = runBlocking {
         val transport = FakeTransport(commitSucceeds = false)
         val store = QualifiedGainStore()
+        val flasher = Ew300Flasher(transport, store, mutationAuthorized = { true })
 
-        val result = Ew300Flasher(transport, store, mutationAuthorized = { true }).flash(profile(preamp = null))
+        val result = flasher.flash(profile(preamp = null))
 
         assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.TransferFailed)
         assertEquals(10, transport.readsAfterWrites)
         assertEquals(0, store.delta)
+        assertFalse(flasher.reconcilePendingVerification())
+    }
+
+    @Test
+    fun delayedReplacementReadbackPromotesAnUncertainFlashWithoutASecondSave() = runBlocking {
+        val transport = FakeTransport(commitSucceeds = false, detachOnCommitNumber = 1)
+        val store = QualifiedGainStore()
+        val flasher = Ew300Flasher(transport, store, mutationAuthorized = { true })
+
+        val result = flasher.flash(profile(preamp = -4.0))
+
+        assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.TransferFailed)
+        assertEquals(1, transport.commitCount)
+        assertTrue(flasher.reconcilePendingVerification())
+        assertEquals(1, transport.commitCount)
+        val trace = requireNotNull(flasher.lastOperationTrace.value)
+        assertTrue(trace.stateKnown)
+        assertTrue(trace.finalReadbackMatched)
+        assertEquals("Verified", trace.outcome)
+        assertTrue(Ew300OperationStage.RECONCILED_AFTER_RECONNECT in trace.stages)
+    }
+
+    @Test
+    fun delayedReplacementReadbackDoesNotPromoteAByteMismatch() = runBlocking {
+        val transport = FakeTransport(
+            commitSucceeds = false,
+            detachOnCommitNumber = 1,
+            corruptOnCommitNumber = 1,
+            corruptRegister = Ew300Protocol.bandRegister(0),
+        )
+        val flasher = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
+
+        val result = flasher.flash(profile(preamp = -4.0))
+
+        assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.TransferFailed)
+        assertFalse(flasher.reconcilePendingVerification())
+        val trace = requireNotNull(flasher.lastOperationTrace.value)
+        assertFalse(trace.stateKnown)
+        assertFalse(trace.finalReadbackMatched)
+    }
+
+    @Test
+    fun delayedReplacementReadbackPromotesAnUncertainResetWithoutASecondSave() = runBlocking {
+        val transport = FakeTransport(commitSucceeds = false, detachOnCommitNumber = 1).apply {
+            state[Ew300Protocol.bandRegister(0)] = bytes(1, 2, 3, 4)
+        }
+        val flasher = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
+
+        val result = flasher.resetToFlat()
+
+        assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult.TransferFailed)
+        assertTrue(flasher.reconcilePendingVerification())
+        assertEquals(1, transport.commitCount)
+        val trace = requireNotNull(flasher.lastOperationTrace.value)
+        assertEquals("RESET", trace.operation)
+        assertTrue(trace.stateKnown)
+        assertTrue(trace.finalReadbackMatched)
+        assertEquals("Verified", trace.outcome)
+    }
+
+    @Test
+    fun alreadyMatchingStateIsNotPromotedAfterAnUncertainSave() = runBlocking {
+        val transport = FakeTransport(commitSucceeds = false, detachOnCommitNumber = 1)
+        val flasher = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
+
+        val result = flasher.resetToFlat()
+
+        assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult.TransferFailed)
+        assertFalse(flasher.reconcilePendingVerification())
+        assertFalse(requireNotNull(flasher.lastOperationTrace.value).stateKnown)
     }
 
     @Test

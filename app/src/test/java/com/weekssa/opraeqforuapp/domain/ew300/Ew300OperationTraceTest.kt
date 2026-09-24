@@ -78,6 +78,29 @@ class Ew300OperationTraceTest {
         assertTrue(completed.trace.finalReadbackMatched)
     }
 
+    @Test
+    fun reconciliationOnlyReplacesTheCurrentUncertainTrace() {
+        val store = Ew300OperationTraceStore()
+        val operationId = store.begin("RESET")
+        val uncertain = trace(operationId, "RESET", verified = false)
+        store.publish(uncertain)
+
+        val reconciled = uncertain.copy(
+            stateKnown = true,
+            finalReadbackMatched = true,
+            outcome = "Verified",
+            failureReason = null,
+        )
+
+        assertTrue(store.reconcile(reconciled))
+        assertEquals("Verified", (store.status.value as Ew300OperationStatus.Completed).trace.outcome)
+        assertFalse(store.reconcile(reconciled))
+
+        val newerId = store.begin("RESET")
+        assertFalse(store.reconcile(reconciled))
+        assertTrue((store.status.value as Ew300OperationStatus.Running).operationId == newerId)
+    }
+
     private fun trace(operationId: String, operation: String, verified: Boolean) = Ew300OperationTrace(
         operationId = operationId,
         operation = operation,

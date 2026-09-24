@@ -46,6 +46,8 @@ class Ew300Flasher(
     private val transactionCoordinator = Ew300TransactionCoordinator(transport)
     @Volatile
     private var lastSuccessfulFlashBaseline: Ew300RawBaseline? = null
+    @Volatile
+    private var pendingVerification: PendingVerification? = null
 
     val lastOperationTrace: StateFlow<Ew300OperationTrace?> = traceStore.lastTrace
     val operationStatus: StateFlow<Ew300OperationStatus> = traceStore.status
@@ -206,6 +208,20 @@ class Ew300Flasher(
         trace.stage(Ew300OperationStage.VOLATILE_VERIFIED)
         val sessionGenerationBeforeSave = transport.sessionGeneration
         val detachBeforeSave = transport.detachGeneration
+        pendingVerification = PendingVerification(
+            operationId = trace.id,
+            operation = "FLASH",
+            deviceFingerprintKey = deviceKey,
+            sessionGenerationBeforeSave = sessionGenerationBeforeSave,
+            detachGenerationBeforeSave = detachBeforeSave,
+            expectedRegisters = expectedRegisters(targetWires, targetGain),
+            targetDiffersFromBaseline = targetWires.withIndex().any { (index, wire) ->
+                val (gain, q) = wire
+                baseline.value(Ew300Protocol.bandRegister(index))?.contentEquals(gain) != true ||
+                    baseline.value(Ew300Protocol.bandRegister(index) + 1)?.contentEquals(q) != true
+            } || !baseline.matches(Ew300Protocol.GLOBAL_GAIN_REGISTER, targetGain),
+            appliedGainDeltaSteps = requestedDeltaSteps,
+        )
         if (!transport.commit()) {
             return Kt02h20FlashResult.TransferFailed(
                 "EW300 accepted the PEQ writes but did not accept the persistence command.",
@@ -239,6 +255,7 @@ class Ew300Flasher(
         }
         gainStateStore.writeAppliedGainDeltaSteps(deviceKey, requestedDeltaSteps)
         lastSuccessfulFlashBaseline = baseline
+        pendingVerification = null
         return Kt02h20FlashResult.Success(
             representation = representation,
             explicitPersistenceCommandUsed = true,
@@ -307,6 +324,23 @@ class Ew300Flasher(
         trace.stage(Ew300OperationStage.VOLATILE_VERIFIED)
         val sessionGenerationBeforeSave = transport.sessionGeneration
         val detachBeforeSave = transport.detachGeneration
+        pendingVerification = PendingVerification(
+            operationId = trace.id,
+            operation = "RESET",
+            deviceFingerprintKey = deviceKey,
+            sessionGenerationBeforeSave = sessionGenerationBeforeSave,
+            detachGenerationBeforeSave = detachBeforeSave,
+            expectedRegisters = expectedRegisters(
+                flat.map { band -> Ew300Protocol.encodeBand(band) },
+                baselineGain,
+            ),
+            targetDiffersFromBaseline = flat.withIndex().any { (index, band) ->
+                val (gain, q) = Ew300Protocol.encodeBand(band)
+                baseline.value(Ew300Protocol.bandRegister(index))?.contentEquals(gain) != true ||
+                    baseline.value(Ew300Protocol.bandRegister(index) + 1)?.contentEquals(q) != true
+            } || !baseline.matches(Ew300Protocol.GLOBAL_GAIN_REGISTER, baselineGain),
+            appliedGainDeltaSteps = 0,
+        )
         if (!transport.commit()) {
             return Kt02h20FlatResetResult.TransferFailed("EW300 did not accept the flat-EQ persistence command.")
         }
@@ -331,7 +365,59 @@ class Ew300Flasher(
             return Kt02h20FlatResetResult.VerificationFailed("EW300 final flat-EQ gain readback did not match.")
         }
         gainStateStore.writeAppliedGainDeltaSteps(deviceKey, 0)
+        pendingVerification = null
         return Kt02h20FlatResetResult.Success(restoredPlaybackGainDb = 0.0, explicitPersistenceCommandUsed = true)
+    }
+
+    /**
+     * Completes an operation whose Save/reconnect window ended uncertainly.
+     *
+     * This is deliberately read-only. It requires the exact identity, both a newer USB session
+     * and a newer observed detach, then captures every EW300 snapshot register and compares the
+     * encoded target bytes. It never retries a write or Save command.
+     */
+    suspend fun reconcilePendingVerification(): Boolean {
+        val pending = pendingVerification ?: return false
+        val trace = lastOperationTrace.value ?: return false
+        if (trace.operationId != pending.operationId || trace.operation != pending.operation || trace.stateKnown) return false
+        val currentFingerprint = transport.deviceFingerprintKey ?: return false
+        val currentSession = transport.sessionGeneration
+        val currentDetach = transport.detachGeneration
+        if (currentFingerprint != pending.deviceFingerprintKey ||
+            currentSession <= pending.sessionGenerationBeforeSave ||
+            currentDetach <= pending.detachGenerationBeforeSave ||
+            !pending.targetDiffersFromBaseline
+        ) {
+            return false
+        }
+        val readback = transactionCoordinator.captureBaseline() ?: return false
+        if (readback.deviceFingerprintKey != pending.deviceFingerprintKey ||
+            readback.sessionGeneration != currentSession ||
+            readback.detachGeneration != currentDetach ||
+            !pending.expectedRegisters.all { (register, expected) -> readback.matches(register, expected) }
+        ) {
+            return false
+        }
+        gainStateStore.writeAppliedGainDeltaSteps(
+            pending.deviceFingerprintKey,
+            pending.appliedGainDeltaSteps,
+        )
+        val reconciled = trace.copy(
+            deviceFingerprintKey = currentFingerprint,
+            sessionGeneration = currentSession,
+            detachGeneration = currentDetach,
+            replacementObserved = true,
+            replacementIdentityMatched = true,
+            finalReadbackMatched = true,
+            stateKnown = true,
+            outcome = "Verified",
+            stages = (trace.stages + Ew300OperationStage.FINAL_READBACK +
+                Ew300OperationStage.RECONCILED_AFTER_RECONNECT + Ew300OperationStage.VERIFIED).distinct(),
+            failureReason = null,
+        )
+        if (!traceStore.reconcile(reconciled)) return false
+        pendingVerification = null
+        return true
     }
 
     private suspend fun restoreBeforeCommit(
@@ -439,6 +525,7 @@ class Ew300Flasher(
         operation: String,
         block: suspend (Ew300OperationTraceBuilder) -> T,
     ): T {
+        pendingVerification = null
         val operationId = traceStore.begin(operation)
         val trace = Ew300OperationTraceBuilder(
             operationId = operationId,
@@ -495,6 +582,28 @@ class Ew300Flasher(
             )
         }
     }
+
+    private fun expectedRegisters(
+        wires: List<Pair<ByteArray, ByteArray>>,
+        globalGain: ByteArray,
+    ): Map<Int, ByteArray> = buildMap {
+        wires.forEachIndexed { index, (gain, q) ->
+            put(Ew300Protocol.bandRegister(index), gain.copyOf())
+            put(Ew300Protocol.bandRegister(index) + 1, q.copyOf())
+        }
+        put(Ew300Protocol.GLOBAL_GAIN_REGISTER, globalGain.copyOf())
+    }
+
+    private data class PendingVerification(
+        val operationId: String,
+        val operation: String,
+        val deviceFingerprintKey: String,
+        val sessionGenerationBeforeSave: Long,
+        val detachGenerationBeforeSave: Long,
+        val expectedRegisters: Map<Int, ByteArray>,
+        val targetDiffersFromBaseline: Boolean,
+        val appliedGainDeltaSteps: Int,
+    )
 
     private fun Kt02h20FlashResult.toFlatResetResult(): Kt02h20FlatResetResult = when (this) {
         is Kt02h20FlashResult.TransferFailed -> Kt02h20FlatResetResult.TransferFailed(reason)

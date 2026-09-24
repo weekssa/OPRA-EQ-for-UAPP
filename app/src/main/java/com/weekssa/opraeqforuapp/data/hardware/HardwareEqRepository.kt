@@ -373,6 +373,11 @@ class HardwareEqRepository(
                 dacSessionRepository.isEw300SessionCurrent(bundle.snapshot.sessionGeneration)
             when {
                 stillCurrent -> {
+                    // A Save may have completed while Android's replacement permission/reconnect
+                    // window was still open. Reconcile only after this fresh, exact snapshot has
+                    // passed the authoritative session check; the flasher performs a second
+                    // complete read-only byte comparison and never replays the mutation.
+                    ew300Flasher.reconcilePendingVerification()
                     mutableEw300SnapshotState.update { it.publishCurrent(requireNotNull(bundle)) }
                     bundle
                 }
