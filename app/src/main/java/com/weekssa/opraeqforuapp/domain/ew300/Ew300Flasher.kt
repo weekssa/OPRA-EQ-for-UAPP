@@ -160,6 +160,9 @@ class Ew300Flasher(
                 "Couldn’t read the EW300 protocol layout. Reconnect the DAC and try again.",
             )
         val currentSteps = Ew300Protocol.globalGainSteps(currentGain, protocolFlags)
+            ?: return Kt02h20FlashResult.NotSuitable(
+                "EW300 stereo playback-gain channels are unequal. No write was sent; refresh or reconnect the DAC before trying again.",
+            )
         val baselineSteps = currentSteps - gainStateStore.readAppliedGainDeltaSteps(deviceKey)
         val requestedDeltaSteps = runCatching {
             Ew300Protocol.gainDbToSteps(representation.playbackGainDb)
@@ -287,7 +290,11 @@ class Ew300Flasher(
             ?: return Kt02h20FlatResetResult.DeviceUnavailable("Couldn’t read the EW300 global gain before reset.")
         val protocolFlags = baseline.value(Ew300Protocol.PROTOCOL_FLAGS_REGISTER)
             ?: return Kt02h20FlatResetResult.DeviceUnavailable("Couldn’t read the EW300 protocol layout before reset.")
-        val baselineSteps = Ew300Protocol.globalGainSteps(currentGain, protocolFlags) - gainStateStore.readAppliedGainDeltaSteps(deviceKey)
+        val currentSteps = Ew300Protocol.globalGainSteps(currentGain, protocolFlags)
+            ?: return Kt02h20FlatResetResult.NotSuitable(
+                "EW300 stereo playback-gain channels are unequal. No write was sent; refresh or reconnect the DAC before trying again.",
+            )
+        val baselineSteps = currentSteps - gainStateStore.readAppliedGainDeltaSteps(deviceKey)
         if (baselineSteps !in Ew300Protocol.GLOBAL_GAIN_MIN_STEPS..Ew300Protocol.GLOBAL_GAIN_MAX_STEPS) {
             return Kt02h20FlatResetResult.NotSuitable("The EW300 baseline global gain is outside the qualified range.")
         }
@@ -416,7 +423,7 @@ class Ew300Flasher(
             replacementIdentityMatched = true,
             finalReadbackMatched = true,
             stateKnown = true,
-            outcome = "Verified",
+            outcome = Ew300OperationOutcome.SUCCESS,
             stages = (trace.stages + Ew300OperationStage.FINAL_READBACK +
                 Ew300OperationStage.RECONCILED_AFTER_RECONNECT + Ew300OperationStage.VERIFIED).distinct(),
             failureReason = null,
@@ -549,29 +556,22 @@ class Ew300Flasher(
         try {
             val result = block(trace)
             val known = when (result) {
-                is Kt02h20FlashResult.TransferFailed,
-                is Kt02h20FlashResult.VerificationFailed,
-                is Kt02h20FlatResetResult.TransferFailed,
-                is Kt02h20FlatResetResult.VerificationFailed,
-                is Ew300EditorApplyResult.TransferFailed,
-                is Ew300EditorApplyResult.VerificationFailed,
-                is Ew300RestorationResult.NoBaseline,
-                is Ew300RestorationResult.DeviceUnavailable,
-                is Ew300RestorationResult.NotSuitable,
-                is Ew300RestorationResult.TransferFailed,
-                is Ew300RestorationResult.VerificationFailed,
-                -> false
-                else -> true
+                is Kt02h20FlashResult.Success,
+                is Kt02h20FlatResetResult.Success,
+                Ew300EditorApplyResult.Verified,
+                Ew300RestorationResult.Verified,
+                -> true
+                else -> false
             }
             trace.complete(
-                result!!::class.simpleName ?: "COMPLETED",
+                result.traceOutcome(),
                 known,
                 result.failureReason(),
             )
             return result
         } catch (error: Throwable) {
             trace.complete(
-                "EXCEPTION:${error::class.simpleName}",
+                Ew300OperationOutcome.EXCEPTION,
                 false,
                 error.message ?: "The EW300 operation terminated with an exception.",
             )
@@ -637,6 +637,38 @@ class Ew300Flasher(
         is Ew300RestorationResult.TransferFailed -> reason
         is Ew300RestorationResult.VerificationFailed -> reason
         else -> null
+    }
+
+    private fun Any?.traceOutcome(): String = when (this) {
+        is Kt02h20FlashResult.Success,
+        is Kt02h20FlatResetResult.Success,
+        Ew300EditorApplyResult.Verified,
+        Ew300RestorationResult.Verified,
+        -> Ew300OperationOutcome.SUCCESS
+        is Kt02h20FlashResult.NotSuitable,
+        is Kt02h20FlatResetResult.NotSuitable,
+        is Ew300EditorApplyResult.InvalidPlan,
+        is Ew300RestorationResult.NotSuitable,
+        -> Ew300OperationOutcome.NOT_SUITABLE
+        is Kt02h20FlashResult.DeviceUnavailable,
+        is Kt02h20FlatResetResult.DeviceUnavailable,
+        is Ew300EditorApplyResult.DeviceUnavailable,
+        is Ew300RestorationResult.DeviceUnavailable,
+        -> Ew300OperationOutcome.DEVICE_UNAVAILABLE
+        is Kt02h20FlashResult.TransferFailed,
+        is Kt02h20FlatResetResult.TransferFailed,
+        is Ew300EditorApplyResult.TransferFailed,
+        is Ew300RestorationResult.TransferFailed,
+        -> Ew300OperationOutcome.TRANSFER_FAILED
+        is Kt02h20FlashResult.VerificationFailed,
+        is Kt02h20FlatResetResult.VerificationFailed,
+        is Ew300EditorApplyResult.VerificationFailed,
+        is Ew300RestorationResult.VerificationFailed,
+        -> Ew300OperationOutcome.VERIFICATION_FAILED
+        is Ew300EditorApplyResult.StaleBaseline -> Ew300OperationOutcome.STALE_BASELINE
+        is Ew300EditorApplyResult.ConfirmationRequired -> Ew300OperationOutcome.CONFIRMATION_REQUIRED
+        is Ew300RestorationResult.NoBaseline -> Ew300OperationOutcome.NO_BASELINE
+        else -> Ew300OperationOutcome.UNKNOWN
     }
 
     private suspend fun verify(expected: List<Kt02h20Band>): VerificationFailure? {

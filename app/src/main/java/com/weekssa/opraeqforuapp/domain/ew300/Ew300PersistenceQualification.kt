@@ -58,6 +58,10 @@ class Ew300PersistenceQualifier(
         val temporaryBand = adjustSigned16(baselineBand, -1)
             ?: return failed("The first Peak gain is at an unsupported edge value. No write was sent.", true)
         val currentPlaybackSteps = Ew300Protocol.globalGainSteps(baselineGain, protocolFlags)
+            ?: return failed(
+                "The EW300 stereo playback-gain channels differ. No write was sent; refresh or reconnect before qualification.",
+                false,
+            )
         if (currentPlaybackSteps <= Ew300Protocol.GLOBAL_GAIN_MIN_STEPS) {
             return failed("Playback gain is at its lower edge. No write was sent.", true)
         }

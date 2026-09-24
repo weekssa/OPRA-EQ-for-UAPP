@@ -48,6 +48,7 @@ import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqPreset
 import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationOutcome
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationStatus
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationTrace
 import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
@@ -355,22 +356,22 @@ fun EqLibraryApp(
                 if (signature == lastEw300CompletedOperationSignature) return@LaunchedEffect
                 lastEw300CompletedOperationSignature = signature
                 when {
-                    trace.operation == "FLASH" && trace.stateKnown && trace.outcome == "Success" && trace.finalReadbackMatched ->
+                    trace.operation == "FLASH" && trace.stateKnown && trace.outcome == Ew300OperationOutcome.SUCCESS && trace.finalReadbackMatched ->
                         showDeviceOperation(
                             message = "SIMGOT EW300 DSP EQ was saved and verified. Final hardware readback matched.",
                             duration = SnackbarDuration.Short,
                         )
-                    trace.operation == "RESET" && trace.stateKnown && trace.outcome == "Success" && trace.finalReadbackMatched ->
+                    trace.operation == "RESET" && trace.stateKnown && trace.outcome == Ew300OperationOutcome.SUCCESS && trace.finalReadbackMatched ->
                         showDeviceOperation(
                             message = "SIMGOT EW300 DSP EQ was reset to flat and verified. Final hardware readback matched.",
                             duration = SnackbarDuration.Short,
                         )
                     trace.operation == "FLASH" && !trace.stateKnown -> showDeviceOperation(
-                        message = "EW300 Flash did not finish with a verified state. Do not retry this operation; review the operation report.",
+                        message = ew300UnverifiedOperationMessage(trace),
                         duration = SnackbarDuration.Indefinite,
                     )
                     trace.operation == "RESET" && !trace.stateKnown -> showDeviceOperation(
-                        message = "EW300 Reset did not finish with a verified state. Do not retry this operation; review the operation report.",
+                        message = ew300UnverifiedOperationMessage(trace),
                         duration = SnackbarDuration.Indefinite,
                     )
                     trace.operation == "FLASH" || trace.operation == "RESET" -> showDeviceOperation(
@@ -380,6 +381,21 @@ fun EqLibraryApp(
                 }
             }
             Ew300OperationStatus.Idle -> Unit
+        }
+    }
+
+    fun ew300UnverifiedOperationMessage(trace: Ew300OperationTrace): String {
+        val operation = "EW300 ${trace.operation.lowercase()}"
+        val reason = trace.failureReason?.takeIf { it.isNotBlank() }
+        return when (trace.outcome) {
+            Ew300OperationOutcome.NOT_SUITABLE,
+            Ew300OperationOutcome.DEVICE_UNAVAILABLE,
+            Ew300OperationOutcome.INVALID_PLAN,
+            Ew300OperationOutcome.STALE_BASELINE,
+            Ew300OperationOutcome.CONFIRMATION_REQUIRED,
+            Ew300OperationOutcome.NO_BASELINE,
+            -> "$operation was not applied${reason?.let { ": $it" } ?: "."}"
+            else -> "$operation did not finish with a verified state. Do not retry this operation; review the operation report${reason?.let { ": $it" } ?: "."}"
         }
     }
 
