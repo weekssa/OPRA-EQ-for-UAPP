@@ -1,6 +1,7 @@
 package com.weekssa.opraeqforuapp.domain.ew300
 
 import com.google.common.truth.Truth.assertThat
+import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqCategory
 import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqMatch
@@ -18,6 +19,7 @@ import com.weekssa.opraeqforuapp.domain.library.RedistributionPolicy
 import com.weekssa.opraeqforuapp.domain.library.VerificationStatus
 import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
+import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
 import org.junit.Test
 
 class Ew300HardwareEqMatchTest {
@@ -139,6 +141,27 @@ class Ew300HardwareEqMatchTest {
             managedHeadphones = emptyList(),
             savedEqs = listOf(invalid),
             savedGeneralEqs = emptyList(),
+        )
+
+        assertThat(candidates).isEmpty()
+    }
+
+    @Test
+    fun invalidGeneralEqIsExcludedFromHardwareMatchingCandidates() {
+        val invalid = SavedGeneralEqRecord(
+            presetId = "general:invalid",
+            displayName = "Invalid general source",
+            category = GeneralEqCategory.SOUND,
+            profile = exactFiveBandProfile(),
+            createdAtMillis = 1,
+            updatedAtMillis = 1,
+            savedEqDataInvalid = true,
+        )
+
+        val candidates = buildEw300MyEqsCandidates(
+            managedHeadphones = emptyList(),
+            savedEqs = emptyList(),
+            savedGeneralEqs = listOf(invalid),
         )
 
         assertThat(candidates).isEmpty()

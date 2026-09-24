@@ -5,6 +5,8 @@ import com.weekssa.opraeqforuapp.data.managed.ManagedProfileSnapshotCodec
 import com.weekssa.opraeqforuapp.data.managed.OpraEqDatabase
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqCategory
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqPreset
+import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
+import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.conversion.ToneBoostersConverter
 import com.weekssa.opraeqforuapp.domain.library.CanonicalEqSelection
 import com.weekssa.opraeqforuapp.domain.library.CanonicalLegacyCatalogAdapter
@@ -130,8 +132,11 @@ class SavedGeneralEqRepository(
     }
 
     private fun toDomain(entity: SavedGeneralEqEntity): SavedGeneralEqRecord {
-        val profile = snapshotCodec.decode(entity.profileJson)
         var invalid = false
+        val profile = runCatching { snapshotCodec.decode(entity.profileJson) }.getOrElse {
+            invalid = true
+            invalidProfile(entity)
+        }
         val selection = entity.canonicalSelectionJson?.let { encoded ->
             runCatching {
                 selectionCodec.decode(encoded).also { decoded ->
@@ -160,7 +165,10 @@ class SavedGeneralEqRepository(
         return SavedGeneralEqRecord(
             presetId = entity.presetId,
             displayName = entity.displayName,
-            category = GeneralEqCategory.valueOf(entity.category),
+            category = runCatching { GeneralEqCategory.valueOf(entity.category) }.getOrElse {
+                invalid = true
+                GeneralEqCategory.UTILITY
+            },
             profile = profile,
             createdAtMillis = entity.createdAtMillis,
             updatedAtMillis = entity.updatedAtMillis,
@@ -168,6 +176,18 @@ class SavedGeneralEqRepository(
             savedEqDataInvalid = invalid,
         )
     }
+
+    private fun invalidProfile(entity: SavedGeneralEqEntity): OpraEqProfile = OpraEqProfile(
+        id = entity.presetId,
+        productId = "invalid-general:${entity.presetId}",
+        author = null,
+        details = entity.displayName,
+        link = null,
+        profileType = null,
+        preampGainDb = null,
+        bands = listOf(OpraBand(type = null, frequency = null, gainDb = null, q = null, slope = null)),
+        isVerified = false,
+    )
 
     companion object {
         private fun categoryLabel(category: GeneralEqCategory): String = when (category) {

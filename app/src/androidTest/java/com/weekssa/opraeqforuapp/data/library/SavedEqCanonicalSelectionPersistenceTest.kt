@@ -152,6 +152,25 @@ class SavedEqCanonicalSelectionPersistenceTest {
         assertNull(damaged.actionProfileOrNull())
     }
 
+    @Test
+    fun malformedGeneralProfileAndCategoryRemainVisibleButCannotAct() = runBlocking {
+        database.savedGeneralEqDao().upsert(
+            SavedGeneralEqEntity(
+                presetId = "general:malformed",
+                displayName = "Malformed general EQ",
+                category = "not-a-category",
+                profileJson = "{invalid-json",
+                createdAtMillis = 1L,
+                updatedAtMillis = 2L,
+            ),
+        )
+
+        val record = savedGeneralEqRepository.observeForOutput("UAPP").first().single()
+
+        assertTrue(record.savedEqDataInvalid)
+        assertNull(record.actionProfileOrNull())
+    }
+
     private fun sampleSnapshot(): CatalogSnapshot {
         val headphone = CanonicalEqProfile(
             canonicalProfileId = "headphone-profile",
