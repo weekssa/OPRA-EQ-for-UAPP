@@ -10,16 +10,22 @@ The physical reports do not establish end-to-end Personal EQ capture. Restore wa
 
 ## Candidate gate before any owner/next-agent check
 
-**Current state: AUTOMATED GATES PASSED; SIGNED CANDIDATE PENDING TRUSTED-MAIN INTEGRATION.** Do not
-install the prior a09d or older candidate. PR #31 exact head `b6c30d399caee9f6d14d1327b640726c92ea8684`
-passed Android CI #1799, CodeQL #1683, catalog currentness #2091, priority-community coverage
-#1576, and dependency submission #2120. Android CI included unit/lint/debug/release/R8, connected
-emulator UI, and API-26 minified install/cold launch. The revised signing workflow is manual/main-only,
-so owner-authorized integration into trusted `main`, pinned-signature/post-alignment verification,
-and an immutable artifact manifest are still required. The remaining physical mutation/read-only work
-is closed; this checklist never asks to repeat it.
+**Current state: AUTOMATED GATES AND SIGNED CANDIDATE PASSED; PHYSICAL AUDIO CONFIRMATION PENDING.**
+Do not install the prior a09d, a8abf78, or any older candidate. PR #31 merged to `main` at source
+`d452004f4f09f026940a7a2da32bae583c3aed43`. Android CI #1800, CodeQL #1684, catalog #2092,
+priority-community #1577, and dependency submission #2121 passed on the final source head before
+merge. Signed-beta workflow #1356 passed the beta gate, R8/signature/alignment checks, signed
+emulator install, cold launch, and immutable publication. The remaining physical mutation/read-only
+work is closed; this checklist never asks to repeat it.
 
-Before anyone installs the final beta, verify in live PR #31 that its source SHA equals the candidate source recorded in the handoff and that Android CI, CodeQL, catalog currentness, priority-community coverage, dependency submission, and the signed-beta workflow all pass on that exact SHA. The signed artifact must preserve package `com.weekssa.opraeqforuapp`, version 0.7.0/code 7, and the pinned release-signing identity. Never use an older candidate as if it were a later head's artifact.
+Before testing, use only the exact immutable candidate:
+
+`https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-d452004.apk`
+
+Its SHA-256 is `49049fc53b7580ae3026b035cd54c227cee5ea791747448d37fccabb37d234a6`; package
+`com.weekssa.opraeqforuapp`, version `0.7.0`/code `7`, release/R8-minified variant, and pinned
+signer SHA-256 `65C1C1256DAE3C49E3548F334C91F0BA991969E9BE9E0B223BA4E253D2114747`. Never use an
+older candidate as if it were this source's artifact.
 
 The signed candidate manifest must point to accepted physical evidence E001 and E043-E048 rather than obsolete pre-qualification placeholders, and it must not claim that another consolidated hardware mutation session is outstanding.
 
