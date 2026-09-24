@@ -11,14 +11,14 @@ The physical reports do not establish end-to-end Personal EQ capture. Restore wa
 ## Candidate gate before any owner/next-agent check
 
 **Current state: SOURCE GATES PASSED; SIGNED CANDIDATE BLOCKED.** Do not install the prior a09d or
-older candidate. PR #29 exact head `ebae2d4e7bb08e8a67b571cc07de4b0924240b37` passed Android CI,
+older candidate. PR #30 exact head `889d25570e56d521714e9109db8332d12b561152` passed Android CI,
 CodeQL, catalog-currentness, priority-community, emulator UI, API-26 smoke, lint, R8, and release
 assembly. The revised signing workflow is manual/main-only, so owner-authorized integration into
 trusted `main`, pinned-signature/post-sign-alignment verification, and an immutable artifact manifest
 are still required. The remaining physical mutation/read-only work is closed; this checklist never
 asks to repeat it.
 
-Before anyone installs the final beta, verify in live PR #29 that its source SHA equals the candidate source recorded in the handoff and that Android CI, CodeQL, catalog currentness, priority-community coverage, dependency submission, and the signed-beta workflow all pass on that exact SHA. The signed artifact must preserve package `com.weekssa.opraeqforuapp`, version 0.7.0/code 7, and the pinned release-signing identity. Never use an older candidate as if it were a later head's artifact.
+Before anyone installs the final beta, verify in live PR #30 that its source SHA equals the candidate source recorded in the handoff and that Android CI, CodeQL, catalog currentness, priority-community coverage, dependency submission, and the signed-beta workflow all pass on that exact SHA. The signed artifact must preserve package `com.weekssa.opraeqforuapp`, version 0.7.0/code 7, and the pinned release-signing identity. Never use an older candidate as if it were a later head's artifact.
 
 The signed candidate manifest must point to accepted physical evidence E001 and E043-E048 rather than obsolete pre-qualification placeholders, and it must not claim that another consolidated hardware mutation session is outstanding.
 
@@ -76,4 +76,4 @@ routing, mono/stereo, UAC, or volume control without exact EW300 evidence.
 
 The implementation/review work has closed the previously listed product gaps: shared EW300 graph/status, authoritative-session manual Refresh, concise DEVICE presentation, the capability-by-capability Black Pearl comparison, and cross-source low/high-shelf regression coverage. These closures do not broaden the qualified EW300 hardware-control boundary.
 
-Keep PR #29 draft and v0.7.0 NO-GO until the exact beta validation, final review, and explicit owner approval are complete. Do not request mutation testing, merge, publication, or a public EW300 support claim from this checklist alone.
+Keep PR #30 draft and v0.7.0 NO-GO until the exact beta validation, final review, and explicit owner approval are complete. Do not request mutation testing, merge, publication, or a public EW300 support claim from this checklist alone.
