@@ -45,6 +45,14 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
   (artifact ID `10883860070`); no signed artifact exists for this head. The diagnostic candidate
   remains hardware-validation pending and must be tested once with the report before any further
   mutation; no release or public support claim follows.
+- After owner approval, the diagnostic implementation was merged into `main` at
+  `af8c68c35d320223a13c635fac69c0f2ebacdb3f` and the exact signed diagnostic candidate was
+  produced by signed-beta run #1363. The immutable APK is
+  `EQ-Library-v0.7.0-beta-af8c68c.apk` with SHA-256
+  `3b442cbab3cf8be59a9b8e4ddd0d7028e93f8c4067d94dbb833a5bbb60b1d37e`; signer certificate
+  SHA-256 remains `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`. Build,
+  test, lint, R8, signer, emulator, and artifact-integrity gates passed. It is ready only for
+  one bounded owner JA11 session; final release and public JA11 support remain held.
 
 ### 2026-09-24 Rtings/AutoEQ Favorite provenance follow-up
 

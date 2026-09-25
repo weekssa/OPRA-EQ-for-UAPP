@@ -84,25 +84,61 @@ Do not use this source/APK/hash/signer tuple for another JA11 mutation. Do not u
 convenience APK, the historical `505182e` candidate, the historical `f3765b03` candidate, or any
 APK with a different source/hash tuple.
 
-## Current diagnostic source — SIGNED CANDIDATE NOT YET AVAILABLE
+## Current signed diagnostic candidate — READY FOR OWNER HARDWARE TESTING / FINAL RELEASE BLOCKED
 
-The bounded diagnostic correction was implemented at source
-`054298b866fad4ca97cb649790af54ccc6a4cfba`; the latest handoff head is
-`1b56035ff9dcbe9a49b3a44432e7ff9e49fc3010` on branch `codex/ja11-signed-provenance`. It adds a
-shareable readable/JSON transaction report, raw JA11 request/response capture while the
-authoritative Flash operation is active, complete five-band/program/global-gain baseline capture,
-phase-aware readback comparison, and exact value joins. It intentionally does not change the
-`0x17` codec, signedness, endian order, `2560` scale, tolerance, retry policy, or fail-closed
-behavior.
+The bounded diagnostic correction is merged on `main` at source
+`af8c68c35d320223a13c635fac69c0f2ebacdb3f`. It adds a shareable readable/JSON transaction report,
+raw JA11 request/response capture while the authoritative Flash operation is active, complete
+five-band/program/global-gain baseline capture, phase-aware readback comparison, and exact value
+joins. It intentionally does not change the `0x17` codec, signedness, endian order, `2560` scale,
+tolerance, retry policy, or fail-closed behavior.
 
-This source is not an owner-test candidate yet: local Android tests are **NOT RUN** because the
-host has no Android SDK location. Final-head Android CI `36178118593`, CodeQL `36178118501`,
-priority-community `36178118603`, catalog-currentness `36178118617`, and dependency-submission
-`36178111903` all passed. CI produced only the unsigned debug artifact `EQ-Library-beta-debug-apk`
-(artifact ID `10883860070`); no signed APK/checksum/signer tuple exists for this head. The owner
-must not install or Flash this source until a new exact signed candidate is produced. Once available, perform one bounded diagnostic session only;
-export the report and stop on missing raw evidence, an unknown baseline, a disconnect outside the
-documented Save boundary, or uncertain restoration.
+Use only this immutable candidate:
+
+- APK: [`EQ-Library-v0.7.0-beta-af8c68c.apk`](https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-af8c68c.apk).
+- Package/version: `com.weekssa.opraeqforuapp`, `0.7.0` / version code `7`.
+- APK SHA-256: `3b442cbab3cf8be59a9b8e4ddd0d7028e93f8c4067d94dbb833a5bbb60b1d37e`.
+- Signer: `CN=OPRA EQ for UAPP, O=weekssa`; RSA 4096; certificate SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`; v2/v3 verified.
+- Signed-beta [run #1363](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36180975485): **PASS**; signed artifact ID `10884371877`; ZIP SHA-256 `77477ad6bd52e9b114cf18e949368424d8d5c1dbc85246679c9c5fd561d5b44d`.
+- R8 mapping SHA-256: `71036cf05464e6b84f07165e75c17c5a5cd5517a843bd1a8efb0bb49add0b374`.
+- Candidate manifest test plan: this checklist; capability profile: `FiiO JA11 exact model; five-band PEQ; global EQ gain`.
+
+The signed workflow passed build, tests, lint, release/R8, signer verification, emulator
+install/cold launch, diagnostics, and immutable candidate publication. This is a diagnostic
+candidate, not a protocol-root-cause fix, final release, or JA11 support qualification. Do not
+use the old `609911e` candidate or a moving convenience APK.
+
+### One bounded owner session
+
+1. Verify the downloaded APK against the SHA-256 and signer tuple above. Do not proceed if either
+   differs.
+2. Connect the exact JA11 and record firmware response, VID/PID/UAC mode, sanitized identity,
+   active program, all five bands, global gain, and original-state restoration plan. This is a
+   read-only baseline.
+3. Select one known Jaytiss profile and perform one controlled Flash. Do not repeat Flash or Reset
+   automatically, even if verification fails.
+4. Export both the readable and JSON JA11 operation reports from My DAC. The report must contain
+   the canonical preamp, optimized target, quantized wire target, raw `0x17` request/response,
+   decoded readback, comparison phase, timestamps/order, Save count, session/detach generations,
+   and final transaction state.
+5. Verify the original state or the documented intended User 1 state after the operation and
+   after one reconnect/power-cycle check only if the Save boundary is reached.
+
+Stop immediately on a missing/unknown baseline, missing raw report, unexpected disconnect,
+uncertain session replacement, or inability to establish restoration. The report’s result is
+evidence even when it is a failure; do not retry to obtain a different result.
+
+### Interpretation boundary
+
+- Request and readback both show the expected `0x17` raw value, but the UI comparison is wrong:
+  investigate the UI/domain comparison.
+- Readback differs from the request: investigate device transformation, quantization, protocol,
+  firmware, or timing; do not widen tolerance.
+- A delayed prior response is associated with the current read: investigate response correlation.
+- Pre-Save readback passes but post-Save readback fails: investigate Save/re-enumeration timing or
+  persistence semantics.
+
+Final release and public JA11 support remain blocked until the report-backed evidence is reviewed.
 
 ## Historical v0.5.0 software candidate record
 
