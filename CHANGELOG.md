@@ -6,6 +6,15 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ## [Unreleased]
 
+### 2026-09-24 Rtings/AutoEQ Favorite provenance follow-up
+
+- Favorites now source-bound-canonicalize exact current OPRA compatibility rows when the
+  multi-source snapshot has not published that same source record yet. The resolver preserves
+  the exact OPRA source ID and rejects changed, stale, or ambiguous projections; it does not
+  accept a similar profile or save unresolved legacy data.
+- Added adapter and repository regression coverage for the Edition XS Rtings/AutoEQ failure
+  path, including altered-projection refusal.
+
 ### 2026-09-24 EW300 delayed reconnect verification candidate
 
 - Added a fail-closed, read-only reconciliation path for EW300 Flash/Reset operations whose Save
