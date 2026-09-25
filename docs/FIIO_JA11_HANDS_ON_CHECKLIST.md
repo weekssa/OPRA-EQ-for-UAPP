@@ -1,5 +1,16 @@
 # FiiO JA11 hands-on qualification
 
+## Integrated software candidate — hardware gate pending
+
+The current integration source is `ba5ffdb5cd427736a8f99a28fcf564ba87d9e42f` on
+`codex/v0.7-release-candidate`. Android CI #1816, CodeQL #1700, catalog currentness #2103, and
+priority community #1588 passed; the FiiO implementation and automated final-test coverage remain
+intact. This source has no signed APK because PR #36 is intentionally unmerged and the signing
+workflow is trusted-`main` only. Do not perform hands-on JA11 testing until the newer task
+produces the exact signed artifact and records its checksum/signer tuple.
+
+
+
 Status: **HARDWARE VALIDATION PENDING — DEFERRED TO NEXT INCREMENTAL RELEASE**
 
 This physical gate is explicitly **not a v0.5.0 publication blocker** because the JA11 hardware is not yet available. Keep the shipped/in-app status **Hardware validation pending**. When the hardware arrives, run this checklist against the exact signed candidate for the next incremental release being qualified; do not automatically reuse the historical v0.5.0 candidate below.
