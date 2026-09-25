@@ -133,7 +133,7 @@ class FiioJa11ProtocolTest {
             -3.9,
             FiioJa11Protocol.globalGainFromResponse(
                 bytes(0x02, 0xBB, 0x0B, 0x00, 0x00, 0x17, 0x02, 0x00, 0xD9, 0xEE),
-            ),
+            )!!,
             0.000_001,
         )
     }
