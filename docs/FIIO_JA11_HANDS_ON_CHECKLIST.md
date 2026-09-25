@@ -2,40 +2,33 @@
 
 ## Integrated software candidate — hardware gate pending
 
-The current integration source is `ba5ffdb5cd427736a8f99a28fcf564ba87d9e42f` on
-`codex/v0.7-release-candidate`. Android CI #1816, CodeQL #1700, catalog currentness #2103, and
-priority community #1588 passed; the FiiO implementation and automated final-test coverage remain
-intact. This source has no signed APK because PR #36 is intentionally unmerged and the signing
-workflow is trusted-`main` only. Do not perform hands-on JA11 testing until the newer task
-produces the exact signed artifact and records its checksum/signer tuple.
+The current signed testing candidate contains the JA11 Flash pacing/readback recovery. Its source
+is the merged main commit `f3765b03a3d8517880956390c9c4eca3b4157222`; Android CI, CodeQL, catalog,
+priority-community, dependency, signed-beta, and emulator cold-launch gates passed on that exact
+source. This is software evidence only. Do not treat it as proof of physical JA11 Flash or
+power-cycle persistence until the owner completes the procedure below.
 
-
-
-Status: **HARDWARE VALIDATION PENDING — DEFERRED TO NEXT INCREMENTAL RELEASE**
-
-This physical gate is explicitly **not a v0.5.0 publication blocker** because the JA11 hardware is not yet available. Keep the shipped/in-app status **Hardware validation pending**. When the hardware arrives, run this checklist against the exact signed candidate for the next incremental release being qualified; do not automatically reuse the historical v0.5.0 candidate below.
+Status: **HARDWARE VALIDATION PENDING — OWNER SESSION REQUIRED**
 
 ## Current physical-test candidate — READY / HARDWARE GATE PENDING
 
-The current exact signed beta candidate is ready for the first JA11 hands-on session:
+Use only this immutable candidate for the first JA11 hands-on session:
 
 - App version: `0.7.0` / version code `7`.
-- Source commit: `505182edc1e7845ff342a2c28196b3b928ddd2f1` (verified `main` merge commit).
-- Exact signed APK: `https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-505182e.apk`
-- APK SHA-256: `0237c1514f03a6b2a6987e35ccb2f3c6512a148aadfd2f7a232ca09742cf79ee`.
+- Source commit: `f3765b03a3d8517880956390c9c4eca3b4157222` (merged `main` commit).
+- Exact signed APK: `https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-f3765b0.apk`
+- APK SHA-256: `928f9a68e0abaeb01d16a1aa1d227432b39c691f191214791a5540cd1c3f3037`.
 - Signer certificate SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`.
-- Signed-beta workflow: [run #1359](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36093590432) — **PASS**.
-- Signed-beta artifact: `10847020834`; artifact ZIP digest: `1339fea5dffb3a5997cdc2d76a5f033650613332a8dc5626850dd7f59fd7b234`.
-- Candidate scope note: PR #35 changed the library Favorites resolver and regression coverage only; no FiiO protocol or transaction behavior changed after the software path represented by this candidate.
+- R8 mapping SHA-256: `1bb47ec1ebcbc3e8696a87f8c93bbaf64795fff0b5388323dfdbbfa200995451`.
+- Signed-beta workflow: [run #1361](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36143910822) — **PASS**.
+- Signed-beta artifact: `10867973392` (`EQ-Library-signed-beta-f3765b03a3d8517880956390c9c4eca3b4157222`).
+- Candidate manifest: target `ja11`; capability profile **FiiO JA11 exact model; five-band PEQ; global EQ gain**.
+- Signing verification: APK Signature Scheme v2/v3 verified; one RSA-4096 signer; zipalign verified.
+- Emulator verification: signed APK installed and cold-launched successfully.
 - Hardware status: **PENDING — first JA11 physical qualification session not yet run**.
 
-Use this exact immutable candidate for the owner session. Do not use the moving convenience APK or the historical v0.5.0 candidate as qualification provenance.
-
-The candidate record above is now superseded for the JA11 Flash-recovery investigation by the
-exact software source line headed by `52633670a86748bd37b1416e356b0c20146ac97a`. Do not use the
-`505182e` APK to evaluate the pacing/readback fix. Replace this section with the newly signed
-candidate tuple after its exact-head software gates pass; until then, the JA11 hardware gate
-remains pending and no hardware result may be attributed to the recovery candidate.
+Use this exact immutable candidate for the owner session. Do not use the moving convenience APK,
+the historical `505182e` candidate, or any APK with a different source/hash tuple.
 
 ## Historical v0.5.0 software candidate record
 
