@@ -790,6 +790,8 @@ fun EqLibraryApp(
                         ew300EditorState = state.ew300EditorState,
                         ew300OperationTrace = state.ew300OperationTrace,
                         ew300OperationStatus = state.ew300OperationStatus,
+                        fiioJa11OperationTrace = state.fiioJa11OperationTrace,
+                        fiioJa11OperationStatus = state.fiioJa11OperationStatus,
                         blackPearlQualificationState = state.blackPearlQualificationState,
                         fiioJa11DeviceState = state.fiioJa11DeviceState,
                         ew300PlaybackGainState = state.ew300PlaybackGainState,

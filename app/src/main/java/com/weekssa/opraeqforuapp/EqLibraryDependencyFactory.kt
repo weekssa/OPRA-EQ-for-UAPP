@@ -123,7 +123,12 @@ internal fun createEqLibraryRuntimeDependencies(context: Context): EqLibraryRunt
             blackPearlTransport,
             BlackPearlGainStatePreferences(appContext),
         ),
-        fiioJa11Flasher = FiioJa11Flasher(fiioJa11Transport),
+        fiioJa11Flasher = FiioJa11Flasher(
+            transport = fiioJa11Transport,
+            sourceCommit = BuildConfig.CANDIDATE_SOURCE_SHA,
+            appVersion = BuildConfig.VERSION_NAME,
+            signerVerified = ReleaseSignatureGate.isPinnedReleaseSigner(appContext),
+        ),
         ew300Flasher = Ew300Flasher(
             transport = ew300Transport,
             gainStateStore = ew300GainStateStore,

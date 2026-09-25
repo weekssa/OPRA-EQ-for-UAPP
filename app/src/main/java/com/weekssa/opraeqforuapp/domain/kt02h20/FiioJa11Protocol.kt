@@ -156,6 +156,14 @@ object FiioJa11Protocol {
         return wire(packet)
     }
 
+    /** The exact dB value represented by the signed 16-bit JA11 global-gain field. */
+    fun quantizedGlobalGainDb(gainDb: Double): Double {
+        require(gainDb.isFinite() && gainDb in MIN_GLOBAL_GAIN_DB..MAX_GLOBAL_GAIN_DB) {
+            "JA11 global preamp is outside the current validated range."
+        }
+        return (gainDb * GLOBAL_GAIN_RAW_PER_DB).roundToInt() / GLOBAL_GAIN_RAW_PER_DB
+    }
+
     fun applyReport(): ByteArray =
         wire(byteArrayOf(SET_1.b(), SET_2.b(), 0, 0, CMD_APPLY.b(), 1, 1, 0, FOOTER.b()))
 

@@ -19,6 +19,30 @@ the exact candidate provenance and capture a read-only baseline plus the intende
 bands, firmware, PID/UAC mode, and whether the mismatch was pre-Save or post-Save. Stop if the
 device state or original-state restoration cannot be established.
 
+## 2026-09-25 exact-candidate repeat — diagnostic evidence required before another mutation
+
+The owner subsequently installed the exact signed `EQ-Library-v0.7.0-beta-609911e.apk` over the
+prior build. The owner reports that every EQ/Flash path failed immediately with the same global
+EQ-gain readback mismatch, while the optimized graph appeared. The Save/reconnect correction was
+exercised, but no visible progress, restart, disconnect/reconnect, Save, or successful EQ was
+observed. The first supplied video includes an intentional Reset-to-EQ action; later unplug/reconnect
+was only to show that the state did not persist. This is a physical negative result tied to the
+exact signed candidate, not a qualification result.
+
+- Video: `/Users/stephenweeks/Library/CloudStorage/GoogleDrive-weekssa@gmail.com/My Drive/OPRA UAPP Presets/EQ Library Testing/screen-20260925-130921-1790359660539.mp4`; SHA-256 `afa7bd92db069bec2d543d90d98fc4d4639810a0c062954607f4d73191b2d2d7`.
+- Screenshot: `/Users/stephenweeks/Library/CloudStorage/GoogleDrive-weekssa@gmail.com/My Drive/OPRA UAPP Presets/EQ Library Testing/Screenshot (Sep 25, 2026 12:40:41 PM)`; SHA-256 `52ed5324861b2a51f154332258d9e4729ae8fc31677a0e2a49be3ea07653df3c`.
+- Candidate source: `609911e2e51a254fc6f45b87fbdf4106c0049740`; APK SHA-256 `583ff7014fc3c0977b6679cd8bf56d3a4f615411a629fa6014bab088ece082ef`; signer certificate SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`.
+
+Do not perform another Flash or Reset with this opaque candidate. The next and only authorized
+physical step is one bounded diagnostic session using a newly built, exact signed candidate whose
+JA11 report can be shared from My DAC. Before that session, record the complete five-band/global-
+gain baseline, firmware response, VID/PID/UAC mode, and sanitized device identity. During one
+controlled Flash, export the report containing the canonical preamp, optimized target, quantized
+wire target, raw `0x17` write/read packets, decoded readback, comparison phase, timestamps/order,
+Save count, session/detach generations, and final state. Stop immediately on an unknown baseline,
+disconnect outside the documented Save boundary, missing raw report, or inability to restore the
+original state. A report showing a mismatch remains a failure; do not retry automatically.
+
 The draft PR now contains an evidence-backed Save/reconnect correction at source commit
 `b32c52a82a46899efd115efd8544deeb16b9eb4c`. The corrected head has passed the repository's
 automated software gates, but the CI debug APK is unsigned and no signed artifact, checksum, or
@@ -35,40 +59,50 @@ JA11 Flash or power-cycle persistence.
 
 Status: **HISTORICAL SOFTWARE EVIDENCE — DO NOT FLASH JA11 WITH THIS ARTIFACT FOR THIS INVESTIGATION**
 
-## Current physical-test candidate — NOT READY / BUILD AND SIGNING GATE BLOCKED
+## Previous physical-test candidate — INVALIDATED BY J006 / DO NOT REPEAT
 
-There is currently no signed physical-test candidate for the Save/reconnect correction. The
-current corrected source is `b32c52a82a46899efd115efd8544deeb16b9eb4c` on draft PR [#41](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/41).
-The complete automated software gates passed on that exact head:
+The previously corrected candidate was merged and had a complete trusted-main signed provenance
+tuple. J006 now records that exact candidate failing on owner hardware. It is no longer a test
+candidate for this investigation and must not be flashed again.
 
-- Android CI [run 36161662881](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36161662881): **PASS** — unit tests, lint, debug/release assembly, R8/minified verification, connected UI tests, and API-26 cold-install smoke.
-- CodeQL [run 36161662907](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36161662907): **PASS**.
-- Priority community coverage [run 36161662950](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36161662950): **PASS**.
-- Catalog currentness [run 36161662958](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36161662958): **PASS**.
-- CI debug artifact: `EQ-Library-beta-debug-apk`, artifact ID `10876492157`; **unsigned and not valid as the physical-test candidate**.
+- Source commit: `609911e2e51a254fc6f45b87fbdf4106c0049740` (PR [#41](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/41), merged into `main` with owner approval).
+- Exact immutable APK: [`EQ-Library-v0.7.0-beta-609911e.apk`](https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-609911e.apk).
+- App/package: `0.7.0` / version code `7` / `com.weekssa.opraeqforuapp`.
+- APK SHA-256: `583ff7014fc3c0977b6679cd8bf56d3a4f615411a629fa6014bab088ece082ef`.
+- Signer: `CN=OPRA EQ for UAPP, O=weekssa`; certificate SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`; RSA 4096.
+- Signing verification: APK Signature Scheme v2 and v3 verified; one signer; zipalign verified.
+- R8 mapping SHA-256: `9f9d0e28271b4cfefdc9e71c6416061bd4a99e38341ab72290b159825de6e6ec`.
+- Candidate manifest: target `ja11`; capability profile **FiiO JA11 exact model; five-band PEQ; global EQ gain**; test plan is this checklist.
+- Signed-beta workflow: [run #1362](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36165218849) — **PASS**; 11m 6s; exact source `609911e`.
+- Signed artifact: `EQ-Library-signed-beta-609911e2e51a254fc6f45b87fbdf4106c0049740`, artifact ID `10877122640`, artifact ZIP SHA-256 `1b124c63cb799a5a069384d48a9477e32078167a509ccd8872b69693880988cd`.
+- Exact candidate APK checksum was independently recomputed from the immutable candidate and matches the embedded manifest and checksum file.
+- Automated gates: Android CI [run 36163197805](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36163197805), CodeQL [run 36163197784](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36163197784), priority community coverage [run 36163197775](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36163197775), and catalog currentness [run 36163197794](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36163197794) — all **PASS**.
+- Hardware status: **FAILED ON J006 — not a qualification result**. The agent performed no physical
+  mutation; JA11 remains hardware-validation pending.
 
-The trusted-main signed-beta workflow has not run for this draft PR head, so the signing gate is
-still open.
+Do not use this source/APK/hash/signer tuple for another JA11 mutation. Do not use the moving
+convenience APK, the historical `505182e` candidate, the historical `f3765b03` candidate, or any
+APK with a different source/hash tuple.
 
-Do not begin the owner JA11 session until all of the following fields are replaced with the exact
-current candidate:
+## Current diagnostic source — SIGNED CANDIDATE NOT YET AVAILABLE
 
-- App version and version code.
-- Exact source commit containing the Save/reconnect correction.
-- Exact signed APK URL and APK SHA-256.
-- Signer certificate SHA-256 and signing verification.
-- R8 mapping SHA-256 when applicable.
-- Signed-beta workflow and artifact identity with complete software gates passed.
-- Historical signed-beta workflow: [run #1361](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36143910822) — **PASS** for the pre-correction candidate only.
-- Historical signed-beta artifact; not valid for testing the Save/reconnect correction.
-- Historical candidate manifest: target `ja11`; capability profile **FiiO JA11 exact model; five-band PEQ; global EQ gain**.
-- Historical artifact signing verification: APK Signature Scheme v2/v3 verified; one RSA-4096 signer; zipalign verified.
-- Historical artifact emulator verification: signed APK installed and cold-launched successfully.
-- Hardware status: **PENDING — first JA11 physical qualification session not yet run**.
+The bounded diagnostic correction was implemented at source
+`054298b866fad4ca97cb649790af54ccc6a4cfba`; the latest handoff head is
+`1b56035ff9dcbe9a49b3a44432e7ff9e49fc3010` on branch `codex/ja11-signed-provenance`. It adds a
+shareable readable/JSON transaction report, raw JA11 request/response capture while the
+authoritative Flash operation is active, complete five-band/program/global-gain baseline capture,
+phase-aware readback comparison, and exact value joins. It intentionally does not change the
+`0x17` codec, signedness, endian order, `2560` scale, tolerance, retry policy, or fail-closed
+behavior.
 
-Until those fields are populated for the corrected candidate, do not use the moving convenience
-APK, the historical `505182e` candidate, the historical `f3765b03` candidate, or any APK with a
-different source/hash tuple.
+This source is not an owner-test candidate yet: local Android tests are **NOT RUN** because the
+host has no Android SDK location. Final-head Android CI `36178118593`, CodeQL `36178118501`,
+priority-community `36178118603`, catalog-currentness `36178118617`, and dependency-submission
+`36178111903` all passed. CI produced only the unsigned debug artifact `EQ-Library-beta-debug-apk`
+(artifact ID `10883860070`); no signed APK/checksum/signer tuple exists for this head. The owner
+must not install or Flash this source until a new exact signed candidate is produced. Once available, perform one bounded diagnostic session only;
+export the report and stop on missing raw evidence, an unknown baseline, a disconnect outside the
+documented Save boundary, or uncertain restoration.
 
 ## Historical v0.5.0 software candidate record
 

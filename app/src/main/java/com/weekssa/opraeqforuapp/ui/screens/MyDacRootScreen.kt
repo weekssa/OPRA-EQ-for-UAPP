@@ -25,6 +25,8 @@ import com.weekssa.opraeqforuapp.domain.dac.DacRecognitionState
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqMatchResolution
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
+import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationStatus
+import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationTrace
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityReport
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300PersistenceQualificationResult
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationTrace
@@ -62,6 +64,8 @@ fun MyDacRootScreen(
     ew300EditorState: MyDacEditorUiState = MyDacEditorUiState(),
     ew300OperationTrace: Ew300OperationTrace? = null,
     ew300OperationStatus: Ew300OperationStatus = Ew300OperationStatus.Idle,
+    fiioJa11OperationTrace: FiioJa11OperationTrace? = null,
+    fiioJa11OperationStatus: FiioJa11OperationStatus = FiioJa11OperationStatus.Idle,
     blackPearlQualificationState: BlackPearlQualificationUiState,
     fiioJa11DeviceState: FiioJa11DeviceUiState,
     ew300PlaybackGainState: Ew300PlaybackGainUiState = Ew300PlaybackGainUiState(),
@@ -210,6 +214,8 @@ fun MyDacRootScreen(
             onSetHeadsetControl = onSetFiioJa11HeadsetControl,
             onSetUacMode = onSetFiioJa11UacMode,
             onResetEq = onResetFiioJa11FromMyDac,
+            operationTrace = fiioJa11OperationTrace,
+            operationStatus = fiioJa11OperationStatus,
             onMessage = onMessage,
             modifier = modifier,
         )

@@ -22,6 +22,29 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
   `b32c52a82a46899efd115efd8544deeb16b9eb4c` passed Android CI, CodeQL, catalog-currentness, and
   priority-community gates. The CI debug artifact is unsigned; no signed APK or release provenance
   exists yet.
+- After owner approval, PR #41 was merged into `main` as `609911e2e51a254fc6f45b87fbdf4106c0049740`.
+  Signed-beta run #1362 passed and produced the exact JA11 candidate
+  `EQ-Library-v0.7.0-beta-609911e.apk` with APK SHA-256
+  `583ff7014fc3c0977b6679cd8bf56d3a4f615411a629fa6014bab088ece082ef`, signer certificate
+  SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`, and R8 mapping
+  SHA-256 `9f9d0e28271b4cfefdc9e71c6416061bd4a99e38341ab72290b159825de6e6ec`. Android CI,
+  CodeQL, priority-community, catalog-currentness, signed emulator install/cold launch, and
+  artifact-integrity gates passed on this exact candidate. It is ready only for the bounded owner
+  JA11 hardware session; final release and public JA11 support remain held.
+- The exact signed `609911e` candidate was subsequently exercised on owner JA11 hardware and
+  reproduced the global-gain verification failure across the EQ/Flash paths. No codec or
+  tolerance change is justified by the UI/video evidence. Added a bounded shared JA11 operation
+  report that joins canonical and quantized gain values, phase-specific readback, raw HID
+  request/response bytes, Save count, and session generations, with readable/JSON sharing from My
+  DAC. The diagnostic implementation is committed at
+  `054298b866fad4ca97cb649790af54ccc6a4cfba`; the latest handoff head is
+  `1b56035ff9dcbe9a49b3a44432e7ff9e49fc3010`. Local Android tests are NOT RUN because the host
+  has no Android SDK location, but final-head Android CI `36178118593`, CodeQL `36178118501`,
+  priority-community `36178118603`, catalog-currentness `36178118617`, and dependency-submission
+  `36178111903` all passed. CI produced only unsigned debug artifact `EQ-Library-beta-debug-apk`
+  (artifact ID `10883860070`); no signed artifact exists for this head. The diagnostic candidate
+  remains hardware-validation pending and must be tested once with the report before any further
+  mutation; no release or public support claim follows.
 
 ### 2026-09-24 Rtings/AutoEQ Favorite provenance follow-up
 

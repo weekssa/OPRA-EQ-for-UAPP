@@ -2,8 +2,10 @@ package com.weekssa.opraeqforuapp.data.kt02h20
 
 import android.content.Context
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
+import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11TransportEvent
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Timing
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Transport
+import com.weekssa.opraeqforuapp.domain.kt02h20.toJa11TraceHex
 import java.io.Closeable
 import kotlinx.coroutines.flow.StateFlow
 
@@ -20,10 +22,37 @@ class AndroidFiioJa11UsbTransport(
 
     val state: StateFlow<Kt02h20ConnectionState> = hid.state
     val present: StateFlow<Boolean> = hid.present
-    val sessionGeneration: Long
-        get() = hid.sessionGeneration
     val connectedProductId: Int?
         get() = hid.connectedProductId
+    override val deviceFingerprintKey: String?
+        get() = hid.deviceFingerprintKey
+    override val usbProductId: Int?
+        get() = hid.connectedProductId
+    override val sessionGeneration: Long
+        get() = hid.sessionGeneration
+    override val detachGeneration: Long
+        get() = hid.detachGeneration
+    override val permissionRequestCount: Long
+        get() = hid.permissionRequestCount
+
+    private val traceLock = Any()
+    private var traceStartMillis: Long? = null
+    private val traceEvents = mutableListOf<FiioJa11TransportEvent>()
+
+    override fun beginTrace(operationId: String) {
+        synchronized(traceLock) {
+            traceStartMillis = System.currentTimeMillis()
+            traceEvents.clear()
+        }
+    }
+
+    override fun endTrace(): List<FiioJa11TransportEvent> =
+        synchronized(traceLock) {
+            val result = traceEvents.toList()
+            traceStartMillis = null
+            traceEvents.clear()
+            result
+        }
 
     fun connect() = hid.connect()
 
@@ -115,7 +144,16 @@ class AndroidFiioJa11UsbTransport(
             settleMillis = FiioJa11Timing.settleMillisForMutation(report),
         )
         val command = report.getOrNull(5)?.toInt()?.and(0xFF)
-        return sent && (command == 0x19 || hid.isCurrentSession(generation, detachGeneration))
+        val accepted = sent && (command == 0x19 || hid.isCurrentSession(generation, detachGeneration))
+        recordTrace(
+            direction = "WRITE",
+            request = report,
+            response = null,
+            sessionGeneration = generation,
+            detachGeneration = detachGeneration,
+            succeeded = accepted,
+        )
+        return accepted
     }
 
     private suspend fun <T> exchangeOneByte(
@@ -136,14 +174,57 @@ class AndroidFiioJa11UsbTransport(
     ): T? {
         val generation = hid.sessionGeneration
         val detachGeneration = hid.detachGeneration
-        if (!hid.isCurrentSession(generation, detachGeneration)) return null
+        if (!hid.isCurrentSession(generation, detachGeneration)) {
+            recordTrace(
+                direction = "READ",
+                request = request,
+                response = null,
+                sessionGeneration = generation,
+                detachGeneration = detachGeneration,
+                succeeded = false,
+            )
+            return null
+        }
         val response = hid.exchange(
             report = request,
             minResponseBytes = minResponseBytes,
             acceptResponse = acceptResponse,
-        ) ?: return null
-        if (!hid.isCurrentSession(generation, detachGeneration)) return null
-        return decoder(response)
+        )
+        val stable = response != null && hid.isCurrentSession(generation, detachGeneration)
+        recordTrace(
+            direction = "READ",
+            request = request,
+            response = response,
+            sessionGeneration = generation,
+            detachGeneration = detachGeneration,
+            succeeded = stable,
+        )
+        if (!stable) return null
+        return decoder(requireNotNull(response))
+    }
+
+    private fun recordTrace(
+        direction: String,
+        request: ByteArray,
+        response: ByteArray?,
+        sessionGeneration: Long,
+        detachGeneration: Long,
+        succeeded: Boolean,
+    ) {
+        synchronized(traceLock) {
+            val start = traceStartMillis ?: return
+            traceEvents += FiioJa11TransportEvent(
+                sequence = traceEvents.size + 1,
+                elapsedMillis = (System.currentTimeMillis() - start).coerceAtLeast(0L),
+                direction = direction,
+                command = request.getOrNull(5)?.let { "0x%02x".format(it.toInt() and 0xFF) } ?: "unknown",
+                requestHex = request.toJa11TraceHex(),
+                responseHex = response?.toJa11TraceHex(),
+                sessionGeneration = sessionGeneration,
+                detachGeneration = detachGeneration,
+                succeeded = succeeded,
+            )
+        }
     }
 
     override fun close() = hid.close()
