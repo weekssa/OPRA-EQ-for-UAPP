@@ -80,7 +80,7 @@ class FiioJa11FlasherTest {
 
     @Test
     fun staleBandReadbackNeverAttemptsPersistentSave() = runBlocking {
-        val transport = FakeJa11Transport(ignoreBandWriteIndex = 2)
+        val transport = FakeJa11Transport(ignoreBandWriteIndex = 0)
 
         val result = FiioJa11Flasher(transport).flash(exactProfile())
 
