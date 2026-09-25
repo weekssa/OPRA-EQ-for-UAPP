@@ -96,6 +96,7 @@ class FiioJa11FlasherTest {
         assertEquals("test-source", trace.sourceCommit)
         assertTrue(trace.signerVerified)
         assertEquals("ja11-flash", trace.sourceProfileId)
+        assertEquals("2.20", trace.firmwareVersion)
         assertEquals(-4.0, trace.canonicalPreampGainDb!!, 0.0)
         assertEquals(-4.0, trace.generatedOrSelectedTargetGainDb!!, 0.0)
         assertEquals(-4.0, trace.quantizedWireTargetGainDb!!, 0.0)
@@ -220,6 +221,8 @@ class FiioJa11FlasherTest {
             if (writeStarted) globalGainReadsAfterWrites++
             return globalGainDb
         }
+
+        override suspend fun readFirmwareVersion(): String? = "2.20"
 
         override suspend fun readEqProgram(): FiioJa11Protocol.EqProgram? {
             if (!readable) return null

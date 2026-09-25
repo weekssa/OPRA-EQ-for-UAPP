@@ -80,6 +80,7 @@ data class FiioJa11OperationTrace(
     val baselineProgram: String? = null,
     val baselineGlobalGainDb: Double? = null,
     val baselineBands: List<FiioJa11TraceBand> = emptyList(),
+    val firmwareVersion: String? = null,
 ) {
     fun toReadableText(): String = buildString {
         appendLine("FiiO JA11 operation report")
@@ -90,6 +91,7 @@ data class FiioJa11OperationTrace(
         appendLine("signerVerified=$signerVerified")
         appendLine("deviceFingerprintKey=${deviceFingerprintKey.redactedForJa11Report() ?: "unavailable"}")
         appendLine("usbProductId=${usbProductId ?: "unavailable"}")
+        appendLine("firmwareVersion=${firmwareVersion ?: "unavailable"}")
         appendLine("sessionGeneration=$sessionGeneration")
         appendLine("detachGeneration=$detachGeneration")
         appendLine("permissionRequestCount=$permissionRequestCount")
@@ -134,6 +136,7 @@ data class FiioJa11OperationTrace(
         boolField("signerVerified", signerVerified)
         field("deviceFingerprintKey", deviceFingerprintKey.redactedForJa11Report())
         numberField("usbProductId", usbProductId?.toLong())
+        field("firmwareVersion", firmwareVersion)
         numberField("sessionGeneration", sessionGeneration)
         numberField("detachGeneration", detachGeneration)
         numberField("permissionRequestCount", permissionRequestCount)
@@ -294,6 +297,7 @@ internal class FiioJa11OperationTraceBuilder(
     private var baselineProgram: String? = null
     private var baselineGlobalGainDb: Double? = null
     private var baselineBands: List<FiioJa11TraceBand> = emptyList()
+    private var firmwareVersion: String? = null
 
     fun stage(stage: FiioJa11OperationStage) {
         if (stages.lastOrNull() != stage) stages += stage
@@ -317,10 +321,12 @@ internal class FiioJa11OperationTraceBuilder(
         program: FiioJa11Protocol.EqProgram,
         globalGainDb: Double,
         bands: List<FiioJa11Protocol.Band>,
+        firmwareVersion: String? = null,
     ) {
         baselineProgram = program.name
         baselineGlobalGainDb = globalGainDb
         baselineBands = bands.map { FiioJa11TraceBand(it.type, it.frequencyHz, it.gainDb, it.q) }
+        this.firmwareVersion = firmwareVersion
         stage(FiioJa11OperationStage.BASELINE_READ)
     }
 
@@ -385,6 +391,7 @@ internal class FiioJa11OperationTraceBuilder(
         baselineProgram = baselineProgram,
         baselineGlobalGainDb = baselineGlobalGainDb,
         baselineBands = baselineBands,
+        firmwareVersion = firmwareVersion,
     )
 }
 

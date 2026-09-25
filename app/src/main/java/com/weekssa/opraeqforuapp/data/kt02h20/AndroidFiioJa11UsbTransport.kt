@@ -66,7 +66,7 @@ class AndroidFiioJa11UsbTransport(
         decoder = FiioJa11Protocol::sampleRateLabelFromResponse,
     )
 
-    suspend fun readFirmwareVersion(): String? {
+    override suspend fun readFirmwareVersion(): String? {
         return exchangeOnStableSession(
             request = FiioJa11Protocol.readFirmwareVersionReport(),
             minResponseBytes = 8,
