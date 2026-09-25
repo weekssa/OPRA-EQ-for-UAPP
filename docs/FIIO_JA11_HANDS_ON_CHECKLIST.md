@@ -86,8 +86,9 @@ APK with a different source/hash tuple.
 
 ## Current diagnostic source — SIGNED CANDIDATE NOT YET AVAILABLE
 
-The bounded diagnostic correction is committed at source
-`054298b866fad4ca97cb649790af54ccc6a4cfba` on branch `codex/ja11-signed-provenance`. It adds a
+The bounded diagnostic correction was implemented at source
+`054298b866fad4ca97cb649790af54ccc6a4cfba`; the latest handoff head is
+`1b56035ff9dcbe9a49b3a44432e7ff9e49fc3010` on branch `codex/ja11-signed-provenance`. It adds a
 shareable readable/JSON transaction report, raw JA11 request/response capture while the
 authoritative Flash operation is active, complete five-band/program/global-gain baseline capture,
 phase-aware readback comparison, and exact value joins. It intentionally does not change the
@@ -95,10 +96,10 @@ phase-aware readback comparison, and exact value joins. It intentionally does no
 behavior.
 
 This source is not an owner-test candidate yet: local Android tests are **NOT RUN** because the
-host has no Android SDK location. Exact-head Android CI `36177233309`, CodeQL `36177233004`,
-priority-community `36177233041`, catalog-currentness `36177233219`, and dependency-submission
-`36177227960` all passed. CI produced only the unsigned debug artifact `EQ-Library-beta-debug-apk`
-(artifact ID `10883011381`); no signed APK/checksum/signer tuple exists for this head. The owner
+host has no Android SDK location. Final-head Android CI `36178118593`, CodeQL `36178118501`,
+priority-community `36178118603`, catalog-currentness `36178118617`, and dependency-submission
+`36178111903` all passed. CI produced only the unsigned debug artifact `EQ-Library-beta-debug-apk`
+(artifact ID `10883860070`); no signed APK/checksum/signer tuple exists for this head. The owner
 must not install or Flash this source until a new exact signed candidate is produced. Once available, perform one bounded diagnostic session only;
 export the report and stop on missing raw evidence, an unknown baseline, a disconnect outside the
 documented Save boundary, or uncertain restoration.
