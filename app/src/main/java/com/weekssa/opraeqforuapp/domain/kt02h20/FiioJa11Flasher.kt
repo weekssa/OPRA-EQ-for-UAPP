@@ -25,6 +25,8 @@ interface FiioJa11Transport {
     suspend fun readBand(index: Int): FiioJa11Protocol.Band?
     suspend fun readGlobalGainDb(): Double?
     suspend fun readEqProgram(): FiioJa11Protocol.EqProgram?
+    /** Optional read-only firmware metadata used to identify protocol-semantic differences. */
+    suspend fun readFirmwareVersion(): String? = null
     suspend fun sendReport(report: ByteArray): Boolean
 
     /**
@@ -102,6 +104,7 @@ class FiioJa11Flasher(
         val baselineBands = (0 until FiioJa11Protocol.BAND_COUNT).map { index ->
             transport.readBand(index)
         }
+        val firmwareVersion = transport.readFirmwareVersion()
         if (baselineProgram == null || baselineGlobalGainDb == null || baselineBands.any { it == null }) {
             return Kt02h20FlashResult.DeviceUnavailable(
                 "Couldn’t read the FiiO JA11 PEQ state. Reconnect the DAC and try again.",
@@ -111,6 +114,7 @@ class FiioJa11Flasher(
             program = baselineProgram,
             globalGainDb = baselineGlobalGainDb,
             bands = baselineBands.filterNotNull(),
+            firmwareVersion = firmwareVersion,
         )
 
         trace.stage(FiioJa11OperationStage.WRITING)
@@ -169,6 +173,7 @@ class FiioJa11Flasher(
         val baselineBands = (0 until FiioJa11Protocol.BAND_COUNT).map { index ->
             transport.readBand(index)
         }
+        val firmwareVersion = transport.readFirmwareVersion()
         if (baselineProgram == null || baselineGlobalGainDb == null || baselineBands.any { it == null }) {
             return Kt02h20FlatResetResult.DeviceUnavailable(
                 "Couldn’t read the FiiO JA11 PEQ state. Reconnect the DAC and try again.",
@@ -178,6 +183,7 @@ class FiioJa11Flasher(
             program = baselineProgram,
             globalGainDb = baselineGlobalGainDb,
             bands = baselineBands.filterNotNull(),
+            firmwareVersion = firmwareVersion,
         )
         val flatBands = FiioJa11Protocol.completeBands(emptyList())
         trace.stage(FiioJa11OperationStage.WRITING)

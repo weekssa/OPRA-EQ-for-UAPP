@@ -28,6 +28,12 @@ correction, not evidence that the signed gain codec, scale, tolerance, or device
 wrong. Exact draft PR #41 head `b32c52a82a46899efd115efd8544deeb16b9eb4c` passed automated software
 gates; physical JA11 semantics remain pending raw transaction evidence.
 
+The diagnostic trace now performs the existing read-only firmware-version query (`0x0B`) during
+Flash/Reset preflight and records the result in both report formats. This metadata is optional: an
+unavailable firmware response does not block an operation and does not alter the write/readback
+transaction. It exists to correlate future raw `0x17` readback evidence with firmware revisions,
+because FiiO's public release history identifies firmware changes affecting gain persistence.
+
 ## USB identity and UAC re-enumeration
 
 Vendor ID:
@@ -272,3 +278,26 @@ This candidate is diagnostic only. The next physical session must be the one bou
 the maintained hands-on checklist. Its report must preserve the raw `0x17` request/response,
 decoded values, phase, timestamps, Save count, session generations, and complete baseline. No
 codec, scale, tolerance, retry, or public-support decision may be changed from UI evidence alone.
+
+### 2026-09-25 J009 device readback observation
+
+The owner returned the first complete JA11 operation trace from the exact signed diagnostic
+candidate. The app wrote global gain command `0x17` with raw little-endian payload `00 D9`
+(`0xD900`, signed `-9984`, `-3.9 dB` at the maintained `2560` raw-units-per-dB scale). After
+the `0x18` Apply command, the same session returned a valid `0x17` read response with payload
+`FF D9` (`0xD9FF`, signed `-9729`, `-3.800390625 dB`). The five band readbacks exactly matched
+the target, and session/detach generations remained `1/0`; no Save was sent because the volatile
+readback failed.
+
+This is physical evidence that the JA11 returned a different global-gain device value for this
+transaction. It is not evidence that the app's signedness, byte order, scale, or framing is
+wrong: those remain independently corroborated by the maintained repository tests and the
+independent `ja11-web-control` and `ja11-config` implementations. No source currently documents
+the observed `0xD9FF` result for a `0xD900` write. The remaining question is whether the device
+firmware intentionally quantizes/transforms the value, has an off-by-one fixed-point behavior, or
+exposes a response behavior not yet characterized. Do not widen tolerance, copy readback into
+the target, retry indefinitely, or send Save on this evidence alone.
+
+The owner-provided technical JSON export is malformed (`{,` at each nested object boundary), so
+the readable report is the authoritative artifact for this operation. The serializer defect is
+separate from the hardware mismatch and must be fixed and parse-tested before the next report.

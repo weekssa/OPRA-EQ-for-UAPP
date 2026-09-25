@@ -19,13 +19,13 @@ result yet and is for diagnosis only.
 | --- | --- | --- |
 | Exact JA11 USB identity, VID `0x2972`, UAC PIDs `0x0101`/`0x0102` | SUPPORTED_AND_IMPLEMENTED; physical pending | Strict allowlist and dynamic HID interface discovery are implemented. Physical identity/PID for J001 was not captured. |
 | Five-band Peak/Low Shelf/High Shelf target representation | SUPPORTED_AND_IMPLEMENTED; physical pending | Shared finite-hardware adapter, complete five-slot target, and codec tests exist. J001 displayed a 9→5 optimized plan but did not provide readback values. |
-| Global EQ gain `0x17` encoding/decoding | SOFTWARE-SUPPORTED; PHYSICAL SEMANTICS INSUFFICIENTLY_EVIDENCED | Repository uses signed 16-bit little-endian, `2560` raw units/dB, matching independent public implementations. The supplied connected-device frame displays `-3.80 dB` against the Jaytiss plan's `-3.90 dB`; raw write/read bytes are missing, so device transformation, stale response, and codec interpretation remain distinct hypotheses. |
+| Global EQ gain `0x17` encoding/decoding | CODEC CORROBORATED; DEVICE SEMANTICS INSUFFICIENTLY_EVIDENCED | Repository and independent implementations use signed 16-bit little-endian, `2560` raw units/dB. J009 proves this candidate wrote `0xD900` (`-3.9 dB`) and the same-session device response returned `0xD9FF` (`-3.800390625 dB`). Do not widen tolerance or change codec math until the device-side quantization/firmware semantics are independently characterized. |
 | Apply command and volatile readback | SOFTWARE-SUPPORTED; PHYSICAL SEMANTICS INSUFFICIENTLY_EVIDENCED | A supplied My DAC frame shows the optimized five-band target present while connected, which supports volatile application of the band plan. It does not prove the gain wire value or the exact transaction phase. |
-| Save User 1 persistence | SOFTWARE-SUPPORTED; PHYSICAL VALIDATION PENDING | Save is sent only after successful pre-Save verification and final readback follows. The supplied `-3.80 dB` mismatch likely prevented Save in the older/current pre-Save path, while the later flat `0.00 dB` frame shows no persistence; exact Save count remains unproven. |
+| Save User 1 persistence | SOFTWARE-SUPPORTED; PHYSICAL VALIDATION PENDING | J009 records `saveCommandCount=0` because volatile verification failed before Save. The supplied report therefore proves neither Save behavior nor persistence; the later flat `0.00 dB` view remains a negative observation without a Save-stage result. |
 | Unplug/reconnect persistence | INSUFFICIENT_EVIDENCE | A supplied post-reconnect frame shows User 1 flat with `0.00 dB`, consistent with the owner's report, but no exact candidate, raw final readback, power-cycle duration, or baseline/restoration record is attached. |
 | Fail-closed mismatch handling | SUPPORTED_AND_IMPLEMENTED | A global-gain mismatch prevents Save in the first verification path. Do not weaken the `0.001 dB` check or suppress the error. |
-| Same-command stale-response correlation | INSUFFICIENT_EVIDENCE / PARTIAL GUARD | Command and band filtering exist, and JA11 reads/ordinary writes now reject a detach or session-generation change spanning the exchange. A valid delayed same-command response on an unchanged session still has no protocol sequence/request identity. Causality for J001 is unproven; do not change behavior without raw evidence. |
-| Complete baseline capture and failed-operation restoration | SOFTWARE CORRECTION MERGED; PHYSICAL EVIDENCE PENDING | The diagnostic JA11 transaction now reads all five bands, active program, and global gain before any write and includes that baseline in the shareable report. Restoration remains owner-session evidence; no automatic retry or restoration mutation is added. The exact signed candidate is J008; its physical result is pending. |
+| Same-command stale-response correlation | PARTIALLY NARROWED; NOT PROVEN SAFE | J009 has a valid same-command `0x17` response on an unchanged session with exact event ordering and no detach/reconnect, so session replacement is not the cause of that attempt. The protocol still lacks request identity beyond command matching; delayed same-command responses remain an unresolved risk. |
+| Complete baseline capture and failed-operation restoration | BASELINE PROVEN; RESTORATION PENDING | J009 contains the complete pre-write program, global gain, and five-band baseline and the complete post-Apply target readback. It does not contain a post-operation restoration or persistence result. No automatic retry or restoration mutation is added. |
 | Session-generation enforcement across Flash | SUPPORTED_AND_IMPLEMENTED; AUTOMATED GATES PASS; PHYSICAL PENDING | The JA11 Android transport pins reads and ordinary writes to one session/detach generation; Save remains the explicit lifecycle exception and waits for its reconnect boundary. Focused tests, Android CI, signed emulator install/cold launch, and the exact signed candidate all pass. Physical lifecycle behavior remains unqualified. |
 | Output volume, presets, headset/UAC controls | SOFTWARE IMPLEMENTED; PHYSICAL PENDING | These controls are outside the failed EQ-gain root-cause boundary; owner reports that general controls work do not qualify Flash or persistence. |
 | Firmware update, bootloader, cross-flash, raw command console | UNSAFE_OR_OUT_OF_SCOPE | No JA11 firmware mutation or arbitrary command surface is authorized in this task. |
@@ -50,6 +50,30 @@ phase-specific decoded readback, raw request/response bytes, Save count, and ses
 It does not change the signedness, endian order, `2560` scale, tolerance, retry policy, or
 fail-closed mismatch behavior. The next candidate is for diagnosis only; JA11 remains physically
 unqualified until the report-backed owner session proves the exact transaction and restoration.
+
+## 2026-09-25 J009 exported transaction result
+
+The owner returned the readable and technical reports from J008. The readable report is
+authoritative for the operation because the technical export is malformed JSON. The exact trace
+shows a stable-session mismatch before Save:
+
+- Intended and quantized target: `-3.9 dB`, raw `0xD900`, write payload `00 D9`.
+- Device readback: raw `0xD9FF`, decoded `-3.800390625 dB`.
+- Difference: `255` raw units / `0.099609375 dB`; tolerance was `0.001 dB`.
+- Five target bands: all read back exactly.
+- Session/detach generations: `1/0` throughout; permission requests: `0`.
+- Save commands: `0`; terminal stages: `VOLATILE_READBACK`, then `FAILED`.
+
+This is a diagnosed physical failure, not a protocol fix or qualification result. It rules out a
+detach/session replacement cause for this transaction and leaves device-side global-gain
+quantization/firmware semantics, or a still-uncharacterized same-command response behavior, as
+the remaining protocol questions. Independent public implementations corroborate the existing
+`0x17` signed little-endian `2560`-scale codec but do not explain this `0xD9FF` response.
+
+The technical export itself is not parser-valid: each nested object begins with `{,`. This is a
+separate software export defect and is being corrected with a deterministic JSON parse test. It
+does not alter hardware behavior. Do not repeat Flash or Reset until the export correction is
+validated and a bounded protocol decision is made.
 
 ## 2026-09-25 exact signed diagnostic candidate
 
