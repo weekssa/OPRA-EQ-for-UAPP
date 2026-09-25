@@ -235,3 +235,23 @@ No sufficiently verified external JA11 preset-file interchange format has been e
 `docs/FIIO_JA11_HANDS_ON_CHECKLIST.md` remains the physical authority. Physical testing is intentionally deferred until the software-side build and automated regression sweep are complete enough to produce one consolidated candidate. At that point, pin the exact source SHA and signed APK and test one small safe step at a time.
 
 Until physical PASS, JA11 must remain clearly labeled **Hardware validation pending** even when the software path is complete.
+
+### 2026-09-25 diagnostic trace boundary
+
+The exact signed `609911e` candidate failed on owner hardware with the same global-gain mismatch
+seen in the earlier unproven record. Independent protocol evidence still supports the current
+`0x17` interpretation: signed 16-bit little-endian, `2560` raw units per dB. The failure is not
+evidence for changing that codec, widening the comparison, retrying writes, or copying readback
+into the target.
+
+The shared JA11 Flash transaction now has an opt-in bounded trace that starts at the authoritative
+flasher and ends after the terminal result. Android records the raw request and response bytes,
+command, elapsed time, session generation, detach generation, and transport outcome only while
+that trace is active. The domain report joins those events to the canonical preamp, optimized
+target gain, exact wire-domain quantization, decoded global-gain comparison, comparison phase,
+Save count, and final outcome. Background reads and other DAC paths are not recorded by this
+trace. Shareable output redacts the USB serial from the device fingerprint.
+
+This diagnostic boundary is not a protocol correction and does not qualify JA11 hardware. The
+next physical session must use one exact signed diagnostic candidate, capture the report, and stop
+on missing evidence or uncertain restoration.

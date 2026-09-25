@@ -19,6 +19,30 @@ the exact candidate provenance and capture a read-only baseline plus the intende
 bands, firmware, PID/UAC mode, and whether the mismatch was pre-Save or post-Save. Stop if the
 device state or original-state restoration cannot be established.
 
+## 2026-09-25 exact-candidate repeat — diagnostic evidence required before another mutation
+
+The owner subsequently installed the exact signed `EQ-Library-v0.7.0-beta-609911e.apk` over the
+prior build. The owner reports that every EQ/Flash path failed immediately with the same global
+EQ-gain readback mismatch, while the optimized graph appeared. The Save/reconnect correction was
+exercised, but no visible progress, restart, disconnect/reconnect, Save, or successful EQ was
+observed. The first supplied video includes an intentional Reset-to-EQ action; later unplug/reconnect
+was only to show that the state did not persist. This is a physical negative result tied to the
+exact signed candidate, not a qualification result.
+
+- Video: `/Users/stephenweeks/Library/CloudStorage/GoogleDrive-weekssa@gmail.com/My Drive/OPRA UAPP Presets/EQ Library Testing/screen-20260925-130921-1790359660539.mp4`; SHA-256 `afa7bd92db069bec2d543d90d98fc4d4639810a0c062954607f4d73191b2d2d7`.
+- Screenshot: `/Users/stephenweeks/Library/CloudStorage/GoogleDrive-weekssa@gmail.com/My Drive/OPRA UAPP Presets/EQ Library Testing/Screenshot (Sep 25, 2026 12:40:41 PM)`; SHA-256 `52ed5324861b2a51f154332258d9e4729ae8fc31677a0e2a49be3ea07653df3c`.
+- Candidate source: `609911e2e51a254fc6f45b87fbdf4106c0049740`; APK SHA-256 `583ff7014fc3c0977b6679cd8bf56d3a4f615411a629fa6014bab088ece082ef`; signer certificate SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`.
+
+Do not perform another Flash or Reset with this opaque candidate. The next and only authorized
+physical step is one bounded diagnostic session using a newly built, exact signed candidate whose
+JA11 report can be shared from My DAC. Before that session, record the complete five-band/global-
+gain baseline, firmware response, VID/PID/UAC mode, and sanitized device identity. During one
+controlled Flash, export the report containing the canonical preamp, optimized target, quantized
+wire target, raw `0x17` write/read packets, decoded readback, comparison phase, timestamps/order,
+Save count, session/detach generations, and final state. Stop immediately on an unknown baseline,
+disconnect outside the documented Save boundary, missing raw report, or inability to restore the
+original state. A report showing a mismatch remains a failure; do not retry automatically.
+
 The draft PR now contains an evidence-backed Save/reconnect correction at source commit
 `b32c52a82a46899efd115efd8544deeb16b9eb4c`. The corrected head has passed the repository's
 automated software gates, but the CI debug APK is unsigned and no signed artifact, checksum, or

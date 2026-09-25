@@ -13,6 +13,8 @@ import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditWorkingCopy
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotBundle
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Flasher
+import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationStatus
+import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationTrace
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300Flasher
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityBatch
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityReport
@@ -65,6 +67,8 @@ class HardwareEqRepository(
         dacSessionRepository.ew300ConnectionState
     val ew300OperationTrace: StateFlow<Ew300OperationTrace?> = ew300Flasher.lastOperationTrace
     val ew300OperationStatus: StateFlow<Ew300OperationStatus> = ew300Flasher.operationStatus
+    val fiioJa11OperationTrace: StateFlow<FiioJa11OperationTrace?> = fiioJa11Flasher.lastOperationTrace
+    val fiioJa11OperationStatus: StateFlow<FiioJa11OperationStatus> = fiioJa11Flasher.operationStatus
 
     private val mutableUnsupportedJcallyState = MutableStateFlow<Kt02h20ConnectionState>(
         Kt02h20ConnectionState.Disconnected,

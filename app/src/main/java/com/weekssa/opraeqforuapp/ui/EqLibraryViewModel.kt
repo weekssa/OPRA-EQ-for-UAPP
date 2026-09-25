@@ -68,6 +68,8 @@ import com.weekssa.opraeqforuapp.domain.ew300.Ew300Protocol
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300RestorationResult
 import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceControls
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
+import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationStatus
+import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationTrace
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
@@ -133,6 +135,8 @@ private data class HardwareConnectionUiState(
     val ew300EditorState: MyDacEditorUiState,
     val ew300OperationTrace: Ew300OperationTrace?,
     val ew300OperationStatus: Ew300OperationStatus,
+    val fiioJa11OperationTrace: FiioJa11OperationTrace?,
+    val fiioJa11OperationStatus: FiioJa11OperationStatus,
     val blackPearlQualificationState: BlackPearlQualificationUiState,
     val fiioJa11DeviceState: FiioJa11DeviceUiState,
     val ew300PlaybackGainState: Ew300PlaybackGainUiState,
@@ -161,6 +165,8 @@ data class EqLibraryUiState(
     val ew300EditorState: MyDacEditorUiState = MyDacEditorUiState(),
     val ew300OperationTrace: Ew300OperationTrace? = null,
     val ew300OperationStatus: Ew300OperationStatus = Ew300OperationStatus.Idle,
+    val fiioJa11OperationTrace: FiioJa11OperationTrace? = null,
+    val fiioJa11OperationStatus: FiioJa11OperationStatus = FiioJa11OperationStatus.Idle,
     val blackPearlQualificationState: BlackPearlQualificationUiState = BlackPearlQualificationUiState(),
     val fiioJa11DeviceState: FiioJa11DeviceUiState = FiioJa11DeviceUiState(),
     val ew300PlaybackGainState: Ew300PlaybackGainUiState = Ew300PlaybackGainUiState(),
@@ -301,6 +307,8 @@ class EqLibraryViewModel(
             ew300EditorState = MyDacEditorUiState(),
             ew300OperationTrace = (ew300OperationStatus as? Ew300OperationStatus.Completed)?.trace,
             ew300OperationStatus = ew300OperationStatus,
+            fiioJa11OperationTrace = null,
+            fiioJa11OperationStatus = FiioJa11OperationStatus.Idle,
             blackPearlQualificationState = BlackPearlQualificationUiState(),
             fiioJa11DeviceState = FiioJa11DeviceUiState(),
             ew300PlaybackGainState = Ew300PlaybackGainUiState(),
@@ -332,12 +340,15 @@ class EqLibraryViewModel(
         hardwareConnectionsWithQualification,
         mutableFiioJa11DeviceState,
         mutableEw300PlaybackGainState,
-    ) { hardware, fiioDevice, ew300Gain ->
+        hardwareRepository.fiioJa11OperationStatus,
+    ) { hardware, fiioDevice, ew300Gain, fiioOperationStatus ->
         val current = fiioDevice.snapshot?.let { snapshot ->
             hardwareRepository.isFiioJa11SessionCurrent(snapshot.sessionGeneration)
         } == true
         hardware.copy(
             fiioJa11DeviceState = fiioDevice.withSessionCurrent(current),
+            fiioJa11OperationTrace = (fiioOperationStatus as? FiioJa11OperationStatus.Completed)?.trace,
+            fiioJa11OperationStatus = fiioOperationStatus,
             ew300PlaybackGainState = ew300Gain,
         )
     }
@@ -375,6 +386,8 @@ class EqLibraryViewModel(
             ew300EditorState = hardware.ew300EditorState,
             ew300OperationTrace = hardware.ew300OperationTrace,
             ew300OperationStatus = hardware.ew300OperationStatus,
+            fiioJa11OperationTrace = hardware.fiioJa11OperationTrace,
+            fiioJa11OperationStatus = hardware.fiioJa11OperationStatus,
             blackPearlQualificationState = hardware.blackPearlQualificationState,
             fiioJa11DeviceState = hardware.fiioJa11DeviceState,
             ew300PlaybackGainState = hardware.ew300PlaybackGainState,

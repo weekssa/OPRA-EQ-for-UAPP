@@ -79,6 +79,38 @@ class FiioJa11FlasherTest {
     }
 
     @Test
+    fun verificationFailurePublishesExactGainComparisonBeforeSave() = runBlocking {
+        val transport = FakeJa11Transport(ignoreGlobalGainWrite = true)
+        val flasher = FiioJa11Flasher(
+            transport = transport,
+            sourceCommit = "test-source",
+            appVersion = "test-version",
+            signerVerified = true,
+        )
+
+        val result = flasher.flash(exactProfile())
+
+        assertTrue(result is Kt02h20FlashResult.VerificationFailed)
+        val trace = requireNotNull(flasher.lastOperationTrace.value)
+        assertEquals("FLASH", trace.operation)
+        assertEquals("test-source", trace.sourceCommit)
+        assertTrue(trace.signerVerified)
+        assertEquals("ja11-flash", trace.sourceProfileId)
+        assertEquals(-4.0, trace.canonicalPreampGainDb!!, 0.0)
+        assertEquals(-4.0, trace.generatedOrSelectedTargetGainDb!!, 0.0)
+        assertEquals(-4.0, trace.quantizedWireTargetGainDb!!, 0.0)
+        assertEquals(0.0, trace.readbackGlobalGainDb!!, 0.0)
+        assertEquals("VOLATILE_READBACK", trace.comparisonPhase)
+        assertEquals(0L, trace.saveCommandCount)
+        assertTrue(trace.stateKnown)
+        assertTrue(trace.stages.contains(FiioJa11OperationStage.FAILED))
+        assertTrue(trace.events.any { it.command == "0x17" })
+        assertEquals(FiioJa11Protocol.EqProgram.USER_1.name, trace.baselineProgram)
+        assertEquals(0.0, trace.baselineGlobalGainDb!!, 0.0)
+        assertEquals(FiioJa11Protocol.BAND_COUNT, trace.baselineBands.size)
+    }
+
+    @Test
     fun staleBandReadbackNeverAttemptsPersistentSave() = runBlocking {
         val transport = FakeJa11Transport(ignoreBandWriteIndex = 0)
 
@@ -164,6 +196,18 @@ class FiioJa11FlasherTest {
         var bandReadsAfterWrites = 0
         var globalGainReadsAfterWrites = 0
         var programReadsAfterWrites = 0
+        private var traceActive = false
+        private val traceEvents = mutableListOf<FiioJa11TransportEvent>()
+
+        override fun beginTrace(operationId: String) {
+            traceActive = true
+            traceEvents.clear()
+        }
+
+        override fun endTrace(): List<FiioJa11TransportEvent> {
+            traceActive = false
+            return traceEvents.toList()
+        }
 
         override suspend fun readBand(index: Int): FiioJa11Protocol.Band? {
             if (!readable) return null
@@ -193,7 +237,10 @@ class FiioJa11FlasherTest {
             writeStarted = true
             val command = report[5].toInt() and 0xFF
             sentCommands += command
-            if (command == failCommand) return false
+            if (command == failCommand) {
+                if (traceActive) traceEvents += traceEvent(report, succeeded = false)
+                return false
+            }
             when (command) {
                 0x15 -> {
                     val index = report[7].toInt() and 0xFF
@@ -224,7 +271,21 @@ class FiioJa11FlasherTest {
                 }
                 0x19 -> saveCount++
             }
+            if (traceActive) traceEvents += traceEvent(report, succeeded = true)
             return true
         }
+
+        private fun traceEvent(report: ByteArray, succeeded: Boolean): FiioJa11TransportEvent =
+            FiioJa11TransportEvent(
+                sequence = traceEvents.size + 1,
+                elapsedMillis = traceEvents.size.toLong(),
+                direction = "WRITE",
+                command = "0x%02x".format(report[5].toInt() and 0xFF),
+                requestHex = report.toJa11TraceHex(),
+                responseHex = null,
+                sessionGeneration = 1L,
+                detachGeneration = 0L,
+                succeeded = succeeded,
+            )
     }
 }

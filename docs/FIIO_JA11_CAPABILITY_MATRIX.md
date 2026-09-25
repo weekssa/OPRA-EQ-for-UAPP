@@ -20,7 +20,7 @@ clears the software/artifact gate only; it does not change any physical qualific
 | Unplug/reconnect persistence | INSUFFICIENT_EVIDENCE | A supplied post-reconnect frame shows User 1 flat with `0.00 dB`, consistent with the owner's report, but no exact candidate, raw final readback, power-cycle duration, or baseline/restoration record is attached. |
 | Fail-closed mismatch handling | SUPPORTED_AND_IMPLEMENTED | A global-gain mismatch prevents Save in the first verification path. Do not weaken the `0.001 dB` check or suppress the error. |
 | Same-command stale-response correlation | INSUFFICIENT_EVIDENCE / PARTIAL GUARD | Command and band filtering exist, and JA11 reads/ordinary writes now reject a detach or session-generation change spanning the exchange. A valid delayed same-command response on an unchanged session still has no protocol sequence/request identity. Causality for J001 is unproven; do not change behavior without raw evidence. |
-| Complete baseline capture and failed-operation restoration | INSUFFICIENT_EVIDENCE / SOFTWARE GAP | Current JA11 preflight reads program, global gain, and band 0 only; it does not capture all five bands or define exact restoration after failed Apply/readback. |
+| Complete baseline capture and failed-operation restoration | SOFTWARE CORRECTION IN PROGRESS; PHYSICAL EVIDENCE PENDING | The diagnostic JA11 transaction now reads all five bands, active program, and global gain before any write and includes that baseline in the shareable report. Restoration remains owner-session evidence; no automatic retry or restoration mutation is added. The exact signed diagnostic candidate and physical result are pending. |
 | Session-generation enforcement across Flash | SUPPORTED_AND_IMPLEMENTED; AUTOMATED GATES PASS; PHYSICAL PENDING | The JA11 Android transport pins reads and ordinary writes to one session/detach generation; Save remains the explicit lifecycle exception and waits for its reconnect boundary. Focused tests, Android CI, signed emulator install/cold launch, and the exact signed candidate all pass. Physical lifecycle behavior remains unqualified. |
 | Output volume, presets, headset/UAC controls | SOFTWARE IMPLEMENTED; PHYSICAL PENDING | These controls are outside the failed EQ-gain root-cause boundary; owner reports that general controls work do not qualify Flash or persistence. |
 | Firmware update, bootloader, cross-flash, raw command console | UNSAFE_OR_OUT_OF_SCOPE | No JA11 firmware mutation or arbitrary command surface is authorized in this task. |
@@ -33,3 +33,15 @@ with a read-only baseline and stage-aware transaction trace before one controlle
 convert J001 into a protocol change, tolerance change, retry, or support claim without evidence
 that distinguishes stale response, firmware transformation, packet semantics, timing, and
 intended-value errors.
+
+## 2026-09-25 exact-candidate failure update
+
+The owner has now reproduced the failure on the exact signed `609911e` candidate. This changes
+the evidence classification from “candidate provenance not established” to **physical negative
+evidence on the current signed candidate**, but it does not identify the protocol root cause.
+The current implementation therefore adds a bounded JA11 transaction report at the shared Flash
+boundary. It records the canonical preamp, optimized target, device-domain quantized target,
+phase-specific decoded readback, raw request/response bytes, Save count, and session generations.
+It does not change the signedness, endian order, `2560` scale, tolerance, retry policy, or
+fail-closed mismatch behavior. The next candidate is for diagnosis only; JA11 remains physically
+unqualified until the report-backed owner session proves the exact transaction and restoration.

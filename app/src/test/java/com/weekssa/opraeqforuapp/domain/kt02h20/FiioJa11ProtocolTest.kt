@@ -139,6 +139,13 @@ class FiioJa11ProtocolTest {
     }
 
     @Test
+    fun quantizedGlobalGainReportsTheExactDeviceDomainValue() {
+        assertEquals(-3.9, FiioJa11Protocol.quantizedGlobalGainDb(-3.9), 0.0)
+        assertEquals(1.0 / 2560.0, FiioJa11Protocol.quantizedGlobalGainDb(1.0 / 2560.0), 0.0)
+        assertEquals(-12.0, FiioJa11Protocol.quantizedGlobalGainDb(-12.0), 0.0)
+    }
+
+    @Test
     fun applyAndSaveCommandsAreDistinctRunModeOperations() {
         assertArrayEquals(
             bytes(0x02, 0xAA, 0x0A, 0x00, 0x00, 0x18, 0x01, 0x01, 0x00, 0xEE),

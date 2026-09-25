@@ -31,6 +31,13 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
   CodeQL, priority-community, catalog-currentness, signed emulator install/cold launch, and
   artifact-integrity gates passed on this exact candidate. It is ready only for the bounded owner
   JA11 hardware session; final release and public JA11 support remain held.
+- The exact signed `609911e` candidate was subsequently exercised on owner JA11 hardware and
+  reproduced the global-gain verification failure across the EQ/Flash paths. No codec or
+  tolerance change is justified by the UI/video evidence. Added a bounded shared JA11 operation
+  report that joins canonical and quantized gain values, phase-specific readback, raw HID
+  request/response bytes, Save count, and session generations, with readable/JSON sharing from My
+  DAC. The diagnostic candidate remains hardware-validation pending and must be tested once with
+  the report before any further mutation; no release or public support claim follows.
 
 ### 2026-09-24 Rtings/AutoEQ Favorite provenance follow-up
 
