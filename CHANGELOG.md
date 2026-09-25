@@ -6,6 +6,17 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ## [Unreleased]
 
+### 2026-09-25 v0.7.0 trusted-main beta candidate
+
+- Merged the integrated v0.7 candidate through PR #36 at exact `main` source
+  `a32770e522451ee1626cbd0dfd9e918c62a4faa1`.
+- Completed exact-main software/security/dependency/catalog/community gates and produced the
+  immutable signed beta candidate `EQ-Library-v0.7.0-beta-a32770e.apk`.
+- Recorded exact APK checksum, pinned signer, alignment, signed install, cold launch, and Actions
+  artifact provenance in the release-readiness audit and validation ledger.
+- Prepared the candidate for bounded owner FiiO JA11 validation. This is not a stable release or a
+  new public hardware-support claim; FiiO JA11 remains hardware-validation-pending.
+
 ### 2026-09-24 Rtings/AutoEQ Favorite provenance follow-up
 
 - Favorites now source-bound-canonicalize exact current OPRA compatibility rows when the

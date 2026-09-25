@@ -22,23 +22,26 @@ The checklist is organized around the **current release state**. Detailed histor
 
 ## Current v0.7.0 state
 
-- [ ] Exact current-head software, security, dependency, and signed-artifact gates complete.
-- [ ] Corrected-source signed APK, checksum, signer verification, artifact digest, install, and cold launch recorded.
+- [x] Exact current-head software, security, dependency, and signed-artifact gates complete on merged `main` source `a32770e522451ee1626cbd0dfd9e918c62a4faa1`.
+- [x] Corrected-source signed APK, checksum, signer verification, artifact digest, install, and cold launch recorded in signed workflow #1360.
 - [x] New Favorite and General EQ saves persist full canonical profile, selected revision, and source references; Room 8→9 migration preserves old projection-only rows without fabricated backfill. Exact implementation snapshot `b57b2466160bc9464d1cb16a004d1522940c553a` passed Android CI #1772, including unit and connected instrumentation tests.
 - [ ] Source-neutral/ToneBoosters parity, clean install, v0.6.0 upgrade/data preservation, accessibility/offline/error/reconnect, Personal EQ capture/provenance, and cross-DAC product verification complete on the exact signed candidate.
 - [ ] Exact-candidate promotion workflow reviewed; it is currently disabled to prevent rebuilding a different APK during publication.
 - [ ] Final owner approval to merge and publish received.
 
-Dependency submission did not run for the feature-branch source. The signed-beta workflow is
-restricted to trusted `main`; no exact-current-source signed APK, checksum, signer result, artifact
-digest, signed install, or cold-launch provenance is available. The last exact implementation
-snapshot’s gates and the new live PR head are recorded separately in
-`docs/V0.7_RELEASE_READINESS_AUDIT.md`; documentation-only source changes require fresh exact-head
-gates. Do not use an earlier APK.
+Current candidate provenance: immutable APK
+`EQ-Library-v0.7.0-beta-a32770e.apk`, SHA-256
+`01b1542e6746a536cdd3ebfc83aee798e6ba6339a715c0259af8f97e46a5299a`, package
+`com.weekssa.opraeqforuapp`, version `0.7.0`/code `7`, signer
+`65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`, Actions artifact ID
+`10851116862`/digest `sha256:d4e16d1f7b0d779ff674005675dba60a9bac982c90534189a11a6cad13f29d20`.
+See the [signed workflow](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36104817542)
+and `docs/V0.7_RELEASE_READINESS_AUDIT.md` for the full gate links.
 
-PR #23 remains draft and v0.7.0 remains NO-GO. Historical physical E001 and E043–E046 are
-accepted; do not repeat Save qualification, Apply, Flash, Restore, Reset, or read-only reports.
-Current source/gate status is maintained in `docs/V0.7_RELEASE_READINESS_AUDIT.md`.
+PR #36 is merged, but v0.7.0 remains NO-GO for stable publication pending the owner’s bounded
+FiiO JA11 hands-on result and explicit release decision. Historical physical E001 and E043–E046
+remain accepted on their own exact sources; do not repeat Save qualification, Apply, Flash, Restore,
+Reset, or read-only reports in this task.
 
 ## Continuing release invariants
 

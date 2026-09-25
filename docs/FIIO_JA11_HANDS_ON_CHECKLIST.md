@@ -1,5 +1,31 @@
 # FiiO JA11 hands-on qualification
 
+## 2026-09-25 exact owner-test candidate — CURRENT
+
+The candidate is ready for the owner’s bounded JA11 validation. Install only the immutable APK
+below; do not use a convenience filename or an older v0.7/v0.6 candidate:
+
+- Source: merged PR #36, `main` commit `a32770e522451ee1626cbd0dfd9e918c62a4faa1`
+- APK: [EQ-Library-v0.7.0-beta-a32770e.apk](https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-a32770e.apk)
+- SHA-256: `01b1542e6746a536cdd3ebfc83aee798e6ba6339a715c0259af8f97e46a5299a`
+- Checksum sidecar: [candidate checksum](https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-a32770e.apk.sha256)
+- Package/version: `com.weekssa.opraeqforuapp`, `0.7.0`, version code `7`
+- Signer SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`
+- Signed workflow: [#1360](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36104817542), exact-main source verified
+
+**Status:** HARDWARE VALIDATION PENDING. This candidate is not a FiiO qualification result and does
+not inherit EW300 or Black Pearl hardware evidence. The authorized session for this task is
+non-mutating: verify exact JA11 recognition, permission/reconnect behavior, read-only state and
+refresh, UI/accessibility/error/offline behavior, and that Cancel on any confirmation performs no
+write. Do not run Apply, Flash, Reset, Save qualification, or an induced mid-transfer disconnect
+in this session; those require a separately authorized physical plan with restoration prerequisites.
+
+**Stop and report immediately** if the app recognizes a non-JA11 device, presents a write control
+without exact identity/capability confirmation, bypasses or loops USB permission, reports success
+after a denied/failed operation, changes hardware after Cancel, or cannot distinguish unknown/stale
+state from a verified readback. Record model/firmware, Android device/build, app version, date,
+and a PASS/FAIL per step; do not send logs containing private serials.
+
 ## Integrated software candidate — hardware gate pending
 
 The current integration source is `ba5ffdb5cd427736a8f99a28fcf564ba87d9e42f` on

@@ -1,5 +1,18 @@
 # EW300 capability matrix
 
+## 2026-09-25 trusted-main candidate status — CURRENT
+
+The integrated source is now merged as `a32770e522451ee1626cbd0dfd9e918c62a4faa1` on `main`.
+The exact signed candidate is [v0.7.0-beta-a32770e](https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-a32770e.apk),
+SHA-256 `01b1542e6746a536cdd3ebfc83aee798e6ba6339a715c0259af8f97e46a5299a`, with the pinned
+signer `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`. Exact-main gates and
+the signed workflow passed; see the current release-readiness audit and ledger entry E054.
+
+This changes provenance status only. It does not add or promote an EW300 capability, does not
+retest E001/E037-E040/E043-E046, and does not inherit EW300 or Black Pearl evidence for FiiO JA11.
+The conservative output-gain row remains **physical-validation pending**, and FiiO JA11 remains
+**implemented-but-unqualified** pending the owner’s bounded hands-on validation.
+
 ## 2026-09-25 integrated candidate checkpoint
 
 The exact integration candidate is source `ba5ffdb5cd427736a8f99a28fcf564ba87d9e42f` on
