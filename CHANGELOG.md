@@ -11,7 +11,7 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Added optional read-only JA11 firmware-version capture to the Flash/Reset operation trace and
   readable/JSON exports. The command is issued during preflight and does not change the transaction
   codec, ordering, tolerance, retry policy, Save behavior, or hardware qualification status.
-- Exact draft PR #44 head `f8520d256fd8340e6e15351565b04c88f78abd2a` passed Android unit/lint/debug/
+- Exact draft PR #44 head `f17a17270aa8d10bc7a34dc1534e90d198b960da` passed Android unit/lint/debug/
   release/R8, emulator UI, min-API smoke, CodeQL, catalog-currentness, priority-community, and
   dynamic Gradle checks. The PR remains draft; no signed artifact or physical JA11 claim follows.
 
