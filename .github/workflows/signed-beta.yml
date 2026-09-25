@@ -2,6 +2,15 @@ name: Signed EQ Library Beta Candidate
 
 on:
   workflow_dispatch:
+    inputs:
+      candidate_target:
+        description: Hardware target for the signed testing candidate manifest.
+        required: true
+        default: ja11
+        type: choice
+        options:
+          - ja11
+          - ew300
 
 permissions:
   contents: write
@@ -105,8 +114,28 @@ jobs:
           test "$actual_fingerprint" = "$expected_fingerprint"
           sha256sum "$output_apk" > "${output_apk}.sha256"
           apk_sha256="$(cut -d ' ' -f 1 "${output_apk}.sha256")"
+          candidate_target="${{ inputs.candidate_target }}"
+          case "$candidate_target" in
+            ja11)
+              capability_profile="FiiO JA11 exact model; five-band PEQ; global EQ gain"
+              test_plan="docs/FIIO_JA11_HANDS_ON_CHECKLIST.md"
+              evidence_ids="JA11-SOFTWARE"
+              outstanding="owner hardware Flash/readback/power-cycle persistence validation; merge/publication approval and final release/public-support approval"
+              ;;
+            ew300)
+              capability_profile="EW300 exact fingerprint; five-band direct-Hz Peak"
+              test_plan="docs/EW300_DSP_HANDS_ON_CHECKLIST.md"
+              evidence_ids="E001,E043,E044,E045,E046,E047,E048"
+              outstanding="final beta clean-install/upgrade/accessibility/offline/error validation; owner merge/publication approval"
+              ;;
+            *)
+              echo "Unsupported candidate target: $candidate_target" >&2
+              exit 1
+              ;;
+          esac
           jq -n \
             --arg sourceSha "$GITHUB_SHA" \
+            --arg candidateTarget "$candidate_target" \
             --arg apk "$(basename "$output_apk")" \
             --arg apkSha256 "$apk_sha256" \
             --arg packageId "com.weekssa.opraeqforuapp" \
@@ -114,21 +143,30 @@ jobs:
             --arg versionCode "7" \
             --arg signerSha256 "$actual_fingerprint" \
             --arg r8MappingSha256 "$r8_mapping_sha256" \
-            --arg capabilityProfile "EW300 exact fingerprint; five-band direct-Hz Peak" \
-            --arg testPlan "docs/EW300_DSP_HANDS_ON_CHECKLIST.md" \
-            --arg evidence "E001,E043,E044,E045,E046,E047,E048" \
-            --arg outstanding "final beta clean-install/upgrade/accessibility/offline/error validation; owner merge/publication approval" \
-            '{sourceSha:$sourceSha, apk:$apk, apkSha256:$apkSha256, packageId:$packageId, versionName:$versionName, versionCode:($versionCode|tonumber), signerSha256:$signerSha256, r8MinificationEnabled:true, r8MappingSha256:$r8MappingSha256, capabilityProfile:$capabilityProfile, testPlan:$testPlan, evidenceIds:($evidence|split(",")), outstanding:$outstanding}' \
+            --arg capabilityProfile "$capability_profile" \
+            --arg testPlan "$test_plan" \
+            --arg evidence "$evidence_ids" \
+            --arg outstanding "$outstanding" \
+            '{sourceSha:$sourceSha, candidateTarget:$candidateTarget, apk:$apk, apkSha256:$apkSha256, packageId:$packageId, versionName:$versionName, versionCode:($versionCode|tonumber), signerSha256:$signerSha256, r8MinificationEnabled:true, r8MappingSha256:$r8MappingSha256, capabilityProfile:$capabilityProfile, testPlan:$testPlan, evidenceIds:($evidence|split(",")), outstanding:$outstanding}' \
             > dist/candidate-manifest.json
-          jq -e --arg sourceSha "$GITHUB_SHA" '
+          jq -e --arg sourceSha "$GITHUB_SHA" --arg candidateTarget "$candidate_target" --arg evidence "$evidence_ids" '
             .sourceSha == $sourceSha and
+            .candidateTarget == $candidateTarget and
             .packageId == "com.weekssa.opraeqforuapp" and
             .versionName == "0.7.0" and
             .versionCode == 7 and
             .r8MinificationEnabled == true and
             (.r8MappingSha256 | test("^[a-f0-9]{64}$")) and
-            .evidenceIds == ["E001","E043","E044","E045","E046","E047","E048"] and
-            (.outstanding | contains("hardware session") | not) and
+            .evidenceIds == ($evidence | split(",")) and
+            (if $candidateTarget == "ja11" then
+              (.capabilityProfile | contains("FiiO JA11")) and
+              .testPlan == "docs/FIIO_JA11_HANDS_ON_CHECKLIST.md" and
+              (.outstanding | contains("owner hardware"))
+             else
+              (.capabilityProfile | contains("EW300")) and
+              .testPlan == "docs/EW300_DSP_HANDS_ON_CHECKLIST.md" and
+              (.outstanding | contains("hardware session") | not)
+             end) and
             (.outstanding | contains("merge/publication approval"))
           ' dist/candidate-manifest.json > /dev/null
 

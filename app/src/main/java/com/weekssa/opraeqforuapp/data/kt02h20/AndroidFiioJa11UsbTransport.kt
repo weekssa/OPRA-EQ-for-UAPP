@@ -2,6 +2,7 @@ package com.weekssa.opraeqforuapp.data.kt02h20
 
 import android.content.Context
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
+import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Timing
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Transport
 import java.io.Closeable
 import kotlinx.coroutines.flow.StateFlow

@@ -79,6 +79,17 @@ class FiioJa11FlasherTest {
     }
 
     @Test
+    fun staleBandReadbackNeverAttemptsPersistentSave() = runBlocking {
+        val transport = FakeJa11Transport(ignoreBandWriteIndex = 2)
+
+        val result = FiioJa11Flasher(transport).flash(exactProfile())
+
+        assertTrue(result is Kt02h20FlashResult.VerificationFailed)
+        assertFalse(0x19 in transport.sentCommands)
+        assertEquals(0, transport.saveCount)
+    }
+
+    @Test
     fun resetWritesAllFiveFlatSlotsZeroGainSelectsUserOneApplyAndSave() = runBlocking {
         val transport = FakeJa11Transport(initialProgram = FiioJa11Protocol.EqProgram.BASS).apply {
             globalGainDb = -6.0
@@ -117,6 +128,7 @@ class FiioJa11FlasherTest {
         initialProgram: FiioJa11Protocol.EqProgram = FiioJa11Protocol.EqProgram.USER_1,
         private val ignoreProgramWrite: Boolean = false,
         private val ignoreGlobalGainWrite: Boolean = false,
+        private val ignoreBandWriteIndex: Int? = null,
     ) : FiioJa11Transport {
         val bands = FiioJa11Protocol.completeBands(emptyList()).toMutableList()
         var globalGainDb: Double = 0.0
@@ -154,17 +166,19 @@ class FiioJa11FlasherTest {
             when (command) {
                 0x15 -> {
                     val index = report[7].toInt() and 0xFF
-                    val gainRawUnsigned = ((report[8].toInt() and 0xFF) shl 8) or (report[9].toInt() and 0xFF)
-                    val gainRaw = if (gainRawUnsigned >= 0x8000) gainRawUnsigned - 0x10000 else gainRawUnsigned
-                    val frequency = ((report[10].toInt() and 0xFF) shl 8) or (report[11].toInt() and 0xFF)
-                    val qRaw = ((report[12].toInt() and 0xFF) shl 8) or (report[13].toInt() and 0xFF)
-                    val type = when (report[14].toInt() and 0xFF) {
-                        0 -> "peak_dip"
-                        1 -> "low_shelf"
-                        2 -> "high_shelf"
-                        else -> error("unexpected test filter type")
+                    if (index != ignoreBandWriteIndex) {
+                        val gainRawUnsigned = ((report[8].toInt() and 0xFF) shl 8) or (report[9].toInt() and 0xFF)
+                        val gainRaw = if (gainRawUnsigned >= 0x8000) gainRawUnsigned - 0x10000 else gainRawUnsigned
+                        val frequency = ((report[10].toInt() and 0xFF) shl 8) or (report[11].toInt() and 0xFF)
+                        val qRaw = ((report[12].toInt() and 0xFF) shl 8) or (report[13].toInt() and 0xFF)
+                        val type = when (report[14].toInt() and 0xFF) {
+                            0 -> "peak_dip"
+                            1 -> "low_shelf"
+                            2 -> "high_shelf"
+                            else -> error("unexpected test filter type")
+                        }
+                        bands[index] = FiioJa11Protocol.Band(type, frequency.toDouble(), gainRaw / 10.0, qRaw / 100.0)
                     }
-                    bands[index] = FiioJa11Protocol.Band(type, frequency.toDouble(), gainRaw / 10.0, qRaw / 100.0)
                 }
                 0x16 -> if (!ignoreProgramWrite) {
                     program = FiioJa11Protocol.EqProgram.fromCode(report[7].toInt() and 0xFF)
