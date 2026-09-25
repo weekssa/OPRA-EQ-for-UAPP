@@ -18,6 +18,16 @@ The Kotlin implementation in this repository is independently written from obser
 
 The expanded v0.6 protocol facts were cross-checked against maintained public JA11 research, including `Cyfine/ja11-web-control` at commit `4d4eb83df6fcdf9e20b52e1bdf59a77f463b2c30`, which in turn documents independent comparison with FiiO Control behavior and live JA11 firmware 2.20 observations.
 
+## Current Save/readback lifecycle correction
+
+FiiO's maintained FAQ documents Save as a chip restart/disconnect boundary. The current Android
+transport therefore treats Save as the explicit lifecycle exception: it waits for the optional
+detach/re-enumeration boundary before final readback, while ordinary reads and writes must remain
+on the same session and detach generation for the full exchange. This is a lifecycle-safety
+correction, not evidence that the signed gain codec, scale, tolerance, or device-domain value is
+wrong. Exact draft PR #41 head `b32c52a82a46899efd115efd8544deeb16b9eb4c` passed automated software
+gates; physical JA11 semantics remain pending raw transaction evidence.
+
 ## USB identity and UAC re-enumeration
 
 Vendor ID:
@@ -163,6 +173,20 @@ The Android JA11 transport therefore waits `200 ms` after every mutation report 
 verifying the next transaction boundary. This is an evidence-backed software mitigation for
 device-side processing/pacing loss, but it is not physical qualification: the exact unit firmware,
 PID/UAC mode, and packet trace remain owner-test evidence.
+
+FiiO's [JA11 FAQ](https://www.jadeaudio.com/details?_l=en&article_id=178) separately states that clicking Save causes the chip to power off and restart,
+so disconnect/re-enumeration is a documented Save lifecycle boundary. The Android transport must
+await the optional replacement-session boundary after Save before final readback; it must not
+assume that the ordinary mutation settle delay is sufficient. Firmware variants that persist
+without re-enumerating may continue on the same healthy session, but a detected detach requires a
+fresh connected session. This remains software behavior evidence, not physical qualification.
+
+The supplied owner screenshot sequence adds a separate physical observation: after the optimized
+Jaytiss target was visible on connected JA11 hardware, My DAC displayed `-3.80 dB` global EQ gain,
+while the source record and current JA11 plan retain `-3.90 dB`; a later connected view displayed
+flat bands and `0.00 dB` after reconnect. This is consistent with a volatile global-gain mismatch
+followed by lost persistence, but no raw `0x17` packets were captured. Do not change the `2560`
+scale, signedness, endianness, or verification tolerance from this UI evidence alone.
 
 JA11 read exchanges accept only a decoded response for the requested command, and band reads also
 require the requested band index. Wrong-command, stale, malformed, or out-of-range responses are

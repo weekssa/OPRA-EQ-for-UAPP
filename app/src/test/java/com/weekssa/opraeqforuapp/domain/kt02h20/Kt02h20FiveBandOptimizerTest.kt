@@ -92,6 +92,38 @@ class Kt02h20FiveBandOptimizerTest {
     }
 
     @Test
+    fun jaytissAfulExplorerNineBandFitPreservesMinusThreePointNineSourcePreamp() {
+        val source = profile(
+            preamp = -3.9,
+            bands = listOf(
+                band("peak_dip", 20.0, 0.8, 0.9),
+                band("peak_dip", 42.0, 0.9, 1.5),
+                band("peak_dip", 93.0, -0.7, 2.0),
+                band("peak_dip", 220.0, -1.4, 1.2),
+                band("peak_dip", 1_300.0, -1.4, 1.9),
+                band("peak_dip", 2_500.0, 3.6, 2.0),
+                band("peak_dip", 4_000.0, 3.3, 2.0),
+                band("peak_dip", 5_100.0, -2.4, 2.0),
+                band("peak_dip", 15_000.0, 2.9, 1.9),
+            ),
+        )
+
+        Kt02h20FiveBandOptimizer.clearCache()
+        val result = Kt02h20FiveBandOptimizer.optimize(source, Kt02h20DeviceSpecs.FIIO_JA11)
+            as FiveBandOptimizationResult.Ready
+
+        assertEquals(DevicePresetFidelity.OPTIMIZED, result.representation.fidelity)
+        assertEquals(9, result.representation.sourceBandCount)
+        assertTrue(result.representation.usedResponseFit)
+        assertEquals(-3.9, result.representation.playbackGainDb, 0.0)
+        assertFalse(result.representation.usesGeneratedHeadroom)
+        assertTrue(result.representation.bands.size <= 5)
+        assertTrue(result.representation.rmsErrorDb <= Kt02h20DeviceSpecs.FIIO_JA11.maxRmsErrorDb)
+        assertTrue(result.representation.maxAbsoluteErrorDb <= Kt02h20DeviceSpecs.FIIO_JA11.maxAbsoluteErrorDb)
+        assertEquals(-3.9, source.preampGainDb!!, 0.0)
+    }
+
+    @Test
     fun jm12PreampIsQuantizedToHalfDbWithoutChangingCanonicalSource() {
         val source = profile(
             preamp = -3.24,

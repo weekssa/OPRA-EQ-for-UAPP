@@ -96,6 +96,18 @@ internal class AndroidKt02h20HidSession(
     val permissionRequestCount: Long
         get() = permissionRequests
 
+    /**
+     * A read or ordinary mutation may report success only if the physical session stayed the
+     * same for the whole exchange. Save is the deliberate exception because it is itself allowed
+     * to detach and replace the USB session; its caller owns the reconnect boundary.
+     */
+    fun isCurrentSession(expectedGeneration: Long, expectedDetachGeneration: Long): Boolean =
+        expectedGeneration > 0L &&
+            currentSessionGeneration == expectedGeneration &&
+            detachSequence == expectedDetachGeneration &&
+            session != null &&
+            state.value is Kt02h20ConnectionState.Connected
+
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val device = intent.usbDevice() ?: return

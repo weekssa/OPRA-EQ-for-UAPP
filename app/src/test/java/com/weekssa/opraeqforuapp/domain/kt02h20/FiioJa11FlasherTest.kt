@@ -90,6 +90,29 @@ class FiioJa11FlasherTest {
     }
 
     @Test
+    fun saveReconnectFailureNeverRunsFinalVerification() = runBlocking {
+        val transport = FakeJa11Transport(saveReconnectAccepted = false)
+
+        val result = FiioJa11Flasher(transport).flash(exactProfile())
+
+        assertTrue(result is Kt02h20FlashResult.TransferFailed)
+        assertEquals(1, transport.saveCount)
+        assertEquals(1, transport.globalGainReadsAfterWrites)
+    }
+
+    @Test
+    fun finalReadbackMismatchAfterSaveFailsWithoutRetryingSave() = runBlocking {
+        val transport = FakeJa11Transport(postSaveGlobalGainDb = -3.9)
+
+        val result = FiioJa11Flasher(transport).flash(exactProfile())
+
+        assertTrue(result is Kt02h20FlashResult.VerificationFailed)
+        assertEquals(1, transport.saveCount)
+        assertEquals(2, transport.globalGainReadsAfterWrites)
+        assertEquals(listOf(0x15, 0x15, 0x15, 0x15, 0x15, 0x17, 0x16, 0x18, 0x19), transport.sentCommands)
+    }
+
+    @Test
     fun resetWritesAllFiveFlatSlotsZeroGainSelectsUserOneApplyAndSave() = runBlocking {
         val transport = FakeJa11Transport(initialProgram = FiioJa11Protocol.EqProgram.BASS).apply {
             globalGainDb = -6.0
@@ -129,6 +152,8 @@ class FiioJa11FlasherTest {
         private val ignoreProgramWrite: Boolean = false,
         private val ignoreGlobalGainWrite: Boolean = false,
         private val ignoreBandWriteIndex: Int? = null,
+        private val saveReconnectAccepted: Boolean = true,
+        private val postSaveGlobalGainDb: Double? = null,
     ) : FiioJa11Transport {
         val bands = FiioJa11Protocol.completeBands(emptyList()).toMutableList()
         var globalGainDb: Double = 0.0
@@ -156,6 +181,12 @@ class FiioJa11FlasherTest {
             if (!readable) return null
             if (writeStarted) programReadsAfterWrites++
             return program
+        }
+
+        override suspend fun saveToFlash(): Boolean {
+            val accepted = sendReport(FiioJa11Protocol.saveToFlashReport()) && saveReconnectAccepted
+            if (accepted) postSaveGlobalGainDb?.let { globalGainDb = it }
+            return accepted
         }
 
         override suspend fun sendReport(report: ByteArray): Boolean {
