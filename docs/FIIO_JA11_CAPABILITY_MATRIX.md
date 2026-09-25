@@ -4,6 +4,12 @@ This matrix is the current evidence boundary for the exact FiiO JA11 identity. S
 implementation does not imply physical support. Unknown behavior stays insufficiently evidenced
 or unsafe rather than being inherited from another KT02H20-family device.
 
+The current owner-test candidate is source `609911e2e51a254fc6f45b87fbdf4106c0049740` with
+immutable APK SHA-256 `583ff7014fc3c0977b6679cd8bf56d3a4f615411a629fa6014bab088ece082ef`, signer
+certificate SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`, and signed-beta
+run [#1362](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36165218849). This provenance
+clears the software/artifact gate only; it does not change any physical qualification decision.
+
 | Capability | Decision | Evidence / boundary |
 | --- | --- | --- |
 | Exact JA11 USB identity, VID `0x2972`, UAC PIDs `0x0101`/`0x0102` | SUPPORTED_AND_IMPLEMENTED; physical pending | Strict allowlist and dynamic HID interface discovery are implemented. Physical identity/PID for J001 was not captured. |
@@ -15,14 +21,15 @@ or unsafe rather than being inherited from another KT02H20-family device.
 | Fail-closed mismatch handling | SUPPORTED_AND_IMPLEMENTED | A global-gain mismatch prevents Save in the first verification path. Do not weaken the `0.001 dB` check or suppress the error. |
 | Same-command stale-response correlation | INSUFFICIENT_EVIDENCE / PARTIAL GUARD | Command and band filtering exist, and JA11 reads/ordinary writes now reject a detach or session-generation change spanning the exchange. A valid delayed same-command response on an unchanged session still has no protocol sequence/request identity. Causality for J001 is unproven; do not change behavior without raw evidence. |
 | Complete baseline capture and failed-operation restoration | INSUFFICIENT_EVIDENCE / SOFTWARE GAP | Current JA11 preflight reads program, global gain, and band 0 only; it does not capture all five bands or define exact restoration after failed Apply/readback. |
-| Session-generation enforcement across Flash | PARTIAL / SOFTWARE CORRECTION PRESENT; COMPLETE GATE PENDING | The JA11 Android transport pins reads and ordinary writes to one session/detach generation; Save remains the explicit lifecycle exception and waits for its reconnect boundary. End-to-end Kotlin/Android validation is not yet run. |
+| Session-generation enforcement across Flash | SUPPORTED_AND_IMPLEMENTED; AUTOMATED GATES PASS; PHYSICAL PENDING | The JA11 Android transport pins reads and ordinary writes to one session/detach generation; Save remains the explicit lifecycle exception and waits for its reconnect boundary. Focused tests, Android CI, signed emulator install/cold launch, and the exact signed candidate all pass. Physical lifecycle behavior remains unqualified. |
 | Output volume, presets, headset/UAC controls | SOFTWARE IMPLEMENTED; PHYSICAL PENDING | These controls are outside the failed EQ-gain root-cause boundary; owner reports that general controls work do not qualify Flash or persistence. |
 | Firmware update, bootloader, cross-flash, raw command console | UNSAFE_OR_OUT_OF_SCOPE | No JA11 firmware mutation or arbitrary command surface is authorized in this task. |
 | Public JA11 support/release claim | UNSAFE_OR_OUT_OF_SCOPE | Hardware qualification remains blocked by J001 and the missing exact transaction evidence. |
 
 ## Matrix rule
 
-The only safe next step is to recover exact candidate provenance and a read-only, stage-aware
-transaction trace. Do not convert J001 into a protocol change, tolerance change, retry, or
-support claim without evidence that distinguishes stale response, firmware transformation,
-packet semantics, timing, and intended-value errors.
+The only safe next step is the single bounded owner session using the exact signed tuple above,
+with a read-only baseline and stage-aware transaction trace before one controlled Flash. Do not
+convert J001 into a protocol change, tolerance change, retry, or support claim without evidence
+that distinguishes stale response, firmware transformation, packet semantics, timing, and
+intended-value errors.

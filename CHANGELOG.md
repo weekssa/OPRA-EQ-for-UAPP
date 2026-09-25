@@ -22,6 +22,15 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
   `b32c52a82a46899efd115efd8544deeb16b9eb4c` passed Android CI, CodeQL, catalog-currentness, and
   priority-community gates. The CI debug artifact is unsigned; no signed APK or release provenance
   exists yet.
+- After owner approval, PR #41 was merged into `main` as `609911e2e51a254fc6f45b87fbdf4106c0049740`.
+  Signed-beta run #1362 passed and produced the exact JA11 candidate
+  `EQ-Library-v0.7.0-beta-609911e.apk` with APK SHA-256
+  `583ff7014fc3c0977b6679cd8bf56d3a4f615411a629fa6014bab088ece082ef`, signer certificate
+  SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`, and R8 mapping
+  SHA-256 `9f9d0e28271b4cfefdc9e71c6416061bd4a99e38341ab72290b159825de6e6ec`. Android CI,
+  CodeQL, priority-community, catalog-currentness, signed emulator install/cold launch, and
+  artifact-integrity gates passed on this exact candidate. It is ready only for the bounded owner
+  JA11 hardware session; final release and public JA11 support remain held.
 
 ### 2026-09-24 Rtings/AutoEQ Favorite provenance follow-up
 
