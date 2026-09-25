@@ -164,6 +164,20 @@ verifying the next transaction boundary. This is an evidence-backed software mit
 device-side processing/pacing loss, but it is not physical qualification: the exact unit firmware,
 PID/UAC mode, and packet trace remain owner-test evidence.
 
+FiiO's [JA11 FAQ](https://www.jadeaudio.com/details?_l=en&article_id=178) separately states that clicking Save causes the chip to power off and restart,
+so disconnect/re-enumeration is a documented Save lifecycle boundary. The Android transport must
+await the optional replacement-session boundary after Save before final readback; it must not
+assume that the ordinary mutation settle delay is sufficient. Firmware variants that persist
+without re-enumerating may continue on the same healthy session, but a detected detach requires a
+fresh connected session. This remains software behavior evidence, not physical qualification.
+
+The supplied owner screenshot sequence adds a separate physical observation: after the optimized
+Jaytiss target was visible on connected JA11 hardware, My DAC displayed `-3.80 dB` global EQ gain,
+while the source record and current JA11 plan retain `-3.90 dB`; a later connected view displayed
+flat bands and `0.00 dB` after reconnect. This is consistent with a volatile global-gain mismatch
+followed by lost persistence, but no raw `0x17` packets were captured. Do not change the `2560`
+scale, signedness, endianness, or verification tolerance from this UI evidence alone.
+
 JA11 read exchanges accept only a decoded response for the requested command, and band reads also
 require the requested band index. Wrong-command, stale, malformed, or out-of-range responses are
 discarded until the bounded read timeout; a transfer is never treated as successful merely because

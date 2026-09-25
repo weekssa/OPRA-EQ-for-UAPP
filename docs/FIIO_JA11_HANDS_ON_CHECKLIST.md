@@ -1,34 +1,64 @@
 # FiiO JA11 hands-on qualification
 
-## Integrated software candidate — hardware gate pending
+## 2026-09-25 owner-reported failed Flash record — DO NOT REPEAT YET
 
-The current signed testing candidate contains the JA11 Flash pacing/readback recovery. Its source
+The owner supplied a screenshot showing a connected FiiO JA11 and a failed Flash verification
+for a Jaytiss profile displayed as `Optimized · 9 → 5 bands · full-response fit`. The exact
+message was `JA11 global EQ gain readback did not match the intended value.`
+
+- Evidence category: **owner-reported physical UI artifact / negative result**.
+- Screenshot: [Screenshot (Sep 25, 2026 9:59:19 AM)](/Users/stephenweeks/Library/CloudStorage/GoogleDrive-weekssa@gmail.com/My%20Drive/OPRA%20UAPP%20Presets/EQ%20Library%20Testing/Screenshot%20%28Sep%2025,%202026%209%3A59%3A19%20AM%29).
+- Not established by the screenshot: APK/source/checksum/signer, firmware, UAC PID, intended gain, raw `0x17` write/readback bytes, whether Save was sent, and final device-state/restoration status.
+- Supplemental owner report: unplug/replug returned the device to `0`; this has no attached raw readback or exact candidate provenance and is not sufficient to identify the persistence or codec behavior.
+- The earlier supplied sequence adds two UI observations: connected My DAC displayed the optimized five-band target with `Global EQ gain -3.80 dB`, while the Jaytiss source plan carries `-3.90 dB`; a later connected view displayed flat bands and `0.00 dB`. This narrows the evidence to a volatile gain mismatch followed by persistence loss, but does not replace raw transaction evidence.
+- Result: **FAILURE OBSERVED; NOT A QUALIFICATION RESULT**. Keep JA11 labeled Hardware validation pending.
+
+Do not repeat Flash or Reset merely to obtain a green result. Before any future mutation, recover
+the exact candidate provenance and capture a read-only baseline plus the intended gain, outgoing
+`0x17` bytes, raw response bytes, decoded value, command timestamps, active program, all five
+bands, firmware, PID/UAC mode, and whether the mismatch was pre-Save or post-Save. Stop if the
+device state or original-state restoration cannot be established.
+
+The working tree now contains an evidence-backed Save/reconnect correction, but the signed
+`f3765b03` APK listed below predates that correction. No signed artifact, checksum, or physical
+qualification claim exists for the correction yet.
+
+## Historical integrated software candidate — do not use for the correction
+
+The signed candidate below contains the earlier JA11 Flash pacing/readback recovery. Its source
 is the merged main commit `f3765b03a3d8517880956390c9c4eca3b4157222`; Android CI, CodeQL, catalog,
 priority-community, dependency, signed-beta, and emulator cold-launch gates passed on that exact
-source. This is software evidence only. Do not treat it as proof of physical JA11 Flash or
-power-cycle persistence until the owner completes the procedure below.
+source. It predates the current Save/reconnect correction and is not a candidate for validating
+the current investigation. This is software evidence only. Do not treat it as proof of physical
+JA11 Flash or power-cycle persistence.
 
-Status: **HARDWARE VALIDATION PENDING — OWNER SESSION REQUIRED**
+Status: **HISTORICAL SOFTWARE EVIDENCE — DO NOT FLASH JA11 WITH THIS ARTIFACT FOR THIS INVESTIGATION**
 
-## Current physical-test candidate — READY / HARDWARE GATE PENDING
+## Current physical-test candidate — NOT READY / BUILD AND SIGNING GATE BLOCKED
 
-Use only this immutable candidate for the first JA11 hands-on session:
+There is currently no signed physical-test candidate for the Save/reconnect correction. The
+working-tree correction is based on local source SHA `7dea208105a6484ce02a31c06d09aad2bbb35781`
+plus uncommitted changes and has not passed the complete Android software gates.
 
-- App version: `0.7.0` / version code `7`.
-- Source commit: `f3765b03a3d8517880956390c9c4eca3b4157222` (merged `main` commit).
-- Exact signed APK: `https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-f3765b0.apk`
-- APK SHA-256: `928f9a68e0abaeb01d16a1aa1d227432b39c691f191214791a5540cd1c3f3037`.
-- Signer certificate SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`.
-- R8 mapping SHA-256: `1bb47ec1ebcbc3e8696a87f8c93bbaf64795fff0b5388323dfdbbfa200995451`.
-- Signed-beta workflow: [run #1361](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36143910822) — **PASS**.
-- Signed-beta artifact: `10867973392` (`EQ-Library-signed-beta-f3765b03a3d8517880956390c9c4eca3b4157222`).
-- Candidate manifest: target `ja11`; capability profile **FiiO JA11 exact model; five-band PEQ; global EQ gain**.
-- Signing verification: APK Signature Scheme v2/v3 verified; one RSA-4096 signer; zipalign verified.
-- Emulator verification: signed APK installed and cold-launched successfully.
+Do not begin the owner JA11 session until all of the following fields are replaced with the exact
+current candidate:
+
+- App version and version code.
+- Exact source commit containing the Save/reconnect correction.
+- Exact signed APK URL and APK SHA-256.
+- Signer certificate SHA-256 and signing verification.
+- R8 mapping SHA-256 when applicable.
+- Signed-beta workflow and artifact identity with complete software gates passed.
+- Historical signed-beta workflow: [run #1361](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36143910822) — **PASS** for the pre-correction candidate only.
+- Historical signed-beta artifact; not valid for testing the Save/reconnect correction.
+- Historical candidate manifest: target `ja11`; capability profile **FiiO JA11 exact model; five-band PEQ; global EQ gain**.
+- Historical artifact signing verification: APK Signature Scheme v2/v3 verified; one RSA-4096 signer; zipalign verified.
+- Historical artifact emulator verification: signed APK installed and cold-launched successfully.
 - Hardware status: **PENDING — first JA11 physical qualification session not yet run**.
 
-Use this exact immutable candidate for the owner session. Do not use the moving convenience APK,
-the historical `505182e` candidate, or any APK with a different source/hash tuple.
+Until those fields are populated for the corrected candidate, do not use the moving convenience
+APK, the historical `505182e` candidate, the historical `f3765b03` candidate, or any APK with a
+different source/hash tuple.
 
 ## Historical v0.5.0 software candidate record
 

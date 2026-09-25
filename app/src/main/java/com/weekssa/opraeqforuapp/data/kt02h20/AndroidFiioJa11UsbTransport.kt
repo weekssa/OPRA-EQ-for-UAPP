@@ -38,12 +38,12 @@ class AndroidFiioJa11UsbTransport(
     )
 
     suspend fun readFirmwareVersion(): String? {
-        val response = hid.exchange(
-            report = FiioJa11Protocol.readFirmwareVersionReport(),
+        return exchangeOnStableSession(
+            request = FiioJa11Protocol.readFirmwareVersionReport(),
             minResponseBytes = 8,
             acceptResponse = { candidate -> FiioJa11Protocol.firmwareVersionFromResponse(candidate) != null },
-        ) ?: return null
-        return FiioJa11Protocol.firmwareVersionFromResponse(response)
+            decoder = FiioJa11Protocol::firmwareVersionFromResponse,
+        )
     }
 
     suspend fun readHeadsetControlEnabled(): Boolean? = exchangeOneByte(
@@ -74,38 +74,75 @@ class AndroidFiioJa11UsbTransport(
         sendReport(FiioJa11Protocol.writeUacModeReport(mode))
 
     override suspend fun readBand(index: Int): FiioJa11Protocol.Band? {
-        val response = hid.exchange(
-            report = FiioJa11Protocol.readBandReport(index),
+        return exchangeOnStableSession(
+            request = FiioJa11Protocol.readBandReport(index),
             minResponseBytes = 15,
             acceptResponse = { candidate -> FiioJa11Protocol.bandFromResponse(candidate)?.first == index },
-        ) ?: return null
-        val parsed = FiioJa11Protocol.bandFromResponse(response) ?: return null
-        return parsed.second.takeIf { parsed.first == index }
+            decoder = { candidate ->
+                FiioJa11Protocol.bandFromResponse(candidate)?.takeIf { it.first == index }?.second
+            },
+        )
     }
 
     override suspend fun readGlobalGainDb(): Double? {
-        val response = hid.exchange(
-            report = FiioJa11Protocol.readGlobalGainReport(),
+        return exchangeOnStableSession(
+            request = FiioJa11Protocol.readGlobalGainReport(),
             minResponseBytes = 8,
             acceptResponse = { candidate -> FiioJa11Protocol.globalGainFromResponse(candidate) != null },
-        ) ?: return null
-        return FiioJa11Protocol.globalGainFromResponse(response)
+            decoder = FiioJa11Protocol::globalGainFromResponse,
+        )
     }
 
-    override suspend fun sendReport(report: ByteArray): Boolean = hid.send(
-        report = report,
-        settleMillis = FiioJa11Timing.settleMillisForMutation(report),
-    )
+    override suspend fun saveToFlash(): Boolean {
+        val previousGeneration = hid.sessionGeneration
+        val previousDetachGeneration = hid.detachGeneration
+        if (!sendReport(FiioJa11Protocol.saveToFlashReport())) return false
+
+        // FiiO documents Save as a chip power-cycle/restart boundary. Final readback must use a
+        // fresh session when Android observed detach/attach, while unchanged healthy sessions
+        // remain accepted for firmware variants that persist without re-enumerating.
+        return hid.awaitOptionalReconnectAfterMutation(
+            previousGeneration = previousGeneration,
+            previousDetachGeneration = previousDetachGeneration,
+        )
+    }
+
+    override suspend fun sendReport(report: ByteArray): Boolean {
+        val generation = hid.sessionGeneration
+        val detachGeneration = hid.detachGeneration
+        val sent = hid.send(
+            report = report,
+            settleMillis = FiioJa11Timing.settleMillisForMutation(report),
+        )
+        val command = report.getOrNull(5)?.toInt()?.and(0xFF)
+        return sent && (command == 0x19 || hid.isCurrentSession(generation, detachGeneration))
+    }
 
     private suspend fun <T> exchangeOneByte(
         request: ByteArray,
         decoder: (ByteArray) -> T?,
+    ): T? = exchangeOnStableSession(
+        request = request,
+        minResponseBytes = 7,
+        acceptResponse = { candidate -> decoder(candidate) != null },
+        decoder = decoder,
+    )
+
+    private suspend fun <T> exchangeOnStableSession(
+        request: ByteArray,
+        minResponseBytes: Int,
+        acceptResponse: (ByteArray) -> Boolean,
+        decoder: (ByteArray) -> T?,
     ): T? {
+        val generation = hid.sessionGeneration
+        val detachGeneration = hid.detachGeneration
+        if (!hid.isCurrentSession(generation, detachGeneration)) return null
         val response = hid.exchange(
             report = request,
-            minResponseBytes = 7,
-            acceptResponse = { candidate -> decoder(candidate) != null },
+            minResponseBytes = minResponseBytes,
+            acceptResponse = acceptResponse,
         ) ?: return null
+        if (!hid.isCurrentSession(generation, detachGeneration)) return null
         return decoder(response)
     }
 

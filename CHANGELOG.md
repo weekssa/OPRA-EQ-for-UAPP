@@ -6,6 +6,21 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ## [Unreleased]
 
+### 2026-09-25 JA11 Flash verification evidence
+
+- Recorded an owner-reported FiiO JA11 Flash failure in which the app reached verification but
+  rejected a global-EQ-gain readback mismatch after a displayed 9-to-5-band optimized conversion.
+  The supplied frame sequence additionally shows connected hardware at `-3.80 dB` against the
+  Jaytiss plan's `-3.90 dB`, followed by a connected flat `0.00 dB` view after reconnect. The
+  source SHA, signed APK, firmware, raw packets, and restoration state are not established; JA11
+  remains hardware-validation pending and the existing fail-closed behavior is preserved.
+- JA11 Save now has an explicit Android reconnect boundary based on FiiO's documented Save
+  power-cycle behavior; final readback is not attempted until the optional replacement-session
+  boundary is satisfied. JA11 reads and ordinary writes now reject a detach/session-generation
+  change spanning the exchange. Added Save-boundary/final-mismatch coverage, the Jaytiss `-3.9 dB`
+  codec vector, and the 9-to-5 optimizer fixture. This working-tree correction has no signed APK
+  or release provenance yet.
+
 ### 2026-09-24 Rtings/AutoEQ Favorite provenance follow-up
 
 - Favorites now source-bound-canonicalize exact current OPRA compatibility rows when the

@@ -9,6 +9,13 @@ interface FiioJa11Transport {
     suspend fun readGlobalGainDb(): Double?
     suspend fun readEqProgram(): FiioJa11Protocol.EqProgram?
     suspend fun sendReport(report: ByteArray): Boolean
+
+    /**
+     * Save is a device-specific lifecycle boundary. The default keeps deterministic fakes and
+     * non-Android transports compatible; Android JA11 overrides it to await the documented
+     * power-cycle/re-enumeration before final readback.
+     */
+    suspend fun saveToFlash(): Boolean = sendReport(FiioJa11Protocol.saveToFlashReport())
 }
 
 /**
@@ -66,9 +73,9 @@ class FiioJa11Flasher(
             return Kt02h20FlashResult.VerificationFailed(reason)
         }
 
-        if (!transport.sendReport(FiioJa11Protocol.saveToFlashReport())) {
+        if (!transport.saveToFlash()) {
             return Kt02h20FlashResult.TransferFailed(
-                "The PEQ was applied to the FiiO JA11, but the device did not accept the persistent Save command.",
+                "The PEQ was applied to the FiiO JA11, but the device did not complete the persistent Save/reconnect boundary.",
             )
         }
 
@@ -118,9 +125,9 @@ class FiioJa11Flasher(
         verifyTarget(flatBands, 0.0)?.let { reason ->
             return Kt02h20FlatResetResult.VerificationFailed(reason)
         }
-        if (!transport.sendReport(FiioJa11Protocol.saveToFlashReport())) {
+        if (!transport.saveToFlash()) {
             return Kt02h20FlatResetResult.TransferFailed(
-                "The FiiO JA11 PEQ is flat in the current session, but the device did not accept the persistent Save command.",
+                "The FiiO JA11 PEQ is flat in the current session, but the device did not complete the persistent Save/reconnect boundary.",
             )
         }
         verifyTarget(flatBands, 0.0)?.let { reason ->
