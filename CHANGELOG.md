@@ -36,8 +36,11 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
   tolerance change is justified by the UI/video evidence. Added a bounded shared JA11 operation
   report that joins canonical and quantized gain values, phase-specific readback, raw HID
   request/response bytes, Save count, and session generations, with readable/JSON sharing from My
-  DAC. The diagnostic candidate remains hardware-validation pending and must be tested once with
-  the report before any further mutation; no release or public support claim follows.
+  DAC. The diagnostic implementation is committed at
+  `054298b866fad4ca97cb649790af54ccc6a4cfba`, but local Android tests are NOT RUN because the
+  host has no Android SDK location, exact-head CI has not run, and no signed artifact exists for
+  this head. The diagnostic candidate remains hardware-validation pending and must be tested once
+  with the report before any further mutation; no release or public support claim follows.
 
 ### 2026-09-24 Rtings/AutoEQ Favorite provenance follow-up
 

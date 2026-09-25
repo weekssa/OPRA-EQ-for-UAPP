@@ -59,11 +59,11 @@ JA11 Flash or power-cycle persistence.
 
 Status: **HISTORICAL SOFTWARE EVIDENCE — DO NOT FLASH JA11 WITH THIS ARTIFACT FOR THIS INVESTIGATION**
 
-## Current physical-test candidate — READY FOR OWNER HARDWARE TESTING / FINAL RELEASE BLOCKED
+## Previous physical-test candidate — INVALIDATED BY J006 / DO NOT REPEAT
 
-The corrected candidate is now merged and has a complete trusted-main signed provenance tuple.
-This makes it ready for one bounded owner JA11 qualification session; it does not qualify JA11
-hardware, publish a release, or establish a public support claim.
+The previously corrected candidate was merged and had a complete trusted-main signed provenance
+tuple. J006 now records that exact candidate failing on owner hardware. It is no longer a test
+candidate for this investigation and must not be flashed again.
 
 - Source commit: `609911e2e51a254fc6f45b87fbdf4106c0049740` (PR [#41](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/41), merged into `main` with owner approval).
 - Exact immutable APK: [`EQ-Library-v0.7.0-beta-609911e.apk`](https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-609911e.apk).
@@ -77,11 +77,29 @@ hardware, publish a release, or establish a public support claim.
 - Signed artifact: `EQ-Library-signed-beta-609911e2e51a254fc6f45b87fbdf4106c0049740`, artifact ID `10877122640`, artifact ZIP SHA-256 `1b124c63cb799a5a069384d48a9477e32078167a509ccd8872b69693880988cd`.
 - Exact candidate APK checksum was independently recomputed from the immutable candidate and matches the embedded manifest and checksum file.
 - Automated gates: Android CI [run 36163197805](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36163197805), CodeQL [run 36163197784](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36163197784), priority community coverage [run 36163197775](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36163197775), and catalog currentness [run 36163197794](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36163197794) — all **PASS**.
-- Hardware status: **PENDING — owner must perform the first physical JA11 qualification session**. The agent performed no physical mutation.
+- Hardware status: **FAILED ON J006 — not a qualification result**. The agent performed no physical
+  mutation; JA11 remains hardware-validation pending.
 
-Use only this exact source/APK/hash/signer tuple for the next session. Do not use the moving
+Do not use this source/APK/hash/signer tuple for another JA11 mutation. Do not use the moving
 convenience APK, the historical `505182e` candidate, the historical `f3765b03` candidate, or any
 APK with a different source/hash tuple.
+
+## Current diagnostic source — SIGNED CANDIDATE NOT YET AVAILABLE
+
+The bounded diagnostic correction is committed at source
+`054298b866fad4ca97cb649790af54ccc6a4cfba` on branch `codex/ja11-signed-provenance`. It adds a
+shareable readable/JSON transaction report, raw JA11 request/response capture while the
+authoritative Flash operation is active, complete five-band/program/global-gain baseline capture,
+phase-aware readback comparison, and exact value joins. It intentionally does not change the
+`0x17` codec, signedness, endian order, `2560` scale, tolerance, retry policy, or fail-closed
+behavior.
+
+This source is not an owner-test candidate yet: local Android tests are **NOT RUN** because the
+host has no Android SDK location, exact-head CI has not run, and no signed APK/checksum/signer
+tuple exists for this head. The owner must not install or Flash this source until those gates
+produce a new exact signed candidate. Once available, perform one bounded diagnostic session only;
+export the report and stop on missing raw evidence, an unknown baseline, a disconnect outside the
+documented Save boundary, or uncertain restoration.
 
 ## Historical v0.5.0 software candidate record
 

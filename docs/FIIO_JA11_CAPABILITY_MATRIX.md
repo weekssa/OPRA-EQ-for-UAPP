@@ -4,11 +4,13 @@ This matrix is the current evidence boundary for the exact FiiO JA11 identity. S
 implementation does not imply physical support. Unknown behavior stays insufficiently evidenced
 or unsafe rather than being inherited from another KT02H20-family device.
 
-The current owner-test candidate is source `609911e2e51a254fc6f45b87fbdf4106c0049740` with
+The last owner-tested signed candidate is source `609911e2e51a254fc6f45b87fbdf4106c0049740` with
 immutable APK SHA-256 `583ff7014fc3c0977b6679cd8bf56d3a4f615411a629fa6014bab088ece082ef`, signer
 certificate SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`, and signed-beta
 run [#1362](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36165218849). This provenance
-clears the software/artifact gate only; it does not change any physical qualification decision.
+clears the software/artifact gate only; its exact physical result is recorded as J006 below and is
+negative. The current diagnostic source is `054298b866fad4ca97cb649790af54ccc6a4cfba`; it has no
+signed artifact or physical result yet.
 
 | Capability | Decision | Evidence / boundary |
 | --- | --- | --- |
