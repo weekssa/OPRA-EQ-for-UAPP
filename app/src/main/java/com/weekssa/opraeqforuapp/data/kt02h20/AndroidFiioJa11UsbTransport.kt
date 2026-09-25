@@ -2,6 +2,7 @@ package com.weekssa.opraeqforuapp.data.kt02h20
 
 import android.content.Context
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
+import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Timing
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Transport
 import java.io.Closeable
 import kotlinx.coroutines.flow.StateFlow
@@ -40,6 +41,7 @@ class AndroidFiioJa11UsbTransport(
         val response = hid.exchange(
             report = FiioJa11Protocol.readFirmwareVersionReport(),
             minResponseBytes = 8,
+            acceptResponse = { candidate -> FiioJa11Protocol.firmwareVersionFromResponse(candidate) != null },
         ) ?: return null
         return FiioJa11Protocol.firmwareVersionFromResponse(response)
     }
@@ -75,6 +77,7 @@ class AndroidFiioJa11UsbTransport(
         val response = hid.exchange(
             report = FiioJa11Protocol.readBandReport(index),
             minResponseBytes = 15,
+            acceptResponse = { candidate -> FiioJa11Protocol.bandFromResponse(candidate)?.first == index },
         ) ?: return null
         val parsed = FiioJa11Protocol.bandFromResponse(response) ?: return null
         return parsed.second.takeIf { parsed.first == index }
@@ -84,25 +87,25 @@ class AndroidFiioJa11UsbTransport(
         val response = hid.exchange(
             report = FiioJa11Protocol.readGlobalGainReport(),
             minResponseBytes = 8,
+            acceptResponse = { candidate -> FiioJa11Protocol.globalGainFromResponse(candidate) != null },
         ) ?: return null
         return FiioJa11Protocol.globalGainFromResponse(response)
     }
 
     override suspend fun sendReport(report: ByteArray): Boolean = hid.send(
         report = report,
-        settleMillis = when {
-            report.size > 6 && (report[5].toInt() and 0xFF) == 0x15 -> 25L
-            report.size > 6 && (report[5].toInt() and 0xFF) == 0x19 -> 80L
-            report.size > 6 && (report[5].toInt() and 0xFF) in setOf(0x12, 0x20) -> 25L
-            else -> 15L
-        },
+        settleMillis = FiioJa11Timing.settleMillisForMutation(report),
     )
 
     private suspend fun <T> exchangeOneByte(
         request: ByteArray,
         decoder: (ByteArray) -> T?,
     ): T? {
-        val response = hid.exchange(report = request, minResponseBytes = 7) ?: return null
+        val response = hid.exchange(
+            report = request,
+            minResponseBytes = 7,
+            acceptResponse = { candidate -> decoder(candidate) != null },
+        ) ?: return null
         return decoder(response)
     }
 

@@ -156,6 +156,19 @@ The established JA11 PEQ contract remains:
 
 Source values are never silently clamped. Complete-response adaptation uses the shared deterministic finite-hardware response machinery and leaves canonical source data unchanged.
 
+### Mutation pacing and response correlation
+
+Independent JA11 protocol research documents an approximately `200 ms` device command interval.
+The Android JA11 transport therefore waits `200 ms` after every mutation report before issuing or
+verifying the next transaction boundary. This is an evidence-backed software mitigation for
+device-side processing/pacing loss, but it is not physical qualification: the exact unit firmware,
+PID/UAC mode, and packet trace remain owner-test evidence.
+
+JA11 read exchanges accept only a decoded response for the requested command, and band reads also
+require the requested band index. Wrong-command, stale, malformed, or out-of-range responses are
+discarded until the bounded read timeout; a transfer is never treated as successful merely because
+it returned enough bytes.
+
 ## Device-control transaction model
 
 Non-disruptive writes use:
