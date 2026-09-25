@@ -1,5 +1,21 @@
 # EW300 capability matrix
 
+## 2026-09-25 integrated candidate checkpoint
+
+The exact integration candidate is source `81aeae90624043ef721401e9d56b8007dfdfa0d1` on
+`codex/v0.7-release-candidate`, with PR #36 intentionally still open and unmerged. It preserves
+the EW300 reconnect-race and stereo-gain/reconnect fixes, the validated Black Pearl Favorite path,
+and the newer FiiO implementation. The added legacy-library resolver is source-bound and
+fail-closed: it can Favorite an exact current OPRA compatibility row (including Rtings/AutoEQ)
+only when the source identity and full displayed projection match; stale, altered, missing, or
+ambiguous rows remain rejected.
+
+Exact-head software gates passed: Android CI #1814 (including the successful API-26 retry),
+CodeQL #1698, catalog currentness #2101, and priority community #1586. This does not add an
+EW300 capability, alter protocol semantics, or create a physical hardware claim. A signed APK and
+hands-on validation remain pending trusted-`main` integration.
+
+
 This matrix is the current product boundary for the exact EW300 identity. Every plausible
 capability is classified so implementation does not imply unsupported hardware behavior.
 
