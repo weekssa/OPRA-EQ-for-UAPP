@@ -78,6 +78,17 @@ Update the maintained documents in the same workstream when a later decision sup
 - Do not automatically retry uncertain hardware mutations.
 - Continue autonomously while safe in-scope work remains. Ask the owner only for a material unresolved product choice, an unsafe contradiction, the minimum necessary physical session, or explicit merge/publication approval.
 
+## Codex multi-agent orchestration
+
+The project-local `.codex/config.toml` defines reusable `repo_state`, `architecture`, `researcher`, `failure_analysis`, and `reviewer` specialist roles. Use them as bounded investigators and reviewers; they do not replace the primary agent.
+
+- The primary agent is the orchestrator and final verifier. It owns scope, source-of-truth reading, synthesis, implementation decisions, all writes/integration, test selection, final validation, and the owner handoff.
+- For substantive feature, recovery, research, or release work, dispatch independent read-only investigations first when the active Codex runtime exposes multi-agent tools. Prefer parallel work for independent questions and keep dependent decisions in the primary thread.
+- Use `repo_state` for repository/branch/PR/CI/documentation/evidence inventory; `architecture` for existing Android flow and reuse boundaries; `researcher` for primary-source technical evidence; `failure_analysis` for logs, traces, lifecycle failures, and root-cause validation; and `reviewer` for an independent candidate and regression review.
+- Treat the configured six specialist-thread limit as a capacity ceiling, not a requirement to use every slot. The primary agent remains active alongside those threads; dispatch no more specialists than the runtime reports it can safely support.
+- Specialists must read this file and the maintained runbook, report evidence and unknowns, and avoid production edits, commits, hardware mutations, or external changes unless the primary agent explicitly assigns a bounded, recoverable action.
+- The primary agent must reconcile specialist reports against repository evidence, reject unsupported claims, integrate any approved changes, run the appropriate tests, and perform the final verification even when a reviewer reports success.
+
 ## Testing and hardware budget
 
 - Exhaust repository evidence, public research, third-party behavior analysis, unit tests, simulated transports, fault injection, emulator tests, and CI before requesting hardware interaction.

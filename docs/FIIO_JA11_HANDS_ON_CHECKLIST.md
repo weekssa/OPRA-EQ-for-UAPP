@@ -4,6 +4,22 @@ Status: **HARDWARE VALIDATION PENDING — DEFERRED TO NEXT INCREMENTAL RELEASE**
 
 This physical gate is explicitly **not a v0.5.0 publication blocker** because the JA11 hardware is not yet available. Keep the shipped/in-app status **Hardware validation pending**. When the hardware arrives, run this checklist against the exact signed candidate for the next incremental release being qualified; do not automatically reuse the historical v0.5.0 candidate below.
 
+## Current physical-test candidate — READY / HARDWARE GATE PENDING
+
+The current exact signed beta candidate is ready for the first JA11 hands-on session:
+
+- App version: `0.7.0` / version code `7`.
+- Source commit: `505182edc1e7845ff342a2c28196b3b928ddd2f1` (verified `main` merge commit).
+- Exact signed APK: `https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-505182e.apk`
+- APK SHA-256: `0237c1514f03a6b2a6987e35ccb2f3c6512a148aadfd2f7a232ca09742cf79ee`.
+- Signer certificate SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`.
+- Signed-beta workflow: [run #1359](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36093590432) — **PASS**.
+- Signed-beta artifact: `10847020834`; artifact ZIP digest: `1339fea5dffb3a5997cdc2d76a5f033650613332a8dc5626850dd7f59fd7b234`.
+- Candidate scope note: PR #35 changed the library Favorites resolver and regression coverage only; no FiiO protocol or transaction behavior changed after the software path represented by this candidate.
+- Hardware status: **PENDING — first JA11 physical qualification session not yet run**.
+
+Use this exact immutable candidate for the owner session. Do not use the moving convenience APK or the historical v0.5.0 candidate as qualification provenance.
+
 ## Historical v0.5.0 software candidate record
 
 - App version: `v0.5.0` candidate

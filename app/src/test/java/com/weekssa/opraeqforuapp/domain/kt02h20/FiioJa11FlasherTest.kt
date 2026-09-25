@@ -67,6 +67,18 @@ class FiioJa11FlasherTest {
     }
 
     @Test
+    fun staleGlobalGainReadbackNeverAttemptsPersistentSave() = runBlocking {
+        val transport = FakeJa11Transport(ignoreGlobalGainWrite = true)
+
+        val result = FiioJa11Flasher(transport).flash(exactProfile())
+
+        assertTrue(result is Kt02h20FlashResult.VerificationFailed)
+        assertFalse(0x19 in transport.sentCommands)
+        assertEquals(0.0, transport.globalGainDb, 0.001)
+        assertEquals(0, transport.saveCount)
+    }
+
+    @Test
     fun resetWritesAllFiveFlatSlotsZeroGainSelectsUserOneApplyAndSave() = runBlocking {
         val transport = FakeJa11Transport(initialProgram = FiioJa11Protocol.EqProgram.BASS).apply {
             globalGainDb = -6.0
@@ -104,6 +116,7 @@ class FiioJa11FlasherTest {
         private val readable: Boolean = true,
         initialProgram: FiioJa11Protocol.EqProgram = FiioJa11Protocol.EqProgram.USER_1,
         private val ignoreProgramWrite: Boolean = false,
+        private val ignoreGlobalGainWrite: Boolean = false,
     ) : FiioJa11Transport {
         val bands = FiioJa11Protocol.completeBands(emptyList()).toMutableList()
         var globalGainDb: Double = 0.0
@@ -158,9 +171,11 @@ class FiioJa11FlasherTest {
                         ?: error("unexpected test EQ program")
                 }
                 0x17 -> {
-                    val rawUnsigned = (report[7].toInt() and 0xFF) or ((report[8].toInt() and 0xFF) shl 8)
-                    val raw = if (rawUnsigned >= 0x8000) rawUnsigned - 0x10000 else rawUnsigned
-                    globalGainDb = raw / 2560.0
+                    if (!ignoreGlobalGainWrite) {
+                        val rawUnsigned = (report[7].toInt() and 0xFF) or ((report[8].toInt() and 0xFF) shl 8)
+                        val raw = if (rawUnsigned >= 0x8000) rawUnsigned - 0x10000 else rawUnsigned
+                        globalGainDb = raw / 2560.0
+                    }
                 }
                 0x19 -> saveCount++
             }
