@@ -1,6 +1,7 @@
 package com.weekssa.opraeqforuapp.domain.ew300
 
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
+import com.weekssa.opraeqforuapp.domain.dac.validateForWrite
 import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
 import com.weekssa.opraeqforuapp.domain.hardware.HardwareEqDeviceSpecs
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiveBandOptimizationResult
@@ -275,6 +276,131 @@ class Ew300Flasher(
         resetToFlatInternal(trace)
     }
 
+    /**
+     * Changes only the EW300's absolute playback/global gain and verifies the persisted result.
+     *
+     * The requested value is the resulting hardware gain, not an EQ headroom delta. The existing
+     * EQ delta is retained separately so a later Flash or Reset can restore the user's baseline
+     * without double-applying or erasing this control change.
+     */
+    suspend fun setPlaybackGain(gainDb: Double): Ew300PlaybackGainResult = record("GAIN") { trace ->
+        trace.stage(Ew300OperationStage.AUTHORIZED_SESSION)
+        val deviceKey = transport.deviceFingerprintKey
+            ?: return@record Ew300PlaybackGainResult.DeviceUnavailable(
+                "The exact EW300 device fingerprint is unavailable; no gain write was sent.",
+            )
+        if (!mutationAuthorized(deviceKey)) {
+            return@record Ew300PlaybackGainResult.NotSuitable(
+                "EW300 playback gain is unavailable for this exact device identity.",
+            )
+        }
+        val requestedSteps = runCatching {
+            Ew300DeviceControls.playbackGainDescriptor.validateForWrite(
+                com.weekssa.opraeqforuapp.domain.dac.DacControlValue.Numeric(gainDb),
+            )
+        }.getOrElse {
+            return@record Ew300PlaybackGainResult.NotSuitable(
+                "The requested EW300 playback gain is not representable safely.",
+            )
+        }.let { validation ->
+            if (validation !is com.weekssa.opraeqforuapp.domain.dac.DacControlValidation.Valid) {
+                return@record Ew300PlaybackGainResult.NotSuitable(
+                    "Choose an EW300 playback gain from -64.0 dB through 0.0 dB in 0.5 dB steps.",
+                )
+            }
+            Ew300Protocol.gainDbToSteps(gainDb)
+        }
+        val baseline = transactionCoordinator.captureBaseline()
+            ?: return@record Ew300PlaybackGainResult.DeviceUnavailable(
+                "Couldn’t read the complete EW300 state before changing playback gain.",
+            )
+        trace.recordBaseline(baseline)
+        val currentGain = baseline.value(Ew300Protocol.GLOBAL_GAIN_REGISTER)
+            ?: return@record Ew300PlaybackGainResult.DeviceUnavailable(
+                "Couldn’t read the EW300 playback gain before changing it.",
+            )
+        val protocolFlags = baseline.value(Ew300Protocol.PROTOCOL_FLAGS_REGISTER)
+            ?: return@record Ew300PlaybackGainResult.DeviceUnavailable(
+                "Couldn’t read the EW300 protocol layout before changing playback gain.",
+            )
+        val currentSteps = Ew300Protocol.globalGainSteps(currentGain, protocolFlags)
+            ?: return@record Ew300PlaybackGainResult.NotSuitable(
+                "EW300 stereo playback-gain channels are unequal. Refresh or reconnect before changing gain.",
+            )
+        val appliedDeltaSteps = gainStateStore.readAppliedGainDeltaSteps(deviceKey)
+        val userBaselineSteps = currentSteps - appliedDeltaSteps
+        if (userBaselineSteps !in Ew300Protocol.GLOBAL_GAIN_MIN_STEPS..Ew300Protocol.GLOBAL_GAIN_MAX_STEPS) {
+            return@record Ew300PlaybackGainResult.NotSuitable(
+                "The current EW300 EQ/gain baseline is outside the safe control range; no write was sent.",
+            )
+        }
+        val targetGain = Ew300Protocol.withGlobalGainSteps(currentGain, requestedSteps, protocolFlags)
+        if (currentGain.contentEquals(targetGain)) {
+            gainStateStore.writeUserBaselineGainSteps(deviceKey, requestedSteps - appliedDeltaSteps)
+            trace.stage(Ew300OperationStage.VOLATILE_VERIFIED)
+            trace.stage(Ew300OperationStage.FINAL_READBACK)
+            return@record Ew300PlaybackGainResult.Success(requestedSteps / Ew300Protocol.GLOBAL_GAIN_STEPS_PER_DB)
+        }
+
+        trace.markBeforeFirstWrite(transport.permissionRequestCount)
+        trace.stage(Ew300OperationStage.WRITING)
+        if (!transport.writeRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER, targetGain)) {
+            return@record Ew300PlaybackGainResult.TransferFailed(
+                "EW300 did not accept the playback-gain change. No Save command was sent.",
+            )
+        }
+        val volatileGain = transport.readRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER)
+        if (volatileGain == null || !volatileGain.contentEquals(targetGain)) {
+            return@record Ew300PlaybackGainResult.VerificationFailed(
+                "EW300 playback-gain readback did not match before Save.",
+            )
+        }
+        trace.stage(Ew300OperationStage.VOLATILE_VERIFIED)
+        val sessionGenerationBeforeSave = transport.sessionGeneration
+        val detachGenerationBeforeSave = transport.detachGeneration
+        pendingVerification = PendingVerification(
+            operationId = trace.id,
+            operation = "GAIN",
+            deviceFingerprintKey = deviceKey,
+            sessionGenerationBeforeSave = sessionGenerationBeforeSave,
+            detachGenerationBeforeSave = detachGenerationBeforeSave,
+            expectedRegisters = mapOf(Ew300Protocol.GLOBAL_GAIN_REGISTER to targetGain.copyOf()),
+            targetDiffersFromBaseline = true,
+            appliedGainDeltaSteps = appliedDeltaSteps,
+            userBaselineGainSteps = requestedSteps - appliedDeltaSteps,
+        )
+        if (!transport.commit()) {
+            return@record Ew300PlaybackGainResult.TransferFailed(
+                "EW300 accepted the playback-gain write but did not accept the persistence command. Stop and reconnect before retrying.",
+            )
+        }
+        trace.stage(Ew300OperationStage.SAVE_SENT_ONCE)
+        if (!recordCommitBoundary(
+                trace = trace,
+                expectedFingerprint = deviceKey,
+                sessionGenerationBeforeSave = sessionGenerationBeforeSave,
+                detachGenerationBeforeSave = detachGenerationBeforeSave,
+            )
+        ) {
+            return@record Ew300PlaybackGainResult.VerificationFailed(
+                "EW300 Save returned on an unverified USB session. No later write is safe until refresh or reconnect.",
+            )
+        }
+        trace.stage(Ew300OperationStage.FINAL_READBACK)
+        val finalGain = Ew300ReadbackRetry.read(
+            read = { transport.readRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER) },
+            matches = { it?.contentEquals(targetGain) == true },
+        )
+        if (finalGain == null || !finalGain.contentEquals(targetGain)) {
+            return@record Ew300PlaybackGainResult.VerificationFailed(
+                "EW300 final playback-gain readback did not match the requested setting.",
+            )
+        }
+        gainStateStore.writeUserBaselineGainSteps(deviceKey, requestedSteps - appliedDeltaSteps)
+        pendingVerification = null
+        return@record Ew300PlaybackGainResult.Success(requestedSteps / Ew300Protocol.GLOBAL_GAIN_STEPS_PER_DB)
+    }
+
     private suspend fun resetToFlatInternal(trace: Ew300OperationTraceBuilder): Kt02h20FlatResetResult {
         val flat = completeBands(emptyList())
         val deviceKey = transport.deviceFingerprintKey
@@ -415,6 +541,9 @@ class Ew300Flasher(
             pending.deviceFingerprintKey,
             pending.appliedGainDeltaSteps,
         )
+        pending.userBaselineGainSteps?.let { steps ->
+            gainStateStore.writeUserBaselineGainSteps(pending.deviceFingerprintKey, steps)
+        }
         val reconciled = trace.copy(
             deviceFingerprintKey = currentFingerprint,
             sessionGeneration = currentSession,
@@ -560,6 +689,7 @@ class Ew300Flasher(
                 is Kt02h20FlatResetResult.Success,
                 Ew300EditorApplyResult.Verified,
                 Ew300RestorationResult.Verified,
+                is Ew300PlaybackGainResult.Success,
                 -> true
                 else -> false
             }
@@ -609,6 +739,7 @@ class Ew300Flasher(
         val expectedRegisters: Map<Int, ByteArray>,
         val targetDiffersFromBaseline: Boolean,
         val appliedGainDeltaSteps: Int,
+        val userBaselineGainSteps: Int? = null,
     )
 
     private fun Kt02h20FlashResult.toFlatResetResult(): Kt02h20FlatResetResult = when (this) {
@@ -636,6 +767,10 @@ class Ew300Flasher(
         is Ew300RestorationResult.NotSuitable -> reason
         is Ew300RestorationResult.TransferFailed -> reason
         is Ew300RestorationResult.VerificationFailed -> reason
+        is Ew300PlaybackGainResult.NotSuitable -> reason
+        is Ew300PlaybackGainResult.DeviceUnavailable -> reason
+        is Ew300PlaybackGainResult.TransferFailed -> reason
+        is Ew300PlaybackGainResult.VerificationFailed -> reason
         else -> null
     }
 
@@ -644,7 +779,7 @@ class Ew300Flasher(
         is Kt02h20FlatResetResult.Success,
         Ew300EditorApplyResult.Verified,
         Ew300RestorationResult.Verified,
-        -> Ew300OperationOutcome.SUCCESS
+        is Ew300PlaybackGainResult.Success -> Ew300OperationOutcome.SUCCESS
         is Kt02h20FlashResult.NotSuitable,
         is Kt02h20FlatResetResult.NotSuitable,
         is Ew300EditorApplyResult.InvalidPlan,
@@ -668,6 +803,10 @@ class Ew300Flasher(
         is Ew300EditorApplyResult.StaleBaseline -> Ew300OperationOutcome.STALE_BASELINE
         is Ew300EditorApplyResult.ConfirmationRequired -> Ew300OperationOutcome.CONFIRMATION_REQUIRED
         is Ew300RestorationResult.NoBaseline -> Ew300OperationOutcome.NO_BASELINE
+        is Ew300PlaybackGainResult.NotSuitable -> Ew300OperationOutcome.NOT_SUITABLE
+        is Ew300PlaybackGainResult.DeviceUnavailable -> Ew300OperationOutcome.DEVICE_UNAVAILABLE
+        is Ew300PlaybackGainResult.TransferFailed -> Ew300OperationOutcome.TRANSFER_FAILED
+        is Ew300PlaybackGainResult.VerificationFailed -> Ew300OperationOutcome.VERIFICATION_FAILED
         else -> Ew300OperationOutcome.UNKNOWN
     }
 

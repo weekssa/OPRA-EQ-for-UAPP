@@ -6,6 +6,9 @@ interface Ew300GainStateStore {
     fun markGlobalGainQualified(deviceFingerprintKey: String, qualified: Boolean)
     fun readAppliedGainDeltaSteps(deviceFingerprintKey: String): Int
     fun writeAppliedGainDeltaSteps(deviceFingerprintKey: String, steps: Int)
+    /** User-owned baseline, kept separate from EQ Library's temporary playback-gain delta. */
+    fun readUserBaselineGainSteps(deviceFingerprintKey: String): Int? = null
+    fun writeUserBaselineGainSteps(deviceFingerprintKey: String, steps: Int) = Unit
     fun isPersistenceQualified(deviceFingerprintKey: String): Boolean = false
     fun markPersistenceQualified(deviceFingerprintKey: String, qualified: Boolean) = Unit
     fun readPersistencePending(deviceFingerprintKey: String): Ew300PersistencePending? = null

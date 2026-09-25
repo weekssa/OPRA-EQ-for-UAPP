@@ -46,6 +46,7 @@ import com.weekssa.opraeqforuapp.domain.dac.DacControlId
 import com.weekssa.opraeqforuapp.domain.dac.DacControlValue
 import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
 import com.weekssa.opraeqforuapp.domain.dac.DacRecognitionState
+import com.weekssa.opraeqforuapp.domain.dac.DacStateFreshness
 import com.weekssa.opraeqforuapp.domain.dac.DacWriteIntent
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditSpecs
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300EditorApplyResult
@@ -62,6 +63,7 @@ import com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityReport
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300PersistenceQualificationResult
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationTrace
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationStatus
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300PlaybackGainResult
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300Protocol
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300RestorationResult
 import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceControls
@@ -133,6 +135,7 @@ private data class HardwareConnectionUiState(
     val ew300OperationStatus: Ew300OperationStatus,
     val blackPearlQualificationState: BlackPearlQualificationUiState,
     val fiioJa11DeviceState: FiioJa11DeviceUiState,
+    val ew300PlaybackGainState: Ew300PlaybackGainUiState,
 )
 
 data class EqLibraryUiState(
@@ -160,6 +163,7 @@ data class EqLibraryUiState(
     val ew300OperationStatus: Ew300OperationStatus = Ew300OperationStatus.Idle,
     val blackPearlQualificationState: BlackPearlQualificationUiState = BlackPearlQualificationUiState(),
     val fiioJa11DeviceState: FiioJa11DeviceUiState = FiioJa11DeviceUiState(),
+    val ew300PlaybackGainState: Ew300PlaybackGainUiState = Ew300PlaybackGainUiState(),
 )
 
 class EqLibraryViewModel(
@@ -184,6 +188,7 @@ class EqLibraryViewModel(
     private val mutableEw300EditorState = MutableStateFlow(MyDacEditorUiState())
     private val mutableBlackPearlQualificationState = MutableStateFlow(BlackPearlQualificationUiState())
     private val mutableFiioJa11DeviceState = MutableStateFlow(FiioJa11DeviceUiState())
+    private val mutableEw300PlaybackGainState = MutableStateFlow(Ew300PlaybackGainUiState())
     private val mutableBlackPearlKnownLineage = MutableStateFlow<BlackPearlKnownLineage?>(null)
     private var blackPearlEditorLineageRepresentation: SavedHardwareEqRepresentation? = null
 
@@ -298,6 +303,7 @@ class EqLibraryViewModel(
             ew300OperationStatus = ew300OperationStatus,
             blackPearlQualificationState = BlackPearlQualificationUiState(),
             fiioJa11DeviceState = FiioJa11DeviceUiState(),
+            ew300PlaybackGainState = Ew300PlaybackGainUiState(),
         )
     }
 
@@ -325,11 +331,15 @@ class EqLibraryViewModel(
     private val hardwareConnections = combine(
         hardwareConnectionsWithQualification,
         mutableFiioJa11DeviceState,
-    ) { hardware, fiioDevice ->
+        mutableEw300PlaybackGainState,
+    ) { hardware, fiioDevice, ew300Gain ->
         val current = fiioDevice.snapshot?.let { snapshot ->
             hardwareRepository.isFiioJa11SessionCurrent(snapshot.sessionGeneration)
         } == true
-        hardware.copy(fiioJa11DeviceState = fiioDevice.withSessionCurrent(current))
+        hardware.copy(
+            fiioJa11DeviceState = fiioDevice.withSessionCurrent(current),
+            ew300PlaybackGainState = ew300Gain,
+        )
     }
 
     val uiState: StateFlow<EqLibraryUiState> = combine(
@@ -367,6 +377,7 @@ class EqLibraryViewModel(
             ew300OperationStatus = hardware.ew300OperationStatus,
             blackPearlQualificationState = hardware.blackPearlQualificationState,
             fiioJa11DeviceState = hardware.fiioJa11DeviceState,
+            ew300PlaybackGainState = hardware.ew300PlaybackGainState,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -402,6 +413,13 @@ class EqLibraryViewModel(
                         else refreshFiioJa11DeviceState()
                     }
                     else -> mutableFiioJa11DeviceState.update(FiioJa11DeviceUiState::markStale)
+                }
+            }
+        }
+        viewModelScope.launch {
+            hardwareRepository.ew300ConnectionState.collectLatest { state ->
+                if (state !is Kt02h20ConnectionState.Connected) {
+                    mutableEw300PlaybackGainState.update(Ew300PlaybackGainUiState::markStale)
                 }
             }
         }
@@ -445,6 +463,33 @@ class EqLibraryViewModel(
         FiioJa11DeviceControls.UAC_MODE,
         DacControlValue.Discrete(mode.name.lowercase()),
     )
+
+    fun setEw300PlaybackGain(gainDb: Double) {
+        val state = mutableEw300PlaybackGainState.value
+        val snapshot = hardwareRepository.ew300SnapshotState.value
+        if (state.isWriting) return
+        if (
+            snapshot.bundle == null ||
+            snapshot.freshness != DacStateFreshness.CURRENT ||
+            hardwareRepository.ew300ConnectionState.value !is Kt02h20ConnectionState.Connected
+        ) {
+            mutableEw300PlaybackGainState.value = state.failure(
+                "Refresh the current EW300 device state before changing playback gain.",
+            )
+            return
+        }
+        mutableEw300PlaybackGainState.value = state.beginWrite()
+        viewModelScope.launch {
+            val result = hardwareRepository.setEw300PlaybackGain(gainDb)
+            mutableEw300PlaybackGainState.value = when (result) {
+                is Ew300PlaybackGainResult.Success -> state.verified(result.playbackGainDb)
+                is Ew300PlaybackGainResult.NotSuitable -> state.failure(result.reason)
+                is Ew300PlaybackGainResult.DeviceUnavailable -> state.failure(result.reason)
+                is Ew300PlaybackGainResult.TransferFailed -> state.failure(result.reason)
+                is Ew300PlaybackGainResult.VerificationFailed -> state.failure(result.reason)
+            }
+        }
+    }
 
     private fun writeFiioJa11Control(controlId: DacControlId, value: DacControlValue) {
         val state = mutableFiioJa11DeviceState.value

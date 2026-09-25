@@ -1,6 +1,7 @@
 package com.weekssa.opraeqforuapp.domain.dac
 
 import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceControls
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300DeviceControls
 
 data class DacCapabilitySet(
     val identity: DacDeviceIdentity,
@@ -54,11 +55,12 @@ object DacCapabilityCatalog {
                 usbVendorId = 0x31B2,
                 usbProductId = 0x0111,
                 // The bounded Save qualification is complete for this exact model/profile. The
-                // product still exposes only the independently qualified Peak EQ operations; it
-                // does not infer unrelated DEVICE controls from this status.
+                // playback-gain control is exposed only through its exact EW300 descriptor and
+                // exact-fingerprint mutation gate; it is still a candidate feature pending the
+                // bounded owner physical gain test.
                 validationStatus = DacValidationStatus.HARDWARE_QUALIFIED,
             ),
-            exposedControls = emptyList(),
+            exposedControls = Ew300DeviceControls.descriptors,
         )
 
         DacDeviceId.JCALLY_JM12_STOCK -> DacCapabilitySet(

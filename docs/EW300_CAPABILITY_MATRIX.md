@@ -16,6 +16,13 @@ The testable v0.7 finished-product and cross-DAC acceptance contract is
 `docs/V0.7_PRODUCT_SUCCESS_CRITERIA.md`. Do not interpret “Black Pearl parity” as permission to
 copy hardware controls; classify each category for this exact EW300 profile.
 
+**Output-gain candidate update (2026-09-24):** The exact signed-main implementation now contains a
+conservative candidate DEVICE control for the already-read `0x66` playback/global-gain field. It
+is limited to `-64.0..0.0 dB` in 0.5 dB steps, uses the shared EW300 mutation gate, and requires
+volatile plus post-Save final readback. It is not physically qualified as an independent user
+volume control until the bounded owner test in `docs/V0.7_EW300_OUTPUT_GAIN_PLAN.md` is recorded;
+no public support claim follows from the code change alone.
+
 Mutation also requires the internally allowlisted recorded USB device revision. The revised code
 must pass exact-source tests before this guard is considered software-verified; unknown revisions
 remain read-only. Shelf filters may be approximated by the source-response optimizer but are not
@@ -60,7 +67,7 @@ microphone gain/control path. Lack of evidence is never converted to `HARDWARE_D
 | Source low-shelf / high-shelf adaptation | SUPPORTED_AND_IMPLEMENTED | Full-response fitting can produce a bounded `Optimized` five-band Peak representation for source low/high shelves when RMS/max-error gates pass. This is not native EW300 shelf readback, capture, editor, or Flash support. |
 | Native low-shelf / high-shelf capture or Flash | INSUFFICIENT_EVIDENCE | Native EW300 transport/product semantics remain Peak-only; raw experiments and family-level shelf support are not enough to establish native EW300 shelf behavior. |
 | Disabled/unused-band semantics | INSUFFICIENT_EVIDENCE | Complete five-band representation required; no guessed disabled state. |
-| Standalone playback-volume control | INSUFFICIENT_EVIDENCE | Register `0x66` is verified global-gain state/baseline and participates in qualified EQ headroom/restoration. Exact-product material says the in-line control has no volume buttons, while generic KT02H20 tools expose digital/analog gain controls. Neither fact proves an exact EW300 independent software volume contract, so no volume row/write is exposed. |
+| Standalone playback-volume control | SUPPORTED_AND_IMPLEMENTED (physical validation pending) | Candidate control uses the exact `0x66` field, conservative non-boosting `-64.0..0.0 dB` / 0.5 dB range, both stereo channel bytes, one shared-session Save, and final readback. User baseline and EQ-applied delta remain separate. The bounded owner test in `docs/V0.7_EW300_OUTPUT_GAIN_PLAN.md` is still required before public support wording; no positive boost or guessed gain mode is exposed. |
 | DAC digital-filter selection | INSUFFICIENT_EVIDENCE | Generic-family tools may expose filter/control families, but no exact EW300 control/readback/write evidence establishes a DAC reconstruction-filter selector. |
 | Gain mode or amplifier/output-stage topology | INSUFFICIENT_EVIDENCE | No exact EW300 control/readback/write evidence. Generic PGA/gain registers are not inherited. |
 | Left/right balance | INSUFFICIENT_EVIDENCE | No exact EW300 control/readback/write evidence. |
