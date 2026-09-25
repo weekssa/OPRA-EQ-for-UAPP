@@ -2,6 +2,10 @@ package com.weekssa.opraeqforuapp.domain.library
 
 import com.google.common.truth.Truth.assertThat
 import com.weekssa.opraeqforuapp.domain.catalog.EqBandOrderProvenance
+import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
+import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
+import com.weekssa.opraeqforuapp.domain.catalog.OpraProduct
+import com.weekssa.opraeqforuapp.domain.catalog.OpraVendor
 import com.weekssa.opraeqforuapp.domain.conversion.ToneBoostersConversionException
 import com.weekssa.opraeqforuapp.domain.conversion.ToneBoostersConverter
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneSelection
@@ -436,6 +440,48 @@ class CanonicalLegacyCatalogAdapterTest {
                 displayed.copy(bands = displayed.bands!!.map { it.copy(gainDb = requireNotNull(it.gainDb) + 0.25) }),
             ),
         ).isNull()
+    }
+
+    @Test
+    fun resolvesExactLegacyOpraProjectionWithStableSourceIdentity() {
+        val vendor = OpraVendor(id = "hifiman", name = "HIFIMAN")
+        val product = OpraProduct(
+            id = "hifiman::edition_xs",
+            vendorId = vendor.id,
+            name = "Edition XS",
+            type = "headphones",
+            subtype = "over_the_ear",
+        )
+        val legacy = OpraEqProfile(
+            id = "hifiman:edition_xs::rtings_target_rtings_com_consolidated_parametric_5band",
+            productId = product.id,
+            author = "Rtings/AutoEQ",
+            details = "Target_Rtings_com · Consolidated",
+            link = null,
+            profileType = "parametric_eq",
+            preampGainDb = -5.1,
+            bands = listOf(
+                OpraBand("peak_dip", 82.0, 2.7, 1.41, null),
+                OpraBand("peak_dip", 125.0, -1.2, 1.41, null),
+                OpraBand("peak_dip", 4000.0, 1.0, 1.41, null),
+                OpraBand("peak_dip", 8000.0, 0.5, 1.41, null),
+                OpraBand("peak_dip", 12000.0, -2.0, 1.41, null),
+            ),
+        )
+
+        val selection = CanonicalLegacyCatalogAdapter.resolveLegacySelection(vendor, product, legacy)
+
+        assertThat(selection).isNotNull()
+        assertThat(requireNotNull(selection).selectedRevision.isLatest).isTrue()
+        assertThat(requireNotNull(selection).selectedRevision.sourceReferences.single().sourceRecordId)
+            .isEqualTo(legacy.id)
+        assertThat(CanonicalLegacyCatalogAdapter.matchesSelection(requireNotNull(selection), legacy)).isTrue()
+        assertThat(
+            CanonicalLegacyCatalogAdapter.matchesSelection(
+                requireNotNull(selection),
+                legacy.copy(preampGainDb = -5.0),
+            ),
+        ).isFalse()
     }
 
     @Test

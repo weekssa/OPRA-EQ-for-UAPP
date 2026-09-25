@@ -71,10 +71,28 @@ class CanonicalFirstCatalogRepository(
         }
     }
 
-    override fun resolveCanonicalSelection(profile: com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile): CanonicalEqSelection? =
-        (canonicalRepository.state.value as? CanonicalCatalogState.Ready)
+    override fun resolveCanonicalSelection(profile: com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile): CanonicalEqSelection? {
+        val canonicalSelection = (canonicalRepository.state.value as? CanonicalCatalogState.Ready)
             ?.snapshot
             ?.let { CanonicalLegacyCatalogAdapter.resolveSelection(it, profile) }
+        if (canonicalSelection != null) return canonicalSelection
+
+        // The effective UI catalog deliberately retains legacy OPRA rows when the canonical
+        // snapshot has not published that exact source record yet. Canonicalize only the current
+        // maintained OPRA row with its exact source ID; never derive a Favorite from an arbitrary
+        // managed snapshot or from a merely similar acoustic profile.
+        val legacyCatalog = (legacyFallback.state.value as? CatalogState.Ready)?.catalog ?: return null
+        val product = legacyCatalog.product(profile.productId) ?: return null
+        val vendor = legacyCatalog.vendor(product.vendorId) ?: return null
+        val sourceProfile = legacyCatalog.profiles.singleOrNull { candidate ->
+            candidate.id == profile.id && legacyCatalog.canonicalProductId(candidate.productId) == product.id
+        } ?: return null
+        val selection = CanonicalLegacyCatalogAdapter.resolveLegacySelection(vendor, product, sourceProfile)
+            ?: return null
+        return selection.takeIf {
+            CanonicalLegacyCatalogAdapter.matchesSelection(it, profile, product.id)
+        }
+    }
 
     override fun resolveCanonicalSelection(preset: com.weekssa.opraeqforuapp.domain.catalog.GeneralEqPreset): CanonicalEqSelection? =
         (canonicalRepository.state.value as? CanonicalCatalogState.Ready)
