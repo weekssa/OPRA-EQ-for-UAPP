@@ -22,6 +22,7 @@ import com.weekssa.opraeqforuapp.domain.ew300.Ew300EditorApplyResult
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationTrace
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationStatus
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300RestorationResult
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300PlaybackGainResult
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult
 import java.io.Closeable
@@ -274,6 +275,17 @@ class HardwareEqRepository(
         dacSessionRepository.withExclusiveEw300Mutation { ew300Flasher.resetToFlat() }.also {
             scheduleEw300SnapshotRefresh()
         }
+
+    suspend fun setEw300PlaybackGain(gainDb: Double): Ew300PlaybackGainResult {
+        mutableEw300SnapshotState.update { it.markStale() }
+        return try {
+            dacSessionRepository.withExclusiveEw300Mutation {
+                ew300Flasher.setPlaybackGain(gainDb)
+            }
+        } finally {
+            refreshEw300Snapshot()
+        }
+    }
 
     @Deprecated("JCALLY is not part of the current product; remove remaining callers.")
     suspend fun flashJcallyJm12(profile: OpraEqProfile): Kt02h20FlashResult =

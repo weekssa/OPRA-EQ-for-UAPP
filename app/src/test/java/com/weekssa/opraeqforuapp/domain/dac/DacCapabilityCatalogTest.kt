@@ -1,6 +1,7 @@
 package com.weekssa.opraeqforuapp.domain.dac
 
 import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceControls
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300DeviceControls
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -28,13 +29,13 @@ class DacCapabilityCatalogTest {
     }
 
     @Test
-    fun ew300IsQualifiedOnlyForTheExactProfileAndDoesNotExposeUnrelatedControls() {
+    fun ew300ExposesOnlyTheExactPlaybackGainControl() {
         val capabilities = DacCapabilityCatalog.forDevice(DacDeviceId.SIMGOT_EW300)
 
         assertEquals(DacValidationStatus.HARDWARE_QUALIFIED, capabilities.identity.validationStatus)
         assertEquals(0x31B2, capabilities.identity.usbVendorId)
         assertEquals(0x0111, capabilities.identity.usbProductId)
-        assertTrue(capabilities.exposedControls.isEmpty())
+        assertEquals(Ew300DeviceControls.descriptors, capabilities.exposedControls)
     }
 
     @Test

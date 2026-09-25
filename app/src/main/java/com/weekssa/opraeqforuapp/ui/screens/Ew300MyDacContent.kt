@@ -13,6 +13,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -40,6 +41,7 @@ import com.weekssa.opraeqforuapp.domain.dac.HardwareEqResponseEvaluator
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.dac.isAcousticallyActive
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityReport
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300DeviceControls
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationTrace
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationStatus
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300PersistenceQualificationResult
@@ -54,6 +56,7 @@ import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.ui.MyDacEditorApplyStatus
 import com.weekssa.opraeqforuapp.ui.MyDacEditorUiState
+import com.weekssa.opraeqforuapp.ui.Ew300PlaybackGainUiState
 import com.weekssa.opraeqforuapp.ui.components.DacEqResponseGraph
 import com.weekssa.opraeqforuapp.ui.components.PremiumSectionLabel
 import com.weekssa.opraeqforuapp.ui.components.PremiumValueRow
@@ -68,6 +71,7 @@ internal fun Ew300MyDacContent(
     editorState: MyDacEditorUiState,
     operationTrace: Ew300OperationTrace?,
     operationStatus: Ew300OperationStatus = Ew300OperationStatus.Idle,
+    playbackGainState: Ew300PlaybackGainUiState = Ew300PlaybackGainUiState(),
     catalogState: CatalogState,
     managedHeadphones: List<ManagedHeadphoneRecord>,
     savedEqs: List<SavedEqRecord>,
@@ -77,6 +81,7 @@ internal fun Ew300MyDacContent(
     onRestoreBaseline: suspend () -> String,
     onRunCapabilityBatch: suspend () -> Ew300CapabilityReport,
     onAdvancePersistenceQualification: suspend () -> Ew300PersistenceQualificationResult,
+    onSetPlaybackGain: (Double) -> Unit = {},
     onCaptureDacEq: suspend (String, SavedEqHeadphoneAssociation?) -> String,
     onOpenEditor: () -> Unit,
     onCloseEditor: () -> Unit,
@@ -252,8 +257,10 @@ internal fun Ew300MyDacContent(
                     Ew300DeviceStatus(
                         report = capabilityReport,
                         hardwareEqState = hardwareEqState,
+                        playbackGainState = playbackGainState,
                         running = capabilityBatchRunning,
                         onRefresh = onConnect,
+                        onSetPlaybackGain = onSetPlaybackGain,
                         onRun = {
                             if (!capabilityBatchRunning) {
                                 capabilityBatchRunning = true
@@ -561,8 +568,10 @@ private fun Ew300EqStatus(
 internal fun Ew300DeviceStatus(
     report: Ew300CapabilityReport?,
     hardwareEqState: HardwareEqSnapshotState = HardwareEqSnapshotState(),
+    playbackGainState: Ew300PlaybackGainUiState = Ew300PlaybackGainUiState(),
     running: Boolean,
     onRefresh: () -> Unit = {},
+    onSetPlaybackGain: (Double) -> Unit = {},
     onRun: () -> Unit,
     onShareReadable: (() -> Unit)?,
     onShareJson: (() -> Unit)?,
@@ -580,7 +589,63 @@ internal fun Ew300DeviceStatus(
     restorationRunning: Boolean = false,
     onRestoreBaseline: () -> Unit = {},
 ) {
+    var gainDialogOpen by remember { mutableStateOf(false) }
+    var stagedGainDb by remember { mutableStateOf(0.0) }
     val hardwareBundle = hardwareEqState.bundle
+    val currentGainDb = hardwareBundle?.snapshot?.playbackGainDb
+    val canChangeGain = currentGainDb != null &&
+        hardwareEqState.freshness == DacStateFreshness.CURRENT &&
+        !playbackGainState.isWriting
+
+    if (gainDialogOpen) {
+        AlertDialog(
+            onDismissRequest = { if (!playbackGainState.isWriting) gainDialogOpen = false },
+            title = { Text("EW300 output gain") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        "Set the resulting device playback gain. This changes the EW300 output level and may make audio much louder. Start conservatively and keep the Android volume low.",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        String.format(Locale.US, "%+.1f dB", stagedGainDb),
+                        style = MaterialTheme.typography.headlineSmall,
+                    )
+                    Slider(
+                        value = stagedGainDb.toFloat(),
+                        onValueChange = { value -> stagedGainDb = value.toDouble() },
+                        valueRange = Ew300DeviceControls.MIN_PLAYBACK_GAIN_DB.toFloat()..Ew300DeviceControls.MAX_PLAYBACK_GAIN_DB.toFloat(),
+                        steps = 127,
+                        enabled = !playbackGainState.isWriting,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Text(
+                        "Allowed range: -64.0 dB to 0.0 dB in 0.5 dB steps. Every change is saved once and verified by final hardware readback.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    playbackGainState.error?.let { error ->
+                        Text(error, color = MaterialTheme.colorScheme.error)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        gainDialogOpen = false
+                        onSetPlaybackGain(stagedGainDb)
+                    },
+                    enabled = !playbackGainState.isWriting,
+                ) { Text(if (playbackGainState.isWriting) "Saving…" else "Save and verify") }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { gainDialogOpen = false },
+                    enabled = !playbackGainState.isWriting,
+                ) { Text("Cancel") }
+            },
+        )
+    }
     PremiumSectionLabel(
         text = when (hardwareEqState.freshness) {
             DacStateFreshness.CURRENT -> "Current device state"
@@ -609,11 +674,26 @@ internal fun Ew300DeviceStatus(
         Text(if (hardwareEqState.isReading) "Refreshing…" else "Refresh")
     }
     PremiumValueRow(
-        title = "Playback / global gain",
-        value = hardwareBundle?.snapshot?.playbackGainDb?.let {
+        title = "Output gain",
+        value = currentGainDb?.let {
             String.format(Locale.US, "%.1f dB", it)
         } ?: "Not read",
-        supportingText = "Verified state used by guarded EQ transactions and restoration; not a standalone volume control.",
+        supportingText = when {
+            playbackGainState.isWriting -> "Saving and verifying the requested output level…"
+            playbackGainState.error != null -> playbackGainState.error
+            canChangeGain -> "Tap to adjust the EW300 playback level. Changes are persisted and read back before success is shown."
+            else -> "Refresh the connected EW300 before changing its playback level."
+        },
+        enabled = canChangeGain,
+        showDisclosure = true,
+        onClick = if (canChangeGain) {
+            {
+                stagedGainDb = currentGainDb ?: 0.0
+                gainDialogOpen = true
+            }
+        } else {
+            null
+        },
     )
     PremiumValueRow(
         title = "Equalizer",

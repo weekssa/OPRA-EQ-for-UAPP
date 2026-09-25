@@ -36,6 +36,7 @@ import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.ui.BlackPearlQualificationUiState
 import com.weekssa.opraeqforuapp.ui.FiioJa11DeviceUiState
+import com.weekssa.opraeqforuapp.ui.Ew300PlaybackGainUiState
 import com.weekssa.opraeqforuapp.ui.MyDacEditorUiState
 import com.weekssa.opraeqforuapp.ui.components.PremiumValueRow
 
@@ -63,6 +64,7 @@ fun MyDacRootScreen(
     ew300OperationStatus: Ew300OperationStatus = Ew300OperationStatus.Idle,
     blackPearlQualificationState: BlackPearlQualificationUiState,
     fiioJa11DeviceState: FiioJa11DeviceUiState,
+    ew300PlaybackGainState: Ew300PlaybackGainUiState = Ew300PlaybackGainUiState(),
     onConnectDac: (DacDeviceId) -> Unit,
     onOpenBlackPearlEditor: () -> Unit,
     onCloseBlackPearlEditor: () -> Unit,
@@ -99,6 +101,7 @@ fun MyDacRootScreen(
     onRestoreEw300Baseline: suspend () -> String = { "EW300 baseline restoration is not available." },
     onRunEw300CapabilityBatch: suspend () -> Ew300CapabilityReport,
     onAdvanceEw300PersistenceQualification: suspend () -> Ew300PersistenceQualificationResult,
+    onSetEw300PlaybackGain: (Double) -> Unit = {},
     onMessage: (String) -> Unit,
     onOperationStatus: (String, Boolean) -> Unit,
     modifier: Modifier = Modifier,
@@ -217,6 +220,7 @@ fun MyDacRootScreen(
             editorState = ew300EditorState,
             operationTrace = ew300OperationTrace,
             operationStatus = ew300OperationStatus,
+            playbackGainState = ew300PlaybackGainState,
             catalogState = catalogState,
             managedHeadphones = blackPearlManagedHeadphones,
             savedEqs = blackPearlSavedEqs,
@@ -226,6 +230,7 @@ fun MyDacRootScreen(
             onRestoreBaseline = onRestoreEw300Baseline,
             onRunCapabilityBatch = onRunEw300CapabilityBatch,
             onAdvancePersistenceQualification = onAdvanceEw300PersistenceQualification,
+            onSetPlaybackGain = onSetEw300PlaybackGain,
             onCaptureDacEq = onCaptureEw300DacEq,
             onOpenEditor = onOpenEw300Editor,
             onCloseEditor = onCloseEw300Editor,

@@ -25,6 +25,17 @@ class Ew300GainStatePreferences(context: Context) : Ew300GainStateStore {
         preferences.edit().putInt(deltaKey(deviceFingerprintKey), steps).apply()
     }
 
+    override fun readUserBaselineGainSteps(deviceFingerprintKey: String): Int? =
+        if (preferences.contains(userBaselineKey(deviceFingerprintKey))) {
+            preferences.getInt(userBaselineKey(deviceFingerprintKey), 0)
+        } else {
+            null
+        }
+
+    override fun writeUserBaselineGainSteps(deviceFingerprintKey: String, steps: Int) {
+        preferences.edit().putInt(userBaselineKey(deviceFingerprintKey), steps).apply()
+    }
+
     override fun isPersistenceQualified(deviceFingerprintKey: String): Boolean =
         preferences.getBoolean(persistenceQualifiedKey(deviceFingerprintKey), false)
 
@@ -50,6 +61,7 @@ class Ew300GainStatePreferences(context: Context) : Ew300GainStateStore {
 
         private fun qualifiedKey(fingerprint: String) = safeKey("global_gain_qualified", fingerprint)
         private fun deltaKey(fingerprint: String) = safeKey("applied_gain_delta_steps", fingerprint)
+        private fun userBaselineKey(fingerprint: String) = safeKey("user_baseline_gain_steps", fingerprint)
         private fun persistenceQualifiedKey(fingerprint: String) = safeKey("persistence_qualified", fingerprint)
         private fun pendingKey(fingerprint: String) = safeKey("persistence_pending", fingerprint)
 

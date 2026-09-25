@@ -62,6 +62,7 @@ class EqLibraryActions(
     val onRestoreEw300Baseline: suspend () -> String,
     val onRunEw300CapabilityBatch: suspend () -> Ew300CapabilityReport,
     val onAdvanceEw300PersistenceQualification: suspend () -> Ew300PersistenceQualificationResult,
+    val onSetEw300PlaybackGain: (Double) -> Unit,
     val onConnectBlackPearl: () -> Unit,
     val onResetBlackPearl: suspend () -> String,
     val onConnectFiioJa11: () -> Unit,
