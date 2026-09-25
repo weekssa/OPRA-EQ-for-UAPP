@@ -18,6 +18,16 @@ The Kotlin implementation in this repository is independently written from obser
 
 The expanded v0.6 protocol facts were cross-checked against maintained public JA11 research, including `Cyfine/ja11-web-control` at commit `4d4eb83df6fcdf9e20b52e1bdf59a77f463b2c30`, which in turn documents independent comparison with FiiO Control behavior and live JA11 firmware 2.20 observations.
 
+## Current Save/readback lifecycle correction
+
+FiiO's maintained FAQ documents Save as a chip restart/disconnect boundary. The current Android
+transport therefore treats Save as the explicit lifecycle exception: it waits for the optional
+detach/re-enumeration boundary before final readback, while ordinary reads and writes must remain
+on the same session and detach generation for the full exchange. This is a lifecycle-safety
+correction, not evidence that the signed gain codec, scale, tolerance, or device-domain value is
+wrong. Exact draft PR #41 head `b32c52a82a46899efd115efd8544deeb16b9eb4c` passed automated software
+gates; physical JA11 semantics remain pending raw transaction evidence.
+
 ## USB identity and UAC re-enumeration
 
 Vendor ID:

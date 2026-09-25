@@ -19,9 +19,10 @@ the exact candidate provenance and capture a read-only baseline plus the intende
 bands, firmware, PID/UAC mode, and whether the mismatch was pre-Save or post-Save. Stop if the
 device state or original-state restoration cannot be established.
 
-The working tree now contains an evidence-backed Save/reconnect correction, but the signed
-`f3765b03` APK listed below predates that correction. No signed artifact, checksum, or physical
-qualification claim exists for the correction yet.
+The draft PR now contains an evidence-backed Save/reconnect correction at source commit
+`b32c52a82a46899efd115efd8544deeb16b9eb4c`. The corrected head has passed the repository's
+automated software gates, but the CI debug APK is unsigned and no signed artifact, checksum, or
+physical qualification claim exists for the correction yet.
 
 ## Historical integrated software candidate — do not use for the correction
 
@@ -37,8 +38,17 @@ Status: **HISTORICAL SOFTWARE EVIDENCE — DO NOT FLASH JA11 WITH THIS ARTIFACT 
 ## Current physical-test candidate — NOT READY / BUILD AND SIGNING GATE BLOCKED
 
 There is currently no signed physical-test candidate for the Save/reconnect correction. The
-working-tree correction is based on local source SHA `7dea208105a6484ce02a31c06d09aad2bbb35781`
-plus uncommitted changes and has not passed the complete Android software gates.
+current corrected source is `b32c52a82a46899efd115efd8544deeb16b9eb4c` on draft PR [#41](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/41).
+The complete automated software gates passed on that exact head:
+
+- Android CI [run 36161662881](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36161662881): **PASS** — unit tests, lint, debug/release assembly, R8/minified verification, connected UI tests, and API-26 cold-install smoke.
+- CodeQL [run 36161662907](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36161662907): **PASS**.
+- Priority community coverage [run 36161662950](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36161662950): **PASS**.
+- Catalog currentness [run 36161662958](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36161662958): **PASS**.
+- CI debug artifact: `EQ-Library-beta-debug-apk`, artifact ID `10876492157`; **unsigned and not valid as the physical-test candidate**.
+
+The trusted-main signed-beta workflow has not run for this draft PR head, so the signing gate is
+still open.
 
 Do not begin the owner JA11 session until all of the following fields are replaced with the exact
 current candidate:

@@ -18,8 +18,10 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
   power-cycle behavior; final readback is not attempted until the optional replacement-session
   boundary is satisfied. JA11 reads and ordinary writes now reject a detach/session-generation
   change spanning the exchange. Added Save-boundary/final-mismatch coverage, the Jaytiss `-3.9 dB`
-  codec vector, and the 9-to-5 optimizer fixture. This working-tree correction has no signed APK
-  or release provenance yet.
+  codec vector, and the 9-to-5 optimizer fixture. Exact draft PR #41 head
+  `b32c52a82a46899efd115efd8544deeb16b9eb4c` passed Android CI, CodeQL, catalog-currentness, and
+  priority-community gates. The CI debug artifact is unsigned; no signed APK or release provenance
+  exists yet.
 
 ### 2026-09-24 Rtings/AutoEQ Favorite provenance follow-up
 
