@@ -255,3 +255,20 @@ trace. Shareable output redacts the USB serial from the device fingerprint.
 This diagnostic boundary is not a protocol correction and does not qualify JA11 hardware. The
 next physical session must use one exact signed diagnostic candidate, capture the report, and stop
 on missing evidence or uncertain restoration.
+
+### 2026-09-25 exact signed diagnostic candidate
+
+The diagnostic implementation is merged on `main` at
+`af8c68c35d320223a13c635fac69c0f2ebacdb3f`. The owner-test artifact is
+[`EQ-Library-v0.7.0-beta-af8c68c.apk`](https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-af8c68c.apk),
+with APK SHA-256 `3b442cbab3cf8be59a9b8e4ddd0d7028e93f8c4067d94dbb833a5bbb60b1d37e`, signer
+certificate SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`, and signed-beta
+[run #1363](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36180975485). Its signed
+artifact is ID `10884371877` with ZIP SHA-256
+`77477ad6bd52e9b114cf18e949368424d8d5c1dbc85246679c9c5fd561d5b44d`; R8 mapping SHA-256 is
+`71036cf05464e6b84f07165e75c17c5a5cd5517a843bd1a8efb0bb49add0b374`.
+
+This candidate is diagnostic only. The next physical session must be the one bounded session in
+the maintained hands-on checklist. Its report must preserve the raw `0x17` request/response,
+decoded values, phase, timestamps, Save count, session generations, and complete baseline. No
+codec, scale, tolerance, retry, or public-support decision may be changed from UI evidence alone.

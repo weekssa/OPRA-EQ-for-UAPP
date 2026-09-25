@@ -9,8 +9,11 @@ immutable APK SHA-256 `583ff7014fc3c0977b6679cd8bf56d3a4f615411a629fa6014bab088e
 certificate SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`, and signed-beta
 run [#1362](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36165218849). This provenance
 clears the software/artifact gate only; its exact physical result is recorded as J006 below and is
-negative. The current diagnostic source is `054298b866fad4ca97cb649790af54ccc6a4cfba`; it has no
-signed artifact or physical result yet.
+negative. The current signed diagnostic candidate is source `af8c68c35d320223a13c635fac69c0f2ebacdb3f`,
+APK SHA-256 `3b442cbab3cf8be59a9b8e4ddd0d7028e93f8c4067d94dbb833a5bbb60b1d37e`, signer certificate
+SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`, and signed-beta
+run [#1363](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36180975485). It has no physical
+result yet and is for diagnosis only.
 
 | Capability | Decision | Evidence / boundary |
 | --- | --- | --- |
@@ -22,15 +25,15 @@ signed artifact or physical result yet.
 | Unplug/reconnect persistence | INSUFFICIENT_EVIDENCE | A supplied post-reconnect frame shows User 1 flat with `0.00 dB`, consistent with the owner's report, but no exact candidate, raw final readback, power-cycle duration, or baseline/restoration record is attached. |
 | Fail-closed mismatch handling | SUPPORTED_AND_IMPLEMENTED | A global-gain mismatch prevents Save in the first verification path. Do not weaken the `0.001 dB` check or suppress the error. |
 | Same-command stale-response correlation | INSUFFICIENT_EVIDENCE / PARTIAL GUARD | Command and band filtering exist, and JA11 reads/ordinary writes now reject a detach or session-generation change spanning the exchange. A valid delayed same-command response on an unchanged session still has no protocol sequence/request identity. Causality for J001 is unproven; do not change behavior without raw evidence. |
-| Complete baseline capture and failed-operation restoration | SOFTWARE CORRECTION IN PROGRESS; PHYSICAL EVIDENCE PENDING | The diagnostic JA11 transaction now reads all five bands, active program, and global gain before any write and includes that baseline in the shareable report. Restoration remains owner-session evidence; no automatic retry or restoration mutation is added. The exact signed diagnostic candidate and physical result are pending. |
+| Complete baseline capture and failed-operation restoration | SOFTWARE CORRECTION MERGED; PHYSICAL EVIDENCE PENDING | The diagnostic JA11 transaction now reads all five bands, active program, and global gain before any write and includes that baseline in the shareable report. Restoration remains owner-session evidence; no automatic retry or restoration mutation is added. The exact signed candidate is J008; its physical result is pending. |
 | Session-generation enforcement across Flash | SUPPORTED_AND_IMPLEMENTED; AUTOMATED GATES PASS; PHYSICAL PENDING | The JA11 Android transport pins reads and ordinary writes to one session/detach generation; Save remains the explicit lifecycle exception and waits for its reconnect boundary. Focused tests, Android CI, signed emulator install/cold launch, and the exact signed candidate all pass. Physical lifecycle behavior remains unqualified. |
 | Output volume, presets, headset/UAC controls | SOFTWARE IMPLEMENTED; PHYSICAL PENDING | These controls are outside the failed EQ-gain root-cause boundary; owner reports that general controls work do not qualify Flash or persistence. |
 | Firmware update, bootloader, cross-flash, raw command console | UNSAFE_OR_OUT_OF_SCOPE | No JA11 firmware mutation or arbitrary command surface is authorized in this task. |
-| Public JA11 support/release claim | UNSAFE_OR_OUT_OF_SCOPE | Hardware qualification remains blocked by J001 and the missing exact transaction evidence. |
+| Public JA11 support/release claim | UNSAFE_OR_OUT_OF_SCOPE | Hardware qualification remains blocked by J006 and the missing J008 raw transaction/restoration evidence. |
 
 ## Matrix rule
 
-The only safe next step is the single bounded owner session using the exact signed tuple above,
+The only safe next step is the single bounded owner session using J008’s exact signed tuple,
 with a read-only baseline and stage-aware transaction trace before one controlled Flash. Do not
 convert J001 into a protocol change, tolerance change, retry, or support claim without evidence
 that distinguishes stale response, firmware transformation, packet semantics, timing, and
@@ -47,3 +50,18 @@ phase-specific decoded readback, raw request/response bytes, Save count, and ses
 It does not change the signedness, endian order, `2560` scale, tolerance, retry policy, or
 fail-closed mismatch behavior. The next candidate is for diagnosis only; JA11 remains physically
 unqualified until the report-backed owner session proves the exact transaction and restoration.
+
+## 2026-09-25 exact signed diagnostic candidate
+
+The diagnostic implementation is merged on `main` at `af8c68c35d320223a13c635fac69c0f2ebacdb3f`.
+The signed candidate is J008 in the validation ledger:
+
+- APK: [`EQ-Library-v0.7.0-beta-af8c68c.apk`](https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-af8c68c.apk).
+- APK SHA-256: `3b442cbab3cf8be59a9b8e4ddd0d7028e93f8c4067d94dbb833a5bbb60b1d37e`.
+- Signed-beta run: [#1363](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36180975485), artifact ID `10884371877`, ZIP SHA-256 `77477ad6bd52e9b114cf18e949368424d8d5c1dbc85246679c9c5fd561d5b44d`.
+- Signer: `CN=OPRA EQ for UAPP, O=weekssa`, RSA 4096, certificate SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`; v2/v3 verified.
+- R8 mapping SHA-256: `71036cf05464e6b84f07165e75c17c5a5cd5517a843bd1a8efb0bb49add0b374`.
+
+This is a signed diagnostic artifact, not a support-qualified release. The owner must perform
+only the one bounded session in the checklist, export the readable and JSON report, and stop on
+missing raw evidence, an unknown baseline, an unexpected disconnect, or uncertain restoration.
