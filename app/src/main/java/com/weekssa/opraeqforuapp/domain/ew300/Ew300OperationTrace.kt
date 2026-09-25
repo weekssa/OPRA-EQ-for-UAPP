@@ -9,7 +9,23 @@ enum class Ew300OperationStage {
     IDLE, AUTHORIZED_SESSION, BASELINE_CAPTURED, WRITING, VOLATILE_VERIFIED,
     SAVE_SENT_ONCE, SAME_SESSION_READBACK, WAITING_FOR_REPLACEMENT,
     REPLACEMENT_IDENTITY_VERIFIED, REPLACEMENT_AUTHORIZED, FINAL_READBACK,
+    RECONCILED_AFTER_RECONNECT,
     VERIFIED, FAILED, STATE_UNCERTAIN,
+}
+
+/** Stable, release-safe values for operation reports and user-facing status mapping. */
+object Ew300OperationOutcome {
+    const val SUCCESS = "Success"
+    const val NOT_SUITABLE = "NotSuitable"
+    const val DEVICE_UNAVAILABLE = "DeviceUnavailable"
+    const val TRANSFER_FAILED = "TransferFailed"
+    const val VERIFICATION_FAILED = "VerificationFailed"
+    const val INVALID_PLAN = "InvalidPlan"
+    const val STALE_BASELINE = "StaleBaseline"
+    const val CONFIRMATION_REQUIRED = "ConfirmationRequired"
+    const val NO_BASELINE = "NoBaseline"
+    const val EXCEPTION = "Exception"
+    const val UNKNOWN = "Unknown"
 }
 
 /** Lifecycle state for the most recent EW300 mutation or editor operation. */
@@ -159,6 +175,7 @@ class Ew300OperationTraceBuilder(
     private val initialSaveCommandCount: Long,
     private val operationId: String = UUID.randomUUID().toString(),
 ) {
+    val id: String get() = operationId
     private val stages = mutableListOf(Ew300OperationStage.IDLE)
     private var baselineCaptured = false
     private var volatileReadbackMatched = false
@@ -281,5 +298,17 @@ class Ew300OperationTraceStore {
         }
         mutableLastTrace.value = trace
         mutableStatus.value = Ew300OperationStatus.Completed(trace)
+    }
+
+    /**
+     * Replaces only the current uncertain terminal trace after a fresh, exact read-only check.
+     * A newer operation always remains authoritative.
+     */
+    fun reconcile(trace: Ew300OperationTrace): Boolean {
+        val current = mutableStatus.value as? Ew300OperationStatus.Completed ?: return false
+        if (current.trace.operationId != trace.operationId || current.trace.stateKnown) return false
+        mutableLastTrace.value = trace
+        mutableStatus.value = Ew300OperationStatus.Completed(trace)
+        return true
     }
 }

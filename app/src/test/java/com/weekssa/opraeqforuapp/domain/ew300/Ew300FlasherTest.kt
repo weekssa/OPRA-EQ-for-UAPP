@@ -33,6 +33,94 @@ class Ew300FlasherTest {
     }
 
     @Test
+    fun unequalStereoGainBaselineStopsFlashBeforeAnyWriteOrSave() = runBlocking {
+        val transport = FakeTransport(initialGain = bytes(0x96, 0xF8, 0, 0))
+        val flasher = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
+
+        val result = flasher.flash(profile(preamp = null))
+
+        assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.NotSuitable)
+        assertTrue(transport.writes.isEmpty())
+        assertEquals(0, transport.commitCount)
+        val trace = requireNotNull(flasher.lastOperationTrace.value)
+        assertEquals(Ew300OperationOutcome.NOT_SUITABLE, trace.outcome)
+        assertFalse(trace.stateKnown)
+    }
+
+    @Test
+    fun unequalStereoGainBaselineStopsResetBeforeAnyWriteOrSave() = runBlocking {
+        val transport = FakeTransport(initialGain = bytes(0x96, 0xF8, 0, 0))
+        val flasher = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
+
+        val result = flasher.resetToFlat()
+
+        assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult.NotSuitable)
+        assertTrue(transport.writes.isEmpty())
+        assertEquals(0, transport.commitCount)
+    }
+
+    @Test
+    fun playbackGainWritesBothStereoChannelsSavesOnceAndVerifiesFinalReadback() = runBlocking {
+        val transport = FakeTransport(initialGain = bytes(0x96, 0x96, 0, 0))
+        val store = QualifiedGainStore()
+        val flasher = Ew300Flasher(transport, store, mutationAuthorized = { true })
+        val result = flasher.setPlaybackGain(-40.0)
+
+        assertEquals(Ew300PlaybackGainResult.Success(-40.0), result)
+        assertEquals(listOf(Ew300Protocol.GLOBAL_GAIN_REGISTER), transport.writes)
+        assertEquals(1, transport.commitCount)
+        assertTrue(
+            transport.state.getValue(Ew300Protocol.GLOBAL_GAIN_REGISTER)
+                .contentEquals(bytes(0xB0, 0xB0, 0, 0)),
+        )
+        assertEquals(-80, store.userBaseline)
+        val trace = requireNotNull(flasher.lastOperationTrace.value)
+        assertTrue(trace.stateKnown)
+    }
+
+    @Test
+    fun playbackGainRejectsPositiveBoostBeforeAnyWriteOrSave() = runBlocking {
+        val transport = FakeTransport()
+        val result = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
+            .setPlaybackGain(0.5)
+
+        assertTrue(result is Ew300PlaybackGainResult.NotSuitable)
+        assertTrue(transport.writes.isEmpty())
+        assertEquals(0, transport.commitCount)
+    }
+
+    @Test
+    fun playbackGainStopsOnUnequalStereoBaselineBeforeAnyWriteOrSave() = runBlocking {
+        val transport = FakeTransport(initialGain = bytes(0x96, 0xF8, 0, 0))
+        val result = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
+            .setPlaybackGain(-40.0)
+
+        assertTrue(result is Ew300PlaybackGainResult.NotSuitable)
+        assertTrue(transport.writes.isEmpty())
+        assertEquals(0, transport.commitCount)
+    }
+
+    @Test
+    fun uncertainPlaybackGainSaveCanBeReconciledWithoutSecondSave() = runBlocking {
+        val transport = FakeTransport(
+            initialGain = bytes(0x96, 0x96, 0, 0),
+            commitSucceeds = false,
+            detachOnCommitNumber = 1,
+        )
+        val store = QualifiedGainStore()
+        val flasher = Ew300Flasher(transport, store, mutationAuthorized = { true })
+
+        val result = flasher.setPlaybackGain(-40.0)
+
+        assertTrue(result is Ew300PlaybackGainResult.TransferFailed)
+        assertEquals(1, transport.commitCount)
+        assertTrue(flasher.reconcilePendingVerification())
+        assertEquals(1, transport.commitCount)
+        assertEquals(-80, store.userBaseline)
+        assertTrue(requireNotNull(flasher.lastOperationTrace.value).stateKnown)
+    }
+
+    @Test
     fun flashWritesAllFiveBandsCommitsAndVerifiesReadback() = runBlocking {
         val transport = FakeTransport()
         val store = QualifiedGainStore()
@@ -46,12 +134,34 @@ class Ew300FlasherTest {
     }
 
     @Test
+    fun flashReconcilesATransientPostSaveReadFailureWithoutASecondSave() = runBlocking {
+        val transport = FakeTransport(
+            detachOnCommitNumber = 1,
+            transientReadFailuresAfterCommit = 1,
+        )
+
+        val result = Ew300Flasher(
+            transport,
+            QualifiedGainStore(),
+            mutationAuthorized = { true },
+        ).flash(profile(preamp = null))
+
+        assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.Success)
+        assertEquals(1, transport.commitCount)
+        assertTrue(transport.readsAfterCommit > 11)
+    }
+
+    @Test
     fun sourcePreampIsAppliedThroughGlobalGainRegister() = runBlocking {
         val transport = FakeTransport()
         val result = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true }).flash(profile(preamp = -4.0))
 
         assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.Success)
         assertEquals(-8, Ew300Protocol.globalGainSteps(transport.state.getValue(Ew300Protocol.GLOBAL_GAIN_REGISTER)))
+        assertTrue(
+            transport.state.getValue(Ew300Protocol.GLOBAL_GAIN_REGISTER)
+                .contentEquals(bytes(0xF8, 0xF8, 0, 0)),
+        )
         assertEquals(11, transport.writes.size)
         assertEquals(1, transport.commitCount)
     }
@@ -71,12 +181,89 @@ class Ew300FlasherTest {
     fun commitFailureStopsBeforeReadbackVerification() = runBlocking {
         val transport = FakeTransport(commitSucceeds = false)
         val store = QualifiedGainStore()
+        val flasher = Ew300Flasher(transport, store, mutationAuthorized = { true })
 
-        val result = Ew300Flasher(transport, store, mutationAuthorized = { true }).flash(profile(preamp = null))
+        val result = flasher.flash(profile(preamp = null))
 
         assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.TransferFailed)
         assertEquals(10, transport.readsAfterWrites)
         assertEquals(0, store.delta)
+        assertFalse(flasher.reconcilePendingVerification())
+    }
+
+    @Test
+    fun delayedReplacementReadbackPromotesAnUncertainFlashWithoutASecondSave() = runBlocking {
+        val transport = FakeTransport(commitSucceeds = false, detachOnCommitNumber = 1)
+        val store = QualifiedGainStore()
+        val flasher = Ew300Flasher(transport, store, mutationAuthorized = { true })
+
+        val result = flasher.flash(profile(preamp = -4.0))
+
+        assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.TransferFailed)
+        assertEquals(1, transport.commitCount)
+        assertTrue(flasher.reconcilePendingVerification())
+        assertEquals(1, transport.commitCount)
+        val trace = requireNotNull(flasher.lastOperationTrace.value)
+        assertTrue(trace.stateKnown)
+        assertTrue(trace.finalReadbackMatched)
+        assertEquals(Ew300OperationOutcome.SUCCESS, trace.outcome)
+        assertTrue(Ew300OperationStage.RECONCILED_AFTER_RECONNECT in trace.stages)
+    }
+
+    @Test
+    fun delayedReplacementReadbackDoesNotPromoteAByteMismatch() = runBlocking {
+        val transport = FakeTransport(
+            commitSucceeds = false,
+            detachOnCommitNumber = 1,
+            corruptOnCommitNumber = 1,
+            corruptRegister = Ew300Protocol.bandRegister(0),
+        )
+        val flasher = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
+
+        val result = flasher.flash(profile(preamp = -4.0))
+
+        assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult.TransferFailed)
+        assertFalse(flasher.reconcilePendingVerification())
+        val trace = requireNotNull(flasher.lastOperationTrace.value)
+        assertFalse(trace.stateKnown)
+        assertFalse(trace.finalReadbackMatched)
+    }
+
+    @Test
+    fun delayedReplacementReadbackPromotesAnUncertainResetWithoutASecondSave() = runBlocking {
+        val transport = FakeTransport(commitSucceeds = false, detachOnCommitNumber = 1).apply {
+            state[Ew300Protocol.bandRegister(0)] = bytes(1, 2, 3, 4)
+        }
+        val flasher = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
+
+        val result = flasher.resetToFlat()
+
+        assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult.TransferFailed)
+        assertTrue(flasher.reconcilePendingVerification())
+        assertEquals(1, transport.commitCount)
+        val trace = requireNotNull(flasher.lastOperationTrace.value)
+        assertEquals("RESET", trace.operation)
+        assertTrue(trace.stateKnown)
+        assertTrue(trace.finalReadbackMatched)
+        assertEquals(Ew300OperationOutcome.SUCCESS, trace.outcome)
+    }
+
+    @Test
+    fun alreadyMatchingStateIsNotPromotedAfterAnUncertainSave() = runBlocking {
+        val transport = FakeTransport(commitSucceeds = false, detachOnCommitNumber = 1).apply {
+            val (flatGain, flatQ) = Ew300Protocol.encodeBand(Kt02h20Band("peak_dip", 1_000.0, 0.0, 1.0))
+            repeat(Ew300Protocol.BAND_COUNT) { index ->
+                state[Ew300Protocol.bandRegister(index)] = flatGain.copyOf()
+                state[Ew300Protocol.bandRegister(index) + 1] = flatQ.copyOf()
+            }
+        }
+        val flasher = Ew300Flasher(transport, QualifiedGainStore(), mutationAuthorized = { true })
+
+        val result = flasher.resetToFlat()
+
+        assertTrue(result is com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlatResetResult.TransferFailed)
+        assertFalse(flasher.reconcilePendingVerification())
+        assertFalse(requireNotNull(flasher.lastOperationTrace.value).stateKnown)
     }
 
     @Test
@@ -222,7 +409,7 @@ class Ew300FlasherTest {
             // The durable operation trace is the result of the uncertain transaction.
         }
         val trace = requireNotNull(flasher.lastOperationTrace.value)
-        assertEquals("EXCEPTION:IllegalStateException", trace.outcome)
+        assertEquals(Ew300OperationOutcome.EXCEPTION, trace.outcome)
         assertFalse(trace.stateKnown)
         assertFalse(trace.restorationVerified)
         assertTrue(trace.failureReason?.contains("after Save") == true)
@@ -252,6 +439,8 @@ class Ew300FlasherTest {
         private val corruptOnCommitNumber: Int? = null,
         private val corruptRegister: Int? = null,
         private val throwOnCommitNumber: Int? = null,
+        private var transientReadFailuresAfterCommit: Int = 0,
+        private val initialGain: ByteArray = bytes(0, 0, 0, 0),
     ) : Ew300Transport {
         override var deviceFingerprintKey: String = "test-ew300"
         override var sessionGeneration: Long = 1L
@@ -268,8 +457,9 @@ class Ew300FlasherTest {
             .associateWith { bytes(0, 0, 0, 0) }
             .toMutableMap()
             .also {
+                it[Ew300Protocol.PROTOCOL_FLAGS_REGISTER] = bytes(0, 0, 0, 0)
                 it[0x24] = bytes(0, 0, 0, 0)
-                it[Ew300Protocol.GLOBAL_GAIN_REGISTER] = bytes(0, 0, 0, 0)
+                it[Ew300Protocol.GLOBAL_GAIN_REGISTER] = initialGain.copyOf()
             }
         val writes = mutableListOf<Int>()
         var commitCount = 0
@@ -278,6 +468,10 @@ class Ew300FlasherTest {
         override suspend fun readRegister(register: Int): ByteArray? {
             if (writes.isNotEmpty()) readsAfterWrites++
             if (commitCount > 0) readsAfterCommit++
+            if (commitCount > 0 && transientReadFailuresAfterCommit > 0) {
+                transientReadFailuresAfterCommit--
+                return null
+            }
             if (register == missingRegister) return null
             if (commitCount >= (corruptOnCommitNumber ?: Int.MAX_VALUE) && register == corruptRegister) {
                 return bytes(0x7F, 0, 0, 0)
@@ -312,9 +506,12 @@ class Ew300FlasherTest {
 
     private class QualifiedGainStore : Ew300GainStateStore {
         var delta = 0
+        var userBaseline: Int? = null
         override fun isGlobalGainQualified(deviceFingerprintKey: String): Boolean = true
         override fun markGlobalGainQualified(deviceFingerprintKey: String, qualified: Boolean) = Unit
         override fun readAppliedGainDeltaSteps(deviceFingerprintKey: String): Int = delta
         override fun writeAppliedGainDeltaSteps(deviceFingerprintKey: String, steps: Int) { delta = steps }
+        override fun readUserBaselineGainSteps(deviceFingerprintKey: String): Int? = userBaseline
+        override fun writeUserBaselineGainSteps(deviceFingerprintKey: String, steps: Int) { userBaseline = steps }
     }
 }

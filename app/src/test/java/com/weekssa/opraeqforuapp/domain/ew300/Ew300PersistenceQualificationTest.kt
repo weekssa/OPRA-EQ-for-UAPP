@@ -54,6 +54,20 @@ class Ew300PersistenceQualificationTest {
     }
 
     @Test
+    fun unequalStereoGainStopsQualificationBeforeAnyMutation() = runBlocking {
+        val transport = FakeTransport(initialGlobalGain = byteArrayOf(0x96.toByte(), 0xF8.toByte(), 0, 0))
+        val store = FakeStore()
+
+        val result = qualifier(transport, store).advance()
+
+        assertTrue(result is Ew300PersistenceQualificationResult.Failed)
+        assertFalse((result as Ew300PersistenceQualificationResult.Failed).stateKnown)
+        assertEquals(0, transport.writeCount)
+        assertEquals(0, transport.commitCount)
+        assertNull(store.pending)
+    }
+
+    @Test
     fun twoPowerCycleFlowQualifiesPersistenceAndRestoresExactBaseline() = runBlocking {
         val transport = FakeTransport()
         val store = FakeStore()
@@ -209,6 +223,7 @@ class Ew300PersistenceQualificationTest {
         private val failWriteAt: Set<Int> = emptySet(),
         private val mutateOnFailedWrite: Boolean = false,
         private val firstBandType: Int = 0,
+        private val initialGlobalGain: ByteArray = byteArrayOf(0xF8.toByte(), 0xF8.toByte(), 0, 0),
     ) : Ew300Transport {
         override val deviceFingerprintKey = "exact-ew300-test"
         override var detachGeneration = 0L
@@ -216,7 +231,7 @@ class Ew300PersistenceQualificationTest {
             when (register) {
                 Ew300Protocol.FIRST_BAND_REGISTER -> byteArrayOf(0xF5.toByte(), 0xFF.toByte(), 0x64, 0)
                 Ew300Protocol.FIRST_BAND_REGISTER + 1 -> byteArrayOf(0, 0, firstBandType.toByte(), 0)
-                Ew300Protocol.GLOBAL_GAIN_REGISTER -> byteArrayOf(0xF8.toByte(), 0xF8.toByte(), 0, 0)
+                Ew300Protocol.GLOBAL_GAIN_REGISTER -> initialGlobalGain.copyOf()
                 else -> byteArrayOf(0, 0, 0, 0)
             }
         }

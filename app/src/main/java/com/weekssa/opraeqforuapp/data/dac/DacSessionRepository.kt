@@ -200,13 +200,17 @@ class DacSessionRepository(
                 val q = ew300Transport.readRegister(Ew300Protocol.bandRegister(index) + 1)
                 if (gain == null || q == null) null else Ew300Protocol.decodeBand(index, gain, q)
             }
+            val protocolFlags = ew300Transport.readRegister(Ew300Protocol.PROTOCOL_FLAGS_REGISTER)
             val gain = ew300Transport.readRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER)
-            if (bands.any { it == null } || gain == null) {
+            val globalGainDb = protocolFlags?.let { flags ->
+                gain?.let { value -> Ew300Protocol.globalGainDb(value, flags) }
+            }
+            if (bands.any { it == null } || globalGainDb == null) {
                 null
             } else {
                 HardwareEqSnapshotFactory.ew300(
                     nativeBands = bands.filterNotNull(),
-                    globalGainDb = Ew300Protocol.globalGainDb(gain),
+                    globalGainDb = globalGainDb,
                     sessionGeneration = generation,
                     verifiedAtEpochMillis = System.currentTimeMillis(),
                 )

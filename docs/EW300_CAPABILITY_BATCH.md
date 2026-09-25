@@ -16,8 +16,9 @@ result presentation, and both share actions without requiring or simulating phys
 ## Default behavior
 
 - Require the exact EW300 fingerprint; VID/PID alone is rejected.
-- Read only the allowlisted identity/current-state registers (`0x24`, the ten five-band fields,
-  and `0x66`) with strict four-byte response validation.
+- Read only the allowlisted protocol-layout/current-state registers (`0x01`, `0x24`, the ten
+  five-band fields, and `0x66`) with strict four-byte response validation. Register `0x01` is
+  required to interpret whether `0x66` contains one digital-gain byte or stereo left/right bytes.
 - Stop after the first failed read and mark the device state unknown.
 - Never send a write, commit, persistence candidate, firmware, bootloader, erase, calibration, or
   cross-flash command.

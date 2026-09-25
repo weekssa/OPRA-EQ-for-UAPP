@@ -124,6 +124,25 @@ class PublishedCatalogTest(unittest.TestCase):
         self.assertEqual("active", statuses["opra"]["lifecycle"])
         self.assertEqual("active", statuses["autoeq"]["lifecycle"])
 
+    def test_legacy_opra_rtings_edition_xs_profile_has_canonical_provenance(self):
+        source_record_id = "hifiman:edition_xs::rtings_target_soundguys_consumer_consolidated_parametric_5band"
+        matches = [
+            (profile, revision, source)
+            for profile in self.snapshot["profiles"]
+            for revision in profile.get("revisions") or []
+            for source in revision.get("source_references") or []
+            if source.get("source_record_id") == source_record_id
+        ]
+
+        self.assertEqual(1, len(matches))
+        profile, revision, source = matches[0]
+        self.assertEqual("HIFIMAN", profile["headphone"]["manufacturer"])
+        self.assertEqual("Edition XS", profile["headphone"]["model"])
+        self.assertEqual("Rtings/AutoEQ", profile["creator"])
+        self.assertTrue(revision["is_latest"])
+        self.assertEqual("opra", source["source_id"])
+        self.assertTrue(source["is_primary"])
+
 
 if __name__ == "__main__":
     unittest.main()

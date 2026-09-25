@@ -14,8 +14,10 @@ class Ew300CapabilityBatchTest {
 
         assertEquals(Ew300CapabilityCaseResult.Status.PASS, report.status)
         assertTrue(transport.writes.isEmpty())
+        assertTrue(transport.reads.contains(Ew300Protocol.PROTOCOL_FLAGS_REGISTER))
         assertTrue(report.toReadableText().contains("Read-only EW300 state"))
         assertTrue(report.toJson().contains("identity-and-eq-snapshot"))
+        assertTrue(report.toJson().contains("0x01"))
         assertTrue(report.toReadableText().contains("serial=[redacted]"))
         assertFalse(report.toReadableText().contains("private-test-value"))
         assertFalse(report.toJson().contains("private-test-value"))

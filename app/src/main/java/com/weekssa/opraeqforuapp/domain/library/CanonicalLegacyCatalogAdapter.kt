@@ -102,6 +102,29 @@ object CanonicalLegacyCatalogAdapter {
         return matches.singleOrNull()
     }
 
+    /**
+     * Canonicalizes an exact profile from the maintained OPRA compatibility catalog when the
+     * multi-source snapshot has not published that same OPRA record yet. This is intentionally
+     * source-bound: the generated selection retains the OPRA record ID and is only accepted when
+     * the displayed legacy projection matches the source profile exactly.
+     */
+    fun resolveLegacySelection(
+        vendor: OpraVendor,
+        product: OpraProduct,
+        legacy: OpraEqProfile,
+    ): CanonicalEqSelection? {
+        if (legacy.productId != product.id || vendor.id != product.vendorId) return null
+        val canonical = OpraProfileAdapter.adapt(vendor, product, legacy) ?: return null
+        val revision = canonical.latestRevision
+        val selection = CanonicalEqSelection(
+            profile = canonical,
+            selectedRevisionId = revision.revisionId,
+            compatibilityVendorId = vendor.id,
+            compatibilityProductId = product.id,
+        )
+        return selection.takeIf { matchesSelection(it, legacy) }
+    }
+
     /** Resolve General EQ only against the exact current canonical preset/revision projection. */
     fun resolveSelection(snapshot: CatalogSnapshot, preset: GeneralEqPreset): CanonicalEqSelection? {
         val matches = snapshot.profiles.asSequence()
@@ -139,9 +162,11 @@ object CanonicalLegacyCatalogAdapter {
         legacy: OpraEqProfile,
         productId: String = legacy.productId,
     ): Boolean {
-        if (selection.profile.canonicalProfileId != legacy.canonicalProfileId) return false
-        val projected = runCatching { projectSelection(selection, productId) }.getOrNull() ?: return false
-        return legacy.matchesCanonicalProjection(projected)
+        if (selection.profile.canonicalProfileId == legacy.canonicalProfileId) {
+            val projected = runCatching { projectSelection(selection, productId) }.getOrNull() ?: return false
+            if (legacy.matchesCanonicalProjection(projected)) return true
+        }
+        return matchesLegacySourceProjection(selection, legacy, productId)
     }
 
     /** Compatibility view for existing General EQ export/action consumers. */
@@ -265,6 +290,34 @@ object CanonicalLegacyCatalogAdapter {
             eqLibrarySafetyHeadroomDb == candidate.eqLibrarySafetyHeadroomDb &&
             isVerified == candidate.isVerified &&
             bandOrderProvenance == candidate.bandOrderProvenance
+
+    private fun matchesLegacySourceProjection(
+        selection: CanonicalEqSelection,
+        legacy: OpraEqProfile,
+        productId: String,
+    ): Boolean {
+        val primary = selection.selectedRevision.sourceReferences
+            .filter(EqSourceReference::isPrimary)
+            .singleOrNull()
+            ?: return false
+        if (primary.sourceId != "opra" || primary.sourceRecordId != legacy.id) return false
+        val projected = runCatching { projectSelection(selection, productId) }.getOrNull() ?: return false
+        return projected.id == legacy.id &&
+            projected.productId == legacy.productId &&
+            projected.author == legacy.author &&
+            projected.link == legacy.link &&
+            projected.profileType == legacy.profileType &&
+            projected.preampGainDb == legacy.preampGainDb &&
+            projected.bands == legacy.bands &&
+            projected.eqLibrarySafetyHeadroomDb == legacy.eqLibrarySafetyHeadroomDb &&
+            projected.isVerified == legacy.isVerified &&
+            legacyBandOrderMatches(projected, legacy)
+    }
+
+    private fun legacyBandOrderMatches(projected: OpraEqProfile, legacy: OpraEqProfile): Boolean =
+        legacy.bandOrderProvenance == projected.bandOrderProvenance ||
+            (legacy.bandOrderProvenance == null &&
+                projected.bandOrderProvenance == EqBandOrderProvenance.OPRA_SOURCE_PRIORITY)
 
     private fun generalCategory(
         profile: CanonicalEqProfile,

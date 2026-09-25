@@ -17,11 +17,16 @@ object Ew300Protocol {
     const val WRITE_COMMAND = 0x57
     const val COMMIT_COMMAND = 0x53
     const val BAND_COUNT = 5
+    const val PROTOCOL_FLAGS_REGISTER = 0x01
     const val FIRST_BAND_REGISTER = 0x26
     const val GLOBAL_GAIN_REGISTER = 0x66
     const val GLOBAL_GAIN_MIN_STEPS = -128
     const val GLOBAL_GAIN_MAX_STEPS = 127
     const val GLOBAL_GAIN_STEPS_PER_DB = 2.0
+
+    private const val SINGLE_DAC_FLAG = 0x0200
+
+    enum class GlobalGainLayout { SINGLE_DAC, STEREO }
 
     private val bandTypes = mapOf("peak_dip" to 0)
 
@@ -52,6 +57,49 @@ object Ew300Protocol {
     fun globalGainDb(data: ByteArray): Double =
         globalGainSteps(data) / GLOBAL_GAIN_STEPS_PER_DB
 
+    /**
+     * The KT02H20 family uses protocol flags to distinguish one-DAC and stereo digital-gain
+     * layouts. The exact EW300 advertises stereo UAC playback and its preserved stock register
+     * contains equal byte-0/byte-1 gain values, so the layout must be read rather than guessed.
+     */
+    fun globalGainLayout(protocolFlags: ByteArray): GlobalGainLayout {
+        require(protocolFlags.size == 4)
+        return if (le32(protocolFlags) and SINGLE_DAC_FLAG != 0) {
+            GlobalGainLayout.SINGLE_DAC
+        } else {
+            GlobalGainLayout.STEREO
+        }
+    }
+
+    /**
+     * Returns one scalar only when every active digital-gain channel agrees.
+     * An unequal stereo pair is unsafe to use as a mutation baseline because collapsing it to
+     * byte 0 can silently attenuate one channel or overwrite the other channel's state.
+     */
+    fun globalGainSteps(data: ByteArray, protocolFlags: ByteArray): Int? {
+        require(data.size == 4)
+        val channels = globalGainChannelSteps(data, protocolFlags)
+        return channels.firstOrNull()?.takeIf { channels.all { channel -> channel == it } }
+    }
+
+    /** Returns null when a stereo device has unequal channel gains and cannot be represented as one value. */
+    fun globalGainDb(data: ByteArray, protocolFlags: ByteArray): Double? {
+        val channels = globalGainChannelSteps(data, protocolFlags)
+        if (channels.size == 2 && channels[0] != channels[1]) return null
+        return channels[0] / GLOBAL_GAIN_STEPS_PER_DB
+    }
+
+    fun globalGainChannelSteps(data: ByteArray, protocolFlags: ByteArray): IntArray {
+        require(data.size == 4)
+        return when (globalGainLayout(protocolFlags)) {
+            GlobalGainLayout.SINGLE_DAC -> intArrayOf(data[0].toInt())
+            GlobalGainLayout.STEREO -> intArrayOf(data[0].toInt(), data[1].toInt())
+        }
+    }
+
+    fun globalGainMatches(data: ByteArray, steps: Int, protocolFlags: ByteArray): Boolean =
+        globalGainChannelSteps(data, protocolFlags).all { it == steps }
+
     fun gainDbToSteps(gainDb: Double): Int {
         require(gainDb.isFinite())
         val steps = (gainDb * GLOBAL_GAIN_STEPS_PER_DB).roundToInt()
@@ -59,10 +107,15 @@ object Ew300Protocol {
         return steps
     }
 
-    fun withGlobalGainSteps(data: ByteArray, steps: Int): ByteArray {
+    fun withGlobalGainSteps(data: ByteArray, steps: Int, protocolFlags: ByteArray): ByteArray {
         require(data.size == 4)
         require(steps in GLOBAL_GAIN_MIN_STEPS..GLOBAL_GAIN_MAX_STEPS)
-        return data.copyOf().also { it[0] = steps.toByte() }
+        return data.copyOf().also {
+            it[0] = steps.toByte()
+            if (globalGainLayout(protocolFlags) == GlobalGainLayout.STEREO) {
+                it[1] = steps.toByte()
+            }
+        }
     }
 
     fun decodeRead(register: Int, report: ByteArray): ByteArray? {
@@ -107,6 +160,11 @@ object Ew300Protocol {
     private fun wire(payload: ByteArray): ByteArray = byteArrayOf(REPORT_ID.byte()) + payload
     private fun Int.byte(): Byte = (this and 0xFF).toByte()
     private fun Byte.u8(): Int = toInt() and 0xFF
+    private fun le32(data: ByteArray): Int =
+        data[0].u8() or
+            (data[1].u8() shl 8) or
+            (data[2].u8() shl 16) or
+            (data[3].u8() shl 24)
     private fun signed16(low: Int, high: Int): Int {
         val raw = (high shl 8) or low
         return if (raw >= 0x8000) raw - 0x10000 else raw

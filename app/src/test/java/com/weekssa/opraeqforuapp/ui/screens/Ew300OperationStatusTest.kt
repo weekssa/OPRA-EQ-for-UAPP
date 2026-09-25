@@ -1,6 +1,7 @@
 package com.weekssa.opraeqforuapp.ui.screens
 
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationStage
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationStatus
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationTrace
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -24,7 +25,18 @@ class Ew300OperationStatusTest {
 
         assertFalse(presentation.verified)
         assertTrue(presentation.message.contains("not verified"))
+        assertTrue(presentation.message.contains("previous Save may have completed"))
         assertFalse(presentation.message.contains("final hardware readback matched"))
+    }
+
+    @Test
+    fun controlsAreDisabledWhileAnOperationIsRunning() {
+        assertFalse(
+            ew300OperationControlsEnabled(
+                Ew300OperationStatus.Running("operation-1", "APPLY"),
+            ),
+        )
+        assertTrue(ew300OperationControlsEnabled(Ew300OperationStatus.Idle))
     }
 
     private fun trace(

@@ -6,6 +6,35 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ## [Unreleased]
 
+### 2026-09-24 Rtings/AutoEQ Favorite provenance follow-up
+
+- Favorites now source-bound-canonicalize exact current OPRA compatibility rows when the
+  multi-source snapshot has not published that same source record yet. The resolver preserves
+  the exact OPRA source ID and rejects changed, stale, or ambiguous projections; it does not
+  accept a similar profile or save unresolved legacy data.
+- Added adapter and repository regression coverage for the Edition XS Rtings/AutoEQ failure
+  path, including altered-projection refusal.
+
+### 2026-09-24 EW300 delayed reconnect verification candidate
+
+- Added a fail-closed, read-only reconciliation path for EW300 Flash/Reset operations whose Save
+  window ended before Android completed replacement-session permission/reconnect. A later exact
+  fingerprint, newer session plus detach generation, and complete byte-for-byte target readback
+  can now promote the existing uncertain trace to `Verified` without replaying any write or Save.
+- Genuine mismatches, same-state operations, stale sessions, malformed/incomplete reads, and newer
+  operations remain uncertain and continue to block unsafe follow-up writes.
+- Reconciled terminal traces now replace stale EW300 warning presentation and emit the verified
+  completion feedback once the fresh readback proves the target.
+
+### 2026-09-24 canonical Favorite star recovery
+
+- Managed My EQs Favorite actions now resolve the current canonical projection before persisting,
+  preventing a stale managed snapshot from causing a valid profile to be rejected.
+- Added the exact OPRA-backed `Rtings/AutoEQ` Edition XS revision visible in the legacy catalog so
+  its source record and immutable revision can be verified before saving a new Favorite.
+- Added focused resolver, canonical Room persistence, and published-catalog provenance coverage;
+  missing or ambiguous canonical provenance remains fail-closed.
+
 ### 2026-09-23 release-readiness corrective candidate
 
 - Refreshed the v0.7 candidate against live `main` and recorded the PR #24 review: its stale

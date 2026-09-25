@@ -13,6 +13,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -40,6 +41,7 @@ import com.weekssa.opraeqforuapp.domain.dac.HardwareEqResponseEvaluator
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.dac.isAcousticallyActive
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityReport
+import com.weekssa.opraeqforuapp.domain.ew300.Ew300DeviceControls
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationTrace
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationStatus
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300PersistenceQualificationResult
@@ -54,11 +56,15 @@ import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.ui.MyDacEditorApplyStatus
 import com.weekssa.opraeqforuapp.ui.MyDacEditorUiState
+import com.weekssa.opraeqforuapp.ui.Ew300PlaybackGainUiState
 import com.weekssa.opraeqforuapp.ui.components.DacEqResponseGraph
 import com.weekssa.opraeqforuapp.ui.components.PremiumSectionLabel
 import com.weekssa.opraeqforuapp.ui.components.PremiumValueRow
 import java.util.Locale
 import kotlinx.coroutines.launch
+
+internal fun ew300OperationControlsEnabled(operationStatus: Ew300OperationStatus): Boolean =
+    operationStatus !is Ew300OperationStatus.Running
 
 /** EW300 uses the same editor, graph, readback and operation semantics as Black Pearl. */
 @Composable
@@ -68,6 +74,7 @@ internal fun Ew300MyDacContent(
     editorState: MyDacEditorUiState,
     operationTrace: Ew300OperationTrace?,
     operationStatus: Ew300OperationStatus = Ew300OperationStatus.Idle,
+    playbackGainState: Ew300PlaybackGainUiState = Ew300PlaybackGainUiState(),
     catalogState: CatalogState,
     managedHeadphones: List<ManagedHeadphoneRecord>,
     savedEqs: List<SavedEqRecord>,
@@ -77,6 +84,7 @@ internal fun Ew300MyDacContent(
     onRestoreBaseline: suspend () -> String,
     onRunCapabilityBatch: suspend () -> Ew300CapabilityReport,
     onAdvancePersistenceQualification: suspend () -> Ew300PersistenceQualificationResult,
+    onSetPlaybackGain: (Double) -> Unit = {},
     onCaptureDacEq: suspend (String, SavedEqHeadphoneAssociation?) -> String,
     onOpenEditor: () -> Unit,
     onCloseEditor: () -> Unit,
@@ -92,6 +100,7 @@ internal fun Ew300MyDacContent(
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val operationBusy = !ew300OperationControlsEnabled(operationStatus)
     val validationEvidenceEnabled = BuildConfig.EW300_FLASH_VALIDATION_ENABLED &&
         BuildConfig.CANDIDATE_SOURCE_SHA.matches(Regex("[0-9a-fA-F]{40}")) &&
         ReleaseSignatureGate.isPinnedReleaseSigner(context)
@@ -141,7 +150,7 @@ internal fun Ew300MyDacContent(
         )
     }
 
-    if (saveDacEqOpen && connectionState == Kt02h20ConnectionState.Connected) {
+    if (saveDacEqOpen && !operationBusy && connectionState == Kt02h20ConnectionState.Connected) {
         BlackPearlSaveDacEqDialog(
             catalogState = catalogState,
             managedHeadphones = managedHeadphones,
@@ -210,7 +219,12 @@ internal fun Ew300MyDacContent(
                     Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("DEVICE") })
                 }
                 if (selectedTab == 0) {
-                    if (editorState.isOpening || editorState.isOpen || editorState.error != null) {
+                    if (operationBusy) {
+                        Text(
+                            "An EW300 operation is still being verified. Editing, capture, reset, and refresh are unavailable until it finishes.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else if (editorState.isOpening || editorState.isOpen || editorState.error != null) {
                         DacEqEditorScreen(
                             state = editorState,
                             onRetryOpen = onOpenEditor,
@@ -230,8 +244,9 @@ internal fun Ew300MyDacContent(
                             managedHeadphones = managedHeadphones,
                             savedEqs = savedEqs,
                             savedGeneralEqs = savedGeneralEqs,
-                            canEdit = true,
-                            canCapture = Ew300Protocol.CANONICAL_CAPTURE_QUALIFIED,
+                            canEdit = !operationBusy,
+                            canCapture = !operationBusy && Ew300Protocol.CANONICAL_CAPTURE_QUALIFIED,
+                            controlsEnabled = !operationBusy,
                             onRefresh = onConnect,
                             onEdit = onOpenEditor,
                             onCapture = { saveDacEqOpen = true },
@@ -252,8 +267,11 @@ internal fun Ew300MyDacContent(
                     Ew300DeviceStatus(
                         report = capabilityReport,
                         hardwareEqState = hardwareEqState,
-                        running = capabilityBatchRunning,
+                        playbackGainState = playbackGainState,
+                        running = capabilityBatchRunning || operationBusy,
+                        operationBusy = operationBusy,
                         onRefresh = onConnect,
+                        onSetPlaybackGain = onSetPlaybackGain,
                         onRun = {
                             if (!capabilityBatchRunning) {
                                 capabilityBatchRunning = true
@@ -339,18 +357,39 @@ internal fun Ew300MyDacContent(
             }
 
             Kt02h20ConnectionState.Disconnected -> {
-                Text("Connect the EW300 USB cable to manage its EQ.")
-                Button(onClick = onConnect) { Text("Connect") }
+                if (operationBusy) {
+                    Text(
+                        "The EW300 operation is still being verified. Do not reconnect manually until its result is shown.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    Text("Connect the EW300 USB cable to manage its EQ.")
+                    Button(onClick = onConnect) { Text("Connect") }
+                }
             }
 
             is Kt02h20ConnectionState.Error -> {
                 Text(connectionState.message, color = MaterialTheme.colorScheme.error)
-                Button(onClick = onConnect) { Text("Try again") }
+                if (operationBusy) {
+                    Text(
+                        "The EW300 operation is still being verified. Do not retry the connection manually yet.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    Button(onClick = onConnect) { Text("Try again") }
+                }
             }
 
             is Kt02h20ConnectionState.PermissionRequired -> {
                 Text(connectionState.message, color = MaterialTheme.colorScheme.error)
-                Button(onClick = onConnect) { Text("Grant USB permission") }
+                if (operationBusy) {
+                    Text(
+                        "The EW300 operation is still being verified. Wait for the result before granting a new USB session.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    Button(onClick = onConnect) { Text("Grant USB permission") }
+                }
             }
         }
     }
@@ -395,7 +434,7 @@ internal fun ew300OperationStatusPresentation(
             " Stop and reconnect or refresh before any later write."
         }
         Ew300OperationStatusPresentation(
-            message = "Last EW300 $operation was not verified$reconnectMessage.$recoveryMessage",
+            message = "Last EW300 $operation was not verified$reconnectMessage. The previous Save may have completed, but final hardware readback was not verified.$recoveryMessage",
             verified = false,
         )
     }
@@ -409,6 +448,7 @@ private fun Ew300EqStatus(
     savedGeneralEqs: List<SavedGeneralEqRecord>,
     canEdit: Boolean,
     canCapture: Boolean,
+    controlsEnabled: Boolean = true,
     onRefresh: () -> Unit,
     onEdit: () -> Unit,
     onCapture: () -> Unit,
@@ -424,7 +464,7 @@ private fun Ew300EqStatus(
     val bundle = state.bundle
     OutlinedButton(
         onClick = onRefresh,
-        enabled = !state.isReading,
+        enabled = controlsEnabled && !state.isReading,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Text(if (state.isReading) "Refreshing…" else "Refresh")
@@ -546,23 +586,23 @@ private fun Ew300EqStatus(
     }
     OutlinedButton(
         onClick = onCapture,
-        enabled = canCapture,
+        enabled = controlsEnabled && canCapture,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Text(if (canCapture) "Save readback as Personal EQ" else "Personal EQ capture is unavailable for this readback")
     }
 }
 
-/**
- * Truthful EW300 DEVICE surface. Unlike Black Pearl, no independent non-EQ controls have been
- * verified for this cable yet, so the tab is present but deliberately exposes no guessed writes.
- */
+/** Truthful EW300 DEVICE surface with only the verified output-gain mutation exposed. */
 @Composable
 internal fun Ew300DeviceStatus(
     report: Ew300CapabilityReport?,
     hardwareEqState: HardwareEqSnapshotState = HardwareEqSnapshotState(),
+    playbackGainState: Ew300PlaybackGainUiState = Ew300PlaybackGainUiState(),
     running: Boolean,
+    operationBusy: Boolean = false,
     onRefresh: () -> Unit = {},
+    onSetPlaybackGain: (Double) -> Unit = {},
     onRun: () -> Unit,
     onShareReadable: (() -> Unit)?,
     onShareJson: (() -> Unit)?,
@@ -580,7 +620,64 @@ internal fun Ew300DeviceStatus(
     restorationRunning: Boolean = false,
     onRestoreBaseline: () -> Unit = {},
 ) {
+    var gainDialogOpen by remember { mutableStateOf(false) }
+    var stagedGainDb by remember { mutableStateOf(0.0) }
     val hardwareBundle = hardwareEqState.bundle
+    val currentGainDb = hardwareBundle?.snapshot?.playbackGainDb
+    val canChangeGain = currentGainDb != null &&
+        hardwareEqState.freshness == DacStateFreshness.CURRENT &&
+        !playbackGainState.isWriting &&
+        !operationBusy
+
+    if (gainDialogOpen) {
+        AlertDialog(
+            onDismissRequest = { if (!playbackGainState.isWriting) gainDialogOpen = false },
+            title = { Text("EW300 output gain") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        "Set the resulting device playback gain. This changes the EW300 output level and may make audio much louder. Start conservatively and keep the Android volume low.",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        String.format(Locale.US, "%+.1f dB", stagedGainDb),
+                        style = MaterialTheme.typography.headlineSmall,
+                    )
+                    Slider(
+                        value = stagedGainDb.toFloat(),
+                        onValueChange = { value -> stagedGainDb = value.toDouble() },
+                        valueRange = Ew300DeviceControls.MIN_PLAYBACK_GAIN_DB.toFloat()..Ew300DeviceControls.MAX_PLAYBACK_GAIN_DB.toFloat(),
+                        steps = 127,
+                        enabled = !playbackGainState.isWriting && !operationBusy,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Text(
+                        "Allowed range: -64.0 dB to 0.0 dB in 0.5 dB steps. Every change is saved once and verified by final hardware readback.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    playbackGainState.error?.let { error ->
+                        Text(error, color = MaterialTheme.colorScheme.error)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        gainDialogOpen = false
+                        onSetPlaybackGain(stagedGainDb)
+                    },
+                    enabled = !playbackGainState.isWriting && !operationBusy,
+                ) { Text(if (playbackGainState.isWriting) "Saving…" else "Save and verify") }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { gainDialogOpen = false },
+                    enabled = !playbackGainState.isWriting,
+                ) { Text("Cancel") }
+            },
+        )
+    }
     PremiumSectionLabel(
         text = when (hardwareEqState.freshness) {
             DacStateFreshness.CURRENT -> "Current device state"
@@ -603,17 +700,32 @@ internal fun Ew300DeviceStatus(
     )
     OutlinedButton(
         onClick = onRefresh,
-        enabled = !hardwareEqState.isReading,
+        enabled = !hardwareEqState.isReading && !operationBusy,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Text(if (hardwareEqState.isReading) "Refreshing…" else "Refresh")
     }
     PremiumValueRow(
-        title = "Playback / global gain",
-        value = hardwareBundle?.snapshot?.playbackGainDb?.let {
+        title = "Output gain",
+        value = currentGainDb?.let {
             String.format(Locale.US, "%.1f dB", it)
         } ?: "Not read",
-        supportingText = "Verified state used by guarded EQ transactions and restoration; not a standalone volume control.",
+        supportingText = when {
+            playbackGainState.isWriting -> "Saving and verifying the requested output level…"
+            playbackGainState.error != null -> playbackGainState.error
+            canChangeGain -> "Tap to adjust the EW300 playback level. Changes are persisted and read back before success is shown."
+            else -> "Refresh the connected EW300 before changing its playback level."
+        },
+        enabled = canChangeGain,
+        showDisclosure = true,
+        onClick = if (canChangeGain) {
+            {
+                stagedGainDb = currentGainDb ?: 0.0
+                gainDialogOpen = true
+            }
+        } else {
+            null
+        },
     )
     PremiumValueRow(
         title = "Equalizer",
@@ -639,8 +751,14 @@ internal fun Ew300DeviceStatus(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Button(onClick = onRun, enabled = !running, modifier = Modifier.fillMaxWidth()) {
-            Text(if (running) "Reading…" else "Run read-only report")
+        Button(onClick = onRun, enabled = !running && !operationBusy, modifier = Modifier.fillMaxWidth()) {
+            Text(
+                when {
+                    operationBusy -> "Unavailable during EW300 operation"
+                    running -> "Reading…"
+                    else -> "Run read-only report"
+                },
+            )
         }
         report?.let {
             Text("Result: ${it.status}", style = MaterialTheme.typography.titleSmall)
@@ -688,7 +806,7 @@ internal fun Ew300DeviceStatus(
                 )
                 Button(
                     onClick = onRestoreBaseline,
-                    enabled = !restorationRunning,
+                    enabled = !restorationRunning && !operationBusy,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(if (restorationRunning) "Restoring exact baseline…" else "Restore exact pre-test baseline")
@@ -727,7 +845,7 @@ internal fun Ew300DeviceStatus(
             persistenceResult is Ew300PersistenceQualificationResult.Failed
         Button(
             onClick = if (awaitingPowerCycle) onContinuePersistence else onStartPersistence,
-            enabled = !terminalResult && !persistenceRunning && (persistenceEnabled || awaitingPowerCycle),
+            enabled = !operationBusy && !terminalResult && !persistenceRunning && (persistenceEnabled || awaitingPowerCycle),
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(

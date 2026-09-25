@@ -3,6 +3,7 @@ package com.weekssa.opraeqforuapp.domain.ew300
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20Band
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Test
@@ -73,11 +74,46 @@ class Ew300ProtocolTest {
     @Test
     fun globalGainUsesSignedHalfDbStepsAndPreservesOtherBytes() {
         val stock = bytes(0xF8, 0xF8, 0x00, 0x00)
+        val stereoFlags = bytes(0x00, 0x00, 0x00, 0x00)
 
         assertEquals(-8, Ew300Protocol.globalGainSteps(stock))
         assertEquals(-4.0, Ew300Protocol.globalGainDb(stock), 0.0)
         assertEquals(2, Ew300Protocol.gainDbToSteps(1.0))
-        assertArrayEquals(bytes(0xF9, 0xF8, 0x00, 0x00), Ew300Protocol.withGlobalGainSteps(stock, -7))
+        assertArrayEquals(
+            bytes(0xF9, 0xF9, 0x00, 0x00),
+            Ew300Protocol.withGlobalGainSteps(stock, -7, stereoFlags),
+        )
+        assertEquals(
+            -3.5,
+            requireNotNull(Ew300Protocol.globalGainDb(bytes(0xF9, 0xF9, 0, 0), stereoFlags)),
+            0.0,
+        )
+    }
+
+    @Test
+    fun singleDacGainLayoutPreservesTheSecondByte() {
+        val singleDacFlags = bytes(0x00, 0x02, 0x00, 0x00)
+        val stock = bytes(0xF8, 0xF7, 0x12, 0x34)
+
+        assertArrayEquals(
+            bytes(0xF9, 0xF7, 0x12, 0x34),
+            Ew300Protocol.withGlobalGainSteps(stock, -7, singleDacFlags),
+        )
+        assertEquals(Ew300Protocol.GlobalGainLayout.SINGLE_DAC, Ew300Protocol.globalGainLayout(singleDacFlags))
+    }
+
+    @Test
+    fun stereoMismatchCannotBePresentedAsOneGlobalGainValue() {
+        val mismatched = bytes(0x96, 0xF8, 0x00, 0x00)
+        val stereoFlags = bytes(0, 0, 0, 0)
+        assertNull(
+            Ew300Protocol.globalGainDb(
+                mismatched,
+                stereoFlags,
+            ),
+        )
+        assertNull(Ew300Protocol.globalGainSteps(mismatched, stereoFlags))
+        assertFalse(Ew300Protocol.globalGainMatches(mismatched, -53, stereoFlags))
     }
 
     private fun bytes(vararg values: Int): ByteArray = ByteArray(values.size) { index ->

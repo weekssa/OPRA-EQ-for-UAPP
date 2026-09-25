@@ -137,6 +137,42 @@ class Ew300EditorApplyTest {
         assertThat(transport.finalReadCount).isEqualTo(0)
     }
 
+    @Test
+    fun applyRejectsUnequalStereoGainBaselineBeforeAnyWriteOrSave() = runBlocking {
+        val bundle = requireNotNull(
+            HardwareEqSnapshotFactory.ew300(
+                nativeBands = stockBands(),
+                globalGainDb = -29.0,
+                sessionGeneration = 1L,
+                verifiedAtEpochMillis = 1L,
+            ),
+        )
+        val started = HardwareEqEditor.startFromCurrent(
+            snapshotState = HardwareEqSnapshotState().publishCurrent(bundle),
+            spec = HardwareEqEditSpecs.SIMGOT_EW300,
+        ) as HardwareEqEditorStartResult.Ready
+        val edited = HardwareEqEditor.updateFilter(
+            workingCopy = started.workingCopy,
+            spec = HardwareEqEditSpecs.SIMGOT_EW300,
+            bandIndex = 0,
+            type = EqFilterType.PEAK,
+            frequencyHz = 2_500.0,
+            gainDb = 4.0,
+            q = 1.4,
+        )
+        val transport = FakeTransport(bundle, initialGain = bytes(0x96, 0xF8, 0, 0))
+
+        val result = Ew300EditorApplier(transport).apply(
+            workingCopy = HardwareEqEditor.useSafeGain(edited, HardwareEqEditSpecs.SIMGOT_EW300),
+            allowCautions = false,
+            isSessionCurrent = { it == 1L },
+        )
+
+        assertTrue(result is Ew300EditorApplyResult.StaleBaseline)
+        assertThat(transport.writeCount).isEqualTo(0)
+        assertThat(transport.commitCount).isEqualTo(0)
+    }
+
     private fun stockBands(): List<Kt02h20Band> = listOf(
         Kt02h20Band("peak_dip", 2_500.0, 4.5, 1.4),
         Kt02h20Band("peak_dip", 120.0, 0.0, 1.0),
@@ -148,16 +184,18 @@ class Ew300EditorApplyTest {
     private inner class FakeTransport(
         bundle: com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotBundle,
         private val replacementFingerprint: String? = null,
+        initialGain: ByteArray = bytes(0xC6, 0xC6, 0, 0),
     ) : Ew300Transport {
         override var deviceFingerprintKey: String =
             "vid=31b2|pid=111|manufacturer=LE XIAN|product=SIMGOT EW300 DSP|serial=2024-07-03-0000-0000-0000|interface=3"
         override var sessionGeneration: Long = 1L
         override var detachGeneration: Long = 0L
         val state = mutableMapOf<Int, ByteArray>().apply {
+            put(Ew300Protocol.PROTOCOL_FLAGS_REGISTER, bytes(0, 0, 0, 0))
             put(0x24, bytes(0, 0, 0, 0))
             put(
                 Ew300Protocol.GLOBAL_GAIN_REGISTER,
-                Ew300Protocol.withGlobalGainSteps(bytes(0, 0, 0, 0), -58),
+                initialGain.copyOf(),
             )
             bundle.snapshot.filters.sortedBy(HardwareEqFilter::index).forEach { filter ->
                 val (gain, q) = Ew300Protocol.encodeBand(

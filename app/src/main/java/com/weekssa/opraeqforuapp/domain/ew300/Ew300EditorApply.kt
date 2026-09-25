@@ -73,8 +73,14 @@ class Ew300EditorApplier(
         }
         val baselineGain = rawBaseline.value(Ew300Protocol.GLOBAL_GAIN_REGISTER)
             ?: return Ew300EditorApplyResult.DeviceUnavailable("Could not re-read EW300 global gain before Apply. No changes were written.")
+        val protocolFlags = rawBaseline.value(Ew300Protocol.PROTOCOL_FLAGS_REGISTER)
+            ?: return Ew300EditorApplyResult.DeviceUnavailable("Could not re-read EW300 protocol layout before Apply. No changes were written.")
         val expectedGainSteps = Ew300Protocol.gainDbToSteps(workingCopy.baselineHeadroomGainDb ?: return invalidGain())
-        if (Ew300Protocol.globalGainSteps(baselineGain) != expectedGainSteps) {
+        val actualBaselineGainSteps = Ew300Protocol.globalGainSteps(baselineGain, protocolFlags)
+            ?: return Ew300EditorApplyResult.StaleBaseline(
+                "The EW300 stereo playback-gain channels differ. No changes were written; refresh the DAC before applying.",
+            )
+        if (actualBaselineGainSteps != expectedGainSteps) {
             return Ew300EditorApplyResult.StaleBaseline("The EW300 global gain changed after the editor was opened. No changes were written; read the DAC again.")
         }
         val targetBands = target.map { encode(it) ?: return invalidBand(it.index) }
@@ -85,7 +91,7 @@ class Ew300EditorApplier(
 
         beforeFirstWrite()
         if (gainChanged && targetGainSteps < expectedGainSteps) {
-            if (!writeGain(targetGainSteps)) {
+            if (!writeGain(targetGainSteps, protocolFlags)) {
                 return restoreAfterFailure(
                     baseline = rawBaseline,
                     reason = "EW300 did not accept the safer global-gain adjustment.",
@@ -112,7 +118,7 @@ class Ew300EditorApplier(
                 )
             }
         }
-        if (gainChanged && targetGainSteps > expectedGainSteps && !writeGain(targetGainSteps)) {
+        if (gainChanged && targetGainSteps > expectedGainSteps && !writeGain(targetGainSteps, protocolFlags)) {
             return restoreAfterFailure(
                 baseline = rawBaseline,
                 reason = "EW300 did not accept the final global-gain adjustment.",
@@ -138,9 +144,22 @@ class Ew300EditorApplier(
                 "EW300 Save returned on a different or unverified USB session. No readback was accepted.",
             )
         }
-        val finalBands = readBands()
-        val finalGain = transport.readRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER)
-        if (finalBands != targetBands || finalGain == null || Ew300Protocol.globalGainSteps(finalGain) != targetGainSteps) {
+        val finalReadback = Ew300ReadbackRetry.read(
+            read = {
+                FinalReadback(
+                    bands = readBands(),
+                    gain = transport.readRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER),
+                )
+            },
+            matches = { observation ->
+                observation.bands == targetBands &&
+                    observation.gain?.let { Ew300Protocol.globalGainMatches(it, targetGainSteps, protocolFlags) } == true
+            },
+        )
+        if (finalReadback.bands != targetBands ||
+            finalReadback.gain == null ||
+            !Ew300Protocol.globalGainMatches(finalReadback.gain, targetGainSteps, protocolFlags)
+        ) {
             return Ew300EditorApplyResult.VerificationFailed(
                 "EW300 final readback did not match the reviewed values after Save.",
             )
@@ -148,9 +167,9 @@ class Ew300EditorApplier(
         return Ew300EditorApplyResult.Verified
     }
 
-    private suspend fun writeGain(steps: Int): Boolean {
+    private suspend fun writeGain(steps: Int, protocolFlags: ByteArray): Boolean {
         val current = transport.readRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER) ?: return false
-        val target = Ew300Protocol.withGlobalGainSteps(current, steps)
+        val target = Ew300Protocol.withGlobalGainSteps(current, steps, protocolFlags)
         return transport.writeRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER, target) &&
             transport.readRegister(Ew300Protocol.GLOBAL_GAIN_REGISTER)?.contentEquals(target) == true
     }
@@ -197,6 +216,11 @@ class Ew300EditorApplier(
 
         override fun hashCode(): Int = 31 * gain.contentHashCode() + q.contentHashCode()
     }
+
+    private data class FinalReadback(
+        val bands: List<WireBandPair>?,
+        val gain: ByteArray?,
+    )
 
     private fun ordered(filters: List<HardwareEqFilter>) = filters.sortedBy(HardwareEqFilter::index)
     private fun invalidBand(index: Int) = Ew300EditorApplyResult.InvalidPlan("EW300 band ${index + 1} cannot be encoded exactly.")
