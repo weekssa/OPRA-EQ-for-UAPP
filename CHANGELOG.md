@@ -37,10 +37,13 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
   report that joins canonical and quantized gain values, phase-specific readback, raw HID
   request/response bytes, Save count, and session generations, with readable/JSON sharing from My
   DAC. The diagnostic implementation is committed at
-  `054298b866fad4ca97cb649790af54ccc6a4cfba`, but local Android tests are NOT RUN because the
-  host has no Android SDK location, exact-head CI has not run, and no signed artifact exists for
-  this head. The diagnostic candidate remains hardware-validation pending and must be tested once
-  with the report before any further mutation; no release or public support claim follows.
+  `054298b866fad4ca97cb649790af54ccc6a4cfba`. Local Android tests are NOT RUN because the host
+  has no Android SDK location, but exact-head Android CI `36177233309`, CodeQL `36177233004`,
+  priority-community `36177233041`, catalog-currentness `36177233219`, and dependency-submission
+  `36177227960` all passed. CI produced only unsigned debug artifact `EQ-Library-beta-debug-apk`
+  (artifact ID `10883011381`); no signed artifact exists for this head. The diagnostic candidate
+  remains hardware-validation pending and must be tested once with the report before any further
+  mutation; no release or public support claim follows.
 
 ### 2026-09-24 Rtings/AutoEQ Favorite provenance follow-up
 

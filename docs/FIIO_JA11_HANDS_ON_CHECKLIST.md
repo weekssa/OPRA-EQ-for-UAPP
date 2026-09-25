@@ -95,9 +95,11 @@ phase-aware readback comparison, and exact value joins. It intentionally does no
 behavior.
 
 This source is not an owner-test candidate yet: local Android tests are **NOT RUN** because the
-host has no Android SDK location, exact-head CI has not run, and no signed APK/checksum/signer
-tuple exists for this head. The owner must not install or Flash this source until those gates
-produce a new exact signed candidate. Once available, perform one bounded diagnostic session only;
+host has no Android SDK location. Exact-head Android CI `36177233309`, CodeQL `36177233004`,
+priority-community `36177233041`, catalog-currentness `36177233219`, and dependency-submission
+`36177227960` all passed. CI produced only the unsigned debug artifact `EQ-Library-beta-debug-apk`
+(artifact ID `10883011381`); no signed APK/checksum/signer tuple exists for this head. The owner
+must not install or Flash this source until a new exact signed candidate is produced. Once available, perform one bounded diagnostic session only;
 export the report and stop on missing raw evidence, an unknown baseline, a disconnect outside the
 documented Save boundary, or uncertain restoration.
 
