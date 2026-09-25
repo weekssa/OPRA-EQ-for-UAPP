@@ -133,7 +133,7 @@ class Ew300DeviceStatusTest {
             }
         }
 
-        composeRule.onNodeWithText("Playback / global gain").assertIsDisplayed()
+        composeRule.onNodeWithText("Output gain").assertIsDisplayed()
         composeRule.onNodeWithText("Equalizer").assertIsDisplayed()
         composeRule.onNodeWithText("Connection").assertIsDisplayed()
         composeRule.onNodeWithText("Refresh").assertIsEnabled().performClick()

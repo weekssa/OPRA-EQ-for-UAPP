@@ -560,10 +560,7 @@ private fun Ew300EqStatus(
     }
 }
 
-/**
- * Truthful EW300 DEVICE surface. Unlike Black Pearl, no independent non-EQ controls have been
- * verified for this cable yet, so the tab is present but deliberately exposes no guessed writes.
- */
+/** Truthful EW300 DEVICE surface with only the verified output-gain mutation exposed. */
 @Composable
 internal fun Ew300DeviceStatus(
     report: Ew300CapabilityReport?,
