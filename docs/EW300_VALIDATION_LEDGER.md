@@ -1,12 +1,22 @@
 ## Active continuation — exact physical and release evidence
 
+The EW300 closeout now includes E053: owner-reported final hands-on PASS on the exact signed-main
+candidate. The corrected stereo-gain path, output-gain control, Flash/readback flow, and safe-volume
+stereo playback are closed for the exact qualified identity. Public release still requires the
+ordinary final product/release QA and synchronized documentation described in the status and public
+release checklist.
+
 Owner reports E043-E046 are tied to signed executable source `7599dd52fc9e8c58c96e021f581b86a669dcc148`, exact fingerprint `vid=31b2|pid=111|manufacturer=LE XIAN|product=SIMGOT EW300 DSP|serial=2024-07-03-0000-0000-0000|interface=3`, app v0.7.0, and the pinned signer. They record read-only PASS, Flash PASS, exact-baseline Restore PASS, and Reset PASS. The complete machine-readable operation details and limitations remain in their append-only rows below.
 
 The later pre-criteria source `b11190f9bbc08326f963190ad8b5a9f4b0872b2c` changed documentation only after 7599. Its exact-head Android CI, CodeQL, catalog, priority coverage, dependency submission, and signed-candidate gates passed; E048 records the exact APK/checksum/signer/artifact provenance. The success-criteria docs commit creates a new source and therefore needs fresh head-specific gates/signing. Do not relabel E043-E046 as physical tests on another SHA.
 
 Do not repeat physical mutation, accepted E001 Save qualification, or the read-only report. Restore proves the baseline at its own completion; a separate later Reset completed, so do not assert arbitrary baseline equality afterward. Replay/competing-job counters are null/unmeasured, not zero.
 
-If still unverified after product work and final signed candidate, the only possible owner check is non-hardware-mutating Personal EQ capture/value/provenance confirmation; check My EQs Flash review only if the verified Flash did not already originate there. No Apply, Flash, Restore, Reset, Save qualification, or read-only report is requested. Release stays NO-GO.
+The owner-reported final PASS does not independently provide a Personal EQ capture/value/provenance
+record. If that flow is intended to be included in the public v0.7 support claim, validate it as a
+non-hardware-mutating library check; otherwise retain it as a clearly documented evidence gap. No
+Apply, Flash, Restore, Reset, Save qualification, or read-only report is requested. Release stays
+NO-GO until ordinary release closeout is complete.
 
 See `docs/V0.7_PRODUCT_SUCCESS_CRITERIA.md` for testable product/UX/capability/shelf/release acceptance.
 
@@ -88,6 +98,8 @@ The prior 02f2697 candidate snapshot at the end of this ledger reused the E041 l
 | E051 | Draft PR #31 source head `b6c30d399caee9f6d14d1327b640726c92ea8684`; draft PR `https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/31`; Android CI #1799 / run `35982537316`; CodeQL #1683 / run `35982537351`; catalog currentness #2091 / run `35982537329`; priority coverage #1576 / run `35982537311`; dependency submission #2120 / run `35982580588` | Exact-head source/security/repository gates all passed. Android CI verified unit tests, lint, debug/release assembly, R8/minified checks, connected emulator UI, API-26 minified install/cold launch. The candidate includes stable R8-safe EW300 outcomes and unequal-stereo `0x66` fail-closed guards with targeted no-write/Save tests. | No signed APK or physical audio result is inferred. Signed-beta workflow is main-only and owner-approved trusted-main integration is required. No Apply/Flash/Restore/Reset/Save qualification or public hardware claim is authorized by this record. |
 
 | E052 | Draft PR #32 source head `37e66c029177c1412c44e108622386d995f9a4f7`; Android CI #1803 / run `36078123906`; CodeQL #1687 / run `36078123900`; catalog currentness #2094 / run `36078123903`; priority coverage #1579 / run `36078123908`; dependency submission #2132 / run `36078122182`; debug artifact `EQ-Library-beta-debug-apk` (artifact ID `10841585770`) | Exact-head source/security/repository gates passed: unit tests, Android lint, debug/release assembly, R8/minified output verification, connected emulator UI (19/19), API-26 minified install/cold launch, CodeQL, catalog currentness, priority coverage, and dependency submission. The candidate adds a conservative exact-EW300 output-gain control (`-64.0..0.0 dB`, 0.5 dB steps) through the shared authoritative session with one Save and final hardware readback, plus targeted success/failure/reconciliation tests. | No signed APK or physical output-gain result is inferred. The signed-beta workflow is main-only; explicit owner approval is required before merging PR #32 and producing the signed candidate. The only requested physical follow-up is the single bounded safe-volume output-gain confirmation described in `docs/V0.7_EW300_OUTPUT_GAIN_PLAN.md`; no prior Apply/Flash/Restore/Reset/Save qualification or public EW300 support claim is repeated. |
+
+| E053 | Owner-reported final hands-on validation on exact signed-main source `7ec01be2f413afb69778a4990950064639e1c4e9`; APK `EQ-Library-v0.7.0-beta-7ec01be.apk`; SHA-256 `40905806a65902bdd94035f0905617218fa76394f09ab187f1937b19b56598bf`; signed workflow [#1357](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36080002546); signer `65C1C1256DAE3C49E3548F334C91F0BA991969E9BE9E0B223BA4E253D2114747`; test plans `docs/EW300_DSP_HANDS_ON_CHECKLIST.md` and `docs/V0.7_EW300_OUTPUT_GAIN_PLAN.md` | On 2026-09-24 the owner confirmed that the final EW300 hands-on test set passed: both stereo channels work without the prior imbalance/crackle symptom, output-gain adjustment works, and the Flash/readback flow succeeds without the prior stale verification errors. This closes the corrected stereo-gain and output-gain physical-validation gates for the exact qualified EW300 identity. | Owner-reported result; no new raw operation JSON or final register snapshot was supplied in this message. The owner reported the device in a normal working state. This record does not broaden support to unknown revisions, add a balance/routing control, or replace the earlier machine-readable E001/E037-E046 transaction evidence. |
 
 ## Exact identity boundary
 

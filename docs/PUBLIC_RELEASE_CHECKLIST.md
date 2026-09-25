@@ -22,22 +22,23 @@ The checklist is organized around the **current release state**. Detailed histor
 
 ## Current v0.7.0 state
 
-- [ ] Exact current-head software, security, dependency, and signed-artifact gates complete.
-- [ ] Corrected-source signed APK, checksum, signer verification, artifact digest, install, and cold launch recorded.
+- [x] Merged source `7ec01be2f413afb69778a4990950064639e1c4e9` passed the exact-head software, security, dependency, and signed-artifact gates.
+- [x] Signed APK `EQ-Library-v0.7.0-beta-7ec01be.apk`, SHA-256 `40905806a65902bdd94035f0905617218fa76394f09ab187f1937b19b56598bf`, pinned signer, artifact, signed install, and cold launch are recorded in workflow #1357 and E053.
 - [x] New Favorite and General EQ saves persist full canonical profile, selected revision, and source references; Room 8→9 migration preserves old projection-only rows without fabricated backfill. Exact implementation snapshot `b57b2466160bc9464d1cb16a004d1522940c553a` passed Android CI #1772, including unit and connected instrumentation tests.
-- [ ] Source-neutral/ToneBoosters parity, clean install, v0.6.0 upgrade/data preservation, accessibility/offline/error/reconnect, Personal EQ capture/provenance, and cross-DAC product verification complete on the exact signed candidate.
+- [ ] Source-neutral/ToneBoosters parity, clean install, v0.6.0 upgrade/data preservation, accessibility/offline/error/reconnect, Personal EQ capture/provenance, and cross-DAC product verification complete on the final signed closeout candidate.
 - [ ] Exact-candidate promotion workflow reviewed; it is currently disabled to prevent rebuilding a different APK during publication.
-- [ ] Final owner approval to merge and publish received.
+- [x] Owner approval to merge received; PR #32 is merged into `main`.
+- [ ] Final owner approval to publish v0.7.0 received.
 
-Dependency submission did not run for the feature-branch source. The signed-beta workflow is
-restricted to trusted `main`; no exact-current-source signed APK, checksum, signer result, artifact
-digest, signed install, or cold-launch provenance is available. The last exact implementation
-snapshot’s gates and the new live PR head are recorded separately in
-`docs/V0.7_RELEASE_READINESS_AUDIT.md`; documentation-only source changes require fresh exact-head
-gates. Do not use an earlier APK.
+The signed-beta workflow is restricted to trusted `main`. The exact signed-main candidate and
+owner-reported EW300 closeout are recorded in E053. This documentation closeout creates a newer
+source SHA, so the final release candidate must receive fresh exact-head gates and signing before
+publication. Do not use an earlier APK as final release evidence.
 
-PR #23 remains draft and v0.7.0 remains NO-GO. Historical physical E001 and E043–E046 are
-accepted; do not repeat Save qualification, Apply, Flash, Restore, Reset, or read-only reports.
+PR #32 is merged; v0.7.0 remains unpublished pending final product QA, synchronized documentation,
+fresh exact-head signing, and explicit publication approval. Historical physical E001 and E043–E046
+and owner-reported E053 are accepted; do not repeat Save qualification, Apply, Flash, Restore, Reset,
+or read-only reports.
 Current source/gate status is maintained in `docs/V0.7_RELEASE_READINESS_AUDIT.md`.
 
 ## Continuing release invariants
