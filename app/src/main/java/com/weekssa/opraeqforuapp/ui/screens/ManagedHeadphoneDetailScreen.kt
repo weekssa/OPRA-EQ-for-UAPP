@@ -221,6 +221,7 @@ fun ManagedHeadphoneDetailScreen(
     }
 
     BackHandler(onBack = onBack)
+    val currentProfiles = readyCatalog?.catalog?.profilesForProduct(headphone.productId).orEmpty()
     var pendingProfileRemoval by remember { mutableStateOf<ManagedProfileRecord?>(null) }
     var pendingProfileFlash by remember { mutableStateOf<ManagedProfileRecord?>(null) }
     var showHeadphoneRemoval by remember { mutableStateOf(false) }
@@ -472,8 +473,13 @@ fun ManagedHeadphoneDetailScreen(
                 onOpenSource = profile.lastKnownProfile.link?.let { sourceUrl -> { onOpenUrl(sourceUrl) } },
                 onToggleFavorite = {
                     scope.launch {
+                        val favoriteProfile = resolveManagedFavoriteProfile(
+                            profileId = profile.profileId,
+                            lastKnownProfile = profile.lastKnownProfile,
+                            currentProfiles = currentProfiles,
+                        )
                         val result = onToggleFavorite(
-                            profile.lastKnownProfile,
+                            favoriteProfile,
                             headphone.vendorName,
                             headphone.productName,
                         )
