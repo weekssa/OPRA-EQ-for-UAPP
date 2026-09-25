@@ -23,6 +23,8 @@ import com.weekssa.opraeqforuapp.domain.library.FavoriteToggleResult
 import com.weekssa.opraeqforuapp.domain.library.HeadphoneIdentity
 import com.weekssa.opraeqforuapp.domain.library.ProvenanceTier
 import com.weekssa.opraeqforuapp.domain.library.RedistributionPolicy
+import com.weekssa.opraeqforuapp.domain.managed.ManagedProfileRecord
+import com.weekssa.opraeqforuapp.ui.screens.resolveManagedFavoriteProfile
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -86,6 +88,58 @@ class SavedEqCanonicalSelectionPersistenceTest {
         assertFalse(record.savedEqDataInvalid)
         assertEquals(selection, record.canonicalSelection)
         assertEquals(legacyProfile, record.actionProfileOrNull())
+    }
+
+    @Test
+    fun staleManagedSnapshotResolvesCurrentProjectionBeforeFavoritePersistence() = runBlocking {
+        val currentProfile = CanonicalLegacyCatalogAdapter.adapt(snapshot).profiles
+            .single { it.canonicalProfileId == "headphone-profile" && it.id == "eq-library:headphone-profile@headphone-new" }
+        val selection = requireNotNull(CanonicalLegacyCatalogAdapter.resolveSelection(snapshot, currentProfile))
+        val staleSnapshot = currentProfile.copy(
+            details = "stale display projection",
+            bands = currentProfile.bands!!.map { band ->
+                band.copy(gainDb = requireNotNull(band.gainDb) + 0.5)
+            },
+        )
+        val managed = ManagedProfileRecord(
+            profileId = currentProfile.id,
+            selected = true,
+            explicitlyExcluded = false,
+            lastKnownProfile = staleSnapshot,
+            fingerprint = "stale",
+            firstSeenAtMillis = 1L,
+            lastSeenAtMillis = 1L,
+            isNewUnreviewed = false,
+            isUpdatedUnreviewed = false,
+            noLongerAvailable = false,
+            generatedPresetName = null,
+            generatedXml = null,
+            generatedFromFingerprint = null,
+            generatedAtMillis = null,
+        )
+
+        val resolved = resolveManagedFavoriteProfile(
+            profileId = managed.profileId,
+            lastKnownProfile = managed.lastKnownProfile,
+            currentProfiles = listOf(currentProfile),
+        )
+        assertEquals(currentProfile, resolved)
+        assertEquals(
+            FavoriteToggleResult.SAVED,
+            savedEqRepository.toggleFavorite(
+                outputId = "UAPP",
+                profile = resolved,
+                manufacturer = "Maker",
+                model = "Headphone",
+                canonicalSelection = selection,
+            ),
+        )
+
+        val stored = CanonicalEqSelectionCodec().decode(
+            requireNotNull(database.savedEqDao().observeAll().first().single().canonicalSelectionJson),
+        )
+        assertEquals(selection, stored)
+        assertEquals(currentProfile, savedEqRepository.observeForOutput("UAPP").first().single().actionProfileOrNull())
     }
 
     @Test

@@ -17,6 +17,15 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Reconciled terminal traces now replace stale EW300 warning presentation and emit the verified
   completion feedback once the fresh readback proves the target.
 
+### 2026-09-24 canonical Favorite star recovery
+
+- Managed My EQs Favorite actions now resolve the current canonical projection before persisting,
+  preventing a stale managed snapshot from causing a valid profile to be rejected.
+- Added the exact OPRA-backed `Rtings/AutoEQ` Edition XS revision visible in the legacy catalog so
+  its source record and immutable revision can be verified before saving a new Favorite.
+- Added focused resolver, canonical Room persistence, and published-catalog provenance coverage;
+  missing or ambiguous canonical provenance remains fail-closed.
+
 ### 2026-09-23 release-readiness corrective candidate
 
 - Refreshed the v0.7 candidate against live `main` and recorded the PR #24 review: its stale
