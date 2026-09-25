@@ -20,6 +20,12 @@ The current exact signed beta candidate is ready for the first JA11 hands-on ses
 
 Use this exact immutable candidate for the owner session. Do not use the moving convenience APK or the historical v0.5.0 candidate as qualification provenance.
 
+The candidate record above is now superseded for the JA11 Flash-recovery investigation by the
+exact software source line headed by `52633670a86748bd37b1416e356b0c20146ac97a`. Do not use the
+`505182e` APK to evaluate the pacing/readback fix. Replace this section with the newly signed
+candidate tuple after its exact-head software gates pass; until then, the JA11 hardware gate
+remains pending and no hardware result may be attributed to the recovery candidate.
+
 ## Historical v0.5.0 software candidate record
 
 - App version: `v0.5.0` candidate
