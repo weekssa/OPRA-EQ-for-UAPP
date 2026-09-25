@@ -2,12 +2,13 @@
 
 ## Integrated software candidate — hardware gate pending
 
-The current integration source is `81aeae90624043ef721401e9d56b8007dfdfa0d1` on
-`codex/v0.7-release-candidate`. Android CI #1814, CodeQL #1698, catalog currentness #2101, and
-priority community #1586 passed; the FiiO implementation and automated final-test coverage remain
+The current integration source is `ba5ffdb5cd427736a8f99a28fcf564ba87d9e42f` on
+`codex/v0.7-release-candidate`. Android CI #1816, CodeQL #1700, catalog currentness #2103, and
+priority community #1588 passed; the FiiO implementation and automated final-test coverage remain
 intact. This source has no signed APK because PR #36 is intentionally unmerged and the signing
 workflow is trusted-`main` only. Do not perform hands-on JA11 testing until the newer task
-produces the exact signed artifact and records its checksum/signer tuple here.
+produces the exact signed artifact and records its checksum/signer tuple.
+
 
 
 Status: **HARDWARE VALIDATION PENDING — DEFERRED TO NEXT INCREMENTAL RELEASE**
