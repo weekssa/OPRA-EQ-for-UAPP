@@ -28,6 +28,12 @@ correction, not evidence that the signed gain codec, scale, tolerance, or device
 wrong. Exact draft PR #41 head `b32c52a82a46899efd115efd8544deeb16b9eb4c` passed automated software
 gates; physical JA11 semantics remain pending raw transaction evidence.
 
+The diagnostic trace now performs the existing read-only firmware-version query (`0x0B`) during
+Flash/Reset preflight and records the result in both report formats. This metadata is optional: an
+unavailable firmware response does not block an operation and does not alter the write/readback
+transaction. It exists to correlate future raw `0x17` readback evidence with firmware revisions,
+because FiiO's public release history identifies firmware changes affecting gain persistence.
+
 ## USB identity and UAC re-enumeration
 
 Vendor ID:
