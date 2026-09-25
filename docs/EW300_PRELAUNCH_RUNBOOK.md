@@ -1,9 +1,19 @@
 # SIMGOT EW300 DSP — Pre-launch Candidate Runbook
 
-Status: 2026-09-22 continuation — E037-E040 close the exact-device physical mutation set; remaining owner check is non-mutating Personal EQ capture and Flash-review UI confirmation after a fresh signed candidate passes all gates.
-Owner: project owner approval is required for merge/publication.
+Status: 2026-09-24 closeout — E053 records the owner's PASS on the exact signed-main EW300 candidate
+for balanced stereo audio, output-gain adjustment, and Flash/readback. The EW300 physical work is
+closed; remaining work is ordinary final release QA and documentation/provenance closeout.
+Owner: project owner approval is required for public publication and any broader support claim.
 
-Current sections 5 and 6 control this closeout; older execution-phase wording is historical. The physical mutation set is accepted in E037-E040, so do not repeat it.
+Current exact candidate: source `7ec01be2f413afb69778a4990950064639e1c4e9`, APK
+`EQ-Library-v0.7.0-beta-7ec01be.apk`, SHA-256
+`40905806a65902bdd94035f0905617218fa76394f09ab187f1937b19b56598bf`, signed workflow #1357.
+
+The execution-phase steps below are retained as historical context. Do not repeat E001/E037-E046
+or request another EW300 mutation session solely because a documentation commit changes the SHA.
+
+Current release status is maintained in `docs/V0.7_EW300_DSP_STATUS.md`,
+`docs/EW300_VALIDATION_LEDGER.md`, and `docs/PUBLIC_RELEASE_CHECKLIST.md`.
 
 ## Objective
 

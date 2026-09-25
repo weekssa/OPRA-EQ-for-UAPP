@@ -6,6 +6,19 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ## [Unreleased]
 
+### 2026-09-24 EW300 closeout
+
+- Closed the exact-qualified SIMGOT EW300 stereo-gain repair after owner confirmation that both
+  channels play normally without the prior imbalance/crackle symptom.
+- Closed the guarded EW300 output-gain control validation on signed-main source
+  `7ec01be2f413afb69778a4990950064639e1c4e9`; the exact control remains limited to `-64.0..0.0 dB`
+  in 0.5 dB steps with verified stereo readback and no positive boost.
+- Recorded owner-reported final EW300 Flash/readback and output-gain evidence as E053. The support
+  boundary remains limited to the exact qualified identity; no balance, routing, UAC, microphone,
+  firmware, or other speculative DEVICE controls were added.
+- Updated the EW300 status, capability matrix, hands-on checklist, audio investigation, output-gain
+  plan, validation ledger, and public release checklist to reflect the merged signed-main candidate.
+
 ### 2026-09-24 EW300 delayed reconnect verification candidate
 
 - Added a fail-closed, read-only reconciliation path for EW300 Flash/Reset operations whose Save
