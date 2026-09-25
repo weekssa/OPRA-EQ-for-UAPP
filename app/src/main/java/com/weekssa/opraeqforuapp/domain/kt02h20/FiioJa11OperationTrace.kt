@@ -164,41 +164,44 @@ data class FiioJa11OperationTrace(
         append(",\"targetBands\":[")
         targetBands.forEachIndexed { index, band ->
             if (index > 0) append(',')
-            append('{')
-            field("type", band.type)
-            decimalField("frequencyHz", band.frequencyHz)
-            decimalField("gainDb", band.gainDb)
-            decimalField("q", band.q)
-            append('}')
+            append(band.toJsonObject())
         }
         append("]")
         append(",\"baselineBands\":[")
         baselineBands.forEachIndexed { index, band ->
             if (index > 0) append(',')
-            append('{')
-            field("type", band.type)
-            decimalField("frequencyHz", band.frequencyHz)
-            decimalField("gainDb", band.gainDb)
-            decimalField("q", band.q)
-            append('}')
+            append(band.toJsonObject())
         }
         append("]")
         append(",\"events\":[")
         events.forEachIndexed { index, event ->
             if (index > 0) append(',')
-            append('{')
-            numberField("sequence", event.sequence.toLong())
-            numberField("elapsedMillis", event.elapsedMillis)
-            field("direction", event.direction)
-            field("command", event.command)
-            field("requestHex", event.requestHex)
-            field("responseHex", event.responseHex)
-            numberField("sessionGeneration", event.sessionGeneration)
-            numberField("detachGeneration", event.detachGeneration)
-            boolField("succeeded", event.succeeded)
-            append('}')
+            append(event.toJsonObject())
         }
         append("]}")
+    }
+
+    private fun FiioJa11TraceBand.toJsonObject(): String = buildString {
+        append('{')
+        field("type", type)
+        decimalField("frequencyHz", frequencyHz)
+        decimalField("gainDb", gainDb)
+        decimalField("q", q)
+        append('}')
+    }
+
+    private fun FiioJa11TransportEvent.toJsonObject(): String = buildString {
+        append('{')
+        numberField("sequence", sequence.toLong())
+        numberField("elapsedMillis", elapsedMillis)
+        field("direction", direction)
+        field("command", command)
+        field("requestHex", requestHex)
+        field("responseHex", responseHex)
+        numberField("sessionGeneration", sessionGeneration)
+        numberField("detachGeneration", detachGeneration)
+        boolField("succeeded", succeeded)
+        append('}')
     }
 
     private fun FiioJa11TraceBand.asText(): String =

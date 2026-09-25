@@ -6,6 +6,17 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ## [Unreleased]
 
+### 2026-09-25 JA11 exported transaction report
+
+- Recorded J009 from the exact signed diagnostic candidate. The trace proves a stable-session
+  pre-Save mismatch: the app wrote `0xD900` (`-3.9 dB`) and the JA11 returned `0xD9FF`
+  (`-3.800390625 dB`) after Apply, while all five target bands matched. No detach, reconnect,
+  stale session generation, permission request, or Save occurred. JA11 remains hardware-validation
+  pending; no codec or tolerance change is justified.
+- Fixed the JA11 technical report serializer so nested band and transport-event objects are valid
+  JSON, and added a parser-backed unit regression test. This is an export-only correction and
+  does not change the hardware transaction path.
+
 ### 2026-09-25 JA11 Flash verification evidence
 
 - Recorded an owner-reported FiiO JA11 Flash failure in which the app reached verification but

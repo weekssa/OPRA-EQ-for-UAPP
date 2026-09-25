@@ -1,5 +1,7 @@
 package com.weekssa.opraeqforuapp.domain.kt02h20
 
+import kotlinx.serialization.json.Json
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -58,6 +60,9 @@ class FiioJa11OperationTraceTest {
         assertTrue(readable.contains("request=02 aa 0a 00 00 17 02 00 d9 00 ee"))
         assertTrue(json.contains("\"comparisonPhase\":\"VOLATILE_READBACK\""))
         assertTrue(json.contains("\"requestHex\":\"02 aa 0a 00 00 17 02 00 d9 00 ee\""))
+        val parsed = Json.parseToJsonElement(json).jsonObject
+        assertEquals(1, parsed.getValue("targetBands").jsonArray.size)
+        assertEquals(1, parsed.getValue("events").jsonArray.size)
         assertFalse(json.contains("account"))
     }
 }

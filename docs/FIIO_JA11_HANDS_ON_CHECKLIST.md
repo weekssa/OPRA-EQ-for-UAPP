@@ -1,5 +1,22 @@
 # FiiO JA11 hands-on qualification
 
+## 2026-09-25 J009 returned report — DO NOT REPEAT YET
+
+The owner returned the exact signed diagnostic candidate's operation report. It proves the app
+wrote `0xD900` (`-3.9 dB`) and the unchanged-session JA11 read back `0xD9FF`
+(`-3.800390625 dB`) after Apply. All five bands matched; Save was not sent because volatile
+verification failed. This is a physical negative result, not qualification.
+
+- Readable report SHA-256: `ce588c7b2bc0047e7edca12277ddf86564fafeab9a39cb11bf3abb305c5f653c`.
+- Technical report SHA-256: `0a2c024941049b2ec3ed78e00d0180ba6461a70ee2e6596518999361606346d1`.
+- Screenshot SHA-256: `ed308e4ddb9df7c922a9820e866035d95dc89a4784eb6b838c3bdad225c16442`.
+- Session/detach generations: `1/0`; permission requests: `0`; Save count: `0`.
+
+The technical report is malformed JSON (`{,` before each nested object's first field). Preserve
+the original file for evidence, but use the readable report as authoritative until the export
+serializer is fixed and parser-tested. Do not repeat Flash or Reset while the device-side
+global-gain semantics remain unresolved.
+
 ## 2026-09-25 owner-reported failed Flash record — DO NOT REPEAT YET
 
 The owner supplied a screenshot showing a connected FiiO JA11 and a failed Flash verification
