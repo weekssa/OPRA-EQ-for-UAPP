@@ -146,7 +146,6 @@ internal fun Ew300MyDacContent(
                     is Ew300OperationStatus.Completed -> {
                         val status = ew300OperationStatusPresentation(
                             trace = currentOperation.trace,
-                            includeEvidenceAction = validationEvidenceEnabled,
                         )
                         Text(
                             status.message,
@@ -160,7 +159,6 @@ internal fun Ew300MyDacContent(
                     Ew300OperationStatus.Idle -> operationTrace?.let { trace ->
                         val status = ew300OperationStatusPresentation(
                             trace = trace,
-                            includeEvidenceAction = validationEvidenceEnabled,
                         )
                         Text(
                             status.message,
@@ -358,7 +356,6 @@ internal data class Ew300OperationStatusPresentation(
 
 internal fun ew300OperationStatusPresentation(
     trace: Ew300OperationTrace,
-    includeEvidenceAction: Boolean = false,
 ): Ew300OperationStatusPresentation {
     val operation = trace.operation
         .lowercase()
@@ -384,13 +381,8 @@ internal fun ew300OperationStatusPresentation(
         } else {
             ""
         }
-        val recoveryMessage = if (includeEvidenceAction) {
-            " Open DEVICE and share the operation report before any later write."
-        } else {
-            " Stop and reconnect or refresh before any later write."
-        }
         Ew300OperationStatusPresentation(
-            message = "Last EW300 $operation was not verified$reconnectMessage. The previous Save may have completed, but final hardware readback was not verified.$recoveryMessage",
+            message = "Last EW300 $operation was not verified$reconnectMessage. The previous Save may have completed, but final hardware readback was not verified. Stop and reconnect or refresh before any later write.",
             verified = false,
         )
     }
