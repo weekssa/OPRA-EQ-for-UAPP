@@ -1,21 +1,92 @@
 # FiiO JA11 hands-on qualification
 
-## 2026-09-26 corrected-codec owner gate — WAIT FOR SIGNED CANDIDATE
+## 2026-09-26 corrected-codec owner gate — J017 FLASH/RECONNECT/RESTORATION PASS / POWER-CYCLE EVIDENCE PENDING / FINAL RELEASE BLOCKED
 
 The previous J012 failure is explained by a proven Android codec defect. Official FiiO Control
 encodes JA11 command `0x17` global gain as signed tenths of a dB, high byte first; the old
 candidate wrote `00 D9` for `-3.9 dB`, while the device returned the official `FF D9` form. The
-corrected source is `c63c4060132ac9f45e898f413da5e4aefdbb7137`. Its exact-head automated gates
-pass; a signed APK is still required. Do not flash J011 or any earlier candidate again. This
+corrected source is merged into `main` at `c886fdbb2ae326e562dc110b2b779cb075869798`. Its
+exact-head automated gates, signed build, signer verification, emulator install/cold launch,
+and immutable publication all pass. Do not flash J011 or any earlier candidate again. This
 checklist remains hardware qualification authority, not a release approval.
 
-The next physical session is allowed only after the exact corrected source has a signed APK,
-verified checksum and signer, and all applicable automated gates. The owner should then perform
-one consolidated session: read-only baseline, one Jaytiss Flash, export readable and JSON reports,
-and verify restoration/persistence only if the transaction reaches Save. The corrected report must
-show the outgoing `0x17` payload as `FF D9` for the `-3.9 dB` Jaytiss case and decode the returned
-`FF D9` as `-3.9 dB`. Stop on any different byte sequence, missing report, mismatch, unexpected
-disconnect, or uncertain restoration; do not retry automatically.
+Use only this exact candidate:
+
+- APK: [`EQ-Library-v0.7.0-beta-c886fdb.apk`](https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-c886fdb.apk).
+- APK SHA-256: `c390bbd429ce4101ce7fad3aa3820990da0e7ffec7a4f688e5eafe4eb11f6341`; the public
+  sidecar matches this digest.
+- App/package: `0.7.0` / version code `7` / `com.weekssa.opraeqforuapp`.
+- Signer certificate SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`;
+  the workflow verified the signed APK and zip alignment.
+- Signed-beta [run #1365](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36223017450):
+  **PASS**; uploaded signed artifact ID `10899662688`; emulator diagnostics artifact ID
+  `10899543957`.
+- Candidate target: `ja11`; candidate test plan: this checklist; capability profile: `FiiO JA11
+  exact model; five-band PEQ; global EQ gain`.
+
+The public `mobile-test-apk` branch is a temporary hands-on testing surface, not a public
+release. Do not use its moving convenience APK; use the immutable URL above and verify both the
+checksum and signer before installation.
+
+## 2026-09-26 J017 owner result — FLASH, OBSERVED RECONNECT, AND EXACT RESTORATION PASS
+
+The owner supplied six readable/JSON exports from the exact c886 candidate. Readable reports
+`(3)` and `(4)` are byte-identical duplicate exports of one Flash operation; JSON reports `(3)`
+and `(4)` are the corresponding byte-identical duplicate exports. The distinct Reset report `(5)`
+was also successful.
+
+- Flash readable reports `(3)` and `(4)`: SHA-256
+  `f23b8c25720d87dbbdf806c48ae09ae857fc80822d1c60ddca66bcbb8c53d6eb` for each.
+- Flash JSON reports `(3)` and `(4)`: SHA-256
+  `f9feebad2dd516a24908937638aa4b1c4f877cf6f8e5ccc146d635179dc80de7` for each.
+- Reset readable report `(5)`: SHA-256
+  `ee6b8fc96b634b80872ca0aa6b23d4ab22d42a34dc99e4ccde6ad17d63482b6f`.
+- Reset JSON report `(5)`: SHA-256
+  `1b5cc11897efb663388e0962d0da12e816ed73837d53626adf9bc24b99cd798`.
+- All six reports identify source `c886fdbb2ae326e562dc110b2b779cb075869798`, app `0.7.0`,
+  verified signer, firmware `2.20`, USB product `0x0102`, and the same sanitized JA11
+  fingerprint. The Flash operation ID is `fc63479b-4d26-44b4-b90f-77a8db2c9c4f`; the Reset
+  operation ID is `402a004a-0217-4700-9b31-9b252f6c8aeb`.
+- Flash passed with the complete `9 → 5` optimized response-fit target, canonical/selected/
+  quantized/readback gain `-3.9 dB`, `0x17` bytes `FF D9`, one Save, final-readback comparison,
+  known state, and outcome `Success`.
+- The Reset report begins at session/detach generations `3/2`, versus `1/0` for Flash. Its
+  baseline is the flashed non-flat target, and its final readback is flat `0.0 dB` with all five
+  bands flat. The normalized raw readback multiset of that final state matches the Flash report's
+  original baseline readback exactly.
+
+This is a **physical PASS for the observed Flash → USB detach/reconnect history → Reset and exact
+restoration path**. It closes the supplied reconnect-persistence and original-flat-state
+restoration evidence gap for this session. The generation change is evidence that detach/reconnect
+occurred, but the exports contain no explicit power-removal marker or power-cycle duration. Do not
+represent J017 as proof of full power-cycle retention, general arbitrary-state restoration, or
+complete JA11 qualification. Keep those gates pending and do not make a public support claim from
+J017 alone.
+
+## 2026-09-26 J016 owner result — SAME-SESSION TRANSACTION PASS / FULL QUALIFICATION PENDING
+
+The owner returned the readable and parser-valid technical reports from the exact corrected source
+`c886fdbb2ae326e562dc110b2b779cb075869798`. The Flash completed with one Save and final readback:
+
+- Readable report SHA-256: `42de6d72e524bb83eb8581ae8af153a8c017012bb4f49a1d753cc7ce1056a3a`.
+- Technical report SHA-256: `6e2e88af5436713555222aebf18fbd2447a45aed7d978328203233bb993d18f0`.
+- Operation ID: `587ebf2a-b9e9-4758-ba0a-6ddf48bef2d0`; firmware `2.20`; VID/PID `0x2972:0x0102`; interface `3`.
+- Canonical, selected, quantized, and final readback global gain: `-3.9 dB`; corrected `0x17` bytes: `FF D9`.
+- Source/target bands: `9 → 5`; response fit: `true`; Save count: `1`; comparison: `FINAL_READBACK`;
+  outcome: `Success`; state known: `true`; transport events: `31`.
+- Session/detach generations remained `1/0`; no USB detach or reconnect was observed.
+
+This is a **same-session transaction PASS**, not proof of unplug/reconnect persistence, power-cycle
+retention, original-state restoration, or complete JA11 hardware qualification. Do not change the
+transaction based on this result. A later UI/status/report-only candidate does not require another
+physical mutation if it leaves protocol, session, Save, and final-readback code unchanged; any
+candidate that changes those boundaries requires a new owner-approved bounded session.
+
+The owner completed the consolidated session, and its reports are recorded as J016 below. The
+corrected report shows the outgoing `0x17` payload as `FF D9` for the `-3.9 dB` Jaytiss case and
+decodes the returned `FF D9` as `-3.9 dB`. No detach or reconnect occurred in that operation.
+Do not repeat physical Flash or Reset for a UI/status/report-only candidate; a future candidate
+that changes protocol, session, Save, or final-readback boundaries requires a new bounded plan.
 
 ## 2026-09-25 J012 returned report — DO NOT REPEAT
 

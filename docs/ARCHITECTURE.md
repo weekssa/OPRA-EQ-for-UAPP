@@ -306,6 +306,10 @@ My DAC is a hardware-state surface:
 - **EQ** shows current/Last-read hardware EQ, response, editing/capture/reset actions;
 - **DEVICE** shows supported current values with capability-driven edits;
 - EQ selection/Flash belongs in My EQs or EQ Library where the EQ already lives;
+- My EQs Flash uses one shared start/progress/final-result feedback contract across supported DACs;
+  device-specific verification and persistence qualifiers remain explicit in the final message;
+- validation reports, qualification actions, and baseline-restoration controls are engineering
+  evidence tools, not product My DAC controls;
 - routine qualified DEVICE choices apply through the safe write/readback transaction rather than staging a fake global Save state;
 - local full-EQ editor changes remain staged until Review -> Apply because those edits intentionally have not reached hardware yet.
 

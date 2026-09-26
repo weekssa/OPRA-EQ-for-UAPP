@@ -13,6 +13,7 @@ class Ew300OperationStatusTest {
         val presentation = ew300OperationStatusPresentation(trace(outcome = "Verified"))
 
         assertTrue(presentation.verified)
+        assertTrue(presentation.message.contains("Flash successful"))
         assertTrue(presentation.message.contains("reconnected"))
         assertTrue(presentation.message.contains("Final hardware readback matched"))
     }

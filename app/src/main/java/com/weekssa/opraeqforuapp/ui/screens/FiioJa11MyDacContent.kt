@@ -1,7 +1,5 @@
 package com.weekssa.opraeqforuapp.ui.screens
 
-import android.content.Context
-import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,7 +10,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -127,7 +124,6 @@ internal fun FiioJa11MyDacContent(
                 deviceState = deviceState,
                 connected = connected,
                 onReset = { confirmReset = true },
-                operationTrace = operationTrace,
                 operationStatus = operationStatus,
             )
         } else {
@@ -143,6 +139,7 @@ internal fun FiioJa11MyDacContent(
                 onSetFiioJa11EqProgram = onSetEqProgram,
                 onSetFiioJa11HeadsetControl = onSetHeadsetControl,
                 onSetFiioJa11UacMode = onSetUacMode,
+                fiioJa11OperationBusy = operationStatus is FiioJa11OperationStatus.Running,
             )
         }
     }
@@ -154,10 +151,8 @@ private fun FiioJa11EqStatus(
     deviceState: FiioJa11DeviceUiState,
     connected: Boolean,
     onReset: () -> Unit,
-    operationTrace: FiioJa11OperationTrace?,
     operationStatus: FiioJa11OperationStatus,
 ) {
-    val context = LocalContext.current
     val program = deviceState.snapshot?.eqProgram
     Text("Current hardware EQ", fontWeight = FontWeight.SemiBold)
     when {
@@ -224,7 +219,10 @@ private fun FiioJa11EqStatus(
 
     Button(
         onClick = onReset,
-        enabled = connected && !deviceState.isBusy && deviceState.pendingRestartWrite == null,
+        enabled = connected &&
+            !deviceState.isBusy &&
+            deviceState.pendingRestartWrite == null &&
+            fiioJa11OperationControlsEnabled(operationStatus),
         modifier = Modifier.fillMaxWidth(),
     ) { Text("Reset EQ to flat") }
 
@@ -236,40 +234,22 @@ private fun FiioJa11EqStatus(
 
     when (operationStatus) {
         is FiioJa11OperationStatus.Running -> Text(
-            "JA11 ${operationStatus.operation.lowercase()} is still being verified. Do not repeat the hardware action until it finishes.",
+            "JA11 ${operationStatus.operation.lowercase()} is being applied and verified. Keep the DAC connected and wait for the final readback.",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        is FiioJa11OperationStatus.Completed -> {
+            val status = fiioJa11OperationStatusPresentation(operationStatus.trace)
+            Text(
+                status.message,
+                color = if (status.verified) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.error
+                },
+            )
+        }
         else -> Unit
     }
-    operationTrace?.let { trace ->
-        Text("Last JA11 operation report", fontWeight = FontWeight.SemiBold)
-        Text(
-            "${trace.operation} · ${trace.outcome}. Share this report before any later Flash so the exact values, phases, USB bytes, and session evidence remain attached to the candidate.",
-            style = MaterialTheme.typography.bodySmall,
-            color = if (trace.stateKnown) {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            } else {
-                MaterialTheme.colorScheme.error
-            },
-        )
-        OutlinedButton(
-            onClick = { shareJa11Report(context, "FiiO JA11 operation report", "text/plain", trace.toReadableText()) },
-            modifier = Modifier.fillMaxWidth(),
-        ) { Text("Share readable report") }
-        OutlinedButton(
-            onClick = { shareJa11Report(context, "FiiO JA11 operation report JSON", "application/json", trace.toJson()) },
-            modifier = Modifier.fillMaxWidth(),
-        ) { Text("Share technical report") }
-    }
-}
-
-private fun shareJa11Report(context: Context, subject: String, mimeType: String, contents: String) {
-    val shareIntent = Intent(Intent.ACTION_SEND).apply {
-        type = mimeType
-        putExtra(Intent.EXTRA_SUBJECT, subject)
-        putExtra(Intent.EXTRA_TEXT, contents)
-    }
-    context.startActivity(Intent.createChooser(shareIntent, "Share FiiO JA11 report"))
 }
 
 private fun connectionLabel(state: Kt02h20ConnectionState): String = when (state) {

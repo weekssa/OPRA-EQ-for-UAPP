@@ -35,10 +35,7 @@ class Ew300DeviceStatusTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun readOnlyReportExplainsSafetyAndExposesBothExportFormats() {
-        var runCount = 0
-        var readableShareCount = 0
-        var jsonShareCount = 0
+    fun productDeviceStatusDoesNotExposeValidationEvidenceControls() {
         val report = Ew300CapabilityReport(
             planVersion = "test-plan",
             deviceFingerprintKey = "test-device",
@@ -58,29 +55,23 @@ class Ew300DeviceStatusTest {
                 Ew300DeviceStatus(
                     report = report,
                     running = false,
-                    onRun = { runCount += 1 },
-                    onShareReadable = { readableShareCount += 1 },
-                    onShareJson = { jsonShareCount += 1 },
-                    validationEvidenceEnabled = true,
+                    onRun = {},
+                    onShareReadable = {},
+                    onShareJson = {},
                 )
             }
         }
 
-        composeRule.onNodeWithText("It never writes, saves, resets, or retries a mutation.", substring = true)
-            .assertIsDisplayed()
-        composeRule.onNodeWithText("Flash, persistence, and Reset remain hardware-validation pending.", substring = true)
-            .assertDoesNotExist()
-        composeRule.onNodeWithText("Start Save qualification", substring = true)
-            .assertDoesNotExist()
-        composeRule.onNodeWithText("Run read-only report").performScrollTo().assertIsEnabled().performClick()
-        composeRule.onNodeWithText("Result: PASS").performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithText("Share readable report").performScrollTo().performClick()
-        composeRule.onNodeWithText("Share technical report").performScrollTo().performClick()
-        composeRule.runOnIdle {
-            assertEquals(1, runCount)
-            assertEquals(1, readableShareCount)
-            assertEquals(1, jsonShareCount)
-        }
+        composeRule.onNodeWithText("Output gain").assertIsDisplayed()
+        composeRule.onNodeWithText("Equalizer").assertIsDisplayed()
+        composeRule.onNodeWithText("Connection").assertIsDisplayed()
+        composeRule.onNodeWithText("Validation capability report").assertDoesNotExist()
+        composeRule.onNodeWithText("Run read-only report").assertDoesNotExist()
+        composeRule.onNodeWithText("Share readable report").assertDoesNotExist()
+        composeRule.onNodeWithText("Share technical report").assertDoesNotExist()
+        composeRule.onNodeWithText("Last operation report").assertDoesNotExist()
+        composeRule.onNodeWithText("Restore exact pre-test baseline").assertDoesNotExist()
+        composeRule.onNodeWithText("Start Save qualification").assertDoesNotExist()
     }
 
     @Test

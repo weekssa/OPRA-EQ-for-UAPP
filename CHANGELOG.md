@@ -6,6 +6,28 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ## [Unreleased]
 
+### 2026-09-26 DAC Flash UX parity
+
+- Unified the My EQs Flash interaction across supported DACs: the action now announces that Flash
+  has started, prevents duplicate taps while the shared transaction is running, and reports the
+  device-specific final result through the global notification surface.
+- Standardized successful Flash copy around an explicit `Flash successful` outcome while preserving
+  each DAC's truthful verification/persistence wording. Removed validation-only report,
+  qualification, baseline-restore, and dead disabled-button controls from product My DAC surfaces;
+  the underlying engineering evidence remains available to the test/release workflow.
+
+### 2026-09-26 JA11 observed reconnect and exact restoration evidence
+
+- Recorded J017 from the exact signed c886 candidate: duplicate Flash exports passed the corrected
+  `0x17` `FF D9` gain transaction, one Save, final readback, and the optimized `9 → 5` response-fit
+  target. A distinct successful Reset report began after the session/detach generations advanced
+  from `1/0` to `3/2` and restored the original flat `USER_1` baseline; normalized final raw
+  readbacks matched the Flash baseline exactly.
+- J017 closes the supplied observed reconnect-persistence and exact original-flat-state
+  restoration evidence gap. The reports do not explicitly identify a power-removal event or
+  duration, so explicit power-cycle retention, full JA11 qualification, public support, and final
+  release remain pending/owner-controlled. No production code or protocol behavior changed.
+
 ### 2026-09-26 JA11 global-gain codec correction
 
 - Read-only inspection of the official FiiO Control V4.6.0 JA11 implementation proved that
@@ -15,8 +37,12 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Corrected JA11 global-gain encoding, decoding, and quantization; added negative, positive,
   zero, rounding-boundary, golden-vector, and observed-readback regression coverage. Apply/Save,
   session ownership, fail-closed verification, canonical EQ data, and other DAC paths are unchanged.
-- JA11 remains hardware-validation pending. A corrected signed candidate must pass all gates before
-  one bounded owner hardware session; this is not a final release or public support claim.
+- JA11 remains hardware-validation pending. Signed-beta run [#1365](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36223017450)
+  passed on merged source `c886fdbb2ae326e562dc110b2b779cb075869798` and published immutable APK
+  `EQ-Library-v0.7.0-beta-c886fdb.apk` with SHA-256
+  `c390bbd429ce4101ce7fad3aa3820990da0e7ffec7a4f688e5eafe4eb11f6341` and signer certificate
+  SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`. It is ready for one
+  bounded owner hardware session; this is not a final release or public support claim.
 
 ### 2026-09-26 JA11 official firmware-history cross-check
 
@@ -710,3 +736,16 @@ APK SHA-256: `dabf4bcdddf69853b09793f5a94bec0a3af7efb430f1cdfe26ffc35a93b783ad`
 The exact candidate passed Android CI #1538, CodeQL #1420, Catalog currentness CI #1826, Priority community coverage CI #1311, and Signed EQ Library Beta Candidate #1213. The signing workflow verified the pinned certificate `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`.
 
 This PASS closes the corrective Black Pearl physical gate. It does not establish TRN factory-default semantics and does not qualify FiiO JA11 hardware behavior. PR #16 was merged and v0.6.0 publication is complete. FiiO JA11 physical qualification remains hardware-validation-pending.
+# 2026-09-26 JA11 same-session transaction verified; UI polish in progress
+
+- Owner report J016 proves the corrected FiiO JA11 `0x17` gain transaction on exact source
+  `c886fdbb2ae326e562dc110b2b779cb075869798`: `FF D9` / `-3.9 dB`, one Save, and matching final
+  readback across 31 successful transport events. The readable and technical report hashes are
+  retained in the JA11 validation ledger.
+- JA11 UI feedback now distinguishes verified final readback from failed or uncertain operations,
+  disables Reset and DEVICE controls while a JA11 Flash/Reset is running, and keeps readable plus
+  technical/JSON operation-report sharing available without changing report contents or
+  transaction behavior.
+- The report showed no detach or reconnect (`1/0` generations), so the UI does not claim reconnect
+  persistence. Power-cycle persistence, original-state restoration, public support, and final
+  release remain owner-controlled gates.

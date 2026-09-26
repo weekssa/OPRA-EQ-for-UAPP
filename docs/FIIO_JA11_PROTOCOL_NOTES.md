@@ -1,6 +1,21 @@
 # FiiO / JadeAudio JA11 protocol notes
 
-Status: **JA11 global-gain codec correction implemented from official FiiO evidence; signed-candidate and physical validation pending**
+Status: **JA11 global-gain codec correction implemented; Flash/Save/final-readback and observed reconnect/restoration physically verified; explicit power-cycle persistence and full qualification pending**
+
+## 2026-09-26 J017 physical evidence — observed reconnect and exact restoration
+
+The owner returned six reports from exact source `c886fdbb2ae326e562dc110b2b779cb075869798`.
+Readable/JSON reports `(3)` and `(4)` are duplicate exports of one successful Flash; report `(5)`
+is a successful Reset. The Flash report records firmware `2.20`, USB product `0x0102`, the
+sanitized exact JA11 fingerprint, `9 → 5` optimized response-fit conversion, canonical/selected/
+quantized/readback gain `-3.9 dB`, corrected `0x17` bytes `FF D9`, one Save, final-readback
+comparison, and known state. The Reset report begins at session/detach generation `3/2` after
+Flash's `1/0`, and its final flat readback matches the Flash report's original flat baseline in
+the raw response multiset and normalized five-band values.
+
+J017 therefore supports the actual observed Flash → detach/reconnect history → Reset restoration
+path. It does not identify a power-removal event or duration, so it cannot by itself establish
+power-cycle retention. No protocol, tolerance, retry, or transaction-order change is justified.
 
 ## 2026-09-26 official FiiO Control evidence — global-gain root cause proven
 
@@ -22,8 +37,9 @@ The official implementation provides the decisive codec contract:
 J012 recorded the app writing `00 D9` and the JA11 returning `FF D9` in the same stable session.
 Under the official domain, the returned `FF D9` is exactly `-3.9 dB`; the prior Android codec
 misread it as little-endian `0xD9FF / 2560 = -3.800390625 dB`. This proves the verification
-failure was caused by the Android JA11 global-gain codec's wrong scale and byte order. It does not
-prove Save persistence or physical qualification.
+failure was caused by the Android JA11 global-gain codec's wrong scale and byte order. J017 now
+supplies physical evidence for one observed reconnect/restoration path, but it does not prove
+explicit power-cycle retention or complete physical qualification.
 
 The correction is intentionally limited to command `0x17` encoding, decoding, and device-domain
 quantization. It does not remove verification, widen tolerance, add retries or offsets, change
@@ -35,6 +51,22 @@ exact official gain bytes. No checksum or sequence change is included in this co
 This official-app evidence supersedes the earlier third-party-only interpretation of `0x17` as
 little-endian/2560. The pinned third-party implementations remain useful behavioral evidence for
 identity, framing, bands, and Save, but they were not sufficient authority for this field.
+
+## 2026-09-26 J016 owner report — corrected same-session transaction PASS
+
+The owner returned parser-valid readable and technical reports from exact source
+`c886fdbb2ae326e562dc110b2b779cb075869798`. They record the corrected `0x17` value `FF D9`
+(`-3.9 dB`) on write and final readback, Apply before volatile verification, exactly one Save,
+`FINAL_READBACK`, `Success`, and `stateKnown=true`. All 31 events remained on session/detach
+generations `1/0`, so no detach or reconnect was observed. Report SHA-256 values are
+`42de6d72e524bb83eb8581ae8af153a8c017012bb4f49a1d753cc7ce1056a3a` (readable) and
+`6e2e88af5436713555222aebf18fbd2447a45aed7d978328203233bb993d18f0` (technical JSON).
+
+J016 proves the corrected same-session transaction and Save/final-readback path. It does not prove
+unplug/reconnect persistence, power-cycle retention, original-state restoration, or full hardware
+qualification. Keep the maintained physical gate and fail-closed behavior unchanged; a UI-only
+follow-up does not require another physical mutation when these transaction boundaries remain
+untouched.
 
 ## 2026-09-25 J012 exact-candidate result — no protocol correction proven
 

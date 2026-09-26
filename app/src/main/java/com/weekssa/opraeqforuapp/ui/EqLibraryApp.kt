@@ -338,7 +338,7 @@ fun EqLibraryApp(
             Ew300OperationOutcome.CONFIRMATION_REQUIRED,
             Ew300OperationOutcome.NO_BASELINE,
             -> "$operation was not applied${reason?.let { ": $it" } ?: "."}"
-            else -> "$operation did not finish with a verified state. Do not retry this operation; review the operation report${reason?.let { ": $it" } ?: "."}"
+            else -> "$operation did not finish with a verified state. Do not retry this operation; stop and reconnect or refresh before any later write${reason?.let { ": $it" } ?: "."}"
         }
     }
 
@@ -374,12 +374,12 @@ fun EqLibraryApp(
                 when {
                     trace.operation == "FLASH" && trace.stateKnown && trace.outcome == Ew300OperationOutcome.SUCCESS && trace.finalReadbackMatched ->
                         showDeviceOperation(
-                            message = "SIMGOT EW300 DSP EQ was saved and verified. Final hardware readback matched.",
+                            message = "Flash successful · SIMGOT EW300 DSP EQ was saved and verified. Final hardware readback matched.",
                             duration = SnackbarDuration.Short,
                         )
                     trace.operation == "RESET" && trace.stateKnown && trace.outcome == Ew300OperationOutcome.SUCCESS && trace.finalReadbackMatched ->
                         showDeviceOperation(
-                            message = "SIMGOT EW300 DSP EQ was reset to flat and verified. Final hardware readback matched.",
+                            message = "Reset successful · SIMGOT EW300 DSP EQ was reset to flat and verified. Final hardware readback matched.",
                             duration = SnackbarDuration.Short,
                         )
                     trace.operation == "FLASH" && !trace.stateKnown -> showDeviceOperation(
