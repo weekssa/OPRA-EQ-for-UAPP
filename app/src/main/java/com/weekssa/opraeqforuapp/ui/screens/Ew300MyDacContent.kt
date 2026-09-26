@@ -295,8 +295,6 @@ internal fun Ew300MyDacContent(
                         persistenceRunning = persistenceRunning,
                         persistenceEnabled = capabilityReport?.status ==
                             com.weekssa.opraeqforuapp.domain.ew300.Ew300CapabilityCaseResult.Status.PASS,
-                        onStartPersistence = { persistenceConfirmationOpen = true },
-                        onContinuePersistence = ::advancePersistenceQualification,
                     )
                 }
             }
