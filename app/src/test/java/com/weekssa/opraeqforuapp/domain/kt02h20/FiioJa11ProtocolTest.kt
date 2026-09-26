@@ -116,9 +116,9 @@ class FiioJa11ProtocolTest {
     }
 
     @Test
-    fun globalGainGoldenVectorUsesSignedLittleEndian2560Scale() {
+    fun globalGainGoldenVectorUsesOfficialSignedBigEndianTenthDbScale() {
         assertArrayEquals(
-            bytes(0x02, 0xAA, 0x0A, 0x00, 0x00, 0x17, 0x02, 0x00, 0xC9, 0x00, 0xEE),
+            bytes(0x02, 0xAA, 0x0A, 0x00, 0x00, 0x17, 0x02, 0xFF, 0xC9, 0x00, 0xEE),
             FiioJa11Protocol.writeGlobalGainReport(-5.5),
         )
     }
@@ -126,41 +126,38 @@ class FiioJa11ProtocolTest {
     @Test
     fun jaytissGlobalGainGoldenVectorUsesTheExpectedNegativeSourcePreamp() {
         assertArrayEquals(
-            bytes(0x02, 0xAA, 0x0A, 0x00, 0x00, 0x17, 0x02, 0x00, 0xD9, 0x00, 0xEE),
+            bytes(0x02, 0xAA, 0x0A, 0x00, 0x00, 0x17, 0x02, 0xFF, 0xD9, 0x00, 0xEE),
             FiioJa11Protocol.writeGlobalGainReport(-3.9),
         )
         assertEquals(
             -3.9,
             FiioJa11Protocol.globalGainFromResponse(
-                bytes(0x02, 0xBB, 0x0B, 0x00, 0x00, 0x17, 0x02, 0x00, 0xD9, 0xEE),
+                bytes(0x02, 0xBB, 0x0B, 0x00, 0x00, 0x17, 0x02, 0xFF, 0xD9, 0x00, 0xEE),
             )!!,
             0.000_001,
         )
     }
 
     @Test
-    fun observedJa11D9ffReadbackDecodesAsDistinctDeviceDomainValue() {
+    fun observedJa11D9ffReadbackMatchesTheOfficialJa11GlobalGainDomain() {
         val response = bytes(
             0x02, 0xBB, 0x0B, 0x00, 0x00, 0x17, 0x02, 0xFF, 0xD9, 0xBB, 0xEE,
         )
 
         assertEquals(
-            -3.800390625,
+            -3.9,
             FiioJa11Protocol.globalGainFromResponse(response)!!,
             0.0,
         )
-        assertTrue(
-            kotlin.math.abs(
-                FiioJa11Protocol.globalGainFromResponse(response)!! -
-                    FiioJa11Protocol.quantizedGlobalGainDb(-3.9),
-            ) > 0.001,
-        )
+        assertEquals(-3.9, FiioJa11Protocol.quantizedGlobalGainDb(-3.9), 0.0)
     }
 
     @Test
     fun quantizedGlobalGainReportsTheExactDeviceDomainValue() {
         assertEquals(-3.9, FiioJa11Protocol.quantizedGlobalGainDb(-3.9), 0.0)
-        assertEquals(1.0 / 2560.0, FiioJa11Protocol.quantizedGlobalGainDb(1.0 / 2560.0), 0.0)
+        assertEquals(0.1, FiioJa11Protocol.quantizedGlobalGainDb(0.1), 0.0)
+        assertEquals(3.9, FiioJa11Protocol.quantizedGlobalGainDb(3.95), 0.0)
+        assertEquals(-3.9, FiioJa11Protocol.quantizedGlobalGainDb(-3.95), 0.0)
         assertEquals(-12.0, FiioJa11Protocol.quantizedGlobalGainDb(-12.0), 0.0)
     }
 
@@ -190,7 +187,7 @@ class FiioJa11ProtocolTest {
         assertEquals(-3.5, parsed.second.gainDb, 0.0)
         assertEquals(0.71, parsed.second.q, 0.0)
 
-        val gainResponse = bytes(0xBB, 0x0B, 0x00, 0x00, 0x17, 0x02, 0x00, 0xC9, 0xEE)
+        val gainResponse = bytes(0xBB, 0x0B, 0x00, 0x00, 0x17, 0x02, 0xFF, 0xC9, 0x00, 0xEE)
         assertEquals(-5.5, FiioJa11Protocol.globalGainFromResponse(gainResponse)!!, 0.000_001)
     }
 
