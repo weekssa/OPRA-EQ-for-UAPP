@@ -15,8 +15,12 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Corrected JA11 global-gain encoding, decoding, and quantization; added negative, positive,
   zero, rounding-boundary, golden-vector, and observed-readback regression coverage. Apply/Save,
   session ownership, fail-closed verification, canonical EQ data, and other DAC paths are unchanged.
-- JA11 remains hardware-validation pending. A corrected signed candidate must pass all gates before
-  one bounded owner hardware session; this is not a final release or public support claim.
+- JA11 remains hardware-validation pending. Signed-beta run [#1365](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36223017450)
+  passed on merged source `c886fdbb2ae326e562dc110b2b779cb075869798` and published immutable APK
+  `EQ-Library-v0.7.0-beta-c886fdb.apk` with SHA-256
+  `c390bbd429ce4101ce7fad3aa3820990da0e7ffec7a4f688e5eafe4eb11f6341` and signer certificate
+  SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`. It is ready for one
+  bounded owner hardware session; this is not a final release or public support claim.
 
 ### 2026-09-26 JA11 official firmware-history cross-check
 

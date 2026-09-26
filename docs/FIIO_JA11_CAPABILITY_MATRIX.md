@@ -26,7 +26,12 @@ The corrected software candidate source is `c63c4060132ac9f45e898f413da5e4aefdbb
 [#1611](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36221829444), catalog currentness
 [#2126](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36221829496), and dependency
 submission [#2191](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36221827629) pass on that
-exact head. No signed APK or physical result exists for it yet.
+exact head. The merged source `c886fdbb2ae326e562dc110b2b779cb075869798` now has signed-beta run
+[#1365](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36223017450) passing, immutable
+owner-test APK `EQ-Library-v0.7.0-beta-c886fdb.apk` published with SHA-256
+`c390bbd429ce4101ce7fad3aa3820990da0e7ffec7a4f688e5eafe4eb11f6341`, and signer certificate
+SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`. This clears the
+software/artifact gate only; no new physical result exists.
 
 | Capability | Decision | Evidence / boundary |
 | --- | --- | --- |

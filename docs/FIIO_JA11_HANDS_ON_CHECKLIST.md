@@ -1,21 +1,38 @@
 # FiiO JA11 hands-on qualification
 
-## 2026-09-26 corrected-codec owner gate — WAIT FOR SIGNED CANDIDATE
+## 2026-09-26 corrected-codec owner gate — READY FOR OWNER HARDWARE TESTING / FINAL RELEASE BLOCKED
 
 The previous J012 failure is explained by a proven Android codec defect. Official FiiO Control
 encodes JA11 command `0x17` global gain as signed tenths of a dB, high byte first; the old
 candidate wrote `00 D9` for `-3.9 dB`, while the device returned the official `FF D9` form. The
-corrected source is `c63c4060132ac9f45e898f413da5e4aefdbb7137`. Its exact-head automated gates
-pass; a signed APK is still required. Do not flash J011 or any earlier candidate again. This
+corrected source is merged into `main` at `c886fdbb2ae326e562dc110b2b779cb075869798`. Its
+exact-head automated gates, signed build, signer verification, emulator install/cold launch,
+and immutable publication all pass. Do not flash J011 or any earlier candidate again. This
 checklist remains hardware qualification authority, not a release approval.
 
-The next physical session is allowed only after the exact corrected source has a signed APK,
-verified checksum and signer, and all applicable automated gates. The owner should then perform
-one consolidated session: read-only baseline, one Jaytiss Flash, export readable and JSON reports,
-and verify restoration/persistence only if the transaction reaches Save. The corrected report must
-show the outgoing `0x17` payload as `FF D9` for the `-3.9 dB` Jaytiss case and decode the returned
-`FF D9` as `-3.9 dB`. Stop on any different byte sequence, missing report, mismatch, unexpected
-disconnect, or uncertain restoration; do not retry automatically.
+Use only this exact candidate:
+
+- APK: [`EQ-Library-v0.7.0-beta-c886fdb.apk`](https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-c886fdb.apk).
+- APK SHA-256: `c390bbd429ce4101ce7fad3aa3820990da0e7ffec7a4f688e5eafe4eb11f6341`; the public
+  sidecar matches this digest.
+- App/package: `0.7.0` / version code `7` / `com.weekssa.opraeqforuapp`.
+- Signer certificate SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`;
+  the workflow verified the signed APK and zip alignment.
+- Signed-beta [run #1365](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36223017450):
+  **PASS**; uploaded signed artifact ID `10899662688`; emulator diagnostics artifact ID
+  `10899543957`.
+- Candidate target: `ja11`; candidate test plan: this checklist; capability profile: `FiiO JA11
+  exact model; five-band PEQ; global EQ gain`.
+
+The public `mobile-test-apk` branch is a temporary hands-on testing surface, not a public
+release. Do not use its moving convenience APK; use the immutable URL above and verify both the
+checksum and signer before installation.
+
+The owner should perform one consolidated session: read-only baseline, one Jaytiss Flash, export
+readable and JSON reports, and verify restoration/persistence only if the transaction reaches Save.
+The corrected report must show the outgoing `0x17` payload as `FF D9` for the `-3.9 dB` Jaytiss
+case and decode the returned `FF D9` as `-3.9 dB`. Stop on any different byte sequence, missing
+report, mismatch, unexpected disconnect, or uncertain restoration; do not retry automatically.
 
 ## 2026-09-25 J012 returned report — DO NOT REPEAT
 

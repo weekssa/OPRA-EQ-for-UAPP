@@ -9,11 +9,11 @@ qualify JA11 hardware unless the exact physical gate is satisfied.
 JA11 is **implemented but hardware-validation pending**. J012 remains a valid negative physical
 record, but its root cause is now proven by the official FiiO Control JA11 codec: the Android
 candidate wrote the wrong command `0x17` scale and byte order. The corrected codec and signed
-device-domain quantizer are on the current investigation branch at
-`c63c4060132ac9f45e898f413da5e4aefdbb7137`; exact-head Android, emulator, static-analysis, and
-catalog gates pass. A new signed candidate is still required. Do not repeat J012's candidate.
-Physical testing remains blocked until the corrected candidate's provenance and bounded owner
-plan are recorded.
+device-domain quantizer are merged in `main` at
+`c886fdbb2ae326e562dc110b2b779cb075869798`; exact-head Android, emulator, static-analysis,
+catalog, signed-candidate, signer, and immutable-publication gates pass. The exact owner-test
+candidate is recorded as J015 below. Do not repeat J012's candidate. Physical testing remains the
+single outstanding product gate.
 
 ## Deterministic software value trace for the supplied Jaytiss record
 
@@ -39,6 +39,7 @@ This is a software/artifact trace, not a physical packet trace:
 
 | ID | Exact source / artifact | Result and claim | Restoration / limits |
 | --- | --- | --- | --- |
+| J015 | `main` merge `c886fdbb2ae326e562dc110b2b779cb075869798`; immutable APK [`EQ-Library-v0.7.0-beta-c886fdb.apk`](https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-c886fdb.apk); APK SHA-256 `c390bbd429ce4101ce7fad3aa3820990da0e7ffec7a4f688e5eafe4eb11f6341`; signer certificate SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`; signed-beta [run #1365](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36223017450); uploaded artifact ID `10899662688`; emulator diagnostics artifact ID `10899543957` | **SOFTWARE / ARTIFACT PASS; OWNER HARDWARE GATE READY.** Beta unit/lint/release build, R8 mapping verification, unsigned identity, APK signing and signer match, zipalign, disposable emulator install/cold launch, diagnostics upload, and immutable publication passed. The corrected candidate is ready for one bounded physical JA11 Flash/readback/persistence/restoration session. | No physical Flash was performed by the agent. JA11 remains hardware-validation pending; no public support or final-release claim is authorized. Verify APK checksum and signer before use; export readable and JSON reports and stop on any mismatch or uncertain restoration. |
 | J001 | Owner screenshot: `/Users/stephenweeks/Library/CloudStorage/GoogleDrive-weekssa@gmail.com/My Drive/OPRA UAPP Presets/EQ Library Testing/Screenshot (Sep 25, 2026 9:59:19 AM)`; PNG SHA-256 `93efb6135fde53f60b285e1f16681f01ff72cc8f7e46a1934e016e280eed8b6f`; 1080×2424; APK/source/checksum/signer not supplied | **FAILURE OBSERVED.** Connected FiiO JA11; Jaytiss profile; displayed `Optimized · 9 → 5 bands · full-response fit`; Flash ended with `JA11 global EQ gain readback did not match the intended value.` Evidence category: owner-reported physical UI artifact. | Exact intended/actual gain, raw `0x17` packets, firmware, PID/UAC, transaction phase, Save count, device identity, and restoration status are unknown. Do not repeat the mutation from this record. Not a qualification result. |
 | J001a | Owner follow-up observation from the same investigation: after unplug/replug, the device reportedly returned to `0` | **SUPPLEMENTAL NEGATIVE OBSERVATION.** This is not accompanied by a readback report, exact candidate provenance, raw bytes, or a baseline, so it cannot distinguish failed persistence from a UI/device-state interpretation. | Do not treat as proof of a codec defect or persistence contract. Combine with J001 only as a reason to require a complete baseline, Save-stage trace, and post-power-cycle readback in the next authorized session. |
 | J001b | Earlier owner screenshot `/Users/stephenweeks/Library/CloudStorage/GoogleDrive-weekssa@gmail.com/My Drive/OPRA UAPP Presets/EQ Library Testing/Screenshot (Sep 25, 2026 2:17:20 AM)`; PNG SHA-256 `6a4997ecbdd916ba487f4e6f2313eacb14221a218ca0ac86ecca42a9be0b48f2`; 1080×2424 | **FAILURE OBSERVED.** Same connected JA11/Jaytiss/9→5 screen shows the same global-gain verification failure. | No exact candidate, raw packets, firmware, PID/UAC, or restoration state. This confirms recurrence in the supplied UI sequence but not the root cause. |
