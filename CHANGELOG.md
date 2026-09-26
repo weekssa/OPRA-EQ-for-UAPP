@@ -6,6 +6,18 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ## [Unreleased]
 
+### 2026-09-26 JA11 observed reconnect and exact restoration evidence
+
+- Recorded J017 from the exact signed c886 candidate: duplicate Flash exports passed the corrected
+  `0x17` `FF D9` gain transaction, one Save, final readback, and the optimized `9 → 5` response-fit
+  target. A distinct successful Reset report began after the session/detach generations advanced
+  from `1/0` to `3/2` and restored the original flat `USER_1` baseline; normalized final raw
+  readbacks matched the Flash baseline exactly.
+- J017 closes the supplied observed reconnect-persistence and exact original-flat-state
+  restoration evidence gap. The reports do not explicitly identify a power-removal event or
+  duration, so explicit power-cycle retention, full JA11 qualification, public support, and final
+  release remain pending/owner-controlled. No production code or protocol behavior changed.
+
 ### 2026-09-26 JA11 global-gain codec correction
 
 - Read-only inspection of the official FiiO Control V4.6.0 JA11 implementation proved that

@@ -1,6 +1,6 @@
 # FiiO JA11 hands-on qualification
 
-## 2026-09-26 corrected-codec owner gate — J016 SAME-SESSION PASS / FULL QUALIFICATION PENDING / FINAL RELEASE BLOCKED
+## 2026-09-26 corrected-codec owner gate — J017 FLASH/RECONNECT/RESTORATION PASS / POWER-CYCLE EVIDENCE PENDING / FINAL RELEASE BLOCKED
 
 The previous J012 failure is explained by a proven Android codec defect. Official FiiO Control
 encodes JA11 command `0x17` global gain as signed tenths of a dB, high byte first; the old
@@ -27,6 +27,41 @@ Use only this exact candidate:
 The public `mobile-test-apk` branch is a temporary hands-on testing surface, not a public
 release. Do not use its moving convenience APK; use the immutable URL above and verify both the
 checksum and signer before installation.
+
+## 2026-09-26 J017 owner result — FLASH, OBSERVED RECONNECT, AND EXACT RESTORATION PASS
+
+The owner supplied six readable/JSON exports from the exact c886 candidate. Readable reports
+`(3)` and `(4)` are byte-identical duplicate exports of one Flash operation; JSON reports `(3)`
+and `(4)` are the corresponding byte-identical duplicate exports. The distinct Reset report `(5)`
+was also successful.
+
+- Flash readable reports `(3)` and `(4)`: SHA-256
+  `f23b8c25720d87dbbdf806c48ae09ae857fc80822d1c60ddca66bcbb8c53d6eb` for each.
+- Flash JSON reports `(3)` and `(4)`: SHA-256
+  `f9feebad2dd516a24908937638aa4b1c4f877cf6f8e5ccc146d635179dc80de7` for each.
+- Reset readable report `(5)`: SHA-256
+  `ee6b8fc96b634b80872ca0aa6b23d4ab22d42a34dc99e4ccde6ad17d63482b6f`.
+- Reset JSON report `(5)`: SHA-256
+  `1b5cc11897efb663388e0962d0da12e816ed73837d53626adf9bc24b99cd798`.
+- All six reports identify source `c886fdbb2ae326e562dc110b2b779cb075869798`, app `0.7.0`,
+  verified signer, firmware `2.20`, USB product `0x0102`, and the same sanitized JA11
+  fingerprint. The Flash operation ID is `fc63479b-4d26-44b4-b90f-77a8db2c9c4f`; the Reset
+  operation ID is `402a004a-0217-4700-9b31-9b252f6c8aeb`.
+- Flash passed with the complete `9 → 5` optimized response-fit target, canonical/selected/
+  quantized/readback gain `-3.9 dB`, `0x17` bytes `FF D9`, one Save, final-readback comparison,
+  known state, and outcome `Success`.
+- The Reset report begins at session/detach generations `3/2`, versus `1/0` for Flash. Its
+  baseline is the flashed non-flat target, and its final readback is flat `0.0 dB` with all five
+  bands flat. The normalized raw readback multiset of that final state matches the Flash report's
+  original baseline readback exactly.
+
+This is a **physical PASS for the observed Flash → USB detach/reconnect history → Reset and exact
+restoration path**. It closes the supplied reconnect-persistence and original-flat-state
+restoration evidence gap for this session. The generation change is evidence that detach/reconnect
+occurred, but the exports contain no explicit power-removal marker or power-cycle duration. Do not
+represent J017 as proof of full power-cycle retention, general arbitrary-state restoration, or
+complete JA11 qualification. Keep those gates pending and do not make a public support claim from
+J017 alone.
 
 ## 2026-09-26 J016 owner result — SAME-SESSION TRANSACTION PASS / FULL QUALIFICATION PENDING
 
