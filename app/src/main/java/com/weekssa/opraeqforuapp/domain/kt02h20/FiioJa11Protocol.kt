@@ -299,8 +299,11 @@ object FiioJa11Protocol {
         return if (raw >= 0x8000) raw - 0x10000 else raw
     }
 
+    /** Signed device-domain value; callers encode it as an unsigned 16-bit wire word. */
     private fun globalGainRaw(gainDb: Double): Int =
-        (gainDb * GLOBAL_GAIN_RAW_PER_DB).toInt().toSigned16Raw()
+        (gainDb * GLOBAL_GAIN_RAW_PER_DB).toInt().also {
+            require(it in Short.MIN_VALUE.toInt()..Short.MAX_VALUE.toInt())
+        }
 
     private fun Int.toSigned16Raw(): Int {
         require(this in Short.MIN_VALUE.toInt()..Short.MAX_VALUE.toInt())
