@@ -20,13 +20,13 @@ class FiioJa11OperationPresentationTest {
     }
 
     @Test
-    fun successfulFlashReportsFinalPersistenceWithoutInventingReconnect() {
+    fun successfulFlashReportsFinalReadbackWithoutInventingReconnectPersistence() {
         val presentation = fiioJa11OperationStatusPresentation(trace())
 
         assertTrue(presentation.verified)
         assertTrue(presentation.message.contains("saved and verified"))
         assertTrue(presentation.message.contains("Final hardware readback matched"))
-        assertFalse(presentation.message.contains("reconnect", ignoreCase = true))
+        assertTrue(presentation.message.contains("Reconnect persistence was not tested"))
     }
 
     @Test
