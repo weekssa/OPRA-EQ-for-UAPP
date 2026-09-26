@@ -64,7 +64,7 @@ class FiioJa11OperationTraceTest {
         assertTrue(readable.contains("request=02 aa 0a 00 00 17 02 ff d9 00 ee"))
         assertTrue(json.contains("\"comparisonPhase\":\"VOLATILE_READBACK\""))
         assertTrue(json.contains("\"firmwareVersion\":\"2.20\""))
-        assertTrue(json.contains("\"requestHex\":\"02 aa 0a 00 00 17 02 00 d9 00 ee\""))
+        assertTrue(json.contains("\"requestHex\":\"02 aa 0a 00 00 17 02 ff d9 00 ee\""))
         val parsed = Json.parseToJsonElement(json).jsonObject
         assertEquals(1, parsed.getValue("targetBands").jsonArray.size)
         assertEquals(1, parsed.getValue("events").jsonArray.size)
