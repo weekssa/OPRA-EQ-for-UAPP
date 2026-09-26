@@ -1,5 +1,22 @@
 # FiiO JA11 hands-on qualification
 
+## 2026-09-26 corrected-codec owner gate — WAIT FOR SIGNED CANDIDATE
+
+The previous J012 failure is explained by a proven Android codec defect. Official FiiO Control
+encodes JA11 command `0x17` global gain as signed tenths of a dB, high byte first; the old
+candidate wrote `00 D9` for `-3.9 dB`, while the device returned the official `FF D9` form. The
+corrected source is `c63c4060132ac9f45e898f413da5e4aefdbb7137`. Its exact-head automated gates
+pass; a signed APK is still required. Do not flash J011 or any earlier candidate again. This
+checklist remains hardware qualification authority, not a release approval.
+
+The next physical session is allowed only after the exact corrected source has a signed APK,
+verified checksum and signer, and all applicable automated gates. The owner should then perform
+one consolidated session: read-only baseline, one Jaytiss Flash, export readable and JSON reports,
+and verify restoration/persistence only if the transaction reaches Save. The corrected report must
+show the outgoing `0x17` payload as `FF D9` for the `-3.9 dB` Jaytiss case and decode the returned
+`FF D9` as `-3.9 dB`. Stop on any different byte sequence, missing report, mismatch, unexpected
+disconnect, or uncertain restoration; do not retry automatically.
+
 ## 2026-09-25 J012 returned report — DO NOT REPEAT
 
 The owner returned the report pair from the exact signed J011 candidate. This is a valid,

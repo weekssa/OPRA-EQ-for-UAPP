@@ -6,6 +6,18 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ## [Unreleased]
 
+### 2026-09-26 JA11 global-gain codec correction
+
+- Read-only inspection of the official FiiO Control V4.6.0 JA11 implementation proved that
+  command `0x17` uses signed tenths-of-a-dB, high-byte-first encoding. The previous Android codec
+  incorrectly used little-endian `2560` raw units/dB, causing the J012 `00 D9` write versus `FF D9`
+  readback to be misinterpreted as `-3.800390625 dB` instead of the intended `-3.9 dB`.
+- Corrected JA11 global-gain encoding, decoding, and quantization; added negative, positive,
+  zero, rounding-boundary, golden-vector, and observed-readback regression coverage. Apply/Save,
+  session ownership, fail-closed verification, canonical EQ data, and other DAC paths are unchanged.
+- JA11 remains hardware-validation pending. A corrected signed candidate must pass all gates before
+  one bounded owner hardware session; this is not a final release or public support claim.
+
 ### 2026-09-26 JA11 official firmware-history cross-check
 
 - Recorded FiiO's official JA11 `V2.2` release note as protocol-boundary evidence. It lists

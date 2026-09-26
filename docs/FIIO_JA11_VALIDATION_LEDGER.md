@@ -6,14 +6,14 @@ qualify JA11 hardware unless the exact physical gate is satisfied.
 
 ## Current disposition
 
-JA11 is **implemented but hardware-validation pending**. The latest owner-provided result is J012,
-a negative Flash verification observation tied to the exact signed diagnostic candidate J011. Its
-valid readable/JSON trace proves a stable-session global-gain readback mismatch before Save; it
-does not prove a codec defect, restoration, persistence, or JA11 qualification. The diagnostic
-reporting enhancement is merged on `main` at
-`5b4b40bfccabae91e3839de9ff2f7b1edcb0d67a`; the protocol behavior remains unchanged. Do not repeat
-this physical mutation until a new, evidence-backed protocol decision produces a different exact
-candidate.
+JA11 is **implemented but hardware-validation pending**. J012 remains a valid negative physical
+record, but its root cause is now proven by the official FiiO Control JA11 codec: the Android
+candidate wrote the wrong command `0x17` scale and byte order. The corrected codec and signed
+device-domain quantizer are on the current investigation branch at
+`c63c4060132ac9f45e898f413da5e4aefdbb7137`; exact-head Android, emulator, static-analysis, and
+catalog gates pass. A new signed candidate is still required. Do not repeat J012's candidate.
+Physical testing remains blocked until the corrected candidate's provenance and bounded owner
+plan are recorded.
 
 ## Deterministic software value trace for the supplied Jaytiss record
 
@@ -24,16 +24,16 @@ This is a software/artifact trace, not a physical packet trace:
 2. The JA11 capability profile leaves `preampStepDb = null`, so the finite-hardware optimizer
    preserves that source preamp rather than applying the JM12 half-dB quantizer.
 3. The intended JA11 device-domain value is therefore `-3.9 dB`.
-4. The current codec computes `round(-3.9 × 2560) = -9984`, represented as unsigned 16-bit
-   `0xD900`, with little-endian payload bytes `00 D9`.
-5. Decoding the same raw value returns `-9984 / 2560 = -3.9 dB`; the flasher compares the
-   readback to the wire-quantized expected value with `0.001 dB` tolerance.
-6. The owner-supplied J009 trace records the app writing `00 D9` (`0xD900`, `-3.9 dB`) and the
-   unchanged-session final volatile readback returning `FF D9` (`0xD9FF`, `-3.800390625 dB`).
-   The five target bands read back exactly, and no detach, reconnect, permission request, or
-   Save occurred. This proves the observed mismatch for this transaction and substantially
-   weakens stale-session and band/optimizer hypotheses; it does not establish why the device
-   returned `0xD9FF`.
+4. The old Android codec computed `round(-3.9 × 2560) = -9984`, represented as `0xD900`, with
+   little-endian payload bytes `00 D9`.
+5. The official FiiO Control JA11 model instead computes the signed tenths-dB value
+   `int(-3.9 × 10) = -39`, represented as `0xFFD9`, with high-byte-first payload bytes `FF D9`.
+6. J012 records the old app writing `00 D9` and the unchanged-session JA11 returning `FF D9`.
+   Decoded under the official JA11 domain, that response is exactly `-3.9 dB`; the prior
+   `-3.800390625 dB` result was an Android decode error, not a device quantization result.
+7. The five target bands read back exactly, and no detach, reconnect, permission request, or Save
+   occurred. This proves the global-gain codec defect and separately leaves Save persistence and
+   restoration for physical qualification.
 
 ## Evidence records
 
@@ -61,6 +61,7 @@ This is a software/artifact trace, not a physical packet trace:
 
 | J012 | Owner-readable report `/Users/stephenweeks/Library/CloudStorage/GoogleDrive-weekssa@gmail.com/My Drive/OPRA UAPP Presets/EQ Library Testing/FiiO JA11 operation report (1)` (SHA-256 `5cf579a19f4706d3895e0286079f46a8bb00af68acc87b1e74d4c5e326a60d3a`) and valid JSON `/Users/stephenweeks/Library/CloudStorage/GoogleDrive-weekssa@gmail.com/My Drive/OPRA UAPP Presets/EQ Library Testing/FiiO JA11 operation report JSON (1)` (SHA-256 `d88b3ed45ed821000616c5fb260356e415311aafbf72d3415b5dd30e451e7e41`); operation `3b348512-833a-4942-bb64-2a2e7bca1b5d`; reported source `5b4b40bfccabae91e3839de9ff2f7b1edcb0d67a`; firmware `2.20`; VID/PID `0x2972:0x0102`; session/detach `1/0`; permission requests `0` | **PHYSICAL NEGATIVE RESULT.** Canonical, selected, and quantized gain were `-3.9 dB`; write was `0x17` raw `0xD900` (`00 D9`); same-session readback was `0xD9FF` (`FF D9`) = `-3.800390625 dB`; delta was `0.099609375 dB` against `0.001 dB` tolerance. All five bands matched; Apply completed; Save count was `0`; outcome was `VerificationFailed`. The valid JSON confirms the corrected export. This proves a repeatable pre-Save mismatch on firmware 2.20, not its root cause. | Original-state restoration, Save behavior, persistence, and public qualification are **not proven**. No detach, reconnect, or permission issue occurred. Do not repeat Flash or Reset from this evidence; retain fail-closed verification. |
 | J013 | Draft PR [#45](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/45), exact head `9d1b68252f3dd758dfa10d114b78217c71137e3c`; Android CI [#1845](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36218116958); CodeQL [#1729](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36218116924); Catalog currentness [#2120](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36218116920); Priority community [#1605](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36218116916) | **AUTOMATED SOFTWARE EVIDENCE PASS.** Unit tests, lint, debug/release assembly, R8 verification, API-26 min-API smoke, connected emulator UI tests, CodeQL, Catalog currentness, and Priority community coverage passed on the exact head. The only code changes are deterministic JA11 regression fixtures; no production protocol behavior changed. | Local Android execution is **NOT RUN** because the checkout has no Gradle wrapper, Gradle executable, or Android SDK. No signed artifact was produced for this test/documentation-only branch. No physical claim follows. |
+| J014 | Corrected-codec source `c63c4060132ac9f45e898f413da5e4aefdbb7137` on draft PR [#45](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/45); Android CI [#1851](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36221829461); CodeQL [#1735](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36221829471); Priority community [#1611](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36221829444); Catalog currentness [#2126](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36221829496); dependency submission [#2191](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36221827629) | **AUTOMATED SOFTWARE EVIDENCE PASS.** The official FiiO contract is implemented as signed tenths-of-a-dB, high-byte-first `0x17` encoding/decoding. The follow-up correction keeps the wire word for `-3.9 dB` as `FF D9` while returning signed device-domain quantization `-3.9 dB`, preventing a false `6549.7 dB` comparison. Focused protocol, flasher, trace, optimizer, session, lint, debug/release assembly, R8/minified verification, API-26 smoke, connected emulator UI, CodeQL, priority coverage, catalog currentness, and dependency gates all passed on this exact head. | Local Android execution remains **NOT RUN** because the checkout has no Gradle wrapper, Gradle executable, or Android SDK. No signed artifact or physical mutation exists for J014. JA11 remains hardware-validation pending; the next step is one new signed owner-test candidate, not a repeat of J012. |
 
 ## Required fields for the next physical record
 

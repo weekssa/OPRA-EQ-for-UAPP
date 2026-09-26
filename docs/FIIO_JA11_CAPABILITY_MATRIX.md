@@ -20,11 +20,19 @@ SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`, and 
 run [#1363](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36180975485). It is historical
 diagnostic evidence only; do not reuse it for physical mutation.
 
+The corrected software candidate source is `c63c4060132ac9f45e898f413da5e4aefdbb7137`. Android CI
+[#1851](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36221829461), CodeQL
+[#1735](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36221829471), priority coverage
+[#1611](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36221829444), catalog currentness
+[#2126](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36221829496), and dependency
+submission [#2191](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36221827629) pass on that
+exact head. No signed APK or physical result exists for it yet.
+
 | Capability | Decision | Evidence / boundary |
 | --- | --- | --- |
 | Exact JA11 USB identity, VID `0x2972`, UAC PIDs `0x0101`/`0x0102` | SUPPORTED_AND_IMPLEMENTED; physical pending | Strict allowlist and dynamic HID interface discovery are implemented. Physical identity/PID for J001 was not captured. |
 | Five-band Peak/Low Shelf/High Shelf target representation | SUPPORTED_AND_IMPLEMENTED; physical pending | Shared finite-hardware adapter, complete five-slot target, and codec tests exist. J001 displayed a 9→5 optimized plan but did not provide readback values. |
-| Global EQ gain `0x17` encoding/decoding | CODEC CORROBORATED; DEVICE SEMANTICS INSUFFICIENTLY_EVIDENCED | Repository and independent implementations use signed 16-bit little-endian, `2560` raw units/dB. J012 repeats that this candidate wrote `0xD900` (`-3.9 dB`) and the same-session device response returned `0xD9FF` (`-3.800390625 dB`). Do not widen tolerance or change codec math until the device-side quantization/firmware semantics are independently characterized. |
+| Global EQ gain `0x17` encoding/decoding | CORRECTION IMPLEMENTED; PHYSICAL VALIDATION PENDING | Official FiiO Control V4.6.0 evidence establishes signed 16-bit tenths-of-a-dB, high-byte-first encoding. J012's `00 D9` write and `FF D9` response therefore identify the old Android scale/order defect; the corrected source writes and reads `FF D9` as `-3.9 dB`. Save persistence and hardware qualification remain unproven. |
 | Apply command and volatile readback | SOFTWARE-SUPPORTED; PHYSICAL SEMANTICS INSUFFICIENTLY_EVIDENCED | A supplied My DAC frame shows the optimized five-band target present while connected, which supports volatile application of the band plan. It does not prove the gain wire value or the exact transaction phase. |
 | Save User 1 persistence | SOFTWARE-SUPPORTED; PHYSICAL VALIDATION PENDING | J012 records `saveCommandCount=0` because volatile verification failed before Save. The supplied report therefore proves neither Save behavior nor persistence; the later flat `0.00 dB` view remains a negative observation without a Save-stage result. |
 | Unplug/reconnect persistence | INSUFFICIENT_EVIDENCE | A supplied post-reconnect frame shows User 1 flat with `0.00 dB`, consistent with the owner's report, but no exact candidate, raw final readback, power-cycle duration, or baseline/restoration record is attached. |
