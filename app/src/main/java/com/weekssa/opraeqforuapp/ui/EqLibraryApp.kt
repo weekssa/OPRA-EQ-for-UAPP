@@ -374,12 +374,12 @@ fun EqLibraryApp(
                 when {
                     trace.operation == "FLASH" && trace.stateKnown && trace.outcome == Ew300OperationOutcome.SUCCESS && trace.finalReadbackMatched ->
                         showDeviceOperation(
-                            message = "SIMGOT EW300 DSP EQ was saved and verified. Final hardware readback matched.",
+                            message = "Flash successful · SIMGOT EW300 DSP EQ was saved and verified. Final hardware readback matched.",
                             duration = SnackbarDuration.Short,
                         )
                     trace.operation == "RESET" && trace.stateKnown && trace.outcome == Ew300OperationOutcome.SUCCESS && trace.finalReadbackMatched ->
                         showDeviceOperation(
-                            message = "SIMGOT EW300 DSP EQ was reset to flat and verified. Final hardware readback matched.",
+                            message = "Reset successful · SIMGOT EW300 DSP EQ was reset to flat and verified. Final hardware readback matched.",
                             duration = SnackbarDuration.Short,
                         )
                     trace.operation == "FLASH" && !trace.stateKnown -> showDeviceOperation(

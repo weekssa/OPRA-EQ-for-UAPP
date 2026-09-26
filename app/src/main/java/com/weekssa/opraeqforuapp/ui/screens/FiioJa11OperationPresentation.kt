@@ -32,8 +32,8 @@ internal fun fiioJa11OperationStatusPresentation(
 
     if (verified) {
         val successMessage = when (trace.operation) {
-            "RESET" -> "FiiO JA11 EQ was reset to flat, saved, and verified."
-            else -> "FiiO JA11 EQ was saved and verified."
+            "RESET" -> "Reset successful · FiiO JA11 EQ was reset to flat, saved, and verified."
+            else -> "Flash successful · FiiO JA11 EQ was saved and verified."
         }
         return FiioJa11OperationStatusPresentation(
             message = "✓ $successMessage Final hardware readback matched.$reconnectMessage",

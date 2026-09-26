@@ -6,6 +6,16 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ## [Unreleased]
 
+### 2026-09-26 DAC Flash UX parity
+
+- Unified the My EQs Flash interaction across supported DACs: the action now announces that Flash
+  has started, prevents duplicate taps while the shared transaction is running, and reports the
+  device-specific final result through the global notification surface.
+- Standardized successful Flash copy around an explicit `Flash successful` outcome while preserving
+  each DAC's truthful verification/persistence wording. Removed validation-only report,
+  qualification, baseline-restore, and dead disabled-button controls from product My DAC surfaces;
+  the underlying engineering evidence remains available to the test/release workflow.
+
 ### 2026-09-26 JA11 observed reconnect and exact restoration evidence
 
 - Recorded J017 from the exact signed c886 candidate: duplicate Flash exports passed the corrected

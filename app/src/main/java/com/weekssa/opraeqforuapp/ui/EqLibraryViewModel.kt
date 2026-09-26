@@ -1655,7 +1655,7 @@ class EqLibraryViewModel(
                     ""
                 }
                 UiText.Dynamic(
-                    "SIMGOT EW300 DSP EQ was saved and verified.$reconnectMessage Final hardware readback matched. Playback-gain adjustment: ${"%+.1f".format(result.representation.playbackGainDb)} dB.",
+                    "Flash successful · SIMGOT EW300 DSP EQ was saved and verified.$reconnectMessage Final hardware readback matched. Playback-gain adjustment: ${"%+.1f".format(result.representation.playbackGainDb)} dB.",
                 )
             }
             is Kt02h20FlashResult.NotSuitable -> UiText.Dynamic(

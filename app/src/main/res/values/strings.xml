@@ -187,14 +187,14 @@
     <string name="error_select_black_pearl_flash">Select Black Pearl as the active output before using direct Flash.</string>
     <string name="error_enable_black_pearl_flash">Enable direct Flash in Settings → Black Pearl before flashing.</string>
     <string name="error_connect_black_pearl_flash">Connect to the Black Pearl from My EQs before flashing.</string>
-    <string name="black_pearl_flash_success">Flash successful · playback gain %1$+.2f dB</string>
-    <string name="black_pearl_flash_success_warning">Flash successful · playback gain %1$+.2f dB · %2$s</string>
+    <string name="black_pearl_flash_success">Flash successful · Black Pearl EQ was written · playback gain %1$+.2f dB</string>
+    <string name="black_pearl_flash_success_warning">Flash successful · Black Pearl EQ was written · playback gain %1$+.2f dB · %2$s</string>
     <string name="black_pearl_not_flashable">Not flashable · %1$s</string>
 
     <string name="error_enable_fiio_flash">Enable direct Flash in Settings → FiiO JA11 before flashing.</string>
     <string name="error_connect_fiio_flash">Connect to the FiiO JA11 from My EQs before flashing.</string>
-    <string name="fiio_flash_success_exact">FiiO JA11 EQ was saved and verified · Exact · final hardware readback matched · global EQ gain %1$+.2f dB</string>
-    <string name="fiio_flash_success_optimized">FiiO JA11 EQ was saved and verified · Optimized · final hardware readback matched · global EQ gain %1$+.2f dB</string>
+    <string name="fiio_flash_success_exact">Flash successful · FiiO JA11 EQ was saved and verified · Exact · final hardware readback matched · global EQ gain %1$+.2f dB</string>
+    <string name="fiio_flash_success_optimized">Flash successful · FiiO JA11 EQ was saved and verified · Optimized · final hardware readback matched · global EQ gain %1$+.2f dB</string>
     <string name="fiio_not_suitable">Not suitable for FiiO JA11 · %1$s</string>
     <string name="fiio_flash_verification_failed">FiiO JA11 Flash verification failed · %1$s</string>
 

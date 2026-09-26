@@ -133,6 +133,7 @@ fun MyEqsHomeScreen(
     val unclaimedEqs = unclaimedFeature.items
     var importOpen by remember { mutableStateOf(false) }
     var pendingFlash by remember { mutableStateOf<PendingHardwareFlash?>(null) }
+    var flashInProgress by remember { mutableStateOf(false) }
     var pendingResetDevice by remember { mutableStateOf<ExportDevice?>(null) }
     var pendingRecovery by remember { mutableStateOf<UnclaimedEqRecord?>(null) }
     var recoveryInProgress by remember { mutableStateOf(false) }
@@ -235,15 +236,23 @@ fun MyEqsHomeScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
+                        val device = pending.preview.device
                         pendingFlash = null
+                        flashInProgress = true
+                        onMessage(hardwareFlashStartedMessage(device))
                         scope.launch {
-                            val message = when (pending) {
-                                is PendingHardwareFlash.SavedEq -> onFlashSavedEq(pending.entryId)
-                                is PendingHardwareFlash.GeneralEq -> onFlashGeneralEq(pending.presetId)
+                            try {
+                                val message = when (pending) {
+                                    is PendingHardwareFlash.SavedEq -> onFlashSavedEq(pending.entryId)
+                                    is PendingHardwareFlash.GeneralEq -> onFlashGeneralEq(pending.presetId)
+                                }
+                                onMessage(message)
+                            } finally {
+                                flashInProgress = false
                             }
-                            onMessage(message)
                         }
                     },
+                    enabled = !flashInProgress,
                 ) {
                     Text(
                         if (pending.preview.device == ExportDevice.BLACK_PEARL &&
@@ -494,7 +503,7 @@ fun MyEqsHomeScreen(
                                 }
                                 if (hardwareFlashOutput) {
                                     TextButton(
-                                        enabled = flashActionsEnabled && flashPreview != null,
+                                        enabled = !flashInProgress && flashActionsEnabled && flashPreview != null,
                                         onClick = {
                                             flashPreview?.let { preview ->
                                                 pendingFlash = PendingHardwareFlash.SavedEq(
@@ -504,7 +513,7 @@ fun MyEqsHomeScreen(
                                                 )
                                             }
                                         },
-                                    ) { Text("Flash") }
+                                    ) { Text(if (flashInProgress) "Flashing…" else "Flash") }
                                 }
                                 if (record.kind == SavedEqKind.Favorite) {
                                     IconButton(
@@ -582,7 +591,7 @@ fun MyEqsHomeScreen(
                             }
                             if (hardwareFlashOutput) {
                                 TextButton(
-                                    enabled = flashActionsEnabled && flashPreview != null,
+                                    enabled = !flashInProgress && flashActionsEnabled && flashPreview != null,
                                     onClick = {
                                         flashPreview?.let { preview ->
                                             pendingFlash = PendingHardwareFlash.GeneralEq(
@@ -592,7 +601,7 @@ fun MyEqsHomeScreen(
                                             )
                                         }
                                     },
-                                ) { Text("Flash") }
+                                ) { Text(if (flashInProgress) "Flashing…" else "Flash") }
                             }
                             IconButton(
                                 onClick = {
@@ -773,6 +782,9 @@ private fun hardwareDeviceTitle(device: ExportDevice): String = when (device) {
     else -> device.folderName
 }
 
+internal fun hardwareFlashStartedMessage(device: ExportDevice): String =
+    "Flashing ${hardwareDeviceTitle(device)}… Keep it connected while the final hardware state is verified."
+
 private fun newEqAttentionText(headphone: ManagedHeadphoneRecord): String? {
     if (!headphone.autoIncludeNewProfiles) return null
     val newCount = headphone.profiles.count { it.isNewUnreviewed && !it.noLongerAvailable }
@@ -795,7 +807,7 @@ fun BlackPearlConnectionControl(
 ) {
     Column(modifier = modifier.padding(bottom = 12.dp)) {
         if (!enabled) {
-            OutlinedButton(onClick = {}, enabled = false) { Text("Direct Flash disabled") }
+            Text("Direct Flash is disabled", style = MaterialTheme.typography.labelLarge)
             Text(
                 text = "Enable direct Flash in Settings → Black Pearl before connecting to the DAC.",
                 modifier = Modifier.padding(top = 4.dp),
@@ -854,7 +866,7 @@ private fun Kt02h20ConnectionControl(
 ) {
     Column(modifier = modifier.padding(bottom = 12.dp)) {
         if (!enabled) {
-            OutlinedButton(onClick = {}, enabled = false) { Text("Direct Flash disabled") }
+            Text("Direct Flash is disabled", style = MaterialTheme.typography.labelLarge)
             Text(
                 text = "Enable direct Flash in Settings → ${hardwareDeviceTitle(device)} before connecting to the DAC.",
                 modifier = Modifier.padding(top = 4.dp),

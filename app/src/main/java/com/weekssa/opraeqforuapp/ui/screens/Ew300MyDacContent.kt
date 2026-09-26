@@ -33,7 +33,6 @@ import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.BuildConfig
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
-import com.weekssa.opraeqforuapp.data.security.ReleaseSignatureGate
 import com.weekssa.opraeqforuapp.domain.dac.AmbiguousExactHardwareEqMatch
 import com.weekssa.opraeqforuapp.domain.dac.DacStateFreshness
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqMatch
@@ -101,9 +100,6 @@ internal fun Ew300MyDacContent(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val operationBusy = !ew300OperationControlsEnabled(operationStatus)
-    val validationEvidenceEnabled = BuildConfig.EW300_FLASH_VALIDATION_ENABLED &&
-        BuildConfig.CANDIDATE_SOURCE_SHA.matches(Regex("[0-9a-fA-F]{40}")) &&
-        ReleaseSignatureGate.isPinnedReleaseSigner(context)
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     var saveDacEqOpen by remember { mutableStateOf(false) }
     var capabilityReport by remember { mutableStateOf<Ew300CapabilityReport?>(null) }
@@ -112,44 +108,6 @@ internal fun Ew300MyDacContent(
     var persistenceRunning by remember { mutableStateOf(false) }
     var persistenceConfirmationOpen by remember { mutableStateOf(false) }
     var restorationRunning by remember { mutableStateOf(false) }
-    // The Save qualification was a bounded development gate and is not a product action. Its
-    // verified result is now represented by the immutable EW300 capability profile.
-    val qualificationBuild = false
-
-    fun advancePersistenceQualification() {
-        if (!qualificationBuild || persistenceRunning) return
-        persistenceRunning = true
-        scope.launch {
-            runCatching { onAdvancePersistenceQualification() }
-                .onSuccess { persistenceResult = it }
-                .onFailure {
-                    onMessage("The EW300 qualification stopped before a result. Do not repeat the action; share the report.")
-                }
-            persistenceRunning = false
-        }
-    }
-
-    if (qualificationBuild && persistenceConfirmationOpen) {
-        AlertDialog(
-            onDismissRequest = { persistenceConfirmationOpen = false },
-            title = { Text("Start the one-time Save qualification?") },
-            text = {
-                Text(
-                    "Exact signed source: ${BuildConfig.CANDIDATE_SOURCE_SHA.take(12)}. The app will lower playback gain by 0.5 dB and one Peak band by 0.1 dB, verify both, send Save once, then preserve the complete baseline. You will unplug and reconnect twice to verify persistence and exact restoration. Stop immediately if the app reports uncertainty.",
-                )
-            },
-            confirmButton = {
-                Button(onClick = {
-                    persistenceConfirmationOpen = false
-                    advancePersistenceQualification()
-                }) { Text("Begin qualification") }
-            },
-            dismissButton = {
-                TextButton(onClick = { persistenceConfirmationOpen = false }) { Text("Cancel") }
-            },
-        )
-    }
-
     if (saveDacEqOpen && !operationBusy && connectionState == Kt02h20ConnectionState.Connected) {
         BlackPearlSaveDacEqDialog(
             catalogState = catalogState,
@@ -744,126 +702,6 @@ internal fun Ew300DeviceStatus(
         supportingText = "One shared My DAC session. Refresh rereads it without opening a second USB path.",
     )
 
-    if (validationEvidenceEnabled) {
-        PremiumSectionLabel(text = "Validation capability report", divider = false)
-        Text(
-            "This automated check reads the exact EW300 identity, EQ registers, and gain register. It never writes, saves, resets, or retries a mutation.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Button(onClick = onRun, enabled = !running && !operationBusy, modifier = Modifier.fillMaxWidth()) {
-            Text(
-                when {
-                    operationBusy -> "Unavailable during EW300 operation"
-                    running -> "Reading…"
-                    else -> "Run read-only report"
-                },
-            )
-        }
-        report?.let {
-            Text("Result: ${it.status}", style = MaterialTheme.typography.titleSmall)
-            Text(
-                if (it.stateKnown) {
-                    "The device state remained known after the check."
-                } else {
-                    "The check stopped safely because device state could not be confirmed."
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = if (it.stateKnown) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
-            )
-            OutlinedButton(onClick = requireNotNull(onShareReadable), modifier = Modifier.fillMaxWidth()) {
-                Text("Share readable report")
-            }
-            OutlinedButton(onClick = requireNotNull(onShareJson), modifier = Modifier.fillMaxWidth()) {
-                Text("Share technical report")
-            }
-        }
-        operationTrace?.let { trace ->
-            PremiumSectionLabel(text = "Last operation report", divider = false)
-            Text(
-                "${trace.operation} · ${trace.outcome}. Share this report after any guarded EW300 operation so the exact session, permission, Save, and readback evidence stays attached to the candidate.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            onShareTraceReadable?.let { share ->
-                OutlinedButton(onClick = share, modifier = Modifier.fillMaxWidth()) { Text("Share operation report") }
-            }
-            onShareTraceJson?.let { share ->
-                OutlinedButton(onClick = share, modifier = Modifier.fillMaxWidth()) { Text("Share operation JSON") }
-            }
-            if (
-                validationEvidenceEnabled &&
-                trace.operation == "FLASH" &&
-                trace.stateKnown &&
-                trace.finalReadbackMatched &&
-                !trace.restorationVerified
-            ) {
-                PremiumSectionLabel(text = "Signed-candidate physical validation", divider = false)
-                Text(
-                    "This validation-only action restores the exact pre-test EW300 baseline captured before the verified Flash. It is not a normal product control. Use it once after the bounded Flash test; do not retry after uncertainty.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Button(
-                    onClick = onRestoreBaseline,
-                    enabled = !restorationRunning && !operationBusy,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(if (restorationRunning) "Restoring exact baseline…" else "Restore exact pre-test baseline")
-                }
-            }
-        }
-    }
-
-    if (qualificationBuild) {
-        PremiumSectionLabel(text = "Signed-candidate Save qualification", divider = false)
-        Text(
-            "Candidate ${candidateSourceSha.take(12)}. This bounded flow makes two small safer changes and requires two complete power-removal checks before persistent Flash can unlock. It is absent from ordinary builds.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        val persistenceMessage = when (val result = persistenceResult) {
-            is Ew300PersistenceQualificationResult.AwaitingPowerCycle -> result.message
-            is Ew300PersistenceQualificationResult.Verified -> result.message
-            is Ew300PersistenceQualificationResult.NotPersistent -> result.message
-            is Ew300PersistenceQualificationResult.Failed -> result.message
-            null -> null
-        }
-        persistenceMessage?.let { message ->
-            Text(
-                message,
-                color = if (persistenceResult is Ew300PersistenceQualificationResult.Failed) {
-                    MaterialTheme.colorScheme.error
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
-            )
-        }
-        val awaitingPowerCycle = persistenceResult is Ew300PersistenceQualificationResult.AwaitingPowerCycle
-        val terminalResult = persistenceResult is Ew300PersistenceQualificationResult.Verified ||
-            persistenceResult is Ew300PersistenceQualificationResult.NotPersistent ||
-            persistenceResult is Ew300PersistenceQualificationResult.Failed
-        Button(
-            onClick = if (awaitingPowerCycle) onContinuePersistence else onStartPersistence,
-            enabled = !operationBusy && !terminalResult && !persistenceRunning && (persistenceEnabled || awaitingPowerCycle),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(
-                when {
-                    persistenceRunning -> "Checking…"
-                    awaitingPowerCycle -> "Continue qualification"
-                    else -> "Start Save qualification"
-                },
-            )
-        }
-        if (!persistenceEnabled && !awaitingPowerCycle) {
-            Text(
-                "Run the read-only report successfully first.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
 }
 
 private fun shareReport(context: Context, subject: String, mimeType: String, contents: String) {

@@ -1,7 +1,5 @@
 package com.weekssa.opraeqforuapp.ui.screens
 
-import android.content.Context
-import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,7 +10,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -127,7 +124,6 @@ internal fun FiioJa11MyDacContent(
                 deviceState = deviceState,
                 connected = connected,
                 onReset = { confirmReset = true },
-                operationTrace = operationTrace,
                 operationStatus = operationStatus,
             )
         } else {
@@ -155,10 +151,8 @@ private fun FiioJa11EqStatus(
     deviceState: FiioJa11DeviceUiState,
     connected: Boolean,
     onReset: () -> Unit,
-    operationTrace: FiioJa11OperationTrace?,
     operationStatus: FiioJa11OperationStatus,
 ) {
-    val context = LocalContext.current
     val program = deviceState.snapshot?.eqProgram
     Text("Current hardware EQ", fontWeight = FontWeight.SemiBold)
     when {
@@ -256,35 +250,6 @@ private fun FiioJa11EqStatus(
         }
         else -> Unit
     }
-    operationTrace?.let { trace ->
-        Text("Last JA11 operation report", fontWeight = FontWeight.SemiBold)
-        Text(
-            "${trace.operation} · ${trace.outcome}. ${fiioJa11OperationReportDescription(trace)}",
-            style = MaterialTheme.typography.bodySmall,
-            color = if (trace.stateKnown) {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            } else {
-                MaterialTheme.colorScheme.error
-            },
-        )
-        OutlinedButton(
-            onClick = { shareJa11Report(context, "FiiO JA11 operation report", "text/plain", trace.toReadableText()) },
-            modifier = Modifier.fillMaxWidth(),
-        ) { Text(FIIO_JA11_READABLE_REPORT_LABEL) }
-        TextButton(
-            onClick = { shareJa11Report(context, "FiiO JA11 operation report JSON", "application/json", trace.toJson()) },
-            modifier = Modifier.fillMaxWidth(),
-        ) { Text(FIIO_JA11_TECHNICAL_REPORT_LABEL) }
-    }
-}
-
-private fun shareJa11Report(context: Context, subject: String, mimeType: String, contents: String) {
-    val shareIntent = Intent(Intent.ACTION_SEND).apply {
-        type = mimeType
-        putExtra(Intent.EXTRA_SUBJECT, subject)
-        putExtra(Intent.EXTRA_TEXT, contents)
-    }
-    context.startActivity(Intent.createChooser(shareIntent, "Share FiiO JA11 report"))
 }
 
 private fun connectionLabel(state: Kt02h20ConnectionState): String = when (state) {
