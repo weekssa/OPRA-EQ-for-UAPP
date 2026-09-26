@@ -21,6 +21,17 @@ ordering, and fail-closed Save gating. Do not add an offset, broad tolerance, re
 normalization. Original-state restoration, Save behavior, persistence, and hardware qualification
 remain unproven; do not repeat the same mutation.
 
+## 2026-09-26 official firmware-history cross-check
+
+FiiO's [official JA11 firmware history](https://forum.fiio.com/note/showNoteContent.do?id=202406211150090736905&tid=77)
+describes the `V2.2` release as fixing a wired inline-control pause issue and optimizing microphone
+input gain. It does not document a PEQ, global-gain, `0x17`, readback, or persistence-format change.
+The J012 report's firmware value `2.20` is consistent with that release naming, but treating the
+two as the same version identity is an inference from the report and public version label, not a
+device-proven fact. The official note therefore neither explains nor disproves the observed
+`0xD900 → 0xD9FF` response. The current codec, tolerance, ordering, and fail-closed behavior
+remain unchanged; no firmware-specific correction is justified.
+
 ## 2026-09-25 independent protocol-oracle matrix
 
 The following pinned sources were compared against the clean-room Android implementation. They are

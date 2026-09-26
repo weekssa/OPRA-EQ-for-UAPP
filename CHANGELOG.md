@@ -6,6 +6,13 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ## [Unreleased]
 
+### 2026-09-26 JA11 official firmware-history cross-check
+
+- Recorded FiiO's official JA11 `V2.2` release note as protocol-boundary evidence. It lists
+  inline-control and microphone changes, not PEQ/global-gain/readback or persistence-format
+  changes. The public note does not explain the J012 `0xD900 → 0xD9FF` response, so no
+  firmware-specific correction or new hardware test is justified.
+
 ### 2026-09-25 JA11 J012 repeat and protocol-oracle audit
 
 - Recorded the latest valid readable/JSON owner reports from the exact signed J011 candidate.
