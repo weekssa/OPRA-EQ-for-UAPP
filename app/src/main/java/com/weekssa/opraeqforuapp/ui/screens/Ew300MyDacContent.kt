@@ -278,7 +278,7 @@ internal fun Ew300MyDacContent(
                                     runCatching { onRestoreBaseline() }
                                         .onSuccess(onMessage)
                                         .onFailure {
-                                            onMessage("EW300 baseline restoration stopped before a verified result. Do not retry; share the operation report.")
+                                            onMessage("EW300 baseline restoration stopped before a verified result. Do not retry; stop and reconnect or refresh before any later write.")
                                         }
                                     restorationRunning = false
                                 }
@@ -369,8 +369,13 @@ internal fun ew300OperationStatusPresentation(
         } else {
             ""
         }
+        val successMessage = when (trace.operation.uppercase()) {
+            "FLASH" -> "Flash successful · SIMGOT EW300 DSP EQ was saved and verified."
+            "RESET" -> "Reset successful · SIMGOT EW300 DSP EQ was reset to flat and verified."
+            else -> "Last EW300 $operation verified."
+        }
         Ew300OperationStatusPresentation(
-            message = "✓ Last EW300 $operation verified.$reconnectMessage Final hardware readback matched.",
+            message = "✓ $successMessage$reconnectMessage Final hardware readback matched.",
             verified = true,
         )
     } else {

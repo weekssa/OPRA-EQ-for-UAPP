@@ -53,7 +53,7 @@ internal fun fiioJa11OperationStatusPresentation(
     }
     val reason = trace.failureReason?.takeIf { it.isNotBlank() }?.let { " Reason: $it" } ?: ""
     return FiioJa11OperationStatusPresentation(
-        message = "Last FiiO JA11 $operation was not verified. $stateMessage$reconnectMessage$reason Do not retry the hardware action; share the operation report before any later write.",
+        message = "Last FiiO JA11 $operation was not verified. $stateMessage$reconnectMessage$reason Do not retry the hardware action; stop and reconnect or refresh before any later write.",
         verified = false,
     )
 }

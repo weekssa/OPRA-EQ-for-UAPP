@@ -338,7 +338,7 @@ fun EqLibraryApp(
             Ew300OperationOutcome.CONFIRMATION_REQUIRED,
             Ew300OperationOutcome.NO_BASELINE,
             -> "$operation was not applied${reason?.let { ": $it" } ?: "."}"
-            else -> "$operation did not finish with a verified state. Do not retry this operation; review the operation report${reason?.let { ": $it" } ?: "."}"
+            else -> "$operation did not finish with a verified state. Do not retry this operation; stop and reconnect or refresh before any later write${reason?.let { ": $it" } ?: "."}"
         }
     }
 

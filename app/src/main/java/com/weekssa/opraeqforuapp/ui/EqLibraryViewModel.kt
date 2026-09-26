@@ -1002,7 +1002,7 @@ class EqLibraryViewModel(
     ): UiText {
         if (!Ew300Protocol.CANONICAL_CAPTURE_QUALIFIED) {
             return UiText.Dynamic(
-                "EW300 Personal EQ capture remains locked until the cable's frequency scaling is verified. The read-only capability report is available in My DAC.",
+                "EW300 Personal EQ capture remains locked until the cable's frequency scaling is verified.",
             )
         }
         val name = displayName.trim()
@@ -1689,7 +1689,7 @@ class EqLibraryViewModel(
                     ""
                 }
                 UiText.Dynamic(
-                    "SIMGOT EW300 DSP EQ was reset to flat and verified.$reconnectMessage Final hardware readback matched. Underlying playback gain was preserved.",
+                    "Reset successful · SIMGOT EW300 DSP EQ was reset to flat and verified.$reconnectMessage Final hardware readback matched. Underlying playback gain was preserved.",
                 )
             }
             is Kt02h20FlatResetResult.NotSuitable -> UiText.Dynamic(

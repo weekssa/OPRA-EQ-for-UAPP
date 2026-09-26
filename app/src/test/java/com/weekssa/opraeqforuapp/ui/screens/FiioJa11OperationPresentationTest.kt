@@ -67,6 +67,8 @@ class FiioJa11OperationPresentationTest {
         assertFalse(presentation.verified)
         assertTrue(presentation.message.contains("was not verified"))
         assertTrue(presentation.message.contains("Do not retry"))
+        assertTrue(presentation.message.contains("stop and reconnect or refresh"))
+        assertFalse(presentation.message.contains("share the operation report"))
         assertTrue(presentation.message.contains("final readback mismatch"))
     }
 
