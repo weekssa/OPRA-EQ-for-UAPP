@@ -139,6 +139,25 @@ class FiioJa11ProtocolTest {
     }
 
     @Test
+    fun observedJa11D9ffReadbackDecodesAsDistinctDeviceDomainValue() {
+        val response = bytes(
+            0x02, 0xBB, 0x0B, 0x00, 0x00, 0x17, 0x02, 0xFF, 0xD9, 0xBB, 0xEE,
+        )
+
+        assertEquals(
+            -3.800390625,
+            FiioJa11Protocol.globalGainFromResponse(response)!!,
+            0.0,
+        )
+        assertTrue(
+            kotlin.math.abs(
+                FiioJa11Protocol.globalGainFromResponse(response)!! -
+                    FiioJa11Protocol.quantizedGlobalGainDb(-3.9),
+            ) > 0.001,
+        )
+    }
+
+    @Test
     fun quantizedGlobalGainReportsTheExactDeviceDomainValue() {
         assertEquals(-3.9, FiioJa11Protocol.quantizedGlobalGainDb(-3.9), 0.0)
         assertEquals(1.0 / 2560.0, FiioJa11Protocol.quantizedGlobalGainDb(1.0 / 2560.0), 0.0)

@@ -1,5 +1,22 @@
 # FiiO JA11 hands-on qualification
 
+## 2026-09-25 J012 returned report — DO NOT REPEAT
+
+The owner returned the report pair from the exact signed J011 candidate. This is a valid,
+repeatable physical negative result and supersedes the earlier “awaiting owner session” wording.
+It does not prove the protocol root cause, Save/persistence behavior, or original-state restoration.
+
+- Readable report: `/Users/stephenweeks/Library/CloudStorage/GoogleDrive-weekssa@gmail.com/My Drive/OPRA UAPP Presets/EQ Library Testing/FiiO JA11 operation report (1)`; SHA-256 `5cf579a19f4706d3895e0286079f46a8bb00af68acc87b1e74d4c5e326a60d3a`.
+- Valid JSON report: `/Users/stephenweeks/Library/CloudStorage/GoogleDrive-weekssa@gmail.com/My Drive/OPRA UAPP Presets/EQ Library Testing/FiiO JA11 operation report JSON (1)`; SHA-256 `d88b3ed45ed821000616c5fb260356e415311aafbf72d3415b5dd30e451e7e41`.
+- Operation ID: `3b348512-833a-4942-bb64-2a2e7bca1b5d`; source `5b4b40bfccabae91e3839de9ff2f7b1edcb0d67a`; firmware `2.20`; VID/PID `0x2972:0x0102`.
+- Exact value trace: `-3.9 dB` → raw `0xD900` / `00 D9` → same-session raw `0xD9FF` / `FF D9` → `-3.800390625 dB`; delta `0.099609375 dB` versus `0.001 dB` tolerance.
+- All five bands and Apply passed; Save count was `0`; session/detach generations remained `1/0`; permission requests were `0`; outcome was `VerificationFailed`.
+
+Do not flash or Reset this candidate again. Do not request another physical mutation to probe an
+unproven offset, tolerance, retry, timing, or response interpretation. The next physical session,
+if ever authorized, must follow a new evidence-backed candidate and a new bounded plan that proves
+the unresolved question and includes restoration verification.
+
 ## 2026-09-25 J009 returned report — DO NOT REPEAT YET
 
 The owner returned the exact signed diagnostic candidate's operation report. It proves the app

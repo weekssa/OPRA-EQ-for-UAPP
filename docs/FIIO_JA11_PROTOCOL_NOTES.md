@@ -2,6 +2,41 @@
 
 Status: **expanded v0.6 software implementation in progress; physical hardware validation pending**
 
+## 2026-09-25 J012 exact-candidate result — no protocol correction proven
+
+The latest owner report pair is valid and is tied to the signed J011 source `5b4b40bfccabae91e3839de9ff2f7b1edcb0d67a`:
+
+- Readable report SHA-256: `5cf579a19f4706d3895e0286079f46a8bb00af68acc87b1e74d4c5e326a60d3a`.
+- JSON report SHA-256: `d88b3ed45ed821000616c5fb260356e415311aafbf72d3415b5dd30e451e7e41`; `jq` validation passed.
+- Firmware: `2.20`; VID/PID: `0x2972:0x0102`; session/detach generations: `1/0`; permission requests: `0`.
+- Canonical/selected/quantized gain: `-3.9 dB`; write: `0x17` raw `0xD900` (`00 D9`).
+- Same-session readback: `0xD9FF` (`FF D9`) = `-3.800390625 dB`; delta `0.099609375 dB` versus `0.001 dB` tolerance.
+- All five bands matched and Apply completed; Save count was `0`; outcome was `VerificationFailed`.
+
+This repeats the earlier J009 symptom on firmware `2.20` but still does not distinguish device-side
+transformation/quantization, stale same-command response, timing, or another protocol-semantic
+behavior. No authoritative or independent implementation documents this exact `D900 → D9FF`
+transition. Preserve signedness, little-endian order, `2560` scale, target derivation, tolerance,
+ordering, and fail-closed Save gating. Do not add an offset, broad tolerance, retry, or readback
+normalization. Original-state restoration, Save behavior, persistence, and hardware qualification
+remain unproven; do not repeat the same mutation.
+
+## 2026-09-25 independent protocol-oracle matrix
+
+The following pinned sources were compared against the clean-room Android implementation. They are
+behavioral/provenance references only; no source code was copied.
+
+| Source | Revision / license | Confirmed overlap | Unresolved limitation |
+| --- | --- | --- | --- |
+| [Cyfine ja11-web-control](https://github.com/Cyfine/ja11-web-control/tree/4d4eb83df6fcdf9e20b52e1bdf59a77f463b2c30) | `4d4eb83df6fcdf9e20b52e1bdf59a77f463b2c30`; [MIT](https://github.com/Cyfine/ja11-web-control/blob/4d4eb83df6fcdf9e20b52e1bdf59a77f463b2c30/LICENSE) | VID/PID, report ID, five bands, `0x17` signed LE/2560, `0x19` Save | Current browser path does not send Android’s explicit `0x18` Apply and does not prove PEQ post-Save readback |
+| [Ircama ja11-config](https://github.com/Ircama/ja11-config/tree/affddff6c9808c33ce8b35b0b9759ff0d7f6e405) | `affddff6c9808c33ce8b35b0b9759ff0d7f6e405`; [EUPL-1.2](https://github.com/Ircama/ja11-config/blob/affddff6c9808c33ce8b35b0b9759ff0d7f6e405/LICENSE) | `0x15`, `0x17`, `0x18`, `0x19`, signed LE/2560 | Save helper does not independently prove global-gain persistence |
+| [adithyasource fiiocontrol-oss](https://github.com/adithyasource/fiiocontrol-oss/tree/f38994b3bd51bbc898cfceb5d182a403180df33e) | `f38994b3bd51bbc898cfceb5d182a403180df33e`; [Unlicense](https://github.com/adithyasource/fiiocontrol-oss/blob/f38994b3bd51bbc898cfceb5d182a403180df33e/LICENSE) | PID `0x0102`, five bands, `0x17` signed LE/2560, Save | Explicitly reverse-engineered/not completely perfect; Save path lacks verification |
+
+The three implementations corroborate the current `0x17` encoding and do not supply evidence for
+an alternate byte order, signedness, scale, tolerance, or `0xD900 → 0xD9FF` interpretation. FiiO’s
+[JA11 FAQ](https://www.jadeaudio.com/details?_l=en&article_id=178) supports Save/restart lifecycle
+behavior, but does not define these raw gain semantics or prove persistence.
+
 These notes document observable normal run-mode behavior used by EQ Library. They are not firmware-update documentation and must not be expanded into bootloader, firmware-flash, cross-flash, USB-identity mutation, or raw-command functionality without a separately approved product scope.
 
 ## Current v0.6 product direction

@@ -6,6 +6,18 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ## [Unreleased]
 
+### 2026-09-25 JA11 J012 repeat and protocol-oracle audit
+
+- Recorded the latest valid readable/JSON owner reports from the exact signed J011 candidate.
+  The stable-session trace repeats `0xD900` (`-3.9 dB`) followed by `0xD9FF`
+  (`-3.800390625 dB`) before Save; all five bands matched and Save was correctly suppressed.
+- Compared pinned Cyfine, Ircama, and adithyasource implementations. All corroborate the current
+  signed little-endian `2560`-scale global-gain codec; none explains the observed readback or proves
+  PEQ persistence. No production protocol change is justified.
+- Added deterministic regression fixtures proving that the observed `0xD9FF` readback remains a
+  verification failure and cannot reach Save. JA11 remains hardware-validation pending, and the
+  consumed candidate must not be flashed again.
+
 ### 2026-09-25 JA11 diagnostic firmware provenance
 
 - Added optional read-only JA11 firmware-version capture to the Flash/Reset operation trace and
