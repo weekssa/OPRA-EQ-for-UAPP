@@ -272,7 +272,6 @@ internal fun Ew300MyDacContent(
                             }
                         },
                         operationTrace = operationTrace,
-                        validationEvidenceEnabled = validationEvidenceEnabled,
                         restorationRunning = restorationRunning,
                         onRestoreBaseline = {
                             if (!restorationRunning) {
@@ -293,7 +292,6 @@ internal fun Ew300MyDacContent(
                         onShareTraceJson = operationTrace?.let { trace ->
                             { shareReport(context, "EW300 operation report JSON", "application/json", trace.toJson()) }
                         },
-                        qualificationBuild = qualificationBuild,
                         candidateSourceSha = BuildConfig.CANDIDATE_SOURCE_SHA,
                         persistenceResult = persistenceResult,
                         persistenceRunning = persistenceRunning,
