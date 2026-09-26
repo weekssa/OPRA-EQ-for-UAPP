@@ -714,3 +714,16 @@ APK SHA-256: `dabf4bcdddf69853b09793f5a94bec0a3af7efb430f1cdfe26ffc35a93b783ad`
 The exact candidate passed Android CI #1538, CodeQL #1420, Catalog currentness CI #1826, Priority community coverage CI #1311, and Signed EQ Library Beta Candidate #1213. The signing workflow verified the pinned certificate `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`.
 
 This PASS closes the corrective Black Pearl physical gate. It does not establish TRN factory-default semantics and does not qualify FiiO JA11 hardware behavior. PR #16 was merged and v0.6.0 publication is complete. FiiO JA11 physical qualification remains hardware-validation-pending.
+# 2026-09-26 JA11 same-session transaction verified; UI polish in progress
+
+- Owner report J016 proves the corrected FiiO JA11 `0x17` gain transaction on exact source
+  `c886fdbb2ae326e562dc110b2b779cb075869798`: `FF D9` / `-3.9 dB`, one Save, and matching final
+  readback across 31 successful transport events. The readable and technical report hashes are
+  retained in the JA11 validation ledger.
+- JA11 UI feedback now distinguishes verified final readback from failed or uncertain operations,
+  disables Reset and DEVICE controls while a JA11 Flash/Reset is running, and keeps readable plus
+  technical/JSON operation-report sharing available without changing report contents or
+  transaction behavior.
+- The report showed no detach or reconnect (`1/0` generations), so the UI does not claim reconnect
+  persistence. Power-cycle persistence, original-state restoration, public support, and final
+  release remain owner-controlled gates.

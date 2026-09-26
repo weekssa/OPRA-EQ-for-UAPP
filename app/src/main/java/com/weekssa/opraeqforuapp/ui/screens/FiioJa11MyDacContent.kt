@@ -143,6 +143,7 @@ internal fun FiioJa11MyDacContent(
                 onSetFiioJa11EqProgram = onSetEqProgram,
                 onSetFiioJa11HeadsetControl = onSetHeadsetControl,
                 onSetFiioJa11UacMode = onSetUacMode,
+                fiioJa11OperationBusy = operationStatus is FiioJa11OperationStatus.Running,
             )
         }
     }
@@ -224,7 +225,10 @@ private fun FiioJa11EqStatus(
 
     Button(
         onClick = onReset,
-        enabled = connected && !deviceState.isBusy && deviceState.pendingRestartWrite == null,
+        enabled = connected &&
+            !deviceState.isBusy &&
+            deviceState.pendingRestartWrite == null &&
+            fiioJa11OperationControlsEnabled(operationStatus),
         modifier = Modifier.fillMaxWidth(),
     ) { Text("Reset EQ to flat") }
 
@@ -236,15 +240,26 @@ private fun FiioJa11EqStatus(
 
     when (operationStatus) {
         is FiioJa11OperationStatus.Running -> Text(
-            "JA11 ${operationStatus.operation.lowercase()} is still being verified. Do not repeat the hardware action until it finishes.",
+            "JA11 ${operationStatus.operation.lowercase()} is being applied and verified. Keep the DAC connected and wait for the final readback.",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        is FiioJa11OperationStatus.Completed -> {
+            val status = fiioJa11OperationStatusPresentation(operationStatus.trace)
+            Text(
+                status.message,
+                color = if (status.verified) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.error
+                },
+            )
+        }
         else -> Unit
     }
     operationTrace?.let { trace ->
         Text("Last JA11 operation report", fontWeight = FontWeight.SemiBold)
         Text(
-            "${trace.operation} · ${trace.outcome}. Share this report before any later Flash so the exact values, phases, USB bytes, and session evidence remain attached to the candidate.",
+            "${trace.operation} · ${trace.outcome}. ${fiioJa11OperationReportDescription(trace)}",
             style = MaterialTheme.typography.bodySmall,
             color = if (trace.stateKnown) {
                 MaterialTheme.colorScheme.onSurfaceVariant
@@ -255,11 +270,11 @@ private fun FiioJa11EqStatus(
         OutlinedButton(
             onClick = { shareJa11Report(context, "FiiO JA11 operation report", "text/plain", trace.toReadableText()) },
             modifier = Modifier.fillMaxWidth(),
-        ) { Text("Share readable report") }
-        OutlinedButton(
+        ) { Text(FIIO_JA11_READABLE_REPORT_LABEL) }
+        TextButton(
             onClick = { shareJa11Report(context, "FiiO JA11 operation report JSON", "application/json", trace.toJson()) },
             modifier = Modifier.fillMaxWidth(),
-        ) { Text("Share technical report") }
+        ) { Text(FIIO_JA11_TECHNICAL_REPORT_LABEL) }
     }
 }
 

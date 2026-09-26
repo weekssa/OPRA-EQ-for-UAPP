@@ -1,6 +1,6 @@
 # FiiO JA11 hands-on qualification
 
-## 2026-09-26 corrected-codec owner gate — READY FOR OWNER HARDWARE TESTING / FINAL RELEASE BLOCKED
+## 2026-09-26 corrected-codec owner gate — J016 SAME-SESSION PASS / FULL QUALIFICATION PENDING / FINAL RELEASE BLOCKED
 
 The previous J012 failure is explained by a proven Android codec defect. Official FiiO Control
 encodes JA11 command `0x17` global gain as signed tenths of a dB, high byte first; the old
@@ -28,11 +28,30 @@ The public `mobile-test-apk` branch is a temporary hands-on testing surface, not
 release. Do not use its moving convenience APK; use the immutable URL above and verify both the
 checksum and signer before installation.
 
-The owner should perform one consolidated session: read-only baseline, one Jaytiss Flash, export
-readable and JSON reports, and verify restoration/persistence only if the transaction reaches Save.
-The corrected report must show the outgoing `0x17` payload as `FF D9` for the `-3.9 dB` Jaytiss
-case and decode the returned `FF D9` as `-3.9 dB`. Stop on any different byte sequence, missing
-report, mismatch, unexpected disconnect, or uncertain restoration; do not retry automatically.
+## 2026-09-26 J016 owner result — SAME-SESSION TRANSACTION PASS / FULL QUALIFICATION PENDING
+
+The owner returned the readable and parser-valid technical reports from the exact corrected source
+`c886fdbb2ae326e562dc110b2b779cb075869798`. The Flash completed with one Save and final readback:
+
+- Readable report SHA-256: `42de6d72e524bb83eb8581ae8af153a8c017012bb4f49a1d753cc7ce1056a3a`.
+- Technical report SHA-256: `6e2e88af5436713555222aebf18fbd2447a45aed7d978328203233bb993d18f0`.
+- Operation ID: `587ebf2a-b9e9-4758-ba0a-6ddf48bef2d0`; firmware `2.20`; VID/PID `0x2972:0x0102`; interface `3`.
+- Canonical, selected, quantized, and final readback global gain: `-3.9 dB`; corrected `0x17` bytes: `FF D9`.
+- Source/target bands: `9 → 5`; response fit: `true`; Save count: `1`; comparison: `FINAL_READBACK`;
+  outcome: `Success`; state known: `true`; transport events: `31`.
+- Session/detach generations remained `1/0`; no USB detach or reconnect was observed.
+
+This is a **same-session transaction PASS**, not proof of unplug/reconnect persistence, power-cycle
+retention, original-state restoration, or complete JA11 hardware qualification. Do not change the
+transaction based on this result. A later UI/status/report-only candidate does not require another
+physical mutation if it leaves protocol, session, Save, and final-readback code unchanged; any
+candidate that changes those boundaries requires a new owner-approved bounded session.
+
+The owner completed the consolidated session, and its reports are recorded as J016 below. The
+corrected report shows the outgoing `0x17` payload as `FF D9` for the `-3.9 dB` Jaytiss case and
+decodes the returned `FF D9` as `-3.9 dB`. No detach or reconnect occurred in that operation.
+Do not repeat physical Flash or Reset for a UI/status/report-only candidate; a future candidate
+that changes protocol, session, Save, or final-readback boundaries requires a new bounded plan.
 
 ## 2026-09-25 J012 returned report — DO NOT REPEAT
 

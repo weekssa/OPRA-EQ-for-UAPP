@@ -48,6 +48,7 @@ internal fun CapabilityDrivenDeviceStatus(
     onSetFiioJa11EqProgram: (FiioJa11Protocol.EqProgram) -> Unit = {},
     onSetFiioJa11HeadsetControl: (Boolean) -> Unit = {},
     onSetFiioJa11UacMode: (FiioJa11Protocol.UacMode) -> Unit = {},
+    fiioJa11OperationBusy: Boolean = false,
 ) {
     when (deviceId) {
         DacDeviceId.TRN_BLACK_PEARL -> BlackPearlDeviceStatus(
@@ -64,6 +65,7 @@ internal fun CapabilityDrivenDeviceStatus(
             onSetEqProgram = onSetFiioJa11EqProgram,
             onSetHeadsetControl = onSetFiioJa11HeadsetControl,
             onSetUacMode = onSetFiioJa11UacMode,
+            operationBusy = fiioJa11OperationBusy,
         )
         DacDeviceId.SIMGOT_EW300 -> Text(
             text = "EW300 five-band EQ is managed from My EQs / EQ Library.",
@@ -133,6 +135,7 @@ private fun FiioJa11DeviceStatus(
     onSetEqProgram: (FiioJa11Protocol.EqProgram) -> Unit,
     onSetHeadsetControl: (Boolean) -> Unit,
     onSetUacMode: (FiioJa11Protocol.UacMode) -> Unit,
+    operationBusy: Boolean,
 ) {
     var stagedVolume by rememberSaveable { mutableStateOf<Int?>(null) }
     var choosingEqProgram by rememberSaveable { mutableStateOf(false) }
@@ -141,7 +144,11 @@ private fun FiioJa11DeviceStatus(
     var aboutExpanded by rememberSaveable { mutableStateOf(false) }
 
     val snapshot = state.snapshot
-    val controlsEnabled = connected && state.isCurrentSession && !state.isBusy && state.pendingRestartWrite == null
+    val controlsEnabled = connected &&
+        state.isCurrentSession &&
+        !state.isBusy &&
+        state.pendingRestartWrite == null &&
+        !operationBusy
 
     DeviceOperationStatusHeader(
         isReading = state.isReading,
@@ -153,7 +160,7 @@ private fun FiioJa11DeviceStatus(
         isCurrentSession = state.isCurrentSession,
         error = state.error,
         enabled = connected,
-        busy = state.isBusy || state.pendingRestartWrite != null,
+        busy = state.isBusy || state.pendingRestartWrite != null || operationBusy,
         onRefresh = onRead,
         controlName = ::fiioControlName,
     )

@@ -1,6 +1,6 @@
 # FiiO / JadeAudio JA11 protocol notes
 
-Status: **JA11 global-gain codec correction implemented from official FiiO evidence; signed-candidate and physical validation pending**
+Status: **JA11 global-gain codec correction implemented; same-session Flash/Save/final-readback physically verified; power-cycle persistence and full qualification pending**
 
 ## 2026-09-26 official FiiO Control evidence — global-gain root cause proven
 
@@ -35,6 +35,22 @@ exact official gain bytes. No checksum or sequence change is included in this co
 This official-app evidence supersedes the earlier third-party-only interpretation of `0x17` as
 little-endian/2560. The pinned third-party implementations remain useful behavioral evidence for
 identity, framing, bands, and Save, but they were not sufficient authority for this field.
+
+## 2026-09-26 J016 owner report — corrected same-session transaction PASS
+
+The owner returned parser-valid readable and technical reports from exact source
+`c886fdbb2ae326e562dc110b2b779cb075869798`. They record the corrected `0x17` value `FF D9`
+(`-3.9 dB`) on write and final readback, Apply before volatile verification, exactly one Save,
+`FINAL_READBACK`, `Success`, and `stateKnown=true`. All 31 events remained on session/detach
+generations `1/0`, so no detach or reconnect was observed. Report SHA-256 values are
+`42de6d72e524bb83eb8581ae8af153a8c017012bb4f49a1d753cc7ce1056a3a` (readable) and
+`6e2e88af5436713555222aebf18fbd2447a45aed7d978328203233bb993d18f0` (technical JSON).
+
+J016 proves the corrected same-session transaction and Save/final-readback path. It does not prove
+unplug/reconnect persistence, power-cycle retention, original-state restoration, or full hardware
+qualification. Keep the maintained physical gate and fail-closed behavior unchanged; a UI-only
+follow-up does not require another physical mutation when these transaction boundaries remain
+untouched.
 
 ## 2026-09-25 J012 exact-candidate result — no protocol correction proven
 

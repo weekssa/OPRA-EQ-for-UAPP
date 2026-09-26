@@ -31,15 +31,18 @@ exact head. The merged source `c886fdbb2ae326e562dc110b2b779cb075869798` now has
 owner-test APK `EQ-Library-v0.7.0-beta-c886fdb.apk` published with SHA-256
 `c390bbd429ce4101ce7fad3aa3820990da0e7ffec7a4f688e5eafe4eb11f6341`, and signer certificate
 SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`. This clears the
-software/artifact gate only; no new physical result exists.
+software/artifact gate. J016 now records a successful same-session Flash with one Save and final
+readback on this exact source; it does not prove power-cycle persistence or restoration. A later
+UI-only candidate must carry its own software/artifact provenance but does not require another
+physical mutation when the transaction path remains unchanged.
 
 | Capability | Decision | Evidence / boundary |
 | --- | --- | --- |
 | Exact JA11 USB identity, VID `0x2972`, UAC PIDs `0x0101`/`0x0102` | SUPPORTED_AND_IMPLEMENTED; physical pending | Strict allowlist and dynamic HID interface discovery are implemented. Physical identity/PID for J001 was not captured. |
 | Five-band Peak/Low Shelf/High Shelf target representation | SUPPORTED_AND_IMPLEMENTED; physical pending | Shared finite-hardware adapter, complete five-slot target, and codec tests exist. J001 displayed a 9→5 optimized plan but did not provide readback values. |
-| Global EQ gain `0x17` encoding/decoding | CORRECTION IMPLEMENTED; PHYSICAL VALIDATION PENDING | Official FiiO Control V4.6.0 evidence establishes signed 16-bit tenths-of-a-dB, high-byte-first encoding. J012's `00 D9` write and `FF D9` response therefore identify the old Android scale/order defect; the corrected source writes and reads `FF D9` as `-3.9 dB`. Save persistence and hardware qualification remain unproven. |
+| Global EQ gain `0x17` encoding/decoding | CORRECTION IMPLEMENTED; SAME-SESSION PHYSICAL PASS; FULL QUALIFICATION PENDING | Official FiiO Control V4.6.0 evidence establishes signed 16-bit tenths-of-a-dB, high-byte-first encoding. J016 physically records the corrected source writing and reading `FF D9` as `-3.9 dB`; power-cycle persistence and restoration remain unproven. |
 | Apply command and volatile readback | SOFTWARE-SUPPORTED; PHYSICAL SEMANTICS INSUFFICIENTLY_EVIDENCED | A supplied My DAC frame shows the optimized five-band target present while connected, which supports volatile application of the band plan. It does not prove the gain wire value or the exact transaction phase. |
-| Save User 1 persistence | SOFTWARE-SUPPORTED; PHYSICAL VALIDATION PENDING | J012 records `saveCommandCount=0` because volatile verification failed before Save. The supplied report therefore proves neither Save behavior nor persistence; the later flat `0.00 dB` view remains a negative observation without a Save-stage result. |
+| Save User 1 persistence | SAME-SESSION SAVE/FINAL-READBACK PASS; POWER-CYCLE PERSISTENCE PENDING | J016 records exactly one Save, final readback after Save, matching `FF D9` gain and all five target bands. It does not prove that values survive unplug/reconnect or that the original baseline was restored. |
 | Unplug/reconnect persistence | INSUFFICIENT_EVIDENCE | A supplied post-reconnect frame shows User 1 flat with `0.00 dB`, consistent with the owner's report, but no exact candidate, raw final readback, power-cycle duration, or baseline/restoration record is attached. |
 | Fail-closed mismatch handling | SUPPORTED_AND_IMPLEMENTED | A global-gain mismatch prevents Save in the first verification path. Do not weaken the `0.001 dB` check or suppress the error. |
 | Same-command stale-response correlation | PARTIALLY NARROWED; NOT PROVEN SAFE | J012 has a valid same-command `0x17` response on an unchanged session with exact event ordering and no detach/reconnect, so session replacement is not the cause of that attempt. The protocol still lacks request identity beyond command matching; delayed same-command responses remain an unresolved risk. |
@@ -47,7 +50,7 @@ software/artifact gate only; no new physical result exists.
 | Session-generation enforcement across Flash | SUPPORTED_AND_IMPLEMENTED; AUTOMATED GATES PASS; PHYSICAL PENDING | The JA11 Android transport pins reads and ordinary writes to one session/detach generation; Save remains the explicit lifecycle exception and waits for its reconnect boundary. Focused tests, Android CI, signed emulator install/cold launch, and the exact signed candidate all pass. Physical lifecycle behavior remains unqualified. |
 | Output volume, presets, headset/UAC controls | SOFTWARE IMPLEMENTED; PHYSICAL PENDING | These controls are outside the failed EQ-gain root-cause boundary; owner reports that general controls work do not qualify Flash or persistence. |
 | Firmware update, bootloader, cross-flash, raw command console | UNSAFE_OR_OUT_OF_SCOPE | No JA11 firmware mutation or arbitrary command surface is authorized in this task. |
-| Public JA11 support/release claim | UNSAFE_OR_OUT_OF_SCOPE | Hardware qualification remains blocked by the J012 pre-Save mismatch and missing restoration/persistence evidence. |
+| Public JA11 support/release claim | UNSAFE_OR_OUT_OF_SCOPE | J016 closes the corrected same-session transaction question but does not close power-cycle persistence or restoration. Keep public support and final-release claims owner-controlled. |
 
 ## Matrix rule
 
