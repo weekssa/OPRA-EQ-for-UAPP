@@ -1,5 +1,39 @@
 # FiiO JA11 hands-on qualification
 
+## 2026-09-26 corrected-codec owner gate — WAIT FOR SIGNED CANDIDATE
+
+The previous J012 failure is explained by a proven Android codec defect. Official FiiO Control
+encodes JA11 command `0x17` global gain as signed tenths of a dB, high byte first; the old
+candidate wrote `00 D9` for `-3.9 dB`, while the device returned the official `FF D9` form. The
+corrected source is `c63c4060132ac9f45e898f413da5e4aefdbb7137`. Its exact-head automated gates
+pass; a signed APK is still required. Do not flash J011 or any earlier candidate again. This
+checklist remains hardware qualification authority, not a release approval.
+
+The next physical session is allowed only after the exact corrected source has a signed APK,
+verified checksum and signer, and all applicable automated gates. The owner should then perform
+one consolidated session: read-only baseline, one Jaytiss Flash, export readable and JSON reports,
+and verify restoration/persistence only if the transaction reaches Save. The corrected report must
+show the outgoing `0x17` payload as `FF D9` for the `-3.9 dB` Jaytiss case and decode the returned
+`FF D9` as `-3.9 dB`. Stop on any different byte sequence, missing report, mismatch, unexpected
+disconnect, or uncertain restoration; do not retry automatically.
+
+## 2026-09-25 J012 returned report — DO NOT REPEAT
+
+The owner returned the report pair from the exact signed J011 candidate. This is a valid,
+repeatable physical negative result and supersedes the earlier “awaiting owner session” wording.
+It does not prove the protocol root cause, Save/persistence behavior, or original-state restoration.
+
+- Readable report: `/Users/stephenweeks/Library/CloudStorage/GoogleDrive-weekssa@gmail.com/My Drive/OPRA UAPP Presets/EQ Library Testing/FiiO JA11 operation report (1)`; SHA-256 `5cf579a19f4706d3895e0286079f46a8bb00af68acc87b1e74d4c5e326a60d3a`.
+- Valid JSON report: `/Users/stephenweeks/Library/CloudStorage/GoogleDrive-weekssa@gmail.com/My Drive/OPRA UAPP Presets/EQ Library Testing/FiiO JA11 operation report JSON (1)`; SHA-256 `d88b3ed45ed821000616c5fb260356e415311aafbf72d3415b5dd30e451e7e41`.
+- Operation ID: `3b348512-833a-4942-bb64-2a2e7bca1b5d`; source `5b4b40bfccabae91e3839de9ff2f7b1edcb0d67a`; firmware `2.20`; VID/PID `0x2972:0x0102`.
+- Exact value trace: `-3.9 dB` → raw `0xD900` / `00 D9` → same-session raw `0xD9FF` / `FF D9` → `-3.800390625 dB`; delta `0.099609375 dB` versus `0.001 dB` tolerance.
+- All five bands and Apply passed; Save count was `0`; session/detach generations remained `1/0`; permission requests were `0`; outcome was `VerificationFailed`.
+
+Do not flash or Reset this candidate again. Do not request another physical mutation to probe an
+unproven offset, tolerance, retry, timing, or response interpretation. The next physical session,
+if ever authorized, must follow a new evidence-backed candidate and a new bounded plan that proves
+the unresolved question and includes restoration verification.
+
 ## 2026-09-25 J009 returned report — DO NOT REPEAT YET
 
 The owner returned the exact signed diagnostic candidate's operation report. It proves the app
@@ -103,27 +137,28 @@ APK with a different source/hash tuple.
 
 ## Current signed diagnostic candidate — READY FOR OWNER HARDWARE TESTING / FINAL RELEASE BLOCKED
 
-The bounded diagnostic correction is merged on `main` at source
-`af8c68c35d320223a13c635fac69c0f2ebacdb3f`. It adds a shareable readable/JSON transaction report,
-raw JA11 request/response capture while the authoritative Flash operation is active, complete
-five-band/program/global-gain baseline capture, phase-aware readback comparison, and exact value
-joins. It intentionally does not change the `0x17` codec, signedness, endian order, `2560` scale,
-tolerance, retry policy, or fail-closed behavior.
+The diagnostic/reporting work is merged on `main` at source
+`5b4b40bfccabae91e3839de9ff2f7b1edcb0d67a`. It includes the shareable readable/JSON transaction
+report, corrected nested JSON serialization, raw JA11 request/response capture while the
+authoritative Flash operation is active, complete five-band/program/global-gain baseline capture,
+phase-aware readback comparison, and optional firmware capture. It intentionally does not change
+the `0x17` codec, signedness, endian order, `2560` scale, tolerance, retry policy, or fail-closed
+behavior.
 
 Use only this immutable candidate:
 
-- APK: [`EQ-Library-v0.7.0-beta-af8c68c.apk`](https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-af8c68c.apk).
+- APK: [`EQ-Library-v0.7.0-beta-5b4b40b.apk`](https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-5b4b40b.apk).
 - Package/version: `com.weekssa.opraeqforuapp`, `0.7.0` / version code `7`.
-- APK SHA-256: `3b442cbab3cf8be59a9b8e4ddd0d7028e93f8c4067d94dbb833a5bbb60b1d37e`.
+- APK SHA-256: `847e2ed07b2373aa17c2feb026a843081123bae00882d777bdb43222375a4049`.
 - Signer: `CN=OPRA EQ for UAPP, O=weekssa`; RSA 4096; certificate SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`; v2/v3 verified.
-- Signed-beta [run #1363](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36180975485): **PASS**; signed artifact ID `10884371877`; ZIP SHA-256 `77477ad6bd52e9b114cf18e949368424d8d5c1dbc85246679c9c5fd561d5b44d`.
-- R8 mapping SHA-256: `71036cf05464e6b84f07165e75c17c5a5cd5517a843bd1a8efb0bb49add0b374`.
+- Signed-beta [run #1364](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36197533476): **PASS**; signed artifact ID `10890643015`; ZIP SHA-256 `9e3c9123d548607227beb3c94e405cbb1a6159ac8b391e20e7a472a8ca34af25`.
+- R8 mapping SHA-256: `70823c91269be19a1a8405c7bb9fd446f1bfa44df67e668dd0a5fce5341f38a6`.
 - Candidate manifest test plan: this checklist; capability profile: `FiiO JA11 exact model; five-band PEQ; global EQ gain`.
 
 The signed workflow passed build, tests, lint, release/R8, signer verification, emulator
 install/cold launch, diagnostics, and immutable candidate publication. This is a diagnostic
 candidate, not a protocol-root-cause fix, final release, or JA11 support qualification. Do not
-use the old `609911e` candidate or a moving convenience APK.
+use the old `609911e`, `af8c68c`, or any moving convenience APK.
 
 ### One bounded owner session
 

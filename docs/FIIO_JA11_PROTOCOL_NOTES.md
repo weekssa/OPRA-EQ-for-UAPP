@@ -1,6 +1,94 @@
 # FiiO / JadeAudio JA11 protocol notes
 
-Status: **expanded v0.6 software implementation in progress; physical hardware validation pending**
+Status: **JA11 global-gain codec correction implemented from official FiiO evidence; signed-candidate and physical validation pending**
+
+## 2026-09-26 official FiiO Control evidence — global-gain root cause proven
+
+The J012 failure is now explained by a source codec defect. FiiO's public Android Control APK
+V4.6.0 was downloaded from the official [FiiO Control download page](https://forum.fiio.com/note/showNoteContent.do?id=202105071628040377809&tid=17)
+and verified as a complete APK (SHA-256
+`516c6d882a6723b03d7860f8ab000ce8dc600d9fabe986bfe187ba15d37d110c`). It was inspected
+read-only with JADX 1.5.6; it was not installed, connected to hardware, or used as a product
+dependency. Its JA11 implementation is in the `classes2.dex` `ed.a` model.
+
+The official implementation provides the decisive codec contract:
+
+- `setMasterGain` multiplies the dB value by `10`, converts the signed integer to a four-digit
+  hexadecimal value, and places the high byte before the low byte in command `0x17`.
+- The corresponding response parser reads the two-byte field as signed 16-bit big-endian and
+  divides by `10`, yielding one decimal dB.
+- For `-3.9 dB`, the official request/readback device-domain bytes are `FF D9`, not `00 D9`.
+
+J012 recorded the app writing `00 D9` and the JA11 returning `FF D9` in the same stable session.
+Under the official domain, the returned `FF D9` is exactly `-3.9 dB`; the prior Android codec
+misread it as little-endian `0xD9FF / 2560 = -3.800390625 dB`. This proves the verification
+failure was caused by the Android JA11 global-gain codec's wrong scale and byte order. It does not
+prove Save persistence or physical qualification.
+
+The correction is intentionally limited to command `0x17` encoding, decoding, and device-domain
+quantization. It does not remove verification, widen tolerance, add retries or offsets, change
+canonical EQ data, alter Apply/Save/session behavior, or change other DAC paths. The official APK
+also computes sequence/check bytes; those fields are a separate protocol concern and are not
+needed to explain J012 because the device accepted the existing framed commands and returned the
+exact official gain bytes. No checksum or sequence change is included in this correction.
+
+This official-app evidence supersedes the earlier third-party-only interpretation of `0x17` as
+little-endian/2560. The pinned third-party implementations remain useful behavioral evidence for
+identity, framing, bands, and Save, but they were not sufficient authority for this field.
+
+## 2026-09-25 J012 exact-candidate result — no protocol correction proven
+
+This is the historical J012 interpretation before the official FiiO Control evidence above. The
+official-app section supersedes its conclusion about command `0x17` scale and byte order; the
+physical facts and the fail-closed pre-Save result remain valid.
+
+The latest owner report pair is valid and is tied to the signed J011 source `5b4b40bfccabae91e3839de9ff2f7b1edcb0d67a`:
+
+- Readable report SHA-256: `5cf579a19f4706d3895e0286079f46a8bb00af68acc87b1e74d4c5e326a60d3a`.
+- JSON report SHA-256: `d88b3ed45ed821000616c5fb260356e415311aafbf72d3415b5dd30e451e7e41`; `jq` validation passed.
+- Firmware: `2.20`; VID/PID: `0x2972:0x0102`; session/detach generations: `1/0`; permission requests: `0`.
+- Canonical/selected/quantized gain: `-3.9 dB`; write: `0x17` raw `0xD900` (`00 D9`).
+- Same-session readback: `0xD9FF` (`FF D9`) = `-3.800390625 dB`; delta `0.099609375 dB` versus `0.001 dB` tolerance.
+- All five bands matched and Apply completed; Save count was `0`; outcome was `VerificationFailed`.
+
+This repeats the earlier J009 symptom on firmware `2.20` but still does not distinguish device-side
+transformation/quantization, stale same-command response, timing, or another protocol-semantic
+behavior. No authoritative or independent implementation documents this exact `D900 → D9FF`
+transition. Preserve signedness, little-endian order, `2560` scale, target derivation, tolerance,
+ordering, and fail-closed Save gating. Do not add an offset, broad tolerance, retry, or readback
+normalization. Original-state restoration, Save behavior, persistence, and hardware qualification
+remain unproven; do not repeat the same mutation.
+
+## 2026-09-26 official firmware-history cross-check
+
+FiiO's [official JA11 firmware history](https://forum.fiio.com/note/showNoteContent.do?id=202406211150090736905&tid=77)
+describes the `V2.2` release as fixing a wired inline-control pause issue and optimizing microphone
+input gain. It does not document a PEQ, global-gain, `0x17`, readback, or persistence-format change.
+The J012 report's firmware value `2.20` is consistent with that release naming, but treating the
+two as the same version identity is an inference from the report and public version label, not a
+device-proven fact. The official note therefore neither explains nor disproves the observed
+`0xD900 → 0xD9FF` response. The current codec, tolerance, ordering, and fail-closed behavior
+remain unchanged; no firmware-specific correction is justified.
+
+## 2026-09-25 independent protocol-oracle matrix
+
+This is a historical third-party-only comparison captured before the official FiiO APK was
+inspected. Its `0x17` scale/order conclusions are superseded by the official-app section above;
+the source and license records remain useful for the other protocol fields they corroborate.
+
+The following pinned sources were compared against the clean-room Android implementation. They are
+behavioral/provenance references only; no source code was copied.
+
+| Source | Revision / license | Confirmed overlap | Unresolved limitation |
+| --- | --- | --- | --- |
+| [Cyfine ja11-web-control](https://github.com/Cyfine/ja11-web-control/tree/4d4eb83df6fcdf9e20b52e1bdf59a77f463b2c30) | `4d4eb83df6fcdf9e20b52e1bdf59a77f463b2c30`; [MIT](https://github.com/Cyfine/ja11-web-control/blob/4d4eb83df6fcdf9e20b52e1bdf59a77f463b2c30/LICENSE) | VID/PID, report ID, five bands, `0x17` signed LE/2560, `0x19` Save | Current browser path does not send Android’s explicit `0x18` Apply and does not prove PEQ post-Save readback |
+| [Ircama ja11-config](https://github.com/Ircama/ja11-config/tree/affddff6c9808c33ce8b35b0b9759ff0d7f6e405) | `affddff6c9808c33ce8b35b0b9759ff0d7f6e405`; [EUPL-1.2](https://github.com/Ircama/ja11-config/blob/affddff6c9808c33ce8b35b0b9759ff0d7f6e405/LICENSE) | `0x15`, `0x17`, `0x18`, `0x19`, signed LE/2560 | Save helper does not independently prove global-gain persistence |
+| [adithyasource fiiocontrol-oss](https://github.com/adithyasource/fiiocontrol-oss/tree/f38994b3bd51bbc898cfceb5d182a403180df33e) | `f38994b3bd51bbc898cfceb5d182a403180df33e`; [Unlicense](https://github.com/adithyasource/fiiocontrol-oss/blob/f38994b3bd51bbc898cfceb5d182a403180df33e/LICENSE) | PID `0x0102`, five bands, `0x17` signed LE/2560, Save | Explicitly reverse-engineered/not completely perfect; Save path lacks verification |
+
+The three implementations corroborate the current `0x17` encoding and do not supply evidence for
+an alternate byte order, signedness, scale, tolerance, or `0xD900 → 0xD9FF` interpretation. FiiO’s
+[JA11 FAQ](https://www.jadeaudio.com/details?_l=en&article_id=178) supports Save/restart lifecycle
+behavior, but does not define these raw gain semantics or prove persistence.
 
 These notes document observable normal run-mode behavior used by EQ Library. They are not firmware-update documentation and must not be expanded into bootloader, firmware-flash, cross-flash, USB-identity mutation, or raw-command functionality without a separately approved product scope.
 

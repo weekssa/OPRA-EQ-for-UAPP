@@ -6,14 +6,52 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ## [Unreleased]
 
+### 2026-09-26 JA11 global-gain codec correction
+
+- Read-only inspection of the official FiiO Control V4.6.0 JA11 implementation proved that
+  command `0x17` uses signed tenths-of-a-dB, high-byte-first encoding. The previous Android codec
+  incorrectly used little-endian `2560` raw units/dB, causing the J012 `00 D9` write versus `FF D9`
+  readback to be misinterpreted as `-3.800390625 dB` instead of the intended `-3.9 dB`.
+- Corrected JA11 global-gain encoding, decoding, and quantization; added negative, positive,
+  zero, rounding-boundary, golden-vector, and observed-readback regression coverage. Apply/Save,
+  session ownership, fail-closed verification, canonical EQ data, and other DAC paths are unchanged.
+- JA11 remains hardware-validation pending. A corrected signed candidate must pass all gates before
+  one bounded owner hardware session; this is not a final release or public support claim.
+
+### 2026-09-26 JA11 official firmware-history cross-check
+
+- Recorded FiiO's official JA11 `V2.2` release note as protocol-boundary evidence. It lists
+  inline-control and microphone changes, not PEQ/global-gain/readback or persistence-format
+  changes. The public note does not explain the J012 `0xD900 → 0xD9FF` response, so no
+  firmware-specific correction or new hardware test is justified.
+
+### 2026-09-25 JA11 J012 repeat and protocol-oracle audit
+
+- Recorded the latest valid readable/JSON owner reports from the exact signed J011 candidate.
+  The stable-session trace repeats `0xD900` (`-3.9 dB`) followed by `0xD9FF`
+  (`-3.800390625 dB`) before Save; all five bands matched and Save was correctly suppressed.
+- Compared pinned Cyfine, Ircama, and adithyasource implementations. All corroborate the current
+  signed little-endian `2560`-scale global-gain codec; none explains the observed readback or proves
+  PEQ persistence. No production protocol change is justified.
+- Added deterministic regression fixtures proving that the observed `0xD9FF` readback remains a
+  verification failure and cannot reach Save. JA11 remains hardware-validation pending, and the
+  consumed candidate must not be flashed again.
+
 ### 2026-09-25 JA11 diagnostic firmware provenance
 
 - Added optional read-only JA11 firmware-version capture to the Flash/Reset operation trace and
   readable/JSON exports. The command is issued during preflight and does not change the transaction
   codec, ordering, tolerance, retry policy, Save behavior, or hardware qualification status.
-- Exact draft PR #44 head `f17a17270aa8d10bc7a34dc1534e90d198b960da` passed Android unit/lint/debug/
-  release/R8, emulator UI, min-API smoke, CodeQL, catalog-currentness, priority-community, and
-  dynamic Gradle checks. The PR remains draft; no signed artifact or physical JA11 claim follows.
+- PR #44 was merged into `main` at `5b4b40bfccabae91e3839de9ff2f7b1edcb0d67a`. Signed-beta run
+  #1364 passed and produced immutable JA11 candidate `EQ-Library-v0.7.0-beta-5b4b40b.apk` with
+  APK SHA-256 `847e2ed07b2373aa17c2feb026a843081123bae00882d777bdb43222375a4049`, signer
+  certificate SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`, R8
+  mapping SHA-256 `70823c91269be19a1a8405c7bb9fd446f1bfa44df67e668dd0a5fce5341f38a6`, and signed
+  artifact ID `10890643015` (artifact ZIP SHA-256
+  `9e3c9123d548607227beb3c94e405cbb1a6159ac8b391e20e7a472a8ca34af25`). Build/test/lint/release,
+  signer, emulator install/cold launch, diagnostics, artifact-integrity, and immutable-publication
+  gates passed. This candidate is ready only for the bounded owner JA11 hardware session; final
+  release and public JA11 support remain blocked.
 
 ### 2026-09-25 JA11 exported transaction report
 

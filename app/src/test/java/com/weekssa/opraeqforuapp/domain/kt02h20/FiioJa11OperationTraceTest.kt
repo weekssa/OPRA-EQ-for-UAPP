@@ -45,7 +45,7 @@ class FiioJa11OperationTraceTest {
                     elapsedMillis = 8L,
                     direction = "WRITE",
                     command = "0x17",
-                    requestHex = "02 aa 0a 00 00 17 02 00 d9 00 ee",
+                    requestHex = "02 aa 0a 00 00 17 02 ff d9 00 ee",
                     responseHex = null,
                     sessionGeneration = 4L,
                     detachGeneration = 5L,
@@ -61,10 +61,10 @@ class FiioJa11OperationTraceTest {
 
         assertTrue(readable.contains("quantizedWireTargetGainDb=-3.9"))
         assertTrue(readable.contains("firmwareVersion=2.20"))
-        assertTrue(readable.contains("request=02 aa 0a 00 00 17 02 00 d9 00 ee"))
+        assertTrue(readable.contains("request=02 aa 0a 00 00 17 02 ff d9 00 ee"))
         assertTrue(json.contains("\"comparisonPhase\":\"VOLATILE_READBACK\""))
         assertTrue(json.contains("\"firmwareVersion\":\"2.20\""))
-        assertTrue(json.contains("\"requestHex\":\"02 aa 0a 00 00 17 02 00 d9 00 ee\""))
+        assertTrue(json.contains("\"requestHex\":\"02 aa 0a 00 00 17 02 ff d9 00 ee\""))
         val parsed = Json.parseToJsonElement(json).jsonObject
         assertEquals(1, parsed.getValue("targetBands").jsonArray.size)
         assertEquals(1, parsed.getValue("events").jsonArray.size)

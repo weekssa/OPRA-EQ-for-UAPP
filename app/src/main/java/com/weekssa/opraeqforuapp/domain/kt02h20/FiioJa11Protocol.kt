@@ -56,7 +56,8 @@ object FiioJa11Protocol {
     private const val TYPE_LOW_SHELF = 1
     private const val TYPE_HIGH_SHELF = 2
 
-    private const val GLOBAL_GAIN_RAW_PER_DB = 2560.0
+    /** JA11 command 0x17 uses signed tenths of a dB, transmitted high byte first. */
+    private const val GLOBAL_GAIN_RAW_PER_DB = 10.0
 
     enum class EqProgram(val code: Int, val technicalLabel: String) {
         VOCAL(0, "Vocal"),
@@ -148,10 +149,10 @@ object FiioJa11Protocol {
         require(gainDb.isFinite() && gainDb in MIN_GLOBAL_GAIN_DB..MAX_GLOBAL_GAIN_DB) {
             "JA11 global preamp is outside the current validated range."
         }
-        val raw = (gainDb * GLOBAL_GAIN_RAW_PER_DB).roundToInt().toSigned16Raw()
+        val raw = globalGainRaw(gainDb)
         val packet = byteArrayOf(
             SET_1.b(), SET_2.b(), 0, 0, CMD_GLOBAL_GAIN.b(), 2,
-            (raw and 0xFF).b(), ((raw ushr 8) and 0xFF).b(), 0, FOOTER.b(),
+            ((raw ushr 8) and 0xFF).b(), (raw and 0xFF).b(), 0, FOOTER.b(),
         )
         return wire(packet)
     }
@@ -161,7 +162,7 @@ object FiioJa11Protocol {
         require(gainDb.isFinite() && gainDb in MIN_GLOBAL_GAIN_DB..MAX_GLOBAL_GAIN_DB) {
             "JA11 global preamp is outside the current validated range."
         }
-        return (gainDb * GLOBAL_GAIN_RAW_PER_DB).roundToInt() / GLOBAL_GAIN_RAW_PER_DB
+        return globalGainRaw(gainDb) / GLOBAL_GAIN_RAW_PER_DB
     }
 
     fun applyReport(): ByteArray =
@@ -222,8 +223,7 @@ object FiioJa11Protocol {
     fun globalGainFromResponse(report: ByteArray): Double? {
         val packet = packetView(report) ?: return null
         if (packet.size < 8 || packet[4].u8() != CMD_GLOBAL_GAIN) return null
-        val rawUnsigned = packet[6].u8() or (packet[7].u8() shl 8)
-        val raw = if (rawUnsigned >= 0x8000) rawUnsigned - 0x10000 else rawUnsigned
+        val raw = signed16(packet[6].u8(), packet[7].u8())
         val gain = raw.toDouble() / GLOBAL_GAIN_RAW_PER_DB
         return gain.takeIf { it.isFinite() && it in MIN_GLOBAL_GAIN_DB..MAX_GLOBAL_GAIN_DB }
     }
@@ -298,6 +298,12 @@ object FiioJa11Protocol {
         val raw = (high shl 8) or low
         return if (raw >= 0x8000) raw - 0x10000 else raw
     }
+
+    /** Signed device-domain value; callers encode it as an unsigned 16-bit wire word. */
+    private fun globalGainRaw(gainDb: Double): Int =
+        (gainDb * GLOBAL_GAIN_RAW_PER_DB).toInt().also {
+            require(it in Short.MIN_VALUE.toInt()..Short.MAX_VALUE.toInt())
+        }
 
     private fun Int.toSigned16Raw(): Int {
         require(this in Short.MIN_VALUE.toInt()..Short.MAX_VALUE.toInt())

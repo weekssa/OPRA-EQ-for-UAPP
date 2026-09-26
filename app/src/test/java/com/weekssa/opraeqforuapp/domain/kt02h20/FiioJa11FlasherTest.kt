@@ -79,6 +79,20 @@ class FiioJa11FlasherTest {
     }
 
     @Test
+    fun unexpectedGlobalGainReadbackFailsClosedBeforePersistentSave() = runBlocking {
+        val transport = FakeJa11Transport(postWriteGlobalGainDb = -3.800390625)
+        val flasher = FiioJa11Flasher(transport)
+
+        val result = flasher.flash(exactProfile())
+        val trace = requireNotNull(flasher.lastOperationTrace.value)
+
+        assertTrue(result is Kt02h20FlashResult.VerificationFailed)
+        assertFalse(0x19 in transport.sentCommands)
+        assertEquals(0, transport.saveCount)
+        assertEquals(-3.800390625, trace.readbackGlobalGainDb!!, 0.0)
+    }
+
+    @Test
     fun verificationFailurePublishesExactGainComparisonBeforeSave() = runBlocking {
         val transport = FakeJa11Transport(ignoreGlobalGainWrite = true)
         val flasher = FiioJa11Flasher(
@@ -187,6 +201,7 @@ class FiioJa11FlasherTest {
         private val ignoreBandWriteIndex: Int? = null,
         private val saveReconnectAccepted: Boolean = true,
         private val postSaveGlobalGainDb: Double? = null,
+        private val postWriteGlobalGainDb: Double? = null,
     ) : FiioJa11Transport {
         val bands = FiioJa11Protocol.completeBands(emptyList()).toMutableList()
         var globalGainDb: Double = 0.0
@@ -219,7 +234,7 @@ class FiioJa11FlasherTest {
         override suspend fun readGlobalGainDb(): Double? {
             if (!readable) return null
             if (writeStarted) globalGainReadsAfterWrites++
-            return globalGainDb
+            return if (writeStarted) postWriteGlobalGainDb ?: globalGainDb else globalGainDb
         }
 
         override suspend fun readFirmwareVersion(): String? = "2.20"
@@ -267,9 +282,10 @@ class FiioJa11FlasherTest {
                 }
                 0x17 -> {
                     if (!ignoreGlobalGainWrite) {
-                        val rawUnsigned = (report[7].toInt() and 0xFF) or ((report[8].toInt() and 0xFF) shl 8)
+                        val rawUnsigned = ((report[7].toInt() and 0xFF) shl 8) or
+                            (report[8].toInt() and 0xFF)
                         val raw = if (rawUnsigned >= 0x8000) rawUnsigned - 0x10000 else rawUnsigned
-                        globalGainDb = raw / 2560.0
+                        globalGainDb = raw / 10.0
                     }
                 }
                 0x19 -> saveCount++
