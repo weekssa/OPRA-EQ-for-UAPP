@@ -2,6 +2,8 @@ package com.weekssa.opraeqforuapp.ui.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Row
@@ -33,6 +35,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.BuildConfig
 import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshFailureReason
@@ -302,7 +307,7 @@ fun SettingsScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            text = "Selected presets are exported automatically on Add/Save only for outputs that use files. Hardware-only outputs keep their generated representation locally and write it only when you explicitly tap Flash. Suggested file location: Documents/EQ Library.",
+            text = "Saving an EQ to My EQs does not export it. Use Export when you want a file, or Flash to write to a supported DAC. Suggested file location: Documents/EQ Library.",
             modifier = Modifier.padding(top = 4.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -419,11 +424,11 @@ private fun OutputOption(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { onCheckedChange(!checked) }
+                .toggleable(value = checked, role = Role.Checkbox, onValueChange = onCheckedChange)
                 .padding(vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Checkbox(checked = checked, onCheckedChange = onCheckedChange)
+            Checkbox(checked = checked, onCheckedChange = null)
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(device.displayName)
@@ -440,7 +445,12 @@ private fun OutputOption(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onDirectFlashChange(!directFlashChecked) },
+                        .toggleable(
+                            value = directFlashChecked,
+                            role = Role.Switch,
+                            onValueChange = onDirectFlashChange,
+                        )
+                        .padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
@@ -450,7 +460,7 @@ private fun OutputOption(
                     )
                     Switch(
                         checked = directFlashChecked,
-                        onCheckedChange = onDirectFlashChange,
+                        onCheckedChange = null,
                     )
                 }
                 Text(
@@ -684,22 +694,19 @@ private fun HiddenEqSettingsScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable {
-                                selectedIds = if (row.canonicalProfileId in selectedIds) {
-                                    selectedIds - row.canonicalProfileId
-                                } else {
-                                    selectedIds + row.canonicalProfileId
-                                }
+                            .toggleable(
+                                value = row.canonicalProfileId in selectedIds,
+                                role = Role.Checkbox,
+                            ) { checked ->
+                                selectedIds = if (checked) selectedIds + row.canonicalProfileId
+                                else selectedIds - row.canonicalProfileId
                             }
                             .padding(horizontal = 12.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Checkbox(
                             checked = row.canonicalProfileId in selectedIds,
-                            onCheckedChange = { checked ->
-                                selectedIds = if (checked) selectedIds + row.canonicalProfileId
-                                else selectedIds - row.canonicalProfileId
-                            },
+                            onCheckedChange = null,
                         )
                         Column(modifier = Modifier.padding(start = 8.dp)) {
                             Text(row.title)
@@ -776,7 +783,7 @@ private fun SectionTitle(title: String) {
     Text(
         text = title,
         style = MaterialTheme.typography.titleMedium,
-        modifier = Modifier.padding(bottom = 8.dp),
+        modifier = Modifier.semantics { heading() }.padding(bottom = 8.dp),
     )
 }
 
@@ -795,11 +802,11 @@ private fun ThemeOption(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onSelected)
+            .selectable(selected = selected, role = Role.RadioButton, onClick = onSelected)
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        RadioButton(selected = selected, onClick = onSelected)
+        RadioButton(selected = selected, onClick = null)
         Spacer(Modifier.width(12.dp))
         Column {
             Text(title)
