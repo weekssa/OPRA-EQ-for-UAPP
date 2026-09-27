@@ -154,6 +154,32 @@ EQ Library follows modern Android development boundaries so UI, domain rules, st
 
 Compose does not implement DSP fitting, source parsing, storage ownership, or USB wire protocol rules. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/V0.6_LIBRARY_OWNERSHIP_AND_RECOVERY.md](docs/V0.6_LIBRARY_OWNERSHIP_AND_RECOVERY.md) for the maintained architecture and current v0.6 ownership/recovery contract.
 
+## Development setup
+
+EQ Library includes a checked-in Gradle Wrapper, so a globally installed Gradle is not required. The wrapper uses Gradle `9.4.1` with Android Gradle Plugin `9.2.0`.
+
+Install JDK 17 and an Android SDK with API 36, Build Tools 36.0.0, Platform Tools, and an emulator image if instrumented tests are needed. Configure SDK discovery with `ANDROID_HOME` or `ANDROID_SDK_ROOT`, or create the ignored `local.properties` file with an environment-specific `sdk.dir` value. Do not commit SDK paths, Gradle distributions, or caches.
+
+From macOS or Linux, use the wrapper directly when the JDK and SDK are already configured:
+
+```sh
+./gradlew :app:testDebugUnitTest
+./gradlew lintDebug
+./gradlew assembleDebug
+```
+
+For Codex on macOS, `tools/codex-android` selects the local JDK and Android SDK and routes Gradle and Android user caches to writable temporary locations. It also exposes `adb`, `android`, `avdmanager`, and `emulator`:
+
+```sh
+./tools/codex-android :app:testDebugUnitTest
+./tools/codex-android lintDebug
+./tools/codex-android assembleDebug
+./tools/codex-android adb devices
+./tools/codex-android emulator -list-avds
+```
+
+Run `:app:connectedDebugAndroidTest` only with an attached device or running emulator. Instrumented-test results are evidence only when the command actually executes against that device or emulator. See [AGENTS.md](AGENTS.md) and the [Codex project runbook](docs/CHATGPT_PROJECT_RUNBOOK.md) for the complete development and validation workflow.
+
 ## Validation and release discipline
 
 v0.5.0 completed both its implementation phase and Pixel 9 release-candidate testing before publication. TRN Black Pearl's v0.5 hardware/DSP regression passed; JA11/JM12 remain explicitly pending hardware qualification for that release.
