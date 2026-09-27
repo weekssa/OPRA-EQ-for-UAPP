@@ -9,6 +9,7 @@ on:
         default: ja11
         type: choice
         options:
+          - black-pearl-ja11
           - ja11
           - ew300
 
@@ -116,6 +117,12 @@ jobs:
           apk_sha256="$(cut -d ' ' -f 1 "${output_apk}.sha256")"
           candidate_target="${{ inputs.candidate_target }}"
           case "$candidate_target" in
+            black-pearl-ja11)
+              capability_profile="TRN Black Pearl final-native-readback-gated Direct Flash; FiiO JA11 exact model; five-band User 1 editor; global EQ gain"
+              test_plan="docs/UX_REVIEW_WORKFLOW/context/black-pearl-ja11-remediation-20260927/05-release-handoff.md"
+              evidence_ids="BLACK-PEARL-SOFTWARE,JA11-SOFTWARE"
+              outstanding="owner Pixel 9 TRN Black Pearl and FiiO JA11 physical validation; merge/publication approval and final release/public-support approval"
+              ;;
             ja11)
               capability_profile="FiiO JA11 exact model; five-band PEQ; global EQ gain"
               test_plan="docs/FIIO_JA11_HANDS_ON_CHECKLIST.md"
@@ -158,7 +165,12 @@ jobs:
             .r8MinificationEnabled == true and
             (.r8MappingSha256 | test("^[a-f0-9]{64}$")) and
             .evidenceIds == ($evidence | split(",")) and
-            (if $candidateTarget == "ja11" then
+            (if $candidateTarget == "black-pearl-ja11" then
+              (.capabilityProfile | contains("TRN Black Pearl")) and
+              (.capabilityProfile | contains("FiiO JA11")) and
+              .testPlan == "docs/UX_REVIEW_WORKFLOW/context/black-pearl-ja11-remediation-20260927/05-release-handoff.md" and
+              (.outstanding | contains("owner Pixel 9"))
+             elif $candidateTarget == "ja11" then
               (.capabilityProfile | contains("FiiO JA11")) and
               .testPlan == "docs/FIIO_JA11_HANDS_ON_CHECKLIST.md" and
               (.outstanding | contains("owner hardware"))
