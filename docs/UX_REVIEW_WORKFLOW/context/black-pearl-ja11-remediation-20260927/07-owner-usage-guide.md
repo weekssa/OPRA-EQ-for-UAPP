@@ -41,6 +41,8 @@ app-level validation. Test one DAC at a time because the app owns one authoritat
 
 - `actionlint` v1.7.12 is installed at `/Users/stephenweeks/.local/bin/actionlint` and passed against
   the exact signed-candidate workflow.
+- Google Android CLI `1.0.16406183` is installed at `/Users/stephenweeks/.local/bin/android`; the
+  checked-in wrapper remains the project command of record and the shell profile was not changed.
 - The checked-in `tools/codex-android` wrapper already provides the Android SDK, `adb`, emulator,
   screenshots, UI inspection, and log capture. No additional Android SDK installation is required.
 - Mac-side automation may verify the exact APK checksum and signer, install and launch the app,
