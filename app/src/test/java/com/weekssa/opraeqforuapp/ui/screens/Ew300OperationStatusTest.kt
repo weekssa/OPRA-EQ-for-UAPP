@@ -3,11 +3,22 @@ package com.weekssa.opraeqforuapp.ui.screens
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationStage
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationStatus
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationTrace
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class Ew300OperationStatusTest {
+    @Test
+    fun resetShowsPersistentProgressWhileFlashUsesTheSharedFlashSurface() {
+        assertEquals(
+            "Resetting EW300 EQ… Keep the DAC connected while final readback is verified.",
+            ew300OperationInProgressMessage(Ew300OperationStatus.Running("operation-1", "RESET")),
+        )
+        assertNull(ew300OperationInProgressMessage(Ew300OperationStatus.Running("operation-1", "FLASH")))
+    }
+
     @Test
     fun verifiedReplacementReadbackIsShownAsSuccessful() {
         val presentation = ew300OperationStatusPresentation(trace(outcome = "Verified"))

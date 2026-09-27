@@ -26,7 +26,7 @@ internal fun fiioJa11OperationStatusPresentation(
     val reconnectMessage = if (trace.usbSessionChangeObserved()) {
         " A USB session change was observed before the final readback."
     } else {
-        " Reconnect persistence was not tested in this operation."
+        ""
     }
     val verified = trace.isSaveAndFinalReadbackVerified()
 

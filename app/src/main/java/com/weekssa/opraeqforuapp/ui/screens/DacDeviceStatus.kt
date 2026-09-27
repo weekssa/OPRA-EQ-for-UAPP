@@ -1,6 +1,7 @@
 package com.weekssa.opraeqforuapp.ui.screens
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,6 +20,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -197,9 +199,12 @@ private fun FiioJa11DeviceStatus(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(enabled = controlsEnabled) {
-                pendingHeadsetValue = !snapshot.headsetControlEnabled
-            }
+            .toggleable(
+                value = snapshot.headsetControlEnabled,
+                enabled = controlsEnabled,
+                role = Role.Switch,
+                onValueChange = { pendingHeadsetValue = it },
+            )
             .padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -217,11 +222,7 @@ private fun FiioJa11DeviceStatus(
         }
         Switch(
             checked = snapshot.headsetControlEnabled,
-            onCheckedChange = if (controlsEnabled) {
-                { requested -> pendingHeadsetValue = requested }
-            } else {
-                null
-            },
+            onCheckedChange = null,
         )
     }
 

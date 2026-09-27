@@ -54,11 +54,18 @@ import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationTrace
 import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
 import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
 import com.weekssa.opraeqforuapp.domain.managed.withHiddenReviewPromptsSuppressed
+import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationStatus
 import com.weekssa.opraeqforuapp.domain.update.SemVer
 import com.weekssa.opraeqforuapp.ui.components.PostUpdateBanner
+import com.weekssa.opraeqforuapp.ui.components.FlashFeedback
+import com.weekssa.opraeqforuapp.ui.components.FlashFeedbackBanner
+import com.weekssa.opraeqforuapp.ui.components.FlashFeedbackPhase
+import com.weekssa.opraeqforuapp.ui.components.blackPearlFlashFeedback
 import com.weekssa.opraeqforuapp.ui.components.TargetContextSelector
 import com.weekssa.opraeqforuapp.ui.components.UpdateAvailableBanner
 import com.weekssa.opraeqforuapp.ui.components.WhatsNewDialog
+import com.weekssa.opraeqforuapp.ui.components.flashDeviceLabel
+import com.weekssa.opraeqforuapp.ui.components.expiresAutomatically
 import com.weekssa.opraeqforuapp.ui.screens.BrowseOpraScreen
 import com.weekssa.opraeqforuapp.ui.screens.ManagedHeadphoneDetailScreen
 import com.weekssa.opraeqforuapp.ui.screens.MyDacRootScreen
@@ -66,8 +73,12 @@ import com.weekssa.opraeqforuapp.ui.screens.deviceOperationControlLabel
 import com.weekssa.opraeqforuapp.ui.screens.DeviceOperationPhase
 import com.weekssa.opraeqforuapp.ui.screens.deviceOperationFeedback
 import com.weekssa.opraeqforuapp.ui.screens.deviceOperationStateSignature
+import com.weekssa.opraeqforuapp.ui.screens.fiioJa11OperationStatusPresentation
+import com.weekssa.opraeqforuapp.ui.screens.hardwareFlashStartedMessage
 import com.weekssa.opraeqforuapp.ui.screens.MyEqsHomeScreen
 import com.weekssa.opraeqforuapp.ui.screens.SettingsScreen
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private sealed interface ActiveOutputExportRequest {
@@ -213,6 +224,31 @@ fun EqLibraryApp(
     }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    var flashFeedback by remember { mutableStateOf<FlashFeedback?>(null) }
+    var pendingFlashResultMessage by remember { mutableStateOf<String?>(null) }
+    var lastBlackPearlFlashSequence by remember {
+        mutableStateOf(state.blackPearlFlashOutcome?.sequence)
+    }
+    LaunchedEffect(state.blackPearlFlashOutcome) {
+        state.blackPearlFlashOutcome?.let { outcome ->
+            if (outcome.sequence != lastBlackPearlFlashSequence) {
+                lastBlackPearlFlashSequence = outcome.sequence
+                flashFeedback = blackPearlFlashFeedback(outcome.result)
+            }
+        }
+    }
+    LaunchedEffect(
+        flashFeedback?.deviceLabel,
+        flashFeedback?.phase,
+        flashFeedback?.detail,
+        flashFeedback?.verified,
+    ) {
+        val feedback = flashFeedback ?: return@LaunchedEffect
+        if (feedback.phase.expiresAutomatically()) {
+            delay(8_000L)
+            if (flashFeedback == feedback) flashFeedback = null
+        }
+    }
     val exportFolderPermissionFailedMessage = stringResource(R.string.export_folder_permission_failed)
     val myDacDetectedMessage = stringResource(R.string.my_dac_detected_prompt)
     val openMyDacActionLabel = stringResource(R.string.my_dac_action_open)
@@ -296,7 +332,69 @@ fun EqLibraryApp(
     val postUpdateVersion = appPreferences.updates.postUpdateVersionToShow
         ?.takeIf { it == BuildConfig.VERSION_NAME }
 
+    fun beginFlash(device: ExportDevice) {
+        pendingFlashResultMessage = null
+        flashFeedback = FlashFeedback(
+            deviceLabel = flashDeviceLabel(device),
+            phase = FlashFeedbackPhase.STARTING,
+        )
+    }
+
+    fun markFlashResultUncertain(device: ExportDevice, detail: String? = null) {
+        flashFeedback = FlashFeedback(
+            deviceLabel = flashDeviceLabel(device),
+            phase = FlashFeedbackPhase.UNCERTAIN,
+            detail = detail ?: "The Flash operation finished without an authoritative verified result.",
+        )
+    }
+
+    suspend fun flashSuspendWithFeedback(device: ExportDevice, action: suspend () -> String): String {
+        beginFlash(device)
+        return try {
+            val message = action()
+            if (
+                flashFeedback?.phase == FlashFeedbackPhase.STARTING ||
+                flashFeedback?.phase == FlashFeedbackPhase.VERIFYING
+            ) {
+                markFlashResultUncertain(device)
+            }
+            pendingFlashResultMessage = message
+            message
+        } catch (cancellation: CancellationException) {
+            flashFeedback = null
+            throw cancellation
+        } catch (_: Exception) {
+            val message = "Flash did not finish and its final state is uncertain."
+            if (
+                flashFeedback?.phase == FlashFeedbackPhase.STARTING ||
+                flashFeedback?.phase == FlashFeedbackPhase.VERIFYING
+            ) {
+                markFlashResultUncertain(device, message)
+            }
+            pendingFlashResultMessage = message
+            message
+        }
+    }
+
+    fun flashImmediateWithFeedback(device: ExportDevice, action: () -> Unit) {
+        beginFlash(device)
+        try {
+            action()
+        } catch (_: Exception) {
+            markFlashResultUncertain(device, "Flash did not start and its final state is uncertain.")
+        }
+    }
+
     fun showMessage(message: String) {
+        if (message == hardwareFlashStartedMessage(activeOutput)) {
+            beginFlash(activeOutput)
+            return
+        }
+        if (message == pendingFlashResultMessage) {
+            pendingFlashResultMessage = null
+            return
+        }
+        pendingFlashResultMessage = null
         scope.launch {
             snackbarHostState.currentSnackbarData?.dismiss()
             snackbarHostState.showSnackbar(message)
@@ -359,11 +457,14 @@ fun EqLibraryApp(
             is Ew300OperationStatus.Running -> {
                 if (status.operationId == lastEw300StartedOperationId) return@LaunchedEffect
                 lastEw300StartedOperationId = status.operationId
-                if (status.operation == "FLASH" || status.operation == "RESET") {
-                    showDeviceOperation(
-                        message = "EW300 ${status.operation.lowercase()} started. Approve Android USB permission if it appears so the final state can be verified.",
-                        duration = SnackbarDuration.Short,
+                if (status.operation == "FLASH") {
+                    flashFeedback = FlashFeedback(
+                        deviceLabel = flashDeviceLabel(ExportDevice.SIMGOT_EW300),
+                        phase = FlashFeedbackPhase.VERIFYING,
                     )
+                } else if (status.operation == "RESET") {
+                    flashFeedback = null
+                    pendingFlashResultMessage = null
                 }
             }
             is Ew300OperationStatus.Completed -> {
@@ -372,31 +473,81 @@ fun EqLibraryApp(
                 if (signature == lastEw300CompletedOperationSignature) return@LaunchedEffect
                 lastEw300CompletedOperationSignature = signature
                 when {
-                    trace.operation == "FLASH" && trace.stateKnown && trace.outcome == Ew300OperationOutcome.SUCCESS && trace.finalReadbackMatched ->
-                        showDeviceOperation(
-                            message = "Flash successful · SIMGOT EW300 DSP EQ was saved and verified. Final hardware readback matched.",
-                            duration = SnackbarDuration.Short,
+                    trace.operation == "FLASH" && trace.stateKnown && trace.outcome == Ew300OperationOutcome.SUCCESS && trace.finalReadbackMatched -> {
+                        val reconnectObserved = trace.replacementObserved && trace.replacementIdentityMatched
+                        flashFeedback = FlashFeedback(
+                            deviceLabel = flashDeviceLabel(ExportDevice.SIMGOT_EW300),
+                            phase = FlashFeedbackPhase.COMPLETED,
+                            detail = if (reconnectObserved) {
+                                "The DAC reconnected and the replacement session was verified."
+                            } else {
+                                "Final hardware readback matched."
+                            },
+                            verified = true,
                         )
-                    trace.operation == "RESET" && trace.stateKnown && trace.outcome == Ew300OperationOutcome.SUCCESS && trace.finalReadbackMatched ->
-                        showDeviceOperation(
-                            message = "Reset successful · SIMGOT EW300 DSP EQ was reset to flat and verified. Final hardware readback matched.",
-                            duration = SnackbarDuration.Short,
-                        )
-                    trace.operation == "FLASH" && !trace.stateKnown -> showDeviceOperation(
-                        message = ew300UnverifiedOperationMessage(trace),
-                        duration = SnackbarDuration.Indefinite,
+                    }
+                    trace.operation == "FLASH" && !trace.stateKnown -> flashFeedback = FlashFeedback(
+                        deviceLabel = flashDeviceLabel(ExportDevice.SIMGOT_EW300),
+                        phase = FlashFeedbackPhase.FAILED,
+                        detail = ew300UnverifiedOperationMessage(trace),
                     )
-                    trace.operation == "RESET" && !trace.stateKnown -> showDeviceOperation(
-                        message = ew300UnverifiedOperationMessage(trace),
-                        duration = SnackbarDuration.Indefinite,
-                    )
-                    trace.operation == "FLASH" || trace.operation == "RESET" -> showDeviceOperation(
-                        message = "EW300 ${trace.operation.lowercase()} stopped before verified persistence (${trace.outcome}).",
-                        duration = SnackbarDuration.Short,
+                    trace.operation == "FLASH" -> flashFeedback = FlashFeedback(
+                        deviceLabel = flashDeviceLabel(ExportDevice.SIMGOT_EW300),
+                        phase = FlashFeedbackPhase.FAILED,
+                        detail = "EW300 Flash stopped before verified persistence (${trace.outcome}).",
                     )
                 }
             }
             Ew300OperationStatus.Idle -> Unit
+        }
+    }
+
+    var fiioOperationStatusInitialized by remember { mutableStateOf(false) }
+    var lastFiioOperationStatusSignature by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(state.fiioJa11OperationStatus) {
+        val statusSignature = when (val status = state.fiioJa11OperationStatus) {
+            FiioJa11OperationStatus.Idle -> "IDLE"
+            is FiioJa11OperationStatus.Running -> "RUNNING:${status.operationId}"
+            is FiioJa11OperationStatus.Completed -> "COMPLETED:${status.trace.operationId}:${status.trace.outcome}:${status.trace.stateKnown}"
+        }
+        if (!fiioOperationStatusInitialized) {
+            fiioOperationStatusInitialized = true
+            lastFiioOperationStatusSignature = statusSignature
+            return@LaunchedEffect
+        }
+        if (statusSignature == lastFiioOperationStatusSignature) return@LaunchedEffect
+        lastFiioOperationStatusSignature = statusSignature
+        when (val status = state.fiioJa11OperationStatus) {
+            is FiioJa11OperationStatus.Running -> if (status.operation == "FLASH") {
+                flashFeedback = FlashFeedback(
+                    deviceLabel = flashDeviceLabel(ExportDevice.FIIO_JA11),
+                    phase = FlashFeedbackPhase.VERIFYING,
+                )
+            } else if (status.operation == "RESET") {
+                flashFeedback = null
+                pendingFlashResultMessage = null
+            }
+            is FiioJa11OperationStatus.Completed -> {
+                val trace = status.trace
+                if (trace.operation == "FLASH") {
+                    val presentation = fiioJa11OperationStatusPresentation(trace)
+                    flashFeedback = if (presentation.verified) {
+                        FlashFeedback(
+                            deviceLabel = flashDeviceLabel(ExportDevice.FIIO_JA11),
+                            phase = FlashFeedbackPhase.COMPLETED,
+                            detail = "Final hardware readback matched.",
+                            verified = true,
+                        )
+                    } else {
+                        FlashFeedback(
+                            deviceLabel = flashDeviceLabel(ExportDevice.FIIO_JA11),
+                            phase = FlashFeedbackPhase.FAILED,
+                            detail = presentation.message,
+                        )
+                    }
+                }
+            }
+            FiioJa11OperationStatus.Idle -> Unit
         }
     }
 
@@ -684,6 +835,16 @@ fun EqLibraryApp(
                 }
             }
 
+            if (
+                flashFeedback != null &&
+                selectedDestination != EqLibraryDestination.Settings
+            ) {
+                FlashFeedbackBanner(
+                    feedback = flashFeedback!!,
+                    onDismiss = { flashFeedback = null },
+                )
+            }
+
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -712,7 +873,9 @@ fun EqLibraryApp(
                                 jcallyJm12ConnectionState = jcallyJm12ConnectionState,
                                 onConnectJcallyJm12 = onConnectJcallyJm12,
                                 onFlashManagedProfile = { profileId ->
-                                    onFlashManagedProfile(selectedManagedHeadphone.productId, profileId)
+                                    flashSuspendWithFeedback(activeOutput) {
+                                        onFlashManagedProfile(selectedManagedHeadphone.productId, profileId)
+                                    }
                                 },
                                 onToggleFavorite = onToggleFavorite,
                                 onHideCanonicalProfile = { canonicalProfileId ->
@@ -763,10 +926,14 @@ fun EqLibraryApp(
                                 onImportPersonal = onImportPersonal,
                                 onDeleteSavedEq = onDeleteSavedEq,
                                 onExportSavedEq = requestExportSavedEq,
-                                onFlashSavedEq = onFlashSavedEq,
+                                onFlashSavedEq = { entryId ->
+                                    flashSuspendWithFeedback(activeOutput) { onFlashSavedEq(entryId) }
+                                },
                                 onRemoveGeneralEq = onRemoveGeneralEq,
                                 onExportGeneralEq = requestExportGeneralEq,
-                                onFlashGeneralEq = onFlashGeneralEq,
+                                onFlashGeneralEq = { presetId ->
+                                    flashSuspendWithFeedback(activeOutput) { onFlashGeneralEq(presetId) }
+                                },
                                 onMessage = ::showMessage,
                                 modifier = Modifier.fillMaxSize(),
                             )
@@ -817,7 +984,11 @@ fun EqLibraryApp(
                         onApplyEw300Editor = onApplyEw300Editor,
                         onCaptureBlackPearlDacEq = onCaptureBlackPearlDacEq,
                         onCaptureEw300DacEq = onCaptureEw300DacEq,
-                        onFlashBlackPearlFromMyDac = onFlashBlackPearlFromMyDac,
+                        onFlashBlackPearlFromMyDac = { profile ->
+                            flashSuspendWithFeedback(ExportDevice.BLACK_PEARL) {
+                                onFlashBlackPearlFromMyDac(profile)
+                            }
+                        },
                         onResetBlackPearlFromMyDac = onResetBlackPearlFromMyDac,
                         onReadBlackPearlQualification = onReadBlackPearlQualificationControls,
                         onSetBlackPearlDeviceControl = onSetBlackPearlDeviceControl,
@@ -846,11 +1017,23 @@ fun EqLibraryApp(
                         savedGeneralPresetIds = savedGeneralPresetIds,
                         hiddenCanonicalProfileIds = appPreferences.hiddenCanonicalProfileIds,
                         blackPearlConnectionState = blackPearlConnectionState,
-                        onFlashBlackPearlProfile = onFlashBlackPearlFromMyDac,
+                        onFlashBlackPearlProfile = { profile ->
+                            flashSuspendWithFeedback(ExportDevice.BLACK_PEARL) {
+                                onFlashBlackPearlFromMyDac(profile)
+                            }
+                        },
                         fiioJa11ConnectionState = fiioJa11ConnectionState,
-                        onFlashFiioJa11Profile = onFlashFiioJa11FromMyDac,
+                        onFlashFiioJa11Profile = { profile ->
+                            flashSuspendWithFeedback(ExportDevice.FIIO_JA11) {
+                                onFlashFiioJa11FromMyDac(profile)
+                            }
+                        },
                         ew300ConnectionState = ew300ConnectionState,
-                        onFlashEw300Profile = onFlashEw300FromMyDac,
+                        onFlashEw300Profile = { profile ->
+                            flashImmediateWithFeedback(ExportDevice.SIMGOT_EW300) {
+                                onFlashEw300FromMyDac(profile)
+                            }
+                        },
                         onToggleFavorite = onToggleFavorite,
                         onSaveGeneralPresets = onSaveGeneralPresets,
                         onHideCanonicalProfiles = onHideCanonicalProfiles,

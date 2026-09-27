@@ -142,16 +142,20 @@ internal fun DeviceOperationStatusHeader(
     onRefresh: () -> Unit,
     controlName: (DacControlId) -> String,
 ) {
-    // The header is deliberately stable. Transient writes, verification and failures belong in the
-    // shared bottom snackbar so setting rows never move while a device operation is running.
-    val heading = when {
-        isCurrentSession -> "Current device state"
-        hasSnapshot -> "Last read"
-        else -> "Device settings"
-    }
+    val presentation = deviceOperationStatusPresentation(
+        isReading = isReading,
+        isWriting = isWriting,
+        activeWriteControlId = activeWriteControlId,
+        pendingVerificationControlId = pendingVerificationControlId,
+        hasSnapshot = hasSnapshot,
+        isCurrentSession = isCurrentSession,
+        controlName = controlName,
+    )
     val supportingText = when {
+        presentation.pendingMessage != null -> presentation.pendingMessage
+        presentation.staleMessage != null -> presentation.staleMessage
+        isWriting || isReading -> "Checking device settings…"
         isCurrentSession -> "Values verified from the connected DAC."
-        hasSnapshot -> "Reconnect or refresh to update these values."
         else -> "Connect a DAC to read its settings."
     }
 
@@ -165,7 +169,7 @@ internal fun DeviceOperationStatusHeader(
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             Text(
-                text = heading,
+                text = presentation.heading,
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
             )
