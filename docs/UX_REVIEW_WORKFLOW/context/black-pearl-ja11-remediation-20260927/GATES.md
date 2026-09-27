@@ -4,26 +4,33 @@ OWNS: app/src/**, docs/UX_REVIEW_WORKFLOW/context/black-pearl-ja11-remediation-2
 
 Scope: Implement and verify only the named Black Pearl final-readback truth correction and complete JA11 User 1 five-band My DAC editor/apply path, then prepare an exact owner handoff.
 
-## Current follow-up gate state — source `9f5cb852994e1c88fce80598f249a97fae047429`
+## Current follow-up gate state — exact candidate source `b61f02e8c91656f14ffc639e4c6d937b2162a1b7`
 
 This section supersedes the historical post-Pixel gate state recorded below. The owner-authorized
-JA11 terminal-result repair is software-verified and independently reviewed, but the exact signed
-candidate boundary is open. The Android UAPP routing prompt is expected stock-device behavior and
-was not changed or retested.
+JA11 terminal-result repair is software-verified and independently reviewed, the minimum main
+integration was authorized and merged, and the exact combined signed candidate is ready for the
+owner Pixel 9 gate. The Android UAPP routing prompt is expected stock-device behavior and was not
+changed or retested.
 
-- Source: branch `codex/black-pearl-ja11-remediation-20260927`, refreshed `origin/main`
-  `acaf4dd32ddd9379ec2860e45e34fb8039219583`, final source
-  `9f5cb852994e1c88fce80598f249a97fae047429`.
+- Source: branch `codex/black-pearl-ja11-remediation-20260927`; merged `origin/main`
+  `b61f02e8c91656f14ffc639e4c6d937b2162a1b7`.
 - Current software gates: unit PASS; focused JA11 terminal UI 4/4 PASS; full API-36 emulator
   instrumentation 24/24 PASS; lint PASS; debug assemble PASS; minified release/R8 PASS; mapping
   verification PASS; `git diff --check` PASS.
 - Independent review: PASS after resolving missing dismiss/expiry, stale global Flash feedback,
   rendered failure coverage, and trace/status identity concerns.
 - `actionlint`: NOT RUN because it is unavailable locally.
-- Exact signed beta for this source: NOT AVAILABLE. The trusted workflow is main-only; no push,
-  merge, tag, publication, or hardware mutation occurred. The prior `acaf4dd` signed APK and
-  Pixel evidence do not transfer to this changed source.
-- Current state: `MERGE_APPROVAL_REQUIRED`; do not claim `READY_FOR_PIXEL_9`.
+- Exact signed beta: workflow [#1372](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36347148408)
+  PASS for `candidate_target=black-pearl-ja11`; APK
+  `EQ-Library-v0.7.0-beta-b61f02e.apk`, SHA-256
+  `276587734fc863277b83e4310c040cee22c27261075e21fa75d766ded9eef27e`; package/version
+  `com.weekssa.opraeqforuapp`, `0.7.0` / code `7`; signer
+  `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`; immutable artifact
+  `10941292707` / `sha256:188d2e4b973e7aab420d4c7d3890dba3407415c1d2c8f935a418acdacdbd8fc3`.
+- Signed emulator install/cold launch: PASS; `Success`, `Status: ok`, `LaunchState: COLD`,
+  `Complete`. Emulator diagnostics artifact `10941003406` /
+  `sha256:e041ee672816ff85ba0c866ff0bdfa8b8a616ec540f95c93f3fd632f19197d57`.
+- Current state: `READY_FOR_PIXEL_9`; no physical qualification or public support claim.
 
 - [x] G0: the acceptance ledger is syntactically valid and its runnable checks are reviewable
   CHECK: node /Users/stephenweeks/.agents/skills/unlazy/scripts/gate-lint.mjs docs/UX_REVIEW_WORKFLOW/context/black-pearl-ja11-remediation-20260927/GATES.md
@@ -58,25 +65,23 @@ was not changed or retested.
   `EMULATOR_INSTRUMENTATION_PASS`. Non-`-r` debug install and cold launch also passed; large-text
   launch and `uiautomator dump` passed.
 
-- [ ] G5: exact signed beta provenance is complete for the current source, or the trusted main-only signing boundary is recorded
-  EVIDENCE: OPEN for current source; no exact signed beta, signer, workflow run, or immutable
-  artifact exists for `9f5cb852994e1c88fce80598f249a97fae047429`. The prior `acaf4dd` artifact is
-  historical and not transferable. `actionlint` is NOT RUN because it is unavailable locally.
+- [x] G5: exact signed beta provenance is complete for the current source, or the trusted main-only signing boundary is recorded
+  EVIDENCE: PASS for merged source `b61f02e8c91656f14ffc639e4c6d937b2162a1b7`; workflow #1372,
+  candidate target `black-pearl-ja11`, APK checksum, signer, immutable artifact ID/digest,
+  package/version, signed emulator install/cold launch, and diagnostics digest are recorded above.
+  `actionlint` is NOT RUN because it is unavailable locally; remote workflow execution passed.
 
 - [x] G6: mandatory independent read-only review finds no unresolved scoped defect or prohibited behavior
   EVIDENCE: PASS for current source; second independent read-only review is recorded in
   `04-final-review.md`; no protocol/transport/identity/retry/canonical-EQ/hardware mutation scope
   breach found.
 
-- [ ] G7: owner Pixel device handoff is complete and hardware mutation remains owner-controlled
-  EVIDENCE: BLOCKED at `MERGE_APPROVAL_REQUIRED`; `05-release-handoff.md` contains the next
-  owner-controlled signing boundary. No Pixel 9 review is authorized for the changed source yet.
+- [x] G7: owner Pixel device handoff is complete and hardware mutation remains owner-controlled
+  EVIDENCE: READY_FOR_PIXEL_9; exact candidate provenance and plain-language checklist are in
+  `05-release-handoff.md` and `07-owner-usage-guide.md`. Hardware remains owner-controlled.
 
 ## Post-Pixel evidence status
 
-The exact candidate was used for one owner-authorized JA11 Apply and one owner-authorized restore.
-Both immediate final current-state reads matched, and the original flat state was restored. The
-Android UAPP routing prompt appeared at both reconnect boundaries and was canceled. The complete
-physical gate remains `PHYSICAL_INCONCLUSIVE`: transient terminal feedback was obscured by that
-prompt and no exported operation trace proving exact Save count was captured. Black Pearl was not
-exercised. These results are not a public hardware-support claim.
+Historical physical evidence below belongs to the prior `acaf4dd` candidate and does not transfer.
+For the exact candidate above, owner physical validation is pending; Black Pearl and JA11 remain
+independent and neither is physically qualified by this software/emulator evidence.

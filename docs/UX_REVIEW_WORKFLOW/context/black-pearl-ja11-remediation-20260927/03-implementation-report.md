@@ -1,17 +1,42 @@
 # Implementation report - Black Pearl and JA11 remediation
 
-Status: `MERGE_APPROVAL_REQUIRED`. The narrowly scoped JA11 terminal-result repair and software
-gates pass on the new branch source, but the trusted signing workflow is main-only and no exact
-signed artifact exists for this source SHA. The earlier signed candidate and Pixel evidence are
-historical evidence only and do not transfer to this changed source.
+Status: `READY_FOR_PIXEL_9`. The owner-authorized minimum main integration completed, the existing
+combined non-public signing workflow produced an exact candidate from the merged source, and the
+software/emulator gates plus mandatory independent review pass. This is an owner physical-validation
+handoff only; it is not a physical-fix or public-support claim.
 
-## Follow-up repair addendum — source `9f5cb852994e1c88fce80598f249a97fae047429`
+## Exact signed candidate addendum — source `b61f02e8c91656f14ffc639e4c6d937b2162a1b7`
 
-This addendum supersedes the earlier `READY_FOR_PIXEL_9` and `PHYSICAL_INCONCLUSIVE` handoff
-claims for the changed source. It records the owner-authorized, narrowly scoped repair after the
+- Repository: `https://github.com/weekssa/OPRA-EQ-for-UAPP.git`.
+- Owner-approved PR: [#50](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/50), merged into `main`.
+- Merged source SHA: `b61f02e8c91656f14ffc639e4c6d937b2162a1b7`.
+- Candidate target: `black-pearl-ja11`.
+- Signed workflow: [run #1372](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36347148408),
+  completed successfully in 9m53s; requested tasks included unit tests, lint, and minified release
+  assembly, followed by signed-emulator install and cold launch.
+- Candidate APK: `EQ-Library-v0.7.0-beta-b61f02e.apk`.
+- APK SHA-256: `276587734fc863277b83e4310c040cee22c27261075e21fa75d766ded9eef27e`.
+- Package/version: `com.weekssa.opraeqforuapp`, `0.7.0` / code `7`.
+- Signer certificate SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`;
+  APK signature schemes v2 and v3 verified.
+- R8 mapping SHA-256: `864c6a6d27ccfdcae2e421ad318be988ea1c846d7f8421a1b8038fd523b608f5`.
+- Immutable signed artifact: ID `10941292707`, digest
+  `sha256:188d2e4b973e7aab420d4c7d3890dba3407415c1d2c8f935a418acdacdbd8fc3`.
+- Exact candidate URL:
+  `https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-b61f02e.apk`.
+- Emulator diagnostics artifact: ID `10941003406`, digest
+  `sha256:e041ee672816ff85ba0c866ff0bdfa8b8a616ec540f95c93f3fd632f19197d57`.
+- Clean signed-emulator install: PASS (`Success`, install command completed).
+- Cold launch: PASS (`Status: ok`, `LaunchState: COLD`, `Activity: ...MainActivity`, `Complete`).
+- Luna did not connect, mutate, flash, apply, reset, save, restore, or otherwise operate a DAC.
+
+## Historical pre-candidate repair addendum — source `9f5cb852994e1c88fce80598f249a97fae047429`
+
+This addendum records the pre-integration owner-authorized, narrowly scoped repair after the
 owner reported that the Android UAPP routing prompt also occurs in the stock app. That prompt is
 expected stock-device/platform behavior and remains unchanged; it is not reclassified as an app
-failure and was not retested on hardware.
+failure and was not retested on hardware. The exact-candidate addendum above supersedes this
+pre-candidate status.
 
 ### Exact source and boundary
 

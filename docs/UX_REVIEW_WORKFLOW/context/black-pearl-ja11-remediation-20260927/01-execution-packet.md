@@ -27,6 +27,11 @@ Success wording must assert saved-and-verified final readback. Failure and uncer
 
 No hardware mutation, automatic retry, source/APK proof transfer, protocol reinterpretation, merge, publication, tag, main push, or public hardware-support claim.
 
+The “no merge” boundary above governed implementation before owner approval. The owner later
+authorized the minimum main integration required by the main-only trusted signing workflow; PR #50
+was merged without tag/public release/hardware mutation, and workflow #1372 produced the exact
+non-public candidate. The remaining gate is the owner Pixel 9 review.
+
 ## Follow-up terminal-result repair contract
 
 For the owner-authorized follow-up, the stock Android UAPP routing prompt is expected and out of

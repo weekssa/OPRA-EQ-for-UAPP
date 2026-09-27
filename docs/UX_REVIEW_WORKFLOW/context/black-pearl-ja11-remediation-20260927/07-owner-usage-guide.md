@@ -2,11 +2,23 @@
 
 ## Current source boundary
 
-The current source is `9f5cb852994e1c88fce80598f249a97fae047429`. No exact signed APK exists for
-this source, so do not install any local debug or unsigned release APK on the Pixel 9 and do not
-perform hardware testing yet. Current status is `MERGE_APPROVAL_REQUIRED`; the next owner action
-is separate authorization of the minimum main integration or a narrowly reviewed combined signing
-path. The prior `acaf4dd` candidate and Pixel evidence are historical and do not prove this source.
+The exact owner-review candidate is source `b61f02e8c91656f14ffc639e4c6d937b2162a1b7`. Current
+status is `READY_FOR_PIXEL_9`; install only the exact signed candidate below. The prior `acaf4dd`
+candidate and Pixel evidence are historical and do not prove this candidate.
+
+Current exact candidate:
+
+- Source SHA: `b61f02e8c91656f14ffc639e4c6d937b2162a1b7`
+- APK: `EQ-Library-v0.7.0-beta-b61f02e.apk`
+- APK SHA-256: `276587734fc863277b83e4310c040cee22c27261075e21fa75d766ded9eef27e`
+- Package/version: `com.weekssa.opraeqforuapp`, `0.7.0` / code `7`
+- Signer SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`
+- Workflow: [signed-beta #1372](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36347148408)
+- Immutable artifact: ID `10941292707`, digest
+  `sha256:188d2e4b973e7aab420d4c7d3890dba3407415c1d2c8f935a418acdacdbd8fc3`
+- Exact candidate URL:
+  `https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-b61f02e.apk`
+- Clean signed-emulator install/cold launch: PASS; `Status: ok`, `LaunchState: COLD`, `Complete`.
 
 The Android UAPP routing prompt also occurs in the stock app and is expected platform/device
 behavior. It was deliberately left unchanged and must not be treated as the app-owned terminal
@@ -29,7 +41,7 @@ candidate for the current repair and is not physical qualification.
 Owner boundary: install only the exact candidate named in the handoff; do not use an older APK as a substitute; do not interpret raw USB bytes; do not retry a failed or uncertain hardware operation. Stop and return the app’s interpreted report if there is a permission loop, disconnect, mismatch, missing final readback, unexpected unrelated change, crash, or uncertain result.
 # Owner usage guide - Black Pearl and JA11 remediation
 
-## Current state
+## Historical state before exact candidate
 
 The branch contains software-verified remediation for exactly two issues plus the later JA11
 terminal-result repair. The API 36 emulator, automated software gates, and local minified release
@@ -37,8 +49,9 @@ build pass for the current source, but the owner-approved main integration and s
 belong to the historical source. Luna did not connect to or mutate a DAC in this follow-up. Do not
 install the branch debug APK or unsigned release APK for hardware testing.
 
-The previous handoff was `READY_FOR_PIXEL_9` for the historical source; the current handoff is
-`MERGE_APPROVAL_REQUIRED` pending exact signed provenance for the repaired source.
+The previous handoff was `MERGE_APPROVAL_REQUIRED` pending exact signed provenance for the repaired
+source. That boundary is now closed by the exact candidate above. The current handoff is
+`READY_FOR_PIXEL_9`; the physical gate remains owner-controlled.
 
 ## What the owner should do next
 

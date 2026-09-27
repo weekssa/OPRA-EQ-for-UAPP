@@ -33,3 +33,11 @@ EQ.” This authorizes only the app-owned `EDITOR_APPLY` terminal-result repair 
 - Do not change JA11 protocol bytes, transport, reconnect/session policy, Save/retry behavior, or
   perform any DAC mutation.
 - Do not merge, publish, tag, or claim a signed beta or Pixel readiness without exact provenance.
+
+## Minimum main integration authorization
+
+The owner then replied `Authorize` to the recommendation to authorize the minimum main integration
+needed to obtain exact signed provenance. This authorizes the already-reviewed PR #50 to merge into
+`main` and permits dispatch of the existing non-public `black-pearl-ja11` signing workflow. It does
+not authorize a public release, tag, additional workflow changes, automatic retries, or any DAC
+connection or mutation. The resulting exact candidate is now recorded in `05-release-handoff.md`.

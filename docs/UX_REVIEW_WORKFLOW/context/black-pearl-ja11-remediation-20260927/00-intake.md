@@ -51,8 +51,9 @@ current candidate manifest did not represent a combined Black Pearl + JA11 targe
 owner's continuation instruction, the branch was updated with a non-destructive merge of the
 refreshed live `origin/main` catalog commits (`0adcc8159a467790104cf2dc797f1279ef2c53ed`) and the
 trusted workflow was narrowly extended with a `black-pearl-ja11` manifest target. The workflow
-still requires `refs/heads/main`; no signed candidate or Pixel 9 physical action exists from this
-branch. The release status remains `MERGE_APPROVAL_REQUIRED`.
+still requires `refs/heads/main`; at that pre-integration checkpoint no signed candidate or Pixel 9
+physical action existed from this branch. The pre-integration status was
+`MERGE_APPROVAL_REQUIRED`; the current status is recorded below.
 
 ## Follow-up intake disposition — terminal-result repair
 
@@ -62,5 +63,7 @@ platform/device behavior and remains unchanged. The final follow-up source is
 `9f5cb852994e1c88fce80598f249a97fae047429` on the same remediation branch; only JA11 terminal
 presentation, global-feedback suppression, and focused tests changed. Full unit, API-36 emulator,
 lint, debug, minified release/R8, and independent review gates pass. No DAC was connected or
-mutated by Luna. Exact signed provenance is unavailable for this source because the trusted
-workflow remains main-only; current disposition is `MERGE_APPROVAL_REQUIRED`.
+mutated by Luna. The owner subsequently authorized minimum main integration. PR #50 merged into
+`main` at `b61f02e8c91656f14ffc639e4c6d937b2162a1b7`, and signed-beta workflow #1372 produced the
+exact combined candidate recorded in `05-release-handoff.md`. Current disposition is
+`READY_FOR_PIXEL_9`; physical validation remains owner-controlled.

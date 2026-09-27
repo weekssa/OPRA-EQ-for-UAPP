@@ -2,13 +2,15 @@
 
 ## Current source boundary
 
-The prior Pixel 9 session used source `acaf4dd32ddd9379ec2860e45e34fb8039219583`. A later
-owner-authorized terminal-result repair now exists at source
-`9f5cb852994e1c88fce80598f249a97fae047429`; therefore the prior physical evidence is historical
-and must not be transferred to the repaired source. Wait for an exact signed candidate whose
-provenance matches `9f5cb852994e1c88fce80598f249a97fae047429` before using this prompt. The Android
-UAPP routing prompt observed on the stock app is expected platform/device behavior and should not be
-treated as an app defect.
+The exact candidate for the final owner review is source
+`b61f02e8c91656f14ffc639e4c6d937b2162a1b7`, APK SHA-256
+`276587734fc863277b83e4310c040cee22c27261075e21fa75d766ded9eef27e`, signer
+`65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`, workflow #1372, and
+immutable artifact ID `10941292707` / digest
+`sha256:188d2e4b973e7aab420d4c7d3890dba3407415c1d2c8f935a418acdacdbd8fc3`. The prior Pixel 9
+session used source `acaf4dd32ddd9379ec2860e45e34fb8039219583` and must not be transferred. The
+Android UAPP routing prompt observed on the stock app is expected platform/device behavior and
+should not be treated as an app defect.
 
 Use only after the owner returns evidence from the exact candidate identified in `05-release-handoff.md`.
 
@@ -41,8 +43,8 @@ in `05-release-handoff.md`.
 > release-readiness audit, changelog, and owner go/no-go package. Do not merge, publish, tag, or
 > make a public hardware-support claim without separate owner approval.
 
-Current post-session state: `PHYSICAL_INCONCLUSIVE`. The exact signed candidate was used for a
-bounded JA11 Apply/restore session. Immediate readback and original-state restoration matched, but
-the Android UAPP routing dialog obscured transient terminal feedback and no exported operation trace
-proving exact Save count was captured. Do not classify the complete JA11 issue as accepted until the
-owner resolves or explicitly accepts this evidence boundary. Black Pearl was not exercised.
+Current post-session state: `OWNER_PHYSICAL_PENDING`. The exact candidate above has not been
+exercised by Luna. The owner must validate Black Pearl and JA11 independently, capture the app
+reports/trace and restoration evidence, and return the evidence before either issue can be
+classified as physically passed or accepted. Black Pearl and JA11 must not inherit the historical
+`acaf4dd` session result.

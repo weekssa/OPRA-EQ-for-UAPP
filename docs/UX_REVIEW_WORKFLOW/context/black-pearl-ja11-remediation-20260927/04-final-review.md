@@ -1,10 +1,28 @@
 # Final review - Black Pearl and JA11 remediation
 
-Status: `MERGE_APPROVAL_REQUIRED` - independent read-only review passed for the follow-up source
-`9f5cb852994e1c88fce80598f249a97fae047429`; exact signed provenance for this changed source is
-not available because the trusted workflow is main-only.
+Status: `READY_FOR_PIXEL_9` - independent read-only review passed, owner-authorized main
+integration completed, and exact signed provenance is recorded below. This remains an owner
+physical-validation state, not a physical-fix or public-support claim.
 
-## Follow-up independent review — source `9f5cb852994e1c88fce80598f249a97fae047429`
+## Exact candidate review addendum — source `b61f02e8c91656f14ffc639e4c6d937b2162a1b7`
+
+- PR #50 merged successfully into `main` at source `b61f02e8c91656f14ffc639e4c6d937b2162a1b7`.
+- Signed workflow [#1372](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36347148408)
+  completed successfully for `candidate_target=black-pearl-ja11`.
+- Candidate `EQ-Library-v0.7.0-beta-b61f02e.apk`; APK SHA-256
+  `276587734fc863277b83e4310c040cee22c27261075e21fa75d766ded9eef27e`.
+- Package/version: `com.weekssa.opraeqforuapp`, `0.7.0` / code `7`.
+- Signer SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`; v2/v3 verified.
+- Immutable artifact ID/digest: `10941292707` /
+  `sha256:188d2e4b973e7aab420d4c7d3890dba3407415c1d2c8f935a418acdacdbd8fc3`.
+- Emulator diagnostics artifact ID/digest: `10941003406` /
+  `sha256:e041ee672816ff85ba0c866ff0bdfa8b8a616ec540f95c93f3fd632f19197d57`.
+- Signed emulator install and cold launch independently visible in the job log: PASS; `Status: ok`,
+  `LaunchState: COLD`, `Complete`.
+- No protocol, transport, retry, identity, Save, canonical-EQ, or hardware behavior changed in
+  the candidate production diff. Luna did not mutate hardware.
+
+## Historical pre-candidate independent review — source `9f5cb852994e1c88fce80598f249a97fae047429`
 
 The required independent reviewer completed a second read-only pass after the terminal-result
 repair. Result: **PASS**.
@@ -21,8 +39,9 @@ repair. Result: **PASS**.
   behavior changed. The stock Android UAPP routing prompt remains expected and out of scope.
 - The reviewer performed no tests, builds, commits, pushes, or hardware actions.
 
-This follow-up review passes the software boundary only. It does not make the changed source a
-signed beta and does not transfer earlier Pixel 9 evidence to the changed source.
+This pre-candidate review passed the software boundary only. The exact candidate review addendum
+above records the later signed provenance; earlier Pixel 9 evidence still does not transfer to the
+new candidate.
 
 ## Review method
 
@@ -108,7 +127,7 @@ integration, and exact signed candidate provenance are verified. The handoff is 
 `READY_FOR_PIXEL_9`; this is an owner physical-validation state, not a physical-fix or public-support
 claim.
 
-## Post-Pixel controlled-session review — 2026-09-27
+## Historical post-Pixel controlled-session review — 2026-09-27
 
 The exact signed candidate was exercised on the owner Pixel 9 with a connected FiiO JA11. The
 read-only baseline, local-only editor path, one Apply to `-1.00 dB`, final current-state readback,

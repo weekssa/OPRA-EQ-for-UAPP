@@ -1,13 +1,38 @@
 # Release handoff - Black Pearl and JA11 remediation
 
-Status: `MERGE_APPROVAL_REQUIRED`
+Status: `READY_FOR_PIXEL_9`
 
-## Follow-up source boundary — `9f5cb852994e1c88fce80598f249a97fae047429`
+## Exact signed candidate — owner Pixel 9 gate
 
-The owner-authorized JA11 terminal-result repair is software-verified, independently reviewed,
-and committed on `codex/black-pearl-ja11-remediation-20260927`. It is not ready for Pixel 9 review:
-the trusted signing workflows remain main-only, no exact signed beta exists for this SHA, and the
-earlier `acaf4dd` APK/Pixel session cannot prove this changed source.
+Use only this candidate for the final owner review. It is a non-public testing artifact and does
+not establish physical qualification or public hardware support.
+
+- Repository: `https://github.com/weekssa/OPRA-EQ-for-UAPP.git`
+- Owner-approved PR #50: merged into `main` at source SHA
+  `b61f02e8c91656f14ffc639e4c6d937b2162a1b7`.
+- Candidate target: `black-pearl-ja11`.
+- Workflow: [Signed EQ Library Beta Candidate #1372](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36347148408),
+  successful; 9m53s.
+- APK: `EQ-Library-v0.7.0-beta-b61f02e.apk`.
+- APK SHA-256: `276587734fc863277b83e4310c040cee22c27261075e21fa75d766ded9eef27e`.
+- Package/version: `com.weekssa.opraeqforuapp`, `0.7.0` / code `7`.
+- Signer certificate SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`.
+- Signature verification: v2 PASS; v3 PASS; one signer; RSA 4096-bit certificate.
+- Immutable artifact ID/digest: `10941292707` /
+  `sha256:188d2e4b973e7aab420d4c7d3890dba3407415c1d2c8f935a418acdacdbd8fc3`.
+- Emulator diagnostics artifact ID/digest: `10941003406` /
+  `sha256:e041ee672816ff85ba0c866ff0bdfa8b8a616ec540f95c93f3fd632f19197d57`.
+- Exact candidate URL:
+  `https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-b61f02e.apk`.
+- Signed emulator install: PASS (`Success`). Cold launch: PASS (`Status: ok`, `LaunchState: COLD`,
+  `Activity: com.weekssa.opraeqforuapp/.MainActivity`, `Complete`).
+- Luna did not connect, mutate, flash, apply, reset, save, restore, or otherwise operate a DAC.
+
+## Historical pre-candidate source boundary — `9f5cb852994e1c88fce80598f249a97fae047429`
+
+This section preserves the pre-integration evidence. It is superseded by the exact candidate
+section above; its old `MERGE_APPROVAL_REQUIRED` state and missing-candidate statements do not apply
+to the merged source.
 
 - Refreshed `origin/main`: `acaf4dd32ddd9379ec2860e45e34fb8039219583`.
 - Final local source SHA: `9f5cb852994e1c88fce80598f249a97fae047429`.
@@ -34,7 +59,7 @@ integration or a narrowly reviewed combined-manifest/signing workflow path so th
 can create an exact signed candidate for `9f5cb852994e1c88fce80598f249a97fae047429`. Until then,
 the state is `MERGE_APPROVAL_REQUIRED`, not `READY_FOR_PIXEL_9`.
 
-## Current software handoff
+## Historical pre-candidate software handoff and prior physical evidence
 
 - Repository: `https://github.com/weekssa/OPRA-EQ-for-UAPP.git`
 - Branch: `codex/black-pearl-ja11-remediation-20260927`
