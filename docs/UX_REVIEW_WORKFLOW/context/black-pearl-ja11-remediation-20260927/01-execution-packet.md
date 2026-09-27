@@ -26,3 +26,12 @@ Success wording must assert saved-and-verified final readback. Failure and uncer
 ## Prohibitions
 
 No hardware mutation, automatic retry, source/APK proof transfer, protocol reinterpretation, merge, publication, tag, main push, or public hardware-support claim.
+
+## Follow-up terminal-result repair contract
+
+For the owner-authorized follow-up, the stock Android UAPP routing prompt is expected and out of
+scope. The app-owned `EDITOR_APPLY` result must render exactly one compact live-region surface from
+the existing completed trace/status identity, use truthful Apply success/not-verified wording,
+retain readable/technical reports, allow dismissal, expire only verified success on the controlled
+test clock, and keep failure/uncertainty actionable until dismissal or recovery. The JA11
+transaction, Save boundary, reconnect behavior, and retry policy remain unchanged.

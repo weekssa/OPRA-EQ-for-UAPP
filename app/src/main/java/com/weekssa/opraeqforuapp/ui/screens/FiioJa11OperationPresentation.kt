@@ -16,13 +16,20 @@ internal fun fiioJa11OperationControlsEnabled(
     operationStatus: FiioJa11OperationStatus,
 ): Boolean = operationStatus !is FiioJa11OperationStatus.Running
 
-internal fun fiioJa11OperationStatusPresentation(
-    trace: FiioJa11OperationTrace,
-): FiioJa11OperationStatusPresentation {
-    val operation = trace.operation
+internal fun fiioJa11OperationLabel(operation: String): String = when (operation.uppercase()) {
+    "EDITOR_APPLY" -> "Apply"
+    "RESET" -> "Reset"
+    "FLASH" -> "Flash"
+    else -> operation
         .lowercase()
         .replace('_', ' ')
         .replaceFirstChar { it.uppercase() }
+}
+
+internal fun fiioJa11OperationStatusPresentation(
+    trace: FiioJa11OperationTrace,
+): FiioJa11OperationStatusPresentation {
+    val operation = fiioJa11OperationLabel(trace.operation)
     val reconnectMessage = if (trace.usbSessionChangeObserved()) {
         " A USB session change was observed before the final readback."
     } else {
@@ -33,6 +40,7 @@ internal fun fiioJa11OperationStatusPresentation(
     if (verified) {
         val successMessage = when (trace.operation) {
             "RESET" -> "Reset successful · FiiO JA11 EQ was reset to flat, saved, and verified."
+            "EDITOR_APPLY" -> "Apply successful · FiiO JA11 EQ was saved and verified."
             else -> "Flash successful · FiiO JA11 EQ was saved and verified."
         }
         return FiioJa11OperationStatusPresentation(

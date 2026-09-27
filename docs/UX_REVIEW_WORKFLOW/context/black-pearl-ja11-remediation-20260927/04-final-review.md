@@ -1,8 +1,28 @@
 # Final review - Black Pearl and JA11 remediation
 
-Status: COMPLETE - independent read-only review passed against implementation/workflow head
-`0c77e081fd6abd12a6e20b482ce269ae9f5bb764` and its final documentation evidence head
-`04a4a0ae2a4fd19371547970d58fab5e6036e97e`; draft PR #49 remote checks also passed.
+Status: `MERGE_APPROVAL_REQUIRED` - independent read-only review passed for the follow-up source
+`9f5cb852994e1c88fce80598f249a97fae047429`; exact signed provenance for this changed source is
+not available because the trusted workflow is main-only.
+
+## Follow-up independent review — source `9f5cb852994e1c88fce80598f249a97fae047429`
+
+The required independent reviewer completed a second read-only pass after the terminal-result
+repair. Result: **PASS**.
+
+- One inline live-region result surface is rendered only for a completed `EDITOR_APPLY` whose
+  trace ID matches the completed status ID; the global Flash banner is not used for the same Apply.
+- Verified Apply has explicit dismissal and deterministic eight-second expiry; failure/uncertainty
+  remains truthful and actionable until dismissal or recovery.
+- A prior JA11 Flash feedback surface is cleared when Apply starts and when it completes.
+- Focused UI coverage verifies verified success, failed Apply wording, one-result rendering,
+  readable/technical reports, dismissal, and test-clock expiry; unit coverage verifies success and
+  failure wording.
+- No JA11 flasher, protocol, transport, reconnect, Save, session, retry, Black Pearl, or hardware
+  behavior changed. The stock Android UAPP routing prompt remains expected and out of scope.
+- The reviewer performed no tests, builds, commits, pushes, or hardware actions.
+
+This follow-up review passes the software boundary only. It does not make the changed source a
+signed beta and does not transfer earlier Pixel 9 evidence to the changed source.
 
 ## Review method
 
@@ -20,9 +40,12 @@ dispatch API, the primary worker performed a separate read-only review pass afte
 6. Re-read the refreshed `origin/main` merge and the signed-beta workflow diff; verified the new
    combined target is explicit, the manifest assertions require both named products, and the
    main-only signing guard and existing publication path remain unchanged.
-7. Inspected draft PR #49 and its final exact-head checks: Android CI `#1874`, CodeQL `#1758`,
+7. Inspected PR #49 and its final exact-head checks: Android CI `#1874`, CodeQL `#1758`,
    priority community `#1627`, catalog currentness `#2142`, and dependency submission `#2231` all
    completed successfully.
+8. Verified signed workflow run `#1371`, exact source `acaf4dd32ddd9379ec2860e45e34fb8039219583`,
+   APK checksum, pinned signer certificate, immutable artifact ID/digest, package/version, signed
+   emulator installation, and cold launch.
 
 This review is independent of the earlier focused implementation inspection and did not edit,
 commit, push, or invoke hardware during the review itself.
@@ -65,19 +88,37 @@ commit, push, or invoke hardware during the review itself.
 - Existing JA11 Flash/Reset, Black Pearl, EW300, shared editor, snapshot, operation-presentation,
   and shared My DAC tests: PASS in the complete suite.
 - API 36 instrumentation: PASS, 20 tests.
-- Draft PR #49 remote checks: PASS on final documentation evidence head; Android CI, CodeQL,
+- PR #49 remote checks: PASS on final documentation evidence head; Android CI, CodeQL,
   priority-community, catalog currentness, and dependency submission all completed successfully.
+- Trusted signed-beta run #1371: PASS; combined Black Pearl/JA11 candidate manifest and signed
+  artifact provenance verified.
 - No change to `BlackPearlProtocol`, `FiioJa11Protocol`, Android USB transport, identity matcher,
   endpoint, timing, retry policy, or signing behavior.
 - The only release-workflow change is the additive `black-pearl-ja11` candidate target and strict
   manifest branch. No signing secret, signer check, main-only guard, artifact publication boundary,
-  or existing target was weakened. Ruby YAML parsing passed; `actionlint` was unavailable.
-- No hardware mutation, merge, tag, publication, or main push occurred.
+  or existing target was weakened. Ruby YAML parsing and actionlint v1.7.12 passed on the exact
+  candidate workflow.
+- No hardware mutation, tag, or public publication occurred. Owner approval authorized the merge to
+  `main` and the trusted signed-beta dispatch recorded in the implementation and release reports.
 
 ## Review conclusion
 
-No unresolved defect was found within the two authorized issues. Software and promotion preparation
-are verified on the branch. The release remains `MERGE_APPROVAL_REQUIRED` solely because the
-trusted signed-candidate job is main-only; the branch now has a truthful combined manifest target,
-but no main merge or signed run has occurred. This is an owner-controlled release boundary, not a
-software test failure.
+No unresolved defect was found within the two authorized issues. Software, owner-approved main
+integration, and exact signed candidate provenance are verified. The handoff is now
+`READY_FOR_PIXEL_9`; this is an owner physical-validation state, not a physical-fix or public-support
+claim.
+
+## Post-Pixel controlled-session review — 2026-09-27
+
+The exact signed candidate was exercised on the owner Pixel 9 with a connected FiiO JA11. The
+read-only baseline, local-only editor path, one Apply to `-1.00 dB`, final current-state readback,
+one restoration Apply to `0.00 dB`, and final flat-state readback all matched the intended values.
+The JA11 re-enumerated at both reconnect boundaries (`273 -> 275 -> 277`), and the Android UAPP
+routing prompt was canceled each time so UAPP did not take ownership of the device.
+
+The immediate hardware state and restoration evidence are **PASS**. Complete physical qualification
+remains **PHYSICAL_INCONCLUSIVE** because the routing prompt obscured transient terminal feedback and
+the post-dialog app surface did not retain an observable editor success sentence or export an
+operation trace proving the exact Save count. This is an evidence/feedback boundary, not evidence
+that the observed final readbacks were wrong. No Black Pearl hardware was exercised, and no public
+support claim is made.

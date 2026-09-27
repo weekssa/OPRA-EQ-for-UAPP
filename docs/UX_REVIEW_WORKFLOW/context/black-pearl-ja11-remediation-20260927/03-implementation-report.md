@@ -1,8 +1,70 @@
 # Implementation report - Black Pearl and JA11 remediation
 
-Status: SOFTWARE_VERIFIED; release status remains
-`MERGE_APPROVAL_REQUIRED` because the trusted signed-beta workflow is main-only. Promotion
-preparation is complete on the existing branch; no main merge or signed candidate was performed.
+Status: `MERGE_APPROVAL_REQUIRED`. The narrowly scoped JA11 terminal-result repair and software
+gates pass on the new branch source, but the trusted signing workflow is main-only and no exact
+signed artifact exists for this source SHA. The earlier signed candidate and Pixel evidence are
+historical evidence only and do not transfer to this changed source.
+
+## Follow-up repair addendum — source `9f5cb852994e1c88fce80598f249a97fae047429`
+
+This addendum supersedes the earlier `READY_FOR_PIXEL_9` and `PHYSICAL_INCONCLUSIVE` handoff
+claims for the changed source. It records the owner-authorized, narrowly scoped repair after the
+owner reported that the Android UAPP routing prompt also occurs in the stock app. That prompt is
+expected stock-device/platform behavior and remains unchanged; it is not reclassified as an app
+failure and was not retested on hardware.
+
+### Exact source and boundary
+
+- Repository: `https://github.com/weekssa/OPRA-EQ-for-UAPP.git` (remote verified exact).
+- Refreshed `origin/main`: `acaf4dd32ddd9379ec2860e45e34fb8039219583`.
+- Branch: `codex/black-pearl-ja11-remediation-20260927`.
+- Branch merge-base with refreshed `origin/main`: `3e8ff5d3f6cb750a627f76aba50f09645c0b41d3`.
+- Final local source SHA: `9f5cb852994e1c88fce80598f249a97fae047429`.
+- Local commit: `9f5cb852 Repair JA11 editor terminal feedback`.
+- Worktree: `/Users/stephenweeks/.codex/worktrees/black-pearl-ja11-remediation-20260927/OPRA-EQ-for-UAPP`.
+- No merge, tag, publication, branch push, or DAC mutation occurred in this follow-up.
+
+### Repair result
+
+- `FiioJa11OperationPresentation` now uses truthful `Apply successful` wording for verified
+  `EDITOR_APPLY`, retains the required final-readback sentence, and labels failed Apply as not
+  verified without automatic retry guidance.
+- `FiioJa11MyDacContent` now renders exactly one compact live-region terminal surface for a
+  completed `EDITOR_APPLY` whose trace ID matches the completed status ID. It exposes readable and
+  technical operation reports, a 48 dp dismiss action, deterministic eight-second verified-success
+  expiry, and persistent actionable failure/uncertainty until dismissed or recovered.
+- `EqLibraryApp` clears a prior JA11 Flash feedback surface when `EDITOR_APPLY` starts or
+  completes, preventing simultaneous stale/global feedback with the inline Apply result.
+- No `FiioJa11Flasher`, JA11 protocol, USB transport, reconnect, Save, session, retry, or hardware
+  mutation behavior changed. The stock Android UAPP routing prompt remains outside this repair.
+
+### Follow-up checks
+
+- `./tools/codex-android :app:testDebugUnitTest` — PASS.
+- `ANDROID_SERIAL=emulator-5554 ./tools/codex-android :app:connectedDebugAndroidTest
+  -Pandroid.testInstrumentationRunnerArguments.class=com.weekssa.opraeqforuapp.ui.screens.FiioJa11MyDacContentTest` — PASS, 4/4.
+- `ANDROID_SERIAL=emulator-5554 ./tools/codex-android :app:connectedDebugAndroidTest` — PASS,
+  24/24 on `codex-api36` API 36; the Pixel 9 was visible but not selected or mutated.
+- `./tools/codex-android :app:lintDebug` — PASS.
+- `./tools/codex-android :app:assembleDebug` — PASS.
+- `./tools/codex-android :app:assembleRelease` — PASS; local unsigned minified release only.
+- `bash tools/verify-r8-mapping.sh app/build/outputs/mapping/release/mapping.txt` — PASS.
+- `git diff --check` — PASS.
+- `actionlint` — `NOT RUN`; unavailable locally, matching the owner-provided boundary.
+- Remote CI, CodeQL, dependency submission, and signed-beta provenance for this new SHA — `NOT
+  RUN`/unavailable because no push or main integration occurred; prior runs belong to prior SHAs.
+
+### Candidate boundary
+
+No exact signed beta was produced for `9f5cb852994e1c88fce80598f249a97fae047429`. Local artifacts
+are not handoff candidates: debug `app-debug.apk` SHA-256
+`79e75c4a39e3a0aeb8b7231643ca4306e29db3578c23124028402b2945ac5fc6` and unsigned minified
+`app-release-unsigned.apk` SHA-256
+`945e330a1eb510d68405603f19f50770f06abda6b931c77ce9dbe33d6d40d746`.
+
+The owner must separately authorize the minimum main integration or a narrowly reviewed combined
+manifest/signing workflow path before an exact signed candidate can exist. This worker must not
+weaken the main-only signing guard or label the earlier `acaf4dd` artifact as this repair.
 
 ## Source and evidence identity
 
@@ -14,11 +76,12 @@ preparation is complete on the existing branch; no main merge or signed candidat
 - Final implementation source SHA: `dc6478a25b1745b4f78f833c69e96e066c615d56`
 - Promotion-preparation source SHA: `0f080516e8d4aa34e9d0a04b16464bf65b2b6d7d`
 - Reviewed implementation/workflow head: `0c77e081fd6abd12a6e20b482ce269ae9f5bb764`
-- Final documentation evidence head: `04a4a0ae2a4fd19371547970d58fab5e6036e97e` (documentation-only
-  commit atop the reviewed implementation/workflow head).
-- Draft review PR: [#49](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/49), exact head
-  `04a4a0ae2a4fd19371547970d58fab5e6036e97e`, base `0adcc8159a467790104cf2dc797f1279ef2c53ed`.
-  It remains intentionally open and draft; no merge was performed.
+- Final documentation evidence head before owner-approved merge: `3e8ff5d3f6cb750a627f76aba50f09645c0b41d3`
+  (documentation-only commits atop the reviewed implementation/workflow head).
+- Owner-approved merge commit on `main`: `acaf4dd32ddd9379ec2860e45e34fb8039219583`.
+- Review PR: [#49](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/49), exact head
+  `3e8ff5d3f6cb750a627f76aba50f09645c0b41d3`, base `0adcc8159a467790104cf2dc797f1279ef2c53ed`;
+  owner-approved and merged as `acaf4dd32ddd9379ec2860e45e34fb8039219583`.
 - Reference APK: available at the owner-supplied path; SHA-256
   `3d723ffa17042fbef7e6e192c14ecce460628d0f08a55eeb30caa59566ff8731`; package
   `com.weekssa.opraeqforuapp`, version `0.7.0` / code `7`; embedded source metadata
@@ -104,19 +167,21 @@ Commands were run in the isolated worktree with the checked-in wrapper tooling.
 - `./tools/codex-android :app:assembleRelease` - PASS; minified release/R8 path completed with existing warnings only.
 - `bash tools/verify-r8-mapping.sh app/build/outputs/mapping/release/mapping.txt` - PASS; application class renaming was verified.
 - `./tools/codex-android :app:connectedDebugAndroidTest` - PASS; `codex-api36(AVD)`, 20/20 tests, 0 skipped, 0 failed.
-- `.github/workflows/signed-beta.yml` Ruby YAML parse - PASS; `actionlint` - NOT RUN because it is not installed.
+- `.github/workflows/signed-beta.yml` Ruby YAML parse - PASS; `actionlint` v1.7.12 - PASS on the
+  exact candidate workflow using `/Users/stephenweeks/.local/bin/actionlint`.
 - GitHub Actions `Automatic Dependency Submission (Gradle)` run `#2229`
   (`36333163159`) - PASS on exact source `7898378e20a610a4667e861220fef40c9d8ac751`.
 
-### Draft PR remote checks at final documentation evidence head `04a4a0ae2a4fd19371547970d58fab5e6036e97e`
+### PR #49 remote checks at final documentation evidence head `3e8ff5d3f6cb750a627f76aba50f09645c0b41d3`
 
 - Android CI run `#1874` (`36334738869`) - PASS: build, min-API smoke, and emulator UI test.
 - CodeQL run `#1758` (`36334738860`) - PASS: Analyze Kotlin.
 - Priority community coverage CI run `#1627` (`36334738871`) - PASS.
 - Catalog currentness CI run `#2142` (`36334738846`) - PASS.
 - Automatic Dependency Submission (Gradle) run `#2231` (`36334735111`) - PASS.
-- PR #49 remained draft, open, and mergeable after checks. The remote push warning reported 51
-  existing default-branch Dependabot findings; this worker did not reinterpret or suppress them.
+- PR #49 was mergeable after checks and was subsequently approved and merged by the owner. The
+  remote push warning reported 51 existing default-branch Dependabot findings; this worker did not
+  reinterpret or suppress them.
 
 ## Emulator and app smoke evidence
 
@@ -139,13 +204,25 @@ Commands were run in the isolated worktree with the checked-in wrapper tooling.
 ## Signed candidate provenance
 
 - Signed beta workflow: `.github/workflows/signed-beta.yml`.
-- Result: no signed candidate produced for this branch.
-- Exact boundary: job condition still requires `github.ref == 'refs/heads/main'`; the branch now
-  includes a `black-pearl-ja11` candidate input whose manifest names both software claims and the
-  prepared owner Pixel 9 handoff. The workflow has not run for this branch.
-- Therefore APK filename, signed APK SHA-256, signer certificate, workflow run, immutable artifact
-  ID/digest, and signed install evidence remain `NOT AVAILABLE` for this branch. No debug APK is
-  presented as a beta or physical-test candidate.
+- Result: PASS; trusted workflow run [#1371](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36336477287)
+  built and published the combined `black-pearl-ja11` candidate from exact source
+  `acaf4dd32ddd9379ec2860e45e34fb8039219583`.
+- APK: `EQ-Library-v0.7.0-beta-acaf4dd.apk`.
+- APK SHA-256: `af83a5e0148263057b1c43e3b775157ab6aedd9d2c1e3ab0558cef8fa3cea665`.
+- Package/version: `com.weekssa.opraeqforuapp`, version `0.7.0`, code `7`.
+- Signer certificate SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`,
+  matching the pinned `release-signing-cert.sha256`.
+- Immutable runtime artifact: ID `10937890771`; digest
+  `sha256:88b1555e9a14642874110d05d5c5ae3554c25cc64b9385898a78287ccea9f52d`.
+- Exact candidate URL:
+  `https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-acaf4dd.apk`.
+- Exact checksum URL:
+  `https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-acaf4dd.apk.sha256`.
+- Signed emulator evidence: `opra_signed_beta`, Android 35, x86_64; signed APK install succeeded
+  in 3172 ms, and cold launch returned `Status: ok`, `LaunchState: COLD`, activity
+  `com.weekssa.opraeqforuapp/.MainActivity`.
+- Candidate workflow job [108668179602](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36336477287/job/108668179602)
+  completed successfully in 10m 28s. No debug APK is presented as the physical-test candidate.
 
 ## Promotion-preparation validation
 
@@ -153,16 +230,61 @@ Commands were run in the isolated worktree with the checked-in wrapper tooling.
   brought onto the remediation branch.
 - `git diff --check` - PASS after the workflow change.
 - Ruby YAML parse of `.github/workflows/signed-beta.yml` - PASS.
-- `actionlint .github/workflows/signed-beta.yml` - NOT RUN; `actionlint` is not installed in this
-  environment.
-- A signed workflow dispatch was NOT RUN because the job remains intentionally main-only and the
-  branch was not merged to `main`. The draft PR review checks were completed separately and do not
-  produce or imply a signed beta.
+- `/Users/stephenweeks/.local/bin/actionlint .github/workflows/signed-beta.yml` - PASS; actionlint
+  v1.7.12, exact candidate workflow, no findings.
+- The owner-approved signed workflow dispatch completed as run `#1371` after merge to `main`; exact
+  candidate provenance is recorded in the signed-candidate section above.
+
+## Pixel 9 controlled JA11 transaction evidence — 2026-09-27
+
+This session used the exact signed candidate from source SHA
+`acaf4dd32ddd9379ec2860e45e34fb8039219583`:
+
+- APK: `EQ-Library-v0.7.0-beta-acaf4dd.apk`
+- APK SHA-256: `af83a5e0148263057b1c43e3b775157ab6aedd9d2c1e3ab0558cef8fa3cea665`
+- Package/version: `com.weekssa.opraeqforuapp`, `0.7.0` / code `7`
+- Pixel: Google Pixel 9, codename `tokay`, Android 17 / API 37
+- ADB target: `adb-46141FDAQ003KZ-3AwgSo._adb-tls-connect._tcp`
+- JA11 identity: VID/PID `0x2972/0x0102`; Android USB host mode remained active
+- Evidence folder: `/tmp/opra-pixel-automated.ZRPv17/`
+
+The read-only baseline was verified as User 1 with five PEAK bands at 80/250/1000/4000/12000 Hz,
+all gains `+0.00 dB`, Q `0.70`, and global EQ gain `0.00 dB`. Opening, editing, Review, local
+Reset edits, Back, and Close were exercised before the first write; the USB connection count stayed
+at `273` throughout those local-only actions.
+
+### Controlled Apply and restore
+
+1. **Apply test — hardware state PASS:** one reviewed change, Band 1 gain `0.0 -> -1.0 dB`.
+   Review showed all five bands, global gain, headroom, one hardware value change, and the
+   first-write boundary. One Apply was sent. After the JA11 reconnect boundary and dismissal of
+   the Android “Open USB Audio Player PRO to handle JadeAudio JA11?” prompt, the fresh current
+   hardware view showed Band 1 `-1.00 dB`, all other values unchanged, and global gain `0.00 dB`.
+   USB connection count advanced `273 -> 275`.
+2. **Restore test — hardware state PASS:** one reviewed change, Band 1 gain `-1.0 -> 0.0 dB`.
+   One restoration Apply was sent. The same Android UAPP routing prompt appeared and was canceled.
+   The final fresh current hardware view showed the original flat five-band state and global gain
+   `0.00 dB`. USB connection count advanced `275 -> 277`.
+
+No Apply was retried, no Reset/Flash/Restore action was used, and no Black Pearl or EW300 hardware
+was touched. The installed APK was pulled after the session and its SHA-256 still matched the exact
+candidate checksum.
+
+### Physical evidence classification
+
+- JA11 immediate hardware readback and original-state restoration: **PASS**.
+- Complete named JA11 physical qualification: **PHYSICAL_INCONCLUSIVE**. The Android USB-routing
+  dialog obscured the transient terminal feedback during each reconnect, and the post-dialog app
+  surface did not retain an observable editor success sentence or expose an exported operation
+  trace proving the exact Save count to this worker. The observed final states are evidence of the
+  requested readback values, not permission to infer missing trace fields or a broader persistence,
+  acoustic, or public-support claim.
+- Black Pearl physical qualification: **NOT EXERCISED**.
+- Luna performed only the two owner-authorized JA11 Apply operations and the required read-only
+  final verification; no additional hardware action followed the final flat readback.
 
 ## Hardware boundary
 
-Luna did not connect to, mutate, Flash, Apply, Reset, Save, Restore, or otherwise write any DAC.
-No physical result is claimed. The next owner-controlled intervention is to merge this reviewed
-branch into trusted `main`, if approved, then dispatch `signed-beta.yml` with
-`candidate_target=black-pearl-ja11`; Pixel 9 remains blocked until that exact signed artifact is
-verified.
+The earlier pre-Pixel statement is superseded by the controlled JA11 session above. Luna did perform
+the two owner-authorized JA11 Apply operations and restored the original state. No Black Pearl or
+EW300 hardware was connected or mutated. No public hardware-support claim is made.
