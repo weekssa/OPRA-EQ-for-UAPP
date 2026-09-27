@@ -1,7 +1,7 @@
 # Final review - Black Pearl and JA11 remediation
 
-Status: COMPLETE - independent read-only review passed; final source SHA is recorded after the
-final documentation commit.
+Status: COMPLETE - independent read-only review passed against implementation source
+`dc6478a25b1745b4f78f833c69e96e066c615d56`.
 
 ## Review method
 

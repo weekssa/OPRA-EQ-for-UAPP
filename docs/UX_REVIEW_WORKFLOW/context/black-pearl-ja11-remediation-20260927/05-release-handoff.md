@@ -7,7 +7,7 @@ Status: `MERGE_APPROVAL_REQUIRED`
 - Repository: `https://github.com/weekssa/OPRA-EQ-for-UAPP.git`
 - Branch: `codex/black-pearl-ja11-remediation-20260927`
 - Base: `origin/main` `ce5efdf7985e4fc48f975b14fcedb1f592d43772`
-- Final source SHA: `TO_BE_FILLED_AFTER_FINAL_COMMIT`
+- Final implementation source SHA: `dc6478a25b1745b4f78f833c69e96e066c615d56`
 - Worktree: `/Users/stephenweeks/.codex/worktrees/black-pearl-ja11-remediation-20260927/OPRA-EQ-for-UAPP`
 - Black Pearl issue: software PASS; success remains final-readback verified and anti-stacking
   uncertainty is fail-closed.

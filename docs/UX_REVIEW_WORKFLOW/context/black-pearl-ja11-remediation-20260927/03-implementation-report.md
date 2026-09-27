@@ -9,7 +9,7 @@ Status: SOFTWARE_VERIFIED pending final commit identity; release status is
 - Refreshed base: `origin/main` at `ce5efdf7985e4fc48f975b14fcedb1f592d43772`
 - Branch: `codex/black-pearl-ja11-remediation-20260927`
 - Worktree: `/Users/stephenweeks/.codex/worktrees/black-pearl-ja11-remediation-20260927/OPRA-EQ-for-UAPP`
-- Final implementation source SHA: `TO_BE_FILLED_AFTER_FINAL_COMMIT`
+- Final implementation source SHA: `dc6478a25b1745b4f78f833c69e96e066c615d56`
 - Reference APK: available at the owner-supplied path; SHA-256
   `3d723ffa17042fbef7e6e192c14ecce460628d0f08a55eeb30caa59566ff8731`; package
   `com.weekssa.opraeqforuapp`, version `0.7.0` / code `7`; embedded source metadata
