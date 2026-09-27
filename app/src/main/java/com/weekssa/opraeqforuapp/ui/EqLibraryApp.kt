@@ -528,32 +528,39 @@ fun EqLibraryApp(
         if (statusSignature == lastFiioOperationStatusSignature) return@LaunchedEffect
         lastFiioOperationStatusSignature = statusSignature
         when (val status = state.fiioJa11OperationStatus) {
-            is FiioJa11OperationStatus.Running -> if (status.operation == "FLASH") {
-                flashFeedback = FlashFeedback(
+            is FiioJa11OperationStatus.Running -> when (status.operation) {
+                "FLASH" -> flashFeedback = FlashFeedback(
                     deviceLabel = flashDeviceLabel(ExportDevice.FIIO_JA11),
                     phase = FlashFeedbackPhase.VERIFYING,
                 )
-            } else if (status.operation == "RESET") {
-                flashFeedback = null
-                pendingFlashResultMessage = null
+                "RESET", "EDITOR_APPLY" -> {
+                    flashFeedback = null
+                    pendingFlashResultMessage = null
+                }
             }
             is FiioJa11OperationStatus.Completed -> {
                 val trace = status.trace
-                if (trace.operation == "FLASH") {
-                    val presentation = fiioJa11OperationStatusPresentation(trace)
-                    flashFeedback = if (presentation.verified) {
-                        FlashFeedback(
-                            deviceLabel = flashDeviceLabel(ExportDevice.FIIO_JA11),
-                            phase = FlashFeedbackPhase.COMPLETED,
-                            detail = "Final hardware readback matched.",
-                            verified = true,
-                        )
-                    } else {
-                        FlashFeedback(
-                            deviceLabel = flashDeviceLabel(ExportDevice.FIIO_JA11),
-                            phase = FlashFeedbackPhase.FAILED,
-                            detail = presentation.message,
-                        )
+                when (trace.operation) {
+                    "FLASH" -> {
+                        val presentation = fiioJa11OperationStatusPresentation(trace)
+                        flashFeedback = if (presentation.verified) {
+                            FlashFeedback(
+                                deviceLabel = flashDeviceLabel(ExportDevice.FIIO_JA11),
+                                phase = FlashFeedbackPhase.COMPLETED,
+                                detail = "Final hardware readback matched.",
+                                verified = true,
+                            )
+                        } else {
+                            FlashFeedback(
+                                deviceLabel = flashDeviceLabel(ExportDevice.FIIO_JA11),
+                                phase = FlashFeedbackPhase.FAILED,
+                                detail = presentation.message,
+                            )
+                        }
+                    }
+                    "EDITOR_APPLY" -> {
+                        flashFeedback = null
+                        pendingFlashResultMessage = null
                     }
                 }
             }

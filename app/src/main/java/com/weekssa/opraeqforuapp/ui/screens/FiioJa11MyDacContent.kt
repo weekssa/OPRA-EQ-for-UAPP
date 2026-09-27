@@ -1,7 +1,10 @@
 package com.weekssa.opraeqforuapp.ui.screens
 
+import android.content.Context
+import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -9,12 +12,18 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -24,6 +33,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
@@ -39,6 +51,7 @@ import com.weekssa.opraeqforuapp.ui.FiioJa11DeviceUiState
 import com.weekssa.opraeqforuapp.ui.MyDacEditorApplyStatus
 import com.weekssa.opraeqforuapp.ui.MyDacEditorUiState
 import com.weekssa.opraeqforuapp.ui.components.DacEqResponseGraph
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
@@ -71,7 +84,25 @@ internal fun FiioJa11MyDacContent(
     val scope = rememberCoroutineScope()
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     var confirmReset by remember { mutableStateOf(false) }
+    var dismissedEditorApplyOperationId by rememberSaveable { mutableStateOf<String?>(null) }
     val connected = connectionState is Kt02h20ConnectionState.Connected
+    val editorApplyTrace = when (val status = operationStatus) {
+        is FiioJa11OperationStatus.Completed -> operationTrace?.takeIf { trace ->
+            trace.operation == "EDITOR_APPLY" && trace.operationId == status.trace.operationId
+        }
+        else -> null
+    }
+
+    LaunchedEffect(editorApplyTrace?.operationId) {
+        dismissedEditorApplyOperationId = null
+        val operationId = editorApplyTrace?.operationId ?: return@LaunchedEffect
+        if (editorApplyTrace.isSaveAndFinalReadbackVerified()) {
+            delay(FIIO_JA11_TERMINAL_SUCCESS_EXPIRY_MILLIS)
+            if (dismissedEditorApplyOperationId != operationId) {
+                dismissedEditorApplyOperationId = operationId
+            }
+        }
+    }
 
     if (confirmReset) {
         AlertDialog(
@@ -166,14 +197,19 @@ internal fun FiioJa11MyDacContent(
                     onReset = { confirmReset = true },
                     operationStatus = operationStatus,
                 )
-                if (editorState.applyStatus != MyDacEditorApplyStatus.IDLE) {
+                if (
+                    editorApplyTrace != null &&
+                    editorApplyTrace.operationId != dismissedEditorApplyOperationId
+                ) {
+                    FiioJa11EditorTerminalResult(
+                        trace = editorApplyTrace,
+                        onDismiss = { dismissedEditorApplyOperationId = editorApplyTrace.operationId },
+                    )
+                } else if (editorState.applyStatus != MyDacEditorApplyStatus.IDLE) {
                     Text(
-                        editorState.applyFailureReason ?: "FiiO JA11 EQ applied and verified.",
-                        color = if (editorState.applyFailureReason == null) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.error
-                        },
+                        editorState.applyFailureReason
+                            ?: "FiiO JA11 Apply completed, but its final verification report is unavailable.",
+                        color = MaterialTheme.colorScheme.error,
                     )
                 }
             }
@@ -194,6 +230,99 @@ internal fun FiioJa11MyDacContent(
             )
         }
     }
+}
+
+internal const val FIIO_JA11_TERMINAL_SUCCESS_EXPIRY_MILLIS = 8_000L
+
+@Composable
+private fun FiioJa11EditorTerminalResult(
+    trace: FiioJa11OperationTrace,
+    onDismiss: () -> Unit,
+) {
+    val context = LocalContext.current
+    val presentation = fiioJa11OperationStatusPresentation(trace)
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics { liveRegion = LiveRegionMode.Polite },
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    text = if (presentation.verified) {
+                        "JA11 Apply verified"
+                    } else {
+                        "JA11 Apply not verified"
+                    },
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = if (presentation.verified) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    },
+                )
+                IconButton(onClick = onDismiss) {
+                    Icon(
+                        imageVector = Icons.Outlined.Close,
+                        contentDescription = "Dismiss JA11 Apply result",
+                    )
+                }
+            }
+            Text(presentation.message)
+            Text(
+                text = fiioJa11OperationReportDescription(trace),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            TextButton(
+                onClick = {
+                    shareFiioJa11Report(
+                        context = context,
+                        subject = "FiiO JA11 operation report",
+                        mimeType = "text/plain",
+                        contents = trace.toReadableText(),
+                    )
+                },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(FIIO_JA11_READABLE_REPORT_LABEL)
+            }
+            TextButton(
+                onClick = {
+                    shareFiioJa11Report(
+                        context = context,
+                        subject = "FiiO JA11 operation report JSON",
+                        mimeType = "application/json",
+                        contents = trace.toJson(),
+                    )
+                },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(FIIO_JA11_TECHNICAL_REPORT_LABEL)
+            }
+        }
+    }
+}
+
+private fun shareFiioJa11Report(
+    context: Context,
+    subject: String,
+    mimeType: String,
+    contents: String,
+) {
+    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+        type = mimeType
+        putExtra(Intent.EXTRA_SUBJECT, subject)
+        putExtra(Intent.EXTRA_TEXT, contents)
+    }
+    context.startActivity(Intent.createChooser(shareIntent, "Share FiiO JA11 report"))
 }
 
 @Composable
@@ -328,7 +457,8 @@ internal fun fiioJa11OperationInProgressMessage(
     is FiioJa11OperationStatus.Running -> when (operationStatus.operation.uppercase()) {
         "FLASH" -> null
         "RESET" -> "Resetting JA11 EQ… Keep the DAC connected while final readback is verified."
-        else -> "Applying JA11 ${operationStatus.operation.lowercase()}… Keep the DAC connected while final readback is verified."
+        "EDITOR_APPLY" -> "Applying JA11 EQ… Keep the DAC connected while final readback is verified."
+        else -> "Applying JA11 ${fiioJa11OperationLabel(operationStatus.operation).lowercase()}… Keep the DAC connected while final readback is verified."
     }
     else -> null
 }

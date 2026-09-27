@@ -17,10 +17,11 @@ class FiioJa11OperationPresentationTest {
             "Resetting JA11 EQ… Keep the DAC connected while final readback is verified.",
             fiioJa11OperationInProgressMessage(FiioJa11OperationStatus.Running("operation-1", "RESET")),
         )
-        assertTrue(
-            fiioJa11OperationInProgressMessage(FiioJa11OperationStatus.Running("operation-1", "APPLY"))
-                .orEmpty()
-                .startsWith("Applying JA11"),
+        assertEquals(
+            "Applying JA11 EQ… Keep the DAC connected while final readback is verified.",
+            fiioJa11OperationInProgressMessage(
+                FiioJa11OperationStatus.Running("operation-1", "EDITOR_APPLY"),
+            ),
         )
         assertNull(fiioJa11OperationInProgressMessage(FiioJa11OperationStatus.Running("operation-1", "FLASH")))
     }
@@ -43,6 +44,35 @@ class FiioJa11OperationPresentationTest {
         assertTrue(presentation.message.contains("saved and verified"))
         assertTrue(presentation.message.contains("Final hardware readback matched"))
         assertFalse(presentation.message.contains("Reconnect persistence was not tested"))
+    }
+
+    @Test
+    fun successfulEditorApplyUsesApplyWordingAndFinalReadback() {
+        val presentation = fiioJa11OperationStatusPresentation(trace(operation = "EDITOR_APPLY"))
+
+        assertTrue(presentation.verified)
+        assertTrue(presentation.message.contains("Apply successful"))
+        assertTrue(presentation.message.contains("FiiO JA11 EQ was saved and verified"))
+        assertTrue(presentation.message.contains("Final hardware readback matched"))
+        assertFalse(presentation.message.contains("Flash successful"))
+    }
+
+    @Test
+    fun failedEditorApplyNamesApplyAndRemainsFailClosed() {
+        val presentation = fiioJa11OperationStatusPresentation(
+            trace(
+                operation = "EDITOR_APPLY",
+                outcome = "VerificationFailed",
+                stateKnown = true,
+                stages = listOf(FiioJa11OperationStage.FINAL_READBACK, FiioJa11OperationStage.FAILED),
+                failureReason = "final readback mismatch",
+            ),
+        )
+
+        assertFalse(presentation.verified)
+        assertTrue(presentation.message.startsWith("Last FiiO JA11 Apply was not verified"))
+        assertTrue(presentation.message.contains("Do not retry"))
+        assertFalse(presentation.message.contains("Flash"))
     }
 
     @Test
@@ -114,6 +144,7 @@ class FiioJa11OperationPresentationTest {
     }
 
     private fun trace(
+        operation: String = "FLASH",
         outcome: String = "Success",
         stateKnown: Boolean = true,
         stages: List<FiioJa11OperationStage> = listOf(
@@ -126,7 +157,7 @@ class FiioJa11OperationPresentationTest {
         saveCommandCount: Long = 1L,
     ) = FiioJa11OperationTrace(
         operationId = "operation-1",
-        operation = "FLASH",
+        operation = operation,
         sourceCommit = "candidate",
         appVersion = "0.7.0",
         signerVerified = true,
