@@ -77,6 +77,7 @@ import com.weekssa.opraeqforuapp.ui.screens.hardwareFlashStartedMessage
 import com.weekssa.opraeqforuapp.ui.screens.MyEqsHomeScreen
 import com.weekssa.opraeqforuapp.ui.screens.SettingsScreen
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private sealed interface ActiveOutputExportRequest {
@@ -233,6 +234,20 @@ fun EqLibraryApp(
                 lastBlackPearlFlashSequence = outcome.sequence
                 flashFeedback = blackPearlFlashFeedback(outcome.result)
             }
+        }
+    }
+    LaunchedEffect(
+        flashFeedback?.deviceLabel,
+        flashFeedback?.phase,
+        flashFeedback?.detail,
+        flashFeedback?.verified,
+    ) {
+        val feedback = flashFeedback ?: return@LaunchedEffect
+        if (feedback.phase == FlashFeedbackPhase.SENT ||
+            feedback.phase == FlashFeedbackPhase.COMPLETED
+        ) {
+            delay(8_000L)
+            if (flashFeedback == feedback) flashFeedback = null
         }
     }
     val exportFolderPermissionFailedMessage = stringResource(R.string.export_folder_permission_failed)
@@ -474,28 +489,15 @@ fun EqLibraryApp(
                             verified = true,
                         )
                     }
-                    trace.operation == "RESET" && trace.stateKnown && trace.outcome == Ew300OperationOutcome.SUCCESS && trace.finalReadbackMatched ->
-                        showDeviceOperation(
-                            message = "Reset successful · SIMGOT EW300 DSP EQ was reset to flat and verified. Final hardware readback matched.",
-                            duration = SnackbarDuration.Short,
-                        )
                     trace.operation == "FLASH" && !trace.stateKnown -> flashFeedback = FlashFeedback(
                         deviceLabel = flashDeviceLabel(ExportDevice.SIMGOT_EW300),
                         phase = FlashFeedbackPhase.FAILED,
                         detail = ew300UnverifiedOperationMessage(trace),
                     )
-                    trace.operation == "RESET" && !trace.stateKnown -> showDeviceOperation(
-                        message = ew300UnverifiedOperationMessage(trace),
-                        duration = SnackbarDuration.Indefinite,
-                    )
                     trace.operation == "FLASH" -> flashFeedback = FlashFeedback(
                         deviceLabel = flashDeviceLabel(ExportDevice.SIMGOT_EW300),
                         phase = FlashFeedbackPhase.FAILED,
                         detail = "EW300 Flash stopped before verified persistence (${trace.outcome}).",
-                    )
-                    trace.operation == "RESET" -> showDeviceOperation(
-                        message = "EW300 ${trace.operation.lowercase()} stopped before verified persistence (${trace.outcome}).",
-                        duration = SnackbarDuration.Short,
                     )
                 }
             }
@@ -837,7 +839,10 @@ fun EqLibraryApp(
                 flashFeedback != null &&
                 selectedDestination != EqLibraryDestination.Settings
             ) {
-                FlashFeedbackBanner(feedback = flashFeedback!!)
+                FlashFeedbackBanner(
+                    feedback = flashFeedback!!,
+                    onDismiss = { flashFeedback = null },
+                )
             }
 
             Box(

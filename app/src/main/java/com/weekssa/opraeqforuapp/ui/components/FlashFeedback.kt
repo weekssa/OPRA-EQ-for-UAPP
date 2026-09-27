@@ -7,8 +7,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -46,7 +50,7 @@ internal fun blackPearlFlashFeedback(result: BlackPearlFlashResult): FlashFeedba
     is BlackPearlFlashResult.Success -> FlashFeedback(
         deviceLabel = flashDeviceLabel(ExportDevice.BLACK_PEARL),
         phase = FlashFeedbackPhase.SENT,
-        detail = "All EQ reports were sent. Final hardware state was not read back." +
+        detail = "EQ reports sent. Final hardware state was not read back." +
             (result.warning?.let { " $it" } ?: ""),
     )
     is BlackPearlFlashResult.NotRepresentable -> FlashFeedback(
@@ -69,6 +73,7 @@ internal fun blackPearlFlashFeedback(result: BlackPearlFlashResult): FlashFeedba
 @Composable
 internal fun FlashFeedbackBanner(
     feedback: FlashFeedback,
+    onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val isActive = feedback.phase == FlashFeedbackPhase.STARTING ||
@@ -88,7 +93,10 @@ internal fun FlashFeedbackBanner(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             if (isActive) CircularProgressIndicator()
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
                 Text(
                     text = when (feedback.phase) {
                         FlashFeedbackPhase.STARTING -> "Flashing to ${feedback.deviceLabel}…"
@@ -121,6 +129,14 @@ internal fun FlashFeedbackBanner(
                         text = "Reconnect or refresh the DAC before any later hardware action. Do not retry automatically.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            if (!isActive) {
+                IconButton(onClick = onDismiss) {
+                    Icon(
+                        imageVector = Icons.Outlined.Close,
+                        contentDescription = "Dismiss flash result",
                     )
                 }
             }

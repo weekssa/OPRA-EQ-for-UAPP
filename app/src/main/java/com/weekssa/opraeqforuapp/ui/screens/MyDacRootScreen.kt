@@ -101,7 +101,7 @@ fun MyDacRootScreen(
     onSetFiioJa11HeadsetControl: (Boolean) -> Unit,
     onSetFiioJa11UacMode: (FiioJa11Protocol.UacMode) -> Unit,
     onResetFiioJa11FromMyDac: suspend () -> String,
-    onResetEw300FromMyDac: () -> Unit = {},
+    onResetEw300FromMyDac: suspend () -> String = { "Reset is not available." },
     onRestoreEw300Baseline: suspend () -> String = { "EW300 baseline restoration is not available." },
     onRunEw300CapabilityBatch: suspend () -> Ew300CapabilityReport,
     onAdvanceEw300PersistenceQualification: suspend () -> Ew300PersistenceQualificationResult,

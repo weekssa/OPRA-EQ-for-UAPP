@@ -26,7 +26,7 @@ class FiioJa11OperationPresentationTest {
         assertTrue(presentation.verified)
         assertTrue(presentation.message.contains("saved and verified"))
         assertTrue(presentation.message.contains("Final hardware readback matched"))
-        assertTrue(presentation.message.contains("Reconnect persistence was not tested"))
+        assertFalse(presentation.message.contains("Reconnect persistence was not tested"))
     }
 
     @Test

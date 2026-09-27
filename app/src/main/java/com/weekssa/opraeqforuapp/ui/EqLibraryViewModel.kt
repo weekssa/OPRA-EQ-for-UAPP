@@ -1201,9 +1201,7 @@ class EqLibraryViewModel(
     }
 
     /** Owns the full EW300 reset across USB detach/re-enumeration independently of Compose. */
-    fun resetEw300FromMyDac() {
-        viewModelScope.launch { resetEw300ToFlat() }
-    }
+    suspend fun resetEw300FromMyDac(): UiText = resetEw300ToFlat()
 
     suspend fun runEw300CapabilityBatch(): Ew300CapabilityReport =
         hardwareRepository.runEw300CapabilityBatch()

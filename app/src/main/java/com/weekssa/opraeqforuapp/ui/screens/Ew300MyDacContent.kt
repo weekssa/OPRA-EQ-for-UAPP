@@ -79,7 +79,7 @@ internal fun Ew300MyDacContent(
     savedEqs: List<SavedEqRecord>,
     savedGeneralEqs: List<SavedGeneralEqRecord> = emptyList(),
     onConnect: () -> Unit,
-    onResetEq: () -> Unit,
+    onResetEq: suspend () -> String,
     onRestoreBaseline: suspend () -> String,
     onRunCapabilityBatch: suspend () -> Ew300CapabilityReport,
     onAdvancePersistenceQualification: suspend () -> Ew300PersistenceQualificationResult,
@@ -136,46 +136,6 @@ internal fun Ew300MyDacContent(
                     "Connected. EQ and DEVICE share one verified hardware session.",
                     style = MaterialTheme.typography.bodyMedium,
                 )
-                when (val currentOperation = operationStatus) {
-                    is Ew300OperationStatus.Running -> {
-                        if (currentOperation.operation != "FLASH") {
-                            Text(
-                                "EW300 ${currentOperation.operation.lowercase().replace('_', ' ')} is still being verified. Approve Android USB permission if it appears.",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                    is Ew300OperationStatus.Completed -> {
-                        if (currentOperation.trace.operation != "FLASH") {
-                            val status = ew300OperationStatusPresentation(
-                                trace = currentOperation.trace,
-                            )
-                            Text(
-                                status.message,
-                                color = if (status.verified) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.error
-                                },
-                            )
-                        }
-                    }
-                    Ew300OperationStatus.Idle -> operationTrace
-                        ?.takeIf { it.operation != "FLASH" }
-                        ?.let { trace ->
-                            val status = ew300OperationStatusPresentation(
-                                trace = trace,
-                            )
-                            Text(
-                                status.message,
-                                color = if (status.verified) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.error
-                                },
-                            )
-                        }
-                }
                 TabRow(selectedTabIndex = selectedTab) {
                     Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("EQ") })
                     Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("DEVICE") })
@@ -212,7 +172,9 @@ internal fun Ew300MyDacContent(
                             onRefresh = onConnect,
                             onEdit = onOpenEditor,
                             onCapture = { saveDacEqOpen = true },
-                            onReset = onResetEq,
+                            onReset = {
+                                scope.launch { onMessage(onResetEq()) }
+                            },
                         )
                         if (editorState.applyStatus != MyDacEditorApplyStatus.IDLE) {
                             Text(
