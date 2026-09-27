@@ -6,6 +6,18 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ## [Unreleased]
 
+### 2026-09-27 Black Pearl and JA11 bounded remediation
+
+- Kept TRN Black Pearl Direct Flash success behind complete active-session ten-band native
+  readback and raw global-gain verification; a readable final-gain mismatch now reconciles the
+  anti-stacking baseline to observed hardware truth, while missing or uncertain readback blocks
+  later mutation until a fresh authoritative snapshot.
+- Added the FiiO JA11 My DAC -> EQ User 1 five-band editor path: fresh verified read, local-only
+  edits, complete Review, explicit Apply, the existing five-band/quantized-global-gain/User 1/
+  Apply/one-Save/reconnect/final-readback boundary, and truthful verified or uncertain results.
+- Software and API 36 emulator gates pass on the remediation branch. No hardware was mutated;
+  JA11 and Black Pearl physical qualification remain owner-controlled and pending.
+
 ### 2026-09-26 DAC Flash UX parity
 
 - Unified the My EQs Flash interaction across supported DACs: the action now announces that Flash

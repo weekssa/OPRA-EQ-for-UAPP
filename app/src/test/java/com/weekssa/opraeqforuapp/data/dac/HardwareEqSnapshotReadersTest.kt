@@ -48,6 +48,7 @@ class HardwareEqSnapshotReadersTest {
         assertThat(transport.globalGainReads).isEqualTo(1)
         assertThat(transport.sendCount).isEqualTo(0)
         assertThat(bundle!!.snapshot.dedicatedEqPreampDb).isEqualTo(-3.0)
+        assertThat(bundle.snapshot.activeProgram).isEqualTo(FiioJa11Protocol.EqProgram.USER_1)
         assertThat(bundle.snapshot.verifiedAtEpochMillis).isEqualTo(55L)
         assertThat(bundle.fingerprint.eqEnabled).isTrue()
     }
@@ -59,6 +60,7 @@ class HardwareEqSnapshotReadersTest {
 
         assertThat(bundle).isNotNull()
         assertThat(bundle!!.fingerprint.eqEnabled).isFalse()
+        assertThat(bundle.snapshot.activeProgram).isEqualTo(FiioJa11Protocol.EqProgram.OFF)
         assertThat(bundle.fingerprint.isFlatResponse).isTrue()
     }
 

@@ -117,6 +117,11 @@ object HardwareEqSnapshotFactory {
         sessionGeneration: Long,
         verifiedAtEpochMillis: Long,
         eqEnabled: Boolean = true,
+        activeProgram: FiioJa11Protocol.EqProgram = if (eqEnabled) {
+            FiioJa11Protocol.EqProgram.USER_1
+        } else {
+            FiioJa11Protocol.EqProgram.OFF
+        },
     ): HardwareEqSnapshotBundle? {
         if (nativeBands.size != FiioJa11Protocol.BAND_COUNT) return null
         if (!globalEqGainDb.isFinite() || globalEqGainDb !in FiioJa11Protocol.MIN_GLOBAL_GAIN_DB..FiioJa11Protocol.MAX_GLOBAL_GAIN_DB) {
@@ -140,13 +145,16 @@ object HardwareEqSnapshotFactory {
                 )
             },
             // JA11 command 0x17 is the dedicated global EQ/preamp control used by its User 1 PEQ path.
-            dedicatedEqPreampUnits = if (eqEnabled) (globalEqGainDb * 2560.0).roundToLong() else null,
+            // Command 0x17 is signed tenths of a dB. This fingerprint is the exact native
+            // comparison domain; the protocol bytes remain owned by FiioJa11Protocol.
+            dedicatedEqPreampUnits = if (eqEnabled) (globalEqGainDb * 10.0).roundToLong() else null,
         )
         return HardwareEqSnapshotBundle(
             snapshot = HardwareEqSnapshot(
                 deviceId = DacDeviceId.FIIO_JA11,
                 sessionGeneration = sessionGeneration,
                 filters = filters,
+                activeProgram = activeProgram,
                 dedicatedEqPreampDb = if (eqEnabled) globalEqGainDb else null,
                 playbackGainDb = null,
                 verifiedAtEpochMillis = verifiedAtEpochMillis,

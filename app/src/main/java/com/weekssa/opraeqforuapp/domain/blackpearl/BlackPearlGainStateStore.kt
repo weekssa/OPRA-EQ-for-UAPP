@@ -5,6 +5,8 @@ package com.weekssa.opraeqforuapp.domain.blackpearl
  * adjustment instead of stacking another attenuation on top of it.
  */
 interface BlackPearlGainStateStore {
-    fun readAppliedGainDeltaRaw(): Int
+    /** Null means the last mutation did not leave a trustworthy anti-stacking baseline. */
+    fun readAppliedGainDeltaRaw(): Int?
     fun writeAppliedGainDeltaRaw(rawDelta: Int)
+    fun markAppliedGainDeltaUnknown()
 }

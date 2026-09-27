@@ -68,6 +68,8 @@ import com.weekssa.opraeqforuapp.domain.ew300.Ew300Protocol
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300RestorationResult
 import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceControls
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
+import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11EditorApplyResult
+import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11EditorBaseline
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationStatus
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationTrace
 import com.weekssa.opraeqforuapp.domain.kt02h20.Kt02h20FlashResult
@@ -133,6 +135,7 @@ private data class HardwareConnectionUiState(
     val ew300HardwareEqState: HardwareEqSnapshotState,
     val blackPearlHardwareEqMatch: HardwareEqMatchResolution?,
     val blackPearlEditorState: MyDacEditorUiState,
+    val fiioJa11EditorState: MyDacEditorUiState,
     val ew300EditorState: MyDacEditorUiState,
     val ew300OperationTrace: Ew300OperationTrace?,
     val ew300OperationStatus: Ew300OperationStatus,
@@ -169,6 +172,7 @@ data class EqLibraryUiState(
     val blackPearlSavedEqs: List<SavedEqRecord> = emptyList(),
     val blackPearlSavedGeneralEqs: List<SavedGeneralEqRecord> = emptyList(),
     val blackPearlEditorState: MyDacEditorUiState = MyDacEditorUiState(),
+    val fiioJa11EditorState: MyDacEditorUiState = MyDacEditorUiState(),
     val ew300EditorState: MyDacEditorUiState = MyDacEditorUiState(),
     val ew300OperationTrace: Ew300OperationTrace? = null,
     val ew300OperationStatus: Ew300OperationStatus = Ew300OperationStatus.Idle,
@@ -199,7 +203,9 @@ class EqLibraryViewModel(
     private var lastForegroundRefreshAttemptMillis: Long = 0L
     private val exportInvalidation = MutableStateFlow(0L)
     private val mutableBlackPearlEditorState = MutableStateFlow(MyDacEditorUiState())
+    private val mutableFiioJa11EditorState = MutableStateFlow(MyDacEditorUiState())
     private val mutableEw300EditorState = MutableStateFlow(MyDacEditorUiState())
+    private var fiioJa11EditorBaseline: FiioJa11EditorBaseline? = null
     private val mutableBlackPearlQualificationState = MutableStateFlow(BlackPearlQualificationUiState())
     private val mutableFiioJa11DeviceState = MutableStateFlow(FiioJa11DeviceUiState())
     private val mutableEw300PlaybackGainState = MutableStateFlow(Ew300PlaybackGainUiState())
@@ -313,6 +319,7 @@ class EqLibraryViewModel(
             fiioJa11HardwareEqState = HardwareEqSnapshotState(),
             blackPearlHardwareEqMatch = blackPearlMatch,
             blackPearlEditorState = MyDacEditorUiState(),
+            fiioJa11EditorState = MyDacEditorUiState(),
             ew300EditorState = MyDacEditorUiState(),
             ew300OperationTrace = (ew300OperationStatus as? Ew300OperationStatus.Completed)?.trace,
             ew300OperationStatus = ew300OperationStatus,
@@ -333,8 +340,15 @@ class EqLibraryViewModel(
     private val hardwareConnectionsWithEditor = combine(
         hardwareConnectionsWithFiioEq,
         mutableBlackPearlEditorState,
+        mutableFiioJa11EditorState,
         mutableEw300EditorState,
-    ) { hardware, editor, ew300Editor -> hardware.copy(blackPearlEditorState = editor, ew300EditorState = ew300Editor) }
+    ) { hardware, editor, fiioEditor, ew300Editor ->
+        hardware.copy(
+            blackPearlEditorState = editor,
+            fiioJa11EditorState = fiioEditor,
+            ew300EditorState = ew300Editor,
+        )
+    }
 
     private val hardwareConnectionsWithQualification = combine(
         hardwareConnectionsWithEditor,
@@ -395,6 +409,7 @@ class EqLibraryViewModel(
             blackPearlSavedEqs = blackPearlLibrary.savedEqs,
             blackPearlSavedGeneralEqs = blackPearlLibrary.savedGeneralEqs,
             blackPearlEditorState = hardware.blackPearlEditorState,
+            fiioJa11EditorState = hardware.fiioJa11EditorState,
             ew300EditorState = hardware.ew300EditorState,
             ew300OperationTrace = hardware.ew300OperationTrace,
             ew300OperationStatus = hardware.ew300OperationStatus,
@@ -689,6 +704,190 @@ class EqLibraryViewModel(
                 )
                 HardwareEqEditorStartResult.CurrentSnapshotRequired -> MyDacEditorUiState(error = MyDacEditorError.READ_FAILED)
                 HardwareEqEditorStartResult.WrongDevice -> MyDacEditorUiState(error = MyDacEditorError.WRONG_DEVICE)
+            }
+        }
+    }
+
+    fun openFiioJa11Editor() {
+        val current = mutableFiioJa11EditorState.value
+        if (current.isOpening || current.applyStatus == MyDacEditorApplyStatus.APPLYING) return
+        if (
+            hardwareRepository.fiioJa11OperationStatus.value is FiioJa11OperationStatus.Running ||
+            mutableFiioJa11DeviceState.value.isBusy ||
+            mutableFiioJa11DeviceState.value.pendingRestartWrite != null
+        ) return
+        fiioJa11EditorBaseline = null
+        if (hardwareRepository.fiioJa11ConnectionState.value != Kt02h20ConnectionState.Connected) {
+            mutableFiioJa11EditorState.value = MyDacEditorUiState(error = MyDacEditorError.NOT_CONNECTED)
+            return
+        }
+
+        mutableFiioJa11EditorState.value = MyDacEditorUiState(isOpening = true)
+        viewModelScope.launch {
+            val refreshed = hardwareRepository.readFiioJa11Snapshot()
+            val bundle = refreshed ?: hardwareRepository.fiioJa11SnapshotState.value.bundle
+            val baseline = bundle?.let(hardwareRepository::fiioJa11EditorBaseline)
+            if (
+                refreshed == null || baseline == null ||
+                bundle.snapshot.activeProgram != FiioJa11Protocol.EqProgram.USER_1
+            ) {
+                fiioJa11EditorBaseline = null
+                mutableFiioJa11EditorState.value = MyDacEditorUiState(error = MyDacEditorError.READ_FAILED)
+                return@launch
+            }
+            val result = withContext(computationDispatcher) {
+                HardwareEqEditor.startFromCurrent(
+                    snapshotState = hardwareRepository.fiioJa11SnapshotState.value,
+                    spec = HardwareEqEditSpecs.FIIO_JA11,
+                )
+            }
+            mutableFiioJa11EditorState.value = when (result) {
+                is HardwareEqEditorStartResult.Ready -> {
+                    fiioJa11EditorBaseline = baseline
+                    MyDacEditorUiState(
+                        stage = MyDacEditorStage.EDIT,
+                        workingCopy = result.workingCopy,
+                        selectedBandIndex = result.workingCopy.filters.firstOrNull()?.index,
+                    )
+                }
+                HardwareEqEditorStartResult.CurrentSnapshotRequired ->
+                    MyDacEditorUiState(error = MyDacEditorError.READ_FAILED)
+                HardwareEqEditorStartResult.WrongDevice ->
+                    MyDacEditorUiState(error = MyDacEditorError.WRONG_DEVICE)
+            }
+        }
+    }
+
+    fun closeFiioJa11Editor() {
+        if (mutableFiioJa11EditorState.value.applyStatus != MyDacEditorApplyStatus.APPLYING) {
+            fiioJa11EditorBaseline = null
+            mutableFiioJa11EditorState.value = MyDacEditorUiState()
+        }
+    }
+
+    fun backFiioJa11Editor(): Boolean {
+        val current = mutableFiioJa11EditorState.value
+        if (current.applyStatus == MyDacEditorApplyStatus.APPLYING) return true
+        val closesEditor = current.isOpening || current.stage == MyDacEditorStage.EDIT
+        mutableFiioJa11EditorState.value = when {
+            current.isOpening -> MyDacEditorUiState()
+            current.stage == MyDacEditorStage.REVIEW || current.stage == MyDacEditorStage.ALL_BANDS ->
+                current.copy(
+                    stage = MyDacEditorStage.EDIT,
+                    error = null,
+                    applyStatus = MyDacEditorApplyStatus.IDLE,
+                    applyFailureReason = null,
+                )
+            current.stage == MyDacEditorStage.EDIT -> MyDacEditorUiState()
+            else -> return false
+        }
+        if (closesEditor) fiioJa11EditorBaseline = null
+        return true
+    }
+
+    fun selectFiioJa11EditorBand(bandIndex: Int) {
+        mutableFiioJa11EditorState.update { current ->
+            val working = current.workingCopy ?: return@update current
+            if (working.filters.none { filter -> filter.index == bandIndex }) return@update current
+            current.copy(
+                stage = MyDacEditorStage.EDIT,
+                selectedBandIndex = bandIndex,
+                error = null,
+                applyStatus = MyDacEditorApplyStatus.IDLE,
+                applyFailureReason = null,
+            )
+        }
+    }
+
+    fun showFiioJa11EditorAllBands() {
+        mutableFiioJa11EditorState.update { current ->
+            if (current.workingCopy == null || current.applyStatus == MyDacEditorApplyStatus.APPLYING) current
+            else current.copy(stage = MyDacEditorStage.ALL_BANDS, applyStatus = MyDacEditorApplyStatus.IDLE, applyFailureReason = null)
+        }
+    }
+
+    fun showFiioJa11EditorReview() {
+        mutableFiioJa11EditorState.update { current ->
+            if (current.workingCopy == null || current.applyStatus == MyDacEditorApplyStatus.APPLYING) current
+            else current.copy(stage = MyDacEditorStage.REVIEW, applyStatus = MyDacEditorApplyStatus.IDLE, applyFailureReason = null)
+        }
+    }
+
+    fun updateFiioJa11EditorBand(
+        bandIndex: Int,
+        type: EqFilterType,
+        frequencyHz: Double,
+        gainDb: Double,
+        q: Double,
+    ) {
+        mutableFiioJa11EditorState.update { current ->
+            if (current.applyStatus == MyDacEditorApplyStatus.APPLYING) return@update current
+            val working = current.workingCopy ?: return@update current
+            current.copy(
+                workingCopy = HardwareEqEditor.updateFilter(
+                    workingCopy = working,
+                    spec = HardwareEqEditSpecs.FIIO_JA11,
+                    bandIndex = bandIndex,
+                    type = type,
+                    frequencyHz = frequencyHz,
+                    gainDb = gainDb,
+                    q = q,
+                ),
+                selectedBandIndex = bandIndex,
+                error = null,
+                applyStatus = MyDacEditorApplyStatus.IDLE,
+                applyFailureReason = null,
+            )
+        }
+    }
+
+    fun useSafeFiioJa11EditorGain() {
+        mutableFiioJa11EditorState.update { current ->
+            if (current.applyStatus == MyDacEditorApplyStatus.APPLYING) return@update current
+            val working = current.workingCopy ?: return@update current
+            current.copy(
+                workingCopy = HardwareEqEditor.useSafeGain(working, HardwareEqEditSpecs.FIIO_JA11),
+                error = null,
+                applyStatus = MyDacEditorApplyStatus.IDLE,
+                applyFailureReason = null,
+            )
+        }
+    }
+
+    fun resetFiioJa11EditorLocalEdits() {
+        mutableFiioJa11EditorState.update { current ->
+            if (current.applyStatus == MyDacEditorApplyStatus.APPLYING) return@update current
+            val working = current.workingCopy ?: return@update current
+            current.copy(
+                stage = MyDacEditorStage.EDIT,
+                workingCopy = HardwareEqEditor.resetLocalEdits(working, HardwareEqEditSpecs.FIIO_JA11),
+                error = null,
+                applyStatus = MyDacEditorApplyStatus.IDLE,
+                applyFailureReason = null,
+            )
+        }
+    }
+
+    fun applyFiioJa11Editor() {
+        val current = mutableFiioJa11EditorState.value
+        val workingCopy = current.workingCopy ?: return
+        val baseline = fiioJa11EditorBaseline ?: return
+        if (current.stage != MyDacEditorStage.REVIEW || current.applyStatus == MyDacEditorApplyStatus.APPLYING) return
+        mutableFiioJa11EditorState.value = current.copy(
+            applyStatus = MyDacEditorApplyStatus.APPLYING,
+            applyFailureReason = null,
+        )
+        viewModelScope.launch {
+            val result = hardwareRepository.applyFiioJa11Editor(workingCopy, baseline)
+            fiioJa11EditorBaseline = null
+            mutableFiioJa11EditorState.value = when (result) {
+                FiioJa11EditorApplyResult.Verified ->
+                    MyDacEditorUiState(applyStatus = MyDacEditorApplyStatus.VERIFIED)
+                is FiioJa11EditorApplyResult.InvalidPlan -> failedEditorApply(result.reason)
+                is FiioJa11EditorApplyResult.StaleBaseline -> failedEditorApply(result.reason)
+                is FiioJa11EditorApplyResult.DeviceUnavailable -> failedEditorApply(result.reason)
+                is FiioJa11EditorApplyResult.TransferFailed -> failedEditorApply(result.reason)
+                is FiioJa11EditorApplyResult.VerificationFailed -> failedEditorApply(result.reason)
             }
         }
     }

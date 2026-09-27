@@ -42,8 +42,19 @@ class BlackPearlFlasher(
      * Returns the app-owned relative playback-gain delta already tracked by the qualified Flash/Reset
      * path. This is local persisted state, not a USB read and not the DAC's absolute playback volume.
      */
-    fun readTrackedAppliedPlaybackGainDb(): Double =
-        BlackPearlProtocol.rawDeltaToGainDb(gainStateStore.readAppliedGainDeltaRaw())
+    fun readTrackedAppliedPlaybackGainDb(): Double? =
+        gainStateStore.readAppliedGainDeltaRaw()?.let(BlackPearlProtocol::rawDeltaToGainDb)
+
+    /**
+     * A complete fresh native snapshot is the recovery boundary after an unverified mutation. The
+     * observed absolute gain is now the user's new baseline; do not invent an app-owned delta from
+     * an earlier uncertain transaction.
+     */
+    fun establishFreshGainBaselineAfterVerifiedSnapshot() {
+        if (gainStateStore.readAppliedGainDeltaRaw() == null) {
+            gainStateStore.writeAppliedGainDeltaRaw(0)
+        }
+    }
 
     suspend fun applyEditorWorkingCopy(
         workingCopy: HardwareEqEditWorkingCopy,
@@ -78,6 +89,9 @@ class BlackPearlFlasher(
                 "Couldn’t read the Black Pearl playback gain. Reconnect the DAC and try again.",
             )
         val previousEqDeltaRaw = gainStateStore.readAppliedGainDeltaRaw()
+            ?: return BlackPearlFlashResult.VerificationFailed(
+                "The Black Pearl tracked playback-gain baseline is unknown. Read the complete DAC state before any later write.",
+            )
         val baselineGainRaw = currentGainRaw - previousEqDeltaRaw
         val requestedDeltaRaw = BlackPearlProtocol.gainDbToRawDelta(plan.requiredPlaybackGainDb)
         val targetGainRaw = baselineGainRaw + requestedDeltaRaw
@@ -127,12 +141,14 @@ class BlackPearlFlasher(
         }
         val actualBands = buildList {
             repeat(BlackPearlProtocol.BAND_COUNT) { index ->
-                add(
-                    transport.readNativeBand(index)
-                        ?: return BlackPearlFlashResult.VerificationFailed(
-                            "Final Black Pearl EQ readback was unavailable at band ${index + 1}.",
-                        ),
-                )
+                val actual = transport.readNativeBand(index)
+                if (actual == null) {
+                    gainStateStore.markAppliedGainDeltaUnknown()
+                    return BlackPearlFlashResult.VerificationFailed(
+                        "Final Black Pearl EQ readback was unavailable at band ${index + 1}.",
+                    )
+                }
+                add(actual)
             }
         }
         if (!isSessionCurrent(expectedSessionGeneration)) {
@@ -140,6 +156,7 @@ class BlackPearlFlasher(
         }
         expectedBands.zip(actualBands).forEachIndexed { index, (expected, actual) ->
             nativeBandMismatchReason(expected, actual)?.let { mismatch ->
+                gainStateStore.markAppliedGainDeltaUnknown()
                 return BlackPearlFlashResult.VerificationFailed(
                     "Final Black Pearl EQ readback mismatch at band ${index + 1}: $mismatch.",
                 )
@@ -147,13 +164,19 @@ class BlackPearlFlasher(
         }
 
         val finalGainRaw = transport.readGlobalGainRaw()
-            ?: return BlackPearlFlashResult.VerificationFailed(
-                "Final Black Pearl playback-gain readback was unavailable.",
-            )
+            ?: run {
+                gainStateStore.markAppliedGainDeltaUnknown()
+                return BlackPearlFlashResult.VerificationFailed(
+                    "Final Black Pearl playback-gain readback was unavailable.",
+                )
+            }
         if (!isSessionCurrent(expectedSessionGeneration)) {
             return sessionChangedDuringFlash()
         }
         if (finalGainRaw != targetGainRaw) {
+            // The raw readback is authoritative for the observed hardware state. Reconcile the
+            // anti-stacking delta to it rather than retaining the requested delta as false truth.
+            gainStateStore.writeAppliedGainDeltaRaw(finalGainRaw - baselineGainRaw)
             return BlackPearlFlashResult.VerificationFailed(
                 "Final Black Pearl playback-gain readback did not match: expected raw $targetGainRaw, actual raw $finalGainRaw.",
             )
@@ -192,10 +215,12 @@ class BlackPearlFlasher(
         else -> null
     }
 
-    private fun sessionChangedDuringFlash(): BlackPearlFlashResult.VerificationFailed =
-        BlackPearlFlashResult.VerificationFailed(
+    private fun sessionChangedDuringFlash(): BlackPearlFlashResult.VerificationFailed {
+        gainStateStore.markAppliedGainDeltaUnknown()
+        return BlackPearlFlashResult.VerificationFailed(
             "The Black Pearl USB session changed during Flash. Final hardware state is uncertain; reconnect and read the DAC before any later write.",
         )
+    }
 
     suspend fun resetToFlat(): BlackPearlFlatResetResult {
         val activeSlot = transport.readActiveSlot()
@@ -208,6 +233,9 @@ class BlackPearlFlasher(
             )
 
         val previousEqDeltaRaw = gainStateStore.readAppliedGainDeltaRaw()
+            ?: return BlackPearlFlatResetResult.DeviceUnavailable(
+                "The Black Pearl tracked playback-gain baseline is unknown. Read the complete DAC state before Reset.",
+            )
         val baselineGainRaw = currentGainRaw - previousEqDeltaRaw
         if (baselineGainRaw !in BlackPearlProtocol.GLOBAL_GAIN_MIN_RAW..BlackPearlProtocol.GLOBAL_GAIN_MAX_RAW) {
             return BlackPearlFlatResetResult.NotRepresentable(

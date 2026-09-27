@@ -132,11 +132,9 @@ private fun EditorHeader(
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                stringResource(
-                    R.string.my_dac_editor_subtitle,
-                    dacLabel,
-                    working.baselineSnapshot.activeSlot ?: 0,
-                ),
+                working.baselineSnapshot.activeSlot?.let { slot ->
+                    stringResource(R.string.my_dac_editor_subtitle, dacLabel, slot)
+                } ?: "$dacLabel · ${working.baselineSnapshot.activeProgram?.technicalLabel ?: "current EQ"}",
             )
         }
         TextButton(onClick = onClose, enabled = closeEnabled) {
@@ -493,6 +491,33 @@ private fun ReviewChanges(
             Text(stringResource(R.string.my_dac_editor_back_to_editor))
         }
     }
+
+    Text(
+        text = stringResource(R.string.my_dac_editor_review_target),
+        fontWeight = FontWeight.SemiBold,
+    )
+    working.filters.sortedBy(HardwareEqFilter::index).forEach { filter ->
+        Text(
+            stringResource(
+                R.string.my_dac_editor_review_band,
+                filter.index + 1,
+                filterTypeLabel(filter.type),
+                filter.frequencyHz,
+                filter.gainDb,
+                filter.q,
+            ),
+        )
+    }
+    working.plannedHeadroomGainDb?.let { plannedGain ->
+        Text(stringResource(R.string.my_dac_editor_review_global_gain, plannedGain))
+    }
+    working.headroomAssessment?.let { assessment ->
+        Text(stringResource(R.string.my_dac_editor_headroom_required, assessment.requiredGainDb))
+    }
+    Text(
+        text = stringResource(R.string.my_dac_editor_review_apply_first_write),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
 
     val changeCount = working.differences.size + if (working.headroomPlanChanged) 1 else 0
     if (changeCount == 0) {

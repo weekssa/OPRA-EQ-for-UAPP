@@ -75,6 +75,7 @@ class FiioJa11SnapshotReader(
             sessionGeneration = sessionGeneration,
             verifiedAtEpochMillis = nowEpochMillis(),
             eqEnabled = program == FiioJa11Protocol.EqProgram.USER_1,
+            activeProgram = program,
         )
     }
 }

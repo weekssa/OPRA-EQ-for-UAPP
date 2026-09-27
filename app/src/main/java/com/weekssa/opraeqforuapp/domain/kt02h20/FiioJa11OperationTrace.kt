@@ -317,6 +317,20 @@ internal class FiioJa11OperationTraceBuilder(
         stage(FiioJa11OperationStage.OPTIMIZED_TARGET)
     }
 
+    fun targetManualEdit(bands: List<FiioJa11Protocol.Band>, globalGainDb: Double) {
+        sourceProfileId = "manual-editor"
+        canonicalPreampGainDb = null
+        generatedOrSelectedTargetGainDb = globalGainDb
+        quantizedWireTargetGainDb = FiioJa11Protocol.quantizedGlobalGainDb(globalGainDb)
+        sourceBandCount = bands.size
+        targetBandCount = bands.size
+        fidelity = "MANUAL_EDITOR"
+        usesGeneratedHeadroom = false
+        usedResponseFit = false
+        targetBands = bands.map { FiioJa11TraceBand(it.type, it.frequencyHz, it.gainDb, it.q) }
+        stage(FiioJa11OperationStage.OPTIMIZED_TARGET)
+    }
+
     fun baselineRead(
         program: FiioJa11Protocol.EqProgram,
         globalGainDb: Double,

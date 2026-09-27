@@ -9,10 +9,13 @@ import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlatResetResult
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlasher
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.dac.DacRecognitionState
+import com.weekssa.opraeqforuapp.domain.dac.DacStateFreshness
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditWorkingCopy
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotBundle
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Flasher
+import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11EditorBaseline
+import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11EditorApplyResult
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationStatus
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationTrace
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300Flasher
@@ -149,12 +152,29 @@ class HardwareEqRepository(
     @Deprecated("JCALLY is not part of the current product; remove remaining callers.")
     fun isJcallyJm12SessionCurrent(sessionGeneration: Long): Boolean = false
 
-    fun readBlackPearlTrackedGainDeltaDb(): Double =
+    fun readBlackPearlTrackedGainDeltaDb(): Double? =
         blackPearlFlasher.readTrackedAppliedPlaybackGainDb()
 
     suspend fun readBlackPearlSnapshot(): HardwareEqSnapshotBundle? = refreshBlackPearlSnapshot()
 
     suspend fun readFiioJa11Snapshot(): HardwareEqSnapshotBundle? = refreshFiioJa11Snapshot()
+
+    /** Captures exact identity metadata for one already-current verified User 1 snapshot. */
+    fun fiioJa11EditorBaseline(bundle: HardwareEqSnapshotBundle): FiioJa11EditorBaseline? {
+        if (fiioJa11ConnectionState.value !is Kt02h20ConnectionState.Connected) return null
+        if (fiioJa11SnapshotState.value.freshness != DacStateFreshness.CURRENT) return null
+        if (fiioJa11SnapshotState.value.bundle != bundle) return null
+        if (!isFiioJa11SessionCurrent(bundle.snapshot.sessionGeneration)) return null
+        val fingerprintKey = dacSessionRepository.fiioJa11Transport.deviceFingerprintKey ?: return null
+        val productId = dacSessionRepository.fiioJa11Transport.usbProductId ?: return null
+        return runCatching {
+            FiioJa11EditorBaseline(
+                deviceFingerprintKey = fingerprintKey,
+                usbProductId = productId,
+                snapshotBundle = bundle,
+            )
+        }.getOrNull()
+    }
 
     suspend fun readEw300Snapshot(): HardwareEqSnapshotBundle? = refreshEw300Snapshot()
 
@@ -225,6 +245,23 @@ class HardwareEqRepository(
         return try {
             dacSessionRepository.withExclusiveFiioJa11Operation {
                 fiioJa11Flasher.resetToFlat()
+            }
+        } finally {
+            scheduleFiioJa11SnapshotRefresh()
+        }
+    }
+
+    suspend fun applyFiioJa11Editor(
+        workingCopy: HardwareEqEditWorkingCopy,
+        baseline: FiioJa11EditorBaseline,
+    ): FiioJa11EditorApplyResult {
+        mutableFiioJa11SnapshotState.update { it.markStale() }
+        return try {
+            dacSessionRepository.withExclusiveFiioJa11Operation {
+                fiioJa11Flasher.applyEditorWorkingCopy(
+                    workingCopy = workingCopy,
+                    baseline = baseline,
+                )
             }
         } finally {
             scheduleFiioJa11SnapshotRefresh()
@@ -317,6 +354,9 @@ class HardwareEqRepository(
 
             when {
                 stillCurrent -> {
+                    // A complete read-only snapshot is the only recovery boundary that may clear
+                    // an unknown anti-stacking baseline. This never retries or mutates hardware.
+                    blackPearlFlasher.establishFreshGainBaselineAfterVerifiedSnapshot()
                     mutableBlackPearlSnapshotState.update { it.publishCurrent(requireNotNull(bundle)) }
                     bundle
                 }

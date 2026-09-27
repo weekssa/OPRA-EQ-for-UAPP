@@ -76,10 +76,22 @@ object HardwareEqEditSpecs {
         minimumVerifiedHeadroomGainDb = null,
     )
 
+    val FIIO_JA11: HardwareEqEditSpec = fromFiniteHardwareSpec(
+        deviceId = DacDeviceId.FIIO_JA11,
+        spec = HardwareEqDeviceSpecs.FIIO_JA11,
+        headroomMechanism = HardwareEqHeadroomMechanism.DEDICATED_EQ_PREAMP,
+        // The maintained JA11 codec represents command 0x17 in signed tenths of a dB. The
+        // capability registry intentionally leaves this protocol-specific field unrounded, so the
+        // editor supplies the exact established native step here without changing wire behavior.
+        headroomGainStepDbOverride = 0.1,
+        minimumVerifiedHeadroomGainDb = null,
+    )
+
     private fun fromFiniteHardwareSpec(
         deviceId: DacDeviceId,
         spec: FiveBandDeviceSpec,
         headroomMechanism: HardwareEqHeadroomMechanism,
+        headroomGainStepDbOverride: Double? = null,
         minimumVerifiedHeadroomGainDb: Double?,
     ): HardwareEqEditSpec {
         val capabilities = spec.capabilities
@@ -109,7 +121,7 @@ object HardwareEqEditSpecs {
             qStep = spec.quantization.qStep,
             normalGainRangeDb = normalGainRange,
             headroomMechanism = headroomMechanism,
-            headroomGainStepDb = spec.quantization.preampStepDb,
+            headroomGainStepDb = headroomGainStepDbOverride ?: spec.quantization.preampStepDb,
             minimumVerifiedHeadroomGainDb = minimumVerifiedHeadroomGainDb,
         )
     }

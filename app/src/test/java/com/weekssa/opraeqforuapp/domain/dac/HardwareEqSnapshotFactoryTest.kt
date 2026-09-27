@@ -109,7 +109,8 @@ class HardwareEqSnapshotFactoryTest {
         bundle!!
         assertThat(bundle.snapshot.dedicatedEqPreampDb).isEqualTo(-3.0)
         assertThat(bundle.snapshot.playbackGainDb).isNull()
-        assertThat(bundle.fingerprint.dedicatedEqPreampUnits).isEqualTo(-7_680)
+        assertThat(bundle.fingerprint.dedicatedEqPreampUnits).isEqualTo(-30)
+        assertThat(bundle.snapshot.activeProgram).isEqualTo(FiioJa11Protocol.EqProgram.USER_1)
         assertThat(bundle.fingerprint.bands.first().gainUnits).isEqualTo(25)
         assertThat(bundle.fingerprint.bands.first().qUnits).isEqualTo(70)
     }
