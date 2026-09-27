@@ -77,7 +77,8 @@ commit, push, or invoke hardware during the review itself.
   endpoint, timing, retry policy, or signing behavior.
 - The only release-workflow change is the additive `black-pearl-ja11` candidate target and strict
   manifest branch. No signing secret, signer check, main-only guard, artifact publication boundary,
-  or existing target was weakened. Ruby YAML parsing passed; `actionlint` was unavailable.
+  or existing target was weakened. Ruby YAML parsing and actionlint v1.7.12 passed on the exact
+  candidate workflow.
 - No hardware mutation, tag, or public publication occurred. Owner approval authorized the merge to
   `main` and the trusted signed-beta dispatch recorded in the implementation and release reports.
 

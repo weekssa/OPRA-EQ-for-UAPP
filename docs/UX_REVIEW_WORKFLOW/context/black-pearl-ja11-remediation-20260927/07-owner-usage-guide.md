@@ -33,6 +33,30 @@ The next action is the final exact-candidate Pixel 9 review. Use the plain-langu
 `05-release-handoff.md` and return the candidate provenance plus separate Black Pearl and JA11
 reports. Do not send credentials, signing material, or private reports in chat.
 
+## Recommended Mac mini automation path
+
+The Mac mini is the controller and evidence-capture host; the Pixel 9 remains the Android USB host.
+Connect the DAC to the Pixel 9 through the appropriate USB-OTG path, not directly to macOS, for
+app-level validation. Test one DAC at a time because the app owns one authoritative DAC session.
+
+- `actionlint` v1.7.12 is installed at `/Users/stephenweeks/.local/bin/actionlint` and passed against
+  the exact signed-candidate workflow.
+- The checked-in `tools/codex-android` wrapper already provides the Android SDK, `adb`, emulator,
+  screenshots, UI inspection, and log capture. No additional Android SDK installation is required.
+- Mac-side automation may verify the exact APK checksum and signer, install and launch the app,
+  capture UI/screens/logs, navigate through read-only and Review steps, collect readable/JSON
+  reports, and timestamp the evidence.
+- Keep Flash, Apply, Save, Reset, and restoration as owner-observed actions. Automation must not
+  retry a failed or uncertain mutation, choose a different device, or continue after disconnect,
+  permission loop, session replacement, missing readback, or mismatch.
+- A DAC plugged directly into the Mac mini can be inspected for read-only USB enumeration, but a
+  macOS USB-audio or libusb transaction is not evidence for the Android app and must not be used to
+  send device writes in this review.
+
+The resulting evidence bundle should identify the exact candidate source/APK/checksum/signer,
+Pixel serial, DAC identity, baseline, operation timestamps, app-readable and technical reports,
+final result, and restoration status separately for Black Pearl and JA11.
+
 ## Safety boundaries
 
 - Do not retry a failed or uncertain Black Pearl Flash, JA11 Apply, Save, or Reset automatically.

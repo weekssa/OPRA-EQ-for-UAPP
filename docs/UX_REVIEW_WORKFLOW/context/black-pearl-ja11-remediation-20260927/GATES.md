@@ -43,7 +43,7 @@ Scope: Implement and verify only the named Black Pearl final-readback truth corr
   `af83a5e0148263057b1c43e3b775157ab6aedd9d2c1e3ab0558cef8fa3cea665`, signer SHA-256
   `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`, artifact ID
   `10937890771`, digest `sha256:88b1555e9a14642874110d05d5c5ae3554c25cc64b9385898a78287ccea9f52d`;
-  signed emulator install/cold launch passed.
+  signed emulator install/cold launch passed; actionlint v1.7.12 passed on the exact workflow.
 
 - [x] G6: mandatory independent read-only review finds no unresolved scoped defect or prohibited behavior
   EVIDENCE: PASS; review recorded in `04-final-review.md`; no protocol/transport/identity/retry/

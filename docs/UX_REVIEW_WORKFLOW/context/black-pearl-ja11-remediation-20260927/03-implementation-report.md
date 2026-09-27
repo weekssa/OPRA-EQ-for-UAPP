@@ -104,7 +104,8 @@ Commands were run in the isolated worktree with the checked-in wrapper tooling.
 - `./tools/codex-android :app:assembleRelease` - PASS; minified release/R8 path completed with existing warnings only.
 - `bash tools/verify-r8-mapping.sh app/build/outputs/mapping/release/mapping.txt` - PASS; application class renaming was verified.
 - `./tools/codex-android :app:connectedDebugAndroidTest` - PASS; `codex-api36(AVD)`, 20/20 tests, 0 skipped, 0 failed.
-- `.github/workflows/signed-beta.yml` Ruby YAML parse - PASS; `actionlint` - NOT RUN because it is not installed.
+- `.github/workflows/signed-beta.yml` Ruby YAML parse - PASS; `actionlint` v1.7.12 - PASS on the
+  exact candidate workflow using `/Users/stephenweeks/.local/bin/actionlint`.
 - GitHub Actions `Automatic Dependency Submission (Gradle)` run `#2229`
   (`36333163159`) - PASS on exact source `7898378e20a610a4667e861220fef40c9d8ac751`.
 
@@ -166,8 +167,8 @@ Commands were run in the isolated worktree with the checked-in wrapper tooling.
   brought onto the remediation branch.
 - `git diff --check` - PASS after the workflow change.
 - Ruby YAML parse of `.github/workflows/signed-beta.yml` - PASS.
-- `actionlint .github/workflows/signed-beta.yml` - NOT RUN; `actionlint` is not installed in this
-  environment.
+- `/Users/stephenweeks/.local/bin/actionlint .github/workflows/signed-beta.yml` - PASS; actionlint
+  v1.7.12, exact candidate workflow, no findings.
 - The owner-approved signed workflow dispatch completed as run `#1371` after merge to `main`; exact
   candidate provenance is recorded in the signed-candidate section above.
 
