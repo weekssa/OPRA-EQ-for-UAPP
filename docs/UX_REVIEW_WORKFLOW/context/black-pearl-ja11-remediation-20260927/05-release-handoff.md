@@ -1,6 +1,38 @@
 # Release handoff - Black Pearl and JA11 remediation
 
-Status: `PHYSICAL_INCONCLUSIVE`
+Status: `MERGE_APPROVAL_REQUIRED`
+
+## Follow-up source boundary — `9f5cb852994e1c88fce80598f249a97fae047429`
+
+The owner-authorized JA11 terminal-result repair is software-verified, independently reviewed,
+and committed on `codex/black-pearl-ja11-remediation-20260927`. It is not ready for Pixel 9 review:
+the trusted signing workflows remain main-only, no exact signed beta exists for this SHA, and the
+earlier `acaf4dd` APK/Pixel session cannot prove this changed source.
+
+- Refreshed `origin/main`: `acaf4dd32ddd9379ec2860e45e34fb8039219583`.
+- Final local source SHA: `9f5cb852994e1c88fce80598f249a97fae047429`.
+- Local debug APK SHA-256: `79e75c4a39e3a0aeb8b7231643ca4306e29db3578c23124028402b2945ac5fc6`.
+- Local unsigned minified release APK SHA-256:
+  `945e330a1eb510d68405603f19f50770f06abda6b931c77ce9dbe33d6d40d746`.
+- Package/version: `com.weekssa.opraeqforuapp`, `0.7.0` / code `7`.
+- Signer, workflow run, immutable artifact ID/digest: `NOT AVAILABLE` for this source.
+- `actionlint`: `NOT RUN` because it is unavailable locally.
+- No push, merge, tag, publication, DAC connection, or DAC mutation occurred in this follow-up.
+
+### Software evidence for this source
+
+- Full unit suite: PASS.
+- API-36 emulator `codex-api36`, serial `emulator-5554`: focused JA11 terminal UI 4/4 PASS;
+  full instrumentation 24/24 PASS.
+- `lintDebug`, `assembleDebug`, `assembleRelease`, and R8 mapping verification: PASS.
+- Independent read-only review: PASS; see `04-final-review.md`.
+
+### Owner-controlled next step
+
+The next action is not a hardware test. The owner must separately authorize the minimum main
+integration or a narrowly reviewed combined-manifest/signing workflow path so the trusted workflow
+can create an exact signed candidate for `9f5cb852994e1c88fce80598f249a97fae047429`. Until then,
+the state is `MERGE_APPROVAL_REQUIRED`, not `READY_FOR_PIXEL_9`.
 
 ## Current software handoff
 

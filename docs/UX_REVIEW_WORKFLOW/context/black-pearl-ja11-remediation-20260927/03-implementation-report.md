@@ -1,7 +1,70 @@
 # Implementation report - Black Pearl and JA11 remediation
 
-Status: `READY_FOR_PIXEL_9`. The owner-approved merge and trusted signed-beta workflow completed
-successfully. Physical qualification remains owner-controlled and has not been performed by Luna.
+Status: `MERGE_APPROVAL_REQUIRED`. The narrowly scoped JA11 terminal-result repair and software
+gates pass on the new branch source, but the trusted signing workflow is main-only and no exact
+signed artifact exists for this source SHA. The earlier signed candidate and Pixel evidence are
+historical evidence only and do not transfer to this changed source.
+
+## Follow-up repair addendum — source `9f5cb852994e1c88fce80598f249a97fae047429`
+
+This addendum supersedes the earlier `READY_FOR_PIXEL_9` and `PHYSICAL_INCONCLUSIVE` handoff
+claims for the changed source. It records the owner-authorized, narrowly scoped repair after the
+owner reported that the Android UAPP routing prompt also occurs in the stock app. That prompt is
+expected stock-device/platform behavior and remains unchanged; it is not reclassified as an app
+failure and was not retested on hardware.
+
+### Exact source and boundary
+
+- Repository: `https://github.com/weekssa/OPRA-EQ-for-UAPP.git` (remote verified exact).
+- Refreshed `origin/main`: `acaf4dd32ddd9379ec2860e45e34fb8039219583`.
+- Branch: `codex/black-pearl-ja11-remediation-20260927`.
+- Branch merge-base with refreshed `origin/main`: `3e8ff5d3f6cb750a627f76aba50f09645c0b41d3`.
+- Final local source SHA: `9f5cb852994e1c88fce80598f249a97fae047429`.
+- Local commit: `9f5cb852 Repair JA11 editor terminal feedback`.
+- Worktree: `/Users/stephenweeks/.codex/worktrees/black-pearl-ja11-remediation-20260927/OPRA-EQ-for-UAPP`.
+- No merge, tag, publication, branch push, or DAC mutation occurred in this follow-up.
+
+### Repair result
+
+- `FiioJa11OperationPresentation` now uses truthful `Apply successful` wording for verified
+  `EDITOR_APPLY`, retains the required final-readback sentence, and labels failed Apply as not
+  verified without automatic retry guidance.
+- `FiioJa11MyDacContent` now renders exactly one compact live-region terminal surface for a
+  completed `EDITOR_APPLY` whose trace ID matches the completed status ID. It exposes readable and
+  technical operation reports, a 48 dp dismiss action, deterministic eight-second verified-success
+  expiry, and persistent actionable failure/uncertainty until dismissed or recovered.
+- `EqLibraryApp` clears a prior JA11 Flash feedback surface when `EDITOR_APPLY` starts or
+  completes, preventing simultaneous stale/global feedback with the inline Apply result.
+- No `FiioJa11Flasher`, JA11 protocol, USB transport, reconnect, Save, session, retry, or hardware
+  mutation behavior changed. The stock Android UAPP routing prompt remains outside this repair.
+
+### Follow-up checks
+
+- `./tools/codex-android :app:testDebugUnitTest` — PASS.
+- `ANDROID_SERIAL=emulator-5554 ./tools/codex-android :app:connectedDebugAndroidTest
+  -Pandroid.testInstrumentationRunnerArguments.class=com.weekssa.opraeqforuapp.ui.screens.FiioJa11MyDacContentTest` — PASS, 4/4.
+- `ANDROID_SERIAL=emulator-5554 ./tools/codex-android :app:connectedDebugAndroidTest` — PASS,
+  24/24 on `codex-api36` API 36; the Pixel 9 was visible but not selected or mutated.
+- `./tools/codex-android :app:lintDebug` — PASS.
+- `./tools/codex-android :app:assembleDebug` — PASS.
+- `./tools/codex-android :app:assembleRelease` — PASS; local unsigned minified release only.
+- `bash tools/verify-r8-mapping.sh app/build/outputs/mapping/release/mapping.txt` — PASS.
+- `git diff --check` — PASS.
+- `actionlint` — `NOT RUN`; unavailable locally, matching the owner-provided boundary.
+- Remote CI, CodeQL, dependency submission, and signed-beta provenance for this new SHA — `NOT
+  RUN`/unavailable because no push or main integration occurred; prior runs belong to prior SHAs.
+
+### Candidate boundary
+
+No exact signed beta was produced for `9f5cb852994e1c88fce80598f249a97fae047429`. Local artifacts
+are not handoff candidates: debug `app-debug.apk` SHA-256
+`79e75c4a39e3a0aeb8b7231643ca4306e29db3578c23124028402b2945ac5fc6` and unsigned minified
+`app-release-unsigned.apk` SHA-256
+`945e330a1eb510d68405603f19f50770f06abda6b931c77ce9dbe33d6d40d746`.
+
+The owner must separately authorize the minimum main integration or a narrowly reviewed combined
+manifest/signing workflow path before an exact signed candidate can exist. This worker must not
+weaken the main-only signing guard or label the earlier `acaf4dd` artifact as this repair.
 
 ## Source and evidence identity
 

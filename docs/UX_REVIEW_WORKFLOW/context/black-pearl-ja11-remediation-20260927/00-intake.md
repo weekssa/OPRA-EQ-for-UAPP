@@ -53,3 +53,14 @@ refreshed live `origin/main` catalog commits (`0adcc8159a467790104cf2dc797f1279e
 trusted workflow was narrowly extended with a `black-pearl-ja11` manifest target. The workflow
 still requires `refs/heads/main`; no signed candidate or Pixel 9 physical action exists from this
 branch. The release status remains `MERGE_APPROVAL_REQUIRED`.
+
+## Follow-up intake disposition — terminal-result repair
+
+The owner-authorized follow-up repair was applied after the owner reported that the Android UAPP
+routing prompt also occurs in the stock app. The prompt is therefore treated as expected
+platform/device behavior and remains unchanged. The final follow-up source is
+`9f5cb852994e1c88fce80598f249a97fae047429` on the same remediation branch; only JA11 terminal
+presentation, global-feedback suppression, and focused tests changed. Full unit, API-36 emulator,
+lint, debug, minified release/R8, and independent review gates pass. No DAC was connected or
+mutated by Luna. Exact signed provenance is unavailable for this source because the trusted
+workflow remains main-only; current disposition is `MERGE_APPROVAL_REQUIRED`.

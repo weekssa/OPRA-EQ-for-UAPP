@@ -1,5 +1,15 @@
 # Post-Pixel closure prompt — Black Pearl and JA11 remediation
 
+## Current source boundary
+
+The prior Pixel 9 session used source `acaf4dd32ddd9379ec2860e45e34fb8039219583`. A later
+owner-authorized terminal-result repair now exists at source
+`9f5cb852994e1c88fce80598f249a97fae047429`; therefore the prior physical evidence is historical
+and must not be transferred to the repaired source. Wait for an exact signed candidate whose
+provenance matches `9f5cb852994e1c88fce80598f249a97fae047429` before using this prompt. The Android
+UAPP routing prompt observed on the stock app is expected platform/device behavior and should not be
+treated as an app defect.
+
 Use only after the owner returns evidence from the exact candidate identified in `05-release-handoff.md`.
 
 Validate install/launch and each DAC independently. Record exact candidate provenance, Pixel identity, DAC fingerprint/firmware, fresh read-only baseline, user-visible result, final readback/Save/reconnect evidence, restoration status, and `PASS`, `FAIL`, `INCONCLUSIVE`, or `NOT EXERCISED` for each named defect. Do not retry an uncertain mutation. Update the validation ledger, capability/status documents, and final outcome only from the returned evidence.

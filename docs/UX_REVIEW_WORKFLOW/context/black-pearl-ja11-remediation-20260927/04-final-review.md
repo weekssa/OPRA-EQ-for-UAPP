@@ -1,9 +1,28 @@
 # Final review - Black Pearl and JA11 remediation
 
-Status: COMPLETE - independent read-only review passed against implementation/workflow head
-`0c77e081fd6abd12a6e20b482ce269ae9f5bb764` and final documentation evidence head
-`3e8ff5d3f6cb750a627f76aba50f09645c0b41d3`; owner-approved merge and signed candidate provenance
-also passed.
+Status: `MERGE_APPROVAL_REQUIRED` - independent read-only review passed for the follow-up source
+`9f5cb852994e1c88fce80598f249a97fae047429`; exact signed provenance for this changed source is
+not available because the trusted workflow is main-only.
+
+## Follow-up independent review — source `9f5cb852994e1c88fce80598f249a97fae047429`
+
+The required independent reviewer completed a second read-only pass after the terminal-result
+repair. Result: **PASS**.
+
+- One inline live-region result surface is rendered only for a completed `EDITOR_APPLY` whose
+  trace ID matches the completed status ID; the global Flash banner is not used for the same Apply.
+- Verified Apply has explicit dismissal and deterministic eight-second expiry; failure/uncertainty
+  remains truthful and actionable until dismissal or recovery.
+- A prior JA11 Flash feedback surface is cleared when Apply starts and when it completes.
+- Focused UI coverage verifies verified success, failed Apply wording, one-result rendering,
+  readable/technical reports, dismissal, and test-clock expiry; unit coverage verifies success and
+  failure wording.
+- No JA11 flasher, protocol, transport, reconnect, Save, session, retry, Black Pearl, or hardware
+  behavior changed. The stock Android UAPP routing prompt remains expected and out of scope.
+- The reviewer performed no tests, builds, commits, pushes, or hardware actions.
+
+This follow-up review passes the software boundary only. It does not make the changed source a
+signed beta and does not transfer earlier Pixel 9 evidence to the changed source.
 
 ## Review method
 
