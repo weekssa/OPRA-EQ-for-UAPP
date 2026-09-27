@@ -1,15 +1,17 @@
 # Black Pearl Flash verification — Luna implementation report
 
-**Status:** `SOFTWARE_READY_PENDING_SIGNED_CANDIDATE`
+**Status:** `READY_FOR_PIXEL_9`
 **Run ID:** `black-pearl-flash-verification-20260926`
 **Implementation model:** GPT-5.6 Luna — High
 
 ## Exact source
 
 - Repository: `weekssa/OPRA-EQ-for-UAPP` (`https://github.com/weekssa/OPRA-EQ-for-UAPP.git`)
-- Branch: `codex/ja11-protocol-evidence`
+- Implementation branch: `codex/ja11-protocol-evidence` (PR #48, merged)
+- Candidate branch: `main`
 - Source SHA before edits: `6e0abc3cf4d1961782a08945f5ae187a47f49eff`
 - Source SHA after implementation: `7bb419bcece58314a22dcfff7159fb7bbf46c17e`; this commit contains only the authorized Black Pearl implementation and tests. The owner’s Android-tooling/README commits remain as its unchanged parent history.
+- Exact signed candidate source SHA: `ce5efdf7985e4fc48f975b14fcedb1f592d43772` (PR #48 merge commit on `main`)
 - Working-tree baseline and unrelated changes preserved: `YES`. Unrelated untracked project artifacts remain unstaged and were not overwritten, reset, cleaned, or deleted by Luna.
 
 ## Diagnosis
@@ -30,6 +32,8 @@
 - `app/src/test/java/com/weekssa/opraeqforuapp/domain/blackpearl/BlackPearlFlasherTest.kt` — adds success, missing band, missing gain, mismatched band, mismatched gain, changed-session, no-retry, and existing transfer/preflight coverage.
 - `app/src/test/java/com/weekssa/opraeqforuapp/ui/screens/BlackPearlFlashPresentationTest.kt` — verifies exact success contract and non-success failure copy.
 - `app/src/test/java/com/weekssa/opraeqforuapp/ui/screens/HardwareFlashMessagingTest.kt` — verifies compact Black Pearl progress copy is not terminal success and does not cover My EQs actions.
+- `app/src/main/java/com/weekssa/opraeqforuapp/ui/components/FlashFeedback.kt` — maps the new typed Black Pearl result to verified success or uncertain/not-verified copy in the shared feedback surface.
+- `app/src/test/java/com/weekssa/opraeqforuapp/ui/components/FlashFeedbackTest.kt` — locks the shared verified-success and verification-failure presentation contract.
 
 `BlackPearlReadCodec.kt`, `BlackPearlFlashPlan.kt`, `AndroidBlackPearlUsbTransport.kt`, `DacSessionRepository.kt`, JA11, and EW300 production behavior were not modified.
 
@@ -46,23 +50,24 @@
 
 | Check | Command | Result | Evidence/notes |
 |---|---|---|---|
-| Repository/source contract | `git remote get-url origin`, `git rev-parse HEAD`, `git status --short --branch` | `PASS` | Correct remote, branch, live HEAD `bdecc158f60f5f4d5f11970b722727aa46019b31`; unrelated changes preserved. |
+| Repository/source contract | `git remote get-url origin`, `git ls-remote origin refs/heads/main`, PR #48 merge verification | `PASS` | Correct remote; PR #48 merged into `main` at exact candidate source SHA `ce5efdf7985e4fc48f975b14fcedb1f592d43772`; owner checkout unrelated changes preserved. |
 | Black Pearl source contract | Node static source assertion over flasher/transport/repository/presentation files | `PASS` | `BLACK_PEARL_SOURCE_CONTRACT_PRESENT`. |
 | Scope diff audit | Node static diff assertion | `PASS` | `BLACK_PEARL_SCOPE_DIFF_CHECKED`; no protocol codec/transport/session-owner/JA11/EW300 production edits. |
 | Whitespace/diff hygiene | `git diff --check` and trailing-whitespace scan | `PASS` | No whitespace errors. |
-| Black Pearl domain and presentation tests | `GRADLE_USER_HOME=/private/tmp/opra-eq-gradle ./gradlew :app:testDebugUnitTest --tests '*BlackPearlFlasherTest*' --tests '*BlackPearlFlashPresentationTest*' --tests '*HardwareFlashMessagingTest*' --tests '*FiioJa11OperationPresentationTest*' --tests '*Ew300OperationStatusTest*'` | `PASS` | `BUILD SUCCESSFUL`; focused Black Pearl, presentation, JA11, and EW300 tests passed. |
-| Full app unit tests | `GRADLE_USER_HOME=/private/tmp/opra-eq-gradle ./gradlew :app:testDebugUnitTest` | `PASS` | `BUILD SUCCESSFUL`; 688 tests across 117 suites, 0 failures, 0 errors. |
-| Aggregate app checks | `GRADLE_USER_HOME=/private/tmp/opra-eq-gradle ./gradlew :app:check` | `PASS` | `BUILD SUCCESSFUL`; includes debug lint and full unit tests. |
-| Debug/release lint and assembly | `GRADLE_USER_HOME=/private/tmp/opra-eq-gradle ./gradlew :app:lintDebug :app:assembleDebug :app:assembleRelease` | `PASS` | `BUILD SUCCESSFUL`; release R8 and `lintVitalRelease` also passed. |
+| Black Pearl domain and presentation tests | `./tools/codex-android :app:testDebugUnitTest --tests '*BlackPearl*' --tests '*FlashFeedback*' --tests '*HardwareFlashMessaging*'` | `PASS` | `BUILD SUCCESSFUL`; focused Black Pearl, shared feedback, and messaging tests passed after the CI-discovered exhaustiveness repair. |
+| Full app unit tests | `./tools/codex-android :app:testDebugUnitTest` | `PASS` | `BUILD SUCCESSFUL`; the complete debug unit suite passed. |
+| Debug/release lint and assembly | `./tools/codex-android :app:lintDebug :app:assembleDebug :app:assembleRelease` | `PASS` | `BUILD SUCCESSFUL`; release R8 and `lintVitalRelease` also passed. |
 | Release lint and signing report | `GRADLE_USER_HOME=/private/tmp/opra-eq-gradle ./gradlew :app:lintRelease :app:signingReport` | `PASS` | `BUILD SUCCESSFUL`; release signing configuration is intentionally absent locally (`Config: null`, no signer). |
 | README-recommended Android wrapper self-test | `./tools/codex-android android info`, `./tools/codex-android android emulator list`, `./tools/codex-android adb devices -l` | `PASS` | JDK 17/SDK selection worked; `codex-api36` was discovered and `emulator-5554` was observed during testing. |
 | Instrumented Android UI tests | `./tools/codex-android :app:connectedDebugAndroidTest --stacktrace` | `PASS` | `codex-api36` emulator: 20/20 tests completed, 0 skipped, 0 failed. Emulator was stopped after the run. |
 | Local security/release tooling | `:app:check`, `:app:lintVitalRelease`, `:app:signingReport`, release R8/minification | `PASS` | Repository release-signature unit coverage passed; no local CodeQL or dependency-submission task/tool exists. |
-| CI CodeQL/dependency-submission and signed workflow | Remote workflows | `NOT RUN` | Luna did not push or start CI; signing secrets are not available locally. |
-| CI/artifact provenance | Remote workflow or release command | `NOT RUN` | Luna did not push and no candidate workflow was started. |
+| Exact-head PR CI | GitHub Actions runs for source SHA `709298ae00cbc0167e1b458c6feacf7184e1bdfb` | `PASS` | Android CI (lint, debug/release assembly, minified output, emulator UI, API-26 smoke), CodeQL, catalog currentness, priority-community coverage, and dependency submission all passed. |
+| Signed candidate workflow | `Signed Release Candidate` run [#9](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36299335354), dispatched from `main` | `PASS` | Release gate, R8, signing, signature verification, zip alignment, checksum, manifest, and artifact upload passed for exact source SHA `ce5efdf7985e4fc48f975b14fcedb1f592d43772`. |
+| Signed APK provenance verification | Downloaded Actions artifact and local `aapt`, `apksigner`, `zipalign`, SHA-256 checks | `PASS` | Artifact digest, APK checksum, package/version, pinned signer, v2/v3 signature, and alignment match. |
+| Exact signed APK emulator smoke | `adb install -r`; `adb shell am start -W -n com.weekssa.opraeqforuapp/com.weekssa.opraeqforuapp.MainActivity` on `codex-api36` | `PASS` | Install succeeded; cold launch returned `Status: ok`, `LaunchState: COLD`; no DAC or physical hardware involved. |
 | Physical Pixel 9 validation | Owner checklist | `NOT RUN` | Explicitly owner-controlled next intervention. |
 
-The repository-local `GATES.md` was created as a bounded acceptance ledger. G1 through G4 are now evidenced as complete; G5 remains open until the authorized signed workflow produces exact candidate provenance.
+The repository-local `GATES.md` was created as a bounded acceptance ledger. G1 through G5 are evidenced as complete for software and artifact provenance; the physical Pixel 9 gate remains owner-controlled.
 
 ## Safety and scope audit
 
@@ -74,27 +79,27 @@ The repository-local `GATES.md` was created as a bounded acceptance ledger. G1 t
 - JA11/EW300 behavior changed: `NO`
 - Automatic post-failure rewrite/restore added: `NO`
 - Hardware mutation performed by Luna: `NO`
-- Push/merge/publication performed: `NO` at report update time; the authorized candidate path requires the feature commit to be pushed and reviewed before main-only signing.
+- Push/merge/publication: feature branch pushed and PR #48 merged into `main` under owner authorization; no public tag, release, or public support claim was made.
 
 ## Candidate provenance
 
-- Signed APK: `NOT PRODUCED`
-- Local unsigned release APK (not a test candidate): `app/build/outputs/apk/release/app-release-unsigned.apk`
-- Local unsigned APK SHA-256: `2594c26d4ee7033aaccfbf3c0444fd853a9838b696c16aff250a5a6b68bd23d5`
-- APK SHA-256: `NOT AVAILABLE`
+- Signed APK filename: `EQ-Library-v0.7.0.apk` (inside artifact ZIP `EQ-Library-v0.7.0-signed-ce5efdf7985e4fc48f975b14fcedb1f592d43772.zip`)
+- APK SHA-256: `3d723ffa17042fbef7e6e192c14ecce460628d0f08a55eeb30caa59566ff8731`
 - Package/version: `com.weekssa.opraeqforuapp` / `versionName 0.7.0`, `versionCode 7`
-- Signer certificate SHA-256: `NOT AVAILABLE`
-- CI workflow/run: `NOT RUN` at report update time — candidate workflow requires the exact reviewed source on `main`
-- Artifact URL/ID/digest: `NOT AVAILABLE`
+- Signer certificate SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`
+- CI workflow/run: [Signed Release Candidate #9](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36299335354), source `ce5efdf7985e4fc48f975b14fcedb1f592d43772`
+- Artifact: ID `10924538542`; digest `sha256:e950b34686cb12406e0828cbd138ed7d866c3760b9b7c987a24541410dfbb9c9`
+- R8 mapping SHA-256: `d20728b847b0608e07c26016dd72b1d52bb06710c66b510cdf0718eb9dc3d49f`
+- Candidate artifact download: `/Users/stephenweeks/Downloads/EQ-Library-v0.7.0-signed-ce5efdf7985e4fc48f975b14fcedb1f592d43772.zip`
 
 ## Final status
 
-`SOFTWARE_READY_PENDING_SIGNED_CANDIDATE`
+`READY_FOR_PIXEL_9`
 
-The local software and emulator gates now pass, while no exact signed APK provenance exists. This is not a physical qualification claim and the hardware bug must not be called fixed before the owner’s exact Pixel 9 test.
+Software gates and exact signed candidate provenance are complete. This is not a physical qualification claim and the hardware bug must not be called fixed before the owner’s exact Pixel 9 test.
 
 ## Owner checklist
 
-`03-pixel-9-handoff.md` has been filled with the exact repository, branch, live source SHA, package/version, and explicit unavailable signed-candidate fields. The owner must supply the exact signed APK filename, SHA-256, signer, CI/artifact provenance, and installation mode before installing or mutating hardware.
+`03-pixel-9-handoff.md` has been filled with the exact candidate repository/source SHA, package/version, APK checksum, signer, CI run, artifact ID/digest, and emulator install mode. The owner may now install this exact signed APK on the Pixel 9; physical Flash validation remains the final owner-controlled gate.
 
-Luna did not mutate hardware. The owner’s next authorized action is the exact signed APK Pixel 9 test after candidate provenance is complete.
+Luna did not mutate hardware. The owner’s next authorized action is the exact signed APK Pixel 9 test; this report does not claim physical qualification or a fixed hardware bug.

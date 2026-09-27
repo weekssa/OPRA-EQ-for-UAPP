@@ -2,26 +2,27 @@
 
 This checklist is the final physical gate for the exact signed candidate produced by Luna. Do not use it with an older APK or an APK whose source SHA, checksum, or signer is not recorded.
 
-## Candidate provenance — Luna must fill before handoff
+## Candidate provenance — verified before owner handoff
 
 - Repository: `weekssa/OPRA-EQ-for-UAPP`
-- Source branch: `codex/ja11-protocol-evidence`
-- Exact implementation source SHA: `7bb419bc` (`Verify Black Pearl Flash with final readback`); the final signed candidate source SHA will be the reviewed merge commit on `main` and must be recorded before installation.
-- APK filename: `NOT PRODUCED — signed workflow not run`
-- APK SHA-256: `NOT AVAILABLE`
+- Source branch: `main`
+- Exact candidate source SHA: `ce5efdf7985e4fc48f975b14fcedb1f592d43772` (PR #48 merge commit)
+- APK filename: `EQ-Library-v0.7.0.apk`
+- APK SHA-256: `3d723ffa17042fbef7e6e192c14ecce460628d0f08a55eeb30caa59566ff8731`
 - Package: `com.weekssa.opraeqforuapp`
 - `versionName` / `versionCode`: `0.7.0` / `7`
-- Build variant: `release signed candidate — NOT PRODUCED`
-- Signer certificate SHA-256: `NOT AVAILABLE`
-- CI workflow/run and artifact URL or ID: `PENDING exact reviewed main source and signed-beta dispatch`
-- Install mode: `PENDING exact signed candidate provenance`
+- Build variant: `release signed candidate`
+- Signer certificate SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`
+- CI workflow/run: [Signed Release Candidate #9](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36299335354)
+- Artifact: ID `10924538542`, digest `sha256:e950b34686cb12406e0828cbd138ed7d866c3760b9b7c987a24541410dfbb9c9`
+- Install mode: download the exact Actions artifact ZIP, extract `EQ-Library-v0.7.0.apk`, and install that APK only. Emulator smoke used `adb install -r`; Pixel 9 installation remains owner-controlled.
 - Local/emulator checks: `PASS` for Gradle unit tests, lint, debug/release assembly, R8, local release-signature tests, and 20/20 instrumented tests on the `codex-api36` emulator. The emulator was stopped after testing.
 
-Do not install or mutate hardware until the signed candidate filename, checksum, signer, source SHA, and CI/artifact provenance are all filled for the exact APK under test. Current software handoff status: `SOFTWARE_READY_PENDING_SIGNED_CANDIDATE`.
+Do not install or mutate hardware with any APK other than the exact candidate identified above. Current software handoff status: `READY_FOR_PIXEL_9`.
 
-A local unsigned release APK exists at `app/build/outputs/apk/release/app-release-unsigned.apk` with SHA-256 `2594c26d4ee7033aaccfbf3c0444fd853a9838b696c16aff250a5a6b68bd23d5`; it is not installable as the signed Pixel 9 candidate and must not be used for hardware testing.
+The signed candidate artifact ZIP is available at `/Users/stephenweeks/Downloads/EQ-Library-v0.7.0-signed-ce5efdf7985e4fc48f975b14fcedb1f592d43772.zip`. The artifact ZIP SHA-256 is `e950b34686cb12406e0828cbd138ed7d866c3760b9b7c987a24541410dfbb9c9`.
 
-If any required identity is missing, stop before installing and return the missing provenance to the agent.
+The local unsigned release APK remains unsuitable for Pixel 9 testing. If the downloaded APK does not match every identity above, stop before installing and report the mismatch.
 
 ## Starting-state safety
 
