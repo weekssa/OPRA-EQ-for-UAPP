@@ -78,6 +78,14 @@ Update the maintained documents in the same workstream when a later decision sup
 - Do not automatically retry uncertain hardware mutations.
 - Continue autonomously while safe in-scope work remains. Ask the owner only for a material unresolved product choice, an unsafe contradiction, the minimum necessary physical session, or explicit merge/publication approval.
 
+## Local development build tooling
+
+- Use the checked-in Gradle Wrapper for all local and Codex Android builds: `./gradlew` on macOS/Linux or `gradlew.bat` on Windows. A globally installed Gradle is not required.
+- The wrapper is pinned to Gradle `9.4.1`, matching the repository's Android Gradle Plugin `9.2.0` setup. Keep `gradlew`, `gradlew.bat`, and `gradle/wrapper/` under version control.
+- The first wrapper invocation may download the pinned Gradle distribution and cache it locally. Do not commit the downloaded distribution or Gradle caches.
+- Android SDK discovery is machine-local: configure `ANDROID_HOME`/`ANDROID_SDK_ROOT` or the ignored `local.properties` file's `sdk.dir`. Do not commit a user-specific SDK path. This project currently compiles against API 36 and Build Tools 36.0.0.
+- Standard development checks include `./gradlew :app:testDebugUnitTest`, `./gradlew lintDebug`, and `./gradlew assembleDebug`. Use the smallest relevant check during iteration and run the complete applicable gates on a coherent candidate head.
+
 ## Codex multi-agent orchestration
 
 The project-local `.codex/config.toml` defines reusable `repo_state`, `architecture`, `researcher`, `failure_analysis`, and `reviewer` specialist roles. Use them as bounded investigators and reviewers; they do not replace the primary agent.
