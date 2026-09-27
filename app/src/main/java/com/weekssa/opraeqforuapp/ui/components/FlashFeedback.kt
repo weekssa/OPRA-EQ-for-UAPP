@@ -39,6 +39,7 @@ internal fun flashDeviceLabel(device: ExportDevice): String = when (device) {
     ExportDevice.FIIO_JA11 -> "FiiO JA11"
     ExportDevice.SIMGOT_EW300 -> "SIMGOT EW300 DSP"
     ExportDevice.JCALLY_JM12 -> "JCALLY JM12"
+    else -> device.displayName
 }
 
 internal fun blackPearlFlashFeedback(result: BlackPearlFlashResult): FlashFeedback = when (result) {

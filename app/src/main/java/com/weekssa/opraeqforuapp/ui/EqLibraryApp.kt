@@ -334,7 +334,7 @@ fun EqLibraryApp(
         )
     }
 
-    suspend fun flashWithFeedback(device: ExportDevice, action: suspend () -> String): String {
+    suspend fun flashSuspendWithFeedback(device: ExportDevice, action: suspend () -> String): String {
         beginFlash(device)
         return try {
             val message = action()
@@ -362,7 +362,7 @@ fun EqLibraryApp(
         }
     }
 
-    fun flashWithFeedback(device: ExportDevice, action: () -> Unit) {
+    fun flashImmediateWithFeedback(device: ExportDevice, action: () -> Unit) {
         beginFlash(device)
         try {
             action()
@@ -868,7 +868,7 @@ fun EqLibraryApp(
                                 jcallyJm12ConnectionState = jcallyJm12ConnectionState,
                                 onConnectJcallyJm12 = onConnectJcallyJm12,
                                 onFlashManagedProfile = { profileId ->
-                                    flashWithFeedback(activeOutput) {
+                                    flashSuspendWithFeedback(activeOutput) {
                                         onFlashManagedProfile(selectedManagedHeadphone.productId, profileId)
                                     }
                                 },
@@ -922,12 +922,12 @@ fun EqLibraryApp(
                                 onDeleteSavedEq = onDeleteSavedEq,
                                 onExportSavedEq = requestExportSavedEq,
                                 onFlashSavedEq = { entryId ->
-                                    flashWithFeedback(activeOutput) { onFlashSavedEq(entryId) }
+                                    flashSuspendWithFeedback(activeOutput) { onFlashSavedEq(entryId) }
                                 },
                                 onRemoveGeneralEq = onRemoveGeneralEq,
                                 onExportGeneralEq = requestExportGeneralEq,
                                 onFlashGeneralEq = { presetId ->
-                                    flashWithFeedback(activeOutput) { onFlashGeneralEq(presetId) }
+                                    flashSuspendWithFeedback(activeOutput) { onFlashGeneralEq(presetId) }
                                 },
                                 onMessage = ::showMessage,
                                 modifier = Modifier.fillMaxSize(),
@@ -980,7 +980,7 @@ fun EqLibraryApp(
                         onCaptureBlackPearlDacEq = onCaptureBlackPearlDacEq,
                         onCaptureEw300DacEq = onCaptureEw300DacEq,
                         onFlashBlackPearlFromMyDac = { profile ->
-                            flashWithFeedback(ExportDevice.BLACK_PEARL) {
+                            flashSuspendWithFeedback(ExportDevice.BLACK_PEARL) {
                                 onFlashBlackPearlFromMyDac(profile)
                             }
                         },
@@ -1013,19 +1013,19 @@ fun EqLibraryApp(
                         hiddenCanonicalProfileIds = appPreferences.hiddenCanonicalProfileIds,
                         blackPearlConnectionState = blackPearlConnectionState,
                         onFlashBlackPearlProfile = { profile ->
-                            flashWithFeedback(ExportDevice.BLACK_PEARL) {
+                            flashSuspendWithFeedback(ExportDevice.BLACK_PEARL) {
                                 onFlashBlackPearlFromMyDac(profile)
                             }
                         },
                         fiioJa11ConnectionState = fiioJa11ConnectionState,
                         onFlashFiioJa11Profile = { profile ->
-                            flashWithFeedback(ExportDevice.FIIO_JA11) {
+                            flashSuspendWithFeedback(ExportDevice.FIIO_JA11) {
                                 onFlashFiioJa11FromMyDac(profile)
                             }
                         },
                         ew300ConnectionState = ew300ConnectionState,
                         onFlashEw300Profile = { profile ->
-                            flashWithFeedback(ExportDevice.SIMGOT_EW300) {
+                            flashImmediateWithFeedback(ExportDevice.SIMGOT_EW300) {
                                 onFlashEw300FromMyDac(profile)
                             }
                         },
