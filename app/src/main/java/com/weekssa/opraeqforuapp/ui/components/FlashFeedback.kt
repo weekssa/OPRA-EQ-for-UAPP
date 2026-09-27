@@ -16,11 +16,13 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
+import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlashResult
 
 internal enum class FlashFeedbackPhase {
     STARTING,
     VERIFYING,
     COMPLETED,
+    SENT,
     UNCERTAIN,
     FAILED,
 }
@@ -37,6 +39,30 @@ internal fun flashDeviceLabel(device: ExportDevice): String = when (device) {
     ExportDevice.FIIO_JA11 -> "FiiO JA11"
     ExportDevice.SIMGOT_EW300 -> "SIMGOT EW300 DSP"
     ExportDevice.JCALLY_JM12 -> "JCALLY JM12"
+}
+
+internal fun blackPearlFlashFeedback(result: BlackPearlFlashResult): FlashFeedback = when (result) {
+    is BlackPearlFlashResult.Success -> FlashFeedback(
+        deviceLabel = flashDeviceLabel(ExportDevice.BLACK_PEARL),
+        phase = FlashFeedbackPhase.SENT,
+        detail = "All EQ reports were sent. Final hardware state was not read back." +
+            (result.warning?.let { " $it" } ?: ""),
+    )
+    is BlackPearlFlashResult.NotRepresentable -> FlashFeedback(
+        deviceLabel = flashDeviceLabel(ExportDevice.BLACK_PEARL),
+        phase = FlashFeedbackPhase.FAILED,
+        detail = result.reason,
+    )
+    is BlackPearlFlashResult.DeviceUnavailable -> FlashFeedback(
+        deviceLabel = flashDeviceLabel(ExportDevice.BLACK_PEARL),
+        phase = FlashFeedbackPhase.FAILED,
+        detail = result.reason,
+    )
+    is BlackPearlFlashResult.TransferFailed -> FlashFeedback(
+        deviceLabel = flashDeviceLabel(ExportDevice.BLACK_PEARL),
+        phase = FlashFeedbackPhase.FAILED,
+        detail = result.reason,
+    )
 }
 
 @Composable
@@ -69,8 +95,9 @@ internal fun FlashFeedbackBanner(
                         FlashFeedbackPhase.COMPLETED -> if (feedback.verified) {
                             "Flash complete · EQ saved and verified"
                         } else {
-                            "Flash complete · EQ saved"
+                            "Flash complete · final state unverified"
                         }
+                        FlashFeedbackPhase.SENT -> "Flash sent to ${feedback.deviceLabel}"
                         FlashFeedbackPhase.UNCERTAIN -> "Flash result could not be verified"
                         FlashFeedbackPhase.FAILED -> "Flash failed"
                     },

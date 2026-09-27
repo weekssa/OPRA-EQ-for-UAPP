@@ -60,6 +60,7 @@ import com.weekssa.opraeqforuapp.ui.components.PostUpdateBanner
 import com.weekssa.opraeqforuapp.ui.components.FlashFeedback
 import com.weekssa.opraeqforuapp.ui.components.FlashFeedbackBanner
 import com.weekssa.opraeqforuapp.ui.components.FlashFeedbackPhase
+import com.weekssa.opraeqforuapp.ui.components.blackPearlFlashFeedback
 import com.weekssa.opraeqforuapp.ui.components.TargetContextSelector
 import com.weekssa.opraeqforuapp.ui.components.UpdateAvailableBanner
 import com.weekssa.opraeqforuapp.ui.components.WhatsNewDialog
@@ -223,6 +224,17 @@ fun EqLibraryApp(
     val scope = rememberCoroutineScope()
     var flashFeedback by remember { mutableStateOf<FlashFeedback?>(null) }
     var pendingFlashResultMessage by remember { mutableStateOf<String?>(null) }
+    var lastBlackPearlFlashSequence by remember {
+        mutableStateOf(state.blackPearlFlashOutcome?.sequence)
+    }
+    LaunchedEffect(state.blackPearlFlashOutcome) {
+        state.blackPearlFlashOutcome?.let { outcome ->
+            if (outcome.sequence != lastBlackPearlFlashSequence) {
+                lastBlackPearlFlashSequence = outcome.sequence
+                flashFeedback = blackPearlFlashFeedback(outcome.result)
+            }
+        }
+    }
     val exportFolderPermissionFailedMessage = stringResource(R.string.export_folder_permission_failed)
     val myDacDetectedMessage = stringResource(R.string.my_dac_detected_prompt)
     val openMyDacActionLabel = stringResource(R.string.my_dac_action_open)

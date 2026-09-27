@@ -140,6 +140,12 @@ private data class HardwareConnectionUiState(
     val blackPearlQualificationState: BlackPearlQualificationUiState,
     val fiioJa11DeviceState: FiioJa11DeviceUiState,
     val ew300PlaybackGainState: Ew300PlaybackGainUiState,
+    val blackPearlFlashOutcome: BlackPearlFlashUiOutcome?,
+)
+
+data class BlackPearlFlashUiOutcome(
+    val sequence: Long,
+    val result: BlackPearlFlashResult,
 )
 
 data class EqLibraryUiState(
@@ -170,6 +176,7 @@ data class EqLibraryUiState(
     val blackPearlQualificationState: BlackPearlQualificationUiState = BlackPearlQualificationUiState(),
     val fiioJa11DeviceState: FiioJa11DeviceUiState = FiioJa11DeviceUiState(),
     val ew300PlaybackGainState: Ew300PlaybackGainUiState = Ew300PlaybackGainUiState(),
+    val blackPearlFlashOutcome: BlackPearlFlashUiOutcome? = null,
 )
 
 class EqLibraryViewModel(
@@ -196,6 +203,7 @@ class EqLibraryViewModel(
     private val mutableFiioJa11DeviceState = MutableStateFlow(FiioJa11DeviceUiState())
     private val mutableEw300PlaybackGainState = MutableStateFlow(Ew300PlaybackGainUiState())
     private val mutableBlackPearlKnownLineage = MutableStateFlow<BlackPearlKnownLineage?>(null)
+    private val mutableBlackPearlFlashOutcome = MutableStateFlow<BlackPearlFlashUiOutcome?>(null)
     private var blackPearlEditorLineageRepresentation: SavedHardwareEqRepresentation? = null
 
     private val activeOutputId = preferencesRepository.preferences
@@ -312,6 +320,7 @@ class EqLibraryViewModel(
             blackPearlQualificationState = BlackPearlQualificationUiState(),
             fiioJa11DeviceState = FiioJa11DeviceUiState(),
             ew300PlaybackGainState = Ew300PlaybackGainUiState(),
+            blackPearlFlashOutcome = null,
         )
     }
 
@@ -341,7 +350,8 @@ class EqLibraryViewModel(
         mutableFiioJa11DeviceState,
         mutableEw300PlaybackGainState,
         hardwareRepository.fiioJa11OperationStatus,
-    ) { hardware, fiioDevice, ew300Gain, fiioOperationStatus ->
+        mutableBlackPearlFlashOutcome,
+    ) { hardware, fiioDevice, ew300Gain, fiioOperationStatus, blackPearlFlashOutcome ->
         val current = fiioDevice.snapshot?.let { snapshot ->
             hardwareRepository.isFiioJa11SessionCurrent(snapshot.sessionGeneration)
         } == true
@@ -350,6 +360,7 @@ class EqLibraryViewModel(
             fiioJa11OperationTrace = (fiioOperationStatus as? FiioJa11OperationStatus.Completed)?.trace,
             fiioJa11OperationStatus = fiioOperationStatus,
             ew300PlaybackGainState = ew300Gain,
+            blackPearlFlashOutcome = blackPearlFlashOutcome,
         )
     }
 
@@ -391,6 +402,7 @@ class EqLibraryViewModel(
             blackPearlQualificationState = hardware.blackPearlQualificationState,
             fiioJa11DeviceState = hardware.fiioJa11DeviceState,
             ew300PlaybackGainState = hardware.ew300PlaybackGainState,
+            blackPearlFlashOutcome = hardware.blackPearlFlashOutcome,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -1705,6 +1717,10 @@ class EqLibraryViewModel(
 
     private suspend fun flashBlackPearlAndRefresh(profile: OpraEqProfile): BlackPearlFlashResult {
         val result = hardwareRepository.flashBlackPearl(profile)
+        mutableBlackPearlFlashOutcome.value = BlackPearlFlashUiOutcome(
+            sequence = (mutableBlackPearlFlashOutcome.value?.sequence ?: 0L) + 1L,
+            result = result,
+        )
         if (hardwareRepository.blackPearlConnectionState.value is BlackPearlConnectionState.Connected) {
             refreshBlackPearlDeviceState()
         }
