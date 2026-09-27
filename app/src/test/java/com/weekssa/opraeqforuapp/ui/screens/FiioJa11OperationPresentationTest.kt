@@ -4,11 +4,27 @@ import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationStage
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationStatus
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationTrace
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11TransportEvent
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class FiioJa11OperationPresentationTest {
+    @Test
+    fun activeMessageNamesTheCurrentOperation() {
+        assertEquals(
+            "Resetting JA11 EQ… Keep the DAC connected while final readback is verified.",
+            fiioJa11OperationInProgressMessage(FiioJa11OperationStatus.Running("operation-1", "RESET")),
+        )
+        assertTrue(
+            fiioJa11OperationInProgressMessage(FiioJa11OperationStatus.Running("operation-1", "APPLY"))
+                .orEmpty()
+                .startsWith("Applying JA11"),
+        )
+        assertNull(fiioJa11OperationInProgressMessage(FiioJa11OperationStatus.Running("operation-1", "FLASH")))
+    }
+
     @Test
     fun resetControlIsDisabledOnlyDuringAnActiveJa11Operation() {
         assertFalse(

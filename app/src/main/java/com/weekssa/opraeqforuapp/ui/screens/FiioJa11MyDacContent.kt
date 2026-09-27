@@ -226,11 +226,8 @@ private fun FiioJa11EqStatus(
         modifier = Modifier.fillMaxWidth(),
     ) { Text("Reset EQ to flat") }
 
-    if (operationStatus is FiioJa11OperationStatus.Running && operationStatus.operation != "FLASH") {
-        Text(
-            "Resetting JA11 EQ… Keep the DAC connected while final readback is verified.",
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+    fiioJa11OperationInProgressMessage(operationStatus)?.let { message ->
+        Text(message, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 
     Text(
@@ -239,6 +236,17 @@ private fun FiioJa11EqStatus(
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 
+}
+
+internal fun fiioJa11OperationInProgressMessage(
+    operationStatus: FiioJa11OperationStatus,
+): String? = when (operationStatus) {
+    is FiioJa11OperationStatus.Running -> when (operationStatus.operation.uppercase()) {
+        "FLASH" -> null
+        "RESET" -> "Resetting JA11 EQ… Keep the DAC connected while final readback is verified."
+        else -> "Applying JA11 ${operationStatus.operation.lowercase()}… Keep the DAC connected while final readback is verified."
+    }
+    else -> null
 }
 
 private fun connectionLabel(state: Kt02h20ConnectionState): String = when (state) {

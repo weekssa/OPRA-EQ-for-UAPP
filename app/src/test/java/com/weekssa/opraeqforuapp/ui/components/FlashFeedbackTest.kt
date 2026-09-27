@@ -9,6 +9,16 @@ import org.junit.Test
 
 class FlashFeedbackTest {
     @Test
+    fun onlyTerminalFlashResultsExpireAutomatically() {
+        assertTrue(FlashFeedbackPhase.SENT.expiresAutomatically())
+        assertTrue(FlashFeedbackPhase.COMPLETED.expiresAutomatically())
+        assertFalse(FlashFeedbackPhase.STARTING.expiresAutomatically())
+        assertFalse(FlashFeedbackPhase.VERIFYING.expiresAutomatically())
+        assertFalse(FlashFeedbackPhase.UNCERTAIN.expiresAutomatically())
+        assertFalse(FlashFeedbackPhase.FAILED.expiresAutomatically())
+    }
+
+    @Test
     fun blackPearlTransferSuccessDoesNotClaimFinalReadback() {
         val feedback = blackPearlFlashFeedback(
             BlackPearlFlashResult.Success(

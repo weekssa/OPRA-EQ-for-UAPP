@@ -142,10 +142,9 @@ internal fun Ew300MyDacContent(
                 }
                 if (selectedTab == 0) {
                     if (operationBusy) {
-                        Text(
-                            "An EW300 operation is still being verified. Editing, capture, reset, and refresh are unavailable until it finishes.",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        ew300OperationInProgressMessage(operationStatus)?.let { message ->
+                            Text(message, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     } else if (editorState.isOpening || editorState.isOpen || editorState.error != null) {
                         DacEqEditorScreen(
                             state = editorState,
@@ -270,7 +269,8 @@ internal fun Ew300MyDacContent(
             Kt02h20ConnectionState.Connecting -> {
                 Text("Connecting to EW300…")
                 Text(
-                    "After Apply or Flash, the EW300 may briefly disconnect and Android may ask for USB permission again. Approve it so final hardware readback can complete.",
+                    ew300OperationInProgressMessage(operationStatus)
+                        ?: "After Apply or Flash, the EW300 may briefly disconnect and Android may ask for USB permission again. Approve it so final hardware readback can complete.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -279,7 +279,8 @@ internal fun Ew300MyDacContent(
             Kt02h20ConnectionState.Disconnected -> {
                 if (operationBusy) {
                     Text(
-                        "The EW300 operation is still being verified. Do not reconnect manually until its result is shown.",
+                        ew300OperationInProgressMessage(operationStatus)
+                            ?: "The EW300 operation is still being verified. Do not reconnect manually until its result is shown.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 } else {
@@ -292,7 +293,8 @@ internal fun Ew300MyDacContent(
                 Text(connectionState.message, color = MaterialTheme.colorScheme.error)
                 if (operationBusy) {
                     Text(
-                        "The EW300 operation is still being verified. Do not retry the connection manually yet.",
+                        ew300OperationInProgressMessage(operationStatus)
+                            ?: "The EW300 operation is still being verified. Do not retry the connection manually yet.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 } else {
@@ -304,7 +306,8 @@ internal fun Ew300MyDacContent(
                 Text(connectionState.message, color = MaterialTheme.colorScheme.error)
                 if (operationBusy) {
                     Text(
-                        "The EW300 operation is still being verified. Wait for the result before granting a new USB session.",
+                        ew300OperationInProgressMessage(operationStatus)
+                            ?: "The EW300 operation is still being verified. Wait for the result before granting a new USB session.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 } else {
@@ -313,6 +316,17 @@ internal fun Ew300MyDacContent(
             }
         }
     }
+}
+
+internal fun ew300OperationInProgressMessage(
+    operationStatus: Ew300OperationStatus,
+): String? = when (operationStatus) {
+    is Ew300OperationStatus.Running -> when (operationStatus.operation.uppercase()) {
+        "FLASH" -> null
+        "RESET" -> "Resetting EW300 EQ… Keep the DAC connected while final readback is verified."
+        else -> "Applying EW300 ${operationStatus.operation.lowercase()}… Keep the DAC connected while final readback is verified."
+    }
+    else -> null
 }
 
 internal data class Ew300OperationStatusPresentation(

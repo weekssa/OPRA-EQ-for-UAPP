@@ -65,6 +65,7 @@ import com.weekssa.opraeqforuapp.ui.components.TargetContextSelector
 import com.weekssa.opraeqforuapp.ui.components.UpdateAvailableBanner
 import com.weekssa.opraeqforuapp.ui.components.WhatsNewDialog
 import com.weekssa.opraeqforuapp.ui.components.flashDeviceLabel
+import com.weekssa.opraeqforuapp.ui.components.expiresAutomatically
 import com.weekssa.opraeqforuapp.ui.screens.BrowseOpraScreen
 import com.weekssa.opraeqforuapp.ui.screens.ManagedHeadphoneDetailScreen
 import com.weekssa.opraeqforuapp.ui.screens.MyDacRootScreen
@@ -243,9 +244,7 @@ fun EqLibraryApp(
         flashFeedback?.verified,
     ) {
         val feedback = flashFeedback ?: return@LaunchedEffect
-        if (feedback.phase == FlashFeedbackPhase.SENT ||
-            feedback.phase == FlashFeedbackPhase.COMPLETED
-        ) {
+        if (feedback.phase.expiresAutomatically()) {
             delay(8_000L)
             if (flashFeedback == feedback) flashFeedback = null
         }
@@ -464,10 +463,8 @@ fun EqLibraryApp(
                         phase = FlashFeedbackPhase.VERIFYING,
                     )
                 } else if (status.operation == "RESET") {
-                    showDeviceOperation(
-                        message = "EW300 ${status.operation.lowercase()} started. Approve Android USB permission if it appears so the final state can be verified.",
-                        duration = SnackbarDuration.Short,
-                    )
+                    flashFeedback = null
+                    pendingFlashResultMessage = null
                 }
             }
             is Ew300OperationStatus.Completed -> {
@@ -526,6 +523,9 @@ fun EqLibraryApp(
                     deviceLabel = flashDeviceLabel(ExportDevice.FIIO_JA11),
                     phase = FlashFeedbackPhase.VERIFYING,
                 )
+            } else if (status.operation == "RESET") {
+                flashFeedback = null
+                pendingFlashResultMessage = null
             }
             is FiioJa11OperationStatus.Completed -> {
                 val trace = status.trace

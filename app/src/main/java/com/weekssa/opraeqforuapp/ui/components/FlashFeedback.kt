@@ -31,6 +31,9 @@ internal enum class FlashFeedbackPhase {
     FAILED,
 }
 
+internal fun FlashFeedbackPhase.expiresAutomatically(): Boolean = this == FlashFeedbackPhase.SENT ||
+    this == FlashFeedbackPhase.COMPLETED
+
 internal data class FlashFeedback(
     val deviceLabel: String,
     val phase: FlashFeedbackPhase,
