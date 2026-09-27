@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+user_home="$(cd ~ && pwd)"
+sdk_root="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$user_home/Library/Android/sdk}}"
+temp_root="${CODEX_ANDROID_TEMP_ROOT:-/private/tmp}"
+
+if [[ ! -d "$sdk_root" ]]; then
+  printf 'Android SDK not found at %s\n' "$sdk_root" >&2
+  printf 'Set ANDROID_HOME/ANDROID_SDK_ROOT or install the Android SDK.\n' >&2
+  exit 2
+fi
+
+export ANDROID_HOME="$sdk_root"
+export ANDROID_SDK_ROOT="$sdk_root"
+export ANDROID_USER_HOME="${ANDROID_USER_HOME:-${temp_root%/}/opra-eq-for-uapp-android-user}"
+export ANDROID_AVD_HOME="${ANDROID_AVD_HOME:-$ANDROID_USER_HOME/avd}"
+export GRADLE_USER_HOME="${GRADLE_USER_HOME:-${temp_root%/}/opra-eq-for-uapp-gradle-home}"
+
+if [[ -z "${JAVA_HOME:-}" ]]; then
+  jdk17="$user_home/Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home"
+  if [[ -x "$jdk17/bin/java" ]]; then
+    export JAVA_HOME="$jdk17"
+  fi
+fi
+
+mkdir -p "$ANDROID_USER_HOME" "$ANDROID_AVD_HOME" "$GRADLE_USER_HOME"
+export PATH="${JAVA_HOME:+$JAVA_HOME/bin:}$sdk_root/cmdline-tools/latest/bin:$sdk_root/platform-tools:$sdk_root/emulator:$PATH"
+
+if [[ $# -eq 0 ]]; then
+  set -- "$repo_root/gradlew" --version
+elif [[ "$1" == :* || "$1" == --* ]]; then
+  set -- "$repo_root/gradlew" "$@"
+fi
+
+exec "$@"

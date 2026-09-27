@@ -84,6 +84,10 @@ Android SDK discovery is machine-local: configure `ANDROID_HOME`/`ANDROID_SDK_RO
 
 The first wrapper invocation may download and cache Gradle locally. Common development checks are `./gradlew :app:testDebugUnitTest`, `./gradlew lintDebug`, and `./gradlew assembleDebug`. Use the smallest relevant check during iteration, then run the complete applicable gates on a coherent candidate head.
 
+For Codex on macOS, prefer `./tools/codex-android <Gradle task or Android command>`. The helper selects the local JDK/SDK, exposes `adb`, `android`, `avdmanager`, and `emulator`, and routes Gradle/Android user caches to writable temporary locations. Examples are `./tools/codex-android :app:testDebugUnitTest`, `./tools/codex-android adb devices`, and `./tools/codex-android emulator -list-avds`. Instrumented/emulator gates remain `NOT RUN` unless an emulator or physical device actually executes them.
+
+Codex skill routing uses the installed global `android-skills:android-dev` baseline plus the narrow Android skills relevant to the task: `android-skills:android-testing`, `android-skills:android-debugging`, `android-skills:compose`, `android-skills:android-ux`, `android-skills:kotlin-coroutines`, `android-skills:kotlin-flows`, `android-skills:android-gradle-logic`, `android-skills:android-source-search`, and `android-skills:modularization`. The Android CLI-managed project skills currently installed under `.agents/skills/` are `android-cli`, `testing-setup`, `android-profiler`, `r8-analyzer`, `android-permissions-security`, `android-intent-security`, `adaptive`, and `edge-to-edge`; repository-local DAC skills remain authoritative for protocol, transaction, physical-validation, and release-readiness work.
+
 The app ships with **zero bundled headphones/EQs**. End users need no login, cloud backend, analytics, telemetry, ChatGPT, GitHub account, or Google Drive account. Selections/preferences/generated state remain local.
 
 Normal runtime network use is limited to validated catalog acquisition/currentness and public app-release metadata/update links. Do not scrape GitHub/forums during normal Android operation and do not download OPRA artwork by default in v1.
