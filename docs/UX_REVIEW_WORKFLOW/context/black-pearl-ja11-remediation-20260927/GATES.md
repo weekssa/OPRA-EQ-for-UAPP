@@ -51,4 +51,13 @@ Scope: Implement and verify only the named Black Pearl final-readback truth corr
 
 - [x] G7: owner Pixel 9 handoff is complete and hardware mutation remains owner-controlled
   EVIDENCE: PASS as an actionable exact-candidate handoff in `05-release-handoff.md` and
-  `07-owner-usage-guide.md`; status is `READY_FOR_PIXEL_9`. Luna did not mutate hardware.
+  `07-owner-usage-guide.md`; the handoff preceded the owner-authorized bounded JA11 session.
+
+## Post-Pixel evidence status
+
+The exact candidate was used for one owner-authorized JA11 Apply and one owner-authorized restore.
+Both immediate final current-state reads matched, and the original flat state was restored. The
+Android UAPP routing prompt appeared at both reconnect boundaries and was canceled. The complete
+physical gate remains `PHYSICAL_INCONCLUSIVE`: transient terminal feedback was obscured by that
+prompt and no exported operation trace proving exact Save count was captured. Black Pearl was not
+exercised. These results are not a public hardware-support claim.

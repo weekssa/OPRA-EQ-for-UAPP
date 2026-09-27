@@ -31,5 +31,8 @@ in `05-release-handoff.md`.
 > release-readiness audit, changelog, and owner go/no-go package. Do not merge, publish, tag, or
 > make a public hardware-support claim without separate owner approval.
 
-Current pre-Pixel state: `READY_FOR_PIXEL_9`; exact signed candidate provenance is recorded in
-`05-release-handoff.md`. Await owner Pixel 9 evidence before classifying either DAC physically.
+Current post-session state: `PHYSICAL_INCONCLUSIVE`. The exact signed candidate was used for a
+bounded JA11 Apply/restore session. Immediate readback and original-state restoration matched, but
+the Android UAPP routing dialog obscured transient terminal feedback and no exported operation trace
+proving exact Save count was captured. Do not classify the complete JA11 issue as accepted until the
+owner resolves or explicitly accepts this evidence boundary. Black Pearl was not exercised.

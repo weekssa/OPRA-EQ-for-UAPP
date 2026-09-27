@@ -172,8 +172,56 @@ Commands were run in the isolated worktree with the checked-in wrapper tooling.
 - The owner-approved signed workflow dispatch completed as run `#1371` after merge to `main`; exact
   candidate provenance is recorded in the signed-candidate section above.
 
+## Pixel 9 controlled JA11 transaction evidence — 2026-09-27
+
+This session used the exact signed candidate from source SHA
+`acaf4dd32ddd9379ec2860e45e34fb8039219583`:
+
+- APK: `EQ-Library-v0.7.0-beta-acaf4dd.apk`
+- APK SHA-256: `af83a5e0148263057b1c43e3b775157ab6aedd9d2c1e3ab0558cef8fa3cea665`
+- Package/version: `com.weekssa.opraeqforuapp`, `0.7.0` / code `7`
+- Pixel: Google Pixel 9, codename `tokay`, Android 17 / API 37
+- ADB target: `adb-46141FDAQ003KZ-3AwgSo._adb-tls-connect._tcp`
+- JA11 identity: VID/PID `0x2972/0x0102`; Android USB host mode remained active
+- Evidence folder: `/tmp/opra-pixel-automated.ZRPv17/`
+
+The read-only baseline was verified as User 1 with five PEAK bands at 80/250/1000/4000/12000 Hz,
+all gains `+0.00 dB`, Q `0.70`, and global EQ gain `0.00 dB`. Opening, editing, Review, local
+Reset edits, Back, and Close were exercised before the first write; the USB connection count stayed
+at `273` throughout those local-only actions.
+
+### Controlled Apply and restore
+
+1. **Apply test — hardware state PASS:** one reviewed change, Band 1 gain `0.0 -> -1.0 dB`.
+   Review showed all five bands, global gain, headroom, one hardware value change, and the
+   first-write boundary. One Apply was sent. After the JA11 reconnect boundary and dismissal of
+   the Android “Open USB Audio Player PRO to handle JadeAudio JA11?” prompt, the fresh current
+   hardware view showed Band 1 `-1.00 dB`, all other values unchanged, and global gain `0.00 dB`.
+   USB connection count advanced `273 -> 275`.
+2. **Restore test — hardware state PASS:** one reviewed change, Band 1 gain `-1.0 -> 0.0 dB`.
+   One restoration Apply was sent. The same Android UAPP routing prompt appeared and was canceled.
+   The final fresh current hardware view showed the original flat five-band state and global gain
+   `0.00 dB`. USB connection count advanced `275 -> 277`.
+
+No Apply was retried, no Reset/Flash/Restore action was used, and no Black Pearl or EW300 hardware
+was touched. The installed APK was pulled after the session and its SHA-256 still matched the exact
+candidate checksum.
+
+### Physical evidence classification
+
+- JA11 immediate hardware readback and original-state restoration: **PASS**.
+- Complete named JA11 physical qualification: **PHYSICAL_INCONCLUSIVE**. The Android USB-routing
+  dialog obscured the transient terminal feedback during each reconnect, and the post-dialog app
+  surface did not retain an observable editor success sentence or expose an exported operation
+  trace proving the exact Save count to this worker. The observed final states are evidence of the
+  requested readback values, not permission to infer missing trace fields or a broader persistence,
+  acoustic, or public-support claim.
+- Black Pearl physical qualification: **NOT EXERCISED**.
+- Luna performed only the two owner-authorized JA11 Apply operations and the required read-only
+  final verification; no additional hardware action followed the final flat readback.
+
 ## Hardware boundary
 
-Luna did not connect to, mutate, Flash, Apply, Reset, Save, Restore, or otherwise write any DAC.
-No physical result is claimed. The next owner-controlled intervention is the final exact-candidate
-Pixel 9 review using the provenance above.
+The earlier pre-Pixel statement is superseded by the controlled JA11 session above. Luna did perform
+the two owner-authorized JA11 Apply operations and restored the original state. No Black Pearl or
+EW300 hardware was connected or mutated. No public hardware-support claim is made.

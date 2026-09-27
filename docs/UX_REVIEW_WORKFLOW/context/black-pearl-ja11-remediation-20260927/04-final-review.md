@@ -88,3 +88,18 @@ No unresolved defect was found within the two authorized issues. Software, owner
 integration, and exact signed candidate provenance are verified. The handoff is now
 `READY_FOR_PIXEL_9`; this is an owner physical-validation state, not a physical-fix or public-support
 claim.
+
+## Post-Pixel controlled-session review — 2026-09-27
+
+The exact signed candidate was exercised on the owner Pixel 9 with a connected FiiO JA11. The
+read-only baseline, local-only editor path, one Apply to `-1.00 dB`, final current-state readback,
+one restoration Apply to `0.00 dB`, and final flat-state readback all matched the intended values.
+The JA11 re-enumerated at both reconnect boundaries (`273 -> 275 -> 277`), and the Android UAPP
+routing prompt was canceled each time so UAPP did not take ownership of the device.
+
+The immediate hardware state and restoration evidence are **PASS**. Complete physical qualification
+remains **PHYSICAL_INCONCLUSIVE** because the routing prompt obscured transient terminal feedback and
+the post-dialog app surface did not retain an observable editor success sentence or export an
+operation trace proving the exact Save count. This is an evidence/feedback boundary, not evidence
+that the observed final readbacks were wrong. No Black Pearl hardware was exercised, and no public
+support claim is made.

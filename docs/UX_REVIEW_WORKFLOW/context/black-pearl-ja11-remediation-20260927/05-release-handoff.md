@@ -1,6 +1,6 @@
 # Release handoff - Black Pearl and JA11 remediation
 
-Status: `READY_FOR_PIXEL_9`
+Status: `PHYSICAL_INCONCLUSIVE`
 
 ## Current software handoff
 
@@ -34,13 +34,41 @@ Status: `READY_FOR_PIXEL_9`
   `sha256:88b1555e9a14642874110d05d5c5ae3554c25cc64b9385898a78287ccea9f52d`.
 - Exact candidate: `https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-acaf4dd.apk`.
 - Signed emulator install and cold launch: PASS; `Status: ok`, `LaunchState: COLD`.
-- Hardware: NOT RUN by Luna. No DAC was connected or mutated.
+- Hardware before the controlled session: NOT RUN by Luna. No DAC was connected or mutated.
 
-## Why this stops before Pixel 9
+## Pixel 9 controlled JA11 session — 2026-09-27
+
+The exact signed candidate above was installed and verified on a Google Pixel 9 (`tokay`, Android
+17/API 37). The FiiO JA11 was identified as VID/PID `0x2972/0x0102` in Android USB host mode.
+
+- Baseline: User 1, five PEAK bands at 80/250/1000/4000/12000 Hz, all `+0.00 dB`, Q `0.70`,
+  global EQ gain `0.00 dB`.
+- Apply: one explicit reviewed change of Band 1 to `-1.00 dB`; final current hardware readback
+  showed `-1.00 dB` and all other values unchanged.
+- Restore: one explicit reviewed change of Band 1 back to `0.00 dB`; final current hardware
+  readback showed the original flat state.
+- USB host connection count: `273 -> 275 -> 277` across the two reconnect boundaries.
+- The Android prompt to open USB Audio Player PRO appeared after each reconnect; the owner canceled
+  both prompts. UAPP was not allowed to take ownership.
+- Installed candidate SHA-256 after the session:
+  `af83a5e0148263057b1c43e3b775157ab6aedd9d2c1e3ab0558cef8fa3cea665`.
+- Evidence: `/tmp/opra-pixel-automated.ZRPv17/` (`editor-apply1-review.xml`,
+  `apply1-after-cancel.png`, `editor-restore-review.xml`, `restore2-after-cancel.png`, and USB
+  snapshots).
+
+Classification: JA11 immediate readback and original-state restoration **PASS**; complete physical
+qualification **PHYSICAL_INCONCLUSIVE** because the routing dialog obscured transient terminal
+feedback and the post-dialog surface did not retain an observable editor success sentence or expose
+an exported operation trace proving the exact Save count. Black Pearl remains **NOT EXERCISED**.
+This does not establish power-cycle persistence, acoustic fidelity, or public hardware support.
+
+## Why this stops before broader physical qualification
 
 The trusted main-only boundary has been satisfied by owner approval. The exact signed candidate and
 its provenance are now verified above. The remaining boundary is owner physical validation only.
-This handoff does not claim either issue physically fixed or publicly supported.
+This handoff does not claim either issue physically fixed or publicly supported. The bounded JA11
+session has now occurred, but the evidence boundary above must be resolved or explicitly accepted by
+the owner before `OWNER_ACCEPTED`.
 
 ## Pixel 9 checklist after an exact signed candidate exists
 
