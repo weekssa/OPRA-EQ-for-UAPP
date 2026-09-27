@@ -86,6 +86,9 @@ internal class BlackPearlEditorApplier(
             ?: return BlackPearlEditorApplyResult.InvalidPlan("The Black Pearl planned EQ safety gain is unavailable.")
         val baselineTrackedRaw = BlackPearlProtocol.gainDbToRawDelta(baselineTrackedGainDb)
         val currentTrackedRaw = gainStateStore.readAppliedGainDeltaRaw()
+            ?: return BlackPearlEditorApplyResult.StaleBaseline(
+                "EQ Library’s tracked Black Pearl gain baseline is unknown. Read the complete DAC state before applying.",
+            )
         if (currentTrackedRaw != baselineTrackedRaw) {
             return BlackPearlEditorApplyResult.StaleBaseline(
                 "EQ Library’s tracked Black Pearl gain changed after the editor was opened. No editor changes were written.",
@@ -263,8 +266,10 @@ internal class BlackPearlEditorApplier(
         q = q,
     )
 
-    private fun sessionChangedDuringApply(): BlackPearlEditorApplyResult.TransferFailed =
-        BlackPearlEditorApplyResult.TransferFailed(
+    private fun sessionChangedDuringApply(): BlackPearlEditorApplyResult.TransferFailed {
+        gainStateStore.markAppliedGainDeltaUnknown()
+        return BlackPearlEditorApplyResult.TransferFailed(
             "The Black Pearl disconnected or its USB session changed during Apply. Reconnect and read the DAC before retrying.",
         )
+    }
 }

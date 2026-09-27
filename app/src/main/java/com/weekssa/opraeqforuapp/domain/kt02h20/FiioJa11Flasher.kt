@@ -1,7 +1,14 @@
 package com.weekssa.opraeqforuapp.domain.kt02h20
 
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
+import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
+import com.weekssa.opraeqforuapp.domain.dac.DacHeadroomStatus
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditWorkingCopy
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqFilter
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotFactory
+import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 import kotlin.math.abs
+import kotlin.math.roundToInt
 import kotlinx.coroutines.CancellationException
 
 interface FiioJa11Transport {
@@ -167,6 +174,207 @@ class FiioJa11Flasher(
 
     suspend fun resetToFlat(): Kt02h20FlatResetResult = resetWithTrace()
 
+    /**
+     * Applies the shared local editor's already-reviewed User 1 working copy. The read immediately
+     * before the first write compares one coherent identity/session/program/band/gain token, then
+     * reuses the exact five-band -> global gain -> User 1 -> Apply -> one Save -> final readback
+     * transaction used by direct JA11 Flash.
+     */
+    suspend fun applyEditorWorkingCopy(
+        workingCopy: HardwareEqEditWorkingCopy,
+        baseline: FiioJa11EditorBaseline,
+    ): FiioJa11EditorApplyResult {
+        val operationId = traceStore.begin("EDITOR_APPLY")
+        transport.beginTrace(operationId)
+        val trace = FiioJa11OperationTraceBuilder(
+            operationId = operationId,
+            operation = "EDITOR_APPLY",
+            sourceCommit = sourceCommit,
+            appVersion = appVersion,
+            signerVerified = signerVerified,
+            deviceFingerprintKey = transport.deviceFingerprintKey,
+            usbProductId = transport.usbProductId,
+            sessionGeneration = transport.sessionGeneration,
+            detachGeneration = transport.detachGeneration,
+            permissionRequestCount = transport.permissionRequestCount,
+        )
+        val result = try {
+            applyEditorInternal(workingCopy, baseline, trace)
+        } catch (error: Throwable) {
+            if (error is CancellationException) throw error
+            FiioJa11EditorApplyResult.TransferFailed(
+                "FiiO JA11 editor Apply stopped unexpectedly: ${error.message ?: "unknown transport error"}.",
+            )
+        }
+        trace.complete(
+            outcome = result.editorOutcomeName(),
+            stateKnown = result.editorStateKnownForTrace(),
+            failureReason = result.editorFailureReason(),
+        )
+        trace.addEvents(transport.endTrace())
+        traceStore.publish(trace.build())
+        return result
+    }
+
+    private suspend fun applyEditorInternal(
+        workingCopy: HardwareEqEditWorkingCopy,
+        baseline: FiioJa11EditorBaseline,
+        trace: FiioJa11OperationTraceBuilder,
+    ): FiioJa11EditorApplyResult {
+        if (workingCopy.baselineSnapshot.deviceId != DacDeviceId.FIIO_JA11) {
+            return FiioJa11EditorApplyResult.InvalidPlan("This editor working copy does not belong to a FiiO JA11.")
+        }
+        if (workingCopy.baselineSnapshot.activeProgram != FiioJa11Protocol.EqProgram.USER_1) {
+            return FiioJa11EditorApplyResult.InvalidPlan("Only the verified active JA11 User 1 program can be edited.")
+        }
+        if (!workingCopy.hasChanges) {
+            return FiioJa11EditorApplyResult.InvalidPlan("There are no reviewed JA11 hardware changes to apply.")
+        }
+        if (workingCopy.hasBlockingIssues) {
+            return FiioJa11EditorApplyResult.InvalidPlan("Fix the blocking JA11 EQ values before applying.")
+        }
+        if (workingCopy.headroomAssessment?.status != DacHeadroomStatus.SAFE) {
+            return FiioJa11EditorApplyResult.InvalidPlan("The reviewed JA11 EQ does not yet have a safe global-gain plan.")
+        }
+        if (workingCopy.filters.size != FiioJa11Protocol.BAND_COUNT ||
+            workingCopy.filters.map(HardwareEqFilter::index) != (0 until FiioJa11Protocol.BAND_COUNT).toList()
+        ) {
+            return FiioJa11EditorApplyResult.InvalidPlan("The reviewed JA11 editor does not contain the complete five-band layout.")
+        }
+
+        if (!sameAuthorizedIdentity(baseline)) {
+            return FiioJa11EditorApplyResult.StaleBaseline(
+                "The FiiO JA11 identity or USB session changed after the editor was opened. No editor changes were written.",
+            )
+        }
+        trace.stage(FiioJa11OperationStage.AUTHORIZED_SESSION)
+
+        // This is the mandatory immediate pre-write token comparison, even when the generation has
+        // not changed. A background DEVICE operation or external state change must invalidate Apply.
+        val currentProgram = transport.readEqProgram()
+            ?: return FiioJa11EditorApplyResult.DeviceUnavailable(
+                "Couldn’t re-read the active FiiO JA11 program before Apply. No editor changes were written.",
+            )
+        if (currentProgram != FiioJa11Protocol.EqProgram.USER_1) {
+            return FiioJa11EditorApplyResult.StaleBaseline(
+                "FiiO JA11 is no longer on User 1. No editor changes were written; read the current EQ again.",
+            )
+        }
+        val currentBands = (0 until FiioJa11Protocol.BAND_COUNT).map { index -> transport.readBand(index) }
+        val currentGlobalGainDb = transport.readGlobalGainDb()
+        if (currentBands.any { it == null } || currentGlobalGainDb == null) {
+            return FiioJa11EditorApplyResult.DeviceUnavailable(
+                "Couldn’t complete the fresh five-band JA11 read before Apply. No editor changes were written.",
+            )
+        }
+        if (!sameAuthorizedIdentity(baseline)) {
+            return FiioJa11EditorApplyResult.StaleBaseline(
+                "The FiiO JA11 identity or USB session changed while the editor baseline was being verified. No editor changes were written.",
+            )
+        }
+        trace.baselineRead(
+            program = currentProgram,
+            globalGainDb = currentGlobalGainDb,
+            bands = currentBands.filterNotNull(),
+            firmwareVersion = null,
+        )
+        val currentBundle = HardwareEqSnapshotFactory.fiioJa11(
+            nativeBands = currentBands.filterNotNull(),
+            globalEqGainDb = currentGlobalGainDb,
+            sessionGeneration = transport.sessionGeneration,
+            verifiedAtEpochMillis = System.currentTimeMillis(),
+            eqEnabled = true,
+            activeProgram = currentProgram,
+        ) ?: return FiioJa11EditorApplyResult.DeviceUnavailable(
+            "The fresh JA11 read was not representable as a complete User 1 snapshot. No editor changes were written.",
+        )
+        if (currentBundle.fingerprint != baseline.snapshotBundle.fingerprint ||
+            currentBundle.snapshot.activeProgram != baseline.snapshotBundle.snapshot.activeProgram
+        ) {
+            return FiioJa11EditorApplyResult.StaleBaseline(
+                "The FiiO JA11 User 1 EQ changed after the editor was opened. No editor changes were written; read the DAC again.",
+            )
+        }
+
+        val targetBands = workingCopy.filters.sortedBy(HardwareEqFilter::index).map { filter ->
+            runCatching { filter.toJa11Band() }.getOrElse { error ->
+                return FiioJa11EditorApplyResult.InvalidPlan(
+                    error.message ?: "A reviewed JA11 band could not be represented exactly.",
+                )
+            }
+        }
+        val targetGlobalGainDb = workingCopy.plannedHeadroomGainDb
+            ?: return FiioJa11EditorApplyResult.InvalidPlan("The reviewed JA11 global EQ gain is unavailable.")
+        val quantizedGlobalGainDb = runCatching {
+            FiioJa11Protocol.quantizedGlobalGainDb(targetGlobalGainDb)
+        }.getOrElse { error ->
+            return FiioJa11EditorApplyResult.InvalidPlan(
+                error.message ?: "The reviewed JA11 global EQ gain is outside the device range.",
+            )
+        }
+        trace.targetManualEdit(targetBands, quantizedGlobalGainDb)
+
+        trace.stage(FiioJa11OperationStage.WRITING)
+        targetBands.forEachIndexed { index, band ->
+            if (!transport.sendReport(FiioJa11Protocol.writeBandReport(index, band))) {
+                return FiioJa11EditorApplyResult.TransferFailed(
+                    "FiiO JA11 stopped accepting the reviewed editor value at band ${index + 1}. The requested state was not verified.",
+                )
+            }
+        }
+        if (!transport.sendReport(FiioJa11Protocol.writeGlobalGainReport(quantizedGlobalGainDb))) {
+            return FiioJa11EditorApplyResult.TransferFailed(
+                "FiiO JA11 did not accept the reviewed global EQ gain. The requested state was not verified.",
+            )
+        }
+        if (!transport.sendReport(FiioJa11Protocol.writeEqProgramReport(FiioJa11Protocol.EqProgram.USER_1))) {
+            return FiioJa11EditorApplyResult.TransferFailed(
+                "FiiO JA11 did not accept selection of User 1. The requested state was not verified.",
+            )
+        }
+        if (!transport.sendReport(FiioJa11Protocol.applyReport())) {
+            return FiioJa11EditorApplyResult.TransferFailed(
+                "FiiO JA11 did not accept Apply. The requested state was not verified.",
+            )
+        }
+        trace.stage(FiioJa11OperationStage.APPLY_SENT)
+
+        verifyTarget(targetBands, quantizedGlobalGainDb, trace, "VOLATILE_READBACK")?.let { reason ->
+            return FiioJa11EditorApplyResult.VerificationFailed(
+                "FiiO JA11 editor Apply was not verified. $reason",
+            )
+        }
+        trace.saveSent()
+        if (!transport.saveToFlash()) {
+            return FiioJa11EditorApplyResult.TransferFailed(
+                "FiiO JA11 applied the reviewed EQ, but the one Save/reconnect boundary did not complete. The requested state was not verified.",
+            )
+        }
+        verifyTarget(targetBands, quantizedGlobalGainDb, trace, "FINAL_READBACK")?.let { reason ->
+            return FiioJa11EditorApplyResult.VerificationFailed(
+                "FiiO JA11 editor Apply was not verified after Save. $reason",
+            )
+        }
+        return FiioJa11EditorApplyResult.Verified
+    }
+
+    private fun sameAuthorizedIdentity(baseline: FiioJa11EditorBaseline): Boolean =
+        transport.deviceFingerprintKey == baseline.deviceFingerprintKey &&
+            transport.usbProductId == baseline.usbProductId &&
+            transport.sessionGeneration == baseline.sessionGeneration
+
+    private fun HardwareEqFilter.toJa11Band(): FiioJa11Protocol.Band = FiioJa11Protocol.Band(
+        type = when (type) {
+            EqFilterType.PEAK -> "peak_dip"
+            EqFilterType.LOW_SHELF -> "low_shelf"
+            EqFilterType.HIGH_SHELF -> "high_shelf"
+            else -> error("Unsupported FiiO JA11 editor filter type: $type")
+        },
+        frequencyHz = frequencyHz.roundToInt().toDouble(),
+        gainDb = (gainDb * 10.0).roundToInt() / 10.0,
+        q = (q * 100.0).roundToInt() / 100.0,
+    )
+
     private suspend fun resetInternal(trace: FiioJa11OperationTraceBuilder): Kt02h20FlatResetResult {
         val baselineProgram = transport.readEqProgram()
         val baselineGlobalGainDb = transport.readGlobalGainDb()
@@ -318,6 +526,34 @@ private fun Kt02h20FlashResult.failureReason(): String? = when (this) {
     is Kt02h20FlashResult.DeviceUnavailable -> reason
     is Kt02h20FlashResult.TransferFailed -> reason
     is Kt02h20FlashResult.VerificationFailed -> reason
+}
+
+private fun FiioJa11EditorApplyResult.editorOutcomeName(): String = when (this) {
+    FiioJa11EditorApplyResult.Verified -> "Success"
+    is FiioJa11EditorApplyResult.InvalidPlan -> "InvalidPlan"
+    is FiioJa11EditorApplyResult.StaleBaseline -> "StaleBaseline"
+    is FiioJa11EditorApplyResult.DeviceUnavailable -> "DeviceUnavailable"
+    is FiioJa11EditorApplyResult.TransferFailed -> "TransferFailed"
+    is FiioJa11EditorApplyResult.VerificationFailed -> "VerificationFailed"
+}
+
+private fun FiioJa11EditorApplyResult.editorStateKnownForTrace(): Boolean = when (this) {
+    FiioJa11EditorApplyResult.Verified,
+    is FiioJa11EditorApplyResult.InvalidPlan,
+    is FiioJa11EditorApplyResult.StaleBaseline,
+    is FiioJa11EditorApplyResult.DeviceUnavailable,
+    is FiioJa11EditorApplyResult.VerificationFailed,
+    -> true
+    is FiioJa11EditorApplyResult.TransferFailed -> false
+}
+
+private fun FiioJa11EditorApplyResult.editorFailureReason(): String? = when (this) {
+    FiioJa11EditorApplyResult.Verified -> null
+    is FiioJa11EditorApplyResult.InvalidPlan -> reason
+    is FiioJa11EditorApplyResult.StaleBaseline -> reason
+    is FiioJa11EditorApplyResult.DeviceUnavailable -> reason
+    is FiioJa11EditorApplyResult.TransferFailed -> reason
+    is FiioJa11EditorApplyResult.VerificationFailed -> reason
 }
 
 private fun Kt02h20FlatResetResult.outcomeName(): String = when (this) {

@@ -2,6 +2,12 @@ package com.weekssa.opraeqforuapp.domain.kt02h20
 
 import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditSpecs
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditor
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditorStartResult
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotFactory
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
+import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -9,6 +15,97 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class FiioJa11FlasherTest {
+    @Test
+    fun editorApplyUsesFreshTokenThenExactFiveBandApplySaveAndFinalReadback() = runBlocking {
+        val transport = FakeJa11Transport()
+        val baseline = editorBaseline(transport)
+        val started = HardwareEqEditor.startFromCurrent(
+            snapshotState = HardwareEqSnapshotState().publishCurrent(baseline.snapshotBundle),
+            spec = HardwareEqEditSpecs.FIIO_JA11,
+        ) as HardwareEqEditorStartResult.Ready
+        val edited = HardwareEqEditor.updateFilter(
+            workingCopy = started.workingCopy,
+            spec = HardwareEqEditSpecs.FIIO_JA11,
+            bandIndex = 0,
+            type = EqFilterType.PEAK,
+            frequencyHz = 80.0,
+            gainDb = 1.0,
+            q = 0.7,
+        )
+        assertTrue(transport.sentCommands.isEmpty())
+
+        val result = FiioJa11Flasher(transport).applyEditorWorkingCopy(
+            HardwareEqEditor.useSafeGain(edited, HardwareEqEditSpecs.FIIO_JA11),
+            baseline,
+        )
+
+        assertTrue(result.toString(), result is FiioJa11EditorApplyResult.Verified)
+        assertEquals(
+            listOf(0x15, 0x15, 0x15, 0x15, 0x15, 0x17, 0x16, 0x18, 0x19),
+            transport.sentCommands,
+        )
+        assertEquals(1, transport.saveCount)
+        assertEquals(1.0, transport.bands[0].gainDb, 0.0)
+        assertEquals(FiioJa11Protocol.EqProgram.USER_1, transport.program)
+    }
+
+    @Test
+    fun editorApplyRejectsChangedCompleteBaselineBeforeAnyWrite() = runBlocking {
+        val transport = FakeJa11Transport()
+        val baseline = editorBaseline(transport)
+        val started = HardwareEqEditor.startFromCurrent(
+            snapshotState = HardwareEqSnapshotState().publishCurrent(baseline.snapshotBundle),
+            spec = HardwareEqEditSpecs.FIIO_JA11,
+        ) as HardwareEqEditorStartResult.Ready
+        val edited = HardwareEqEditor.updateFilter(
+            started.workingCopy,
+            HardwareEqEditSpecs.FIIO_JA11,
+            0,
+            EqFilterType.PEAK,
+            80.0,
+            1.0,
+            0.7,
+        )
+        transport.bands[1] = transport.bands[1].copy(gainDb = 0.5)
+
+        val result = FiioJa11Flasher(transport).applyEditorWorkingCopy(
+            HardwareEqEditor.useSafeGain(edited, HardwareEqEditSpecs.FIIO_JA11),
+            baseline,
+        )
+
+        assertTrue(result.toString(), result is FiioJa11EditorApplyResult.StaleBaseline)
+        assertTrue(transport.sentCommands.isEmpty())
+        assertEquals(0, transport.saveCount)
+    }
+
+    @Test
+    fun editorApplyFinalMismatchDoesNotRetrySave() = runBlocking {
+        val transport = FakeJa11Transport(postSaveGlobalGainDb = -3.9)
+        val baseline = editorBaseline(transport)
+        val started = HardwareEqEditor.startFromCurrent(
+            snapshotState = HardwareEqSnapshotState().publishCurrent(baseline.snapshotBundle),
+            spec = HardwareEqEditSpecs.FIIO_JA11,
+        ) as HardwareEqEditorStartResult.Ready
+        val edited = HardwareEqEditor.updateFilter(
+            started.workingCopy,
+            HardwareEqEditSpecs.FIIO_JA11,
+            0,
+            EqFilterType.PEAK,
+            80.0,
+            1.0,
+            0.7,
+        )
+
+        val result = FiioJa11Flasher(transport).applyEditorWorkingCopy(
+            HardwareEqEditor.useSafeGain(edited, HardwareEqEditSpecs.FIIO_JA11),
+            baseline,
+        )
+
+        assertTrue(result.toString(), result is FiioJa11EditorApplyResult.VerificationFailed)
+        assertEquals(1, transport.saveCount)
+        assertEquals(1, transport.sentCommands.count { it == 0x19 })
+    }
+
     @Test
     fun flashWritesFiveSlotsGainSelectsUserOneApplyVerifySaveAndFinalVerify() = runBlocking {
         val transport = FakeJa11Transport(initialProgram = FiioJa11Protocol.EqProgram.VOCAL)
@@ -192,6 +289,22 @@ class FiioJa11FlasherTest {
         ),
     )
 
+    private fun editorBaseline(transport: FakeJa11Transport): FiioJa11EditorBaseline =
+        FiioJa11EditorBaseline(
+            deviceFingerprintKey = requireNotNull(transport.deviceFingerprintKey),
+            usbProductId = requireNotNull(transport.usbProductId),
+            snapshotBundle = requireNotNull(
+                HardwareEqSnapshotFactory.fiioJa11(
+                    nativeBands = transport.bands,
+                    globalEqGainDb = transport.globalGainDb,
+                    sessionGeneration = transport.sessionGeneration,
+                    verifiedAtEpochMillis = 10L,
+                    eqEnabled = true,
+                    activeProgram = FiioJa11Protocol.EqProgram.USER_1,
+                ),
+            ),
+        )
+
     private class FakeJa11Transport(
         private val failCommand: Int? = null,
         private val readable: Boolean = true,
@@ -203,6 +316,9 @@ class FiioJa11FlasherTest {
         private val postSaveGlobalGainDb: Double? = null,
         private val postWriteGlobalGainDb: Double? = null,
     ) : FiioJa11Transport {
+        override val deviceFingerprintKey: String = "serial=ja11-test|vid=2972"
+        override val usbProductId: Int = FiioJa11Protocol.PRODUCT_ID_UAC_2
+        override var sessionGeneration: Long = 1L
         val bands = FiioJa11Protocol.completeBands(emptyList()).toMutableList()
         var globalGainDb: Double = 0.0
         var program: FiioJa11Protocol.EqProgram = initialProgram

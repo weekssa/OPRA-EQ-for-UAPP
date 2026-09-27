@@ -1,6 +1,7 @@
 package com.weekssa.opraeqforuapp.domain.dac
 
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
+import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.round
@@ -390,6 +391,8 @@ data class HardwareEqSnapshot(
     val deviceId: DacDeviceId,
     val sessionGeneration: Long,
     val activeSlot: Int? = null,
+    /** Exact active program when the device exposes named EQ programs, such as JA11 User 1. */
+    val activeProgram: FiioJa11Protocol.EqProgram? = null,
     val filters: List<HardwareEqFilter>,
     /** Dedicated EQ preamp/headroom control only when its semantics are independently established. */
     val dedicatedEqPreampDb: Double? = null,

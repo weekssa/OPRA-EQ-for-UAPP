@@ -31,7 +31,8 @@ class BlackPearlFlasherTest {
     fun finalNativeReadbackAndGainMatchAreRequiredForSuccess() = runBlocking {
         val transport = FakeTransport(activeSlot = 0x06, globalGainRaw = -2_000)
 
-        val result = flash(transport, FakeGainStore(), profile(preamp = 0.0))
+        val store = FakeGainStore()
+        val result = flash(transport, store, profile(preamp = 0.0))
 
         assertTrue(result is BlackPearlFlashResult.Success)
         assertEquals(10, transport.nativeBandReadCount)
@@ -46,7 +47,8 @@ class BlackPearlFlasherTest {
             missingBandIndex = 4,
         )
 
-        val result = flash(transport, FakeGainStore(), profile(preamp = 0.0))
+        val store = FakeGainStore()
+        val result = flash(transport, store, profile(preamp = 0.0))
 
         assertTrue(result is BlackPearlFlashResult.VerificationFailed)
         assertFalse(result is BlackPearlFlashResult.Success)
@@ -62,7 +64,8 @@ class BlackPearlFlasherTest {
             mismatchedBandIndex = 3,
         )
 
-        val result = flash(transport, FakeGainStore(), profile(preamp = 0.0))
+        val store = FakeGainStore()
+        val result = flash(transport, store, profile(preamp = 0.0))
 
         assertTrue(result is BlackPearlFlashResult.VerificationFailed)
         assertFalse(result is BlackPearlFlashResult.Success)
@@ -79,12 +82,14 @@ class BlackPearlFlasherTest {
             finalGlobalGainRawOverride = -1_999,
         )
 
-        val result = flash(transport, FakeGainStore(), profile(preamp = 0.0))
+        val store = FakeGainStore()
+        val result = flash(transport, store, profile(preamp = 0.0))
 
         assertTrue(result is BlackPearlFlashResult.VerificationFailed)
         assertFalse(result is BlackPearlFlashResult.Success)
         assertEquals(12, transport.sent.size)
         assertTrue((result as BlackPearlFlashResult.VerificationFailed).reason.contains("playback-gain"))
+        assertEquals(1, store.appliedRaw)
     }
 
     @Test
@@ -95,12 +100,19 @@ class BlackPearlFlasherTest {
             missingFinalGlobalGainRead = true,
         )
 
-        val result = flash(transport, FakeGainStore(), profile(preamp = 0.0))
+        val store = FakeGainStore()
+        val result = flash(transport, store, profile(preamp = 0.0))
 
         assertTrue(result is BlackPearlFlashResult.VerificationFailed)
         assertFalse(result is BlackPearlFlashResult.Success)
         assertEquals(12, transport.sent.size)
         assertTrue((result as BlackPearlFlashResult.VerificationFailed).reason.contains("playback-gain"))
+        assertEquals(Int.MIN_VALUE, store.appliedRaw)
+
+        val sentBeforeBlockedAttempt = transport.sent.size
+        val blocked = flash(transport, store, profile(preamp = 0.0))
+        assertFalse(blocked is BlackPearlFlashResult.Success)
+        assertEquals(sentBeforeBlockedAttempt, transport.sent.size)
     }
 
     @Test
@@ -111,12 +123,14 @@ class BlackPearlFlasherTest {
             invalidateSessionAfterFlash = true,
         )
 
-        val result = flash(transport, FakeGainStore(), profile(preamp = 0.0))
+        val store = FakeGainStore()
+        val result = flash(transport, store, profile(preamp = 0.0))
 
         assertTrue(result is BlackPearlFlashResult.VerificationFailed)
         assertFalse(result is BlackPearlFlashResult.Success)
         assertEquals(12, transport.sent.size)
         assertTrue((result as BlackPearlFlashResult.VerificationFailed).reason.contains("session"))
+        assertEquals(Int.MIN_VALUE, store.appliedRaw)
     }
 
     @Test
@@ -320,9 +334,13 @@ class BlackPearlFlasherTest {
     private class FakeGainStore(
         var appliedRaw: Int = 0,
     ) : BlackPearlGainStateStore {
-        override fun readAppliedGainDeltaRaw(): Int = appliedRaw
+        override fun readAppliedGainDeltaRaw(): Int? = appliedRaw.takeUnless { it == Int.MIN_VALUE }
         override fun writeAppliedGainDeltaRaw(rawDelta: Int) {
             appliedRaw = rawDelta
+        }
+
+        override fun markAppliedGainDeltaUnknown() {
+            appliedRaw = Int.MIN_VALUE
         }
     }
 

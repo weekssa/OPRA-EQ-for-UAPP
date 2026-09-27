@@ -36,6 +36,8 @@ import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationStatus
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationTrace
 import com.weekssa.opraeqforuapp.ui.BlackPearlQualificationUiState
 import com.weekssa.opraeqforuapp.ui.FiioJa11DeviceUiState
+import com.weekssa.opraeqforuapp.ui.MyDacEditorApplyStatus
+import com.weekssa.opraeqforuapp.ui.MyDacEditorUiState
 import com.weekssa.opraeqforuapp.ui.components.DacEqResponseGraph
 import kotlinx.coroutines.launch
 
@@ -43,6 +45,7 @@ import kotlinx.coroutines.launch
 internal fun FiioJa11MyDacContent(
     connectionState: Kt02h20ConnectionState,
     hardwareEqState: HardwareEqSnapshotState,
+    editorState: MyDacEditorUiState,
     deviceState: FiioJa11DeviceUiState,
     onConnect: () -> Unit,
     onReadDeviceControls: () -> Unit,
@@ -51,6 +54,15 @@ internal fun FiioJa11MyDacContent(
     onSetHeadsetControl: (Boolean) -> Unit,
     onSetUacMode: (FiioJa11Protocol.UacMode) -> Unit,
     onResetEq: suspend () -> String,
+    onOpenEditor: () -> Unit,
+    onCloseEditor: () -> Unit,
+    onSelectBand: (Int) -> Unit,
+    onShowAllBands: () -> Unit,
+    onShowReview: () -> Unit,
+    onUpdateBand: (Int, com.weekssa.opraeqforuapp.domain.library.EqFilterType, Double, Double, Double) -> Unit,
+    onUseSafeGain: () -> Unit,
+    onResetEdits: () -> Unit,
+    onApply: (Boolean) -> Unit,
     operationTrace: FiioJa11OperationTrace? = null,
     operationStatus: FiioJa11OperationStatus = FiioJa11OperationStatus.Idle,
     onMessage: (String) -> Unit,
@@ -119,13 +131,52 @@ internal fun FiioJa11MyDacContent(
         }
 
         if (selectedTab == 0) {
-            FiioJa11EqStatus(
+            val operationBusy = operationStatus is FiioJa11OperationStatus.Running
+            val canEdit = fiioJa11EditActionEnabled(
+                connectionState = connectionState,
                 hardwareEqState = hardwareEqState,
                 deviceState = deviceState,
-                connected = connected,
-                onReset = { confirmReset = true },
                 operationStatus = operationStatus,
             )
+            if (operationBusy) {
+                fiioJa11OperationInProgressMessage(operationStatus)?.let { message ->
+                    Text(message, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            } else if (editorState.isOpening || editorState.isOpen || editorState.error != null) {
+                DacEqEditorScreen(
+                    state = editorState,
+                    onRetryOpen = onOpenEditor,
+                    onClose = onCloseEditor,
+                    onSelectBand = onSelectBand,
+                    onShowAllBands = onShowAllBands,
+                    onShowReview = onShowReview,
+                    onUpdateBand = onUpdateBand,
+                    onUseSafeGain = onUseSafeGain,
+                    onResetEdits = onResetEdits,
+                    onApply = onApply,
+                    dacLabel = "FiiO JA11 · User 1",
+                )
+            } else {
+                FiioJa11EqStatus(
+                    hardwareEqState = hardwareEqState,
+                    deviceState = deviceState,
+                    connected = connected,
+                    onEdit = onOpenEditor,
+                    canEdit = canEdit,
+                    onReset = { confirmReset = true },
+                    operationStatus = operationStatus,
+                )
+                if (editorState.applyStatus != MyDacEditorApplyStatus.IDLE) {
+                    Text(
+                        editorState.applyFailureReason ?: "FiiO JA11 EQ applied and verified.",
+                        color = if (editorState.applyFailureReason == null) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.error
+                        },
+                    )
+                }
+            }
         } else {
             CapabilityDrivenDeviceStatus(
                 deviceId = DacDeviceId.FIIO_JA11,
@@ -150,6 +201,8 @@ private fun FiioJa11EqStatus(
     hardwareEqState: HardwareEqSnapshotState,
     deviceState: FiioJa11DeviceUiState,
     connected: Boolean,
+    onEdit: () -> Unit,
+    canEdit: Boolean,
     onReset: () -> Unit,
     operationStatus: FiioJa11OperationStatus,
 ) {
@@ -217,6 +270,14 @@ private fun FiioJa11EqStatus(
         )
     }
 
+    if (program == FiioJa11Protocol.EqProgram.USER_1) {
+        Button(
+            onClick = onEdit,
+            enabled = canEdit,
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text("Edit EQ") }
+    }
+
     Button(
         onClick = onReset,
         enabled = connected &&
@@ -236,6 +297,29 @@ private fun FiioJa11EqStatus(
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 
+}
+
+internal fun fiioJa11EditActionEnabled(
+    connectionState: Kt02h20ConnectionState,
+    hardwareEqState: HardwareEqSnapshotState,
+    deviceState: FiioJa11DeviceUiState,
+    operationStatus: FiioJa11OperationStatus,
+): Boolean {
+    val deviceSnapshot = deviceState.snapshot ?: return false
+    val editableSnapshot = hardwareEqState.bundle?.snapshot ?: return false
+    return connectionState is Kt02h20ConnectionState.Connected &&
+        deviceState.isCurrentSession &&
+        deviceSnapshot.eqProgram == FiioJa11Protocol.EqProgram.USER_1 &&
+        editableSnapshot.sessionGeneration == deviceSnapshot.sessionGeneration &&
+        hardwareEqState.freshness == DacStateFreshness.CURRENT &&
+        !hardwareEqState.isReading &&
+        !hardwareEqState.readFailed &&
+        editableSnapshot.activeProgram == FiioJa11Protocol.EqProgram.USER_1 &&
+        editableSnapshot.filters.size == FiioJa11Protocol.BAND_COUNT &&
+        editableSnapshot.dedicatedEqPreampDb != null &&
+        !deviceState.isBusy &&
+        deviceState.pendingRestartWrite == null &&
+        operationStatus !is FiioJa11OperationStatus.Running
 }
 
 internal fun fiioJa11OperationInProgressMessage(

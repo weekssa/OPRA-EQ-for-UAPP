@@ -103,6 +103,30 @@ class MainActivity : ComponentActivity() {
         onUseSafeBlackPearlEditorGain = viewModel::useSafeBlackPearlEditorGain,
         onResetBlackPearlEditorLocalEdits = viewModel::resetBlackPearlEditorLocalEdits,
         onApplyBlackPearlEditor = viewModel::applyBlackPearlEditor,
+        onOpenFiioJa11Editor = viewModel::openFiioJa11Editor,
+        onBackFiioJa11Editor = viewModel::backFiioJa11Editor,
+        onCloseFiioJa11Editor = viewModel::closeFiioJa11Editor,
+        onSelectFiioJa11EditorBand = viewModel::selectFiioJa11EditorBand,
+        onShowFiioJa11EditorAllBands = viewModel::showFiioJa11EditorAllBands,
+        onShowFiioJa11EditorReview = viewModel::showFiioJa11EditorReview,
+        onUpdateFiioJa11EditorBand = { bandIndex, type, frequencyHz, gainDb, q ->
+            val normalized = normalizeHardwareEqUserInput(
+                spec = HardwareEqEditSpecs.FIIO_JA11,
+                frequencyHz = frequencyHz,
+                gainDb = gainDb,
+                q = q,
+            )
+            viewModel.updateFiioJa11EditorBand(
+                bandIndex = bandIndex,
+                type = type,
+                frequencyHz = normalized.frequencyHz,
+                gainDb = normalized.gainDb,
+                q = normalized.q,
+            )
+        },
+        onUseSafeFiioJa11EditorGain = viewModel::useSafeFiioJa11EditorGain,
+        onResetFiioJa11EditorLocalEdits = viewModel::resetFiioJa11EditorLocalEdits,
+        onApplyFiioJa11Editor = viewModel::applyFiioJa11Editor,
         onOpenEw300Editor = viewModel::openEw300Editor,
         onBackEw300Editor = viewModel::backEw300Editor,
         onCloseEw300Editor = viewModel::closeEw300Editor,

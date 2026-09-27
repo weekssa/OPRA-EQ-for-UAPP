@@ -129,6 +129,16 @@ fun EqLibraryApp(
     val onUseSafeBlackPearlEditorGain = actions.onUseSafeBlackPearlEditorGain
     val onResetBlackPearlEditorLocalEdits = actions.onResetBlackPearlEditorLocalEdits
     val onApplyBlackPearlEditor = actions.onApplyBlackPearlEditor
+    val onOpenFiioJa11Editor = actions.onOpenFiioJa11Editor
+    val onBackFiioJa11Editor = actions.onBackFiioJa11Editor
+    val onCloseFiioJa11Editor = actions.onCloseFiioJa11Editor
+    val onSelectFiioJa11EditorBand = actions.onSelectFiioJa11EditorBand
+    val onShowFiioJa11EditorAllBands = actions.onShowFiioJa11EditorAllBands
+    val onShowFiioJa11EditorReview = actions.onShowFiioJa11EditorReview
+    val onUpdateFiioJa11EditorBand = actions.onUpdateFiioJa11EditorBand
+    val onUseSafeFiioJa11EditorGain = actions.onUseSafeFiioJa11EditorGain
+    val onResetFiioJa11EditorLocalEdits = actions.onResetFiioJa11EditorLocalEdits
+    val onApplyFiioJa11Editor = actions.onApplyFiioJa11Editor
     val onOpenEw300Editor = actions.onOpenEw300Editor
     val onBackEw300Editor = actions.onBackEw300Editor
     val onCloseEw300Editor = actions.onCloseEw300Editor
@@ -745,7 +755,9 @@ fun EqLibraryApp(
         enabled = selectedDestination == EqLibraryDestination.Settings ||
             selectedDestination == EqLibraryDestination.MyDac,
     ) {
-        if (selectedDestination == EqLibraryDestination.MyDac && (onBackMyDacEditor() || onBackEw300Editor())) {
+        if (selectedDestination == EqLibraryDestination.MyDac &&
+            (onBackMyDacEditor() || onBackFiioJa11Editor() || onBackEw300Editor())
+        ) {
             return@BackHandler
         }
         onCloseMyDacEditor()
@@ -954,6 +966,7 @@ fun EqLibraryApp(
                         blackPearlSavedEqs = state.blackPearlSavedEqs,
                         blackPearlSavedGeneralEqs = state.blackPearlSavedGeneralEqs,
                         blackPearlEditorState = state.blackPearlEditorState,
+                        fiioJa11EditorState = state.fiioJa11EditorState,
                         ew300EditorState = state.ew300EditorState,
                         ew300OperationTrace = state.ew300OperationTrace,
                         ew300OperationStatus = state.ew300OperationStatus,
@@ -972,6 +985,16 @@ fun EqLibraryApp(
                         onUseSafeBlackPearlEditorGain = onUseSafeBlackPearlEditorGain,
                         onResetBlackPearlEditorLocalEdits = onResetBlackPearlEditorLocalEdits,
                         onApplyBlackPearlEditor = onApplyBlackPearlEditor,
+                        onOpenFiioJa11Editor = onOpenFiioJa11Editor,
+                        onBackFiioJa11Editor = onBackFiioJa11Editor,
+                        onCloseFiioJa11Editor = onCloseFiioJa11Editor,
+                        onSelectFiioJa11EditorBand = onSelectFiioJa11EditorBand,
+                        onShowFiioJa11EditorAllBands = onShowFiioJa11EditorAllBands,
+                        onShowFiioJa11EditorReview = onShowFiioJa11EditorReview,
+                        onUpdateFiioJa11EditorBand = onUpdateFiioJa11EditorBand,
+                        onUseSafeFiioJa11EditorGain = onUseSafeFiioJa11EditorGain,
+                        onResetFiioJa11EditorLocalEdits = onResetFiioJa11EditorLocalEdits,
+                        onApplyFiioJa11Editor = onApplyFiioJa11Editor,
                         onOpenEw300Editor = onOpenEw300Editor,
                         onBackEw300Editor = onBackEw300Editor,
                         onCloseEw300Editor = onCloseEw300Editor,

@@ -140,6 +140,10 @@
     <string name="my_dac_editor_no_changes">No local changes yet.</string>
     <string name="my_dac_editor_change_count">%1$d hardware value changes</string>
     <string name="my_dac_editor_review_title">Review changes</string>
+    <string name="my_dac_editor_review_target">Complete reviewed hardware target</string>
+    <string name="my_dac_editor_review_band">Band %1$d · %2$s · %3$.0f Hz · %4$+.2f dB · Q %5$.2f</string>
+    <string name="my_dac_editor_review_global_gain">Global EQ gain / safety adjustment · %1$+.2f dB</string>
+    <string name="my_dac_editor_review_apply_first_write">Opening, editing, and reviewing are local only. Apply is the first hardware write.</string>
     <string name="my_dac_editor_change_line">Band %1$d · %2$s · %3$s → %4$s</string>
     <string name="my_dac_editor_headroom_change">EQ safety adjustment · %1$+.2f → %2$+.2f dB</string>
     <string name="my_dac_editor_apply">Apply to DAC</string>

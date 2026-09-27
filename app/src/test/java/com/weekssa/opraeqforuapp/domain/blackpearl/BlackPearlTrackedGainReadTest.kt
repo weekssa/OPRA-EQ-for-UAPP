@@ -21,10 +21,14 @@ class BlackPearlTrackedGainReadTest {
     }
 
     private class FakeGainStore(var raw: Int) : BlackPearlGainStateStore {
-        override fun readAppliedGainDeltaRaw(): Int = raw
+        override fun readAppliedGainDeltaRaw(): Int? = raw.takeUnless { it == Int.MIN_VALUE }
 
         override fun writeAppliedGainDeltaRaw(rawDelta: Int) {
             raw = rawDelta
+        }
+
+        override fun markAppliedGainDeltaUnknown() {
+            raw = Int.MIN_VALUE
         }
     }
 

@@ -290,10 +290,14 @@ class BlackPearlEditorApplyTest {
     private class FakeGainStore(
         var appliedRaw: Int,
     ) : BlackPearlGainStateStore {
-        override fun readAppliedGainDeltaRaw(): Int = appliedRaw
+        override fun readAppliedGainDeltaRaw(): Int? = appliedRaw.takeUnless { it == Int.MIN_VALUE }
 
         override fun writeAppliedGainDeltaRaw(rawDelta: Int) {
             appliedRaw = rawDelta
+        }
+
+        override fun markAppliedGainDeltaUnknown() {
+            appliedRaw = Int.MIN_VALUE
         }
     }
 
