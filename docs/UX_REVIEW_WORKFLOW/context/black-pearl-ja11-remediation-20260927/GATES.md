@@ -38,15 +38,17 @@ Scope: Implement and verify only the named Black Pearl final-readback truth corr
   launch and `uiautomator dump` passed.
 
 - [x] G5: exact signed beta provenance is complete for the final source, or the trusted main-only signing boundary is recorded
-  EVIDENCE: BOUNDARY RECORDED; `.github/workflows/signed-beta.yml` still requires
-  `refs/heads/main`. The branch now exposes the additive `black-pearl-ja11` target alongside
-  `ja11`/`ew300`, but no signed branch candidate exists; status remains
-  `MERGE_APPROVAL_REQUIRED`. Ruby YAML parsing passed; `actionlint` was unavailable.
+  EVIDENCE: PASS; owner-approved merge `acaf4dd32ddd9379ec2860e45e34fb8039219583` and trusted
+  signed-beta run `#1371` produced `EQ-Library-v0.7.0-beta-acaf4dd.apk`, APK SHA-256
+  `af83a5e0148263057b1c43e3b775157ab6aedd9d2c1e3ab0558cef8fa3cea665`, signer SHA-256
+  `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`, artifact ID
+  `10937890771`, digest `sha256:88b1555e9a14642874110d05d5c5ae3554c25cc64b9385898a78287ccea9f52d`;
+  signed emulator install/cold launch passed.
 
 - [x] G6: mandatory independent read-only review finds no unresolved scoped defect or prohibited behavior
   EVIDENCE: PASS; review recorded in `04-final-review.md`; no protocol/transport/identity/retry/
   canonical-EQ/hardware mutation scope breach found.
 
 - [x] G7: owner Pixel 9 handoff is complete and hardware mutation remains owner-controlled
-  EVIDENCE: PASS as a prepared, non-actionable handoff in `05-release-handoff.md` and
-  `07-owner-usage-guide.md`; Pixel 9 is blocked until exact signed candidate provenance exists.
+  EVIDENCE: PASS as an actionable exact-candidate handoff in `05-release-handoff.md` and
+  `07-owner-usage-guide.md`; status is `READY_FOR_PIXEL_9`. Luna did not mutate hardware.

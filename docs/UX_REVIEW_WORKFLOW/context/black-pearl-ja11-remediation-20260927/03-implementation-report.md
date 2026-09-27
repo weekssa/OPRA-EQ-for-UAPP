@@ -1,8 +1,7 @@
 # Implementation report - Black Pearl and JA11 remediation
 
-Status: SOFTWARE_VERIFIED; release status remains
-`MERGE_APPROVAL_REQUIRED` because the trusted signed-beta workflow is main-only. Promotion
-preparation is complete on the existing branch; no main merge or signed candidate was performed.
+Status: `READY_FOR_PIXEL_9`. The owner-approved merge and trusted signed-beta workflow completed
+successfully. Physical qualification remains owner-controlled and has not been performed by Luna.
 
 ## Source and evidence identity
 
@@ -14,11 +13,12 @@ preparation is complete on the existing branch; no main merge or signed candidat
 - Final implementation source SHA: `dc6478a25b1745b4f78f833c69e96e066c615d56`
 - Promotion-preparation source SHA: `0f080516e8d4aa34e9d0a04b16464bf65b2b6d7d`
 - Reviewed implementation/workflow head: `0c77e081fd6abd12a6e20b482ce269ae9f5bb764`
-- Final documentation evidence head: `04a4a0ae2a4fd19371547970d58fab5e6036e97e` (documentation-only
-  commit atop the reviewed implementation/workflow head).
-- Draft review PR: [#49](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/49), exact head
-  `04a4a0ae2a4fd19371547970d58fab5e6036e97e`, base `0adcc8159a467790104cf2dc797f1279ef2c53ed`.
-  It remains intentionally open and draft; no merge was performed.
+- Final documentation evidence head before owner-approved merge: `3e8ff5d3f6cb750a627f76aba50f09645c0b41d3`
+  (documentation-only commits atop the reviewed implementation/workflow head).
+- Owner-approved merge commit on `main`: `acaf4dd32ddd9379ec2860e45e34fb8039219583`.
+- Review PR: [#49](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/49), exact head
+  `3e8ff5d3f6cb750a627f76aba50f09645c0b41d3`, base `0adcc8159a467790104cf2dc797f1279ef2c53ed`;
+  owner-approved and merged as `acaf4dd32ddd9379ec2860e45e34fb8039219583`.
 - Reference APK: available at the owner-supplied path; SHA-256
   `3d723ffa17042fbef7e6e192c14ecce460628d0f08a55eeb30caa59566ff8731`; package
   `com.weekssa.opraeqforuapp`, version `0.7.0` / code `7`; embedded source metadata
@@ -108,15 +108,16 @@ Commands were run in the isolated worktree with the checked-in wrapper tooling.
 - GitHub Actions `Automatic Dependency Submission (Gradle)` run `#2229`
   (`36333163159`) - PASS on exact source `7898378e20a610a4667e861220fef40c9d8ac751`.
 
-### Draft PR remote checks at final documentation evidence head `04a4a0ae2a4fd19371547970d58fab5e6036e97e`
+### PR #49 remote checks at final documentation evidence head `3e8ff5d3f6cb750a627f76aba50f09645c0b41d3`
 
 - Android CI run `#1874` (`36334738869`) - PASS: build, min-API smoke, and emulator UI test.
 - CodeQL run `#1758` (`36334738860`) - PASS: Analyze Kotlin.
 - Priority community coverage CI run `#1627` (`36334738871`) - PASS.
 - Catalog currentness CI run `#2142` (`36334738846`) - PASS.
 - Automatic Dependency Submission (Gradle) run `#2231` (`36334735111`) - PASS.
-- PR #49 remained draft, open, and mergeable after checks. The remote push warning reported 51
-  existing default-branch Dependabot findings; this worker did not reinterpret or suppress them.
+- PR #49 was mergeable after checks and was subsequently approved and merged by the owner. The
+  remote push warning reported 51 existing default-branch Dependabot findings; this worker did not
+  reinterpret or suppress them.
 
 ## Emulator and app smoke evidence
 
@@ -139,13 +140,25 @@ Commands were run in the isolated worktree with the checked-in wrapper tooling.
 ## Signed candidate provenance
 
 - Signed beta workflow: `.github/workflows/signed-beta.yml`.
-- Result: no signed candidate produced for this branch.
-- Exact boundary: job condition still requires `github.ref == 'refs/heads/main'`; the branch now
-  includes a `black-pearl-ja11` candidate input whose manifest names both software claims and the
-  prepared owner Pixel 9 handoff. The workflow has not run for this branch.
-- Therefore APK filename, signed APK SHA-256, signer certificate, workflow run, immutable artifact
-  ID/digest, and signed install evidence remain `NOT AVAILABLE` for this branch. No debug APK is
-  presented as a beta or physical-test candidate.
+- Result: PASS; trusted workflow run [#1371](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36336477287)
+  built and published the combined `black-pearl-ja11` candidate from exact source
+  `acaf4dd32ddd9379ec2860e45e34fb8039219583`.
+- APK: `EQ-Library-v0.7.0-beta-acaf4dd.apk`.
+- APK SHA-256: `af83a5e0148263057b1c43e3b775157ab6aedd9d2c1e3ab0558cef8fa3cea665`.
+- Package/version: `com.weekssa.opraeqforuapp`, version `0.7.0`, code `7`.
+- Signer certificate SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`,
+  matching the pinned `release-signing-cert.sha256`.
+- Immutable runtime artifact: ID `10937890771`; digest
+  `sha256:88b1555e9a14642874110d05d5c5ae3554c25cc64b9385898a78287ccea9f52d`.
+- Exact candidate URL:
+  `https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-acaf4dd.apk`.
+- Exact checksum URL:
+  `https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-acaf4dd.apk.sha256`.
+- Signed emulator evidence: `opra_signed_beta`, Android 35, x86_64; signed APK install succeeded
+  in 3172 ms, and cold launch returned `Status: ok`, `LaunchState: COLD`, activity
+  `com.weekssa.opraeqforuapp/.MainActivity`.
+- Candidate workflow job [108668179602](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36336477287/job/108668179602)
+  completed successfully in 10m 28s. No debug APK is presented as the physical-test candidate.
 
 ## Promotion-preparation validation
 
@@ -155,14 +168,11 @@ Commands were run in the isolated worktree with the checked-in wrapper tooling.
 - Ruby YAML parse of `.github/workflows/signed-beta.yml` - PASS.
 - `actionlint .github/workflows/signed-beta.yml` - NOT RUN; `actionlint` is not installed in this
   environment.
-- A signed workflow dispatch was NOT RUN because the job remains intentionally main-only and the
-  branch was not merged to `main`. The draft PR review checks were completed separately and do not
-  produce or imply a signed beta.
+- The owner-approved signed workflow dispatch completed as run `#1371` after merge to `main`; exact
+  candidate provenance is recorded in the signed-candidate section above.
 
 ## Hardware boundary
 
 Luna did not connect to, mutate, Flash, Apply, Reset, Save, Restore, or otherwise write any DAC.
-No physical result is claimed. The next owner-controlled intervention is to merge this reviewed
-branch into trusted `main`, if approved, then dispatch `signed-beta.yml` with
-`candidate_target=black-pearl-ja11`; Pixel 9 remains blocked until that exact signed artifact is
-verified.
+No physical result is claimed. The next owner-controlled intervention is the final exact-candidate
+Pixel 9 review using the provenance above.

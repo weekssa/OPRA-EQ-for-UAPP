@@ -31,5 +31,5 @@ in `05-release-handoff.md`.
 > release-readiness audit, changelog, and owner go/no-go package. Do not merge, publish, tag, or
 > make a public hardware-support claim without separate owner approval.
 
-Current pre-Pixel state: `MERGE_APPROVAL_REQUIRED`; no exact signed candidate exists for the
-remediation branch.
+Current pre-Pixel state: `READY_FOR_PIXEL_9`; exact signed candidate provenance is recorded in
+`05-release-handoff.md`. Await owner Pixel 9 evidence before classifying either DAC physically.

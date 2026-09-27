@@ -1,6 +1,6 @@
 # Release handoff - Black Pearl and JA11 remediation
 
-Status: `MERGE_APPROVAL_REQUIRED`
+Status: `READY_FOR_PIXEL_9`
 
 ## Current software handoff
 
@@ -10,10 +10,11 @@ Status: `MERGE_APPROVAL_REQUIRED`
 - Final implementation source SHA: `dc6478a25b1745b4f78f833c69e96e066c615d56`
 - Promotion-preparation source SHA: `0f080516e8d4aa34e9d0a04b16464bf65b2b6d7d`
 - Reviewed implementation/workflow head: `0c77e081fd6abd12a6e20b482ce269ae9f5bb764`
-- Final documentation evidence head: `04a4a0ae2a4fd19371547970d58fab5e6036e97e` (documentation-only
-  commit atop the reviewed implementation/workflow head).
-- Draft review PR: [#49](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/49), open and mergeable;
-  all required remote review checks passed on the final exact head. It was not merged.
+- Final documentation evidence head before owner-approved merge: `3e8ff5d3f6cb750a627f76aba50f09645c0b41d3`
+  (documentation-only commits atop the reviewed implementation/workflow head).
+- Owner-approved merge commit on `main`: `acaf4dd32ddd9379ec2860e45e34fb8039219583`.
+- Review PR: [#49](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/49), owner-approved and merged;
+  all required remote review checks passed on the final exact head.
 - Worktree: `/Users/stephenweeks/.codex/worktrees/black-pearl-ja11-remediation-20260927/OPRA-EQ-for-UAPP`
 - Black Pearl issue: software PASS; success remains final-readback verified and anti-stacking
   uncertainty is fail-closed.
@@ -23,35 +24,28 @@ Status: `MERGE_APPROVAL_REQUIRED`
   large-text launch, and UI hierarchy smoke: PASS.
 - Remote Android CI `#1874`, CodeQL `#1758`, priority-community `#1627`, catalog currentness
   `#2142`, and dependency submission `#2231`: PASS on the final documentation evidence head.
+- Signed beta workflow run [#1371](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36336477287):
+  PASS for `candidate_target=black-pearl-ja11` and exact source `acaf4dd32ddd9379ec2860e45e34fb8039219583`.
+- Candidate APK: `EQ-Library-v0.7.0-beta-acaf4dd.apk`; SHA-256
+  `af83a5e0148263057b1c43e3b775157ab6aedd9d2c1e3ab0558cef8fa3cea665`.
+- Package/version: `com.weekssa.opraeqforuapp`, `0.7.0` / code `7`.
+- Signer SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`.
+- Immutable artifact ID/digest: `10937890771` /
+  `sha256:88b1555e9a14642874110d05d5c5ae3554c25cc64b9385898a78287ccea9f52d`.
+- Exact candidate: `https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-acaf4dd.apk`.
+- Signed emulator install and cold launch: PASS; `Status: ok`, `LaunchState: COLD`.
 - Hardware: NOT RUN by Luna. No DAC was connected or mutated.
 
 ## Why this stops before Pixel 9
 
-The repository's trusted `.github/workflows/signed-beta.yml` job still has this exact condition:
-`github.ref == 'refs/heads/main'`. The branch now adds the truthful `black-pearl-ja11`
-`candidate_target`, with a combined capability profile, this handoff as the test plan, both
-software evidence IDs, and owner Pixel 9 hardware validation as outstanding. A branch debug APK is
-not a signed beta, and no signed artifact, signer tuple, workflow run, immutable artifact
-ID/digest, or exact signed install proof exists for this branch.
-
-The next owner-controlled boundary is:
-
-1. Review and merge this exact branch into trusted `main` if the owner approves the prepared
-   promotion; then dispatch the existing signed-beta workflow with
-   `candidate_target=black-pearl-ja11`.
-2. Verify the resulting exact source SHA, package/version, pinned signer, APK checksum, workflow
-   run, immutable artifact ID/digest, candidate manifest, clean install, and cold launch before
-   any Pixel 9 hardware session.
-
-No merge to `main`, signing request, tag, public release, public support claim, or hardware mutation
-was made by Luna. The workflow branch was prepared and the existing non-public publication path was
-not executed.
+The trusted main-only boundary has been satisfied by owner approval. The exact signed candidate and
+its provenance are now verified above. The remaining boundary is owner physical validation only.
+This handoff does not claim either issue physically fixed or publicly supported.
 
 ## Pixel 9 checklist after an exact signed candidate exists
 
-This checklist is prepared but not actionable from the current branch. After the signed workflow
-passes, use only the exact candidate APK and record every result against its source SHA, APK
-SHA-256, signer certificate, workflow run, and immutable artifact ID.
+This checklist is actionable for the owner. Use only the exact candidate APK and record every result
+against its source SHA, APK SHA-256, signer certificate, workflow run, and immutable artifact ID.
 
 ### Before connecting either DAC
 

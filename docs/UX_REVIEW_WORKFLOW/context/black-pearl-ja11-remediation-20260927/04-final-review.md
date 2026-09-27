@@ -1,8 +1,9 @@
 # Final review - Black Pearl and JA11 remediation
 
 Status: COMPLETE - independent read-only review passed against implementation/workflow head
-`0c77e081fd6abd12a6e20b482ce269ae9f5bb764` and its final documentation evidence head
-`04a4a0ae2a4fd19371547970d58fab5e6036e97e`; draft PR #49 remote checks also passed.
+`0c77e081fd6abd12a6e20b482ce269ae9f5bb764` and final documentation evidence head
+`3e8ff5d3f6cb750a627f76aba50f09645c0b41d3`; owner-approved merge and signed candidate provenance
+also passed.
 
 ## Review method
 
@@ -20,9 +21,12 @@ dispatch API, the primary worker performed a separate read-only review pass afte
 6. Re-read the refreshed `origin/main` merge and the signed-beta workflow diff; verified the new
    combined target is explicit, the manifest assertions require both named products, and the
    main-only signing guard and existing publication path remain unchanged.
-7. Inspected draft PR #49 and its final exact-head checks: Android CI `#1874`, CodeQL `#1758`,
+7. Inspected PR #49 and its final exact-head checks: Android CI `#1874`, CodeQL `#1758`,
    priority community `#1627`, catalog currentness `#2142`, and dependency submission `#2231` all
    completed successfully.
+8. Verified signed workflow run `#1371`, exact source `acaf4dd32ddd9379ec2860e45e34fb8039219583`,
+   APK checksum, pinned signer certificate, immutable artifact ID/digest, package/version, signed
+   emulator installation, and cold launch.
 
 This review is independent of the earlier focused implementation inspection and did not edit,
 commit, push, or invoke hardware during the review itself.
@@ -65,19 +69,21 @@ commit, push, or invoke hardware during the review itself.
 - Existing JA11 Flash/Reset, Black Pearl, EW300, shared editor, snapshot, operation-presentation,
   and shared My DAC tests: PASS in the complete suite.
 - API 36 instrumentation: PASS, 20 tests.
-- Draft PR #49 remote checks: PASS on final documentation evidence head; Android CI, CodeQL,
+- PR #49 remote checks: PASS on final documentation evidence head; Android CI, CodeQL,
   priority-community, catalog currentness, and dependency submission all completed successfully.
+- Trusted signed-beta run #1371: PASS; combined Black Pearl/JA11 candidate manifest and signed
+  artifact provenance verified.
 - No change to `BlackPearlProtocol`, `FiioJa11Protocol`, Android USB transport, identity matcher,
   endpoint, timing, retry policy, or signing behavior.
 - The only release-workflow change is the additive `black-pearl-ja11` candidate target and strict
   manifest branch. No signing secret, signer check, main-only guard, artifact publication boundary,
   or existing target was weakened. Ruby YAML parsing passed; `actionlint` was unavailable.
-- No hardware mutation, merge, tag, publication, or main push occurred.
+- No hardware mutation, tag, or public publication occurred. Owner approval authorized the merge to
+  `main` and the trusted signed-beta dispatch recorded in the implementation and release reports.
 
 ## Review conclusion
 
-No unresolved defect was found within the two authorized issues. Software and promotion preparation
-are verified on the branch. The release remains `MERGE_APPROVAL_REQUIRED` solely because the
-trusted signed-candidate job is main-only; the branch now has a truthful combined manifest target,
-but no main merge or signed run has occurred. This is an owner-controlled release boundary, not a
-software test failure.
+No unresolved defect was found within the two authorized issues. Software, owner-approved main
+integration, and exact signed candidate provenance are verified. The handoff is now
+`READY_FOR_PIXEL_9`; this is an owner physical-validation state, not a physical-fix or public-support
+claim.
