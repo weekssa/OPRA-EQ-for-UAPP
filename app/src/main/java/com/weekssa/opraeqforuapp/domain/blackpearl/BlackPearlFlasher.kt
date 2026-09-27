@@ -21,6 +21,7 @@ sealed interface BlackPearlFlashResult {
     data class NotRepresentable(val reason: String) : BlackPearlFlashResult
     data class DeviceUnavailable(val reason: String) : BlackPearlFlashResult
     data class TransferFailed(val reason: String) : BlackPearlFlashResult
+    data class VerificationFailed(val reason: String) : BlackPearlFlashResult
 }
 
 sealed interface BlackPearlFlatResetResult {
@@ -57,7 +58,11 @@ class BlackPearlFlasher(
         isSessionCurrent = isSessionCurrent,
     )
 
-    suspend fun flash(profile: OpraEqProfile): BlackPearlFlashResult {
+    suspend fun flash(
+        profile: OpraEqProfile,
+        expectedSessionGeneration: Long,
+        isSessionCurrent: (Long) -> Boolean,
+    ): BlackPearlFlashResult {
         val activeSlot = transport.readActiveSlot()
             ?: return BlackPearlFlashResult.DeviceUnavailable(
                 "Couldn’t read the Black Pearl active EQ slot. Reconnect the DAC and try again.",
@@ -82,7 +87,20 @@ class BlackPearlFlasher(
             )
         }
 
+        val expectedBands = expectedNativeBands(plan, activeSlot)
+            ?: return BlackPearlFlashResult.VerificationFailed(
+                "The planned Black Pearl EQ could not be decoded for final hardware verification.",
+            )
+        if (!isSessionCurrent(expectedSessionGeneration)) {
+            return BlackPearlFlashResult.VerificationFailed(
+                "The Black Pearl USB session changed before Flash began. Read the DAC again before any later write.",
+            )
+        }
+
         if (targetGainRaw != currentGainRaw) {
+            if (!isSessionCurrent(expectedSessionGeneration)) {
+                return sessionChangedDuringFlash()
+            }
             if (!transport.sendReport(BlackPearlProtocol.writeGlobalGainReport(targetGainRaw))) {
                 return BlackPearlFlashResult.TransferFailed(
                     "Black Pearl did not accept the required playback-gain adjustment. No EQ bands were written.",
@@ -94,18 +112,90 @@ class BlackPearlFlasher(
         gainStateStore.writeAppliedGainDeltaRaw(requestedDeltaRaw)
 
         plan.reports.forEachIndexed { index, report ->
+            if (!isSessionCurrent(expectedSessionGeneration)) {
+                return sessionChangedDuringFlash()
+            }
             if (!transport.sendReport(report)) {
                 return BlackPearlFlashResult.TransferFailed(
                     "Black Pearl stopped accepting EQ data during Flash at step ${index + 1} of ${plan.reports.size}. The playback-gain state is retained so a retry will not apply it twice.",
                 )
             }
         }
+
+        if (!isSessionCurrent(expectedSessionGeneration)) {
+            return sessionChangedDuringFlash()
+        }
+        val actualBands = buildList {
+            repeat(BlackPearlProtocol.BAND_COUNT) { index ->
+                add(
+                    transport.readNativeBand(index)
+                        ?: return BlackPearlFlashResult.VerificationFailed(
+                            "Final Black Pearl EQ readback was unavailable at band ${index + 1}.",
+                        ),
+                )
+            }
+        }
+        if (!isSessionCurrent(expectedSessionGeneration)) {
+            return sessionChangedDuringFlash()
+        }
+        expectedBands.zip(actualBands).forEachIndexed { index, (expected, actual) ->
+            nativeBandMismatchReason(expected, actual)?.let { mismatch ->
+                return BlackPearlFlashResult.VerificationFailed(
+                    "Final Black Pearl EQ readback mismatch at band ${index + 1}: $mismatch.",
+                )
+            }
+        }
+
+        val finalGainRaw = transport.readGlobalGainRaw()
+            ?: return BlackPearlFlashResult.VerificationFailed(
+                "Final Black Pearl playback-gain readback was unavailable.",
+            )
+        if (!isSessionCurrent(expectedSessionGeneration)) {
+            return sessionChangedDuringFlash()
+        }
+        if (finalGainRaw != targetGainRaw) {
+            return BlackPearlFlashResult.VerificationFailed(
+                "Final Black Pearl playback-gain readback did not match: expected raw $targetGainRaw, actual raw $finalGainRaw.",
+            )
+        }
+
         return BlackPearlFlashResult.Success(
             fidelity = plan.fidelity,
             appliedPlaybackGainDb = BlackPearlProtocol.rawDeltaToGainDb(requestedDeltaRaw),
             warning = plan.warning,
         )
     }
+
+    private fun expectedNativeBands(
+        plan: BlackPearlFlashPlan.Ready,
+        activeSlot: Byte,
+    ): List<BlackPearlReadCodec.NativeBand>? {
+        if (plan.reports.size < BlackPearlProtocol.BAND_COUNT) return null
+        return plan.reports
+            .take(BlackPearlProtocol.BAND_COUNT)
+            .map { report -> BlackPearlReadCodec.bandFromWriteReport(report) ?: return null }
+            .takeIf { bands -> bands.all { it.activeSlot == (activeSlot.toInt() and 0xFF) } }
+    }
+
+    private fun nativeBandMismatchReason(
+        expected: BlackPearlReadCodec.NativeBand,
+        actual: BlackPearlReadCodec.NativeBand,
+    ): String? = when {
+        expected.index != actual.index -> "index expected ${expected.index} actual ${actual.index}"
+        expected.activeSlot != actual.activeSlot -> "active slot expected ${expected.activeSlot} actual ${actual.activeSlot}"
+        expected.type != actual.type -> "filter type expected ${expected.type} actual ${actual.type}"
+        expected.frequencyRawHz != actual.frequencyRawHz ->
+            "frequency raw expected ${expected.frequencyRawHz} actual ${actual.frequencyRawHz}"
+        expected.gainRaw256 != actual.gainRaw256 ->
+            "gain raw expected ${expected.gainRaw256} actual ${actual.gainRaw256}"
+        expected.qRaw256 != actual.qRaw256 -> "Q raw expected ${expected.qRaw256} actual ${actual.qRaw256}"
+        else -> null
+    }
+
+    private fun sessionChangedDuringFlash(): BlackPearlFlashResult.VerificationFailed =
+        BlackPearlFlashResult.VerificationFailed(
+            "The Black Pearl USB session changed during Flash. Final hardware state is uncertain; reconnect and read the DAC before any later write.",
+        )
 
     suspend fun resetToFlat(): BlackPearlFlatResetResult {
         val activeSlot = transport.readActiveSlot()

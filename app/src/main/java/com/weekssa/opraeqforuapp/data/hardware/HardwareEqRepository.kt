@@ -187,7 +187,11 @@ class HardwareEqRepository(
         mutableBlackPearlSnapshotState.update { it.markStale() }
         return try {
             dacSessionRepository.withExclusiveBlackPearlOperation {
-                blackPearlFlasher.flash(profile)
+                blackPearlFlasher.flash(
+                    profile = profile,
+                    expectedSessionGeneration = dacSessionRepository.blackPearlTransport.sessionGeneration,
+                    isSessionCurrent = dacSessionRepository::isBlackPearlSessionCurrent,
+                )
             }
         } finally {
             scheduleBlackPearlSnapshotRefresh()
