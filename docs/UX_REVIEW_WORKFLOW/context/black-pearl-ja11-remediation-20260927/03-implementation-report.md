@@ -89,6 +89,16 @@ Commands were run in the isolated worktree with the checked-in wrapper tooling.
 - Deterministic fake transports - PASS through the focused/full unit suite; no USB hardware transport was invoked.
 - Release/R8/security/CodeQL/remote CI - NOT RUN locally where not available; no claim is made from their absence.
 
+### Promotion-preparation rerun at source/workflow tree `fc72d7d5be82da64c55d299535d24478c9af46ac`
+
+- `node /Users/stephenweeks/.agents/skills/unlazy/scripts/gate-check.mjs --reverify docs/UX_REVIEW_WORKFLOW/context/black-pearl-ja11-remediation-20260927/GATES.md` - PASS; G0-G4 reran and passed, G5-G7 remained satisfied by the recorded manual review/handoff evidence.
+- `./tools/codex-android :app:testDebugUnitTest` - PASS; build was up to date on the refreshed source.
+- `./tools/codex-android :app:lintDebug :app:assembleDebug` - PASS.
+- `./tools/codex-android :app:assembleRelease` - PASS; minified release/R8 path completed with existing warnings only.
+- `bash tools/verify-r8-mapping.sh app/build/outputs/mapping/release/mapping.txt` - PASS; application class renaming was verified.
+- `./tools/codex-android :app:connectedDebugAndroidTest` - PASS; `codex-api36(AVD)`, 20/20 tests, 0 skipped, 0 failed.
+- `.github/workflows/signed-beta.yml` Ruby YAML parse - PASS; `actionlint` - NOT RUN because it is not installed.
+
 ## Emulator and app smoke evidence
 
 - AVD: `codex-api36`; device serial: `emulator-5554`; API level: `36`; model: `sdk_gphone64_arm64`.

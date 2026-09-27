@@ -27,13 +27,13 @@ Scope: Implement and verify only the named Black Pearl final-readback truth corr
   CHECK: ./tools/codex-android :app:lintDebug :app:assembleDebug && printf 'LINT_ASSEMBLE_PASS\n'
   EXPECT: LINT_ASSEMBLE_PASS
   CWD: ../../../../
-  EVIDENCE: automatic-evidence=v1; definition-sha256=2897a109bd9ae26bc6fe38b497ec2a418f96b3174969868c2c4b2adcc10c4471; exit=0; EXPECT=matched; output-sha256=a832437d5323fa0193de9aae4f264400d49755940d0441af8a98ffb2e9ec33c2; output-bytes=2786; shell=/bin/sh; cwd=/Users/stephenweeks/.codex/worktrees/black-pearl-ja11-remediation-20260927/OPRA-EQ-for-UAPP; path=60a9ac3e3e95/16 entries
+  EVIDENCE: automatic-evidence=v1; definition-sha256=2897a109bd9ae26bc6fe38b497ec2a418f96b3174969868c2c4b2adcc10c4471; exit=0; EXPECT=matched; output-sha256=602e478e63a3e5a6b4736ce8e9753b508fcf6501f25d92981337e4f2302dd9b1; output-bytes=2786; shell=/bin/sh; cwd=/Users/stephenweeks/.codex/worktrees/black-pearl-ja11-remediation-20260927/OPRA-EQ-for-UAPP; path=60a9ac3e3e95/16 entries
 
 - [x] G4: clean API 36 emulator instrumentation passes, or the prescribed unavailable boundary is recorded
   CHECK: ./tools/codex-android :app:connectedDebugAndroidTest && printf 'EMULATOR_INSTRUMENTATION_PASS\n'
   EXPECT: EMULATOR_INSTRUMENTATION_PASS
   CWD: ../../../../
-  EVIDENCE: automatic-evidence=v1; definition-sha256=80cf7db05a5e254dc8b13b99a0cdee5845815564a64475d968c145386364af79; exit=0; EXPECT=matched; output-sha256=f541d63081e601a19bdb78890c8205475e969fb0de1cebd3254aacd00c768efb; output-bytes=4357; shell=/bin/sh; cwd=/Users/stephenweeks/.codex/worktrees/black-pearl-ja11-remediation-20260927/OPRA-EQ-for-UAPP; path=60a9ac3e3e95/16 entries
+  EVIDENCE: automatic-evidence=v1; definition-sha256=80cf7db05a5e254dc8b13b99a0cdee5845815564a64475d968c145386364af79; exit=0; EXPECT=matched; output-sha256=3b522b174be4d5fb0fae95fbda6d320dfcacea44d8752624d49fdfee6810dbc2; output-bytes=4357; shell=/bin/sh; cwd=/Users/stephenweeks/.codex/worktrees/black-pearl-ja11-remediation-20260927/OPRA-EQ-for-UAPP; path=60a9ac3e3e95/16 entries
   `EMULATOR_INSTRUMENTATION_PASS`. Non-`-r` debug install and cold launch also passed; large-text
   launch and `uiautomator dump` passed.
 
