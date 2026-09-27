@@ -13,9 +13,11 @@ preparation is complete on the existing branch; no main merge or signed candidat
 - Worktree: `/Users/stephenweeks/.codex/worktrees/black-pearl-ja11-remediation-20260927/OPRA-EQ-for-UAPP`
 - Final implementation source SHA: `dc6478a25b1745b4f78f833c69e96e066c615d56`
 - Promotion-preparation source SHA: `0f080516e8d4aa34e9d0a04b16464bf65b2b6d7d`
-- Reviewed branch head: `0c77e081fd6abd12a6e20b482ce269ae9f5bb764`
+- Reviewed implementation/workflow head: `0c77e081fd6abd12a6e20b482ce269ae9f5bb764`
+- Final documentation evidence head: `04a4a0ae2a4fd19371547970d58fab5e6036e97e` (documentation-only
+  commit atop the reviewed implementation/workflow head).
 - Draft review PR: [#49](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/49), exact head
-  `0c77e081fd6abd12a6e20b482ce269ae9f5bb764`, base `0adcc8159a467790104cf2dc797f1279ef2c53ed`.
+  `04a4a0ae2a4fd19371547970d58fab5e6036e97e`, base `0adcc8159a467790104cf2dc797f1279ef2c53ed`.
   It remains intentionally open and draft; no merge was performed.
 - Reference APK: available at the owner-supplied path; SHA-256
   `3d723ffa17042fbef7e6e192c14ecce460628d0f08a55eeb30caa59566ff8731`; package
@@ -106,13 +108,13 @@ Commands were run in the isolated worktree with the checked-in wrapper tooling.
 - GitHub Actions `Automatic Dependency Submission (Gradle)` run `#2229`
   (`36333163159`) - PASS on exact source `7898378e20a610a4667e861220fef40c9d8ac751`.
 
-### Draft PR remote checks at reviewed branch head `0c77e081fd6abd12a6e20b482ce269ae9f5bb764`
+### Draft PR remote checks at final documentation evidence head `04a4a0ae2a4fd19371547970d58fab5e6036e97e`
 
-- Android CI run `#1873` (`36334128762`) - PASS: build, min-API smoke, and emulator UI test.
-- CodeQL run `#1757` (`36334128766`) - PASS: Analyze Kotlin.
-- Priority community coverage CI run `#1626` (`36334128753`) - PASS.
-- Catalog currentness CI run `#2141` (`36334128743`) - PASS.
-- Automatic Dependency Submission (Gradle) run `#2230` (`36333230721`) - PASS.
+- Android CI run `#1874` (`36334738869`) - PASS: build, min-API smoke, and emulator UI test.
+- CodeQL run `#1758` (`36334738860`) - PASS: Analyze Kotlin.
+- Priority community coverage CI run `#1627` (`36334738871`) - PASS.
+- Catalog currentness CI run `#2142` (`36334738846`) - PASS.
+- Automatic Dependency Submission (Gradle) run `#2231` (`36334735111`) - PASS.
 - PR #49 remained draft, open, and mergeable after checks. The remote push warning reported 51
   existing default-branch Dependabot findings; this worker did not reinterpret or suppress them.
 
