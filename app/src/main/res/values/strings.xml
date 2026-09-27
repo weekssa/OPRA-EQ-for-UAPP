@@ -187,8 +187,8 @@
     <string name="error_select_black_pearl_flash">Select Black Pearl as the active output before using direct Flash.</string>
     <string name="error_enable_black_pearl_flash">Enable direct Flash in Settings → Black Pearl before flashing.</string>
     <string name="error_connect_black_pearl_flash">Connect to the Black Pearl from My EQs before flashing.</string>
-    <string name="black_pearl_flash_success">Flash successful · Black Pearl EQ was written · playback gain %1$+.2f dB</string>
-    <string name="black_pearl_flash_success_warning">Flash successful · Black Pearl EQ was written · playback gain %1$+.2f dB · %2$s</string>
+    <string name="black_pearl_flash_success">Flash successful · TRN Black Pearl EQ was saved and verified · Final hardware readback matched. Playback-gain adjustment: %1$+.2f dB.</string>
+    <string name="black_pearl_flash_success_warning">Flash successful · TRN Black Pearl EQ was saved and verified · Final hardware readback matched. Playback-gain adjustment: %1$+.2f dB. %2$s</string>
     <string name="black_pearl_not_flashable">Not flashable · %1$s</string>
 
     <string name="error_enable_fiio_flash">Enable direct Flash in Settings → FiiO JA11 before flashing.</string>

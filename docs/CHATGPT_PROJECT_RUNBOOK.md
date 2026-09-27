@@ -76,6 +76,18 @@ Do not commit credentials, signing secrets, tokens, passwords, or private keys.
 - Prefer clear UI/domain/data/platform boundaries, Room, Preferences DataStore, WorkManager, and Android's Storage Access Framework
 - Do not bundle Python in the APK
 
+## Local development build tooling
+
+The repository includes a checked-in Gradle Wrapper for reproducible local and Codex builds. Use `./gradlew` on macOS/Linux or `gradlew.bat` on Windows; no globally installed Gradle is required. The wrapper is pinned to Gradle `9.4.1` for the repository's Android Gradle Plugin `9.2.0` setup. Keep the wrapper scripts and `gradle/wrapper/` files in version control, but never commit downloaded Gradle distributions or caches.
+
+Android SDK discovery is machine-local: configure `ANDROID_HOME`/`ANDROID_SDK_ROOT` or the ignored `local.properties` file's `sdk.dir`. Do not commit a user-specific SDK path. This project currently compiles against API 36 and Build Tools 36.0.0.
+
+The first wrapper invocation may download and cache Gradle locally. Common development checks are `./gradlew :app:testDebugUnitTest`, `./gradlew lintDebug`, and `./gradlew assembleDebug`. Use the smallest relevant check during iteration, then run the complete applicable gates on a coherent candidate head.
+
+For Codex on macOS, prefer `./tools/codex-android <Gradle task or Android command>`. The helper selects the local JDK/SDK, exposes `adb`, `android`, `avdmanager`, and `emulator`, and routes Gradle/Android user caches to writable temporary locations. Examples are `./tools/codex-android :app:testDebugUnitTest`, `./tools/codex-android adb devices`, and `./tools/codex-android emulator -list-avds`. Instrumented/emulator gates remain `NOT RUN` unless an emulator or physical device actually executes them.
+
+Codex skill routing uses the installed global `android-skills:android-dev` baseline plus the narrow Android skills relevant to the task: `android-skills:android-testing`, `android-skills:android-debugging`, `android-skills:compose`, `android-skills:android-ux`, `android-skills:kotlin-coroutines`, `android-skills:kotlin-flows`, `android-skills:android-gradle-logic`, `android-skills:android-source-search`, and `android-skills:modularization`. The Android CLI-managed project skills currently installed under `.agents/skills/` are `android-cli`, `testing-setup`, `android-profiler`, `r8-analyzer`, `android-permissions-security`, `android-intent-security`, `adaptive`, and `edge-to-edge`; repository-local DAC skills remain authoritative for protocol, transaction, physical-validation, and release-readiness work.
+
 The app ships with **zero bundled headphones/EQs**. End users need no login, cloud backend, analytics, telemetry, ChatGPT, GitHub account, or Google Drive account. Selections/preferences/generated state remain local.
 
 Normal runtime network use is limited to validated catalog acquisition/currentness and public app-release metadata/update links. Do not scrape GitHub/forums during normal Android operation and do not download OPRA artwork by default in v1.

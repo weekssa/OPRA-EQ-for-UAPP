@@ -52,9 +52,16 @@ internal fun flashDeviceLabel(device: ExportDevice): String = when (device) {
 internal fun blackPearlFlashFeedback(result: BlackPearlFlashResult): FlashFeedback = when (result) {
     is BlackPearlFlashResult.Success -> FlashFeedback(
         deviceLabel = flashDeviceLabel(ExportDevice.BLACK_PEARL),
-        phase = FlashFeedbackPhase.SENT,
-        detail = "EQ reports sent. Final hardware state was not read back." +
+        phase = FlashFeedbackPhase.COMPLETED,
+        verified = true,
+        detail = "Flash successful · TRN Black Pearl EQ was saved and verified · Final hardware readback matched." +
             (result.warning?.let { " $it" } ?: ""),
+    )
+    is BlackPearlFlashResult.VerificationFailed -> FlashFeedback(
+        deviceLabel = flashDeviceLabel(ExportDevice.BLACK_PEARL),
+        phase = FlashFeedbackPhase.UNCERTAIN,
+        detail = "TRN Black Pearl Flash was not verified. Final hardware readback did not confirm the requested EQ. " +
+            "Stop and reconnect or refresh before any later write. ${result.reason}",
     )
     is BlackPearlFlashResult.NotRepresentable -> FlashFeedback(
         deviceLabel = flashDeviceLabel(ExportDevice.BLACK_PEARL),

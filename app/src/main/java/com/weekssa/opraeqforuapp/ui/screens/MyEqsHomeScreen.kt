@@ -783,7 +783,7 @@ private fun hardwareDeviceTitle(device: ExportDevice): String = when (device) {
 }
 
 internal fun hardwareFlashStartedMessage(device: ExportDevice): String =
-    "Flashing ${hardwareDeviceTitle(device)}… Keep it connected while the final hardware state is verified."
+    "Flashing ${if (device == ExportDevice.BLACK_PEARL) "TRN Black Pearl" else hardwareDeviceTitle(device)}… Keep it connected while the final hardware state is verified."
 
 private fun newEqAttentionText(headphone: ManagedHeadphoneRecord): String? {
     if (!headphone.autoIncludeNewProfiles) return null

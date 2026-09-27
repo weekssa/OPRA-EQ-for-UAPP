@@ -78,6 +78,7 @@ import com.weekssa.opraeqforuapp.domain.library.SavedEqHeadphoneAssociation
 import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
 import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
+import com.weekssa.opraeqforuapp.ui.screens.blackPearlFlashPresentation
 import com.weekssa.opraeqforuapp.domain.settings.AppPreferences
 import com.weekssa.opraeqforuapp.domain.settings.OutputBehavior
 import com.weekssa.opraeqforuapp.domain.settings.ThemeMode
@@ -1589,14 +1590,8 @@ class EqLibraryViewModel(
         return blackPearlFlashResultMessage(flashBlackPearlAndRefresh(profile))
     }
 
-    private fun blackPearlFlashResultMessage(result: BlackPearlFlashResult): UiText = when (result) {
-        is BlackPearlFlashResult.Success -> result.warning?.let { warning ->
-            resource(R.string.black_pearl_flash_success_warning, result.appliedPlaybackGainDb, warning)
-        } ?: resource(R.string.black_pearl_flash_success, result.appliedPlaybackGainDb)
-        is BlackPearlFlashResult.NotRepresentable -> resource(R.string.black_pearl_not_flashable, result.reason)
-        is BlackPearlFlashResult.DeviceUnavailable -> UiText.Dynamic(result.reason)
-        is BlackPearlFlashResult.TransferFailed -> UiText.Dynamic(result.reason)
-    }
+    private fun blackPearlFlashResultMessage(result: BlackPearlFlashResult): UiText =
+        UiText.Dynamic(blackPearlFlashPresentation(result).message)
 
     private fun blackPearlResetResultMessage(result: BlackPearlFlatResetResult): UiText = when (result) {
         is BlackPearlFlatResetResult.Success -> {
