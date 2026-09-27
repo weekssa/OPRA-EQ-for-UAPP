@@ -98,7 +98,7 @@ Commands were run in the isolated worktree with the checked-in wrapper tooling.
 - The two pre-install uninstall attempts returned `DELETE_FAILED_INTERNAL_ERROR`; the non-`-r`
   install then succeeded and no signature-conflicting package blocked installation. This was a
   disposable emulator only.
-- Debug APK SHA-256 observed during smoke: `1bb0136bac7bf6d6807a37cf358b11a5e4515cca179923cf71a9a257bfb74e93`.
+- Debug APK SHA-256 observed from the final gate-run assembly: `24785132fe18e7fd9b92a5a197b07175569c96b6eea768f7e79c73f6b24a9e45`.
   It is an unsigned/debug development artifact, not the signed beta candidate.
 
 ## Signed candidate provenance
