@@ -9,6 +9,9 @@ Status: `MERGE_APPROVAL_REQUIRED`
 - Refreshed live base: `origin/main` `0adcc8159a467790104cf2dc797f1279ef2c53ed`
 - Final implementation source SHA: `dc6478a25b1745b4f78f833c69e96e066c615d56`
 - Promotion-preparation source SHA: `0f080516e8d4aa34e9d0a04b16464bf65b2b6d7d`
+- Reviewed branch head: `0c77e081fd6abd12a6e20b482ce269ae9f5bb764`
+- Draft review PR: [#49](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/49), open and mergeable;
+  all required remote review checks passed on the exact head. It was not merged.
 - Worktree: `/Users/stephenweeks/.codex/worktrees/black-pearl-ja11-remediation-20260927/OPRA-EQ-for-UAPP`
 - Black Pearl issue: software PASS; success remains final-readback verified and anti-stacking
   uncertainty is fail-closed.
@@ -16,6 +19,8 @@ Status: `MERGE_APPROVAL_REQUIRED`
   one-Save/final-readback result.
 - Focused/full unit tests, lint, debug assembly, API 36 instrumentation, clean install/cold launch,
   large-text launch, and UI hierarchy smoke: PASS.
+- Remote Android CI `#1873`, CodeQL `#1757`, priority-community `#1626`, catalog currentness
+  `#2141`, and dependency submission `#2230`: PASS on the exact reviewed head.
 - Hardware: NOT RUN by Luna. No DAC was connected or mutated.
 
 ## Why this stops before Pixel 9

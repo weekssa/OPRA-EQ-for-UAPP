@@ -13,6 +13,10 @@ preparation is complete on the existing branch; no main merge or signed candidat
 - Worktree: `/Users/stephenweeks/.codex/worktrees/black-pearl-ja11-remediation-20260927/OPRA-EQ-for-UAPP`
 - Final implementation source SHA: `dc6478a25b1745b4f78f833c69e96e066c615d56`
 - Promotion-preparation source SHA: `0f080516e8d4aa34e9d0a04b16464bf65b2b6d7d`
+- Reviewed branch head: `0c77e081fd6abd12a6e20b482ce269ae9f5bb764`
+- Draft review PR: [#49](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/49), exact head
+  `0c77e081fd6abd12a6e20b482ce269ae9f5bb764`, base `0adcc8159a467790104cf2dc797f1279ef2c53ed`.
+  It remains intentionally open and draft; no merge was performed.
 - Reference APK: available at the owner-supplied path; SHA-256
   `3d723ffa17042fbef7e6e192c14ecce460628d0f08a55eeb30caa59566ff8731`; package
   `com.weekssa.opraeqforuapp`, version `0.7.0` / code `7`; embedded source metadata
@@ -87,7 +91,8 @@ Commands were run in the isolated worktree with the checked-in wrapper tooling.
 - `./tools/codex-android :app:connectedDebugAndroidTest` - PASS, `EMULATOR_INSTRUMENTATION_PASS`; 20 tests on `codex-api36(AVD)`.
 - `git diff --check` - PASS.
 - Deterministic fake transports - PASS through the focused/full unit suite; no USB hardware transport was invoked.
-- Release/R8/security/CodeQL/remote CI - NOT RUN locally where not available; no claim is made from their absence.
+- Release/R8/security/CodeQL/remote CI - local security/CodeQL tooling was unavailable, but the
+  exact branch head completed the remote release and analysis checks recorded below.
 
 ### Promotion-preparation rerun at source/workflow tree `fc72d7d5be82da64c55d299535d24478c9af46ac`
 
@@ -100,10 +105,16 @@ Commands were run in the isolated worktree with the checked-in wrapper tooling.
 - `.github/workflows/signed-beta.yml` Ruby YAML parse - PASS; `actionlint` - NOT RUN because it is not installed.
 - GitHub Actions `Automatic Dependency Submission (Gradle)` run `#2229`
   (`36333163159`) - PASS on exact source `7898378e20a610a4667e861220fef40c9d8ac751`.
-- GitHub Actions Android CI and CodeQL were NOT RUN for this branch: their maintained triggers are
-  pull request or trusted `main`, and no pull request was created by this worker (`gh` is not
-  installed). The remote push warning reported 51 existing default-branch Dependabot findings;
-  this worker did not reinterpret or suppress them.
+
+### Draft PR remote checks at reviewed branch head `0c77e081fd6abd12a6e20b482ce269ae9f5bb764`
+
+- Android CI run `#1873` (`36334128762`) - PASS: build, min-API smoke, and emulator UI test.
+- CodeQL run `#1757` (`36334128766`) - PASS: Analyze Kotlin.
+- Priority community coverage CI run `#1626` (`36334128753`) - PASS.
+- Catalog currentness CI run `#2141` (`36334128743`) - PASS.
+- Automatic Dependency Submission (Gradle) run `#2230` (`36333230721`) - PASS.
+- PR #49 remained draft, open, and mergeable after checks. The remote push warning reported 51
+  existing default-branch Dependabot findings; this worker did not reinterpret or suppress them.
 
 ## Emulator and app smoke evidence
 
@@ -143,7 +154,8 @@ Commands were run in the isolated worktree with the checked-in wrapper tooling.
 - `actionlint .github/workflows/signed-beta.yml` - NOT RUN; `actionlint` is not installed in this
   environment.
 - A signed workflow dispatch was NOT RUN because the job remains intentionally main-only and the
-  branch was not merged to `main`.
+  branch was not merged to `main`. The draft PR review checks were completed separately and do not
+  produce or imply a signed beta.
 
 ## Hardware boundary
 
