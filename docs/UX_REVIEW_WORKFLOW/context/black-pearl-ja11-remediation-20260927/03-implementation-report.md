@@ -98,6 +98,12 @@ Commands were run in the isolated worktree with the checked-in wrapper tooling.
 - `bash tools/verify-r8-mapping.sh app/build/outputs/mapping/release/mapping.txt` - PASS; application class renaming was verified.
 - `./tools/codex-android :app:connectedDebugAndroidTest` - PASS; `codex-api36(AVD)`, 20/20 tests, 0 skipped, 0 failed.
 - `.github/workflows/signed-beta.yml` Ruby YAML parse - PASS; `actionlint` - NOT RUN because it is not installed.
+- GitHub Actions `Automatic Dependency Submission (Gradle)` run `#2229`
+  (`36333163159`) - PASS on exact source `7898378e20a610a4667e861220fef40c9d8ac751`.
+- GitHub Actions Android CI and CodeQL were NOT RUN for this branch: their maintained triggers are
+  pull request or trusted `main`, and no pull request was created by this worker (`gh` is not
+  installed). The remote push warning reported 51 existing default-branch Dependabot findings;
+  this worker did not reinterpret or suppress them.
 
 ## Emulator and app smoke evidence
 
