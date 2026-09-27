@@ -233,20 +233,24 @@ private fun FiioJa11EqStatus(
     )
 
     when (operationStatus) {
-        is FiioJa11OperationStatus.Running -> Text(
-            "JA11 ${operationStatus.operation.lowercase()} is being applied and verified. Keep the DAC connected and wait for the final readback.",
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        is FiioJa11OperationStatus.Completed -> {
-            val status = fiioJa11OperationStatusPresentation(operationStatus.trace)
+        is FiioJa11OperationStatus.Running -> if (operationStatus.operation != "FLASH") {
             Text(
-                status.message,
-                color = if (status.verified) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.error
-                },
+                "JA11 ${operationStatus.operation.lowercase()} is being applied and verified. Keep the DAC connected and wait for the final readback.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+        is FiioJa11OperationStatus.Completed -> {
+            if (operationStatus.trace.operation != "FLASH") {
+                val status = fiioJa11OperationStatusPresentation(operationStatus.trace)
+                Text(
+                    status.message,
+                    color = if (status.verified) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    },
+                )
+            }
         }
         else -> Unit
     }
