@@ -47,6 +47,9 @@ The live `origin/main` source and maintained documents are authoritative. Prior 
 
 The two named software defects were implemented and verified on the branch. The exact signed beta
 boundary was rechecked after implementation: signing is restricted to trusted `main`, and the
-current candidate manifest does not represent a combined Black Pearl + JA11 target. The workflow
-therefore proceeds to `MERGE_APPROVAL_REQUIRED`; no Pixel 9 physical action is requested from this
-branch.
+current candidate manifest did not represent a combined Black Pearl + JA11 target. After the
+owner's continuation instruction, the branch was updated with a non-destructive merge of the
+refreshed live `origin/main` catalog commits (`0adcc8159a467790104cf2dc797f1279ef2c53ed`) and the
+trusted workflow was narrowly extended with a `black-pearl-ja11` manifest target. The workflow
+still requires `refs/heads/main`; no signed candidate or Pixel 9 physical action exists from this
+branch. The release status remains `MERGE_APPROVAL_REQUIRED`.

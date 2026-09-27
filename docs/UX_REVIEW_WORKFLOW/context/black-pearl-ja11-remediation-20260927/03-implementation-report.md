@@ -1,15 +1,18 @@
 # Implementation report - Black Pearl and JA11 remediation
 
-Status: SOFTWARE_VERIFIED; release status is
-`MERGE_APPROVAL_REQUIRED` because the trusted signed-beta workflow is main-only.
+Status: SOFTWARE_VERIFIED; release status remains
+`MERGE_APPROVAL_REQUIRED` because the trusted signed-beta workflow is main-only. Promotion
+preparation is complete on the existing branch; no main merge or signed candidate was performed.
 
 ## Source and evidence identity
 
 - Repository: `https://github.com/weekssa/OPRA-EQ-for-UAPP.git`
-- Refreshed base: `origin/main` at `ce5efdf7985e4fc48f975b14fcedb1f592d43772`
+- Refreshed base before implementation: `origin/main` at `ce5efdf7985e4fc48f975b14fcedb1f592d43772`
+- Live `origin/main` after the required refresh: `0adcc8159a467790104cf2dc797f1279ef2c53ed`
 - Branch: `codex/black-pearl-ja11-remediation-20260927`
 - Worktree: `/Users/stephenweeks/.codex/worktrees/black-pearl-ja11-remediation-20260927/OPRA-EQ-for-UAPP`
 - Final implementation source SHA: `dc6478a25b1745b4f78f833c69e96e066c615d56`
+- Promotion-preparation source SHA: `0f080516e8d4aa34e9d0a04b16464bf65b2b6d7d`
 - Reference APK: available at the owner-supplied path; SHA-256
   `3d723ffa17042fbef7e6e192c14ecce460628d0f08a55eeb30caa59566ff8731`; package
   `com.weekssa.opraeqforuapp`, version `0.7.0` / code `7`; embedded source metadata
@@ -65,7 +68,10 @@ domain and transaction boundary, existing Hardware EQ repository/session plumbin
 screen/action wiring, and four review strings. Test changes add Black Pearl failure-safety,
 JA11 transaction, snapshot-unit, editor, presentation, and Edit-action state coverage. Durable run
 artifacts are in this folder. Maintained documentation changes are limited to the changelog,
-My DAC status, and release-readiness audit.
+My DAC status, and release-readiness audit. Promotion preparation also adds one combined
+`black-pearl-ja11` choice to `.github/workflows/signed-beta.yml`; it leaves the main-only job guard,
+signing inputs, certificate check, emulator checks, immutable artifact publication, and existing
+`ja11`/`ew300` targets unchanged.
 
 No protocol, transport, USB identity, endpoint, retry, canonical EQ, navigation, or unsupported
 hardware-control file was changed.
@@ -105,14 +111,28 @@ Commands were run in the isolated worktree with the checked-in wrapper tooling.
 
 - Signed beta workflow: `.github/workflows/signed-beta.yml`.
 - Result: no signed candidate produced for this branch.
-- Exact boundary: job condition requires `github.ref == 'refs/heads/main'`; candidate input options
-  are only `ja11` and `ew300`, not a combined Black Pearl + JA11 target.
+- Exact boundary: job condition still requires `github.ref == 'refs/heads/main'`; the branch now
+  includes a `black-pearl-ja11` candidate input whose manifest names both software claims and the
+  prepared owner Pixel 9 handoff. The workflow has not run for this branch.
 - Therefore APK filename, signed APK SHA-256, signer certificate, workflow run, immutable artifact
-  ID/digest, and signed install evidence are `NOT AVAILABLE` for this branch. No debug APK is
+  ID/digest, and signed install evidence remain `NOT AVAILABLE` for this branch. No debug APK is
   presented as a beta or physical-test candidate.
+
+## Promotion-preparation validation
+
+- `git merge --no-ff --no-edit origin/main` - PASS; only the three refreshed catalog files were
+  brought onto the remediation branch.
+- `git diff --check` - PASS after the workflow change.
+- Ruby YAML parse of `.github/workflows/signed-beta.yml` - PASS.
+- `actionlint .github/workflows/signed-beta.yml` - NOT RUN; `actionlint` is not installed in this
+  environment.
+- A signed workflow dispatch was NOT RUN because the job remains intentionally main-only and the
+  branch was not merged to `main`.
 
 ## Hardware boundary
 
 Luna did not connect to, mutate, Flash, Apply, Reset, Save, Restore, or otherwise write any DAC.
-No physical result is claimed. The next routine owner intervention can occur only after the
-owner-controlled trusted-main signing boundary produces an exact combined candidate.
+No physical result is claimed. The next owner-controlled intervention is to merge this reviewed
+branch into trusted `main`, if approved, then dispatch `signed-beta.yml` with
+`candidate_target=black-pearl-ja11`; Pixel 9 remains blocked until that exact signed artifact is
+verified.

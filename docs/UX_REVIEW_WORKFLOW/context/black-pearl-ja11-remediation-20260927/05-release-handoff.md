@@ -6,8 +6,9 @@ Status: `MERGE_APPROVAL_REQUIRED`
 
 - Repository: `https://github.com/weekssa/OPRA-EQ-for-UAPP.git`
 - Branch: `codex/black-pearl-ja11-remediation-20260927`
-- Base: `origin/main` `ce5efdf7985e4fc48f975b14fcedb1f592d43772`
+- Refreshed live base: `origin/main` `0adcc8159a467790104cf2dc797f1279ef2c53ed`
 - Final implementation source SHA: `dc6478a25b1745b4f78f833c69e96e066c615d56`
+- Promotion-preparation source SHA: `0f080516e8d4aa34e9d0a04b16464bf65b2b6d7d`
 - Worktree: `/Users/stephenweeks/.codex/worktrees/black-pearl-ja11-remediation-20260927/OPRA-EQ-for-UAPP`
 - Black Pearl issue: software PASS; success remains final-readback verified and anti-stacking
   uncertainty is fail-closed.
@@ -19,27 +20,31 @@ Status: `MERGE_APPROVAL_REQUIRED`
 
 ## Why this stops before Pixel 9
 
-The repository's trusted `.github/workflows/signed-beta.yml` job has this exact condition:
-`github.ref == 'refs/heads/main'`. Its `candidate_target` choices are only `ja11` and `ew300`;
-there is no truthful combined Black Pearl + JA11 target. A branch debug APK is not a signed beta,
-and no signed artifact, signer tuple, workflow run, immutable artifact ID/digest, or exact signed
-install proof exists for this branch.
+The repository's trusted `.github/workflows/signed-beta.yml` job still has this exact condition:
+`github.ref == 'refs/heads/main'`. The branch now adds the truthful `black-pearl-ja11`
+`candidate_target`, with a combined capability profile, this handoff as the test plan, both
+software evidence IDs, and owner Pixel 9 hardware validation as outstanding. A branch debug APK is
+not a signed beta, and no signed artifact, signer tuple, workflow run, immutable artifact
+ID/digest, or exact signed install proof exists for this branch.
 
-The owner must separately authorize one of these minimum boundaries before Pixel 9 testing:
+The next owner-controlled boundary is:
 
-1. Integrate this exact branch into trusted `main`, then run the existing signed-beta workflow with
-   a manifest/evidence target that truthfully covers both named defects; or
-2. Authorize a narrowly reviewed workflow/manifest change that binds the exact branch SHA to a
-   non-public signed candidate without weakening signing or hardware evidence rules.
+1. Review and merge this exact branch into trusted `main` if the owner approves the prepared
+   promotion; then dispatch the existing signed-beta workflow with
+   `candidate_target=black-pearl-ja11`.
+2. Verify the resulting exact source SHA, package/version, pinned signer, APK checksum, workflow
+   run, immutable artifact ID/digest, candidate manifest, clean install, and cold launch before
+   any Pixel 9 hardware session.
 
-No merge, main push, workflow change, signing request, tag, publication, or public support claim
-was made by Luna.
+No merge to `main`, signing request, tag, public release, public support claim, or hardware mutation
+was made by Luna. The workflow branch was prepared and the existing non-public publication path was
+not executed.
 
 ## Pixel 9 checklist after an exact signed candidate exists
 
-This checklist is prepared but not actionable from the current branch. The owner should use the
-exact candidate APK and record every result against its source SHA, APK SHA-256, signer certificate,
-workflow run, and immutable artifact ID.
+This checklist is prepared but not actionable from the current branch. After the signed workflow
+passes, use only the exact candidate APK and record every result against its source SHA, APK
+SHA-256, signer certificate, workflow run, and immutable artifact ID.
 
 ### Before connecting either DAC
 

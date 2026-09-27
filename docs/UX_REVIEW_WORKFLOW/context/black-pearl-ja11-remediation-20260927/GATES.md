@@ -38,9 +38,10 @@ Scope: Implement and verify only the named Black Pearl final-readback truth corr
   launch and `uiautomator dump` passed.
 
 - [x] G5: exact signed beta provenance is complete for the final source, or the trusted main-only signing boundary is recorded
-  EVIDENCE: BOUNDARY RECORDED; `.github/workflows/signed-beta.yml` requires `refs/heads/main` and
-  exposes only `ja11`/`ew300` candidate targets. No signed branch candidate exists; status is
-  `MERGE_APPROVAL_REQUIRED`.
+  EVIDENCE: BOUNDARY RECORDED; `.github/workflows/signed-beta.yml` still requires
+  `refs/heads/main`. The branch now exposes the additive `black-pearl-ja11` target alongside
+  `ja11`/`ew300`, but no signed branch candidate exists; status remains
+  `MERGE_APPROVAL_REQUIRED`. Ruby YAML parsing passed; `actionlint` was unavailable.
 
 - [x] G6: mandatory independent read-only review finds no unresolved scoped defect or prohibited behavior
   EVIDENCE: PASS; review recorded in `04-final-review.md`; no protocol/transport/identity/retry/

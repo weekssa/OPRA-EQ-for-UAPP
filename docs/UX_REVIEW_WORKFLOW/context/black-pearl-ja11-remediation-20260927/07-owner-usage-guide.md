@@ -11,17 +11,18 @@ The branch contains software-verified remediation for exactly two issues. The AP
 automated software gates passed. Luna did not connect to or mutate a DAC. There is currently no
 signed beta candidate for this branch, so do not install the branch debug APK for hardware testing.
 
-The handoff is stopped at `MERGE_APPROVAL_REQUIRED` because the trusted signing workflow is
-main-only and its current candidate manifest cannot truthfully identify a combined Black Pearl +
-JA11 candidate.
+The handoff is stopped at `MERGE_APPROVAL_REQUIRED` because the trusted signing workflow remains
+main-only. The branch now contains a reviewed `black-pearl-ja11` combined candidate-manifest target,
+but no signed candidate exists until the branch is owner-approved for trusted-main integration.
 
 ## What the owner should do next
 
-No routine implementation action is needed now. If the owner wants to continue toward Pixel 9, first
-authorize the minimum trusted-main integration or a narrowly reviewed combined-manifest signing
-workflow change. After an exact signed candidate is produced, use the plain-language checklist in
-`05-release-handoff.md` and return the candidate provenance plus separate Black Pearl and JA11
-reports. Do not send credentials, signing material, or private reports in chat.
+No routine implementation action is needed now. If the owner wants to continue toward Pixel 9, review
+and merge the prepared branch into trusted `main`, then dispatch the existing signed-beta workflow
+with `candidate_target=black-pearl-ja11`. After an exact signed candidate is produced, use the
+plain-language checklist in `05-release-handoff.md` and return the candidate provenance plus
+separate Black Pearl and JA11 reports. Do not send credentials, signing material, or private reports
+in chat.
 
 ## Safety boundaries
 

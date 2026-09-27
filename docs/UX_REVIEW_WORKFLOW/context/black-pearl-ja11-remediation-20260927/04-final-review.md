@@ -1,7 +1,7 @@
 # Final review - Black Pearl and JA11 remediation
 
-Status: COMPLETE - independent read-only review passed against implementation source
-`dc6478a25b1745b4f78f833c69e96e066c615d56`.
+Status: COMPLETE - independent read-only review passed against the promotion-preparation source
+`0f080516e8d4aa34e9d0a04b16464bf65b2b6d7d`.
 
 ## Review method
 
@@ -16,6 +16,9 @@ dispatch API, the primary worker performed a separate read-only review pass afte
    canonical-EQ, or unrelated DAC modifications.
 5. Re-ran complete unit, lint, debug assembly, and API 36 instrumentation gates after the final
    gating predicate repair.
+6. Re-read the refreshed `origin/main` merge and the signed-beta workflow diff; verified the new
+   combined target is explicit, the manifest assertions require both named products, and the
+   main-only signing guard and existing publication path remain unchanged.
 
 This review is independent of the earlier focused implementation inspection and did not edit,
 commit, push, or invoke hardware during the review itself.
@@ -59,13 +62,16 @@ commit, push, or invoke hardware during the review itself.
   and shared My DAC tests: PASS in the complete suite.
 - API 36 instrumentation: PASS, 20 tests.
 - No change to `BlackPearlProtocol`, `FiioJa11Protocol`, Android USB transport, identity matcher,
-  endpoint, timing, retry policy, or signing workflow.
+  endpoint, timing, retry policy, or signing behavior.
+- The only release-workflow change is the additive `black-pearl-ja11` candidate target and strict
+  manifest branch. No signing secret, signer check, main-only guard, artifact publication boundary,
+  or existing target was weakened. Ruby YAML parsing passed; `actionlint` was unavailable.
 - No hardware mutation, merge, tag, publication, or main push occurred.
 
 ## Review conclusion
 
-No unresolved defect was found within the two authorized issues. Software is verified on the
-branch. The release remains `MERGE_APPROVAL_REQUIRED` solely because the trusted signed candidate
-boundary is main-only and the current signed manifest cannot truthfully represent the combined
-Black Pearl + JA11 handoff. This is an owner-controlled release boundary, not a software test
-failure.
+No unresolved defect was found within the two authorized issues. Software and promotion preparation
+are verified on the branch. The release remains `MERGE_APPROVAL_REQUIRED` solely because the
+trusted signed-candidate job is main-only; the branch now has a truthful combined manifest target,
+but no main merge or signed run has occurred. This is an owner-controlled release boundary, not a
+software test failure.

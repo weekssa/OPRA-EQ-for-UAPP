@@ -10,3 +10,11 @@ This artifact records the owner instruction supplied in the task prompt on 2026-
 - The final physical outcome remains owner-controlled and must be classified independently for Black Pearl and JA11.
 
 No additional routine product decision is requested from the owner during implementation.
+
+## Continuation authorization
+
+The owner's follow-up instruction, “Continue with the recommended next step,” authorizes the
+reviewable promotion preparation on the existing remediation branch: refresh against live
+`origin/main` and add the minimum combined Black Pearl + JA11 candidate-manifest support needed by
+the trusted workflow. It does not authorize an automatic merge to `main`, tag, public release,
+hardware mutation, or bypass of the main-only signing boundary.
