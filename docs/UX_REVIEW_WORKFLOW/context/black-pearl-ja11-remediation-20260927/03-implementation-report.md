@@ -1,6 +1,6 @@
 # Implementation report - Black Pearl and JA11 remediation
 
-Status: SOFTWARE_VERIFIED pending final commit identity; release status is
+Status: SOFTWARE_VERIFIED; release status is
 `MERGE_APPROVAL_REQUIRED` because the trusted signed-beta workflow is main-only.
 
 ## Source and evidence identity
