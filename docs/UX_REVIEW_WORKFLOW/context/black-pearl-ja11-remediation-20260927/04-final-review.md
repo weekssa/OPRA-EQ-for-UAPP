@@ -1,5 +1,23 @@
 # Final review - Black Pearl and JA11 remediation
 
+## Current authoritative closeout — 2026-09-28
+
+Owner authorization for final software/release closeout is recorded. The closeout documentation
+delta has no production-code delta from the exact tested executable source
+`e1ab5fa5a65dc2d64624d871ac53d436f792ea6a`.
+
+- Software implementation and independent review: **PASS**.
+- Exact signed beta and Pixel 9 Black Pearl AFUL Explorer result: **PASS** for the bounded
+  candidate/device/starting-state transaction; restoration was not run by Luna.
+- JA11 software path: **PASS**; physical evidence remains bounded by the maintained ledger and
+  is not silently transferred to the combined candidate.
+- Final local unit/lint/debug/release/R8/mapping/API-36 emulator gates: **PASS**.
+- `actionlint`: **NOT RUN** locally because unavailable; no workflow changed.
+- Public release action: authorized and pending the trusted main-only signed release workflow.
+
+The historical review entries below are retained as an audit trail and do not override this
+authoritative closeout section.
+
 Status: `PHYSICAL_FAIL` for the exercised Black Pearl Direct Flash path. Independent review,
 software/emulator gates, and exact signed provenance passed; the owner-authorized AFUL Explorer
 mutation was correctly reported as not verified after a final raw-gain mismatch. JA11 remains

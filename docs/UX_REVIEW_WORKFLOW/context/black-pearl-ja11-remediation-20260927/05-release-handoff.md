@@ -1,13 +1,16 @@
 # Release handoff - Black Pearl and JA11 remediation
 
-Status: `PHYSICAL_FAIL` for the exercised Black Pearl Direct Flash path; JA11 remains independently
-`PHYSICAL_INCONCLUSIVE`. The exact signed candidate and software/emulator gates remain valid, but
-the owner-authorized AFUL Explorer mutation did not verify its final native state.
+Status: **FINAL CLOSEOUT AUTHORIZED.** The exact Black Pearl AFUL Explorer retest is
+`PHYSICAL_PASS` on the exact `e1ab5fa` candidate after the owner adjusted the DAC volume. JA11's
+software remediation is complete; its physical claim remains bounded by the maintained ledger.
+The earlier pre-adjustment failure and superseded candidate records remain below as history.
 
-## Exact signed candidate — owner Pixel 9 gate
+## Superseded exact signed candidate — historical owner Pixel 9 gate
 
-Use only this candidate for the final owner review. It is a non-public testing artifact and does
-not establish physical qualification or public hardware support.
+This was the prior owner-review candidate and is retained for provenance only. Do not install or
+use it for final closeout; the authoritative final candidate and result are recorded in the
+`Final 0.7.0 closeout handoff — authoritative summary` section below. It was a non-public testing
+artifact and did not establish physical qualification or public hardware support.
 
 - Repository: `https://github.com/weekssa/OPRA-EQ-for-UAPP.git`
 - Owner-authorized minimum main integration completed at source SHA

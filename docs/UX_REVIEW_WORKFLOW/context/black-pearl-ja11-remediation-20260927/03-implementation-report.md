@@ -859,3 +859,26 @@ Evidence captured:
 - Fresh baseline My DAC UI XML SHA-256: `b57e4efdd6c3bc9a531609251d1d84d714bf106dc58047ff50e6a7ceb319dac5`.
 - AFUL Explorer confirmation UI XML SHA-256: `e337346f26864511504c74c482f22752ee761522a0d6221fed264381c0203129`.
 - Post-operation My DAC UI XML SHA-256: `087bfc661d40d59a5a64d50b210281a2f2bbf5880961ad0439a481c7c228c96c`.
+
+## Final release-closeout verification — 2026-09-28
+
+The owner authorized final software/release closeout. The closeout documentation delta is
+documentation-only relative to the exact tested executable source
+`e1ab5fa5a65dc2d64624d871ac53d436f792ea6a`.
+
+Local final-head gates:
+
+- `./tools/codex-android :app:testDebugUnitTest` — **PASS**.
+- `./tools/codex-android :app:lintDebug :app:assembleDebug` — **PASS**.
+- `./tools/codex-android :app:assembleRelease` — **PASS**; `lintVitalRelease` and minified R8
+  release path completed.
+- `bash tools/verify-r8-mapping.sh app/build/outputs/mapping/release/mapping.txt` — **PASS**.
+- `ANDROID_SERIAL=emulator-5554 ./tools/codex-android :app:connectedDebugAndroidTest` — **PASS**;
+  clean disposable `codex-api36` emulator, 24/24 tests, 0 skipped, 0 failed.
+- `git diff --check` and unlazy gate lint — **PASS**; gate lint retains its documented manual-gate
+  warnings.
+- `actionlint` — **NOT RUN**, unavailable locally; no workflow file changed and the prior signed
+  workflow execution passed remotely.
+
+No production source, protocol bytes, timing, retry policy, canonical EQ data, or DAC state changed
+in the closeout documentation commit. Luna did not mutate hardware.

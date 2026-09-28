@@ -220,6 +220,27 @@ hardware.
 
 Current gate status: **MERGE_APPROVAL_REQUIRED**.
 
+## Final release-closeout gates — documentation-only delta after `ec02399b`
+
+The owner authorized final software/release closeout. This closeout is documentation-only relative to
+the exact tested executable source `e1ab5fa5a65dc2d64624d871ac53d436f792ea6a`; no production code
+or DAC state changed.
+
+- [x] G31: final documentation/evidence synchronization — **PASS**; release notes, changelog,
+  readiness audit, JA11 ledger/matrix, post-Pixel prompt, and owner handoff now agree on the
+  exact candidate and evidence-bounded hardware claims.
+- [x] G32: final local unit/lint/debug/release/R8/mapping gates — **PASS**.
+- [x] G33: final clean API-36 emulator instrumentation — **PASS**; `codex-api36`, serial
+  `emulator-5554`, 24/24, 0 skipped, 0 failed. The Pixel 9 was not targeted by this run.
+- [x] G34: scope/diff check — **PASS**; no production source, protocol bytes, timing, retry,
+  canonical EQ, or hardware mutation changes in the closeout head.
+- [ ] G35: `actionlint` — **NOT RUN**; unavailable locally. No workflow file changed and the
+  prior exact signed workflow passed remotely.
+- [x] G36: owner final-go authorization — **PASS**; release publication is authorized, while
+  Black Pearl restoration and broader JA11 physical support remain separately bounded.
+
+Current closeout status: **SOFTWARE_VERIFIED; PUBLIC SIGNED RELEASE PENDING WORKFLOW**.
+
 ## Latest exact-candidate AFUL Explorer attempt — 2026-09-27 local / 2026-09-28 UTC
 
 - Candidate source: `e1ab5fa5a65dc2d64624d871ac53d436f792ea6a`; APK SHA-256
