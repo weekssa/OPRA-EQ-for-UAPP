@@ -32,9 +32,10 @@ independently `PHYSICAL_INCONCLUSIVE`; neither device is publicly supported by t
   visible result contained the required not-verified wording and the actionable no-automatic-retry
   boundary.
 - The decisive mismatch was `expected raw -7398, actual raw -6400` for final Black Pearl playback
-  gain. Because the requested hardware state was not confirmed and no post-failure refresh or
-  restoration was authorized, the physical Flash qualification is **PHYSICAL_FAIL** and the final
-  hardware state is **unknown**.
+  gain. Because the requested hardware state was not confirmed and no owner-directed recovery
+  refresh/reconnect or restoration followed, the physical Flash qualification is
+  **PHYSICAL_FAIL**. The existing ViewModel's normal post-operation read refresh does not qualify
+  the requested state or restoration.
 - The named truth defect's exercised failure behavior is a **PASS**: no false success claim,
   no duplicate retry, and no later write was attempted. This is not a pass for the requested EQ's
   hardware application or restoration.

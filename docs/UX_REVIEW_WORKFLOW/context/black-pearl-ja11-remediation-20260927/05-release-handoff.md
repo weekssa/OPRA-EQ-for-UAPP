@@ -47,8 +47,9 @@ This addendum supersedes the pre-session checklist below for the exercised Black
   `Final hardware readback did not confirm the requested EQ` and
   `expected raw -7398, actual raw -6400`.
 - The app correctly withheld success and instructed reconnect/refresh before any later hardware
-  action. No retry, Reset, Save, Restore, reconnect, or refresh was performed, so restoration is
-  **NOT VERIFIED** and the post-operation DAC state is **UNKNOWN**.
+  action. The existing ViewModel performed its normal read-only post-operation refresh; no retry,
+  Reset, Save, Restore, reconnect, or owner-directed recovery write was performed, so restoration
+  is **NOT VERIFIED** and the requested post-operation state remains unqualified.
 - The Black Pearl truthfulness defect's failure-path assertion is **PASS**; the Direct Flash
   application/restoration gate is **FAIL**. Do not label Black Pearl physically fixed or publicly
   supported.

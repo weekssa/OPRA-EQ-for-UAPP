@@ -46,7 +46,8 @@ in `05-release-handoff.md`.
 Current post-session state: `PHYSICAL_FAIL` for the single Black Pearl AFUL Explorer Direct Flash
 exercise and `PHYSICAL_INCONCLUSIVE` for the previously exercised JA11 session. The exact candidate
 was verified on the Pixel 9 and the Black Pearl identity matched, but final raw playback-gain
-readback was `expected -7398`, `actual -6400`; the app correctly withheld success. No retry,
-reconnect, refresh, Reset, Save, Restore, or restoration claim followed. Treat the post-operation
-Black Pearl state as unknown, do not transfer the historical `acaf4dd` result, and do not classify
-either named issue as owner-accepted or publicly supported.
+readback was `expected -7398`, `actual -6400`; the app correctly withheld success. Its existing
+post-operation read-only refresh ran, but no retry, owner-directed recovery reconnect/refresh,
+Reset, Save, Restore, or restoration claim followed. Treat the requested post-operation state as
+unqualified, do not transfer the historical `acaf4dd` result, and do not classify either named issue
+as owner-accepted or publicly supported.

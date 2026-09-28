@@ -52,9 +52,10 @@ was not verified and restoration was not attempted. JA11 remains independently `
   Final hardware readback did not confirm the requested EQ.` It reported
   `Final Black Pearl playback-gain readback did not match: expected raw -7398, actual raw -6400.`
 - Safety behavior: the app instructed `Reconnect or refresh the DAC before any later hardware
-  action. Do not retry automatically.` No retry, Reset, Save, Restore, reconnect, or refresh was
-  performed after the mismatch. The post-operation hardware state is therefore **unknown**, and no
-  restoration claim is made.
+  action. Do not retry automatically.` The existing ViewModel then performed its normal read-only
+  post-operation refresh while the session remained connected; no retry, Reset, Save, Restore,
+  reconnect, or owner-directed recovery write was performed after the mismatch. The requested
+  post-operation state remains **not verified**, and no restoration claim is made.
 - Evidence directory: `/tmp/opra-black-pearl-flash-aful-192520/`. Terminal UI XML SHA-256
   `b853450bed1000ca07de478cda78b1d6eb6f575f4690dc960e4a95c579a8f9f3`; terminal screenshot SHA-256
   `9d9769f2b3452d88344ed24d1003702f8d915170739ed4aaf94cb0461f0a1a3b`; USB evidence SHA-256
