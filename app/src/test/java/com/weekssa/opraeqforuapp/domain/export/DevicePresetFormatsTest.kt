@@ -81,7 +81,7 @@ class DevicePresetFormatsTest {
         assertTrue(!blackPearl.content.contains("ON LSC"))
         assertTrue(!blackPearl.content.contains("ON HSC"))
         assertEquals(DevicePresetFidelity.EXACT, blackPearl.fidelity)
-        assertTrue(blackPearl.transformation.contains("same filters and playback gain as Direct Flash"))
+        assertTrue(blackPearl.transformation.contains("file path's filters and playback gain"))
         assertEquals(3, blackPearl.representationVersion)
     }
 

@@ -149,7 +149,7 @@ class PresetExportPlanTest {
 
         assertEquals(1, plan.candidates.size)
         assertEquals(DevicePresetFidelity.EXACT, plan.candidates.single().fidelity)
-        assertTrue(plan.candidates.single().transformation.contains("same filters and playback gain"))
+        assertTrue(plan.candidates.single().transformation.contains("file path's filters and playback gain"))
         assertTrue(plan.candidates.single().xml.contains("ON LS "))
     }
 

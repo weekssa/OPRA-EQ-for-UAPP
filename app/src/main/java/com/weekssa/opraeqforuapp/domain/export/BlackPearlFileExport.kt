@@ -8,8 +8,10 @@ import com.weekssa.opraeqforuapp.domain.kt02h20.adaptationSummary
 import java.util.Locale
 
 /**
- * Builds file representations for outputs whose exported file should match the same derived hardware
- * plan used by Direct Flash, or which need a product-specific verified import contract.
+ * Builds file representations for outputs whose exported file should match the shared derived
+ * hardware representation used by Direct Flash, or which need a product-specific verified import
+ * contract. Black Pearl Direct Flash applies a separate native whole-dB global-gain boundary; this
+ * text path intentionally retains the shared 1/256 wire-domain representation.
  *
  * Black Pearl file export and USB Flash remain independent delivery actions, but they consume one
  * shared response-adaptation policy. A >10-band canonical source is fitted to the complete response,
@@ -52,14 +54,14 @@ private fun buildBlackPearlFileExportVariant(profile: OpraEqProfile): DevicePres
 
     val baseTransformation = when (representation.fidelity) {
         DevicePresetFidelity.EXACT ->
-            "Source values are preserved in the Black Pearl hardware plan; this AutoEq text uses the same filters and playback gain as Direct Flash."
+            "Source values are preserved in the Black Pearl file/protocol representation; this AutoEq text uses the file path's filters and playback gain. Direct Flash applies its native whole-dB global-gain planning separately."
         DevicePresetFidelity.OPTIMIZED -> {
             val metrics = if (representation.usedResponseFit) {
                 " (RMS ${formatMetric(representation.rmsErrorDb)} dB, max ${formatMetric(representation.maxAbsoluteErrorDb)} dB)"
             } else {
                 ""
             }
-            "Black Pearl: Optimized · ${representation.adaptationSummary()}$metrics. This AutoEq text uses the same derived filters and playback gain as Direct Flash."
+            "Black Pearl: Optimized · ${representation.adaptationSummary()}$metrics. This AutoEq text uses the file path's derived filters and playback gain; Direct Flash applies its native whole-dB global-gain planning separately."
         }
     }
 
