@@ -506,7 +506,7 @@ hardware write during development.
   `2d516a7057f8120e7c03e76592266f05c076402399d59f8b2f69eb9845f92160`.
 - These are local debug/unsigned outputs, not signed beta artifacts. No signer, workflow run, or
   immutable artifact ID exists for this source SHA. The separately authorized non-public branch was
-  pushed at final branch head `2d15d2d4aef3f310563a73c2ba3be38f5493dd52`; no signed beta resulted.
+  pushed at final branch head `ccc548908d3e09e46b374abc86d058fbf8b8d5e6`; no signed beta resulted.
 - No DAC was connected, written, flashed, applied, reset, saved, restored, or mutated by Luna during
   this source change. The physical Black Pearl state remains owner-controlled and not qualified.
 

@@ -133,7 +133,7 @@ reference repository.
   SHA-256 `2d516a7057f8120e7c03e76592266f05c076402399d59f8b2f69eb9845f92160`.
 - No DAC was connected, written, flashed, applied, reset, saved, restored, or mutated by Luna for
   this source change. No signed beta was produced. The separately authorized non-public branch push
-  was completed afterward at final branch head `2d15d2d4aef3f310563a73c2ba3be38f5493dd52`.
+was completed afterward at final branch head `ccc548908d3e09e46b374abc86d058fbf8b8d5e6`.
 
 Current disposition for this source checkpoint is **SOFTWARE_READY_PENDING_SIGNED_CANDIDATE**.
 The earlier physical failure and the historical endpoint blocker remain evidence only; this source

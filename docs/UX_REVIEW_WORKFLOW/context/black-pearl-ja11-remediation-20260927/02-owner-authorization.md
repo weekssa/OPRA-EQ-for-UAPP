@@ -78,6 +78,6 @@ This authorizes only the source change and its deterministic software tests. It 
 DAC write, Flash, Reset, Apply, Save, Restore, automatic retry, merge, tag, publication, or public
 hardware-support claim. The initial task authorization separately permitted one non-public branch
 push after software gates; that push completed at final branch head
-`2d15d2d4aef3f310563a73c2ba3be38f5493dd52`. The implementation must fail closed when an interrupt
+`ccc548908d3e09e46b374abc86d058fbf8b8d5e6`. The implementation must fail closed when an interrupt
 OUT transfer does not send the complete 64-byte report and must preserve the existing control-transfer
 fallback.

@@ -21,7 +21,7 @@ bytes/timing/retry policy, and perform no hardware write during development.
 - `actionlint`: NOT RUN, unavailable locally; no workflow was changed.
 - Exact signed candidate: NOT AVAILABLE for this branch SHA. Local debug and unsigned release APKs
   are not candidates. The separately authorized non-public branch was pushed at final head
-  `2d15d2d4aef3f310563a73c2ba3be38f5493dd52`; no signed beta resulted.
+  `ccc548908d3e09e46b374abc86d058fbf8b8d5e6`; no signed beta resulted.
 - Hardware: no DAC connected or mutated by Luna for this change; physical qualification remains
   owner-controlled and not proven.
 

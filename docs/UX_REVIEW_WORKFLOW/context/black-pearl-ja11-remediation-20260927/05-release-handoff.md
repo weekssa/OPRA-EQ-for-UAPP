@@ -271,7 +271,7 @@ assembly, and final independent review are complete and passing.
 This does **not** create a signed beta. The local debug APK and unsigned minified release APK are
 development artifacts only; no signer, workflow run, or immutable artifact ID exists for this SHA.
 The separately authorized non-public branch was pushed at final branch head
-`2d15d2d4aef3f310563a73c2ba3be38f5493dd52`; no signed beta resulted. No DAC was connected or
+`ccc548908d3e09e46b374abc86d058fbf8b8d5e6`; no signed beta resulted. No DAC was connected or
 mutated by Luna during this source change.
 
 Current handoff status: **SOFTWARE_READY_PENDING_SIGNED_CANDIDATE**. Do not use the local APK for
