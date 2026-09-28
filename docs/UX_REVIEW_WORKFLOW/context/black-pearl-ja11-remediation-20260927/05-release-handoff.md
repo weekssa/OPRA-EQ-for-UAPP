@@ -505,3 +505,149 @@ the Flash; no second mutation, Reset, Save, Restore, or retry was performed. Thi
 power-cycle persistence, broad revision support, or public hardware support. The next step is owner
 direction on whether to leave this AFUL Explorer state in place or separately authorize restoration;
 JA11 remains an independent result.
+
+## Final `0.7.0` closeout handoff — authoritative summary
+
+Use this section for final owner closeout. Earlier sections preserve the chronological evidence
+record; this section is the current consolidated disposition.
+
+### Current disposition
+
+- **Black Pearl AFUL Explorer exact transaction:** `PHYSICAL_PASS` on the exact signed candidate
+  below, Pixel 9, and the identified Black Pearl unit.
+- **Black Pearl restoration:** `NOT RUN`. The owner authorized one Flash only, so Luna did not
+  Reset, Restore, Save, retry, or perform a second mutation. The DAC remains in the verified AFUL
+  Explorer state from the successful test.
+- **JA11 software remediation:** `PASS` through the complete safe User 1 editor path in source and
+  deterministic tests.
+- **JA11 physical release closure:** still pending/inconclusive in the maintained evidence. The
+  ledger records successful Flash/Save/final-readback and observed restoration evidence on an earlier
+  exact candidate, but explicit power-cycle retention/full qualification and exact-current-candidate
+  closure are not yet recorded as final-release evidence.
+- **Overall public release status:** `NO-GO` until the remaining release gates and owner approval
+  below are closed. No public hardware-support claim follows from this handoff.
+
+### What was implemented
+
+1. **TRN Black Pearl Direct Flash truthfulness**
+
+   - Preserved the existing Black Pearl protocol bytes, report order, timing, gain handling,
+     identity matching, session ownership, and retry policy.
+   - Success now requires a complete active-session final native readback: all ten native bands,
+     active slot, filter type, frequency, gain, Q, and raw global gain.
+   - Missing, malformed, stale, mismatched, or wrong-session readback is not success.
+   - A readable gain mismatch reconciles the persistent anti-stacking baseline to observed truth;
+     unavailable or session-uncertain baselines block later mutation until a fresh authoritative
+     read exists.
+   - The compact verified wording and single terminal feedback surface remain truthful and
+     actionable.
+   - The scoped Android transport repair selects the HID interrupt OUT endpoint when present and
+     retains `SET_REPORT` fallback while preserving report bytes, timing, and retry policy.
+
+2. **FiiO JA11 My DAC -> EQ editor/apply path**
+
+   - Added the discoverable User 1-only editor route from the existing My DAC current-hardware
+     section.
+   - Editing, Reset-local-edits, Cancel, Close, Back, and Review remain local and perform zero
+     transport writes.
+   - The immutable baseline token binds exact identity/fingerprint, session generation, active
+     `USER_1`, all five native bands, native global-gain units, freshness, and verification time.
+   - Review presents all five bands, filter/frequency/gain/Q values, global gain, response/headroom
+     consequences, warnings, and the fact that Apply is the first write.
+   - Apply delegates to the existing JA11 transaction boundary with exact five-band writes,
+     quantized global gain, User 1 selection, one Save/persistence boundary, reconnect handling,
+     final readback, cancellation, and fail-closed uncertainty handling.
+   - EQ Off and built-in Vocal/Classic/Bass states remain non-editable; no built-in coefficients
+     are invented.
+
+### Exact signed beta produced for testing — not a public release
+
+The bug-fixed software was produced as one non-public signed testing candidate:
+
+- Source SHA: `e1ab5fa5a65dc2d64624d871ac53d436f792ea6a`
+- Candidate target: combined `black-pearl-ja11`
+- APK: `EQ-Library-v0.7.0-beta-e1ab5fa.apk`
+- APK SHA-256: `7fffba26f32991ce8c936f725bdc6c3c4b6956d3a0800c539b8d45e6b52a2501`
+- Package/version: `com.weekssa.opraeqforuapp`, `0.7.0` / code `7`
+- Signer certificate SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`
+- R8 mapping SHA-256: `a713de5e165a7b2da9dba9ca2ae20cc8a6123748b4c271ac1706dda995ca0985`
+- Signed-beta workflow: [run 36375994853](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36375994853)
+- Immutable APK artifact: ID `10950858857`, digest
+  `sha256:b13ca6973a203529c2cf7ea3247bb83f46af17cc89ff9506e460f33488b543b1`
+- Diagnostics artifact: ID `10950719717`, digest
+  `sha256:6f9e42122a3579f9ac6230cad24e912688592562b2cc1d6bd5512f4ae4f12e94`
+- Testing APK:
+  [EQ-Library-v0.7.0-beta-e1ab5fa.apk](https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-e1ab5fa.apk)
+- Testing checksum:
+  [EQ-Library-v0.7.0-beta-e1ab5fa.apk.sha256](https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-e1ab5fa.apk.sha256)
+- Signed-emulator install and cold launch: `PASS`
+
+Important: this beta was published only to the non-public `mobile-test-apk` testing surface. No
+public GitHub `v0.7.0` release, public tag, or public APK release was published with these fixes.
+
+### Physical evidence completed
+
+#### Black Pearl — exact AFUL Explorer pass
+
+- Pixel: Google Pixel 9, `tokay`, API 37, wireless ADB serial
+  `adb-46141FDAQ003KZ-3AwgSo._adb-tls-connect._tcp`.
+- DAC: TTGK Technology `TE-C`, VID `0x3302`, PID `0x43E8`, serial `330243E8260129`.
+- Fresh baseline: verified current hardware, `Flat`, `10 filters`, `Active slot 1`, playback gain
+  `-25.00 dB`.
+- One authorized operation: AFUL Explorer Flash with the intended native rounded `-4.00 dB`
+  adjustment.
+- Final app readback: `Verified current hardware`, `Matches My EQs`, Explorer active, `9 active
+  bands`, `10 filters`, `Active slot 1`, playback gain `-29.00 dB`.
+- Result: `PHYSICAL_PASS` for this exact candidate/device/DAC/starting state and AFUL Explorer
+  transaction.
+- Limitation: the transient success banner expired before capture; the durable verified-current-
+  hardware and Matches My EQs screen is the retained app evidence. This does not establish
+  power-cycle persistence, other Black Pearl revisions, other presets, or public support.
+
+#### JA11 — current release limitation
+
+The software path is complete and the maintained ledger contains successful physical JA11
+Flash/Save/final-readback plus observed restoration records on an earlier exact signed candidate.
+However, the current remediation handoff still classifies complete JA11 physical qualification as
+inconclusive because the transient terminal/Save evidence was not retained, and explicit
+power-cycle retention/full qualification is not closed for the exact combined `e1ab5fa` candidate.
+Do not silently transfer the earlier JA11 hardware record to the current combined beta.
+
+### Remaining closeout checklist
+
+The final public release should not be tagged or published until each item below is resolved and
+recorded against the final source SHA.
+
+- [ ] Decide the public `0.7.0` scope. The existing `docs/releases/v0.7.0.md` describes EW300,
+  while the tested bug-fix candidate is the combined `black-pearl-ja11` target. Reconcile the
+  release notes, manifest, capability claims, and public support wording.
+- [ ] Close JA11 exact-candidate evidence: either run the bounded current-candidate JA11 physical
+  closure including final readback, exact one-Save trace, reconnect/persistence evidence, and
+  restoration, or explicitly ship JA11 as hardware-validation-pending and remove any stronger
+  public claim.
+- [ ] Decide whether Black Pearl restoration is required for the release gate. If required,
+  authorize one separate restoration operation and record the final restored state. Do not reuse
+  the Flash authorization for restoration.
+- [ ] Synchronize the authoritative [v0.7 release-readiness audit](../../../V0.7_RELEASE_READINESS_AUDIT.md),
+  [JA11 validation ledger](../../../FIIO_JA11_VALIDATION_LEDGER.md), capability matrix,
+  `06-post-pixel-closure-prompt.md`, changelog, and release notes with this final evidence. Remove
+  stale NO-GO/PENDING statements only when replaced by exact evidence; preserve historical records.
+- [ ] Freeze the final source SHA after documentation and scope decisions. Run the complete
+  applicable Android unit/lint/debug/release/R8, API-36 emulator, UI/accessibility, CodeQL,
+  catalog-currentness, priority-community, dependency-submission, security, and workflow checks.
+- [ ] Produce the final signed `v0.7.0` release APK from the trusted main-only release workflow.
+  Verify source SHA, package/version, signer, APK checksum, R8 mapping, immutable artifact ID and
+  digest, install/upgrade behavior, cold launch, and release manifest.
+- [ ] Obtain explicit owner approval for merge, tag, public GitHub release, and any public
+  hardware-support claim. These actions remain owner-controlled and were not performed here.
+- [ ] After publication approval, verify the public tag/release page/APK/checksum/update metadata
+  and record the final owner acceptance in the validation ledger.
+
+### Bottom line for final closeout
+
+The two named software defects are implemented and software-verified. The exact Black Pearl AFUL
+Explorer transaction now passes after the volume was adjusted. The bug-fixed candidate exists as a
+non-public signed beta, but no public `v0.7.0` release was published. The remaining work is release
+scope reconciliation, JA11 exact-candidate/qualification closure or explicit deferral wording,
+optional-but-release-governed Black Pearl restoration, authoritative documentation synchronization,
+final signed-release gates, and explicit owner publication approval.
