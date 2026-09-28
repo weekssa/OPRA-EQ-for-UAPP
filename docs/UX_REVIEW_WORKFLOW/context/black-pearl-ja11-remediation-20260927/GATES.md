@@ -26,7 +26,8 @@ bytes/timing/retry policy, and perform no hardware write during development.
 - Hardware: no DAC connected or mutated by Luna for this change; physical qualification remains
   owner-controlled and not proven.
 
-Current gate status: **SOFTWARE_READY_PENDING_SIGNED_CANDIDATE**. `READY_FOR_PIXEL_9` is not claimed.
+Current gate status: **READY_FOR_PIXEL_9**. The exact signed candidate provenance is recorded in the
+signed-candidate addendum below; this is an owner handoff state, not a physical-fix claim.
 
 ## Current follow-up gate state — exact candidate source `b61f02e8c91656f14ffc639e4c6d937b2162a1b7`
 

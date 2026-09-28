@@ -138,3 +138,30 @@ was completed afterward for implementation source `eb761f1bc510a612acde7b71b4536
 Current disposition for this source checkpoint is **SOFTWARE_READY_PENDING_SIGNED_CANDIDATE**.
 The earlier physical failure and the historical endpoint blocker remain evidence only; this source
 checkpoint is not physical qualification and is not a public hardware-support claim.
+
+## Exact signed candidate provenance — 2026-09-28
+
+The owner authorized minimum main integration. The conflict-free branch merge was pushed to
+`main` at source SHA `2cba1322245221103b8790bfcef705a38022c2ed`; `origin/main` and the remediation
+branch both resolve to that SHA. The trusted `Signed EQ Library Beta Candidate` workflow was
+dispatched with `candidate_target=black-pearl-ja11` and completed successfully as run
+`36368698803`:
+<https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36368698803>.
+
+- APK: `EQ-Library-v0.7.0-beta-2cba132.apk`
+- APK SHA-256: `50cee56aa59a8980a61bff42625fe9d839a28189068ba5adddd1a03530ea02d6`
+- Package/version: `com.weekssa.opraeqforuapp`, `0.7.0` / code `7`
+- Signer certificate SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`
+- Signed APK artifact: ID `10948632352`, digest
+  `sha256:3e9fb31a814a8feb30ff0c48ac69a71cddd579e71b90401ddf34e491b8fc45ab`
+- Candidate manifest binds the exact source SHA, target `black-pearl-ja11`, APK checksum, signer,
+  R8 mapping, and combined Black Pearl/JA11 capability profile.
+- Signed emulator evidence: Android 35 `opra_signed_beta`; install returned `Success`, package
+  identity/version checks passed, and cold launch returned `Status: ok` / `LaunchState: COLD`.
+  Diagnostics artifact ID `10948497670`, digest
+  `sha256:fd92f4bf31c57616580ccfab399e4d13ef4f15973f5463154740fbcb4a6ebda2`.
+- Existing testing branch publish recorded the candidate checksum under `candidates/`; it is not a
+  public release or a hardware-support claim.
+
+The task is now **READY_FOR_PIXEL_9**. Luna did not connect to or mutate a DAC. The owner controls
+the final exact-candidate Pixel 9 review and must classify Black Pearl and JA11 independently.

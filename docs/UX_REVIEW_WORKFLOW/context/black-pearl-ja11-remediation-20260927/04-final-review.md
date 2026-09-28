@@ -244,3 +244,26 @@ silently treated as proof.
 Final software review disposition: **PASS**. Current release state remains
 **SOFTWARE_READY_PENDING_SIGNED_CANDIDATE**, not `READY_FOR_PIXEL_9`; no physical-fix or public
 hardware-support claim is made.
+
+## Signed-candidate provenance review — 2026-09-28
+
+The owner-authorized minimum main integration completed conflict-free. Main and the remediation
+branch resolve to `2cba1322245221103b8790bfcef705a38022c2ed`. The trusted signed-beta workflow run
+[#36368698803](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36368698803) completed
+successfully for `candidate_target=black-pearl-ja11`.
+
+The resulting candidate manifest binds source SHA `2cba1322245221103b8790bfcef705a38022c2ed` to
+`EQ-Library-v0.7.0-beta-2cba132.apk`, package `com.weekssa.opraeqforuapp`, version `0.7.0`, code
+`7`, APK SHA-256
+`50cee56aa59a8980a61bff42625fe9d839a28189068ba5adddd1a03530ea02d6`, and signer certificate
+SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`. The immutable signed
+APK artifact is ID `10948632352` with digest
+`sha256:3e9fb31a814a8feb30ff0c48ac69a71cddd579e71b90401ddf34e491b8fc45ab`.
+
+The workflow also passed its signed-emulator install and cold-launch checks on Android 35
+(`Success`, `Status: ok`, `LaunchState: COLD`). Diagnostics artifact ID `10948497670` has digest
+`sha256:fd92f4bf31c57616580ccfab399e4d13ef4f15973f5463154740fbcb4a6ebda2`.
+
+Final review disposition: **READY_FOR_PIXEL_9**. The state is a handoff to the owner’s exact-candidate
+Pixel 9 review, not physical qualification. Black Pearl and JA11 must be classified independently;
+Luna has not mutated hardware.

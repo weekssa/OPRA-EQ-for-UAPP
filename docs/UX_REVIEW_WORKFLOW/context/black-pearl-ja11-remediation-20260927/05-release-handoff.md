@@ -278,3 +278,45 @@ Current handoff status: **SOFTWARE_READY_PENDING_SIGNED_CANDIDATE**. Do not use 
 Pixel 9 hardware qualification. The next required boundary is an exact signed candidate tied to
 this source SHA through the trusted release path; only then can the owner decide whether to begin the
 final Pixel 9 review. This source result is not a physical-fix or public-support claim.
+
+## Exact signed candidate — owner Pixel 9 gate
+
+The owner authorized minimum main integration. Main and the remediation branch now resolve to
+`2cba1322245221103b8790bfcef705a38022c2ed`. The trusted workflow
+`Signed EQ Library Beta Candidate` completed **PASS** as run
+[#36368698803](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36368698803) with
+`candidate_target=black-pearl-ja11`.
+
+Candidate provenance:
+
+- APK: `EQ-Library-v0.7.0-beta-2cba132.apk`
+- SHA-256: `50cee56aa59a8980a61bff42625fe9d839a28189068ba5adddd1a03530ea02d6`
+- Package/version: `com.weekssa.opraeqforuapp`, `0.7.0` / code `7`
+- Signer certificate SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`
+- Immutable signed APK artifact: ID `10948632352`, digest
+  `sha256:3e9fb31a814a8feb30ff0c48ac69a71cddd579e71b90401ddf34e491b8fc45ab`
+- Candidate manifest: exact source SHA, combined target, package/version, APK checksum, signer, R8
+  mapping, and combined Black Pearl/JA11 capability profile all verified.
+- Signed emulator: Android 35 `opra_signed_beta`; install `Success`; package identity/version
+  checks passed; cold launch `Status: ok` and `LaunchState: COLD`.
+- Diagnostics artifact: ID `10948497670`, digest
+  `sha256:fd92f4bf31c57616580ccfab399e4d13ef4f15973f5463154740fbcb4a6ebda2`.
+- The existing `mobile-test-apk` testing branch contains the exact candidate checksum under
+  `candidates/`; this is not a public release or support claim.
+
+## Current status: READY_FOR_PIXEL_9
+
+The owner may now perform the final exact-candidate Pixel 9 review. Use only the candidate above and
+record every result against its source SHA, APK SHA-256, signer, workflow run, and artifact ID.
+
+Before connecting either DAC:
+
+1. Confirm the installed APK matches the exact candidate tuple above.
+2. Capture the baseline state and confirm the exact DAC identity/session.
+3. Test Black Pearl and JA11 independently; do not infer one result from the other.
+4. Stop on a disconnect, permission prompt during mutation, session replacement, stale/missing
+   readback, or any result that is not explicitly verified. Do not retry a mutation automatically.
+5. Restore the original state using the approved owner procedure and record restoration evidence.
+
+This is an owner physical-validation handoff. It is not a claim that either DAC is physically fixed
+or publicly supported. Luna did not connect to or mutate a DAC.

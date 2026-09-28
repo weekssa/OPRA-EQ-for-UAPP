@@ -515,6 +515,33 @@ Current source disposition: **SOFTWARE_READY_PENDING_SIGNED_CANDIDATE**. The exa
 boundary is an owner-controlled exact signed candidate for this source SHA; do not hand off a debug
 or unsigned APK as a Pixel 9 candidate.
 
+## Exact signed beta handoff — 2026-09-28
+
+Minimum main integration was authorized and completed without conflicts. Main and the remediation
+branch now resolve to `2cba1322245221103b8790bfcef705a38022c2ed`. The trusted workflow
+`Signed EQ Library Beta Candidate` ran with `candidate_target=black-pearl-ja11` as
+[#36368698803](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36368698803) and completed
+**PASS**.
+
+- Signed APK: `EQ-Library-v0.7.0-beta-2cba132.apk`
+- SHA-256: `50cee56aa59a8980a61bff42625fe9d839a28189068ba5adddd1a03530ea02d6`
+- Package/version: `com.weekssa.opraeqforuapp`, `0.7.0` / code `7`
+- Signer: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`
+- Immutable signed APK artifact: ID `10948632352`, digest
+  `sha256:3e9fb31a814a8feb30ff0c48ac69a71cddd579e71b90401ddf34e491b8fc45ab`.
+- Candidate manifest source SHA: `2cba1322245221103b8790bfcef705a38022c2ed`; target
+  `black-pearl-ja11`; R8 mapping SHA-256
+  `e600037d77142d8803aea2fd42af5f6a19d59e82a347b86d42ce11a89afac92c`.
+- Signed emulator: Android 35 `opra_signed_beta`; clean install returned `Success`, package
+  identity/version checks passed, and cold launch returned `Status: ok` / `LaunchState: COLD`.
+- Diagnostics artifact: ID `10948497670`, digest
+  `sha256:fd92f4bf31c57616580ccfab399e4d13ef4f15973f5463154740fbcb4a6ebda2`.
+- `actionlint`: **NOT RUN**, unavailable locally; the remote workflow completed its own gate.
+
+The exact signed candidate is now available for the owner Pixel 9 gate. This is not physical
+qualification and does not establish a public hardware-support claim. Luna did not connect to or
+mutate a DAC.
+
 ## External reference comparison and guardrail blocker — 2026-09-27
 
 The owner supplied the public `Matr1x01/trnBlackPearlEq` implementation as a working reference.
