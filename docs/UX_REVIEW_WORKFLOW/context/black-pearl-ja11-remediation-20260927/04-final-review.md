@@ -214,3 +214,32 @@ proof of a fix. The required change would alter USB endpoint behavior, which the
 forbids. Independent review therefore finds the named Black Pearl defect unresolved and the next
 source change **blocked pending owner authorization for that exact boundary**. No external code was
 copied, no protocol bytes were changed, and no hardware was touched during this comparison.
+
+## Final repaired-commit independent review — 2026-09-27
+
+The first independent review correctly rejected the initial uncommitted implementation because its
+interrupt OUT path treated zero and short transfers as success. The implementation was repaired to
+require an exact 64-byte transfer, and focused/full unit, API-36 emulator, lint, and release/R8 gates
+were rerun before commit `eb761f1bc510a612acde7b71b453631e1ff23a8f`.
+
+A second independent read-only reviewer then reviewed that exact committed source and returned
+**PASS — no P0/P1/P2 code defect**. The reviewer verified:
+
+- interrupt OUT selection is limited to OUT + interrupt endpoints;
+- interrupt success requires the complete requested report length;
+- existing `SET_REPORT` parameters/result policy remain unchanged;
+- report bytes, 250 ms transfer timeout, settle delays, read polling, bounded two-attempt read
+  retry, mutex/session ownership, and no automatic write retry remain unchanged;
+- the commit scope is exactly one transport, one small policy helper, and its unit test; and
+- no hardware was connected or mutated during review.
+
+The reviewer recorded two non-blocking P2 evidence gaps: the tests do not mock
+`UsbDeviceConnection` to assert the actual Android call arguments/bytes, and the exact commit is
+local/unpushed with no signed artifact or remote checks. These gaps prevent signed-candidate,
+physical-qualification, and release approval, but do not require another source repair for this
+software checkpoint. They are explicitly retained as follow-up evidence requirements rather than
+silently treated as proof.
+
+Final software review disposition: **PASS**. Current release state remains
+**SOFTWARE_READY_PENDING_SIGNED_CANDIDATE**, not `READY_FOR_PIXEL_9`; no physical-fix or public
+hardware-support claim is made.

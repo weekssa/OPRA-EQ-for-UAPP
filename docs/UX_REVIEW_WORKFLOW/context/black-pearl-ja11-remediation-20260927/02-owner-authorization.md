@@ -67,3 +67,14 @@ The authorized attempt was completed once. The temporary package selected the ca
 Explorer profile; this is distinct from the earlier Hifigues community Explorer target recorded in
 the failed exact-candidate result. The temporary diagnostic package, instrumentation, and isolated
 app data were removed afterward. The original signed package and its data were not overwritten.
+
+## Scoped Black Pearl Android transport authorization — 2026-09-27
+
+The owner authorized: `Authorize the scoped Black Pearl Android transport change: use HID interrupt
+OUT endpoint when present, retain SET_REPORT fallback, preserve report bytes/timing/retry policy,
+and perform no hardware write during development.`
+
+This authorizes only the source change and its deterministic software tests. It does not authorize a
+DAC write, Flash, Reset, Apply, Save, Restore, automatic retry, branch push, merge, tag, publication,
+or public hardware-support claim. The implementation must fail closed when an interrupt OUT transfer
+does not send the complete 64-byte report and must preserve the existing control-transfer fallback.

@@ -466,6 +466,53 @@ was reverted, `git diff --check` passed, the diagnostic package was uninstalled,
 worktree returned clean at `01a968cac7a61f8cccd30cd26dfbce4c1fab7235`. Current disposition remains
 **REPAIR_REQUIRED** with no new pushable fix.
 
+## Scoped transport remediation — 2026-09-27
+
+The owner authorized the narrow Android transport change to use a HID interrupt OUT endpoint when
+present, retain `SET_REPORT` fallback, preserve report bytes/timing/retry policy, and perform no
+hardware write during development.
+
+### Implementation
+
+- Source commit: `eb761f1bc510a612acde7b71b453631e1ff23a8f` on
+  `codex/black-pearl-ja11-remediation-20260927`, based on refreshed `origin/main`
+  `ce5efdf7985e4fc48f975b14fcedb1f592d43772`.
+- Changed only `app/src/main/java/com/weekssa/opraeqforuapp/data/blackpearl/AndroidBlackPearlUsbTransport.kt`,
+  `BlackPearlOutputPath.kt`, and `BlackPearlOutputPathTest.kt`.
+- The claimed Black Pearl interface now retains an interrupt OUT endpoint when it exposes one.
+  Requests and writes pass the original 64-byte report unchanged through `bulkTransfer`; the path
+  returns success only for a complete transfer. Missing, zero, negative, or short transfers fail
+  closed. Interfaces without an interrupt OUT endpoint retain the existing HID `SET_REPORT` path,
+  including its request type, report ID, interface, timeout, and existing result policy.
+- Existing read drain/polling, bounded two-attempt read retry, same-session check, USB mutex, and
+  PEQ/command/Flash settle delays are unchanged. No mutation retry or protocol-byte change was made.
+
+### Decisive checks
+
+- `./tools/codex-android :app:testDebugUnitTest --tests com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlOutputPathTest --tests com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlProtocolTest --tests com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlFlasherTest` — **PASS**.
+- `./tools/codex-android :app:testDebugUnitTest` — **PASS**.
+- `ANDROID_SERIAL=emulator-5554 ./tools/codex-android :app:connectedDebugAndroidTest` — **PASS**, API 36 `codex-api36`, 24 tests, 0 skipped, 0 failed.
+- `./tools/codex-android :app:lintDebug :app:lintVitalRelease :app:assembleDebug :app:assembleRelease` — **PASS**.
+- `git diff --check` — **PASS** before commit.
+- Final independent review of the repaired commit — recorded in `04-final-review.md`; no hardware
+  operation was requested or performed.
+- `actionlint` — **NOT RUN**, unavailable locally; no workflow was changed by this source fix.
+
+### Development artifacts and boundary
+
+- `app/build/outputs/apk/debug/app-debug.apk` SHA-256:
+  `65973da872db8b1283197750ac20425bfe4d4d633f3bc3aa734e6edf3634686c`.
+- `app/build/outputs/apk/release/app-release-unsigned.apk` SHA-256:
+  `2d516a7057f8120e7c03e76592266f05c076402399d59f8b2f69eb9845f92160`.
+- These are local debug/unsigned outputs, not signed beta artifacts. No signer, workflow run, or
+  immutable artifact ID exists for this source SHA. No branch push occurred.
+- No DAC was connected, written, flashed, applied, reset, saved, restored, or mutated by Luna during
+  this source change. The physical Black Pearl state remains owner-controlled and not qualified.
+
+Current source disposition: **SOFTWARE_READY_PENDING_SIGNED_CANDIDATE**. The exact next release
+boundary is an owner-controlled exact signed candidate for this source SHA; do not hand off a debug
+or unsigned APK as a Pixel 9 candidate.
+
 ## External reference comparison and guardrail blocker — 2026-09-27
 
 The owner supplied the public `Matr1x01/trnBlackPearlEq` implementation as a working reference.

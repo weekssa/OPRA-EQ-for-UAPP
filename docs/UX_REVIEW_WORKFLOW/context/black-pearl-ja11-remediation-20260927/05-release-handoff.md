@@ -257,3 +257,22 @@ Status is **REPAIR_REQUIRED / BLOCKED — boundary requires owner decision**. Th
 no pushable source fix, and no Pixel 9 handoff. The required decision is whether to authorize one
 narrow source change that uses the existing interrupt OUT endpoint for Black Pearl writes, preserves
 the current HID reports/timing/retry policy, and retains control-transfer fallback when OUT is absent.
+
+## Current source checkpoint — signed candidate still pending
+
+The owner has now authorized the exact narrow endpoint-path change. The implementation is committed
+at `eb761f1bc510a612acde7b71b453631e1ff23a8f` on
+`codex/black-pearl-ja11-remediation-20260927`. It uses an interrupt OUT endpoint when present,
+retains the existing HID `SET_REPORT` fallback, requires a complete 64-byte interrupt transfer, and
+preserves report bytes, timing, read retry, session, and no-mutation-retry behavior. Focused/full
+unit tests, API-36 emulator instrumentation, lint, debug assembly, release lint, release/R8
+assembly, and final independent review are complete and passing.
+
+This does **not** create a signed beta. The local debug APK and unsigned minified release APK are
+development artifacts only; no signer, workflow run, or immutable artifact ID exists for this SHA.
+No branch push occurred. No DAC was connected or mutated by Luna during this source change.
+
+Current handoff status: **SOFTWARE_READY_PENDING_SIGNED_CANDIDATE**. Do not use the local APK for
+Pixel 9 hardware qualification. The next required boundary is an exact signed candidate tied to
+this source SHA through the trusted release path; only then can the owner decide whether to begin the
+final Pixel 9 review. This source result is not a physical-fix or public-support claim.

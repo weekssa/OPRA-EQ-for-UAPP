@@ -4,6 +4,28 @@ OWNS: app/src/**, docs/UX_REVIEW_WORKFLOW/context/black-pearl-ja11-remediation-2
 
 Scope: Implement and verify only the named Black Pearl final-readback truth correction and complete JA11 User 1 five-band My DAC editor/apply path, then prepare an exact owner handoff.
 
+## Current source checkpoint — `eb761f1bc510a612acde7b71b453631e1ff23a8f`
+
+This addendum supersedes the historical endpoint blocker below. The owner authorized one scoped
+source change: use HID interrupt OUT when present, retain `SET_REPORT` fallback, preserve report
+bytes/timing/retry policy, and perform no hardware write during development.
+
+- Source: `codex/black-pearl-ja11-remediation-20260927`, based on refreshed `origin/main`
+  `ce5efdf7985e4fc48f975b14fcedb1f592d43772`.
+- Implementation: interrupt OUT is selected only for OUT+interrupt endpoints; complete 64-byte
+  transfer is required; missing/zero/negative/short transfers fail closed; existing SET_REPORT
+  parameters and result policy remain unchanged.
+- Tests/gates: focused and full unit PASS; API-36 `codex-api36` instrumentation PASS (24/24); lint,
+  lintVitalRelease, debug assembly, and release/R8 assembly PASS; `git diff --check` PASS.
+- Independent review: final repaired-commit review recorded in `04-final-review.md`.
+- `actionlint`: NOT RUN, unavailable locally; no workflow was changed.
+- Exact signed candidate: NOT AVAILABLE for this branch SHA. Local debug and unsigned release APKs
+  are not candidates. No branch push occurred.
+- Hardware: no DAC connected or mutated by Luna for this change; physical qualification remains
+  owner-controlled and not proven.
+
+Current gate status: **SOFTWARE_READY_PENDING_SIGNED_CANDIDATE**. `READY_FOR_PIXEL_9` is not claimed.
+
 ## Current follow-up gate state — exact candidate source `b61f02e8c91656f14ffc639e4c6d937b2162a1b7`
 
 This section supersedes the historical post-Pixel gate state recorded below. The owner-authorized

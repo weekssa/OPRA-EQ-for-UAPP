@@ -110,3 +110,30 @@ only the IN endpoint and always sends writes through `controlTransfer`. This is 
 for the observed PEQ/global-gain divergence, but it is not yet source or physical proof. Changing the
 OPRA write endpoint is explicitly outside the current remediation guardrails, so the source remains
 unchanged and the task is blocked pending an owner decision on that boundary.
+
+## Scoped endpoint-path authorization and software verification — 2026-09-27
+
+The owner subsequently authorized the exact narrow source change: use the Black Pearl HID interrupt
+OUT endpoint when present, retain HID `SET_REPORT` fallback, preserve report bytes/timing/retry
+policy, and perform no hardware write during development. No source was copied from the supplied
+reference repository.
+
+- Final source commit: `eb761f1bc510a612acde7b71b453631e1ff23a8f`.
+- Changed files: `AndroidBlackPearlUsbTransport.kt`, `BlackPearlOutputPath.kt`, and
+  `BlackPearlOutputPathTest.kt` only.
+- Interrupt OUT sends the unchanged report and is successful only when all requested bytes are
+  transferred. Zero, negative, and short transfers fail closed. If no interrupt OUT endpoint is
+  present, the existing control-transfer path and its parameters remain unchanged.
+- Existing read draining, bounded two-attempt read retry, session-current predicate, mutation
+  serialization, and PEQ/command/Flash settle delays are unchanged. No write retry was added.
+- Focused tests, full unit tests, API-36 emulator instrumentation, lint, debug assembly, release
+  lint, and release/R8 assembly pass. Independent final review is recorded in `04-final-review.md`.
+- Local APKs are development outputs only: debug SHA-256
+  `65973da872db8b1283197750ac20425bfe4d4d633f3bc3aa734e6edf3634686c`; unsigned minified release
+  SHA-256 `2d516a7057f8120e7c03e76592266f05c076402399d59f8b2f69eb9845f92160`.
+- No DAC was connected, written, flashed, applied, reset, saved, restored, or mutated by Luna for
+  this source change. No signed beta was produced and no branch was pushed.
+
+Current disposition for this source checkpoint is **SOFTWARE_READY_PENDING_SIGNED_CANDIDATE**.
+The earlier physical failure and the historical endpoint blocker remain evidence only; this source
+checkpoint is not physical qualification and is not a public hardware-support claim.
