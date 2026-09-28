@@ -40,3 +40,11 @@ the existing completed trace/status identity, use truthful Apply success/not-ver
 retain readable/technical reports, allow dismissal, expire only verified success on the controlled
 test clock, and keep failure/uncertainty actionable until dismissal or recovery. The JA11
 transaction, Save boundary, reconnect behavior, and retry policy remain unchanged.
+
+## Read-only protocol-diagnosis follow-up
+
+After the exact-candidate physical failure, the owner authorized one Black Pearl read-only
+protocol-diagnosis capture. The follow-up may inspect native read request/response bytes and the
+resulting My DAC snapshot, but may not infer a write correction or change wire bytes, gain math,
+tolerance, ordering, retry policy, or hardware state without separate evidence. A raw capture that
+matches the maintained codec is a diagnostic closure, not a physical qualification pass.

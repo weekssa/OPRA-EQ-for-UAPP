@@ -67,3 +67,15 @@ mutated by Luna. The owner subsequently authorized minimum main integration. PR 
 `main` at `b61f02e8c91656f14ffc639e4c6d937b2162a1b7`, and signed-beta workflow #1372 produced the
 exact combined candidate recorded in `05-release-handoff.md`. Current disposition is
 `READY_FOR_PIXEL_9`; physical validation remains owner-controlled.
+
+## Post-candidate diagnostic disposition — 2026-09-27
+
+The owner-authorized Black Pearl AFUL Explorer Direct Flash did not verify the requested final
+gain (`expected raw -7398`, `actual raw -6400`). A later owner-authorized reconnect/full refresh
+confirmed the live hardware baseline remained raw `-6400` (`-25.00 dB`). A separate diagnostic
+debug package then captured a read-only native HID trace on the exact Black Pearl identity; the
+global-gain read response was `4B 80 03 02 00 E7 FF FF ...`, which decodes to raw `-6400` under the
+maintained codec. The capture did not identify a safe protocol correction, so the existing source
+remains unchanged and no new fix branch push is warranted. Current disposition is `REPAIR_REQUIRED`;
+the prior exact signed candidate remains evidence of truthful failure handling, not proof of a
+successful Black Pearl Flash.

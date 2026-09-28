@@ -204,3 +204,23 @@ against its source SHA, APK SHA-256, signer certificate, workflow run, and immut
   independent result, and classify `PASS`, `FAIL`, or `INCONCLUSIVE`.
 - Do not call either issue physically fixed or publicly supported from software/emulator evidence.
 - Use `06-post-pixel-closure-prompt.md` for the next bounded closure update.
+
+## Read-only Black Pearl diagnosis addendum — 2026-09-27
+
+The owner-authorized read-only capture completed on the same Pixel 9 and exact Black Pearl identity
+after the failed AFUL Explorer Flash. The diagnostic session reached Connected, refreshed My DAC,
+and captured native reads without Flash, Reset, Apply, Save, Restore, or retry. Evidence is in
+`/tmp/opra-black-pearl-diagnostic-20260927-195236/`; the filtered log SHA-256 is
+`5250ef7845041f55facea336790e65940d3a37dd7d2b8ffbee84bf6f678f11bf` and the full log SHA-256 is
+`7512e300995553cb4093bd4a1820e5b32558b7cea590b49b42994c6657003b04`.
+
+The decisive read was global gain request `4B 80 03 ...` and response `4B 80 03 02 00 E7 FF FF ...`,
+which decodes to raw `-6400` / `-25.00 dB`. This matches the prior failure's observed final gain
+and the refreshed My DAC state. The maintained codec/read path is corroborated, but no write-side
+defect is proven. The temporary diagnostic changes were reverted, so the branch has no new source
+fix and no new beta candidate to push. The exact signed candidate remains a truthful-failure
+candidate only; it must not be presented as a successful Black Pearl Flash candidate.
+
+Current handoff status: `REPAIR_REQUIRED`. Do not request another hardware write from this evidence.
+A future write-side diagnosis would require a separately authorized, exact operation with explicit
+stop conditions; Luna did not mutate hardware during this diagnostic capture.

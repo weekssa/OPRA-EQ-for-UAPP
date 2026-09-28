@@ -167,3 +167,20 @@ the post-dialog app surface did not retain an observable editor success sentence
 operation trace proving the exact Save count. This is an evidence/feedback boundary, not evidence
 that the observed final readbacks were wrong. No Black Pearl hardware was exercised, and no public
 support claim is made.
+
+## Read-only Black Pearl protocol-diagnosis review — 2026-09-27
+
+The post-failure capture was reviewed against the maintained Black Pearl protocol and the exact
+physical evidence. It is diagnostic evidence only: the diagnostic app connected and refreshed reads,
+but issued no setting write or persistence command. The native global-gain response was
+`4B 80 03 02 00 E7 FF FF ...`, raw `-6400`, matching both the current app snapshot (`-25.00 dB`)
+and the earlier final-readback mismatch (`expected -7398`, `actual -6400`). The ten-band read
+responses were present and parseable.
+
+Independent review conclusion: the existing codec and read envelope are corroborated; the capture
+does not establish a write-side byte/order defect. No tolerance, gain math, report order, timing,
+retry behavior, or transport change is justified. The temporary diagnostic instrumentation was
+removed and the production source is clean of diagnostic changes. The prior mandatory independent
+software review remains PASS;
+this follow-up does not upgrade the physical result. Current release disposition is
+`REPAIR_REQUIRED`, with no new source fix or pushable candidate produced.

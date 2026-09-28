@@ -56,3 +56,11 @@ The authorized read-only recovery subsequently established a fresh current snaps
 10-filter hardware state matched, active slot 1 remained selected, and playback gain remained
 `-25.00 dB` / raw `-6400` rather than the requested `-7398`. This is partial-state evidence only;
 it does not convert the complete Flash to a pass and does not prove restoration.
+
+The owner-authorized read-only protocol capture then confirmed a native global-gain read response of
+`4B 80 03 02 00 E7 FF FF ...` (`-6400`) on the exact Black Pearl identity. Treat this as diagnosis
+of the current read path, not proof of a write-side correction. The temporary diagnostic package was
+removed, the production source was unchanged, and the current outcome remains
+`REPAIR_REQUIRED` / `PHYSICAL_FAIL` for the Black Pearl Flash. Do not classify the candidate as
+physically fixed or request another mutation unless a new exact diagnosis and owner authorization
+exist.

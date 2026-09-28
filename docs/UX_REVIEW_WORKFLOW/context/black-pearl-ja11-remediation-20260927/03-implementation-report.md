@@ -362,3 +362,52 @@ candidate checksum.
 The earlier pre-Pixel statement is superseded by the controlled JA11 session above. Luna did perform
 the two owner-authorized JA11 Apply operations and restored the original state. No Black Pearl or
 EW300 hardware was connected or mutated. No public hardware-support claim is made.
+
+## Owner-authorized Black Pearl read-only protocol-diagnosis capture — 2026-09-27
+
+This capture followed the exact-candidate Black Pearl physical failure and was explicitly read-only.
+The diagnostic APK used a temporary debug-only application-id suffix so the signed candidate package
+`com.weekssa.opraeqforuapp` and its data were not replaced. The temporary raw-read logger and build
+suffix were reverted after capture, and the diagnostic package was uninstalled. No Flash, Reset,
+Apply, Save, Restore, or retry was invoked by this capture.
+
+Device and identity:
+
+- Pixel 9, codename `tokay`, Android API 37.
+- ADB serial: `adb-46141FDAQ003KZ-3AwgSo._adb-tls-connect._tcp`.
+- Black Pearl: TTGK Technology / TE-C, VID `0x3302`, PID `0x43E8`, serial `330243E8260129`.
+- The first temporary-permission response did not grant a usable session and Android re-enumerated
+  the DAC; one bounded second connection used the persistent permission choice. The successful
+  session then reached `Connected` and My DAC showed `Verified current hardware`, `Unknown EQ`,
+  10 filters, active slot 1, and playback gain `-25.00 dB`.
+
+Read-only raw evidence:
+
+- Evidence directory: `/tmp/opra-black-pearl-diagnostic-20260927-195236/`.
+- Filtered diagnostic log SHA-256:
+  `5250ef7845041f55facea336790e65940d3a37dd7d2b8ffbee84bf6f678f11bf`.
+- Full threadtime log SHA-256:
+  `7512e300995553cb4093bd4a1820e5b32558b7cea590b49b42994c6657003b04`.
+- UI XML SHA-256: `f70154becea4f84d2a81f96fc0c4f61909ef1b9262ea36eefc3b3cc0f98b7e3b`.
+- Screenshot SHA-256: `fb3a4b326b2c3f51b4ae0bb3318fb2f765e32f5032a0329c4a61002d0752a74c`.
+- The trace captured the complete ten-band read sequence, global-gain read, version/feature reads,
+  and session/control reads. The global-gain request was `4B 80 03 00 00 00 00 ...`; the response
+  was `4B 80 03 02 00 E7 FF FF ...`. Bytes `00 E7` are the maintained little-endian signed raw
+  value `-6400`, matching the UI's `-25.00 dB` and the prior final-readback mismatch.
+
+Diagnosis:
+
+- The capture corroborates the maintained report envelope, read opcode, global-gain command, and
+  little-endian raw readback representation. An independent read-only Black Pearl controller source
+  also uses report ID `0x4B`, read `0x80`, global-gain command `0x03`, and the same control-transfer
+  envelope; it is research corroboration only and no code was copied.
+- The capture does not contain a write, so it cannot prove whether the device ignored the earlier
+  requested gain write or whether a device/firmware/variant boundary caused the mismatch.
+- No safe source fix is proven. The production source, protocol bytes, gain math, tolerance, timing,
+  report order, retry policy, and UI behavior remain unchanged. The exact signed candidate is not a
+  successful Black Pearl hardware candidate, and no new beta push is recommended from this evidence.
+
+The final statement for this run is: Black Pearl truthfulness/fail-closed behavior **PASS**;
+requested AFUL Explorer Flash and restoration **PHYSICAL_FAIL / NOT VERIFIED**; read-only protocol
+diagnosis **COMPLETE, no source correction identified**. Luna did not mutate hardware during this
+diagnostic capture.
