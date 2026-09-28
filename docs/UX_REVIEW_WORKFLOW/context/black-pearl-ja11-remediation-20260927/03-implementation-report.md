@@ -517,8 +517,8 @@ or unsigned APK as a Pixel 9 candidate.
 
 ## Exact signed beta handoff — 2026-09-28
 
-Minimum main integration was authorized and completed without conflicts. Main and the remediation
-branch now resolve to `2cba1322245221103b8790bfcef705a38022c2ed`. The trusted workflow
+Minimum main integration was authorized and completed without conflicts at candidate source SHA
+`2cba1322245221103b8790bfcef705a38022c2ed`; the later handoff commit is documentation-only. The trusted workflow
 `Signed EQ Library Beta Candidate` ran with `candidate_target=black-pearl-ja11` as
 [#36368698803](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36368698803) and completed
 **PASS**.

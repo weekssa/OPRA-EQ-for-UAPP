@@ -281,8 +281,9 @@ final Pixel 9 review. This source result is not a physical-fix or public-support
 
 ## Exact signed candidate — owner Pixel 9 gate
 
-The owner authorized minimum main integration. Main and the remediation branch now resolve to
-`2cba1322245221103b8790bfcef705a38022c2ed`. The trusted workflow
+The owner authorized minimum main integration at candidate source SHA
+`2cba1322245221103b8790bfcef705a38022c2ed`; the later handoff commit is documentation-only, so the
+candidate remains pinned to that source. The trusted workflow
 `Signed EQ Library Beta Candidate` completed **PASS** as run
 [#36368698803](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36368698803) with
 `candidate_target=black-pearl-ja11`.

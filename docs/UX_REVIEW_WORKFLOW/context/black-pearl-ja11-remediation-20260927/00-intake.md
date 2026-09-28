@@ -141,9 +141,10 @@ checkpoint is not physical qualification and is not a public hardware-support cl
 
 ## Exact signed candidate provenance — 2026-09-28
 
-The owner authorized minimum main integration. The conflict-free branch merge was pushed to
-`main` at source SHA `2cba1322245221103b8790bfcef705a38022c2ed`; `origin/main` and the remediation
-branch both resolve to that SHA. The trusted `Signed EQ Library Beta Candidate` workflow was
+The owner authorized minimum main integration. The conflict-free candidate source merge was pushed
+to `main` at source SHA `2cba1322245221103b8790bfcef705a38022c2ed`; the later handoff documentation
+commit is docs-only, and the signed candidate remains pinned to that source SHA. The trusted
+`Signed EQ Library Beta Candidate` workflow was
 dispatched with `candidate_target=black-pearl-ja11` and completed successfully as run
 `36368698803`:
 <https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36368698803>.

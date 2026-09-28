@@ -247,8 +247,8 @@ hardware-support claim is made.
 
 ## Signed-candidate provenance review — 2026-09-28
 
-The owner-authorized minimum main integration completed conflict-free. Main and the remediation
-branch resolve to `2cba1322245221103b8790bfcef705a38022c2ed`. The trusted signed-beta workflow run
+The owner-authorized minimum main integration completed conflict-free at candidate source SHA
+`2cba1322245221103b8790bfcef705a38022c2ed`; the later handoff commit is documentation-only. The trusted signed-beta workflow run
 [#36368698803](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36368698803) completed
 successfully for `candidate_target=black-pearl-ja11`.
 
