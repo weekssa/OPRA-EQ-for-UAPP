@@ -155,5 +155,18 @@ and immutable artifact `10948632352` / `sha256:3e9fb31a814a8feb30ff0c48ac69a71cd
   still failed at the final global-gain readback boundary; deterministic source diagnosis is
   required before another physical write.
 
+## Deterministic diagnosis addendum
+
+- Focused command: `./tools/codex-android :app:testDebugUnitTest --tests '*BlackPearl*' --tests '*Kt02h20FiveBandOptimizerTest*'`
+- Result: **PASS** (`BLACK_PEARL_DIAG_TESTS_PASS`).
+- Source trace: baseline raw `-7936` + `round(-3.90 * 256) = -998` -> expected raw `-8934`;
+  physical final readback raw `-8960`.
+- Independent oracle review: the supplied Android reference uses interrupt OUT when present,
+  retains SET_REPORT fallback, and preserves signed raw/256 gain; it does not establish a
+  Black-Pearl global-gain quantization rule.
+- Disposition: no source correction is proven. Do not widen tolerance, alter wire bytes, replace
+  the target with readback, add retry, or request another hardware write. Current status remains
+  **REPAIR_REQUIRED**.
+
 Current gate status: **REPAIR_REQUIRED** for Black Pearl. JA11 remains an independent result and
 must not be inferred from this Black Pearl failure. No public hardware-support claim follows.

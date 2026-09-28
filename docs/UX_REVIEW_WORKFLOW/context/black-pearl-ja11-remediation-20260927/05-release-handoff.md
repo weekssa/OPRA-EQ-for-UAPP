@@ -341,3 +341,16 @@ PASS, but the interrupt-OUT transport candidate did not produce a verified compl
 must remain independently classified; no public hardware-support claim follows. The next step is
 deterministic source-side diagnosis and a new exact signed candidate, not another owner write on
 this candidate.
+
+## Current engineering boundary after deterministic diagnosis
+
+The source-side trace is reproducible and unchanged: baseline raw `-7936`, AFUL Explorer preamp
+`-3.90 dB`, rounded 256-unit delta `-998`, expected raw `-8934`, and final readback raw `-8960`.
+The supplied independent Black Pearl implementation corroborates the report framing, interrupt-OUT
+transport, and raw/256 representation, but does not prove a global-gain quantization rule. The
+current source and focused tests therefore remain truthfully fail-closed; no tolerance widening,
+readback substitution, retry, wire-byte change, or speculative rounding has been made.
+
+There is no new candidate for Pixel testing. Leave the Black Pearl untouched. Owner support is
+needed only after a proven source correction has passed the full software gates and produced a new
+exact signed candidate with immutable provenance.

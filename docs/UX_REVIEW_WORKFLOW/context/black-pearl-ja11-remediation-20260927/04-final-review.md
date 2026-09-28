@@ -298,3 +298,10 @@ same signed little-endian 16-bit global-gain representation at 256 raw units per
 evidence to reinterpret that as an accepted native quantization step, so no tolerance, codec, wire,
 timing, or retry change is approved by this result. A new source correction requires deterministic
 evidence before another physical candidate is produced.
+
+The source-side value trace is now closed for the tested operation: baseline `-7936`, source
+preamp `-3.90 dB`, rounded delta `-998`, expected target `-8934`, observed readback `-8960`.
+The independent Android reference uses the same 64-byte report and raw/256 gain model, but does
+not establish a device-side global-gain step. Focused deterministic tests pass; no defensible
+production correction has been identified. Final review therefore remains **REPAIR_REQUIRED**,
+with no additional owner write requested on the current candidate.

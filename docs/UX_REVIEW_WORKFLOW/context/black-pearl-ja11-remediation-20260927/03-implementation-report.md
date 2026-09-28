@@ -614,3 +614,14 @@ gain as a signed little-endian 16-bit value at 256 raw units per dB. The observe
 rule from an exact-target write that was not accepted. The current evidence does not justify
 changing wire bytes, gain math, verification tolerance, or retry policy. The scoped interrupt-OUT
 candidate therefore remains a failed physical candidate, not a proven repair.
+
+The deterministic follow-up confirms the source-side values: the tested baseline raw gain was
+`-7936` (`-31.00 dB`), the AFUL Explorer source preamp was `-3.90 dB`, and
+`round(-3.90 * 256) = -998`, producing the expected target raw `-8934`. The observed `-8960`
+readback is exactly `-35.00 dB`, but one observation cannot distinguish a 0.25 dB, 1 dB, or other
+device/firmware quantization rule from a transformed write. The supplied independent Android
+reference at `45bbf3c65c899181395eb7936615ced1fbd5d4be` and its current protocol implementation
+retain arbitrary signed raw gain at 256 units per dB and provide no global-gain quantization rule.
+Focused Black Pearl/optimizer tests pass on the current source. No production change is justified;
+the only safe disposition is to retain exact final-readback verification and defer any new hardware
+mutation until a new source hypothesis is proven and a new exact signed candidate exists.
