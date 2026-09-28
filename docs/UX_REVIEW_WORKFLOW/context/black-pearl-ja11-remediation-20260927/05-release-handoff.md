@@ -244,3 +244,16 @@ candidate only; it must not be presented as a successful Black Pearl Flash candi
 Current handoff status: `REPAIR_REQUIRED`. Do not request another hardware write from this evidence.
 A future write-side diagnosis would require a separately authorized, exact operation with explicit
 stop conditions; Luna did not mutate hardware during this diagnostic capture.
+
+## Current engineering blocker — endpoint path requires owner decision
+
+The supplied working reference uses the Black Pearl HID interrupt OUT endpoint when available and
+falls back to HID `SET_REPORT` otherwise. The exact Black Pearl descriptor captured in this run has
+OUT endpoint `0x05`; OPRA currently ignores it and uses `controlTransfer` for every write. This is
+the leading software hypothesis for the earlier global-gain mismatch, but changing the endpoint
+path is explicitly outside the current remediation scope.
+
+Status is **REPAIR_REQUIRED / BLOCKED — boundary requires owner decision**. There is no signed beta,
+no pushable source fix, and no Pixel 9 handoff. The required decision is whether to authorize one
+narrow source change that uses the existing interrupt OUT endpoint for Black Pearl writes, preserves
+the current HID reports/timing/retry policy, and retains control-transfer fallback when OUT is absent.

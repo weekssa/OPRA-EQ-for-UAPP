@@ -104,3 +104,10 @@ independent and neither is physically qualified by this software/emulator eviden
 - [ ] G10: physical state restored after the diagnostic
   EVIDENCE: NOT RUN. The diagnostic state is explicitly not restored by Luna. Any later restoration
   or follow-up mutation requires a separately identified target and explicit authorization.
+
+- [ ] G11: external transport hypothesis is resolved within the authorized scope
+  EVIDENCE: NOT RUN. Reference commit `45bbf3c65c899181395eb7936615ced1fbd5d4be` uses interrupt
+  OUT endpoint `bulkTransfer` when available; the captured Black Pearl exposes OUT `0x05`, while
+  OPRA currently uses only control-transfer writes. Testing that path requires changing endpoint
+  behavior, which is explicitly outside the current remediation guardrails. Status is
+  **BLOCKED — boundary requires owner decision**; no hardware test or push occurred.

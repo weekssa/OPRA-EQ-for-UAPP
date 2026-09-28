@@ -465,3 +465,26 @@ not restored by Luna because the authorization prohibited an automatic restore. 
 was reverted, `git diff --check` passed, the diagnostic package was uninstalled, and the source
 worktree returned clean at `01a968cac7a61f8cccd30cd26dfbce4c1fab7235`. Current disposition remains
 **REPAIR_REQUIRED** with no new pushable fix.
+
+## External reference comparison and guardrail blocker — 2026-09-27
+
+The owner supplied the public `Matr1x01/trnBlackPearlEq` implementation as a working reference.
+It was inspected read-only at Android branch commit
+`45bbf3c65c899181395eb7936615ced1fbd5d4be` and protocol branch commit
+`cd1ed0783134723d3c0a69088d739ac965354883`. No source was copied and the repository was not
+modified. The reference Android transport (`UsbHidTransport.kt`) discovers both interrupt endpoints;
+when an OUT endpoint exists it sends the unchanged 64-byte report with `bulkTransfer`, and uses HID
+`SET_REPORT` only as a fallback. Its protocol reports corroborate OPRA's existing report ID, command
+IDs, 64-byte framing, and little-endian gain representation; no wire-byte or codec correction is
+justified by this comparison.
+
+The exact Black Pearl descriptor captured during the authorized run shows HID interface 0 with
+interrupt IN endpoint `0x86` and interrupt OUT endpoint `0x05`, both with 64-byte maximum packets.
+OPRA's `AndroidBlackPearlUsbTransport` currently retains only the IN endpoint and sends every write
+through `controlTransfer`. This transport-path difference is the strongest current hypothesis for
+the earlier observation that PEQ readback changed while the global-gain readback remained at raw
+`-6400`, but it is not proven without a controlled write using the alternate path.
+
+Implementing that alternate path would change OPRA's USB endpoint behavior. The remediation prompt
+explicitly prohibits changing endpoints, so no source edit was made. Current status remains
+**REPAIR_REQUIRED / BLOCKED — boundary requires owner decision**; there is no candidate to push.

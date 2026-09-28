@@ -200,3 +200,17 @@ removed and the production source is clean of diagnostic changes. The prior mand
 software review remains PASS;
 this follow-up does not upgrade the physical result. Current release disposition is
 `REPAIR_REQUIRED`, with no new source fix or pushable candidate produced.
+
+## External reference review addendum — 2026-09-27
+
+The supplied `Matr1x01/trnBlackPearlEq` Android implementation was compared read-only. At commit
+`45bbf3c65c899181395eb7936615ced1fbd5d4be`, it uses an available interrupt OUT endpoint for writes
+and retains HID `SET_REPORT` only as fallback. The Black Pearl descriptor captured in this run has
+that OUT endpoint (`0x05`) alongside IN endpoint `0x86`; OPRA currently ignores OUT and uses only
+`controlTransfer`.
+
+This is actionable evidence and a plausible explanation for the prior gain-write failure, but not
+proof of a fix. The required change would alter USB endpoint behavior, which the remediation scope
+forbids. Independent review therefore finds the named Black Pearl defect unresolved and the next
+source change **blocked pending owner authorization for that exact boundary**. No external code was
+copied, no protocol bytes were changed, and no hardware was touched during this comparison.

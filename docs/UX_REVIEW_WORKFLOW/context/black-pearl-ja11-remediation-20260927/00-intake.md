@@ -95,3 +95,18 @@ source correction for the earlier Hifigues target. The diagnostic package and te
 instrumentation were removed, the signed package remained installed and untouched, and no Reset,
 retry, Save, Restore, or second mutation was performed. Current disposition remains
 `REPAIR_REQUIRED`; no new candidate is available or recommended for push.
+
+## External Black Pearl implementation comparison — 2026-09-27
+
+The owner supplied `https://github.com/Matr1x01/trnBlackPearlEq`. It was inspected read-only at
+Android branch commit `45bbf3c65c899181395eb7936615ced1fbd5d4be` and protocol branch commit
+`cd1ed0783134723d3c0a69088d739ac965354883`; no source was copied and the other repository was not
+modified. Its Android transport detects an interrupt OUT endpoint and uses `bulkTransfer` for writes
+when present, falling back to HID `SET_REPORT` only when no OUT endpoint exists.
+
+The captured Black Pearl descriptor for serial `330243E8260129` exposes HID interface 0 with
+interrupt IN endpoint `0x86` and interrupt OUT endpoint `0x05`, both 64-byte. OPRA currently stores
+only the IN endpoint and always sends writes through `controlTransfer`. This is a credible explanation
+for the observed PEQ/global-gain divergence, but it is not yet source or physical proof. Changing the
+OPRA write endpoint is explicitly outside the current remediation guardrails, so the source remains
+unchanged and the task is blocked pending an owner decision on that boundary.
