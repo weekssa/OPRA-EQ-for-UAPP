@@ -43,8 +43,10 @@ in `05-release-handoff.md`.
 > release-readiness audit, changelog, and owner go/no-go package. Do not merge, publish, tag, or
 > make a public hardware-support claim without separate owner approval.
 
-Current post-session state: `OWNER_PHYSICAL_PENDING`. The exact candidate above has not been
-exercised by Luna. The owner must validate Black Pearl and JA11 independently, capture the app
-reports/trace and restoration evidence, and return the evidence before either issue can be
-classified as physically passed or accepted. Black Pearl and JA11 must not inherit the historical
-`acaf4dd` session result.
+Current post-session state: `PHYSICAL_FAIL` for the single Black Pearl AFUL Explorer Direct Flash
+exercise and `PHYSICAL_INCONCLUSIVE` for the previously exercised JA11 session. The exact candidate
+was verified on the Pixel 9 and the Black Pearl identity matched, but final raw playback-gain
+readback was `expected -7398`, `actual -6400`; the app correctly withheld success. No retry,
+reconnect, refresh, Reset, Save, Restore, or restoration claim followed. Treat the post-operation
+Black Pearl state as unknown, do not transfer the historical `acaf4dd` result, and do not classify
+either named issue as owner-accepted or publicly supported.

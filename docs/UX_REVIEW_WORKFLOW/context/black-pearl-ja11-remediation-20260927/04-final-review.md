@@ -1,8 +1,9 @@
 # Final review - Black Pearl and JA11 remediation
 
-Status: `READY_FOR_PIXEL_9` - independent read-only review passed, owner-authorized main
-integration completed, and exact signed provenance is recorded below. This remains an owner
-physical-validation state, not a physical-fix or public-support claim.
+Status: `PHYSICAL_FAIL` for the exercised Black Pearl Direct Flash path. Independent review,
+software/emulator gates, and exact signed provenance passed; the owner-authorized AFUL Explorer
+mutation was correctly reported as not verified after a final raw-gain mismatch. JA11 remains
+independently `PHYSICAL_INCONCLUSIVE`; neither device is publicly supported by this result.
 
 ## Exact candidate review addendum — source `b61f02e8c91656f14ffc639e4c6d937b2162a1b7`
 
@@ -20,7 +21,23 @@ physical-validation state, not a physical-fix or public-support claim.
 - Signed emulator install and cold launch independently visible in the job log: PASS; `Status: ok`,
   `LaunchState: COLD`, `Complete`.
 - No protocol, transport, retry, identity, Save, canonical-EQ, or hardware behavior changed in
-  the candidate production diff. Luna did not mutate hardware.
+  the candidate production diff. Luna later performed exactly one owner-authorized physical Flash
+  action; the candidate truthfully rejected the mismatched final readback and no retry followed.
+
+## Owner-authorized Pixel 9 physical execution review — 2026-09-27
+
+- Candidate, package, APK checksum, Pixel identity, and Black Pearl identity matched the exact
+  provenance recorded in `03-implementation-report.md` and `05-release-handoff.md`.
+- The single authorized AFUL Explorer Direct Flash reached terminal failure, not success. The
+  visible result contained the required not-verified wording and the actionable no-automatic-retry
+  boundary.
+- The decisive mismatch was `expected raw -7398, actual raw -6400` for final Black Pearl playback
+  gain. Because the requested hardware state was not confirmed and no post-failure refresh or
+  restoration was authorized, the physical Flash qualification is **PHYSICAL_FAIL** and the final
+  hardware state is **unknown**.
+- The named truth defect's exercised failure behavior is a **PASS**: no false success claim,
+  no duplicate retry, and no later write was attempted. This is not a pass for the requested EQ's
+  hardware application or restoration.
 
 ## Historical pre-candidate independent review — source `9f5cb852994e1c88fce80598f249a97fae047429`
 

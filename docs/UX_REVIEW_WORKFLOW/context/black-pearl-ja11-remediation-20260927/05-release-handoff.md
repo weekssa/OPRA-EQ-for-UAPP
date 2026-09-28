@@ -1,6 +1,8 @@
 # Release handoff - Black Pearl and JA11 remediation
 
-Status: `READY_FOR_PIXEL_9`
+Status: `PHYSICAL_FAIL` for the exercised Black Pearl Direct Flash path; JA11 remains independently
+`PHYSICAL_INCONCLUSIVE`. The exact signed candidate and software/emulator gates remain valid, but
+the owner-authorized AFUL Explorer mutation did not verify its final native state.
 
 ## Exact signed candidate — owner Pixel 9 gate
 
@@ -26,7 +28,30 @@ not establish physical qualification or public hardware support.
   `https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-b61f02e.apk`.
 - Signed emulator install: PASS (`Success`). Cold launch: PASS (`Status: ok`, `LaunchState: COLD`,
   `Activity: com.weekssa.opraeqforuapp/.MainActivity`, `Complete`).
-- Luna did not connect, mutate, flash, apply, reset, save, restore, or otherwise operate a DAC.
+- Before the owner-authorized physical session, Luna did not connect, mutate, flash, apply, reset,
+  save, restore, or otherwise operate a DAC.
+
+## Owner-authorized Pixel 9 result — Black Pearl / AFUL Explorer
+
+This addendum supersedes the pre-session checklist below for the exercised Black Pearl path.
+
+- Exact candidate: `b61f02e8c91656f14ffc639e4c6d937b2162a1b7`, APK SHA-256
+  `276587734fc863277b83e4310c040cee22c27261075e21fa75d766ded9eef27e`, workflow #1372,
+  immutable artifact `10941292707` / `sha256:188d2e4b973e7aab420d4c7d3890dba3407415c1d2c8f935a418acdacdbd8fc3`.
+- Pixel: Google Pixel 9 / `tokay` / API 37 / wireless serial
+  `adb-46141FDAQ003KZ-3AwgSo._adb-tls-connect._tcp`.
+- DAC identity: TTGK Technology TE-C, VID `0x3302`, PID `0x43E8`, serial `330243E8260129`.
+- Baseline: app-connected, verified Flat, 10 filters, active slot 1, playback gain `-25.00 dB`.
+- One authorized action: My EQs -> AFUL -> Explorer -> Flash. No second mutation was attempted.
+- Result: **PHYSICAL_FAIL** for requested-state verification. Terminal UI reported
+  `Final hardware readback did not confirm the requested EQ` and
+  `expected raw -7398, actual raw -6400`.
+- The app correctly withheld success and instructed reconnect/refresh before any later hardware
+  action. No retry, Reset, Save, Restore, reconnect, or refresh was performed, so restoration is
+  **NOT VERIFIED** and the post-operation DAC state is **UNKNOWN**.
+- The Black Pearl truthfulness defect's failure-path assertion is **PASS**; the Direct Flash
+  application/restoration gate is **FAIL**. Do not label Black Pearl physically fixed or publicly
+  supported.
 
 ## Historical pre-candidate source boundary — `9f5cb852994e1c88fce80598f249a97fae047429`
 

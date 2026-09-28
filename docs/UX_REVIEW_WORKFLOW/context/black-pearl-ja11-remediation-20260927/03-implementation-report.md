@@ -1,9 +1,10 @@
 # Implementation report - Black Pearl and JA11 remediation
 
-Status: `READY_FOR_PIXEL_9`. The owner-authorized minimum main integration completed, the existing
-combined non-public signing workflow produced an exact candidate from the merged source, and the
-software/emulator gates plus mandatory independent review pass. This is an owner physical-validation
-handoff only; it is not a physical-fix or public-support claim.
+Status: `PHYSICAL_FAIL` for the owner-authorized Black Pearl Direct Flash exercise. The exact signed
+candidate, software/emulator gates, and mandatory independent review passed; the single AFUL Explorer
+hardware mutation did not reach verified success because final raw playback-gain readback mismatched.
+The Black Pearl truthfulness defect's failure-path behavior passed, but the requested hardware state
+was not verified and restoration was not attempted. JA11 remains independently `PHYSICAL_INCONCLUSIVE`.
 
 ## Exact signed candidate addendum — source `b61f02e8c91656f14ffc639e4c6d937b2162a1b7`
 
@@ -28,7 +29,39 @@ handoff only; it is not a physical-fix or public-support claim.
   `sha256:e041ee672816ff85ba0c866ff0bdfa8b8a616ec540f95c93f3fd632f19197d57`.
 - Clean signed-emulator install: PASS (`Success`, install command completed).
 - Cold launch: PASS (`Status: ok`, `LaunchState: COLD`, `Activity: ...MainActivity`, `Complete`).
-- Luna did not connect, mutate, flash, apply, reset, save, restore, or otherwise operate a DAC.
+- Before the owner-authorized physical session, Luna did not connect, mutate, flash, apply, reset,
+  save, restore, or otherwise operate a DAC.
+
+## Owner-authorized Pixel 9 physical execution addendum — 2026-09-27
+
+- Exact candidate installed: source `b61f02e8c91656f14ffc639e4c6d937b2162a1b7`; APK
+  `EQ-Library-v0.7.0-beta-b61f02e.apk`; APK SHA-256
+  `276587734fc863277b83e4310c040cee22c27261075e21fa75d766ded9eef27e`; package
+  `com.weekssa.opraeqforuapp`, version `0.7.0` / code `7`.
+- Pixel: Google Pixel 9, `tokay`, Android API 37, wireless ADB serial
+  `adb-46141FDAQ003KZ-3AwgSo._adb-tls-connect._tcp`.
+- Black Pearl identity: vendor `0x3302`, product `0x43E8`, manufacturer `TTGK Technology`,
+  product `TE-C`, serial `330243E8260129`; identity matched the maintained exact profile.
+- Read-only baseline before mutation: app `Connected`; My DAC showed `Verified current hardware`,
+  `Flat`, 10 filters, active slot 1, and playback gain `-25.00 dB`. The editor opened and closed
+  without a transport write.
+- One and only one authorized mutation: My EQs -> AFUL -> Explorer -> Flash. The confirmation
+  identified `TRN Black Pearl: Optimized · native hardware rounding only`, source Hifiguides, and
+  a displayed playback-gain adjustment of `-3.90 dB`.
+- Terminal result: **not verified**. The app displayed `TRN Black Pearl Flash was not verified.
+  Final hardware readback did not confirm the requested EQ.` It reported
+  `Final Black Pearl playback-gain readback did not match: expected raw -7398, actual raw -6400.`
+- Safety behavior: the app instructed `Reconnect or refresh the DAC before any later hardware
+  action. Do not retry automatically.` No retry, Reset, Save, Restore, reconnect, or refresh was
+  performed after the mismatch. The post-operation hardware state is therefore **unknown**, and no
+  restoration claim is made.
+- Evidence directory: `/tmp/opra-black-pearl-flash-aful-192520/`. Terminal UI XML SHA-256
+  `b853450bed1000ca07de478cda78b1d6eb6f575f4690dc960e4a95c579a8f9f3`; terminal screenshot SHA-256
+  `9d9769f2b3452d88344ed24d1003702f8d915170739ed4aaf94cb0461f0a1a3b`; USB evidence SHA-256
+  `ad17ca6edca249fce742bda2f28e6e4aae5d6a28f88795e17c16823a7aa65a3d`.
+- Classification: Black Pearl truthfulness failure-path behavior **PASS**; AFUL Explorer requested
+  Direct Flash / final hardware verification **PHYSICAL_FAIL**; Black Pearl restoration **NOT
+  VERIFIED**. This does not establish public hardware support.
 
 ## Historical pre-candidate repair addendum — source `9f5cb852994e1c88fce80598f249a97fae047429`
 
