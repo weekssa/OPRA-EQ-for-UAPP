@@ -404,3 +404,19 @@ Owner action required, after independent review returns PASS: reply exactly
 main-integration step needed to bind the trusted signed-beta workflow to this combined
 `black-pearl-ja11` source; it does not authorize hardware mutation, publication, tagging, or a
 public support claim. Luna has not mutated hardware.
+
+## Final software handoff boundary — reviewed tip `59caced95234aab494bdd44fb9a8beb5bb045e2c`
+
+Independent review is **PASS** for the final pushed branch tip
+`59caced95234aab494bdd44fb9a8beb5bb045e2c`. The production/test source is
+`3f818d89`; the reviewed tip adds only documentation and handoff-record closure after that source.
+The exact signed candidate tuple remains **NOT AVAILABLE** because signing is trusted and main-only.
+All local software/emulator gates are green. This is not `READY_FOR_PIXEL_9` and is not a physical
+qualification or public support claim.
+
+Owner action required: reply exactly
+`Authorize minimum main integration for production source 3f818d89 from reviewed branch tip 59caced95234aab494bdd44fb9a8beb5bb045e2c`.
+That authorizes the minimum main integration needed to create the combined `black-pearl-ja11`
+signed candidate. It does not authorize hardware mutation, publication, tagging, or a public claim.
+After the exact signed artifact is proven, the next owner intervention will be one exact-candidate
+Pixel 9 review. Luna has not mutated hardware.

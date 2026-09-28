@@ -24,3 +24,15 @@ Scope: verify TRN Black Pearl Flash through final native EQ and gain readback, p
 
 - [ ] G5: exact signed APK candidate provenance is available for the owner-controlled Pixel 9 gate
   EVIDENCE: pending until a signed candidate is produced by the authorized release workflow
+G31: Final independent read-only review — PASS for reviewed branch tip
+`59caced95234aab494bdd44fb9a8beb5bb045e2c`. Production/test source remains `3f818d89`; the
+reviewed delta after that source is documentation/report-only. No unresolved production code,
+protocol, transport, timing, retry, session, fail-closed, canonical-EQ, or hardware-mutation defect
+was found. The three authoritative wording repairs and exact-tip provenance distinction were
+verified.
+
+G32: Exact signed beta — NOT AVAILABLE. Trusted signing remains main-only. The required owner
+boundary is minimum main integration of production source `3f818d89` from reviewed branch tip
+`59caced95234aab494bdd44fb9a8beb5bb045e2c`; no hardware action is requested at this state.
+
+Current gate status: **MERGE_APPROVAL_REQUIRED**.

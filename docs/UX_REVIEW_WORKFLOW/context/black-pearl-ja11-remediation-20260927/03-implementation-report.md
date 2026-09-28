@@ -726,3 +726,24 @@ time of this checkpoint. The trusted signed-beta workflow is main-only, so exact
 provenance for `3f818d89` is **NOT AVAILABLE**. Current status remains **MERGE_APPROVAL_REQUIRED**;
 no DAC was connected, written, flashed, applied, reset, saved, restored, or mutated by Luna during
 this checkpoint.
+
+## Final independent review and provenance closure — reviewed tip `59caced95234aab494bdd44fb9a8beb5bb045e2c`
+
+The mandatory independent read-only reviewer completed the final review of exact pushed branch tip
+`59caced95234aab494bdd44fb9a8beb5bb045e2c` with **PASS for production scope and behavior**. The
+review found no unresolved production code, protocol, transport, timing, retry, session,
+fail-closed, canonical-EQ, or hardware-mutation defect. It confirmed the three authoritative
+documentation repairs in `docs/CHATGPT_PROJECT_RUNBOOK.md`, `docs/ARCHITECTURE.md`, and
+`docs/releases/v0.5.0.md`, and confirmed that the delta after production/test source
+`3f818d89` is documentation/report-only.
+
+For exact provenance, the two hashes are intentionally distinguished:
+
+- Production/test source SHA: `3f818d89`.
+- Final reviewed branch tip including documentation and handoff records:
+  `59caced95234aab494bdd44fb9a8beb5bb045e2c`.
+- Exact signed beta for this source: **NOT AVAILABLE**; the trusted workflow remains main-only.
+
+This post-review ledger clarification is documentation-only and does not change the reviewed
+production source. Current status is **MERGE_APPROVAL_REQUIRED**. No DAC was connected or mutated
+by Luna.
