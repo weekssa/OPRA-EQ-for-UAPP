@@ -143,6 +143,30 @@ class HardwareEqEditorTest {
     }
 
     @Test
+    fun blackPearlGeneratedHeadroomUsesWholeDbNativeStep() {
+        val started = HardwareEqEditor.startFromCurrent(
+            snapshotState = currentState(blackPearlSnapshot()),
+            spec = HardwareEqEditSpecs.TRN_BLACK_PEARL,
+            trackedPlaybackGainDeltaDb = 0.0,
+        ) as HardwareEqEditorStartResult.Ready
+        val edited = HardwareEqEditor.updateFilter(
+            workingCopy = started.workingCopy,
+            spec = HardwareEqEditSpecs.TRN_BLACK_PEARL,
+            bandIndex = 0,
+            type = EqFilterType.PEAK,
+            frequencyHz = 1_000.0,
+            gainDb = 3.8984375,
+            q = 1.0,
+        )
+
+        val safe = HardwareEqEditor.useSafeGain(edited, HardwareEqEditSpecs.TRN_BLACK_PEARL)
+
+        assertThat(requireNotNull(safe.headroomAssessment).requiredGainDb).isEqualTo(-4.0)
+        assertThat(safe.plannedHeadroomGainDb).isEqualTo(-4.0)
+        assertThat(safe.headroomPlanChanged).isTrue()
+    }
+
+    @Test
     fun resetLocalEditsRestoresFiltersAndHeadroomBaseline() {
         val started = HardwareEqEditor.startFromCurrent(
             snapshotState = currentState(blackPearlSnapshot()),

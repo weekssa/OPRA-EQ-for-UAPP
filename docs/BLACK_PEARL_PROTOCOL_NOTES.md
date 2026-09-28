@@ -53,7 +53,7 @@ The packet stores frequency as a little-endian 16-bit integer, Q/gain metadata i
 
 ## v0.5 target derivation and fidelity
 
-Black Pearl v0.5 file export and Direct Flash consume the same shared ten-band device representation. Canonical source data remains unchanged.
+Black Pearl v0.5 file export and Direct Flash share the same canonical source ownership and ten-band filter representation, but their global-gain boundaries are intentionally distinct. Direct Flash/editor mutation applies the exact native whole-dB global/preamp step established for Black Pearl; file export retains the independently maintained signed 1/256-dB text representation. Canonical source data remains unchanged.
 
 - Source values already on the Black Pearl native grid with an exactly representable source-authored preamp may be **Exact**.
 - A source that fits the same band structure but requires only Black Pearl native rounding remains structurally unchanged and is **Optimized · native hardware rounding only**; it is not unnecessarily curve-fitted.
@@ -64,14 +64,14 @@ This v0.5 derivation change invalidates the old software candidate for final har
 
 ## Global playback gain
 
-The Black Pearl global playback gain is observable through command `0x03`. The reviewed Android controller uses raw range `-9472..6440` and derives gain/headroom in 1/256 dB units. Its AutoEq importer uses a convenience percentage approximation for negative preamp; EQ Library does **not** copy that approximation.
+The Black Pearl global playback gain is observable through command `0x03`. The reviewed Android controller uses raw range `-9472..6440` and exposes the wire register at 1/256 dB resolution, while exact Black Pearl device evidence establishes a whole-dB native application step for Direct Flash/editor global/preamp changes. Its AutoEq importer uses a convenience percentage approximation for negative preamp; EQ Library does **not** copy that approximation.
 
 The reviewed `cheesyserg/BlackPearlControl-Android` controller also presents ordinary playback level as a percentage. At reviewed commit `491e9d5131562d85b44ce9fd741f3e1ff5c4781c`, its presentation maps percentage linearly across the same raw range using `raw = VOL_MIN_RAW + (percent / 100) * (VOL_MAX_RAW - VOL_MIN_RAW)`. Therefore a device raw value of `512` corresponds to approximately `62.745%`, consistent with the controller displaying `63%`. EQ Library independently presents raw `512` as `+2.00 dB` because the protocol unit is 1/256 dB. These are two presentations of the same raw register; percentage is not a dB unit and this observation does not qualify any new playback-volume write behavior.
 
-EQ Library independently uses the protocol's raw 1/256 dB scale:
+File export independently uses the protocol's raw 1/256 dB scale:
 
 - read the current signed little-endian raw gain;
-- convert the required source preamp / generated safety headroom directly to a raw delta at 256 units per dB;
+- convert the required source preamp / generated safety headroom to the file's raw delta at 256 units per dB;
 - validate the resulting absolute raw gain against the corroborated hardware range;
 - fail clearly rather than clamp when the requested adjustment cannot fit.
 
@@ -103,7 +103,7 @@ Direct Flash must not send commands for:
 
 ## Black Pearl AutoEq file import contract
 
-Black Pearl file export is independent from USB Flash but uses the **same derived filters and playback gain** as the Direct Flash plan.
+Black Pearl file export is independent from USB Flash. It uses the same derived filters and source-derived playback-gain intent as the Direct Flash plan, but its text serialization remains at 1/256 dB; Direct Flash/editor mutation uses the native whole-dB global/preamp boundary.
 
 The verified file-import compatibility target is `cheesyserg/pyBlackPearl`, which imports text files containing `Preamp:` plus up to ten AutoEq-style filters. Its parser recognizes shelf tokens as `LS` and `HS`; therefore the Black Pearl-specific EQ Library serializer uses:
 

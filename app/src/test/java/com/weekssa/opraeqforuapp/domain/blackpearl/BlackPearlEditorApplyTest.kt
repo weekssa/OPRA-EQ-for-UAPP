@@ -110,6 +110,25 @@ class BlackPearlEditorApplyTest {
     }
 
     @Test
+    fun generatedWholeDbHeadroomReachesApplyAsNativeGainRaw() = runBlocking {
+        val fixture = fixture(firstGainDb = 0.0, trackedGainDb = 0.0)
+        var working = editFirstBand(fixture, gainDb = 3.8984375)
+        working = HardwareEqEditor.useSafeGain(working, HardwareEqEditSpecs.TRN_BLACK_PEARL)
+
+        assertThat(working.plannedHeadroomGainDb).isEqualTo(-4.0)
+
+        val result = fixture.applier.apply(
+            workingCopy = working,
+            allowCautions = true,
+            isSessionCurrent = { true },
+        )
+
+        assertThat(result).isInstanceOf(BlackPearlEditorApplyResult.Verified::class.java)
+        assertThat(fixture.store.appliedRaw).isEqualTo(-4 * BlackPearlProtocol.GLOBAL_GAIN_RAW_PER_DB)
+        assertThat(fixture.transport.globalGainRaw).isEqualTo(-2_000 - 4 * BlackPearlProtocol.GLOBAL_GAIN_RAW_PER_DB)
+    }
+
+    @Test
     fun reducedBoostVerifiesEqBeforeRaisingGain() = runBlocking {
         val fixture = fixture(firstGainDb = 6.0, trackedGainDb = -6.0, userVolumeRaw = -2_000)
         var working = editFirstBand(fixture, gainDb = 2.0)
