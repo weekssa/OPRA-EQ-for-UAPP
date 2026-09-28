@@ -747,3 +747,33 @@ For exact provenance, the two hashes are intentionally distinguished:
 This post-review ledger clarification is documentation-only and does not change the reviewed
 production source. Current status is **MERGE_APPROVAL_REQUIRED**. No DAC was connected or mutated
 by Luna.
+## Exact signed beta provenance — source/main `e1ab5fa5a65dc2d64624d871ac53d436f792ea6a` — 2026-09-28
+
+The owner authorized minimum main integration. The reviewed branch was integrated to `main` at
+exact source SHA `e1ab5fa5a65dc2d64624d871ac53d436f792ea6a`; no tag, public release, or hardware
+mutation was performed. The trusted `Signed EQ Library Beta Candidate` workflow was dispatched
+once with `candidate_target=black-pearl-ja11` and completed **PASS**:
+[#36375994853](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36375994853).
+
+Exact candidate tuple:
+
+- APK: `EQ-Library-v0.7.0-beta-e1ab5fa.apk`
+- APK SHA-256: `7fffba26f32991ce8c936f725bdc6c3c4b6956d3a0800c539b8d45e6b52a2501`
+- Package/version: `com.weekssa.opraeqforuapp`, `0.7.0` / code `7`
+- Signer certificate SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`
+- R8 mapping SHA-256: `a713de5e165a7b2da9dba9ca2ae20cc8a6123748b4c271ac1706dda995ca0985`
+- Immutable signed APK artifact: ID `10950858857`, digest
+  `sha256:b13ca6973a203529c2cf7ea3247bb83f46af17cc89ff9506e460f33488b543b1`
+- Signed-emulator diagnostics artifact: ID `10950719717`, digest
+  `sha256:6f9e42122a3579f9ac6230cad24e912688592562b2cc1d6bd5512f4ae4f12e94`
+- Candidate manifest target: combined `black-pearl-ja11`; capability profile includes TRN Black
+  Pearl final-native-readback-gated Direct Flash and FiiO JA11 exact-model five-band User 1 editor.
+- Workflow signed-emulator install and cold launch: **PASS**.
+- Non-public testing APK:
+  `https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-e1ab5fa.apk`
+- Non-public testing checksum:
+  `https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-e1ab5fa.apk.sha256`
+
+This candidate is now **READY_FOR_PIXEL_9**. That is a handoff state, not a physical-fix or public
+support claim. Black Pearl and JA11 remain independent physical classifications; Luna did not
+connect to or mutate either DAC.

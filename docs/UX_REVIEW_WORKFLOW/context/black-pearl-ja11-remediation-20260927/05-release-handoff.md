@@ -420,3 +420,39 @@ That authorizes the minimum main integration needed to create the combined `blac
 signed candidate. It does not authorize hardware mutation, publication, tagging, or a public claim.
 After the exact signed artifact is proven, the next owner intervention will be one exact-candidate
 Pixel 9 review. Luna has not mutated hardware.
+## Exact signed beta — READY_FOR_PIXEL_9
+
+The authorized minimum main integration completed at source SHA
+`e1ab5fa5a65dc2d64624d871ac53d436f792ea6a`. The trusted workflow
+[#36375994853](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36375994853) completed
+**PASS** with the combined `black-pearl-ja11` target.
+
+Use only this exact candidate for the owner Pixel 9 review:
+
+- APK: `EQ-Library-v0.7.0-beta-e1ab5fa.apk`
+- APK SHA-256: `7fffba26f32991ce8c936f725bdc6c3c4b6956d3a0800c539b8d45e6b52a2501`
+- Package/version: `com.weekssa.opraeqforuapp`, `0.7.0` / code `7`
+- Signer certificate SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`
+- Immutable APK artifact: ID `10950858857`, digest
+  `sha256:b13ca6973a203529c2cf7ea3247bb83f46af17cc89ff9506e460f33488b543b1`
+- Diagnostics artifact: ID `10950719717`, digest
+  `sha256:6f9e42122a3579f9ac6230cad24e912688592562b2cc1d6bd5512f4ae4f12e94`
+- Download: `https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-e1ab5fa.apk`
+- Checksum: `https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-e1ab5fa.apk.sha256`
+
+Workflow evidence: signed-emulator install **PASS**, cold launch **PASS**. `actionlint` remains
+**NOT RUN** locally because it is unavailable; this did not prevent the remote workflow from
+passing. This exact candidate is a testing handoff only, not a physical-fix or public-support claim.
+
+Pixel 9 owner checklist:
+
+1. Verify the installed package and APK SHA-256 match the tuple above before connecting a DAC.
+2. Test Black Pearl and JA11 independently; do not infer one result from the other.
+3. For Black Pearl, capture a fresh read-only baseline, then authorize only the specified single
+   Flash operation. Stop on any permission prompt during mutation, disconnect, session replacement,
+   stale/missing readback, or non-verified result; do not retry automatically.
+4. For JA11, capture fresh verified User 1 state, edit locally, Review, then Apply once. Confirm
+   the exact five-band/global-gain final readback and one Save boundary; stop on any uncertainty.
+5. Record restoration separately for each DAC. Use `06-post-pixel-closure-prompt.md` afterward.
+
+Current handoff state: **READY_FOR_PIXEL_9**. Luna did not mutate hardware.

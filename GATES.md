@@ -36,3 +36,13 @@ boundary is minimum main integration of production source `3f818d89` from review
 `59caced95234aab494bdd44fb9a8beb5bb045e2c`; no hardware action is requested at this state.
 
 Current gate status: **MERGE_APPROVAL_REQUIRED**.
+G33: Exact signed beta provenance — PASS. Main source `e1ab5fa5a65dc2d64624d871ac53d436f792ea6a`
+was signed once by workflow `36375994853` for combined target `black-pearl-ja11`. APK checksum,
+signer, R8 mapping, immutable APK artifact `10950858857`, diagnostics artifact `10950719717`,
+manifest, signed-emulator install, and cold launch are recorded in the run artifacts.
+
+G34: Owner Pixel 9 handoff — READY_FOR_PIXEL_9. This is an exact-candidate handoff only. Physical
+qualification, restoration, merge/publication approval, and public hardware-support claims remain
+outstanding. Luna did not mutate hardware.
+
+Current gate status: **READY_FOR_PIXEL_9**.

@@ -355,3 +355,17 @@ main-only; this review does not qualify physical hardware or authorize publicati
 
 The final owner boundary is minimum main integration of production source `3f818d89` from reviewed
 branch tip `59caced95234aab494bdd44fb9a8beb5bb045e2c`, followed by exact signed-beta provenance.
+## Exact signed candidate review boundary — `e1ab5fa5a65dc2d64624d871ac53d436f792ea6a`
+
+The minimum main integration boundary is complete and the trusted signed-beta workflow passed for
+the combined `black-pearl-ja11` target. The candidate manifest binds source SHA
+`e1ab5fa5a65dc2d64624d871ac53d436f792ea6a` to APK SHA-256
+`7fffba26f32991ce8c936f725bdc6c3c4b6956d3a0800c539b8d45e6b52a2501`, signer certificate
+`65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`, workflow run
+`36375994853`, and immutable APK artifact `10950858857` / digest
+`sha256:b13ca6973a203529c2cf7ea3247bb83f46af17cc89ff9506e460f33488b543b1`. The signed-emulator
+install and cold launch passed.
+
+Final review status: **READY_FOR_PIXEL_9**. The candidate is not physical qualification, does not
+claim Black Pearl is fixed, and does not authorize a public hardware-support claim. The next owner
+boundary is one exact-candidate Pixel 9 review with Black Pearl and JA11 classified independently.
