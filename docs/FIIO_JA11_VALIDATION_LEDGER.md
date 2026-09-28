@@ -4,6 +4,15 @@ This is the append-only evidence ledger for the exact FiiO JA11 target. Do not r
 EW300 ledger for JA11. A software, artifact, emulator, or owner-reported UI result does not
 qualify JA11 hardware unless the exact physical gate is satisfied.
 
+## 2026-09-28 owner-authorized release disposition
+
+The owner authorized final software/release closeout. No new JA11 operation report or exact-current
+candidate physical trace was supplied in this closeout turn, so the evidence boundary remains
+unchanged: the User 1 editor/apply path is software-verified, J016/J017 remain valid physical
+records for the earlier exact signed candidate, and explicit power-cycle retention/full
+qualification are not claimed for the combined `e1ab5fa` candidate. Publication approval does not
+rewrite or broaden this append-only hardware evidence.
+
 ## Current disposition
 
 JA11 is **implemented with a successful physical Flash/Save/final-readback record and an accepted

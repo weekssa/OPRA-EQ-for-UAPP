@@ -80,3 +80,18 @@ instrumentation were removed, no retry or restore was attempted, and the physica
 restored by this worker. If the owner later supplies evidence, classify it against the exact profile,
 source, APK, DAC identity, final raw fields, and restoration state independently; otherwise leave the
 ledger at **REPAIR_REQUIRED / PHYSICAL_FAIL / NOT VERIFIED**.
+
+## 2026-09-28 owner final-go disposition
+
+The owner authorized final software/release closeout and publication after the exact-candidate
+Black Pearl AFUL Explorer pass. This approval is not new physical evidence and does not override
+the separate restoration or JA11 qualification boundaries.
+
+- Black Pearl: `PHYSICAL_PASS` for source `e1ab5fa5a65dc2d64624d871ac53d436f792ea6a`, APK
+  `7fffba26f32991ce8c936f725bdc6c3c4b6956d3a0800c539b8d45e6b52a2501`, the identified Pixel 9,
+  and one authorized AFUL Explorer Flash after the owner adjusted the DAC volume. No restoration
+  mutation was performed by Luna.
+- JA11: software `PASS`; physical release status remains evidence-bounded by the maintained
+  ledger and is not reclassified from the earlier exact-candidate records without a new report.
+- Public release: authorized by the owner, with the release notes and public wording constrained
+  to the exact software and physical claims above.

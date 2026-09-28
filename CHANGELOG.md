@@ -4,6 +4,23 @@ All notable changes to **OPRA EQ for UAPP / EQ Library** will be documented in t
 
 The project uses Semantic Versioning. Development releases remain in the `0.x` series until the first stable `v1.0.0` release.
 
+## [0.7.0] - 2026-09-28
+
+Owner-authorized final closeout for the EW300 release plus the Black Pearl and FiiO JA11
+remediation. The release preserves truthful hardware boundaries: Black Pearl AFUL Explorer passed
+the exact signed candidate's final-readback gate on Pixel 9, while JA11's complete editor/apply
+software path is verified and its physical qualification remains bounded by the maintained ledger.
+
+- Added truthful Black Pearl Direct Flash success gating across all ten native bands, active slot,
+  and raw global gain, including anti-stacking baseline protection after a readable mismatch.
+- Added HID interrupt-OUT transport selection with the existing `SET_REPORT` fallback while
+  preserving Black Pearl report bytes, timing, and retry policy.
+- Added the complete JA11 User 1 five-band My DAC editor path: fresh verified read, local-only
+  edit, Review, explicit Apply, one Save boundary, reconnect handling, final readback, and
+  truthful success/uncertainty outcomes.
+- Kept built-in JA11 programs and EQ Off non-editable, and kept canonical EQ ownership and other
+  DAC transaction behavior unchanged.
+
 ## [Unreleased]
 
 ### 2026-09-27 Black Pearl and JA11 bounded remediation

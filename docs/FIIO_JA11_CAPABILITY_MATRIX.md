@@ -4,6 +4,14 @@ This matrix is the current evidence boundary for the exact FiiO JA11 identity. S
 implementation does not imply physical support. Unknown behavior stays insufficiently evidenced
 or unsafe rather than being inherited from another KT02H20-family device.
 
+## 2026-09-28 release closeout
+
+The owner authorized final release publication. The software editor/apply capability is complete
+and verified in the remediation source; the physical capability decisions below remain bounded by
+the exact reports and candidate identities already recorded. In particular, the earlier J016/J017
+physical records are not relabeled as tests of combined source `e1ab5fa`, and explicit power-cycle
+retention/full JA11 qualification remains pending unless separately evidenced.
+
 The latest owner-tested signed candidate is source `c886fdbb2ae326e562dc110b2b779cb075869798`, with
 immutable APK SHA-256 `c390bbd429ce4101ce7fad3aa3820990da0e7ffec7a4f688e5eafe4eb11f6341`, signer
 certificate SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`, and signed-beta

@@ -651,3 +651,10 @@ non-public signed beta, but no public `v0.7.0` release was published. The remain
 scope reconciliation, JA11 exact-candidate/qualification closure or explicit deferral wording,
 optional-but-release-governed Black Pearl restoration, authoritative documentation synchronization,
 final signed-release gates, and explicit owner publication approval.
+
+## Owner authorization — 2026-09-28
+
+The owner approved final software/release closeout and publication. This approval authorizes the
+release workflow and documentation synchronization; it does not authorize an additional DAC write
+or convert the maintained JA11 evidence boundary into a broader physical-support claim. The final
+release must retain the exact candidate provenance and limitations above.
