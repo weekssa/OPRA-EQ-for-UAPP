@@ -238,3 +238,19 @@ This supersedes `READY_FOR_PIXEL_9` for the exercised Black Pearl path. Black Pe
 **REPAIR_REQUIRED / NOT VERIFIED** as a physical capability claim. A later attempt requires a
 fresh read-only baseline after the owner adjusts DAC volume and a new explicit one-operation
 authorization. JA11 remains independent and is not changed by this result.
+
+## Latest exact-candidate AFUL Explorer retest after volume adjustment
+
+- Exact source/APK/device/DAC identity: **PASS**. Source `e1ab5fa5a65dc2d64624d871ac53d436f792ea6a`,
+  APK SHA-256 `7fffba26f32991ce8c936f725bdc6c3c4b6956d3a0800c539b8d45e6b52a2501`, Pixel 9 `tokay`
+  API 37, Black Pearl VID `0x3302` / PID `0x43E8`, serial `330243E8260129`.
+- Fresh baseline: **PASS**. Verified Flat, ten filters, active slot 1, playback gain `-25.00 dB`.
+- One authorized AFUL Explorer Flash: **PASS**. Confirmation showed the intended `-4.00 dB` change.
+- Final app readback: **PASS**. Verified current hardware matched My EQs Explorer with nine active
+  bands, ten filters, active slot 1, and playback gain `-29.00 dB`.
+- Restoration: **NOT RUN**; not authorized. Retry/second Flash/Reset/Save: **NOT RUN**.
+
+Current Black Pearl physical disposition for this exact candidate and identity is **PHYSICAL_PASS**
+for the bounded AFUL Explorer transaction. It is not a persistence, broad-revision, or public-support
+claim. JA11 remains independent. The transient terminal success surface was not captured before it
+expired; the durable verified-current-hardware and Matches My EQs readback is the captured result.

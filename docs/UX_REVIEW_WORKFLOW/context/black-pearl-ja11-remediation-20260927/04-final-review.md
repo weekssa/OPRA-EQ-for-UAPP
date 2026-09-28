@@ -391,3 +391,23 @@ failure-path assertion is **PASS**, but no final native readback occurred and th
 **NOT VERIFIED**. No retry, Reset, Save, Restore, or second Flash was attempted. This result does
 not qualify Black Pearl hardware or prove the named success path. A later attempt requires a fresh
 baseline and a separate authorization after the DAC volume is adjusted into the validated range.
+
+## Latest exact-candidate Black Pearl result — AFUL Explorer PASS
+
+After the earlier preflight stop, the owner adjusted the Black Pearl volume and authorized one fresh
+exact-candidate AFUL Explorer Flash. The candidate remained source
+`e1ab5fa5a65dc2d64624d871ac53d436f792ea6a` with APK SHA-256
+`7fffba26f32991ce8c936f725bdc6c3c4b6956d3a0800c539b8d45e6b52a2501`; the Pixel was `tokay`, API
+37, and the DAC identity was TTGK Technology `TE-C`, VID `0x3302`, PID `0x43E8`, serial
+`330243E8260129`.
+
+The fresh baseline was verified Flat with ten filters, active slot 1, and playback gain `-25.00 dB`.
+The one confirmation showed the expected `-4.00 dB` change. The subsequent read-only My DAC screen
+reported `Verified current hardware`, `Matches My EQs`, `Explorer · Jaytiss · Latest`, nine active
+bands, ten filters, active slot 1, and playback gain `-29.00 dB`.
+
+Review disposition: exact-candidate AFUL Explorer requested-state **PHYSICAL_PASS**. This is a
+bounded pass for the tested candidate/device/identity/starting volume only; restoration was **NOT
+RUN** because it was not authorized, and persistence, other revisions, other presets, and public
+support remain unproven. The transient success banner was not captured before it expired, but the
+durable app readback screen explicitly verified current hardware and matched My EQs.

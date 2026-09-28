@@ -484,3 +484,24 @@ Owner next step, if another attempt is desired: adjust the Black Pearl volume so
 range permits the `-4.00 dB` change, refresh/reconnect the DAC, and then provide a new explicit
 authorization for one fresh exact-candidate AFUL Explorer Flash. The prior authorization is
 consumed; do not treat this as permission to retry.
+
+## Latest owner-authorized Black Pearl result — AFUL Explorer PASS
+
+The owner adjusted the Black Pearl volume and authorized one fresh Flash using the same exact signed
+candidate. The fresh baseline was `Verified current hardware`, `Flat`, `10 filters`, `Active slot 1`,
+playback gain `-25.00 dB`; the confirmation showed the expected `-4.00 dB` adjustment.
+
+After the single Flash, the app's read-only My DAC view showed:
+
+- `Verified current hardware`
+- `Matches My EQs`
+- `Explorer · Jaytiss · Latest`
+- `9 active bands`, `10 filters`, `Active slot 1`
+- Playback gain `-29.00 dB`
+
+Disposition: **PHYSICAL_PASS** for the exact AFUL Explorer transaction on this exact candidate,
+Pixel 9, and Black Pearl identity. Restoration was **NOT RUN** because the owner authorized only
+the Flash; no second mutation, Reset, Save, Restore, or retry was performed. This is not a claim of
+power-cycle persistence, broad revision support, or public hardware support. The next step is owner
+direction on whether to leave this AFUL Explorer state in place or separately authorize restoration;
+JA11 remains an independent result.

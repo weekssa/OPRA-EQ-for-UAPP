@@ -818,3 +818,44 @@ observed, but AFUL Explorer requested-state verification remains **PHYSICAL_FAIL
 The next physical attempt requires a separately authorized fresh baseline after the owner adjusts
 the DAC volume so the validated range guard permits the requested `-4.00 dB` adjustment. Do not
 retry automatically and do not infer Black Pearl physical support from this result.
+
+## Exact-candidate AFUL Explorer Flash retest after volume adjustment — 2026-09-27 local / 2026-09-28 UTC
+
+The owner separately authorized one fresh exact-candidate AFUL Explorer Flash after adjusting the
+Black Pearl volume. Candidate and device identity were rechecked before mutation:
+
+- Source SHA: `e1ab5fa5a65dc2d64624d871ac53d436f792ea6a`.
+- APK SHA-256: `7fffba26f32991ce8c936f725bdc6c3c4b6956d3a0800c539b8d45e6b52a2501`.
+- Package/version: `com.weekssa.opraeqforuapp`, `0.7.0` / code `7`.
+- Pixel: Google Pixel 9, `tokay`, API 37, wireless ADB serial
+  `adb-46141FDAQ003KZ-3AwgSo._adb-tls-connect._tcp`.
+- Black Pearl identity: vendor `0x3302`, product `0x43E8`, manufacturer `TTGK Technology`,
+  product `TE-C`, serial `330243E8260129`.
+- Signed-beta workflow `36375994853`; immutable APK artifact `10950858857`, digest
+  `sha256:b13ca6973a203529c2cf7ea3247bb83f46af17cc89ff9506e460f33488b543b1`.
+
+The fresh read-only baseline showed `Verified current hardware`, `Flat`, `10 filters`, `Active slot
+1`, and playback gain `-25.00 dB`. The selected AFUL Explorer confirmation displayed the exact
+`-4.00 dB` adjustment and was accepted once. No retry, second Flash, Reset, Save, or Restore was
+performed.
+
+The post-operation read-only My DAC view showed `Verified current hardware`, `Matches My EQs`,
+`Explorer · Jaytiss · Latest`, `9 active bands`, `10 filters`, `Active slot 1`, and playback gain
+`-29.00 dB`. This is the app's interpreted final native readback state and matches the expected
+whole-dB Black Pearl adjustment from the fresh baseline. The transient terminal success surface was
+not retained in the first post-action UI dump because it had expired before capture; the durable
+verified-current-hardware screen is the decisive captured result.
+
+Classification: exact-candidate AFUL Explorer requested-state **PHYSICAL_PASS** for the tested
+Black Pearl transaction; source/app fail-closed behavior **PASS**; restoration **NOT RUN** and not
+authorized. This proves only the exact candidate, Pixel 9, Black Pearl identity, volume starting
+state, and AFUL Explorer transaction exercised here. It does not prove persistence across power
+cycles, other presets, other Black Pearl revisions, or public support. Luna did not restore or make
+any additional DAC mutation.
+
+Evidence captured:
+
+- Exact-candidate package pull SHA-256: `7fffba26f32991ce8c936f725bdc6c3c4b6956d3a0800c539b8d45e6b52a2501`.
+- Fresh baseline My DAC UI XML SHA-256: `b57e4efdd6c3bc9a531609251d1d84d714bf106dc58047ff50e6a7ceb319dac5`.
+- AFUL Explorer confirmation UI XML SHA-256: `e337346f26864511504c74c482f22752ee761522a0d6221fed264381c0203129`.
+- Post-operation My DAC UI XML SHA-256: `087bfc661d40d59a5a64d50b210281a2f2bbf5880961ad0439a481c7c228c96c`.
