@@ -234,8 +234,9 @@ A second independent read-only reviewer then reviewed that exact committed sourc
 - no hardware was connected or mutated during review.
 
 The reviewer recorded two non-blocking P2 evidence gaps: the tests do not mock
-`UsbDeviceConnection` to assert the actual Android call arguments/bytes, and the exact commit is
-local/unpushed with no signed artifact or remote checks. These gaps prevent signed-candidate,
+`UsbDeviceConnection` to assert the actual Android call arguments/bytes, and no signed artifact or
+remote check result exists yet for the pushed branch head `2d15d2d4aef3f310563a73c2ba3be38f5493dd52`.
+These gaps prevent signed-candidate,
 physical-qualification, and release approval, but do not require another source repair for this
 software checkpoint. They are explicitly retained as follow-up evidence requirements rather than
 silently treated as proof.
