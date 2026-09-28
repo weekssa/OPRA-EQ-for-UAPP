@@ -354,3 +354,29 @@ readback substitution, retry, wire-byte change, or speculative rounding has been
 There is no new candidate for Pixel testing. Leave the Black Pearl untouched. Owner support is
 needed only after a proven source correction has passed the full software gates and produced a new
 exact signed candidate with immutable provenance.
+
+## New repair checkpoint — exact candidate not yet available
+
+The current software repair is implementation commit
+`7183d2c5beb76dca697e8497ba15b5c7627a320b`, based on `origin/main`
+`62584133bbd78228f26abe69bc8ab65c76be2cd5`. Local gates passed: full unit tests, API 36
+`codex-api36` instrumentation 24/24, lint, debug assembly, minified release/R8 assembly, mapping
+verification, and `git diff --check`. `actionlint` is **NOT RUN** because it is unavailable locally.
+
+The repair is limited to native whole-dB global/preamp planning for direct Black Pearl Flash/editor
+headroom. It preserves the signed 16-bit 1/256 wire representation, report bytes/order/timing,
+transport, identity, session, retry policy, canonical EQ, and file export. No DAC was connected or
+mutated for this checkpoint.
+
+The signed-beta workflow remains main-only. Therefore the exact candidate tuple is currently:
+
+- source SHA: **NOT AVAILABLE** for a signed candidate; implementation checkpoint is
+  `7183d2c5beb76dca697e8497ba15b5c7627a320b`;
+- APK, SHA-256, signer, workflow/run, immutable artifact ID/digest: **NOT AVAILABLE**;
+- package/version target remains `com.weekssa.opraeqforuapp`, `0.7.0` / code `7` once produced;
+- candidate target must be the combined `black-pearl-ja11` profile and must not be labeled JA11-only.
+
+Current status: **MERGE_APPROVAL_REQUIRED**. The owner must authorize the minimum main integration
+of the reviewed branch tip before the trusted main-only workflow can create an exact signed beta.
+After provenance is complete, the owner’s next routine intervention is one exact-candidate Pixel 9
+review; no hardware action is requested before that.

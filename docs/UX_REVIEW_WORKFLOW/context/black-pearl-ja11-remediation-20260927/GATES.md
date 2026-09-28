@@ -170,3 +170,26 @@ and immutable artifact `10948632352` / `sha256:3e9fb31a814a8feb30ff0c48ac69a71cd
 
 Current gate status: **REPAIR_REQUIRED** for Black Pearl. JA11 remains an independent result and
 must not be inferred from this Black Pearl failure. No public hardware-support claim follows.
+
+## Latest software repair checkpoint — implementation `7183d2c5beb76dca697e8497ba15b5c7627a320b`
+
+The exact AFUL Explorer mismatch is now addressed at the narrow planning boundary supported by the
+physical trace and independent exact-identity evidence: direct Black Pearl Flash/editor global-gain
+planning uses a whole-dB native overlay, while the signed 16-bit 1/256 wire codec and shared file
+export remain unchanged. No tolerance, readback substitution, report-byte change, timing change,
+retry, or automatic hardware replay was added.
+
+G16: Source repair implementation and focused regressions — PASS; `7183d2c5`, including
+`-3.90 dB -> -4.00 dB` and raw `-7936 -> -8960` deterministic coverage.
+G17: Full unit, lint, debug assembly — PASS.
+G18: API 36 emulator — PASS; `codex-api36`, serial `emulator-5554`, 24/24, 0 skipped, 0 failed.
+G19: Release/R8 and mapping verification — PASS.
+G20: Diff/scope audit — PASS; five production/test files only, no transport/protocol/identity/
+retry/canonical-EQ/hardware mutation changes.
+G21: Independent Black Pearl review of this exact checkpoint — PENDING reviewer response.
+G22: Exact signed beta for this checkpoint — NOT AVAILABLE; trusted workflow is main-only.
+G23: Owner Pixel 9 physical validation and restoration — NOT RUN; blocked until exact candidate.
+
+Current gate status: **MERGE_APPROVAL_REQUIRED**. This is software evidence only and does not claim
+the Black Pearl is physically fixed or publicly supported. Luna did not mutate hardware for this
+checkpoint.

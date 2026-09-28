@@ -625,3 +625,46 @@ retain arbitrary signed raw gain at 256 units per dB and provide no global-gain 
 Focused Black Pearl/optimizer tests pass on the current source. No production change is justified;
 the only safe disposition is to retain exact final-readback verification and defer any new hardware
 mutation until a new source hypothesis is proven and a new exact signed candidate exists.
+
+## Current source repair checkpoint — implementation `7183d2c5beb76dca697e8497ba15b5c7627a320b`
+
+This checkpoint records the narrowly evidenced repair after the exact-candidate physical mismatch.
+It does not replace the prior physical result and does not qualify hardware.
+
+- Base: refreshed `origin/main` `62584133bbd78228f26abe69bc8ab65c76be2cd5`; branch
+  `codex/black-pearl-ja11-remediation-20260927`; implementation commit
+  `7183d2c5beb76dca697e8497ba15b5c7627a320b`.
+- Diagnosis: the owner-authorized AFUL Explorer run produced baseline raw `-7936`, source preamp
+  `-3.90 dB`, the previous target `-8934`, and final native readback `-8960`. Two independent
+  exact-identity implementations identify Black Pearl/Savitech global/preamp application as
+  whole-dB, while the maintained OPRA/reference wire codec remains signed little-endian 16-bit
+  at 256 raw units per dB. The observed `-8934 -> -8960` is therefore explained by native whole-dB
+  application without changing the report bytes.
+- Change: direct Black Pearl Flash and editor headroom planning now use a dedicated 1 dB native
+  global-gain overlay. The shared file/protocol spec remains 1/256 dB, so Black Pearl text export,
+  canonical EQ data, PEQ band bytes, global-gain wire encoding, report order, timing, transport,
+  identity, session, and retry policy are unchanged.
+- Regression proof: `-3.90 dB` plans as `-4.00 dB`; a deterministic baseline of raw `-7936`
+  writes raw `-8960` and verifies successfully in the fake transport. Existing mismatched/missing/
+  stale/wrong-session final-readback tests remain green and still block later mutation.
+
+### Current gates for implementation `7183d2c5`
+
+- `./tools/codex-android :app:testDebugUnitTest --tests '*BlackPearl*' --tests '*Kt02h20FiveBandOptimizerTest*'` — PASS.
+- `./tools/codex-android :app:testDebugUnitTest :app:lintDebug :app:assembleDebug` — PASS.
+- `ANDROID_SERIAL=emulator-5554 ./tools/codex-android :app:connectedDebugAndroidTest` — PASS,
+  `codex-api36`, API 36, 24/24, 0 skipped, 0 failed. The Pixel 9 was not selected.
+- `./tools/codex-android :app:assembleRelease` — PASS; minified release/R8 completed.
+- `bash tools/verify-r8-mapping.sh app/build/outputs/mapping/release/mapping.txt` — PASS.
+- `git diff --check` — PASS.
+- `actionlint` — NOT RUN; no executable is available locally. No workflow file was changed.
+- Hardware — NOT RUN for this checkpoint. Luna did not connect, flash, apply, reset, save, restore,
+  or otherwise mutate a DAC after the prior exact-candidate failure.
+
+### Current release boundary
+
+The trusted signed-beta workflow is still main-only. The current branch is software-verified but has
+no exact signed artifact for this repair. Status is **MERGE_APPROVAL_REQUIRED** for the minimum main
+integration needed to create one combined `black-pearl-ja11` candidate; the prior physical result
+remains **REPAIR_REQUIRED / NOT VERIFIED** until that exact new candidate passes an owner-authorized
+Pixel 9 test. No public support claim follows.

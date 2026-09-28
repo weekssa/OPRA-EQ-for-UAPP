@@ -305,3 +305,25 @@ The independent Android reference uses the same 64-byte report and raw/256 gain 
 not establish a device-side global-gain step. Focused deterministic tests pass; no defensible
 production correction has been identified. Final review therefore remains **REPAIR_REQUIRED**,
 with no additional owner write requested on the current candidate.
+
+## Current implementation review — `7183d2c5beb76dca697e8497ba15b5c7627a320b`
+
+A read-only review of the new source checkpoint finds the repair narrowly scoped and internally
+consistent:
+
+- `BlackPearlFlashPlan` alone switches from the shared file/protocol spec to the direct-Flash native
+  gain overlay; the Black Pearl file exporter continues to use the shared 1/256 representation.
+- `HardwareEqEditSpecs` applies the same whole-dB boundary only to editor-generated tracked
+  headroom. The raw protocol codec and all transport/report paths are unchanged.
+- The implementation does not copy or depend on GPL reference code. Its rule is supported by the
+  physical trace and independent exact-identity implementation evidence recorded in the report.
+- The added tests prove the fractional source preamp and observed raw transition while retaining
+  all existing fail-closed, no-retry, session, mismatch, and anti-stacking regression coverage.
+- Scope audit: no navigation, canonical EQ ownership, device identity, endpoint, timing, Save,
+  retry, transport, public-support, or hardware behavior outside the named Black Pearl Direct
+  Flash gain-planning defect changed.
+
+The existing project-local independent JA11 reviewer remains **PASS** for the JA11 terminal/editor
+path. The Black Pearl reviewer was requested to inspect this exact checkpoint read-only; until that
+review and exact signed provenance are complete, this is not a candidate approval. Current release
+state is **MERGE_APPROVAL_REQUIRED**, not `READY_FOR_PIXEL_9`.
