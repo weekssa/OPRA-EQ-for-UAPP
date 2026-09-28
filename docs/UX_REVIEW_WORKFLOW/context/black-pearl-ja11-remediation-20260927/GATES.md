@@ -193,3 +193,9 @@ G23: Owner Pixel 9 physical validation and restoration — NOT RUN; blocked unti
 Current gate status: **MERGE_APPROVAL_REQUIRED**. This is software evidence only and does not claim
 the Black Pearl is physically fixed or publicly supported. Luna did not mutate hardware for this
 checkpoint.
+
+G24: Final source-clarity follow-up `1393150b` — PASS. File-export wording and its two assertions
+now state the shared 1/256 file path is independent from direct-Flash native whole-dB planning;
+file bytes, canonical EQ, and hardware behavior are unchanged. Full unit/lint/debug/release/R8 and
+API-36 24/24 gates were rerun and passed. Exact signed beta remains unavailable on the main-only
+workflow; current status remains **MERGE_APPROVAL_REQUIRED**.

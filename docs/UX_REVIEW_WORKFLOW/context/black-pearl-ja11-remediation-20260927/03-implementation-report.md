@@ -668,3 +668,15 @@ no exact signed artifact for this repair. Status is **MERGE_APPROVAL_REQUIRED** 
 integration needed to create one combined `black-pearl-ja11` candidate; the prior physical result
 remains **REPAIR_REQUIRED / NOT VERIFIED** until that exact new candidate passes an owner-authorized
 Pixel 9 test. No public support claim follows.
+
+## Follow-up source-clarity checkpoint — `1393150ba6cfff7a0b73c385f564a57d29c157a3`
+
+The final source follow-up corrects one stale file-export explanation exposed by the scope audit.
+Black Pearl text export now explicitly describes its shared 1/256 file/protocol representation as
+independent from the direct-Flash native whole-dB global-gain planning. Exported bytes and canonical
+EQ data are unchanged; only the truthful transformation wording and its two assertions changed.
+
+Rerun evidence after this follow-up: full `:app:testDebugUnitTest`, `:app:lintDebug`,
+`:app:assembleDebug`, `:app:assembleRelease`, R8 mapping verification, API 36
+`codex-api36` instrumentation 24/24, and `git diff --check` — all **PASS**. The branch tip is
+`1393150ba6cfff7a0b73c385f564a57d29c157a3` before the final durable-documentation commit.

@@ -327,3 +327,11 @@ The existing project-local independent JA11 reviewer remains **PASS** for the JA
 path. The Black Pearl reviewer was requested to inspect this exact checkpoint read-only; until that
 review and exact signed provenance are complete, this is not a candidate approval. Current release
 state is **MERGE_APPROVAL_REQUIRED**, not `READY_FOR_PIXEL_9`.
+
+## Final source-clarity follow-up review — `1393150ba6cfff7a0b73c385f564a57d29c157a3`
+
+The follow-up changed only Black Pearl file-export transformation wording and the two focused
+assertions that describe it. It preserves file contents, canonical EQ ownership, direct-Flash
+planning, protocol bytes, transport, timing, retry policy, and hardware boundaries. The rerun full
+unit/lint/debug/release/R8/API-36 gates are green. No new defect was found; the prior independent
+review PASS and the exact signed-candidate boundary remain unchanged.

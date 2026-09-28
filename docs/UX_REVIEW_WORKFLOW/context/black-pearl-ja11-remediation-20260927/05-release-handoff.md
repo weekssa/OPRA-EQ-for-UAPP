@@ -380,3 +380,8 @@ Current status: **MERGE_APPROVAL_REQUIRED**. The owner must authorize the minimu
 of the reviewed branch tip before the trusted main-only workflow can create an exact signed beta.
 After provenance is complete, the owner’s next routine intervention is one exact-candidate Pixel 9
 review; no hardware action is requested before that.
+
+The final reviewed branch tip after the file-export wording follow-up is
+`1393150ba6cfff7a0b73c385f564a57d29c157a3` plus the durable documentation commit that records this
+handoff. No exact signed artifact exists for either tip because the trusted workflow remains
+main-only.
