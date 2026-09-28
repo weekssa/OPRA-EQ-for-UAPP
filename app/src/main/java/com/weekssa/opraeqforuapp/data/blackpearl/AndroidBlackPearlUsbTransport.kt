@@ -211,7 +211,7 @@ class AndroidBlackPearlUsbTransport(
                 if (current.connection.bulkTransfer(endpoint, drain, drain.size, 2) <= 0) return@repeat
             }
 
-            if (!sendControlReport(current, request)) return null
+            if (!sendOutputReport(current, request)) return null
             val deadline = System.currentTimeMillis() + READ_TIMEOUT_MILLIS
             val response = ByteArray(BlackPearlProtocol.REPORT_SIZE)
             while (System.currentTimeMillis() < deadline) {
@@ -235,7 +235,7 @@ class AndroidBlackPearlUsbTransport(
     override suspend fun sendReport(report: ByteArray): Boolean = usbMutex.withLock {
         require(report.size == BlackPearlProtocol.REPORT_SIZE) { "Black Pearl HID reports must be 64 bytes." }
         val current = session ?: return@withLock false
-        val sent = sendControlReport(current, report)
+        val sent = sendOutputReport(current, report)
         if (sent) {
             when (report[2].toInt() and 0xFF) {
                 0x09 -> delay(PEQ_WRITE_SETTLE_MILLIS)
@@ -244,6 +244,28 @@ class AndroidBlackPearlUsbTransport(
             }
         }
         sent
+    }
+
+    /**
+     * Use the device's interrupt OUT endpoint when it exposes one. Some Black Pearl firmware
+     * accepts the same reports only through that endpoint; HID SET_REPORT remains the fallback for
+     * devices/interfaces without an OUT endpoint. The report bytes and caller timing stay unchanged.
+     */
+    private fun sendOutputReport(current: UsbSession, report: ByteArray): Boolean {
+        return when (blackPearlOutputPath(current.endpointOut != null)) {
+            BlackPearlOutputPath.INTERRUPT_OUT -> current.connection.bulkTransfer(
+                current.endpointOut ?: return false,
+                report,
+                report.size,
+                CONTROL_TIMEOUT_MILLIS,
+            ).let { transferredBytes ->
+                blackPearlInterruptOutTransferSucceeded(
+                    transferredBytes = transferredBytes,
+                    expectedBytes = report.size,
+                )
+            }
+            BlackPearlOutputPath.CONTROL_SET_REPORT -> sendControlReport(current, report)
+        }
     }
 
     private fun sendControlReport(current: UsbSession, report: ByteArray): Boolean {
@@ -287,7 +309,8 @@ class AndroidBlackPearlUsbTransport(
                     )
                     return@withLock
                 }
-                session = UsbSession(connection, usbInterface, endpointIn)
+                val endpointOut = findInterruptOutEndpoint(usbInterface)
+                session = UsbSession(connection, usbInterface, endpointIn, endpointOut)
                 lastSessionGeneration = nextSessionGeneration(lastSessionGeneration)
                 currentSessionGeneration = lastSessionGeneration
                 mutableState.value = BlackPearlConnectionState.Connected
@@ -334,6 +357,16 @@ class AndroidBlackPearlUsbTransport(
             .firstOrNull { endpoint ->
                 endpoint.direction == UsbConstants.USB_DIR_IN &&
                     endpoint.type == UsbConstants.USB_ENDPOINT_XFER_INT
+            }
+
+    private fun findInterruptOutEndpoint(usbInterface: UsbInterface): UsbEndpoint? =
+        (0 until usbInterface.endpointCount)
+            .map(usbInterface::getEndpoint)
+            .firstOrNull { endpoint ->
+                isBlackPearlInterruptOutEndpoint(
+                    direction = endpoint.direction,
+                    type = endpoint.type,
+                )
             }
 
     private fun registerReceiver() {
@@ -388,6 +421,7 @@ class AndroidBlackPearlUsbTransport(
         val connection: UsbDeviceConnection,
         val usbInterface: UsbInterface,
         val endpointIn: UsbEndpoint?,
+        val endpointOut: UsbEndpoint?,
     )
 
     companion object {
