@@ -22,23 +22,19 @@ The checklist is organized around the **current release state**. Detailed histor
 
 ## Current v0.7.0 state
 
-- [ ] Exact current-head software, security, dependency, and signed-artifact gates complete.
-- [ ] Corrected-source signed APK, checksum, signer verification, artifact digest, install, and cold launch recorded.
-- [x] New Favorite and General EQ saves persist full canonical profile, selected revision, and source references; Room 8→9 migration preserves old projection-only rows without fabricated backfill. Exact implementation snapshot `b57b2466160bc9464d1cb16a004d1522940c553a` passed Android CI #1772, including unit and connected instrumentation tests.
-- [ ] Source-neutral/ToneBoosters parity, clean install, v0.6.0 upgrade/data preservation, accessibility/offline/error/reconnect, Personal EQ capture/provenance, and cross-DAC product verification complete on the exact signed candidate.
-- [ ] Exact-candidate promotion workflow reviewed; it is currently disabled to prevent rebuilding a different APK during publication.
-- [ ] Final owner approval to merge and publish received.
+- [x] Exact v0.7.0 software, security, dependency, release, and signed-artifact gates completed.
+- [x] Public signed APK, checksum, signer verification, immutable workflow artifact, install, and cold launch recorded.
+- [x] The public README and curated `docs/releases/v0.7.0.md` release notes describe the current product and evidence boundaries.
+- [x] Owner approval to merge, publish, and complete the bounded release closeout received.
+- [x] Public tag `v0.7.0`, release assets, latest-release metadata, and APK digest verified.
+- [ ] `actionlint` was unavailable locally. No workflow file changed during final closeout, and the trusted remote release workflow passed.
 
-Dependency submission did not run for the feature-branch source. The signed-beta workflow is
-restricted to trusted `main`; no exact-current-source signed APK, checksum, signer result, artifact
-digest, signed install, or cold-launch provenance is available. The last exact implementation
-snapshot’s gates and the new live PR head are recorded separately in
-`docs/V0.7_RELEASE_READINESS_AUDIT.md`; documentation-only source changes require fresh exact-head
-gates. Do not use an earlier APK.
-
-PR #23 remains draft and v0.7.0 remains NO-GO. Historical physical E001 and E043–E046 are
-accepted; do not repeat Save qualification, Apply, Flash, Restore, Reset, or read-only reports.
-Current source/gate status is maintained in `docs/V0.7_RELEASE_READINESS_AUDIT.md`.
+Status: **Published and owner-accepted.** The public release is complete. Historical physical
+evidence remains source-, candidate-, device-, and operation-specific; do not repeat Save,
+Apply, Flash, Restore, Reset, or read-only qualification solely because the documentation closeout
+created a newer documentation commit. Black Pearl is publicly described only with its exact AFUL
+Explorer evidence boundary. JA11 software is verified, while broader power-cycle qualification is
+not claimed.
 
 ## Continuing release invariants
 

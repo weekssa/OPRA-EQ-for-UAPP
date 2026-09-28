@@ -8,26 +8,32 @@ EQ Library ships with **zero headphone or EQ profiles bundled in the APK**. It d
 
 ## Current release
 
-**v0.6.0** is the current public Android release.
+**v0.7.0** is the current public Android release.
 
-[Download the latest signed release](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/latest)
+[Download EQ Library v0.7.0](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.7.0) or [download the signed APK directly](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.7.0/EQ-Library-v0.7.0.apk)
 
 - Android 8.0 / API 26 or newer
 - Signed with the project's permanent Android release identity for in-place upgrades
 - No Google Play account, EQ Library account, or cloud account required
 - No analytics or telemetry
 
-The public v0.6.0 APK is `EQ-Library-v0.6.0.apk`. Its SHA-256 is:
+The public v0.7.0 APK is `EQ-Library-v0.7.0.apk`. Its SHA-256 is:
 
-`93b5250d7f32b068f24702c9fbfacb697e7921100250ee0652981100e29adb62`
+`27dada499bcbf9be9bd21d1349164858c93a5d2b83f78fd61134de13b4eb4025`
+
+The matching [SHA-256 checksum file](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.7.0/EQ-Library-v0.7.0.apk.sha256) is published with the release.
 
 Android may ask you to allow installation from the browser or file manager used to open the APK because GitHub Releases are installed outside an app store. EQ Library itself does not request package-install permission and never silently installs updates.
 
-## EW300 DSP beta status
+## v0.7.0 highlights
 
-The SIMGOT EW300 DSP cable is implemented on the v0.7 beta branch through the shared My DAC, finite-hardware, and Direct Flash framework. The exact five-band raw transport, strict session boundary, guarded Apply/Flash/Reset paths, and operation evidence are covered by automated code and protocol fixtures. The latest signed candidate is a trace/test follow-up to the one physically tested candidate; no further physical mutation is authorized, and the exact-candidate hardware gate remains open before release or public support. The accepted Save qualification is historical evidence and is not repeated. See [EW300 status](docs/V0.7_EW300_DSP_STATUS.md), [validation ledger](docs/EW300_VALIDATION_LEDGER.md), and [protocol notes](docs/EW300_DSP_PROTOCOL_NOTES.md).
+SIMGOT EW300 DSP has a five-band Peak workflow with readback, local editing, Review → Apply, Flash, Reset, reconnect verification, and evidence-bounded DEVICE state. The path reuses the shared My DAC session, canonical EQ pipeline, response adapter, and capture flow. See the [EW300 DSP status](docs/V0.7_EW300_DSP_STATUS.md) and [v0.7.0 release notes](docs/releases/v0.7.0.md) for the complete evidence record.
 
-## v0.6.0 release
+- TRN Black Pearl Direct Flash reports success only after final native readback confirms the requested ten-band state and global playback gain.
+- FiiO JA11 My DAC → EQ supports a fresh verified User 1 read, local five-band editing, Review, explicit Apply, one Save boundary, and final readback verification.
+- Hardware operations remain fail-closed: an uncertain write is reported as unverified and is not retried automatically.
+
+## v0.6.0 history
 
 v0.6.0 is publicly released from merge commit `e5ffa5d00862edc3b79bf52e1508db5244845e94`. The signed release build passed the controlled publication workflow; the focused Pixel 9 Black Pearl/UI smoke test passed on exact behavior evidence source `eef5633e18a4ac311f110493e29633bf382675e3`.
 
@@ -44,7 +50,7 @@ The approved v0.6 direction includes:
 - persistent **Needs attention** recovery for exact app-owned preset artifacts that can no longer be confidently associated with a current My EQ item;
 - conservative recovery into Personal EQs without scanning or deleting arbitrary external files.
 
-TRN Black Pearl automatic physical reattach, Restore defaults, and the final DEVICE feedback/layout flow have passed maintained focused Pixel 9 testing on exact signed evidence candidates. Restore defaults is deliberately an **EQ Library preset**, not a claim about TRN factory defaults. FiiO/JadeAudio JA11 physical qualification is deferred and does not block this release. See the v0.6 status/checklist documents for exact evidence categories and release gates.
+At v0.6.0 publication, TRN Black Pearl automatic physical reattach, Restore defaults, and the final DEVICE feedback/layout flow had passed focused Pixel 9 testing on their exact signed evidence candidates. Restore defaults is deliberately an **EQ Library preset**, not a claim about TRN factory defaults. See the v0.6 status/checklist documents for that historical evidence record.
 
 ## What you can do
 
@@ -53,7 +59,7 @@ TRN Black Pearl automatic physical reattach, Restore defaults, and the final DEV
 - Browse headphone EQs by **Manufacturer → Model**, with deeper identity only when a source genuinely verifies it.
 - Search the canonical library without hiding valid curves merely because the active output cannot represent them.
 - Browse standalone **General EQs** in Sound, Genre, and Utility groups when the source itself supports that classification.
-- Keep one local **My EQs** collection independent of the current output target on the v0.6.0 release.
+- Keep one local **My EQs** collection independent of the current output target.
 - Favorite saved EQs and locally Hide/Unhide canonical EQ lineages without deleting source history.
 - Review new or changed EQs explicitly. **Notify me about new EQs** is attention-only and never silently selects a profile.
 - Import personal Equalizer APO / AutoEq-style parametric text from paste or Android file selection.
@@ -62,32 +68,31 @@ TRN Black Pearl automatic physical reattach, Restore defaults, and the final DEV
 
 EQ Library supports multiple output contexts from one canonical source representation.
 
-| Group | Outputs in v0.5.0 |
+| Group | Outputs in v0.7.0 |
 | --- | --- |
-| **Hardware DACs** | TRN Black Pearl, FiiO JA11, stock-firmware JCALLY JM12 |
+| **Hardware DACs** | TRN Black Pearl, FiiO JA11, SIMGOT EW300 DSP |
 | **Apps** | USB Audio Player PRO / ToneBoosters, Poweramp / Poweramp Equalizer, Wavelet, TOPPING Tune, EasyEffects, Equalizer APO |
 | **Universal formats** | AutoEq / Equalizer APO Parametric, AutoEq GraphicEQ |
 
 The active output is an **operating/action context**, not a catalog or My EQs ownership filter. Switching outputs changes target compatibility, conversion/fidelity, export behavior, and hardware actions without hiding otherwise valid canonical EQs or changing which EQs the user saved.
 
-On the v0.6 development branch, **Save/Add changes local My EQs state only**. File export is an explicit Export action and hardware writes are explicit Flash actions. This prevents selecting a target from silently becoming a library-membership or storage operation.
+In v0.7.0, **Save/Add changes local My EQs state only**. File export is an explicit Export action and hardware writes are explicit Flash actions. This prevents selecting a target from silently becoming a library-membership or storage operation.
 
 Exports use Android's system folder picker. EQ Library does not request broad storage access, does not write into another app's private storage, and manages only files it can prove it created.
 
 ## Hardware support
 
-| Device | EQ Library behavior | v0.6.0 status |
+| Device | EQ Library behavior | v0.7.0 status |
 | --- | --- | --- |
-| **TRN Black Pearl** | `.txt` export, 10-band Direct Flash, playback-gain/headroom handling, Reset EQ to flat | **Hardware-qualified for the v0.6.0 path** |
-| **FiiO JA11** | Hardware-only 5-band Direct Flash, global EQ gain, Apply/Save/readback, Reset EQ to flat | **Hardware validation pending** |
-| **JCALLY JM12 (stock firmware)** | Hardware-only 5-band Direct Flash, readback verification, tracked playback-gain adjustment, Reset EQ to flat | **Hardware validation pending · power-cycle persistence unclaimed** |
-| **SIMGOT EW300 DSP cable** | v0.7 beta exact-profile five-band Peak readback/capture, guarded editor Apply, persistent Flash, Reset, reconnect verification, and operation reports | **Physical state/restoration verified on prior candidate · exact latest-candidate hardware gate open** |
+| **TRN Black Pearl** | `.txt` export, 10-band Direct Flash, playback-gain/headroom handling, final native readback verification, and Reset EQ to flat | **Verified for the tested AFUL Explorer transaction, unit, starting state, and Pixel 9 session** |
+| **FiiO JA11** | Hardware-only five-band User 1 editor, global EQ gain, Apply/Save/readback, Flash, and Reset EQ to flat | **Software path verified · broader power-cycle qualification unclaimed** |
+| **SIMGOT EW300 DSP cable** | Five-band Peak readback/capture, guarded editor Apply, persistent Flash, Reset, reconnect verification, and operation reports | **Evidence-bounded exact-device support** |
 
-The SIMGOT EW300 DSP cable is not supported by v0.6.0. The v0.7 recovery candidate reuses the existing device registry, source-neutral canonical EQ pipeline, finite-hardware response adapter, authoritative DAC session, and My DAC/capture flows. Peak-only readback/capture is evidence-backed; non-Peak snapshots fail closed, and ordinary playback gain is excluded from captured EQs. The exact implementation blocks automatic reconnect before the single Save send, never replays mutations, and shares privacy-safe readable/JSON operation reports. The consolidated session observed persisted hardware editing and exact restoration, but the candidate Apply operation telemetry was not exported; release and public-support approval remain blocked. See the [v0.7 EW300 DSP implementation plan](docs/V0.7_EW300_DSP_IMPLEMENTATION_PLAN.md) and [hands-on checklist](docs/EW300_DSP_HANDS_ON_CHECKLIST.md).
+Peak-only EW300 readback/capture is evidence-backed; non-Peak snapshots fail closed, and ordinary playback gain is excluded from captured EQs. Hardware claims remain limited to the exact device and evidence recorded in the [v0.7.0 release notes](docs/releases/v0.7.0.md) and validation ledgers.
 
 Direct Flash is OFF by default for newly introduced hardware outputs. Add/Save never automatically writes to a DAC. Flash and Reset require explicit confirmation where the maintained device safety contract requires it.
 
-The v0.6.0 hardware scope does **not** include firmware update, bootloader, cross-flash, or
+The v0.7.0 hardware scope does **not** include firmware update, bootloader, cross-flash, or
 unrelated DAC-management commands. More generally, any such control must be exposed when the
 exact hardware profile genuinely supports it and safe protocol evidence is established; an
 unverified control is kept absent and unclaimed until then.
@@ -100,17 +105,17 @@ Flash replaces EQ Library's prior playback-gain adjustment instead of stacking r
 
 **Reset EQ to flat** operates on the DAC's current EQ slot, writes all 10 bands flat, persists the slot, and then removes only the playback-gain adjustment previously tracked as applied by EQ Library. Unrelated DAC settings remain outside the transaction.
 
-On the v0.6 development branch, My DAC also exposes a physically qualified **EQ Library Restore defaults** action for Black Pearl. It restores 50% volume, FAST-LL, HIGH gain, CLASS AB, centered balance, and microphone gain 0 dB. **Also reset EQ to flat** is optional and OFF by default. With it OFF, the current hardware EQ remains unchanged; with it ON, the separately qualified EQ-flat reset is used. The selected values are app-owned restore targets and are **not** presented as verified TRN factory defaults.
+My DAC exposes a physically qualified **EQ Library Restore defaults** action for Black Pearl. It restores 50% volume, FAST-LL, HIGH gain, CLASS AB, centered balance, and microphone gain 0 dB. **Also reset EQ to flat** is optional and OFF by default. With it OFF, the current hardware EQ remains unchanged; with it ON, the separately qualified EQ-flat reset is used. The selected values are app-owned restore targets and are **not** presented as verified TRN factory defaults.
 
 Black Pearl `.txt` export uses the verified pyBlackPearl `PK / LS / HS` peak/shelf syntax and preserves the true derived preamp. Third-party importer limitations are disclosed rather than silently changing canonical EQ data or the Direct Flash plan.
 
-### FiiO JA11 and JCALLY JM12
+### FiiO JA11
 
-v0.6.0 includes implemented Direct Flash paths for FiiO JA11 on normal FiiO firmware and JCALLY JM12 on stock firmware. Each has its own strict USB identity, device representation, confirmation flow, and readback/failure handling.
+v0.7.0 includes a strict FiiO JA11 USB identity, a five-band User 1 editor, explicit Review → Apply controls, one-Save persistence, final readback, and failure handling within the existing transaction boundary.
 
-The physical devices were not available for the required Pixel 9 hands-on qualification before v0.6.0 publication, so both remain visibly **Hardware validation pending**. Stock JM12 power-cycle persistence is not claimed until it is established on hardware.
+The software path is verified. Physical evidence remains limited to the exact reports and candidate identities recorded in the repository ledger; broader JA11 power-cycle qualification is not claimed.
 
-The v0.6 product roadmap focuses on **TRN Black Pearl → FiiO**. Historical/internal JCALLY protocol material may remain for reference, but JCALLY is not current/upcoming v0.6 product UX.
+Historical JCALLY JM12 protocol material may remain in the repository for reference, but JCALLY is not a current v0.7 hardware-support claim.
 
 ## Fidelity and safety
 
@@ -152,7 +157,7 @@ EQ Library follows modern Android development boundaries so UI, domain rules, st
 - Android USB host/HID integration behind device-specific data/platform adapters
 - source-independent EQ and target-specific derivation kept in the domain layer
 
-Compose does not implement DSP fitting, source parsing, storage ownership, or USB wire protocol rules. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/V0.6_LIBRARY_OWNERSHIP_AND_RECOVERY.md](docs/V0.6_LIBRARY_OWNERSHIP_AND_RECOVERY.md) for the maintained architecture and current v0.6 ownership/recovery contract.
+Compose does not implement DSP fitting, source parsing, storage ownership, or USB wire protocol rules. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/V0.6_LIBRARY_OWNERSHIP_AND_RECOVERY.md](docs/V0.6_LIBRARY_OWNERSHIP_AND_RECOVERY.md) for the maintained architecture and My EQs ownership/recovery contract.
 
 ## Development setup
 
@@ -182,17 +187,14 @@ Run `:app:connectedDebugAndroidTest` only with an attached device or running emu
 
 ## Validation and release discipline
 
-v0.5.0 completed both its implementation phase and Pixel 9 release-candidate testing before publication. TRN Black Pearl's v0.5 hardware/DSP regression passed; JA11/JM12 remain explicitly pending hardware qualification for that release.
+The public v0.7.0 release was built, tested, signed, and published through the trusted main-only workflow. The public tag points to `4f325d673159b40515086fe5143df12b29ddb076`; the executable behavior was tested on `e1ab5fa5a65dc2d64624d871ac53d436f792ea6a`, and the tagged source adds documentation-only closeout synchronization.
 
-The public v0.5.0 release was rebuilt, tested, signed, and published from exact source commit:
+- Signed workflow: [GitHub Actions run 36381764266](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36381764266)
+- Public release: [EQ Library v0.7.0](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.7.0)
+- Public APK SHA-256: `27dada499bcbf9be9bd21d1349164858c93a5d2b83f78fd61134de13b4eb4025`
+- Signer certificate SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`
 
-`ff2fa351d5f38f9dcf37a77859f1e988bbdb76a8`
-
-The release workflow verified the same permanent signing identity pinned in [`release-signing-cert.sha256`](release-signing-cert.sha256).
-
-For v0.6, the Black Pearl Restore-defaults physical PASS is pinned to exact signed source `b0340842dd88dc85613d9441fcc72ceadf877b20`; its APK SHA-256 is `dcae4f54881976af70e93c2c796b6993697d1a0a8f333698e9d925933c61ff37`. Documentation-only closeout does not replace that behavior evidence unless it changes the qualified transaction semantics.
-
-The public v0.6.0 release was built, tested, signed, and published from merge commit `e5ffa5d00862edc3b79bf52e1508db5244845e94` via [Signed GitHub Release workflow run #35008912862](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/35008912862). The release is [EQ Library v0.6.0](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.6.0); its APK is `EQ-Library-v0.6.0.apk` with SHA-256 `93b5250d7f32b068f24702c9fbfacb697e7921100250ee0652981100e29adb62`. The signer certificate remains `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`. FiiO JA11 physical qualification remains deferred and is not a blocker for v0.6.0.
+The complete release gates and hardware evidence boundaries are recorded in the [v0.7.0 release notes](docs/releases/v0.7.0.md) and [public release checklist](docs/PUBLIC_RELEASE_CHECKLIST.md). `actionlint` was not available locally; no workflow file changed during final closeout, and the trusted remote release workflow passed.
 
 Installable releases use SemVer during the `0.x` development series. The first stable release is reserved for `v1.0.0`.
 
@@ -204,13 +206,14 @@ USB Audio Player PRO/UAPP, ToneBoosters, OPRA, Roon Labs, TRN, FiiO, JCALLY, TOP
 
 ## Documentation
 
+- [docs/releases/v0.7.0.md](docs/releases/v0.7.0.md) — v0.7.0 release notes and validation record
 - [docs/releases/v0.6.0.md](docs/releases/v0.6.0.md) — v0.6.0 release notes and validation record
 - [docs/releases/v0.5.0.md](docs/releases/v0.5.0.md) — v0.5.0 release notes and validation record
 - [CHANGELOG.md](CHANGELOG.md) — release history and notable changes
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — Android/MAD architecture and invariants
 - [docs/CHATGPT_PROJECT_RUNBOOK.md](docs/CHATGPT_PROJECT_RUNBOOK.md) — maintained product and execution source of truth
 - [docs/V0.6_LIBRARY_OWNERSHIP_AND_RECOVERY.md](docs/V0.6_LIBRARY_OWNERSHIP_AND_RECOVERY.md) — v0.6 device-agnostic My EQs / Needs attention authority
-- [docs/V0.7_EW300_DSP_IMPLEMENTATION_PLAN.md](docs/V0.7_EW300_DSP_IMPLEMENTATION_PLAN.md) — approved scope, evidence gates, implementation sequence, validation, and signed testing handoff for the planned EW300 DSP cable support
+- [docs/V0.7_EW300_DSP_IMPLEMENTATION_PLAN.md](docs/V0.7_EW300_DSP_IMPLEMENTATION_PLAN.md) — EW300 DSP scope, evidence gates, implementation sequence, and validation record
 - [docs/V0.6_PREMIUM_UX_AUDIT_BLUEPRINT.md](docs/V0.6_PREMIUM_UX_AUDIT_BLUEPRINT.md) — design-only v0.6 polish blueprint; approval required before major UI changes
 - [docs/PUBLIC_RELEASE_CHECKLIST.md](docs/PUBLIC_RELEASE_CHECKLIST.md) — GitHub release gates
 - [docs/RELEASE_SIGNING.md](docs/RELEASE_SIGNING.md) — permanent APK signing process
