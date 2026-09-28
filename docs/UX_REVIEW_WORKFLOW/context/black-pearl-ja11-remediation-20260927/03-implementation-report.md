@@ -605,3 +605,12 @@ The interrupt-OUT transport change is therefore not proven to resolve this failu
 Black Pearl physically fixed or publicly supported. The next engineering step is source-side
 diagnosis of the `-8934` versus `-8960` native-gain mismatch using deterministic fixtures and
 maintained protocol evidence; no further hardware mutation is authorized by this result.
+
+### Read-only source diagnosis after the retest
+
+The maintained `BlackPearlProtocol` and the independently reviewed reference both encode global
+gain as a signed little-endian 16-bit value at 256 raw units per dB. The observed final mismatch is
+26 raw units (`0.1015625 dB`) and does not, by itself, distinguish a device-side quantization/rounding
+rule from an exact-target write that was not accepted. The current evidence does not justify
+changing wire bytes, gain math, verification tolerance, or retry policy. The scoped interrupt-OUT
+candidate therefore remains a failed physical candidate, not a proven repair.

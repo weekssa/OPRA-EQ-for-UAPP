@@ -289,3 +289,12 @@ shows only that the exact candidate still failed the complete AFUL Explorer tran
 final global-gain readback boundary. Independent review disposition for the physical result is
 **REPAIR_REQUIRED**. Do not request another write until deterministic source diagnosis produces a
 new candidate and its exact provenance is complete.
+
+### Source-diagnosis boundary
+
+Read-only comparison of the maintained codec and the supplied independent reference confirms the
+same signed little-endian 16-bit global-gain representation at 256 raw units per dB. The physical
+`-8934` versus `-8960` result is a 26-raw-unit (`0.1015625 dB`) disagreement. There is not enough
+evidence to reinterpret that as an accepted native quantization step, so no tolerance, codec, wire,
+timing, or retry change is approved by this result. A new source correction requires deterministic
+evidence before another physical candidate is produced.
