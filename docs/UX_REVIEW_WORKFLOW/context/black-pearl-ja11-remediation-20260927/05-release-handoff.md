@@ -456,3 +456,31 @@ Pixel 9 owner checklist:
 5. Record restoration separately for each DAC. Use `06-post-pixel-closure-prompt.md` afterward.
 
 Current handoff state: **READY_FOR_PIXEL_9**. Luna did not mutate hardware.
+
+## Latest owner-authorized Black Pearl result — AFUL Explorer
+
+The exact signed candidate was installed on Pixel 9 and verified before the one authorized action:
+
+- Source: `e1ab5fa5a65dc2d64624d871ac53d436f792ea6a`
+- APK: `EQ-Library-v0.7.0-beta-e1ab5fa.apk`
+- APK SHA-256: `7fffba26f32991ce8c936f725bdc6c3c4b6956d3a0800c539b8d45e6b52a2501`
+- Package/version: `com.weekssa.opraeqforuapp`, `0.7.0` / code `7`
+- Pixel: `tokay`, API 37, wireless serial `adb-46141FDAQ003KZ-3AwgSo._adb-tls-connect._tcp`
+- Signed-beta workflow: `36375994853`; immutable artifact `10950858857`;
+  digest `sha256:b13ca6973a203529c2cf7ea3247bb83f46af17cc89ff9506e460f33488b543b1`
+
+One action was authorized and confirmed: `My EQs -> AFUL -> Explorer -> Flash`. The app performed
+its safe preflight and stopped before hardware mutation because the planned native playback-gain
+adjustment `-4.00 dB` would exceed the Black Pearl validated volume range. Terminal wording was:
+`Flash failed — Applying -4.00 dB of playback gain would exceed the Black Pearl's validated volume
+range. Adjust the DAC volume and try again.` It also said: `Reconnect or refresh the DAC before any
+later hardware action. Do not retry automatically.`
+
+Current disposition: **PHYSICAL_FAIL / PRECHECK_BLOCKED**, requested EQ **NOT VERIFIED**, final
+native readback **NOT RUN** because no write was permitted. No Reset, Save, Restore, retry, second
+Flash, or other DAC mutation followed. Luna did not mutate the DAC in this attempt.
+
+Owner next step, if another attempt is desired: adjust the Black Pearl volume so the validated
+range permits the `-4.00 dB` change, refresh/reconnect the DAC, and then provide a new explicit
+authorization for one fresh exact-candidate AFUL Explorer Flash. The prior authorization is
+consumed; do not treat this as permission to retry.

@@ -777,3 +777,44 @@ Exact candidate tuple:
 This candidate is now **READY_FOR_PIXEL_9**. That is a handoff state, not a physical-fix or public
 support claim. Black Pearl and JA11 remain independent physical classifications; Luna did not
 connect to or mutate either DAC.
+
+## Exact-candidate AFUL Explorer Flash attempt — 2026-09-27 local / 2026-09-28 UTC
+
+This addendum supersedes the pre-physical handoff state for the one newly authorized Black Pearl
+attempt. The exact candidate was installed and selected on the owner Pixel 9:
+
+- Source SHA bound by the candidate manifest: `e1ab5fa5a65dc2d64624d871ac53d436f792ea6a`.
+- APK: `EQ-Library-v0.7.0-beta-e1ab5fa.apk`; SHA-256
+  `7fffba26f32991ce8c936f725bdc6c3c4b6956d3a0800c539b8d45e6b52a2501`.
+- Package/version: `com.weekssa.opraeqforuapp`, `0.7.0` / code `7`.
+- Pixel: Google Pixel 9, `tokay`, API 37, wireless ADB serial
+  `adb-46141FDAQ003KZ-3AwgSo._adb-tls-connect._tcp`.
+- Candidate provenance: signed-beta workflow `36375994853`, immutable APK artifact ID
+  `10950858857`, digest `sha256:b13ca6973a203529c2cf7ea3247bb83f46af17cc89ff9506e460f33488b543b1`.
+
+The read-only preflight showed `TRN Black Pearl · Connected`, `Verified current hardware`, `Flat`,
+`10 filters`, and `Active slot 1`. The selected action was exactly `My EQs -> AFUL -> Explorer ->
+Flash`; the confirmation displayed the expected native rounded adjustment of `-4.00 dB`. The
+owner-authorized confirmation was accepted once.
+
+The transaction then failed closed before a hardware write. The terminal result was:
+`Flash failed — Applying -4.00 dB of playback gain would exceed the Black Pearl's validated volume
+range. Adjust the DAC volume and try again.` It also displayed: `Reconnect or refresh the DAC before
+any later hardware action. Do not retry automatically.` No final native readback was available
+because the preflight range guard stopped the transaction before mutation; therefore the requested
+EQ was not verified and this attempt is **PHYSICAL_FAIL / PRECHECK_BLOCKED**, not a protocol-pass or
+physical-fix claim.
+
+Evidence captured from the Pixel session:
+
+- My DAC preflight UI XML SHA-256: `f0d34d552e42d03de1c38bc062f52fbab4cb6feccdf8b2dd6b8090454e8f4ca3`.
+- My EQs pre-Flash UI XML SHA-256: `85624efe68fc8ab7467e76178c1fa96b4722d988ac965586054657bccef9a0a2`.
+- Terminal-result UI XML SHA-256: `9f51471c6035d1506749912da6ca814c55b849733035b446fc2b0cb7aa1e9dd5`.
+- No Reset, Save, Restore, retry, second Flash, or other DAC mutation was attempted after the
+  terminal result. Luna did not mutate the DAC in this attempt.
+
+Disposition: the exact candidate's fail-closed safety wording and one-terminal-result behavior are
+observed, but AFUL Explorer requested-state verification remains **PHYSICAL_FAIL / NOT VERIFIED**.
+The next physical attempt requires a separately authorized fresh baseline after the owner adjusts
+the DAC volume so the validated range guard permits the requested `-4.00 dB` adjustment. Do not
+retry automatically and do not infer Black Pearl physical support from this result.

@@ -369,3 +369,25 @@ install and cold launch passed.
 Final review status: **READY_FOR_PIXEL_9**. The candidate is not physical qualification, does not
 claim Black Pearl is fixed, and does not authorize a public hardware-support claim. The next owner
 boundary is one exact-candidate Pixel 9 review with Black Pearl and JA11 classified independently.
+
+## Latest exact-candidate Black Pearl attempt — preflight safety stop
+
+The owner authorized one exact-candidate AFUL Explorer Flash on Pixel 9. Candidate identity matched
+source `e1ab5fa5a65dc2d64624d871ac53d436f792ea6a`, APK SHA-256
+`7fffba26f32991ce8c936f725bdc6c3c4b6956d3a0800c539b8d45e6b52a2501`, package
+`com.weekssa.opraeqforuapp` version `0.7.0` / code `7`, and signed workflow `36375994853`.
+The device was the owner Pixel 9 `tokay`, API 37, wireless serial
+`adb-46141FDAQ003KZ-3AwgSo._adb-tls-connect._tcp`; the connected target was `TRN Black Pearl`.
+
+The read-only baseline showed verified current hardware, Flat, ten filters, and active slot 1. The
+single confirmation displayed `-4.00 dB` native playback-gain adjustment and was accepted once.
+The transaction stopped before hardware mutation with the truthful terminal result that applying
+`-4.00 dB` would exceed the Black Pearl validated volume range and that the DAC volume must be
+adjusted before trying again. The result also prohibited automatic retry and requested reconnect or
+refresh before later hardware action.
+
+Review disposition: **PHYSICAL_FAIL / PRECHECK_BLOCKED** for this AFUL Explorer request; the safety
+failure-path assertion is **PASS**, but no final native readback occurred and the requested EQ is
+**NOT VERIFIED**. No retry, Reset, Save, Restore, or second Flash was attempted. This result does
+not qualify Black Pearl hardware or prove the named success path. A later attempt requires a fresh
+baseline and a separate authorization after the DAC volume is adjusted into the validated range.
