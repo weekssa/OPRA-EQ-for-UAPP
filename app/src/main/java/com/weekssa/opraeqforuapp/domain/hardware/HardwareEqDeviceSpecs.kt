@@ -102,8 +102,12 @@ object HardwareEqDeviceSpecs {
             supportedBandTypes = setOf("peak_dip", "low_shelf", "high_shelf"),
             minFrequencyHz = 20.0,
             maxFrequencyHz = 20_000.0,
-            // The packet field is signed 16-bit in 1/256 dB units. Exact source values outside
-            // +/-10 dB remain representable and keep the existing explicit caution path.
+            // The protocol fields, including the global-gain wire field, remain signed 16-bit
+            // values in 1/256 dB units. Direct Flash applies the separately established native
+            // whole-dB global-gain rule through TRN_BLACK_PEARL_DIRECT_FLASH below; this base spec
+            // remains the shared file/protocol representation and does not change text export.
+            // Exact source filter values outside +/-10 dB remain representable and keep the
+            // existing explicit caution path.
             minGainDb = -128.0,
             maxGainDb = 127.99609375,
             minQ = 0.1,
@@ -124,5 +128,15 @@ object HardwareEqDeviceSpecs {
         optimizerMinGainDb = -10.0,
         optimizerMaxGainDb = 10.0,
         representationVersion = 3,
+    )
+
+    /**
+     * Direct Flash/editor capability overlay. The wire codec remains the base spec's signed
+     * 16-bit 1/256 dB field; exact Black Pearl evidence shows the native global/preamp application
+     * step is 1 dB, so only mutation planning uses this overlay.
+     */
+    val TRN_BLACK_PEARL_DIRECT_FLASH = TRN_BLACK_PEARL.copy(
+        quantization = TRN_BLACK_PEARL.quantization.copy(preampStepDb = 1.0),
+        representationVersion = 4,
     )
 }

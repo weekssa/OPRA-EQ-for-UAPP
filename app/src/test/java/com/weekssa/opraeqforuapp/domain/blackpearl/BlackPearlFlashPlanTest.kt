@@ -40,6 +40,16 @@ class BlackPearlFlashPlanTest {
     }
 
     @Test
+    fun fractionalSourcePreampUsesBlackPearlsWholeDbNativeGlobalGainStep() {
+        val plan = buildBlackPearlFlashPlan(profile(preamp = -3.9), activeSlot = 0x00)
+
+        assertTrue(plan is BlackPearlFlashPlan.Ready)
+        plan as BlackPearlFlashPlan.Ready
+        assertEquals(-4.0, plan.requiredPlaybackGainDb, 0.0)
+        assertEquals("native hardware rounding only", plan.adaptationSummary)
+    }
+
+    @Test
     fun generatedHeadroomIsDerivedFromFinalHardwareResponseWithoutMutatingCanonicalMetadata() {
         val source = profile(
             preamp = null,
@@ -52,6 +62,7 @@ class BlackPearlFlashPlanTest {
         plan as BlackPearlFlashPlan.Ready
         assertEquals(DevicePresetFidelity.OPTIMIZED, plan.fidelity)
         assertTrue(plan.adaptationSummary.contains("generated headroom"))
+        assertEquals(-4.0, plan.requiredPlaybackGainDb, 0.0)
         assertEquals(null, plan.warning)
         assertTrue(plan.requiredPlaybackGainDb <= -3.9)
         assertTrue(plan.requiredPlaybackGainDb >= -4.1)

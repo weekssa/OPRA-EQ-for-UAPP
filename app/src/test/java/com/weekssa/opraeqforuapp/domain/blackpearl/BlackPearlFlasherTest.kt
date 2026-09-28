@@ -143,8 +143,23 @@ class BlackPearlFlasherTest {
         assertTrue(result is BlackPearlFlashResult.Success)
         assertEquals(13, transport.sent.size)
         assertEquals(0x03, transport.sent.first()[2].u8())
-        assertEquals(-2_000 + BlackPearlProtocol.gainDbToRawDelta(-4.5), gainRaw(transport.sent.first()))
-        assertEquals(BlackPearlProtocol.gainDbToRawDelta(-4.5), store.appliedRaw)
+        assertEquals(-2_000 + BlackPearlProtocol.gainDbToRawDelta(-4.0), gainRaw(transport.sent.first()))
+        assertEquals(BlackPearlProtocol.gainDbToRawDelta(-4.0), store.appliedRaw)
+    }
+
+    @Test
+    fun fractionalPreampIsWrittenAtBlackPearlsWholeDbNativeGainStep() = runBlocking {
+        val transport = FakeTransport(activeSlot = 0x00, globalGainRaw = -7_936)
+        val store = FakeGainStore()
+
+        val result = flash(transport, store, profile(preamp = -3.9))
+
+        assertTrue(result is BlackPearlFlashResult.Success)
+        result as BlackPearlFlashResult.Success
+        assertEquals(-4.0, result.appliedPlaybackGainDb, 0.0)
+        assertEquals(-8_960, transport.globalGainRaw)
+        assertEquals(-8_960, gainRaw(transport.sent.first()))
+        assertEquals(-1_024, store.appliedRaw)
     }
 
     @Test

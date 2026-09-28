@@ -64,6 +64,9 @@ object HardwareEqEditSpecs {
         deviceId = DacDeviceId.TRN_BLACK_PEARL,
         spec = HardwareEqDeviceSpecs.TRN_BLACK_PEARL,
         headroomMechanism = HardwareEqHeadroomMechanism.TRACKED_PLAYBACK_GAIN_DELTA,
+        // The global-gain wire field remains 1/256 dB, but the exact native Black Pearl
+        // application step is whole dB. Keep editor-generated safety changes on that boundary.
+        headroomGainStepDbOverride = 1.0,
         // Black Pearl final absolute representability depends on the fresh playback baseline and the
         // previously tracked EQ Library delta, so there is deliberately no static minimum here.
         minimumVerifiedHeadroomGainDb = null,

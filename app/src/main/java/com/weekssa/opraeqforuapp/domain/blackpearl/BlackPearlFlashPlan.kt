@@ -41,7 +41,7 @@ fun buildBlackPearlFlashPlan(
     }
 
     val representation = when (
-        val result = Kt02h20FiveBandOptimizer.optimize(profile, HardwareEqDeviceSpecs.TRN_BLACK_PEARL)
+        val result = Kt02h20FiveBandOptimizer.optimize(profile, HardwareEqDeviceSpecs.TRN_BLACK_PEARL_DIRECT_FLASH)
     ) {
         is FiveBandOptimizationResult.NotSuitable -> return BlackPearlFlashPlan.NotRepresentable(result.reason)
         is FiveBandOptimizationResult.Ready -> result.representation
