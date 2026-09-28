@@ -79,3 +79,19 @@ maintained codec. The capture did not identify a safe protocol correction, so th
 remains unchanged and no new fix branch push is warranted. Current disposition is `REPAIR_REQUIRED`;
 the prior exact signed candidate remains evidence of truthful failure handling, not proof of a
 successful Black Pearl Flash.
+
+## Owner-authorized write-side diagnostic disposition — 2026-09-27
+
+The owner then approved one narrowly scoped write-side diagnostic Flash for AFUL Explorer, with no
+automatic retry. A temporary debug package selected the AutoEq/Jaytiss Explorer profile (not the
+earlier Hifigues community Explorer profile that produced the `expected raw -7398` / `actual raw
+-6400` mismatch), connected to the exact Black Pearl identity, and performed exactly one confirmed
+Flash. The post-operation My DAC surface showed `Verified current hardware`, `Matches My EQs`, 10
+filters, active slot 1, and `Playback gain -31.00 dB` for the AutoEq/Jaytiss profile.
+
+The temporary logger used the wrong report-byte predicate and therefore captured zero raw write
+transfer lines; it did not provide the requested raw write proof. The result cannot establish a
+source correction for the earlier Hifigues target. The diagnostic package and temporary source
+instrumentation were removed, the signed package remained installed and untouched, and no Reset,
+retry, Save, Restore, or second mutation was performed. Current disposition remains
+`REPAIR_REQUIRED`; no new candidate is available or recommended for push.

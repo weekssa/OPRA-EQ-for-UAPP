@@ -64,3 +64,19 @@ removed, the production source was unchanged, and the current outcome remains
 `REPAIR_REQUIRED` / `PHYSICAL_FAIL` for the Black Pearl Flash. Do not classify the candidate as
 physically fixed or request another mutation unless a new exact diagnosis and owner authorization
 exist.
+
+## Later write-side diagnostic outcome — 2026-09-27
+
+The owner authorized one additional Black Pearl Flash for diagnosis only. It used a different
+catalog representation: AutoEq/Jaytiss Explorer with `-6.00 dB` preamp, not the earlier Hifigues
+community Explorer target whose expected raw gain was `-7398`. The single operation was followed by
+a read-only My DAC view showing verified current hardware, matching My EQs, 10 filters, active slot
+1, and `-31.00 dB` playback gain.
+
+Do not merge this observation with the earlier failed target or classify the named defect as fixed.
+The temporary logger captured no raw write bytes because it tested the report ID byte instead of the
+write marker byte, so no transfer-level conclusion is available. The diagnostic package and
+instrumentation were removed, no retry or restore was attempted, and the physical state is not
+restored by this worker. If the owner later supplies evidence, classify it against the exact profile,
+source, APK, DAC identity, final raw fields, and restoration state independently; otherwise leave the
+ledger at **REPAIR_REQUIRED / PHYSICAL_FAIL / NOT VERIFIED**.

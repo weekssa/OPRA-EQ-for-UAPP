@@ -48,3 +48,12 @@ protocol-diagnosis capture. The follow-up may inspect native read request/respon
 resulting My DAC snapshot, but may not infer a write correction or change wire bytes, gain math,
 tolerance, ordering, retry policy, or hardware state without separate evidence. A raw capture that
 matches the maintained codec is a diagnostic closure, not a physical qualification pass.
+
+## Owner-authorized write-side diagnostic exception — 2026-09-27
+
+After the read-only diagnosis, the owner explicitly authorized one Black Pearl Flash for diagnosis
+only. The run used the isolated debug package and the AutoEq/Jaytiss Explorer representation, which
+is distinct from the earlier Hifigues Explorer target. No automatic retry, Reset, Save, Restore, or
+second mutation was permitted. The temporary package and instrumentation were removed afterward;
+the observed hardware state is not restored by this worker and no source fix or candidate claim is
+derived from the run.

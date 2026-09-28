@@ -95,6 +95,22 @@ dispatch API, the primary worker performed a separate read-only review pass afte
 This review is independent of the earlier focused implementation inspection and did not edit,
 commit, push, or invoke hardware during the review itself.
 
+## Write-side diagnostic review addendum — 2026-09-27
+
+The later owner-authorized write-side diagnostic did not change production source. Review of the
+temporary diff confirms that the application-id suffix and logger were removed, the original signed
+package was not overwritten, the temporary package was uninstalled, and `git diff --check` passed.
+The diagnostic logger's byte predicate was incorrect (`report[0]` was checked instead of
+`report[1]`), so the captured log contains no raw write transfer evidence. The only usable result is
+the post-operation UI observation for the AutoEq/Jaytiss Explorer profile: verified current
+hardware, matching My EQs, 10 filters, active slot 1, and `-31.00 dB` playback gain.
+
+That profile is not the earlier Hifigues community Explorer target that failed at expected raw
+`-7398` versus actual raw `-6400`. No source correction is proven, no new candidate exists, and no
+additional hardware action is authorized or recommended from this run. Final disposition remains
+**REPAIR_REQUIRED**; the prior truthfulness failure-path result remains the only qualified evidence
+for the named Black Pearl defect.
+
 ## Findings
 
 ### Black Pearl - PASS

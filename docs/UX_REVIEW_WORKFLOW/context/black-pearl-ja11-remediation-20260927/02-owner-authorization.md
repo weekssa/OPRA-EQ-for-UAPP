@@ -54,3 +54,16 @@ The temporary diagnostic package was allowed to use the Black Pearl USB interfac
 capture. Its debug-only raw-read logging and separate application-id suffix were removed after the
 capture; the signed candidate package and its data were not overwritten. No source protocol change
 was authorized or made from read-only evidence alone.
+
+## Write-side diagnostic Flash authorization — 2026-09-27
+
+The owner approved the exact follow-up action: `Authorize one Black Pearl write-side diagnostic
+Flash for AFUL Explorer with raw request/response capture and no automatic retry.` This authorized
+one confirmed Flash attempt only, using a temporary debug package if needed. It did not authorize a
+second mutation, retry, Reset, Save, Restore, source correction without evidence, candidate push,
+merge, tag, publication, or public hardware-support claim.
+
+The authorized attempt was completed once. The temporary package selected the catalog AutoEq/Jaytiss
+Explorer profile; this is distinct from the earlier Hifigues community Explorer target recorded in
+the failed exact-candidate result. The temporary diagnostic package, instrumentation, and isolated
+app data were removed afterward. The original signed package and its data were not overwritten.

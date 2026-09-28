@@ -85,3 +85,22 @@ changed or retested.
 Historical physical evidence below belongs to the prior `acaf4dd` candidate and does not transfer.
 For the exact candidate above, owner physical validation is pending; Black Pearl and JA11 remain
 independent and neither is physically qualified by this software/emulator evidence.
+
+## Post-diagnosis disposition — 2026-09-27
+
+- [x] G8: one owner-authorized Black Pearl write-side diagnostic was bounded and cleaned up
+  EVIDENCE: PASS for exactly one Flash attempt on the isolated diagnostic package; no automatic
+  retry, Reset, Save, Restore, or second mutation was performed. The temporary package and logger
+  instrumentation were removed, and the production source remained unchanged.
+
+- [ ] G9: Black Pearl write-side defect is repaired and ready for a new signed candidate
+  EVIDENCE: NOT RUN / NOT PROVEN. The diagnostic used AutoEq/Jaytiss Explorer (`-6.00 dB`) rather
+  than the earlier Hifigues Explorer target (`-3.90 dB`, expected raw `-7398`). My DAC subsequently
+  showed verified current hardware at `-31.00 dB`, but the temporary logger captured no raw write
+  transfer because it tested the report ID byte instead of the write marker byte. This does not
+  resolve the earlier mismatch. Status remains **REPAIR_REQUIRED** and no branch push is authorized
+  by this evidence.
+
+- [ ] G10: physical state restored after the diagnostic
+  EVIDENCE: NOT RUN. The diagnostic state is explicitly not restored by Luna. Any later restoration
+  or follow-up mutation requires a separately identified target and explicit authorization.

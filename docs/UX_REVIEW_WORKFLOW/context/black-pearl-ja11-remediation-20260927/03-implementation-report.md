@@ -411,3 +411,57 @@ The final statement for this run is: Black Pearl truthfulness/fail-closed behavi
 requested AFUL Explorer Flash and restoration **PHYSICAL_FAIL / NOT VERIFIED**; read-only protocol
 diagnosis **COMPLETE, no source correction identified**. Luna did not mutate hardware during this
 diagnostic capture.
+
+## Owner-authorized write-side diagnostic Flash — 2026-09-27
+
+This section records one later owner-authorized mutation separately from the read-only capture above.
+The authorization was: `Authorize one Black Pearl write-side diagnostic Flash for AFUL Explorer with
+raw request/response capture and no automatic retry.` The owner then approved it with `apporoved`.
+Exactly one Flash confirmation was accepted; no second mutation, retry, Reset, Save, Restore, or
+owner-directed recovery write followed.
+
+### Diagnostic package and setup
+
+- Pixel: Google Pixel 9, codename `tokay`, API 37.
+- ADB serial: `adb-46141FDAQ003KZ-3AwgSo._adb-tls-connect._tcp`.
+- Black Pearl: TTGK Technology / TE-C, VID `0x3302`, PID `0x43E8`, serial `330243E8260129`.
+- Temporary package: `com.weekssa.opraeqforuapp.bpwdiag`; it was built from the clean source head
+  `01a968cac7a61f8cccd30cd26dfbce4c1fab7235` plus uncommitted debug-only instrumentation and was
+  uninstalled after the attempt. The signed package `com.weekssa.opraeqforuapp` remained installed.
+- Build command: `./tools/codex-android :app:assembleDebug
+  -PBLACK_PEARL_DIAGNOSTIC_APPLICATION_ID_SUFFIX=.bpwdiag`.
+- The isolated app was populated locally with the catalog profile
+  `eq-library:autoeq-8caf93a11a25c9d37760cfa5@rev-3ae1a6c820b3402dc7fc8b54`; its source text was
+  `AutoEq · Latest · Database: Jaytiss · Measurement: Jaytiss · Source: AutoEQ` and its preamp was
+  `-6.00 dB`.
+
+### Result and evidence
+
+- The Flash confirmation displayed `TRN Black Pearl: Optimized · native hardware rounding only`
+  and a `-6.00 dB` playback-gain adjustment. One confirmation tap was accepted.
+- The post-operation My DAC surface showed `Verified current hardware`, `Matches My EQs`, the
+  AutoEq/Jaytiss Explorer profile, 10 filters, active slot 1, and playback gain `-31.00 dB`.
+- Evidence directory: `/tmp/opra-black-pearl-write-diagnostic-20260927-2015/`.
+- Final My DAC UI XML SHA-256:
+  `e61bb28ddc6003e868b7960b8c06afda72c7afd7fd74372364124979bf1a93ff`.
+- Final My DAC screenshot SHA-256:
+  `bed1d65d4f57fea38c78bb3a8ccbc0b0f54ddd7406b1c3191ab90197bb8d48a1`.
+- Captured terminal log SHA-256:
+  `a6d8470cc05e6b5333e75a44a09e87174a02c2bcf5601e9bd7d972128a50f2d7`.
+- The final screenshot visibly shows the connected Black Pearl, verified current hardware, matching
+  My EQs, 10 filters, active slot 1, and `Playback gain -31.00 dB`.
+
+### Capture limitation and disposition
+
+The temporary logger attempted to identify write reports with `report[0] == 0x01`. The maintained
+Black Pearl report layout uses report ID `0x4B` at byte 0 and the write marker `0x01` at byte 1, so
+the logger emitted zero `BlackPearlUsb` write-report lines. Consequently, this run did **not**
+capture raw write bytes or the `controlTransfer` return value; it is not raw request/response proof.
+
+The UI result is an observation for the AutoEq/Jaytiss Explorer profile only. It is not evidence that
+the earlier Hifigues community Explorer target (expected raw `-7398`, observed raw `-6400`) was
+repaired, and it does not justify a protocol or gain-codec change. The current physical state was
+not restored by Luna because the authorization prohibited an automatic restore. The temporary code
+was reverted, `git diff --check` passed, the diagnostic package was uninstalled, and the source
+worktree returned clean at `01a968cac7a61f8cccd30cd26dfbce4c1fab7235`. Current disposition remains
+**REPAIR_REQUIRED** with no new pushable fix.

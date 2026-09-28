@@ -62,6 +62,26 @@ performed no hardware write. Fresh My DAC readback showed `Verified current hard
 `-6400`; the requested target raw gain was `-7398`. This confirms partial PEQ application but not a
 complete verified Flash or restoration.
 
+## Latest authorized write-side diagnostic — not a candidate
+
+After the read-only protocol capture, the owner authorized exactly one write-side diagnostic Flash.
+The isolated debug package used the catalog AutoEq/Jaytiss Explorer profile, not the earlier
+Hifigues community Explorer target. The one operation's post-operation My DAC surface showed
+`Verified current hardware`, `Matches My EQs`, 10 filters, active slot 1, and playback gain
+`-31.00 dB`.
+
+This run is not a signed beta, not an exact-candidate result, and not evidence that the earlier
+`-7398` gain mismatch is repaired. The temporary raw logger used the wrong byte position and
+captured no write transfer result. The temporary package and instrumentation were removed; the
+original signed package was left installed. No Reset, retry, Save, Restore, or second mutation was
+performed. Current state is **REPAIR_REQUIRED**, not `READY_FOR_PIXEL_9`; no branch push is
+recommended.
+
+The physical Black Pearl state after this diagnostic was not restored by Luna because the approved
+boundary prohibited an automatic restore. The owner should treat the device as containing the
+AutoEq/Jaytiss diagnostic state until a separately authorized, exact restoration or follow-up test
+is chosen.
+
 ## Historical pre-candidate source boundary — `9f5cb852994e1c88fce80598f249a97fae047429`
 
 This section preserves the pre-integration evidence. It is superseded by the exact candidate
