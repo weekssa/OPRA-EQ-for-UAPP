@@ -275,9 +275,12 @@ No unknown revision is authorized. VID/PID alone is insufficient. Firmware, boot
 
 Black Pearl protocol/USB behavior was physically qualified in the v0.3 foundation and Reset EQ to flat was qualified in v0.4. Preserve those protocol boundaries and fail-safe gain-reset rules.
 
-v0.5 changes **derived DSP adaptation**, not the qualified Black Pearl USB identity:
+v0.5 changes **derived DSP adaptation**, not the qualified Black Pearl USB identity. File export and
+Direct Flash share canonical ownership and ten-band filter adaptation, but their global-gain
+representations are intentionally distinct: Direct Flash/editor mutation uses the established
+native whole-dB application step, while file export retains its signed 1/256-dB serialization:
 
-- Direct Flash and Black Pearl file export consume the same shared device representation;
+- Direct Flash and Black Pearl file export consume the same shared filter representation;
 - profiles over 10 bands are complete-response fitted instead of first-10 truncated;
 - exact protocol-encodable values are not silently clamped;
 - current active EQ slot and global playback-gain replacement semantics remain protected;

@@ -321,7 +321,10 @@ Automatic physical reattach is armed only after that exact DAC has connected suc
 
 Black Pearl transport/protocol was qualified in v0.3 and flat reset in v0.4.
 
-v0.5 routes Black Pearl file export and Direct Flash through the same shared 10-band device representation. This supersedes the earlier v0.3 first-10 Black Pearl adaptation rule while leaving the UAPP first-10 rule intact.
+v0.5 routes Black Pearl file export and Direct Flash through the same shared 10-band filter
+representation, while keeping file global-gain serialization independent from the native whole-dB
+Direct Flash/editor mutation boundary. This supersedes the earlier v0.3 first-10 Black Pearl
+adaptation rule while leaving the UAPP first-10 rule intact.
 
 Key safety properties:
 

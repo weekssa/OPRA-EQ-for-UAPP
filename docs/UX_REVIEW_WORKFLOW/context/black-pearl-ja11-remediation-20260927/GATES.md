@@ -199,3 +199,23 @@ now state the shared 1/256 file path is independent from direct-Flash native who
 file bytes, canonical EQ, and hardware behavior are unchanged. Full unit/lint/debug/release/R8 and
 API-36 24/24 gates were rerun and passed. Exact signed beta remains unavailable on the main-only
 workflow; current status remains **MERGE_APPROVAL_REQUIRED**.
+
+G25: Editor native-gain regression at `3f818d89` — PASS. A fractional but protocol-representable
+Black Pearl response plans `-4.0 dB`; the existing editor Apply transaction emits raw tracked
+delta `-1024`, reaches the expected fake native global gain, and passes final readback verification.
+
+G26: Maintained protocol-plan source-of-truth repair — PASS. The Black Pearl protocol notes and
+v0.5 plan now distinguish Direct Flash/editor native whole-dB global-gain mutation from independent
+1/256-dB text export; no wire bytes, canonical EQ, or file output changed.
+
+G27: Full current-tip software gates at `3f818d89` — PASS. Unit 707, lint, debug assembly,
+release/R8 assembly, mapping verification, API-36 `codex-api36` instrumentation 24/24, clean debug
+install/cold launch/UI dump, diff check, and gate-lint all passed. `actionlint` is NOT RUN because
+it is unavailable locally.
+
+G28: Mandatory independent re-review of exact pushed `3f818d89` — PENDING at this checkpoint.
+G29: Exact signed beta for `3f818d89` — NOT AVAILABLE; trusted signing workflow remains main-only.
+G30: Owner Pixel 9 validation — NOT RUN; no exact signed candidate exists and Luna did not mutate
+hardware.
+
+Current gate status: **MERGE_APPROVAL_REQUIRED**.

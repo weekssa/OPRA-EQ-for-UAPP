@@ -385,3 +385,22 @@ The final reviewed branch tip after the file-export wording follow-up is
 `1393150ba6cfff7a0b73c385f564a57d29c157a3` plus the durable documentation commit that records this
 handoff. No exact signed artifact exists for either tip because the trusted workflow remains
 main-only.
+
+## Current source gate — `3f818d89`
+
+The latest pushed branch tip is `3f818d89`, based on refreshed `origin/main`
+`62584133bbd78228f26abe69bc8ab65c76be2cd5`. The editor whole-dB regression and the maintained
+file/Flash representation wording are complete. Unit, lint, debug, release/R8, API-36 emulator,
+clean-install/cold-launch, UI-dump, diff, and gate-lint checks are passing; `actionlint` is **NOT
+RUN** because it is unavailable locally.
+
+This is not yet a Pixel handoff. The exact signed candidate tuple (source SHA, APK filename and
+checksum, signer, workflow run, immutable artifact ID/digest) is **NOT AVAILABLE** because the
+trusted signing workflow is main-only. The mandatory independent read-only review of `3f818d89` is
+also the final software gate still in progress. Current status is **MERGE_APPROVAL_REQUIRED**.
+
+Owner action required, after independent review returns PASS: reply exactly
+`Authorize minimum main integration for 3f818d89`. That approval authorizes only the minimum
+main-integration step needed to bind the trusted signed-beta workflow to this combined
+`black-pearl-ja11` source; it does not authorize hardware mutation, publication, tagging, or a
+public support claim. Luna has not mutated hardware.

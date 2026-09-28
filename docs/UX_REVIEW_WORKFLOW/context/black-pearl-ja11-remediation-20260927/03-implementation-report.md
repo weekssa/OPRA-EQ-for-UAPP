@@ -680,3 +680,49 @@ Rerun evidence after this follow-up: full `:app:testDebugUnitTest`, `:app:lintDe
 `:app:assembleDebug`, `:app:assembleRelease`, R8 mapping verification, API 36
 `codex-api36` instrumentation 24/24, and `git diff --check` — all **PASS**. The branch tip is
 `1393150ba6cfff7a0b73c385f564a57d29c157a3` before the final durable-documentation commit.
+
+## Final source/test closure checkpoint — `3f818d89` — 2026-09-27
+
+The branch tip `3f818d89` is the current pushed source candidate. It is based on refreshed
+`origin/main` `62584133bbd78228f26abe69bc8ab65c76be2cd5` and follows the prior implementation and
+documentation checkpoints. No production protocol, transport, identity, timing, retry, canonical
+EQ, or hardware-mutation behavior changed in this follow-up; the changed source files are two
+focused regression test files and two maintained Black Pearl explanation documents.
+
+The independent review findings are now covered directly:
+
+- `HardwareEqEditorTest.blackPearlGeneratedHeadroomUsesWholeDbNativeStep` uses a protocol-
+  representable fractional filter response (`3.8984375 dB`) and proves local Black Pearl safety
+  planning produces `-4.0 dB` rather than a fractional global-gain adjustment.
+- `BlackPearlEditorApplyTest.generatedWholeDbHeadroomReachesApplyAsNativeGainRaw` applies that
+  working copy through the existing editor transaction and proves the tracked raw delta is
+  `-1024` and the fake native global gain reaches `-3024` from a `-2000` baseline before final
+  verification.
+- `docs/BLACK_PEARL_PROTOCOL_NOTES.md` and `docs/V0.5_KT02H20_IMPLEMENTATION_PLAN.md` now
+  distinguish the direct-Flash/editor native whole-dB global-gain boundary from independent
+  1/256-dB text-file representation. No file bytes or canonical values changed.
+
+Current verification evidence for `3f818d89`:
+
+- `./tools/codex-android :app:testDebugUnitTest :app:lintDebug :app:assembleDebug` — **PASS**;
+  707 unit tests completed.
+- `./tools/codex-android :app:assembleRelease` — **PASS**; minified release/R8 completed.
+- `bash tools/verify-r8-mapping.sh app/build/outputs/mapping/release/mapping.txt` — **PASS**.
+- `./tools/codex-android emulator -list-avds` — **PASS**, `codex-api36` available.
+- `./tools/codex-android adb devices -l` and boot check — **PASS**; emulator serial
+  `emulator-5554`, API 36, boot complete. Pixel 9 serial was not selected.
+- `ANDROID_SERIAL=emulator-5554 ./tools/codex-android :app:connectedDebugAndroidTest` —
+  **PASS**, 24/24, 0 skipped, 0 failed.
+- Clean disposable-emulator debug install — **PASS** (`Success`); explicit cold launch of
+  `com.weekssa.opraeqforuapp/.MainActivity` — **PASS** (`Status: ok`, `LaunchState: COLD`);
+  `uiautomator dump` — **PASS** and resumed activity was `MainActivity`.
+- `git diff --check` — **PASS**.
+- `node /Users/stephenweeks/.agents/skills/unlazy/scripts/gate-lint.mjs .../GATES.md` —
+  **PASS**, 13 existing manual-evidence warnings.
+- `actionlint` — **NOT RUN**, unavailable locally; no workflow file changed.
+
+Mandatory independent re-review of this exact pushed tip was requested and remains pending at the
+time of this checkpoint. The trusted signed-beta workflow is main-only, so exact signed candidate
+provenance for `3f818d89` is **NOT AVAILABLE**. Current status remains **MERGE_APPROVAL_REQUIRED**;
+no DAC was connected, written, flashed, applied, reset, saved, restored, or mutated by Luna during
+this checkpoint.

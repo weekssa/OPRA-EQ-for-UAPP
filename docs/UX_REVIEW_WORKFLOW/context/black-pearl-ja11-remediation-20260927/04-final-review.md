@@ -335,3 +335,11 @@ assertions that describe it. It preserves file contents, canonical EQ ownership,
 planning, protocol bytes, transport, timing, retry policy, and hardware boundaries. The rerun full
 unit/lint/debug/release/R8/API-36 gates are green. No new defect was found; the prior independent
 review PASS and the exact signed-candidate boundary remain unchanged.
+
+## Exact-tip re-review requested — `3f818d89` — 2026-09-27
+
+The prior independent review returned `REPAIR_REQUIRED` for two specific gaps: no decisive editor
+whole-dB Apply regression and stale maintained file/Flash representation wording. Both are repaired
+on pushed tip `3f818d89`, and the full software/emulator gate set is green. The same read-only
+reviewer was asked to re-review this exact tip without editing, committing, pushing, publishing,
+or contacting hardware. This gate remains **PENDING** until that response is recorded.
