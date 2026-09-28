@@ -40,6 +40,14 @@ independently `PHYSICAL_INCONCLUSIVE`; neither device is publicly supported by t
   no duplicate retry, and no later write was attempted. This is not a pass for the requested EQ's
   hardware application or restoration.
 
+### Read-only recovery result
+
+After the terminal failure, one owner-authorized app-session reconnect and full read-only refresh
+was completed. My DAC showed `Verified current hardware`, `Matches My EQs`, `Explorer`, 10 filters,
+active slot 1, and playback gain `-25.00 dB` / raw `-6400`; the selected target required raw
+`-7398`. The recovery confirms that the PEQ bands reached hardware but the global-gain target did
+not, so the complete Flash remains **PHYSICAL_FAIL** and restoration remains unverified.
+
 ## Historical pre-candidate independent review — source `9f5cb852994e1c88fce80598f249a97fae047429`
 
 The required independent reviewer completed a second read-only pass after the terminal-result

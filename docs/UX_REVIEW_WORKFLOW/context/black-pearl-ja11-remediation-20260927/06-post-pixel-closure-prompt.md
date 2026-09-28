@@ -51,3 +51,8 @@ post-operation read-only refresh ran, but no retry, owner-directed recovery reco
 Reset, Save, Restore, or restoration claim followed. Treat the requested post-operation state as
 unqualified, do not transfer the historical `acaf4dd` result, and do not classify either named issue
 as owner-accepted or publicly supported.
+
+The authorized read-only recovery subsequently established a fresh current snapshot: Explorer's
+10-filter hardware state matched, active slot 1 remained selected, and playback gain remained
+`-25.00 dB` / raw `-6400` rather than the requested `-7398`. This is partial-state evidence only;
+it does not convert the complete Flash to a pass and does not prove restoration.

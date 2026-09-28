@@ -54,6 +54,14 @@ This addendum supersedes the pre-session checklist below for the exercised Black
   application/restoration gate is **FAIL**. Do not label Black Pearl physically fixed or publicly
   supported.
 
+### Read-only recovery result
+
+The owner-authorized recovery closed and reopened the app session, tapped `Connect` once, and
+performed no hardware write. Fresh My DAC readback showed `Verified current hardware`,
+`Matches My EQs` for `Explorer`, 10 filters, active slot 1, and playback gain `-25.00 dB` / raw
+`-6400`; the requested target raw gain was `-7398`. This confirms partial PEQ application but not a
+complete verified Flash or restoration.
+
 ## Historical pre-candidate source boundary — `9f5cb852994e1c88fce80598f249a97fae047429`
 
 This section preserves the pre-integration evidence. It is superseded by the exact candidate

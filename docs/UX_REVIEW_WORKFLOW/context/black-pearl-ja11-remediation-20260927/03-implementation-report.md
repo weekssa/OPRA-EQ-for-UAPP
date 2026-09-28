@@ -64,6 +64,21 @@ was not verified and restoration was not attempted. JA11 remains independently `
   Direct Flash / final hardware verification **PHYSICAL_FAIL**; Black Pearl restoration **NOT
   VERIFIED**. This does not establish public hardware support.
 
+## Owner-authorized read-only recovery addendum — 2026-09-27
+
+- The app session was closed and reopened, then `Connect` was tapped once using the existing
+  Android USB permission. No DAC write control was invoked during recovery.
+- Fresh My DAC readback showed `Verified current hardware`, `Matches My EQs`, `Explorer`,
+  `Optimized · native hardware rounding only`, 10 filters, active slot 1, and playback gain
+  `-25.00 dB` (raw `-6400`). The AFUL Explorer Flash target had required raw gain `-7398`.
+- Recovery therefore proves a partial result: the ten-band EQ state matched the selected Explorer
+  representation, while the requested global playback-gain target did not. The original Flash
+  remains **PHYSICAL_FAIL** as a complete transaction, and no restoration was attempted.
+- Evidence directory: `/tmp/opra-black-pearl-recovery-1933/`. Fresh My DAC XML SHA-256
+  `12a1a3195a6bc392aae9ac344c880ef62edd39a8ab945eb3e65c33ad63635c1c`; screenshot SHA-256
+  `9dacda703ca0fa9a85b68cb7432307021944178589be063499a57b2baf72efce`; USB evidence SHA-256
+  `ad17ca6edca249fce742bda2f28e6e4aae5d6a28f88795e17c16823a7aa65a3d`.
+
 ## Historical pre-candidate repair addendum — source `9f5cb852994e1c88fce80598f249a97fae047429`
 
 This addendum records the pre-integration owner-authorized, narrowly scoped repair after the
