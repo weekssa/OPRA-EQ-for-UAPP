@@ -270,9 +270,9 @@ assembly, and final independent review are complete and passing.
 
 This does **not** create a signed beta. The local debug APK and unsigned minified release APK are
 development artifacts only; no signer, workflow run, or immutable artifact ID exists for this SHA.
-The separately authorized non-public branch was pushed at final branch head
-`ccc548908d3e09e46b374abc86d058fbf8b8d5e6`; no signed beta resulted. No DAC was connected or
-mutated by Luna during this source change.
+The separately authorized non-public branch was pushed after the software gates for implementation
+source `eb761f1bc510a612acde7b71b453631e1ff23a8f`; no signed beta resulted. No DAC was connected
+or mutated by Luna during this source change.
 
 Current handoff status: **SOFTWARE_READY_PENDING_SIGNED_CANDIDATE**. Do not use the local APK for
 Pixel 9 hardware qualification. The next required boundary is an exact signed candidate tied to
