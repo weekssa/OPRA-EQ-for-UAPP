@@ -20,6 +20,10 @@ software path is verified and its physical qualification remains bounded by the 
   truthful success/uncertainty outcomes.
 - Kept built-in JA11 programs and EQ Off non-editable, and kept canonical EQ ownership and other
   DAC transaction behavior unchanged.
+- Published the signed `v0.7.0` release from tagged source `4f325d673159b40515086fe5143df12b29ddb076`.
+  The public APK SHA-256 is `27dada499bcbf9be9bd21d1349164858c93a5d2b83f78fd61134de13b4eb4025`;
+  the release includes the APK and checksum assets. Public hardware wording remains bounded by
+  the exact Black Pearl and JA11 evidence records.
 
 ## [Unreleased]
 

@@ -91,3 +91,21 @@ whether the failure was pre-Save or post-Save.
 Do not record `PASS`, remove Hardware validation pending, publish JA11 support, or repeat an
 uncertain mutation until the exact candidate, complete baseline, raw transaction evidence, and
 restoration result are all present and reviewed.
+
+## Public `v0.7.0` release provenance — 2026-09-28
+
+Record J018 is release provenance, not a new physical JA11 result. The owner-approved public
+[v0.7.0 release](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.7.0) is latest,
+published, and non-prerelease at release ID `397979580`. Tag `v0.7.0` points to
+`4f325d673159b40515086fe5143df12b29ddb076`; the executable behavior was tested on
+`e1ab5fa5a65dc2d64624d871ac53d436f792ea6a`, with documentation-only closeout synchronization on
+the tagged head. The trusted release workflow was `36381764266`; immutable artifact ID was
+`10952494777` with ZIP SHA-256
+`08cffddad84f4c5648a4ec2e884784188689a24041f020cc9925e7af8040bccc`; public APK SHA-256 was
+`27dada499bcbf9be9bd21d1349164858c93a5d2b83f78fd61134de13b4eb4025`; signer certificate
+SHA-256 was `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`. The APK and
+`.sha256` assets both report `uploaded` through the public GitHub API.
+
+J018 does not promote JA11 hardware status. The complete User 1 editor/apply software path is
+verified, while power-cycle retention and broader physical qualification remain bounded by the
+exact J016/J017 reports and are not generalized to the public release.

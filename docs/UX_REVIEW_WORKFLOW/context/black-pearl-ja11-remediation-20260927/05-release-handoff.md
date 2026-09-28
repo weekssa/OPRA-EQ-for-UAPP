@@ -661,3 +661,42 @@ The owner approved final software/release closeout and publication. This approva
 release workflow and documentation synchronization; it does not authorize an additional DAC write
 or convert the maintained JA11 evidence boundary into a broader physical-support claim. The final
 release must retain the exact candidate provenance and limitations above.
+
+## Public `v0.7.0` release — published 2026-09-28
+
+The final public release is now available at
+[github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.7.0](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.7.0).
+
+Release identity:
+
+- Tag: `v0.7.0`, latest, published, non-prerelease.
+- Release ID: `397979580`.
+- Tagged source SHA: `4f325d673159b40515086fe5143df12b29ddb076`.
+- Executable source exercised on Pixel 9: `e1ab5fa5a65dc2d64624d871ac53d436f792ea6a`; the tagged head contains documentation-only closeout changes after that executable candidate.
+- Package/version: `com.weekssa.opraeqforuapp`, `0.7.0` / code `7`.
+- Signer certificate SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`.
+- Workflow: [trusted main-only run `36381764266`](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36381764266).
+- Immutable artifact: ID `10952494777`; ZIP SHA-256 `08cffddad84f4c5648a4ec2e884784188689a24041f020cc9925e7af8040bccc`.
+- APK: [`EQ-Library-v0.7.0.apk`](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.7.0/EQ-Library-v0.7.0.apk); SHA-256 `27dada499bcbf9be9bd21d1349164858c93a5d2b83f78fd61134de13b4eb4025`.
+- Checksum: [`EQ-Library-v0.7.0.apk.sha256`](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.7.0/EQ-Library-v0.7.0.apk.sha256); asset SHA-256 `137e44db9333f69d5df872df4176c1a25d7001b46b392fddf3c2bd4676c54f55`.
+
+The public GitHub release API independently reports both assets as uploaded and reports the APK
+digest matching the verified local APK. The release notes use sentence-case headings, direct
+language, parallel lists, descriptive links, and explicit accessibility and hardware boundaries
+per the Google developer documentation style guidance.
+
+### Plain-language closeout checklist
+
+- Install only the public APK linked above and verify the published checksum before installation.
+- The Black Pearl claim is limited to the exact AFUL Explorer transaction that passed on the owner
+  Pixel 9 after the owner adjusted the DAC volume. It does not claim power-cycle persistence,
+  other Black Pearl revisions, other presets, or restoration performed by Luna.
+- The JA11 User 1 editor/apply software path is included and software-verified. The release does
+  not claim broader JA11 power-cycle qualification beyond the exact records in the maintained
+  ledger.
+- No additional release gate is pending. Any future Black Pearl restoration or JA11 power-cycle
+  session is a separate owner-authorized physical activity and is not required to validate the
+  published software provenance.
+
+Current handoff state: **OWNER_ACCEPTED** for the published software release and its bounded
+evidence claims. Luna did not mutate hardware.

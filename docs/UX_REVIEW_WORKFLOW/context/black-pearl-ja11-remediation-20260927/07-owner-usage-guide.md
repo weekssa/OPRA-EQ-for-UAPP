@@ -93,3 +93,16 @@ final result, and restoration status separately for Black Pearl and JA11.
 - Keep Black Pearl and JA11 results independent; one passing device cannot prove the other.
 - Do not infer power-cycle persistence, acoustic fidelity, public support, or release readiness from
   immediate readback alone.
+
+## Published release closeout — 2026-09-28
+
+The owner-approved final release is [OPRA EQ for UAPP v0.7.0](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.7.0).
+Download the exact APK and checksum from that page. The public APK SHA-256 is
+`27dada499bcbf9be9bd21d1349164858c93a5d2b83f78fd61134de13b4eb4025`; the tagged source is
+`4f325d673159b40515086fe5143df12b29ddb076`; and the trusted signing workflow is `36381764266`.
+
+No release gate remains pending. The Black Pearl public wording is limited to the exact AFUL
+Explorer transaction that passed on the owner Pixel 9 after the volume adjustment. The JA11 User 1
+editor/apply path is software-verified, but the release does not claim broader JA11 power-cycle
+qualification. Any future restoration or additional physical qualification is a separate owner
+decision; Luna did not mutate hardware during publication.

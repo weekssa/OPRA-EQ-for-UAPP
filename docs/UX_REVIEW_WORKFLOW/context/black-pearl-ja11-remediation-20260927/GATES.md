@@ -275,3 +275,26 @@ Current Black Pearl physical disposition for this exact candidate and identity i
 for the bounded AFUL Explorer transaction. It is not a persistence, broad-revision, or public-support
 claim. JA11 remains independent. The transient terminal success surface was not captured before it
 expired; the durable verified-current-hardware and Matches My EQs readback is the captured result.
+
+## Public `v0.7.0` publication gates — 2026-09-28
+
+- [x] G37: trusted main-only signed release workflow `36381764266` — **PASS**. Source
+  `4f325d673159b40515086fe5143df12b29ddb076`, release build, minified R8, signer, zipalign,
+  verification, and artifact upload all passed.
+- [x] G38: immutable signed release artifact — **PASS**. Artifact ID `10952494777`; ZIP SHA-256
+  `08cffddad84f4c5648a4ec2e884784188689a24041f020cc9925e7af8040bccc`; APK SHA-256
+  `27dada499bcbf9be9bd21d1349164858c93a5d2b83f78fd61134de13b4eb4025`.
+- [x] G39: public GitHub release/tag/assets — **PASS**. Release ID `397979580`, tag `v0.7.0`,
+  latest/non-prerelease, public APK and `.sha256` assets present, GitHub API asset state
+  `uploaded`, and APK API digest matches the local verified checksum.
+- [x] G40: public documentation quality — **PASS**. Release notes use sentence-case headings,
+  direct language, parallel lists, descriptive links, and explicit accessibility and hardware
+  boundaries in accordance with the Google developer documentation style guidance.
+- [x] G41: owner final publication authorization — **PASS**. The owner authorized publication;
+  no additional DAC write was authorized or performed by Luna.
+- [ ] G35: `actionlint` remains **NOT RUN** because it is unavailable locally. No workflow file
+  changed in the final closeout, and the trusted remote workflow passed.
+
+Current closeout status: **OWNER_ACCEPTED** for the published software release and its bounded
+evidence claims. Black Pearl is `PHYSICAL_PASS` only for the exact AFUL Explorer transaction;
+JA11 software is verified while broader physical power-cycle qualification remains unclaimed.

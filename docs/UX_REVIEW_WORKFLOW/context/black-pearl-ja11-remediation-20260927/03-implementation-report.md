@@ -882,3 +882,29 @@ Local final-head gates:
 
 No production source, protocol bytes, timing, retry policy, canonical EQ data, or DAC state changed
 in the closeout documentation commit. Luna did not mutate hardware.
+
+## Public `v0.7.0` release verification — 2026-09-28
+
+The owner-approved public release was published after the final signed workflow and exact asset
+provenance were verified. The public release is the documentation closeout head, not a new
+executable or physical-test source:
+
+- Public release: [OPRA EQ for UAPP v0.7.0](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.7.0), release ID `397979580`, latest, non-draft, non-prerelease.
+- Public tag: `v0.7.0`, pointing to source `4f325d673159b40515086fe5143df12b29ddb076`.
+- Exact tested executable source: `e1ab5fa5a65dc2d64624d871ac53d436f792ea6a`; the final release head adds documentation-only closeout synchronization.
+- Signed release workflow: [run `36381764266`](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36381764266), all release, R8, signing, verification, and artifact-upload steps passed.
+- Immutable workflow artifact: ID `10952494777`, ZIP SHA-256 `08cffddad84f4c5648a4ec2e884784188689a24041f020cc9925e7af8040bccc`.
+- Public APK: [`EQ-Library-v0.7.0.apk`](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.7.0/EQ-Library-v0.7.0.apk), package `com.weekssa.opraeqforuapp`, version `0.7.0` / code `7`, size `2,835,216` bytes, SHA-256 `27dada499bcbf9be9bd21d1349164858c93a5d2b83f78fd61134de13b4eb4025`.
+- Public checksum: [`EQ-Library-v0.7.0.apk.sha256`](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.7.0/EQ-Library-v0.7.0.apk.sha256), asset SHA-256 `137e44db9333f69d5df872df4176c1a25d7001b46b392fddf3c2bd4676c54f55`.
+- Signer certificate SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`; v2/v3 signing and zipalign passed.
+- Public GitHub API verification: both assets report `state=uploaded`; the APK asset digest matches the local verified APK checksum.
+
+The public release body uses sentence-case headings, direct language, parallel bullets, descriptive
+links, and explicit accessibility and hardware boundaries. This follows the Google developer
+documentation style guidance recorded for the owner’s public-documentation request. No DAC was
+mutated, restored, flashed, applied, reset, saved, or otherwise changed by Luna during publication.
+
+Final disposition: **OWNER_ACCEPTED** for the software release and the evidence-bounded claims in
+the public notes. Black Pearl remains a bounded exact AFUL Explorer `PHYSICAL_PASS`; JA11 software
+is verified, while broader JA11 power-cycle qualification is not claimed. Black Pearl restoration
+was not run by Luna.

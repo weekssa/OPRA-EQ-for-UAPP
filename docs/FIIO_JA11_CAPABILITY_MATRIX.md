@@ -120,3 +120,12 @@ The signed candidate is J008 in the validation ledger:
 This is a signed diagnostic artifact, not a support-qualified release. The owner must perform
 only the one bounded session in the checklist, export the readable and JSON report, and stop on
 missing raw evidence, an unknown baseline, an unexpected disconnect, or uncertain restoration.
+
+## Public `v0.7.0` release boundary — 2026-09-28
+
+The public [v0.7.0 release](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.7.0) is
+published from tagged source `4f325d673159b40515086fe5143df12b29ddb076` with public APK SHA-256
+`27dada499bcbf9be9bd21d1349164858c93a5d2b83f78fd61134de13b4eb4025`. The release includes the
+software-verified User 1 five-band editor/apply path. This publication fact does not alter the
+capability classifications: JA11 remains physically evidence-bounded, with no new power-cycle
+retention or broader hardware-support claim.

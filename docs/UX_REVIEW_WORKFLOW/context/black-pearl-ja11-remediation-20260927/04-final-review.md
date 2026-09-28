@@ -429,3 +429,18 @@ bounded pass for the tested candidate/device/identity/starting volume only; rest
 RUN** because it was not authorized, and persistence, other revisions, other presets, and public
 support remain unproven. The transient success banner was not captured before it expired, but the
 durable app readback screen explicitly verified current hardware and matched My EQs.
+
+## Public release verification — 2026-09-28
+
+The owner-approved release gate is complete:
+
+- [Public `v0.7.0` release](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.7.0) is latest, published, and non-prerelease.
+- Tag `v0.7.0` points to `4f325d673159b40515086fe5143df12b29ddb076`; the executable behavior remains the exact tested `e1ab5fa5a65dc2d64624d871ac53d436f792ea6a` candidate, with documentation-only synchronization on the tagged head.
+- The trusted main-only [release workflow `36381764266`](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36381764266) passed and produced immutable artifact `10952494777` / `sha256:08cffddad84f4c5648a4ec2e884784188689a24041f020cc9925e7af8040bccc`.
+- The public APK asset has SHA-256 `27dada499bcbf9be9bd21d1349164858c93a5d2b83f78fd61134de13b4eb4025`; its public checksum asset is uploaded and independently reported by the GitHub API.
+- Release notes were reviewed against the Google developer documentation style guidance: sentence-case headings, direct language, parallel lists, descriptive links, and explicit accessibility and hardware boundaries.
+
+Final review status: **OWNER_ACCEPTED** for publication and evidence-bounded release claims. This
+does not expand the Black Pearl result beyond the exact AFUL Explorer transaction, does not add a
+JA11 power-cycle claim, and does not claim restoration performed by Luna. No DAC was mutated during
+publication.

@@ -205,3 +205,13 @@ The following are not required for the current GitHub development-release path:
 - Play-specific update routing.
 
 Those items will be handled separately when Google Play work is intentionally started.
+
+## `v0.7.0` publication record — 2026-09-28
+
+- [x] Public release [v0.7.0](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.7.0) is latest, published, and non-prerelease.
+- [x] Tag `v0.7.0` points to `4f325d673159b40515086fe5143df12b29ddb076`.
+- [x] Trusted main-only workflow `36381764266` passed; immutable artifact `10952494777` has ZIP SHA-256 `08cffddad84f4c5648a4ec2e884784188689a24041f020cc9925e7af8040bccc`.
+- [x] Public `EQ-Library-v0.7.0.apk` is present with SHA-256 `27dada499bcbf9be9bd21d1349164858c93a5d2b83f78fd61134de13b4eb4025`.
+- [x] Public `EQ-Library-v0.7.0.apk.sha256` is present; the GitHub API reports both assets as uploaded.
+- [x] Release notes use sentence-case headings, direct language, parallel lists, descriptive links, and explicit accessibility and hardware boundaries following the Google developer documentation style guidance.
+- [x] Public hardware wording remains evidence-bounded: Black Pearl is limited to the exact AFUL Explorer pass, and JA11 broader power-cycle qualification is not claimed.

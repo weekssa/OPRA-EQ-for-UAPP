@@ -95,3 +95,21 @@ the separate restoration or JA11 qualification boundaries.
   ledger and is not reclassified from the earlier exact-candidate records without a new report.
 - Public release: authorized by the owner, with the release notes and public wording constrained
   to the exact software and physical claims above.
+
+## Public release record — 2026-09-28
+
+The owner-approved public release is complete:
+
+- [Release page](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.7.0): `v0.7.0`, latest,
+  published, non-prerelease, release ID `397979580`.
+- Tagged source: `4f325d673159b40515086fe5143df12b29ddb076`.
+- Signed workflow: [run `36381764266`](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36381764266).
+- Immutable artifact: `10952494777`, ZIP SHA-256
+  `08cffddad84f4c5648a4ec2e884784188689a24041f020cc9925e7af8040bccc`.
+- Public APK SHA-256: `27dada499bcbf9be9bd21d1349164858c93a5d2b83f78fd61134de13b4eb4025`.
+- Public APK and `.sha256` assets are uploaded and independently verified through the GitHub API.
+
+This record closes the publication gate. It does not change the independent per-DAC classification:
+Black Pearl is a bounded exact AFUL Explorer `PHYSICAL_PASS`; JA11 software is verified while
+broader power-cycle qualification remains unclaimed. Do not use this prompt to authorize another
+hardware mutation.
