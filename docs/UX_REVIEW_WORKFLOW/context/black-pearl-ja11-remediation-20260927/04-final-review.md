@@ -5,19 +5,20 @@ software/emulator gates, and exact signed provenance passed; the owner-authorize
 mutation was correctly reported as not verified after a final raw-gain mismatch. JA11 remains
 independently `PHYSICAL_INCONCLUSIVE`; neither device is publicly supported by this result.
 
-## Exact candidate review addendum — source `b61f02e8c91656f14ffc639e4c6d937b2162a1b7`
+## Exact candidate review addendum — source `2cba1322245221103b8790bfcef705a38022c2ed`
 
-- PR #50 merged successfully into `main` at source `b61f02e8c91656f14ffc639e4c6d937b2162a1b7`.
-- Signed workflow [#1372](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36347148408)
+- Owner-authorized minimum main integration completed successfully at source
+  `2cba1322245221103b8790bfcef705a38022c2ed`; the later handoff commit is documentation-only.
+- Signed workflow [#36368698803](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36368698803)
   completed successfully for `candidate_target=black-pearl-ja11`.
-- Candidate `EQ-Library-v0.7.0-beta-b61f02e.apk`; APK SHA-256
-  `276587734fc863277b83e4310c040cee22c27261075e21fa75d766ded9eef27e`.
+- Candidate `EQ-Library-v0.7.0-beta-2cba132.apk`; APK SHA-256
+  `50cee56aa59a8980a61bff42625fe9d839a28189068ba5adddd1a03530ea02d6`.
 - Package/version: `com.weekssa.opraeqforuapp`, `0.7.0` / code `7`.
 - Signer SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`; v2/v3 verified.
-- Immutable artifact ID/digest: `10941292707` /
-  `sha256:188d2e4b973e7aab420d4c7d3890dba3407415c1d2c8f935a418acdacdbd8fc3`.
-- Emulator diagnostics artifact ID/digest: `10941003406` /
-  `sha256:e041ee672816ff85ba0c866ff0bdfa8b8a616ec540f95c93f3fd632f19197d57`.
+- Immutable artifact ID/digest: `10948632352` /
+  `sha256:3e9fb31a814a8feb30ff0c48ac69a71cddd579e71b90401ddf34e491b8fc45ab`.
+- Emulator diagnostics artifact ID/digest: `10948497670` /
+  `sha256:fd92f4bf31c57616580ccfab399e4d13ef4f15973f5463154740fbcb4a6ebda2`.
 - Signed emulator install and cold launch independently visible in the job log: PASS; `Status: ok`,
   `LaunchState: COLD`, `Complete`.
 - No protocol, transport, retry, identity, Save, canonical-EQ, or hardware behavior changed in
@@ -267,3 +268,24 @@ The workflow also passed its signed-emulator install and cold-launch checks on A
 Final review disposition: **READY_FOR_PIXEL_9**. The state is a handoff to the owner’s exact-candidate
 Pixel 9 review, not physical qualification. Black Pearl and JA11 must be classified independently;
 Luna has not mutated hardware.
+
+## Latest exact-candidate Black Pearl physical review — 2026-09-27 local / 2026-09-28 UTC
+
+The Pixel 9 was running the exact signed candidate bound to source
+`2cba1322245221103b8790bfcef705a38022c2ed`; installed APK SHA-256 was
+`50cee56aa59a8980a61bff42625fe9d839a28189068ba5adddd1a03530ea02d6`, package version was `0.7.0`
+code `7`, and signed artifact provenance was workflow `36368698803`, artifact `10948632352` /
+`sha256:3e9fb31a814a8feb30ff0c48ac69a71cddd579e71b90401ddf34e491b8fc45ab`.
+
+The owner authorized one exact AFUL Explorer Flash. The app showed the expected confirmation and,
+after the single mutation, a truthful terminal failure with final raw gain `expected -8934, actual
+-8960`. No automatic retry or additional mutation occurred. The visible result included the
+required not-verified and reconnect/refresh wording, so the named truthfulness defect's failure
+path remains **PASS**. The requested Flash state and restoration remain **PHYSICAL_FAIL / NOT
+VERIFIED**.
+
+This result is not evidence that the interrupt-OUT path is correct or incorrect in isolation; it
+shows only that the exact candidate still failed the complete AFUL Explorer transaction at the
+final global-gain readback boundary. Independent review disposition for the physical result is
+**REPAIR_REQUIRED**. Do not request another write until deterministic source diagnosis produces a
+new candidate and its exact provenance is complete.

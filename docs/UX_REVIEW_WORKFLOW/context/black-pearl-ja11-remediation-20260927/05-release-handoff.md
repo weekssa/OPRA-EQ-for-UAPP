@@ -10,22 +10,22 @@ Use only this candidate for the final owner review. It is a non-public testing a
 not establish physical qualification or public hardware support.
 
 - Repository: `https://github.com/weekssa/OPRA-EQ-for-UAPP.git`
-- Owner-approved PR #50: merged into `main` at source SHA
-  `b61f02e8c91656f14ffc639e4c6d937b2162a1b7`.
+- Owner-authorized minimum main integration completed at source SHA
+  `2cba1322245221103b8790bfcef705a38022c2ed`; the later handoff commit is documentation-only.
 - Candidate target: `black-pearl-ja11`.
-- Workflow: [Signed EQ Library Beta Candidate #1372](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36347148408),
-  successful; 9m53s.
-- APK: `EQ-Library-v0.7.0-beta-b61f02e.apk`.
-- APK SHA-256: `276587734fc863277b83e4310c040cee22c27261075e21fa75d766ded9eef27e`.
+- Workflow: [Signed EQ Library Beta Candidate #36368698803](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36368698803),
+  successful for `candidate_target=black-pearl-ja11`.
+- APK: `EQ-Library-v0.7.0-beta-2cba132.apk`.
+- APK SHA-256: `50cee56aa59a8980a61bff42625fe9d839a28189068ba5adddd1a03530ea02d6`.
 - Package/version: `com.weekssa.opraeqforuapp`, `0.7.0` / code `7`.
 - Signer certificate SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`.
 - Signature verification: v2 PASS; v3 PASS; one signer; RSA 4096-bit certificate.
-- Immutable artifact ID/digest: `10941292707` /
-  `sha256:188d2e4b973e7aab420d4c7d3890dba3407415c1d2c8f935a418acdacdbd8fc3`.
-- Emulator diagnostics artifact ID/digest: `10941003406` /
-  `sha256:e041ee672816ff85ba0c866ff0bdfa8b8a616ec540f95c93f3fd632f19197d57`.
+- Immutable artifact ID/digest: `10948632352` /
+  `sha256:3e9fb31a814a8feb30ff0c48ac69a71cddd579e71b90401ddf34e491b8fc45ab`.
+- Emulator diagnostics artifact ID/digest: `10948497670` /
+  `sha256:fd92f4bf31c57616580ccfab399e4d13ef4f15973f5463154740fbcb4a6ebda2`.
 - Exact candidate URL:
-  `https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-b61f02e.apk`.
+  `https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-2cba132.apk`.
 - Signed emulator install: PASS (`Success`). Cold launch: PASS (`Status: ok`, `LaunchState: COLD`,
   `Activity: com.weekssa.opraeqforuapp/.MainActivity`, `Complete`).
 - Before the owner-authorized physical session, Luna did not connect, mutate, flash, apply, reset,
@@ -305,7 +305,7 @@ Candidate provenance:
 - The existing `mobile-test-apk` testing branch contains the exact candidate checksum under
   `candidates/`; this is not a public release or support claim.
 
-## Current status: READY_FOR_PIXEL_9
+## Pre-physical handoff status: READY_FOR_PIXEL_9
 
 The owner may now perform the final exact-candidate Pixel 9 review. Use only the candidate above and
 record every result against its source SHA, APK SHA-256, signer, workflow run, and artifact ID.
@@ -321,3 +321,23 @@ Before connecting either DAC:
 
 This is an owner physical-validation handoff. It is not a claim that either DAC is physically fixed
 or publicly supported. Luna did not connect to or mutate a DAC.
+
+## Latest exact-candidate Black Pearl result — superseding physical disposition
+
+The owner-authorized test used the exact candidate above with corrected provenance: source
+`2cba1322245221103b8790bfcef705a38022c2ed`, APK `EQ-Library-v0.7.0-beta-2cba132.apk`, installed
+SHA-256 `50cee56aa59a8980a61bff42625fe9d839a28189068ba5adddd1a03530ea02d6`, workflow
+`36368698803`, and immutable artifact `10948632352` /
+`sha256:3e9fb31a814a8feb30ff0c48ac69a71cddd579e71b90401ddf34e491b8fc45ab`.
+
+On Pixel 9 `tokay`, one AFUL Explorer (Hifiguides/Jaytiss Latest) Direct Flash was submitted after
+a fresh read-only baseline. The app reported `Flash result could not be verified`; final native
+playback-gain readback was expected raw `-8934` and actual raw `-8960`. The app instructed reconnect
+or refresh before any later hardware action and no retry, Reset, Save, Restore, or second mutation
+was performed. The requested state and restoration are **NOT VERIFIED**.
+
+Current handoff status: **REPAIR_REQUIRED** for Black Pearl. The software truthfulness gate is
+PASS, but the interrupt-OUT transport candidate did not produce a verified complete Flash. JA11
+must remain independently classified; no public hardware-support claim follows. The next step is
+deterministic source-side diagnosis and a new exact signed candidate, not another owner write on
+this candidate.

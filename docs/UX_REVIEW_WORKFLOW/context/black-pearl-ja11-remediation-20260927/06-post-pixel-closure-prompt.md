@@ -2,12 +2,12 @@
 
 ## Current source boundary
 
-The exact candidate for the final owner review is source
-`b61f02e8c91656f14ffc639e4c6d937b2162a1b7`, APK SHA-256
-`276587734fc863277b83e4310c040cee22c27261075e21fa75d766ded9eef27e`, signer
-`65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`, workflow #1372, and
-immutable artifact ID `10941292707` / digest
-`sha256:188d2e4b973e7aab420d4c7d3890dba3407415c1d2c8f935a418acdacdbd8fc3`. The prior Pixel 9
+The exact candidate used for the latest owner review is source
+`2cba1322245221103b8790bfcef705a38022c2ed`, APK SHA-256
+`50cee56aa59a8980a61bff42625fe9d839a28189068ba5adddd1a03530ea02d6`, signer
+`65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`, workflow #36368698803, and
+immutable artifact ID `10948632352` / digest
+`sha256:3e9fb31a814a8feb30ff0c48ac69a71cddd579e71b90401ddf34e491b8fc45ab`. The prior Pixel 9
 session used source `acaf4dd32ddd9379ec2860e45e34fb8039219583` and must not be transferred. The
 Android UAPP routing prompt observed on the stock app is expected platform/device behavior and
 should not be treated as an app defect.

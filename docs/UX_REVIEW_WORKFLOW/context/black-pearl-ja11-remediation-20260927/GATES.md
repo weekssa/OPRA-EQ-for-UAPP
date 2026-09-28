@@ -26,10 +26,10 @@ bytes/timing/retry policy, and perform no hardware write during development.
 - Hardware: no DAC connected or mutated by Luna for this change; physical qualification remains
   owner-controlled and not proven.
 
-Current gate status: **READY_FOR_PIXEL_9**. The exact signed candidate provenance is recorded in the
+Pre-physical handoff gate status: **READY_FOR_PIXEL_9**. The exact signed candidate provenance is recorded in the
 signed-candidate addendum below; this is an owner handoff state, not a physical-fix claim.
 
-## Current follow-up gate state — exact candidate source `b61f02e8c91656f14ffc639e4c6d937b2162a1b7`
+## Superseded follow-up gate state — exact candidate source `b61f02e8c91656f14ffc639e4c6d937b2162a1b7`
 
 This section supersedes the historical post-Pixel gate state recorded below. The owner-authorized
 JA11 terminal-result repair is software-verified and independently reviewed, the minimum main
@@ -55,7 +55,7 @@ changed or retested.
 - Signed emulator install/cold launch: PASS; `Success`, `Status: ok`, `LaunchState: COLD`,
   `Complete`. Emulator diagnostics artifact `10941003406` /
   `sha256:e041ee672816ff85ba0c866ff0bdfa8b8a616ec540f95c93f3fd632f19197d57`.
-- Current state: `READY_FOR_PIXEL_9`; no physical qualification or public support claim.
+- Superseded state: `READY_FOR_PIXEL_9`; no physical qualification or public support claim.
 
 - [x] G0: the acceptance ledger is syntactically valid and its runnable checks are reviewable
   CHECK: node /Users/stephenweeks/.agents/skills/unlazy/scripts/gate-lint.mjs docs/UX_REVIEW_WORKFLOW/context/black-pearl-ja11-remediation-20260927/GATES.md
@@ -131,8 +131,29 @@ independent and neither is physically qualified by this software/emulator eviden
   or follow-up mutation requires a separately identified target and explicit authorization.
 
 - [ ] G11: external transport hypothesis is resolved within the authorized scope
-  EVIDENCE: NOT RUN. Reference commit `45bbf3c65c899181395eb7936615ced1fbd5d4be` uses interrupt
-  OUT endpoint `bulkTransfer` when available; the captured Black Pearl exposes OUT `0x05`, while
-  OPRA currently uses only control-transfer writes. Testing that path requires changing endpoint
-  behavior, which is explicitly outside the current remediation guardrails. Status is
-  **BLOCKED — boundary requires owner decision**; no hardware test or push occurred.
+  EVIDENCE: historical pre-remediation blocker. The owner later authorized the narrow interrupt-OUT
+  source change and the exact candidate was physically tested; the current post-Pixel result is
+  recorded below as a final-gain mismatch, so the hypothesis remains **NOT PROVEN**.
+
+## Current post-Pixel gate state — exact candidate AFUL Explorer retest
+
+This section supersedes the earlier `READY_FOR_PIXEL_9` handoff state for the exercised Black Pearl
+path. The exact candidate was source `2cba1322245221103b8790bfcef705a38022c2ed`, APK SHA-256
+`50cee56aa59a8980a61bff42625fe9d839a28189068ba5adddd1a03530ea02d6`, workflow `36368698803`,
+and immutable artifact `10948632352` / `sha256:3e9fb31a814a8feb30ff0c48ac69a71cddd579e71b90401ddf34e491b8fc45ab`.
+
+- [x] G12: exact-candidate install and identity check — **PASS**. Pixel 9 `tokay`, API 37,
+  package `com.weekssa.opraeqforuapp`, version `0.7.0` / code `7`; installed APK hash matched
+  `50cee56aa59a8980a61bff42625fe9d839a28189068ba5adddd1a03530ea02d6`.
+- [x] G13: one bounded AFUL Explorer Flash and truthful terminal result — **PASS for the
+  failure-safety gate; PHYSICAL_FAIL for requested-state verification**. Fresh read-only baseline
+  was taken, exactly one Flash was submitted, and the app reported expected raw `-8934` versus
+  actual raw `-8960` with no automatic retry.
+- [ ] G14: complete Black Pearl Flash physically verified and state restored — **FAIL / NOT
+  VERIFIED**. No Reset, Save, Restore, second Flash, or recovery mutation was performed.
+- [ ] G15: source repair proven by the interrupt-OUT candidate — **NOT PROVEN**. The candidate
+  still failed at the final global-gain readback boundary; deterministic source diagnosis is
+  required before another physical write.
+
+Current gate status: **REPAIR_REQUIRED** for Black Pearl. JA11 remains an independent result and
+must not be inferred from this Black Pearl failure. No public hardware-support claim follows.

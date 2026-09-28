@@ -6,27 +6,26 @@ hardware mutation did not reach verified success because final raw playback-gain
 The Black Pearl truthfulness defect's failure-path behavior passed, but the requested hardware state
 was not verified and restoration was not attempted. JA11 remains independently `PHYSICAL_INCONCLUSIVE`.
 
-## Exact signed candidate addendum — source `b61f02e8c91656f14ffc639e4c6d937b2162a1b7`
+## Exact signed candidate addendum — source `2cba1322245221103b8790bfcef705a38022c2ed`
 
 - Repository: `https://github.com/weekssa/OPRA-EQ-for-UAPP.git`.
-- Owner-approved PR: [#50](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/50), merged into `main`.
-- Merged source SHA: `b61f02e8c91656f14ffc639e4c6d937b2162a1b7`.
+- Owner-authorized minimum main integration completed at source SHA
+  `2cba1322245221103b8790bfcef705a38022c2ed`; the later handoff commit is documentation-only.
 - Candidate target: `black-pearl-ja11`.
-- Signed workflow: [run #1372](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36347148408),
-  completed successfully in 9m53s; requested tasks included unit tests, lint, and minified release
-  assembly, followed by signed-emulator install and cold launch.
-- Candidate APK: `EQ-Library-v0.7.0-beta-b61f02e.apk`.
-- APK SHA-256: `276587734fc863277b83e4310c040cee22c27261075e21fa75d766ded9eef27e`.
+- Signed workflow: [run #36368698803](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36368698803),
+  completed successfully for `candidate_target=black-pearl-ja11`.
+- Candidate APK: `EQ-Library-v0.7.0-beta-2cba132.apk`.
+- APK SHA-256: `50cee56aa59a8980a61bff42625fe9d839a28189068ba5adddd1a03530ea02d6`.
 - Package/version: `com.weekssa.opraeqforuapp`, `0.7.0` / code `7`.
 - Signer certificate SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`;
   APK signature schemes v2 and v3 verified.
-- R8 mapping SHA-256: `864c6a6d27ccfdcae2e421ad318be988ea1c846d7f8421a1b8038fd523b608f5`.
-- Immutable signed artifact: ID `10941292707`, digest
-  `sha256:188d2e4b973e7aab420d4c7d3890dba3407415c1d2c8f935a418acdacdbd8fc3`.
+- R8 mapping SHA-256: `e600037d77142d8803aea2fd42af5f6a19d59e82a347b86d42ce11a89afac92c`.
+- Immutable signed artifact: ID `10948632352`, digest
+  `sha256:3e9fb31a814a8feb30ff0c48ac69a71cddd579e71b90401ddf34e491b8fc45ab`.
 - Exact candidate URL:
-  `https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-b61f02e.apk`.
-- Emulator diagnostics artifact: ID `10941003406`, digest
-  `sha256:e041ee672816ff85ba0c866ff0bdfa8b8a616ec540f95c93f3fd632f19197d57`.
+  `https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.0-beta-2cba132.apk`.
+- Emulator diagnostics artifact: ID `10948497670`, digest
+  `sha256:fd92f4bf31c57616580ccfab399e4d13ef4f15973f5463154740fbcb4a6ebda2`.
 - Clean signed-emulator install: PASS (`Success`, install command completed).
 - Cold launch: PASS (`Status: ok`, `LaunchState: COLD`, `Activity: ...MainActivity`, `Complete`).
 - Before the owner-authorized physical session, Luna did not connect, mutate, flash, apply, reset,
@@ -542,7 +541,7 @@ The exact signed candidate is now available for the owner Pixel 9 gate. This is 
 qualification and does not establish a public hardware-support claim. Luna did not connect to or
 mutate a DAC.
 
-## External reference comparison and guardrail blocker — 2026-09-27
+## Historical external reference comparison and pre-remediation blocker — 2026-09-27
 
 The owner supplied the public `Matr1x01/trnBlackPearlEq` implementation as a working reference.
 It was inspected read-only at Android branch commit
@@ -554,13 +553,55 @@ when an OUT endpoint exists it sends the unchanged 64-byte report with `bulkTran
 IDs, 64-byte framing, and little-endian gain representation; no wire-byte or codec correction is
 justified by this comparison.
 
-The exact Black Pearl descriptor captured during the authorized run shows HID interface 0 with
+At that pre-remediation point, the exact Black Pearl descriptor captured during the authorized run
+showed HID interface 0 with
 interrupt IN endpoint `0x86` and interrupt OUT endpoint `0x05`, both with 64-byte maximum packets.
-OPRA's `AndroidBlackPearlUsbTransport` currently retains only the IN endpoint and sends every write
-through `controlTransfer`. This transport-path difference is the strongest current hypothesis for
+The then-current `AndroidBlackPearlUsbTransport` retained only the IN endpoint and sent every write
+through `controlTransfer`. That transport-path difference was the strongest hypothesis for
 the earlier observation that PEQ readback changed while the global-gain readback remained at raw
 `-6400`, but it is not proven without a controlled write using the alternate path.
 
-Implementing that alternate path would change OPRA's USB endpoint behavior. The remediation prompt
-explicitly prohibits changing endpoints, so no source edit was made. Current status remains
-**REPAIR_REQUIRED / BLOCKED — boundary requires owner decision**; there is no candidate to push.
+Implementing that alternate path required an owner-authorized scope decision. The later scoped
+remediation added interrupt-OUT selection with the existing `SET_REPORT` fallback; the exact signed
+candidate and its failed physical result are recorded in the later sections of this report.
+
+## Exact-candidate AFUL Explorer Flash retest — 2026-09-27 local / 2026-09-28 UTC
+
+This is the latest owner-authorized physical result and supersedes the earlier Pixel entries as the
+current Black Pearl disposition. The tested candidate was the exact combined signed beta:
+
+- Source SHA bound by the candidate manifest: `2cba1322245221103b8790bfcef705a38022c2ed`.
+- APK: `EQ-Library-v0.7.0-beta-2cba132.apk`.
+- Installed APK SHA-256: `50cee56aa59a8980a61bff42625fe9d839a28189068ba5adddd1a03530ea02d6`.
+- Package/version: `com.weekssa.opraeqforuapp`, `0.7.0` / code `7`; device API 37.
+- Pixel: Google Pixel 9, `tokay`, wireless ADB serial
+  `adb-46141FDAQ003KZ-3AwgSo._adb-tls-connect._tcp`.
+- Signed candidate provenance: workflow `36368698803`, immutable APK artifact `10948632352`,
+  digest `sha256:3e9fb31a814a8feb30ff0c48ac69a71cddd579e71b90401ddf34e491b8fc45ab`.
+
+The read-only baseline was refreshed before the test. The selected target was AFUL Explorer,
+Hifiguides, Jaytiss, Latest; the confirmation showed `TRN Black Pearl: Optimized · native
+hardware rounding only` and a `-3.90 dB` playback-gain adjustment. Exactly one Flash confirmation
+was accepted. No retry, Reset, Save, Restore, second Flash, or recovery mutation followed.
+
+The terminal surface displayed `Flash result could not be verified` and:
+`TRN Black Pearl Flash was not verified. Final hardware readback did not confirm the requested EQ.`
+The decisive detail was `Final Black Pearl playback-gain readback did not match: expected raw
+-8934, actual raw -8960.` The app also displayed `Reconnect or refresh the DAC before any later
+hardware action. Do not retry automatically.`
+
+Evidence captured from the Pixel session:
+
+- Pre-Flash UI XML SHA-256: `65f1c8466ac0323d022f3ba639814d759ec404ba3f2a020150b8988a4d3fc655`.
+- Confirmation UI XML SHA-256: `d56217a45e2b3c844bd55089c76d6d33d2fd5c9fc01968c61c484e90b0471cda`.
+- Terminal-result UI XML SHA-256: `0e76fd623a0e38fc432fc8e058be831fd9687aa88b59ebd0e4d9c7bac33266bf`.
+- Terminal-result screenshot SHA-256: `ea4bdd7a9871fb2d92d88ab9e9d04d4c18d4ea78b72099d2d87e8de8afa9187c`.
+- Package inspection: version code `7`, version name `0.7.0`, API 37; installed package remained
+  `com.weekssa.opraeqforuapp`.
+
+Classification: Black Pearl truthfulness/fail-closed behavior **PASS**; exact-candidate AFUL
+Explorer Direct Flash **PHYSICAL_FAIL / NOT VERIFIED**; restoration **NOT RUN / NOT VERIFIED**.
+The interrupt-OUT transport change is therefore not proven to resolve this failure. Do not label
+Black Pearl physically fixed or publicly supported. The next engineering step is source-side
+diagnosis of the `-8934` versus `-8960` native-gain mismatch using deterministic fixtures and
+maintained protocol evidence; no further hardware mutation is authorized by this result.
