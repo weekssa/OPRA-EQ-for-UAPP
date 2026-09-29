@@ -2,12 +2,12 @@
   "schema_version": 1,
   "sources": [
     {
-      "consecutive_failures": 1,
-      "cursor": "2655811b975e93139d006b33f8d6889923e9c3e21f7a7cf2f1b8678ab717288e",
-      "last_attempt_at": "2026-09-28T19:49:24Z",
-      "last_content_fingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-      "last_error": "public XenForo feed/thread retrieval was not usable",
-      "last_successful_scan_at": "2026-09-21T18:18:36Z",
+      "consecutive_failures": 0,
+      "cursor": "b157767ad37eb46a3de0312099667055d54acc31089825cbd6c931f895cc96ac",
+      "last_attempt_at": "2026-09-29T18:14:13Z",
+      "last_content_fingerprint": "b242b73fed70a705f8040d1cbcb8d21744e02442964cebe1a73aa8ef815ae328",
+      "last_error": null,
+      "last_successful_scan_at": "2026-09-29T18:14:13Z",
       "last_terms_review_at": "2026-08-29T19:35:00Z",
       "lifecycle": "active",
       "parser_version": "4",
@@ -181,5 +181,6 @@
       "parser_version": "5",
       "source_id": "topping-community"
     }
-  ]
+  ],
+  "updated_at": "2026-09-29T18:14:14Z"
 }
