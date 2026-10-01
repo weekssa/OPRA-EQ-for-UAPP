@@ -154,7 +154,17 @@ object CanonicalLegacyCatalogAdapter {
         val vendorId = selection.compatibilityVendorId
             ?: primary?.sourceVendorId
             ?: "eq-library-vendor:${slug(requireNotNull(selection.profile.headphone).manufacturer)}"
-        return revisionProfile(selection.profile, revision, vendorId, productId)
+        // Keep the trusted OPRA identity profile-scoped. A revision cannot validate itself with a
+        // conflicting vendor/product identity; any disagreement across revisions fails closed.
+        val canonicalOpraIdentity = profileOpraBandOrderIdentity(selection.profile)
+        return revisionProfile(
+            profile = selection.profile,
+            revision = revision,
+            vendorId = vendorId,
+            productId = productId,
+            opraPriorityVendorId = canonicalOpraIdentity?.sourceVendorId ?: vendorId,
+            opraPriorityProductId = canonicalOpraIdentity?.sourceProductId ?: productId,
+        )
     }
 
     fun matchesSelection(
@@ -341,13 +351,21 @@ object CanonicalLegacyCatalogAdapter {
         revision: EqRevision,
         vendorId: String,
         productId: String,
+        opraPriorityVendorId: String = vendorId,
+        opraPriorityProductId: String = productId,
     ): OpraEqProfile {
         val primaryReference = revision.sourceReferences.filter(EqSourceReference::isPrimary).singleOrNull()
         val primary = primaryReference ?: revision.sourceReferences.firstOrNull()
         val opra = revision.sourceReferences.firstOrNull {
             it.sourceId == "opra" && !it.sourceRecordId.isNullOrBlank()
         }
-        val verifiedOpraPriority = revision.hasVerifiedOpraBandOrderFor(vendorId, productId)
+        // A displayed product alias may change compatibility IDs. Keep the independent canonical
+        // OPRA identity available so that alias rebasing does not erase trusted order, while still
+        // requiring the selected primary OPRA reference to match the canonical product identity.
+        val verifiedOpraPriority = revision.hasVerifiedOpraBandOrderFor(
+            vendorId = opraPriorityVendorId,
+            productId = opraPriorityProductId,
+        )
         val idSource = primaryReference?.takeIf { it.sourceId == "opra" && !it.sourceRecordId.isNullOrBlank() }
             ?: opra
         val legacyProfileId = if (revision.isLatest && idSource != null) {
@@ -402,6 +420,15 @@ object CanonicalLegacyCatalogAdapter {
             productId = "eq-library-product:${headphone.normalizedKey}",
         )
     }
+
+    private fun profileOpraBandOrderIdentity(profile: CanonicalEqProfile): EqSourceReference? =
+        profile.revisions.asSequence()
+            .flatMap(EqRevision::sourceReferences)
+            .firstOrNull {
+                it.sourceId == "opra" &&
+                    !it.sourceVendorId.isNullOrBlank() &&
+                    !it.sourceProductId.isNullOrBlank()
+            }
 
     private fun legacyDetails(
         profile: CanonicalEqProfile,

@@ -532,9 +532,83 @@ not test migration of a pre-existing nonempty Favorite set. The temporary `codex
 was removed after the run; the pre-existing `codex-api36` AVD was not changed. This is emulator
 evidence, not physical-device evidence.
 
-No DAC hardware or physical test is required for this canonical catalog Favorite change. The
-source-kind matrix remains the basis for source-wide claims: it covers all seven canonical catalog
-source kinds over three headphone products, while `DEVICE_CAPTURE` and `PERSONAL_IMPORT` remain
-separate local flows. The matrix and the candidate UI smoke establish strong source-independent
-coverage at the Favorite resolver and persisted-user-flow boundaries; they do not measure a
-statistical 95% probability or independently qualify each source-feed parser.
+No DAC hardware or physical test was required for the signed v0.7.1 candidate's canonical catalog
+Favorite verification. At that point, the synthetic source-kind matrix was the available automated
+coverage; it spans all seven catalog kinds, with six synthetic alias cases, but it did not provide
+one actual current profile for each source ID. The follow-up below supersedes that matrix as the
+per-source coverage basis. `DEVICE_CAPTURE` and `PERSONAL_IMPORT` remain separate local flows.
+
+### 2026-10-01 real source-ID Favorite coverage and OPRA alias correction
+
+The owner requested one actual canonical sample per ingested source and a permanent requirement for
+new sources. On isolated branch `codex/favorite-source-review`, based on refreshed `origin/main`
+`84998be61769950cf8b13801a7846523631603f9` (the review began on `bfb1e3b49e37dd764675e512cee10670d22570a1`),
+the review found 14 distinct source IDs in canonical profile revision references, represented by 13
+unique profiles. `opra` and `oratory1990` are separate source references on one Edition XS
+profile/revision. Twelve samples use the headphone Favorite resolver; `milciossq-eq-general` and
+`paraeq` use the separate General resolver. The exact profile/revision/source-record table is in
+`docs/AFUL_EXPLORER_FAVORITE_REVIEW.md`.
+
+The registry contains 15 IDs. `squiglink` is intentionally excluded because it supplies measurement
+ecosystem/provenance monitoring rather than source-authored PEQ. `topping-community` is paused and
+has no canonical catalog profile. The unregistered catalog spelling `headphone-community` remains
+covered as its own source-ID sample with an explicit policy alias to registered
+`headphones-community`; it is not silently dropped or merged.
+
+The first real OPRA alias test failed strict selection matching: after compatibility IDs changed,
+the projection lost OPRA band-order provenance because it compared the displayed IDs to the
+canonical source IDs. `CanonicalLegacyCatalogAdapter.projectSelection()` now validates that marker
+against the profile-scoped canonical OPRA identity while preserving the displayed compatibility
+IDs. The identity deliberately spans the profile's revisions; conflicting source vendor/product
+IDs fail closed. A regression covers this rule during alias rebasing. Using the selected revision's
+IDs alone would allow a revision to validate its own conflicting identity.
+
+The checked-in fixture `app/src/test/resources/catalog/favorite-source-samples.json`, checker
+`tools/verify_favorite_source_samples.py`, and its five negative/positive Python tests are integrated
+into catalog currentness CI. The JVM test forces a different displayed product ID for every
+headphone candidate, checks exact canonical profile/revision/fingerprint/filter/source-reference
+retention, and tests stale projections fail closed. General samples use the distinct exact General
+resolver. A new catalog source ID absent from the registry or fixture fails CI; a registry-only ID
+requires an explicit reviewed no-profile reason.
+
+Local verification passed:
+
+- `python3 tools/verify_favorite_source_samples.py --check`: 14 source samples, 13 unique profile
+  records, and 2 reviewed no-profile exclusions.
+- `python3 -m unittest tools.test_favorite_source_samples -v`: 5 tests passed, including missing
+  sample, stale profile, unknown source ID, and unreviewed registry-only source negative controls.
+- `./tools/codex-android :app:testDebugUnitTest --tests 'com.weekssa.opraeqforuapp.data.library.CanonicalFavoriteAliasIntegrationTest' --tests 'com.weekssa.opraeqforuapp.domain.library.CanonicalLegacyCatalogAdapterTest'`:
+  passed after the OPRA correction, including profile-wide mismatch rejection during alias rebasing.
+- `./tools/codex-android :app:testDebugUnitTest`: all 713 JVM tests passed.
+- The full repository Python CI discovery passed all 199 tests under the bundled workspace Python
+  runtime. The machine's system `python3` is 3.9 and cannot import two existing tests using Python
+  3.10 union type syntax; CI and this successful run use a supported interpreter.
+- `actionlint` was not available locally; the changed workflow still requires exact-head remote
+  catalog CI before merge.
+
+The signed v0.7.1 candidate recorded above predates this follow-up OPRA band-order correction. Any
+future signed candidate for the updated source must be built from the exact final source SHA and
+reverified against that artifact. No phone, USB DAC, wireless debugging, or signed beta was needed
+for this repository resolver test. These deterministic samples provide current source-ID boundary
+coverage, not a statistical 95% probability or parser, provenance, license, access, or acoustic
+quality certification.
+
+The source branch was prepared on base `bfb1e3b49e37dd764675e512cee10670d22570a1`. A catalog-
+currentness refresh later advanced `origin/main` to `84998be61769950cf8b13801a7846523631603f9`;
+the canonical source-ID/profile sample set is unchanged. The local candidate now shares that
+refreshed main base. The source fixture, focused Kotlin regressions, full 713-test JVM suite, and
+full 199-test Python suite passed against it. `actionlint` is not installed locally; exact-head
+remote CI remains pending. Branch
+`codex/favorite-source-review` is local and has no remote CI or pull request yet. Existing draft
+[PR #55](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/55) records the earlier signed candidate
+and remains separate; it does not contain this follow-up correction. The latest public release is
+still v0.7.0. No tag, release, or artifact promotion was made for this work.
+
+### 2026-10-01 conditional merge authorization for source-wide Favorite fix
+
+The owner explicitly authorizes merging `codex/favorite-source-review` only if every applicable
+GitHub workflow passes on the exact reviewed PR head and an independent review finds no unresolved
+actionable issue. The merge must use that same expected head SHA. This permission covers the source
+fix and its review documentation only. It does not authorize a public tag, GitHub release, or public
+hardware-support claim. A fresh signed candidate may be built from the exact merged main SHA after
+those gates pass; candidate testing-channel publication remains distinct from public release.

@@ -137,6 +137,22 @@ class CanonicalLegacyCatalogAdapterTest {
             ToneBoostersConverter.convert(latest, "Mismatched OPRA vendor")
         }
 
+        val latestSelection = requireNotNull(
+            CanonicalLegacyCatalogAdapter.resolveSelection(
+                CatalogSnapshot(1, "2026-09-23T00:00:00Z", "test", listOf(canonical)),
+                latest,
+            ),
+        )
+        val aliasRebasedSelection = latestSelection.copy(
+            compatibilityVendorId = "display-vendor",
+            compatibilityProductId = "display-product",
+        )
+        val aliasRebasedLatest = CanonicalLegacyCatalogAdapter.projectSelection(
+            aliasRebasedSelection,
+            "display-product",
+        )
+        assertThat(aliasRebasedLatest.bandOrderProvenance).isNull()
+
         val wrongProductPrimary = expectedSource.copy(
             sourceRecordId = "newer-wrong-product-record",
             sourceProductId = "different-product",

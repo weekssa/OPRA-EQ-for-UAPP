@@ -32,7 +32,11 @@ software path is verified and its physical qualification remains bounded by the 
 - Fixed AFUL Explorer community Favorite resolution when the effective catalog presents the
   canonical product through the retained legacy `aful::explorer` product ID. Only compatibility
   IDs are rebased after the effective catalog proves the alias; canonical revision and source
-  provenance remain unchanged, and invalid or stale selections still fail closed.
+  provenance remain unchanged, and invalid or stale selections still fail closed. Verified OPRA
+  band-order provenance now follows the immutable primary source identity across that compatibility
+  rebase.
+- Added one real canonical profile/revision regression sample for each ingested catalog source ID,
+  plus a CI onboarding gate that requires the sample to stay current as sources are added.
 
 ### 2026-09-27 Black Pearl and JA11 bounded remediation
 

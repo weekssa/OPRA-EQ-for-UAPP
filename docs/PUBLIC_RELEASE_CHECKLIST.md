@@ -36,7 +36,7 @@ created a newer documentation commit. Black Pearl is publicly described only wit
 Explorer evidence boundary. JA11 software is verified, while broader power-cycle qualification is
 not claimed.
 
-## v0.7.1 patch candidate: qualified; publication pending
+## v0.7.1 patch candidate: superseded for expanded Favorite fix; publication pending
 
 The only app-production behavior change since public v0.7.0 is the canonical Favorite product-alias
 correction. PR #51 contains the fix; PR #52 adds the current source-kind regression matrix and is
@@ -74,9 +74,21 @@ v0.7.1 tag or release exists.
   saved. My EQs showed both after force-stop and cold relaunch. This fresh AVD began with an empty
   saved list, so a pre-existing Favorite migration was not exercised. The temporary AVD was deleted
   after testing; the existing `codex-api36` AVD was left unchanged.
+- [ ] **Superseding finding, 2026-10-01:** a one-candidate-per-source review found that an actual
+  OPRA profile failed strict selection matching when its displayed product ID was an alias. The
+  compatibility-ID rebase then recalculated OPRA band-order provenance against the display IDs
+  and lost the trusted marker. The follow-up corrects the provenance identity and adds current
+  source-ID fixture coverage; details are in `docs/AFUL_EXPLORER_FAVORITE_REVIEW.md` and the dated
+  runbook section. This source/test/docs branch is still local on `codex/favorite-source-review`,
+  now based on refreshed `origin/main` `84998be61769950cf8b13801a7846523631603f9`; it is not in signed artifact
+  `cfdc688a0ff9392f5617b05719b09c9c478cf07390aa7dc79e8d4e33c6eecba3`. Do not promote that APK as
+  containing the expanded fix. After review and merge, run exact-head CI and create a fresh signed
+  candidate from the finalized source SHA before any publication decision.
 - [ ] Obtain explicit owner approval for any public promotion. The repository has no exact-artifact
   public promotion workflow; the signed candidate is a qualification artifact, not a public
-  release. Do not rebuild or re-sign it during later manual publication.
+  release. The owner's conditional merge approval for the expanded Favorite fix does not authorize
+  a public tag, release, or support claim. Do not rebuild or re-sign it during later manual
+  publication.
 
 No DAC hardware mutation or physical-device qualification is needed for this catalog Favorite
 identity fix. See the 2026-10-01 entry in `docs/CHATGPT_PROJECT_RUNBOOK.md` for the complete

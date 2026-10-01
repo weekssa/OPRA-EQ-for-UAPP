@@ -28,6 +28,29 @@ Conceptual flow:
 
 The canonical EQ is never rewritten to fit a target. Preserve complete supported source filter count/order, types, frequency, gain, Q, creator, details/target, provenance, source preamp, and revision identity. Missing source preamp remains null. Generated safety headroom is derived metadata, not source authorship.
 
+### Canonical Favorite resolution and source coverage
+
+Catalog headphone Favorites resolve through the shared canonical selection path. The compatibility
+product-ID rebase is allowed only after the displayed profile resolves to one exact canonical
+profile/revision and the effective catalog proves the canonical product maps to one displayed
+product. The rebase changes compatibility identity only; it retains the canonical profile,
+revision, acoustic fingerprint, filters, and complete source references. The rebase itself is
+source-neutral; the separate OPRA band-order trust marker still requires an exact verified primary
+OPRA identity and fails closed when profile revisions disagree.
+
+Every distinct `source_id` represented in canonical profile revisions must have a real checked-in
+sample in `app/src/test/resources/catalog/favorite-source-samples.json`. The sample coverage checker
+compares those samples against `catalog/catalog.json` and `config/source_registry.json`; Android JVM
+tests run each headphone sample through the alias-rebase path and each General EQ sample through its
+separate exact resolver. Adding an ingested source therefore requires adding its authentic profile
+sample and passing these checks before catalog publication. A registered source without a
+canonical PEQ needs an explicit reviewed exclusion reason. New source IDs absent from the registry
+need a reviewed registry identity or alias decision.
+
+This is resolver regression coverage. It does not qualify source parsers, establish acoustic
+correctness, or validate a source's access and redistribution policy. `DEVICE_CAPTURE` and
+`PERSONAL_IMPORT` remain local saved-EQ flows outside the canonical catalog Favorite sample set.
+
 ## Package responsibilities
 
 ### `com.weekssa.opraeqforuapp.ui`
