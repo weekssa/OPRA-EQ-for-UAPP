@@ -129,13 +129,18 @@ merged fix at `2a39bc53d7ee3caf2b98fe2fb043aff7bf4bdc74`, a test-only regression
 It runs the production canonical repository, overlay, alias resolution, and strict Favorite
 selection matcher for every canonical headphone-catalog source kind: `STRUCTURED_CATALOG`,
 `MEASUREMENT_DERIVED`, `CREATOR`, `COMMUNITY`, `REPOSITORY`, `DEVICE_COMMUNITY`, and
-`USER_SUBMISSION`. The test asserts exact set coverage so a future catalog source kind cannot be
-silently omitted. Cases span AFUL Explorer (in-ear), Sony WH-1000XM5 (over-ear), and Sennheiser HD
-600 (over-ear), with distinct acoustics to prevent overlay deduplication.
+`USER_SUBMISSION`. The fixture set is checked against every current `EqSourceKind` except the two
+explicitly separate local flows, `DEVICE_CAPTURE` and `PERSONAL_IMPORT`. Adding another enum value
+therefore fails the test until it is classified and either added to this catalog matrix or
+documented as a separate flow. Cases span AFUL Explorer (in-ear), Sony WH-1000XM5 (over-ear), and
+Sennheiser HD 600 (over-ear), with distinct acoustics to prevent overlay deduplication.
 
 For each case, the test verifies the canonical-to-legacy product alias, displayed product and
 vendor compatibility IDs, strict `matchesSelection`, exact selected profile and revision, source
-kind, and unchanged source references. Existing regressions still cover the live LoboNautics and
+kind, and unchanged source references. The structured OPRA fixture already carries the effective
+legacy `aful::explorer` product ID, so its original and displayed compatibility IDs match; the six
+other synthetic-source fixtures assert that their original compatibility ID differs and exercise
+the synthetic-to-legacy rebase. Existing regressions still cover the live LoboNautics and
 Jaytiss profiles, stale projection, wrong canonical ID, ambiguity, unrelated product rejection,
 exact OPRA fallback, Room persistence, and UI restoration.
 

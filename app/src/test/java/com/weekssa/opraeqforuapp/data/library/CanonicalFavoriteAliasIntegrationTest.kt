@@ -134,17 +134,13 @@ class CanonicalFavoriteAliasIntegrationTest {
     @Test
     fun favoriteAliasResolutionIsIndependentOfCatalogSourceKindAndHeadphoneProduct() = runBlocking {
         val sourceCases = catalogSourceCases()
-        assertThat(sourceCases.map(SourceCase::sourceKind).toSet()).containsExactlyElementsIn(
-            setOf(
-                EqSourceKind.STRUCTURED_CATALOG,
-                EqSourceKind.MEASUREMENT_DERIVED,
-                EqSourceKind.CREATOR,
-                EqSourceKind.COMMUNITY,
-                EqSourceKind.REPOSITORY,
-                EqSourceKind.DEVICE_COMMUNITY,
-                EqSourceKind.USER_SUBMISSION,
-            ),
+        val inScopeCatalogKinds = EqSourceKind.values().toSet() - setOf(
+            EqSourceKind.DEVICE_CAPTURE,
+            EqSourceKind.PERSONAL_IMPORT,
         )
+        val coveredKinds = sourceCases.map(SourceCase::sourceKind)
+        assertThat(coveredKinds.size).isEqualTo(inScopeCatalogKinds.size)
+        assertThat(coveredKinds.toSet()).isEqualTo(inScopeCatalogKinds)
         val baseProfile = currentAfulCommunitySnapshot().profiles.first()
         val profiles = sourceCases.mapIndexed { index, sourceCase ->
             val filters = baseProfile.latestRevision.filters.mapIndexed { filterIndex, filter ->
@@ -238,6 +234,15 @@ class CanonicalFavoriteAliasIntegrationTest {
                     it.canonicalProfileId == canonicalProfile.canonicalProfileId
                 }
                 assertThat(displayedProfile.productId).isEqualTo(sourceCase.productId)
+
+                val originalSelection = requireNotNull(
+                    CanonicalLegacyCatalogAdapter.resolveSelection(snapshot, displayedProfile),
+                )
+                if (sourceCase.sourceKind == EqSourceKind.STRUCTURED_CATALOG) {
+                    assertThat(originalSelection.compatibilityProductId).isEqualTo(displayedProfile.productId)
+                } else {
+                    assertThat(originalSelection.compatibilityProductId).isNotEqualTo(displayedProfile.productId)
+                }
 
                 val selection = repository.resolveCanonicalSelection(displayedProfile)
                 assertThat(selection).isNotNull()
@@ -442,11 +447,11 @@ class CanonicalFavoriteAliasIntegrationTest {
         SourceCase(
             sourceKind = EqSourceKind.COMMUNITY,
             sourceId = "reddit-audio",
-            manufacturer = "AFUL",
-            model = "Explorer",
-            vendorId = "aful",
-            productId = "aful::explorer",
-            productSubtype = "in_ear",
+            manufacturer = "Sony",
+            model = "WH-1000XM5",
+            vendorId = "sony",
+            productId = "sony::wh-1000xm5",
+            productSubtype = "over_ear",
             provenanceTier = ProvenanceTier.TRACEABLE_COMMUNITY,
             redistributionPolicy = RedistributionPolicy.LINK_ONLY,
         ),
@@ -475,11 +480,11 @@ class CanonicalFavoriteAliasIntegrationTest {
         SourceCase(
             sourceKind = EqSourceKind.USER_SUBMISSION,
             sourceId = "user-submission",
-            manufacturer = "AFUL",
-            model = "Explorer",
-            vendorId = "aful",
-            productId = "aful::explorer",
-            productSubtype = "in_ear",
+            manufacturer = "Sennheiser",
+            model = "HD 600",
+            vendorId = "sennheiser",
+            productId = "sennheiser::hd-600",
+            productSubtype = "over_ear",
             provenanceTier = ProvenanceTier.NEEDS_REVIEW,
             redistributionPolicy = RedistributionPolicy.UNKNOWN_REVIEW,
         ),
