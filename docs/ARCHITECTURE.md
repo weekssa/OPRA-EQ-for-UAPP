@@ -144,6 +144,13 @@ proves the exact displayed projection, and a multi-item General EQ save is atomi
 migration adds this data without reconstructing or rewriting older projection-only rows. Those
 legacy rows remain distinguishable as legacy; missing source provenance is never invented.
 
+When the effective legacy overlay presents a canonical product through a retained legacy product
+ID, Favorite resolution may rebase only the selection's compatibility vendor/product IDs, and only
+when the current effective catalog proves that exact canonical-to-displayed product alias and the
+displayed vendor/product both exist. The canonical profile, selected revision, fingerprint, and
+source references remain unchanged. `matchesSelection` remains strict; unrelated products, stale
+projections, and ambiguous canonical matches continue to fail closed.
+
 ### Needs attention recovery
 
 Persisted app-managed artifacts cannot silently disappear merely because a current My EQ association is no longer confident.

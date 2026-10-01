@@ -4,8 +4,15 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.weekssa.opraeqforuapp.data.catalog.AppCatalogRepository
+import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshFailureReason
+import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshResult
+import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.data.managed.ManagedProfileSnapshotCodec
 import com.weekssa.opraeqforuapp.data.managed.OpraEqDatabase
+import com.weekssa.opraeqforuapp.domain.catalog.OpraCatalog
+import com.weekssa.opraeqforuapp.domain.catalog.OpraProduct
+import com.weekssa.opraeqforuapp.domain.catalog.OpraVendor
 import com.weekssa.opraeqforuapp.domain.library.CanonicalEqProfile
 import com.weekssa.opraeqforuapp.domain.library.CanonicalEqSelection
 import com.weekssa.opraeqforuapp.domain.library.CanonicalLegacyCatalogAdapter
@@ -25,8 +32,13 @@ import com.weekssa.opraeqforuapp.domain.library.ProvenanceTier
 import com.weekssa.opraeqforuapp.domain.library.RedistributionPolicy
 import com.weekssa.opraeqforuapp.domain.managed.ManagedProfileRecord
 import com.weekssa.opraeqforuapp.ui.screens.resolveManagedFavoriteProfile
+import java.nio.file.Files
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -88,6 +100,104 @@ class SavedEqCanonicalSelectionPersistenceTest {
         assertFalse(record.savedEqDataInvalid)
         assertEquals(selection, record.canonicalSelection)
         assertEquals(legacyProfile, record.actionProfileOrNull())
+    }
+
+    @Test
+    fun aliasedCommunityFavoritePersistsCanonicalSelectionAndCanBeRemoved() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val sourceSnapshot = afulAliasSnapshot()
+        val filesDir = Files.createTempDirectory(context.cacheDir.toPath(), "aful-favorite-alias").toFile()
+        try {
+            val canonicalCatalogRepository = CanonicalCatalogRepository(
+                filesDir = filesDir,
+                source = { destination ->
+                    destination.writeText(Json.encodeToString(sourceSnapshot), Charsets.UTF_8)
+                },
+            )
+            val legacyCatalogRepository = FakeCatalogRepository(
+                OpraCatalog(
+                    vendors = listOf(OpraVendor(id = "aful", name = "AFUL")),
+                    products = listOf(
+                        OpraProduct(
+                            id = LEGACY_AFUL_EXPLORER_PRODUCT_ID,
+                            vendorId = "aful",
+                            name = "Explorer",
+                            type = "headphones",
+                            subtype = "in_ear",
+                        ),
+                    ),
+                    profiles = emptyList(),
+                ),
+            )
+            val catalogRepository = CanonicalFirstCatalogRepository(
+                canonicalCatalogRepository,
+                legacyCatalogRepository,
+            )
+            catalogRepository.initialize()
+
+            val effectiveCatalog = (catalogRepository.state.value as CatalogState.Ready).catalog
+            val canonicalProductId = CanonicalLegacyCatalogAdapter.adapt(sourceSnapshot).products.single().id
+            assertEquals(LEGACY_AFUL_EXPLORER_PRODUCT_ID, effectiveCatalog.productAliases[canonicalProductId])
+            val displayedProfile = effectiveCatalog.profiles.single()
+            assertEquals(LEGACY_AFUL_EXPLORER_PRODUCT_ID, displayedProfile.productId)
+            val selection = requireNotNull(catalogRepository.resolveCanonicalSelection(displayedProfile))
+            assertEquals(displayedProfile.productId, selection.compatibilityProductId)
+            assertTrue(CanonicalLegacyCatalogAdapter.matchesSelection(selection, displayedProfile))
+
+            val unrelatedProductProfile = displayedProfile.copy(productId = "unrelated::explorer")
+            assertEquals(
+                FavoriteToggleResult.CANONICAL_SOURCE_UNAVAILABLE,
+                savedEqRepository.toggleFavorite(
+                    outputId = "UAPP",
+                    profile = unrelatedProductProfile,
+                    manufacturer = "AFUL",
+                    model = "Explorer",
+                    canonicalSelection = selection,
+                ),
+            )
+            assertTrue(database.savedEqDao().observeAll().first().isEmpty())
+
+            assertEquals(
+                FavoriteToggleResult.SAVED,
+                savedEqRepository.toggleFavorite(
+                    outputId = "UAPP",
+                    profile = displayedProfile,
+                    manufacturer = "ignored display value",
+                    model = "ignored display value",
+                    canonicalSelection = selection,
+                ),
+            )
+
+            val saved = savedEqRepository.observeForOutput("UAPP").first().single()
+            assertEquals(displayedProfile.productId, saved.productId)
+            assertEquals(selection, saved.canonicalSelection)
+            assertEquals(
+                selection,
+                CanonicalEqSelectionCodec().decode(
+                    requireNotNull(database.savedEqDao().observeAll().first().single().canonicalSelectionJson),
+                ),
+            )
+            assertEquals("community-96571b708868cdf52c109d5f", saved.canonicalSelection?.profile?.canonicalProfileId)
+            assertEquals("rev-b2b639d1d1dfee12e6b87f97", saved.canonicalSelection?.selectedRevisionId)
+            assertEquals(
+                "b2b639d1d1dfee12e6b87f970fbe8e3d0d4e0a86493d1a3bcee1dfbe4783b5e9",
+                saved.canonicalSelection?.selectedRevision?.acousticFingerprint,
+            )
+            assertEquals(displayedProfile.canonicalProfileId, saved.actionProfileOrNull()?.canonicalProfileId)
+            assertEquals(displayedProfile.productId, saved.actionProfileOrNull()?.productId)
+            assertEquals(
+                "reddit-iems-1pi6g5d-lobonautics-explorer-basshead",
+                saved.canonicalSelection?.selectedRevision?.sourceReferences?.single()?.sourceRecordId,
+            )
+
+            assertEquals(
+                FavoriteToggleResult.REMOVED,
+                savedEqRepository.toggleFavorite("UAPP", displayedProfile, "AFUL", "Explorer", selection),
+            )
+            assertTrue(database.savedEqDao().observeAll().first().isEmpty())
+        } finally {
+            filesDir.deleteRecursively()
+        }
     }
 
     @Test
@@ -225,6 +335,66 @@ class SavedEqCanonicalSelectionPersistenceTest {
         assertNull(record.actionProfileOrNull())
     }
 
+    private fun afulAliasSnapshot() = CatalogSnapshot(
+        schemaVersion = 1,
+        generatedAt = "2026-09-30T00:00:00Z",
+        sourceRegistryVersion = "favorite-alias-test",
+        profiles = listOf(
+            CanonicalEqProfile(
+                canonicalProfileId = "community-96571b708868cdf52c109d5f",
+                headphone = HeadphoneIdentity("AFUL", "Explorer"),
+                creator = "LoboNautics",
+                target = EqTarget(null, EqTargetKind.UNKNOWN),
+                tuningLabel = "Basshead tuning",
+                revisions = listOf(
+                    EqRevision(
+                        revisionId = "rev-b2b639d1d1dfee12e6b87f97",
+                        acousticFingerprint = "b2b639d1d1dfee12e6b87f970fbe8e3d0d4e0a86493d1a3bcee1dfbe4783b5e9",
+                        preampGainDb = -3.7,
+                        filters = listOf(
+                            EqFilter(EqFilterType.LOW_SHELF, 20.0, 2.0, 0.3),
+                            EqFilter(EqFilterType.LOW_SHELF, 90.0, 3.0, 0.3),
+                            EqFilter(EqFilterType.PEAK, 200.0, -1.0, 1.3),
+                            EqFilter(EqFilterType.PEAK, 1500.0, -0.6, 1.2),
+                            EqFilter(EqFilterType.PEAK, 2700.0, 1.0, 2.0),
+                            EqFilter(EqFilterType.PEAK, 3500.0, 3.7, 1.1),
+                            EqFilter(EqFilterType.PEAK, 3800.0, -2.0, 1.2),
+                            EqFilter(EqFilterType.PEAK, 8000.0, 1.5, 0.3),
+                        ),
+                        sourceReferences = listOf(
+                            EqSourceReference(
+                                sourceId = "reddit-audio",
+                                sourceKind = EqSourceKind.COMMUNITY,
+                                sourceRecordId = "reddit-iems-1pi6g5d-lobonautics-explorer-basshead",
+                                sourceVendorId = "AFUL",
+                                sourceProductId = "Explorer",
+                                url = "https://www.reddit.com/r/iems/comments/1pi6g5d/aful_explorer_basshead_tuning/",
+                                creator = "LoboNautics",
+                                provenanceTier = ProvenanceTier.TRACEABLE_COMMUNITY,
+                                redistributionPolicy = RedistributionPolicy.STRUCTURED_DATA_ONLY,
+                                isPrimary = true,
+                            ),
+                        ),
+                        isLatest = true,
+                    ),
+                ),
+            ),
+        ),
+    )
+
+    private class FakeCatalogRepository(catalog: OpraCatalog) : AppCatalogRepository {
+        override val state: StateFlow<CatalogState> = MutableStateFlow(
+            CatalogState.Ready(catalog = catalog, lastSuccessfulRefreshMillis = 1L),
+        )
+
+        override suspend fun initialize() = Unit
+
+        override suspend fun refresh(): CatalogRefreshResult = CatalogRefreshResult.Failure(
+            reason = CatalogRefreshFailureReason.Network,
+            usingSavedCatalog = true,
+        )
+    }
+
     private fun sampleSnapshot(): CatalogSnapshot {
         val headphone = CanonicalEqProfile(
             canonicalProfileId = "headphone-profile",
@@ -276,4 +446,8 @@ class SavedEqCanonicalSelectionPersistenceTest {
         redistributionPolicy = RedistributionPolicy.LINK_ONLY,
         isPrimary = true,
     )
+
+    private companion object {
+        const val LEGACY_AFUL_EXPLORER_PRODUCT_ID = "aful::explorer"
+    }
 }

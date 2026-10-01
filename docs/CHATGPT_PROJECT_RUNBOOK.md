@@ -353,3 +353,115 @@ adds focused regressions. This does not change EW300 protocol behavior or accept
 evidence. Check all remote gates and artifacts on the live exact PR head. The trusted-main-only
 signed candidate cannot be produced from this feature branch without explicit owner-authorized
 integration; do not merge, sign or publish under the guise of a test run.
+
+## 2026-09-30 AFUL Explorer Favorite candidate
+
+The AFUL Explorer Reddit/LoboNautics and HiFiGuides/Jaytiss community Favorites failed because
+canonical selection resolution retained synthetic compatibility product IDs after the effective
+catalog overlay displayed the same canonical rows through the legacy OPRA `aful::explorer` product
+alias. The bounded correction rebases only compatibility vendor/product IDs after validating the
+effective alias and displayed records; exact canonical profile, revision, fingerprint, and source
+references remain authoritative. Strict `matchesSelection` validation remains in place.
+
+Implementation commit `fcb0f5e03b22fc51c778d1989ec1c0ad8c7ddb38` is based on current
+`origin/main` `6ada7efc84425f7b149f9f9e9fb4e9599bc80cf2`. The candidate passed focused and full JVM
+unit tests, Android-test Kotlin compilation, the Room-backed API 36 instrumentation class, and a
+fresh debug-app API 36 Favorites/restart smoke. The complete source, fixture, test, and evidence
+record is `docs/AFUL_EXPLORER_FAVORITE_REVIEW.md`. The branch is local/unpushed with no PR, remote
+CI, signed candidate, release qualification, or hardware test. Status is **CANDIDATE FIX VERIFIED:
+ready for independent review**, not resolved or release-ready. No hardware validation ledger or
+capability matrix changed because this candidate does not exercise hardware or establish a device
+capability. The next stage is the Sol 5.6 independent review, followed by a new Codex Luna Extra
+High worker task on every outcome. Sol records PASS/FAIL/INCONCLUSIVE plus a durable result and
+copyable Luna prompt under `docs/AFUL_EXPLORER_REVIEW_TO_LUNA_WORKFLOW.md`. FAIL returns concrete
+fix and test criteria; INCONCLUSIVE returns the exact access gap. Sol may update review/runbook
+documentation only and must leave implementation work to Luna.
+
+### 2026-09-30 AFUL task-intake routing correction
+
+The Luna intake found that `docs/AFUL_EXPLORER_NEXT_TASK.md` was absent while the review outcome
+and maintained workflow still marked the candidate **PENDING SOL 5.6 REVIEW**. No implementation
+work or tests were run. The review outcome records this intake as `REVIEW_REQUIRED` without
+changing the technical review status, and the new next-task baton routes to a fresh Sol independent
+review of candidate `fcb0f5e03b22fc51c778d1989ec1c0ad8c7ddb38` on branch
+`codex/aful-favorite-identity` at expected HEAD `ecdcb6cab8ff7e5688d7092cf2b356566e88cc84`.
+See `docs/AFUL_EXPLORER_REVIEW_OUTCOME.md` and `docs/AFUL_EXPLORER_NEXT_TASK.md`. The next task
+class is **GPT-5.6 Sol independent review**; Luna work follows only after a recorded Sol outcome.
+
+
+### 2026-09-30 AFUL Sol review access recovery
+
+The preceding GPT-5.6 Sol review attempt was **INCONCLUSIVE** because that Sol runtime could not
+access the required local macOS worktree or candidate implementation commit through its connected
+GitHub context. Sol ran no tests and made no implementation finding; the result is an access gap,
+not a code assessment.
+
+Luna verified the repository-local baton at
+/Users/stephenweeks/.codex/worktrees/aful-favorite-fix/OPRA-EQ-for-UAPP on branch
+codex/aful-favorite-identity, HEAD ecdcb6cab8ff7e5688d7092cf2b356566e88cc84. The local
+implementation commit fcb0f5e03b22fc51c778d1989ec1c0ad8c7ddb38 is based directly on
+6ada7efc84425f7b149f9f9e9fb4e9599bc80cf2, which a live remote-main lookup confirmed on
+2026-09-30. The exact production and test diff is accessible in this worktree; this repository-state
+check made no independent implementation judgment and ran no tests.
+
+The next role is a new GPT-5.6 Sol independent review using the complete prompt in
+docs/AFUL_EXPLORER_NEXT_TASK.md. The reviewer must preserve all existing uncommitted documentation,
+inspect the exact source/test diff, classify the candidate PASS, FAIL, or INCONCLUSIVE, and limit
+writes to the documented review/handoff files. See
+docs/AFUL_EXPLORER_REVIEW_OUTCOME.md and docs/AFUL_EXPLORER_LUNA_WORKER_HANDOFF.md.
+
+### 2026-09-30 AFUL Explorer Favorite Luna final verification
+
+The owner supplied a direct Luna final-verification and closeout task for this candidate. That
+explicit request superseded the earlier Sol-first routing baton recorded above. The prior Sol
+attempt remains **INCONCLUSIVE** because it could not access this local worktree; it made no
+implementation finding and ran no tests. A separate read-only reviewer then returned **PASS** on
+the exact source and test diff, with no actionable implementation finding.
+
+On branch `codex/aful-favorite-identity`, starting HEAD
+`ecdcb6cab8ff7e5688d7092cf2b356566e88cc84`, Luna reviewed implementation commit
+`fcb0f5e03b22fc51c778d1989ec1c0ad8c7ddb38` against base
+`6ada7efc84425f7b149f9f9e9fb4e9599bc80cf2`. The alias path changes only compatibility IDs after
+the effective alias resolves to the displayed product and its unique product/existing vendor are
+present. Canonical profile, exact selected revision, fingerprint, and source references remain
+unchanged; strict projection matching and persistence revalidation remain active. The existing
+exact legacy OPRA fallback and wrong, stale, ambiguous, and unrelated selection cases were
+inspected in source and tests.
+
+The following checks passed:
+
+- Focused command `./tools/codex-android :app:testDebugUnitTest --tests 'com.weekssa.opraeqforuapp.data.library.CanonicalFavoriteAliasIntegrationTest' --tests 'com.weekssa.opraeqforuapp.data.library.CanonicalFirstCatalogRepositoryTest' --tests 'com.weekssa.opraeqforuapp.domain.library.CanonicalLegacyCatalogAdapterTest' --tests 'com.weekssa.opraeqforuapp.domain.library.CatalogOverlayTest'`: 22 tests.
+- Full command `./tools/codex-android :app:testDebugUnitTest`: 711 tests, 0 failures, 0 errors, 0 skipped.
+- `./tools/codex-android :app:compileDebugAndroidTestKotlin`.
+- API 36 install `./tools/codex-android :app:installDebug :app:installDebugAndroidTest` and
+  `./tools/codex-android adb shell am instrument -w -e class com.weekssa.opraeqforuapp.data.library.SavedEqCanonicalSelectionPersistenceTest com.weekssa.opraeqforuapp.test/androidx.test.runner.AndroidJUnitRunner`: `OK (6 tests)`.
+- Debug UI Favorite/restart smoke on AVD `codex-api36`, serial `emulator-5554`, API 36. Both
+  community Favorites restored as the same AFUL Explorer with their Reddit and HiFiGuides source
+  identities; the unrelated AutoEQ Favorite remained. Luna removed the test Favorites afterward
+  and restored the initially empty emulator library. The detailed record is
+  `docs/AFUL_EXPLORER_FAVORITE_UI_SMOKE.md`.
+
+`adb devices -l` showed no phone before emulator start. No physical or wireless test was needed.
+This candidate is **VERIFIED FOR REPOSITORY PROMOTION**, not app release readiness, signed-candidate
+provenance, or hardware qualification. No production or test code changed during this closeout.
+
+Before publication, the live remote check found no candidate branch ref, no PR for
+`codex/aful-favorite-identity`, and no Actions runs. `gh` was unavailable; GitHub REST queries were
+read-only. The owner task authorizes committing the closeout documentation, pushing this branch,
+and opening its normal integration PR. Record the resulting commit, push, PR, and live check state
+in the follow-up entry once those actions complete.
+
+### 2026-09-30 AFUL Favorite repository promotion
+
+The verified branch was pushed to `origin/codex/aful-favorite-identity`. Closeout documentation
+commit `e9f79089802b30c7678215ff5d157354d9995d3c` was the branch head when PR #51 was opened against
+[main](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/51). The PR was open, non-draft, and
+reported mergeable at the live refresh. At that point, Catalog currentness CI (run 2145), CodeQL
+(run 1771), Android CI (run 1886), and Priority community coverage CI (run 1630) were all
+`in_progress`; the local test results remain separate from those remote checks.
+
+This promotion update is documentation-only. Its pushed commit advances the PR head; the workflow
+state above is a snapshot for the initial PR head. The final task closeout records the latest branch
+head and check state. The next owner action is to review PR #51 and merge it through the normal
+protected-branch process when approved. This does not authorize merge, release signing, or
+publication by the verification worker.
