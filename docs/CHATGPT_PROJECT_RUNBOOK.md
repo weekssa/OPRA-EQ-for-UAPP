@@ -588,12 +588,12 @@ Local verification passed:
 - `actionlint` was not available locally; the changed workflow still requires exact-head remote
   catalog CI before merge.
 
-The signed v0.7.1 candidate recorded above predates this follow-up OPRA band-order correction. Any
-future signed candidate for the updated source must be built from the exact final source SHA and
-reverified against that artifact. No phone, USB DAC, wireless debugging, or signed beta was needed
-for this repository resolver test. These deterministic samples provide current source-ID boundary
-coverage, not a statistical 95% probability or parser, provenance, license, access, or acoustic
-quality certification.
+At this pre-PR checkpoint, the earlier signed v0.7.1 candidate predated this follow-up OPRA
+band-order correction. That candidate was superseded by the fresh merged-source signed beta recorded
+in the final closeout below. No phone, USB DAC, or wireless debugging was needed for this repository
+resolver test. These deterministic samples provide current source-ID boundary coverage, not a
+statistical 95% probability or parser, provenance, license, access, or acoustic quality
+certification.
 
 The source fix was committed locally as `1c04e6e8bce6af50d79f11b5599e2d55dcd843d9` on
 `84998be61769950cf8b13801a7846523631603f9`. Two automated catalog-only commits then advanced
@@ -622,11 +622,64 @@ head GitHub automation and independent review remain pending. Existing draft
 [PR #55](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/55) is unrelated and remains unchanged.
 The latest public release is still v0.7.0. No public tag or release was created.
 
-### 2026-10-01 conditional merge authorization for source-wide Favorite fix
+### 2026-10-01 merged source-wide Favorite fix and signed beta closeout
 
-The owner explicitly authorizes merging `codex/favorite-source-review` only if every applicable
-GitHub workflow passes on the exact reviewed PR head and an independent review finds no unresolved
-actionable issue. The merge must use that same expected head SHA. This permission covers the source
-fix and its review documentation only. It does not authorize a public tag, GitHub release, or public
-hardware-support claim. A fresh signed candidate may be built from the exact merged main SHA after
-those gates pass; candidate testing-channel publication remains distinct from public release.
+The owner approved autonomous completion of the source-wide review, source-onboarding
+documentation, exact-head automation, merge when those gates passed, and a fresh signed candidate.
+PR #56 head `87842777b4d40f5f95e8d6e30e9f775a736e0b34` passed independent read-only review and all
+8/8 applicable PR checks. It merged at `66d32756d682405c8617380a4c64f5e25a5699f6`. Applicable
+merge-commit checks passed; the post-merge ingestion job also succeeded.
+
+The sample fixture has 14 source IDs across 13 profiles, with 12 headphone samples and 2 General EQ
+samples, plus 2 reviewed no-profile exclusions. PR #56 requires each newly ingested source ID to
+add an authentic sample or a reviewed exclusion and exercises the corresponding production
+resolver in catalog CI. After merge, automated ingestion added catalog data at
+`68d5e2e745dacbf26ecf15947d199cdd8667951a` without changing app code. Its source-coverage check
+still passes: 14 samples, 13 profiles, 2 exclusions; all five checker tests pass against that
+catalog. The new revision uses an already-covered source ID.
+
+Signed EQ Library Beta Candidate run #1375 / ID `36905949756` completed successfully from the exact
+PR merge SHA `66d32756d682405c8617380a4c64f5e25a5699f6`. It built version `0.7.1` / code `8` for
+package `com.weekssa.opraeqforuapp`, verified R8, pinned signing certificate, APK signature, and
+alignment, then installed and cold-launched on the hosted API 35 emulator. Artifact ID
+`11184356919` has ZIP SHA-256
+`b5fad8c72744ae5fd03e41225db58986070396634a3ceaec3113b5aa7d9fec41` and expires 2026-10-15. The
+APK SHA-256 is `9c4cf12d8f95525e8ba4b42a640512fdac91ba551583714c49d642f6eaa2639f`; signer
+certificate SHA-256 is `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`. The
+superseded immutable APK is
+[`EQ-Library-v0.7.1-beta-66d3275.apk`](https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.1-beta-66d3275.apk).
+The immutable testing-channel copy is present at `mobile-test-apk` branch commit
+`b24610d8861b4f57b176b990894c12a465f5bd0a`; its downloaded APK hash matches the workflow
+manifest and artifact copy. Post-run review found that the manifest repeated stale
+`merge/publication approval` wording, so this artifact is superseded and must not be used as the
+current handoff candidate.
+
+The run #1375 target field was `ja11` because the workflow default was used. It was metadata only
+and did not prove JA11 physical behavior. PR #57 corrected the workflow manifest predicate;
+reviewer `favorite_pr56_review` returned PASS on exact head
+`3878ee23d36da69847edb1695a92e18a734f7c57`, and the local jq fixture covered 12 manifest
+assertions. PR #57 merged at `38302d6b880fcb1b384a4c290d8539260bd4a138` after all six merge-commit
+checks passed.
+
+Replacement signed beta run #1376 / ID `36913222922` completed successfully from exact main SHA
+`38302d6b880fcb1b384a4c290d8539260bd4a138`, with target `ja11`. Artifact ID `11188327665`, ZIP
+SHA-256 `26894f2c0a8a490450418693c8b2c34f6217c6e8f64e9a5e1411ac3992cb76d0`, expires 2026-10-15
+19:27:31 UTC. APK SHA-256 is
+`dfdac7782d0545a652cd5eec6e8d6ede60e748da746c0fbec4514c8b3ddaa7d2`; signer SHA-256 is
+`65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`; R8 mapping SHA-256 is
+`048f3f5267c387c0a6b4f483c356a52e7334c636eaa0e7b46692762aab3affb8`. Manifest fields verify
+package `com.weekssa.opraeqforuapp`, version `0.7.1` / code `8`, R8 enabled, and test plan
+`docs/FIIO_JA11_HANDS_ON_CHECKLIST.md`. The outstanding condition is JA11 Flash/readback/power-cycle
+persistence validation plus final public release/support approval. Artifact checksum, APK checksum,
+pinned single signer, v2/v3 signatures, package/version, and ZIP alignment passed local independent
+checks. The hosted API 35 emulator installed and cold-launched the APK. The immutable mobile-test
+copy matches its APK hash; its branch tip is `dc3fdae75998f4a74f90581d0f53b3f860841ee7`:
+[EQ-Library-v0.7.1-beta-38302d6.apk](https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.1-beta-38302d6.apk).
+
+This Favorite resolver defect required no phone, wireless debugging, USB DAC, or physical
+qualification. The latest public release remains v0.7.0; no public v0.7.1 tag or release was created
+or authorized. Conditional merge approval was exercised for PR #56 and PR #57 after their applicable
+exact-head gates passed. It does not authorize public release or a broader hardware-support claim.
+The owner also authorized merging this documentation-only closeout PR if independent review and all
+applicable exact-head automation pass. That conditional approval does not authorize public
+publication, tagging, or broader support claims.
