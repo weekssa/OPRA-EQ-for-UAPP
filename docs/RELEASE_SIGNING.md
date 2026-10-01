@@ -106,9 +106,10 @@ credentials are disabled. `tools/test_promote_release_candidate.py` and the work
 run in Android CI on pull requests and main.
 
 Normal Android CI never receives the release-signing key and never publishes a development APK.
-No workflow action here creates a public release or version tag. Candidate preparation remains a
-main-only owner action after merge approval; do not dispatch it from the feature branch or infer
-hardware qualification from its build/install/cold-launch result.
+The Signed Release Candidate workflow only prepares a signed candidate. The separate main-only
+promotion workflow can create the public tag and release after every promotion check passes and
+the applicable owner authorization is recorded. Never dispatch it from a feature branch or infer
+hardware qualification from a candidate's build/install/cold-launch result.
 
 ## Public release gate (exact-candidate promotion)
 
