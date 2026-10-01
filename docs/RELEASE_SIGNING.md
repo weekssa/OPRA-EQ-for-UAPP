@@ -99,8 +99,9 @@ draft; mismatched or already-published tags fail closed. The publisher never reb
 edits the APK. It marks the release latest and verifies the `/releases/latest` metadata used by the
 app's update check.
 
-The verify job has read access to source and write access only to transfer its verified artifact.
-The publish job has release-content write access and Actions read access. Signing secrets are not
+The verify job has read-only repository access; the runner artifact service transfers its verified
+candidate to the publish job. The publish job has release-content write access and Actions read
+access. Signing secrets are not
 available to either job. Every external action is pinned to a full commit SHA, and checkout
 credentials are disabled. `tools/test_promote_release_candidate.py` and the workflow contract check
 run in Android CI on pull requests and main.

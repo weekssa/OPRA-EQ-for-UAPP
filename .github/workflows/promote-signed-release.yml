@@ -39,7 +39,7 @@ jobs:
       candidate_version_code: ${{ steps.verify.outputs.candidate_version_code }}
       baseline_version_code: ${{ steps.verify.outputs.baseline_version_code }}
     permissions:
-      actions: write
+      actions: read
       contents: read
     steps:
       - name: Check out the exact publisher source

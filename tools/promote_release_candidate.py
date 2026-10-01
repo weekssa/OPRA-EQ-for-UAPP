@@ -841,7 +841,7 @@ def check_contract(project_root: Path) -> None:
         "candidate_run_id:",
         "candidate_artifact_id:",
         "refs/heads/main",
-        "permissions:\n      actions: write\n      contents: read",
+        "permissions:\n      actions: read\n      contents: read",
         "permissions:\n      actions: read\n      contents: write",
         "actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c",
         "tools/promote_release_candidate.py verify",
