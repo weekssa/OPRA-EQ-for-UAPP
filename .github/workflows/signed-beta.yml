@@ -172,12 +172,18 @@ jobs:
               (.outstanding | contains("owner Pixel 9"))
              elif $candidateTarget == "ja11" then
               (.capabilityProfile | contains("FiiO JA11")) and
-              .testPlan == "docs/FIIO_JA11_HANDS_ON_CHECKLIST.md" and
-              (.outstanding | contains("owner hardware"))
+              .testPlan == "docs/FIIO_JA11_HANDS_ON_CHECKLIST.md"
              else
               (.capabilityProfile | contains("EW300")) and
               .testPlan == "docs/EW300_DSP_HANDS_ON_CHECKLIST.md" and
               (.outstanding | contains("hardware session") | not)
+             end) and
+            (if $candidateTarget == "black-pearl-ja11" then
+              (.outstanding | contains("owner Pixel 9 TRN Black Pearl and FiiO JA11 physical validation"))
+             elif $candidateTarget == "ja11" then
+              (.outstanding | contains("owner hardware Flash/readback/power-cycle persistence validation"))
+             else
+              (.outstanding | contains("final beta clean-install/upgrade/accessibility/offline/error validation"))
              end) and
             (.outstanding | contains("merge/publication approval") | not) and
             (.outstanding | contains("final public release/public-support approval"))
