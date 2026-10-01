@@ -121,19 +121,19 @@ jobs:
               capability_profile="TRN Black Pearl final-native-readback-gated Direct Flash; FiiO JA11 exact model; five-band User 1 editor; global EQ gain"
               test_plan="docs/UX_REVIEW_WORKFLOW/context/black-pearl-ja11-remediation-20260927/05-release-handoff.md"
               evidence_ids="BLACK-PEARL-SOFTWARE,JA11-SOFTWARE"
-              outstanding="owner Pixel 9 TRN Black Pearl and FiiO JA11 physical validation; merge/publication approval and final release/public-support approval"
+              outstanding="owner Pixel 9 TRN Black Pearl and FiiO JA11 physical validation; final public release/public-support approval"
               ;;
             ja11)
               capability_profile="FiiO JA11 exact model; five-band PEQ; global EQ gain"
               test_plan="docs/FIIO_JA11_HANDS_ON_CHECKLIST.md"
               evidence_ids="JA11-SOFTWARE"
-              outstanding="owner hardware Flash/readback/power-cycle persistence validation; merge/publication approval and final release/public-support approval"
+              outstanding="owner hardware Flash/readback/power-cycle persistence validation; final public release/public-support approval"
               ;;
             ew300)
               capability_profile="EW300 exact fingerprint; five-band direct-Hz Peak"
               test_plan="docs/EW300_DSP_HANDS_ON_CHECKLIST.md"
               evidence_ids="E001,E043,E044,E045,E046,E047,E048"
-              outstanding="final beta clean-install/upgrade/accessibility/offline/error validation; owner merge/publication approval"
+              outstanding="final beta clean-install/upgrade/accessibility/offline/error validation; final public release/public-support approval"
               ;;
             *)
               echo "Unsupported candidate target: $candidate_target" >&2
@@ -172,14 +172,21 @@ jobs:
               (.outstanding | contains("owner Pixel 9"))
              elif $candidateTarget == "ja11" then
               (.capabilityProfile | contains("FiiO JA11")) and
-              .testPlan == "docs/FIIO_JA11_HANDS_ON_CHECKLIST.md" and
-              (.outstanding | contains("owner hardware"))
+              .testPlan == "docs/FIIO_JA11_HANDS_ON_CHECKLIST.md"
              else
               (.capabilityProfile | contains("EW300")) and
               .testPlan == "docs/EW300_DSP_HANDS_ON_CHECKLIST.md" and
               (.outstanding | contains("hardware session") | not)
              end) and
-            (.outstanding | contains("merge/publication approval"))
+            (if $candidateTarget == "black-pearl-ja11" then
+              (.outstanding | contains("owner Pixel 9 TRN Black Pearl and FiiO JA11 physical validation"))
+             elif $candidateTarget == "ja11" then
+              (.outstanding | contains("owner hardware Flash/readback/power-cycle persistence validation"))
+             else
+              (.outstanding | contains("final beta clean-install/upgrade/accessibility/offline/error validation"))
+             end) and
+            (.outstanding | contains("merge/publication approval") | not) and
+            (.outstanding | contains("final public release/public-support approval"))
           ' dist/candidate-manifest.json > /dev/null
 
       - name: Set up signed-beta emulator
