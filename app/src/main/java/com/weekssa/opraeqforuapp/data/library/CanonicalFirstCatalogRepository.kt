@@ -75,7 +75,9 @@ class CanonicalFirstCatalogRepository(
         val canonicalSelection = (canonicalRepository.state.value as? CanonicalCatalogState.Ready)
             ?.snapshot
             ?.let { CanonicalLegacyCatalogAdapter.resolveSelection(it, profile) }
-        if (canonicalSelection != null) return canonicalSelection
+        if (canonicalSelection != null) {
+            return resolveDisplayedProductAlias(canonicalSelection, profile)
+        }
 
         // The effective UI catalog deliberately retains legacy OPRA rows when the canonical
         // snapshot has not published that exact source record yet. Canonicalize only the current
@@ -92,6 +94,30 @@ class CanonicalFirstCatalogRepository(
         return selection.takeIf {
             CanonicalLegacyCatalogAdapter.matchesSelection(it, profile, product.id)
         }
+    }
+
+    private fun resolveDisplayedProductAlias(
+        selection: CanonicalEqSelection,
+        displayedProfile: com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile,
+    ): CanonicalEqSelection {
+        val effectiveCatalog = (mutableState.value as? CatalogState.Ready)?.catalog ?: return selection
+        val canonicalProductId = selection.compatibilityProductId ?: return selection
+        val displayedProductId = displayedProfile.productId
+        if (canonicalProductId == displayedProductId ||
+            effectiveCatalog.canonicalProductId(canonicalProductId) != displayedProductId
+        ) {
+            return selection
+        }
+
+        val displayedProduct = effectiveCatalog.products.singleOrNull { it.id == displayedProductId }
+            ?: return selection
+        val displayedVendor = effectiveCatalog.vendor(displayedProduct.vendorId) ?: return selection
+
+        // The overlay may change the compatibility projection identity; canonical source and revision remain untouched.
+        return selection.copy(
+            compatibilityVendorId = displayedVendor.id,
+            compatibilityProductId = displayedProduct.id,
+        )
     }
 
     override fun resolveCanonicalSelection(preset: com.weekssa.opraeqforuapp.domain.catalog.GeneralEqPreset): CanonicalEqSelection? =
