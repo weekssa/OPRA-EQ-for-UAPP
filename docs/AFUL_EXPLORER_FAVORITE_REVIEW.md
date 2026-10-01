@@ -120,6 +120,54 @@ exercises the LoboNautics path through the production resolver and `SavedEqRepos
 that an unrelated product ID returns `CANONICAL_SOURCE_UNAVAILABLE` without a database write,
 then verifies canonical selection persistence, action-profile identity, source record, and removal.
 
+## 2026-09-30 source-independent Favorite coverage
+
+The owner requested stronger evidence that the alias correction applies to catalog Favorites from
+different source types and headphone products. On branch `codex/aful-source-matrix`, based on the
+merged fix at `2a39bc53d7ee3caf2b98fe2fb043aff7bf4bdc74`, a test-only regression matrix was added in
+`CanonicalFavoriteAliasIntegrationTest.favoriteAliasResolutionIsIndependentOfCatalogSourceKindAndHeadphoneProduct`.
+It runs the production canonical repository, overlay, alias resolution, and strict Favorite
+selection matcher for every canonical headphone-catalog source kind: `STRUCTURED_CATALOG`,
+`MEASUREMENT_DERIVED`, `CREATOR`, `COMMUNITY`, `REPOSITORY`, `DEVICE_COMMUNITY`, and
+`USER_SUBMISSION`. The test asserts exact set coverage so a future catalog source kind cannot be
+silently omitted. Cases span AFUL Explorer (in-ear), Sony WH-1000XM5 (over-ear), and Sennheiser HD
+600 (over-ear), with distinct acoustics to prevent overlay deduplication.
+
+For each case, the test verifies the canonical-to-legacy product alias, displayed product and
+vendor compatibility IDs, strict `matchesSelection`, exact selected profile and revision, source
+kind, and unchanged source references. Existing regressions still cover the live LoboNautics and
+Jaytiss profiles, stale projection, wrong canonical ID, ambiguity, unrelated product rejection,
+exact OPRA fallback, Room persistence, and UI restoration.
+
+`DEVICE_CAPTURE` and `PERSONAL_IMPORT` are deliberately outside this catalog Favorite matrix. The
+application stores those as local saved EQs through separate capture/import flows; their adapter
+and snapshot migration behavior has separate coverage in `LocalSavedEqAdapterTest` and
+`SavedEqCanonicalSnapshotMigrationTest`. The Favorite alias resolver consumes displayed catalog
+headphone profiles, so the seven catalog source kinds above are the complete in-scope matrix.
+
+Final checks after adding the source matrix:
+
+- Focused catalog/alias JVM command using `CanonicalFavoriteAliasIntegrationTest`,
+  `CanonicalFirstCatalogRepositoryTest`, `CanonicalLegacyCatalogAdapterTest`, and `CatalogOverlayTest`:
+  **PASS**, 23 tests.
+- Full JVM command `./tools/codex-android :app:testDebugUnitTest`: **PASS**, 712 tests, no
+  failures, errors, or skips.
+- Android test compilation `./tools/codex-android :app:compileDebugAndroidTestKotlin`: **PASS**.
+- API 36 AVD `codex-api36` install of debug app and Android tests: **PASS**.
+- Room command
+  `./tools/codex-android adb shell am instrument -w -e class com.weekssa.opraeqforuapp.data.library.SavedEqCanonicalSelectionPersistenceTest com.weekssa.opraeqforuapp.test/androidx.test.runner.AndroidJUnitRunner`:
+  **PASS**, `OK (6 tests)`.
+- The fresh debug UI Favorite/restart smoke recorded above remains applicable because this
+  follow-up changes only test and review documentation, not production code. No physical device was
+  used.
+
+This evidence establishes source-kind independence at the canonical headphone Favorite resolver
+boundary. It does not quantify a statistical probability or claim coverage of every external feed
+parser independently. The production implementation has no source-kind branch in the alias rebase;
+source-specific ingestion remains covered by its source tests and remote CI. The follow-up branch
+is a test-evidence change based on the merged fix and must pass its own remote workflows before it
+is treated as repository-integrated evidence.
+
 ## Verification evidence
 
 - **Pre-fix RED:** `./tools/codex-android :app:testDebugUnitTest --tests 'com.weekssa.opraeqforuapp.data.library.CanonicalFavoriteAliasIntegrationTest'` failed at the regression expectation: expected compatibility vendor `aful`, observed `eq-library-vendor:aful`. Direct `matchesSelection` was false; substituting the selection's product ID made it true.

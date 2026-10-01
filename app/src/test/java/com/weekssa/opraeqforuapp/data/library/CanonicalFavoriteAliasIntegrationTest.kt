@@ -8,9 +8,10 @@ import com.weekssa.opraeqforuapp.data.catalog.CatalogState
 import com.weekssa.opraeqforuapp.domain.catalog.OpraCatalog
 import com.weekssa.opraeqforuapp.domain.catalog.OpraProduct
 import com.weekssa.opraeqforuapp.domain.catalog.OpraVendor
+import com.weekssa.opraeqforuapp.domain.library.AcousticFingerprint
 import com.weekssa.opraeqforuapp.domain.library.CanonicalEqProfile
-import com.weekssa.opraeqforuapp.domain.library.CanonicalLegacyCatalogAdapter
 import com.weekssa.opraeqforuapp.domain.library.CanonicalEqSelection
+import com.weekssa.opraeqforuapp.domain.library.CanonicalLegacyCatalogAdapter
 import com.weekssa.opraeqforuapp.domain.library.CatalogSnapshot
 import com.weekssa.opraeqforuapp.domain.library.EqFilter
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
@@ -124,6 +125,132 @@ class CanonicalFavoriteAliasIntegrationTest {
                     CanonicalEqSelectionCodec().encode(exactSelection),
                 )
                 assertThat(roundTripped).isEqualTo(exactSelection)
+            }
+        } finally {
+            filesDir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun favoriteAliasResolutionIsIndependentOfCatalogSourceKindAndHeadphoneProduct() = runBlocking {
+        val sourceCases = catalogSourceCases()
+        assertThat(sourceCases.map(SourceCase::sourceKind).toSet()).containsExactlyElementsIn(
+            setOf(
+                EqSourceKind.STRUCTURED_CATALOG,
+                EqSourceKind.MEASUREMENT_DERIVED,
+                EqSourceKind.CREATOR,
+                EqSourceKind.COMMUNITY,
+                EqSourceKind.REPOSITORY,
+                EqSourceKind.DEVICE_COMMUNITY,
+                EqSourceKind.USER_SUBMISSION,
+            ),
+        )
+        val baseProfile = currentAfulCommunitySnapshot().profiles.first()
+        val profiles = sourceCases.mapIndexed { index, sourceCase ->
+            val filters = baseProfile.latestRevision.filters.mapIndexed { filterIndex, filter ->
+                if (filterIndex == 0) {
+                    filter.copy(gainDb = requireNotNull(filter.gainDb) + index * 0.125)
+                } else {
+                    filter
+                }
+            }
+            val creator = "Alias fixture $index"
+            val sourceReference = baseProfile.latestRevision.sourceReferences.single().copy(
+                sourceId = sourceCase.sourceId,
+                sourceKind = sourceCase.sourceKind,
+                sourceRecordId = "${sourceCase.sourceId}-record-$index",
+                sourceVendorId = if (sourceCase.sourceKind == EqSourceKind.STRUCTURED_CATALOG) {
+                    sourceCase.vendorId
+                } else {
+                    sourceCase.manufacturer
+                },
+                sourceProductId = if (sourceCase.sourceKind == EqSourceKind.STRUCTURED_CATALOG) {
+                    sourceCase.productId
+                } else {
+                    sourceCase.model
+                },
+                creator = creator,
+                provenanceTier = sourceCase.provenanceTier,
+                redistributionPolicy = sourceCase.redistributionPolicy,
+            )
+            val revision = baseProfile.latestRevision.copy(
+                revisionId = "${sourceCase.sourceId}-revision-$index",
+                acousticFingerprint = AcousticFingerprint.of(
+                    baseProfile.latestRevision.preampGainDb,
+                    filters,
+                ),
+                filters = filters,
+                sourceReferences = listOf(sourceReference),
+            )
+            baseProfile.copy(
+                canonicalProfileId = "${sourceCase.sourceId}-profile-$index",
+                headphone = HeadphoneIdentity(sourceCase.manufacturer, sourceCase.model),
+                creator = creator,
+                tuningLabel = "${sourceCase.sourceKind} alias fixture",
+                revisions = listOf(revision),
+            )
+        }
+        val snapshot = currentAfulCommunitySnapshot().copy(
+            sourceRegistryVersion = "favorite-alias-source-matrix",
+            profiles = profiles,
+        )
+        val legacyCatalog = OpraCatalog(
+            vendors = sourceCases.distinctBy(SourceCase::vendorId).map { sourceCase ->
+                OpraVendor(id = sourceCase.vendorId, name = sourceCase.manufacturer)
+            },
+            products = sourceCases.distinctBy(SourceCase::productId).map { sourceCase ->
+                OpraProduct(
+                    id = sourceCase.productId,
+                    vendorId = sourceCase.vendorId,
+                    name = sourceCase.model,
+                    type = "headphones",
+                    subtype = sourceCase.productSubtype,
+                )
+            },
+            profiles = emptyList(),
+        )
+        val filesDir = Files.createTempDirectory("canonical-favorite-source-matrix").toFile()
+        val canonicalRepository = CanonicalCatalogRepository(
+            filesDir = filesDir,
+            source = { destination ->
+                destination.writeText(Json.encodeToString(snapshot), Charsets.UTF_8)
+            },
+        )
+        val repository = CanonicalFirstCatalogRepository(
+            canonicalRepository,
+            FakeCatalogRepository(legacyCatalog),
+        )
+
+        try {
+            repository.initialize()
+
+            val effectiveCatalog = (repository.state.value as CatalogState.Ready).catalog
+            val canonicalProjection = CanonicalLegacyCatalogAdapter.adapt(snapshot)
+            sourceCases.forEachIndexed { index, sourceCase ->
+                val canonicalProfile = profiles[index]
+                val projectedProfile = canonicalProjection.profiles.single {
+                    it.canonicalProfileId == canonicalProfile.canonicalProfileId
+                }
+                assertThat(effectiveCatalog.canonicalProductId(projectedProfile.productId))
+                    .isEqualTo(sourceCase.productId)
+
+                val displayedProfile = effectiveCatalog.profiles.single {
+                    it.canonicalProfileId == canonicalProfile.canonicalProfileId
+                }
+                assertThat(displayedProfile.productId).isEqualTo(sourceCase.productId)
+
+                val selection = repository.resolveCanonicalSelection(displayedProfile)
+                assertThat(selection).isNotNull()
+                val exactSelection = requireNotNull(selection)
+                assertThat(exactSelection.compatibilityProductId).isEqualTo(sourceCase.productId)
+                assertThat(exactSelection.compatibilityVendorId).isEqualTo(sourceCase.vendorId)
+                assertThat(CanonicalLegacyCatalogAdapter.matchesSelection(exactSelection, displayedProfile)).isTrue()
+                assertThat(exactSelection.profile).isEqualTo(canonicalProfile)
+                assertThat(exactSelection.selectedRevision).isEqualTo(canonicalProfile.latestRevision)
+                assertThat(exactSelection.selectedRevision.sourceReferences.single().sourceKind)
+                    .isEqualTo(sourceCase.sourceKind)
+                assertThat(exactSelection.selectedRevision.sourceReferences)
+                    .containsExactlyElementsIn(canonicalProfile.latestRevision.sourceReferences)
             }
         } finally {
             filesDir.deleteRecursively()
@@ -265,6 +392,98 @@ class CanonicalFavoriteAliasIntegrationTest {
             usingSavedCatalog = true,
         )
     }
+
+    private data class SourceCase(
+        val sourceKind: EqSourceKind,
+        val sourceId: String,
+        val manufacturer: String,
+        val model: String,
+        val vendorId: String,
+        val productId: String,
+        val productSubtype: String,
+        val provenanceTier: ProvenanceTier,
+        val redistributionPolicy: RedistributionPolicy,
+    )
+
+    private fun catalogSourceCases() = listOf(
+        SourceCase(
+            sourceKind = EqSourceKind.STRUCTURED_CATALOG,
+            sourceId = "opra",
+            manufacturer = "AFUL",
+            model = "Explorer",
+            vendorId = "aful",
+            productId = "aful::explorer",
+            productSubtype = "in_ear",
+            provenanceTier = ProvenanceTier.AUTHORITATIVE,
+            redistributionPolicy = RedistributionPolicy.STRUCTURED_DATA_ONLY,
+        ),
+        SourceCase(
+            sourceKind = EqSourceKind.MEASUREMENT_DERIVED,
+            sourceId = "autoeq",
+            manufacturer = "Sony",
+            model = "WH-1000XM5",
+            vendorId = "sony",
+            productId = "sony::wh-1000xm5",
+            productSubtype = "over_ear",
+            provenanceTier = ProvenanceTier.MEASUREMENT_DERIVED,
+            redistributionPolicy = RedistributionPolicy.STRUCTURED_DATA_ONLY,
+        ),
+        SourceCase(
+            sourceKind = EqSourceKind.CREATOR,
+            sourceId = "creator-feed",
+            manufacturer = "Sennheiser",
+            model = "HD 600",
+            vendorId = "sennheiser",
+            productId = "sennheiser::hd-600",
+            productSubtype = "over_ear",
+            provenanceTier = ProvenanceTier.TRACEABLE_COMMUNITY,
+            redistributionPolicy = RedistributionPolicy.LINK_ONLY,
+        ),
+        SourceCase(
+            sourceKind = EqSourceKind.COMMUNITY,
+            sourceId = "reddit-audio",
+            manufacturer = "AFUL",
+            model = "Explorer",
+            vendorId = "aful",
+            productId = "aful::explorer",
+            productSubtype = "in_ear",
+            provenanceTier = ProvenanceTier.TRACEABLE_COMMUNITY,
+            redistributionPolicy = RedistributionPolicy.LINK_ONLY,
+        ),
+        SourceCase(
+            sourceKind = EqSourceKind.REPOSITORY,
+            sourceId = "oratory1990",
+            manufacturer = "Sony",
+            model = "WH-1000XM5",
+            vendorId = "sony",
+            productId = "sony::wh-1000xm5",
+            productSubtype = "over_ear",
+            provenanceTier = ProvenanceTier.MIRROR,
+            redistributionPolicy = RedistributionPolicy.LINK_ONLY,
+        ),
+        SourceCase(
+            sourceKind = EqSourceKind.DEVICE_COMMUNITY,
+            sourceId = "device-community",
+            manufacturer = "Sennheiser",
+            model = "HD 600",
+            vendorId = "sennheiser",
+            productId = "sennheiser::hd-600",
+            productSubtype = "over_ear",
+            provenanceTier = ProvenanceTier.TRACEABLE_COMMUNITY,
+            redistributionPolicy = RedistributionPolicy.LINK_ONLY,
+        ),
+        SourceCase(
+            sourceKind = EqSourceKind.USER_SUBMISSION,
+            sourceId = "user-submission",
+            manufacturer = "AFUL",
+            model = "Explorer",
+            vendorId = "aful",
+            productId = "aful::explorer",
+            productSubtype = "in_ear",
+            provenanceTier = ProvenanceTier.NEEDS_REVIEW,
+            redistributionPolicy = RedistributionPolicy.UNKNOWN_REVIEW,
+        ),
+    )
 
     private companion object {
         const val LEGACY_EXPLORER_PRODUCT_ID = "aful::explorer"
