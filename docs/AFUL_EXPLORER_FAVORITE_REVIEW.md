@@ -1,7 +1,10 @@
 # AFUL Explorer canonical Favorite candidate review
 
-Status: **VERIFIED FOR REPOSITORY PROMOTION** on 2026-09-30. This closes the bounded Favorite
-identity verification stage only; it is not app release readiness or hardware qualification.
+Status: **The original AFUL Explorer regression was verified for repository promotion** on
+2026-09-30. That result applies to the reproduced AFUL community failure and its exact candidate.
+The 2026-10-01 real-source follow-up below found and corrected an additional OPRA alias edge case;
+the expanded fix still needs normal candidate review and exact-head remote checks. Neither entry is
+app release readiness or hardware qualification.
 
 ## 2026-09-30 final verification and closeout
 
@@ -187,9 +190,10 @@ content is unchanged from the tested PR head. The exact merge commit's Android C
 analysis, API 26 smoke, emulator UI, Gradle dependency submission, and dependency submission checks
 also passed; the run IDs are 36820154922, 36820154963, 36820154755, and 36820154934.
 
-The Favorite code change is the only app-production behavior change after public v0.7.0. Version
-0.7.1 / version code 8 is being prepared as a focused patch. It is not yet a signed candidate or a
-public release; README current-release wording remains v0.7.0 until publication is separately
+At the original implementation handoff, version 0.7.1 / version code 8 was still being prepared;
+that status is historical and was later superseded by the signed candidate recorded in the runbook.
+The signed artifact covers the earlier Favorite correction only and predates this source-wide OPRA
+alias follow-up. README current-release wording remains v0.7.0 until publication is separately
 approved and completed.
 
 ## Verification evidence
@@ -277,3 +281,70 @@ The Luna prompt is required for every outcome:
 Return the outcome, changed documentation paths, and the full Luna handoff prompt in your response.
 Do not declare product/release closure, merge, publish, or request owner hardware work.
 ```
+
+## 2026-10-01 real source-ID sample review
+
+The owner asked for one actual catalog candidate per ingested source and for this coverage to be a
+required part of adding future sources. The fixture at
+`app/src/test/resources/catalog/favorite-source-samples.json` contains one exact canonical
+profile/revision/source-reference candidate for every distinct `source_id` present in catalog
+profile revisions. It selects a latest-revision candidate when available, then prefers a primary
+reference and stable IDs. The catalog-currentness workflow checks the fixture against the live
+candidate catalog and registry before accepting the catalog.
+
+| Source ID | Canonical profile | Revision | EQ flow | Selected source record / role |
+|---|---|---|---|---|
+| `audio-science-review` | `community-4e4476dfcaf33ebf09261f14` | `rev-ee077e8815c9332419ee6474` | Headphone | `post-789170` / primary |
+| `autoeq` | `autoeq-000f5edf18e84517a8804e15` | `rev-f4d3c969104810ab42cf2c07` | Headphone | `results/Innerfidelity/over-ear/Beyerdynamic DT 48 E (120 Ohm)/Beyerdynamic DT 48 E (120 Ohm) ParametricEQ.txt` / primary |
+| `fairbuds` | `community-c4c28a8c2722e594de336c29` | `rev-6a47bfc3b81e6a38a88be86c` | Headphone | `jurf/fairbuds:presets/main-ish.txt:main-ish` / primary |
+| `github-community` | `autoeq-392d1a7b2eb8419079d3004d` | `rev-5c63291a4fe3fd8e27c96233` | Headphone | `AlbertH0ng/headphones-eq-match:results/KZ PR2 (Harpo) ParametricEQ.txt:9be33f55ef5bfd6c35cfaa5730b41d9c8d99c507` / primary |
+| `head-fi` | `community-0f9a9264fb4fabf1beec586a` | `rev-3fde3c6243a3218e5946c3d0` | Headphone | `headfi-962951-bop-p1max-crinacle-neutral` / primary |
+| `headphone-community` | `community-1f766dfaea3a48f8ac77008a` | `rev-a426f9b83bdd0e91b7a4fbf7` | Headphone | `headphones-community-23552-3-listener` / primary; historical singular ID |
+| `headphones-community` | `community-15405021c316339a1fe6f0b5` | `rev-a68d1b0eea5a09cba35a99e5` | Headphone | `post-155679` / primary |
+| `hifiguides` | `community-3886c08be4d84b1b4fcd236a` | `rev-ef1fc5e1b3963383fc81774b` | Headphone | `hifiguides-iem-discussion-part2-p91-sovran-wf1000xm5-anc` / primary |
+| `milciossq-eq-general` | `general-0a643eafb9b239933a0a70b0` | `rev-8a15a8cf47b5c014728d885b` | General EQ | `PRESETS.lounge` / primary |
+| `mrchillstorm-headphone-target` | `community-68157b04722eca8c1081ba48` | `rev-e19328629edf18f9adb0859f` | Headphone | `7hz-zero2-iso226-85phon` / primary |
+| `opra` | `hifiman:edition-xs:oratory1990:harman:b99b8966bb250506` | `hifiman:edition-xs:oratory1990:harman:b99b8966bb250506-b99b8966bb25` | Headphone | `hifiman:edition_xs::oratory1990_harman_target` / primary |
+| `oratory1990` | `hifiman:edition-xs:oratory1990:harman:b99b8966bb250506` | `hifiman:edition-xs:oratory1990:harman:b99b8966bb250506-b99b8966bb25` | Headphone | `oratory1990:ff49f17af0988b5ac45e` / secondary creator provenance |
+| `paraeq` | `general-06cad3f1012d140a40c3641f` | `rev-1d717d1687d5450bb2d8cec8` | General EQ | `EQPreset.bassBoost` / primary |
+| `reddit-audio` | `community-36ba326f2913f813334d315f` | `rev-e11de7f74776ceb954c0aeab` | Headphone | `reddit-headphones-1i8fblj-altruistic-farmer275` / primary |
+
+There are 14 source-ID samples backed by 13 unique canonical profile records because `opra` and
+`oratory1990` are distinct source references on the same Edition XS profile/revision. Twelve
+samples take the headphone Favorite path; the `milciossq-eq-general` and `paraeq` samples use the
+separate General EQ resolver. The singular `headphone-community` spelling is retained as its own
+sample and has an explicit alias-policy entry to the registry's plural `headphones-community` ID;
+it is not silently merged.
+
+Two registered IDs have no sample because they currently contribute no source-authored canonical
+PEQ: `squiglink` is measurement/provenance currentness only, and `topping-community` is paused
+pending an authorized retrieval path. Their explicit exclusion reasons are stored with the fixture
+and checked by `tools/verify_favorite_source_samples.py`. Any new registry ID without a canonical
+sample or reviewed exclusion fails the checker; any unregistered catalog source ID fails until its
+identity is added to the registry or explicit alias policy.
+
+The JVM test decodes the exact source records without changing their filters or provenance. For
+every headphone sample it constructs an exact canonical overlay whose displayed product ID differs
+from the adapter's compatibility ID, then verifies the shared resolver rebases compatibility IDs,
+passes the strict matcher, and retains the exact profile, revision, fingerprint, filters, and all
+source references. The two General samples resolve through the General path and remain free of a
+fake headphone/product identity. Negative controls mutate a headphone projection and require
+resolution to fail.
+
+The first real OPRA alias case failed the strict matcher even though compatibility IDs were rebased.
+The reason was that trusted OPRA band-order metadata was being recomputed against the displayed
+compatibility vendor/product IDs. `CanonicalLegacyCatalogAdapter.projectSelection()` now evaluates
+that metadata against the profile-scoped canonical OPRA identity while still projecting the
+displayed compatibility IDs. This identity deliberately spans the profile's revision history: a
+revision cannot certify its own conflicting vendor/product IDs. The adapter grants the marker only
+when all complete OPRA identities across the profile's revisions agree; a conflict suppresses it
+for every revision, including one that matches the first identity encountered. The regression
+checks both revisions and the alias-rebase path. Using only the selected revision's IDs would
+weaken that identity-consistency rule.
+
+The older synthetic source-kind matrix remains useful as a source-kind boundary check. It does
+exercise alias rebasing for its six non-structured cases; it did not supply real catalog candidates
+for all source IDs. This real-sample set supersedes it as the current per-source coverage evidence.
+Neither test validates every external parser, authorship claim, license, upstream access path,
+acoustic correctness, or future source until that source appears in the checker-driven sample set.
+No DAC, wireless-debug session, physical phone, or signed beta is needed for this resolver change.

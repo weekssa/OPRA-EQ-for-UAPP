@@ -1,0 +1,1689 @@
+{
+  "schema_version": 1,
+  "samples": [
+    {
+      "source_id": "audio-science-review",
+      "canonical_profile_id": "community-4e4476dfcaf33ebf09261f14",
+      "revision_id": "rev-ee077e8815c9332419ee6474",
+      "source_record_id": "post-789170",
+      "source_kind": "community",
+      "scope": "headphone",
+      "is_latest_revision": true,
+      "is_primary_reference": true
+    },
+    {
+      "source_id": "autoeq",
+      "canonical_profile_id": "autoeq-000f5edf18e84517a8804e15",
+      "revision_id": "rev-f4d3c969104810ab42cf2c07",
+      "source_record_id": "results/Innerfidelity/over-ear/Beyerdynamic DT 48 E (120 Ohm)/Beyerdynamic DT 48 E (120 Ohm) ParametricEQ.txt",
+      "source_kind": "measurement_derived",
+      "scope": "headphone",
+      "is_latest_revision": true,
+      "is_primary_reference": true
+    },
+    {
+      "source_id": "fairbuds",
+      "canonical_profile_id": "community-c4c28a8c2722e594de336c29",
+      "revision_id": "rev-6a47bfc3b81e6a38a88be86c",
+      "source_record_id": "jurf/fairbuds:presets/main-ish.txt:main-ish",
+      "source_kind": "repository",
+      "scope": "headphone",
+      "is_latest_revision": true,
+      "is_primary_reference": true
+    },
+    {
+      "source_id": "github-community",
+      "canonical_profile_id": "autoeq-392d1a7b2eb8419079d3004d",
+      "revision_id": "rev-5c63291a4fe3fd8e27c96233",
+      "source_record_id": "AlbertH0ng/headphones-eq-match:results/KZ PR2 (Harpo) ParametricEQ.txt:9be33f55ef5bfd6c35cfaa5730b41d9c8d99c507",
+      "source_kind": "repository",
+      "scope": "headphone",
+      "is_latest_revision": true,
+      "is_primary_reference": true
+    },
+    {
+      "source_id": "head-fi",
+      "canonical_profile_id": "community-0f9a9264fb4fabf1beec586a",
+      "revision_id": "rev-3fde3c6243a3218e5946c3d0",
+      "source_record_id": "headfi-962951-bop-p1max-crinacle-neutral",
+      "source_kind": "community",
+      "scope": "headphone",
+      "is_latest_revision": true,
+      "is_primary_reference": true
+    },
+    {
+      "source_id": "headphone-community",
+      "canonical_profile_id": "community-1f766dfaea3a48f8ac77008a",
+      "revision_id": "rev-a426f9b83bdd0e91b7a4fbf7",
+      "source_record_id": "headphones-community-23552-3-listener",
+      "source_kind": "community",
+      "scope": "headphone",
+      "is_latest_revision": true,
+      "is_primary_reference": true
+    },
+    {
+      "source_id": "headphones-community",
+      "canonical_profile_id": "community-15405021c316339a1fe6f0b5",
+      "revision_id": "rev-a68d1b0eea5a09cba35a99e5",
+      "source_record_id": "post-155679",
+      "source_kind": "community",
+      "scope": "headphone",
+      "is_latest_revision": true,
+      "is_primary_reference": true
+    },
+    {
+      "source_id": "hifiguides",
+      "canonical_profile_id": "community-3886c08be4d84b1b4fcd236a",
+      "revision_id": "rev-ef1fc5e1b3963383fc81774b",
+      "source_record_id": "hifiguides-iem-discussion-part2-p91-sovran-wf1000xm5-anc",
+      "source_kind": "community",
+      "scope": "headphone",
+      "is_latest_revision": true,
+      "is_primary_reference": true
+    },
+    {
+      "source_id": "milciossq-eq-general",
+      "canonical_profile_id": "general-0a643eafb9b239933a0a70b0",
+      "revision_id": "rev-8a15a8cf47b5c014728d885b",
+      "source_record_id": "PRESETS.lounge",
+      "source_kind": "repository",
+      "scope": "general",
+      "is_latest_revision": true,
+      "is_primary_reference": true
+    },
+    {
+      "source_id": "mrchillstorm-headphone-target",
+      "canonical_profile_id": "community-68157b04722eca8c1081ba48",
+      "revision_id": "rev-e19328629edf18f9adb0859f",
+      "source_record_id": "MrChillStorm/Headphone_Target:README.md:7hz-zero2-iso226-85phon",
+      "source_kind": "repository",
+      "scope": "headphone",
+      "is_latest_revision": true,
+      "is_primary_reference": true
+    },
+    {
+      "source_id": "opra",
+      "canonical_profile_id": "hifiman:edition-xs:oratory1990:harman:b99b8966bb250506",
+      "revision_id": "hifiman:edition-xs:oratory1990:harman:b99b8966bb250506-b99b8966bb25",
+      "source_record_id": "hifiman:edition_xs::oratory1990_harman_target",
+      "source_kind": "structured_catalog",
+      "scope": "headphone",
+      "is_latest_revision": true,
+      "is_primary_reference": true
+    },
+    {
+      "source_id": "oratory1990",
+      "canonical_profile_id": "hifiman:edition-xs:oratory1990:harman:b99b8966bb250506",
+      "revision_id": "hifiman:edition-xs:oratory1990:harman:b99b8966bb250506-b99b8966bb25",
+      "source_record_id": "oratory1990:ff49f17af0988b5ac45e",
+      "source_kind": "creator",
+      "scope": "headphone",
+      "is_latest_revision": true,
+      "is_primary_reference": false
+    },
+    {
+      "source_id": "paraeq",
+      "canonical_profile_id": "general-06cad3f1012d140a40c3641f",
+      "revision_id": "rev-1d717d1687d5450bb2d8cec8",
+      "source_record_id": "EQPreset.bassBoost",
+      "source_kind": "repository",
+      "scope": "general",
+      "is_latest_revision": true,
+      "is_primary_reference": true
+    },
+    {
+      "source_id": "reddit-audio",
+      "canonical_profile_id": "community-36ba326f2913f813334d315f",
+      "revision_id": "rev-e11de7f74776ceb954c0aeab",
+      "source_record_id": "reddit-headphones-1i8fblj-altruistic-farmer275",
+      "source_kind": "community",
+      "scope": "headphone",
+      "is_latest_revision": true,
+      "is_primary_reference": true
+    }
+  ],
+  "excluded_registered_sources": [
+    {
+      "source_id": "squiglink",
+      "reason": "Measurement ecosystem and provenance monitor; it does not publish source-authored PEQ. Do not derive filters from response curves."
+    },
+    {
+      "source_id": "topping-community",
+      "reason": "Paused pending an authorized retrieval path; no canonical profile is currently ingested."
+    }
+  ],
+  "snapshot": {
+    "schema_version": 1,
+    "generated_at": "fixture:favorite-source-samples",
+    "source_registry_version": "fixture:favorite-source-samples-v1",
+    "profiles": [
+      {
+        "canonical_profile_id": "autoeq-000f5edf18e84517a8804e15",
+        "creator": "AutoEq",
+        "headphone": {
+          "manufacturer": "Beyerdynamic",
+          "model": "DT 48 E (120 Ohm)",
+          "pads_or_mode": null,
+          "variant": null
+        },
+        "revisions": [
+          {
+            "acoustic_fingerprint": "f4d3c969104810ab42cf2c0782cc784c4095a5a8597562c594d0aada7230fed4",
+            "filters": [
+              {
+                "frequency_hz": 105.0,
+                "gain_db": 8.0,
+                "q": 0.7,
+                "slope": null,
+                "type": "low_shelf"
+              },
+              {
+                "frequency_hz": 1518.0,
+                "gain_db": -6.2,
+                "q": 1.06,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 4894.0,
+                "gain_db": 7.5,
+                "q": 1.99,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 626.0,
+                "gain_db": 7.2,
+                "q": 1.6,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 83.0,
+                "gain_db": -10.4,
+                "q": 1.09,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 10000.0,
+                "gain_db": -12.3,
+                "q": 0.7,
+                "slope": null,
+                "type": "high_shelf"
+              },
+              {
+                "frequency_hz": 205.0,
+                "gain_db": -1.6,
+                "q": 2.89,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 48.0,
+                "gain_db": 2.5,
+                "q": 3.92,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 6396.0,
+                "gain_db": 3.5,
+                "q": 3.7,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 72.0,
+                "gain_db": -1.7,
+                "q": 4.98,
+                "slope": null,
+                "type": "peak"
+              }
+            ],
+            "first_seen_at_epoch_seconds": 1788061991,
+            "is_latest": true,
+            "preamp_gain_db": -7.4,
+            "revision_id": "rev-f4d3c969104810ab42cf2c07",
+            "sound_impact_summary": null,
+            "source_references": [
+              {
+                "creator": "AutoEq",
+                "discovered_at_epoch_seconds": 1788061991,
+                "is_primary": true,
+                "last_verified_at_epoch_seconds": 1788061991,
+                "provenance_tier": "measurement_derived",
+                "published_at_epoch_seconds": null,
+                "redistribution_policy": "structured-data-only",
+                "source_dataset": "Innerfidelity",
+                "source_id": "autoeq",
+                "source_kind": "measurement_derived",
+                "source_product_id": "DT 48 E (120 Ohm)",
+                "source_record_id": "results/Innerfidelity/over-ear/Beyerdynamic DT 48 E (120 Ohm)/Beyerdynamic DT 48 E (120 Ohm) ParametricEQ.txt",
+                "source_vendor_id": "Beyerdynamic",
+                "updated_at_epoch_seconds": null,
+                "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/Innerfidelity/over-ear/Beyerdynamic%20DT%2048%20E%20%28120%20Ohm%29/Beyerdynamic%20DT%2048%20E%20%28120%20Ohm%29%20ParametricEQ.txt"
+              }
+            ],
+            "source_updated_at_epoch_seconds": null,
+            "source_version_label": "AutoEq content sha256 7643e907e6aabf6d92330296d5c4e0dfd91463add35f888dbf1efe01e47e9959"
+          }
+        ],
+        "target": {
+          "kind": "unknown",
+          "name": null
+        },
+        "tuning_label": "AutoEq (Innerfidelity measurement)"
+      },
+      {
+        "canonical_profile_id": "autoeq-392d1a7b2eb8419079d3004d",
+        "creator": "AutoEq",
+        "headphone": {
+          "manufacturer": "KZ",
+          "model": "PR2",
+          "pads_or_mode": null,
+          "variant": null
+        },
+        "revisions": [
+          {
+            "acoustic_fingerprint": "5c63291a4fe3fd8e27c96233b66fea9b64820dd51c984014656d45e01dbef0a5",
+            "filters": [
+              {
+                "frequency_hz": 105.0,
+                "gain_db": -3.0,
+                "q": 0.7,
+                "slope": null,
+                "type": "low_shelf"
+              },
+              {
+                "frequency_hz": 690.0,
+                "gain_db": 2.1,
+                "q": 1.31,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 1907.0,
+                "gain_db": -2.3,
+                "q": 1.51,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 6278.0,
+                "gain_db": 4.4,
+                "q": 4.43,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 61.0,
+                "gain_db": 2.7,
+                "q": 1.17,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 10000.0,
+                "gain_db": -11.0,
+                "q": 0.7,
+                "slope": null,
+                "type": "high_shelf"
+              },
+              {
+                "frequency_hz": 10000.0,
+                "gain_db": 4.4,
+                "q": 1.08,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 2519.0,
+                "gain_db": -0.8,
+                "q": 2.4,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 4845.0,
+                "gain_db": -2.2,
+                "q": 6.0,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 3265.0,
+                "gain_db": 1.9,
+                "q": 5.76,
+                "slope": null,
+                "type": "peak"
+              }
+            ],
+            "first_seen_at_epoch_seconds": 1788061991,
+            "is_latest": true,
+            "preamp_gain_db": -4.5,
+            "revision_id": "rev-5c63291a4fe3fd8e27c96233",
+            "sound_impact_summary": null,
+            "source_references": [
+              {
+                "creator": "AutoEq",
+                "discovered_at_epoch_seconds": 1788061991,
+                "is_primary": true,
+                "last_verified_at_epoch_seconds": 1788061991,
+                "provenance_tier": "measurement_derived",
+                "published_at_epoch_seconds": null,
+                "redistribution_policy": "structured-data-only",
+                "source_dataset": "Harpo",
+                "source_id": "autoeq",
+                "source_kind": "measurement_derived",
+                "source_product_id": "PR2",
+                "source_record_id": "results/Harpo/in-ear/KZ PR2/KZ PR2 ParametricEQ.txt",
+                "source_vendor_id": "KZ",
+                "updated_at_epoch_seconds": null,
+                "url": "https://github.com/jaakkopasanen/AutoEq/blob/master/results/Harpo/in-ear/KZ%20PR2/KZ%20PR2%20ParametricEQ.txt"
+              },
+              {
+                "creator": null,
+                "discovered_at_epoch_seconds": null,
+                "is_primary": true,
+                "last_verified_at_epoch_seconds": null,
+                "provenance_tier": "traceable_community",
+                "published_at_epoch_seconds": null,
+                "redistribution_policy": "structured-data-only",
+                "source_id": "github-community",
+                "source_kind": "repository",
+                "source_product_id": "PR2",
+                "source_record_id": "AlbertH0ng/headphones-eq-match:results/KZ PR2 (Harpo) ParametricEQ.txt:9be33f55ef5bfd6c35cfaa5730b41d9c8d99c507",
+                "source_vendor_id": "KZ",
+                "updated_at_epoch_seconds": null,
+                "url": "https://github.com/AlbertH0ng/headphones-eq-match/blob/3707e05b453049ac53091043f41aba3fe6e403ac/results/KZ PR2 (Harpo) ParametricEQ.txt"
+              }
+            ],
+            "source_updated_at_epoch_seconds": null,
+            "source_version_label": "9be33f55ef5bfd6c35cfaa5730b41d9c8d99c507",
+            "verification_status": "verified"
+          }
+        ],
+        "target": {
+          "kind": "unknown",
+          "name": null
+        },
+        "tuning_label": "AutoEq (Harpo measurement)"
+      },
+      {
+        "canonical_profile_id": "community-0f9a9264fb4fabf1beec586a",
+        "creator": "Bop",
+        "headphone": {
+          "manufacturer": "TINHIFI",
+          "model": "P1 MAX",
+          "pads_or_mode": null,
+          "variant": null
+        },
+        "revisions": [
+          {
+            "acoustic_fingerprint": "3fde3c6243a3218e5946c3d0757fdb39a1d930fee448340da8bcf83988d2f4dd",
+            "eq_library_safety_headroom_db": null,
+            "filters": [
+              {
+                "frequency_hz": 3300.0,
+                "gain_db": 4.0,
+                "q": 1.8,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 4300.0,
+                "gain_db": 1.2,
+                "q": 2.0,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 4600.0,
+                "gain_db": -1.3,
+                "q": 1.2,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 6500.0,
+                "gain_db": 3.5,
+                "q": 2.0,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 7900.0,
+                "gain_db": -10.0,
+                "q": 2.0,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 10000.0,
+                "gain_db": 2.6,
+                "q": 2.0,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 15000.0,
+                "gain_db": 3.6,
+                "q": 0.5,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 16000.0,
+                "gain_db": -9.1,
+                "q": 2.0,
+                "slope": null,
+                "type": "peak"
+              }
+            ],
+            "first_seen_at_epoch_seconds": null,
+            "is_latest": true,
+            "preamp_gain_db": -3.8,
+            "revision_id": "rev-3fde3c6243a3218e5946c3d0",
+            "sound_impact_summary": "Estimated signature: reduced treble energy. Strongest broad lift: presence +2.4 dB; strongest broad reduction: treble -2.6 dB. Analysis preserves the source's original 8 filters; no missing bands were invented.",
+            "source_references": [
+              {
+                "creator": "Bop",
+                "discovered_at_epoch_seconds": null,
+                "is_primary": true,
+                "last_verified_at_epoch_seconds": null,
+                "provenance_tier": "traceable_community",
+                "published_at_epoch_seconds": null,
+                "redistribution_policy": "structured-data-only",
+                "source_id": "head-fi",
+                "source_kind": "community",
+                "source_product_id": "P1 MAX",
+                "source_record_id": "headfi-962951-bop-p1max-crinacle-neutral",
+                "source_vendor_id": "TINHIFI",
+                "updated_at_epoch_seconds": null,
+                "url": "https://www.head-fi.org/threads/tinhifi-p1-max-%E2%80%9Cgiant-panda-universal-in-ear-monitor.962951/page-5"
+              }
+            ],
+            "source_updated_at_epoch_seconds": null,
+            "source_version_label": "2022-06-02",
+            "verification_status": "verified"
+          }
+        ],
+        "target": {
+          "kind": "explicit_target",
+          "name": "Crinacle Neutral Target"
+        },
+        "tuning_label": "Crinacle Neutral Target"
+      },
+      {
+        "canonical_profile_id": "community-15405021c316339a1fe6f0b5",
+        "creator": "Reyess",
+        "headphone": {
+          "manufacturer": "HIFIMAN",
+          "model": "Arya",
+          "pads_or_mode": null,
+          "variant": null
+        },
+        "revisions": [
+          {
+            "acoustic_fingerprint": "a68d1b0eea5a09cba35a99e53bef7f86650658264f72ce1b9e298274692db03f",
+            "filters": [
+              {
+                "frequency_hz": 16.0,
+                "gain_db": 5.1,
+                "q": 0.27,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 155.0,
+                "gain_db": -1.8,
+                "q": 1.24,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 344.0,
+                "gain_db": -1.8,
+                "q": 0.96,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 866.0,
+                "gain_db": -1.6,
+                "q": 3.46,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 1111.0,
+                "gain_db": -1.6,
+                "q": 2.64,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 1620.0,
+                "gain_db": 0.6,
+                "q": 1.16,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 1801.0,
+                "gain_db": 6.8,
+                "q": 1.01,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 2969.0,
+                "gain_db": -3.0,
+                "q": 3.32,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 3101.0,
+                "gain_db": -1.8,
+                "q": 0.49,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 18821.0,
+                "gain_db": -3.3,
+                "q": 0.53,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 20024.0,
+                "gain_db": -3.3,
+                "q": 0.44,
+                "slope": null,
+                "type": "peak"
+              }
+            ],
+            "first_seen_at_epoch_seconds": null,
+            "is_latest": true,
+            "preamp_gain_db": -5.6,
+            "revision_id": "rev-a68d1b0eea5a09cba35a99e5",
+            "sound_impact_summary": null,
+            "source_references": [
+              {
+                "creator": "Reyess",
+                "discovered_at_epoch_seconds": null,
+                "is_primary": true,
+                "last_verified_at_epoch_seconds": null,
+                "provenance_tier": "traceable_community",
+                "published_at_epoch_seconds": null,
+                "redistribution_policy": "structured-data-only",
+                "source_id": "headphones-community",
+                "source_kind": "community",
+                "source_product_id": "Arya",
+                "source_record_id": "post-155679",
+                "source_vendor_id": "HIFIMAN",
+                "updated_at_epoch_seconds": null,
+                "url": "https://forum.headphones.com/t/hifiman-arya-official-thread/2577/202"
+              }
+            ],
+            "source_updated_at_epoch_seconds": null,
+            "source_version_label": null,
+            "verification_status": "unverified"
+          }
+        ],
+        "target": {
+          "kind": "unknown",
+          "name": null
+        },
+        "tuning_label": "Hifiman Arya - Official Thread"
+      },
+      {
+        "canonical_profile_id": "community-1f766dfaea3a48f8ac77008a",
+        "creator": "listener",
+        "headphone": {
+          "manufacturer": "HIFIMAN",
+          "model": "Edition XS",
+          "pads_or_mode": null,
+          "variant": null
+        },
+        "revisions": [
+          {
+            "acoustic_fingerprint": "a426f9b83bdd0e91b7a4fbf79ceb1ed0ee232aafd4fd1d0c07e0064a499f2ae2",
+            "eq_library_safety_headroom_db": null,
+            "filters": [
+              {
+                "frequency_hz": 20.0,
+                "gain_db": 3.0,
+                "q": 1.0,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 100.0,
+                "gain_db": 2.7,
+                "q": 0.7,
+                "slope": null,
+                "type": "low_shelf"
+              },
+              {
+                "frequency_hz": 155.0,
+                "gain_db": -1.0,
+                "q": 0.9,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 1000.0,
+                "gain_db": -1.0,
+                "q": 0.5,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 1700.0,
+                "gain_db": 5.4,
+                "q": 1.2,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 3300.0,
+                "gain_db": -3.0,
+                "q": 2.4,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 5850.0,
+                "gain_db": 7.5,
+                "q": 2.0,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 6300.0,
+                "gain_db": -9.5,
+                "q": 2.0,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 9000.0,
+                "gain_db": -3.0,
+                "q": 0.7,
+                "slope": null,
+                "type": "high_shelf"
+              }
+            ],
+            "first_seen_at_epoch_seconds": null,
+            "is_latest": true,
+            "preamp_gain_db": -5.7,
+            "revision_id": "rev-a426f9b83bdd0e91b7a4fbf7",
+            "sound_impact_summary": "Estimated signature: fuller/stronger bass, more forward upper mids, softer presence, reduced treble energy. Strongest broad lift: sub-bass +3.6 dB; strongest broad reduction: treble -3.2 dB. Analysis preserves the source's original 9 filters; no missing bands were invented.",
+            "source_references": [
+              {
+                "creator": "listener",
+                "discovered_at_epoch_seconds": null,
+                "is_primary": true,
+                "last_verified_at_epoch_seconds": null,
+                "provenance_tier": "traceable_community",
+                "published_at_epoch_seconds": null,
+                "redistribution_policy": "structured-data-only",
+                "source_id": "headphone-community",
+                "source_kind": "community",
+                "source_product_id": "Edition XS",
+                "source_record_id": "headphones-community-23552-3-listener",
+                "source_vendor_id": "HIFIMAN",
+                "updated_at_epoch_seconds": null,
+                "url": "https://forum.headphones.com/t/headphones-com-eq-repository-request-thread/23552/3"
+              },
+              {
+                "creator": "listener",
+                "discovered_at_epoch_seconds": null,
+                "is_primary": true,
+                "last_verified_at_epoch_seconds": null,
+                "provenance_tier": "traceable_community",
+                "published_at_epoch_seconds": null,
+                "redistribution_policy": "structured-data-only",
+                "source_id": "headphones-community",
+                "source_kind": "community",
+                "source_product_id": "Edition XS",
+                "source_record_id": "headphones-community-23552-3-listener",
+                "source_vendor_id": "HIFIMAN",
+                "updated_at_epoch_seconds": null,
+                "url": "https://forum.headphones.com/t/headphones-com-eq-repository-request-thread/23552/3"
+              }
+            ],
+            "source_updated_at_epoch_seconds": null,
+            "source_version_label": "2024-06-12",
+            "verification_status": "verified"
+          }
+        ],
+        "target": {
+          "kind": "unknown",
+          "name": null
+        },
+        "tuning_label": "listener community tuning"
+      },
+      {
+        "canonical_profile_id": "community-36ba326f2913f813334d315f",
+        "creator": "Altruistic-Farmer275",
+        "headphone": {
+          "manufacturer": "HIFIMAN",
+          "model": "Edition XS",
+          "pads_or_mode": null,
+          "variant": null
+        },
+        "revisions": [
+          {
+            "acoustic_fingerprint": "e11de7f74776ceb954c0aeab10108c472cb48dbb3141c2a0258c1c8695ed2137",
+            "eq_library_safety_headroom_db": null,
+            "filters": [
+              {
+                "frequency_hz": 88.0,
+                "gain_db": 2.9,
+                "q": 0.7,
+                "slope": null,
+                "type": "low_shelf"
+              },
+              {
+                "frequency_hz": 941.0,
+                "gain_db": -2.9,
+                "q": 3.1,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 1961.0,
+                "gain_db": 5.2,
+                "q": 1.3,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 3200.0,
+                "gain_db": -1.6,
+                "q": 9.4,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 4000.0,
+                "gain_db": 4.0,
+                "q": 1.6,
+                "slope": null,
+                "type": "high_shelf"
+              },
+              {
+                "frequency_hz": 4000.0,
+                "gain_db": 1.2,
+                "q": 3.0,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 6500.0,
+                "gain_db": -3.0,
+                "q": 4.0,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 7000.0,
+                "gain_db": -4.0,
+                "q": 0.9,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 11500.0,
+                "gain_db": 1.7,
+                "q": 5.0,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 13500.0,
+                "gain_db": -11.9,
+                "q": 4.0,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 250.0,
+                "gain_db": -1.1,
+                "q": 0.7,
+                "slope": null,
+                "type": "peak"
+              }
+            ],
+            "first_seen_at_epoch_seconds": null,
+            "is_latest": true,
+            "preamp_gain_db": -3.9,
+            "revision_id": "rev-e11de7f74776ceb954c0aeab",
+            "sound_impact_summary": "Estimated signature: fuller/stronger bass, more forward upper mids. Strongest broad lift: sub-bass +2.5 dB; strongest broad reduction: lower mids -0.9 dB. Analysis preserves the source's original 11 filters; no missing bands were invented.",
+            "source_references": [
+              {
+                "creator": "Altruistic-Farmer275",
+                "discovered_at_epoch_seconds": null,
+                "is_primary": true,
+                "last_verified_at_epoch_seconds": null,
+                "provenance_tier": "traceable_community",
+                "published_at_epoch_seconds": null,
+                "redistribution_policy": "structured-data-only",
+                "source_id": "reddit-audio",
+                "source_kind": "community",
+                "source_product_id": "Edition XS",
+                "source_record_id": "reddit-headphones-1i8fblj-altruistic-farmer275",
+                "source_vendor_id": "HIFIMAN",
+                "updated_at_epoch_seconds": null,
+                "url": "https://www.reddit.com/r/headphones/comments/1i8fblj/hifiman_edition_xs/"
+              }
+            ],
+            "source_updated_at_epoch_seconds": null,
+            "source_version_label": "2025",
+            "verification_status": "verified"
+          }
+        ],
+        "target": {
+          "kind": "unknown",
+          "name": null
+        },
+        "tuning_label": "Altruistic-Farmer275 community tuning"
+      },
+      {
+        "canonical_profile_id": "community-3886c08be4d84b1b4fcd236a",
+        "creator": "sovran",
+        "headphone": {
+          "manufacturer": "Sony",
+          "model": "WF-1000XM5",
+          "pads_or_mode": null,
+          "variant": "ANC on"
+        },
+        "revisions": [
+          {
+            "acoustic_fingerprint": "ef1fc5e1b3963383fc81774be360933bb2648dbb805323f5024229fefdcbbe32",
+            "eq_library_safety_headroom_db": null,
+            "filters": [
+              {
+                "frequency_hz": 26.0,
+                "gain_db": -9.3,
+                "q": 0.6,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 28.0,
+                "gain_db": 1.7,
+                "q": 2.0,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 80.0,
+                "gain_db": -3.1,
+                "q": 0.4,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 140.0,
+                "gain_db": 0.8,
+                "q": 1.3,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 860.0,
+                "gain_db": 0.2,
+                "q": 1.7,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 1500.0,
+                "gain_db": -1.3,
+                "q": 0.9,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 1900.0,
+                "gain_db": -2.4,
+                "q": 1.8,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 3400.0,
+                "gain_db": 3.9,
+                "q": 1.3,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 4200.0,
+                "gain_db": -1.9,
+                "q": 2.0,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 7600.0,
+                "gain_db": 0.4,
+                "q": 0.5,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 9100.0,
+                "gain_db": -6.0,
+                "q": 1.2,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 15000.0,
+                "gain_db": 2.4,
+                "q": 0.6,
+                "slope": null,
+                "type": "peak"
+              }
+            ],
+            "first_seen_at_epoch_seconds": null,
+            "is_latest": true,
+            "preamp_gain_db": -1.9,
+            "revision_id": "rev-ef1fc5e1b3963383fc81774b",
+            "sound_impact_summary": "Estimated signature: reduced treble energy. Strongest broad lift: presence +0.4 dB; strongest broad reduction: sub-bass -8.1 dB. Analysis preserves the source's original 12 filters; no missing bands were invented.",
+            "source_references": [
+              {
+                "creator": "sovran",
+                "discovered_at_epoch_seconds": null,
+                "is_primary": true,
+                "last_verified_at_epoch_seconds": null,
+                "provenance_tier": "traceable_community",
+                "published_at_epoch_seconds": null,
+                "redistribution_policy": "structured-data-only",
+                "source_id": "hifiguides",
+                "source_kind": "community",
+                "source_product_id": "WF-1000XM5",
+                "source_record_id": "hifiguides-iem-discussion-part2-p91-sovran-wf1000xm5-anc",
+                "source_vendor_id": "Sony",
+                "updated_at_epoch_seconds": null,
+                "url": "https://forum.hifiguides.com/t/iem-discussion-thread-part-2/40657?page=91"
+              }
+            ],
+            "source_updated_at_epoch_seconds": null,
+            "source_version_label": "2024-06-11",
+            "verification_status": "unverified"
+          }
+        ],
+        "target": {
+          "kind": "unknown",
+          "name": null
+        },
+        "tuning_label": "ANC on"
+      },
+      {
+        "canonical_profile_id": "community-4e4476dfcaf33ebf09261f14",
+        "creator": "Maiky76",
+        "headphone": {
+          "manufacturer": "HIFIMAN",
+          "model": "HE6se",
+          "pads_or_mode": null,
+          "variant": null
+        },
+        "revisions": [
+          {
+            "acoustic_fingerprint": "ee077e8815c9332419ee64745950bbb84e83a69960b8af450a9d1f58e4dcc29d",
+            "filters": [
+              {
+                "frequency_hz": 45.0,
+                "gain_db": 6.2,
+                "q": 0.65,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 1816.0,
+                "gain_db": 5.93,
+                "q": 1.21,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 3514.0,
+                "gain_db": -2.63,
+                "q": 2.4,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 5703.0,
+                "gain_db": -2.36,
+                "q": 0.11,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 6541.0,
+                "gain_db": 4.31,
+                "q": 1.68,
+                "slope": null,
+                "type": "peak"
+              }
+            ],
+            "first_seen_at_epoch_seconds": null,
+            "is_latest": true,
+            "preamp_gain_db": -6.2,
+            "revision_id": "rev-ee077e8815c9332419ee6474",
+            "sound_impact_summary": null,
+            "source_references": [
+              {
+                "creator": "Maiky76",
+                "discovered_at_epoch_seconds": null,
+                "is_primary": true,
+                "last_verified_at_epoch_seconds": null,
+                "provenance_tier": "traceable_community",
+                "published_at_epoch_seconds": null,
+                "redistribution_policy": "structured-data-only",
+                "source_id": "audio-science-review",
+                "source_kind": "community",
+                "source_product_id": "HE6se",
+                "source_record_id": "post-789170",
+                "source_vendor_id": "HIFIMAN",
+                "updated_at_epoch_seconds": null,
+                "url": "https://www.audiosciencereview.com/forum/index.php?threads/hifiman-he6se-review-headphone.23576/#post-789170"
+              }
+            ],
+            "source_updated_at_epoch_seconds": null,
+            "source_version_label": null,
+            "verification_status": "unverified"
+          }
+        ],
+        "target": {
+          "kind": "unknown",
+          "name": null
+        },
+        "tuning_label": "Hifiman HE6se Review (Headphone)"
+      },
+      {
+        "canonical_profile_id": "community-68157b04722eca8c1081ba48",
+        "creator": "MrChillStorm",
+        "headphone": {
+          "manufacturer": "7Hz",
+          "model": "Zero:2",
+          "model_aliases": [
+            "Zero 2",
+            "Salnotes Zero 2",
+            "x Crinacle Zero 2"
+          ],
+          "pads_or_mode": null,
+          "variant": null
+        },
+        "revisions": [
+          {
+            "acoustic_fingerprint": "e19328629edf18f9adb0859f1594acb46de82f863aafb84b24cb86f60398e2f8",
+            "filters": [
+              {
+                "frequency_hz": 31.82,
+                "gain_db": -5.27,
+                "q": 0.423,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 89.79,
+                "gain_db": -9.39,
+                "q": 0.272,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 935.12,
+                "gain_db": 7.4,
+                "q": 0.96,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 991.83,
+                "gain_db": -6.31,
+                "q": 0.625,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 999.09,
+                "gain_db": 1.89,
+                "q": 5.0,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 1487.42,
+                "gain_db": -7.54,
+                "q": 1.081,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 2815.58,
+                "gain_db": 3.55,
+                "q": 0.26,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 8035.74,
+                "gain_db": -15.8,
+                "q": 1.825,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 11109.7,
+                "gain_db": 5.09,
+                "q": 2.96,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 16000.0,
+                "gain_db": 7.4,
+                "q": 1.398,
+                "slope": null,
+                "type": "peak"
+              }
+            ],
+            "first_seen_at_epoch_seconds": 1788042355,
+            "is_latest": true,
+            "preamp_gain_db": -7.2,
+            "revision_id": "rev-e19328629edf18f9adb0859f",
+            "sound_impact_summary": null,
+            "source_references": [
+              {
+                "creator": "MrChillStorm",
+                "discovered_at_epoch_seconds": 1788612122,
+                "is_primary": true,
+                "last_verified_at_epoch_seconds": 1788612122,
+                "provenance_tier": "traceable_community",
+                "published_at_epoch_seconds": null,
+                "redistribution_policy": "structured-data-only",
+                "source_id": "mrchillstorm-headphone-target",
+                "source_kind": "repository",
+                "source_product_id": "Zero:2",
+                "source_record_id": "MrChillStorm/Headphone_Target:README.md:7hz-zero2-iso226-85phon",
+                "source_vendor_id": "7Hz",
+                "updated_at_epoch_seconds": null,
+                "url": "https://github.com/MrChillStorm/Headphone_Target#iem-compatibility"
+              }
+            ],
+            "source_updated_at_epoch_seconds": null,
+            "source_version_label": "GitHub blob d4d7ca2a268ae5cc89b348554d4a1e1a559f53ce",
+            "verification_status": "verified"
+          }
+        ],
+        "target": {
+          "kind": "explicit_target",
+          "name": "ISO 226:2023 85 phon (author-defined)"
+        },
+        "tuning_label": "ISO 226:2023 85 phon"
+      },
+      {
+        "canonical_profile_id": "community-c4c28a8c2722e594de336c29",
+        "creator": "Juraj Fiala",
+        "headphone": {
+          "manufacturer": "Fairphone",
+          "model": "Fairbuds",
+          "model_aliases": [
+            "Fairphone Fairbuds"
+          ],
+          "pads_or_mode": null,
+          "variant": null
+        },
+        "revisions": [
+          {
+            "acoustic_fingerprint": "6a47bfc3b81e6a38a88be86c3c6d9adf2dcdb809ae969cce9ea2974c9f3b44d2",
+            "filters": [
+              {
+                "frequency_hz": 60.0,
+                "gain_db": -1.0,
+                "q": 0.71,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 100.0,
+                "gain_db": 1.0,
+                "q": 0.71,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 230.0,
+                "gain_db": 2.0,
+                "q": 0.71,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 500.0,
+                "gain_db": 3.5,
+                "q": 0.71,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 1100.0,
+                "gain_db": 1.0,
+                "q": 0.71,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 2400.0,
+                "gain_db": -3.0,
+                "q": 0.71,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 5400.0,
+                "gain_db": 1.0,
+                "q": 0.71,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 12000.0,
+                "gain_db": 1.0,
+                "q": 0.71,
+                "slope": null,
+                "type": "peak"
+              }
+            ],
+            "first_seen_at_epoch_seconds": 1788059383,
+            "is_latest": true,
+            "preamp_gain_db": -7.5,
+            "revision_id": "rev-6a47bfc3b81e6a38a88be86c",
+            "sound_impact_summary": null,
+            "source_references": [
+              {
+                "creator": "Juraj Fiala",
+                "discovered_at_epoch_seconds": 1788061995,
+                "is_primary": true,
+                "last_verified_at_epoch_seconds": 1788061995,
+                "provenance_tier": "traceable_community",
+                "published_at_epoch_seconds": null,
+                "redistribution_policy": "structured-data-only",
+                "source_id": "fairbuds",
+                "source_kind": "repository",
+                "source_product_id": "Fairbuds",
+                "source_record_id": "jurf/fairbuds:presets/main-ish.txt:main-ish",
+                "source_vendor_id": "Fairphone",
+                "updated_at_epoch_seconds": null,
+                "url": "https://github.com/jurf/fairbuds/blob/main/presets/main-ish.txt"
+              }
+            ],
+            "source_updated_at_epoch_seconds": null,
+            "source_version_label": "GitHub blob 52cad02ba3dad4f1d18a1196ca2d6c41a94739f1",
+            "verification_status": "verified"
+          }
+        ],
+        "target": {
+          "kind": "unknown",
+          "name": null
+        },
+        "tuning_label": "Main-ish"
+      },
+      {
+        "canonical_profile_id": "general-06cad3f1012d140a40c3641f",
+        "creator": "wabsto1",
+        "headphone": null,
+        "purpose": "effect",
+        "revisions": [
+          {
+            "acoustic_fingerprint": "1d717d1687d5450bb2d8cec8eb633d05a9154a6a0594a7d7da1809111ef1266c",
+            "eq_library_safety_headroom_db": -7.8,
+            "filters": [
+              {
+                "frequency_hz": 31.0,
+                "gain_db": 6.0,
+                "q": 1.41,
+                "slope": null,
+                "type": "low_shelf"
+              },
+              {
+                "frequency_hz": 63.0,
+                "gain_db": 4.5,
+                "q": 1.41,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 125.0,
+                "gain_db": 2.0,
+                "q": 1.41,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 250.0,
+                "gain_db": 0.0,
+                "q": 1.41,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 500.0,
+                "gain_db": 0.0,
+                "q": 1.41,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 1000.0,
+                "gain_db": 0.0,
+                "q": 1.41,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 2000.0,
+                "gain_db": 0.0,
+                "q": 1.41,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 4000.0,
+                "gain_db": 0.0,
+                "q": 1.41,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 8000.0,
+                "gain_db": 0.0,
+                "q": 1.41,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 16000.0,
+                "gain_db": 0.0,
+                "q": 1.41,
+                "slope": null,
+                "type": "high_shelf"
+              }
+            ],
+            "first_seen_at_epoch_seconds": 1788220800,
+            "is_latest": true,
+            "preamp_gain_db": null,
+            "revision_id": "rev-1d717d1687d5450bb2d8cec8",
+            "sound_impact_summary": null,
+            "source_references": [
+              {
+                "creator": "wabsto1",
+                "discovered_at_epoch_seconds": 1788220800,
+                "is_primary": true,
+                "last_verified_at_epoch_seconds": 1788220800,
+                "provenance_tier": "traceable_community",
+                "published_at_epoch_seconds": null,
+                "redistribution_policy": "structured-data-only",
+                "source_id": "paraeq",
+                "source_kind": "repository",
+                "source_record_id": "EQPreset.bassBoost",
+                "updated_at_epoch_seconds": null,
+                "url": "https://github.com/wabsto1/ParaEQ/blob/51d6f6d29aef607a3a2e26b829549f9c8d7fec6e/Sources/Models.swift"
+              }
+            ],
+            "source_updated_at_epoch_seconds": null,
+            "source_version_label": "51d6f6d29aef607a3a2e26b829549f9c8d7fec6e",
+            "verification_status": "verified"
+          }
+        ],
+        "scope": "general",
+        "target": {
+          "kind": "unknown",
+          "name": null
+        },
+        "tuning_label": "Bass Boost"
+      },
+      {
+        "canonical_profile_id": "general-0a643eafb9b239933a0a70b0",
+        "creator": "MilcioSSQ",
+        "headphone": null,
+        "purpose": "genre",
+        "revisions": [
+          {
+            "acoustic_fingerprint": "8a15a8cf47b5c014728d885b072f6aa4da808f92e662e787c5838e68691000d6",
+            "eq_library_safety_headroom_db": -3.9,
+            "filters": [
+              {
+                "frequency_hz": 60.0,
+                "gain_db": -2.0,
+                "q": 1.0,
+                "slope": null,
+                "type": "low_shelf"
+              },
+              {
+                "frequency_hz": 250.0,
+                "gain_db": -1.0,
+                "q": 1.0,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 1000.0,
+                "gain_db": 3.0,
+                "q": 1.0,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 4000.0,
+                "gain_db": 2.0,
+                "q": 1.0,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 16000.0,
+                "gain_db": 4.0,
+                "q": 1.0,
+                "slope": null,
+                "type": "high_shelf"
+              }
+            ],
+            "first_seen_at_epoch_seconds": 1788739200,
+            "is_latest": true,
+            "preamp_gain_db": null,
+            "revision_id": "rev-8a15a8cf47b5c014728d885b",
+            "sound_impact_summary": null,
+            "source_references": [
+              {
+                "creator": "MilcioSSQ",
+                "discovered_at_epoch_seconds": 1788739200,
+                "is_primary": true,
+                "last_verified_at_epoch_seconds": 1788739200,
+                "provenance_tier": "traceable_community",
+                "published_at_epoch_seconds": null,
+                "redistribution_policy": "structured-data-only",
+                "source_id": "milciossq-eq-general",
+                "source_kind": "repository",
+                "source_record_id": "PRESETS.lounge",
+                "updated_at_epoch_seconds": null,
+                "url": "https://github.com/MilcioSSQ/eq/blob/5e294b506ea13be1489310fcd67f397739d38eb0/index.html"
+              }
+            ],
+            "source_updated_at_epoch_seconds": null,
+            "source_version_label": "5e294b506ea13be1489310fcd67f397739d38eb0",
+            "verification_status": "verified"
+          }
+        ],
+        "scope": "general",
+        "target": {
+          "kind": "unknown",
+          "name": null
+        },
+        "tuning_label": "Lounge"
+      },
+      {
+        "canonical_profile_id": "hifiman:edition-xs:oratory1990:harman:b99b8966bb250506",
+        "creator": "oratory1990",
+        "headphone": {
+          "manufacturer": "HIFIMAN",
+          "model": "Edition XS",
+          "pads_or_mode": null,
+          "variant": null
+        },
+        "revisions": [
+          {
+            "acoustic_fingerprint": "b99b8966bb2505065a939ab01e160dc059e833f5284abad89bf0d349959254db",
+            "filters": [
+              {
+                "frequency_hz": 70.0,
+                "gain_db": -2.5,
+                "q": 0.5,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 105.0,
+                "gain_db": 5.5,
+                "q": 0.71,
+                "slope": null,
+                "type": "low_shelf"
+              },
+              {
+                "frequency_hz": 300.0,
+                "gain_db": -1.0,
+                "q": 1.4,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 950.0,
+                "gain_db": -2.3,
+                "q": 1.8,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 1900.0,
+                "gain_db": 5.3,
+                "q": 0.8,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 2960.0,
+                "gain_db": -5.4,
+                "q": 2.1,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 6500.0,
+                "gain_db": -1.8,
+                "q": 6.0,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 7900.0,
+                "gain_db": -2.0,
+                "q": 6.0,
+                "slope": null,
+                "type": "peak"
+              },
+              {
+                "frequency_hz": 8000.0,
+                "gain_db": 1.5,
+                "q": 0.71,
+                "slope": null,
+                "type": "high_shelf"
+              },
+              {
+                "frequency_hz": 12000.0,
+                "gain_db": -3.0,
+                "q": 2.0,
+                "slope": null,
+                "type": "peak"
+              }
+            ],
+            "first_seen_at_epoch_seconds": null,
+            "is_latest": true,
+            "preamp_gain_db": -5.4,
+            "revision_id": "hifiman:edition-xs:oratory1990:harman:b99b8966bb250506-b99b8966bb25",
+            "sound_impact_summary": "Adds bass and reduces lower-mid energy.",
+            "source_references": [
+              {
+                "creator": "ngs428",
+                "discovered_at_epoch_seconds": null,
+                "is_primary": false,
+                "last_verified_at_epoch_seconds": null,
+                "provenance_tier": "mirror",
+                "published_at_epoch_seconds": null,
+                "redistribution_policy": "structured-data-only",
+                "source_id": "audio-science-review",
+                "source_kind": "community",
+                "source_product_id": "Edition XS",
+                "source_record_id": "asr-27903-p14-oratory-mirror",
+                "source_vendor_id": "HIFIMAN",
+                "updated_at_epoch_seconds": null,
+                "url": "https://www.audiosciencereview.com/forum/index.php?threads/hifiman-edition-xs.27903/page-14"
+              },
+              {
+                "creator": "oratory1990",
+                "discovered_at_epoch_seconds": null,
+                "is_primary": true,
+                "last_verified_at_epoch_seconds": null,
+                "provenance_tier": "authoritative",
+                "published_at_epoch_seconds": null,
+                "redistribution_policy": "structured-data-only",
+                "source_id": "opra",
+                "source_kind": "structured_catalog",
+                "source_product_id": "hifiman::edition_xs",
+                "source_record_id": "hifiman:edition_xs::oratory1990_harman_target",
+                "source_vendor_id": "hifiman",
+                "updated_at_epoch_seconds": null,
+                "url": "https://www.dropbox.com/s/djhxtkvqne01kxv/Hifiman%20Edition%20XS.pdf?dl=0"
+              },
+              {
+                "creator": "oratory1990",
+                "discovered_at_epoch_seconds": null,
+                "is_primary": false,
+                "last_verified_at_epoch_seconds": null,
+                "provenance_tier": "authoritative",
+                "published_at_epoch_seconds": null,
+                "redistribution_policy": "link-only",
+                "source_id": "oratory1990",
+                "source_kind": "creator",
+                "source_product_id": "hifiman::edition_xs",
+                "source_record_id": "oratory1990:ff49f17af0988b5ac45e",
+                "source_vendor_id": "hifiman",
+                "updated_at_epoch_seconds": null,
+                "url": "https://www.dropbox.com/s/djhxtkvqne01kxv/Hifiman%20Edition%20XS.pdf?dl=0"
+              }
+            ],
+            "source_updated_at_epoch_seconds": null,
+            "source_version_label": "OPRA dist 8de4b39ee5a2a26fab1e1abc71ba95e52dd03bcc"
+          }
+        ],
+        "target": {
+          "kind": "explicit_target",
+          "name": "Harman"
+        },
+        "tuning_label": "Harman Target"
+      }
+    ],
+    "sources": [],
+    "headphone_aliases": []
+  }
+}

@@ -1,10 +1,12 @@
 package com.weekssa.opraeqforuapp.data.library
 
 import com.google.common.truth.Truth.assertThat
+import com.google.common.truth.Truth.assertWithMessage
 import com.weekssa.opraeqforuapp.data.catalog.AppCatalogRepository
 import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshFailureReason
 import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshResult
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
+import com.weekssa.opraeqforuapp.domain.catalog.EqBandOrderProvenance
 import com.weekssa.opraeqforuapp.domain.catalog.OpraCatalog
 import com.weekssa.opraeqforuapp.domain.catalog.OpraProduct
 import com.weekssa.opraeqforuapp.domain.catalog.OpraVendor
@@ -30,9 +32,38 @@ import java.nio.file.Files
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.junit.Test
+
+@Serializable
+private data class FavoriteSourceSampleFixture(
+    @SerialName("schema_version") val schemaVersion: Int,
+    val samples: List<FavoriteSourceSample>,
+    @SerialName("excluded_registered_sources") val excludedRegisteredSources: List<FavoriteSourceExclusion>,
+    val snapshot: CatalogSnapshot,
+)
+
+@Serializable
+private data class FavoriteSourceSample(
+    @SerialName("source_id") val sourceId: String,
+    @SerialName("canonical_profile_id") val canonicalProfileId: String,
+    @SerialName("revision_id") val revisionId: String,
+    @SerialName("source_record_id") val sourceRecordId: String?,
+    @SerialName("source_kind") val sourceKind: String,
+    val scope: String,
+    @SerialName("is_latest_revision") val isLatestRevision: Boolean,
+    @SerialName("is_primary_reference") val isPrimaryReference: Boolean,
+)
+
+@Serializable
+private data class FavoriteSourceExclusion(
+    @SerialName("source_id") val sourceId: String,
+    val reason: String,
+)
 
 class CanonicalFavoriteAliasIntegrationTest {
     @Test
@@ -263,6 +294,175 @@ class CanonicalFavoriteAliasIntegrationTest {
     }
 
     @Test
+    fun everyIngestedSourceSampleResolvesThroughItsExactFavoriteBoundary() = runBlocking {
+        val fixture = loadFavoriteSourceSampleFixture()
+        val snapshot = fixture.snapshot
+        val sampleSourceIds = fixture.samples.map(FavoriteSourceSample::sourceId)
+        val profileSourceIds = snapshot.profiles
+            .flatMap(CanonicalEqProfile::revisions)
+            .flatMap(EqRevision::sourceReferences)
+            .map(EqSourceReference::sourceId)
+            .toSet()
+
+        assertThat(fixture.schemaVersion).isEqualTo(1)
+        assertThat(sampleSourceIds).containsNoDuplicates()
+        assertThat(sampleSourceIds).containsExactlyElementsIn(profileSourceIds)
+        val excludedSourceIds = fixture.excludedRegisteredSources.map(FavoriteSourceExclusion::sourceId)
+        assertThat(excludedSourceIds).containsNoDuplicates()
+        assertThat(fixture.excludedRegisteredSources.all { it.reason.isNotBlank() }).isTrue()
+        assertThat(sampleSourceIds.toSet().intersect(excludedSourceIds.toSet())).isEmpty()
+
+        val canonicalProjection = CanonicalLegacyCatalogAdapter.adapt(snapshot)
+        val legacyVendorIds = canonicalProjection.vendors
+            .sortedBy(OpraVendor::id)
+            .mapIndexed { index, vendor -> vendor.id to "favorite-source-legacy-vendor-$index" }
+            .toMap()
+        val legacyVendors = canonicalProjection.vendors.map { vendor ->
+            OpraVendor(
+                id = requireNotNull(legacyVendorIds[vendor.id]),
+                name = vendor.name,
+            )
+        }
+        val canonicalToDisplayedProductId = canonicalProjection.products
+            .sortedBy(OpraProduct::id)
+            .mapIndexed { index, product -> product.id to "favorite-source-legacy-product-$index" }
+            .toMap()
+        val legacyProducts = canonicalProjection.products.map { product ->
+            product.copy(
+                id = requireNotNull(canonicalToDisplayedProductId[product.id]),
+                vendorId = requireNotNull(legacyVendorIds[product.vendorId]),
+            )
+        }
+        val legacyCatalog = canonicalProjection.copy(
+            vendors = legacyVendors,
+            products = legacyProducts,
+            profiles = emptyList(),
+            generalPresets = emptyList(),
+        )
+        val filesDir = Files.createTempDirectory("canonical-favorite-real-source-samples").toFile()
+        val canonicalRepository = CanonicalCatalogRepository(
+            filesDir = filesDir,
+            source = { destination ->
+                destination.writeText(Json.encodeToString(snapshot), Charsets.UTF_8)
+            },
+        )
+        val repository = CanonicalFirstCatalogRepository(
+            canonicalRepository,
+            FakeCatalogRepository(legacyCatalog),
+        )
+
+        try {
+            repository.initialize()
+            val effectiveCatalog = (repository.state.value as CatalogState.Ready).catalog
+
+            fixture.samples.forEach { sample ->
+                val canonicalProfile = snapshot.profiles.single {
+                    it.canonicalProfileId == sample.canonicalProfileId
+                }
+                val selectedRevision = canonicalProfile.revisions.single {
+                    it.revisionId == sample.revisionId
+                }
+                val sourceReference = selectedRevision.sourceReferences.single {
+                    it.sourceId == sample.sourceId && it.sourceRecordId == sample.sourceRecordId
+                }
+
+                assertThat(sample.scope).isEqualTo(canonicalProfile.scope.name.lowercase())
+                assertThat(sample.isLatestRevision).isEqualTo(selectedRevision.isLatest)
+                assertThat(sample.isPrimaryReference).isEqualTo(sourceReference.isPrimary)
+                assertThat(sample.sourceKind).isEqualTo(sourceReference.sourceKind.name.lowercase())
+
+                when (canonicalProfile.scope) {
+                    EqProfileScope.HEADPHONE -> {
+                        val projectedId = projectedProfileId(canonicalProfile, selectedRevision)
+                        val canonicalDisplayedProjection = canonicalProjection.profiles.single {
+                            it.canonicalProfileId == canonicalProfile.canonicalProfileId && it.id == projectedId
+                        }
+                        val displayedProfile = effectiveCatalog.profiles.single {
+                            it.canonicalProfileId == canonicalProfile.canonicalProfileId && it.id == projectedId
+                        }
+                        assertThat(displayedProfile.bandOrderProvenance)
+                            .isEqualTo(canonicalDisplayedProjection.bandOrderProvenance)
+                        if (sample.sourceId == "opra" && sourceReference.isPrimary) {
+                            assertThat(displayedProfile.bandOrderProvenance)
+                                .isEqualTo(EqBandOrderProvenance.OPRA_SOURCE_PRIORITY)
+                        }
+                        val canonicalProductId = canonicalDisplayedProjection.productId
+                        val displayedProductId = requireNotNull(canonicalToDisplayedProductId[canonicalProductId])
+
+                        assertThat(effectiveCatalog.canonicalProductId(canonicalProductId))
+                            .isEqualTo(displayedProductId)
+                        assertThat(displayedProfile.productId).isEqualTo(displayedProductId)
+                        assertThat(displayedProfile.productId).isNotEqualTo(canonicalProductId)
+
+                        val beforeRebase = requireNotNull(
+                            CanonicalLegacyCatalogAdapter.resolveSelection(snapshot, displayedProfile),
+                        )
+                        assertThat(beforeRebase.compatibilityProductId).isEqualTo(canonicalProductId)
+                        assertThat(beforeRebase.compatibilityProductId).isNotEqualTo(displayedProfile.productId)
+
+                        val selection = requireNotNull(repository.resolveCanonicalSelection(displayedProfile))
+                        assertThat(selection.compatibilityProductId).isEqualTo(displayedProfile.productId)
+                        assertThat(selection.compatibilityVendorId).isEqualTo(displayedProfile.let {
+                            requireNotNull(effectiveCatalog.product(it.productId)).vendorId
+                        })
+                        assertWithMessage("strict canonical selection match for ${sample.sourceId}")
+                            .that(CanonicalLegacyCatalogAdapter.matchesSelection(selection, displayedProfile))
+                            .isTrue()
+                        assertThat(selection.profile).isEqualTo(canonicalProfile)
+                        assertThat(selection.selectedRevisionId).isEqualTo(sample.revisionId)
+                        assertThat(selection.selectedRevision).isEqualTo(selectedRevision)
+                        assertThat(selection.selectedRevision.acousticFingerprint)
+                            .isEqualTo(selectedRevision.acousticFingerprint)
+                        assertThat(selection.selectedRevision.filters).containsExactlyElementsIn(selectedRevision.filters)
+                        assertThat(selection.selectedRevision.sourceReferences)
+                            .containsExactlyElementsIn(selectedRevision.sourceReferences)
+                        assertThat(selection.selectedRevision.sourceReferences).contains(sourceReference)
+
+                        val editableBandIndex = requireNotNull(displayedProfile.bands)
+                            .indexOfFirst { it.gainDb != null }
+                        assertThat(editableBandIndex).isAtLeast(0)
+                        val staleProjection = displayedProfile.copy(
+                            bands = requireNotNull(displayedProfile.bands).mapIndexed { index, band ->
+                                if (index == editableBandIndex) {
+                                    band.copy(gainDb = requireNotNull(band.gainDb) + 0.1)
+                                } else {
+                                    band
+                                }
+                            },
+                        )
+                        assertThat(repository.resolveCanonicalSelection(staleProjection)).isNull()
+
+                        val roundTripped = CanonicalEqSelectionCodec().decode(
+                            CanonicalEqSelectionCodec().encode(selection),
+                        )
+                        assertThat(roundTripped).isEqualTo(selection)
+                    }
+
+                    EqProfileScope.GENERAL -> {
+                        val displayedPreset = effectiveCatalog.generalPresets.single {
+                            it.canonicalProfileId == canonicalProfile.canonicalProfileId &&
+                                it.id.endsWith("@${sample.revisionId}")
+                        }
+                        val selection = requireNotNull(repository.resolveCanonicalSelection(displayedPreset))
+
+                        assertThat(CanonicalLegacyCatalogAdapter.isSameGeneralSelection(selection, displayedPreset))
+                            .isTrue()
+                        assertThat(selection.profile).isEqualTo(canonicalProfile)
+                        assertThat(selection.selectedRevisionId).isEqualTo(sample.revisionId)
+                        assertThat(selection.selectedRevision).isEqualTo(selectedRevision)
+                        assertThat(selection.selectedRevision.sourceReferences)
+                            .containsExactlyElementsIn(selectedRevision.sourceReferences)
+                        assertThat(selection.selectedRevision.sourceReferences).contains(sourceReference)
+                        assertThat(selection.compatibilityProductId).isNull()
+                    }
+                }
+            }
+        } finally {
+            filesDir.deleteRecursively()
+        }
+    }
+
+    @Test
     fun ambiguousCanonicalProjectionDoesNotResolve() {
         val original = currentAfulCommunitySnapshot().profiles.first()
         val alternateSource = original.latestRevision.sourceReferences.single().copy(
@@ -384,6 +584,28 @@ class CanonicalFavoriteAliasIntegrationTest {
             ),
         ),
     )
+
+    private fun loadFavoriteSourceSampleFixture(): FavoriteSourceSampleFixture =
+        checkNotNull(javaClass.classLoader?.getResourceAsStream("catalog/favorite-source-samples.json")) {
+            "Favorite source sample fixture was not found on the test classpath"
+        }.bufferedReader().use { reader ->
+            Json { ignoreUnknownKeys = true }.decodeFromString(reader.readText())
+        }
+
+    private fun projectedProfileId(profile: CanonicalEqProfile, revision: EqRevision): String {
+        val primary = revision.sourceReferences.singleOrNull(EqSourceReference::isPrimary)
+        val opra = revision.sourceReferences.firstOrNull { reference ->
+            reference.sourceId == "opra" && !reference.sourceRecordId.isNullOrBlank()
+        }
+        val idSource = primary?.takeIf {
+            it.sourceId == "opra" && !it.sourceRecordId.isNullOrBlank()
+        } ?: opra
+        return if (revision.isLatest && idSource != null) {
+            requireNotNull(idSource.sourceRecordId)
+        } else {
+            "eq-library:${profile.canonicalProfileId}@${revision.revisionId}"
+        }
+    }
 
     private class FakeCatalogRepository(catalog: OpraCatalog) : AppCatalogRepository {
         override val state: StateFlow<CatalogState> = MutableStateFlow(

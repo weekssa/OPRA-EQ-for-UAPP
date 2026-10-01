@@ -30,6 +30,7 @@ on:
       - 'tools/oratory_provenance.py'
       - 'tools/oratory_update_discovery.py'
       - 'tools/test_*.py'
+      - 'tools/verify_favorite_source_samples.py'
       - '.github/workflows/catalog-currentness-ci.yml'
       - '.github/workflows/catalog-currentness.yml'
       - '.github/workflows/headphone-identity-decisions.yml'
@@ -59,6 +60,7 @@ on:
       - 'tools/oratory_provenance.py'
       - 'tools/oratory_update_discovery.py'
       - 'tools/test_*.py'
+      - 'tools/verify_favorite_source_samples.py'
       - '.github/workflows/catalog-currentness-ci.yml'
       - '.github/workflows/catalog-currentness.yml'
       - '.github/workflows/headphone-identity-decisions.yml'
@@ -85,6 +87,8 @@ jobs:
           --candidate catalog/catalog.json
           --published "${RUNNER_TEMP}/published.json"
           --last-known-good "${RUNNER_TEMP}/catalog.last-known-good.json"
+      - name: Verify canonical Favorite source sample coverage
+        run: python3 tools/verify_favorite_source_samples.py --check
       - name: Restore reviewed immutable catalog history in CI workspace
         run: |
           python3 tools/catalog_history_repair.py \

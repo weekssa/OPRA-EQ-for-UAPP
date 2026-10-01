@@ -91,7 +91,7 @@ object CanonicalLegacyCatalogAdapter {
                         compatibilityVendorId = identity.vendorId,
                         compatibilityProductId = identity.productId,
                     )
-                    val projected = revisionProfile(profile, revision, identity.vendorId, identity.productId)
+                    val projected = projectRevision(profile, revision, identity.vendorId, identity.productId)
                     selection to projected
                 }
             }
@@ -154,7 +154,7 @@ object CanonicalLegacyCatalogAdapter {
         val vendorId = selection.compatibilityVendorId
             ?: primary?.sourceVendorId
             ?: "eq-library-vendor:${slug(requireNotNull(selection.profile.headphone).manufacturer)}"
-        return revisionProfile(selection.profile, revision, vendorId, productId)
+        return projectRevision(selection.profile, revision, vendorId, productId)
     }
 
     fun matchesSelection(
@@ -222,7 +222,26 @@ object CanonicalLegacyCatalogAdapter {
                         it.sourceUpdatedAtEpochSeconds ?: it.firstSeenAtEpochSeconds ?: Long.MIN_VALUE
                     },
             )
-            .map { revision -> revisionProfile(profile, revision, vendorId, productId) }
+            .map { revision -> projectRevision(profile, revision, vendorId, productId) }
+
+    /** Project revisions with one profile-wide OPRA identity, failing closed on disagreement. */
+    private fun projectRevision(
+        profile: CanonicalEqProfile,
+        revision: EqRevision,
+        vendorId: String,
+        productId: String,
+    ): OpraEqProfile {
+        val opraIdentity = profileOpraBandOrderIdentity(profile)
+        return revisionProfile(
+            profile = profile,
+            revision = revision,
+            vendorId = vendorId,
+            productId = productId,
+            opraPriorityVendorId = opraIdentity.vendorId ?: vendorId,
+            opraPriorityProductId = opraIdentity.productId ?: productId,
+            allowOpraPriority = opraIdentity.isConsistent,
+        )
+    }
 
     private fun generalRevisionPresets(profile: CanonicalEqProfile): List<GeneralEqPreset> =
         profile.revisions
@@ -341,13 +360,22 @@ object CanonicalLegacyCatalogAdapter {
         revision: EqRevision,
         vendorId: String,
         productId: String,
+        opraPriorityVendorId: String,
+        opraPriorityProductId: String,
+        allowOpraPriority: Boolean,
     ): OpraEqProfile {
         val primaryReference = revision.sourceReferences.filter(EqSourceReference::isPrimary).singleOrNull()
         val primary = primaryReference ?: revision.sourceReferences.firstOrNull()
         val opra = revision.sourceReferences.firstOrNull {
             it.sourceId == "opra" && !it.sourceRecordId.isNullOrBlank()
         }
-        val verifiedOpraPriority = revision.hasVerifiedOpraBandOrderFor(vendorId, productId)
+        // A displayed product alias may change compatibility IDs. Keep the independent canonical
+        // OPRA identity available so that alias rebasing does not erase trusted order, while still
+        // requiring the selected primary OPRA reference to match the canonical product identity.
+        val verifiedOpraPriority = allowOpraPriority && revision.hasVerifiedOpraBandOrderFor(
+            vendorId = opraPriorityVendorId,
+            productId = opraPriorityProductId,
+        )
         val idSource = primaryReference?.takeIf { it.sourceId == "opra" && !it.sourceRecordId.isNullOrBlank() }
             ?: opra
         val legacyProfileId = if (revision.isLatest && idSource != null) {
@@ -402,6 +430,29 @@ object CanonicalLegacyCatalogAdapter {
             productId = "eq-library-product:${headphone.normalizedKey}",
         )
     }
+
+    private fun profileOpraBandOrderIdentity(profile: CanonicalEqProfile): ProfileOpraBandOrderIdentity {
+        val identities = profile.revisions.asSequence()
+            .flatMap(EqRevision::sourceReferences)
+            .filter {
+                it.sourceId == "opra" && !it.sourceVendorId.isNullOrBlank() && !it.sourceProductId.isNullOrBlank()
+            }
+            .map { requireNotNull(it.sourceVendorId) to requireNotNull(it.sourceProductId) }
+            .distinct()
+            .toList()
+        val identity = identities.singleOrNull()
+        return ProfileOpraBandOrderIdentity(
+            vendorId = identity?.first,
+            productId = identity?.second,
+            isConsistent = identities.size <= 1,
+        )
+    }
+
+    private data class ProfileOpraBandOrderIdentity(
+        val vendorId: String?,
+        val productId: String?,
+        val isConsistent: Boolean,
+    )
 
     private fun legacyDetails(
         profile: CanonicalEqProfile,

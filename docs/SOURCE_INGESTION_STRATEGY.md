@@ -57,6 +57,25 @@ A community record is a candidate until exact parsing, attribution, identity res
 
 A mechanically valid, source-traceable candidate from an already-qualified community lane may publish automatically as **Unverified**. Individual exact PEQ files/posts do not require a separate human approval merely because discovery found them. Unsafe candidates are quarantined individually so they do not block unrelated valid records.
 
+### Source-addition Favorite regression gate
+
+Before a new source ID publishes canonical EQ data, add one authentic catalog profile/revision
+sample for that ID to `app/src/test/resources/catalog/favorite-source-samples.json` and pass
+`python3 tools/verify_favorite_source_samples.py --check` plus the
+`CanonicalFavoriteAliasIntegrationTest` JVM suite. The catalog CI checker compares source IDs from
+canonical profile revision references with the sample fixture, so a newly ingested source fails
+CI until its real sample is present and exercised. The sample keeps source-authored profile values
+and provenance intact; synthetic source-kind rows do not replace it.
+
+Headphone samples must reach the shared Favorite resolver with an effective catalog product alias
+so the compatibility-ID rebase is actually exercised. General EQ sources use the separate exact
+General resolver and must be sampled there rather than represented as fake headphones. A source
+registered before it has canonical PEQ must receive a reviewed, reasoned exclusion. Measurement
+ecosystems and paused providers remain excluded until they publish eligible exact PEQ data. This
+gate covers Favorite resolution only; each parser, source-access policy, attribution, license, and
+acoustic validation retains its own qualification gates. Local `DEVICE_CAPTURE` and
+`PERSONAL_IMPORT` flows are covered separately.
+
 ### D. GitHub repositories and Gists
 
 Search qualified public GitHub/Gist lanes for structured preset files such as:

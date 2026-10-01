@@ -155,6 +155,15 @@ At least monthly, broad discovery may identify newly useful databases, repositor
 
 Once a lane is qualified, individual exact community PEQ candidates should flow through deterministic publish/dedupe/quarantine decisions rather than accumulating in an indefinite review queue.
 
+Every new source ID that contributes canonical profile data must also add one authentic profile and
+revision to `app/src/test/resources/catalog/favorite-source-samples.json`. The catalog-currentness
+CI check fails when an ingested ID has no sample, a sample points at stale canonical data, a new ID
+is absent from the registry/approved alias policy, or a registry-only source has no reviewed
+no-profile exclusion. The Android JVM test runs headphone samples through the actual compatibility
+product alias rebase and General EQ samples through their distinct exact resolver. Keep this gate
+with source onboarding so the source-neutral Favorite behavior remains covered as the catalog
+grows. It is not a parser, provenance, access, license, or acoustic-quality certification.
+
 ## 10. Stop conditions that require the project owner
 
 Ordinary adapter/parser/CI/source-health repairs should be handled autonomously in the repository. Escalate to the owner only when a source requires something the repository cannot legitimately decide or obtain itself, including:

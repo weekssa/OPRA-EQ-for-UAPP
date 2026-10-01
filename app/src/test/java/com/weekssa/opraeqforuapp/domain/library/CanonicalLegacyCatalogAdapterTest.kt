@@ -128,14 +128,47 @@ class CanonicalLegacyCatalogAdapterTest {
         val projected = CanonicalLegacyCatalogAdapter.adapt(
             CatalogSnapshot(1, "2026-09-23T00:00:00Z", "test", listOf(canonical)),
         )
+        val historical = projected.profiles.single { it.bands?.size == 1 }
         val latest = projected.profiles.single { it.bands?.size == 11 }
 
         assertThat(projected.products.single().vendorId).isEqualTo("expected-vendor")
         assertThat(projected.products.single().id).isEqualTo("shared-product-id")
+        assertThat(historical.bandOrderProvenance).isNull()
         assertThat(latest.bandOrderProvenance).isNull()
         assertThrows(ToneBoostersConversionException::class.java) {
             ToneBoostersConverter.convert(latest, "Mismatched OPRA vendor")
         }
+
+        val latestSelection = requireNotNull(
+            CanonicalLegacyCatalogAdapter.resolveSelection(
+                CatalogSnapshot(1, "2026-09-23T00:00:00Z", "test", listOf(canonical)),
+                latest,
+            ),
+        )
+        val aliasRebasedSelection = latestSelection.copy(
+            compatibilityVendorId = "display-vendor",
+            compatibilityProductId = "display-product",
+        )
+        val aliasRebasedLatest = CanonicalLegacyCatalogAdapter.projectSelection(
+            aliasRebasedSelection,
+            "display-product",
+        )
+        assertThat(aliasRebasedLatest.bandOrderProvenance).isNull()
+
+        val historicalSelection = requireNotNull(
+            CanonicalLegacyCatalogAdapter.resolveSelection(
+                CatalogSnapshot(1, "2026-09-23T00:00:00Z", "test", listOf(canonical)),
+                historical,
+            ),
+        )
+        val aliasRebasedHistorical = CanonicalLegacyCatalogAdapter.projectSelection(
+            historicalSelection.copy(
+                compatibilityVendorId = "display-vendor",
+                compatibilityProductId = "display-product",
+            ),
+            "display-product",
+        )
+        assertThat(aliasRebasedHistorical.bandOrderProvenance).isNull()
 
         val wrongProductPrimary = expectedSource.copy(
             sourceRecordId = "newer-wrong-product-record",
