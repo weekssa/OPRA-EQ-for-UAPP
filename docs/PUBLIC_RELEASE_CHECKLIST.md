@@ -146,11 +146,30 @@ publisher must use a fresh Signed Release Candidate built from the finalized `ma
   emulator step to consume `steps.verify.outputs.*`. Local validation currently passes all 24
   promotion-verifier tests, the workflow contract check, and `git diff --check`; PR review and
   exact-head automation are still required.
-- [ ] After PR #61 passes independent review and exact-head automation and merges, run a fresh
-  Signed Release Candidate from the new exact main SHA, then rerun promotion. Do not reuse candidate
-  #14 because its source SHA will no longer equal main. Verify the public tag, APK bytes, release
-  assets, signer, source provenance, curated release notes, and `/releases/latest` metadata before
-  marking this release published.
+- [x] PR #61 passed independent review, all 7 exact-head checks, and all 6 post-merge checks. It
+  merged at exact main SHA `b55b0b29d1f963198c5ca4f724a9303001781cce`.
+- [x] Fresh Signed Release Candidate run #15 / ID `36939892786` succeeded from exact main SHA
+  `b55b0b29d1f963198c5ca4f724a9303001781cce`, tag input `v0.7.1`. Artifact ID `11199164815`, size
+  2,220,892 bytes, ZIP SHA-256
+  `d5bc88dcf84297fddea7a14c62d35e418c2b7c0de0acaa4ac1ef491f29423690`, expires 2026-12-30
+  23:16:24 UTC. Release build, unit tests, lint, R8, signing, signature, and alignment passed.
+- [x] Promotion run #3 / ID `36940581035` reverified candidate #15 and passed the API 35 public
+  v0.7.0 install, in-place candidate upgrade, and cold launch. Publishing then stopped because the
+  verifier expected a Git tag ref before publishing the private draft. GitHub had created private
+  draft release ID `401429211` with `target_commitish` equal to the exact candidate source but no
+  tag ref and no assets. The public `v0.7.1` tag remains absent and `/releases/latest` remains
+  v0.7.0. The release API permits changing `target_commitish` on a draft; the repaired publisher
+  will only retarget this draft when it is asset-free, has no tag ref, and the previous full source
+  SHA is an ancestor of the new exact candidate source.
+- [ ] PR #62 must pass independent review and exact-head automation, then merge under the owner's
+  conditional approval. The workflow, release-signing policy, checklist, and runbook must describe
+  the draft's absent-tag state and the fail-closed ancestry/asset checks.
+- [ ] After PR #62 merges, run a new Signed Release Candidate from the new exact main SHA and
+  rerun promotion. Candidate #15 no longer qualifies because its source will not equal current
+  main. Promotion must pass candidate checks, the API 35 upgrade and cold launch, private draft
+  retarget/readback, exact asset uploads/downloads, publication, tag-to-source verification, signer,
+  provenance, curated release notes, and `/releases/latest` metadata before this release is marked
+  published.
 
 No DAC hardware mutation or physical-device qualification is needed for this catalog Favorite
 identity fix. See the 2026-10-01 entry in `docs/CHATGPT_PROJECT_RUNBOOK.md` for the complete

@@ -500,6 +500,24 @@ def resolve_tag_commit(api: GitHubApi, tag: str) -> str | None:
     return None
 
 
+def require_ancestor_commit(api: GitHubApi, ancestor_sha: str, current_sha: str) -> None:
+    """Require an older draft source to be an ancestor of the exact current source."""
+    require(SOURCE_SHA_RE.fullmatch(ancestor_sha) is not None,
+            "existing draft target commit is not a full source SHA")
+    require(SOURCE_SHA_RE.fullmatch(current_sha) is not None,
+            "candidate source commit is not a full source SHA")
+    comparison = api.json(
+        "GET",
+        api.repo_path + "/compare/" + urllib.parse.quote(ancestor_sha, safe="") + "..." +
+        urllib.parse.quote(current_sha, safe=""),
+    )
+    require(comparison.get("status") == "ahead" and
+            (comparison.get("base_commit") or {}).get("sha") == ancestor_sha and
+            (comparison.get("head_commit") or {}).get("sha") == current_sha and
+            (comparison.get("merge_base_commit") or {}).get("sha") == ancestor_sha,
+            "existing draft source is not an ancestor of the exact candidate source")
+
+
 def provenance_bytes(candidate: dict[str, Any], run_id: int, artifact_id: int, publisher_run_id: str) -> bytes:
     data = {
         "repository": REPOSITORY,
@@ -664,9 +682,40 @@ def _verify_or_create_draft(api: GitHubApi, candidate: dict[str, Any], release_n
             "release tag already exists at a different commit")
     if existing is not None:
         require(existing.get("draft") is True and existing.get("prerelease") is False and
-                existing.get("tag_name") == tag and existing.get("body") == release_notes,
+                existing.get("tag_name") == tag and existing.get("name") == f"EQ Library {tag}" and
+                existing.get("body") == release_notes and isinstance(existing.get("assets"), list),
                 "an existing public or mismatched release already uses this tag")
-        require(tag_commit == source_sha, "existing draft release tag does not point to the exact candidate source")
+        require(current_main_sha(api) == source_sha,
+                "main moved before an existing release draft could be resumed")
+        draft_source = existing.get("target_commitish")
+        if draft_source != source_sha:
+            require(tag_commit is None,
+                    "existing draft release tag is already bound to a different source")
+            require(isinstance(draft_source, str) and isinstance(existing.get("assets"), list) and
+                    not existing["assets"],
+                    "an existing draft without a full source SHA and empty asset set cannot be safely retargeted")
+            require_ancestor_commit(api, draft_source, source_sha)
+            release_id = existing.get("id")
+            require(isinstance(release_id, int) and release_id > 0,
+                    "existing release draft has no valid release ID")
+            updated = api.json("PATCH", api.repo_path + f"/releases/{release_id}", {
+                "target_commitish": source_sha,
+            })
+            require(updated.get("draft") is True and updated.get("prerelease") is False and
+                    updated.get("tag_name") == tag and updated.get("name") == f"EQ Library {tag}" and
+                    updated.get("body") == release_notes and updated.get("target_commitish") == source_sha and
+                    updated.get("assets") == [],
+                    "GitHub did not preserve the exact source while retargeting the asset-free draft")
+            existing = api.json("GET", api.repo_path + f"/releases/{release_id}")
+            require(existing.get("draft") is True and existing.get("prerelease") is False and
+                    existing.get("tag_name") == tag and existing.get("name") == f"EQ Library {tag}" and
+                    existing.get("body") == release_notes and existing.get("target_commitish") == source_sha and
+                    existing.get("assets") == [],
+                    "release draft readback did not confirm its exact retargeted source")
+        require(existing.get("target_commitish") == source_sha,
+                "existing draft release target does not match the exact candidate source")
+        require(tag_commit is None or tag_commit == source_sha,
+                "existing draft release tag does not point to the exact candidate source")
         return existing
 
     require(tag_commit is None, "tag exists without a resumable draft release")
@@ -685,7 +734,11 @@ def _verify_or_create_draft(api: GitHubApi, candidate: dict[str, Any], release_n
     })
     require(created.get("tag_name") == tag and created.get("draft") is True,
             "GitHub did not create the expected private draft release")
-    require(resolve_tag_commit(api, tag) == source_sha, "created release tag does not point to the exact candidate source")
+    require(created.get("target_commitish") == source_sha,
+            "created release draft does not target the exact candidate source")
+    created_tag_commit = resolve_tag_commit(api, tag)
+    require(created_tag_commit is None or created_tag_commit == source_sha,
+            "created release tag does not point to the exact candidate source")
     return created
 
 
@@ -703,6 +756,8 @@ def publish_release(api: GitHubApi, *, candidate: dict[str, Any], assets: dict[s
     release = _verify_or_create_draft(api, candidate, release_notes)
     require(release.get("tag_name") == tag and release.get("draft") is True,
             "release is not in the expected unpublished draft state")
+    require(release.get("target_commitish") == candidate["source_sha"],
+            "unpublished release draft does not target the exact candidate source")
     _preserve_matching_provenance(api, release, candidate, assets)
 
     existing_names = [item.get("name") for item in release.get("assets", [])]
@@ -716,13 +771,15 @@ def publish_release(api: GitHubApi, *, candidate: dict[str, Any], assets: dict[s
 
     by_name = _verify_release_assets(api, release, assets)
     require(set(by_name) == set(assets), "release asset set is incomplete")
-    require(resolve_tag_commit(api, tag) == candidate["source_sha"],
+    tag_commit = resolve_tag_commit(api, tag)
+    require(tag_commit is None or tag_commit == candidate["source_sha"],
             "release tag changed before publication")
     require(current_main_sha(api) == candidate["source_sha"],
             "main moved during promotion; release remains an unpublished draft")
     require_release_version_advances(api, tag)
 
     published = api.json("PATCH", api.repo_path + f"/releases/{release['id']}", {
+        "target_commitish": candidate["source_sha"],
         "draft": False,
         "prerelease": False,
         "make_latest": "true",
@@ -878,6 +935,9 @@ def check_contract(project_root: Path) -> None:
     require('"/releases/latest"' in publisher and '"make_latest": "true"' in publisher and
             '"release-provenance.json"' in publisher,
             "publisher does not preserve its latest metadata and provenance contract")
+    require("require_ancestor_commit" in publisher and '"/compare/"' in publisher and
+            '"target_commitish": candidate["source_sha"]' in publisher,
+            "publisher does not ancestry-check draft resumption and pin the exact source at publication")
     for line in workflow.splitlines():
         if re.match(r"^\s+uses:\s+", line):
             require(re.search(r"@[0-9a-f]{40}(?:\s|$)", line) is not None,
@@ -900,6 +960,8 @@ def check_contract(project_root: Path) -> None:
             "Android CI does not test the exact-candidate promotion contract")
     require("promote-signed-release.yml" in signing and "exact candidate APK bytes" in signing,
             "signing policy does not identify the exact-byte publisher")
+    require("tag ref" in signing and "asset-free draft" in signing and "ancestor" in signing,
+            "signing policy does not document safe private-draft resumption")
     require("promote-signed-release.yml" in checklist and "owner approval" in checklist.lower(),
             "release checklist does not describe the publisher and existing owner authorization")
     require("exact-artifact promotion is not implemented" not in checklist.lower(),
