@@ -451,6 +451,29 @@ class ReleasePromotionTest(unittest.TestCase):
                 promotion._verify_or_create_draft(api, candidate, "# Release notes\n")
         self.assertEqual([], api.calls)
 
+    def test_stale_draft_with_tag_ref_at_another_source_is_rejected(self):
+        candidate = self.validate()
+        draft = {
+            "id": 12,
+            "tag_name": TAG,
+            "name": f"EQ Library {TAG}",
+            "body": "# Release notes\n",
+            "target_commitish": "b" * 40,
+            "draft": True,
+            "prerelease": False,
+            "assets": [],
+        }
+
+        class DraftApi:
+            repo_path = "/repos/weekssa/OPRA-EQ-for-UAPP"
+
+            def optional_json(self, _path):
+                return draft
+
+        with mock.patch.object(promotion, "resolve_tag_commit", return_value="c" * 40):
+            with self.assertRaisesRegex(promotion.PromotionError, "tag already exists at a different commit"):
+                promotion._verify_or_create_draft(DraftApi(), candidate, "# Release notes\n")
+
     def test_draft_source_must_be_an_ancestor_before_retargeting(self):
         candidate = self.validate()
         ancestor_sha = "b" * 40
