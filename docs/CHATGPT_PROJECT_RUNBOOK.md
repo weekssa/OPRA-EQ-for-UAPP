@@ -1,4 +1,4 @@
-# OPRA EQ for UAPP / EQ Library — ChatGPT Project Runbook
+# OPRA EQ for UAPP / EQ Library: ChatGPT Project Runbook
 
 This is the maintained operational source of truth for work on **OPRA EQ for UAPP / EQ Library**. Read it before substantive work. Later explicit user decisions supersede older planning text; when that happens, update this runbook in the same workstream rather than restoring obsolete behavior.
 
@@ -37,7 +37,7 @@ Historical plans remain useful context, but this runbook, current architecture, 
 
 Owner reports E043-E046 are tied to signed executable source `7599dd52fc9e8c58c96e021f581b86a669dcc148`: E043 read-only capability PASS, E044 Flash PASS, E045 exact-baseline Restore PASS (`restorationVerified=true`), and E046 Reset PASS for the exact fingerprint. Each mutation recorded 11 writes, exactly one Save, zero permission requests before the first write, matching replacement identity/generation, final readback, and known state. Total permission requests were one per operation. Replay and competing-job telemetry remain null/unmeasured, not zero. Do not repeat these operations or the accepted E001 Save qualification.
 
-The nine commits from 7599 to `b11190f9bbc08326f963190ad8b5a9f4b0872b2c` changed documentation files only; no executable source changed. Physical results remain attached to 7599, not relabeled. On exact source b11190, the applicable Android CI, CodeQL, catalog, priority-coverage, dependency-submission, and signed-candidate workflows all passed. The exact artifact provenance is recorded in E048 and live PR #23. Any later commit—including this documentation acceptance update—creates a new candidate SHA and needs fresh exact-head gates and signed provenance before that SHA is treated as ready.
+The nine commits from 7599 to `b11190f9bbc08326f963190ad8b5a9f4b0872b2c` changed documentation files only; no executable source changed. Physical results remain attached to 7599, not relabeled. On exact source b11190, the applicable Android CI, CodeQL, catalog, priority-coverage, dependency-submission, and signed-candidate workflows all passed. The exact artifact provenance is recorded in E048 and live PR #23. Any later commit, including this documentation acceptance update, creates a new candidate SHA and needs fresh exact-head gates and signed provenance before that SHA is treated as ready.
 
 The Restore proves exact baseline restoration when it completed. A separate later Reset also completed; do not claim the post-Reset state is byte-for-byte the earlier arbitrary baseline. The read-only report proves a known snapshot only. E001 remains accepted and is not repeated.
 
@@ -201,9 +201,9 @@ Hardware-only outputs do not invent export files. Their deterministic derived re
 
 Use fidelity states consistently:
 
-- **Exact** — source is natively representable at the target's actual limits/quantization without target-side acoustic alteration or generated headroom.
-- **Optimized** — EQ Library deterministically derives a faithful target representation and it passes that target's quality/safety gates. Native target rounding, complete-response fitting, and EQ Library-generated target headroom are all Optimized rather than Exact.
-- **Not suitable / Not exportable** — a safe/faithful representation cannot be produced.
+- **Exact**: source is natively representable at the target's actual limits/quantization without target-side acoustic alteration or generated headroom.
+- **Optimized**: EQ Library deterministically derives a faithful target representation and it passes that target's quality/safety gates. Native target rounding, complete-response fitting, and EQ Library-generated target headroom are all Optimized rather than Exact.
+- **Not suitable / Not exportable**: a safe/faithful representation cannot be produced.
 
 For finite hardware, show a concise reason separate from source/catalog description text. Prefer wording such as:
 
@@ -263,7 +263,7 @@ Historical internal class names containing `Kt02h20` or `FiveBand` are implement
 
 My DAC manual editing must reuse the same deterministic response/headroom principles. Do not create a Compose-only clipping heuristic. A local edit plan evaluates the complete planned native response, determines required safe headroom using verified device semantics, separates headroom warnings from device-limit/unsupported-value warnings, and requires review before any hardware write.
 
-### v0.7 SIMGOT EW300 DSP cable — current capability and evidence boundary
+### v0.7 SIMGOT EW300 DSP cable: current capability and evidence boundary
 
 The exact EW300 USB identity, five-band raw transport, direct-Hz Peak decoding, and bounded transaction behavior are maintained in the EW300 protocol/status documents. The recovery implementation uses the shared output registry, finite-hardware adapter, authoritative DAC session, and My DAC shell; it does not copy Black Pearl commands or controls. The exact profile currently exposes native five-band Peak readback, local edit/review, guarded Apply/Flash, Peak-only Personal EQ capture, qualified Reset-to-flat, reconnect/final-readback feedback, and the evidenced read-only Device state/report surface. Source low/high shelves may be represented only by a complete-response Optimized fit to the five-Peak target when the shared quality gates pass; native EW300 shelf readback/capture/edit/write is not established. Other controls remain unclaimed unless exact-profile evidence establishes them.
 
@@ -311,7 +311,7 @@ Use SemVer. Keep v0.x during development; v1.0.0 is the first stable release. Ne
 The owner-reported `431cbfa` test failed Restore defaults (premature stop at 0%) and page-density review. The current corrective work and genuine-failure policy are maintained at `docs/V0.6_MY_DAC_STATUS.md`. Restore completion is tied to the exact write cycle and original USB session; all final targets must match. No failed setting is automatically retried. Managed detail and General EQ headers/actions are compact and scrollable. A new exact signed beta needs focused physical review; historical PASS pins do not qualify these corrections. PR #16 remains open/draft and v0.5.0 remains public.
 
 
-## 2026-09-15 corrective candidate — PASS
+## 2026-09-15 corrective candidate: PASS
 
 The project owner completed the focused Pixel 9 / TRN Black Pearl retest on exact signed source `eb1980076009001b5216ffbb531de8a28a4780eb` and reported **SUCCESS**.
 
@@ -492,9 +492,49 @@ debug/release builds, the API 26 cold-install smoke, and API 36 connected UI tes
 commit's main checks also passed: Android CI run 36820154922, Kotlin analysis run 36820154963,
 Gradle dependency submission run 36820154755, and dependency submission run 36820154934.
 
-The Favorite fix is the only app-production behavior change after public v0.7.0. A focused v0.7.1
-patch candidate is being prepared at version code 8 in release-preparation [PR #53](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/53).
-The published version remains v0.7.0; no signed candidate or public v0.7.1 release exists yet.
-Use the live PR for the current source head and exact-head checks. Exact-source gates and a
-signed-candidate Favorite/upgrade/restart validation remain outstanding before any publication
-decision.
+The Favorite fix is the only app-production behavior change after public v0.7.0. Release-preparation
+PR #53 merged normally to main at `5c05b0c3ac06e4d8eb868b6232a81651ac060da5`; all exact-head checks
+passed. The owner authorized a main-only v0.7.1 signed candidate and API 36 install/restart
+verification. The signed candidate passed those gates. Its exact provenance, observed UI behavior,
+and remaining publication boundary are recorded in `docs/PUBLIC_RELEASE_CHECKLIST.md`.
+
+The latest public release remains v0.7.0. No public v0.7.1 tag or release has been created. The
+repository still has no exact-artifact public promotion workflow. Public publication therefore
+remains an explicit owner decision and cannot be performed by rebuilding or re-signing the
+qualified candidate.
+
+### 2026-10-01 v0.7.1 signed candidate and API 36 Favorite verification
+
+Signed Release Candidate workflow run #11 / run ID `36831766816` succeeded from main at exact
+source SHA `5c05b0c3ac06e4d8eb868b6232a81651ac060da5`, tag input `v0.7.1`. It uploaded immutable
+artifact `11148046368`, named
+`EQ-Library-v0.7.1-signed-5c05b0c3ac06e4d8eb868b6232a81651ac060da5`, ZIP size 2,218,563 bytes,
+ZIP SHA-256 `5735a433e52ec34e075aa4a6a5044aae77d9efb8a8a6a7386a614b26d5c87acb`, expiring
+2026-12-30. The manifest records APK `EQ-Library-v0.7.1.apk`, package
+`com.weekssa.opraeqforuapp`, version `0.7.1` / code `8`, APK SHA-256
+`cfdc688a0ff9392f5617b05719b09c9c478cf07390aa7dc79e8d4e33c6eecba3`, signer certificate
+SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`, and R8 mapping
+SHA-256 `715a5a42e51e021a21c7957bb78ed235edcd851bd15cf7c884af8e2745f67a0d`.
+
+The downloaded archive digest matched the Actions artifact digest. The APK checksum was recomputed
+from the extracted file and matched both the manifest and checksum sidecar. Independent Android
+Build Tools verification passed for the pinned signer, APK v2/v3 signatures, zip alignment, package
+ID, version, and version code. The public v0.7.0 APK used for the upgrade control matched its
+published SHA-256 and had the same release signer.
+
+On a fresh API 36 AVD, the exact public v0.7.0 APK reproduced the Jaytiss/Hifiguides Favorite
+failure, reporting that the exact source revision was unavailable. The exact signed v0.7.1 APK
+installed in place over it. On v0.7.1, the same Jaytiss Favorite changed to `Remove favorite` and
+reported a successful save. A separate Fahryst/AutoEQ Favorite also saved. My EQs showed both
+source identities after force-stop and cold relaunch. The starting app library was empty, so this
+run verifies the in-place version upgrade and persistence of newly created Favorites, but it does
+not test migration of a pre-existing nonempty Favorite set. The temporary `codex-v071-smoke` AVD
+was removed after the run; the pre-existing `codex-api36` AVD was not changed. This is emulator
+evidence, not physical-device evidence.
+
+No DAC hardware or physical test is required for this canonical catalog Favorite change. The
+source-kind matrix remains the basis for source-wide claims: it covers all seven canonical catalog
+source kinds over three headphone products, while `DEVICE_CAPTURE` and `PERSONAL_IMPORT` remain
+separate local flows. The matrix and the candidate UI smoke establish strong source-independent
+coverage at the Favorite resolver and persisted-user-flow boundaries; they do not measure a
+statistical 95% probability or independently qualify each source-feed parser.

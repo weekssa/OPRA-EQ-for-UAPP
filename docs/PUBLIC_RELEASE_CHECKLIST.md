@@ -1,4 +1,4 @@
-# Public release checklist — EQ Library
+# Public release checklist: EQ Library
 
 This document records the GitHub-release gates for EQ Library. Google Play remains intentionally out of scope until a later product decision.
 
@@ -36,13 +36,15 @@ created a newer documentation commit. Black Pearl is publicly described only wit
 Explorer evidence boundary. JA11 software is verified, while broader power-cycle qualification is
 not claimed.
 
-## v0.7.1 patch candidate: preparation in progress
+## v0.7.1 patch candidate: qualified; publication pending
 
 The only app-production behavior change since public v0.7.0 is the canonical Favorite product-alias
-correction. PR #51 contains the fix; PR #52 adds the exhaustive current source-kind regression
-matrix and is merged at `70a240a458f1e3cb6607d8349bb422d78cc95699`. The patch candidate is prepared
-as `versionName 0.7.1` / `versionCode 8`. This section records preparation only; v0.7.0 remains the
-current public release until a future exact candidate is qualified and publication is approved.
+correction. PR #51 contains the fix; PR #52 adds the current source-kind regression matrix and is
+merged at `70a240a458f1e3cb6607d8349bb422d78cc95699`. Release-preparation PR #53 passed all exact-head
+checks and merged normally to main at `5c05b0c3ac06e4d8eb868b6232a81651ac060da5`. The signed
+v0.7.1 / `versionCode 8` candidate from that exact main commit passed independent artifact checks
+and API 36 Favorite save/restart validation. The latest public release remains v0.7.0; no public
+v0.7.1 tag or release exists.
 
 - [x] Focused Favorite source-kind matrix, full JVM suite, Room persistence tests, and documented
   API 36 Favorite/restart smoke passed; see `docs/AFUL_EXPLORER_FAVORITE_REVIEW.md`.
@@ -52,28 +54,34 @@ current public release until a future exact candidate is qualified and publicati
   release-candidate and signed-beta workflows match `0.7.1` / code `8`.
 - [x] Local unsigned v0.7.1 release assembly, 712 JVM tests, and Android lint pass; `aapt` confirms
   package `com.weekssa.opraeqforuapp`, version `0.7.1`, and code `8`.
-- Release-preparation [PR #53](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/53) was opened
-  against `main` at source snapshot `fc407eaf8e722c80233c3463b9d9ecf6e8feee61`. Its four exact-head
-  workflows were in progress at creation. All four later passed at PR head
-  `50a4c2e8afd19162f8c6f62f5349cc737608cd19`: Android CI run
-  [36823974790](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36823974790), CodeQL run
-  [36823974796](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36823974796), Catalog
-  currentness run [36823974881](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36823974881),
-  and Priority community coverage run
-  [36823974785](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36823974785). Android CI's
-  API 26 cold-install job passed on its failed-job retry after the first hosted emulator boot timed
-  out. Use the live PR for its latest head and check results.
-- [ ] Release-preparation PR passes all exact-head remote checks and receives owner merge approval.
-- [ ] Main-only signed candidate records exact source SHA, APK SHA-256, package/version, signer,
-  workflow run, artifact ID/digest, and R8 mapping identity.
-- [ ] Install the exact signed candidate over public v0.7.0 and run the bounded Favorite save,
-  force-stop/restart, same-product/source restoration, and removal smoke on API 36.
+- [x] Release-preparation PR #53 passed Android CI run `36826035050`, CodeQL run `36826035019`,
+  Catalog currentness run `36826035036`, and Priority community coverage run `36826035015` at exact
+  head `ceb36062aa7b3dd4e3e8cbb4066892551778d143`; it merged normally after owner approval. The
+  exact merge commit's main checks also passed.
+- [x] Signed Release Candidate workflow run #11 / run ID `36831766816` succeeded from main SHA
+  `5c05b0c3ac06e4d8eb868b6232a81651ac060da5`, tag input `v0.7.1`. Actions artifact ID:
+  `11148046368`; artifact ZIP SHA-256:
+  `5735a433e52ec34e075aa4a6a5044aae77d9efb8a8a6a7386a614b26d5c87acb`; expiration: 2026-12-30.
+- [x] Candidate APK `EQ-Library-v0.7.1.apk`: SHA-256
+  `cfdc688a0ff9392f5617b05719b09c9c478cf07390aa7dc79e8d4e33c6eecba3`; package
+  `com.weekssa.opraeqforuapp`; version `0.7.1`, code `8`; signer certificate SHA-256
+  `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`; R8 mapping SHA-256
+  `715a5a42e51e021a21c7957bb78ed235edcd851bd15cf7c884af8e2745f67a0d`. Independent checksum,
+  `apksigner`, signature scheme, `zipalign`, package, and version verification passed.
+- [x] The public v0.7.0 APK matched its published SHA-256 and release signer. It reproduced the
+  Jaytiss/Hifiguides Favorite failure on a fresh API 36 AVD. After in-place upgrade to the exact
+  signed candidate, Jaytiss/Hifiguides saved successfully; a separate Fahryst/AutoEQ Favorite also
+  saved. My EQs showed both after force-stop and cold relaunch. This fresh AVD began with an empty
+  saved list, so a pre-existing Favorite migration was not exercised. The temporary AVD was deleted
+  after testing; the existing `codex-api36` AVD was left unchanged.
 - [ ] Obtain explicit owner approval for any public promotion. The repository has no exact-artifact
-  public promotion workflow; a signed candidate is not a public release.
+  public promotion workflow; the signed candidate is a qualification artifact, not a public
+  release. Do not rebuild or re-sign it during later manual publication.
 
 No DAC hardware mutation or physical-device qualification is needed for this catalog Favorite
-identity fix. The Favorite/restart candidate smoke is still required to verify behavior in the
-versioned signed APK.
+identity fix. See the 2026-10-01 entry in `docs/CHATGPT_PROJECT_RUNBOOK.md` for the complete
+source SHA, candidate provenance, UI result, and qualification limits. The release-candidate
+artifact expires on 2026-12-30 and must be requalified if it expires or its source changes.
 
 ## Continuing release invariants
 
@@ -90,7 +98,7 @@ These apply to every installable GitHub release:
 - Never replace an already-published APK with differently signed or different-content bytes under the same version/tag.
 - Never commit signing keys, passwords, tokens, or credentials.
 
-# v0.6.0 — COMPLETE
+# v0.6.0: COMPLETE
 
 **Published:** 2026-09-15  
 **Tag:** `v0.6.0`  
@@ -128,7 +136,7 @@ Status: **Published.** Implementation, automated gates, signed-candidate verific
 - [x] Public release assets, checksum, signer verification, and latest-release metadata verified.
 - [x] README current-release section updated to the published v0.6.0 APK.
 
-# v0.5.0 — COMPLETE
+# v0.5.0: COMPLETE
 
 **Published:** 2026-09-09  
 **Tag:** `v0.5.0`  
@@ -149,7 +157,7 @@ Phase 2 tested the same v0.5.0 milestone built in Phase 1. Testing did not creat
 - [x] README/front-page copy describes the shipped v0.5.0 output registry and hardware qualification state.
 - [x] The permanent Android signing identity remains pinned and unchanged.
 
-## Phase 1 — implementation and automated candidate qualification
+## Phase 1: implementation and automated candidate qualification
 
 Candidate source `30535bd3b1bce9940d23e8735d88a4d9b6a9a4ef` contains the MAD-style architecture refactor while preserving device/DSP/conversion behavior.
 
@@ -169,7 +177,7 @@ Pinned signed candidate record:
 - Actions artifact ID: `10082967650`
 - Artifact ZIP SHA-256: `c55d7b53e7b355e85a5b54b2b9a0da6925448c35563f85796605885ad6de91c3`
 
-## Phase 2 — Pixel 9 release-candidate testing
+## Phase 2: Pixel 9 release-candidate testing
 
 - [x] `docs/V0.5_HANDS_ON_RELEASE_CHECKLIST.md` completed on the primary Pixel 9 with final result **PASS** on 2026-09-09.
 - [x] In-place upgrade/state retention passed.
@@ -188,9 +196,9 @@ The Android build string and pre-upgrade app version were not captured during th
 
 ## Hardware qualification state at v0.5.0 publication
 
-- [x] **TRN Black Pearl** — qualified for the v0.5 path. The destructive/fidelity/persistence regression passed, including Exact Flash, Optimized complete-response Flash, power-cycle persistence, Reset-to-flat persistence, and the explicit out-of-validated-range caution path.
-- [ ] **FiiO JA11** — **Hardware validation pending**. Software implementation shipped, but physical qualification remains deferred until hardware is available.
-- [ ] **JCALLY JM12 (stock firmware)** — **Hardware validation pending**. Software implementation shipped; power-cycle persistence remains unclaimed until physically established.
+- [x] **TRN Black Pearl**: qualified for the v0.5 path. The destructive/fidelity/persistence regression passed, including Exact Flash, Optimized complete-response Flash, power-cycle persistence, Reset-to-flat persistence, and the explicit out-of-validated-range caution path.
+- [ ] **FiiO JA11**: **Hardware validation pending**. Software implementation shipped, but physical qualification remains deferred until hardware is available.
+- [ ] **JCALLY JM12 (stock firmware)**: **Hardware validation pending**. Software implementation shipped; power-cycle persistence remains unclaimed until physically established.
 
 JA11/JM12 pending status does not retroactively change the v0.5.0 publication result. Their release/in-app wording must continue to state the pending status accurately until future exact-candidate hardware checklists pass.
 
@@ -222,10 +230,10 @@ The beta candidate remains a qualification artifact only. The public v0.5.0 APK 
 
 ## Previous public releases
 
-- **v0.4.0** — focused TRN Black Pearl Reset EQ to flat release; published 2026-09-06.
-- **v0.3.0** — source-agnostic EQ Library foundation and TRN Black Pearl Direct Flash; published 2026-08-31.
-- **v0.2.0** — EQ Library rebrand and device-targeted export foundation; published 2026-08-28.
-- **v0.1.0** — first signed public Android release; published 2026-08-16.
+- **v0.4.0**: focused TRN Black Pearl Reset EQ to flat release; published 2026-09-06.
+- **v0.3.0**: source-agnostic EQ Library foundation and TRN Black Pearl Direct Flash; published 2026-08-31.
+- **v0.2.0**: EQ Library rebrand and device-targeted export foundation; published 2026-08-28.
+- **v0.1.0**: first signed public Android release; published 2026-08-16.
 
 Version-specific details belong in `CHANGELOG.md`, `docs/releases/`, and the applicable hands-on/protocol records rather than being copied into the current release gate.
 
@@ -241,7 +249,7 @@ The following are not required for the current GitHub development-release path:
 
 Those items will be handled separately when Google Play work is intentionally started.
 
-## `v0.7.0` publication record — 2026-09-28
+## `v0.7.0` publication record: 2026-09-28
 
 - [x] Public release [v0.7.0](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.7.0) is latest, published, and non-prerelease.
 - [x] Tag `v0.7.0` points to `4f325d673159b40515086fe5143df12b29ddb076`.
