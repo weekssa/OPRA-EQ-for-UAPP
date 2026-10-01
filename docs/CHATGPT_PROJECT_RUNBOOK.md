@@ -353,3 +353,22 @@ adds focused regressions. This does not change EW300 protocol behavior or accept
 evidence. Check all remote gates and artifacts on the live exact PR head. The trusted-main-only
 signed candidate cannot be produced from this feature branch without explicit owner-authorized
 integration; do not merge, sign or publish under the guise of a test run.
+
+## 2026-09-30 AFUL Explorer Favorite candidate
+
+The AFUL Explorer Reddit/LoboNautics and HiFiGuides/Jaytiss community Favorites failed because
+canonical selection resolution retained synthetic compatibility product IDs after the effective
+catalog overlay displayed the same canonical rows through the legacy OPRA `aful::explorer` product
+alias. The bounded correction rebases only compatibility vendor/product IDs after validating the
+effective alias and displayed records; exact canonical profile, revision, fingerprint, and source
+references remain authoritative. Strict `matchesSelection` validation remains in place.
+
+Implementation commit `fcb0f5e03b22fc51c778d1989ec1c0ad8c7ddb38` is based on current
+`origin/main` `6ada7efc84425f7b149f9f9e9fb4e9599bc80cf2`. The candidate passed focused and full JVM
+unit tests, Android-test Kotlin compilation, the Room-backed API 36 instrumentation class, and a
+fresh debug-app API 36 Favorites/restart smoke. The complete source, fixture, test, and evidence
+record is `docs/AFUL_EXPLORER_FAVORITE_REVIEW.md`. The branch is local/unpushed with no PR, remote
+CI, signed candidate, release qualification, or hardware test. Status is **CANDIDATE FIX VERIFIED:
+ready for independent review**, not resolved or release-ready. No hardware validation ledger or
+capability matrix changed because this candidate does not exercise hardware or establish a device
+capability.
