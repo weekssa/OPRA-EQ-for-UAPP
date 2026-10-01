@@ -89,6 +89,10 @@ def expected_asset_names(tag: str) -> set[str]:
     }
 
 
+def optional_candidate_sidecar_names(tag: str) -> set[str]:
+    return {f"EQ-Library-{tag}.apk.idsig"}
+
+
 def parse_app_version(project_root: Path) -> tuple[str, int]:
     gradle = (project_root / "app/build.gradle.kts").read_text(encoding="utf-8")
     name_match = re.search(r'^\s*versionName\s*=\s*"([^"\r\n]+)"', gradle, re.MULTILINE)
@@ -165,10 +169,18 @@ def validate_candidate_archive(
         infos = archive.infolist()
         names = [info.filename for info in infos]
         require(len(names) == len(set(names)), "candidate archive contains duplicate member names")
-        require(set(names) == expected_asset_names(tag), "candidate archive file set does not match the signed-candidate contract")
+        archive_names = set(names)
+        required_names = expected_asset_names(tag)
+        allowed_names = required_names | optional_candidate_sidecar_names(tag)
+        require(archive_names in (required_names, allowed_names),
+                "candidate archive file set does not match the signed-candidate contract")
         require(sum(info.file_size for info in infos) <= MAX_TOTAL_UNCOMPRESSED_BYTES,
                 "candidate archive uncompressed size exceeds the limit")
         files = {info.filename: _bounded_member(archive, info) for info in infos}
+
+    idsig_name = next(iter(optional_candidate_sidecar_names(tag)))
+    if idsig_name in files:
+        require(files[idsig_name], "candidate v4 signature sidecar is empty")
 
     manifest_bytes = files["candidate-manifest.json"]
     try:
