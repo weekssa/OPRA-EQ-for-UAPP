@@ -54,7 +54,15 @@ current public release until a future exact candidate is qualified and publicati
   package `com.weekssa.opraeqforuapp`, version `0.7.1`, and code `8`.
 - Release-preparation [PR #53](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/53) was opened
   against `main` at source snapshot `fc407eaf8e722c80233c3463b9d9ecf6e8feee61`. Its four exact-head
-  workflows were in progress at creation. Use the live PR for the current head and check results.
+  workflows were in progress at creation. All four later passed at PR head
+  `50a4c2e8afd19162f8c6f62f5349cc737608cd19`: Android CI run
+  [36823974790](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36823974790), CodeQL run
+  [36823974796](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36823974796), Catalog
+  currentness run [36823974881](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36823974881),
+  and Priority community coverage run
+  [36823974785](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36823974785). Android CI's
+  API 26 cold-install job passed on its failed-job retry after the first hosted emulator boot timed
+  out. Use the live PR for its latest head and check results.
 - [ ] Release-preparation PR passes all exact-head remote checks and receives owner merge approval.
 - [ ] Main-only signed candidate records exact source SHA, APK SHA-256, package/version, signer,
   workflow run, artifact ID/digest, and R8 mapping identity.
