@@ -85,13 +85,21 @@ No workflow action here creates a public release or version tag. Candidate prepa
 main-only owner action after merge approval; do not dispatch it from the feature branch or infer
 hardware qualification from its build/install/cold-launch result.
 
-## Public release gate (not yet implemented for exact-candidate promotion)
+## Public release gate (exact-candidate promotion is not implemented)
 
-For `v0.7.0`, only after every release gate and explicit owner approval:
+For any future version, including the prepared v0.7.1 Favorite patch, complete the applicable
+release gates and receive explicit owner approval before public publication:
 
-1. Run **Signed Release Candidate** from the finalized `main` commit.
-2. Download and install the signed candidate on the Pixel 9.
-3. Perform the short signed-release smoke test recorded in `docs/PUBLIC_RELEASE_CHECKLIST.md`.
-4. If the candidate passes, make no source changes that would alter the release commit.
-5. Obtain explicit owner approval and use a separately reviewed exact-artifact promotion workflow (not yet implemented).
-6. Verify the public release page, assets, checksum, signer, source provenance, and in-app update metadata path.
+1. Merge the reviewed release source through the protected `main` process and pass the exact-head
+   main checks.
+2. Run **Signed Release Candidate** from that finalized `main` commit.
+3. Verify the candidate manifest, immutable artifact identity, recomputed APK checksum, package
+   and version, pinned signer, alignment, and R8 mapping.
+4. Install the exact signed candidate on an emulator or owner device appropriate to the changed
+   behavior, and complete the version-specific smoke test recorded in
+   `docs/PUBLIC_RELEASE_CHECKLIST.md`.
+5. Make no source changes that would alter the qualified release commit or artifact.
+6. Obtain explicit owner approval for publication. The exact-artifact promotion workflow is not
+   implemented; do not rebuild or re-sign the candidate during any later manual publication step.
+7. Verify the public release page, assets, checksum, signer, source provenance, and in-app update
+   metadata path after an authorized publication.

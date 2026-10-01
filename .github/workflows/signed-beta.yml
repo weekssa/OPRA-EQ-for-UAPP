@@ -72,7 +72,7 @@ jobs:
           unsigned_apk="app/build/outputs/apk/release/app-release-unsigned.apk"
           test -f "$unsigned_apk"
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$unsigned_apk" |
-            grep -F "package: name='com.weekssa.opraeqforuapp' versionCode='7' versionName='0.7.0'" >/dev/null
+            grep -F "package: name='com.weekssa.opraeqforuapp' versionCode='8' versionName='0.7.1'" >/dev/null
 
       - name: Align sign and verify beta APK
         env:
@@ -147,7 +147,7 @@ jobs:
             --arg apkSha256 "$apk_sha256" \
             --arg packageId "com.weekssa.opraeqforuapp" \
             --arg versionName "$version_name" \
-            --arg versionCode "7" \
+            --arg versionCode "8" \
             --arg signerSha256 "$actual_fingerprint" \
             --arg r8MappingSha256 "$r8_mapping_sha256" \
             --arg capabilityProfile "$capability_profile" \
@@ -160,8 +160,8 @@ jobs:
             .sourceSha == $sourceSha and
             .candidateTarget == $candidateTarget and
             .packageId == "com.weekssa.opraeqforuapp" and
-            .versionName == "0.7.0" and
-            .versionCode == 7 and
+            .versionName == "0.7.1" and
+            .versionCode == 8 and
             .r8MinificationEnabled == true and
             (.r8MappingSha256 | test("^[a-f0-9]{64}$")) and
             .evidenceIds == ($evidence | split(",")) and
@@ -225,8 +225,8 @@ jobs:
           fi
           echo "$install_output"
           package_dump="$(adb shell dumpsys package com.weekssa.opraeqforuapp)"
-          echo "$package_dump" | grep -q 'versionCode=7'
-          echo "$package_dump" | grep -q 'versionName=0.7.0'
+          echo "$package_dump" | grep -q 'versionCode=8'
+          echo "$package_dump" | grep -q 'versionName=0.7.1'
 
       - name: Cold-launch signed beta APK
         shell: bash

@@ -19,13 +19,14 @@ INCONCLUSIVE and is not treated as a code review result.
 - No physical device was attached, and none was needed for this software path. No release or hardware claim is made.
 - The closeout made no production or test changes. Documentation, commit, push, and PR outcomes are recorded in `docs/AFUL_EXPLORER_REVIEW_OUTCOME.md` and the dated runbook entry.
 
-## Candidate identity and repository state
+## Initial candidate identity and repository snapshot before PR #51 promotion (2026-09-30)
 
 - Repository: `weekssa/OPRA-EQ-for-UAPP`
 - Isolated worktree: `/Users/stephenweeks/.codex/worktrees/aful-favorite-fix/OPRA-EQ-for-UAPP`
 - Branch: `codex/aful-favorite-identity`
 - Implementation commit: `fcb0f5e03b22fc51c778d1989ec1c0ad8c7ddb38`
-- Parent / current `origin/main`: `6ada7efc84425f7b149f9f9e9fb4e9599bc80cf2`
+- Implementation parent and `origin/main` at that initial snapshot:
+  `6ada7efc84425f7b149f9f9e9fb4e9599bc80cf2`
 - Current `origin/catalog-live`: `b85ee763de4712aa39d38095db93aac083b03585`
 - Saved checkout at task start: branch `codex/ja11-protocol-evidence`, HEAD
   `dc34db33258159a7f73e92df0c792908c92166c8`, with 46 pre-existing untracked paths and no
@@ -36,8 +37,10 @@ INCONCLUSIVE and is not treated as a code review result.
   `docs/V0.6_LIBRARY_OWNERSHIP_AND_RECOVERY.md`, and `CHANGELOG.md`.
 - `git diff --check` passed before commit. The worktree was clean immediately after the
   implementation commit.
-- The branch is local and unpushed. There is no PR or remote CI result for this candidate. GitHub
-  was refreshed: related historical Favorites PRs #34 and #35 are closed; neither is this head.
+- At that initial snapshot, the branch was local and unpushed, with no PR or remote CI result.
+  It was later pushed and PR #51 was merged. PR #52 then added and merged the source-kind matrix;
+  see the promotion and current check records below. Related historical Favorites PRs #34 and #35
+  are closed and are not this candidate.
 
 ## Current catalog evidence
 
@@ -169,12 +172,25 @@ Final checks after adding the source matrix:
 This evidence establishes source-kind independence at the canonical headphone Favorite resolver
 boundary. It does not quantify a statistical probability or claim coverage of every external feed
 parser independently. The production implementation has no source-kind branch in the alias rebase;
-source-specific ingestion remains covered by its source tests and remote CI. PR #52 was opened from
-test commit `913ea660dbdd89d37f17e8b066f43296c144058f` against merged `main` commit
-`2a39bc53d7ee3caf2b98fe2fb043aff7bf4bdc74`. On that exact PR head, Android CI run 1889, CodeQL run
-1774, Catalog currentness CI run 2147, and Priority community coverage CI run 1632 all passed.
+source-specific ingestion remains covered by its source tests and remote CI.
+
+PR #52's final test head was `0cdfe66caf045696f9055197fc2ef617b0b72146`, based on PR #51 merge
+`2a39bc53d7ee3caf2b98fe2fb043aff7bf4bdc74`. On that exact test head, Android CI run
+[36819126699](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36819126699), CodeQL run
+[36819126784](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36819126784), Catalog
+currentness run [36819126769](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36819126769),
+and Priority community coverage run
+[36819126877](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36819126877) all passed.
 Android CI included unit tests, lint, debug/release builds, the API 26 cold-install smoke, and API
-36 connected UI tests. PR #52 remains open for normal owner review; it has not been merged.
+36 connected UI tests. PR #52 merged as `70a240a458f1e3cb6607d8349bb422d78cc95699`. Its test
+content is unchanged from the tested PR head. The exact merge commit's Android CI build, Kotlin
+analysis, API 26 smoke, emulator UI, Gradle dependency submission, and dependency submission checks
+also passed; the run IDs are 36820154922, 36820154963, 36820154755, and 36820154934.
+
+The Favorite code change is the only app-production behavior change after public v0.7.0. Version
+0.7.1 / version code 8 is being prepared as a focused patch. It is not yet a signed candidate or a
+public release; README current-release wording remains v0.7.0 until publication is separately
+approved and completed.
 
 ## Verification evidence
 

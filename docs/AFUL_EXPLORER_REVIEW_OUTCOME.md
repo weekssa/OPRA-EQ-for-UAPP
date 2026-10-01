@@ -34,12 +34,11 @@ The owner supplied a direct Luna final-verification and closeout task on 2026-09
 - The maintained UI smoke record contains the observed steps and command details: `docs/AFUL_EXPLORER_FAVORITE_UI_SMOKE.md`.
 - No bounded source or test fix was needed. No production or test file was changed during closeout.
 
-### Live remote state before publication
+### Initial remote snapshot before PR #51 (2026-09-30)
 
-- `origin/main` resolved to `6ada7efc84425f7b149f9f9e9fb4e9599bc80cf2`; it is the implementation parent.
-- No remote `codex/aful-favorite-identity` branch existed at the live check.
-- GitHub REST returned no PR for this branch and no Actions runs for the unpublished branch. `gh` was unavailable; the check-runs endpoint returned HTTP 422 for the unpublished HEAD, which is not a failed check.
-- The owner task authorizes publishing this verified branch and creating the normal PR. Record their actual results below after the repository action.
+- At this initial intake check, `origin/main` resolved to `6ada7efc84425f7b149f9f9e9fb4e9599bc80cf2`, the implementation parent.
+- At that snapshot, no remote `codex/aful-favorite-identity` branch or PR existed. GitHub REST returned no Actions runs for the unpublished branch. `gh` was unavailable; the check-runs endpoint returned HTTP 422 for the unpublished HEAD, which was not a failed check.
+- The owner task authorized pushing the verified branch and creating a normal PR. Those actions were completed and are recorded below. This snapshot is superseded by the repository promotion record and later live checks in `docs/AFUL_EXPLORER_FAVORITE_REVIEW.md`.
 
 ### Classification
 

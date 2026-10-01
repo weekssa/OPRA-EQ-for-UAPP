@@ -36,6 +36,45 @@ created a newer documentation commit. Black Pearl is publicly described only wit
 Explorer evidence boundary. JA11 software is verified, while broader power-cycle qualification is
 not claimed.
 
+## v0.7.1 patch candidate: preparation in progress
+
+The only app-production behavior change since public v0.7.0 is the canonical Favorite product-alias
+correction. PR #51 contains the fix; PR #52 adds the exhaustive current source-kind regression
+matrix and is merged at `70a240a458f1e3cb6607d8349bb422d78cc95699`. The patch candidate is prepared
+as `versionName 0.7.1` / `versionCode 8`. This section records preparation only; v0.7.0 remains the
+current public release until a future exact candidate is qualified and publication is approved.
+
+- [x] Focused Favorite source-kind matrix, full JVM suite, Room persistence tests, and documented
+  API 36 Favorite/restart smoke passed; see `docs/AFUL_EXPLORER_FAVORITE_REVIEW.md`.
+- [x] PR #52 exact-head Android CI, CodeQL, catalog-currentness, and priority-community checks
+  passed; its exact merge commit's main checks also passed.
+- [x] Patch release notes exist at `docs/releases/v0.7.1.md`; version assertions in the signed
+  release-candidate and signed-beta workflows match `0.7.1` / code `8`.
+- [x] Local unsigned v0.7.1 release assembly, 712 JVM tests, and Android lint pass; `aapt` confirms
+  package `com.weekssa.opraeqforuapp`, version `0.7.1`, and code `8`.
+- Release-preparation [PR #53](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/53) was opened
+  against `main` at source snapshot `fc407eaf8e722c80233c3463b9d9ecf6e8feee61`. Its four exact-head
+  workflows were in progress at creation. All four later passed at PR head
+  `50a4c2e8afd19162f8c6f62f5349cc737608cd19`: Android CI run
+  [36823974790](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36823974790), CodeQL run
+  [36823974796](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36823974796), Catalog
+  currentness run [36823974881](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36823974881),
+  and Priority community coverage run
+  [36823974785](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36823974785). Android CI's
+  API 26 cold-install job passed on its failed-job retry after the first hosted emulator boot timed
+  out. Use the live PR for its latest head and check results.
+- [ ] Release-preparation PR passes all exact-head remote checks and receives owner merge approval.
+- [ ] Main-only signed candidate records exact source SHA, APK SHA-256, package/version, signer,
+  workflow run, artifact ID/digest, and R8 mapping identity.
+- [ ] Install the exact signed candidate over public v0.7.0 and run the bounded Favorite save,
+  force-stop/restart, same-product/source restoration, and removal smoke on API 36.
+- [ ] Obtain explicit owner approval for any public promotion. The repository has no exact-artifact
+  public promotion workflow; a signed candidate is not a public release.
+
+No DAC hardware mutation or physical-device qualification is needed for this catalog Favorite
+identity fix. The Favorite/restart candidate smoke is still required to verify behavior in the
+versioned signed APK.
+
 ## Continuing release invariants
 
 These apply to every installable GitHub release:
