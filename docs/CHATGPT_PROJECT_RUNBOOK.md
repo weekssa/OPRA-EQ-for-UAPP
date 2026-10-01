@@ -493,6 +493,8 @@ commit's main checks also passed: Android CI run 36820154922, Kotlin analysis ru
 Gradle dependency submission run 36820154755, and dependency submission run 36820154934.
 
 The Favorite fix is the only app-production behavior change after public v0.7.0. A focused v0.7.1
-patch candidate is being prepared at version code 8. The published version remains v0.7.0; no
-signed candidate or public v0.7.1 release exists yet. Exact-source gates and a signed-candidate
-Favorite/upgrade/restart validation remain outstanding before any publication decision.
+patch candidate is being prepared at version code 8 in release-preparation [PR #53](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/53).
+The published version remains v0.7.0; no signed candidate or public v0.7.1 release exists yet.
+Use the live PR for the current source head and exact-head checks. Exact-source gates and a
+signed-candidate Favorite/upgrade/restart validation remain outstanding before any publication
+decision.

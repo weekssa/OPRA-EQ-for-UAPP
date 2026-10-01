@@ -52,6 +52,9 @@ current public release until a future exact candidate is qualified and publicati
   release-candidate and signed-beta workflows match `0.7.1` / code `8`.
 - [x] Local unsigned v0.7.1 release assembly, 712 JVM tests, and Android lint pass; `aapt` confirms
   package `com.weekssa.opraeqforuapp`, version `0.7.1`, and code `8`.
+- Release-preparation [PR #53](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/53) was opened
+  against `main` at source snapshot `fc407eaf8e722c80233c3463b9d9ecf6e8feee61`. Its four exact-head
+  workflows were in progress at creation. Use the live PR for the current head and check results.
 - [ ] Release-preparation PR passes all exact-head remote checks and receives owner merge approval.
 - [ ] Main-only signed candidate records exact source SHA, APK SHA-256, package/version, signer,
   workflow run, artifact ID/digest, and R8 mapping identity.
