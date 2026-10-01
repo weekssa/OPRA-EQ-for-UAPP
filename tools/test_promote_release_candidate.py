@@ -129,6 +129,31 @@ class ReleasePromotionTest(unittest.TestCase):
         with self.assertRaisesRegex(promotion.PromotionError, "file set"):
             self.validate(archive=archive, digest=hashlib.sha256(archive).hexdigest())
 
+    def test_accepts_apksigner_v4_sidecar_but_does_not_publish_it(self):
+        files = self.make_files()
+        idsig_name = f"EQ-Library-{TAG}.apk.idsig"
+        files[idsig_name] = b"v4 signature sidecar fixture"
+        archive = self.make_archive(files)
+        candidate = self.validate(archive=archive, digest=hashlib.sha256(archive).hexdigest())
+        self.assertEqual(files[idsig_name], candidate["files"][idsig_name])
+
+        assets = promotion.release_assets(
+            candidate,
+            {"apksigner-verification.txt": SIGNER_REPORT, "zipalign-verification.txt": ALIGNMENT_REPORT},
+            RUN_ID,
+            ARTIFACT_ID,
+            "34567",
+        )
+        self.assertNotIn(idsig_name, assets)
+        self.assertEqual(APK, assets[candidate["apk_name"]])
+
+    def test_rejects_empty_apksigner_v4_sidecar(self):
+        files = self.make_files()
+        files[f"EQ-Library-{TAG}.apk.idsig"] = b""
+        archive = self.make_archive(files)
+        with self.assertRaisesRegex(promotion.PromotionError, "sidecar is empty"):
+            self.validate(archive=archive, digest=hashlib.sha256(archive).hexdigest())
+
     def test_rejects_ambiguous_duplicate_manifest_fields(self):
         files = self.make_files()
         manifest = files["candidate-manifest.json"].decode("utf-8")

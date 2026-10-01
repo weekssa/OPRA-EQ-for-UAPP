@@ -78,6 +78,13 @@ Secrets are scoped only to the workflow steps that need them. The checkout/setup
 10. creates a SHA-256 checksum and source/package/version/signer/R8 candidate manifest; and
 11. uploads the signed outputs as a 90-day Actions artifact.
 
+Build Tools `apksigner` may also produce an APK Signature Scheme v4 sidecar named
+`EQ-Library-<tag>.apk.idsig` in that artifact. The publisher accepts only that exact optional
+sidecar alongside the required candidate files, includes it in the checked Actions artifact
+digest, and requires it to be nonempty. It does not publish the sidecar; the public release contains
+the standalone APK whose embedded v2/v3 signatures, checksum, package, version, and alignment are
+verified independently.
+
 Public tag/release publication remains separate from candidate building. The main-only
 `.github/workflows/promote-signed-release.yml` workflow accepts the tag, signed-candidate run ID,
 and immutable artifact ID. It requires the successful candidate run to come from
