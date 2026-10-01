@@ -72,3 +72,25 @@
 ## Cleanup
 
 The temporary `medium_phone` AVD was stopped and removed after the run. No physical DAC or hardware mutation was used.
+
+## 2026-09-30 Luna final verification smoke
+
+### Environment and initial state
+
+- AVD: `codex-api36`, started with `./tools/codex-android emulator -avd codex-api36 -no-window -no-audio -no-boot-anim`.
+- Device: `emulator-5554`, model `sdk_gphone64_arm64`, API 36.
+- `./tools/codex-android adb devices -l` showed no device before the AVD started. No physical or wireless device was connected.
+- The installed debug app initially showed `0 headphone EQs · 0 General EQs` and no saved Favorites.
+- App and test APK installation: `./tools/codex-android :app:installDebug :app:installDebugAndroidTest` succeeded.
+
+### Actions and observed results
+
+1. Launched `com.weekssa.opraeqforuapp/.MainActivity`, opened EQ Library, searched `AFUL Explorer`, and opened the `Explorer` row with five profiles.
+2. Added a known-good AutoEQ Favorite, then the HiFiGuides/Jaytiss and Reddit/LoboNautics community Favorites. Each action changed to `Remove favorite` and displayed `Saved to My EQs favorites.`
+3. My EQs showed LoboNautics with `Database: Reddit`, Jaytiss with `Database: Hifiguides`, and the AutoEQ/Fahryst Favorite. The AFUL entries both showed `AFUL · Explorer`.
+4. Ran `./tools/codex-android adb shell am force-stop com.weekssa.opraeqforuapp`, relaunched the same activity, and inspected the UI again. The same three Favorites and source/product identities remained.
+5. Removed only the three Favorites created by this smoke. The UI returned to `0 headphone EQs · 0 General EQs` and the original empty saved list.
+
+The UI was inspected with `./tools/codex-android android layout --device emulator-5554 --pretty` after navigation, save, restart, and cleanup. Navigation and Favorite actions used `./tools/codex-android adb shell input tap` and `input swipe`; search used `input text AFUL%sexplorer`. No catalog-update simulation was run because the maintained procedure above does not specify one. The AVD was shut down with `./tools/codex-android adb emu kill` after cleanup.
+
+Result: **PASS**. Both affected community selections resolved after restart to the intended AFUL Explorer product and source; the unrelated Favorite remained intact. This is emulator evidence only.

@@ -1,7 +1,23 @@
 # AFUL Explorer canonical Favorite candidate review
 
-Status: **CANDIDATE FIX VERIFIED — ready for independent review**. This is an implementation
-handoff, not a declaration that the issue is closed and not release or hardware qualification.
+Status: **VERIFIED FOR REPOSITORY PROMOTION** on 2026-09-30. This closes the bounded Favorite
+identity verification stage only; it is not app release readiness or hardware qualification.
+
+## 2026-09-30 final verification and closeout
+
+The owner directly authorized Luna to complete final verification and repository closeout, replacing
+the earlier pending Sol-first baton for this candidate. A separate read-only reviewer returned
+PASS with no actionable implementation finding. The prior access-limited Sol attempt remains
+INCONCLUSIVE and is not treated as a code review result.
+
+- Focused JVM command `./tools/codex-android :app:testDebugUnitTest --tests 'com.weekssa.opraeqforuapp.data.library.CanonicalFavoriteAliasIntegrationTest' --tests 'com.weekssa.opraeqforuapp.data.library.CanonicalFirstCatalogRepositoryTest' --tests 'com.weekssa.opraeqforuapp.domain.library.CanonicalLegacyCatalogAdapterTest' --tests 'com.weekssa.opraeqforuapp.domain.library.CatalogOverlayTest'`: **PASS**, 22 tests.
+- Full JVM command `./tools/codex-android :app:testDebugUnitTest`: **PASS**, 711 tests, no failures, errors, or skips.
+- Android test Kotlin compilation `./tools/codex-android :app:compileDebugAndroidTestKotlin`: **PASS**.
+- API 36 installation `./tools/codex-android :app:installDebug :app:installDebugAndroidTest`: **PASS**.
+- Room instrumentation command `./tools/codex-android adb shell am instrument -w -e class com.weekssa.opraeqforuapp.data.library.SavedEqCanonicalSelectionPersistenceTest com.weekssa.opraeqforuapp.test/androidx.test.runner.AndroidJUnitRunner`: **PASS**, `OK (6 tests)`.
+- UI smoke: **PASS** on AVD `codex-api36` / `emulator-5554` / API 36. Both affected AFUL Explorer community Favorites restored under their intended Reddit and HiFiGuides source identities after force-stop/relaunch; the unrelated AutoEQ Favorite remained. Test Favorites were removed afterward and the initially empty library state was restored. The detailed procedure and observations are in `docs/AFUL_EXPLORER_FAVORITE_UI_SMOKE.md`.
+- No physical device was attached, and none was needed for this software path. No release or hardware claim is made.
+- The closeout made no production or test changes. Documentation, commit, push, and PR outcomes are recorded in `docs/AFUL_EXPLORER_REVIEW_OUTCOME.md` and the dated runbook entry.
 
 ## Candidate identity and repository state
 
@@ -113,23 +129,22 @@ then verifies canonical selection persistence, action-profile identity, source r
 - **Instrumented Room PASS:** direct API 36 AVD run of `SavedEqCanonicalSelectionPersistenceTest` passed `OK (6 tests)`, including the invalid-product no-write and valid-save/remove controls.
 - **Fresh debug-app UI smoke PASS:** AFUL Explorer loaded from current feeds; the AutoEQ Jaytiss baseline Favorite was saved; both Reddit/LoboNautics and HiFiGuides/Jaytiss Favorites saved and appeared in My EQs with their source labels; LoboNautics was removed; force-stop/relaunch preserved HiFiGuides/Jaytiss and AutoEQ while keeping LoboNautics removed. The detailed command/layout record is `docs/AFUL_EXPLORER_FAVORITE_UI_SMOKE.md`.
 - A temporary API 36 AVD was removed after the smoke run. No physical DAC, USB mutation, or hardware test was used or needed because this failure occurs before the hardware path.
-- No remote CI, signed APK, release artifact, or PR exists for this unpushed candidate. These are not implied by the local results.
+- At the initial implementation handoff, no remote CI, signed APK, release artifact, or PR existed
+  for the unpushed candidate. These are not implied by the local verification results.
 
-## Remaining uncertainty and review boundary
+## Historical pre-closeout review boundary
 
-The candidate is ready for an independent code/regression review, not closure. Review the narrow
-alias evidence gate and ensure wrong, stale, ambiguous, and unrelated selections still fail closed.
-The UI invalid-identity case was not exercised by constructing an invalid UI row; it is covered by
-the JVM and Room negative controls. No signed artifact, clean-install/upgrade release validation,
-remote CI, physical device, or hardware qualification was performed. Do not infer release readiness
-or physical-device qualification from this candidate.
+This described the evidence boundary at the earlier implementation handoff. The later 2026-09-30
+verification above supersedes its pending-review status. The UI invalid-identity case was not
+constructed as a UI row; fail-closed behavior is covered by the JVM and Room negative controls.
+No signed artifact, clean-install/upgrade release validation, physical device, or hardware
+qualification was performed, and repository-promotion verification does not imply those claims.
 
-## Sol review to Luna worker workflow
+## Previous Sol-first routing workflow (historical)
 
-The next reviewer is a **Sol 5.6 independent review chat** with access to the worktree folder
-above. The independent code review is the first stage; it must return a durable result and a
-copyable prompt for a new **Codex Luna Extra High worker task**. The workflow and the required
-PASS, FAIL, and INCONCLUSIVE paths are in `docs/AFUL_EXPLORER_REVIEW_TO_LUNA_WORKFLOW.md`.
+This was the next role before the owner supplied the direct Luna final-verification request. That
+request is now complete. The general workflow and PASS, FAIL, and INCONCLUSIVE paths remain in
+`docs/AFUL_EXPLORER_REVIEW_TO_LUNA_WORKFLOW.md` for future candidates.
 
 The reviewer may update review/handoff documentation and append the review result to the runbook.
 It must not modify production code or tests. A PASS means only that the reviewer found no
@@ -137,7 +152,7 @@ actionable code-review issue within the files and evidence it could inspect. It 
 bug is closed, remote CI passed, or a release is ready. FAIL findings and INCONCLUSIVE access gaps
 must both be packaged for Luna, with FAIL adding concrete fix and verification criteria.
 
-## Independent review handoff prompt
+## Archived independent review handoff prompt (not active)
 
 ```text
 You are the independent reviewer in the first stage of a two-stage handoff. This review will be

@@ -1,12 +1,12 @@
-# AFUL Explorer Favorite final verification handoff
+# AFUL Explorer Favorite next-task baton (completed)
 
-Status: **FINAL VERIFICATION COMPLETE - VERIFIED FOR REPOSITORY PROMOTION**
+Status: **SUPERSEDED AND COMPLETED**. The owner supplied a direct Luna final-verification and
+closeout task on 2026-09-30. Do not launch the historical GPT-5.6 Sol prompt below. The exact
+verification results and repository handoff are recorded in
+`docs/AFUL_EXPLORER_REVIEW_OUTCOME.md` and the dated runbook entry. No further technical task is
+needed; the remaining action is owner review and normal PR integration.
 
-The owner directly authorized Luna final verification and closeout on 2026-09-30. That request superseded the earlier Sol-first routing baton for this candidate. Do not launch the historical Sol prompt below. The prior Sol attempt remains recorded as access-limited INCONCLUSIVE, with no test or code finding.
-
-The local source review, 22 focused JVM tests, 711-test full JVM suite, Android test compilation, six API 36 Room instrumentation tests, and API 36 emulator Favorite/restart smoke all passed. The exact evidence and limitations are in `docs/AFUL_EXPLORER_REVIEW_OUTCOME.md`, `docs/AFUL_EXPLORER_FAVORITE_REVIEW.md`, and `docs/AFUL_EXPLORER_FAVORITE_UI_SMOKE.md`.
-
-No additional technical task is required after this closeout. The remaining normal repository step is owner review of the PR and owner-controlled merge under the usual branch policy. The previous Sol prompt is retained below as historical context only.
+The previous prompt is retained below for audit context only.
 
 ~~~text
 You are GPT-5.6 Sol, acting as the independent code reviewer in the first stage of the AFUL Explorer Favorite review workflow. This is a fresh review task. Do not rely on prior chat history, and make your own technical judgment from the candidate source, tests, and recorded evidence available in this worktree.
