@@ -164,9 +164,12 @@ Final checks after adding the source matrix:
 This evidence establishes source-kind independence at the canonical headphone Favorite resolver
 boundary. It does not quantify a statistical probability or claim coverage of every external feed
 parser independently. The production implementation has no source-kind branch in the alias rebase;
-source-specific ingestion remains covered by its source tests and remote CI. The follow-up branch
-is a test-evidence change based on the merged fix and must pass its own remote workflows before it
-is treated as repository-integrated evidence.
+source-specific ingestion remains covered by its source tests and remote CI. PR #52 was opened from
+test commit `913ea660dbdd89d37f17e8b066f43296c144058f` against merged `main` commit
+`2a39bc53d7ee3caf2b98fe2fb043aff7bf4bdc74`. On that exact PR head, Android CI run 1889, CodeQL run
+1774, Catalog currentness CI run 2147, and Priority community coverage CI run 1632 all passed.
+Android CI included unit tests, lint, debug/release builds, the API 26 cold-install smoke, and API
+36 connected UI tests. PR #52 remains open for normal owner review; it has not been merged.
 
 ## Verification evidence
 

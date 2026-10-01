@@ -482,5 +482,9 @@ run, both with no failures, errors, or skips. Android-test Kotlin compilation an
 instrumentation also passed (`OK (6 tests)`). The existing API 36 Favorite/restart UI smoke remains
 applicable because production code did not change. Exact commands and coverage boundaries are in
 `docs/AFUL_EXPLORER_FAVORITE_REVIEW.md`. This increases regression coverage but is not a statistical
-95% guarantee and does not independently validate every external feed parser. The follow-up branch
-requires its own remote CI before its evidence is treated as repository-integrated.
+95% guarantee and does not independently validate every external feed parser. PR #52 was opened
+from test commit `913ea660dbdd89d37f17e8b066f43296c144058f` against `main` at
+`2a39bc53d7ee3caf2b98fe2fb043aff7bf4bdc74`. On that exact PR head, Android CI run 1889, CodeQL run
+1774, Catalog currentness CI run 2147, and Priority community coverage CI run 1632 all passed.
+Android CI included unit tests, lint, debug/release builds, the API 26 cold-install smoke, and API
+36 connected UI tests. PR #52 remains open and unmerged for normal owner review.
