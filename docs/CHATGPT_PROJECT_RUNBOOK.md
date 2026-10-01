@@ -593,16 +593,27 @@ for this repository resolver test. These deterministic samples provide current s
 coverage, not a statistical 95% probability or parser, provenance, license, access, or acoustic
 quality certification.
 
-The source branch was prepared on base `bfb1e3b49e37dd764675e512cee10670d22570a1`. A catalog-
-currentness refresh later advanced `origin/main` to `84998be61769950cf8b13801a7846523631603f9`;
-the canonical source-ID/profile sample set is unchanged. The local candidate now shares that
-refreshed main base. The source fixture, focused Kotlin regressions, full 713-test JVM suite, and
-full 199-test Python suite passed against it. `actionlint` is not installed locally; exact-head
-remote CI remains pending. Branch
-`codex/favorite-source-review` is local and has no remote CI or pull request yet. Existing draft
-[PR #55](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/55) records the earlier signed candidate
-and remains separate; it does not contain this follow-up correction. The latest public release is
-still v0.7.0. No tag, release, or artifact promotion was made for this work.
+The source fix was committed locally as `1c04e6e8bce6af50d79f11b5599e2d55dcd843d9` on
+`84998be61769950cf8b13801a7846523631603f9`. During closeout, live `origin/main` advanced to
+`32e7937a1e3c9b646d69bd5caebcccd98b2b0d77`. That catalog refresh changed the generated timestamp
+and JSON formatting; after parsing both files and removing `generated_at`, all catalog data was
+identical and the 14 sample IDs remained current. The attached verification instructions prohibit
+rebasing, so the feature branch merged current main without rewriting the source commit. The local
+merge head is `68ca6117230f4dab709be23b0a56cd66ee732dc7`, with current main as its second parent.
+The PR diff against main contains only the 15 intended source, test, workflow, and documentation
+files; the generated catalog formatting change is not part of the PR diff.
+
+After that merge, local validation passed on the candidate code: 14 source samples / 13 profiles;
+5 checker tests; all 199 repository Python tests using the bundled Python 3.12 runtime; both focused
+Kotlin test classes; the full JVM suite (713 tests, zero failures/errors/skips); and the Room-backed
+Favorite persistence class (6 tests, zero failures/errors/skips) on a temporary API 36 emulator.
+The emulator UI smoke filtered Edition XS to Database: OPRA, saved the oratory1990 Favorite, verified
+that it restored after force-stop/relaunch, then removed it and restored the initial empty Favorites
+state. No physical phone, wireless debugging, DAC, or hardware operation was used. `actionlint` is
+not installed locally. Exact-head GitHub automation and independent review are pending; no PR has
+been created yet. Existing draft [PR #55](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/55) is
+unrelated and remains unchanged. The latest public release is still v0.7.0. No public tag or release
+was created.
 
 ### 2026-10-01 conditional merge authorization for source-wide Favorite fix
 

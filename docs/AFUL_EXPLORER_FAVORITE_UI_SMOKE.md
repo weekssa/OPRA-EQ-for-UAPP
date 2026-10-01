@@ -94,3 +94,23 @@ The temporary `medium_phone` AVD was stopped and removed after the run. No physi
 The UI was inspected with `./tools/codex-android android layout --device emulator-5554 --pretty` after navigation, save, restart, and cleanup. Navigation and Favorite actions used `./tools/codex-android adb shell input tap` and `input swipe`; search used `input text AFUL%sexplorer`. No catalog-update simulation was run because the maintained procedure above does not specify one. The AVD was shut down with `./tools/codex-android adb emu kill` after cleanup.
 
 Result: **PASS**. Both affected community selections resolved after restart to the intended AFUL Explorer product and source; the unrelated Favorite remained intact. This is emulator evidence only.
+
+## 2026-10-01 source-wide Favorite OPRA smoke
+
+### Environment and initial state
+
+- Candidate code head: `68ca6117230f4dab709be23b0a56cd66ee732dc7`, which includes current main.
+- Temporary AVD: `medium_phone`, Android 16 / API 36, Google Play arm64 image, serial `emulator-5554`.
+- `./tools/codex-android adb devices -l` showed only the temporary emulator; no physical or wireless device was connected.
+- A fresh debug install showed an empty My EQs Favorites state.
+
+### Actions and results
+
+1. Opened EQ Library, searched `HIFIMAN edition XS`, and selected Edition XS.
+2. Opened the Database filter and selected OPRA. The visible card was `oratory1990`, `Database: OPRA`, `Target: Harman`.
+3. Tapped `Add favorite`. The card changed to `Remove favorite` and the app displayed `Saved to My EQs favorites.`
+4. My EQs showed `oratory1990`, `Database: OPRA`, `Target: Harman`, and `HIFIMAN · Edition XS`.
+5. Force-stopped and relaunched the app. The same OPRA Favorite and product identity remained.
+6. Removed the test Favorite. My EQs returned to the initial empty state.
+
+The screen state was inspected with `./tools/codex-android android layout --device emulator-5554 --pretty` after navigation, save, restart, and cleanup. The app was installed with `./tools/codex-android :app:installDebug`. No catalog refresh simulation was run. The temporary `medium_phone` AVD was stopped and removed; the existing `codex-api36` AVD was left unchanged. This is emulator software evidence only. It does not claim physical-device, DAC, acoustic, or parser qualification.
