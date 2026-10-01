@@ -464,4 +464,27 @@ This promotion update is documentation-only. Its pushed commit advances the PR h
 state above is a snapshot for the initial PR head. The final task closeout records the latest branch
 head and check state. The next owner action is to review PR #51 and merge it through the normal
 protected-branch process when approved. This does not authorize merge, release signing, or
-publication by the verification worker.
+publication by the verification worker. This owner action was subsequently completed: PR #51 is
+merged, and the current `main` merge commit is `2a39bc53d7ee3caf2b98fe2fb043aff7bf4bdc74`.
+
+### 2026-09-30 AFUL Favorite source-kind confidence follow-up
+
+The owner asked for evidence that the Favorite alias correction applies across catalog sources, not
+only the AFUL Explorer community examples. PR #51 is merged; the verified `origin/main` merge head
+for this follow-up is `2a39bc53d7ee3caf2b98fe2fb043aff7bf4bdc74`. A test-only matrix was added on
+branch `codex/aful-source-matrix`. It exercises all seven source kinds used by canonical headphone
+catalog Favorites across AFUL Explorer, Sony WH-1000XM5, and Sennheiser HD 600, while checking exact
+profile, revision, and source-reference retention. `DEVICE_CAPTURE` and `PERSONAL_IMPORT` use
+separate local saved-EQ flows and are not inputs to this catalog Favorite resolver.
+
+The matrix passed as part of the 23-test focused alias/catalog JVM run and the 712-test full JVM
+run, both with no failures, errors, or skips. Android-test Kotlin compilation and API 36 Room
+instrumentation also passed (`OK (6 tests)`). The existing API 36 Favorite/restart UI smoke remains
+applicable because production code did not change. Exact commands and coverage boundaries are in
+`docs/AFUL_EXPLORER_FAVORITE_REVIEW.md`. This increases regression coverage but is not a statistical
+95% guarantee and does not independently validate every external feed parser. PR #52 was opened
+from test commit `913ea660dbdd89d37f17e8b066f43296c144058f` against `main` at
+`2a39bc53d7ee3caf2b98fe2fb043aff7bf4bdc74`. On that exact PR head, Android CI run 1889, CodeQL run
+1774, Catalog currentness CI run 2147, and Priority community coverage CI run 1632 all passed.
+Android CI included unit tests, lint, debug/release builds, the API 26 cold-install smoke, and API
+36 connected UI tests. PR #52 remains open and unmerged for normal owner review.
