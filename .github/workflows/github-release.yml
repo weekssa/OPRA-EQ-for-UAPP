@@ -6,7 +6,7 @@ on:
       tag:
         description: Release tag in exact vMAJOR.MINOR.PATCH form.
         required: true
-        default: v0.7.0
+        default: v0.7.1
         type: string
 
 permissions:
@@ -87,7 +87,7 @@ jobs:
           unsigned_apk="app/build/outputs/apk/release/app-release-unsigned.apk"
           test -f "$unsigned_apk"
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$unsigned_apk" |
-            grep -F "package: name='com.weekssa.opraeqforuapp' versionCode='7' versionName='0.7.0'" >/dev/null
+            grep -F "package: name='com.weekssa.opraeqforuapp' versionCode='8' versionName='0.7.1'" >/dev/null
 
       - name: Align, sign, and verify APK
         env:

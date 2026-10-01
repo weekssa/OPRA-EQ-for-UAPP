@@ -43,7 +43,7 @@ The Restore proves exact baseline restoration when it completed. A separate late
 
 No further Apply, Flash, Restore, Reset, Save qualification, or read-only report is needed. If still unverified, the only possible owner check is non-hardware-mutating Personal EQ capture/value/provenance confirmation; open/cancel My EQs Flash review only if the successful Flash was not already launched there. Stop before final write confirmation. Capture remains “not yet evidenced,” not unsupported hardware.
 
-The approved cross-DAC product acceptance—including the shared graph/state/manual Refresh flow, capability-by-capability Black Pearl comparison, and low/high-shelf corpus behavior—is defined in `docs/V0.7_PRODUCT_SUCCESS_CRITERIA.md`. The current independent release audit is `docs/V0.7_RELEASE_READINESS_AUDIT.md`; earlier green gates and candidate provenance do not transfer to later source SHAs. PR #23 remains draft, v0.7.0 remains NO-GO, and merge/publication/public-support claims require explicit owner approval.
+The approved cross-DAC product acceptance, including the shared graph/state/manual Refresh flow, capability-by-capability Black Pearl comparison, and low/high-shelf corpus behavior, is defined in `docs/V0.7_PRODUCT_SUCCESS_CRITERIA.md`. The current independent release audit is `docs/V0.7_RELEASE_READINESS_AUDIT.md`; earlier green gates and candidate provenance do not transfer to later source SHAs. At this 2026-09-22 checkpoint, PR #23 remained draft and v0.7.0 had not cleared. That release status was superseded by the owner-approved v0.7.0 publication on 2026-09-28, recorded below. PR #23 remains historical context; current release status is maintained in `docs/PUBLIC_RELEASE_CHECKLIST.md`.
 
 ## 2. Repository boundary
 
@@ -332,13 +332,13 @@ The exact candidate passed Android CI #1538, CodeQL #1420, Catalog currentness C
 
 This PASS closes the corrective Black Pearl physical gate. It does not establish TRN factory-default semantics and does not qualify FiiO JA11 hardware behavior. PR #16 remains open and draft; merge, release, and publication remain explicit owner-authorization gates.
 
-## 2026-09-22 current EW300 v0.7 checkpoint
+## Historical 2026-09-22 EW300 v0.7 checkpoint
 
-PR #23 is the authoritative location for the current exact branch SHA, signed APK filename, SHA-256, package/version, signer, artifact digest, artifact ID, and gate links. Use only the candidate whose source SHA matches the live PR head and whose Android CI, CodeQL, catalog, priority coverage, dependency submission, and signed-candidate workflow all pass on that same SHA.
+At that checkpoint, PR #23 was the authoritative location for the exact branch SHA, signed APK filename, SHA-256, package/version, signer, artifact digest, artifact ID, and gate links. The instructions below describe that historical release state; they are superseded by the later v0.7.0 publication and current checklist.
 
 Physical transaction qualification is complete on sources 381 and 7599 (E037-E046); retain those tested SHAs in the ledger and do not repeat any mutation or read-only report. After all product work and exact-head gates pass, the only possible owner checks are non-hardware-mutating Personal EQ capture/value/provenance confirmation and opening/canceling My EQs Flash review only if the verified Flash did not already originate from My EQs. No Apply, Flash, Reset, Restore, or Save is requested.
 
-Keep PR #23 draft and v0.7.0 NO-GO until scope and final review are closed and the owner explicitly approves merge/publication/public support.
+Historical gate instruction from 2026-09-22: keep PR #23 draft and v0.7.0 NO-GO until scope and final review are closed and the owner explicitly approves merge/publication/public support.
 
 ### 2026-09-23 source-review continuation
 
@@ -465,14 +465,15 @@ state above is a snapshot for the initial PR head. The final task closeout recor
 head and check state. The next owner action is to review PR #51 and merge it through the normal
 protected-branch process when approved. This does not authorize merge, release signing, or
 publication by the verification worker. This owner action was subsequently completed: PR #51 is
-merged, and the current `main` merge commit is `2a39bc53d7ee3caf2b98fe2fb043aff7bf4bdc74`.
+merged as `2a39bc53d7ee3caf2b98fe2fb043aff7bf4bdc74`. Later PR #52 merged as
+`70a240a458f1e3cb6607d8349bb422d78cc95699`.
 
-### 2026-09-30 AFUL Favorite source-kind confidence follow-up
+### 2026-10-01 AFUL Favorite source-kind coverage and patch preparation
 
 The owner asked for evidence that the Favorite alias correction applies across catalog sources, not
-only the AFUL Explorer community examples. PR #51 is merged; the verified `origin/main` merge head
-for this follow-up is `2a39bc53d7ee3caf2b98fe2fb043aff7bf4bdc74`. A test-only matrix was added on
-branch `codex/aful-source-matrix`. It exercises all seven source kinds used by canonical headphone
+only the AFUL Explorer community examples. PR #51 is merged. A test-only matrix was added on branch
+`codex/aful-source-matrix`; its final tested head is `0cdfe66caf045696f9055197fc2ef617b0b72146`,
+and it merged as `70a240a458f1e3cb6607d8349bb422d78cc95699`. It exercises all seven source kinds used by canonical headphone
 catalog Favorites across AFUL Explorer, Sony WH-1000XM5, and Sennheiser HD 600, while checking exact
 profile, revision, and source-reference retention. `DEVICE_CAPTURE` and `PERSONAL_IMPORT` use
 separate local saved-EQ flows and are not inputs to this catalog Favorite resolver.
@@ -481,10 +482,17 @@ The matrix passed as part of the 23-test focused alias/catalog JVM run and the 7
 run, both with no failures, errors, or skips. Android-test Kotlin compilation and API 36 Room
 instrumentation also passed (`OK (6 tests)`). The existing API 36 Favorite/restart UI smoke remains
 applicable because production code did not change. Exact commands and coverage boundaries are in
-`docs/AFUL_EXPLORER_FAVORITE_REVIEW.md`. This increases regression coverage but is not a statistical
-95% guarantee and does not independently validate every external feed parser. PR #52 was opened
-from test commit `913ea660dbdd89d37f17e8b066f43296c144058f` against `main` at
-`2a39bc53d7ee3caf2b98fe2fb043aff7bf4bdc74`. On that exact PR head, Android CI run 1889, CodeQL run
-1774, Catalog currentness CI run 2147, and Priority community coverage CI run 1632 all passed.
-Android CI included unit tests, lint, debug/release builds, the API 26 cold-install smoke, and API
-36 connected UI tests. PR #52 remains open and unmerged for normal owner review.
+`docs/AFUL_EXPLORER_FAVORITE_REVIEW.md`. The updated matrix derives its expected set from all
+`EqSourceKind` values and explicitly excludes only the two separate local flows. This evidence does
+not quantify a statistical 95% probability or independently validate every external feed parser.
+
+On final PR head `0cdfe66`, Android CI run 1891, CodeQL run 1776, Catalog currentness CI run 2149,
+and Priority community coverage CI run 1634 all passed. Android CI included unit tests, lint,
+debug/release builds, the API 26 cold-install smoke, and API 36 connected UI tests. The exact merge
+commit's main checks also passed: Android CI run 36820154922, Kotlin analysis run 36820154963,
+Gradle dependency submission run 36820154755, and dependency submission run 36820154934.
+
+The Favorite fix is the only app-production behavior change after public v0.7.0. A focused v0.7.1
+patch candidate is being prepared at version code 8. The published version remains v0.7.0; no
+signed candidate or public v0.7.1 release exists yet. Exact-source gates and a signed-candidate
+Favorite/upgrade/restart validation remain outstanding before any publication decision.
