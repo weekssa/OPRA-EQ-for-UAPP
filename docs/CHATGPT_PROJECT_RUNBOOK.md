@@ -538,3 +538,45 @@ source kinds over three headphone products, while `DEVICE_CAPTURE` and `PERSONAL
 separate local flows. The matrix and the candidate UI smoke establish strong source-independent
 coverage at the Favorite resolver and persisted-user-flow boundaries; they do not measure a
 statistical 95% probability or independently qualify each source-feed parser.
+
+### 2026-10-01 v0.7.1 signed candidate #12 and three-source restart verification
+
+The documentation-only PR #54 merged at `bfb1e3b49e37dd764675e512cee10670d22570a1`. Its exact-main
+Android CI run #1898 / `36867047458`, CodeQL run #1783 / `36867047589`, Dependency Submission run
+#52 / `36867047343`, and Automatic Dependency Submission run #2302 / `36867046954` all succeeded.
+The remote `main` ref was rechecked at that same SHA before candidate signing.
+
+Signed Release Candidate workflow run #12 / run ID `36868604916` succeeded from main SHA
+`bfb1e3b49e37dd764675e512cee10670d22570a1`, with tag input `v0.7.1`. Actions artifact ID
+`11166960960`, named
+`EQ-Library-v0.7.1-signed-bfb1e3b49e37dd764675e512cee10670d22570a1`, was 2,218,565 bytes and
+expires 2026-12-30. Its ZIP SHA-256 is
+`3743d6755555df67c539fbced020de8fe1564fc0fcc83b88698531c53eca8acd`. The manifest records
+`EQ-Library-v0.7.1.apk`, package `com.weekssa.opraeqforuapp`, version `0.7.1` / code `8`, APK
+SHA-256 `7b0650c6f98af99e45117b0e07bf894f5a5f2d3a33535bb1b3cfe640293f67af`, signer certificate
+SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`, and R8 mapping
+SHA-256 `715a5a42e51e021a21c7957bb78ed235edcd851bd15cf7c884af8e2745f67a0d`. The downloaded ZIP
+digest matched the Actions artifact digest. Independent APK checksum, `apksigner` v2/v3 signature,
+`zipalign`, package, and version checks passed. The earlier signed candidate from source
+`5c05b0c3ac06e4d8eb868b6232a81651ac060da5` is historical and is superseded as the latest candidate
+by run #12.
+
+The public v0.7.0 APK matched its published checksum and pinned signer. On a fresh API 36 AVD it
+reproduced the Jaytiss/Hifiguides failure, reporting that the exact source revision was unavailable.
+The exact run #12 APK installed in place over v0.7.0 with the same signer. On that candidate,
+Jaytiss/Hifiguides, AutoEq/Fahryst, and LoboNautics/Reddit Favorites each saved successfully and
+showed the saved state. My EQs displayed all three records with their source labels and favorite
+removal controls after force-stop and cold relaunch. The fresh AVD started with no saved profiles,
+so migration of pre-existing Favorites was not exercised. This is emulator UI evidence, not
+physical-device evidence. The temporary `codex-v071-smoke` AVD was deleted; the existing
+`codex-api36` AVD was left unchanged.
+
+The latest public release remains v0.7.0. No public v0.7.1 tag or release exists, and the repository
+still has no exact-artifact public promotion workflow. Candidate qualification does not authorize
+publication. Preserve the exact candidate artifact and do not rebuild or re-sign it to simulate
+promotion. The source-kind matrix spans all seven catalog Favorite source kinds across three
+headphone products, with 23 focused tests, 712 full JVM tests, and six Room instrumentation tests;
+candidate UI smoke covers Hifiguides, AutoEQ, and Reddit source records. Together these provide
+strong source-independent coverage at the canonical Favorite resolver and persisted-user-flow
+boundaries, but they do not establish a statistical 95% probability or independently validate each
+external feed parser.
