@@ -306,6 +306,18 @@ class ReleasePromotionTest(unittest.TestCase):
         root = Path(__file__).resolve().parents[1]
         promotion.check_contract(root)
 
+    def test_emulator_upgrade_uses_outputs_from_same_job_verification_step(self):
+        workflow = (Path(__file__).resolve().parents[1] / ".github/workflows/promote-signed-release.yml").read_text(
+            encoding="utf-8"
+        )
+        upgrade_step = workflow.split(
+            "- name: Install exact candidate over the latest public release on API 35\n", 1
+        )[1].split("\n      - name: Upload promotion emulator diagnostics", 1)[0]
+        self.assertNotIn("${{ needs.verify-candidate.outputs.", upgrade_step)
+        for output in ("baseline_version_code", "candidate_version_code", "candidate_version_name"):
+            with self.subTest(output=output):
+                self.assertIn(f"${{{{ steps.verify.outputs.{output} }}}}", upgrade_step)
+
     def test_latest_release_baseline_is_verified_before_emulator_upgrade(self):
         candidate = self.validate()
         apk_sha = hashlib.sha256(APK).hexdigest()

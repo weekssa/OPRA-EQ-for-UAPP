@@ -679,8 +679,24 @@ copy matches its APK hash; its branch tip is `dc3fdae75998f4a74f90581d0f53b3f860
 This Favorite resolver defect required no phone, wireless debugging, USB DAC, or physical
 qualification. At this recorded checkpoint, the latest public release was v0.7.0 and no public
 v0.7.1 tag or release had been created. Conditional merge approval was exercised for PR #56, #57,
-and #58 after their applicable exact-head gates passed. On 2026-10-01, the owner separately
-authorized the public v0.7.1 release on the condition that all review, CI, exact-candidate,
-promotion, and post-publication gates pass. That approval does not authorize any broader
-hardware-support claim. The exact-artifact publisher and final release evidence belong in the
-follow-up closeout entry below this history.
+and #58 after their applicable exact-head gates passed. The owner separately authorized the public
+v0.7.1 release on the condition that all review, CI, exact-candidate, promotion, and post-publication
+gates pass. That approval does not authorize any broader hardware-support claim. The publisher and
+final release evidence are tracked in the current release checklist and follow-up closeout below.
+
+### 2026-10-01 exact-artifact publisher promotion repair
+
+PR #59 added the main-only exact-artifact publisher and PR #60 corrected its candidate archive
+contract for the optional nonempty APK v4 signature sidecar. Both merged and passed their required
+checks. Fresh Signed Release Candidate run #14 / `36935224537` then succeeded from exact main
+`9ad72df85b163fa41ff604eed1d7e6dfc8af3230`; candidate artifact `11198451366` contains APK SHA-256
+`4a56d09d9e08e4949272c18e980a3f4e673a7d155aa0c51851d371cb3de633ea`.
+
+Promotion run #2 / `36936467429` verified the candidate and public v0.7.0 baseline, then failed in
+the API 35 install step before installing either APK. The step read job outputs through
+`needs.verify-candidate.outputs.*` from inside its own job, which expanded to empty values. The
+publish job was skipped, so no public tag or release was created. PR #61 corrects those references
+to `steps.verify.outputs.*` and adds a regression contract. Its local promotion test suite (24
+tests), workflow contract check, and whitespace check pass. Exact-head independent review and CI,
+fresh candidate provenance after merge, a passing API 35 upgrade/cold launch, and public asset/tag
+verification remain required. See `docs/PUBLIC_RELEASE_CHECKLIST.md` for the live gate status.

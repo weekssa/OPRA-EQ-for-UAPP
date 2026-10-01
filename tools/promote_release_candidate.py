@@ -867,6 +867,14 @@ def check_contract(project_root: Path) -> None:
     ]
     for marker in required:
         require(marker in workflow, f"promotion workflow contract is missing {marker!r}")
+    upgrade_step = workflow.split(
+        "- name: Install exact candidate over the latest public release on API 35\n", 1
+    )[1].split("\n      - name: Upload promotion emulator diagnostics", 1)[0]
+    require("${{ needs.verify-candidate.outputs." not in upgrade_step,
+            "same-job emulator checks must not read verify-candidate through needs")
+    for output in ("baseline_version_code", "candidate_version_code", "candidate_version_name"):
+        require(f"${{{{ steps.verify.outputs.{output} }}}}" in upgrade_step,
+                f"API 35 emulator check does not consume verify-step output {output!r}")
     require('"/releases/latest"' in publisher and '"make_latest": "true"' in publisher and
             '"release-provenance.json"' in publisher,
             "publisher does not preserve its latest metadata and provenance contract")
