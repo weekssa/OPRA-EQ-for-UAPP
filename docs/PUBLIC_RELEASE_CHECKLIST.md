@@ -17,7 +17,9 @@ The checklist is organized around the **current release state**. Detailed histor
 - [x] Normal Android CI validates unit tests, Android lint, debug assembly, and unsigned release assembly without publishing development APKs.
 - [x] GitHub Actions dependencies are pinned and repository security/dependency checks are enabled.
 - [x] One permanent Android release-signing identity is established and its public certificate fingerprint is pinned in `release-signing-cert.sha256`.
-- [x] Candidate signing is separate from public publication; the v0.7 candidate workflow cannot create a public tag or release while exact-artifact promotion is unimplemented.
+- [x] Candidate signing is separate from public publication. The main-only
+  `.github/workflows/promote-signed-release.yml` publisher promotes an immutable verified candidate
+  and never rebuilds or re-signs the APK.
 - [x] The repository front page describes the current **EQ Library** product rather than the original OPRA-only workflow.
 
 ## Current v0.7.0 state
@@ -46,10 +48,11 @@ v0.7.1 / `versionCode 8` candidate from that exact main commit passed independen
 and API 36 Favorite save/restart validation. The latest public release remains v0.7.0; no public
 v0.7.1 tag or release exists.
 
-The candidate described above was superseded for the expanded source-wide Favorite correction. The
-source fix merged in PR #56; the signed beta workflow correction merged in PR #57. Replacement
-candidate #1376 from that exact merged workflow SHA is recorded below; public publication remains a
-separate owner decision.
+The initial v0.7.1 release candidate and replacement signed beta #1376 predate the current `main`
+commit and are not eligible for public promotion. The source-wide fix merged in PR #56; the signed
+beta workflow correction merged in PR #57; documentation closeout merged in PR #58. Candidate #1376
+remains useful as prior signed install/cold-launch evidence for unchanged app code. The release
+publisher must use a fresh Signed Release Candidate built from the finalized `main` SHA.
 
 - [x] Focused Favorite source-kind matrix, full JVM suite, Room persistence tests, and documented
   API 36 Favorite/restart smoke passed; see `docs/AFUL_EXPLORER_FAVORITE_REVIEW.md`.
@@ -120,18 +123,15 @@ separate owner decision.
   [EQ-Library-v0.7.1-beta-38302d6.apk](https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.1-beta-38302d6.apk)
   matches the artifact and manifest APK SHA-256. Its `mobile-test-apk` branch tip is
   `dc3fdae75998f4a74f90581d0f53b3f860841ee7`.
-- [ ] Public v0.7.1 promotion remains pending explicit owner decision and an exact-artifact
-  promotion path. Do not create a tag/release or make a public hardware-support claim. Earlier
-  candidate `cfdc688a0ff9392f5617b05719b09c9c478cf07390aa7dc79e8d4e33c6eecba3` predates this
-  expanded fix and is superseded for the Favorite fix. Replacement signed beta run #1376 was
-  dispatched from exact main SHA `38302d6b880fcb1b384a4c290d8539260bd4a138` with target `ja11`;
-  its artifact, manifest, APK, signer, and temporary-channel provenance were independently verified
-  and are recorded above. Public promotion remains a separate owner decision.
-- [ ] Obtain explicit owner approval for any public promotion. The repository has no exact-artifact
-  public promotion workflow; the signed candidate is a qualification artifact, not a public
-  release. The owner's conditional merge approval for the expanded Favorite fix does not authorize
-  a public tag, release, or support claim. Do not rebuild or re-sign it during later manual
-  publication.
+- [x] The owner conditionally authorized public v0.7.1 publication on 2026-10-01, provided all
+  software, review, candidate, and promotion checks pass. This approval applies to this source-wide
+  Favorite correction; no separate hardware-support claim is authorized.
+- [ ] Merge the independently reviewed exact-artifact publisher after all exact-head checks pass.
+- [ ] Build a fresh Signed Release Candidate from the finalized `main` SHA and pass the publisher's
+  archive, APK, API 35 clean-install/in-place-upgrade, and cold-launch checks.
+- [ ] Run **Promote Signed Release Candidate** with the exact candidate run/artifact IDs. Verify the
+  public tag, APK bytes, release assets, signer, source provenance, curated release notes, and
+  `/releases/latest` metadata before marking this release published.
 
 No DAC hardware mutation or physical-device qualification is needed for this catalog Favorite
 identity fix. See the 2026-10-01 entry in `docs/CHATGPT_PROJECT_RUNBOOK.md` for the complete

@@ -1,0 +1,212 @@
+name: Promote Signed Release Candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Exact release tag of the signed candidate (for example v0.7.1).
+        required: true
+        type: string
+      candidate_run_id:
+        description: Successful Signed Release Candidate workflow run ID.
+        required: true
+        type: string
+      candidate_artifact_id:
+        description: Immutable signed-candidate Actions artifact ID from that run.
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: exact-public-release-promotion
+  cancel-in-progress: false
+
+jobs:
+  verify-candidate:
+    if: github.repository == 'weekssa/OPRA-EQ-for-UAPP' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    outputs:
+      release_tag: ${{ steps.verify.outputs.release_tag }}
+      candidate_run_id: ${{ steps.verify.outputs.candidate_run_id }}
+      candidate_artifact_id: ${{ steps.verify.outputs.candidate_artifact_id }}
+      source_sha: ${{ steps.verify.outputs.source_sha }}
+      artifact_digest: ${{ steps.verify.outputs.artifact_digest }}
+      candidate_version_name: ${{ steps.verify.outputs.candidate_version_name }}
+      candidate_version_code: ${{ steps.verify.outputs.candidate_version_code }}
+      baseline_version_code: ${{ steps.verify.outputs.baseline_version_code }}
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Check out the exact publisher source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Set up Android SDK tools
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
+        with:
+          packages: platform-tools
+
+      - name: Install pinned Android build tools
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0" "emulator" "system-images;android-35;google_apis;x86_64"
+
+      - name: Verify signed candidate and artifact identity
+        id: verify
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_API_URL: ${{ github.api_url }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          CANDIDATE_RUN_ID: ${{ inputs.candidate_run_id }}
+          CANDIDATE_ARTIFACT_ID: ${{ inputs.candidate_artifact_id }}
+          EXPECTED_SOURCE_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/promotion-transfer"
+          python3 tools/promote_release_candidate.py verify \
+            --tag "$RELEASE_TAG" \
+            --candidate-run-id "$CANDIDATE_RUN_ID" \
+            --candidate-artifact-id "$CANDIDATE_ARTIFACT_ID" \
+            --source-sha "$EXPECTED_SOURCE_SHA" \
+            --build-tools "$ANDROID_HOME/build-tools/36.0.0" \
+            --project-root . \
+            --archive-out "$RUNNER_TEMP/promotion-transfer/candidate.zip" \
+            --apk-out "$RUNNER_TEMP/promotion-transfer/candidate.apk" \
+            --baseline-apk-out "$RUNNER_TEMP/promotion-transfer/baseline.apk" \
+            --github-output "$GITHUB_OUTPUT"
+
+      - name: Install exact candidate over the latest public release on API 35
+        shell: bash
+        run: |
+          set -euo pipefail
+          avd_home="$RUNNER_TEMP/promotion-avd"
+          mkdir -p "$avd_home"
+          export ANDROID_AVD_HOME="$avd_home"
+          printf 'ANDROID_AVD_HOME=%s\n' "$avd_home" >> "$GITHUB_ENV"
+          avdmanager create avd --force --name opra_release_promotion --package "system-images;android-35;google_apis;x86_64" --device pixel_6
+          sudo chown "$(id -un)" /dev/kvm
+          "$ANDROID_SDK_ROOT/emulator/emulator" -accel-check
+          nohup "$ANDROID_SDK_ROOT/emulator/emulator" \
+            -avd opra_release_promotion -no-window -noaudio -no-boot-anim -no-snapshot -wipe-data \
+            -gpu swiftshader_indirect > "$RUNNER_TEMP/promotion-emulator.log" 2>&1 &
+          emulator_pid=$!
+          for attempt in $(seq 1 90); do
+            if ! kill -0 "$emulator_pid" 2>/dev/null; then
+              cat "$RUNNER_TEMP/promotion-emulator.log"
+              exit 1
+            fi
+            if adb get-state 2>/dev/null | grep -qx device; then break; fi
+            if [[ "$attempt" -eq 90 ]]; then
+              cat "$RUNNER_TEMP/promotion-emulator.log"
+              exit 1
+            fi
+            sleep 2
+          done
+          adb wait-for-device
+          timeout 300 bash -c 'until [[ "$(adb shell getprop sys.boot_completed | tr -d "\r")" == "1" ]]; do sleep 5; done'
+          build_tools="$ANDROID_HOME/build-tools/36.0.0"
+          "$build_tools/aapt" dump badging "$RUNNER_TEMP/promotion-transfer/baseline.apk" |
+            grep -F "package: name='com.weekssa.opraeqforuapp'" >/dev/null
+          baseline_code="$("$build_tools/aapt" dump badging "$RUNNER_TEMP/promotion-transfer/baseline.apk" | sed -n "s/^package: .*versionCode='\([0-9][0-9]*\)'.*/\1/p" | head -n 1)"
+          test -n "$baseline_code"
+          test "$baseline_code" = "${{ needs.verify-candidate.outputs.baseline_version_code }}"
+          adb install "$RUNNER_TEMP/promotion-transfer/baseline.apk"
+          baseline_package="$(adb shell dumpsys package com.weekssa.opraeqforuapp)"
+          echo "$baseline_package" | grep -q "versionCode=$baseline_code"
+          candidate_code="$("$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$RUNNER_TEMP/promotion-transfer/candidate.apk" | sed -n "s/^package: .*versionCode='\([0-9][0-9]*\)'.*/\1/p" | head -n 1)"
+          test -n "$candidate_code"
+          test "$candidate_code" = "${{ needs.verify-candidate.outputs.candidate_version_code }}"
+          install_output="$(adb install -r "$RUNNER_TEMP/promotion-transfer/candidate.apk")"
+          echo "$install_output"
+          package_dump="$(adb shell dumpsys package com.weekssa.opraeqforuapp)"
+          echo "$package_dump" | grep -q "versionCode=$candidate_code"
+          echo "$package_dump" | grep -q 'versionName=${{ needs.verify-candidate.outputs.candidate_version_name }}'
+          adb shell am force-stop com.weekssa.opraeqforuapp
+          if ! launch_output="$(adb shell am start -W -n com.weekssa.opraeqforuapp/.MainActivity 2>&1)"; then
+            echo "$launch_output"
+            adb logcat -d > "$RUNNER_TEMP/promotion-logcat.txt" || true
+            exit 1
+          fi
+          echo "$launch_output"
+          echo "$launch_output" | grep -q 'Status: ok'
+          sleep 5
+          adb logcat -d > "$RUNNER_TEMP/promotion-logcat.txt"
+
+      - name: Upload promotion emulator diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-promotion-emulator-diagnostics-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/promotion-emulator.log
+            ${{ runner.temp }}/promotion-logcat.txt
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Transfer the verified candidate archive to the publisher job
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: verified-candidate-archive-${{ github.run_id }}
+          path: ${{ runner.temp }}/promotion-transfer/candidate.zip
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    needs: verify-candidate
+    if: github.repository == 'weekssa/OPRA-EQ-for-UAPP' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Check out the exact publisher source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Set up Android SDK tools
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
+        with:
+          packages: platform-tools
+
+      - name: Install pinned Android build tools
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Download the verified candidate archive
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: verified-candidate-archive-${{ github.run_id }}
+          path: ${{ runner.temp }}/promotion-transfer
+
+      - name: Reverify and publish the exact signed APK bytes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_API_URL: ${{ github.api_url }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          RELEASE_TAG: ${{ needs.verify-candidate.outputs.release_tag }}
+          CANDIDATE_RUN_ID: ${{ needs.verify-candidate.outputs.candidate_run_id }}
+          CANDIDATE_ARTIFACT_ID: ${{ needs.verify-candidate.outputs.candidate_artifact_id }}
+          EXPECTED_SOURCE_SHA: ${{ needs.verify-candidate.outputs.source_sha }}
+          EXPECTED_ARTIFACT_DIGEST: ${{ needs.verify-candidate.outputs.artifact_digest }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/promote_release_candidate.py publish \
+            --tag "$RELEASE_TAG" \
+            --candidate-run-id "$CANDIDATE_RUN_ID" \
+            --candidate-artifact-id "$CANDIDATE_ARTIFACT_ID" \
+            --source-sha "$EXPECTED_SOURCE_SHA" \
+            --artifact-digest "$EXPECTED_ARTIFACT_DIGEST" \
+            --build-tools "$ANDROID_HOME/build-tools/36.0.0" \
+            --project-root . \
+            --archive "$RUNNER_TEMP/promotion-transfer/candidate.zip"
