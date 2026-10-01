@@ -594,26 +594,31 @@ coverage, not a statistical 95% probability or parser, provenance, license, acce
 quality certification.
 
 The source fix was committed locally as `1c04e6e8bce6af50d79f11b5599e2d55dcd843d9` on
-`84998be61769950cf8b13801a7846523631603f9`. During closeout, live `origin/main` advanced to
-`32e7937a1e3c9b646d69bd5caebcccd98b2b0d77`. That catalog refresh changed the generated timestamp
-and JSON formatting; after parsing both files and removing `generated_at`, all catalog data was
-identical and the 14 sample IDs remained current. The attached verification instructions prohibit
-rebasing, so the feature branch merged current main without rewriting the source commit. The local
-merge head is `68ca6117230f4dab709be23b0a56cd66ee732dc7`, with current main as its second parent.
-The PR diff against main contains only the 15 intended source, test, workflow, and documentation
-files; the generated catalog formatting change is not part of the PR diff.
+`84998be61769950cf8b13801a7846523631603f9`. Two automated catalog-only commits then advanced
+`origin/main`, first to `32e7937a1e3c9b646d69bd5caebcccd98b2b0d77` and then to
+`9c67f8ee780e65ab3f966dbfc5f2aa5efab462ed`. The parsed catalog data in the latest refresh is
+identical to its parent after removing `generated_at`; both contain 8,931 profiles and 8,933
+revisions. The 14 source IDs, selected profile/revision samples, and two reviewed exclusions remain
+unchanged. The source-sample checker also passed directly against the latest catalog.
 
-After that merge, local validation passed on the candidate code: 14 source samples / 13 profiles;
-5 checker tests; all 199 repository Python tests using the bundled Python 3.12 runtime; both focused
+The attached verification instructions prohibit rebasing, so the feature branch merged live main
+without rewriting the source commit. The latest-main merge point is
+`cbb6a3911dea1ff2ec14acca80e5c8d568f0c6aa`, with main `9c67f8ee780e65ab3f966dbfc5f2aa5efab462ed`
+as its second parent. The PR diff against latest main contains only the 16 intended source, test,
+workflow, and documentation files; generated catalog formatting is not in the PR diff.
+
+Local checks passed at the latest-main merge point: 14 source samples / 13 profiles; 5 checker
+unit tests; all 199 repository Python tests using the bundled Python 3.12 runtime; both focused
 Kotlin test classes; the full JVM suite (713 tests, zero failures/errors/skips); and the Room-backed
 Favorite persistence class (6 tests, zero failures/errors/skips) on a temporary API 36 emulator.
-The emulator UI smoke filtered Edition XS to Database: OPRA, saved the oratory1990 Favorite, verified
-that it restored after force-stop/relaunch, then removed it and restored the initial empty Favorites
-state. No physical phone, wireless debugging, DAC, or hardware operation was used. `actionlint` is
-not installed locally. Exact-head GitHub automation and independent review are pending; no PR has
-been created yet. Existing draft [PR #55](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/55) is
-unrelated and remains unchanged. The latest public release is still v0.7.0. No public tag or release
-was created.
+The OPRA Edition XS Favorite UI smoke was run on merge point `68ca6117230f4dab709be23b0a56cd66ee732dc7`
+before the second metadata-only catalog formatting refresh; application code was unchanged at the
+latest merge point. The test Favorite was removed, the temporary emulator was deleted, and the
+existing `codex-api36` emulator was left unchanged. No physical phone, wireless debugging, DAC, or
+hardware operation was used. `actionlint` is not installed locally. At this pre-PR snapshot, exact-
+head GitHub automation and independent review remain pending. Existing draft
+[PR #55](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/55) is unrelated and remains unchanged.
+The latest public release is still v0.7.0. No public tag or release was created.
 
 ### 2026-10-01 conditional merge authorization for source-wide Favorite fix
 

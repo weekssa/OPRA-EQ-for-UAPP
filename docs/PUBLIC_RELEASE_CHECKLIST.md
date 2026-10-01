@@ -79,9 +79,9 @@ v0.7.1 tag or release exists.
   compatibility-ID rebase then recalculated OPRA band-order provenance against the display IDs
   and lost the trusted marker. The follow-up corrects the provenance identity and adds current
   source-ID fixture coverage; details are in `docs/AFUL_EXPLORER_FAVORITE_REVIEW.md` and the dated
-  runbook section. The local branch `codex/favorite-source-review` is at merge head
-  `68ca6117230f4dab709be23b0a56cd66ee732dc7` and includes live main
-  `32e7937a1e3c9b646d69bd5caebcccd98b2b0d77`. Source matrix, full Python/JVM tests, Room persistence,
+  runbook section. The candidate code's latest-main merge point is
+  `cbb6a3911dea1ff2ec14acca80e5c8d568f0c6aa`, which includes live main
+  `9c67f8ee780e65ab3f966dbfc5f2aa5efab462ed`. Source matrix, full Python/JVM tests, Room persistence,
   and the OPRA Favorite save/restart emulator smoke pass locally. Exact-head GitHub automation and
   independent review are pending. This fix is not in signed artifact
   `cfdc688a0ff9392f5617b05719b09c9c478cf07390aa7dc79e8d4e33c6eecba3`. Do not promote that APK as
