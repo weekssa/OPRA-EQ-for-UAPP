@@ -559,9 +559,11 @@ The first real OPRA alias test failed strict selection matching: after compatibi
 the projection lost OPRA band-order provenance because it compared the displayed IDs to the
 canonical source IDs. `CanonicalLegacyCatalogAdapter.projectSelection()` now validates that marker
 against the profile-scoped canonical OPRA identity while preserving the displayed compatibility
-IDs. The identity deliberately spans the profile's revisions; conflicting source vendor/product
-IDs fail closed. A regression covers this rule during alias rebasing. Using the selected revision's
-IDs alone would allow a revision to validate its own conflicting identity.
+IDs. The identity deliberately spans the profile's revisions; all complete OPRA vendor/product
+pairs must agree before any revision receives the trust marker. Conflicting identities suppress the
+marker for every revision, including a revision matching the first pair encountered. A regression
+covers both revisions and the alias-rebase path. Using the selected revision's IDs alone would allow
+a revision to validate its own conflicting identity.
 
 The checked-in fixture `app/src/test/resources/catalog/favorite-source-samples.json`, checker
 `tools/verify_favorite_source_samples.py`, and its five negative/positive Python tests are integrated

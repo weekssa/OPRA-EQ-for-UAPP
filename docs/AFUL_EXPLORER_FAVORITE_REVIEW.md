@@ -336,9 +336,11 @@ The reason was that trusted OPRA band-order metadata was being recomputed agains
 compatibility vendor/product IDs. `CanonicalLegacyCatalogAdapter.projectSelection()` now evaluates
 that metadata against the profile-scoped canonical OPRA identity while still projecting the
 displayed compatibility IDs. This identity deliberately spans the profile's revision history: a
-revision cannot certify its own conflicting vendor/product IDs. The existing mismatch regression
-also covers the alias-rebase path and confirms that disagreement fails closed. Using only the
-selected revision's IDs would weaken that identity-consistency rule.
+revision cannot certify its own conflicting vendor/product IDs. The adapter grants the marker only
+when all complete OPRA identities across the profile's revisions agree; a conflict suppresses it
+for every revision, including one that matches the first identity encountered. The regression
+checks both revisions and the alias-rebase path. Using only the selected revision's IDs would
+weaken that identity-consistency rule.
 
 The older synthetic source-kind matrix remains useful as a source-kind boundary check. It does
 exercise alias rebasing for its six non-structured cases; it did not supply real catalog candidates
