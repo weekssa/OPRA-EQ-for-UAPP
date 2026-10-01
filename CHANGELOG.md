@@ -25,9 +25,9 @@ software path is verified and its physical qualification remains bounded by the 
   the release includes the APK and checksum assets. Public hardware wording remains bounded by
   the exact Black Pearl and JA11 evidence records.
 
-## [Unreleased]
+## [0.7.1] - 2026-10-01
 
-### 2026-09-30 Canonical Favorite product-alias validation
+### Canonical Favorite resolution across ingested sources
 
 - Fixed AFUL Explorer community Favorite resolution when the effective catalog presents the
   canonical product through the retained legacy `aful::explorer` product ID. Only compatibility
@@ -37,6 +37,8 @@ software path is verified and its physical qualification remains bounded by the 
   rebase.
 - Added one real canonical profile/revision regression sample for each ingested catalog source ID,
   plus a CI onboarding gate that requires the sample to stay current as sources are added.
+
+## [Unreleased]
 
 ### 2026-09-27 Black Pearl and JA11 bounded remediation
 

@@ -1,0 +1,532 @@
+import copy
+import hashlib
+import io
+import json
+import tempfile
+import unittest
+import zipfile
+from pathlib import Path
+from unittest import mock
+
+import promote_release_candidate as promotion
+
+
+SOURCE_SHA = "a" * 40
+ARTIFACT_ID = 12345
+RUN_ID = 23456
+TAG = "v0.7.1"
+SIGNER = "65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747"
+SIGNER_COLON = ":".join(SIGNER[index:index + 2] for index in range(0, 64, 2))
+APK = b"signed apk fixture bytes"
+SIGNER_REPORT = f"""Verifies
+Verified using v1 scheme (JAR signing): false
+Verified using v2 scheme (APK Signature Scheme v2): true
+Verified using v3 scheme (APK Signature Scheme v3): true
+Number of signers: 1
+Signer #1 certificate SHA-256 digest: {SIGNER_COLON}
+""".encode("utf-8")
+ALIGNMENT_REPORT = b"Verifying alignment of EQ-Library-v0.7.1.apk (4)...\nVerification successful\n"
+
+
+class FakeApi:
+    repo_path = "/repos/weekssa/OPRA-EQ-for-UAPP"
+
+    def __init__(self, responses):
+        self.responses = responses
+
+    def json(self, method, path, payload=None):
+        key = (method, path)
+        response = self.responses[key]
+        if isinstance(response, Exception):
+            raise response
+        return copy.deepcopy(response)
+
+
+class ReleasePromotionTest(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(prefix="release-promotion-test-")
+        self.root = Path(self.temp.name)
+        (self.root / "app").mkdir()
+        (self.root / "docs/releases").mkdir(parents=True)
+        (self.root / "app/build.gradle.kts").write_text(
+            'android {\n    defaultConfig {\n        versionCode = 8\n        versionName = "0.7.1"\n    }\n}\n',
+            encoding="utf-8",
+        )
+        (self.root / "release-signing-cert.sha256").write_text(SIGNER + "\n", encoding="utf-8")
+        (self.root / "docs/releases/v0.7.1.md").write_text("# EQ Library v0.7.1\n\nFavorite correction.\n", encoding="utf-8")
+        self.files = self.make_files()
+        self.archive = self.make_archive(self.files)
+        self.digest = hashlib.sha256(self.archive).hexdigest()
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def make_files(self):
+        apk_name = f"EQ-Library-{TAG}.apk"
+        apk_sha = hashlib.sha256(APK).hexdigest()
+        manifest = {
+            "sourceSha": SOURCE_SHA,
+            "releaseTag": TAG,
+            "apk": apk_name,
+            "apkSha256": apk_sha,
+            "packageId": promotion.PACKAGE_ID,
+            "versionName": "0.7.1",
+            "versionCode": 8,
+            "signerSha256": SIGNER,
+            "r8MinificationEnabled": True,
+            "r8MappingSha256": "b" * 64,
+        }
+        return {
+            apk_name: APK,
+            f"{apk_name}.sha256": f"{apk_sha}  dist/{apk_name}\n".encode("ascii"),
+            "candidate-manifest.json": (json.dumps(manifest) + "\n").encode("utf-8"),
+            "apksigner-verification.txt": SIGNER_REPORT,
+            "zipalign-verification.txt": ALIGNMENT_REPORT,
+        }
+
+    @staticmethod
+    def make_archive(files):
+        stream = io.BytesIO()
+        with zipfile.ZipFile(stream, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+            for name, data in files.items():
+                archive.writestr(name, data)
+        return stream.getvalue()
+
+    def validate(self, archive=None, digest=None, tag=TAG, source_sha=SOURCE_SHA):
+        return promotion.validate_candidate_archive(
+            self.archive if archive is None else archive,
+            artifact_digest=self.digest if digest is None else digest,
+            tag=tag,
+            source_sha=source_sha,
+            project_root=self.root,
+        )
+
+    def test_accepts_exact_candidate_manifest_checksum_signer_alignment_and_source(self):
+        candidate = self.validate(digest=f"sha256:{self.digest}")
+        self.assertEqual(SOURCE_SHA, candidate["source_sha"])
+        self.assertEqual(hashlib.sha256(APK).hexdigest(), candidate["apk_sha256"])
+        self.assertEqual(SIGNER, candidate["signer_sha256"])
+
+    def test_rejects_downloaded_archive_digest_mismatch(self):
+        with self.assertRaisesRegex(promotion.PromotionError, "artifact digest"):
+            self.validate(digest="c" * 64)
+
+    def test_rejects_candidate_from_another_source_sha(self):
+        with self.assertRaisesRegex(promotion.PromotionError, "sourceSha"):
+            self.validate(source_sha="d" * 40)
+
+    def test_rejects_checksum_sidecar_for_different_apk_bytes(self):
+        files = self.make_files()
+        files[f"EQ-Library-{TAG}.apk.sha256"] = ("0" * 64 + f"  dist/EQ-Library-{TAG}.apk\n").encode("ascii")
+        archive = self.make_archive(files)
+        with self.assertRaisesRegex(promotion.PromotionError, "checksum file"):
+            self.validate(archive=archive, digest=hashlib.sha256(archive).hexdigest())
+
+    def test_rejects_unexpected_archive_members(self):
+        files = self.make_files()
+        files["unexpected.txt"] = b"not part of a release candidate"
+        archive = self.make_archive(files)
+        with self.assertRaisesRegex(promotion.PromotionError, "file set"):
+            self.validate(archive=archive, digest=hashlib.sha256(archive).hexdigest())
+
+    def test_rejects_ambiguous_duplicate_manifest_fields(self):
+        files = self.make_files()
+        manifest = files["candidate-manifest.json"].decode("utf-8")
+        manifest = manifest.replace("{", '{"sourceSha":"' + SOURCE_SHA + '",', 1)
+        files["candidate-manifest.json"] = manifest.encode("utf-8")
+        archive = self.make_archive(files)
+        with self.assertRaisesRegex(promotion.PromotionError, "duplicate JSON field"):
+            self.validate(archive=archive, digest=hashlib.sha256(archive).hexdigest())
+
+    def test_rejects_nested_archive_paths(self):
+        files = self.make_files()
+        files["dist/EQ-Library-v0.7.1.apk"] = files.pop(f"EQ-Library-{TAG}.apk")
+        archive = self.make_archive(files)
+        with self.assertRaisesRegex(promotion.PromotionError, "file set"):
+            self.validate(archive=archive, digest=hashlib.sha256(archive).hexdigest())
+
+    def test_rejects_wrong_pinned_signer_in_candidate_report(self):
+        files = self.make_files()
+        files["apksigner-verification.txt"] = SIGNER_REPORT.replace(SIGNER_COLON.encode("ascii"), b"00:" * 31 + b"00")
+        archive = self.make_archive(files)
+        with self.assertRaisesRegex(promotion.PromotionError, "signer report"):
+            self.validate(archive=archive, digest=hashlib.sha256(archive).hexdigest())
+
+    def test_rejects_missing_v3_signature_evidence(self):
+        files = self.make_files()
+        files["apksigner-verification.txt"] = SIGNER_REPORT.replace(
+            b"Verified using v3 scheme (APK Signature Scheme v3): true\n", b""
+        )
+        archive = self.make_archive(files)
+        with self.assertRaisesRegex(promotion.PromotionError, "v3"):
+            self.validate(archive=archive, digest=hashlib.sha256(archive).hexdigest())
+
+    def test_rejects_bad_alignment_evidence(self):
+        files = self.make_files()
+        files["zipalign-verification.txt"] = b"Verification failed"
+        archive = self.make_archive(files)
+        with self.assertRaisesRegex(promotion.PromotionError, "alignment report"):
+            self.validate(archive=archive, digest=hashlib.sha256(archive).hexdigest())
+
+    def test_rejects_tag_that_disagrees_with_app_version(self):
+        (self.root / "app/build.gradle.kts").write_text(
+            'android {\n    defaultConfig {\n        versionCode = 9\n        versionName = "0.7.2"\n    }\n}\n',
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(promotion.PromotionError, "versionName"):
+            self.validate()
+
+    def test_strict_semver_parser_rejects_ambiguous_tags(self):
+        for tag in ("0.7.1", "v00.7.1", "v0.7", "v0.7.1-beta.1", "v0.7.1/other"):
+            with self.subTest(tag=tag), self.assertRaises(promotion.PromotionError):
+                promotion.parse_tag(tag)
+
+    def test_release_assets_keep_apk_bytes_and_make_downloadable_checksum_filename(self):
+        candidate = self.validate()
+        logs = {
+            "apksigner-verification.txt": SIGNER_REPORT,
+            "zipalign-verification.txt": ALIGNMENT_REPORT,
+        }
+        assets = promotion.release_assets(candidate, logs, RUN_ID, ARTIFACT_ID, "34567")
+        apk_name = candidate["apk_name"]
+        self.assertEqual(APK, assets[apk_name])
+        self.assertEqual(
+            f"{candidate['apk_sha256']}  {apk_name}\n".encode("ascii"),
+            assets[f"{apk_name}.sha256"],
+        )
+        provenance = json.loads(assets["release-provenance.json"].decode("utf-8"))
+        self.assertEqual(SOURCE_SHA, provenance["releaseSourceSha"])
+        self.assertEqual(ARTIFACT_ID, provenance["candidateArtifactId"])
+        self.assertEqual(candidate["artifact_digest"], provenance["candidateArtifactSha256"])
+
+    def test_candidate_run_must_be_successful_main_workflow_run_and_current_head(self):
+        workflow = {"id": 91, "path": promotion.CANDIDATE_WORKFLOW_PATH, "state": "active"}
+        run = {
+            "id": RUN_ID,
+            "workflow_id": 91,
+            "status": "completed",
+            "conclusion": "success",
+            "event": "workflow_dispatch",
+            "head_branch": "main",
+            "head_sha": SOURCE_SHA,
+            "head_repository": {"full_name": promotion.REPOSITORY},
+        }
+        artifact = {
+            "id": ARTIFACT_ID,
+            "expired": False,
+            "size_in_bytes": 123,
+            "name": f"EQ-Library-{TAG}-signed-{SOURCE_SHA}",
+            "digest": f"sha256:{self.digest}",
+            "workflow_run": {"id": RUN_ID, "head_sha": SOURCE_SHA, "head_branch": "main"},
+        }
+        responses = {
+            ("GET", "/repos/weekssa/OPRA-EQ-for-UAPP/actions/workflows/github-release.yml"): workflow,
+            ("GET", f"/repos/weekssa/OPRA-EQ-for-UAPP/actions/runs/{RUN_ID}"): run,
+            ("GET", "/repos/weekssa/OPRA-EQ-for-UAPP/branches/main"): {"commit": {"sha": SOURCE_SHA}},
+            ("GET", f"/repos/weekssa/OPRA-EQ-for-UAPP/actions/artifacts/{ARTIFACT_ID}"): artifact,
+        }
+        api = FakeApi(responses)
+        actual_run, actual_artifact, digest = promotion.validate_github_candidate(
+            api, tag=TAG, run_id=RUN_ID, artifact_id=ARTIFACT_ID, source_sha=SOURCE_SHA
+        )
+        self.assertEqual(run, actual_run)
+        self.assertEqual(artifact, actual_artifact)
+        self.assertEqual(f"sha256:{self.digest}", digest)
+
+    def test_candidate_metadata_rejects_wrong_workflow_branch_run_state_and_artifact_owner(self):
+        workflow = {"id": 91, "path": promotion.CANDIDATE_WORKFLOW_PATH, "state": "active"}
+        base_run = {
+            "id": RUN_ID,
+            "workflow_id": 91,
+            "status": "completed",
+            "conclusion": "success",
+            "event": "workflow_dispatch",
+            "head_branch": "main",
+            "head_sha": SOURCE_SHA,
+            "head_repository": {"full_name": promotion.REPOSITORY},
+        }
+        base_artifact = {
+            "id": ARTIFACT_ID,
+            "expired": False,
+            "size_in_bytes": 123,
+            "name": f"EQ-Library-{TAG}-signed-{SOURCE_SHA}",
+            "digest": f"sha256:{self.digest}",
+            "workflow_run": {"id": RUN_ID, "head_sha": SOURCE_SHA, "head_branch": "main"},
+        }
+        cases = [
+            ("wrong branch", lambda run, artifact: run.update(head_branch="feature"), "manually dispatched from main"),
+            ("wrong status", lambda run, artifact: run.update(conclusion="failure"), "complete successfully"),
+            ("wrong workflow", lambda run, artifact: run.update(workflow_id=999), "signed release candidate workflow"),
+            ("wrong artifact run", lambda run, artifact: artifact["workflow_run"].update(id=999), "not attached"),
+            ("expired artifact", lambda run, artifact: artifact.update(expired=True), "expired"),
+            ("wrong artifact name", lambda run, artifact: artifact.update(name="other"), "artifact name"),
+        ]
+        for label, mutate, error in cases:
+            with self.subTest(label=label):
+                run = copy.deepcopy(base_run)
+                artifact = copy.deepcopy(base_artifact)
+                mutate(run, artifact)
+                responses = {
+                    ("GET", "/repos/weekssa/OPRA-EQ-for-UAPP/actions/workflows/github-release.yml"): workflow,
+                    ("GET", f"/repos/weekssa/OPRA-EQ-for-UAPP/actions/runs/{RUN_ID}"): run,
+                    ("GET", "/repos/weekssa/OPRA-EQ-for-UAPP/branches/main"): {"commit": {"sha": SOURCE_SHA}},
+                    ("GET", f"/repos/weekssa/OPRA-EQ-for-UAPP/actions/artifacts/{ARTIFACT_ID}"): artifact,
+                }
+                with self.assertRaisesRegex(promotion.PromotionError, error):
+                    promotion.validate_github_candidate(
+                        FakeApi(responses), tag=TAG, run_id=RUN_ID, artifact_id=ARTIFACT_ID, source_sha=SOURCE_SHA
+                    )
+
+    def test_repository_workflow_and_documentation_contract(self):
+        root = Path(__file__).resolve().parents[1]
+        promotion.check_contract(root)
+
+    def test_latest_release_baseline_is_verified_before_emulator_upgrade(self):
+        candidate = self.validate()
+        apk_sha = hashlib.sha256(APK).hexdigest()
+        test_case = self
+
+        class BaselineApi:
+            api_url = "https://api.github.com"
+            repo_path = "/repos/weekssa/OPRA-EQ-for-UAPP"
+
+            def json(self, method, path, payload=None):
+                test_case.assertEqual("GET", method)
+                test_case.assertEqual(self.repo_path + "/releases/latest", path)
+                return {
+                    "tag_name": "v0.7.0",
+                    "draft": False,
+                    "prerelease": False,
+                    "assets": [{
+                        "id": 98,
+                        "name": "EQ-Library-v0.7.0.apk",
+                        "state": "uploaded",
+                        "digest": f"sha256:{apk_sha}",
+                    }],
+                }
+
+            def request_bytes(self, url, **kwargs):
+                test_case.assertTrue(url.endswith("/releases/assets/98"))
+                test_case.assertEqual("application/octet-stream", kwargs["accept"])
+                return 200, APK, {}
+
+        api = BaselineApi()
+        with tempfile.TemporaryDirectory(prefix="upgrade-baseline-test-") as temporary:
+            output = Path(temporary) / "baseline.apk"
+            with mock.patch.object(
+                promotion,
+                "verify_android_apk",
+                return_value=({"zipalign-verification.txt": ALIGNMENT_REPORT}, 7),
+            ) as verify:
+                summary = promotion.download_and_verify_upgrade_baseline(api, candidate, Path("unused"), output)
+            verify.assert_called_once()
+            self.assertEqual(APK, output.read_bytes())
+            self.assertEqual("v0.7.0", summary["baseline_tag"])
+            self.assertEqual(apk_sha, summary["baseline_apk_sha256"])
+
+    def test_publish_does_not_publish_until_every_asset_readback_passes(self):
+        candidate = self.validate()
+        logs = {
+            "apksigner-verification.txt": SIGNER_REPORT,
+            "zipalign-verification.txt": ALIGNMENT_REPORT,
+        }
+        assets = promotion.release_assets(candidate, logs, RUN_ID, ARTIFACT_ID, "34567")
+        source_sha = candidate["source_sha"]
+        draft = {"id": 12, "tag_name": TAG, "draft": True, "prerelease": False, "assets": []}
+        final = {
+            "id": 12,
+            "tag_name": TAG,
+            "draft": False,
+            "prerelease": False,
+            "html_url": f"https://github.com/{promotion.REPOSITORY}/releases/tag/{TAG}",
+            "assets_url": f"https://api.github.com/repos/{promotion.REPOSITORY}/releases/12/assets",
+        }
+
+        class PublishApi:
+            repo_path = "/repos/weekssa/OPRA-EQ-for-UAPP"
+
+            def __init__(self):
+                self.calls = []
+
+            def json(self, method, path, payload=None):
+                self.calls.append((method, path, payload))
+                if method == "PATCH":
+                    return {"id": 12, "tag_name": TAG, "draft": False}
+                if path.endswith("/releases/latest"):
+                    return {"tag_name": TAG}
+                return final
+
+        api = PublishApi()
+        verified_assets = {name: {"name": name} for name in assets}
+        with (
+            mock.patch.object(promotion, "_verify_or_create_draft", return_value=draft),
+            mock.patch.object(promotion, "_upload_asset"),
+            mock.patch.object(promotion, "_verify_release_assets", side_effect=[verified_assets, verified_assets]),
+            mock.patch.object(promotion, "_verify_public_asset_downloads"),
+            mock.patch.object(promotion, "resolve_tag_commit", return_value=source_sha),
+            mock.patch.object(promotion, "current_main_sha", return_value=source_sha),
+            mock.patch.object(promotion, "require_release_version_advances"),
+        ):
+            result = promotion.publish_release(api, candidate=candidate, assets=assets, release_notes="# Notes\n")
+        self.assertFalse(result["draft"])
+        mutations = [call for call in api.calls if call[0] == "PATCH"]
+        self.assertEqual(1, len(mutations))
+        self.assertIs(mutations[0][2]["draft"], False)
+        self.assertEqual("true", mutations[0][2]["make_latest"])
+        self.assertIn(("GET", api.repo_path + "/releases/latest", None), api.calls)
+
+    def test_publish_stops_before_mutation_when_asset_set_is_incomplete(self):
+        candidate = self.validate()
+        assets = promotion.release_assets(
+            candidate,
+            {"apksigner-verification.txt": SIGNER_REPORT, "zipalign-verification.txt": ALIGNMENT_REPORT},
+            RUN_ID,
+            ARTIFACT_ID,
+            "34567",
+        )
+        source_sha = candidate["source_sha"]
+        draft = {"id": 12, "tag_name": TAG, "draft": True, "prerelease": False, "assets": []}
+
+        class PublishApi:
+            calls = []
+
+            def json(self, method, path, payload=None):
+                self.calls.append((method, path, payload))
+                return {}
+
+        api = PublishApi()
+        incomplete = {name: {"name": name} for name in assets if name != "zipalign-verification.txt"}
+        with (
+            mock.patch.object(promotion, "_verify_or_create_draft", return_value=draft),
+            mock.patch.object(promotion, "_upload_asset"),
+            mock.patch.object(promotion, "_verify_release_assets", return_value=incomplete),
+            mock.patch.object(promotion, "resolve_tag_commit", return_value=source_sha),
+            mock.patch.object(promotion, "current_main_sha", return_value=source_sha),
+            mock.patch.object(promotion, "require_release_version_advances"),
+        ):
+            with self.assertRaisesRegex(promotion.PromotionError, "asset set is incomplete"):
+                promotion.publish_release(api, candidate=candidate, assets=assets, release_notes="# Notes\n")
+        self.assertFalse(any(call[0] == "PATCH" for call in api.calls))
+
+    def test_publish_retry_preserves_verified_provenance_from_partial_draft(self):
+        candidate = self.validate()
+        logs = {
+            "apksigner-verification.txt": SIGNER_REPORT,
+            "zipalign-verification.txt": ALIGNMENT_REPORT,
+        }
+        first_assets = promotion.release_assets(candidate, logs, RUN_ID, ARTIFACT_ID, "34567")
+        retry_assets = promotion.release_assets(candidate, logs, RUN_ID, ARTIFACT_ID, "45678")
+        prior_provenance = first_assets["release-provenance.json"]
+        draft = {
+            "id": 12,
+            "tag_name": TAG,
+            "draft": True,
+            "prerelease": False,
+            "assets": [{
+                "id": 99,
+                "name": "release-provenance.json",
+                "state": "uploaded",
+                "size": len(prior_provenance),
+                "digest": promotion.asset_digest(prior_provenance),
+            }],
+        }
+        final = {
+            "id": 12,
+            "tag_name": TAG,
+            "draft": False,
+            "prerelease": False,
+            "html_url": f"https://github.com/{promotion.REPOSITORY}/releases/tag/{TAG}",
+            "assets_url": f"https://api.github.com/repos/{promotion.REPOSITORY}/releases/12/assets",
+        }
+
+        class RetryApi:
+            api_url = "https://api.github.com"
+            repo_path = "/repos/weekssa/OPRA-EQ-for-UAPP"
+            test_case = self
+
+            def __init__(self):
+                self.calls = []
+
+            def json(self, method, path, payload=None):
+                self.calls.append((method, path, payload))
+                if method == "PATCH":
+                    return {"id": 12, "tag_name": TAG, "draft": False}
+                if path.endswith("/releases/latest"):
+                    return {"tag_name": TAG}
+                return final
+
+            def request_bytes(self, url, **kwargs):
+                self.test_case.assertTrue(url.endswith("/releases/assets/99"))
+                self.test_case.assertEqual("application/octet-stream", kwargs["accept"])
+                return 200, prior_provenance, {}
+
+        api = RetryApi()
+        verified = []
+
+        def verify_assets(_api, _release, expected):
+            verified.append(dict(expected))
+            return {name: {"id": 100 + index, "name": name}
+                    for index, name in enumerate(expected)}
+
+        with (
+            mock.patch.object(promotion, "_verify_or_create_draft", return_value=draft),
+            mock.patch.object(promotion, "_upload_asset") as upload,
+            mock.patch.object(promotion, "_verify_release_assets", side_effect=verify_assets),
+            mock.patch.object(promotion, "_verify_public_asset_downloads"),
+            mock.patch.object(promotion, "resolve_tag_commit", return_value=candidate["source_sha"]),
+            mock.patch.object(promotion, "current_main_sha", return_value=candidate["source_sha"]),
+            mock.patch.object(promotion, "require_release_version_advances"),
+        ):
+            result = promotion.publish_release(api, candidate=candidate, assets=retry_assets,
+                                               release_notes="# Notes\n")
+
+        self.assertFalse(result["draft"])
+        self.assertEqual(prior_provenance, retry_assets["release-provenance.json"])
+        self.assertNotIn("release-provenance.json", [call.args[2] for call in upload.call_args_list])
+        self.assertEqual(set(first_assets) - {"release-provenance.json"},
+                         {call.args[2] for call in upload.call_args_list})
+        self.assertEqual(3, len(verified))
+        self.assertEqual(prior_provenance, verified[0]["release-provenance.json"])
+        self.assertEqual(1, sum(call[0] == "PATCH" for call in api.calls))
+
+    def test_publish_retry_rejects_partial_draft_provenance_for_another_source(self):
+        candidate = self.validate()
+        provenance = json.loads(
+            promotion.provenance_bytes(candidate, RUN_ID, ARTIFACT_ID, "34567").decode("utf-8")
+        )
+        provenance["releaseSourceSha"] = "c" * 40
+        contents = (json.dumps(provenance, sort_keys=True) + "\n").encode("utf-8")
+        draft = {
+            "id": 12,
+            "tag_name": TAG,
+            "draft": True,
+            "prerelease": False,
+            "assets": [{
+                "id": 99,
+                "name": "release-provenance.json",
+                "state": "uploaded",
+                "size": len(contents),
+                "digest": promotion.asset_digest(contents),
+            }],
+        }
+
+        class RetryApi:
+            api_url = "https://api.github.com"
+            repo_path = "/repos/weekssa/OPRA-EQ-for-UAPP"
+
+            def request_bytes(self, _url, **_kwargs):
+                return 200, contents, {}
+
+        assets = promotion.release_assets(
+            candidate,
+            {"apksigner-verification.txt": SIGNER_REPORT, "zipalign-verification.txt": ALIGNMENT_REPORT},
+            RUN_ID,
+            ARTIFACT_ID,
+            "45678",
+        )
+        with self.assertRaisesRegex(promotion.PromotionError, "does not match this exact signed candidate"):
+            promotion._preserve_matching_provenance(RetryApi(), draft, candidate, assets)
+
+
+if __name__ == "__main__":
+    unittest.main()

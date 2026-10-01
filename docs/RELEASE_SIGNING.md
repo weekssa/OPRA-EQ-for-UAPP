@@ -78,14 +78,39 @@ Secrets are scoped only to the workflow steps that need them. The checkout/setup
 10. creates a SHA-256 checksum and source/package/version/signer/R8 candidate manifest; and
 11. uploads the signed outputs as a 90-day Actions artifact.
 
-Public tag/release publication is deliberately unavailable in this workflow. The previous publisher rebuilt and re-signed instead of promoting the exact candidate that passed human testing, so source equality could not establish APK byte identity. A future publisher must accept an immutable candidate artifact identity, verify its source SHA, manifest, recomputed checksum, package/version, signer, alignment, and artifact digest, and publish those exact bytes. It must be separately reviewed and explicitly owner-approved before use.
+Public tag/release publication remains separate from candidate building. The main-only
+`.github/workflows/promote-signed-release.yml` workflow accepts the tag, signed-candidate run ID,
+and immutable artifact ID. It requires the successful candidate run to come from
+`.github/workflows/github-release.yml` on `main`, requires the artifact to belong to that run, and
+requires both the candidate source SHA and current `main` SHA to equal the publisher's exact source
+commit. It verifies GitHub's artifact digest against the downloaded ZIP, requires the exact expected
+file set, and validates the manifest, recomputed APK checksum, package/version, R8 mapping record,
+pinned signer, APK v2/v3 signatures, alignment, and Android package metadata. The workflow also
+downloads the latest public release APK, verifies its digest and signer, then installs it on a clean
+API 35 emulator and upgrades that install with the exact candidate APK before a cold launch.
+
+The publisher verifies the candidate in a read-only job, passes only the unchanged candidate ZIP to
+the publish job, and repeats all candidate and APK checks there. It creates a draft release only
+after verification, uploads the exact candidate APK bytes plus checksum, manifest, verification
+reports, and a provenance record, verifies release-asset digests and public download bytes, confirms
+the tag resolves to the candidate source, checks that `main` has not moved, and only then publishes
+the release. The same source and asset checks allow a later run to resume an incomplete matching
+draft; mismatched or already-published tags fail closed. The publisher never rebuilds, re-signs, or
+edits the APK. It marks the release latest and verifies the `/releases/latest` metadata used by the
+app's update check.
+
+The verify job has read access to source and write access only to transfer its verified artifact.
+The publish job has release-content write access and Actions read access. Signing secrets are not
+available to either job. Every external action is pinned to a full commit SHA, and checkout
+credentials are disabled. `tools/test_promote_release_candidate.py` and the workflow contract check
+run in Android CI on pull requests and main.
 
 Normal Android CI never receives the release-signing key and never publishes a development APK.
 No workflow action here creates a public release or version tag. Candidate preparation remains a
 main-only owner action after merge approval; do not dispatch it from the feature branch or infer
 hardware qualification from its build/install/cold-launch result.
 
-## Public release gate (exact-candidate promotion is not implemented)
+## Public release gate (exact-candidate promotion)
 
 For any future version, including the prepared v0.7.1 Favorite patch, complete the applicable
 release gates and receive explicit owner approval before public publication:
@@ -99,7 +124,14 @@ release gates and receive explicit owner approval before public publication:
    behavior, and complete the version-specific smoke test recorded in
    `docs/PUBLIC_RELEASE_CHECKLIST.md`.
 5. Make no source changes that would alter the qualified release commit or artifact.
-6. Obtain explicit owner approval for publication. The exact-artifact promotion workflow is not
-   implemented; do not rebuild or re-sign the candidate during any later manual publication step.
-7. Verify the public release page, assets, checksum, signer, source provenance, and in-app update
-   metadata path after an authorized publication.
+6. Confirm an explicit owner authorization applies to the exact release. Dispatch
+   **Promote Signed Release Candidate** from current `main` with the candidate run and artifact IDs.
+   A passing workflow publishes only the exact tested APK bytes; do not rebuild or re-sign during
+   promotion.
+7. Verify the public release page, tag-to-source mapping, all asset digests and downloaded APK
+   bytes, signer, provenance record, release notes, and in-app `/releases/latest` metadata path.
+
+If promotion stops after creating a matching draft, rerun only after confirming the candidate
+artifact remains available and the current source is unchanged. The workflow resumes only when the
+existing tag, draft release, release notes, source SHA, and any already uploaded asset bytes match.
+Any mismatch requires an owner-reviewed recovery before another publication attempt.

@@ -677,9 +677,10 @@ copy matches its APK hash; its branch tip is `dc3fdae75998f4a74f90581d0f53b3f860
 [EQ-Library-v0.7.1-beta-38302d6.apk](https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.1-beta-38302d6.apk).
 
 This Favorite resolver defect required no phone, wireless debugging, USB DAC, or physical
-qualification. The latest public release remains v0.7.0; no public v0.7.1 tag or release was created
-or authorized. Conditional merge approval was exercised for PR #56 and PR #57 after their applicable
-exact-head gates passed. It does not authorize public release or a broader hardware-support claim.
-The owner also authorized merging this documentation-only closeout PR if independent review and all
-applicable exact-head automation pass. That conditional approval does not authorize public
-publication, tagging, or broader support claims.
+qualification. At this recorded checkpoint, the latest public release was v0.7.0 and no public
+v0.7.1 tag or release had been created. Conditional merge approval was exercised for PR #56, #57,
+and #58 after their applicable exact-head gates passed. On 2026-10-01, the owner separately
+authorized the public v0.7.1 release on the condition that all review, CI, exact-candidate,
+promotion, and post-publication gates pass. That approval does not authorize any broader
+hardware-support claim. The exact-artifact publisher and final release evidence belong in the
+follow-up closeout entry below this history.
