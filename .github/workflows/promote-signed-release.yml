@@ -116,18 +116,18 @@ jobs:
             grep -F "package: name='com.weekssa.opraeqforuapp'" >/dev/null
           baseline_code="$("$build_tools/aapt" dump badging "$RUNNER_TEMP/promotion-transfer/baseline.apk" | sed -n "s/^package: .*versionCode='\([0-9][0-9]*\)'.*/\1/p" | head -n 1)"
           test -n "$baseline_code"
-          test "$baseline_code" = "${{ needs.verify-candidate.outputs.baseline_version_code }}"
+          test "$baseline_code" = "${{ steps.verify.outputs.baseline_version_code }}"
           adb install "$RUNNER_TEMP/promotion-transfer/baseline.apk"
           baseline_package="$(adb shell dumpsys package com.weekssa.opraeqforuapp)"
           echo "$baseline_package" | grep -q "versionCode=$baseline_code"
           candidate_code="$("$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$RUNNER_TEMP/promotion-transfer/candidate.apk" | sed -n "s/^package: .*versionCode='\([0-9][0-9]*\)'.*/\1/p" | head -n 1)"
           test -n "$candidate_code"
-          test "$candidate_code" = "${{ needs.verify-candidate.outputs.candidate_version_code }}"
+          test "$candidate_code" = "${{ steps.verify.outputs.candidate_version_code }}"
           install_output="$(adb install -r "$RUNNER_TEMP/promotion-transfer/candidate.apk")"
           echo "$install_output"
           package_dump="$(adb shell dumpsys package com.weekssa.opraeqforuapp)"
           echo "$package_dump" | grep -q "versionCode=$candidate_code"
-          echo "$package_dump" | grep -q 'versionName=${{ needs.verify-candidate.outputs.candidate_version_name }}'
+          echo "$package_dump" | grep -q 'versionName=${{ steps.verify.outputs.candidate_version_name }}'
           adb shell am force-stop com.weekssa.opraeqforuapp
           if ! launch_output="$(adb shell am start -W -n com.weekssa.opraeqforuapp/.MainActivity 2>&1)"; then
             echo "$launch_output"

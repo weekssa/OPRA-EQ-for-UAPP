@@ -126,12 +126,31 @@ publisher must use a fresh Signed Release Candidate built from the finalized `ma
 - [x] The owner conditionally authorized public v0.7.1 publication on 2026-10-01, provided all
   software, review, candidate, and promotion checks pass. This approval applies to this source-wide
   Favorite correction; no separate hardware-support claim is authorized.
-- [ ] Merge the independently reviewed exact-artifact publisher after all exact-head checks pass.
-- [ ] Build a fresh Signed Release Candidate from the finalized `main` SHA and pass the publisher's
-  archive, APK, API 35 clean-install/in-place-upgrade, and cold-launch checks.
-- [ ] Run **Promote Signed Release Candidate** with the exact candidate run/artifact IDs. Verify the
-  public tag, APK bytes, release assets, signer, source provenance, curated release notes, and
-  `/releases/latest` metadata before marking this release published.
+- [x] The main-only exact-artifact publisher merged through PR #59 as
+  `51992318d517bf443aa0cd4fb02b610a9916c133`. PR #60's independently reviewed v4 sidecar contract
+  fix passed all 7 exact-head checks and merged as
+  `9ad72df85b163fa41ff604eed1d7e6dfc8af3230`; all 6 applicable post-merge checks passed.
+- [x] Fresh Signed Release Candidate run #14 / ID `36935224537` succeeded from exact main SHA
+  `9ad72df85b163fa41ff604eed1d7e6dfc8af3230`, tag input `v0.7.1`. Artifact ID `11198451366`,
+  artifact ZIP SHA-256 `51a029cc065068277faae91a2009f1ef7b299b2d77c94bbf07941c6f9d7d2d1d`, expires
+  2026-12-30 22:28:02 UTC. The APK SHA-256 is
+  `4a56d09d9e08e4949272c18e980a3f4e673a7d155aa0c51851d371cb3de633ea`.
+- [x] Promotion run #2 / ID `36936467429` independently verified that candidate's artifact digest,
+  manifest, APK checksum, package/version, signer, signatures, alignment, and R8 mapping. It also
+  verified the latest public v0.7.0 baseline APK SHA-256
+  `27dada499bcbf9be9bd21d1349164858c93a5d2b83f78fd61134de13b4eb4025`.
+- [x] Promotion run #2 stopped before baseline installation because the API 35 step referenced
+  `needs.verify-candidate.outputs.*` from inside that same job; GitHub expanded the expected
+  version values to empty strings. The publish job was skipped. No `v0.7.1` tag or release was
+  created; latest remains v0.7.0. PR #61 adds a same-job output contract regression and changes the
+  emulator step to consume `steps.verify.outputs.*`. Local validation currently passes all 24
+  promotion-verifier tests, the workflow contract check, and `git diff --check`; PR review and
+  exact-head automation are still required.
+- [ ] After PR #61 passes independent review and exact-head automation and merges, run a fresh
+  Signed Release Candidate from the new exact main SHA, then rerun promotion. Do not reuse candidate
+  #14 because its source SHA will no longer equal main. Verify the public tag, APK bytes, release
+  assets, signer, source provenance, curated release notes, and `/releases/latest` metadata before
+  marking this release published.
 
 No DAC hardware mutation or physical-device qualification is needed for this catalog Favorite
 identity fix. See the 2026-10-01 entry in `docs/CHATGPT_PROJECT_RUNBOOK.md` for the complete
