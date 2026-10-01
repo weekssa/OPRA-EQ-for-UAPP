@@ -371,4 +371,8 @@ record is `docs/AFUL_EXPLORER_FAVORITE_REVIEW.md`. The branch is local/unpushed 
 CI, signed candidate, release qualification, or hardware test. Status is **CANDIDATE FIX VERIFIED:
 ready for independent review**, not resolved or release-ready. No hardware validation ledger or
 capability matrix changed because this candidate does not exercise hardware or establish a device
-capability.
+capability. The next stage is the Sol 5.6 independent review, followed by a new Codex Luna Extra
+High worker task on every outcome. Sol records PASS/FAIL/INCONCLUSIVE plus a durable result and
+copyable Luna prompt under `docs/AFUL_EXPLORER_REVIEW_TO_LUNA_WORKFLOW.md`. FAIL returns concrete
+fix and test criteria; INCONCLUSIVE returns the exact access gap. Sol may update review/runbook
+documentation only and must leave implementation work to Luna.

@@ -124,28 +124,69 @@ the JVM and Room negative controls. No signed artifact, clean-install/upgrade re
 remote CI, physical device, or hardware qualification was performed. Do not infer release readiness
 or physical-device qualification from this candidate.
 
+## Sol review to Luna worker workflow
+
+The next reviewer is a **Sol 5.6 independent review chat** with access to the worktree folder
+above. The independent code review is the first stage; it must return a durable result and a
+copyable prompt for a new **Codex Luna Extra High worker task**. The workflow and the required
+PASS, FAIL, and INCONCLUSIVE paths are in `docs/AFUL_EXPLORER_REVIEW_TO_LUNA_WORKFLOW.md`.
+
+The reviewer may update review/handoff documentation and append the review result to the runbook.
+It must not modify production code or tests. A PASS means only that the reviewer found no
+actionable code-review issue within the files and evidence it could inspect. It does not mean the
+bug is closed, remote CI passed, or a release is ready. FAIL findings and INCONCLUSIVE access gaps
+must both be packaged for Luna, with FAIL adding concrete fix and verification criteria.
+
 ## Independent review handoff prompt
 
 ```text
-Perform an independent, read-only review of the AFUL Explorer Favorite candidate in:
+You are the independent reviewer in the first stage of a two-stage handoff. This review will be
+performed in a Sol 5.6 chat. The second stage is a new Codex Luna Extra High task that takes the
+worker role. You can access the candidate folder below; use only the repository and evidence that
+are actually available to you.
 
+Candidate folder:
 /Users/stephenweeks/.codex/worktrees/aful-favorite-fix/OPRA-EQ-for-UAPP
 
 Repository: weekssa/OPRA-EQ-for-UAPP
 Branch: codex/aful-favorite-identity
+Expected review HEAD: use the exact SHA supplied by the dispatcher with this prompt; first verify
+`git rev-parse HEAD` matches it. If it does not, preserve the checkout and report the actual HEAD
+and status before reviewing. Do not reset, rebase, or discard changes.
 Implementation commit: fcb0f5e03b22fc51c778d1989ec1c0ad8c7ddb38
 Parent: 6ada7efc84425f7b149f9f9e9fb4e9599bc80cf2
 
 Read AGENTS.md, docs/CHATGPT_PROJECT_RUNBOOK.md, docs/ARCHITECTURE.md,
-docs/V0.6_LIBRARY_OWNERSHIP_AND_RECOVERY.md, and this review report. Review the production diff
-and tests against the parent. Confirm whether the compatibility-ID rebase is limited to an exact
-effective-catalog product alias with an existing displayed product/vendor; canonical revision,
-fingerprint, and source provenance remain intact; and wrong product, stale projection, wrong
-canonical ID, ambiguity, and exact legacy OPRA fallback behavior remain safe.
+docs/V0.6_LIBRARY_OWNERSHIP_AND_RECOVERY.md, this report, the UI smoke record, and
+docs/AFUL_EXPLORER_REVIEW_TO_LUNA_WORKFLOW.md. Review the production diff and tests against the
+parent. Confirm whether the compatibility-ID rebase is limited to an exact effective-catalog
+product alias with an existing displayed product/vendor; canonical revision, fingerprint, and
+source provenance remain intact; and wrong product, stale projection, wrong canonical ID,
+ambiguity, and exact legacy OPRA fallback behavior remain safe.
 
-Use the recorded test results as evidence; run the focused JVM tests only if needed to resolve a
-review question. Do not edit files, commit, push, create a PR, change catalogs, run release/signing
-workflows, or use physical hardware. Report actionable findings first with priority, file/line,
-failure scenario, and a concrete correction. If there are no findings, say so explicitly and list
-any remaining non-blocking uncertainty. Do not declare product/release closure.
+Classify the result as PASS, FAIL, or INCONCLUSIVE. PASS means no actionable code finding from the
+accessible source and evidence. It is not a product/release closure claim. Do not fail the code
+review merely because remote CI, a signed APK, or hardware evidence is absent; those are explicitly
+not part of this pre-merge code review. Use INCONCLUSIVE if the candidate source or required local
+evidence is unavailable, and name the exact access gap.
+
+Use recorded test results as evidence; run focused JVM tests only if needed to resolve a review
+question. Do not modify production code/tests, commit, push, create a PR/task, change catalogs, run
+release/signing workflows, or use physical hardware. You are authorized to create or update only
+review/handoff documentation: write `docs/AFUL_EXPLORER_REVIEW_OUTCOME.md`, write
+`docs/AFUL_EXPLORER_LUNA_WORKER_HANDOFF.md` with a complete copyable prompt for the next new Codex
+Luna Extra High task, and append a concise dated status/link to `docs/CHATGPT_PROJECT_RUNBOOK.md`.
+Do not stage or commit these documentation updates. Preserve existing worktree changes.
+
+The Luna prompt is required for every outcome:
+
+- PASS: ask Luna to take the worker role for bounded final verification and owner handoff, without
+  inventing code changes or claiming closure.
+- FAIL: carry every finding with priority, exact file/line, reproduction, correction, and
+  acceptance tests; authorize Luna as worker to implement and verify those fixes in this worktree.
+- INCONCLUSIVE: identify precisely what could not be inspected and ask Luna to resolve that gap
+  using available repository tools before deciding whether code changes are needed.
+
+Return the outcome, changed documentation paths, and the full Luna handoff prompt in your response.
+Do not declare product/release closure, merge, publish, or request owner hardware work.
 ```
