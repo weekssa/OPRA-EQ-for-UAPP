@@ -40,16 +40,21 @@ not claimed.
 
 The only app-production behavior change since public v0.7.0 is the canonical Favorite product-alias
 correction. PR #51 contains the fix; PR #52 adds the current source-kind regression matrix and is
-merged at `70a240a458f1e3cb6607d8349bb422d78cc95699`. Release-preparation PR #53 passed all exact-head
-checks and merged normally to main at `5c05b0c3ac06e4d8eb868b6232a81651ac060da5`. The signed
-v0.7.1 / `versionCode 8` candidate from that exact main commit passed independent artifact checks
-and API 36 Favorite save/restart validation. The latest public release remains v0.7.0; no public
-v0.7.1 tag or release exists.
+merged at `70a240a458f1e3cb6607d8349bb422d78cc95699`. Release-preparation PR #53 passed its exact-head
+checks and merged normally. Documentation PR #54 then merged at
+`bfb1e3b49e37dd764675e512cee10670d22570a1`; the latest signed v0.7.1 / `versionCode 8` candidate
+was built from that exact main commit and passed independent artifact checks and API 36 Favorite
+save/restart validation. The earlier candidate from `5c05b0c3ac06e4d8eb868b6232a81651ac060da5`
+remains historical evidence. The latest public release remains v0.7.0; no public v0.7.1 tag or
+release exists.
 
 - [x] Focused Favorite source-kind matrix, full JVM suite, Room persistence tests, and documented
   API 36 Favorite/restart smoke passed; see `docs/AFUL_EXPLORER_FAVORITE_REVIEW.md`.
 - [x] PR #52 exact-head Android CI, CodeQL, catalog-currentness, and priority-community checks
   passed; its exact merge commit's main checks also passed.
+- [x] PR #54 merged as `bfb1e3b49e37dd764675e512cee10670d22570a1`. Its exact-main Android CI run
+  #1898 / `36867047458`, CodeQL run #1783 / `36867047589`, Dependency Submission run #52 /
+  `36867047343`, and Automatic Dependency Submission run #2302 / `36867046954` all succeeded.
 - [x] Patch release notes exist at `docs/releases/v0.7.1.md`; version assertions in the signed
   release-candidate and signed-beta workflows match `0.7.1` / code `8`.
 - [x] Local unsigned v0.7.1 release assembly, 712 JVM tests, and Android lint pass; `aapt` confirms
@@ -58,21 +63,24 @@ v0.7.1 tag or release exists.
   Catalog currentness run `36826035036`, and Priority community coverage run `36826035015` at exact
   head `ceb36062aa7b3dd4e3e8cbb4066892551778d143`; it merged normally after owner approval. The
   exact merge commit's main checks also passed.
-- [x] Signed Release Candidate workflow run #11 / run ID `36831766816` succeeded from main SHA
-  `5c05b0c3ac06e4d8eb868b6232a81651ac060da5`, tag input `v0.7.1`. Actions artifact ID:
-  `11148046368`; artifact ZIP SHA-256:
-  `5735a433e52ec34e075aa4a6a5044aae77d9efb8a8a6a7386a614b26d5c87acb`; expiration: 2026-12-30.
+- [x] Signed Release Candidate workflow run #12 / run ID `36868604916` succeeded from main SHA
+  `bfb1e3b49e37dd764675e512cee10670d22570a1`, tag input `v0.7.1`. Actions artifact ID:
+  `11166960960`; artifact ZIP SHA-256:
+  `3743d6755555df67c539fbced020de8fe1564fc0fcc83b88698531c53eca8acd`; artifact size 2,218,565
+  bytes; expiration: 2026-12-30. This supersedes run #11 as the latest exact-main candidate.
 - [x] Candidate APK `EQ-Library-v0.7.1.apk`: SHA-256
-  `cfdc688a0ff9392f5617b05719b09c9c478cf07390aa7dc79e8d4e33c6eecba3`; package
+  `7b0650c6f98af99e45117b0e07bf894f5a5f2d3a33535bb1b3cfe640293f67af`; package
   `com.weekssa.opraeqforuapp`; version `0.7.1`, code `8`; signer certificate SHA-256
   `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`; R8 mapping SHA-256
-  `715a5a42e51e021a21c7957bb78ed235edcd851bd15cf7c884af8e2745f67a0d`. Independent checksum,
-  `apksigner`, signature scheme, `zipalign`, package, and version verification passed.
+  `715a5a42e51e021a21c7957bb78ed235edcd851bd15cf7c884af8e2745f67a0d`. Independent APK checksum,
+  `apksigner`, signature scheme, `zipalign`, package, and version verification passed. The downloaded
+  ZIP digest matched the Actions artifact digest.
 - [x] The public v0.7.0 APK matched its published SHA-256 and release signer. It reproduced the
   Jaytiss/Hifiguides Favorite failure on a fresh API 36 AVD. After in-place upgrade to the exact
-  signed candidate, Jaytiss/Hifiguides saved successfully; a separate Fahryst/AutoEQ Favorite also
-  saved. My EQs showed both after force-stop and cold relaunch. This fresh AVD began with an empty
-  saved list, so a pre-existing Favorite migration was not exercised. The temporary AVD was deleted
+  run #12 signed candidate, Jaytiss/Hifiguides, AutoEq/Fahryst, and LoboNautics/Reddit Favorites all
+  saved successfully. My EQs showed all three source identities after force-stop and cold relaunch.
+  The fresh AVD began with an empty saved list, so a pre-existing Favorite migration was not
+  exercised. This is emulator evidence, not physical-device evidence. The temporary AVD was deleted
   after testing; the existing `codex-api36` AVD was left unchanged.
 - [ ] Obtain explicit owner approval for any public promotion. The repository has no exact-artifact
   public promotion workflow; the signed candidate is a qualification artifact, not a public
