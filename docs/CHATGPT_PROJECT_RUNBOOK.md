@@ -450,3 +450,18 @@ Before publication, the live remote check found no candidate branch ref, no PR f
 read-only. The owner task authorizes committing the closeout documentation, pushing this branch,
 and opening its normal integration PR. Record the resulting commit, push, PR, and live check state
 in the follow-up entry once those actions complete.
+
+### 2026-09-30 AFUL Favorite repository promotion
+
+The verified branch was pushed to `origin/codex/aful-favorite-identity`. Closeout documentation
+commit `e9f79089802b30c7678215ff5d157354d9995d3c` was the branch head when PR #51 was opened against
+[main](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/51). The PR was open, non-draft, and
+reported mergeable at the live refresh. At that point, Catalog currentness CI (run 2145), CodeQL
+(run 1771), Android CI (run 1886), and Priority community coverage CI (run 1630) were all
+`in_progress`; the local test results remain separate from those remote checks.
+
+This promotion update is documentation-only. Its pushed commit advances the PR head; the workflow
+state above is a snapshot for the initial PR head. The final task closeout records the latest branch
+head and check state. The next owner action is to review PR #51 and merge it through the normal
+protected-branch process when approved. This does not authorize merge, release signing, or
+publication by the verification worker.

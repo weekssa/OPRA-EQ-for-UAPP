@@ -47,10 +47,17 @@ The owner supplied a direct Luna final-verification and closeout task on 2026-09
 
 ### Repository promotion record
 
-- Closeout documentation commit: pending the authorized documentation commit.
-- Push: pending.
-- PR: pending.
-- Exact post-closeout branch HEAD and full status: record here and in the runbook after the authorized repository action.
+- Closeout documentation commit pushed: `e9f79089802b30c7678215ff5d157354d9995d3c`
+  (`Record AFUL Favorite final verification`).
+- Push: succeeded to `origin/codex/aful-favorite-identity`; the branch tracks the remote ref.
+- PR: [#51](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/51), open, not draft, targeting
+  `main`. It was created at head `e9f79089802b30c7678215ff5d157354d9995d3c`.
+- At PR creation, the worktree was clean and GitHub reported `main` at implementation base
+  `6ada7efc84425f7b149f9f9e9fb4e9599bc80cf2`. Catalog currentness CI, CodeQL, Android CI, and
+  priority community coverage CI had started and were in progress. No result was inferred from
+  those running workflows.
+- This record is followed by a documentation-only promotion update. The workflow state above is a
+  snapshot at PR creation; use the live PR for the latest branch head and check state.
 
 ## Previous Sol attempt
 
