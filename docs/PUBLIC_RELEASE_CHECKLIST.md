@@ -36,7 +36,7 @@ created a newer documentation commit. Black Pearl is publicly described only wit
 Explorer evidence boundary. JA11 software is verified, while broader power-cycle qualification is
 not claimed.
 
-## v0.7.1 patch candidate: superseded for expanded Favorite fix; publication pending
+## v0.7.1 patch candidate: source-wide Favorite fix verified; public publication pending
 
 The only app-production behavior change since public v0.7.0 is the canonical Favorite product-alias
 correction. PR #51 contains the fix; PR #52 adds the current source-kind regression matrix and is
@@ -45,6 +45,11 @@ checks and merged normally to main at `5c05b0c3ac06e4d8eb868b6232a81651ac060da5`
 v0.7.1 / `versionCode 8` candidate from that exact main commit passed independent artifact checks
 and API 36 Favorite save/restart validation. The latest public release remains v0.7.0; no public
 v0.7.1 tag or release exists.
+
+The candidate described above was superseded for the expanded source-wide Favorite correction. The
+source fix merged in PR #56; the signed beta workflow correction merged in PR #57. Replacement
+candidate #1376 from that exact merged workflow SHA is recorded below; public publication remains a
+separate owner decision.
 
 - [x] Focused Favorite source-kind matrix, full JVM suite, Room persistence tests, and documented
   API 36 Favorite/restart smoke passed; see `docs/AFUL_EXPLORER_FAVORITE_REVIEW.md`.
@@ -74,19 +79,54 @@ v0.7.1 tag or release exists.
   saved. My EQs showed both after force-stop and cold relaunch. This fresh AVD began with an empty
   saved list, so a pre-existing Favorite migration was not exercised. The temporary AVD was deleted
   after testing; the existing `codex-api36` AVD was left unchanged.
-- [ ] **Superseding finding, 2026-10-01:** a one-candidate-per-source review found that an actual
-  OPRA profile failed strict selection matching when its displayed product ID was an alias. The
-  compatibility-ID rebase then recalculated OPRA band-order provenance against the display IDs
-  and lost the trusted marker. The follow-up corrects the provenance identity and adds current
-  source-ID fixture coverage; details are in `docs/AFUL_EXPLORER_FAVORITE_REVIEW.md` and the dated
-  runbook section. The candidate code's latest-main merge point is
-  `cbb6a3911dea1ff2ec14acca80e5c8d568f0c6aa`, which includes live main
-  `9c67f8ee780e65ab3f966dbfc5f2aa5efab462ed`. Source matrix, full Python/JVM tests, Room persistence,
-  and the OPRA Favorite save/restart emulator smoke pass locally. Exact-head GitHub automation and
-  independent review are pending. This fix is not in signed artifact
-  `cfdc688a0ff9392f5617b05719b09c9c478cf07390aa7dc79e8d4e33c6eecba3`. Do not promote that APK as
-  containing the expanded fix. Build a fresh signed candidate from the exact merged main SHA after
-  the PR gates pass, before any public promotion decision.
+- [x] The source-wide Favorite fix passed the one-candidate-per-source review, exact-head
+  independent review, and remote automation. PR #56 exact head
+  `87842777b4d40f5f95e8d6e30e9f775a736e0b34` merged at
+  `66d32756d682405c8617380a4c64f5e25a5699f6`. The fix preserves profile-wide OPRA identity when
+  projecting through product aliases and fails closed when complete revision identities conflict.
+- [x] Current source coverage includes 14 source IDs and 13 profiles; 12 real profile/revision
+  samples exercise the shared headphone Favorite resolver, and 2 General EQ samples exercise the
+  separate exact General resolver. Two registered no-profile sources have reviewed exclusions.
+  CI requires an authentic sample or reviewed exclusion for each source as new sources are added.
+  The checker and its 5 tests passed again against the later catalog-only main SHA
+  `68d5e2e745dacbf26ecf15947d199cdd8667951a`.
+- [x] The complete local suite passed on the reviewed candidate: 713 Android JVM tests, 199 Python
+  tool tests, 6 API 36 Room persistence tests, and temporary API 36 Favorite save/restart/remove UI
+  smoke. The exact PR head had 8/8 applicable remote checks and an independent PASS. No physical
+  phone, DAC, wireless debugging, or USB mutation was needed for the source-resolution path.
+- [x] Initial signed beta run #1375 / ID `36905949756` built from exact merge SHA
+  `66d32756d682405c8617380a4c64f5e25a5699f6` and passed build, R8, pinned signer, APK signature,
+  alignment, hosted API 35 install, and cold launch. Post-run review found stale
+  `merge/publication approval` text in its manifest; run #1375 and its APK are superseded and must
+  not be used as the current handoff candidate. APK SHA-256:
+  `9c4cf12d8f95525e8ba4b42a640512fdac91ba551583714c49d642f6eaa2639f`. Signer certificate SHA-256:
+  `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`. Artifact ID `11184356919`,
+  ZIP SHA-256 `b5fad8c72744ae5fd03e41225db58986070396634a3ceaec3113b5aa7d9fec41`, expires
+  2026-10-15. The superseded APK was published as an immutable temporary test candidate at
+  [EQ-Library-v0.7.1-beta-66d3275.apk](https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.1-beta-66d3275.apk).
+- [x] Initial temporary mobile-test branch publication for superseded run #1375 was present at
+  branch commit `b24610d8861b4f57b176b990894c12a465f5bd0a`; its APK matched the #1375 workflow
+  artifact and manifest.
+- [x] Replacement signed beta run #1376 / ID `36913222922` built from exact main SHA
+  `38302d6b880fcb1b384a4c290d8539260bd4a138`, target `ja11`, and passed the corrected manifest
+  assertions, unit/lint/release build, R8, pinned signing, signature, alignment, hosted API 35
+  install, and cold launch. Artifact ID `11188327665`; ZIP SHA-256
+  `26894f2c0a8a490450418693c8b2c34f6217c6e8f64e9a5e1411ac3992cb76d0`; expiration 2026-10-15
+  19:27:31 UTC. APK SHA-256:
+  `dfdac7782d0545a652cd5eec6e8d6ede60e748da746c0fbec4514c8b3ddaa7d2`; signer SHA-256
+  `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`; R8 mapping SHA-256
+  `048f3f5267c387c0a6b4f483c356a52e7334c636eaa0e7b46692762aab3affb8`.
+- [x] Immutable testing-channel APK
+  [EQ-Library-v0.7.1-beta-38302d6.apk](https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.1-beta-38302d6.apk)
+  matches the artifact and manifest APK SHA-256. Its `mobile-test-apk` branch tip is
+  `dc3fdae75998f4a74f90581d0f53b3f860841ee7`.
+- [ ] Public v0.7.1 promotion remains pending explicit owner decision and an exact-artifact
+  promotion path. Do not create a tag/release or make a public hardware-support claim. Earlier
+  candidate `cfdc688a0ff9392f5617b05719b09c9c478cf07390aa7dc79e8d4e33c6eecba3` predates this
+  expanded fix and is superseded for the Favorite fix. Replacement signed beta run #1376 was
+  dispatched from exact main SHA `38302d6b880fcb1b384a4c290d8539260bd4a138` with target `ja11`;
+  its artifact, manifest, APK, signer, and temporary-channel provenance were independently verified
+  and are recorded above. Public promotion remains a separate owner decision.
 - [ ] Obtain explicit owner approval for any public promotion. The repository has no exact-artifact
   public promotion workflow; the signed candidate is a qualification artifact, not a public
   release. The owner's conditional merge approval for the expanded Favorite fix does not authorize
@@ -95,8 +135,9 @@ v0.7.1 tag or release exists.
 
 No DAC hardware mutation or physical-device qualification is needed for this catalog Favorite
 identity fix. See the 2026-10-01 entry in `docs/CHATGPT_PROJECT_RUNBOOK.md` for the complete
-source SHA, candidate provenance, UI result, and qualification limits. The release-candidate
-artifact expires on 2026-12-30 and must be requalified if it expires or its source changes.
+source SHA, candidate provenance, UI result, and qualification limits. Check each GitHub Actions
+artifact's `expires_at` before relying on it; requalify if the artifact expires or its source
+changes.
 
 ## Continuing release invariants
 

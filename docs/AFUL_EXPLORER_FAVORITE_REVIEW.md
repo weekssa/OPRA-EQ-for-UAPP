@@ -1,10 +1,15 @@
 # AFUL Explorer canonical Favorite candidate review
 
-Status: **The original AFUL Explorer regression was verified for repository promotion** on
-2026-09-30. That result applies to the reproduced AFUL community failure and its exact candidate.
-The 2026-10-01 real-source follow-up below found and corrected an additional OPRA alias edge case;
-the expanded fix still needs normal candidate review and exact-head remote checks. Neither entry is
-app release readiness or hardware qualification.
+Status: **The source-wide Favorite resolver correction is merged and its source coverage is
+verified.** PR #56 merged at `66d32756d682405c8617380a4c64f5e25a5699f6` after independent review
+PASS and 8/8 exact-head checks. The source sample gate also passed against the later catalog-only
+main commit `68d5e2e7`. Signed beta #1375 passed technical artifact checks but is superseded because
+its manifest repeated stale merge/publication approval text. Workflow follow-up PR #57 corrected
+that predicate and merged at `38302d6b`; replacement run #1376 passed signed-artifact and hosted
+API 35 install/cold-launch checks from that exact SHA. APK SHA-256 is
+`dfdac7782d0545a652cd5eec6e8d6ede60e748da746c0fbec4514c8b3ddaa7d2`. This work does not qualify
+every source parser, establish acoustic quality, constitute physical-device or DAC evidence, or
+authorize public v0.7.1 release.
 
 ## 2026-09-30 final verification and closeout
 
@@ -192,9 +197,11 @@ also passed; the run IDs are 36820154922, 36820154963, 36820154755, and 36820154
 
 At the original implementation handoff, version 0.7.1 / version code 8 was still being prepared;
 that status is historical and was later superseded by the signed candidate recorded in the runbook.
-The signed artifact covers the earlier Favorite correction only and predates this source-wide OPRA
-alias follow-up. README current-release wording remains v0.7.0 until publication is separately
-approved and completed.
+The earlier signed artifact covers the previous Favorite correction only and is superseded for this
+source-wide OPRA alias follow-up. Signed beta #1375 was built for the merged correction but is also
+superseded because its manifest contained stale approval wording. Replacement run #1376 is the
+verified software candidate recorded in the 2026-10-01 closeout below. README current-release
+wording remains v0.7.0 until public publication is separately approved and completed.
 
 ## Verification evidence
 
@@ -221,6 +228,49 @@ qualification was performed, and repository-promotion verification does not impl
 This was the next role before the owner supplied the direct Luna final-verification request. That
 request is now complete. The general workflow and PASS, FAIL, and INCONCLUSIVE paths remain in
 `docs/AFUL_EXPLORER_REVIEW_TO_LUNA_WORKFLOW.md` for future candidates.
+
+## 2026-10-01 merged source-wide Favorite closeout
+
+- PR #56 merged with reviewed head `87842777b4d40f5f95e8d6e30e9f775a736e0b34` at merge SHA
+  `66d32756d682405c8617380a4c64f5e25a5699f6` after all applicable exact-head checks passed and an
+  independent read-only review returned PASS.
+- The merge commit's applicable CI, dependency-submission, and source-ingestion checks passed. A
+  later automated catalog-only update advanced main to `68d5e2e745dacbf26ecf15947d199cdd8667951a`;
+  the source-sample checker still reports 14 IDs, 13 profiles, and 2 explicit exclusions, and all
+  five checker tests pass on that current catalog.
+- Signed beta run #1375 / `36905949756` built from the exact PR merge SHA and passed its build,
+  signature, alignment, and hosted API 35 install/cold-launch checks. Its manifest still repeated
+  stale `merge/publication approval` text, so run #1375 and its APK are superseded and must not be
+  used as the current candidate. PR #57 corrected the workflow predicate. Its exact head
+  `3878ee23d36da69847edb1695a92e18a734f7c57` received independent review PASS, passed 12 manifest
+  predicate assertions, and merged at `38302d6b880fcb1b384a4c290d8539260bd4a138` after all six
+  merge-commit checks passed. Replacement signed beta run #1376 uses that exact SHA; its verified
+  artifact evidence follows.
+- Superseded run #1375 APK SHA-256 was
+  `9c4cf12d8f95525e8ba4b42a640512fdac91ba551583714c49d642f6eaa2639f`; pinned signer SHA-256 is
+  `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`. The workflow artifact ZIP
+  SHA-256 is `b5fad8c72744ae5fd03e41225db58986070396634a3ceaec3113b5aa7d9fec41`, artifact ID
+  `11184356919`, expiring 2026-10-15.
+- Run #1375's checksum matched its manifest, checksum sidecar, and then-current immutable
+  mobile-test APK. Its manifest target was `ja11`, metadata only, and did not establish hardware
+  qualification.
+- Replacement signed beta run #1376 / `36913222922` completed successfully from exact main SHA
+  `38302d6b880fcb1b384a4c290d8539260bd4a138`, target `ja11`. Its artifact ID is `11188327665`,
+  ZIP SHA-256 is `26894f2c0a8a490450418693c8b2c34f6217c6e8f64e9a5e1411ac3992cb76d0`, and it expires
+  2026-10-15 19:27:31 UTC. APK SHA-256 is
+  `dfdac7782d0545a652cd5eec6e8d6ede60e748da746c0fbec4514c8b3ddaa7d2`; signer SHA-256 is
+  `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`; R8 mapping SHA-256 is
+  `048f3f5267c387c0a6b4f483c356a52e7334c636eaa0e7b46692762aab3affb8`.
+- The run #1376 manifest records package `com.weekssa.opraeqforuapp`, version `0.7.1` / code `8`,
+  R8 enabled, test plan `docs/FIIO_JA11_HANDS_ON_CHECKLIST.md`, and outstanding JA11 Flash,
+  readback, power-cycle persistence, and final public release/support approvals. Local Build Tools
+  independently confirmed the APK checksum, one pinned signer, v2/v3 signatures, package/version,
+  and ZIP alignment. The hosted API 35 emulator installed and cold-launched it. The immutable
+  mobile-test APK hash matches; the `mobile-test-apk` branch tip is
+  `dc3fdae75998f4a74f90581d0f53b3f860841ee7`.
+- Superseded immutable APK: [EQ-Library-v0.7.1-beta-66d3275.apk](https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.1-beta-66d3275.apk). Verified current software candidate: [EQ-Library-v0.7.1-beta-38302d6.apk](https://raw.githubusercontent.com/weekssa/OPRA-EQ-for-UAPP/mobile-test-apk/candidates/EQ-Library-v0.7.1-beta-38302d6.apk).
+  No wireless debugging, owner phone, USB DAC mutation, or physical test was needed for this
+  source-resolution defect. Public tag/release and any broader support claim remain unapproved.
 
 The reviewer may update review/handoff documentation and append the review result to the runbook.
 It must not modify production code or tests. A PASS means only that the reviewer found no
