@@ -8,9 +8,9 @@ Evidence: fetched remote tag resolves to c48f6a5daa08a5e03475b2e415fe80b41d3357d
 
 Alternatives: use the detached worktree's initial commit or origin/main without checking ancestry.
 
-Reason: the user explicitly requires immutable v0.7.1 as the exact base. HEAD and merge-base now both equal the tag commit.
+Reason: the user explicitly requires immutable v0.7.1 as the exact base. The stabilization branch was created directly from the tag. After checkpointing the recovery fix, it merged current `origin/main` at `afed3dc90b5873218d5e333882528f8c5ddd54a2`; the tag remains an ancestor and no history was rewritten.
 
-Tests validating safety: git rev-parse refs/tags/v0.7.1^{commit}; git merge-base HEAD v0.7.1^{commit}; tagged Gradle metadata inspection.
+Tests validating safety: git rev-parse refs/tags/v0.7.1^{commit}; ancestry check after the merge; tagged Gradle metadata inspection.
 
 ## D002: no physical hardware transaction
 
@@ -33,3 +33,13 @@ Alternatives: increase `largeHeap`, reduce minSdk, skip API 26, or catch the all
 Reason chosen: streaming removes the confirmed full-file text allocation while preserving the repository state model, validation, refresh boundaries, and on-disk format.
 
 Tests validating safety: `largeCachedCatalogCanBeLoadedFromDisk` exercises a >20 MiB persisted JSON file; the focused `CanonicalCatalogRepositoryTest` suite passes. A newly wiped API 26 AVD cold-installed and launched a minified local APK after the fix; MainActivity remained resumed, the process remained alive, and the AndroidRuntime error log was empty. Full candidate validation remains pending.
+
+## D004: merge current main without rewriting the v0.7.1 base
+
+Decision: merge current `origin/main` into `codex/v0.7.2-stabilization` with a normal merge commit.
+
+Evidence: fetched main was `afed3dc90b5873218d5e333882528f8c5ddd54a2`. Its changes since v0.7.1 were currentness/catalog data and updated README, changelog, runbook, public release checklist, and signing docs. No production Kotlin changes were present. The merge completed cleanly at `1530d02f`; `c48f6a5daa08a5e03475b2e415fe80b41d3357db` remains an ancestor.
+
+Reason: preserve the current v0.7.1 release/status documentation and live catalog while retaining the exact immutable release source in branch ancestry.
+
+Tests validating safety: fetched branch/file inventory, clean `git merge --no-edit origin/main`, merge-parent inspection, and ancestor check.

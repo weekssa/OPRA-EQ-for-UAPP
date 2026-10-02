@@ -8,7 +8,7 @@ BASELINE: v0.7.1 SHA c48f6a5daa08a5e03475b2e415fe80b41d3357db; versionName 0.7.1
 
 WORKTREE: /Users/stephenweeks/.codex/worktrees/a79b/OPRA-EQ-for-UAPP
 
-RELEASE BRANCH: codex/v0.7.2-stabilization; recovery source commit 8acb4b976f1f9c25cd364f517ab0e6af33a253f1
+RELEASE BRANCH: codex/v0.7.2-stabilization; recovery source commit 8acb4b976f1f9c25cd364f517ab0e6af33a253f1; latest-main merge 1530d02f
 
 OWNER PRIMARY CHECKOUT MODIFIED: NO
 
