@@ -22,7 +22,29 @@ The checklist is organized around the **current release state**. Detailed histor
   and never rebuilds or re-signs the APK.
 - [x] The repository front page describes the current **EQ Library** product rather than the original OPRA-only workflow.
 
-## Current v0.7.0 state
+## Current v0.7.1 state: source-wide Favorite fix
+
+- [x] Public release [v0.7.1](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.7.1) is published, non-draft, non-prerelease, and returned by `/releases/latest`.
+- [x] Release ID `401454172` was published at `2026-10-02T00:32:34Z` with curated v0.7.1 notes.
+- [x] Tag `v0.7.1` resolves to exact source `c48f6a5daa08a5e03475b2e415fe80b41d3357db`, the merged PR #62 source.
+- [x] PR #62 publisher repair passed independent review and all seven exact-head checks at `e3c890e88e86491aa21759bfdfd2fc4d36bcc269`; it merged under the owner's conditional approval. All six applicable post-merge checks passed.
+- [x] Fresh Signed Release Candidate run [#16 / 36945247310](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36945247310) succeeded from exact main source `c48f6a5daa08a5e03475b2e415fe80b41d3357db`; artifact ID `11201724340`, ZIP SHA-256 `8716136285cd7d77c15c3e850c319ad121e4d4177338b3c1eb1d59594ac95918`.
+- [x] Candidate APK `EQ-Library-v0.7.1.apk` is package `com.weekssa.opraeqforuapp`, version `0.7.1`, code `8`, SHA-256 `abd8837f78aaf72d28abef3db956a1c171f791616effbc8f7875814c2c28002b`. Pinned signer certificate SHA-256 is `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`; R8 mapping SHA-256 is `a6daea5036e4dbaefbf276f6f087da33c9d1c2b4635460f24e2c3f1a8df0cef5`.
+- [x] Release build, unit tests, lint, R8, APK checksum/signature, v2/v3 signing, pinned certificate, package/version, and zip alignment passed. The hosted API 35 promotion gate installed public v0.7.0, upgraded in place to the exact candidate, and cold-launched successfully.
+- [x] Promotion run [#4 / 36946254797](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36946254797) verified the candidate and repaired the existing asset-free private draft only after exact ancestry and target readback checks, then published and verified the exact tag/source.
+- [x] All six public release assets were downloaded and their SHA-256 digests matched GitHub release metadata. The public APK bytes match the exact signed candidate; signer and zip-alignment reports pass; provenance records source, candidate run/artifact, promotion run, APK digest, tag, and signer:
+  - `apksigner-verification.txt`: `ad34f86ffe5fb59711128eb260f44bcce0fad0813d13a73a2a13fd9a711ccccb`
+  - `candidate-manifest.json`: `886668cdea7590be90f729807bb3b5ae8f5f92517ac86687f32840744fb48699`
+  - `EQ-Library-v0.7.1.apk`: `abd8837f78aaf72d28abef3db956a1c171f791616effbc8f7875814c2c28002b`
+  - `EQ-Library-v0.7.1.apk.sha256`: `45692400347998e093e929fad428e361dd6f4da4a6a8fe68b562a32265c69622`
+  - `release-provenance.json`: `be423c9a97397a2dbb7edfe12d09580334fd96a666792f85677d38d6d2492bd1`
+  - `zipalign-verification.txt`: `1cbca796394740ae9826e89e72833b5a04bfa64e55319b25fdd3fda564b68d86`
+- [x] Favorite source coverage includes 14 source-ID samples across 13 profiles: 12 headphone samples exercise the shared headphone resolver, 2 General EQ samples exercise the General resolver, and 2 registered no-profile sources have reviewed exclusions. CI requires each new ingested source ID to add an authentic sample or reviewed exclusion and exercises the production resolver.
+- [x] No physical device, wireless debugging, DAC, or hardware mutation was required; this fix changes source-neutral catalog Favorite resolution and no DAC behavior.
+
+Status: **Published under the owner's conditional approval; all merge, candidate, promotion, and post-publication gates passed.** The release makes no new hardware-support claim. See [v0.7.1 release notes](releases/v0.7.1.md) and the latest closeout entry in `docs/CHATGPT_PROJECT_RUNBOOK.md`.
+
+## Previous v0.7.0 state
 
 - [x] Exact v0.7.0 software, security, dependency, release, and signed-artifact gates completed.
 - [x] Public signed APK, checksum, signer verification, immutable workflow artifact, install, and cold launch recorded.
@@ -38,21 +60,25 @@ created a newer documentation commit. Black Pearl is publicly described only wit
 Explorer evidence boundary. JA11 software is verified, while broader power-cycle qualification is
 not claimed.
 
-## v0.7.1 patch candidate: source-wide Favorite fix verified; public publication pending
+## Historical v0.7.1 candidate and promotion checkpoints
+
+The following chronology records candidate and publisher retry states as they occurred. The
+current release status above supersedes any statement here that v0.7.0 was latest or v0.7.1
+publication was pending.
 
 The only app-production behavior change since public v0.7.0 is the canonical Favorite product-alias
 correction. PR #51 contains the fix; PR #52 adds the current source-kind regression matrix and is
 merged at `70a240a458f1e3cb6607d8349bb422d78cc95699`. Release-preparation PR #53 passed all exact-head
 checks and merged normally to main at `5c05b0c3ac06e4d8eb868b6232a81651ac060da5`. The signed
 v0.7.1 / `versionCode 8` candidate from that exact main commit passed independent artifact checks
-and API 36 Favorite save/restart validation. The latest public release remains v0.7.0; no public
-v0.7.1 tag or release exists.
+and API 36 Favorite save/restart validation. At that early checkpoint, v0.7.0 remained the latest
+public release and no v0.7.1 tag or release existed.
 
-The initial v0.7.1 release candidate and replacement signed beta #1376 predate the current `main`
-commit and are not eligible for public promotion. The source-wide fix merged in PR #56; the signed
-beta workflow correction merged in PR #57; documentation closeout merged in PR #58. Candidate #1376
-remains useful as prior signed install/cold-launch evidence for unchanged app code. The release
-publisher must use a fresh Signed Release Candidate built from the finalized `main` SHA.
+At the start of the release sequence, the initial v0.7.1 release candidate and replacement signed
+beta #1376 predated then-current `main` and were not eligible for public promotion. The source-wide
+fix merged in PR #56; the signed beta workflow correction merged in PR #57; documentation closeout
+merged in PR #58. Candidate #1376 remains historical install/cold-launch evidence for unchanged
+app code; candidate #16 is the published release artifact.
 
 - [x] Focused Favorite source-kind matrix, full JVM suite, Room persistence tests, and documented
   API 36 Favorite/restart smoke passed; see `docs/AFUL_EXPLORER_FAVORITE_REVIEW.md`.
@@ -139,13 +165,13 @@ publisher must use a fresh Signed Release Candidate built from the finalized `ma
   manifest, APK checksum, package/version, signer, signatures, alignment, and R8 mapping. It also
   verified the latest public v0.7.0 baseline APK SHA-256
   `27dada499bcbf9be9bd21d1349164858c93a5d2b83f78fd61134de13b4eb4025`.
-- [x] Promotion run #2 stopped before baseline installation because the API 35 step referenced
+- [x] At that checkpoint, promotion run #2 stopped before baseline installation because the API 35 step referenced
   `needs.verify-candidate.outputs.*` from inside that same job; GitHub expanded the expected
   version values to empty strings. The publish job was skipped. No `v0.7.1` tag or release was
   created; latest remains v0.7.0. PR #61 adds a same-job output contract regression and changes the
-  emulator step to consume `steps.verify.outputs.*`. Local validation currently passes all 24
+  emulator step to consume `steps.verify.outputs.*`. Local validation passed all 24
   promotion-verifier tests, the workflow contract check, and `git diff --check`; PR review and
-  exact-head automation are still required.
+  exact-head automation were subsequently completed by PR #61.
 - [x] PR #61 passed independent review, all 7 exact-head checks, and all 6 post-merge checks. It
   merged at exact main SHA `b55b0b29d1f963198c5ca4f724a9303001781cce`.
 - [x] Fresh Signed Release Candidate run #15 / ID `36939892786` succeeded from exact main SHA
@@ -161,15 +187,11 @@ publisher must use a fresh Signed Release Candidate built from the finalized `ma
   v0.7.0. The release API permits changing `target_commitish` on a draft; the repaired publisher
   will only retarget this draft when it is asset-free, has no tag ref, and the previous full source
   SHA is an ancestor of the new exact candidate source.
-- [ ] PR #62 must pass independent review and exact-head automation, then merge under the owner's
-  conditional approval. The workflow, release-signing policy, checklist, and runbook must describe
-  the draft's absent-tag state and the fail-closed ancestry/asset checks.
-- [ ] After PR #62 merges, run a new Signed Release Candidate from the new exact main SHA and
-  rerun promotion. Candidate #15 no longer qualifies because its source will not equal current
-  main. Promotion must pass candidate checks, the API 35 upgrade and cold launch, private draft
-  retarget/readback, exact asset uploads/downloads, publication, tag-to-source verification, signer,
-  provenance, curated release notes, and `/releases/latest` metadata before this release is marked
-  published.
+- [x] PR #62 passed independent review and all seven exact-head checks, then merged at
+  `c48f6a5daa08a5e03475b2e415fe80b41d3357db`; all six applicable post-merge checks passed.
+- [x] Signed candidate #16 and promotion #4 ran on that exact source. The API 35 upgrade and cold
+  launch passed, the safe private-draft retarget/readback completed, and the public tag, six assets,
+  APK digest, signer, provenance, release notes, and `/releases/latest` were verified.
 
 No DAC hardware mutation or physical-device qualification is needed for this catalog Favorite
 identity fix. See the 2026-10-01 entry in `docs/CHATGPT_PROJECT_RUNBOOK.md` for the complete

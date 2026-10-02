@@ -127,8 +127,9 @@ hardware qualification from a candidate's build/install/cold-launch result.
 
 ## Public release gate (exact-candidate promotion)
 
-For any future version, including the prepared v0.7.1 Favorite patch, complete the applicable
-release gates and receive explicit owner approval before public publication:
+For a future version, complete the applicable release gates and receive explicit owner approval
+before public publication. The v0.7.1 source-wide Favorite release is published; its exact candidate,
+publication, and post-release evidence is recorded in `docs/PUBLIC_RELEASE_CHECKLIST.md`.
 
 1. Merge the reviewed release source through the protected `main` process and pass the exact-head
    main checks.
