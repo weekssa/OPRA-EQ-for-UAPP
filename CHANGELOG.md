@@ -37,6 +37,8 @@ software path is verified and its physical qualification remains bounded by the 
   rebase.
 - Added one real canonical profile/revision regression sample for each ingested catalog source ID,
   plus a CI onboarding gate that requires the sample to stay current as sources are added.
+- Published v0.7.1 from exact source `c48f6a5daa08a5e03475b2e415fe80b41d3357db`. The public APK SHA-256 is
+  `abd8837f78aaf72d28abef3db956a1c171f791616effbc8f7875814c2c28002b`.
 
 ## [Unreleased]
 
