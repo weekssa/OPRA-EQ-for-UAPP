@@ -12,7 +12,7 @@
 - v0.7.2 tag at initial remote check: absent
 - Latest fetched `origin/main`: `afed3dc90b5873218d5e333882528f8c5ddd54a2` (2026-10-02); changes since v0.7.1 are README/changelog/runbook/checklist/signing docs and live catalog data, with no production Kotlin changes
 - Current remote workflows: latest observed main dependency-submission run `37035754432` succeeded; catalog/currentness runs `37035683308` and `37033343784` succeeded; older Dependabot failure `37029780198` was on superseded main `4a3cc20f24dd6308bacd36e3d52e98d09c3e8e37`
-- Current source changes: uncommitted API 26 catalog streaming fix and regression test; HEAD remains the exact v0.7.1 base commit
+- Recovery commit: `8acb4b976f1f9c25cd364f517ab0e6af33a253f1` (`fix(catalog): stream large canonical snapshot loads`), parent is exact v0.7.1 commit
 - Pristine v0.7.1 API 35 instrumentation: 25 tests passed, 0 failures/errors/skips on `opra-v072-api35` (API 35, Google APIs ARM64, emulator 37.1.11)
 - Pristine v0.7.1 API 26 cold-install smoke: failed on `opra-v072-api26` with confirmed catalog-load OOM; failure evidence was captured from logcat before applying the source fix
 - Corrected API 26 smoke: current worktree release APK, versionName 0.7.1/code 8, locally signed with a temporary smoke-only key; install/start/resumed-activity/process checks passed and AndroidRuntime error log was empty
@@ -21,7 +21,7 @@
 
 ## Promotion records
 
-- Branch commits: none beyond base
+- Branch commits: `8acb4b976f1f9c25cd364f517ab0e6af33a253f1` beyond base; remote checkpoint push pending
 - Pull request: NONE
 - CI runs: NONE for this branch
 - Merge SHA: NONE
