@@ -306,6 +306,215 @@ class ReleasePromotionTest(unittest.TestCase):
         root = Path(__file__).resolve().parents[1]
         promotion.check_contract(root)
 
+    def test_new_draft_accepts_absent_tag_ref_when_target_commitish_is_exact(self):
+        candidate = self.validate()
+        source_sha = candidate["source_sha"]
+        created = {
+            "id": 12,
+            "tag_name": TAG,
+            "name": f"EQ Library {TAG}",
+            "body": "# Release notes\n",
+            "target_commitish": source_sha,
+            "draft": True,
+            "prerelease": False,
+            "assets": [],
+        }
+
+        class DraftApi:
+            repo_path = "/repos/weekssa/OPRA-EQ-for-UAPP"
+
+            def json(self, method, path, payload=None):
+                self_test.assertEqual("POST", method)
+                self_test.assertEqual(self.repo_path + "/releases", path)
+                self_test.assertEqual(source_sha, payload["target_commitish"])
+                self_test.assertIs(payload["draft"], True)
+                return created
+
+            def optional_json(self, _path):
+                return None
+
+        self_test = self
+        with (
+            mock.patch.object(promotion, "resolve_tag_commit", side_effect=[None, None]),
+            mock.patch.object(promotion, "current_main_sha", return_value=source_sha),
+            mock.patch.object(promotion, "require_release_version_advances"),
+        ):
+            result = promotion._verify_or_create_draft(DraftApi(), candidate, "# Release notes\n")
+        self.assertEqual(source_sha, result["target_commitish"])
+
+    def test_matching_asset_free_draft_resumes_without_a_tag_ref(self):
+        candidate = self.validate()
+        draft = {
+            "id": 12,
+            "tag_name": TAG,
+            "name": f"EQ Library {TAG}",
+            "body": "# Release notes\n",
+            "target_commitish": candidate["source_sha"],
+            "draft": True,
+            "prerelease": False,
+            "assets": [],
+        }
+
+        class DraftApi:
+            repo_path = "/repos/weekssa/OPRA-EQ-for-UAPP"
+
+            def optional_json(self, _path):
+                return draft
+
+        with (
+            mock.patch.object(promotion, "resolve_tag_commit", return_value=None),
+            mock.patch.object(promotion, "current_main_sha", return_value=candidate["source_sha"]),
+        ):
+            result = promotion._verify_or_create_draft(DraftApi(), candidate, "# Release notes\n")
+        self.assertIs(result, draft)
+
+    def test_asset_free_ancestor_draft_is_retargeted_to_exact_candidate_source(self):
+        candidate = self.validate()
+        source_sha = candidate["source_sha"]
+        ancestor_sha = "b" * 40
+        draft = {
+            "id": 12,
+            "tag_name": TAG,
+            "name": f"EQ Library {TAG}",
+            "body": "# Release notes\n",
+            "target_commitish": ancestor_sha,
+            "draft": True,
+            "prerelease": False,
+            "assets": [],
+        }
+        retargeted = {**draft, "target_commitish": source_sha}
+
+        class DraftApi:
+            repo_path = "/repos/weekssa/OPRA-EQ-for-UAPP"
+
+            def __init__(self):
+                self.calls = []
+
+            def optional_json(self, _path):
+                return draft
+
+            def json(self, method, path, payload=None):
+                self.calls.append((method, path, payload))
+                if path == self.repo_path + f"/compare/{ancestor_sha}...{source_sha}":
+                    self_test.assertEqual(
+                        self.repo_path + f"/compare/{ancestor_sha}...{source_sha}", path
+                    )
+                    return {
+                        "status": "ahead",
+                        "base_commit": {"sha": ancestor_sha},
+                        "head_commit": {"sha": source_sha},
+                        "merge_base_commit": {"sha": ancestor_sha},
+                    }
+                if method == "PATCH":
+                    self_test.assertEqual(self.repo_path + "/releases/12", path)
+                    self_test.assertEqual({"target_commitish": source_sha}, payload)
+                    return retargeted
+                self_test.assertEqual(("GET", self.repo_path + "/releases/12"), (method, path))
+                return retargeted
+
+        self_test = self
+        api = DraftApi()
+        with (
+            mock.patch.object(promotion, "resolve_tag_commit", return_value=None),
+            mock.patch.object(promotion, "current_main_sha", return_value=source_sha),
+        ):
+            result = promotion._verify_or_create_draft(api, candidate, "# Release notes\n")
+        self.assertEqual(source_sha, result["target_commitish"])
+        self.assertEqual(["GET", "PATCH", "GET"], [call[0] for call in api.calls])
+
+    def test_draft_with_assets_is_not_retargeted(self):
+        candidate = self.validate()
+        draft = {
+            "id": 12,
+            "tag_name": TAG,
+            "name": f"EQ Library {TAG}",
+            "body": "# Release notes\n",
+            "target_commitish": "b" * 40,
+            "draft": True,
+            "prerelease": False,
+            "assets": [{"id": 99, "name": "old.apk"}],
+        }
+
+        class DraftApi:
+            repo_path = "/repos/weekssa/OPRA-EQ-for-UAPP"
+            calls = []
+
+            def optional_json(self, _path):
+                return draft
+
+        api = DraftApi()
+        with (
+            mock.patch.object(promotion, "resolve_tag_commit", return_value=None),
+            mock.patch.object(promotion, "current_main_sha", return_value=candidate["source_sha"]),
+        ):
+            with self.assertRaisesRegex(promotion.PromotionError, "cannot be safely retargeted"):
+                promotion._verify_or_create_draft(api, candidate, "# Release notes\n")
+        self.assertEqual([], api.calls)
+
+    def test_stale_draft_with_tag_ref_at_another_source_is_rejected(self):
+        candidate = self.validate()
+        draft = {
+            "id": 12,
+            "tag_name": TAG,
+            "name": f"EQ Library {TAG}",
+            "body": "# Release notes\n",
+            "target_commitish": "b" * 40,
+            "draft": True,
+            "prerelease": False,
+            "assets": [],
+        }
+
+        class DraftApi:
+            repo_path = "/repos/weekssa/OPRA-EQ-for-UAPP"
+
+            def optional_json(self, _path):
+                return draft
+
+        with mock.patch.object(promotion, "resolve_tag_commit", return_value="c" * 40):
+            with self.assertRaisesRegex(promotion.PromotionError, "tag already exists at a different commit"):
+                promotion._verify_or_create_draft(DraftApi(), candidate, "# Release notes\n")
+
+    def test_draft_source_must_be_an_ancestor_before_retargeting(self):
+        candidate = self.validate()
+        ancestor_sha = "b" * 40
+        draft = {
+            "id": 12,
+            "tag_name": TAG,
+            "name": f"EQ Library {TAG}",
+            "body": "# Release notes\n",
+            "target_commitish": ancestor_sha,
+            "draft": True,
+            "prerelease": False,
+            "assets": [],
+        }
+
+        class DraftApi:
+            repo_path = "/repos/weekssa/OPRA-EQ-for-UAPP"
+            patched = False
+
+            def optional_json(self, _path):
+                return draft
+
+            def json(self, method, _path, payload=None):
+                if method == "PATCH":
+                    self.patched = True
+                    return {}
+                return {
+                    "status": "diverged",
+                    "base_commit": {"sha": ancestor_sha},
+                    "head_commit": {"sha": candidate["source_sha"]},
+                    "merge_base_commit": {"sha": "c" * 40},
+                }
+
+        api = DraftApi()
+        with (
+            mock.patch.object(promotion, "resolve_tag_commit", return_value=None),
+            mock.patch.object(promotion, "current_main_sha", return_value=candidate["source_sha"]),
+        ):
+            with self.assertRaisesRegex(promotion.PromotionError, "not an ancestor"):
+                promotion._verify_or_create_draft(api, candidate, "# Release notes\n")
+        self.assertFalse(api.patched)
+
     def test_emulator_upgrade_uses_outputs_from_same_job_verification_step(self):
         workflow = (Path(__file__).resolve().parents[1] / ".github/workflows/promote-signed-release.yml").read_text(
             encoding="utf-8"
@@ -369,7 +578,8 @@ class ReleasePromotionTest(unittest.TestCase):
         }
         assets = promotion.release_assets(candidate, logs, RUN_ID, ARTIFACT_ID, "34567")
         source_sha = candidate["source_sha"]
-        draft = {"id": 12, "tag_name": TAG, "draft": True, "prerelease": False, "assets": []}
+        draft = {"id": 12, "tag_name": TAG, "target_commitish": source_sha,
+                 "draft": True, "prerelease": False, "assets": []}
         final = {
             "id": 12,
             "tag_name": TAG,
@@ -400,7 +610,7 @@ class ReleasePromotionTest(unittest.TestCase):
             mock.patch.object(promotion, "_upload_asset"),
             mock.patch.object(promotion, "_verify_release_assets", side_effect=[verified_assets, verified_assets]),
             mock.patch.object(promotion, "_verify_public_asset_downloads"),
-            mock.patch.object(promotion, "resolve_tag_commit", return_value=source_sha),
+            mock.patch.object(promotion, "resolve_tag_commit", side_effect=[None, source_sha]),
             mock.patch.object(promotion, "current_main_sha", return_value=source_sha),
             mock.patch.object(promotion, "require_release_version_advances"),
         ):
@@ -409,6 +619,7 @@ class ReleasePromotionTest(unittest.TestCase):
         mutations = [call for call in api.calls if call[0] == "PATCH"]
         self.assertEqual(1, len(mutations))
         self.assertIs(mutations[0][2]["draft"], False)
+        self.assertEqual(source_sha, mutations[0][2]["target_commitish"])
         self.assertEqual("true", mutations[0][2]["make_latest"])
         self.assertIn(("GET", api.repo_path + "/releases/latest", None), api.calls)
 
@@ -422,7 +633,8 @@ class ReleasePromotionTest(unittest.TestCase):
             "34567",
         )
         source_sha = candidate["source_sha"]
-        draft = {"id": 12, "tag_name": TAG, "draft": True, "prerelease": False, "assets": []}
+        draft = {"id": 12, "tag_name": TAG, "target_commitish": source_sha,
+                 "draft": True, "prerelease": False, "assets": []}
 
         class PublishApi:
             calls = []
@@ -457,6 +669,7 @@ class ReleasePromotionTest(unittest.TestCase):
         draft = {
             "id": 12,
             "tag_name": TAG,
+            "target_commitish": candidate["source_sha"],
             "draft": True,
             "prerelease": False,
             "assets": [{
@@ -470,6 +683,7 @@ class ReleasePromotionTest(unittest.TestCase):
         final = {
             "id": 12,
             "tag_name": TAG,
+            "target_commitish": candidate["source_sha"],
             "draft": False,
             "prerelease": False,
             "html_url": f"https://github.com/{promotion.REPOSITORY}/releases/tag/{TAG}",

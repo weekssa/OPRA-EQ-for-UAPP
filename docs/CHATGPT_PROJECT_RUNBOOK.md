@@ -700,3 +700,32 @@ to `steps.verify.outputs.*` and adds a regression contract. Its local promotion 
 tests), workflow contract check, and whitespace check pass. Exact-head independent review and CI,
 fresh candidate provenance after merge, a passing API 35 upgrade/cold launch, and public asset/tag
 verification remain required. See `docs/PUBLIC_RELEASE_CHECKLIST.md` for the live gate status.
+
+### 2026-10-01 v0.7.1 promotion draft retry correction
+
+PR #61 passed independent review and all 7 exact-head checks, then merged at main SHA
+`b55b0b29d1f963198c5ca4f724a9303001781cce`; all 6 applicable post-merge checks passed. Fresh Signed
+Release Candidate run #15 / `36939892786` succeeded from that exact source for `v0.7.1`. Its
+immutable artifact is ID `11199164815`, 2,220,892 bytes, ZIP SHA-256
+`d5bc88dcf84297fddea7a14c62d35e418c2b7c0de0acaa4ac1ef491f29423690`, expiring 2026-12-30
+23:16:24 UTC. Release build, unit tests, lint, R8, signing, signature, and alignment passed.
+
+Promotion run #3 / `36940581035` independently reverified that artifact and passed the API 35
+install of public v0.7.0, in-place upgrade to the exact candidate, and cold launch. The publisher
+then stopped at `created release tag does not point to the exact candidate source`. The attempt
+created only private draft release ID `401429211`, recorded `target_commitish` as the exact source,
+and uploaded no assets. The GitHub tag ref remained absent and `/releases/latest` remained public
+v0.7.0. This exposed a publisher assumption: a private draft can correctly record its exact
+`target_commitish` before GitHub creates the tag ref at publication.
+
+The follow-up publisher repair must accept an absent tag ref only while the release remains an
+unpublished draft whose `target_commitish` exactly matches the candidate. It may retarget this
+asset-free draft for a fresh candidate only after verifying the recorded full source SHA is an
+ancestor of current main and reading back the new exact target. A draft with any assets, an existing
+unexpected tag ref, diverged ancestry, or mismatched tag/name/notes remains fail-closed. The publish
+request must pin the exact candidate `target_commitish`; post-publication verification still requires
+the public tag to resolve to that source. PR #62 carries this repair and documentation. Once merged,
+candidate #15 is superseded by the changed main SHA. A fresh signed candidate and full promotion
+run are required before the owner-approved public release can proceed. No wireless-debugging session,
+signed beta, physical device, DAC, or hardware mutation is needed for this source-neutral Favorite
+catalog fix.

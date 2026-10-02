@@ -1,4 +1,4 @@
-# Android release signing — GitHub distribution
+# Android release signing: GitHub distribution
 
 This document covers the permanent Android signing identity used for direct GitHub APK distribution. Google Play setup is intentionally deferred.
 
@@ -56,9 +56,9 @@ Before any public APK is published:
 
 The repository release workflow expects exactly these Actions secrets:
 
-- `OPRA_RELEASE_KEYSTORE_BASE64` — the full one-line contents of `opra-eq-for-uapp-release.p12.base64.txt`.
-- `OPRA_RELEASE_KEYSTORE_PASSWORD` — the password chosen when the PKCS12 keystore was created.
-- `OPRA_RELEASE_KEY_ALIAS` — `opra-eq-for-uapp-release`.
+- `OPRA_RELEASE_KEYSTORE_BASE64`: the full one-line contents of `opra-eq-for-uapp-release.p12.base64.txt`.
+- `OPRA_RELEASE_KEYSTORE_PASSWORD`: the password chosen when the PKCS12 keystore was created.
+- `OPRA_RELEASE_KEY_ALIAS`: `opra-eq-for-uapp-release`.
 
 Secrets are scoped only to the workflow steps that need them. The checkout/setup actions never receive the signing secrets.
 
@@ -99,12 +99,18 @@ API 35 emulator and upgrades that install with the exact candidate APK before a 
 The publisher verifies the candidate in a read-only job, passes only the unchanged candidate ZIP to
 the publish job, and repeats all candidate and APK checks there. It creates a draft release only
 after verification, uploads the exact candidate APK bytes plus checksum, manifest, verification
-reports, and a provenance record, verifies release-asset digests and public download bytes, confirms
-the tag resolves to the candidate source, checks that `main` has not moved, and only then publishes
-the release. The same source and asset checks allow a later run to resume an incomplete matching
-draft; mismatched or already-published tags fail closed. The publisher never rebuilds, re-signs, or
-edits the APK. It marks the release latest and verifies the `/releases/latest` metadata used by the
-app's update check.
+reports, and a provenance record, verifies release-asset digests and public download bytes, checks
+that `main` has not moved, and only then publishes the release. A private draft can have the exact
+`target_commitish` while its Git tag ref is still absent; the publisher accepts that state and
+verifies the tag after publication creates it. A later run can resume a matching asset-free draft
+with no tag ref. It can retarget a previous draft only when that draft has the expected tag, name,
+and notes, no uploaded assets or tag ref, and its full source SHA is verified as an ancestor of the
+exact current candidate source. It reads back the new target before continuing. Drafts with assets,
+diverged sources, mismatched metadata, or an unexpected tag ref fail closed for owner-reviewed
+recovery. The publish request pins `target_commitish` to the verified candidate source before
+publication, then requires the public tag to resolve to that same source. The publisher never
+rebuilds, re-signs, or edits the APK. It marks the release latest and verifies the
+`/releases/latest` metadata used by the app's update check.
 
 The verify job has read-only repository access; the runner artifact service transfers its verified
 candidate to the publish job. The publish job has release-content write access and Actions read
@@ -140,7 +146,11 @@ release gates and receive explicit owner approval before public publication:
 7. Verify the public release page, tag-to-source mapping, all asset digests and downloaded APK
    bytes, signer, provenance record, release notes, and in-app `/releases/latest` metadata path.
 
-If promotion stops after creating a matching draft, rerun only after confirming the candidate
-artifact remains available and the current source is unchanged. The workflow resumes only when the
-existing tag, draft release, release notes, source SHA, and any already uploaded asset bytes match.
-Any mismatch requires an owner-reviewed recovery before another publication attempt.
+If promotion stops after creating a matching draft, first confirm that the candidate artifact is
+still available and that the current `main` source is the candidate source. A matching asset-free
+draft with no tag ref can resume. When `main` advanced after an earlier failed attempt, the
+publisher may update that private draft only if its recorded full source SHA is an ancestor of the
+new exact candidate source and the draft has no assets or tag ref. It checks the tag, draft name,
+notes, ancestry, source readback, and any already uploaded bytes before publication. Any draft with
+assets from another candidate, a diverged source, a mismatched tag or notes, or an unexpected tag
+ref requires owner-reviewed recovery before another attempt.
