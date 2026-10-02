@@ -13,7 +13,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
+import androidx.compose.material3.SecondaryTabRow
+import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -256,7 +257,11 @@ fun MyDacScreen(
             }
         }
 
-        TabRow(selectedTabIndex = selectedTabIndex) {
+        SecondaryTabRow(
+            selectedTabIndex = selectedTabIndex,
+            containerColor = TabRowDefaults.primaryContainerColor,
+            contentColor = TabRowDefaults.primaryContentColor,
+        ) {
             Tab(
                 selected = selectedTabIndex == 0,
                 onClick = { selectedTabIndex = 0 },

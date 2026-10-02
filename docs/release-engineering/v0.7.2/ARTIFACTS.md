@@ -2,35 +2,51 @@
 
 ## Source
 
-- Repository: weekssa/OPRA-EQ-for-UAPP
-- Worktree: /Users/stephenweeks/.codex/worktrees/a79b/OPRA-EQ-for-UAPP
-- Branch: codex/v0.7.2-stabilization
-- Base/tag: v0.7.1
-- Base commit: c48f6a5daa08a5e03475b2e415fe80b41d3357db
-- Starting v0.7.1 metadata: versionName 0.7.1, versionCode 8
-- Target metadata: versionName 0.7.2, versionCode 9
-- v0.7.2 tag at initial remote check: absent
-- Latest fetched `origin/main`: `afed3dc90b5873218d5e333882528f8c5ddd54a2` (2026-10-02); changes since v0.7.1 are README/changelog/runbook/checklist/signing docs and live catalog data, with no production Kotlin changes
-- Latest main merge: `1530d02f` on this branch, with `afed3dc90b5873218d5e333882528f8c5ddd54a2` as the merged parent; v0.7.1 `c48f6a5daa08a5e03475b2e415fe80b41d3357db` remains an ancestor
-- Current remote workflows: latest observed main dependency-submission run `37035754432` succeeded; catalog/currentness runs `37035683308` and `37033343784` succeeded; older Dependabot failure `37029780198` was on superseded main `4a3cc20f24dd6308bacd36e3d52e98d09c3e8e37`
-- Recovery commit: `8acb4b976f1f9c25cd364f517ab0e6af33a253f1` (`fix(catalog): stream large canonical snapshot loads`), parent is exact v0.7.1 commit
-- Pristine v0.7.1 API 35 instrumentation: 25 tests passed, 0 failures/errors/skips on `opra-v072-api35` (API 35, Google APIs ARM64, emulator 37.1.11)
-- Pristine v0.7.1 API 26 cold-install smoke: failed on `opra-v072-api26` with confirmed catalog-load OOM; failure evidence was captured from logcat before applying the source fix
-- Corrected API 26 smoke: current worktree release APK, versionName 0.7.1/code 8, locally signed with a temporary smoke-only key; install/start/resumed-activity/process checks passed and AndroidRuntime error log was empty
-- Temporary API 26 smoke keystore and APK were deleted after verification; this is not a signed candidate and its temporary certificate is not the release signer
-- Original `medium_phone` API 36 AVD was restarted without wiping and still has the previously installed app, versionName 0.7.0/code 7
+- Repository: `weekssa/OPRA-EQ-for-UAPP`
+- Worktree: `/Users/stephenweeks/.codex/worktrees/a79b/OPRA-EQ-for-UAPP`
+- Branch: `codex/v0.7.2-stabilization`
+- Base/tag: `v0.7.1`
+- Base commit: `c48f6a5daa08a5e03475b2e415fe80b41d3357db`
+- Starting metadata: versionName `0.7.1`, versionCode `8`
+- Target metadata: versionName `0.7.2`, versionCode `9`
+- Latest fetched `origin/main` at the last refresh: `afed3dc90b5873218d5e333882528f8c5ddd54a2` (2026-10-02)
+- Latest main merge on this branch: `1530d02f`, with `afed3dc90b5873218d5e333882528f8c5ddd54a2` as its main parent; the v0.7.1 source remains an ancestor
+- Latest pushed stabilization checkpoint before this local candidate: `d37e114d466d681138140a0280a7c988235c3c94`
+- Current working changes: complete v0.7.2/code 9 stabilization candidate, not yet committed or pushed
+- Physical DAC writes: none
 
-## Promotion records
+## Local verification
 
-- Branch commits beyond v0.7.1: recovery source `8acb4b976f1f9c25cd364f517ab0e6af33a253f1`, recovery ledger `bd615efd`, and latest-main merge `1530d02f`; push of the merge checkpoint pending
-- Pull request: NONE
-- CI runs: NONE for this branch
-- Merge SHA: NONE
-- Signed candidate workflow/run/artifact: NONE
-- APK SHA-256: NONE
-- Signer certificate SHA-256: expected pinned project identity, to be reverified on candidate
-- Candidate manifest: NONE
-- v0.7.2 tag: absent
-- GitHub Release URL: NONE
+- Full Gradle gate on the dirty worktree: 727 JVM tests passed with 0 failures/errors/skips; lint passed with 0 errors, 111 warnings, and 2 hints; debug and release APK assembly passed
+- Forced Kotlin compile passed; its two warnings are in unchanged files
+- R8 mapping verification passed; at least one app class is renamed
+- API 35 instrumentation passed 25 tests with 0 failures/errors/skips on `opra-v072-api35` (ARM64, emulator 37.1.11)
+- Python tool suite passed 235 tests; release contract, registry validation, and Favorite sample validation passed
+- actionlint 1.7.12 passed all workflow YAML; ShellCheck 0.11.0 passed repository shell scripts
+- Independent read-only candidate review found no confirmed correctness or regression finding; exact PR-head review remains required
+
+## API 26 smoke artifacts
+
+- Latest local smoke used a fresh `-wipe-data` API 26 ARM64 emulator with a 48 MiB heap-growth limit. It rendered manufacturer, model, and profile lists; process PID 4425 remained alive and resumed after the 60-second observation, with no AndroidRuntime errors.
+- Unsigned minified v0.7.2/code 9 APK SHA-256: `67a2663d53cedc30ad3395117636e02891f86b9a98f4ada4c6e552a4b000480c`
+- Temporary smoke-signed APK SHA-256: `fd56fe111f17221ce673ac3a51f58defcaa05890d963bef03a6cfd1e59347ef1`
+- Temporary smoke signer certificate SHA-256: `e8d962e436a507a3edb891a38a2867c7d1191a62b3da9ff3aa0e8477bd2ca10d`; it is not the project release signer
+- `aapt` verified package `com.weekssa.opraeqforuapp`, versionName `0.7.2`, versionCode `9`, and minSdk 26; `apksigner verify` passed v2/v3
+- Final Dalvik allocation was 47,094 KiB of 49,152 KiB, leaving 2,058 KiB free
+- Full local evidence and the separated earlier 13-minute smoke are under `.unlazy/v0.7.2-autonomous-release/evidence/api26-final/`
+- The API 26 smoke used dirty source and a temporary signer. It is not final source, CI x86_64, or release candidate provenance. Repeat after checkpoint commit.
+
+## Remote promotion state
+
+- Remote branch after previous checkpoint: `d37e114d466d681138140a0280a7c988235c3c94`; fetch and push state must be refreshed before the next push
+- Pull request: none
+- No candidate or PR CI exists yet. The latest observed branch run was unrelated Automatic Dependency Submission run `37057657032` on checkpoint `d37e114d466d681138140a0280a7c988235c3c94`; it succeeded.
+- Merge SHA: none
+- Signed candidate workflow/run/artifact: none
+- Release APK SHA-256: none
+- Release signer certificate SHA-256: expected pinned project identity, to be independently verified on the candidate
+- Candidate manifest: none
+- Remote `v0.7.2` tag: absent at the last remote check
+- GitHub Release: absent at the last remote check
 
 Update this file after every branch push, PR/CI change, merge, candidate, tag, publication, and public asset verification. Never copy a previous candidate checksum or signer verification forward as evidence for a changed source.

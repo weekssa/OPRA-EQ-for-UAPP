@@ -74,15 +74,27 @@ class Ew300PersistenceQualifier(
             powerCycleMarker = transport.detachGeneration,
         )
         // Store the recovery record before the first mutation.
-        stateStore.writePersistencePending(key, pending)
+        if (!persistPending(key, pending)) {
+            return failed("Could not durably store the EW300 recovery record. No hardware write was sent.", true)
+        }
 
         if (!transport.writeRegister(bandRegister, temporaryBand)) {
             val observed = readSnapshot()
             if (observed != null && matchesSnapshot(baseline, observed)) {
-                stateStore.writePersistencePending(key, null)
+                if (!persistPending(key, null)) {
+                    return failed(
+                        "Exact readback confirms the baseline is unchanged, but the EW300 recovery record could not be cleared. Stop and share the report.",
+                        false,
+                    )
+                }
                 return failed("The EW300 rejected the temporary 0.1 dB Peak change. Exact readback confirms the baseline is unchanged.", true)
             }
-            stateStore.writePersistencePending(key, pending.copy(stage = Ew300PersistenceStage.UNCERTAIN))
+            if (!persistPending(key, pending.copy(stage = Ew300PersistenceStage.UNCERTAIN))) {
+                return failed(
+                    "The temporary Peak write and exact baseline readback are uncertain, and the recovery record could not be updated. Stop and share the report.",
+                    false,
+                )
+            }
             return failed(
                 "The temporary Peak write was not confirmed and exact baseline readback failed. Stop and share the report; no further operation was sent.",
                 false,
@@ -99,7 +111,12 @@ class Ew300PersistenceQualifier(
             return restoreBeforeCommitOrFail(key, pending, "Temporary readback did not match before Save.")
         }
         if (!transport.commit()) {
-            stateStore.writePersistencePending(key, pending.copy(stage = Ew300PersistenceStage.UNCERTAIN))
+            if (!persistPending(key, pending.copy(stage = Ew300PersistenceStage.UNCERTAIN))) {
+                return failed(
+                    "The Save result is uncertain and the recovery record could not be updated. Stop, leave the cable connected, and share the report.",
+                    false,
+                )
+            }
             return failed(
                 "The Save result is uncertain. Stop, leave the cable connected, and share the report; the app will not retry automatically.",
                 false,
@@ -107,16 +124,26 @@ class Ew300PersistenceQualifier(
         }
         val immediate = readSnapshot()
         if (immediate == null || !matchesTemporary(pending, immediate)) {
-            stateStore.writePersistencePending(key, pending.copy(stage = Ew300PersistenceStage.UNCERTAIN))
+            if (!persistPending(key, pending.copy(stage = Ew300PersistenceStage.UNCERTAIN))) {
+                return failed(
+                    "Save was sent, immediate readback is uncertain, and the recovery record could not be updated. Stop and share the report.",
+                    false,
+                )
+            }
             return failed(
                 "Save was sent, but immediate readback is uncertain. Stop and share the report; do not repeat the action.",
                 false,
             )
         }
-        stateStore.writePersistencePending(
+        if (!persistPending(
             key,
             pending.copy(powerCycleMarker = transport.detachGeneration),
-        )
+        )) {
+            return failed(
+                "Temporary values were saved and verified, but the recovery record could not be updated. Stop and share the report.",
+                false,
+            )
+        }
         return Ew300PersistenceQualificationResult.AwaitingPowerCycle(
             "Temporary values were saved and verified. Unplug the EW300 completely for 10 seconds, reconnect it, then tap Continue qualification.",
         )
@@ -135,7 +162,12 @@ class Ew300PersistenceQualifier(
             ?: return failed("Could not read the EW300 after power removal. No write was sent.", false)
         if (!matchesTemporary(pending, afterPowerCycle)) {
             if (matchesSnapshot(pending.baseline, afterPowerCycle)) {
-                stateStore.writePersistencePending(key, null)
+                if (!persistPending(key, null)) {
+                    return failed(
+                        "The original baseline is intact, but the EW300 recovery record could not be cleared. Stop and share the report.",
+                        false,
+                    )
+                }
                 return Ew300PersistenceQualificationResult.NotPersistent(
                     "The temporary values did not survive full power removal. Persistent Flash remains unavailable; the original baseline is intact.",
                 )
@@ -153,25 +185,45 @@ class Ew300PersistenceQualifier(
                 pending.baseline.getValue(Ew300Protocol.GLOBAL_GAIN_REGISTER),
             )
         ) {
-            stateStore.writePersistencePending(key, pending.copy(stage = Ew300PersistenceStage.UNCERTAIN))
+            if (!persistPending(key, pending.copy(stage = Ew300PersistenceStage.UNCERTAIN))) {
+                return failed(
+                    "The temporary values persisted, baseline restoration was not accepted, and the recovery record could not be updated. Stop and share the report.",
+                    false,
+                )
+            }
             return failed("The temporary values persisted, but baseline restoration was not accepted. Stop and share the report.", false)
         }
         if (!transport.commit()) {
-            stateStore.writePersistencePending(key, pending.copy(stage = Ew300PersistenceStage.UNCERTAIN))
+            if (!persistPending(key, pending.copy(stage = Ew300PersistenceStage.UNCERTAIN))) {
+                return failed(
+                    "The baseline restore Save is uncertain and the recovery record could not be updated. Stop and share the report.",
+                    false,
+                )
+            }
             return failed("The baseline restore Save is uncertain. Stop and share the report; do not retry.", false)
         }
         val restored = readSnapshot()
         if (restored == null || !matchesSnapshot(pending.baseline, restored)) {
-            stateStore.writePersistencePending(key, pending.copy(stage = Ew300PersistenceStage.UNCERTAIN))
+            if (!persistPending(key, pending.copy(stage = Ew300PersistenceStage.UNCERTAIN))) {
+                return failed(
+                    "The baseline restoration could not be verified and the recovery record could not be updated. Stop and share the report.",
+                    false,
+                )
+            }
             return failed("The baseline restoration could not be verified. Stop and share the report.", false)
         }
-        stateStore.writePersistencePending(
+        if (!persistPending(
             key,
             pending.copy(
                 stage = Ew300PersistenceStage.BASELINE_RESTORED,
                 powerCycleMarker = transport.detachGeneration,
             ),
-        )
+        )) {
+            return failed(
+                "The original values were restored and verified, but the recovery record could not be updated. Stop and share the report.",
+                false,
+            )
+        }
         return Ew300PersistenceQualificationResult.AwaitingPowerCycle(
             "The original values were restored and saved. Unplug the EW300 completely for 10 seconds again, reconnect it, then tap Finish qualification.",
         )
@@ -191,10 +243,15 @@ class Ew300PersistenceQualifier(
         if (!matchesSnapshot(pending.baseline, final)) {
             return failed("The final power-cycle state does not match the preserved baseline. Stop and share the report.", false)
         }
+        if (!persistPending(key, null)) {
+            return failed(
+                "The original values are intact, but the EW300 recovery record could not be cleared. Persistent Flash remains unavailable.",
+                false,
+            )
+        }
         stateStore.markGlobalGainQualified(key, true)
         stateStore.markPersistenceQualified(key, true)
         stateStore.writeAppliedGainDeltaSteps(key, 0)
-        stateStore.writePersistencePending(key, null)
         return Ew300PersistenceQualificationResult.Verified(
             "EW300 Save, Peak persistence, playback-gain persistence, and exact baseline restoration passed both power-removal checks.",
         )
@@ -213,9 +270,19 @@ class Ew300PersistenceQualifier(
             )
         val verified = restored && readSnapshot()?.let { matchesSnapshot(pending.baseline, it) } == true
         if (verified) {
-            stateStore.writePersistencePending(key, null)
+            if (!persistPending(key, null)) {
+                return failed(
+                    "$reason The original volatile state is restored and verified, but the EW300 recovery record could not be cleared. Stop and share the report.",
+                    false,
+                )
+            }
         } else {
-            stateStore.writePersistencePending(key, pending.copy(stage = Ew300PersistenceStage.UNCERTAIN))
+            if (!persistPending(key, pending.copy(stage = Ew300PersistenceStage.UNCERTAIN))) {
+                return failed(
+                    "$reason The original volatile state could not be verified, and the recovery record could not be updated. Stop and share the report.",
+                    false,
+                )
+            }
         }
         return failed(
             if (verified) "$reason The original volatile state was restored and verified; Save was not sent."
@@ -243,6 +310,12 @@ class Ew300PersistenceQualifier(
         expected.keys == actual.keys && expected.keys.all { register ->
             actual[register]?.contentEquals(expected.getValue(register)) == true
         }
+
+    private fun persistPending(key: String, pending: Ew300PersistencePending?): Boolean = try {
+        stateStore.writePersistencePending(key, pending)
+    } catch (_: Exception) {
+        false
+    }
 
     private fun adjustSigned16(source: ByteArray, delta: Int): ByteArray? {
         if (source.size != 4) return null

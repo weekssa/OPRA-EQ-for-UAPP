@@ -17,7 +17,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
+import androidx.compose.material3.SecondaryTabRow
+import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.Icons
@@ -156,7 +157,11 @@ internal fun FiioJa11MyDacContent(
             }
         }
 
-        TabRow(selectedTabIndex = selectedTab) {
+        SecondaryTabRow(
+            selectedTabIndex = selectedTab,
+            containerColor = TabRowDefaults.primaryContainerColor,
+            contentColor = TabRowDefaults.primaryContentColor,
+        ) {
             Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("EQ") })
             Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("DEVICE") })
         }

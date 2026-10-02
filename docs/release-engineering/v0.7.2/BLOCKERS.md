@@ -12,15 +12,15 @@ Resolution: official GitHub CLI was installed outside the repository and authent
 
 Current state: resolved.
 
-## Resolved baseline defect: API 26 startup OOM
+## Resolved API 26 cold-start OOM chain
 
-Problem: the pristine v0.7.1 minified APK crashed during first launch on a freshly wiped API 26 emulator.
+Problem: the pristine v0.7.1 minified APK crashed during first launch on a freshly wiped API 26 emulator. Streaming the catalog removed the first OOM, but a three-second follow-up smoke falsely passed and longer cold launches still failed during catalog overlay.
 
-Root cause: `CanonicalCatalogRepository.loadSnapshot()` converted the complete 19,375,344-byte catalog file to a `String` before JSON decoding. On the emulator's 48 MiB heap growth limit this caused `OutOfMemoryError` while `StringWriter` was growing by 33,562,632 bytes.
+Root causes: `CanonicalCatalogRepository.loadSnapshot()` initially converted the complete 19,375,344-byte catalog file to a `String` before JSON decoding, which attempted a 33,562,632-byte `StringWriter` growth against the 48 MiB heap-growth limit. After streaming fixed that allocation, catalog rendering retained eager lookup indexes and full formatted acoustic signatures for thousands of profiles. A cold trace reached the signature builder during acoustic deduplication with only a few hundred bytes free. Earlier traces also caught memory pressure during product alias resolution and legacy profile normalization.
 
-Recovery: captured the AndroidRuntime stack, confirmed the API level and heap limit, inspected the R8 mapping/source path and catalog read implementation, added a large persisted-catalog regression test, and changed decoding to consume a file `InputStream` directly.
+Recovery: retained direct stream decoding and its large persisted-catalog regression test; made `OpraCatalog` lookup indexes lazy; reduced alias-resolution duplication; made canonical band projection lazy; changed acoustic deduplication to compact 64-bit fingerprints with exact signature checks for collisions; replaced the hot numeric formatter with fixed-precision formatting that falls back to `String.format` around rounding ties and unusual values; and moved catalog adaptation/overlay to `Dispatchers.Default`. Added fixed-precision/negative-zero and formatter-equivalence tests. The API 26 smoke now waits for the manufacturer list and observes for 60 seconds after catalog readiness.
 
-Resolution/current state: the focused repository tests passed; a fresh minified release build cold-installed and launched successfully on the wiped API 26 AVD. `MainActivity` remained resumed, the app process was alive, and the AndroidRuntime error log was empty. Run full candidate validation again after all remaining changes.
+Resolution/current state: the latest smoke on a freshly wiped API 26 Google APIs ARM64 AVD with a 48 MiB heap-growth limit cold-installed the local minified 0.7.2/code 9 APK. The manufacturer, model, and profile list rendered; `MainActivity` remained resumed and PID 4425 remained alive after a 60-second observation; the AndroidRuntime error log was empty. Dalvik used 47,094 KiB of 49,152 KiB at final inspection. A separate earlier smoke remained alive for more than 13 minutes, but its artifacts and memory snapshot are explicitly separated under `.unlazy/v0.7.2-autonomous-release/evidence/api26-final/` and are not the latest-run result. The latest smoke APK was signed with a temporary local-only key and is not official candidate evidence. The AVD is ARM64 while CI uses x86_64. No unresolved API 26 failure is currently reproduced; final committed-source and CI x86_64 runs remain pending.
 
 ## Historical checkpoint: initial detached worktree
 

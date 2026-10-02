@@ -15,7 +15,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
+import androidx.compose.material3.SecondaryTabRow
+import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -136,7 +137,11 @@ internal fun Ew300MyDacContent(
                     "Connected. EQ and DEVICE share one verified hardware session.",
                     style = MaterialTheme.typography.bodyMedium,
                 )
-                TabRow(selectedTabIndex = selectedTab) {
+                SecondaryTabRow(
+                    selectedTabIndex = selectedTab,
+                    containerColor = TabRowDefaults.primaryContainerColor,
+                    contentColor = TabRowDefaults.primaryContentColor,
+                ) {
                     Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("EQ") })
                     Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("DEVICE") })
                 }
@@ -653,7 +658,7 @@ internal fun Ew300DeviceStatus(
         showDisclosure = true,
         onClick = if (canChangeGain) {
             {
-                stagedGainDb = currentGainDb ?: 0.0
+                stagedGainDb = currentGainDb
                 gainDialogOpen = true
             }
         } else {

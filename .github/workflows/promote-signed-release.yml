@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Exact release tag of the signed candidate (for example v0.7.1).
+        description: Exact release tag of the signed candidate (vMAJOR.MINOR.PATCH).
         required: true
         type: string
       candidate_run_id:
@@ -83,6 +83,10 @@ jobs:
             --github-output "$GITHUB_OUTPUT"
 
       - name: Install exact candidate over the latest public release on API 35
+        env:
+          BASELINE_VERSION_CODE: ${{ steps.verify.outputs.baseline_version_code }}
+          CANDIDATE_VERSION_CODE: ${{ steps.verify.outputs.candidate_version_code }}
+          CANDIDATE_VERSION_NAME: ${{ steps.verify.outputs.candidate_version_name }}
         shell: bash
         run: |
           set -euo pipefail
@@ -110,24 +114,31 @@ jobs:
             sleep 2
           done
           adb wait-for-device
-          timeout 300 bash -c 'until [[ "$(adb shell getprop sys.boot_completed | tr -d "\r")" == "1" ]]; do sleep 5; done'
+          for attempt in $(seq 1 60); do
+            if [[ "$(adb shell getprop sys.boot_completed | tr -d '\r')" == "1" ]]; then break; fi
+            if [[ "$attempt" -eq 60 ]]; then
+              cat "$RUNNER_TEMP/promotion-emulator.log"
+              exit 1
+            fi
+            sleep 5
+          done
           build_tools="$ANDROID_HOME/build-tools/36.0.0"
           "$build_tools/aapt" dump badging "$RUNNER_TEMP/promotion-transfer/baseline.apk" |
             grep -F "package: name='com.weekssa.opraeqforuapp'" >/dev/null
           baseline_code="$("$build_tools/aapt" dump badging "$RUNNER_TEMP/promotion-transfer/baseline.apk" | sed -n "s/^package: .*versionCode='\([0-9][0-9]*\)'.*/\1/p" | head -n 1)"
           test -n "$baseline_code"
-          test "$baseline_code" = "${{ steps.verify.outputs.baseline_version_code }}"
+          test "$baseline_code" = "$BASELINE_VERSION_CODE"
           adb install "$RUNNER_TEMP/promotion-transfer/baseline.apk"
           baseline_package="$(adb shell dumpsys package com.weekssa.opraeqforuapp)"
           echo "$baseline_package" | grep -q "versionCode=$baseline_code"
           candidate_code="$("$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$RUNNER_TEMP/promotion-transfer/candidate.apk" | sed -n "s/^package: .*versionCode='\([0-9][0-9]*\)'.*/\1/p" | head -n 1)"
           test -n "$candidate_code"
-          test "$candidate_code" = "${{ steps.verify.outputs.candidate_version_code }}"
+          test "$candidate_code" = "$CANDIDATE_VERSION_CODE"
           install_output="$(adb install -r "$RUNNER_TEMP/promotion-transfer/candidate.apk")"
           echo "$install_output"
           package_dump="$(adb shell dumpsys package com.weekssa.opraeqforuapp)"
           echo "$package_dump" | grep -q "versionCode=$candidate_code"
-          echo "$package_dump" | grep -q 'versionName=${{ steps.verify.outputs.candidate_version_name }}'
+          echo "$package_dump" | grep -Fq "versionName=${CANDIDATE_VERSION_NAME}"
           adb shell am force-stop com.weekssa.opraeqforuapp
           if ! launch_output="$(adb shell am start -W -n com.weekssa.opraeqforuapp/.MainActivity 2>&1)"; then
             echo "$launch_output"
@@ -158,8 +169,44 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  publish:
+  create-candidate-tag:
     needs: verify-candidate
+    if: github.repository == 'weekssa/OPRA-EQ-for-UAPP' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Check out the exact publisher source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Bind the validated candidate to an immutable annotated tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_API_URL: ${{ github.api_url }}
+          RELEASE_TAG: ${{ needs.verify-candidate.outputs.release_tag }}
+          CANDIDATE_RUN_ID: ${{ needs.verify-candidate.outputs.candidate_run_id }}
+          CANDIDATE_ARTIFACT_ID: ${{ needs.verify-candidate.outputs.candidate_artifact_id }}
+          EXPECTED_SOURCE_SHA: ${{ needs.verify-candidate.outputs.source_sha }}
+          EXPECTED_ARTIFACT_DIGEST: ${{ needs.verify-candidate.outputs.artifact_digest }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/promote_release_candidate.py tag \
+            --tag "$RELEASE_TAG" \
+            --candidate-run-id "$CANDIDATE_RUN_ID" \
+            --candidate-artifact-id "$CANDIDATE_ARTIFACT_ID" \
+            --source-sha "$EXPECTED_SOURCE_SHA" \
+            --artifact-digest "$EXPECTED_ARTIFACT_DIGEST" \
+            --project-root .
+
+  publish:
+    needs: [verify-candidate, create-candidate-tag]
     if: github.repository == 'weekssa/OPRA-EQ-for-UAPP' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 25

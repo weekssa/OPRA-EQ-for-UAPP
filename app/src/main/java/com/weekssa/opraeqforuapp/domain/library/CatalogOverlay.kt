@@ -45,16 +45,25 @@ fun overlayCanonicalCatalog(
     val visibleVendorIds = visibleProducts.map(OpraProduct::vendorId).toSet()
 
     val profiles = linkedMapOf<String, OpraEqProfile>()
-    legacy.profiles.forEach { profiles[it.id] = it.toUserFacingProfile(defaultSource = "OPRA") }
-    canonical.profiles.forEach { profiles[it.id] = it.toUserFacingProfile(defaultSource = null) }
-    val resolvedProfiles = profiles.values.map { profile ->
-        profile.copy(productId = resolveProductId(profile.productId, aliasResolution.aliases))
+    val canonicalProfileIds = canonical.profiles.mapTo(HashSet(canonical.profiles.size), OpraEqProfile::id)
+    legacy.profiles.forEach { profile ->
+        profiles[profile.id] = if (profile.id in canonicalProfileIds) {
+            profile
+        } else {
+            profile.toUserFacingProfile(defaultSource = "OPRA")
+        }
     }
+    canonical.profiles.forEach { profiles[it.id] = it }
+    val resolvedProfiles = profiles.values.map { profile ->
+        val productId = resolveProductId(profile.productId, aliasResolution.aliases)
+        if (productId == profile.productId) profile else profile.copy(productId = productId)
+    }
+    val deduplicatedProfiles = deduplicateAcoustically(resolvedProfiles)
 
     return OpraCatalog(
         vendors = vendors.values.filter { it.id in visibleVendorIds },
         products = visibleProducts,
-        profiles = deduplicateAcoustically(resolvedProfiles),
+        profiles = deduplicatedProfiles,
         ignoredEntryCount = legacy.ignoredEntryCount + canonical.ignoredEntryCount,
         productAliases = aliasResolution.aliases,
     )
@@ -65,14 +74,6 @@ private data class ProductAliasResolution(
     val preferredProducts: Map<String, OpraProduct>,
 )
 
-private data class IndexedProduct(
-    val product: OpraProduct,
-    val manufacturer: String,
-    val vendorKey: String,
-    val modelKey: String,
-    val subtypeKey: String,
-)
-
 private fun resolveProductAliases(
     legacy: OpraCatalog,
     canonical: OpraCatalog,
@@ -81,32 +82,24 @@ private fun resolveProductAliases(
 ): ProductAliasResolution {
     val aliases = linkedMapOf<String, String>()
     val preferred = linkedMapOf<String, OpraProduct>()
-    val allProducts = (legacy.products + canonical.products).distinctBy(OpraProduct::id)
-    val productById = allProducts.associateBy(OpraProduct::id)
-    val legacyIds = legacy.products.map(OpraProduct::id).toSet()
+    val sourceProductByRoot = linkedMapOf<String, OpraProduct>()
+    val legacyIds = legacy.products.mapTo(mutableSetOf(), OpraProduct::id)
 
     fun vendorName(product: OpraProduct): String? = vendors[product.vendorId]?.name
 
-    // v0.3 can carry thousands of canonical products. Build normalized identity indexes once so
-    // each alias group resolves by hash lookup instead of rescanning every legacy+canonical row.
-    val indexedProducts = allProducts.mapNotNull { product ->
-        val manufacturer = vendorName(product)?.takeIf(String::isNotBlank) ?: return@mapNotNull null
+    val productsByVendorModel = linkedMapOf<Pair<String, String>, MutableList<OpraProduct>>()
+    fun indexProduct(product: OpraProduct) {
+        val manufacturer = vendorName(product).orEmpty()
         val vendorKey = normalizeIdentityText(manufacturer)
         val modelKey = normalizeIdentityModel(product.name, manufacturer)
-        if (vendorKey.isEmpty() || modelKey.isEmpty()) return@mapNotNull null
-        IndexedProduct(
-            product = product,
-            manufacturer = manufacturer,
-            vendorKey = vendorKey,
-            modelKey = modelKey,
-            subtypeKey = normalizeIdentityText(product.subtype),
-        )
+        if (vendorKey.isNotEmpty() && modelKey.isNotEmpty()) {
+            productsByVendorModel.getOrPut(vendorKey to modelKey) { mutableListOf() }.add(product)
+        }
     }
-    val indexedById = indexedProducts.associateBy { it.product.id }
-    val productsByVendorModel = indexedProducts.groupBy { it.vendorKey to it.modelKey }
-    val safeIdentityGroups = indexedProducts.groupBy {
-        Triple(it.vendorKey, it.modelKey, it.subtypeKey)
-    }.values
+    legacy.products.forEach(::indexProduct)
+    canonical.products.forEach { if (it.id !in legacyIds) indexProduct(it) }
+
+    // Avoid retaining a second full product-ID map during startup.
 
     fun applyIdentityGroup(
         manufacturer: String,
@@ -124,16 +117,15 @@ private fun resolveProductAliases(
         val requiredSubtypeKey = requiredSubtype?.let(::normalizeIdentityText)
         val matches = acceptedKeys.asSequence()
             .flatMap { modelKey -> productsByVendorModel[manufacturerKey to modelKey].orEmpty().asSequence() }
-            .filter { indexed -> requiredSubtypeKey == null || indexed.subtypeKey == requiredSubtypeKey }
-            .map(IndexedProduct::product)
+            .filter { product -> requiredSubtypeKey == null || normalizeIdentityText(product.subtype) == requiredSubtypeKey }
             .distinctBy(OpraProduct::id)
             .toList()
         if (matches.isEmpty()) return
 
         val retained = matches.firstOrNull {
-            it.id in legacyIds && indexedById[it.id]?.modelKey == canonicalKey
+            it.id in legacyIds && normalizeIdentityModel(it.name, manufacturer) == canonicalKey
         } ?: matches.firstOrNull { it.id in legacyIds }
-            ?: matches.firstOrNull { indexedById[it.id]?.modelKey == canonicalKey }
+            ?: matches.firstOrNull { normalizeIdentityModel(it.name, manufacturer) == canonicalKey }
             ?: matches.first()
         val retainedRoot = resolveProductId(retained.id, aliases)
 
@@ -143,7 +135,8 @@ private fun resolveProductAliases(
             if (product.id != retainedRoot) aliases[product.id] = retainedRoot
         }
 
-        val retainedProduct = productById[retainedRoot] ?: retained
+        val retainedProduct = sourceProductByRoot[retainedRoot] ?: retained
+        sourceProductByRoot.putIfAbsent(retainedRoot, retainedProduct)
         preferred[retainedRoot] = retainedProduct.copy(
             name = canonicalModel,
             aliases = (
@@ -158,19 +151,21 @@ private fun resolveProductAliases(
 
     // Global safe cleanup: punctuation/casing/spacing variants, plus a redundant manufacturer token,
     // collapse even when no canonical source touches that headphone. Subtype remains part of the key.
-    safeIdentityGroups
-        .filter { group -> group.size > 1 && group.first().product.name.isNotBlank() }
-        .forEach { indexedGroup ->
-            val group = indexedGroup.map(IndexedProduct::product)
-            val representative = group.firstOrNull { it.id in legacyIds } ?: group.first()
-            val manufacturer = indexedById[representative.id]?.manufacturer ?: return@forEach
-            applyIdentityGroup(
-                manufacturer = manufacturer,
-                canonicalModel = representative.name,
-                modelAliases = emptyList(),
-                requiredSubtype = representative.subtype,
-            )
+    productsByVendorModel.values.forEach { vendorModelGroup ->
+        if (vendorModelGroup.size > 1) {
+            vendorModelGroup.groupBy { normalizeIdentityText(it.subtype) }.values.forEach { group ->
+                if (group.size > 1 && group.first().name.isNotBlank()) {
+                    val representative = group.firstOrNull { it.id in legacyIds } ?: group.first()
+                    applyIdentityGroup(
+                        manufacturer = vendorName(representative).orEmpty(),
+                        canonicalModel = representative.name,
+                        modelAliases = emptyList(),
+                        requiredSubtype = representative.subtype,
+                    )
+                }
+            }
         }
+    }
 
     // Canonical profiles can carry qualified aliases from their source manifest.
     canonical.products.forEach { canonicalProduct ->
@@ -192,7 +187,7 @@ private fun resolveProductAliases(
     val normalizedPreferred = linkedMapOf<String, OpraProduct>()
     preferred.forEach { (id, product) ->
         val root = resolveProductId(id, flattenedAliases)
-        val rootProduct = productById[root] ?: product
+        val rootProduct = sourceProductByRoot[root] ?: product
         normalizedPreferred[root] = rootProduct.copy(
             name = product.name,
             aliases = (rootProduct.aliases + product.aliases)
@@ -234,21 +229,41 @@ private fun normalizeIdentityModel(value: String, manufacturer: String): String 
 }
 
 private fun deduplicateAcoustically(profiles: List<OpraEqProfile>): List<OpraEqProfile> {
-    val retained = linkedMapOf<String, OpraEqProfile>()
+    val retained = linkedMapOf<Any, OpraEqProfile>()
+    val fingerprintCollisions = linkedMapOf<AcousticFingerprintKey, MutableList<OpraEqProfile>>()
     profiles.forEach { profile ->
-        val acousticKey = profile.legacyAcousticSignature()
-        if (acousticKey == null) {
+        val signature = profile.legacyAcousticSignature()
+        if (signature == null) {
             retained["id:${profile.id}"] = profile
             return@forEach
         }
-        val key = "${profile.productId}|$acousticKey"
+        val key = AcousticFingerprintKey(profile.productId, signature.legacyAcousticFingerprint())
         val previous = retained[key]
-        if (previous == null || profile.preferenceScore() > previous.preferenceScore()) {
+        if (previous == null) {
             retained[key] = profile
+            return@forEach
+        }
+
+        if (previous.legacyAcousticSignature() == signature) {
+            if (profile.preferenceScore() > previous.preferenceScore()) retained[key] = profile
+            return@forEach
+        }
+
+        val collisions = fingerprintCollisions.getOrPut(key) { mutableListOf() }
+        val collisionIndex = collisions.indexOfFirst { it.legacyAcousticSignature() == signature }
+        if (collisionIndex < 0) {
+            collisions += profile
+        } else if (profile.preferenceScore() > collisions[collisionIndex].preferenceScore()) {
+            collisions[collisionIndex] = profile
         }
     }
-    return retained.values.toList()
+    return buildList(retained.size + fingerprintCollisions.values.sumOf { it.size }) {
+        addAll(retained.values)
+        fingerprintCollisions.values.forEach(::addAll)
+    }
 }
+
+private data class AcousticFingerprintKey(val productId: String, val fingerprint: Long)
 
 private fun OpraEqProfile.preferenceScore(): Int {
     var score = 0
@@ -295,7 +310,8 @@ private fun OpraEqProfile.toUserFacingProfile(defaultSource: String?): OpraEqPro
     }
     val existingSoundSummary = originalParts.firstOrNull(::looksLikeSoundSummary)
     val hasBands = bands.orEmpty().isNotEmpty()
-    val generatedSoundSummary = soundImpactFromLegacyBands()
+    val generatedSoundSummary = existingSoundSummary
+        ?: soundImpactFromLegacyBands()
         ?: if (hasBands) "Makes small frequency-response adjustments." else null
 
     val compactDetails = buildList {
@@ -310,7 +326,8 @@ private fun OpraEqProfile.toUserFacingProfile(defaultSource: String?): OpraEqPro
         (existingSoundSummary ?: generatedSoundSummary)?.let(::add)
     }.distinct().joinToString(" · ")
 
-    return copy(details = compactDetails.takeIf(String::isNotBlank))
+    val normalizedDetails = compactDetails.takeIf(String::isNotBlank)
+    return if (normalizedDetails == details) this else copy(details = normalizedDetails)
 }
 
 private fun humanReadableContext(value: String, status: String?, target: String?): String? {
@@ -355,6 +372,8 @@ private fun humanizeTarget(value: String?): String? {
         else -> cleaned.replace(Regex("\\s+"), " ")
     }
 }
+
+internal fun humanizeCanonicalTarget(value: String?): String? = humanizeTarget(value)
 
 private fun humanizeSource(value: String?): String? = when (value?.trim()?.lowercase(Locale.ROOT)) {
     null, "" -> null

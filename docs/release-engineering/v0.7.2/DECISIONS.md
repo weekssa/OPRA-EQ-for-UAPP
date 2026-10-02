@@ -20,7 +20,7 @@ Evidence: explicit user instruction; the target is release stabilization and DSP
 
 Reason: source-only DSP oracle and emulator/repository gates can test the requested concern without consuming or changing a physical DAC state.
 
-Tests validating safety: source and diff review must confirm no protocol/authorization/write path changed; local tests use pure code, mocks, or emulator only.
+Tests validating safety: source and diff review must confirm no protocol bytes, identity authorization, or USB command encoding changed. The existing EW300 qualification path now refuses its first write when durable recovery state cannot be saved. Local tests use pure code, mocks, or emulator only; no physical DAC is touched.
 
 ## D003: stream canonical catalog JSON from disk
 

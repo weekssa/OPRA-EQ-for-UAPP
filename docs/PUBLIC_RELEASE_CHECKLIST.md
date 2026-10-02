@@ -45,6 +45,20 @@ The checklist is organized around the **current release state**. Detailed histor
 
 Status: **Published under the owner's conditional approval; all merge, candidate, promotion, and post-publication gates passed.** The release makes no new hardware-support claim. See [v0.7.1 release notes](releases/v0.7.1.md) and the latest closeout entry in `docs/CHATGPT_PROJECT_RUNBOOK.md`.
 
+## v0.7.2 stabilization preparation
+
+v0.7.1 remains the current public release until the signed v0.7.2 candidate is independently verified, tagged, and published. The stabilization branch targets versionName `0.7.2` and versionCode `9` from the immutable v0.7.1 base.
+
+- [x] Version metadata is set to `0.7.2` / `9` without changing package ID or SDK levels.
+- [x] User-facing v0.7.2 notes describe only implemented behavior and retain existing hardware/UAPP boundaries.
+- [x] Independent dense DSP tests reproduce the old high-Q response miss and cover the production correction.
+- [x] Final local Gradle, emulator, workflow, and repository validations pass on the current dirty candidate; rerun release-critical gates on the committed source.
+- [ ] Exact-head independent review and required pull request checks pass before merge.
+- [ ] Signed candidate from verified merged main passes independent artifact and install/upgrade checks.
+- [ ] Immutable `v0.7.2` tag and public release assets are verified after publication.
+
+Status: **Preparation in progress. No v0.7.2 tag, candidate APK, or public release exists yet.** Full evidence is maintained in `docs/release-engineering/v0.7.2/`.
+
 ## Previous v0.7.0 state
 
 - [x] Exact v0.7.0 software, security, dependency, release, and signed-artifact gates completed.

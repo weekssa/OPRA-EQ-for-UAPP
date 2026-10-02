@@ -21,29 +21,29 @@ Status markers: [ ] pending, [x] complete, [!] failed/recovery active, [-] not a
 - [x] Pristine v0.7.1 R8 mapping verification recorded
 - [x] Baseline instrumentation and current CI emulator behavior recorded
 - [x] Minimum-SDK/API-26 baseline failure reproduced, fixed on the work branch, and cold-install coverage rerun successfully
-- [ ] v0.7.2 version metadata set to 0.7.2 / code 9
-- [ ] v0.7.2 release notes and user-facing version documentation prepared
-- [ ] Release automation derives requested release identity instead of hard-coding a release number
+- [x] v0.7.2 version metadata set to 0.7.2 / code 9
+- [x] v0.7.2 release notes and user-facing version documentation prepared
+- [x] Release automation derives requested release identity instead of hard-coding a release number
 - [ ] Signed candidate is producible from verified merged main before immutable tagging
-- [ ] Previous review findings re-evaluated against actual v0.7.1 source
-- [ ] SharedPreferences commit semantics verified before any change
-- [ ] JCALLY compatibility state reviewed and preserved where required
+- [x] Previous review findings re-evaluated against actual v0.7.1 source
+- [x] SharedPreferences commit semantics verified before any change
+- [x] JCALLY compatibility state reviewed and preserved where required
 - [x] DSP dense oracle implemented and independently measured
 - [x] DSP production corrected from deterministic evidence; no USB or protocol behavior changed
-- [ ] Optimizer cache investigated without speculative rewrite
+- [x] Optimizer cache investigated without speculative rewrite
 - [x] No physical DAC writes performed
-- [ ] No unverified USB protocol behavior changed
-- [ ] Debug build passes on coherent candidate
-- [ ] Fresh complete JVM suite passes
-- [ ] Lint completes with no errors and no unexplained changed-code warnings
-- [ ] Release build passes
-- [ ] R8 verification passes
+- [x] No unverified USB protocol behavior changed
+- [x] Debug build passes on dirty v0.7.2/code 9 candidate; rerun after checkpoint commit
+- [x] Fresh complete JVM suite passes: 727 tests, 0 failures/errors/skips; rerun after checkpoint commit
+- [x] Lint completes with 0 errors and no new actionable warning in changed code; 111 existing warnings and 2 hints remain; rerun after checkpoint commit
+- [x] Release build passes on dirty v0.7.2/code 9 candidate; rerun after checkpoint commit
+- [x] R8 verification passes on dirty v0.7.2/code 9 candidate; rerun after checkpoint commit
 - [ ] Instrumentation passes on CI-equivalent emulator
-- [ ] Minimum-SDK/API-26 smoke passes
-- [ ] Relevant Python, catalog, source, and release-script tests pass
-- [ ] actionlint passes; ShellCheck passes where applicable
-- [ ] git diff --check passes
-- [ ] Full diff reviewed against v0.7.1 and prohibited changes ruled out
+- [x] Minimum-SDK/API-26 local smoke passes on dirty source; committed-source and CI x86_64 reruns remain required
+- [x] Relevant Python, catalog, source, and release-script tests pass: 235 Python tests and all catalog/release contracts
+- [x] actionlint passes; ShellCheck passes where applicable
+- [x] `git diff --check` passed before this ledger synchronization; rerun after final documentation edits
+- [x] Full working diff reviewed against v0.7.1; independent read-only review found no confirmed correctness/regression issue
 - [ ] Branch pushed without force
 - [ ] PR created with exact baseline, changes, evidence, and recovery status
 - [ ] Required GitHub CI and independent review pass on exact PR head

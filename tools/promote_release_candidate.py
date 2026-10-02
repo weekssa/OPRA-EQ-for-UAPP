@@ -10,6 +10,7 @@ both the read-only verification stage and the publish stage.
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import hashlib
 import io
 import json
@@ -86,7 +87,13 @@ def expected_asset_names(tag: str) -> set[str]:
         "candidate-manifest.json",
         "apksigner-verification.txt",
         "zipalign-verification.txt",
+        "r8-mapping.txt",
     }
+
+
+def public_release_asset_names(tag: str) -> set[str]:
+    """Return the candidate files permitted on a public release; R8 mapping stays private."""
+    return expected_asset_names(tag) - {"r8-mapping.txt"}
 
 
 def optional_candidate_sidecar_names(tag: str) -> set[str]:
@@ -144,6 +151,17 @@ def validate_saved_signer_report(contents: bytes, pinned_signer: str) -> None:
 def validate_saved_alignment_report(contents: bytes) -> None:
     text = contents.decode("utf-8", errors="strict")
     require("Verification successful" in text, "candidate alignment report does not prove zipalign success")
+
+
+def validate_r8_mapping(contents: bytes) -> None:
+    text = contents.decode("utf-8", errors="strict")
+    renamed_application_class = False
+    for line in text.splitlines():
+        match = re.fullmatch(r"(com\.weekssa\.opraeqforuapp\.[^\s]+)\s+->\s+([^\s]+):", line)
+        if match is not None and match.group(1) != match.group(2).removesuffix(":"):
+            renamed_application_class = True
+            break
+    require(renamed_application_class, "candidate R8 mapping does not prove an application class was renamed")
 
 
 def validate_candidate_archive(
@@ -212,6 +230,10 @@ def validate_candidate_archive(
     mapping_digest = manifest.get("r8MappingSha256")
     require(isinstance(mapping_digest, str) and SHA256_RE.fullmatch(mapping_digest) is not None,
             "candidate manifest is missing a valid R8 mapping digest")
+    actual_mapping_digest = sha256_hex(files["r8-mapping.txt"])
+    require(actual_mapping_digest == mapping_digest,
+            "candidate R8 mapping bytes do not match the manifest digest")
+    validate_r8_mapping(files["r8-mapping.txt"])
 
     checksum_text = files[f"{apk_name}.sha256"].decode("ascii", errors="strict").strip()
     checksum_match = re.fullmatch(r"([0-9a-f]{64})\s+\*?(.+)", checksum_text)
@@ -482,40 +504,100 @@ def current_main_sha(api: GitHubApi) -> str:
     return sha
 
 
-def resolve_tag_commit(api: GitHubApi, tag: str) -> str | None:
+def candidate_tag_message(tag: str, source_sha: str, run_id: int, artifact_id: int,
+                          artifact_digest: str) -> str:
+    parse_tag(tag)
+    require(SOURCE_SHA_RE.fullmatch(source_sha) is not None, "tag source commit SHA is malformed")
+    require(run_id > 0 and artifact_id > 0, "tag candidate run and artifact IDs must be positive")
+    normalized_digest = normalize_sha256(artifact_digest)
+    require(SHA256_RE.fullmatch(normalized_digest) is not None, "tag candidate artifact digest is malformed")
+    return (
+        "OPRA EQ Library signed candidate binding\n"
+        f"Release-Tag: {tag}\n"
+        f"Source-SHA: {source_sha}\n"
+        f"Candidate-Run-ID: {run_id}\n"
+        f"Candidate-Artifact-ID: {artifact_id}\n"
+        f"Candidate-Artifact-SHA256: {normalized_digest}\n"
+    )
+
+
+def resolve_candidate_annotated_tag(api: GitHubApi, *, tag: str, source_sha: str, run_id: int,
+                                    artifact_id: int, artifact_digest: str) -> str | None:
+    """Resolve only an annotated tag whose immutable message binds this exact candidate."""
+    expected_message = candidate_tag_message(tag, source_sha, run_id, artifact_id, artifact_digest)
     ref = api.optional_json(api.repo_path + "/git/ref/tags/" + urllib.parse.quote(tag, safe=""))
     if ref is None:
         return None
     obj = ref.get("object") or {}
-    for _ in range(3):
-        object_type = obj.get("type")
-        object_sha = obj.get("sha", "")
-        require(SOURCE_SHA_RE.fullmatch(object_sha) is not None, "release tag points to an invalid Git object SHA")
-        if object_type == "commit":
-            return object_sha
-        require(object_type == "tag", "release tag does not resolve to a commit")
-        annotated = api.json("GET", api.repo_path + f"/git/tags/{object_sha}")
-        obj = annotated.get("object") or {}
-    fail("release tag is nested too deeply to resolve safely")
-    return None
+    require(obj.get("type") == "tag", "release tag exists as a lightweight tag; annotated candidate tag is required")
+    tag_object_sha = obj.get("sha", "")
+    require(SOURCE_SHA_RE.fullmatch(tag_object_sha) is not None,
+            "release tag points to an invalid annotated Git tag object SHA")
+    annotated = api.json("GET", api.repo_path + f"/git/tags/{tag_object_sha}")
+    target = annotated.get("object") or {}
+    require(annotated.get("tag") == tag and annotated.get("message") == expected_message and
+            target.get("type") == "commit" and target.get("sha") == source_sha,
+            "annotated release tag does not bind the exact candidate tuple")
+    return source_sha
 
 
-def require_ancestor_commit(api: GitHubApi, ancestor_sha: str, current_sha: str) -> None:
-    """Require an older draft source to be an ancestor of the exact current source."""
-    require(SOURCE_SHA_RE.fullmatch(ancestor_sha) is not None,
-            "existing draft target commit is not a full source SHA")
-    require(SOURCE_SHA_RE.fullmatch(current_sha) is not None,
-            "candidate source commit is not a full source SHA")
-    comparison = api.json(
-        "GET",
-        api.repo_path + "/compare/" + urllib.parse.quote(ancestor_sha, safe="") + "..." +
-        urllib.parse.quote(current_sha, safe=""),
+def create_candidate_tag(api: GitHubApi, *, tag: str, source_sha: str, run_id: int,
+                         artifact_id: int, artifact_digest: str, release_notes: str) -> None:
+    message = candidate_tag_message(tag, source_sha, run_id, artifact_id, artifact_digest)
+    require(current_main_sha(api) == source_sha, "main moved before annotated release tag creation")
+    existing_tag = resolve_candidate_annotated_tag(
+        api, tag=tag, source_sha=source_sha, run_id=run_id,
+        artifact_id=artifact_id, artifact_digest=artifact_digest,
     )
-    require(comparison.get("status") == "ahead" and
-            (comparison.get("base_commit") or {}).get("sha") == ancestor_sha and
-            (comparison.get("head_commit") or {}).get("sha") == current_sha and
-            (comparison.get("merge_base_commit") or {}).get("sha") == ancestor_sha,
-            "existing draft source is not an ancestor of the exact candidate source")
+    existing_release = api.optional_json(
+        api.repo_path + "/releases/tags/" + urllib.parse.quote(tag, safe="")
+    )
+    if existing_tag is not None:
+        if existing_release is not None:
+            require(existing_release.get("draft") is True and existing_release.get("prerelease") is False and
+                    existing_release.get("tag_name") == tag and
+                    existing_release.get("name") == f"EQ Library {tag}" and
+                    existing_release.get("body") == release_notes and
+                    isinstance(existing_release.get("assets"), list),
+                    "existing release is not a matching private draft for this annotated candidate tag")
+        print(f"ANNOTATED_CANDIDATE_TAG_ALREADY_VERIFIED tag={tag} source={source_sha}")
+        return
+
+    require(existing_release is None, "a release already uses this version before candidate tag creation")
+    require_release_version_advances(api, tag)
+    tag_object = api.json("POST", api.repo_path + "/git/tags", {
+        "tag": tag,
+        "message": message,
+        "object": source_sha,
+        "type": "commit",
+        "tagger": {
+            "name": "github-actions[bot]",
+            "email": "41898282+github-actions[bot]@users.noreply.github.com",
+            "date": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
+        },
+    })
+    tag_object_sha = tag_object.get("sha", "")
+    require(SOURCE_SHA_RE.fullmatch(tag_object_sha) is not None and
+            tag_object.get("tag") == tag and tag_object.get("message") == message and
+            (tag_object.get("object") or {}).get("type") == "commit" and
+            (tag_object.get("object") or {}).get("sha") == source_sha,
+            "GitHub did not create the exact annotated candidate tag object")
+
+    try:
+        api.json("POST", api.repo_path + "/git/refs", {
+            "ref": f"refs/tags/{tag}",
+            "sha": tag_object_sha,
+        })
+    except PromotionError:
+        # A failed response can follow a successful server-side mutation. Read back
+        # the immutable ref before deciding that creation failed.
+        pass
+    require(resolve_candidate_annotated_tag(
+        api, tag=tag, source_sha=source_sha, run_id=run_id,
+        artifact_id=artifact_id, artifact_digest=artifact_digest,
+    ) == source_sha, "annotated candidate tag readback failed")
+    require(current_main_sha(api) == source_sha, "main moved during annotated release tag creation")
+    print(f"ANNOTATED_CANDIDATE_TAG_CREATED tag={tag} source={source_sha} artifact_sha256={normalize_sha256(artifact_digest)}")
 
 
 def provenance_bytes(candidate: dict[str, Any], run_id: int, artifact_id: int, publisher_run_id: str) -> bytes:
@@ -539,7 +621,7 @@ def provenance_bytes(candidate: dict[str, Any], run_id: int, artifact_id: int, p
 def release_assets(candidate: dict[str, Any], android_logs: dict[str, bytes], run_id: int,
                    artifact_id: int, publisher_run_id: str) -> dict[str, bytes]:
     files = candidate["files"]
-    names = expected_asset_names(candidate["release_tag"])
+    names = public_release_asset_names(candidate["release_tag"])
     assets = {name: files[name] for name in names}
     assets[f"{candidate['apk_name']}.sha256"] = (
         f"{candidate['apk_sha256']}  {candidate['apk_name']}\n"
@@ -676,10 +758,17 @@ def _preserve_matching_provenance(api: GitHubApi, release: dict[str, Any], candi
 def _verify_or_create_draft(api: GitHubApi, candidate: dict[str, Any], release_notes: str) -> dict[str, Any]:
     tag = candidate["release_tag"]
     source_sha = candidate["source_sha"]
-    tag_commit = resolve_tag_commit(api, tag)
+    tag_commit = resolve_candidate_annotated_tag(
+        api,
+        tag=tag,
+        source_sha=source_sha,
+        run_id=candidate["candidate_run_id"],
+        artifact_id=candidate["candidate_artifact_id"],
+        artifact_digest=candidate["artifact_digest"],
+    )
+    require(tag_commit == source_sha,
+            "release publication requires the exact prevalidated annotated candidate tag")
     existing = api.optional_json(api.repo_path + "/releases/tags/" + urllib.parse.quote(tag, safe=""))
-    require(tag_commit is None or tag_commit == source_sha,
-            "release tag already exists at a different commit")
     if existing is not None:
         require(existing.get("draft") is True and existing.get("prerelease") is False and
                 existing.get("tag_name") == tag and existing.get("name") == f"EQ Library {tag}" and
@@ -687,44 +776,13 @@ def _verify_or_create_draft(api: GitHubApi, candidate: dict[str, Any], release_n
                 "an existing public or mismatched release already uses this tag")
         require(current_main_sha(api) == source_sha,
                 "main moved before an existing release draft could be resumed")
-        draft_source = existing.get("target_commitish")
-        if draft_source != source_sha:
-            require(tag_commit is None,
-                    "existing draft release tag is already bound to a different source")
-            require(isinstance(draft_source, str) and isinstance(existing.get("assets"), list) and
-                    not existing["assets"],
-                    "an existing draft without a full source SHA and empty asset set cannot be safely retargeted")
-            require_ancestor_commit(api, draft_source, source_sha)
-            release_id = existing.get("id")
-            require(isinstance(release_id, int) and release_id > 0,
-                    "existing release draft has no valid release ID")
-            updated = api.json("PATCH", api.repo_path + f"/releases/{release_id}", {
-                "target_commitish": source_sha,
-            })
-            require(updated.get("draft") is True and updated.get("prerelease") is False and
-                    updated.get("tag_name") == tag and updated.get("name") == f"EQ Library {tag}" and
-                    updated.get("body") == release_notes and updated.get("target_commitish") == source_sha and
-                    updated.get("assets") == [],
-                    "GitHub did not preserve the exact source while retargeting the asset-free draft")
-            existing = api.json("GET", api.repo_path + f"/releases/{release_id}")
-            require(existing.get("draft") is True and existing.get("prerelease") is False and
-                    existing.get("tag_name") == tag and existing.get("name") == f"EQ Library {tag}" and
-                    existing.get("body") == release_notes and existing.get("target_commitish") == source_sha and
-                    existing.get("assets") == [],
-                    "release draft readback did not confirm its exact retargeted source")
-        require(existing.get("target_commitish") == source_sha,
-                "existing draft release target does not match the exact candidate source")
-        require(tag_commit is None or tag_commit == source_sha,
-                "existing draft release tag does not point to the exact candidate source")
         return existing
 
-    require(tag_commit is None, "tag exists without a resumable draft release")
     require_release_version_advances(api, tag)
 
-    require(current_main_sha(api) == source_sha, "main moved before public draft creation")
+    require(current_main_sha(api) == source_sha, "main moved before private release draft creation")
     created = api.json("POST", api.repo_path + "/releases", {
         "tag_name": tag,
-        "target_commitish": source_sha,
         "name": f"EQ Library {tag}",
         "body": release_notes,
         "draft": True,
@@ -734,11 +792,14 @@ def _verify_or_create_draft(api: GitHubApi, candidate: dict[str, Any], release_n
     })
     require(created.get("tag_name") == tag and created.get("draft") is True,
             "GitHub did not create the expected private draft release")
-    require(created.get("target_commitish") == source_sha,
-            "created release draft does not target the exact candidate source")
-    created_tag_commit = resolve_tag_commit(api, tag)
-    require(created_tag_commit is None or created_tag_commit == source_sha,
-            "created release tag does not point to the exact candidate source")
+    require(resolve_candidate_annotated_tag(
+        api,
+        tag=tag,
+        source_sha=source_sha,
+        run_id=candidate["candidate_run_id"],
+        artifact_id=candidate["candidate_artifact_id"],
+        artifact_digest=candidate["artifact_digest"],
+    ) == source_sha, "release draft creation changed the annotated candidate tag")
     return created
 
 
@@ -756,8 +817,6 @@ def publish_release(api: GitHubApi, *, candidate: dict[str, Any], assets: dict[s
     release = _verify_or_create_draft(api, candidate, release_notes)
     require(release.get("tag_name") == tag and release.get("draft") is True,
             "release is not in the expected unpublished draft state")
-    require(release.get("target_commitish") == candidate["source_sha"],
-            "unpublished release draft does not target the exact candidate source")
     _preserve_matching_provenance(api, release, candidate, assets)
 
     existing_names = [item.get("name") for item in release.get("assets", [])]
@@ -771,15 +830,19 @@ def publish_release(api: GitHubApi, *, candidate: dict[str, Any], assets: dict[s
 
     by_name = _verify_release_assets(api, release, assets)
     require(set(by_name) == set(assets), "release asset set is incomplete")
-    tag_commit = resolve_tag_commit(api, tag)
-    require(tag_commit is None or tag_commit == candidate["source_sha"],
-            "release tag changed before publication")
+    require(resolve_candidate_annotated_tag(
+        api,
+        tag=tag,
+        source_sha=candidate["source_sha"],
+        run_id=candidate["candidate_run_id"],
+        artifact_id=candidate["candidate_artifact_id"],
+        artifact_digest=candidate["artifact_digest"],
+    ) == candidate["source_sha"], "annotated candidate tag changed before publication")
     require(current_main_sha(api) == candidate["source_sha"],
             "main moved during promotion; release remains an unpublished draft")
     require_release_version_advances(api, tag)
 
     published = api.json("PATCH", api.repo_path + f"/releases/{release['id']}", {
-        "target_commitish": candidate["source_sha"],
         "draft": False,
         "prerelease": False,
         "make_latest": "true",
@@ -790,8 +853,14 @@ def publish_release(api: GitHubApi, *, candidate: dict[str, Any], assets: dict[s
     final = api.json("GET", api.repo_path + "/releases/tags/" + urllib.parse.quote(tag, safe=""))
     require(final.get("draft") is False and final.get("prerelease") is False and final.get("tag_name") == tag,
             "public release readback did not confirm the expected published state")
-    require(resolve_tag_commit(api, tag) == candidate["source_sha"],
-            "public release tag no longer resolves to the candidate source")
+    require(resolve_candidate_annotated_tag(
+        api,
+        tag=tag,
+        source_sha=candidate["source_sha"],
+        run_id=candidate["candidate_run_id"],
+        artifact_id=candidate["candidate_artifact_id"],
+        artifact_digest=candidate["artifact_digest"],
+    ) == candidate["source_sha"], "public release tag no longer binds the exact candidate")
     final_assets = _verify_release_assets(api, final, assets)
     _verify_public_asset_downloads(api, final_assets, assets)
 
@@ -866,6 +935,39 @@ def command_verify(args: argparse.Namespace) -> None:
     print(f"CANDIDATE_VERIFIED tag={candidate['release_tag']} source={candidate['source_sha']} apk_sha256={candidate['apk_sha256']} artifact_sha256={candidate['artifact_digest']}")
 
 
+def command_tag(args: argparse.Namespace) -> None:
+    project_root = Path(args.project_root)
+    check_contract(project_root)
+    api = _github_api_from_environment()
+    _, _, digest = validate_github_candidate(
+        api,
+        tag=args.tag,
+        run_id=args.candidate_run_id,
+        artifact_id=args.candidate_artifact_id,
+        source_sha=args.source_sha,
+    )
+    require(digest == normalize_sha256(args.artifact_digest),
+            "candidate tag input digest differs from the immutable Actions artifact digest")
+    archive_bytes = read_candidate_archive(api, args.candidate_artifact_id, digest)
+    candidate = validate_candidate_archive(
+        archive_bytes,
+        artifact_digest=digest,
+        tag=args.tag,
+        source_sha=args.source_sha,
+        project_root=project_root,
+    )
+    release_notes = (project_root / "docs/releases" / f"{args.tag}.md").read_text(encoding="utf-8")
+    create_candidate_tag(
+        api,
+        tag=args.tag,
+        source_sha=candidate["source_sha"],
+        run_id=args.candidate_run_id,
+        artifact_id=args.candidate_artifact_id,
+        artifact_digest=digest,
+        release_notes=release_notes,
+    )
+
+
 def command_publish(args: argparse.Namespace) -> None:
     project_root = Path(args.project_root)
     check_contract(project_root)
@@ -888,6 +990,8 @@ def command_publish(args: argparse.Namespace) -> None:
         source_sha=args.source_sha,
         project_root=project_root,
     )
+    candidate["candidate_run_id"] = args.candidate_run_id
+    candidate["candidate_artifact_id"] = args.candidate_artifact_id
     logs = validate_android_tools(candidate, Path(args.build_tools))
     run_id_text = os.environ.get("GITHUB_RUN_ID", "")
     require(run_id_text.isdigit() and int(run_id_text) > 0, "promotion workflow run ID is missing")
@@ -901,9 +1005,11 @@ def check_contract(project_root: Path) -> None:
     workflow_path = project_root / PROMOTION_WORKFLOW_PATH
     workflow = workflow_path.read_text(encoding="utf-8")
     candidate_workflow = (project_root / CANDIDATE_WORKFLOW_PATH).read_text(encoding="utf-8")
+    beta_workflow = (project_root / ".github/workflows/signed-beta.yml").read_text(encoding="utf-8")
     android_ci = (project_root / ".github/workflows/android-ci.yml").read_text(encoding="utf-8")
     signing = (project_root / "docs/RELEASE_SIGNING.md").read_text(encoding="utf-8")
     checklist = (project_root / "docs/PUBLIC_RELEASE_CHECKLIST.md").read_text(encoding="utf-8")
+    mobile_publisher = (project_root / "tools/publish_mobile_test_candidate.sh").read_text(encoding="utf-8")
     publisher = (project_root / "tools/promote_release_candidate.py").read_text(encoding="utf-8")
     required = [
         "workflow_dispatch:",
@@ -914,7 +1020,10 @@ def check_contract(project_root: Path) -> None:
         "permissions:\n      actions: read\n      contents: write",
         "actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c",
         "tools/promote_release_candidate.py verify",
+        "tools/promote_release_candidate.py tag",
         "tools/promote_release_candidate.py publish",
+        "create-candidate-tag:",
+        "needs: [verify-candidate, create-candidate-tag]",
         "persist-credentials: false",
         "--apk-out",
         "--baseline-apk-out",
@@ -924,6 +1033,16 @@ def check_contract(project_root: Path) -> None:
     ]
     for marker in required:
         require(marker in workflow, f"promotion workflow contract is missing {marker!r}")
+    verify_index = workflow.index("  verify-candidate:")
+    tag_index = workflow.index("  create-candidate-tag:")
+    publish_index = workflow.index("  publish:")
+    require(verify_index < tag_index < publish_index,
+            "candidate must pass independent verification before annotated tag creation and publication")
+    tag_job = workflow[tag_index:publish_index]
+    require("needs: verify-candidate" in tag_job and
+            "permissions:\n      actions: read\n      contents: write" in tag_job and
+            "needs.verify-candidate.outputs.artifact_digest" in tag_job,
+            "annotated tag job must consume a verified candidate and scope write permission to tag creation")
     upgrade_step = workflow.split(
         "- name: Install exact candidate over the latest public release on API 35\n", 1
     )[1].split("\n      - name: Upload promotion emulator diagnostics", 1)[0]
@@ -935,9 +1054,18 @@ def check_contract(project_root: Path) -> None:
     require('"/releases/latest"' in publisher and '"make_latest": "true"' in publisher and
             '"release-provenance.json"' in publisher,
             "publisher does not preserve its latest metadata and provenance contract")
-    require("require_ancestor_commit" in publisher and '"/compare/"' in publisher and
-            '"target_commitish": candidate["source_sha"]' in publisher,
-            "publisher does not ancestry-check draft resumption and pin the exact source at publication")
+    require("def resolve_candidate_annotated_tag" in publisher and
+            '"Candidate-Artifact-SHA256: {normalized_digest}\\n"' in publisher and
+            'require(tag_commit == source_sha' in publisher and
+            "ANNOTATED_CANDIDATE_TAG_CREATED" in publisher,
+            "publisher does not bind publication to the exact immutable annotated candidate tag")
+    draft_logic = publisher.split("def _verify_or_create_draft", 1)[1].split(
+        "def require_release_version_advances", 1
+    )[0]
+    publish_logic = publisher.split("def publish_release", 1)[1].split("def write_outputs", 1)[0]
+    require("resolve_candidate_annotated_tag" in draft_logic and "target_commitish" not in draft_logic and
+            "resolve_candidate_annotated_tag" in publish_logic and "target_commitish" not in publish_logic,
+            "release drafts and publication must rely on the exact precreated tag without retargeting it")
     for line in workflow.splitlines():
         if re.match(r"^\s+uses:\s+", line):
             require(re.search(r"@[0-9a-f]{40}(?:\s|$)", line) is not None,
@@ -955,13 +1083,67 @@ def check_contract(project_root: Path) -> None:
         if re.match(r"^\s+uses:\s+", line):
             require(re.search(r"@[0-9a-f]{40}(?:\s|$)", line) is not None,
                     "signed-candidate workflow must pin every action to a full commit SHA")
+    require("default: v0.7.1" not in candidate_workflow and
+            "version_name=$version_name" in candidate_workflow and
+            "version_code=$version_code" in candidate_workflow and
+            "VERSION_NAME: ${{ steps.release.outputs.version_name }}" in candidate_workflow and
+            "VERSION_CODE: ${{ steps.release.outputs.version_code }}" in candidate_workflow and
+            "r8-mapping.txt" in candidate_workflow,
+            "signed-candidate workflow must derive release identity from Gradle and retain private R8 evidence")
+    require(re.search(r"versionCode='[0-9]+' versionName='[^']+'", candidate_workflow) is None and
+            '"versionCode":"8"' not in candidate_workflow and
+            '"versionName":"0.7.1"' not in candidate_workflow,
+            "signed-candidate workflow contains a hard-coded historical version assertion")
+    require("permissions:\n      contents: read" in beta_workflow and
+            "publish-mobile-test-candidate:" in beta_workflow and
+            "permissions:\n      actions: read\n      contents: write" in beta_workflow and
+            "tools/publish_mobile_test_candidate.sh" in beta_workflow,
+            "signed beta must separate read-only candidate build from the mobile-test writer")
+    beta_top_level_permissions = beta_workflow.split("jobs:", 1)[0]
+    require("contents: write" not in beta_top_level_permissions,
+            "signed beta must not grant publication permission at workflow scope")
+    for line in beta_workflow.splitlines():
+        if re.match(r"^\s+uses:\s+", line):
+            require(re.search(r"@[0-9a-f]{40}(?:\s|$)", line) is not None,
+                    "signed-beta workflow must pin every action to a full commit SHA")
+    build_beta = beta_workflow.split("  build-signed-beta:\n", 1)[1].split(
+        "  publish-mobile-test-candidate:\n", 1
+    )[0]
+    require("contents: write" not in build_beta and "GH_TOKEN:" not in build_beta and
+            "OPRA_RELEASE_KEYSTORE_BASE64: ${{ secrets.OPRA_RELEASE_KEYSTORE_BASE64 }}" in build_beta,
+            "beta build must not receive write permission or a publication token; signing secrets stay step-scoped")
+    require("version_name: ${{ steps.version.outputs.version_name }}" in beta_workflow and
+            "version_code: ${{ steps.version.outputs.version_code }}" in beta_workflow and
+            "VERSION_NAME: ${{ steps.version.outputs.version_name }}" in beta_workflow and
+            "VERSION_CODE: ${{ steps.version.outputs.version_code }}" in beta_workflow and
+            "r8-mapping.txt" in beta_workflow,
+            "signed beta must derive version identity from Gradle and retain private R8 evidence")
+    for text, label in ((beta_workflow, "signed-beta workflow"),
+                        (mobile_publisher, "mobile-test publisher")):
+        require(re.search(r"versionCode='[0-9]+' versionName='[^']+'", text) is None and
+                '"versionCode":"8"' not in text and
+                '"versionName":"0.7.1"' not in text,
+                f"{label} contains a hard-coded historical version assertion")
+    for marker in (
+        '.sourceSha == $sourceSha',
+        '.versionName == $versionName',
+        '.versionCode == ($versionCode | tonumber)',
+        'manifest_sha256',
+        'r8MappingSha256',
+        'GITHUB_RUN_ID',
+        'cmp -s "$source_apk" "$immutable_path"',
+        'git push origin HEAD:mobile-test-apk',
+    ):
+        require(marker in mobile_publisher,
+                f"mobile-test publisher is missing its downloaded-candidate assertion {marker!r}")
     require("test_promote_release_candidate.py" in android_ci and
             "tools/promote_release_candidate.py check-contract" in android_ci,
             "Android CI does not test the exact-candidate promotion contract")
     require("promote-signed-release.yml" in signing and "exact candidate APK bytes" in signing,
             "signing policy does not identify the exact-byte publisher")
-    require("tag ref" in signing and "asset-free draft" in signing and "ancestor" in signing,
-            "signing policy does not document safe private-draft resumption")
+    require("annotated candidate tag" in signing and "Candidate-Artifact-SHA256" in signing and
+            "API 35" in signing and "R8 mapping" in signing,
+            "signing policy does not document candidate-before-tag and exact-artifact promotion")
     require("promote-signed-release.yml" in checklist and "owner approval" in checklist.lower(),
             "release checklist does not describe the publisher and existing owner authorization")
     require("exact-artifact promotion is not implemented" not in checklist.lower(),
@@ -978,20 +1160,23 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser("check-contract", help="validate main-only workflow and release policy invariants")
-    for command in ("verify", "publish"):
+    for command in ("verify", "tag", "publish"):
         sub = subparsers.add_parser(command)
         sub.add_argument("--tag", required=True)
         sub.add_argument("--candidate-run-id", required=True, type=_positive_int)
         sub.add_argument("--candidate-artifact-id", required=True, type=_positive_int)
         sub.add_argument("--source-sha", required=True)
-        sub.add_argument("--build-tools", required=True)
         sub.add_argument("--project-root", default=".")
         if command == "verify":
+            sub.add_argument("--build-tools", required=True)
             sub.add_argument("--archive-out", required=True)
             sub.add_argument("--apk-out", required=True)
             sub.add_argument("--baseline-apk-out", required=True)
             sub.add_argument("--github-output", required=True)
+        elif command == "tag":
+            sub.add_argument("--artifact-digest", required=True)
         else:
+            sub.add_argument("--build-tools", required=True)
             sub.add_argument("--archive", required=True)
             sub.add_argument("--artifact-digest", required=True)
     return parser
@@ -1004,6 +1189,8 @@ def main(argv: list[str] | None = None) -> int:
             check_contract(Path("."))
         elif args.command == "verify":
             command_verify(args)
+        elif args.command == "tag":
+            command_tag(args)
         elif args.command == "publish":
             command_publish(args)
         else:

@@ -12,8 +12,30 @@ import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneSelection
 import com.weekssa.opraeqforuapp.domain.managed.StoredProfileSelection
 import org.junit.Assert.assertThrows
 import org.junit.Test
+import kotlin.collections.AbstractList
 
 class CanonicalLegacyCatalogAdapterTest {
+    @Test
+    fun canonicalBandProjectionDefersBandAllocationUntilRead() {
+        val filterReads = mutableListOf<Int>()
+        val filters = object : AbstractList<EqFilter>() {
+            override val size: Int = 1
+
+            override fun get(index: Int): EqFilter {
+                filterReads += index
+                return EqFilter(EqFilterType.PEAK, 1_234.0, 1.0, 0.7)
+            }
+        }
+
+        val bands = CanonicalLegacyCatalogAdapter.projectBandsOnAccess(filters)
+
+        assertThat(filterReads).isEmpty()
+        assertThat(bands.size).isEqualTo(1)
+        assertThat(filterReads).isEmpty()
+        assertThat(bands[0]).isEqualTo(OpraBand("peak_dip", 1_234.0, 1.0, 0.7, null))
+        assertThat(filterReads).containsExactly(0)
+    }
+
     @Test
     fun canonicalNonOpraOverBudgetSourceCannotUseOpraPriorityTruncation() {
         val source = EqSourceReference(

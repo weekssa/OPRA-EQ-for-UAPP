@@ -4,6 +4,16 @@ All notable changes to **OPRA EQ for UAPP / EQ Library** will be documented in t
 
 The project uses Semantic Versioning. Development releases remain in the `0.x` series until the first stable `v1.0.0` release.
 
+## [Unreleased]
+
+### v0.7.2 stabilization
+
+- Reduced startup memory use when loading a large cached canonical EQ catalog.
+- Improved dense response verification for high-Q hardware EQ fits and generated headroom, including a fail-closed response-quality check before an optimized representation is accepted.
+- Made EW300 persistence qualification stop before a hardware write if its required local recovery record cannot be stored.
+- Removed silent zero-gain substitution when an imported parametric filter has invalid or missing gain data.
+- No new DAC support, USB command behavior, UAPP live-audio integration, catalog source, or telemetry was added.
+
 ## [0.7.0] - 2026-09-28
 
 Owner-authorized final closeout for the EW300 release plus the Black Pearl and FiiO JA11
@@ -40,7 +50,7 @@ software path is verified and its physical qualification remains bounded by the 
 - Published v0.7.1 from exact source `c48f6a5daa08a5e03475b2e415fe80b41d3357db`. The public APK SHA-256 is
   `abd8837f78aaf72d28abef3db956a1c171f791616effbc8f7875814c2c28002b`.
 
-## [Unreleased]
+## Earlier development details
 
 ### 2026-09-27 Black Pearl and JA11 bounded remediation
 
@@ -286,7 +296,7 @@ software path is verified and its physical qualification remains bounded by the 
   Favorites, General EQs, and pre-canonical legacy rows; Personal imports, DAC captures, recovered
   imports, and catalog snapshots already persist canonical data.
 
-### Historical v0.7 closeout audit snapshot — superseded by the latest implementation result above
+### Historical v0.7 closeout audit snapshot - superseded by the latest implementation result above
 
 - Corrected the stale beta-testing handoff: the live PR baseline when rechecked was `a09d442be728b77dc83b1487814f2428159ddf19`, not the older SHA labeled frozen in that handoff. Earlier signed APKs are not test artifacts for later source changes.
 - The a09d baseline's Android CI #1745, CodeQL #1630, catalog #2043, priority coverage #1528, dependency #2052, and signed beta #1350 passed on that exact source. Audit found release minification disabled and no post-sign alignment check; therefore those passes do not close the stricter current release gate.
@@ -633,7 +643,7 @@ software path is verified and its physical qualification remains bounded by the 
 - Hands-on testing passed for in-place upgrade, OPRA browsing/selection, revised selection behavior, device-targeted export, app-owned file cleanup, UAPP import, and TRN Black Pearl import.
 - DX5 II and DX1 II export formats remain implemented but hardware-untested.
 
-## 2026-09-21 EW300 release-candidate gate — SOFTWARE PASS, HARDWARE PENDING
+## 2026-09-21 EW300 release-candidate gate - SOFTWARE PASS, HARDWARE PENDING
 
 The exact signed EW300 candidate from source `855364e8a9d758f12e7d2a48bdaf89f457e28070`
 passed the complete automated, security, signing, emulator installation, cold-launch,
@@ -643,7 +653,7 @@ accessibility, and release-polish gates. APK SHA-256 is
 physical EW300 session remains outstanding. No merge, publication, or public support claim is
 authorized.
 
-## 2026-09-21 EW300 signed candidate Apply stop — NO WRITE
+## 2026-09-21 EW300 signed candidate Apply stop - NO WRITE
 
 The owner’s exact-candidate Apply attempt stopped safely before mutation. The exported operation
 report records `InvalidPlan`, zero register writes, zero Save commands, zero permission requests,
@@ -652,7 +662,7 @@ global-gain register as a dedicated EQ preamp; the recovery branch now maps it a
 device-global-gain headroom mechanism. The old APK must not be retried. A replacement signed
 candidate and complete gates are required before the consolidated physical session resumes.
 
-## 2026-09-21 EW300 replacement candidate — SOFTWARE PASS, HARDWARE PENDING
+## 2026-09-21 EW300 replacement candidate - SOFTWARE PASS, HARDWARE PENDING
 
 Corrected the EW300 editor’s headroom mapping so the verified absolute device-global-gain
 register is used as the baseline instead of an unavailable dedicated EQ preamp. Replacement
@@ -664,7 +674,7 @@ the immutable testing APK is [available here](https://raw.githubusercontent.com/
 No physical mutation has been attempted with this candidate. The one consolidated EW300 session
 remains pending, and merge, publication, and any public support claim remain owner-controlled.
 
-## 2026-09-21 EW300 physical session — HARDWARE STATE RESTORED, APP TELEMETRY INCOMPLETE
+## 2026-09-21 EW300 physical session - HARDWARE STATE RESTORED, APP TELEMETRY INCOMPLETE
 
 On exact candidate `7035518b042a7b19c0495869cf247359ee27b4a2`, the EW300 re-enumerated after the
 reviewed edit and Android displayed the documented replacement USB permission request. The first
@@ -675,7 +685,7 @@ baseline with global gain unchanged. The candidate Apply operation report was no
 the app’s Save/readback counters and end-to-end operation outcome remain unverified. No further
 physical mutation is authorized for this candidate.
 
-## 2026-09-21 EW300 reconnect-gate candidate — SOFTWARE PASS, HARDWARE PENDING
+## 2026-09-21 EW300 reconnect-gate candidate - SOFTWARE PASS, HARDWARE PENDING
 
 After the `8bb87aa` candidate repeatedly surfaced an Android USB permission prompt when a
 pre-Save operation stopped, automatic EW300 reconnect is now held until the owner explicitly
@@ -686,7 +696,7 @@ signing, emulator, installation, and release gates. The exact signed APK is
 `0f70d9f290c487691992ac657d8f2dae1ccba844a99749c6b44e37895ce4c345`; signed workflow #1261.
 The previous physical attempt remains a permission-denied stop with no verified Apply result.
 
-## 2026-09-21 EW300 queued-reconnect guard candidate — SOFTWARE PASS, HARDWARE PENDING
+## 2026-09-21 EW300 queued-reconnect guard candidate - SOFTWARE PASS, HARDWARE PENDING
 
 The EW300 automatic reconnect path now rechecks the reconnect gate at invocation time, preventing
 a stale queued callback from requesting Android USB permission after a pre-Save stop has closed
@@ -698,7 +708,7 @@ and cold-launch gates. The exact signed APK is
 No physical mutation has been attempted with this candidate. The one consolidated EW300 session
 remains pending, and merge, publication, and any public support claim remain owner-controlled.
 
-## 2026-09-21 EW300 trace-boundary follow-up — SOFTWARE PASS, HARDWARE GATE OPEN
+## 2026-09-21 EW300 trace-boundary follow-up - SOFTWARE PASS, HARDWARE GATE OPEN
 
 The bounded Extra-High review found one actionable evidence defect in the prior candidate: Apply
 did not mark the operation trace immediately before its first hardware write. The follow-up at
@@ -712,7 +722,7 @@ This evidence-only follow-up was not physically tested; no further physical muta
 Replay/competing-job counters remain unmeasured zero fields, and PR #23 stays draft with no merge,
 publication, or public EW300 support claim authorized.
 
-## 2026-09-21 EW300 final guard-seam candidate — SOFTWARE PASS, HARDWARE GATE OPEN
+## 2026-09-21 EW300 final guard-seam candidate - SOFTWARE PASS, HARDWARE GATE OPEN
 
 The final bounded Extra-High review found that the reconnect regression should exercise the
 production guard path rather than duplicate its condition in a local test lambda. Source
@@ -764,7 +774,7 @@ Replay/competing-job counters remain unmeasured zero fields, and PR #23 stays dr
 - Verified the public `releases/latest` metadata endpoint and confirmed the installed `v0.1.0` app reports **You're up to date** against the live public release metadata.
 
 
-## 2026-09-15 corrective candidate — PASS
+## 2026-09-15 corrective candidate - PASS
 
 The project owner completed the focused Pixel 9 / TRN Black Pearl retest on exact signed source `eb1980076009001b5216ffbb531de8a28a4780eb` and reported **SUCCESS**.
 

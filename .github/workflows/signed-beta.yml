@@ -14,8 +14,8 @@ on:
           - ew300
 
 permissions:
-  contents: write
   actions: read
+  contents: read
 
 concurrency:
   group: signed-eq-library-beta-${{ github.ref }}
@@ -26,6 +26,11 @@ jobs:
     if: github.repository == 'weekssa/OPRA-EQ-for-UAPP' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    permissions:
+      contents: read
+    outputs:
+      version_name: ${{ steps.version.outputs.version_name }}
+      version_code: ${{ steps.version.outputs.version_code }}
 
     steps:
       - name: Check out exact source
@@ -53,6 +58,20 @@ jobs:
           gradle-version: "9.4.1"
           cache-provider: basic
 
+      - name: Read app version from Gradle
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          version_name="$(sed -n 's/^[[:space:]]*versionName = "\([^"]*\)".*/\1/p' app/build.gradle.kts | head -n 1)"
+          version_code="$(sed -n 's/^[[:space:]]*versionCode = \([0-9]*\).*/\1/p' app/build.gradle.kts | head -n 1)"
+          test -n "$version_name"
+          [[ "$version_code" =~ ^[1-9][0-9]*$ ]]
+          {
+            echo "version_name=$version_name"
+            echo "version_code=$version_code"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Run beta gate and build release APK
         run: >-
           gradle :app:testDebugUnitTest :app:lintDebug :app:assembleRelease --stacktrace
@@ -64,32 +83,41 @@ jobs:
           set -euo pipefail
           mapping="app/build/outputs/mapping/release/mapping.txt"
           bash tools/verify-r8-mapping.sh "$mapping"
+          mkdir -p dist
+          cp "$mapping" dist/r8-mapping.txt
 
       - name: Verify unsigned APK identity before signing
+        env:
+          VERSION_NAME: ${{ steps.version.outputs.version_name }}
+          VERSION_CODE: ${{ steps.version.outputs.version_code }}
         shell: bash
         run: |
           set -euo pipefail
           unsigned_apk="app/build/outputs/apk/release/app-release-unsigned.apk"
           test -f "$unsigned_apk"
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$unsigned_apk" |
-            grep -F "package: name='com.weekssa.opraeqforuapp' versionCode='8' versionName='0.7.1'" >/dev/null
+            grep -F "package: name='com.weekssa.opraeqforuapp' versionCode='${VERSION_CODE}' versionName='${VERSION_NAME}'" >/dev/null
 
       - name: Align sign and verify beta APK
         env:
+          VERSION_NAME: ${{ steps.version.outputs.version_name }}
+          VERSION_CODE: ${{ steps.version.outputs.version_code }}
           OPRA_RELEASE_KEYSTORE_BASE64: ${{ secrets.OPRA_RELEASE_KEYSTORE_BASE64 }}
           OPRA_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.OPRA_RELEASE_KEYSTORE_PASSWORD }}
           OPRA_RELEASE_KEY_ALIAS: ${{ secrets.OPRA_RELEASE_KEY_ALIAS }}
         shell: bash
         run: |
           set -euo pipefail
-          version_name="$(sed -n 's/^[[:space:]]*versionName = "\([^"]*\)".*/\1/p' app/build.gradle.kts | head -n 1)"
-          test -n "$version_name"
+          version_name="$VERSION_NAME"
+          version_code="$VERSION_CODE"
+          [[ "$version_code" =~ ^[1-9][0-9]*$ ]]
           unsigned_apk="app/build/outputs/apk/release/app-release-unsigned.apk"
           aligned_apk="$RUNNER_TEMP/eq-library-beta-aligned.apk"
           mkdir -p dist
           output_apk="dist/EQ-Library-v${version_name}-beta-${GITHUB_SHA::7}.apk"
           build_tools="$ANDROID_HOME/build-tools/36.0.0"
-          mapping="app/build/outputs/mapping/release/mapping.txt"
+          mapping="dist/r8-mapping.txt"
+          test -s "$mapping"
           r8_mapping_sha256="$(sha256sum "$mapping" | cut -d ' ' -f 1)"
           : "${OPRA_RELEASE_KEYSTORE_BASE64:?Missing release keystore secret}"
           : "${OPRA_RELEASE_KEYSTORE_PASSWORD:?Missing release keystore password}"
@@ -147,7 +175,7 @@ jobs:
             --arg apkSha256 "$apk_sha256" \
             --arg packageId "com.weekssa.opraeqforuapp" \
             --arg versionName "$version_name" \
-            --arg versionCode "8" \
+            --arg versionCode "$version_code" \
             --arg signerSha256 "$actual_fingerprint" \
             --arg r8MappingSha256 "$r8_mapping_sha256" \
             --arg capabilityProfile "$capability_profile" \
@@ -156,12 +184,12 @@ jobs:
             --arg outstanding "$outstanding" \
             '{sourceSha:$sourceSha, candidateTarget:$candidateTarget, apk:$apk, apkSha256:$apkSha256, packageId:$packageId, versionName:$versionName, versionCode:($versionCode|tonumber), signerSha256:$signerSha256, r8MinificationEnabled:true, r8MappingSha256:$r8MappingSha256, capabilityProfile:$capabilityProfile, testPlan:$testPlan, evidenceIds:($evidence|split(",")), outstanding:$outstanding}' \
             > dist/candidate-manifest.json
-          jq -e --arg sourceSha "$GITHUB_SHA" --arg candidateTarget "$candidate_target" --arg evidence "$evidence_ids" '
+          jq -e --arg sourceSha "$GITHUB_SHA" --arg candidateTarget "$candidate_target" --arg evidence "$evidence_ids" --arg versionName "$version_name" --arg versionCode "$version_code" '
             .sourceSha == $sourceSha and
             .candidateTarget == $candidateTarget and
             .packageId == "com.weekssa.opraeqforuapp" and
-            .versionName == "0.7.1" and
-            .versionCode == 8 and
+            .versionName == $versionName and
+            .versionCode == ($versionCode | tonumber) and
             .r8MinificationEnabled == true and
             (.r8MappingSha256 | test("^[a-f0-9]{64}$")) and
             .evidenceIds == ($evidence | split(",")) and
@@ -217,13 +245,23 @@ jobs:
             sleep 2
           done
           adb wait-for-device
-          timeout 240 bash -c 'until [[ "$(adb shell getprop sys.boot_completed | tr -d "\r")" == "1" ]]; do sleep 5; done'
+          for attempt in $(seq 1 48); do
+            if [[ "$(adb shell getprop sys.boot_completed | tr -d '\r')" == "1" ]]; then break; fi
+            if [[ "$attempt" -eq 48 ]]; then
+              cat "$RUNNER_TEMP/signed-beta-emulator.log"
+              exit 1
+            fi
+            sleep 5
+          done
 
       - name: Install signed beta APK
+        env:
+          VERSION_NAME: ${{ steps.version.outputs.version_name }}
+          VERSION_CODE: ${{ steps.version.outputs.version_code }}
         shell: bash
         run: |
           set -euo pipefail
-          output_apk="dist/$(find dist -maxdepth 1 -type f -name 'EQ-Library-v*.apk' -printf '%f\n' -quit)"
+          output_apk="dist/EQ-Library-v${VERSION_NAME}-beta-${GITHUB_SHA::7}.apk"
           test -f "$output_apk"
           if ! install_output="$(adb install -r "$output_apk" 2>&1)"; then
             echo "$install_output"
@@ -232,8 +270,8 @@ jobs:
           fi
           echo "$install_output"
           package_dump="$(adb shell dumpsys package com.weekssa.opraeqforuapp)"
-          echo "$package_dump" | grep -q 'versionCode=8'
-          echo "$package_dump" | grep -q 'versionName=0.7.1'
+          echo "$package_dump" | grep -Fq "versionCode=${VERSION_CODE}"
+          echo "$package_dump" | grep -Fq "versionName=${VERSION_NAME}"
 
       - name: Cold-launch signed beta APK
         shell: bash
@@ -269,109 +307,36 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Publish mobile-test APKs and immutable candidate copy
+  publish-mobile-test-candidate:
+    needs: build-signed-beta
+    if: github.repository == 'weekssa/OPRA-EQ-for-UAPP' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Check out exact source and pinned signer identity
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Download exact signed beta candidate
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: EQ-Library-signed-beta-${{ github.sha }}
+          path: ${{ runner.temp }}/signed-beta-candidate
+
+      - name: Publish verified mobile-test APKs
         env:
           GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_SHA: ${{ github.sha }}
+          CANDIDATE_DIRECTORY: ${{ runner.temp }}/signed-beta-candidate
+          EXPECTED_VERSION_NAME: ${{ needs.build-signed-beta.outputs.version_name }}
+          EXPECTED_VERSION_CODE: ${{ needs.build-signed-beta.outputs.version_code }}
           PINNED_V06_READ_ONLY_ARTIFACT_ID: "10134900164"
           PINNED_V06_READ_ONLY_COMMIT: "d3d227de45751f6606b75637a2fd311249afa88d"
           PINNED_V06_READ_ONLY_SHA256: "ea8235ee1ba2828873b488054b25d40c917b844c2d76a813bf9e038cf31c8ee5"
-        shell: bash
-        run: |
-          set -euo pipefail
-          source_apk="$(find dist -maxdepth 1 -type f -name 'EQ-Library-v*.apk' -print -quit)"
-          test -n "$source_apk"
-          version_name="$(sed -n 's/^[[:space:]]*versionName = "\([^"]*\)".*/\1/p' app/build.gradle.kts | head -n 1)"
-          test -n "$version_name"
-
-          publish_dir="$(mktemp -d)"
-          if git clone --depth 1 --branch mobile-test-apk \
-            "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$publish_dir"; then
-            :
-          else
-            rm -rf "$publish_dir"
-            publish_dir="$(mktemp -d)"
-            cd "$publish_dir"
-            git init
-            git checkout -b mobile-test-apk
-            git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          fi
-
-          cd "$publish_dir"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          mkdir -p candidates
-
-          stable_name="EQ-Library-mobile-test.apk"
-          versioned_name="EQ-Library-v${version_name}-mobile-test.apk"
-          zip_name="EQ-Library-v${version_name}-mobile-test.zip"
-          immutable_name="EQ-Library-v${version_name}-beta-${GITHUB_SHA::7}.apk"
-
-          cp "$GITHUB_WORKSPACE/$source_apk" "$stable_name"
-          cp "$GITHUB_WORKSPACE/$source_apk" "$versioned_name"
-          cp "$GITHUB_WORKSPACE/$source_apk" "candidates/$immutable_name"
-          zip -9 -j "$zip_name" "$versioned_name"
-          sha256sum "$stable_name" > "${stable_name}.sha256"
-          sha256sum "$versioned_name" > "${versioned_name}.sha256"
-          sha256sum "$zip_name" > "${zip_name}.sha256"
-          sha256sum "candidates/$immutable_name" > "candidates/${immutable_name}.sha256"
-
-          pinned_name="EQ-Library-v0.6.0-beta-${PINNED_V06_READ_ONLY_COMMIT::7}.apk"
-          if [[ ! -f "candidates/$pinned_name" ]]; then
-            pinned_zip="$RUNNER_TEMP/pinned-v06-read-only.zip"
-            pinned_dir="$RUNNER_TEMP/pinned-v06-read-only"
-            mkdir -p "$pinned_dir"
-            curl --fail --location --retry 3 \
-              -H "Authorization: Bearer ${GH_TOKEN}" \
-              -H "Accept: application/vnd.github+json" \
-              "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/${PINNED_V06_READ_ONLY_ARTIFACT_ID}/zip" \
-              --output "$pinned_zip"
-            unzip -q "$pinned_zip" -d "$pinned_dir"
-            pinned_source="$(find "$pinned_dir" -type f -name "EQ-Library-v0.6.0-beta-${PINNED_V06_READ_ONLY_COMMIT::7}.apk" -print -quit)"
-            test -n "$pinned_source"
-            actual_pinned_sha="$(sha256sum "$pinned_source" | awk '{print $1}')"
-            test "$actual_pinned_sha" = "$PINNED_V06_READ_ONLY_SHA256"
-            cp "$pinned_source" "candidates/$pinned_name"
-            printf '%s  %s\n' "$PINNED_V06_READ_ONLY_SHA256" "$pinned_name" > "candidates/${pinned_name}.sha256"
-          fi
-
-          cat > README.md <<EOF
-          # EQ Library mobile test builds
-
-          Latest signed beta generated from commit ${GITHUB_SHA} for app version ${version_name}.
-
-          Latest convenience APK (moves as the development branch advances):
-          https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/mobile-test-apk/${stable_name}
-
-          Latest version convenience APK (also moves while version ${version_name} is under development):
-          https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/mobile-test-apk/${versioned_name}
-
-          Exact immutable candidate for this commit:
-          https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/mobile-test-apk/candidates/${immutable_name}
-
-          Pinned v0.6 Black Pearl read-only qualification candidate:
-          https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/mobile-test-apk/candidates/${pinned_name}
-
-          ZIP fallback for the latest convenience build:
-          https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/mobile-test-apk/${zip_name}
-
-          Files under candidates/ are append-only exact-commit test candidates. Stable/versioned convenience names are not qualification provenance.
-          This branch is only a temporary hands-on testing surface. It is not a public release.
-          EOF
-
-          git add README.md "$stable_name" "$stable_name.sha256" \
-            "$versioned_name" "$versioned_name.sha256" "$zip_name" "$zip_name.sha256" candidates/
-          if git diff --cached --quiet; then
-            echo "No mobile-test publication changes."
-          else
-            git commit -m "Publish signed mobile test APK from ${GITHUB_SHA::7}"
-            git push origin HEAD:mobile-test-apk
-          fi
-
-          {
-            echo "### Mobile test APK"
-            echo "Latest convenience: https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/mobile-test-apk/${stable_name}"
-            echo ""
-            echo "Exact immutable candidate: https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/mobile-test-apk/candidates/${immutable_name}"
-            echo ""
-            echo "Pinned v0.6 read-only candidate: https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/mobile-test-apk/candidates/${pinned_name}"
-          } >> "$GITHUB_STEP_SUMMARY"
+        run: bash tools/publish_mobile_test_candidate.sh

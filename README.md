@@ -33,6 +33,8 @@ Android may ask you to allow installation from the browser or file manager used 
 
 See the [v0.7.1 release notes](docs/releases/v0.7.1.md) for the exact coverage, evidence, and boundaries.
 
+The next stabilization update is being prepared for **v0.7.2 / versionCode 9**. Its [release notes](docs/releases/v0.7.2.md) describe lower-memory loading for large cached catalogs and denser EQ response/headroom checks. The signed v0.7.2 APK will be linked here only after its source, artifact, signer, and publication gates pass; v0.7.1 remains the current public download until then.
+
 ## v0.7.0 highlights
 
 SIMGOT EW300 DSP has a five-band Peak workflow with readback, local editing, Review → Apply, Flash, Reset, reconnect verification, and evidence-bounded DEVICE state. The path reuses the shared My DAC session, canonical EQ pipeline, response adapter, and capture flow. See the [EW300 DSP status](docs/V0.7_EW300_DSP_STATUS.md) and [v0.7.0 release notes](docs/releases/v0.7.0.md) for the complete evidence record.

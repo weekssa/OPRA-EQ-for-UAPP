@@ -24,7 +24,7 @@ internal fun MyDacRecognitionPromptEffect(
     onOpenMyDac: () -> Unit,
 ) {
     var previousPresentDeviceNames by rememberSaveable {
-        mutableStateOf(
+        mutableStateOf<List<String>>(
             ArrayList(recognitionState.presentDeviceIds.map { deviceId -> deviceId.name }.sorted()),
         )
     }
