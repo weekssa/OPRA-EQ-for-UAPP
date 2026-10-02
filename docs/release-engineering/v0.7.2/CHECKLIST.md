@@ -1,0 +1,58 @@
+# v0.7.2 master checklist
+
+Status markers: [ ] pending, [x] complete, [!] failed/recovery active, [-] not applicable.
+
+- [x] Current worktree correctly detected; supplied isolated worktree reused
+- [x] Owner primary checkout protected
+- [x] Unlazy fully read and used; local control plane created
+- [x] Repository instructions and task-relevant docs read
+- [x] Relevant Android, testing, debugging, release, and tool skills discovered/read/used
+- [x] Missing necessary trusted skills/tools installed or equivalent used
+- [x] Git-backed recovery ledger created and resume path operational
+- [x] Exact v0.7.1 tag/source/version verified
+- [x] Stabilization branch created from exact v0.7.1
+- [x] GitHub/PR/CI/release state refreshed through authenticated tooling
+- [x] Toolchain inventory complete
+- [x] Complete repository test surface and CI matrix recorded
+- [x] Pristine v0.7.1 debug build recorded
+- [x] Pristine v0.7.1 fresh JVM suite recorded with counts
+- [x] Pristine v0.7.1 lint recorded
+- [x] Pristine v0.7.1 release build recorded
+- [x] Pristine v0.7.1 R8 mapping verification recorded
+- [x] Baseline instrumentation and current CI emulator behavior recorded
+- [x] Minimum-SDK/API-26 baseline failure reproduced, fixed on the work branch, and cold-install coverage rerun successfully
+- [ ] v0.7.2 version metadata set to 0.7.2 / code 9
+- [ ] v0.7.2 release notes and user-facing version documentation prepared
+- [ ] Release automation derives requested release identity instead of hard-coding a release number
+- [ ] Signed candidate is producible from verified merged main before immutable tagging
+- [ ] Previous review findings re-evaluated against actual v0.7.1 source
+- [ ] SharedPreferences commit semantics verified before any change
+- [ ] JCALLY compatibility state reviewed and preserved where required
+- [ ] DSP dense oracle implemented and independently measured
+- [ ] DSP production changed only if deterministic evidence requires it
+- [ ] Optimizer cache investigated without speculative rewrite
+- [x] No physical DAC writes performed
+- [ ] No unverified USB protocol behavior changed
+- [ ] Debug build passes on coherent candidate
+- [ ] Fresh complete JVM suite passes
+- [ ] Lint completes with no errors and no unexplained changed-code warnings
+- [ ] Release build passes
+- [ ] R8 verification passes
+- [ ] Instrumentation passes on CI-equivalent emulator
+- [ ] Minimum-SDK/API-26 smoke passes
+- [ ] Relevant Python, catalog, source, and release-script tests pass
+- [ ] actionlint passes; ShellCheck passes where applicable
+- [ ] git diff --check passes
+- [ ] Full diff reviewed against v0.7.1 and prohibited changes ruled out
+- [ ] Branch pushed without force
+- [ ] PR created with exact baseline, changes, evidence, and recovery status
+- [ ] Required GitHub CI and independent review pass on exact PR head
+- [ ] PR merged without bypassing branch protection
+- [ ] Merged main reverified on exact SHA
+- [ ] Signed release candidate generated from verified merged main
+- [ ] APK metadata, signature, pinned certificate, alignment, checksum, manifest, and provenance independently verified
+- [ ] Immutable v0.7.2 tag created on exact verified release commit
+- [ ] GitHub Release published with approved candidate assets and notes
+- [ ] Public release assets re-downloaded and verified
+- [ ] FINAL_REPORT.md complete and exact state pushed to recovery branch
+- [ ] HUMAN ACTION REQUIRED = NONE
