@@ -2,6 +2,7 @@ package com.weekssa.opraeqforuapp.domain.kt02h20
 
 import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
+import com.weekssa.opraeqforuapp.domain.dsp.IndependentDenseEqResponseOracle
 import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
 import com.weekssa.opraeqforuapp.domain.hardware.HardwareEqDeviceSpecs
 import org.junit.Assert.assertEquals
@@ -238,6 +239,152 @@ class Kt02h20FiveBandOptimizerTest {
         assertTrue(second.representation.usesGeneratedHeadroom)
         assertEquals(null, withStaleHint.preampGainDb)
         assertEquals(-9.5, withStaleHint.eqLibrarySafetyHeadroomDb!!, 0.0)
+    }
+
+    @Test
+    fun maximumQBoostBetweenCoarsePointsGetsDenseHeadroomAcrossFiniteHardwareTargets() {
+        val source = profile(
+            preamp = null,
+            bands = listOf(band("peak_dip", 978.371245, 12.0, 10.0)),
+        )
+        val specs = listOf(
+            HardwareEqDeviceSpecs.SIMGOT_EW300,
+            HardwareEqDeviceSpecs.FIIO_JA11,
+            HardwareEqDeviceSpecs.JCALLY_JM12_STOCK,
+            HardwareEqDeviceSpecs.TRN_BLACK_PEARL,
+        )
+
+        specs.forEach { spec ->
+            Kt02h20FiveBandOptimizer.clearCache()
+            val result = Kt02h20FiveBandOptimizer.optimize(source, spec)
+            assertTrue("${spec.displayName}: $result", result is FiveBandOptimizationResult.Ready)
+            val representation = (result as FiveBandOptimizationResult.Ready).representation
+            val sourceFilters = requireNotNull(source.bands).map(IndependentDenseEqResponseOracle::fromOpra)
+            val targetFilters = representation.bands.map(IndependentDenseEqResponseOracle::fromHardware)
+            val metrics = IndependentDenseEqResponseOracle.error(sourceFilters, targetFilters)
+            val targetMaximum = IndependentDenseEqResponseOracle.maximumGainDb(targetFilters)
+
+            assertTrue(representation.usesGeneratedHeadroom)
+            assertEquals(spec.representationVersion, representation.representationVersion)
+            assertEquals(metrics.rmsDb, representation.rmsErrorDb, 1e-6)
+            assertEquals(metrics.maxAbsoluteDb, representation.maxAbsoluteErrorDb, 1e-6)
+            assertTrue("${spec.displayName}: $targetMaximum + ${representation.playbackGainDb}",
+                targetMaximum + representation.playbackGainDb <= 1e-9)
+        }
+    }
+
+    @Test
+    fun maximumQCutBetweenCoarsePointsNeedsNoGeneratedBoostHeadroomAcrossFiniteTargets() {
+        val source = profile(
+            preamp = null,
+            bands = listOf(band("peak_dip", 978.371245, -12.0, 10.0)),
+        )
+        val specs = listOf(
+            HardwareEqDeviceSpecs.SIMGOT_EW300,
+            HardwareEqDeviceSpecs.FIIO_JA11,
+            HardwareEqDeviceSpecs.JCALLY_JM12_STOCK,
+            HardwareEqDeviceSpecs.TRN_BLACK_PEARL,
+        )
+
+        specs.forEach { spec ->
+            Kt02h20FiveBandOptimizer.clearCache()
+            val result = Kt02h20FiveBandOptimizer.optimize(source, spec)
+            assertTrue("${spec.displayName}: $result", result is FiveBandOptimizationResult.Ready)
+            val representation = (result as FiveBandOptimizationResult.Ready).representation
+            val targetFilters = representation.bands.map(IndependentDenseEqResponseOracle::fromHardware)
+            val targetMaximum = IndependentDenseEqResponseOracle.maximumGainDb(targetFilters)
+
+            assertTrue(representation.usesGeneratedHeadroom)
+            assertTrue("${spec.displayName}: $targetMaximum", targetMaximum <= 1e-6)
+            assertTrue("${spec.displayName}: $targetMaximum + ${representation.playbackGainDb}",
+                targetMaximum + representation.playbackGainDb <= 1e-6)
+        }
+    }
+
+    @Test
+    fun maximumQPeaksAtFrequencyBoundsGetDenseHeadroomAcrossFiniteTargets() {
+        val edgeProfiles = listOf(20.0, 20_000.0).map { frequency ->
+            profile(
+                preamp = null,
+                bands = listOf(band("peak_dip", frequency, 12.0, 10.0)),
+            )
+        }
+        val specs = listOf(
+            HardwareEqDeviceSpecs.SIMGOT_EW300,
+            HardwareEqDeviceSpecs.FIIO_JA11,
+            HardwareEqDeviceSpecs.JCALLY_JM12_STOCK,
+            HardwareEqDeviceSpecs.TRN_BLACK_PEARL,
+        )
+
+        edgeProfiles.forEach { source ->
+            specs.forEach { spec ->
+                Kt02h20FiveBandOptimizer.clearCache()
+                val result = Kt02h20FiveBandOptimizer.optimize(source, spec)
+                assertTrue("${spec.displayName}, ${source.bands?.single()?.frequency}: $result",
+                    result is FiveBandOptimizationResult.Ready)
+                val representation = (result as FiveBandOptimizationResult.Ready).representation
+                val targetFilters = representation.bands.map(IndependentDenseEqResponseOracle::fromHardware)
+                val targetMaximum = IndependentDenseEqResponseOracle.maximumGainDb(targetFilters)
+
+                assertTrue(representation.usesGeneratedHeadroom)
+                assertEquals(12.0, targetMaximum, 1e-6)
+                assertTrue(targetMaximum + representation.playbackGainDb <= 1e-6)
+            }
+        }
+    }
+
+    @Test
+    fun denseValidationRejectsCoarseFitThatMissesAHighQBandAtTheFidelityBoundary() {
+        val source = profile(
+            preamp = -3.0,
+            bands = listOf(
+                band("peak_dip", 127.730071, 8.0, 10.0),
+                band("peak_dip", 264.291154, 8.0, 10.0),
+                band("peak_dip", 546.854891, 8.0, 10.0),
+                band("peak_dip", 1_131.518280, 8.0, 10.0),
+                band("peak_dip", 2_341.267563, 8.0, 10.0),
+                band("peak_dip", 4_844.405873, 8.0, 10.0),
+            ),
+        )
+
+        Kt02h20FiveBandOptimizer.clearCache()
+        val result = Kt02h20FiveBandOptimizer.optimize(source, HardwareEqDeviceSpecs.FIIO_JA11)
+
+        assertTrue("$result", result is FiveBandOptimizationResult.NotSuitable)
+        assertTrue((result as FiveBandOptimizationResult.NotSuitable).reason.contains("dense"))
+    }
+
+    @Test
+    fun interactingMaximumQBoostsFailClosedWhenGeneratedHeadroomExceedsTargetLimits() {
+        val source = profile(
+            preamp = null,
+            bands = listOf(
+                band("peak_dip", 978.0, 12.0, 10.0),
+                band("peak_dip", 978.0, 12.0, 10.0),
+            ),
+        )
+        val limited = HardwareEqDeviceSpecs.FIIO_JA11
+        val supported = listOf(
+            HardwareEqDeviceSpecs.SIMGOT_EW300,
+            HardwareEqDeviceSpecs.JCALLY_JM12_STOCK,
+            HardwareEqDeviceSpecs.TRN_BLACK_PEARL,
+        )
+
+        Kt02h20FiveBandOptimizer.clearCache()
+        val limitedResult = Kt02h20FiveBandOptimizer.optimize(source, limited)
+        assertTrue("$limitedResult", limitedResult is FiveBandOptimizationResult.NotSuitable)
+
+        supported.forEach { spec ->
+            Kt02h20FiveBandOptimizer.clearCache()
+            val result = Kt02h20FiveBandOptimizer.optimize(source, spec)
+            assertTrue("${spec.displayName}: $result", result is FiveBandOptimizationResult.Ready)
+            val representation = (result as FiveBandOptimizationResult.Ready).representation
+            val targetMaximum = IndependentDenseEqResponseOracle.maximumGainDb(
+                representation.bands.map(IndependentDenseEqResponseOracle::fromHardware),
+            )
+            assertEquals(24.0, targetMaximum, 1e-6)
+            assertTrue(targetMaximum + representation.playbackGainDb <= 1e-6)
+        }
     }
 
     private fun profile(preamp: Double?, bands: List<OpraBand>): OpraEqProfile = OpraEqProfile(

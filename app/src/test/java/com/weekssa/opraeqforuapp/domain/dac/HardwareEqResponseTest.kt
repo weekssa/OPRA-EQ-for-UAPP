@@ -1,6 +1,7 @@
 package com.weekssa.opraeqforuapp.domain.dac
 
 import com.google.common.truth.Truth.assertThat
+import com.weekssa.opraeqforuapp.domain.dsp.IndependentDenseEqResponseOracle
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 import org.junit.Test
 
@@ -31,6 +32,49 @@ class HardwareEqResponseTest {
 
         assertThat(requireNotNull(curve.gainDbAt(1_000.0))).isWithin(0.02).of(6.0)
         assertThat(curve.maximumGainDb).isGreaterThan(5.9)
+    }
+
+    @Test
+    fun denseHeadroomSearchFindsMaximumQBoostMissedBetweenDefaultGraphPoints() {
+        val filter = hardwareFilter(
+            type = EqFilterType.PEAK,
+            frequencyHz = 978.371245,
+            gainDb = 12.0,
+            q = 10.0,
+        )
+        val curve = requireNotNull(HardwareEqResponseEvaluator.evaluate(listOf(filter)))
+        val independentMaximum = IndependentDenseEqResponseOracle.maximumGainDb(
+            listOf(IndependentDenseEqResponseOracle.fromHardware(filter)),
+        )
+        val denseMaximum = requireNotNull(
+            HardwareEqResponseEvaluator.maximumGainDbForHeadroom(listOf(filter)),
+        )
+
+        assertThat(independentMaximum).isWithin(1e-6).of(12.0)
+        assertThat(independentMaximum - curve.maximumGainDb).isGreaterThan(4.0)
+        assertThat(denseMaximum).isWithin(1e-6).of(independentMaximum)
+    }
+
+    @Test
+    fun interactingMaximumQBoostsDoNotShareTheCoarseGraphHeadroomMiss() {
+        val first = hardwareFilter(
+            index = 0,
+            type = EqFilterType.PEAK,
+            frequencyHz = 978.0,
+            gainDb = 12.0,
+            q = 10.0,
+        )
+        val second = first.copy(index = 1)
+        val filters = listOf(first, second)
+        val curve = requireNotNull(HardwareEqResponseEvaluator.evaluate(filters))
+        val independentMaximum = IndependentDenseEqResponseOracle.maximumGainDb(
+            filters.map(IndependentDenseEqResponseOracle::fromHardware),
+        )
+        val denseMaximum = requireNotNull(HardwareEqResponseEvaluator.maximumGainDbForHeadroom(filters))
+
+        assertThat(independentMaximum).isWithin(1e-6).of(24.0)
+        assertThat(independentMaximum - curve.maximumGainDb).isGreaterThan(8.0)
+        assertThat(denseMaximum).isWithin(1e-6).of(independentMaximum)
     }
 
     @Test

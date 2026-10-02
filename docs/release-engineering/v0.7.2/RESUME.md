@@ -2,7 +2,7 @@
 
 MISSION: v0.7.2 stabilization and release
 
-CURRENT PHASE: evidence-backed fixes, DSP oracle, and release workflow correction
+CURRENT PHASE: evidence-backed fixes and v0.7.2 metadata preparation
 
 CURRENT WORKTREE: /Users/stephenweeks/.codex/worktrees/a79b/OPRA-EQ-for-UAPP
 
@@ -10,13 +10,13 @@ CURRENT BRANCH: codex/v0.7.2-stabilization
 
 BASELINE: v0.7.1 -> c48f6a5daa08a5e03475b2e415fe80b41d3357db
 
-CURRENT HEAD: merge `1530d02f` of current `origin/main` `afed3dc90b5873218d5e333882528f8c5ddd54a2`; current branch tip is `1530d02f` and has not yet been pushed. The original v0.7.1 commit remains an ancestor.
+CURRENT HEAD: `41243456` is the current base; DSP changes and ledger updates are pending a phase checkpoint. The v0.7.1 commit remains an ancestor; no history was rewritten.
 
 VERSION: 0.7.2 / 9
 
-LAST VERIFIED COMPLETION: pristine v0.7.1 debug/JVM/lint/release/R8 gates passed; API 35 instrumentation passed 25/25; API 26 baseline OOM was fixed with stream decoding; fixed-source debug/JVM/lint/release/R8 gates and focused repository tests pass; the rebuilt APK passed cold install and launch on a fresh API 26 AVD
+LAST VERIFIED COMPLETION: DSP dense oracle confirmed 4.392812 dB single-peak and 8.683458 dB stacked-peak coarse-grid misses; dense headroom/final-fit checks and Safe Gain fixes pass the 724-test JVM suite and lint (0 errors)
 
-NEXT EXACT ACTION: finish the active finding-by-finding source review under leaf-1.2.3, then complete version-driven release automation and the dense DSP oracle before preparing v0.7.2 metadata
+NEXT EXACT ACTION: close and checkpoint DSP leaf 1.2.2, then update app versionName to 0.7.2/versionCode to 9 and prepare synchronized release notes under leaf 1.2.4
 
 CURRENT FAILURE: NONE; the v0.7.1 API 26 startup failure is resolved on the work branch, with full candidate verification still pending
 

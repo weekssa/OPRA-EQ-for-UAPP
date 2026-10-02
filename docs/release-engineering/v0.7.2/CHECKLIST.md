@@ -28,8 +28,8 @@ Status markers: [ ] pending, [x] complete, [!] failed/recovery active, [-] not a
 - [ ] Previous review findings re-evaluated against actual v0.7.1 source
 - [ ] SharedPreferences commit semantics verified before any change
 - [ ] JCALLY compatibility state reviewed and preserved where required
-- [ ] DSP dense oracle implemented and independently measured
-- [ ] DSP production changed only if deterministic evidence requires it
+- [x] DSP dense oracle implemented and independently measured
+- [x] DSP production corrected from deterministic evidence; no USB or protocol behavior changed
 - [ ] Optimizer cache investigated without speculative rewrite
 - [x] No physical DAC writes performed
 - [ ] No unverified USB protocol behavior changed

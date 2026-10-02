@@ -355,8 +355,17 @@ object HardwareEqEditor {
         val issues = validate(filters, spec).toMutableList()
         val response = HardwareEqResponseEvaluator.evaluate(filters)
         if (response == null) issues += HardwareEqEditIssue.ResponseUnavailable
-        val headroom = response?.let { curve ->
-            val required = conservativeRequiredHeadroomDb(curve, spec.headroomGainStepDb)
+        val maximumGainForHeadroom = if (response != null) {
+            HardwareEqResponseEvaluator.maximumGainDbForHeadroom(filters)
+                ?: run {
+                    issues += HardwareEqEditIssue.ResponseUnavailable
+                    null
+                }
+        } else {
+            null
+        }
+        val headroom = maximumGainForHeadroom?.let { maximumGainDb ->
+            val required = conservativeRequiredHeadroomDb(maximumGainDb, spec.headroomGainStepDb)
             assessHeadroom(
                 requiredGainDb = required,
                 plannedGainDb = plannedHeadroomGainDb,
@@ -433,12 +442,12 @@ object HardwareEqEditor {
     }
 
     private fun conservativeRequiredHeadroomDb(
-        curve: HardwareEqResponseCurve,
+        maximumGainDb: Double,
         stepDb: Double?,
     ): Double {
-        val raw = -curve.maximumGainDb.coerceAtLeast(0.0)
+        val raw = -maximumGainDb.coerceAtLeast(0.0)
         if (abs(raw) <= HEADROOM_EPSILON_DB) return 0.0
-        return if (stepDb != null) floor(raw / stepDb) * stepDb else raw
+        return if (stepDb != null) floor((raw + HEADROOM_EPSILON_DB) / stepDb) * stepDb else raw
     }
 
     private fun assessHeadroom(

@@ -38,9 +38,10 @@ object HardwareEqDeviceSpecs {
             qStep = 0.001,
             preampStepDb = 0.5,
         ),
-        // v3 enables source low/high shelves to be approximated as Peak-only response fits.
+        // v3 enabled shelf-to-Peak response fits; v4 validates fit quality and generated headroom
+        // against a dense response grid before exposing the derived representation.
         // Native EW300 readback and editor controls remain Peak-only.
-        representationVersion = 3,
+        representationVersion = 4,
         responseFitSourceBandTypes = setOf("low_shelf", "high_shelf"),
     )
 
@@ -67,7 +68,7 @@ object HardwareEqDeviceSpecs {
             // here and let the protocol layer perform the exact wire conversion.
             preampStepDb = null,
         ),
-        representationVersion = 3,
+        representationVersion = 4,
     )
 
     val JCALLY_JM12_STOCK = FiveBandDeviceSpec(
@@ -91,7 +92,7 @@ object HardwareEqDeviceSpecs {
             qStep = 0.001,
             preampStepDb = 0.5,
         ),
-        representationVersion = 3,
+        representationVersion = 4,
     )
 
     val TRN_BLACK_PEARL = FiveBandDeviceSpec(
@@ -127,7 +128,7 @@ object HardwareEqDeviceSpecs {
         // per-filter gain range. Wider exact source values are preserved, never clamped.
         optimizerMinGainDb = -10.0,
         optimizerMaxGainDb = 10.0,
-        representationVersion = 3,
+        representationVersion = 4,
     )
 
     /**
@@ -137,6 +138,6 @@ object HardwareEqDeviceSpecs {
      */
     val TRN_BLACK_PEARL_DIRECT_FLASH = TRN_BLACK_PEARL.copy(
         quantization = TRN_BLACK_PEARL.quantization.copy(preampStepDb = 1.0),
-        representationVersion = 4,
+        representationVersion = 5,
     )
 }

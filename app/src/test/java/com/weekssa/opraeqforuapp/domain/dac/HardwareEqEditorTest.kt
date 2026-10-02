@@ -1,6 +1,7 @@
 package com.weekssa.opraeqforuapp.domain.dac
 
 import com.google.common.truth.Truth.assertThat
+import com.weekssa.opraeqforuapp.domain.dsp.IndependentDenseEqResponseOracle
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 import kotlin.math.roundToLong
 import org.junit.Test
@@ -221,6 +222,33 @@ class HardwareEqEditorTest {
         assertThat(requireNotNull(changed.responseCurve).maximumGainDb).isGreaterThan(2.0)
         assertThat(requireNotNull(changed.headroomAssessment).status)
             .isEqualTo(DacHeadroomStatus.ADJUSTMENT_REQUIRED)
+    }
+
+    @Test
+    fun useSafeGainUsesDensePeakForMaximumQBoostBetweenGraphPoints() {
+        val started = HardwareEqEditor.startFromCurrent(
+            snapshotState = currentState(blackPearlSnapshot()),
+            spec = HardwareEqEditSpecs.TRN_BLACK_PEARL,
+        ) as HardwareEqEditorStartResult.Ready
+        val edited = HardwareEqEditor.updateFilter(
+            workingCopy = started.workingCopy,
+            spec = HardwareEqEditSpecs.TRN_BLACK_PEARL,
+            bandIndex = 0,
+            type = EqFilterType.PEAK,
+            frequencyHz = 978.0,
+            gainDb = 12.0,
+            q = 10.0,
+        )
+        val independentMaximum = IndependentDenseEqResponseOracle.maximumGainDb(
+            edited.filters.map(IndependentDenseEqResponseOracle::fromHardware),
+        )
+        val safe = HardwareEqEditor.useSafeGain(edited, HardwareEqEditSpecs.TRN_BLACK_PEARL)
+        val plannedGain = requireNotNull(safe.plannedHeadroomGainDb)
+
+        assertThat(edited.hasBlockingIssues).isFalse()
+        assertThat(independentMaximum).isGreaterThan(11.99)
+        assertThat(independentMaximum + plannedGain).isAtMost(1e-9)
+        assertThat(requireNotNull(safe.headroomAssessment).requiredGainDb).isEqualTo(-12.0)
     }
 
     @Test

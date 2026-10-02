@@ -3,8 +3,9 @@
 | Gate | Command / evidence | Environment | Baseline result | Final result |
 |---|---|---|---|---|
 | Debug assembly | ./tools/codex-android :app:assembleDebug | macOS Codex host, v0.7.1 then candidate | PASS on exact v0.7.1 base | PASS on current worktree source, still version 0.7.1; final versioned run pending |
-| Fresh JVM suite | ./tools/codex-android :app:testDebugUnitTest --rerun-tasks | macOS Codex host, v0.7.1 then candidate | PASS, 713 tests, 0 failures/errors/skips | PASS on current worktree source, 714 tests, 0 failures/errors/skips; final versioned run pending |
-| Android lint | ./tools/codex-android :app:lintDebug | macOS Codex host, v0.7.1 then candidate | PASS, 0 errors, 114 warnings, 2 hints | PASS on current worktree source, 0 errors, 114 warnings, 2 hints; final versioned run pending |
+| Fresh JVM suite | ./tools/codex-android :app:testDebugUnitTest | macOS Codex host, v0.7.1 then candidate | PASS, 713 tests, 0 failures/errors/skips | PASS, 724 tests, 0 failures/errors/skips; current source still declares 0.7.1/code 8; versioned run pending |
+| Android lint | ./tools/codex-android :app:lintDebug | macOS Codex host, v0.7.1 then candidate | PASS, 0 errors, 114 warnings, 2 hints | PASS, 0 errors, 111 warnings, 2 hints; no diagnostics in changed DSP source/tests; versioned run pending |
+| Dense DSP oracle | optimizer, editor, response, and EW300 shelf corpus tests within `:app:testDebugUnitTest` | independent test-only 12,001-point log oracle; current JVM | No independent headroom/error oracle on baseline | PASS, 724-test suite; single high-Q coarse miss 4.392811513 dB; coincident-peak miss 8.683458274 dB; Safe Gain and dense final fit checks pass |
 | Release assembly | ./tools/codex-android :app:assembleRelease | macOS Codex host, v0.7.1 then candidate | PASS on exact v0.7.1 base | PASS on current worktree source, still version 0.7.1; final versioned run pending |
 | R8 mapping | bash tools/verify-r8-mapping.sh | after release assembly | PASS on exact v0.7.1 base | PASS on current worktree source; final versioned run pending |
 | Instrumentation | ./tools/codex-android :app:connectedDebugAndroidTest | API 35 Google APIs ARM64 AVD, emulator 37.1.11 | PASS, 25 tests, 0 failures/errors/skips | pending coherent final source run |

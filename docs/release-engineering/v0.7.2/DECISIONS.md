@@ -43,3 +43,15 @@ Evidence: fetched main was `afed3dc90b5873218d5e333882528f8c5ddd54a2`. Its chang
 Reason: preserve the current v0.7.1 release/status documentation and live catalog while retaining the exact immutable release source in branch ancestry.
 
 Tests validating safety: fetched branch/file inventory, clean `git merge --no-edit origin/main`, merge-parent inspection, and ancestor check.
+
+## D005: use dense final response checks while retaining the coarse fit grid
+
+Decision: retain the 96-point response grid for candidate search and UI graph rendering, but calculate generated optimizer/editor headroom with a 12,001-point logarithmic grid plus exact band centers and nearby samples. Require a dense source-to-final-target error check before returning every non-exact `Ready` optimizer result. Advance finite-hardware representation versions so derived plans are rebuilt under the new validation contract.
+
+Evidence: an independent RBJ oracle measured a +12 dB/Q=10 Peak at 978.371245 Hz at 12 dB while the old 96-point graph returned 7.607188487 dB, a 4.392811513 dB miss. Two coincident +12 dB/Q=10 Peaks at 978 Hz produced 24 dB dense response versus a 15.316541726 dB coarse maximum, an 8.683458274 dB miss. A six-band JA11 fit passes the coarse checks but is rejected by the dense final check. Exact maximum-Q +12 dB and −12 dB, 20 Hz and 20 kHz boundaries, coincident boosts, cross-source shelves, and target quantization now have independent tests across EW300, Black Pearl, JA11, and JM12.
+
+Alternatives: leave production unchanged because the concern was only a display approximation; or replace the fitter grid globally with thousands of points. Rejected because generated headroom and fit eligibility materially under-read extrema, while replacing the search grid would needlessly expand optimization cost. The dense grid is used only for safety/final verification.
+
+Reason chosen: the 96-point grid demonstrably underestimates modeled peak response enough to leave +4 dB net response in the single-boost EW300 counterexample and +8.68 dB for coincident filters. The final dense check fails closed without changing device commands or source-authored preamp semantics.
+
+Tests validating safety: independent dense-response tests; editor `useSafeGain()` regression; six-band fit dense rejection; all current shelf corpus Ready cases independently resampled; `./tools/codex-android :app:testDebugUnitTest` passes 724 tests; `./tools/codex-android :app:lintDebug` passes with 0 errors, 111 warnings, and 2 hints. No changed DSP source/test file has a lint diagnostic. No hardware was connected or mutated.
