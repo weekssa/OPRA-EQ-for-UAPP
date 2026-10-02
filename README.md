@@ -1,6 +1,6 @@
 # EQ Library
 
-**EQ Library** is a native Android app for finding, saving, converting, exporting, and—on supported hardware—directly applying parametric EQ presets.
+**EQ Library** is a native Android app for finding, saving, converting, exporting, and directly applying parametric EQ presets on supported hardware.
 
 The project began as **OPRA EQ for UAPP**. The repository and Android application ID remain `com.weekssa.opraeqforuapp` so existing installations continue to upgrade normally, but the product is now source-agnostic: **OPRA is one attributed EQ source, not the product identity.**
 
@@ -8,22 +8,30 @@ EQ Library ships with **zero headphone or EQ profiles bundled in the APK**. It d
 
 ## Current release
 
-**v0.7.0** is the current public Android release.
+**v0.7.1** is the current public Android release.
 
-[Download EQ Library v0.7.0](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.7.0) or [download the signed APK directly](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.7.0/EQ-Library-v0.7.0.apk)
+[Download EQ Library v0.7.1](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.7.1) or [download the signed APK directly](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.7.1/EQ-Library-v0.7.1.apk)
 
 - Android 8.0 / API 26 or newer
 - Signed with the project's permanent Android release identity for in-place upgrades
 - No Google Play account, EQ Library account, or cloud account required
 - No analytics or telemetry
 
-The public v0.7.0 APK is `EQ-Library-v0.7.0.apk`. Its SHA-256 is:
+The public v0.7.1 APK is `EQ-Library-v0.7.1.apk`. Its SHA-256 is:
 
-`27dada499bcbf9be9bd21d1349164858c93a5d2b83f78fd61134de13b4eb4025`
+`abd8837f78aaf72d28abef3db956a1c171f791616effbc8f7875814c2c28002b`
 
-The matching [SHA-256 checksum file](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.7.0/EQ-Library-v0.7.0.apk.sha256) is published with the release.
+The matching [SHA-256 checksum file](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.7.1/EQ-Library-v0.7.1.apk.sha256) is published with the release.
 
 Android may ask you to allow installation from the browser or file manager used to open the APK because GitHub Releases are installed outside an app store. EQ Library itself does not request package-install permission and never silently installs updates.
+
+## v0.7.1 highlights
+
+- Fixed canonical Favorite resolution across the ingested source IDs covered by authentic profile/revision samples. The resolver preserves canonical profile, selected revision, and source provenance when a catalog product alias changes the displayed compatibility IDs.
+- The source coverage gate is part of catalog-source onboarding: each new source ID that contributes canonical EQs needs an authentic sample exercised through its production resolver, or a reviewed no-profile exclusion. Catalog CI fails when the registry and fixture drift.
+- This release changes catalog Favorite resolution only. It does not change DAC protocols or hardware behavior, and the source-ID resolver samples do not independently validate feed parsers, attribution, licenses, or acoustic quality.
+
+See the [v0.7.1 release notes](docs/releases/v0.7.1.md) for the exact coverage, evidence, and boundaries.
 
 ## v0.7.0 highlights
 
@@ -46,7 +54,7 @@ The approved v0.6 direction includes:
 - stable DEVICE connection context with shared bottom operation feedback for Applying, verification/reconnect, success, and recoverable failure;
 - Black Pearl **Restore defaults** using the qualified EQ Library-owned preset: 50% volume, FAST-LL, HIGH, CLASS AB, centered balance, and microphone gain 0 dB, with optional EQ reset to flat;
 - a single **device-agnostic My EQs** library whose saved headphones/EQs do not change when the output target changes;
-- Save/Add separated from **Export** and **Flash**—saving changes local library state only;
+- Save/Add is separate from **Export** and **Flash**: saving changes local library state only;
 - persistent **Needs attention** recovery for exact app-owned preset artifacts that can no longer be confidently associated with a current My EQ item;
 - conservative recovery into Personal EQs without scanning or deleting arbitrary external files.
 
@@ -68,7 +76,7 @@ At v0.6.0 publication, TRN Black Pearl automatic physical reattach, Restore defa
 
 EQ Library supports multiple output contexts from one canonical source representation.
 
-| Group | Outputs in v0.7.0 |
+| Group | Outputs in v0.7.1 |
 | --- | --- |
 | **Hardware DACs** | TRN Black Pearl, FiiO JA11, SIMGOT EW300 DSP |
 | **Apps** | USB Audio Player PRO / ToneBoosters, Poweramp / Poweramp Equalizer, Wavelet, TOPPING Tune, EasyEffects, Equalizer APO |
@@ -76,13 +84,13 @@ EQ Library supports multiple output contexts from one canonical source represent
 
 The active output is an **operating/action context**, not a catalog or My EQs ownership filter. Switching outputs changes target compatibility, conversion/fidelity, export behavior, and hardware actions without hiding otherwise valid canonical EQs or changing which EQs the user saved.
 
-In v0.7.0, **Save/Add changes local My EQs state only**. File export is an explicit Export action and hardware writes are explicit Flash actions. This prevents selecting a target from silently becoming a library-membership or storage operation.
+In v0.7.1, **Save/Add changes local My EQs state only**. File export is an explicit Export action and hardware writes are explicit Flash actions. This prevents selecting a target from silently becoming a library-membership or storage operation.
 
 Exports use Android's system folder picker. EQ Library does not request broad storage access, does not write into another app's private storage, and manages only files it can prove it created.
 
 ## Hardware support
 
-| Device | EQ Library behavior | v0.7.0 status |
+| Device | EQ Library behavior | v0.7.1 status |
 | --- | --- | --- |
 | **TRN Black Pearl** | `.txt` export, 10-band Direct Flash, playback-gain/headroom handling, final native readback verification, and Reset EQ to flat | **Verified for the tested AFUL Explorer transaction, unit, starting state, and Pixel 9 session** |
 | **FiiO JA11** | Hardware-only five-band User 1 editor, global EQ gain, Apply/Save/readback, Flash, and Reset EQ to flat | **Software path verified · broader power-cycle qualification unclaimed** |
@@ -121,9 +129,9 @@ Historical JCALLY JM12 protocol material may remain in the repository for refere
 
 Each canonical EQ is evaluated against the active output as:
 
-- **Exact** — the source is natively representable at the target's actual limits and resolution without target-side acoustic alteration or generated headroom.
-- **Optimized** — EQ Library deterministically derives a faithful target representation, such as native target rounding, complete-response fitting, or generated target headroom.
-- **Not suitable / Not exportable** — a safe, faithful representation cannot be produced.
+- **Exact**: the source is natively representable at the target's actual limits and resolution without target-side acoustic alteration or generated headroom.
+- **Optimized**: EQ Library deterministically derives a faithful target representation, such as native target rounding, complete-response fitting, or generated target headroom.
+- **Not suitable / Not exportable**: a safe, faithful representation cannot be produced.
 
 Canonical source data remains complete and unchanged even when an output has tighter limits. Unsupported active filters, unsafe values, or quality-gate failures are rejected instead of silently dropped or clamped.
 
@@ -187,14 +195,22 @@ Run `:app:connectedDebugAndroidTest` only with an attached device or running emu
 
 ## Validation and release discipline
 
-The public v0.7.0 release was built, tested, signed, and published through the trusted main-only workflow. The public tag points to `4f325d673159b40515086fe5143df12b29ddb076`; the executable behavior was tested on `e1ab5fa5a65dc2d64624d871ac53d436f792ea6a`, and the tagged source adds documentation-only closeout synchronization.
+The public v0.7.1 release was built, tested, signed, and published through the trusted main-only workflow from main source `c48f6a5daa08a5e03475b2e415fe80b41d3357db`, which the `v0.7.1` tag resolves to. PR #62's publisher repair passed independent review, all seven exact-head checks, and all six applicable post-merge checks. The signed candidate and public promotion both passed on that same source; the API 35 upgrade and cold launch passed.
 
-- Signed workflow: [GitHub Actions run 36381764266](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36381764266)
-- Public release: [EQ Library v0.7.0](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.7.0)
-- Public APK SHA-256: `27dada499bcbf9be9bd21d1349164858c93a5d2b83f78fd61134de13b4eb4025`
+- Signed candidate: [GitHub Actions run 36945247310](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36945247310), artifact ID `11201724340`, ZIP SHA-256 `8716136285cd7d77c15c3e850c319ad121e4d4177338b3c1eb1d59594ac95918`
+- Public promotion: [GitHub Actions run 36946254797](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36946254797)
+- Public release: [EQ Library v0.7.1](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.7.1)
+- Public APK SHA-256: `abd8837f78aaf72d28abef3db956a1c171f791616effbc8f7875814c2c28002b`
 - Signer certificate SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`
+- Public tag and latest-release metadata resolve to `v0.7.1` and the tag points to the exact release source.
 
-The complete release gates and hardware evidence boundaries are recorded in the [v0.7.0 release notes](docs/releases/v0.7.0.md) and [public release checklist](docs/PUBLIC_RELEASE_CHECKLIST.md). `actionlint` was not available locally; no workflow file changed during final closeout, and the trusted remote release workflow passed.
+The promotion verified all six published release assets against GitHub's reported digests; the public APK bytes match the signed candidate. The source-wide Favorite regression gate currently has 14 source-ID samples across 13 profiles, including 12 headphone samples and 2 General EQ samples, plus 2 reviewed no-profile exclusions. Wireless debugging and physical-device testing were not required because this change does not alter device behavior.
+
+After publication, the owner confirmed that the Favorite fix works. This owner-reported confirmation adds no device-specific or DAC hardware-support claim.
+
+The previous public v0.7.0 release used signed workflow [run 36381764266](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36381764266), tag source `4f325d673159b40515086fe5143df12b29ddb076`, and APK SHA-256 `27dada499bcbf9be9bd21d1349164858c93a5d2b83f78fd61134de13b4eb4025`.
+
+The complete release gates and evidence boundaries are recorded in the [v0.7.1 release notes](docs/releases/v0.7.1.md), [v0.7.0 release notes](docs/releases/v0.7.0.md), and [public release checklist](docs/PUBLIC_RELEASE_CHECKLIST.md).
 
 Installable releases use SemVer during the `0.x` development series. The first stable release is reserved for `v1.0.0`.
 
@@ -206,20 +222,23 @@ USB Audio Player PRO/UAPP, ToneBoosters, OPRA, Roon Labs, TRN, FiiO, JCALLY, TOP
 
 ## Documentation
 
-- [docs/releases/v0.7.0.md](docs/releases/v0.7.0.md) — v0.7.0 release notes and validation record
-- [docs/releases/v0.6.0.md](docs/releases/v0.6.0.md) — v0.6.0 release notes and validation record
-- [docs/releases/v0.5.0.md](docs/releases/v0.5.0.md) — v0.5.0 release notes and validation record
-- [CHANGELOG.md](CHANGELOG.md) — release history and notable changes
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — Android/MAD architecture and invariants
-- [docs/CHATGPT_PROJECT_RUNBOOK.md](docs/CHATGPT_PROJECT_RUNBOOK.md) — maintained product and execution source of truth
-- [docs/V0.6_LIBRARY_OWNERSHIP_AND_RECOVERY.md](docs/V0.6_LIBRARY_OWNERSHIP_AND_RECOVERY.md) — v0.6 device-agnostic My EQs / Needs attention authority
-- [docs/V0.7_EW300_DSP_IMPLEMENTATION_PLAN.md](docs/V0.7_EW300_DSP_IMPLEMENTATION_PLAN.md) — EW300 DSP scope, evidence gates, implementation sequence, and validation record
-- [docs/V0.6_PREMIUM_UX_AUDIT_BLUEPRINT.md](docs/V0.6_PREMIUM_UX_AUDIT_BLUEPRINT.md) — design-only v0.6 polish blueprint; approval required before major UI changes
-- [docs/PUBLIC_RELEASE_CHECKLIST.md](docs/PUBLIC_RELEASE_CHECKLIST.md) — GitHub release gates
-- [docs/RELEASE_SIGNING.md](docs/RELEASE_SIGNING.md) — permanent APK signing process
-- [PRIVACY.md](PRIVACY.md) — privacy policy
-- [CONTRIBUTING.md](CONTRIBUTING.md) — contribution and validation expectations
-- [SECURITY.md](SECURITY.md) — security-reporting guidance
+- [docs/releases/v0.7.0.md](docs/releases/v0.7.0.md): v0.7.0 release notes and validation record
+- [docs/releases/v0.7.1.md](docs/releases/v0.7.1.md): v0.7.1 Favorite coverage, release notes, and validation record
+- [docs/releases/v0.6.0.md](docs/releases/v0.6.0.md): v0.6.0 release notes and validation record
+- [docs/releases/v0.5.0.md](docs/releases/v0.5.0.md): v0.5.0 release notes and validation record
+- [CHANGELOG.md](CHANGELOG.md): release history and notable changes
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): Android/MAD architecture and invariants
+- [docs/SOURCE_INGESTION_STRATEGY.md](docs/SOURCE_INGESTION_STRATEGY.md): source qualification and the required Favorite regression gate for new source IDs
+- [docs/FUTURE_SOURCE_AUTOMATION_PLAN.md](docs/FUTURE_SOURCE_AUTOMATION_PLAN.md): current source automation and onboarding requirements
+- [docs/CHATGPT_PROJECT_RUNBOOK.md](docs/CHATGPT_PROJECT_RUNBOOK.md): maintained product and execution source of truth
+- [docs/V0.6_LIBRARY_OWNERSHIP_AND_RECOVERY.md](docs/V0.6_LIBRARY_OWNERSHIP_AND_RECOVERY.md): v0.6 device-agnostic My EQs / Needs attention authority
+- [docs/V0.7_EW300_DSP_IMPLEMENTATION_PLAN.md](docs/V0.7_EW300_DSP_IMPLEMENTATION_PLAN.md): EW300 DSP scope, evidence gates, implementation sequence, and validation record
+- [docs/V0.6_PREMIUM_UX_AUDIT_BLUEPRINT.md](docs/V0.6_PREMIUM_UX_AUDIT_BLUEPRINT.md): design-only v0.6 polish blueprint; approval required before major UI changes
+- [docs/PUBLIC_RELEASE_CHECKLIST.md](docs/PUBLIC_RELEASE_CHECKLIST.md): GitHub release gates
+- [docs/RELEASE_SIGNING.md](docs/RELEASE_SIGNING.md): permanent APK signing process
+- [PRIVACY.md](PRIVACY.md): privacy policy
+- [CONTRIBUTING.md](CONTRIBUTING.md): contribution and validation expectations
+- [SECURITY.md](SECURITY.md): security-reporting guidance
 
 ## Feedback and contributions
 

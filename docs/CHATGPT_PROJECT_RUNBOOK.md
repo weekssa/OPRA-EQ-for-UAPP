@@ -718,14 +718,70 @@ and uploaded no assets. The GitHub tag ref remained absent and `/releases/latest
 v0.7.0. This exposed a publisher assumption: a private draft can correctly record its exact
 `target_commitish` before GitHub creates the tag ref at publication.
 
-The follow-up publisher repair must accept an absent tag ref only while the release remains an
-unpublished draft whose `target_commitish` exactly matches the candidate. It may retarget this
-asset-free draft for a fresh candidate only after verifying the recorded full source SHA is an
-ancestor of current main and reading back the new exact target. A draft with any assets, an existing
-unexpected tag ref, diverged ancestry, or mismatched tag/name/notes remains fail-closed. The publish
-request must pin the exact candidate `target_commitish`; post-publication verification still requires
-the public tag to resolve to that source. PR #62 carries this repair and documentation. Once merged,
-candidate #15 is superseded by the changed main SHA. A fresh signed candidate and full promotion
-run are required before the owner-approved public release can proceed. No wireless-debugging session,
-signed beta, physical device, DAC, or hardware mutation is needed for this source-neutral Favorite
-catalog fix.
+PR #62 completed the publisher repair and documentation. It permits an absent tag ref only while
+the release remains an unpublished draft with the expected `target_commitish`; it retargets an
+asset-free draft only after checking the recorded full source SHA is an ancestor of current main and
+reading back the exact new target. A draft with assets, an unexpected tag ref, diverged ancestry,
+or mismatched tag/name/notes remains fail-closed. The publish request pins the exact candidate
+`target_commitish`, and post-publication verification requires the public tag to resolve to that
+source. Candidate #15 was superseded by the changed main SHA. The fresh candidate and promotion
+completed successfully; see the final closeout below. No wireless-debugging session, physical
+device, DAC, or hardware mutation was needed for this source-neutral Favorite catalog fix.
+
+### 2026-10-01 v0.7.1 public release and closeout
+
+The owner authorized autonomous merge and public v0.7.1 publication if all review, automation,
+candidate, promotion, and post-publication gates passed. PR #62 head
+`e3c890e88e86491aa21759bfdfd2fc4d36bcc269` received an independent PASS and all seven exact-head
+checks passed: CodeQL, Analyze Kotlin, min-api-smoke, build, emulator-ui-test, validate, and
+submit-gradle. It merged under that conditional approval at exact main SHA
+`c48f6a5daa08a5e03475b2e415fe80b41d3357db`. All six applicable post-merge checks passed.
+
+Fresh Signed Release Candidate run #16 / ID `36945247310` succeeded from that exact main SHA for
+tag input `v0.7.1`. Artifact ID `11201724340` has ZIP SHA-256
+`8716136285cd7d77c15c3e850c319ad121e4d4177338b3c1eb1d59594ac95918` and expires 2026-12-31
+00:17:37 UTC. The APK is package `com.weekssa.opraeqforuapp`, version `0.7.1` / code `8`, SHA-256
+`abd8837f78aaf72d28abef3db956a1c171f791616effbc8f7875814c2c28002b`; signer certificate SHA-256
+is `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`. R8 mapping SHA-256 is
+`a6daea5036e4dbaefbf276f6f087da33c9d1c2b4635460f24e2c3f1a8df0cef5`. Release build, unit tests,
+lint, R8, pinned signing, APK signature, and alignment passed. Independent local Build Tools
+checks verified the APK signer/signature, package/version, and alignment.
+
+Promotion run #4 / ID `36946254797` succeeded. It verified and installed public v0.7.0 on the
+hosted API 35 emulator, upgraded in place to the exact signed candidate, and cold-launched it. The
+publisher safely retargeted private draft release ID `401429211` only after verifying it was
+asset-free, had no tag ref, and its previous full source SHA was an ancestor of exact main; the new
+`target_commitish` was read back before publication. The published release is ID `401454172`,
+[EQ Library v0.7.1](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.7.1), published
+2026-10-02T00:32:34Z. It is non-draft and non-prerelease, tag `v0.7.1` points to exact source
+`c48f6a5daa08a5e03475b2e415fe80b41d3357db`, and `/releases/latest` returns v0.7.1.
+
+The six public asset digests matched GitHub metadata after independent download. The published APK
+bytes equal the candidate APK. The checksum sidecar contains the exact APK SHA-256; the signer
+report confirms the pinned single signer and v2/v3 signatures; zip-alignment verification passed.
+`release-provenance.json` ties the source, candidate run/artifact digest, promotion run, APK digest,
+tag, and signer together. Release ID, tag source, public assets, curated release notes, latest
+metadata, and public APK bytes were all read back after publication.
+
+The coverage gate contains 14 current source-ID samples across 13 profiles: 12 headphone samples
+exercise the shared production headphone resolver and 2 General samples exercise the exact General
+resolver. Two registered sources without a canonical profile have reviewed exclusions. Catalog CI
+requires each new source ID that contributes canonical EQ data to add an authentic sample exercised
+through the corresponding production resolver, or a reviewed no-profile exclusion. This belongs
+in source onboarding as a required regression contract. It does not independently qualify feed
+parsers, source access, attribution, licensing, or acoustic correctness. `DEVICE_CAPTURE` and
+`PERSONAL_IMPORT` remain separate local save flows.
+
+The Favorite fix does not change DAC behavior, so no wireless-debugging session, signed beta,
+physical phone, DAC, or hardware mutation was required. The public release records no new hardware
+support claim. The complete live release state is summarized in `docs/PUBLIC_RELEASE_CHECKLIST.md`.
+
+### 2026-10-02 owner confirmation of the public Favorite fix
+
+After the v0.7.1 GitHub release was published, the owner confirmed that the Favorite fix works.
+Record this as owner-reported functional confirmation. The confirmation did not specify a device,
+source/profile, or test artifact, so it does not add independent device, parser, or hardware
+qualification evidence. The fix remains limited to source-neutral catalog Favorite resolution and
+does not add a DAC support claim. The public v0.7.1 GitHub release and APK remain the production
+distribution for this patch; Google Play setup remains deferred under the current release policy.
+There is no remaining owner action required for this GitHub release closeout.
