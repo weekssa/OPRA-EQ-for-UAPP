@@ -206,6 +206,8 @@ The public v0.7.1 release was built, tested, signed, and published through the t
 
 The promotion verified all six published release assets against GitHub's reported digests; the public APK bytes match the signed candidate. The source-wide Favorite regression gate currently has 14 source-ID samples across 13 profiles, including 12 headphone samples and 2 General EQ samples, plus 2 reviewed no-profile exclusions. Wireless debugging and physical-device testing were not required because this change does not alter device behavior.
 
+After publication, the owner confirmed that the Favorite fix works. This owner-reported confirmation adds no device-specific or DAC hardware-support claim.
+
 The previous public v0.7.0 release used signed workflow [run 36381764266](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36381764266), tag source `4f325d673159b40515086fe5143df12b29ddb076`, and APK SHA-256 `27dada499bcbf9be9bd21d1349164858c93a5d2b83f78fd61134de13b4eb4025`.
 
 The complete release gates and evidence boundaries are recorded in the [v0.7.1 release notes](docs/releases/v0.7.1.md), [v0.7.0 release notes](docs/releases/v0.7.0.md), and [public release checklist](docs/PUBLIC_RELEASE_CHECKLIST.md).

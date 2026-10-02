@@ -775,3 +775,13 @@ parsers, source access, attribution, licensing, or acoustic correctness. `DEVICE
 The Favorite fix does not change DAC behavior, so no wireless-debugging session, signed beta,
 physical phone, DAC, or hardware mutation was required. The public release records no new hardware
 support claim. The complete live release state is summarized in `docs/PUBLIC_RELEASE_CHECKLIST.md`.
+
+### 2026-10-02 owner confirmation of the public Favorite fix
+
+After the v0.7.1 GitHub release was published, the owner confirmed that the Favorite fix works.
+Record this as owner-reported functional confirmation. The confirmation did not specify a device,
+source/profile, or test artifact, so it does not add independent device, parser, or hardware
+qualification evidence. The fix remains limited to source-neutral catalog Favorite resolution and
+does not add a DAC support claim. The public v0.7.1 GitHub release and APK remain the production
+distribution for this patch; Google Play setup remains deferred under the current release policy.
+There is no remaining owner action required for this GitHub release closeout.

@@ -41,6 +41,7 @@ The checklist is organized around the **current release state**. Detailed histor
   - `zipalign-verification.txt`: `1cbca796394740ae9826e89e72833b5a04bfa64e55319b25fdd3fda564b68d86`
 - [x] Favorite source coverage includes 14 source-ID samples across 13 profiles: 12 headphone samples exercise the shared headphone resolver, 2 General EQ samples exercise the General resolver, and 2 registered no-profile sources have reviewed exclusions. CI requires each new ingested source ID to add an authentic sample or reviewed exclusion and exercises the production resolver.
 - [x] No physical device, wireless debugging, DAC, or hardware mutation was required; this fix changes source-neutral catalog Favorite resolution and no DAC behavior.
+- [x] After publication, the owner confirmed that the Favorite fix works. This is owner-reported functional confirmation and adds no hardware-support claim.
 
 Status: **Published under the owner's conditional approval; all merge, candidate, promotion, and post-publication gates passed.** The release makes no new hardware-support claim. See [v0.7.1 release notes](releases/v0.7.1.md) and the latest closeout entry in `docs/CHATGPT_PROJECT_RUNBOOK.md`.
 
