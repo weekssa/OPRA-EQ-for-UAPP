@@ -67,6 +67,16 @@ def normalize_sha256(value: str) -> str:
     return re.sub(r"[\s:]", "", normalized)
 
 
+def require_matching_sha256_digest(actual: str, expected: str, mismatch_message: str) -> None:
+    """Compare GitHub and workflow SHA-256 values with optional prefixes normalized."""
+    actual_digest = normalize_sha256(actual)
+    expected_digest = normalize_sha256(expected)
+    require(SHA256_RE.fullmatch(actual_digest) is not None and
+            SHA256_RE.fullmatch(expected_digest) is not None,
+            "SHA-256 digest input is malformed")
+    require(actual_digest == expected_digest, mismatch_message)
+
+
 def sha256_hex(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
@@ -946,8 +956,11 @@ def command_tag(args: argparse.Namespace) -> None:
         artifact_id=args.candidate_artifact_id,
         source_sha=args.source_sha,
     )
-    require(digest == normalize_sha256(args.artifact_digest),
-            "candidate tag input digest differs from the immutable Actions artifact digest")
+    require_matching_sha256_digest(
+        digest,
+        args.artifact_digest,
+        "candidate tag input digest differs from the immutable Actions artifact digest",
+    )
     archive_bytes = read_candidate_archive(api, args.candidate_artifact_id, digest)
     candidate = validate_candidate_archive(
         archive_bytes,
@@ -982,7 +995,11 @@ def command_publish(args: argparse.Namespace) -> None:
     archive_bytes = Path(args.archive).read_bytes()
     require(sha256_hex(archive_bytes) == normalize_sha256(digest),
             "transferred candidate archive differs from the candidate artifact digest")
-    require(digest == args.artifact_digest, "verification-job artifact digest differs from publisher input")
+    require_matching_sha256_digest(
+        digest,
+        args.artifact_digest,
+        "verification-job artifact digest differs from publisher input",
+    )
     candidate = validate_candidate_archive(
         archive_bytes,
         artifact_digest=digest,

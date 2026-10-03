@@ -66,4 +66,44 @@ Alternatives: rely on the post-failure `UNCERTAIN` write alone, clear the pendin
 
 Reason chosen: the durable attempted marker closes the replay window without changing protocol commands or requiring successful storage after the hardware operation. If its own write fails, the baseline write is not sent.
 
-Tests validating safety: four simulated-store/transport regressions cover both baseline-restoration paths. They verify that a failed pre-write checkpoint sends no restoration write, a failed `UNCERTAIN` checkpoint after either restoration path remains terminal across qualifier recreation, and transient temporary readback does not permit replay. The focused persistence class passes 17/17 and the full JVM suite passes 731 tests. Physical hardware was not accessed. All eight checks and independent review passed on exact PR head `3ccf6728`; this tracked status sync creates a docs-only descendant that needs fresh exact-head gates.
+Tests validating safety: four simulated-store/transport regressions cover both baseline-restoration paths. They verify that a failed pre-write checkpoint sends no restoration write, a failed `UNCERTAIN` checkpoint after either restoration path remains terminal across qualifier recreation, and transient temporary readback does not permit replay. The focused persistence class passes 17/17 and the full JVM suite passes 731 tests. Physical hardware was not accessed. All eight checks and independent review passed on exact PR head `e7f2fc93`; that tree merged normally as `a60411be`, and the post-merge Gradle/R8 gates passed.
+
+## D007: keep pre-existing Maven advisories as a separate build-tool remediation
+
+Decision: do not turn v0.7.2 into a broad dependency-upgrade project, but record the live build/test dependency risk explicitly.
+
+Evidence: the current main SBOM maps the 51 open transitive Maven alerts (3 critical, 20 high, 26 medium, 2 low) to Android build artifacts, Gradle plugins, emulator tooling, and test dependencies. The candidate's resolved app `releaseRuntimeClasspath` contains none of the alerted coordinates; the mapped minified release DEX scan returned zero flagged package-class matches. The candidate app dependency declarations are unchanged from main apart from version metadata.
+
+Reason: the alerts do not establish exposure in the distributed APK runtime, while the scope expressly excludes an unrelated broad dependency refresh. They do establish real build-toolchain risk and must remain visible for a separately tracked critical/high remediation.
+
+Tests validating safety: fresh GitHub alert and SBOM reads, candidate Gradle dependency report, and mapped minified DEX inspection. This finding does not assert a risk-free build environment.
+
+## D008: label the signed testing candidate with the workflow's existing JA11 default
+
+Decision: dispatch the main-only signed candidate with `candidate_target=ja11`.
+
+Evidence: the v0.7.2 task does not request a hardware-target-specific candidate and forbids physical DAC writes. `signed-beta.yml` requires a target in its candidate manifest and declares `ja11` as the existing default. The label binds the test plan and outstanding validation wording in the manifest; it does not change app bytes or grant a new support claim.
+
+Reason: use the workflow's established default while keeping all hardware validation explicitly pending and avoiding a new product choice.
+
+Tests validating safety: candidate workflow source SHA is pinned to merged `main` and its exact artifact must pass independent identity, signer, R8, checksum, signature, alignment, manifest, and install/upgrade checks. No physical device interaction is authorized or planned.
+
+## D009: use the release-candidate workflow for public release promotion
+
+Decision: only promote artifacts produced by `.github/workflows/github-release.yml` (`Signed Release Candidate`). The similarly named `signed-beta.yml` workflow is for the temporary `mobile-test-apk` testing surface and is not eligible for public release promotion.
+
+Evidence: the promotion verifier checks workflow ID, branch, exact source SHA, artifact identity, and immutable artifact digest. Its read-only verification correctly rejected beta run `37093821378` before artifact processing because that run came from the beta workflow. Official candidate run `37095180116` was dispatched with `tag=v0.7.2` from exact merged `main` SHA `a60411bebfdbd1cea4218d3bde45013bb7ed26a9`.
+
+Reason: enforce the repository's distinct candidate and beta artifact contracts without substituting a test artifact for the public release candidate.
+
+Tests validating safety: `tools/promote_release_candidate.py check-contract` passed; local verification of the wrong-workflow beta artifact failed closed with the expected workflow-ID rejection and made no tag or release mutation. The correct official candidate later passed independent verification. No hardware claim was added.
+
+## D010: normalize both sides of the immutable artifact digest comparison
+
+Decision: use one validated SHA-256 equality helper for both tag and publish command inputs, normalizing GitHub's optional `sha256:` prefix on each side.
+
+Evidence: promotion run `37096259477` completed candidate verification and the API 35 v0.7.1-to-candidate install/upgrade/cold-launch gate. `create-candidate-tag` failed with `candidate tag input digest differs from the immutable Actions artifact digest`; workflow output carried `sha256:<hex>`, while `command_tag()` normalized only the argument. The publish job was skipped, and remote inspection found no v0.7.2 tag or release.
+
+Reason: GitHub's Actions artifact API and the normalized local representation are both valid formats for the same immutable digest. Both comparison inputs must be normalized while mismatch and malformed-digest rejection remain strict.
+
+Tests validating safety: 39 focused promotion tests pass, including equal digests with and without `sha256:`, malformed/mismatched rejection, and direct `command_tag()` coverage for the GitHub-prefixed digest. The full Python tool suite passes 238/238 under bundled Python 3.12, and the promotion contract passes. Independent review and normal PR CI/merge remain pending; promotion must use a new candidate from the corrected merged source.

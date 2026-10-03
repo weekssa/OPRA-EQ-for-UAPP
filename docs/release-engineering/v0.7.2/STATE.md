@@ -9,8 +9,13 @@
 - Latest pushed production source commit: `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4`
 - Recovery fix commits in the pushed branch: `40b4f5d8c7b255ebed7cc886158d6e6621a911c4`, `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4`
 - Product candidate already validated and in the PR: `1c36349ca3edb69061a34b44d385670380f60512`
-- Both recovery fixes are pushed. Exact PR snapshot `3ccf6728a9edd6c85a76ece1f5e71bc93fa37b74` passed all eight GitHub checks and independent review. This pre-merge ledger sync creates a docs-only descendant; resolve the live PR head and refresh its exact-head gates before merge.
-- PR #65 is open from `codex/v0.7.2-stabilization` into `main`.
+- PR #65 was merged normally at `a60411bebfdbd1cea4218d3bde45013bb7ed26a9` from exact reviewed head `e7f2fc937e9b265770296dbdc4cbb40a4e5e13c9`.
+- All eight checks on `e7f2fc93` passed and independent review returned PASS with no P0-P2 finding. The merged main tree exactly equals that tested tree.
+- `main` is verified at `a60411bebfdbd1cea4218d3bde45013bb7ed26a9`; app metadata is 0.7.2/code 9, package ID unchanged, minSdk 26, targetSdk 36.
+- The recovery branch last pushed head remains `e7f2fc93` until this post-merge ledger checkpoint is committed and pushed.
+- Signed beta run `37093821378` succeeded from exact merged SHA and published a signed APK to temporary branch `mobile-test-apk` at commit `19ded401683b87ae56528ba5fc3af783cacec4bb`. The artifact is testing evidence only; the promotion verifier correctly rejected it because it was not produced by the required release workflow.
+- Official Signed Release Candidate run `37095180116` succeeded from exact merged SHA `a60411bebfdbd1cea4218d3bde45013bb7ed26a9` with tag `v0.7.2`; artifact `11264251526` passed independent verification. Candidate APK SHA-256 `f3afaa102a31491286828faa37cfe1454853721d1e4aa736da57bf4919e89ded`; artifact ZIP digest `sha256:1da409dcf47368ec254a5432e7c1d316473920c28e27c19416b10cc8e29969d9`.
+- Promotion run `37096259477` passed candidate verification and API 35 v0.7.1 clean install / exact candidate in-place upgrade / cold launch, but failed in the tag job due to asymmetric SHA-256 prefix normalization. Publish was skipped; no tag or release mutation occurred.
 - Release target: versionName `0.7.2`, versionCode `9`.
 - No physical DAC was connected or mutated.
 
@@ -35,15 +40,15 @@
 
 ## Current changes
 
-Three Kotlin source/test files cover both fixes in commits `40b4f5d8` and `e63fc4bf`; the latest production source commit is pushed. Exact PR snapshot `3ccf6728` passed all eight checks and independent review. Its API 35 report contains 25 passing tests; API 26 x86_64 reached catalog readiness and remained alive/resumed after the observation period. `.unlazy/v0.7.2-autonomous-release/` is a local untracked orchestration workspace and must not be staged. This pre-merge ledger sync is a docs-only descendant, so refresh exact-head checks and review for the live PR head.
+The product recovery fixes in commits `40b4f5d8` and `e63fc4bf` passed exact-head review, all eight PR checks, and post-merge validation at `a60411be`. The official release candidate and API 35 upgrade passed, but promotion run `37096259477` stopped before tag creation on an asymmetric SHA-256 prefix comparison. The current worktree fixes both tag and publish comparisons, with a direct `command_tag()` regression. The focused publisher tests pass 39/39; the full Python suite passes 238/238 under bundled Python 3.12; the release contract passes. `.unlazy/v0.7.2-autonomous-release/` is a local untracked orchestration workspace and must not be staged.
 
 ## Next exact actions
 
-1. Resolve the live PR head, run state, and review result from GitHub; do not repeat an already completed checkpoint action.
-2. Require all eight GitHub checks and an independent PASS on the live exact PR head; repair any finding and repeat both gates.
-3. Merge normally under the active `Protect main` ruleset only after exact-head checks and review pass.
-4. Reverify merged main, create and independently verify the main-only signed candidate, then tag and publish only after every artifact gate passes.
+1. Complete independent review and publish the tracked fix through normal PR checks and merge.
+2. Reverify corrected `main`, generate and verify a fresh candidate bound to its exact SHA, and run promotion again.
+3. Verify remote `v0.7.2` annotated tag binding and public release metadata.
+4. Download every public asset and confirm digest, APK bytes, signer, provenance, curated notes, and `/releases/latest`; then push final recovery state and sync main docs.
 
 ## Current failure and release state
 
-Both EW300 P2 findings are fixed in pushed source head `e63fc4bf`. PR exact-head snapshot `3ccf6728` passed all eight checks and independent review. The tracked pre-merge ledger sync is a docs-only descendant and its live head must receive fresh exact-head checks and review. Merge, signed candidate, immutable v0.7.2 tag, and public GitHub Release remain pending. No owner action is required.
+Both EW300 P2 findings are fixed in source commit `e63fc4bf`. PR #65 exact head `e7f2fc93` passed all eight checks and independent review and merged normally as `a60411be`; the merge tree equals that tested head. Post-merge local Gradle and R8 gates pass. Candidate `37095180116` was independently verified and the promotion API 35 install/upgrade passed, but the tag job failed on digest prefix normalization. The fix and regression are present locally and all 238 Python tests pass; independent review and normal PR merge remain. No tag/release exists. No physical DAC writes were performed. No owner action is required.

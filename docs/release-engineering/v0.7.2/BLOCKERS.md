@@ -49,8 +49,32 @@ Root cause: the first fix guarded `verifyTemporaryAndRestore()` but missed a sec
 
 Recovery: commit `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4` persists `RESTORATION_ATTEMPTED` before the helper's first baseline write. Failure to save that marker sends no baseline write. The marker remains terminal if the later `UNCERTAIN` checkpoint fails. Added regressions for transient readback plus failed uncertain persistence across qualifier recreation, and for failure of the helper's pre-write checkpoint.
 
-Resolution/current state: focused EW300 persistence tests pass 17/17. Fresh full local Gradle validation on `e63fc4bf` passes 731 JVM tests, lint with 0 errors, 111 warnings, and 2 hints, debug/release assembly, and R8 mapping verification. No physical DAC was accessed. All eight GitHub checks and independent review passed on exact PR head `3ccf6728a9edd6c85a76ece1f5e71bc93fa37b74`. This pre-merge ledger sync creates a docs-only descendant that must pass fresh exact-head checks and review before merge.
+Resolution/current state: focused EW300 persistence tests pass 17/17. Fresh full local Gradle validation on `e63fc4bf` passes 731 JVM tests, lint with 0 errors, 111 warnings, and 2 hints, debug/release assembly, and R8 mapping verification. No physical DAC was accessed. All eight GitHub checks and independent review passed on exact PR head `e7f2fc937e9b265770296dbdc4cbb40a4e5e13c9`; that tree merged normally as `a60411be`, and post-merge local Gradle/R8 gates passed.
+
+## Current build-tool dependency risk
+
+Live main has 51 open transitive Maven Dependabot alerts: 3 critical, 20 high, 26 medium, and 2 low. The default-branch SBOM maps alerted libraries to Android build artifacts, Gradle plugins, emulator tooling, and test components. On the candidate, no alerted coordinates appear in `releaseRuntimeClasspath`, and a mapped minified DEX scan found zero flagged package-class matches. These alerts remain real build/test-toolchain exposure; they are not a claim of zero supply-chain risk. Broad dependency upgrades are outside this stabilization scope. Track critical/high build-tool remediation separately.
 
 ## Current release gate
 
-PR #65 exact head `3ccf6728a9edd6c85a76ece1f5e71bc93fa37b74` passed all eight checks and independent review. API 35 instrumentation passed 25/25; API 26 x86_64 reached catalog readiness and remained alive/resumed after the observation period, with no app-process AndroidRuntime error. Review of docs-only head `adf871f2` found a P2 stale restart instruction; `3ccf6728` corrected it. This tracked pre-merge sync creates a docs-only descendant, so refresh checks and review on the live PR head before merging. Protected merge, merged-main verification, signed candidate, immutable tag, and public release remain pending. No physical DAC writes were performed and no owner action is required.
+PR #65 exact head `e7f2fc937e9b265770296dbdc4cbb40a4e5e13c9` passed all eight checks and independent review; UI instrumentation passed 25/25 and API 26 x86_64 cold-install/readiness/survival passed. It merged normally as `a60411bebfdbd1cea4218d3bde45013bb7ed26a9`; merged main's tree is identical to the reviewed head. Post-merge local Gradle validation passed 731 tests, lint, debug/release assembly, and R8 mapping. Beta run `37093821378` is testing evidence only and is not promotion-eligible. Official candidate run `37095180116` and artifact `11264251526` passed independent verification. Promotion run `37096259477` passed its verify/API 35 job, then failed in tag job `111127079868` because a SHA-256 prefix was normalized on only one side of a comparison; publication job was skipped. No v0.7.2 tag or release was created. No physical DAC writes were performed and no owner action is required.
+
+## Resolved release workflow selection error
+
+Problem: the first signed workflow dispatched after merge was Signed EQ Library Beta Candidate run `37093821378`. Its signed APK passed the beta workflow's emulator smoke and was published to the temporary `mobile-test-apk` branch, but it could not be used by the release promoter.
+
+Root cause: the main-only `Promote Signed Release Candidate` contract accepts only successful runs of `.github/workflows/github-release.yml`; it rejects `.github/workflows/signed-beta.yml` by workflow ID before candidate validation.
+
+Recovery: keep the beta run and mobile-test publication as testing evidence, do not pass that artifact to promotion, and dispatch the correct `Signed Release Candidate` workflow from exact merged main. Run `37095180116` completed for tag `v0.7.2` at source `a60411bebfdbd1cea4218d3bde45013bb7ed26a9`; artifact `11264251526` passed independent verification.
+
+Resolution/current state: the wrong-workflow artifact remained testing evidence only. The official candidate passed independent verification and its API 35 install/upgrade gate passed during promotion run `37096259477`. No immutable tag or release was created because a later digest-comparison defect stopped the tag job.
+
+## Active release-promotion code defect: artifact digest normalization
+
+Problem: promotion run `37096259477` completed the candidate verification and API 35 baseline install, in-place upgrade, and cold launch, then failed before tag creation. The log reports `candidate tag input digest differs from the immutable Actions artifact digest`; the public publish job was skipped.
+
+Root cause: `validate_github_candidate()` returns GitHub's artifact digest as `sha256:<64 hex>`. `command_tag()` compares that prefixed value directly with `normalize_sha256(args.artifact_digest)`, which has no prefix. `command_publish()` also compares raw forms and should use the same normalized digest contract.
+
+Recovery: a shared digest equality helper now normalizes and validates both sides in the tag and publish commands. Tests cover prefixed/unprefixed equality, malformed and mismatched values, and the direct tag-command path. The focused publisher suite passes 39/39, full Python tools pass 238/238 with bundled Python 3.12, and the promotion contract passes. Complete independent review and normal PR/CI merge, post-merge verify, build a new exact-source signed candidate, and rerun promotion with the new candidate tuple.
+
+Current state: main remains `a60411bebfdbd1cea4218d3bde45013bb7ed26a9`; `v0.7.2` tag and release are absent. The local correction is not yet on main. The existing candidate is tied to the current main only and must not be reused after the code correction merges.

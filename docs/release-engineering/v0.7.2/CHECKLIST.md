@@ -24,7 +24,7 @@ Status markers: [ ] pending, [x] complete, [!] failed/recovery active, [-] not a
 - [x] v0.7.2 version metadata set to 0.7.2 / code 9
 - [x] v0.7.2 release notes and user-facing version documentation prepared
 - [x] Release automation derives requested release identity instead of hard-coding a release number
-- [ ] Signed candidate is producible from verified merged main before immutable tagging
+- [x] Signed candidate is producible from verified merged main before immutable tagging; exact artifact and APK identity verified for source `a60411bebfdbd1cea4218d3bde45013bb7ed26a9`
 - [x] Previous review findings re-evaluated against actual v0.7.1 source
 - [x] SharedPreferences commit semantics verified before any change
 - [x] JCALLY compatibility state reviewed and preserved where required
@@ -38,23 +38,30 @@ Status markers: [ ] pending, [x] complete, [!] failed/recovery active, [-] not a
 - [x] Lint passes on source commit `e63fc4bf` with 0 errors, 111 warnings, 2 hints, and no issue in the changed production files
 - [x] Release build passes on source commit `e63fc4bf`, v0.7.2/code 9
 - [x] R8 verification passes on source commit `e63fc4bf`; at least one app class is renamed
-- [x] PR-head emulator UI/API35 instrumentation passes 25/25 on exact head `3ccf6728a9edd6c85a76ece1f5e71bc93fa37b74`, artifact `11262353847`
-- [x] Minimum-SDK/API-26 smoke passes on exact PR head `3ccf6728a9edd6c85a76ece1f5e71bc93fa37b74`; fresh-wipe x86_64 minified release install reaches Manufacturers, remains alive/resumed after the observation period, and has no app-process AndroidRuntime error; artifact `11261474879`
-- [x] Relevant Python, catalog, source, and release-script tests pass: 235 Python tests and all catalog/release contracts
+- [x] PR-head emulator UI/API35 instrumentation passes 25/25 on exact head `e7f2fc937e9b265770296dbdc4cbb40a4e5e13c9`, artifact `11263771217`
+- [x] Minimum-SDK/API-26 smoke passes on exact PR head `e7f2fc937e9b265770296dbdc4cbb40a4e5e13c9`; fresh-wipe x86_64 minified release install reaches Manufacturers, remains alive/resumed after the 60-second observation, and has no app-process AndroidRuntime error; artifact `11262861589`
+- [x] Initial Python, catalog, source, and release-script checks passed on product commit `1c36349ca3edb69061a34b44d385670380f60512`: 235 Python tests and all catalog/release contracts; current digest-fix validation is recorded below at 238/238
 - [x] actionlint passes; ShellCheck passes where applicable
 - [x] Full 731-test Gradle, lint, debug/release, and R8 checks pass on source commit `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4`
 - [x] `git diff --check` and tracked Markdown U+2014 scan pass after this ledger status sync
-- [x] Independent exact-head review passes on `3ccf6728a9edd6c85a76ece1f5e71bc93fa37b74`; prior P2 findings in both restoration paths are fixed and covered by regression cases
+- [x] Independent exact-head review passes on `e7f2fc937e9b265770296dbdc4cbb40a4e5e13c9`; prior P2 findings in both restoration paths are fixed and covered by regression cases
 - [x] Follow-up review of docs-only head `adf871f2` found a stale restart instruction; corrected in `3ccf6728`, which passed exact-head review
-- [x] Branch pushed without force; latest fully verified snapshot `3ccf6728a9edd6c85a76ece1f5e71bc93fa37b74`
+- [x] Branch pushed without force; exact PR head `e7f2fc937e9b265770296dbdc4cbb40a4e5e13c9` passed all gates and merged. A post-merge recovery checkpoint is being prepared.
 - [x] PR #65 created with exact baseline, changes, local evidence, and recovery status: https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/65
 - [x] Recovery-fix branch commits were pushed normally without force; later exact-head snapshots are recorded in `ARTIFACTS.md`
-- [x] All eight GitHub checks pass on exact head `3ccf6728a9edd6c85a76ece1f5e71bc93fa37b74`; this tracked pre-merge sync creates a docs-only descendant that requires fresh exact-head checks and independent review
-- [ ] Required GitHub CI and independent review pass on the final pushed exact head
-- [ ] PR merged without bypassing branch protection
-- [ ] Merged main reverified on exact SHA
-- [ ] Signed release candidate generated from verified merged main
-- [ ] APK metadata, signature, pinned certificate, alignment, checksum, manifest, and provenance independently verified
+- [x] All eight GitHub checks and independent review pass on exact head `e7f2fc937e9b265770296dbdc4cbb40a4e5e13c9`; UI report `11263771217` is 25/25 and API26 smoke report is `11262861589`
+- [x] PR #65 merged normally without bypassing branch protection at `a60411bebfdbd1cea4218d3bde45013bb7ed26a9`
+- [x] Merged main verified at exact SHA `a60411bebfdbd1cea4218d3bde45013bb7ed26a9`; its Git tree equals the reviewed and CI-green PR head
+- [x] Post-merge local `:app:testDebugUnitTest --rerun-tasks`, `:app:lintDebug`, `:app:assembleDebug`, and `:app:assembleRelease` pass on merged main: 731 tests, 0 failures/errors/skips; lint 0 errors, 111 warnings, 2 hints
+- [x] Post-merge R8 mapping verification passes on merged main
+- [x] Official Signed Release Candidate generated from verified merged main (run `37095180116`, exact source `a60411bebfdbd1cea4218d3bde45013bb7ed26a9`)
+- [x] APK metadata, signature, pinned certificate, alignment, checksum, manifest, artifact digest, and R8 mapping independently verified; exact tuple is recorded in `ARTIFACTS.md`
+- [x] Promotion run `37096259477` passed clean API 35 install of latest public v0.7.1, in-place candidate upgrade, and cold launch
+- [!] Promotion tag step failed on prefixed/unprefixed artifact digest comparison; publisher fix/test, normal PR merge, fresh candidate, and new promotion run are required
+- [x] Root cause confirmed before tag creation; remote tag/release unchanged
+- [x] Shared validated digest normalization added to tag and publish paths; direct tag-command regression test covers GitHub-prefixed digest input
+- [x] Focused promotion suite passes 39/39, full Python tool suite passes 238/238 under bundled Python 3.12, and promotion contract passes
+- [ ] Independent review and normal PR checks/merge for the promotion fix
 - [ ] Immutable v0.7.2 tag created on exact verified release commit
 - [ ] GitHub Release published with approved candidate assets and notes
 - [ ] Public release assets re-downloaded and verified
