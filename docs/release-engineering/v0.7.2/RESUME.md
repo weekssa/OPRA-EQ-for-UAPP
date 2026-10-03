@@ -2,7 +2,7 @@
 
 MISSION: v0.7.2 stabilization and release
 
-CURRENT PHASE: second EW300 replay path fixed and pushed; exact-head CI is running and independent review is pending
+CURRENT PHASE: exact PR head `8db499af0212795d05b97d0439a0c82f462722b9` passed all eight GitHub checks and independent review; synchronizing the ledger before the final protected-merge gate
 
 CURRENT WORKTREE: /Users/stephenweeks/.codex/worktrees/a79b/OPRA-EQ-for-UAPP
 
@@ -10,24 +10,24 @@ CURRENT BRANCH: codex/v0.7.2-stabilization
 
 BASELINE: v0.7.1 -> c48f6a5daa08a5e03475b2e415fe80b41d3357db
 
-CURRENT HEAD: Tested production source commit is e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4. The release ledger may be a docs-only descendant; resolve the live checkout and PR SHA before relying on CI or review results.
+CURRENT HEAD: `8db499af0212795d05b97d0439a0c82f462722b9` is the exact head covered by the evidence below. The pending documentation checkpoint will create a new head requiring fresh checks and review.
 
 VERSION: 0.7.2 / 9
 
-LAST VERIFIED COMPLETION: exact source commit e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4 passed a forced full Gradle run: 731 JVM tests, 0 failures/errors/skips; lint 0 errors, 111 warnings, 2 hints; debug/release assembly; and R8 mapping verification. The EW300 persistence suite passed 17/17, including both restoration paths and qualifier recreation after failed checkpoints. Earlier API 35, Python, and API 26 local evidence remains tied to its recorded source. All eight GitHub checks passed on source head e63fc4bf; the docs-only ledger commit requires a fresh run.
+LAST VERIFIED COMPLETION: forced full Gradle validation on production source `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4`: 731 JVM tests passed, 0 failures/errors/skips; lint 0 errors, 111 warnings, 2 hints; debug/release assembly and R8 mapping passed. The EW300 persistence suite passed 17/17. On PR head `8db499af`, all eight GitHub checks passed, API 35 emulator instrumentation passed 25/25, API 26 x86_64 cold install/readiness/survival passed, and independent review returned PASS.
 
-NEXT EXACT ACTION: if the ledger sync is still uncommitted, finish its diff check and push normally; then resolve the exact PR head, complete its CI and independent review, and repair any finding before merge.
+NEXT EXACT ACTION: finish the release-ledger checkpoint, run `git diff --check`, commit and push normally, then wait for all eight checks and an independent PASS on the resulting exact PR head before merging normally.
 
-CURRENT FAILURE: independent reviews of heads af3f4c59 and 13bf1f20 found two P2 replay windows in separate baseline-restoration paths. Commits 40b4f5d8 and e63fc4bf now checkpoint RESTORATION_ATTEMPTED before writes in both paths, with regression coverage. Exact-head CI and review on e63fc4bf remain pending.
+CURRENT FAILURE: NONE. Reviews of `af3f4c59` and `13bf1f20` found separate P2 restoration replay paths; commits `40b4f5d8` and `e63fc4bf` now store `RESTORATION_ATTEMPTED` before baseline writes in both paths, with regression coverage.
 
-LAST GREEN GATES: all eight checks pass on source head e63fc4bf. Android/API26/UI run 37087067275, Analyze Kotlin run 37087067259, CodeQL check 111100633597, Catalog run 37087067266, Priority community run 37087067347, and dependency submission run 37087067174. Prior head af3f4c59 artifacts are historical and predate both recovery fixes.
+LAST GREEN GATES: PR #65 head `8db499af0212795d05b97d0439a0c82f462722b9`: Android build/UI/API26 run `37088331227`, Analyze Kotlin run `37088331231`, CodeQL check `111104328833`, Catalog run `37088331236`, Priority community run `37088331239`, and dependency submission run `37088326577`; independent exact-head review PASS. API 35 instrumentation artifact `11261079560`, API 26 smoke artifact `11261199392`.
 
 ACTIVE PR: https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/65
 
-ACTIVE CI RUN: All checks passed on source head e63fc4bf. The pending docs-only descendant triggers a fresh run; refresh live status after it is pushed.
+ACTIVE CI RUN: all eight checks passed for `8db499af`; the ledger checkpoint below requires a fresh exact-head run.
 
 ACTIVE RELEASE RUN: NONE
 
-ARTIFACT STATUS: no official v0.7.2 candidate; remote tag and GitHub Release remain absent. Local API 26 APK and temporary signer are smoke-only.
+ARTIFACT STATUS: API26 and emulator UI reports were inspected for `8db499af`; the downloaded debug APK is smoke evidence only. No signed candidate, v0.7.2 tag, or GitHub Release exists.
 
 HUMAN ACTION REQUIRED: NONE

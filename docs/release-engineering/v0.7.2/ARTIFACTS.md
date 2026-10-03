@@ -9,10 +9,10 @@
 - Base commit: `c48f6a5daa08a5e03475b2e415fe80b41d3357db`
 - Starting metadata: versionName `0.7.1`, versionCode `8`
 - Target metadata: versionName `0.7.2`, versionCode `9`
-- Latest fetched `origin/main` at the last refresh: `afed3dc90b5873218d5e333882528f8c5ddd54a2` (2026-10-02)
+- Latest fetched `origin/main` at the last refresh: `afed3dc90b5873218d5e333882528f8c5ddd54a2` (2026-10-03)
 - Latest main merge on this branch: `1530d02f`, with `afed3dc90b5873218d5e333882528f8c5ddd54a2` as its main parent; the v0.7.1 source remains an ancestor
 - Product source candidate already in the PR: commit `1c36349ca3edb69061a34b44d385670380f60512`.
-- Latest production source commit: `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4`; recovery commits `40b4f5d8c7b255ebed7cc886158d6e6621a911c4` and `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4` are in the branch. The PR may have a docs-only descendant; resolve its exact current SHA before relying on CI or review.
+- Latest production source commit: `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4`; recovery commits `40b4f5d8c7b255ebed7cc886158d6e6621a911c4` and `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4` are in the branch. Exact PR evidence snapshot below is head `8db499af0212795d05b97d0439a0c82f462722b9`; this documentation checkpoint creates a new head that needs fresh exact-head checks and review.
 - Physical DAC writes: none
 
 ## Local verification
@@ -22,9 +22,10 @@
 - R8 mapping verification on source commit `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4` passed; at least one app class is renamed.
 - Forced Kotlin compile passed; its two warnings are in unchanged files
 - API 35 instrumentation passed 25 tests with 0 failures/errors/skips on `opra-v072-api35` (ARM64, emulator 37.1.11)
+- PR-head emulator UI/API35 instrumentation on `8db499af`: 25 tests, 0 failures/errors/skips; report artifact ID `11261079560`, run `37088331227`.
 - Python tool suite passed 235 tests; release contract, registry validation, and Favorite sample validation passed
 - actionlint 1.7.12 passed all workflow YAML; ShellCheck 0.11.0 passed repository shell scripts
-- Independent exact-head review of `af3f4c59` and `13bf1f20` returned FAIL with two P2 replay paths, each now fixed in the pushed `e63fc4bf` source. Exact-head review is still required.
+- Independent reviews of `af3f4c59` and `13bf1f20` returned FAIL with two P2 replay paths, each now fixed in the pushed `e63fc4bf` source. Exact later head review of `8db499af` returned PASS; the documentation descendant still requires a fresh review.
 
 ## API 26 smoke artifacts
 
@@ -35,16 +36,20 @@
 - `aapt` verified package `com.weekssa.opraeqforuapp`, versionName `0.7.2`, versionCode `9`, and minSdk 26; `apksigner verify` passed v2/v3
 - Final Dalvik allocation was 47,111 KiB of 49,152 KiB, leaving 2,041 KiB free
 - Full exact-source evidence, the earlier dirty-source smokes, and one separately recorded contaminated attempt are under `.unlazy/v0.7.2-autonomous-release/evidence/api26-final/`
-- The clean run used committed source but a temporary signer. It is not CI x86_64 or release candidate provenance. Exact PR CI remains required.
+- The clean local ARM64 run used committed source but a temporary signer. It is not CI x86_64 or release candidate provenance. The separate exact PR CI x86_64 evidence below passes on `8db499af`.
+- PR-head API 26 x86_64 smoke on `8db499af`: fresh wipe, minified release APK built and temporary smoke-signed, cold install succeeded, MainActivity launch returned `Status: ok`, Manufacturers appeared, and the app remained alive and resumed through a 60-second observation with no app-process AndroidRuntime error. Diagnostics artifact `11261199392`, run `37088331227`. The smoke-signed APK is not retained as release provenance.
+- Downloaded UI debug APK from run `37088331227`: package `com.weekssa.opraeqforuapp`, versionName `0.7.2`, versionCode `9`, SHA-256 `bf18e80806756814bd30bd4a7d35e3c0615cb211689accc44a69995a8e367b9c`. It is CI test evidence only, not the release candidate.
 
 ## Remote promotion state
 
 - Prior PR branch heads `af3f4c596e99e0cf8dce408b982c641c6898de6a` and `13bf1f20002f32da622392980eea145a0eb2a776` are superseded by current source head `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4`.
 - Pull request: [#65](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/65), open, base `main` at `afed3dc90b5873218d5e333882528f8c5ddd54a2`
 - All eight checks passed on exact PR head `af3f4c596e99e0cf8dce408b982c641c6898de6a`: Android build run `37082764610`, CodeQL run `37082764637`, Catalog run `37082764642`, Priority community run `37082764613`, dependency-submission run `37082761608`, and the associated UI/API 26 jobs. API 26 report artifact `11259384390` and emulator UI report artifact `11258319894` were downloaded and inspected. These results predate the current local recovery fix.
-- Source head `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4`: all eight checks passed. Android build/UI/API26 run `37087067275`, Analyze Kotlin run `37087067259`, CodeQL check `111100633597`, Catalog run `37087067266`, Priority community run `37087067347`, and dependency submission run `37087067174`. The ledger commit will create a docs-only descendant that needs fresh exact-head CI and review.
+- Exact PR head `8db499af0212795d05b97d0439a0c82f462722b9`: all eight checks passed. Android build/UI/API26 run `37088331227`, Analyze Kotlin `37088331231`, CodeQL check `111104328833`, Catalog `37088331236`, Priority community `37088331239`, and dependency submission `37088326577`.
+- Independent exact-head review of `8db499af0212795d05b97d0439a0c82f462722b9` returned PASS with no actionable P0-P2 issue or unsupported release claim.
+- Current PR-head artifacts: API 26 diagnostics `11261199392`, emulator UI reports `11261079560`, lint reports `11261154040`, and debug APK `11261034576`. They are test evidence only. Earlier artifacts `11259384390` and `11258319894` predate both recovery fixes.
 - Independent review of `af3f4c59` found replay risk in the post-cycle restore path. Review of `13bf1f20` found the same risk in `restoreBeforeCommitOrFail()`. Both paths now persist terminal `RESTORATION_ATTEMPTED` before their first baseline write; if the checkpoint fails, no baseline write is sent.
-- Full local validation on `e63fc4bf`: 731 JVM tests, zero failures/errors/skips; lint 0 errors, 111 warnings, 2 hints; debug/release assembly and R8 mapping pass. The focused EW300 suite passes 17/17. Fresh exact-head CI and independent follow-up review remain pending.
+- Full local validation on `e63fc4bf`: 731 JVM tests, zero failures/errors/skips; lint 0 errors, 111 warnings, 2 hints; debug/release assembly and R8 mapping pass. The focused EW300 suite passes 17/17.
 - Active `Protect main` ruleset: prevents deletion and non-fast-forward updates, with no bypass actors. It defines no required reviewer or named status checks; the task's CI and independent-review gates still apply.
 - Merge SHA: none
 - Signed candidate workflow/run/artifact: none
@@ -54,4 +59,4 @@
 - Remote `v0.7.2` tag: absent at the last remote check
 - GitHub Release: absent at the last remote check
 
-Update this file after every branch push, PR/CI change, merge, candidate, tag, publication, and public asset verification. Never copy a previous candidate checksum or signer verification forward as evidence for a changed source.
+The status above records evidence for exact head `8db499af`; the next docs-only head requires a new exact-head CI and review result before merge. Update this file after merge, candidate, tag, publication, and public asset verification. Never copy a previous candidate checksum or signer verification forward as evidence for a changed source.

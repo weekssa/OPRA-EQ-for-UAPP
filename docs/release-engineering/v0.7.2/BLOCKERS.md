@@ -49,4 +49,8 @@ Root cause: the first fix guarded `verifyTemporaryAndRestore()` but missed a sec
 
 Recovery: commit `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4` persists `RESTORATION_ATTEMPTED` before the helper's first baseline write. Failure to save that marker sends no baseline write. The marker remains terminal if the later `UNCERTAIN` checkpoint fails. Added regressions for transient readback plus failed uncertain persistence across qualifier recreation, and for failure of the helper's pre-write checkpoint.
 
-Resolution/current state: focused EW300 persistence tests pass 17/17. Fresh full local Gradle validation on `e63fc4bf` passes 731 JVM tests, lint with 0 errors, 111 warnings, and 2 hints, debug/release assembly, and R8 mapping verification. No physical DAC was accessed. All eight GitHub checks passed on source head `e63fc4bf`; the ledger commit creates a docs-only descendant requiring fresh exact-head checks and review.
+Resolution/current state: focused EW300 persistence tests pass 17/17. Fresh full local Gradle validation on `e63fc4bf` passes 731 JVM tests, lint with 0 errors, 111 warnings, and 2 hints, debug/release assembly, and R8 mapping verification. No physical DAC was accessed. All eight GitHub checks and independent review passed on exact PR head `8db499af0212795d05b97d0439a0c82f462722b9`. A docs-only status checkpoint creates a new PR head that must pass fresh exact-head checks and review before merge.
+
+## Current release gate
+
+No code finding remains open. PR #65 head `8db499af` passed all eight checks, exact-head independent review, API35 instrumentation (25/25), and API26 x86_64 cold-install/readiness/survival coverage. The current documentation checkpoint must be committed and pushed, then its exact-head checks and review refreshed. Protected merge, merged-main verification, signed candidate, immutable tag, and public release remain pending. No physical DAC writes were performed and no owner action is required.
