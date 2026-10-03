@@ -42,10 +42,12 @@ Status markers: [ ] pending, [x] complete, [!] failed/recovery active, [-] not a
 - [x] Minimum-SDK/API-26 smoke passes on product source `1c36349ca3edb69061a34b44d385670380f60512`; exact prior PR head `af3f4c59` x86_64 CI passes; current fix needs fresh CI
 - [x] Relevant Python, catalog, source, and release-script tests pass: 235 Python tests and all catalog/release contracts
 - [x] actionlint passes; ShellCheck passes where applicable
-- [x] Branch diff check passed on the committed candidate before this ledger synchronization; rerun after final documentation edits
+- [x] Full 729-test Gradle, lint, debug/release, and R8 checks pass on source commit `40b4f5d8c7b255ebed7cc886158d6e6621a911c4`
+- [ ] Final `git diff --check` after this ledger update and before push
 - [!] Exact-head independent review found one P2 EW300 restoration replay risk; a durable pre-write marker and two local regression cases now address it, with exact-head review pending
 - [x] Branch pushed without force to `c81f329b35773141ee7ba583468eaa9e8d7e009b`
 - [x] PR #65 created with exact baseline, changes, local evidence, and recovery status: https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/65
+- [ ] Push recovery-fix branch and refresh PR head without force
 - [ ] Required GitHub CI and independent review pass on the exact head containing the recovery fix
 - [ ] PR merged without bypassing branch protection
 - [ ] Merged main reverified on exact SHA

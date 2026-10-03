@@ -12,14 +12,14 @@
 - Latest fetched `origin/main` at the last refresh: `afed3dc90b5873218d5e333882528f8c5ddd54a2` (2026-10-02)
 - Latest main merge on this branch: `1530d02f`, with `afed3dc90b5873218d5e333882528f8c5ddd54a2` as its main parent; the v0.7.1 source remains an ancestor
 - Product source candidate already in the PR: commit `1c36349ca3edb69061a34b44d385670380f60512`.
-- Last pushed PR head: `af3f4c596e99e0cf8dce408b982c641c6898de6a`; the local EW300 recovery fix and current ledger synchronization are uncommitted. Resolve the exact live PR head before any push or review request.
+- Last pushed PR head: `af3f4c596e99e0cf8dce408b982c641c6898de6a`; local recovery code commit `40b4f5d8c7b255ebed7cc886158d6e6621a911c4` and its ledger sync are not yet pushed. Resolve the exact live PR head before push/review.
 - Physical DAC writes: none
 
 ## Local verification
 
-- Full Gradle gate on the current local working tree based on `af3f4c59`: 729 JVM tests passed with 0 failures/errors/skips; lint passed with 0 errors, 111 warnings, and 2 hints; debug and release APK assembly passed. These checks include the local EW300 recovery fix, which is not yet pushed.
+- Fresh full Gradle gate on source commit `40b4f5d8c7b255ebed7cc886158d6e6621a911c4`: 729 JVM tests passed with 0 failures/errors/skips; lint passed with 0 errors, 111 warnings, and 2 hints; debug and release APK assembly passed. This source commit is not yet pushed.
 - Focused `Ew300PersistenceQualificationTest`: 15/15 passed, including failed pre-write checkpoint and post-restoration `UNCERTAIN` checkpoint recovery cases.
-- R8 mapping verification on the current local working tree passed; at least one app class is renamed.
+- R8 mapping verification on source commit `40b4f5d8c7b255ebed7cc886158d6e6621a911c4` passed; at least one app class is renamed.
 - Forced Kotlin compile passed; its two warnings are in unchanged files
 - API 35 instrumentation passed 25 tests with 0 failures/errors/skips on `opra-v072-api35` (ARM64, emulator 37.1.11)
 - Python tool suite passed 235 tests; release contract, registry validation, and Favorite sample validation passed

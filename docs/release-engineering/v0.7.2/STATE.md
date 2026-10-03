@@ -7,8 +7,9 @@
 - Branch: `codex/v0.7.2-stabilization`
 - Verified release base: `v0.7.1` at `c48f6a5daa08a5e03475b2e415fe80b41d3357db`, versionName `0.7.1`, versionCode `8`
 - Last pushed PR head before this recovery fix: `af3f4c596e99e0cf8dce408b982c641c6898de6a`
+- Recovery fix commit, local and not yet pushed: `40b4f5d8c7b255ebed7cc886158d6e6621a911c4`
 - Product candidate already validated and in the PR: `1c36349ca3edb69061a34b44d385670380f60512`
-- Current source changes and this ledger checkpoint are local and uncommitted.
+- Recovery code and initial ledger sync are committed locally; this follow-up status update remains uncommitted. Neither has been pushed.
 - PR #65 is open from `codex/v0.7.2-stabilization` into `main`.
 - Release target: versionName `0.7.2`, versionCode `9`.
 - No physical DAC was connected or mutated.
@@ -24,18 +25,18 @@
 - Independent review of PR head `af3f4c59` returned FAIL with one P2: if baseline restoration failed and the follow-up `UNCERTAIN` checkpoint also failed, `TEMPORARY_COMMITTED` could survive on disk and restoration could be retried after process recreation.
 - The local fix adds durable `RESTORATION_ATTEMPTED` before the first restoration write and treats that stage as terminal. Failure to save the marker prevents the hardware write.
 - The simulated transport/store tests include an ambiguous write that partially mutates state, failure of the `UNCERTAIN` checkpoint, and a recreated qualifier using the same persisted record. Both new regressions pass.
-- Current working tree full Gradle gate: 729 tests, 0 failures/errors/skips; lint 0 errors, 111 warnings, 2 hints; debug and release assemblies pass. `bash tools/verify-r8-mapping.sh` passes. The focused EW300 persistence class passes 15/15.
+- Fresh full Gradle gate on exact source commit `40b4f5d8c7b255ebed7cc886158d6e6621a911c4`: 729 tests, 0 failures/errors/skips; lint 0 errors, 111 warnings, 2 hints; debug and release assemblies pass. `bash tools/verify-r8-mapping.sh` passes. The focused EW300 persistence class passes 15/15.
 - No protocol bytes, hardware identity rules, authorization, or real DAC state changed.
 
 ## Current changes
 
-Three Kotlin source/test files implement and cover the fix; release engineering docs record the review finding and current validation. `.unlazy/v0.7.2-autonomous-release/` is a local untracked orchestration workspace and must not be staged. Exact new PR-head CI and independent review are not yet available.
+Three Kotlin source/test files implement and cover the fix in local commit `40b4f5d8c7b255ebed7cc886158d6e6621a911c4`; release engineering docs record the review finding and current validation. The local branch and ledger sync are not yet pushed. `.unlazy/v0.7.2-autonomous-release/` is a local untracked orchestration workspace and must not be staged. Exact new PR-head CI and independent review are not yet available.
 
 ## Next exact actions
 
-1. Re-read and self-review the source/test/docs diff; run diff checks after all edits.
-2. Commit only the intended Kotlin and tracked release-ledger files, leaving `.unlazy/` untracked.
-3. Push normally, refresh PR #65, and require all exact-head checks.
+1. Run final diff checks and verify intended branch state.
+2. Push the local recovery-fix branch normally, leaving `.unlazy/` untracked.
+3. Refresh PR #65 and require all exact-head checks.
 4. Obtain independent review of the exact pushed head. Repair findings and repeat applicable checks/review.
 5. Merge normally under the active `Protect main` ruleset only after exact-head CI and review pass.
 6. Reverify merged main, create and independently verify the main-only signed candidate, then tag and publish only after every artifact gate passes.
