@@ -16,7 +16,12 @@ interface Ew300GainStateStore {
     fun writePersistencePending(deviceFingerprintKey: String, pending: Ew300PersistencePending?): Boolean = false
 }
 
-enum class Ew300PersistenceStage { TEMPORARY_COMMITTED, BASELINE_RESTORED, UNCERTAIN }
+enum class Ew300PersistenceStage {
+    TEMPORARY_COMMITTED,
+    RESTORATION_ATTEMPTED,
+    BASELINE_RESTORED,
+    UNCERTAIN,
+}
 
 data class Ew300PersistencePending(
     val stage: Ew300PersistenceStage,

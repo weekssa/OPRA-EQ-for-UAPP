@@ -6,48 +6,40 @@
 - Worktree: `/Users/stephenweeks/.codex/worktrees/a79b/OPRA-EQ-for-UAPP`
 - Branch: `codex/v0.7.2-stabilization`
 - Verified release base: `v0.7.1` at `c48f6a5daa08a5e03475b2e415fe80b41d3357db`, versionName `0.7.1`, versionCode `8`
-- Latest pushed checkpoint at initial PR creation: `c81f329b35773141ee7ba583468eaa9e8d7e009b`
-- Product source candidate with local test evidence: `1c36349ca3edb69061a34b44d385670380f60512`
-- PR #65: open from `codex/v0.7.2-stabilization` into `main`; status ledger synchronization is being prepared after initial CI started
-- Release target: versionName `0.7.2`, versionCode `9`
+- Last pushed PR head before this recovery fix: `af3f4c596e99e0cf8dce408b982c641c6898de6a`
+- Product candidate already validated and in the PR: `1c36349ca3edb69061a34b44d385670380f60512`
+- Current source changes and this ledger checkpoint are local and uncommitted.
+- PR #65 is open from `codex/v0.7.2-stabilization` into `main`.
+- Release target: versionName `0.7.2`, versionCode `9`.
 - No physical DAC was connected or mutated.
 
-## Completed this phase
+## Completed before the current recovery fix
 
-- Independent test-only dense response oracle added for PEAK, LOW_SHELF, and HIGH_SHELF.
-- Confirmed 96-point high-Q under-read: 4.392811513 dB for +12 dB/Q=10 at 978.371245 Hz and 8.683458274 dB for two coincident +12 dB/Q=10 filters at 978 Hz.
-- Optimizer generated headroom and editor Safe Gain use dense sampling; final non-exact optimizer results must pass dense RMS/max-error gates.
-- Exact generated-headroom range-boundary rounding corrected without changing strict source-authored preamp validation.
-- Dense regressions cover maximum-Q positive/negative boosts, 20 Hz/20 kHz edges, interacting filters, the source shelf corpus, target quantization, and a six-band JA11 fit rejected by dense validation.
-- Finite-hardware representation versions advanced; export fingerprint expectation updated.
-- Complete JVM suite on commit `1c36349ca3edb69061a34b44d385670380f60512`: 727 tests passed, 0 failures/errors/skips.
-- Android lint on the committed candidate: 0 errors, 111 warnings, 2 hints. Review found only existing patterns in unchanged code and no new actionable warning in changed code.
-- Debug and release assembly passed. Forced `compileDebugKotlin --rerun-tasks` passed; its two warnings are in unchanged files. R8 mapping verification passed with at least one app class renamed.
-- API 35 instrumentation passed 25 tests with 0 failures/errors/skips on the local ARM64 API 35 emulator.
-- Repository Python suite passed 235 tests. Release contract, 15-source catalog registry, 14-sample Favorite validation, actionlint, ShellCheck, and `git diff --check` passed.
-- Android metadata now targets versionName `0.7.2` and versionCode `9`; package ID and SDK levels were not changed.
-- User-facing v0.7.2 release notes, changelog entry, README preparation note, public checklist section, and runbook status have been prepared. Publication remains pending.
-- Release automation changes and previous review-finding fixes are recorded in their corresponding investigation and gate files.
-- API 26 startup follow-up OOMs were traced beyond the canonical file read: eager catalog indexes, per-profile formatted acoustic signatures, and main-thread overlay work. Lookup indexes are lazy, acoustic dedup retains compact collision-checked fingerprints, numeric formatting avoids formatter allocation except on rounding boundaries, and catalog rendering runs on `Dispatchers.Default`.
-- Focused `CatalogOverlayTest` and `CanonicalFirstCatalogRepositoryTest` pass, including fixed-precision/negative-zero formatting checks.
-- Exact-commit API 26 smoke on `1c36349ca3edb69061a34b44d385670380f60512` used a fresh wipe/install, rendered manufacturer, 1MORE model, and `oratory1990` profile UI, remained resumed/alive after 60 seconds, and had no AndroidRuntime error. The smoke signer is local-only. Final Dalvik use was 47,111 of 49,152 KiB. Evidence is in `.unlazy/v0.7.2-autonomous-release/evidence/api26-final/RESULT.md`.
-- An earlier exact-commit smoke attempt logged OOM while overlapping UIAutomation diagnostics caused an Android system-process service-registration crash. That contaminated attempt is recorded separately; a serialized clean rerun passed.
-- The API 26 CI smoke in `.github/workflows/android-ci.yml` waits for the EQ Library tab and manufacturer list, then observes the process for 60 seconds. actionlint passed; exact PR-head CI remains pending.
-- An independent read-only review agent scanned the working diff and found no confirmed correctness or regression finding. This does not replace exact PR-head review.
-- All eight checks passed on initial PR head `c81f329b35773141ee7ba583468eaa9e8d7e009b`: Android build, emulator UI, API 26 x86_64 smoke, CodeQL, catalog currentness, community coverage, and dependency submission. This docs-only status checkpoint advances the PR head; verify all checks again on the updated head.
-- Active `Protect main` ruleset prohibits deletion and non-fast-forward updates, has no bypass actors, and has no required reviewer or named status checks. Merge must remain a normal GitHub merge after this task's checks and independent review pass.
+- The v0.7.2 candidate addresses the reproduced API 26 startup OOM, includes an independent dense DSP response oracle and bounded safety correction, version-driven release workflows, and synchronized release docs. The DSP evidence is recorded in D005 and the test matrix.
+- Product commit `1c36349ca3edb69061a34b44d385670380f60512` passed 727 JVM tests, lint, debug/release assembly, R8 mapping, and API 35 instrumentation (25/25). The Python suite passed 235 tests; catalog/release contracts, actionlint, ShellCheck, and API 26 ARM64 cold smoke passed. These results apply to that source and are not transferred to later commits.
+- PR head `af3f4c596e99e0cf8dce408b982c641c6898de6a` passed all eight CI/security checks. API 26 artifact `11259384390` and UI artifact `11258319894` were downloaded and inspected. These checks predate the current EW300 recovery fix.
 
-## Current working changes
+## Current exact-head finding and recovery
 
-The product candidate at `1c36349ca3edb69061a34b44d385670380f60512` contains release automation, safe Kotlin/UI/persistence fixes, version metadata, and synchronized release documentation. Commit `c81f329b` records exact-source/API-26 evidence. PR #65 is open, and every check passed on its initial head. This local status synchronization is documentation-only and causes checks to rerun on the resulting PR head. Immutable v0.7.1 remains an ancestor.
+- Independent review of PR head `af3f4c59` returned FAIL with one P2: if baseline restoration failed and the follow-up `UNCERTAIN` checkpoint also failed, `TEMPORARY_COMMITTED` could survive on disk and restoration could be retried after process recreation.
+- The local fix adds durable `RESTORATION_ATTEMPTED` before the first restoration write and treats that stage as terminal. Failure to save the marker prevents the hardware write.
+- The simulated transport/store tests include an ambiguous write that partially mutates state, failure of the `UNCERTAIN` checkpoint, and a recreated qualifier using the same persisted record. Both new regressions pass.
+- Current working tree full Gradle gate: 729 tests, 0 failures/errors/skips; lint 0 errors, 111 warnings, 2 hints; debug and release assemblies pass. `bash tools/verify-r8-mapping.sh` passes. The focused EW300 persistence class passes 15/15.
+- No protocol bytes, hardware identity rules, authorization, or real DAC state changed.
 
-## Next
+## Current changes
 
-1. Refresh PR #65's exact live head and wait for all checks to pass after the status checkpoint.
-2. Obtain independent exact-head review, then merge under the active main ruleset.
-3. Reverify merged main and generate the main-only signed candidate.
-4. Verify the exact merged-main signed artifact before immutable tagging/publication.
+Three Kotlin source/test files implement and cover the fix; release engineering docs record the review finding and current validation. `.unlazy/v0.7.2-autonomous-release/` is a local untracked orchestration workspace and must not be staged. Exact new PR-head CI and independent review are not yet available.
 
-## Current failure
+## Next exact actions
 
-No API 26 startup failure was reproduced on the latest clean committed-source smoke, though memory headroom remains low. PR #65 is open; exact PR CI, independent review, merge, signed candidate, and release gates remain pending. No v0.7.2 tag or public release exists.
+1. Re-read and self-review the source/test/docs diff; run diff checks after all edits.
+2. Commit only the intended Kotlin and tracked release-ledger files, leaving `.unlazy/` untracked.
+3. Push normally, refresh PR #65, and require all exact-head checks.
+4. Obtain independent review of the exact pushed head. Repair findings and repeat applicable checks/review.
+5. Merge normally under the active `Protect main` ruleset only after exact-head CI and review pass.
+6. Reverify merged main, create and independently verify the main-only signed candidate, then tag and publish only after every artifact gate passes.
+
+## Current failure and release state
+
+The P2 finding is fixed locally but remains unverified on a pushed PR head. Merge, signed candidate, immutable v0.7.2 tag, and public GitHub Release remain pending. No owner action is required.

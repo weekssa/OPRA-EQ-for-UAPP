@@ -55,3 +55,15 @@ Alternatives: leave production unchanged because the concern was only a display 
 Reason chosen: the 96-point grid demonstrably underestimates modeled peak response enough to leave +4 dB net response in the single-boost EW300 counterexample and +8.68 dB for coincident filters. The final dense check fails closed without changing device commands or source-authored preamp semantics.
 
 Tests validating safety: independent dense-response tests; editor `useSafeGain()` regression; six-band fit dense rejection; all current shelf corpus Ready cases independently resampled; `./tools/codex-android :app:testDebugUnitTest` passes 724 tests; `./tools/codex-android :app:lintDebug` passes with 0 errors, 111 warnings, and 2 hints. No changed DSP source/test file has a lint diagnostic. No hardware was connected or mutated.
+
+## D006: persist a terminal restoration-attempt marker before baseline writes
+
+Decision: store `RESTORATION_ATTEMPTED` durably before sending the first baseline-restoration register write. Treat that state like `UNCERTAIN` on a later call.
+
+Evidence: the independent review found that if a baseline write failed and the following checkpoint to `UNCERTAIN` also failed, disk could retain `TEMPORARY_COMMITTED`. A later process could then resend the restoration write. The new pre-write marker becomes the stored terminal state before this failure window begins.
+
+Alternatives: rely on the post-failure `UNCERTAIN` write alone, clear the pending record before the write, or retry when `UNCERTAIN` cannot be saved. Rejected because any later failed write could leave an older replayable stage, clearing first loses recovery context, and retrying an ambiguous hardware mutation is unsafe.
+
+Reason chosen: the durable attempted marker closes the replay window without changing protocol commands or requiring successful storage after the hardware operation. If its own write fails, the baseline write is not sent.
+
+Tests validating safety: two new simulated-store/transport regressions pass in the 729-test JVM suite. One confirms that a failed pre-write checkpoint sends no baseline write. The other makes a restoration write fail after mutating simulated state, rejects the following `UNCERTAIN` checkpoint, recreates the qualifier over the same durable store, and confirms no replay. Physical hardware was not accessed. Exact PR-head CI and independent review of the fix remain pending.

@@ -34,6 +34,7 @@ class Ew300PersistenceQualifier(
             else -> when (pending.stage) {
                 Ew300PersistenceStage.TEMPORARY_COMMITTED -> verifyTemporaryAndRestore(key, pending)
                 Ew300PersistenceStage.BASELINE_RESTORED -> verifyFinalRestoration(key, pending)
+                Ew300PersistenceStage.RESTORATION_ATTEMPTED,
                 Ew300PersistenceStage.UNCERTAIN -> failed(
                     "A prior Save or restoration result is uncertain. No operation was sent; share the report before any recovery action.",
                     false,
@@ -179,6 +180,17 @@ class Ew300PersistenceQualifier(
         }
 
         val bandRegister = Ew300Protocol.FIRST_BAND_REGISTER
+        // A durable pre-write marker keeps an older TEMPORARY_COMMITTED record from replaying this mutation.
+        if (!persistPending(
+                key,
+                pending.copy(stage = Ew300PersistenceStage.RESTORATION_ATTEMPTED),
+            )
+        ) {
+            return failed(
+                "The temporary values persisted, but the restoration attempt could not be durably recorded. No baseline restoration write was sent; stop and share the report.",
+                false,
+            )
+        }
         if (!transport.writeRegister(bandRegister, pending.baseline.getValue(bandRegister)) ||
             !transport.writeRegister(
                 Ew300Protocol.GLOBAL_GAIN_REGISTER,

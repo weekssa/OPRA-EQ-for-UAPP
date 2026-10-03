@@ -107,7 +107,7 @@ class Ew300PersistenceQualificationTest {
 
     @Test
     fun failedRecoveryRecordWritePreventsTheFirstHardwareMutation() = runBlocking {
-        val store = FakeStore(failPendingWrite = true)
+        val store = FakeStore(failPendingWritesAt = setOf(1))
         val transport = FakeTransport()
 
         val result = qualifier(transport, store).advance()
@@ -199,7 +199,10 @@ class Ew300PersistenceQualificationTest {
 
     @Test
     fun failedRestorationWriteBecomesTerminalAndIsNeverRetried() = runBlocking {
-        val transport = FakeTransport(failWriteAt = setOf(3))
+        val transport = FakeTransport(
+            failWriteAt = setOf(3),
+            mutateOnFailedWrite = true,
+        )
         val store = FakeStore()
         val qualifier = qualifier(transport, store)
 
@@ -214,11 +217,50 @@ class Ew300PersistenceQualificationTest {
         assertEquals(writesAtStop, transport.writeCount)
     }
 
-    private class FakeStore(private val failPendingWrite: Boolean = false) : Ew300GainStateStore {
+    @Test
+    fun failedUncertainCheckpointCannotReplayRejectedRestorationAfterQualifierRecreation() = runBlocking {
+        val transport = FakeTransport(
+            failWriteAt = setOf(3),
+            mutateOnFailedWrite = true,
+        )
+        val store = FakeStore(failPendingWritesAt = setOf(4))
+        val qualifier = qualifier(transport, store)
+
+        assertTrue(qualifier.advance() is Ew300PersistenceQualificationResult.AwaitingPowerCycle)
+        transport.detachGeneration += 1
+        assertTrue(qualifier.advance() is Ew300PersistenceQualificationResult.Failed)
+
+        assertEquals(4, store.pendingWriteCount)
+        assertEquals(Ew300PersistenceStage.RESTORATION_ATTEMPTED, store.pending?.stage)
+        assertEquals(3, transport.writeCount)
+
+        val recreatedQualifier = qualifier(transport, store)
+        assertTrue(recreatedQualifier.advance() is Ew300PersistenceQualificationResult.Failed)
+        assertEquals(3, transport.writeCount)
+        assertEquals(1, transport.commitCount)
+    }
+
+    @Test
+    fun failedRestorationAttemptCheckpointPreventsBaselineWrite() = runBlocking {
+        val transport = FakeTransport()
+        val store = FakeStore(failPendingWritesAt = setOf(3))
+        val qualifier = qualifier(transport, store)
+
+        assertTrue(qualifier.advance() is Ew300PersistenceQualificationResult.AwaitingPowerCycle)
+        transport.detachGeneration += 1
+        val writesBeforeRestore = transport.writeCount
+
+        assertTrue(qualifier.advance() is Ew300PersistenceQualificationResult.Failed)
+        assertEquals(writesBeforeRestore, transport.writeCount)
+        assertEquals(Ew300PersistenceStage.TEMPORARY_COMMITTED, store.pending?.stage)
+    }
+
+    private class FakeStore(private val failPendingWritesAt: Set<Int> = emptySet()) : Ew300GainStateStore {
         var gainQualified = false
         var persistenceQualified = false
         var pending: Ew300PersistencePending? = null
         var delta = 0
+        var pendingWriteCount = 0
 
         override fun isGlobalGainQualified(deviceFingerprintKey: String) = gainQualified
         override fun markGlobalGainQualified(deviceFingerprintKey: String, qualified: Boolean) {
@@ -237,7 +279,8 @@ class Ew300PersistenceQualificationTest {
             deviceFingerprintKey: String,
             pending: Ew300PersistencePending?,
         ): Boolean {
-            if (failPendingWrite) return false
+            pendingWriteCount += 1
+            if (pendingWriteCount in failPendingWritesAt) return false
             this.pending = pending
             return true
         }

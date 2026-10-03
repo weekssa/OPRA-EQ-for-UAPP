@@ -2,7 +2,7 @@
 
 MISSION: v0.7.2 stabilization and release
 
-CURRENT PHASE: PR #65 is open; initial-head checks passed; verify the status-sync head and obtain independent review
+CURRENT PHASE: repair the exact-head review finding; local validation passes, and the fix is being prepared for a fresh PR-head review and CI run
 
 CURRENT WORKTREE: /Users/stephenweeks/.codex/worktrees/a79b/OPRA-EQ-for-UAPP
 
@@ -10,24 +10,24 @@ CURRENT BRANCH: codex/v0.7.2-stabilization
 
 BASELINE: v0.7.1 -> c48f6a5daa08a5e03475b2e415fe80b41d3357db
 
-CURRENT HEAD: PR #65 initially opened at `c81f329b35773141ee7ba583468eaa9e8d7e009b`; this post-creation status checkpoint is documentation-only and advances the PR head when pushed. Refresh the live PR head before resuming. Product source was validated at `1c36349ca3edb69061a34b44d385670380f60512`. The v0.7.1 commit remains an ancestor.
+CURRENT HEAD: PR #65 is at af3f4c596e99e0cf8dce408b982c641c6898de6a. Local EW300 source/test changes and this recovery-ledger update are uncommitted. Refresh PR head before any remote action.
 
 VERSION: 0.7.2 / 9
 
-LAST VERIFIED COMPLETION: exact commit `1c36349ca3edb69061a34b44d385670380f60512` passed the full Gradle suite: 727 JVM tests, lint, debug/release assembly, R8, and 25/25 API 35 instrumentation tests. Python tools passed 235 tests; release/catalog contracts, actionlint, ShellCheck, and diff checks passed. A freshly wiped API 26 ARM64/48 MiB install rendered manufacturer, 1MORE product, and oratory1990 profile lists, remained resumed/alive for 60 seconds, and had no app runtime errors. All eight PR checks, including API 26 x86_64, passed on initial PR head `c81f329b`; this docs-only status checkpoint needs a fresh exact-head run. Local smoke artifact and signer are temporary and not release provenance.
+LAST VERIFIED COMPLETION: the local working tree based on af3f4c59 passed the full Gradle gate: 729 JVM tests, 0 failures/errors/skips; lint 0 errors, 111 warnings, 2 hints; debug/release assembly; and R8 mapping verification. The EW300 persistence suite passed 15/15, including the failed-checkpoint-after-restoration regression. Existing API 35, Python, API 26, and remote CI evidence remains bound to its recorded earlier source/head.
 
-NEXT EXACT ACTION: refresh PR #65's live head and checks after this status checkpoint; complete its exact-head checks and independent review, repair any owned failure without weakening gates, then merge under repository policy and reverify merged main.
+NEXT EXACT ACTION: review the complete source and ledger diff, commit the fix and recovery record, push normally, then refresh PR #65 and require all checks plus a new independent review on the exact pushed head.
 
-CURRENT FAILURE: none reproduced locally or on the initial PR head. The API 26 process used 47,111 KiB of its 49,152 KiB Dalvik heap after the local observation window; refresh checks for this status-sync head.
+CURRENT FAILURE: the independent review of PR head af3f4c59 returned FAIL with one P2: a failed UNCERTAIN checkpoint after a rejected restoration write could leave TEMPORARY_COMMITTED persisted and replay the restoration after restart. A durable RESTORATION_ATTEMPTED marker now precedes that write. Local regression and full Gradle checks pass; exact-head CI/review remain pending.
 
-LAST GREEN GATES: pristine v0.7.1 baseline; exact candidate 727-test JVM suite; lint with 0 errors; debug/release assembly; R8 mapping; API 35 instrumentation 25/25; API 26 cold install, manufacturer/product/profile render and 60-second resumed-process observation; 235 Python tests; release contract; catalog validations; actionlint; ShellCheck; git diff check; independent read-only review found no confirmed finding
+LAST GREEN GATES: prior PR head af3f4c596e99e0cf8dce408b982c641c6898de6a passed all eight checks: Android build, emulator UI, API 26 x86_64 smoke, CodeQL, catalog currentness, priority community coverage, dependency submission, and Analyze Kotlin. The API 26 artifact was downloaded and inspected. This local fix is not included in those results.
 
-ACTIVE PR: https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/65 (PR #65, base main; refresh live head)
+ACTIVE PR: https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/65
 
-ACTIVE CI RUN: All eight initial checks passed on PR head c81f329b, including Android build, API 26 x86_64, Android UI, CodeQL, catalog, community coverage, and dependency submission. This documentation checkpoint advances the head; refresh GitHub for its rerun status.
+ACTIVE CI RUN: NONE for the uncommitted fix. Previous exact-head runs are recorded in ARTIFACTS.md.
 
 ACTIVE RELEASE RUN: NONE
 
-ARTIFACT STATUS: no signed release candidate. The local API 26 APK and temporary signer are smoke-only, not release provenance. Remote v0.7.2 tag is absent and `gh release view v0.7.2` reports not found.
+ARTIFACT STATUS: no official v0.7.2 candidate; remote tag and GitHub Release remain absent. Local API 26 APK and temporary signer are smoke-only.
 
 HUMAN ACTION REQUIRED: NONE

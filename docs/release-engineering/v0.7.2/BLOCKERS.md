@@ -29,3 +29,13 @@ Problem: supplied isolated worktree initially pointed to detached commit 6f841ef
 Recovery: verify clean status, fetch tags, confirm v0.7.1 provenance, then create the requested release branch directly from the tag.
 
 Resolution: branch codex/v0.7.2-stabilization now starts at exact v0.7.1 commit c48f6a5daa08a5e03475b2e415fe80b41d3357db. No owner checkout changes were made.
+
+## Active exact-head review finding: EW300 restoration checkpoint replay
+
+Problem: if a baseline-restoration register write failed and persisting the follow-up `UNCERTAIN` state also failed, the durable record could remain `TEMPORARY_COMMITTED`. A later call after process restart could send the restoration write again.
+
+Root cause: the first durable transition after `TEMPORARY_COMMITTED` occurred after the hardware restoration write. The failure of that later checkpoint therefore left the previous retryable state on disk.
+
+Recovery: persist `RESTORATION_ATTEMPTED` before the first baseline-restoration write and treat it as terminal on subsequent calls. If that pre-write checkpoint fails, no baseline write is sent. Added tests for both pre-write checkpoint failure and failed `UNCERTAIN` persistence after an ambiguous restoration write, followed by qualifier recreation.
+
+Resolution/current state: the local working tree passes 729 JVM tests, lint, debug/release assembly, and R8 verification; the EW300 persistence class passes 15/15. No physical DAC was accessed. The exact PR head `af3f4c596e99e0cf8dce408b982c641c6898de6a` predates the fix and had all checks green, but its independent review returned FAIL on this P2. The fix must be committed and pushed, then pass fresh exact-head CI and independent review before merge.

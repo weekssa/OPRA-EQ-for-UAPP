@@ -33,20 +33,20 @@ Status markers: [ ] pending, [x] complete, [!] failed/recovery active, [-] not a
 - [x] Optimizer cache investigated without speculative rewrite
 - [x] No physical DAC writes performed
 - [x] No unverified USB protocol behavior changed
-- [x] Debug build passes on committed candidate `1c36349ca3edb69061a34b44d385670380f60512`
-- [x] Fresh complete JVM suite passes on committed candidate: 727 tests, 0 failures/errors/skips
-- [x] Lint passes with 0 errors and no new actionable warning in changed code; 111 existing warnings and 2 hints remain
-- [x] Release build passes on committed v0.7.2/code 9 candidate
-- [x] R8 verification passes on committed candidate; at least one app class is renamed
+- [x] Debug build passes on the current local recovery fix
+- [x] Fresh complete JVM suite passes on the current local recovery fix: 729 tests, 0 failures/errors/skips
+- [x] Lint passes on the current local recovery fix with 0 errors, 111 warnings, 2 hints, and no issue in the changed production files
+- [x] Release build passes on the current local v0.7.2/code 9 recovery fix
+- [x] R8 verification passes on the current local recovery fix; at least one app class is renamed
 - [ ] Instrumentation passes on CI-equivalent emulator
-- [x] Minimum-SDK/API-26 smoke passes on committed source `1c36349ca3edb69061a34b44d385670380f60512`; exact CI x86_64 rerun remains required
+- [x] Minimum-SDK/API-26 smoke passes on product source `1c36349ca3edb69061a34b44d385670380f60512`; exact prior PR head `af3f4c59` x86_64 CI passes; current fix needs fresh CI
 - [x] Relevant Python, catalog, source, and release-script tests pass: 235 Python tests and all catalog/release contracts
 - [x] actionlint passes; ShellCheck passes where applicable
 - [x] Branch diff check passed on the committed candidate before this ledger synchronization; rerun after final documentation edits
-- [x] Full working diff reviewed against v0.7.1; independent read-only review found no confirmed correctness/regression issue
+- [!] Exact-head independent review found one P2 EW300 restoration replay risk; a durable pre-write marker and two local regression cases now address it, with exact-head review pending
 - [x] Branch pushed without force to `c81f329b35773141ee7ba583468eaa9e8d7e009b`
 - [x] PR #65 created with exact baseline, changes, local evidence, and recovery status: https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/65
-- [ ] Required GitHub CI and independent review pass on exact PR head
+- [ ] Required GitHub CI and independent review pass on the exact head containing the recovery fix
 - [ ] PR merged without bypassing branch protection
 - [ ] Merged main reverified on exact SHA
 - [ ] Signed release candidate generated from verified merged main
