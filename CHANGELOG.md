@@ -6,13 +6,17 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ## [Unreleased]
 
-### v0.7.2 stabilization
+## [0.7.2] - 2026-10-03
+
+### Stabilization
 
 - Reduced startup memory use when loading a large cached canonical EQ catalog.
 - Improved dense response verification for high-Q hardware EQ fits and generated headroom, including a fail-closed response-quality check before an optimized representation is accepted.
 - Made EW300 persistence qualification stop before a hardware write if its required local recovery record cannot be stored.
 - Removed silent zero-gain substitution when an imported parametric filter has invalid or missing gain data.
 - No new DAC support, USB command behavior, UAPP live-audio integration, catalog source, or telemetry was added.
+- Published the signed release from exact source `b8e90b9b53fc63ea00fefa499d7d4bd6ce4d55ea`. Candidate run `37099431204` used artifact `11265653006` with ZIP SHA-256 `dc2607ad3b8c43aae4b0d41502ff5f13ce03d8b7b635511941f8271be255ab33`; promotion run `37099991693` created the annotated `v0.7.2` tag and published the release.
+- The public APK SHA-256 is `efdd63ddb305d0624f805cc53e4ce27aae7d1ddeb169e8f965302d0f290ba64a`. It has package `com.weekssa.opraeqforuapp`, versionName `0.7.2`, versionCode `9`, and the pinned release signer `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`.
 
 ## [0.7.0] - 2026-09-28
 

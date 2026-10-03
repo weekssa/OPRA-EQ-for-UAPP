@@ -1,33 +1,33 @@
-# Resume v0.7.2
+# v0.7.2 release handoff
 
-MISSION: v0.7.2 stabilization and release
+MISSION: stabilization and public release
 
-CURRENT PHASE: PR #65 merged; post-merge checks passed. Official candidate `37095180116` / artifact `11264251526` passed independent verification. Promotion run `37096259477` passed API 35 upgrade but failed in `create-candidate-tag` because the publisher compared a prefixed GitHub artifact digest to an unprefixed value. No tag/release was created; publish was skipped.
+RELEASE STATUS: complete and published. See [EQ Library v0.7.2](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.7.2).
 
-CURRENT WORKTREE: `/Users/stephenweeks/.codex/worktrees/a79b/OPRA-EQ-for-UAPP`
+REPOSITORY: `weekssa/OPRA-EQ-for-UAPP`
 
-CURRENT BRANCH: `codex/v0.7.2-stabilization`
+WORKTREE: `/Users/stephenweeks/.codex/worktrees/a79b/OPRA-EQ-for-UAPP`
 
-BASELINE: v0.7.1 -> `c48f6a5daa08a5e03475b2e415fe80b41d3357db`, versionName 0.7.1, versionCode 8
+BRANCH: `codex/v0.7.2-stabilization`
 
-CURRENT HEAD: merged `main` is `a60411bebfdbd1cea4218d3bde45013bb7ed26a9`. Its tree exactly matches reviewed and green PR head `e7f2fc937e9b265770296dbdc4cbb40a4e5e13c9`. Recovery branch currently ends at `e7f2fc93`; this status checkpoint must be committed and pushed there.
+RELEASE SOURCE: `b8e90b9b53fc63ea00fefa499d7d4bd6ce4d55ea`; the annotated `v0.7.2` tag targets this exact commit.
 
-VERSION: 0.7.2 / 9
+VERSION: `0.7.2` / versionCode `9`; package `com.weekssa.opraeqforuapp`.
 
-LAST VERIFIED COMPLETION: all eight GitHub checks passed on exact PR head `e7f2fc937e9b265770296dbdc4cbb40a4e5e13c9`; independent review PASS with no P0-P2 finding. PR #65 merged normally as `a60411bebfdbd1cea4218d3bde45013bb7ed26a9`. Post-merge local Gradle validation passed 731 tests, 0 failures/errors/skips; lint 0 errors, 111 warnings, 2 hints; debug and release assembly; R8 mapping verification.
+CANDIDATE: run `37099431204`, artifact `11265653006`, archive SHA-256 `dc2607ad3b8c43aae4b0d41502ff5f13ce03d8b7b635511941f8271be255ab33`.
 
-NEXT EXACT ACTION: finish independent review of the working-tree digest fix, stage only the ten intended tracked files, commit and push normally, rebase the recovery branch topology by merging `origin/main` if needed, and open/update the promotion-fix PR. Complete CI/review and merge normally, then build and verify a fresh candidate from the corrected exact main SHA before promotion.
+PROMOTION: run `37099991693`; candidate verification, API 35 clean install of public v0.7.1, candidate in-place upgrade, and cold launch passed. It created the annotated tag and published the release.
 
-CURRENT FAILURE: promotion run `37096259477` failed before tag creation because the immutable artifact digest prefix was normalized on only one side. The working tree now normalizes and validates both sides in the tag and publish commands. Focused tests pass 39/39, full Python tools pass 238/238 under bundled Python 3.12, and `check-contract` passes. Independent review, PR checks/merge, a fresh candidate, and a new promotion run remain.
+APK: SHA-256 `efdd63ddb305d0624f805cc53e4ce27aae7d1ddeb169e8f965302d0f290ba64a`; signer SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`; R8 mapping SHA-256 `2ef382f4838c49c89fbea9985fdba976bedef5202aa59711dcbe263690515021`.
 
-LAST GREEN GATES: all eight exact-head checks on `e7f2fc93`: Android build/UI/API26 run `37092536385`; Analyze Kotlin and CodeQL `37092536382`; Catalog `37092536383`; Priority community `37092536380`; dependency submission `37092533146`. API35 UI report `11263771217` records 25/25; API26 report `11262861589`; lint report `11263656445`.
+PUBLIC ASSETS: all six uploaded release assets were downloaded and matched GitHub's SHA-256 metadata; GitHub also lists two generated source archives. APK bytes match the candidate and published checksum; `/releases/latest` resolves to v0.7.2.
 
-ACTIVE PR: https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/65 (merged)
+SOURCE CHECKS: PR #65 merged normally as `a60411bebfdbd1cea4218d3bde45013bb7ed26a9` after eight checks and independent review passed. PR #66 merged normally after all seven checks and independent code/documentation review passed; exact tested head `11275d510f3a0b9b1ad4aa4edae2c25bd2044b4b` has the release source tree. Python tests passed 238/238 and the promotion workflow contract passed.
 
-ACTIVE CI RUN: no required PR check is pending; resolve post-merge `main` status live before promotion.
+HARDWARE: no physical DAC writes were performed. No new hardware support claim was added.
 
-ACTIVE RELEASE RUN: failed Promote Signed Release Candidate `37096259477`, https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/37096259477; new corrected-source candidate/promotion not yet dispatched.
+TRACKED RISK: 51 transitive Maven alerts remain in Gradle/build/emulator/test tooling. No flagged coordinate was found in the release runtime classpath or mapped minified DEX; build-environment risk remains for separate remediation.
 
-ARTIFACT STATUS: candidate run `37095180116`, artifact `11264251526`, archive SHA-256 `1da409dcf47368ec254a5432e7c1d316473920c28e27c19416b10cc8e29969d9`, and APK SHA-256 `f3afaa102a31491286828faa37cfe1454853721d1e4aa736da57bf4919e89ded` were verified for main `a60411bebfdbd1cea4218d3bde45013bb7ed26a9`. API 35 upgrade passed in promotion run `37096259477`, but the tag step failed; no tag or release exists. A corrected source merge requires a new candidate.
+HUMAN ACTION REQUIRED: NONE.
 
-HUMAN ACTION REQUIRED: NONE
+DOCUMENTATION FOLLOW-UP: the current branch contains the release-closeout ledger update. Review its diff, open a docs-only PR, and merge only after normal checks pass. This is post-publication documentation synchronization; no release, candidate, hardware, or publication action remains.
