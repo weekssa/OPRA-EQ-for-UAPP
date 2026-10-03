@@ -45,6 +45,7 @@ Status markers: [ ] pending, [x] complete, [!] failed/recovery active, [-] not a
 - [x] Full 731-test Gradle, lint, debug/release, and R8 checks pass on source commit `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4`
 - [x] `git diff --check` and tracked Markdown U+2014 scan pass after this ledger status sync
 - [x] Independent exact-head review passes on `8db499af0212795d05b97d0439a0c82f462722b9`; prior P2 findings in both restoration paths are fixed and covered by regression cases
+- [!] Follow-up review of docs-only head `adf871f2` found a stale restart instruction; corrected in this documentation update, with exact-head review pending
 - [x] Branch pushed without force; latest evidence head `8db499af0212795d05b97d0439a0c82f462722b9`
 - [x] PR #65 created with exact baseline, changes, local evidence, and recovery status: https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/65
 - [x] Push recovery-fix branch normally without force: source head `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4`; latest ledger evidence head `8db499af0212795d05b97d0439a0c82f462722b9`

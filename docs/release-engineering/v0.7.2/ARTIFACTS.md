@@ -12,7 +12,7 @@
 - Latest fetched `origin/main` at the last refresh: `afed3dc90b5873218d5e333882528f8c5ddd54a2` (2026-10-03)
 - Latest main merge on this branch: `1530d02f`, with `afed3dc90b5873218d5e333882528f8c5ddd54a2` as its main parent; the v0.7.1 source remains an ancestor
 - Product source candidate already in the PR: commit `1c36349ca3edb69061a34b44d385670380f60512`.
-- Latest production source commit: `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4`; recovery commits `40b4f5d8c7b255ebed7cc886158d6e6621a911c4` and `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4` are in the branch. Exact PR evidence snapshot below is head `8db499af0212795d05b97d0439a0c82f462722b9`; this documentation checkpoint creates a new head that needs fresh exact-head checks and review.
+- Latest production source commit: `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4`; recovery commits `40b4f5d8c7b255ebed7cc886158d6e6621a911c4` and `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4` are in the branch. Exact PR evidence snapshot below is head `8db499af0212795d05b97d0439a0c82f462722b9`. Review of docs-only head `adf871f2` found one P2 stale restart instruction; this update corrects it. Resolve the live PR head and require fresh checks and review before merge.
 - Physical DAC writes: none
 
 ## Local verification
@@ -47,6 +47,7 @@
 - All eight checks passed on exact PR head `af3f4c596e99e0cf8dce408b982c641c6898de6a`: Android build run `37082764610`, CodeQL run `37082764637`, Catalog run `37082764642`, Priority community run `37082764613`, dependency-submission run `37082761608`, and the associated UI/API 26 jobs. API 26 report artifact `11259384390` and emulator UI report artifact `11258319894` were downloaded and inspected. These results predate the current local recovery fix.
 - Exact PR head `8db499af0212795d05b97d0439a0c82f462722b9`: all eight checks passed. Android build/UI/API26 run `37088331227`, Analyze Kotlin `37088331231`, CodeQL check `111104328833`, Catalog `37088331236`, Priority community `37088331239`, and dependency submission `37088326577`.
 - Independent exact-head review of `8db499af0212795d05b97d0439a0c82f462722b9` returned PASS with no actionable P0-P2 issue or unsupported release claim.
+- Follow-up independent review of docs-only head `adf871f2` found one P2 stale restart instruction, corrected in this release-ledger update. Review the resulting live head before merge.
 - Current PR-head artifacts: API 26 diagnostics `11261199392`, emulator UI reports `11261079560`, lint reports `11261154040`, and debug APK `11261034576`. They are test evidence only. Earlier artifacts `11259384390` and `11258319894` predate both recovery fixes.
 - Independent review of `af3f4c59` found replay risk in the post-cycle restore path. Review of `13bf1f20` found the same risk in `restoreBeforeCommitOrFail()`. Both paths now persist terminal `RESTORATION_ATTEMPTED` before their first baseline write; if the checkpoint fails, no baseline write is sent.
 - Full local validation on `e63fc4bf`: 731 JVM tests, zero failures/errors/skips; lint 0 errors, 111 warnings, 2 hints; debug/release assembly and R8 mapping pass. The focused EW300 suite passes 17/17.
@@ -59,4 +60,4 @@
 - Remote `v0.7.2` tag: absent at the last remote check
 - GitHub Release: absent at the last remote check
 
-The status above records evidence for exact head `8db499af`; the next docs-only head requires a new exact-head CI and review result before merge. Update this file after merge, candidate, tag, publication, and public asset verification. Never copy a previous candidate checksum or signer verification forward as evidence for a changed source.
+The check and review results above are immutable head-specific snapshots. Resolve live GitHub state before acting. Merge only when all eight checks and an independent PASS apply to the exact current PR head. Update this file after merge, candidate, tag, publication, and public asset verification. Never copy a previous candidate checksum or signer verification forward as evidence for a changed source.

@@ -9,7 +9,7 @@
 - Latest pushed production source commit: `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4`
 - Recovery fix commits in the pushed branch: `40b4f5d8c7b255ebed7cc886158d6e6621a911c4`, `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4`
 - Product candidate already validated and in the PR: `1c36349ca3edb69061a34b44d385670380f60512`
-- Both recovery fixes are pushed. Exact PR head `8db499af0212795d05b97d0439a0c82f462722b9` is the current evidence snapshot below. This ledger update will create a docs-only descendant, which must be rechecked before merge.
+- Both recovery fixes are pushed. Latest reviewed PR head is `adf871f25c4e60b9b777063b3ca6af4be1c6fb0b`; its review found a stale restart instruction in the docs. Resolve the live PR head and status before acting.
 - PR #65 is open from `codex/v0.7.2-stabilization` into `main`.
 - Release target: versionName `0.7.2`, versionCode `9`.
 - No physical DAC was connected or mutated.
@@ -30,6 +30,7 @@
 - Simulated transport/store regressions cover each path, transient temporary readback, failed pre-write checkpoints, failed `UNCERTAIN` checkpoints, and qualifier recreation. Focused persistence class passes 17/17.
 - Fresh full Gradle gate on exact source commit `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4`: 731 tests, 0 failures/errors/skips; lint 0 errors, 111 warnings, 2 hints; debug and release assemblies pass. `bash tools/verify-r8-mapping.sh` passes.
 - Independent exact-head review of `8db499af0212795d05b97d0439a0c82f462722b9` returned PASS with no actionable P0-P2 issue or unsupported release claim.
+- Follow-up review of docs-only head `adf871f25c4e60b9b777063b3ca6af4be1c6fb0b` found a P2 stale restart instruction in `RESUME.md`; this update corrects the instruction to resolve live PR state and wait for gates. No source-code finding was reported.
 - No protocol bytes, hardware identity rules, authorization, or real DAC state changed.
 
 ## Current changes
@@ -38,11 +39,11 @@ Three Kotlin source/test files cover both fixes in commits `40b4f5d8` and `e63fc
 
 ## Next exact actions
 
-1. Complete and push this release-ledger status checkpoint without staging `.unlazy/`.
-2. Require all eight GitHub checks and an independent PASS on the resulting exact PR head; repair any finding and repeat both gates.
+1. Resolve the live PR head, run state, and review result from GitHub; do not repeat an already completed checkpoint action.
+2. Require all eight GitHub checks and an independent PASS on the live exact PR head; repair any finding and repeat both gates.
 3. Merge normally under the active `Protect main` ruleset only after exact-head checks and review pass.
 4. Reverify merged main, create and independently verify the main-only signed candidate, then tag and publish only after every artifact gate passes.
 
 ## Current failure and release state
 
-Both P2 findings are fixed in pushed source head `e63fc4bf`. Exact PR head `8db499af` has all eight checks and independent review PASS; the pending docs-only descendant must be rechecked before merge. Merge, signed candidate, immutable v0.7.2 tag, and public GitHub Release remain pending. No owner action is required.
+Both EW300 P2 findings are fixed in pushed source head `e63fc4bf`. PR head `8db499af` passed all eight checks and independent review. Review of docs-only head `adf871f2` found a stale restart instruction, fixed by this update; resolve the new live head and refresh its checks/review before merge. Merge, signed candidate, immutable v0.7.2 tag, and public GitHub Release remain pending. No owner action is required.
