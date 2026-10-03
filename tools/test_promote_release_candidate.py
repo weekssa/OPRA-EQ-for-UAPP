@@ -1,3 +1,4 @@
+import argparse
 import copy
 import hashlib
 import io
@@ -117,6 +118,59 @@ class ReleasePromotionTest(unittest.TestCase):
     def test_rejects_downloaded_archive_digest_mismatch(self):
         with self.assertRaisesRegex(promotion.PromotionError, "artifact digest"):
             self.validate(digest="c" * 64)
+
+    def test_artifact_digest_comparison_accepts_github_prefix_on_either_value(self):
+        promotion.require_matching_sha256_digest(
+            f"sha256:{self.digest}", self.digest, "artifact digest mismatch"
+        )
+        promotion.require_matching_sha256_digest(
+            self.digest, f"sha256:{self.digest}", "artifact digest mismatch"
+        )
+
+    def test_artifact_digest_comparison_rejects_mismatch_and_malformed_values(self):
+        with self.assertRaisesRegex(promotion.PromotionError, "artifact digest mismatch"):
+            promotion.require_matching_sha256_digest(
+                f"sha256:{self.digest}", "c" * 64, "artifact digest mismatch"
+            )
+        with self.assertRaisesRegex(promotion.PromotionError, "SHA-256 digest input is malformed"):
+            promotion.require_matching_sha256_digest(
+                f"sha256:{self.digest}", "not-a-digest", "artifact digest mismatch"
+            )
+
+    def test_tag_command_accepts_prefixed_github_digest_from_verifier(self):
+        github_digest = f"sha256:{self.digest}"
+        args = argparse.Namespace(
+            project_root=self.root,
+            tag=TAG,
+            candidate_run_id=RUN_ID,
+            candidate_artifact_id=ARTIFACT_ID,
+            source_sha=SOURCE_SHA,
+            artifact_digest=github_digest,
+        )
+        candidate = {"source_sha": SOURCE_SHA}
+        with (
+            mock.patch.object(promotion, "check_contract"),
+            mock.patch.object(promotion, "_github_api_from_environment", return_value=object()),
+            mock.patch.object(
+                promotion,
+                "validate_github_candidate",
+                return_value=(None, None, github_digest),
+            ),
+            mock.patch.object(promotion, "read_candidate_archive", return_value=self.archive) as read_archive,
+            mock.patch.object(promotion, "validate_candidate_archive", return_value=candidate) as validate_archive,
+            mock.patch.object(promotion, "create_candidate_tag") as create_tag,
+        ):
+            promotion.command_tag(args)
+
+        read_archive.assert_called_once_with(mock.ANY, ARTIFACT_ID, github_digest)
+        validate_archive.assert_called_once_with(
+            self.archive,
+            artifact_digest=github_digest,
+            tag=TAG,
+            source_sha=SOURCE_SHA,
+            project_root=self.root,
+        )
+        create_tag.assert_called_once()
 
     def test_rejects_candidate_from_another_source_sha(self):
         with self.assertRaisesRegex(promotion.PromotionError, "sourceSha"):
