@@ -2,32 +2,32 @@
 
 MISSION: v0.7.2 stabilization and release
 
-CURRENT PHASE: following up on the independent review of docs-only PR head `adf871f25c4e60b9b777063b3ca6af4be1c6fb0b`, which found a stale restart instruction; this ledger update fixes it
+CURRENT PHASE: PR #65 exact snapshot `3ccf6728a9edd6c85a76ece1f5e71bc93fa37b74` passed all eight GitHub checks and independent review. The tracked pre-merge ledger sync records this snapshot and creates a docs-only descendant that needs fresh exact-head gates.
 
-CURRENT WORKTREE: /Users/stephenweeks/.codex/worktrees/a79b/OPRA-EQ-for-UAPP
+CURRENT WORKTREE: `/Users/stephenweeks/.codex/worktrees/a79b/OPRA-EQ-for-UAPP`
 
-CURRENT BRANCH: codex/v0.7.2-stabilization
+CURRENT BRANCH: `codex/v0.7.2-stabilization`
 
-BASELINE: v0.7.1 -> c48f6a5daa08a5e03475b2e415fe80b41d3357db
+BASELINE: v0.7.1 -> `c48f6a5daa08a5e03475b2e415fe80b41d3357db`, versionName 0.7.1, versionCode 8
 
-CURRENT HEAD: resolve the live exact head from the local branch and PR #65 before acting. Latest review snapshot: `adf871f25c4e60b9b777063b3ca6af4be1c6fb0b`.
+CURRENT HEAD: resolve the live branch and PR #65 head before acting. The latest fully verified exact-head snapshot before this ledger sync is `3ccf6728a9edd6c85a76ece1f5e71bc93fa37b74`.
 
 VERSION: 0.7.2 / 9
 
-LAST VERIFIED COMPLETION: forced full Gradle validation on production source `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4`: 731 JVM tests passed, 0 failures/errors/skips; lint 0 errors, 111 warnings, 2 hints; debug/release assembly and R8 mapping passed. The EW300 persistence suite passed 17/17. On PR head `8db499af`, all eight GitHub checks and independent review passed; API 35 emulator instrumentation passed 25/25 and API 26 x86_64 cold install/readiness/survival passed. Follow-up review of docs-only head `adf871f2` found a P2 stale restart instruction, corrected by this ledger update.
+LAST VERIFIED COMPLETION: exact PR head 3ccf6728 passed all eight checks: Android build, API 35 UI instrumentation (25/25), API 26 x86_64 cold-install/catalog readiness/survival, Analyze Kotlin, CodeQL, catalog currentness, priority community, and dependency submission. Independent review returned PASS with no actionable P0-P2 issue or unsupported release claim. Exact-run artifacts: UI `11262353847`, API 26 `11261474879`, lint `11262258835`, debug APK `11262004385` (test evidence only). Full Gradle validation on source `e63fc4bf` passed 731 JVM tests, lint, debug/release assembly, and R8 mapping.
 
-NEXT EXACT ACTION: resolve the live PR head and wait for all eight checks and an independent PASS on that exact head; repair any actionable finding, then merge normally when all gates and protection are clear.
+NEXT EXACT ACTION: resolve the live PR head and refresh all eight checks plus independent review on that exact head. Merge normally only after both gates pass and branch protection allows it.
 
-CURRENT FAILURE: P2 stale restart instruction found in review of `adf871f2`; this update replaces the already-completed commit/push instruction with live-head verification and gate waiting. The prior two P2 restoration replay paths remain fixed and regression-tested.
+CURRENT FAILURE: NONE. The stale restart instruction reported on `adf871f2` was fixed in `3ccf6728`. Both EW300 restoration replay findings are fixed and regression-tested.
 
-LAST GREEN GATES: PR #65 head `8db499af0212795d05b97d0439a0c82f462722b9`: Android build/UI/API26 run `37088331227`, Analyze Kotlin run `37088331231`, CodeQL check `111104328833`, Catalog run `37088331236`, Priority community run `37088331239`, and dependency submission run `37088326577`; independent exact-head review PASS. API 35 instrumentation artifact `11261079560`, API 26 smoke artifact `11261199392`.
+LAST GREEN GATES: all eight GitHub checks and independent review passed on exact PR head `3ccf6728a9edd6c85a76ece1f5e71bc93fa37b74`. Android run `37090841176`; Analyze Kotlin/CodeQL workflow run `37090841130`; CodeQL status `111111725873`; dependency submission `37090838488`; Catalog `37090841097`; Priority community `37090841101`.
 
 ACTIVE PR: https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/65
 
-ACTIVE CI RUN: resolve live status from PR #65. At the last query on `adf871f2`, three of eight checks had passed and five were pending; this documentation fix creates a new head that must be checked separately.
+ACTIVE CI RUN: resolve live status from PR #65; the next pushed ledger head requires fresh exact-head checks.
 
 ACTIVE RELEASE RUN: NONE
 
-ARTIFACT STATUS: API26 and emulator UI reports were inspected for `8db499af`; the downloaded debug APK is smoke evidence only. No signed candidate, v0.7.2 tag, or GitHub Release exists.
+ARTIFACT STATUS: API 35 and API 26 exact-head reports were downloaded and inspected for snapshot `3ccf6728`. No signed candidate, v0.7.2 tag, or GitHub Release exists.
 
 HUMAN ACTION REQUIRED: NONE

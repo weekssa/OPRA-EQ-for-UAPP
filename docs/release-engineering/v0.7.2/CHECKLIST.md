@@ -38,18 +38,18 @@ Status markers: [ ] pending, [x] complete, [!] failed/recovery active, [-] not a
 - [x] Lint passes on source commit `e63fc4bf` with 0 errors, 111 warnings, 2 hints, and no issue in the changed production files
 - [x] Release build passes on source commit `e63fc4bf`, v0.7.2/code 9
 - [x] R8 verification passes on source commit `e63fc4bf`; at least one app class is renamed
-- [x] Current PR-head emulator UI/API35 instrumentation passes 25/25 on exact head `8db499af0212795d05b97d0439a0c82f462722b9`, artifact `11261079560`
-- [x] Minimum-SDK/API-26 smoke passes on exact PR head `8db499af0212795d05b97d0439a0c82f462722b9`; fresh-wipe x86_64 minified release install reaches Manufacturers, survives 60 seconds, remains resumed, and has no app-process AndroidRuntime error
+- [x] PR-head emulator UI/API35 instrumentation passes 25/25 on exact head `3ccf6728a9edd6c85a76ece1f5e71bc93fa37b74`, artifact `11262353847`
+- [x] Minimum-SDK/API-26 smoke passes on exact PR head `3ccf6728a9edd6c85a76ece1f5e71bc93fa37b74`; fresh-wipe x86_64 minified release install reaches Manufacturers, remains alive/resumed after the observation period, and has no app-process AndroidRuntime error; artifact `11261474879`
 - [x] Relevant Python, catalog, source, and release-script tests pass: 235 Python tests and all catalog/release contracts
 - [x] actionlint passes; ShellCheck passes where applicable
 - [x] Full 731-test Gradle, lint, debug/release, and R8 checks pass on source commit `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4`
 - [x] `git diff --check` and tracked Markdown U+2014 scan pass after this ledger status sync
-- [x] Independent exact-head review passes on `8db499af0212795d05b97d0439a0c82f462722b9`; prior P2 findings in both restoration paths are fixed and covered by regression cases
-- [!] Follow-up review of docs-only head `adf871f2` found a stale restart instruction; corrected in this documentation update, with exact-head review pending
-- [x] Branch pushed without force; latest evidence head `8db499af0212795d05b97d0439a0c82f462722b9`
+- [x] Independent exact-head review passes on `3ccf6728a9edd6c85a76ece1f5e71bc93fa37b74`; prior P2 findings in both restoration paths are fixed and covered by regression cases
+- [x] Follow-up review of docs-only head `adf871f2` found a stale restart instruction; corrected in `3ccf6728`, which passed exact-head review
+- [x] Branch pushed without force; latest fully verified snapshot `3ccf6728a9edd6c85a76ece1f5e71bc93fa37b74`
 - [x] PR #65 created with exact baseline, changes, local evidence, and recovery status: https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/65
-- [x] Push recovery-fix branch normally without force: source head `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4`; latest ledger evidence head `8db499af0212795d05b97d0439a0c82f462722b9`
-- [x] All eight GitHub checks pass on exact head `8db499af0212795d05b97d0439a0c82f462722b9`; the docs-only descendant created by this update requires fresh exact-head checks and independent review
+- [x] Recovery-fix branch commits were pushed normally without force; later exact-head snapshots are recorded in `ARTIFACTS.md`
+- [x] All eight GitHub checks pass on exact head `3ccf6728a9edd6c85a76ece1f5e71bc93fa37b74`; this tracked pre-merge sync creates a docs-only descendant that requires fresh exact-head checks and independent review
 - [ ] Required GitHub CI and independent review pass on the final pushed exact head
 - [ ] PR merged without bypassing branch protection
 - [ ] Merged main reverified on exact SHA

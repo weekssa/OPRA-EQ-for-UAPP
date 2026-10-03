@@ -12,7 +12,7 @@
 - Latest fetched `origin/main` at the last refresh: `afed3dc90b5873218d5e333882528f8c5ddd54a2` (2026-10-03)
 - Latest main merge on this branch: `1530d02f`, with `afed3dc90b5873218d5e333882528f8c5ddd54a2` as its main parent; the v0.7.1 source remains an ancestor
 - Product source candidate already in the PR: commit `1c36349ca3edb69061a34b44d385670380f60512`.
-- Latest production source commit: `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4`; recovery commits `40b4f5d8c7b255ebed7cc886158d6e6621a911c4` and `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4` are in the branch. Exact PR evidence snapshot below is head `8db499af0212795d05b97d0439a0c82f462722b9`. Review of docs-only head `adf871f2` found one P2 stale restart instruction; this update corrects it. Resolve the live PR head and require fresh checks and review before merge.
+- Latest production source commit: `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4`; recovery commits `40b4f5d8c7b255ebed7cc886158d6e6621a911c4` and `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4` are in the branch. Latest fully verified PR snapshot is `3ccf6728a9edd6c85a76ece1f5e71bc93fa37b74`; all eight checks and independent review passed. This pre-merge ledger sync creates a docs-only descendant that needs fresh exact-head checks and review.
 - Physical DAC writes: none
 
 ## Local verification
@@ -22,10 +22,10 @@
 - R8 mapping verification on source commit `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4` passed; at least one app class is renamed.
 - Forced Kotlin compile passed; its two warnings are in unchanged files
 - API 35 instrumentation passed 25 tests with 0 failures/errors/skips on `opra-v072-api35` (ARM64, emulator 37.1.11)
-- PR-head emulator UI/API35 instrumentation on `8db499af`: 25 tests, 0 failures/errors/skips; report artifact ID `11261079560`, run `37088331227`.
+- PR-head emulator UI/API35 instrumentation on `3ccf6728`: 25 tests, 0 failures/errors/skips; report artifact ID `11262353847`, run `37090841176`.
 - Python tool suite passed 235 tests; release contract, registry validation, and Favorite sample validation passed
 - actionlint 1.7.12 passed all workflow YAML; ShellCheck 0.11.0 passed repository shell scripts
-- Independent reviews of `af3f4c59` and `13bf1f20` returned FAIL with two P2 replay paths, each now fixed in the pushed `e63fc4bf` source. Exact later head review of `8db499af` returned PASS; the documentation descendant still requires a fresh review.
+- Independent reviews of `af3f4c59` and `13bf1f20` returned FAIL with two P2 replay paths, each now fixed in the pushed `e63fc4bf` source. Exact review of `8db499af` and its corrected docs descendant `3ccf6728` returned PASS; this ledger sync's descendant needs a fresh review.
 
 ## API 26 smoke artifacts
 
@@ -39,6 +39,14 @@
 - The clean local ARM64 run used committed source but a temporary signer. It is not CI x86_64 or release candidate provenance. The separate exact PR CI x86_64 evidence below passes on `8db499af`.
 - PR-head API 26 x86_64 smoke on `8db499af`: fresh wipe, minified release APK built and temporary smoke-signed, cold install succeeded, MainActivity launch returned `Status: ok`, Manufacturers appeared, and the app remained alive and resumed through a 60-second observation with no app-process AndroidRuntime error. Diagnostics artifact `11261199392`, run `37088331227`. The smoke-signed APK is not retained as release provenance.
 - Downloaded UI debug APK from run `37088331227`: package `com.weekssa.opraeqforuapp`, versionName `0.7.2`, versionCode `9`, SHA-256 `bf18e80806756814bd30bd4a7d35e3c0615cb211689accc44a69995a8e367b9c`. It is CI test evidence only, not the release candidate.
+
+## Latest exact-head snapshot
+
+- PR #65 was open, non-draft, and `CLEAN` against base `afed3dc90b5873218d5e333882528f8c5ddd54a2` at exact head `3ccf6728a9edd6c85a76ece1f5e71bc93fa37b74`.
+- All eight GitHub checks passed on that exact head: Android build/UI/API 26 run `37090841176` (jobs `111110648767`, `111110648890`, `111110648953`); Analyze Kotlin run `37090841130` (job `111110648040`); CodeQL check `111111725873`; dependency submission run `37090838488` (job `111110640795`); Catalog run `37090841097` (job `111110647550`); Priority community run `37090841101` (job `111110647754`).
+- Independent read-only review returned PASS on exact head `3ccf6728` against base `afed3dc90b5873218d5e333882528f8c5ddd54a2`, with no actionable P0-P2 issue or unsupported release claim. No review was posted to GitHub.
+- Exact-head API 35 report artifact `11262353847` records 25 tests, 0 failures/errors/skips. API 26 report artifact `11261474879` records a fresh minified install, visible Manufacturers list, live PID, resumed MainActivity after the observation period, and no app-process AndroidRuntime error. Lint artifact `11262258835`. Debug APK artifact `11262004385` has SHA-256 `084e3e778023d9dd11dbe9e85a0531c7a08a1dabefb2b563c53f2279a2869caa`; it is CI test evidence only, not a release candidate.
+- The current tracked pre-merge sync is a docs-only descendant of `3ccf6728`; resolve its live head, refresh CI and independent review, and merge only after exact-head gates pass and protection permits.
 
 ## Remote promotion state
 
