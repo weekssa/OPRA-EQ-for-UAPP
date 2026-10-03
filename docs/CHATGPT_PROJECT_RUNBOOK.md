@@ -803,7 +803,8 @@ oracle covers positive and negative high-Q filters, band edges, interacting peak
 shelves, target quantization, and a multi-band fit rejected by dense final validation. Before the
 version metadata change, the local JVM suite passed 724 tests with no failures, errors,
 or skips; Android lint had 0 errors, 111 warnings, and 2 hints, with no diagnostics in the changed
-DSP source/tests. The final versioned run is pending. No physical DAC was connected or mutated.
+DSP source/tests. At this 2026-10-02 phase snapshot, the final versioned run was pending. No
+physical DAC was connected or mutated.
 
 The committed v0.7.2/code 9 candidate `1c36349ca3edb69061a34b44d385670380f60512` passed 727 JVM
 tests, lint with 0 errors, debug and release assembly, forced Kotlin compilation, R8 mapping
@@ -815,13 +816,38 @@ AndroidRuntime error. The smoke used a temporary local signer and is not officia
 provenance. Final Dalvik use was 47,111 KiB of 49,152 KiB. The first same-commit attempt was
 contaminated by overlapping UIAutomation diagnostics and is preserved separately; the serialized
 clean rerun passed. Exact APK hashes, temporary signer, memory data, and both attempt records are in
-`docs/release-engineering/v0.7.2/ARTIFACTS.md`. Exact PR-head CI, review, merge, signed candidate,
-tag, and release remain pending.
+`docs/release-engineering/v0.7.2/ARTIFACTS.md`. At this 2026-10-02 snapshot, exact PR-head CI,
+review, merge, signed candidate, tag, and release remained pending; the 2026-10-03 closeout below
+records their completion.
 
-The v0.7.2 stabilization branch is under PR validation. PR #65 targets `main` and was initially
-opened at head `c81f329b35773141ee7ba583468eaa9e8d7e009b`. Its Android UI, CodeQL, catalog,
-community-coverage, dependency-submission, API 26 x86_64 smoke, and Android build checks passed on
-that initial head. This post-PR status checkpoint advances the head, so confirm its full rerun
-before merge. No signed candidate, v0.7.2 tag, or public release exists yet. Exact current state
-and later evidence belong in `docs/release-engineering/v0.7.2/` and the v0.7.2 section of
-`docs/PUBLIC_RELEASE_CHECKLIST.md`.
+At this 2026-10-02 snapshot, PR #65 had been opened at head
+`c81f329b35773141ee7ba583468eaa9e8d7e009b`; its initial checks passed, while later head validation
+and merge remained pending. No signed candidate, v0.7.2 tag, or public release existed at that
+snapshot. The 2026-10-03 closeout below supersedes it. Exact current release evidence is in
+`docs/release-engineering/v0.7.2/` and the v0.7.2 section of `docs/PUBLIC_RELEASE_CHECKLIST.md`.
+
+### 2026-10-03 v0.7.2 release closeout
+
+EQ Library v0.7.2 is publicly published and is the latest release. Its annotated tag resolves to
+exact source commit `b8e90b9b53fc63ea00fefa499d7d4bd6ce4d55ea` (versionName `0.7.2`, versionCode
+`9`, package `com.weekssa.opraeqforuapp`). PR #66 fixed the promotion artifact-digest comparison
+and merged normally. All seven exact-head checks and independent code/documentation review passed.
+Post-merge Python tests passed 238/238 under bundled Python 3.12, and the release contract,
+15-source registry validation, and Favorite sample coverage passed.
+
+The official Signed Release Candidate run `37099431204` produced artifact `11265653006`, ZIP
+SHA-256 `dc2607ad3b8c43aae4b0d41502ff5f13ce03d8b7b635511941f8271be255ab33`. Its APK checksum is
+`efdd63ddb305d0624f805cc53e4ce27aae7d1ddeb169e8f965302d0f290ba64a`, package version is 0.7.2 / 9,
+the pinned signer certificate SHA-256 is
+`65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`, and the R8 mapping SHA-256 is
+`2ef382f4838c49c89fbea9985fdba976bedef5202aa59711dcbe263690515021`. Promotion run `37099991693`
+passed candidate verification, API 35 clean v0.7.1 install, exact in-place upgrade, and cold launch;
+it created the annotated `v0.7.2` tag and published the release.
+
+All six uploaded release assets were downloaded and matched GitHub's SHA-256 metadata; GitHub
+also lists its two generated source archives. The release APK bytes match the signed candidate and
+checksum. The tag message records the candidate run,
+artifact ID, archive digest, and exact source. `/releases/latest` resolves to v0.7.2. No physical
+DAC writes occurred, and the release adds no DAC support claim. The earlier digest-prefix promotion
+failure is resolved; the original beta artifact remains testing-only. Build/test-toolchain
+Dependabot alerts remain separately tracked as recorded in the release ledger.

@@ -8,22 +8,32 @@ EQ Library ships with **zero headphone or EQ profiles bundled in the APK**. It d
 
 ## Current release
 
-**v0.7.1** is the current public Android release.
+**v0.7.2** is the current public Android release.
 
-[Download EQ Library v0.7.1](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.7.1) or [download the signed APK directly](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.7.1/EQ-Library-v0.7.1.apk)
+[Download EQ Library v0.7.2](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.7.2) or [download the signed APK directly](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.7.2/EQ-Library-v0.7.2.apk)
 
 - Android 8.0 / API 26 or newer
 - Signed with the project's permanent Android release identity for in-place upgrades
 - No Google Play account, EQ Library account, or cloud account required
 - No analytics or telemetry
 
-The public v0.7.1 APK is `EQ-Library-v0.7.1.apk`. Its SHA-256 is:
+The public v0.7.2 APK is `EQ-Library-v0.7.2.apk`. Its SHA-256 is:
 
-`abd8837f78aaf72d28abef3db956a1c171f791616effbc8f7875814c2c28002b`
+`efdd63ddb305d0624f805cc53e4ce27aae7d1ddeb169e8f965302d0f290ba64a`
 
-The matching [SHA-256 checksum file](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.7.1/EQ-Library-v0.7.1.apk.sha256) is published with the release.
+The matching [SHA-256 checksum file](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.7.2/EQ-Library-v0.7.2.apk.sha256) is published with the release.
 
 Android may ask you to allow installation from the browser or file manager used to open the APK because GitHub Releases are installed outside an app store. EQ Library itself does not request package-install permission and never silently installs updates.
+
+## v0.7.2 highlights
+
+- Large cached EQ catalogs load from disk without first copying the full catalog into a large in-memory string.
+- Dense response checks catch high-Q peaks missed by the fitting grid before generated headroom or a fitted EQ is accepted.
+- EW300 persistence qualification stops before a hardware write if its required local recovery checkpoint cannot be saved.
+- Invalid or missing imported filter gains are rejected instead of being silently treated as 0 dB.
+- No new DAC support or USB protocol behavior was added.
+
+See the [v0.7.2 release notes](docs/releases/v0.7.2.md) for the tested scope and release evidence.
 
 ## v0.7.1 highlights
 
@@ -31,9 +41,7 @@ Android may ask you to allow installation from the browser or file manager used 
 - The source coverage gate is part of catalog-source onboarding: each new source ID that contributes canonical EQs needs an authentic sample exercised through its production resolver, or a reviewed no-profile exclusion. Catalog CI fails when the registry and fixture drift.
 - This release changes catalog Favorite resolution only. It does not change DAC protocols or hardware behavior, and the source-ID resolver samples do not independently validate feed parsers, attribution, licenses, or acoustic quality.
 
-See the [v0.7.1 release notes](docs/releases/v0.7.1.md) for the exact coverage, evidence, and boundaries.
-
-The next stabilization update is being prepared for **v0.7.2 / versionCode 9**. Its [release notes](docs/releases/v0.7.2.md) describe lower-memory loading for large cached catalogs and denser EQ response/headroom checks. The signed v0.7.2 APK will be linked here only after its source, artifact, signer, and publication gates pass; v0.7.1 remains the current public download until then.
+See the [v0.7.1 release notes](docs/releases/v0.7.1.md) for its exact coverage, evidence, and boundaries.
 
 ## v0.7.0 highlights
 
@@ -78,7 +86,7 @@ At v0.6.0 publication, TRN Black Pearl automatic physical reattach, Restore defa
 
 EQ Library supports multiple output contexts from one canonical source representation.
 
-| Group | Outputs in v0.7.1 |
+| Group | Outputs in v0.7.2 |
 | --- | --- |
 | **Hardware DACs** | TRN Black Pearl, FiiO JA11, SIMGOT EW300 DSP |
 | **Apps** | USB Audio Player PRO / ToneBoosters, Poweramp / Poweramp Equalizer, Wavelet, TOPPING Tune, EasyEffects, Equalizer APO |
@@ -86,13 +94,13 @@ EQ Library supports multiple output contexts from one canonical source represent
 
 The active output is an **operating/action context**, not a catalog or My EQs ownership filter. Switching outputs changes target compatibility, conversion/fidelity, export behavior, and hardware actions without hiding otherwise valid canonical EQs or changing which EQs the user saved.
 
-In v0.7.1, **Save/Add changes local My EQs state only**. File export is an explicit Export action and hardware writes are explicit Flash actions. This prevents selecting a target from silently becoming a library-membership or storage operation.
+In v0.7.2, **Save/Add changes local My EQs state only**. File export is an explicit Export action and hardware writes are explicit Flash actions. This prevents selecting a target from silently becoming a library-membership or storage operation.
 
 Exports use Android's system folder picker. EQ Library does not request broad storage access, does not write into another app's private storage, and manages only files it can prove it created.
 
 ## Hardware support
 
-| Device | EQ Library behavior | v0.7.1 status |
+| Device | EQ Library behavior | v0.7.2 status |
 | --- | --- | --- |
 | **TRN Black Pearl** | `.txt` export, 10-band Direct Flash, playback-gain/headroom handling, final native readback verification, and Reset EQ to flat | **Verified for the tested AFUL Explorer transaction, unit, starting state, and Pixel 9 session** |
 | **FiiO JA11** | Hardware-only five-band User 1 editor, global EQ gain, Apply/Save/readback, Flash, and Reset EQ to flat | **Software path verified · broader power-cycle qualification unclaimed** |
@@ -197,22 +205,21 @@ Run `:app:connectedDebugAndroidTest` only with an attached device or running emu
 
 ## Validation and release discipline
 
-The public v0.7.1 release was built, tested, signed, and published through the trusted main-only workflow from main source `c48f6a5daa08a5e03475b2e415fe80b41d3357db`, which the `v0.7.1` tag resolves to. PR #62's publisher repair passed independent review, all seven exact-head checks, and all six applicable post-merge checks. The signed candidate and public promotion both passed on that same source; the API 35 upgrade and cold launch passed.
+The public v0.7.2 release was built, tested, signed, and published through the main-only workflows from exact source `b8e90b9b53fc63ea00fefa499d7d4bd6ce4d55ea`, which the annotated `v0.7.2` tag resolves to. PR #66's digest comparison repair passed independent review and all seven exact-head checks. The fresh signed candidate and public promotion passed on that same source, including the API 35 clean baseline install, candidate in-place upgrade, and cold launch.
 
-- Signed candidate: [GitHub Actions run 36945247310](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36945247310), artifact ID `11201724340`, ZIP SHA-256 `8716136285cd7d77c15c3e850c319ad121e4d4177338b3c1eb1d59594ac95918`
-- Public promotion: [GitHub Actions run 36946254797](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36946254797)
-- Public release: [EQ Library v0.7.1](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.7.1)
-- Public APK SHA-256: `abd8837f78aaf72d28abef3db956a1c171f791616effbc8f7875814c2c28002b`
+- Signed candidate: [GitHub Actions run 37099431204](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/37099431204), artifact ID `11265653006`, ZIP SHA-256 `dc2607ad3b8c43aae4b0d41502ff5f13ce03d8b7b635511941f8271be255ab33`
+- Public promotion: [GitHub Actions run 37099991693](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/37099991693)
+- Public release: [EQ Library v0.7.2](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.7.2)
+- Public APK SHA-256: `efdd63ddb305d0624f805cc53e4ce27aae7d1ddeb169e8f965302d0f290ba64a`
 - Signer certificate SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`
-- Public tag and latest-release metadata resolve to `v0.7.1` and the tag points to the exact release source.
+- R8 mapping SHA-256: `2ef382f4838c49c89fbea9985fdba976bedef5202aa59711dcbe263690515021`
+- Public tag and latest-release metadata resolve to `v0.7.2`; the annotated tag binds candidate run `37099431204`, artifact `11265653006`, and the exact source SHA.
 
-The promotion verified all six published release assets against GitHub's reported digests; the public APK bytes match the signed candidate. The source-wide Favorite regression gate currently has 14 source-ID samples across 13 profiles, including 12 headphone samples and 2 General EQ samples, plus 2 reviewed no-profile exclusions. Wireless debugging and physical-device testing were not required because this change does not alter device behavior.
+All six uploaded release assets were re-downloaded and matched GitHub's reported SHA-256 digests; GitHub also lists its two generated source archives. The public APK bytes match the signed candidate and published checksum. The source-wide Favorite regression gate has 14 source-ID samples across 13 profiles, including 12 headphone samples and 2 General EQ samples, plus 2 reviewed no-profile exclusions. No physical DAC writes were performed and this release adds no DAC support claim.
 
-After publication, the owner confirmed that the Favorite fix works. This owner-reported confirmation adds no device-specific or DAC hardware-support claim.
+The previous v0.7.1 and v0.7.0 evidence is recorded in their versioned release notes.
 
-The previous public v0.7.0 release used signed workflow [run 36381764266](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/36381764266), tag source `4f325d673159b40515086fe5143df12b29ddb076`, and APK SHA-256 `27dada499bcbf9be9bd21d1349164858c93a5d2b83f78fd61134de13b4eb4025`.
-
-The complete release gates and evidence boundaries are recorded in the [v0.7.1 release notes](docs/releases/v0.7.1.md), [v0.7.0 release notes](docs/releases/v0.7.0.md), and [public release checklist](docs/PUBLIC_RELEASE_CHECKLIST.md).
+The complete release gates and evidence boundaries are recorded in the [v0.7.2 release notes](docs/releases/v0.7.2.md), [public release checklist](docs/PUBLIC_RELEASE_CHECKLIST.md), and [release evidence ledger](docs/release-engineering/v0.7.2/ARTIFACTS.md).
 
 Installable releases use SemVer during the `0.x` development series. The first stable release is reserved for `v1.0.0`.
 

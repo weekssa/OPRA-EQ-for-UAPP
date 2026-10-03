@@ -32,7 +32,7 @@ Alternatives: increase `largeHeap`, reduce minSdk, skip API 26, or catch the all
 
 Reason chosen: streaming removes the confirmed full-file text allocation while preserving the repository state model, validation, refresh boundaries, and on-disk format.
 
-Tests validating safety: `largeCachedCatalogCanBeLoadedFromDisk` exercises a >20 MiB persisted JSON file; the focused `CanonicalCatalogRepositoryTest` suite passes. A newly wiped API 26 AVD cold-installed and launched a minified local APK after the fix; MainActivity remained resumed, the process remained alive, and the AndroidRuntime error log was empty. Full candidate validation remains pending.
+Tests validating safety: `largeCachedCatalogCanBeLoadedFromDisk` exercises a >20 MiB persisted JSON file; the focused `CanonicalCatalogRepositoryTest` suite passes. A newly wiped API 26 AVD cold-installed and launched a minified local APK after the fix; MainActivity remained resumed, the process remained alive, and the AndroidRuntime error log was empty. At the time of this decision record, full candidate validation remained pending; it later passed as recorded in `TEST_MATRIX.md` and `ARTIFACTS.md`.
 
 ## D004: merge current main without rewriting the v0.7.1 base
 
@@ -102,8 +102,8 @@ Tests validating safety: `tools/promote_release_candidate.py check-contract` pas
 
 Decision: use one validated SHA-256 equality helper for both tag and publish command inputs, normalizing GitHub's optional `sha256:` prefix on each side.
 
-Evidence: promotion run `37096259477` completed candidate verification and the API 35 v0.7.1-to-candidate install/upgrade/cold-launch gate. `create-candidate-tag` failed with `candidate tag input digest differs from the immutable Actions artifact digest`; workflow output carried `sha256:<hex>`, while `command_tag()` normalized only the argument. The publish job was skipped, and remote inspection found no v0.7.2 tag or release.
+Evidence: at the time, promotion run `37096259477` completed candidate verification and the API 35 v0.7.1-to-candidate install/upgrade/cold-launch gate. `create-candidate-tag` failed with `candidate tag input digest differs from the immutable Actions artifact digest`; workflow output carried `sha256:<hex>`, while `command_tag()` normalized only the argument. The publish job was skipped, and remote inspection then found no v0.7.2 tag or release. This historical failure was resolved as recorded below.
 
 Reason: GitHub's Actions artifact API and the normalized local representation are both valid formats for the same immutable digest. Both comparison inputs must be normalized while mismatch and malformed-digest rejection remain strict.
 
-Tests validating safety: 39 focused promotion tests pass, including equal digests with and without `sha256:`, malformed/mismatched rejection, and direct `command_tag()` coverage for the GitHub-prefixed digest. The full Python tool suite passes 238/238 under bundled Python 3.12, and the promotion contract passes. Independent review and normal PR CI/merge remain pending; promotion must use a new candidate from the corrected merged source.
+Tests validating safety: 39 focused promotion tests passed, including equal digests with and without `sha256:`, malformed/mismatched rejection, and direct `command_tag()` coverage for the GitHub-prefixed digest. The full Python tool suite passed 238/238 under bundled Python 3.12, and the promotion contract passed. PR #66 passed all seven exact-head checks and independent code/documentation review, then merged normally at release source `b8e90b9b53fc63ea00fefa499d7d4bd6ce4d55ea`. Fresh candidate run `37099431204` and promotion run `37099991693` passed; the promotion created the annotated tag and published the public release.

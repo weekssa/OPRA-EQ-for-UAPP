@@ -1,54 +1,30 @@
-# v0.7.2 active execution state
+# v0.7.2 release state
 
-## Identity
+## Published release
 
 - Repository: `weekssa/OPRA-EQ-for-UAPP`
-- Worktree: `/Users/stephenweeks/.codex/worktrees/a79b/OPRA-EQ-for-UAPP`
-- Branch: `codex/v0.7.2-stabilization`
-- Verified release base: `v0.7.1` at `c48f6a5daa08a5e03475b2e415fe80b41d3357db`, versionName `0.7.1`, versionCode `8`
-- Latest pushed production source commit: `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4`
-- Recovery fix commits in the pushed branch: `40b4f5d8c7b255ebed7cc886158d6e6621a911c4`, `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4`
-- Product candidate already validated and in the PR: `1c36349ca3edb69061a34b44d385670380f60512`
-- PR #65 was merged normally at `a60411bebfdbd1cea4218d3bde45013bb7ed26a9` from exact reviewed head `e7f2fc937e9b265770296dbdc4cbb40a4e5e13c9`.
-- All eight checks on `e7f2fc93` passed and independent review returned PASS with no P0-P2 finding. The merged main tree exactly equals that tested tree.
-- `main` is verified at `a60411bebfdbd1cea4218d3bde45013bb7ed26a9`; app metadata is 0.7.2/code 9, package ID unchanged, minSdk 26, targetSdk 36.
-- The recovery branch last pushed head remains `e7f2fc93` until this post-merge ledger checkpoint is committed and pushed.
-- Signed beta run `37093821378` succeeded from exact merged SHA and published a signed APK to temporary branch `mobile-test-apk` at commit `19ded401683b87ae56528ba5fc3af783cacec4bb`. The artifact is testing evidence only; the promotion verifier correctly rejected it because it was not produced by the required release workflow.
-- Official Signed Release Candidate run `37095180116` succeeded from exact merged SHA `a60411bebfdbd1cea4218d3bde45013bb7ed26a9` with tag `v0.7.2`; artifact `11264251526` passed independent verification. Candidate APK SHA-256 `f3afaa102a31491286828faa37cfe1454853721d1e4aa736da57bf4919e89ded`; artifact ZIP digest `sha256:1da409dcf47368ec254a5432e7c1d316473920c28e27c19416b10cc8e29969d9`.
-- Promotion run `37096259477` passed candidate verification and API 35 v0.7.1 clean install / exact candidate in-place upgrade / cold launch, but failed in the tag job due to asymmetric SHA-256 prefix normalization. Publish was skipped; no tag or release mutation occurred.
-- Release target: versionName `0.7.2`, versionCode `9`.
-- No physical DAC was connected or mutated.
+- Release: [EQ Library v0.7.2](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.7.2), published 2026-10-03 and latest
+- Version: `0.7.2`, versionCode `9`; package `com.weekssa.opraeqforuapp`
+- Release source and annotated tag target: `b8e90b9b53fc63ea00fefa499d7d4bd6ce4d55ea`
+- Candidate run: [37099431204](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/37099431204), artifact `11265653006`, ZIP SHA-256 `dc2607ad3b8c43aae4b0d41502ff5f13ce03d8b7b635511941f8271be255ab33`
+- Promotion run: [37099991693](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/37099991693); candidate verification and API 35 baseline install, in-place upgrade, and cold launch passed; tag creation and publication succeeded
+- APK SHA-256: `efdd63ddb305d0624f805cc53e4ce27aae7d1ddeb169e8f965302d0f290ba64a`
+- Pinned signer SHA-256: `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`
+- R8 mapping SHA-256: `2ef382f4838c49c89fbea9985fdba976bedef5202aa59711dcbe263690515021`
+- All six uploaded release assets were downloaded and their bytes matched GitHub's SHA-256 metadata; GitHub also lists two generated source archives. APK bytes match the candidate and its published checksum. `/releases/latest` resolves to v0.7.2.
+- No physical DAC writes were performed; v0.7.2 adds no DAC support claim.
 
-## Completed before the current recovery fix
+## Source, checks, and review
 
-- The v0.7.2 candidate addresses the reproduced API 26 startup OOM, includes an independent dense DSP response oracle and bounded safety correction, version-driven release workflows, and synchronized release docs. The DSP evidence is recorded in D005 and the test matrix.
-- Product commit `1c36349ca3edb69061a34b44d385670380f60512` passed 727 JVM tests, lint, debug/release assembly, R8 mapping, and API 35 instrumentation (25/25). The Python suite passed 235 tests; catalog/release contracts, actionlint, ShellCheck, and API 26 ARM64 cold smoke passed. These results apply to that source and are not transferred to later commits.
-- Prior PR head `af3f4c596e99e0cf8dce408b982c641c6898de6a` passed all eight CI/security checks. API 26 artifact `11259384390` and UI artifact `11258319894` were downloaded and inspected. These checks predate the current EW300 recovery fix.
-- PR head `8db499af0212795d05b97d0439a0c82f462722b9`: all eight checks passed. Android build, emulator UI, and API26 jobs are in run `37088331227`; Analyze Kotlin `37088331231`; CodeQL check `111104328833`; Catalog `37088331236`; Priority community `37088331239`; dependency submission `37088326577`.
-- Exact-head API35 emulator UI instrumentation passed 25/25 (artifact `11261079560`). Fresh-wipe API26 x86_64 smoke installed the minified release APK, launched MainActivity, reached the Manufacturers list, and remained alive/resumed for 60 seconds without an app AndroidRuntime error (artifact `11261199392`).
-- The downloaded debug APK is package `com.weekssa.opraeqforuapp`, versionName `0.7.2`, versionCode `9`, SHA-256 `bf18e80806756814bd30bd4a7d35e3c0615cb211689accc44a69995a8e367b9c`; it is test evidence, not a release candidate.
+- Stabilization branch: `codex/v0.7.2-stabilization`
+- PR #65 product work merged normally as `a60411bebfdbd1cea4218d3bde45013bb7ed26a9` after all eight exact-head checks and independent review passed.
+- PR #66 fixed the prefixed Actions artifact digest comparison and merged normally. Its exact tested head is `11275d510f3a0b9b1ad4aa4edae2c25bd2044b4b`; all seven checks and independent code/documentation review passed. Its tree matches release source `b8e90b9b53fc63ea00fefa499d7d4bd6ce4d55ea`.
+- PR #65 exact-head CI included API 35 UI instrumentation (25/25) and API 26 x86_64 cold-install, catalog readiness, and 60-second survival evidence. Post-merge local Gradle validation on the product changes passed 731 JVM tests, lint, debug/release assembly, and R8 mapping verification.
+- The promotion defect was reproduced in historical run `37096259477`; its tag job failed before tag creation and its publish job was skipped. PR #66 corrected the comparison. Fresh candidate run `37099431204` and promotion run `37099991693` passed on the corrected release source.
+- The release-tree Python validation passed 238/238 tests under bundled Python 3.12; the release promotion contract passed. Registry validation passed for 15 sources; Favorite validation passed for 14 samples, 13 profiles, and 2 explicit exclusions.
 
-## Current exact-head finding and recovery
+## Remaining tracked risk and handoff
 
-- Independent reviews of PR heads `af3f4c59` and `13bf1f20` returned FAIL with separate P2 replay windows in two baseline-restoration paths. Both were caused by sending restoration writes before persisting a terminal attempt marker.
-- Commits `40b4f5d8` and `e63fc4bf` now persist durable `RESTORATION_ATTEMPTED` before the first baseline write in both paths. Failure to save the marker prevents that path's restoration write; the stage is terminal if later uncertainty persistence fails.
-- Simulated transport/store regressions cover each path, transient temporary readback, failed pre-write checkpoints, failed `UNCERTAIN` checkpoints, and qualifier recreation. Focused persistence class passes 17/17.
-- Fresh full Gradle gate on exact source commit `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4`: 731 tests, 0 failures/errors/skips; lint 0 errors, 111 warnings, 2 hints; debug and release assemblies pass. `bash tools/verify-r8-mapping.sh` passes.
-- Independent exact-head review of `8db499af0212795d05b97d0439a0c82f462722b9` returned PASS with no actionable P0-P2 issue or unsupported release claim.
-- Follow-up review of docs-only head `adf871f25c4e60b9b777063b3ca6af4be1c6fb0b` found a P2 stale restart instruction in `RESUME.md`; commit `3ccf6728` corrected the instruction to resolve live PR state and wait for gates. Independent review of `3ccf6728` returned PASS and its eight checks passed. No source-code finding was reported.
-- No protocol bytes, hardware identity rules, authorization, or real DAC state changed.
-
-## Current changes
-
-The product recovery fixes in commits `40b4f5d8` and `e63fc4bf` passed exact-head review, all eight PR checks, and post-merge validation at `a60411be`. The official release candidate and API 35 upgrade passed, but promotion run `37096259477` stopped before tag creation on an asymmetric SHA-256 prefix comparison. The current worktree fixes both tag and publish comparisons, with a direct `command_tag()` regression. The focused publisher tests pass 39/39; the full Python suite passes 238/238 under bundled Python 3.12; the release contract passes. `.unlazy/v0.7.2-autonomous-release/` is a local untracked orchestration workspace and must not be staged.
-
-## Next exact actions
-
-1. Complete independent review and publish the tracked fix through normal PR checks and merge.
-2. Reverify corrected `main`, generate and verify a fresh candidate bound to its exact SHA, and run promotion again.
-3. Verify remote `v0.7.2` annotated tag binding and public release metadata.
-4. Download every public asset and confirm digest, APK bytes, signer, provenance, curated notes, and `/releases/latest`; then push final recovery state and sync main docs.
-
-## Current failure and release state
-
-Both EW300 P2 findings are fixed in source commit `e63fc4bf`. PR #65 exact head `e7f2fc93` passed all eight checks and independent review and merged normally as `a60411be`; the merge tree equals that tested head. Post-merge local Gradle and R8 gates pass. Candidate `37095180116` was independently verified and the promotion API 35 install/upgrade passed, but the tag job failed on digest prefix normalization. The fix and regression are present locally and all 238 Python tests pass; independent review and normal PR merge remain. No tag/release exists. No physical DAC writes were performed. No owner action is required.
+- 51 transitive Maven Dependabot alerts (3 critical, 20 high, 26 medium, 2 low) remain in Gradle/build/emulator/test components. None was found in v0.7.2 `releaseRuntimeClasspath` or mapped minified DEX; build-environment risk remains and is tracked separately.
+- No release gate or owner action remains. The docs-only closeout update is being recorded on the stabilization branch; its normal PR and checks are documentation maintenance after publication.
+- Detailed checks, decisions, blockers, artifacts, and recovery history are in `CHECKLIST.md`, `TEST_MATRIX.md`, `DECISIONS.md`, `BLOCKERS.md`, and `ARTIFACTS.md`.

@@ -57,13 +57,18 @@ Status markers: [ ] pending, [x] complete, [!] failed/recovery active, [-] not a
 - [x] Official Signed Release Candidate generated from verified merged main (run `37095180116`, exact source `a60411bebfdbd1cea4218d3bde45013bb7ed26a9`)
 - [x] APK metadata, signature, pinned certificate, alignment, checksum, manifest, artifact digest, and R8 mapping independently verified; exact tuple is recorded in `ARTIFACTS.md`
 - [x] Promotion run `37096259477` passed clean API 35 install of latest public v0.7.1, in-place candidate upgrade, and cold launch
-- [!] Promotion tag step failed on prefixed/unprefixed artifact digest comparison; publisher fix/test, normal PR merge, fresh candidate, and new promotion run are required
+- [x] Historical promotion run `37096259477` exposed the prefixed/unprefixed artifact digest comparison; it failed before tag creation and made no release mutation. PR #66 fixed the defect.
 - [x] Root cause confirmed before tag creation; remote tag/release unchanged
 - [x] Shared validated digest normalization added to tag and publish paths; direct tag-command regression test covers GitHub-prefixed digest input
 - [x] Focused promotion suite passes 39/39, full Python tool suite passes 238/238 under bundled Python 3.12, and promotion contract passes
-- [ ] Independent review and normal PR checks/merge for the promotion fix
-- [ ] Immutable v0.7.2 tag created on exact verified release commit
-- [ ] GitHub Release published with approved candidate assets and notes
-- [ ] Public release assets re-downloaded and verified
-- [ ] FINAL_REPORT.md complete and exact state pushed to recovery branch
-- [ ] HUMAN ACTION REQUIRED = NONE
+- [x] PR #66 promotion fix passed all seven exact-head checks and independent code/documentation review; merged normally at exact release source `b8e90b9b53fc63ea00fefa499d7d4bd6ce4d55ea`
+- [x] Fresh signed candidate passed exact identity verification: run `37099431204`, artifact `11265653006`, APK SHA-256 `efdd63ddb305d0624f805cc53e4ce27aae7d1ddeb169e8f965302d0f290ba64a`
+- [x] Promotion run `37099991693` passed API 35 baseline install, candidate upgrade, and cold launch; created the annotated `v0.7.2` tag and published the release
+- [x] Public release assets re-downloaded; all six files matched GitHub SHA-256 metadata and the public APK matches the candidate/checksum
+- [x] `/releases/latest` and the public tag resolve to v0.7.2 and exact source `b8e90b9b53fc63ea00fefa499d7d4bd6ce4d55ea`
+- [x] `FINAL_REPORT.md` records exact release provenance, passed gates, resolved failure, residual risk, and owner action status
+- [x] HUMAN ACTION REQUIRED = NONE
+
+## Documentation closeout
+
+The release is complete. The current documentation-only ledger synchronization must be reviewed and merged through its normal PR checks; that follow-up does not reopen release, candidate, publication, or hardware gates.

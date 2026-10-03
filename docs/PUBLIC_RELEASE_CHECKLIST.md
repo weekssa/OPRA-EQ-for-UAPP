@@ -22,7 +22,7 @@ The checklist is organized around the **current release state**. Detailed histor
   and never rebuilds or re-signs the APK.
 - [x] The repository front page describes the current **EQ Library** product rather than the original OPRA-only workflow.
 
-## Current v0.7.1 state: source-wide Favorite fix
+## Historical v0.7.1 release closeout
 
 - [x] Public release [v0.7.1](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.7.1) is published, non-draft, non-prerelease, and returned by `/releases/latest`.
 - [x] Release ID `401454172` was published at `2026-10-02T00:32:34Z` with curated v0.7.1 notes.
@@ -45,22 +45,22 @@ The checklist is organized around the **current release state**. Detailed histor
 
 Status: **Published under the owner's conditional approval; all merge, candidate, promotion, and post-publication gates passed.** The release makes no new hardware-support claim. See [v0.7.1 release notes](releases/v0.7.1.md) and the latest closeout entry in `docs/CHATGPT_PROJECT_RUNBOOK.md`.
 
-## v0.7.2 stabilization preparation
+## v0.7.2 release closeout
 
-v0.7.1 remains the current public release until the signed v0.7.2 candidate is independently verified, tagged, and published. The stabilization branch targets versionName `0.7.2` and versionCode `9` from the immutable v0.7.1 base.
+The v0.7.2 public release is latest. It uses versionName `0.7.2`, versionCode `9`, package `com.weekssa.opraeqforuapp`, and source commit `b8e90b9b53fc63ea00fefa499d7d4bd6ce4d55ea`.
 
-- [x] Version metadata is set to `0.7.2` / `9` without changing package ID or SDK levels.
-- [x] User-facing v0.7.2 notes describe only implemented behavior and retain existing hardware/UAPP boundaries.
-- [x] Independent dense DSP tests reproduce the old high-Q response miss and cover the production correction.
-- [x] Product source `1c36349ca3edb69061a34b44d385670380f60512` passed local Gradle, R8, API 35 instrumentation, Python/catalog/release, actionlint, and ShellCheck gates. Fresh wipe/install API 26 ARM64 smoke rendered the manufacturer, 1MORE model, and `oratory1990` profile, then remained resumed/alive for 60 seconds without an AndroidRuntime error. It used a temporary signer and left 2,041 KiB free in the 48 MiB Dalvik heap. Later exact-head CI and review on `e7f2fc937e9b265770296dbdc4cbb40a4e5e13c9` passed before PR #65 merged at `a60411bebfdbd1cea4218d3bde45013bb7ed26a9`.
-- [x] Exact-head independent review returned PASS with no P0-P2 findings on `e7f2fc937e9b265770296dbdc4cbb40a4e5e13c9`; all eight GitHub checks passed. API35 instrumentation passed 25/25 and API26 x86_64 minified cold-install smoke passed.
-- [x] PR #65 merged normally without bypass at exact main SHA `a60411bebfdbd1cea4218d3bde45013bb7ed26a9`. The merged Git tree equals the reviewed and checked PR head.
-- [x] Post-merge local Gradle validation on `a60411be` passed 731 JVM tests, lint with 0 errors/111 warnings/2 hints, debug and release assembly, and R8 mapping verification.
-- [x] Official Signed Release Candidate run `37095180116` succeeded from exact source SHA `a60411bebfdbd1cea4218d3bde45013bb7ed26a9`. Artifact `11264251526` has ZIP digest `sha256:1da409dcf47368ec254a5432e7c1d316473920c28e27c19416b10cc8e29969d9`; APK `EQ-Library-v0.7.2.apk` SHA-256 is `f3afaa102a31491286828faa37cfe1454853721d1e4aa736da57bf4919e89ded`, package/version `com.weekssa.opraeqforuapp` / `0.7.2` / code `9`, signer matches the pinned certificate, and R8 mapping digest is `2ef382f4838c49c89fbea9985fdba976bedef5202aa59711dcbe263690515021`. Independent local promotion verification passed against the GitHub artifact digest and latest public v0.7.1 APK.
-- [!] Promotion run `37096259477` completed its API 35 v0.7.1 install, exact candidate upgrade, and cold launch successfully, but its tag job failed because the publisher compared GitHub's `sha256:`-prefixed digest against a prefix-stripped input. The publish job was skipped; remote v0.7.2 tag and release remain absent. Fix and merge the publisher comparison with a regression test, then create a fresh candidate from the new exact main SHA before retrying promotion. Earlier beta run `37093821378` is only testing evidence; its APK went to temporary `mobile-test-apk` and is not eligible for release promotion.
-- [ ] Immutable `v0.7.2` tag and public release assets are verified after publication.
+- [x] Startup catalog, dense DSP response, EW300 persistence, import validation, and existing support boundaries are covered by the release notes and regression evidence.
+- [x] PR #65 product changes merged at `a60411bebfdbd1cea4218d3bde45013bb7ed26a9`; PR #66 fixed the digest comparison and merged normally at exact release source `b8e90b9b53fc63ea00fefa499d7d4bd6ce4d55ea`.
+- [x] All seven exact-head checks passed on PR #66 head `11275d510f3a0b9b1ad4aa4edae2c25bd2044b4b`; independent code and documentation reviews passed.
+- [x] Post-merge validation passed: Python tool suite 238/238 under bundled Python 3.12; promotion contract; catalog registry (15 sources); Favorite coverage (14 samples across 13 profiles, 2 exclusions). The Android CI gate passed on the exact PR tree, including unit tests, lint, debug/release assembly, R8, emulator UI, and API 26 smoke.
+- [x] Fresh official candidate run `37099431204` built from exact main source `b8e90b9b53fc63ea00fefa499d7d4bd6ce4d55ea`. Artifact `11265653006` ZIP SHA-256: `dc2607ad3b8c43aae4b0d41502ff5f13ce03d8b7b635511941f8271be255ab33`.
+- [x] Candidate APK `EQ-Library-v0.7.2.apk` SHA-256: `efdd63ddb305d0624f805cc53e4ce27aae7d1ddeb169e8f965302d0f290ba64a`; package/version `com.weekssa.opraeqforuapp` / `0.7.2` / code `9`; pinned signer SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`; R8 mapping SHA-256 `2ef382f4838c49c89fbea9985fdba976bedef5202aa59711dcbe263690515021`.
+- [x] Promotion run `37099991693` passed exact candidate verification, API 35 install of public v0.7.1, candidate in-place upgrade, and cold launch. It created the annotated `v0.7.2` tag and published the GitHub release.
+- [x] The annotated `v0.7.2` tag resolves to exact source `b8e90b9b53fc63ea00fefa499d7d4bd6ce4d55ea` and records candidate run `37099431204`, artifact `11265653006`, and candidate ZIP SHA-256.
+- [x] All six uploaded release assets were downloaded and their bytes matched GitHub's reported SHA-256 digests; GitHub also lists its two generated source archives. APK bytes match the candidate and checksum; `/releases/latest` resolves to v0.7.2.
+- [x] No physical DAC writes were performed, and no DAC support claim was added.
 
-Status: **PR #65 is merged and post-merge tests pass. The official candidate and API 35 upgrade gate passed, but promotion run `37096259477` failed at the annotated-tag digest comparison; publication was skipped. The publisher fix now passes 39 focused tests, the full 238-test Python suite, and the release contract. Independent review and normal PR checks/merge remain before a fresh candidate is built from corrected main. v0.7.1 remains latest and no v0.7.2 tag or release exists.** The beta APK published to temporary `mobile-test-apk` is testing material only. Full evidence, including one contaminated API 26 attempt and the clean exact-source rerun, is maintained in `docs/release-engineering/v0.7.2/`.
+Status: **v0.7.2 is published and latest.** The former promotion run `37096259477` is a resolved historical failure; its digest correction is in PR #66 and the fresh candidate/promotion passed. The earlier beta run `37093821378` remains testing evidence only. The 51 transitive Maven Dependabot alerts in Gradle/build/emulator/test tooling remain separately tracked; none was found in v0.7.2 `releaseRuntimeClasspath` or the mapped minified DEX scan, while build-environment risk remains. Full evidence is in `docs/release-engineering/v0.7.2/`.
 
 ## Previous v0.7.0 state
 
