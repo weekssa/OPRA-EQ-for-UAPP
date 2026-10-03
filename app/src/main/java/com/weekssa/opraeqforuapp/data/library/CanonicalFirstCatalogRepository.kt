@@ -9,9 +9,11 @@ import com.weekssa.opraeqforuapp.domain.library.CanonicalLegacyCatalogAdapter
 import com.weekssa.opraeqforuapp.domain.library.CanonicalEqSelection
 import com.weekssa.opraeqforuapp.domain.library.CatalogSnapshot
 import com.weekssa.opraeqforuapp.domain.library.overlayCanonicalCatalog
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.withContext
 
 /**
  * v0.3 multi-source catalog bridge.
@@ -125,15 +127,20 @@ class CanonicalFirstCatalogRepository(
             ?.snapshot
             ?.let { CanonicalLegacyCatalogAdapter.resolveSelection(it, preset) }
 
-    private fun renderAvailableCatalog(): CatalogState.Ready? {
+    private suspend fun renderAvailableCatalog(): CatalogState.Ready? =
+        withContext(Dispatchers.Default) { renderAvailableCatalogInBackground() }
+
+    private fun renderAvailableCatalogInBackground(): CatalogState.Ready? {
         val canonicalReady = canonicalRepository.state.value as? CanonicalCatalogState.Ready
         val legacyReady = legacyFallback.state.value as? CatalogState.Ready
         val canonicalCatalog = canonicalReady
             ?.takeIf { it.snapshot.isUsable() }
-            ?.let { CanonicalLegacyCatalogAdapter.adapt(it.snapshot) }
+            ?.let {
+                CanonicalLegacyCatalogAdapter.adapt(it.snapshot)
+            }
 
         val catalog: OpraCatalog = when {
-            legacyReady != null && canonicalCatalog != null ->
+            legacyReady != null && canonicalCatalog != null -> {
                 overlayCanonicalCatalog(
                     legacy = legacyReady.catalog,
                     canonical = canonicalCatalog,
@@ -143,6 +150,7 @@ class CanonicalFirstCatalogRepository(
                     // projection alongside it so output selection cannot hide or fake identities.
                     generalPresets = canonicalCatalog.generalPresets,
                 )
+            }
             canonicalCatalog != null -> canonicalCatalog
             legacyReady != null -> legacyReady.catalog
             else -> {

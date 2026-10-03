@@ -12,10 +12,16 @@ interface Ew300GainStateStore {
     fun isPersistenceQualified(deviceFingerprintKey: String): Boolean = false
     fun markPersistenceQualified(deviceFingerprintKey: String, qualified: Boolean) = Unit
     fun readPersistencePending(deviceFingerprintKey: String): Ew300PersistencePending? = null
-    fun writePersistencePending(deviceFingerprintKey: String, pending: Ew300PersistencePending?) = Unit
+    /** Returns false when the recovery checkpoint was not durably stored. */
+    fun writePersistencePending(deviceFingerprintKey: String, pending: Ew300PersistencePending?): Boolean = false
 }
 
-enum class Ew300PersistenceStage { TEMPORARY_COMMITTED, BASELINE_RESTORED, UNCERTAIN }
+enum class Ew300PersistenceStage {
+    TEMPORARY_COMMITTED,
+    RESTORATION_ATTEMPTED,
+    BASELINE_RESTORED,
+    UNCERTAIN,
+}
 
 data class Ew300PersistencePending(
     val stage: Ew300PersistenceStage,

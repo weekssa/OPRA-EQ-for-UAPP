@@ -136,7 +136,19 @@ jobs:
             fi
             sleep 2
           done
-          timeout 240 bash -c 'until [[ "$(adb shell getprop sys.boot_completed | tr -d "\r")" == "1" ]]; do sleep 5; done'
+          boot_completed=""
+          for attempt in $(seq 1 48); do
+            boot_completed="$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
+            if [[ "$boot_completed" == "1" ]]; then
+              break
+            fi
+            sleep 5
+          done
+          if [[ "$boot_completed" != "1" ]]; then
+            printf 'API 35 emulator did not finish booting.\n' >&2
+            cat "$RUNNER_TEMP/emulator.log"
+            exit 1
+          fi
           adb shell input keyevent 82
 
       - name: Run connected UI tests
@@ -219,7 +231,19 @@ jobs:
             fi
             sleep 2
           done
-          timeout 300 bash -c 'until [[ "$(adb shell getprop sys.boot_completed | tr -d "\r")" == "1" ]]; do sleep 5; done'
+          boot_completed=""
+          for attempt in $(seq 1 60); do
+            boot_completed="$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
+            if [[ "$boot_completed" == "1" ]]; then
+              break
+            fi
+            sleep 5
+          done
+          if [[ "$boot_completed" != "1" ]]; then
+            printf 'API 26 emulator did not finish booting.\n' >&2
+            cat "$RUNNER_TEMP/emulator-api-26.log"
+            exit 1
+          fi
           api_level="$(adb shell getprop ro.build.version.sdk | tr -d "\r")"
           printf 'Booted emulator API level: %s\n' "$api_level"
           if [[ "$api_level" != "26" ]]; then
@@ -263,10 +287,56 @@ jobs:
           launch_output="$(adb shell am start -W -n com.weekssa.opraeqforuapp/.MainActivity 2>&1)"
           printf '%s\n' "$launch_output" | tee "$RUNNER_TEMP/min-api-launch.txt"
           grep -q '^Status: ok$' "$RUNNER_TEMP/min-api-launch.txt"
-          sleep 3
+          tab_deadline=$((SECONDS + 60))
+          while (( SECONDS < tab_deadline )); do
+            adb shell uiautomator dump /sdcard/window.xml > /dev/null 2>&1 || true
+            if adb shell cat /sdcard/window.xml 2>/dev/null | grep -q 'text="EQ Library"'; then
+              break
+            fi
+            sleep 5
+          done
+          if ! adb shell cat /sdcard/window.xml 2>/dev/null | grep -q 'text="EQ Library"'; then
+            adb shell cat /sdcard/window.xml > "$RUNNER_TEMP/min-api-hierarchy.xml" 2>/dev/null || true
+            printf 'EQ Library navigation tab did not appear within 60 seconds.\n' >&2
+            exit 1
+          fi
+          adb shell cat /sdcard/window.xml > "$RUNNER_TEMP/min-api-hierarchy.xml"
+          adb shell input tap 540 1680
+          readiness_deadline=$((SECONDS + 300))
+          catalog_ready=false
+          while (( SECONDS < readiness_deadline )); do
+            if ! adb shell pidof com.weekssa.opraeqforuapp > "$RUNNER_TEMP/min-api-pid.txt"; then
+              adb logcat -d -v brief -s AndroidRuntime:E > "$RUNNER_TEMP/min-api-logcat.txt"
+              cat "$RUNNER_TEMP/min-api-logcat.txt"
+              printf 'App process exited before the EQ catalog became ready.\n' >&2
+              exit 1
+            fi
+            adb shell uiautomator dump /sdcard/window.xml > /dev/null 2>&1 || true
+            if adb shell cat /sdcard/window.xml 2>/dev/null | grep -q 'text="Manufacturers"'; then
+              catalog_ready=true
+              adb shell cat /sdcard/window.xml > "$RUNNER_TEMP/min-api-hierarchy.xml"
+              break
+            fi
+            adb logcat -d -v brief -s AndroidRuntime:E > "$RUNNER_TEMP/min-api-logcat.txt"
+            if grep -Fq 'Process: com.weekssa.opraeqforuapp' "$RUNNER_TEMP/min-api-logcat.txt"; then
+              cat "$RUNNER_TEMP/min-api-logcat.txt"
+              exit 1
+            fi
+            sleep 5
+          done
+          if [[ "$catalog_ready" != true ]]; then
+            adb shell cat /sdcard/window.xml > "$RUNNER_TEMP/min-api-hierarchy.xml" 2>/dev/null || true
+            printf 'EQ catalog did not reach its manufacturer list within 300 seconds.\n' >&2
+            exit 1
+          fi
+          printf 'EQ catalog manufacturer list became visible after launch.\n' | tee "$RUNNER_TEMP/min-api-catalog-ready.txt"
           adb shell pidof com.weekssa.opraeqforuapp
           adb shell dumpsys activity activities > "$RUNNER_TEMP/min-api-activities.txt"
-          grep -F 'mResumedActivity' "$RUNNER_TEMP/min-api-activities.txt" | grep -F 'com.weekssa.opraeqforuapp'
+          grep -E 'ResumedActivity|mResumedActivity' "$RUNNER_TEMP/min-api-activities.txt" | grep -F 'com.weekssa.opraeqforuapp'
+          sleep 60
+          adb shell pidof com.weekssa.opraeqforuapp
+          adb shell dumpsys activity activities > "$RUNNER_TEMP/min-api-activities.txt"
+          grep -E 'ResumedActivity|mResumedActivity' "$RUNNER_TEMP/min-api-activities.txt" | grep -F 'com.weekssa.opraeqforuapp'
           adb logcat -d -v brief -s AndroidRuntime:E > "$RUNNER_TEMP/min-api-logcat.txt"
           if grep -Fq 'Process: com.weekssa.opraeqforuapp' "$RUNNER_TEMP/min-api-logcat.txt"; then
             cat "$RUNNER_TEMP/min-api-logcat.txt"
@@ -281,7 +351,10 @@ jobs:
           path: |
             ${{ runner.temp }}/emulator-api-26.log
             ${{ runner.temp }}/min-api-launch.txt
+            ${{ runner.temp }}/min-api-pid.txt
+            ${{ runner.temp }}/min-api-catalog-ready.txt
             ${{ runner.temp }}/min-api-activities.txt
+            ${{ runner.temp }}/min-api-hierarchy.xml
             ${{ runner.temp }}/min-api-logcat.txt
           if-no-files-found: ignore
           retention-days: 14

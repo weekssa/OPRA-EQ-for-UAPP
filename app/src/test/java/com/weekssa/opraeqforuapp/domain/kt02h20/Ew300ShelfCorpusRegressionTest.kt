@@ -9,6 +9,7 @@ import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.OpraProduct
 import com.weekssa.opraeqforuapp.domain.catalog.OpraVendor
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotFactory
+import com.weekssa.opraeqforuapp.domain.dsp.IndependentDenseEqResponseOracle
 import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
 import com.weekssa.opraeqforuapp.domain.hardware.HardwareEqDeviceSpecs
 import com.weekssa.opraeqforuapp.domain.library.AcousticFingerprint
@@ -353,6 +354,7 @@ class Ew300ShelfCorpusRegressionTest {
                             .isAtMost(spec.maxRmsErrorDb)
                         assertThat(representation.maxAbsoluteErrorDb)
                             .isAtMost(spec.maxAbsoluteErrorDb)
+                        assertDenseResponseContract(source, representation, spec)
                         assertThat(representation.bands.all { candidate ->
                             candidate.type in spec.capabilities.supportedBandTypes &&
                                 candidate.frequencyHz in spec.capabilities.minFrequencyHz..spec.capabilities.maxFrequencyHz &&
@@ -383,6 +385,7 @@ class Ew300ShelfCorpusRegressionTest {
             .isAtMost(HardwareEqDeviceSpecs.SIMGOT_EW300.maxRmsErrorDb)
         assertThat(ready.representation.maxAbsoluteErrorDb)
             .isAtMost(HardwareEqDeviceSpecs.SIMGOT_EW300.maxAbsoluteErrorDb)
+        assertDenseResponseContract(profile, ready.representation, HardwareEqDeviceSpecs.SIMGOT_EW300)
         return ready
     }
 
@@ -399,8 +402,30 @@ class Ew300ShelfCorpusRegressionTest {
                     .isAtMost(HardwareEqDeviceSpecs.SIMGOT_EW300.maxRmsErrorDb)
                 assertThat(first.representation.maxAbsoluteErrorDb)
                     .isAtMost(HardwareEqDeviceSpecs.SIMGOT_EW300.maxAbsoluteErrorDb)
+                assertDenseResponseContract(profile, first.representation, HardwareEqDeviceSpecs.SIMGOT_EW300)
             }
             is FiveBandOptimizationResult.NotSuitable -> assertThat(first.reason).isNotEmpty()
+        }
+    }
+
+    private fun assertDenseResponseContract(
+        source: OpraEqProfile,
+        representation: FiveBandRepresentation,
+        spec: FiveBandDeviceSpec,
+    ) {
+        val metrics = IndependentDenseEqResponseOracle.error(
+            source = source.bands.orEmpty().map(IndependentDenseEqResponseOracle::fromOpra),
+            target = representation.bands.map(IndependentDenseEqResponseOracle::fromHardware),
+        )
+        assertThat(metrics.rmsDb).isAtMost(spec.maxRmsErrorDb)
+        assertThat(metrics.maxAbsoluteDb).isAtMost(spec.maxAbsoluteErrorDb)
+        assertThat(representation.rmsErrorDb).isWithin(1e-6).of(metrics.rmsDb)
+        assertThat(representation.maxAbsoluteErrorDb).isWithin(1e-6).of(metrics.maxAbsoluteDb)
+        if (representation.usesGeneratedHeadroom) {
+            val targetMaximum = IndependentDenseEqResponseOracle.maximumGainDb(
+                representation.bands.map(IndependentDenseEqResponseOracle::fromHardware),
+            )
+            assertThat(targetMaximum + representation.playbackGainDb).isAtMost(1e-9)
         }
     }
 

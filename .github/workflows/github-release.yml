@@ -6,7 +6,6 @@ on:
       tag:
         description: Release tag in exact vMAJOR.MINOR.PATCH form.
         required: true
-        default: v0.7.1
         type: string
 
 permissions:
@@ -51,18 +50,21 @@ jobs:
           cache-provider: basic
 
       - name: Validate release inputs and repository files
+        id: release
         env:
           RELEASE_TAG: ${{ inputs.tag }}
         shell: bash
         run: |
           set -euo pipefail
-          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
+          [[ "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || {
             echo "Release tags must use exact SemVer form vMAJOR.MINOR.PATCH" >&2
             exit 1
           }
           tag_version="${RELEASE_TAG#v}"
           version_name="$(sed -n 's/^[[:space:]]*versionName = "\([^"]*\)".*/\1/p' app/build.gradle.kts | head -n 1)"
-          test -n "$version_name"
+          version_code="$(sed -n 's/^[[:space:]]*versionCode = \([0-9]*\).*/\1/p' app/build.gradle.kts | head -n 1)"
+          test -n "$version_name" && test -n "$version_code"
+          [[ "$version_code" =~ ^[1-9][0-9]*$ ]]
           test "$tag_version" = "$version_name" || {
             echo "Requested tag $RELEASE_TAG does not match app versionName $version_name" >&2
             exit 1
@@ -75,23 +77,36 @@ jobs:
             echo "Missing public release-signing certificate fingerprint file" >&2
             exit 1
           }
+          {
+            echo "version_name=$version_name"
+            echo "version_code=$version_code"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Run release gate and build unsigned APK
         run: gradle :app:testDebugUnitTest :app:lintDebug :app:assembleRelease --stacktrace
 
       - name: Verify minified release output
+        env:
+          VERSION_NAME: ${{ steps.release.outputs.version_name }}
+          VERSION_CODE: ${{ steps.release.outputs.version_code }}
         shell: bash
         run: |
           set -euo pipefail
           bash tools/verify-r8-mapping.sh
           unsigned_apk="app/build/outputs/apk/release/app-release-unsigned.apk"
+          mapping="app/build/outputs/mapping/release/mapping.txt"
           test -f "$unsigned_apk"
+          test -s "$mapping"
+          mkdir -p dist
+          cp "$mapping" dist/r8-mapping.txt
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$unsigned_apk" |
-            grep -F "package: name='com.weekssa.opraeqforuapp' versionCode='8' versionName='0.7.1'" >/dev/null
+            grep -F "package: name='com.weekssa.opraeqforuapp' versionCode='${VERSION_CODE}' versionName='${VERSION_NAME}'" >/dev/null
 
       - name: Align, sign, and verify APK
         env:
           RELEASE_TAG: ${{ inputs.tag }}
+          VERSION_NAME: ${{ steps.release.outputs.version_name }}
+          VERSION_CODE: ${{ steps.release.outputs.version_code }}
           OPRA_RELEASE_KEYSTORE_BASE64: ${{ secrets.OPRA_RELEASE_KEYSTORE_BASE64 }}
           OPRA_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.OPRA_RELEASE_KEYSTORE_PASSWORD }}
           OPRA_RELEASE_KEY_ALIAS: ${{ secrets.OPRA_RELEASE_KEY_ALIAS }}
@@ -123,11 +138,15 @@ jobs:
 
           "$build_tools/apksigner" verify --verbose --print-certs "$output_apk" | tee "$output_directory/apksigner-verification.txt"
           "$build_tools/zipalign" -c -v 4 "$output_apk" | tee "$output_directory/zipalign-verification.txt"
+          "$build_tools/aapt" dump badging "$output_apk" |
+            grep -F "package: name='com.weekssa.opraeqforuapp' versionCode='${VERSION_CODE}' versionName='${VERSION_NAME}'" >/dev/null
 
           actual_fingerprint="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' "$output_directory/apksigner-verification.txt" | head -n 1 | tr -d '[:space:]:' | tr '[:upper:]' '[:lower:]')"
           expected_fingerprint="$(tr -d '[:space:]:' < release-signing-cert.sha256 | tr '[:upper:]' '[:lower:]')"
-          version_name="$(sed -n 's/^[[:space:]]*versionName = "\([^"]*\)".*/\1/p' app/build.gradle.kts | head -n 1)"
+          version_name="$VERSION_NAME"
+          version_code="$VERSION_CODE"
           test "$version_name" = "${RELEASE_TAG#v}"
+          [[ "$version_code" =~ ^[1-9][0-9]*$ ]]
           test -n "$actual_fingerprint"
           test "$actual_fingerprint" = "$expected_fingerprint" || {
             echo "Release signing certificate does not match the repository-pinned fingerprint" >&2
@@ -136,9 +155,8 @@ jobs:
 
           sha256sum "$output_apk" > "${output_apk}.sha256"
           apk_sha256="$(cut -d ' ' -f 1 "${output_apk}.sha256")"
-          mapping="app/build/outputs/mapping/release/mapping.txt"
+          mapping="$output_directory/r8-mapping.txt"
           mapping_sha256="$(sha256sum "$mapping" | cut -d ' ' -f 1)"
-          version_code="$(sed -n 's/^[[:space:]]*versionCode = \([0-9]*\).*/\1/p' app/build.gradle.kts | head -n 1)"
           jq -n \
             --arg sourceSha "$GITHUB_SHA" \
             --arg releaseTag "$RELEASE_TAG" \

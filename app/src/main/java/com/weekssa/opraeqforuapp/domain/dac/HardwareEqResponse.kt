@@ -1,6 +1,7 @@
 package com.weekssa.opraeqforuapp.domain.dac
 
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
+import java.util.TreeSet
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
@@ -76,6 +77,11 @@ object HardwareEqResponseEvaluator {
     const val MIN_FREQUENCY_HZ: Double = 20.0
     const val MAX_FREQUENCY_HZ: Double = 20_000.0
     const val DEFAULT_POINT_COUNT: Int = 96
+    const val HEADROOM_VALIDATION_POINT_COUNT: Int = 12_001
+    private val centerOffsets = listOf(
+        0.75, 0.90, 0.95, 0.98, 0.99, 0.995,
+        1.005, 1.01, 1.02, 1.05, 1.10, 1.25,
+    )
 
     fun evaluate(
         filters: List<HardwareEqFilter>,
@@ -83,17 +89,53 @@ object HardwareEqResponseEvaluator {
     ): HardwareEqResponseCurve? {
         require(pointCount >= 2) { "Hardware EQ response requires at least two samples." }
         val frequencies = logarithmicFrequencyGrid(pointCount)
+        val activeBiquads = activeBiquads(filters) ?: return null
         val points = ArrayList<HardwareEqResponsePoint>(frequencies.size)
         frequencies.forEach { frequency ->
             var gainDb = 0.0
-            filters.forEach { filter ->
-                if (!filter.enabled) return@forEach
-                gainDb += responseDb(filter, frequency) ?: return null
+            activeBiquads.forEach { biquad ->
+                gainDb += responseDb(biquad, frequency) ?: return null
             }
             if (!gainDb.isFinite()) return null
             points += HardwareEqResponsePoint(frequencyHz = frequency, gainDb = gainDb)
         }
         return HardwareEqResponseCurve(points)
+    }
+
+    /**
+     * Finds the positive peak used to plan conservative editor headroom.
+     *
+     * The graph remains at its compact default resolution. Headroom uses a dense logarithmic grid,
+     * each active filter's exact center, and nearby center samples so narrow high-Q boosts are not
+     * skipped between graph points.
+     */
+    fun maximumGainDbForHeadroom(filters: List<HardwareEqFilter>): Double? {
+        val activeFilters = filters.filter(HardwareEqFilter::enabled)
+        val activeBiquads = activeBiquads(filters) ?: return null
+        val frequencies = TreeSet<Double>()
+        repeat(HEADROOM_VALIDATION_POINT_COUNT) { index ->
+            val fraction = index.toDouble() / (HEADROOM_VALIDATION_POINT_COUNT - 1).toDouble()
+            frequencies += MIN_FREQUENCY_HZ * (MAX_FREQUENCY_HZ / MIN_FREQUENCY_HZ).pow(fraction)
+        }
+        activeFilters.forEach { filter ->
+            if (filter.frequencyHz in MIN_FREQUENCY_HZ..MAX_FREQUENCY_HZ) {
+                frequencies += filter.frequencyHz
+                centerOffsets.forEach { scale ->
+                    val nearby = filter.frequencyHz * scale
+                    if (nearby in MIN_FREQUENCY_HZ..MAX_FREQUENCY_HZ) frequencies += nearby
+                }
+            }
+        }
+        var maximum = Double.NEGATIVE_INFINITY
+        frequencies.forEach { frequency ->
+            var gainDb = 0.0
+            activeBiquads.forEach { biquad ->
+                gainDb += responseDb(biquad, frequency) ?: return null
+            }
+            if (!gainDb.isFinite()) return null
+            maximum = maxOf(maximum, gainDb)
+        }
+        return maximum.takeIf(Double::isFinite)
     }
 
     fun logarithmicFrequencyGrid(
@@ -106,8 +148,13 @@ object HardwareEqResponseEvaluator {
         }
     }
 
-    private fun responseDb(filter: HardwareEqFilter, frequencyHz: Double): Double? {
-        val biquad = biquad(filter) ?: return null
+    private fun activeBiquads(filters: List<HardwareEqFilter>): List<Biquad>? = buildList {
+        filters.filter(HardwareEqFilter::enabled).forEach { filter ->
+            add(biquad(filter) ?: return null)
+        }
+    }
+
+    private fun responseDb(biquad: Biquad, frequencyHz: Double): Double? {
         if (!frequencyHz.isFinite() || frequencyHz <= 0.0 || frequencyHz >= SAMPLE_RATE_HZ / 2.0) return null
 
         val omega = 2.0 * PI * frequencyHz / SAMPLE_RATE_HZ

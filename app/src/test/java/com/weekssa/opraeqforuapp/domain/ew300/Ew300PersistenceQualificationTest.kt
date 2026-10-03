@@ -91,6 +91,34 @@ class Ew300PersistenceQualificationTest {
     }
 
     @Test
+    fun recoveryRecordIsStoredBeforeTheFirstHardwareWrite() = runBlocking {
+        val store = FakeStore()
+        var pendingAtFirstWrite: Ew300PersistencePending? = null
+        val transport = FakeTransport(beforeWrite = { pendingAtFirstWrite = store.pending })
+
+        val result = qualifier(transport, store).advance()
+
+        assertTrue(result is Ew300PersistenceQualificationResult.AwaitingPowerCycle)
+        assertEquals(2, transport.writeCount)
+        assertTrue(pendingAtFirstWrite != null)
+        assertEquals(Ew300PersistenceStage.TEMPORARY_COMMITTED, pendingAtFirstWrite?.stage)
+        assertEquals(transport.baseline.keys, pendingAtFirstWrite?.baseline?.keys)
+    }
+
+    @Test
+    fun failedRecoveryRecordWritePreventsTheFirstHardwareMutation() = runBlocking {
+        val store = FakeStore(failPendingWritesAt = setOf(1))
+        val transport = FakeTransport()
+
+        val result = qualifier(transport, store).advance()
+
+        assertTrue(result is Ew300PersistenceQualificationResult.Failed)
+        assertTrue((result as Ew300PersistenceQualificationResult.Failed).stateKnown)
+        assertEquals(0, transport.writeCount)
+        assertNull(store.pending)
+    }
+
+    @Test
     fun temporaryValuesLostAfterPowerCycleKeepPersistentFlashLocked() = runBlocking {
         val transport = FakeTransport()
         val store = FakeStore()
@@ -171,7 +199,10 @@ class Ew300PersistenceQualificationTest {
 
     @Test
     fun failedRestorationWriteBecomesTerminalAndIsNeverRetried() = runBlocking {
-        val transport = FakeTransport(failWriteAt = setOf(3))
+        val transport = FakeTransport(
+            failWriteAt = setOf(3),
+            mutateOnFailedWrite = true,
+        )
         val store = FakeStore()
         val qualifier = qualifier(transport, store)
 
@@ -186,11 +217,85 @@ class Ew300PersistenceQualificationTest {
         assertEquals(writesAtStop, transport.writeCount)
     }
 
-    private class FakeStore : Ew300GainStateStore {
+    @Test
+    fun failedUncertainCheckpointCannotReplayRejectedRestorationAfterQualifierRecreation() = runBlocking {
+        val transport = FakeTransport(
+            failWriteAt = setOf(3),
+            mutateOnFailedWrite = true,
+        )
+        val store = FakeStore(failPendingWritesAt = setOf(4))
+        val qualifier = qualifier(transport, store)
+
+        assertTrue(qualifier.advance() is Ew300PersistenceQualificationResult.AwaitingPowerCycle)
+        transport.detachGeneration += 1
+        assertTrue(qualifier.advance() is Ew300PersistenceQualificationResult.Failed)
+
+        assertEquals(4, store.pendingWriteCount)
+        assertEquals(Ew300PersistenceStage.RESTORATION_ATTEMPTED, store.pending?.stage)
+        assertEquals(3, transport.writeCount)
+
+        val recreatedQualifier = qualifier(transport, store)
+        assertTrue(recreatedQualifier.advance() is Ew300PersistenceQualificationResult.Failed)
+        assertEquals(3, transport.writeCount)
+        assertEquals(1, transport.commitCount)
+    }
+
+    @Test
+    fun helperRestorationMarkerPreventsReplayAfterTransientReadbackAndFailedUncertainCheckpoint() = runBlocking {
+        val transport = FakeTransport(
+            failWriteAt = setOf(3),
+            mismatchFirstTemporaryBandReadback = true,
+        )
+        val store = FakeStore(failPendingStages = setOf(Ew300PersistenceStage.UNCERTAIN))
+        val qualifier = qualifier(transport, store)
+
+        assertTrue(qualifier.advance() is Ew300PersistenceQualificationResult.Failed)
+        assertEquals(3, transport.writeCount)
+        assertEquals(Ew300PersistenceStage.RESTORATION_ATTEMPTED, store.pending?.stage)
+        assertEquals(0, transport.commitCount)
+
+        transport.detachGeneration += 1
+        assertTrue(qualifier(transport, store).advance() is Ew300PersistenceQualificationResult.Failed)
+        assertEquals(3, transport.writeCount)
+        assertEquals(0, transport.commitCount)
+    }
+
+    @Test
+    fun failedHelperRestorationMarkerPreventsTheFirstBaselineWrite() = runBlocking {
+        val transport = FakeTransport(mismatchFirstTemporaryBandReadback = true)
+        val store = FakeStore(failPendingStages = setOf(Ew300PersistenceStage.RESTORATION_ATTEMPTED))
+
+        assertTrue(qualifier(transport, store).advance() is Ew300PersistenceQualificationResult.Failed)
+
+        assertEquals(2, transport.writeCount)
+        assertEquals(Ew300PersistenceStage.TEMPORARY_COMMITTED, store.pending?.stage)
+        assertEquals(0, transport.commitCount)
+    }
+
+    @Test
+    fun failedRestorationAttemptCheckpointPreventsBaselineWrite() = runBlocking {
+        val transport = FakeTransport()
+        val store = FakeStore(failPendingWritesAt = setOf(3))
+        val qualifier = qualifier(transport, store)
+
+        assertTrue(qualifier.advance() is Ew300PersistenceQualificationResult.AwaitingPowerCycle)
+        transport.detachGeneration += 1
+        val writesBeforeRestore = transport.writeCount
+
+        assertTrue(qualifier.advance() is Ew300PersistenceQualificationResult.Failed)
+        assertEquals(writesBeforeRestore, transport.writeCount)
+        assertEquals(Ew300PersistenceStage.TEMPORARY_COMMITTED, store.pending?.stage)
+    }
+
+    private class FakeStore(
+        private val failPendingWritesAt: Set<Int> = emptySet(),
+        private val failPendingStages: Set<Ew300PersistenceStage> = emptySet(),
+    ) : Ew300GainStateStore {
         var gainQualified = false
         var persistenceQualified = false
         var pending: Ew300PersistencePending? = null
         var delta = 0
+        var pendingWriteCount = 0
 
         override fun isGlobalGainQualified(deviceFingerprintKey: String) = gainQualified
         override fun markGlobalGainQualified(deviceFingerprintKey: String, qualified: Boolean) {
@@ -205,8 +310,14 @@ class Ew300PersistenceQualificationTest {
             persistenceQualified = qualified
         }
         override fun readPersistencePending(deviceFingerprintKey: String) = pending
-        override fun writePersistencePending(deviceFingerprintKey: String, pending: Ew300PersistencePending?) {
+        override fun writePersistencePending(
+            deviceFingerprintKey: String,
+            pending: Ew300PersistencePending?,
+        ): Boolean {
+            pendingWriteCount += 1
+            if (pendingWriteCount in failPendingWritesAt || pending?.stage in failPendingStages) return false
             this.pending = pending
+            return true
         }
     }
 
@@ -224,6 +335,8 @@ class Ew300PersistenceQualificationTest {
         private val mutateOnFailedWrite: Boolean = false,
         private val firstBandType: Int = 0,
         private val initialGlobalGain: ByteArray = byteArrayOf(0xF8.toByte(), 0xF8.toByte(), 0, 0),
+        private val mismatchFirstTemporaryBandReadback: Boolean = false,
+        private val beforeWrite: () -> Unit = {},
     ) : Ew300Transport {
         override val deviceFingerprintKey = "exact-ew300-test"
         override var detachGeneration = 0L
@@ -239,12 +352,22 @@ class Ew300PersistenceQualificationTest {
         var commitCount = 0
         var writeCount = 0
         var readCount = 0
+        private var returnedTransientTemporaryMismatch = false
 
         override suspend fun readRegister(register: Int): ByteArray? {
             readCount += 1
+            if (mismatchFirstTemporaryBandReadback &&
+                !returnedTransientTemporaryMismatch &&
+                writeCount == 2 &&
+                register == Ew300Protocol.FIRST_BAND_REGISTER
+            ) {
+                returnedTransientTemporaryMismatch = true
+                return baseline.getValue(register).copyOf()
+            }
             return state[register]?.copyOf()
         }
         override suspend fun writeRegister(register: Int, data: ByteArray): Boolean {
+            beforeWrite()
             writeCount += 1
             if (writeCount in failWriteAt) {
                 if (mutateOnFailedWrite) {

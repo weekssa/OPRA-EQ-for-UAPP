@@ -73,6 +73,23 @@ object CanonicalLegacyCatalogAdapter {
         )
     }
 
+    internal fun projectBandsOnAccess(filters: List<EqFilter>): List<OpraBand> =
+        object : AbstractList<OpraBand>() {
+            override val size: Int
+                get() = filters.size
+
+            override fun get(index: Int): OpraBand {
+                val filter = filters[index]
+                return OpraBand(
+                    type = filter.type.toLegacyType(filter.sourceType),
+                    frequency = filter.frequencyHz,
+                    gainDb = filter.gainDb,
+                    q = filter.q,
+                    slope = filter.slope,
+                )
+            }
+        }
+
     /** Resolve only when a displayed legacy view exactly matches one current canonical revision. */
     fun resolveSelection(snapshot: CatalogSnapshot, legacy: OpraEqProfile): CanonicalEqSelection? {
         val matches = snapshot.profiles.asSequence()
@@ -280,15 +297,7 @@ object CanonicalLegacyCatalogAdapter {
                     ?.let { "EQ Library summary: $it" },
             sourceUrl = primary?.url,
             preampGainDb = revision.preampGainDb,
-            bands = revision.filters.map { filter ->
-                OpraBand(
-                    type = filter.type.toLegacyType(filter.sourceType),
-                    frequency = filter.frequencyHz,
-                    gainDb = filter.gainDb,
-                    q = filter.q,
-                    slope = filter.slope,
-                )
-            },
+            bands = projectBandsOnAccess(revision.filters),
             eqLibrarySafetyHeadroomDb = revision.eqLibrarySafetyHeadroomDb,
             isVerified = revision.verificationStatus == VerificationStatus.VERIFIED,
             isLatestRevision = revision.isLatest,
@@ -393,15 +402,7 @@ object CanonicalLegacyCatalogAdapter {
             link = primary?.url,
             profileType = "parametric_eq",
             preampGainDb = revision.preampGainDb,
-            bands = revision.filters.map { filter ->
-                OpraBand(
-                    type = filter.type.toLegacyType(filter.sourceType),
-                    frequency = filter.frequencyHz,
-                    gainDb = filter.gainDb,
-                    q = filter.q,
-                    slope = filter.slope,
-                )
-            },
+            bands = projectBandsOnAccess(revision.filters),
             eqLibrarySafetyHeadroomDb = revision.eqLibrarySafetyHeadroomDb,
             isVerified = revision.verificationStatus == VerificationStatus.VERIFIED,
             bandOrderProvenance = EqBandOrderProvenance.OPRA_SOURCE_PRIORITY.takeIf { verifiedOpraPriority },
@@ -466,7 +467,9 @@ object CanonicalLegacyCatalogAdapter {
         val database = primary?.sourceDataset?.takeIf(String::isNotBlank)
             ?: measurement?.substringBefore(" / ")?.trim()?.takeIf(String::isNotBlank)
             ?: primary?.sourceId?.takeIf(String::isNotBlank)?.let(::displaySourceId)
-        val target = profile.target.name?.takeIf(String::isNotBlank)
+        val target = profile.target.name
+            ?.takeIf(String::isNotBlank)
+            ?.let(::humanizeCanonicalTarget)
         val parts = buildList {
             add(if (revision.isLatest) "Latest" else "Previous revision")
             if (!revision.isLatest) {

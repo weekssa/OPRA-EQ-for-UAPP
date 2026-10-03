@@ -3,6 +3,11 @@ package com.weekssa.opraeqforuapp.domain.library
 import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import java.util.Locale
+import kotlin.math.abs
+import kotlin.math.floor
+
+private const val FNV_OFFSET_BASIS = -3750763034362895579L
+private const val FNV_PRIME = 1099511628211L
 
 /**
  * Stable exact acoustic identity for legacy compatibility records.
@@ -24,15 +29,27 @@ internal fun OpraEqProfile.legacyAcousticSignature(): String? {
     }
 }
 
+internal fun String.legacyAcousticFingerprint(): Long {
+    var hash = FNV_OFFSET_BASIS
+    for (character in this) {
+        hash = (hash xor character.code.toLong()) * FNV_PRIME
+    }
+    return hash
+}
+
 private fun OpraBand.legacyAcousticKey(): String? {
     val frequencyValue = frequency ?: return null
-    return listOf(
-        normalizedLegacyFilterType(type),
-        legacyAcousticFormat(frequencyValue, 3),
-        legacyAcousticFormat(gainDb ?: 0.0, 3),
-        legacyAcousticFormat(q ?: 0.0, 4),
-        legacyAcousticFormat(slope ?: 0.0, 4),
-    ).joinToString("|")
+    return buildString {
+        append(normalizedLegacyFilterType(type))
+        append('|')
+        append(legacyAcousticFormat(frequencyValue, 3))
+        append('|')
+        append(legacyAcousticFormat(gainDb ?: 0.0, 3))
+        append('|')
+        append(legacyAcousticFormat(q ?: 0.0, 4))
+        append('|')
+        append(legacyAcousticFormat(slope ?: 0.0, 4))
+    }
 }
 
 private fun normalizedLegacyFilterType(value: String?): String = when (value?.trim()?.lowercase(Locale.ROOT)) {
@@ -44,5 +61,25 @@ private fun normalizedLegacyFilterType(value: String?): String = when (value?.tr
     else -> value.orEmpty().trim().uppercase(Locale.ROOT)
 }
 
-private fun legacyAcousticFormat(value: Double, decimals: Int): String =
+private fun legacyAcousticFormat(value: Double, decimals: Int): String {
+    if (!value.isFinite() || decimals !in 3..4) return legacyAcousticFormatSlow(value, decimals)
+
+    val unitsPerWhole = if (decimals == 3) 1_000L else 10_000L
+    val scaled = abs(value) * unitsPerWhole
+    if (!scaled.isFinite() || scaled >= Long.MAX_VALUE.toDouble() - 1.0) {
+        return legacyAcousticFormatSlow(value, decimals)
+    }
+
+    val lower = floor(scaled)
+    val fraction = scaled - lower
+    if (abs(fraction - 0.5) <= 0.0000001) return legacyAcousticFormatSlow(value, decimals)
+
+    val rounded = (lower + if (fraction > 0.5) 1.0 else 0.0).toLong()
+    val sign = if (java.lang.Double.doubleToRawLongBits(value) < 0L) "-" else ""
+    val whole = rounded / unitsPerWhole
+    val fractional = (rounded % unitsPerWhole).toString().padStart(decimals, '0')
+    return "$sign$whole.$fractional"
+}
+
+private fun legacyAcousticFormatSlow(value: Double, decimals: Int): String =
     String.format(Locale.US, "%.${decimals}f", value)

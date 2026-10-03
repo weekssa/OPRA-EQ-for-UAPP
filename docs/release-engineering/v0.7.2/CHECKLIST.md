@@ -1,0 +1,62 @@
+# v0.7.2 master checklist
+
+Status markers: [ ] pending, [x] complete, [!] failed/recovery active, [-] not applicable.
+
+- [x] Current worktree correctly detected; supplied isolated worktree reused
+- [x] Owner primary checkout protected
+- [x] Unlazy fully read and used; local control plane created
+- [x] Repository instructions and task-relevant docs read
+- [x] Relevant Android, testing, debugging, release, and tool skills discovered/read/used
+- [x] Missing necessary trusted skills/tools installed or equivalent used
+- [x] Git-backed recovery ledger created and resume path operational
+- [x] Exact v0.7.1 tag/source/version verified
+- [x] Stabilization branch created from exact v0.7.1
+- [x] GitHub/PR/CI/release state refreshed through authenticated tooling
+- [x] Toolchain inventory complete
+- [x] Complete repository test surface and CI matrix recorded
+- [x] Pristine v0.7.1 debug build recorded
+- [x] Pristine v0.7.1 fresh JVM suite recorded with counts
+- [x] Pristine v0.7.1 lint recorded
+- [x] Pristine v0.7.1 release build recorded
+- [x] Pristine v0.7.1 R8 mapping verification recorded
+- [x] Baseline instrumentation and current CI emulator behavior recorded
+- [x] Minimum-SDK/API-26 baseline failure reproduced, fixed on the work branch, and cold-install coverage rerun successfully
+- [x] v0.7.2 version metadata set to 0.7.2 / code 9
+- [x] v0.7.2 release notes and user-facing version documentation prepared
+- [x] Release automation derives requested release identity instead of hard-coding a release number
+- [ ] Signed candidate is producible from verified merged main before immutable tagging
+- [x] Previous review findings re-evaluated against actual v0.7.1 source
+- [x] SharedPreferences commit semantics verified before any change
+- [x] JCALLY compatibility state reviewed and preserved where required
+- [x] DSP dense oracle implemented and independently measured
+- [x] DSP production corrected from deterministic evidence; no USB or protocol behavior changed
+- [x] Optimizer cache investigated without speculative rewrite
+- [x] No physical DAC writes performed
+- [x] No unverified USB protocol behavior changed
+- [x] Debug build passes on source commit `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4`
+- [x] Fresh complete JVM suite passes on source commit `e63fc4bf`: 731 tests, 0 failures/errors/skips
+- [x] Lint passes on source commit `e63fc4bf` with 0 errors, 111 warnings, 2 hints, and no issue in the changed production files
+- [x] Release build passes on source commit `e63fc4bf`, v0.7.2/code 9
+- [x] R8 verification passes on source commit `e63fc4bf`; at least one app class is renamed
+- [x] PR-head emulator UI/API35 instrumentation passes 25/25 on exact head `3ccf6728a9edd6c85a76ece1f5e71bc93fa37b74`, artifact `11262353847`
+- [x] Minimum-SDK/API-26 smoke passes on exact PR head `3ccf6728a9edd6c85a76ece1f5e71bc93fa37b74`; fresh-wipe x86_64 minified release install reaches Manufacturers, remains alive/resumed after the observation period, and has no app-process AndroidRuntime error; artifact `11261474879`
+- [x] Relevant Python, catalog, source, and release-script tests pass: 235 Python tests and all catalog/release contracts
+- [x] actionlint passes; ShellCheck passes where applicable
+- [x] Full 731-test Gradle, lint, debug/release, and R8 checks pass on source commit `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4`
+- [x] `git diff --check` and tracked Markdown U+2014 scan pass after this ledger status sync
+- [x] Independent exact-head review passes on `3ccf6728a9edd6c85a76ece1f5e71bc93fa37b74`; prior P2 findings in both restoration paths are fixed and covered by regression cases
+- [x] Follow-up review of docs-only head `adf871f2` found a stale restart instruction; corrected in `3ccf6728`, which passed exact-head review
+- [x] Branch pushed without force; latest fully verified snapshot `3ccf6728a9edd6c85a76ece1f5e71bc93fa37b74`
+- [x] PR #65 created with exact baseline, changes, local evidence, and recovery status: https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/65
+- [x] Recovery-fix branch commits were pushed normally without force; later exact-head snapshots are recorded in `ARTIFACTS.md`
+- [x] All eight GitHub checks pass on exact head `3ccf6728a9edd6c85a76ece1f5e71bc93fa37b74`; this tracked pre-merge sync creates a docs-only descendant that requires fresh exact-head checks and independent review
+- [ ] Required GitHub CI and independent review pass on the final pushed exact head
+- [ ] PR merged without bypassing branch protection
+- [ ] Merged main reverified on exact SHA
+- [ ] Signed release candidate generated from verified merged main
+- [ ] APK metadata, signature, pinned certificate, alignment, checksum, manifest, and provenance independently verified
+- [ ] Immutable v0.7.2 tag created on exact verified release commit
+- [ ] GitHub Release published with approved candidate assets and notes
+- [ ] Public release assets re-downloaded and verified
+- [ ] FINAL_REPORT.md complete and exact state pushed to recovery branch
+- [ ] HUMAN ACTION REQUIRED = NONE

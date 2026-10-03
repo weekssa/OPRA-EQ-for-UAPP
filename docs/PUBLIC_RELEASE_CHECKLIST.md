@@ -45,6 +45,20 @@ The checklist is organized around the **current release state**. Detailed histor
 
 Status: **Published under the owner's conditional approval; all merge, candidate, promotion, and post-publication gates passed.** The release makes no new hardware-support claim. See [v0.7.1 release notes](releases/v0.7.1.md) and the latest closeout entry in `docs/CHATGPT_PROJECT_RUNBOOK.md`.
 
+## v0.7.2 stabilization preparation
+
+v0.7.1 remains the current public release until the signed v0.7.2 candidate is independently verified, tagged, and published. The stabilization branch targets versionName `0.7.2` and versionCode `9` from the immutable v0.7.1 base.
+
+- [x] Version metadata is set to `0.7.2` / `9` without changing package ID or SDK levels.
+- [x] User-facing v0.7.2 notes describe only implemented behavior and retain existing hardware/UAPP boundaries.
+- [x] Independent dense DSP tests reproduce the old high-Q response miss and cover the production correction.
+- [x] Product source `1c36349ca3edb69061a34b44d385670380f60512` passes the local Gradle, R8, API 35 instrumentation, Python/catalog/release, actionlint, and ShellCheck gates. Fresh wipe/install API 26 ARM64 smoke rendered the manufacturer, 1MORE model, and `oratory1990` profile, then remained resumed/alive for 60 seconds without an AndroidRuntime error. It used a temporary signer and left 2,041 KiB free in the 48 MiB Dalvik heap. All eight checks passed on initial PR head `c81f329b`, including the x86_64 API 26 CI smoke. The status ledger advances the PR head; verify the latest check set before merge.
+- [ ] Exact-head independent review and required pull request checks pass before merge.
+- [ ] Signed candidate from verified merged main passes independent artifact and install/upgrade checks.
+- [ ] Immutable `v0.7.2` tag and public release assets are verified after publication.
+
+Status: **PR #65 is open for exact-head CI and review. No official signed candidate, tag, or public release exists yet.** Full evidence, including one contaminated API 26 attempt and the clean exact-source rerun, is maintained in `docs/release-engineering/v0.7.2/`.
+
 ## Previous v0.7.0 state
 
 - [x] Exact v0.7.0 software, security, dependency, release, and signed-artifact gates completed.

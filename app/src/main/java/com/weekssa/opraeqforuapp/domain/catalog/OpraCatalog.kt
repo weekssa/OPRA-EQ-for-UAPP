@@ -111,25 +111,31 @@ data class OpraCatalog(
     val productAliases: Map<String, String> = emptyMap(),
     val generalPresets: List<GeneralEqPreset> = emptyList(),
 ) {
-    private val vendorById = vendors.associateBy(OpraVendor::id)
-    private val productById = products.associateBy(OpraProduct::id)
-    private val visibleProducts = products.filter { canonicalProductId(it.id) == it.id }
-    private val productsByVendor = visibleProducts.groupBy(OpraProduct::vendorId)
-    private val profilesByProduct = profiles.groupBy { canonicalProductId(it.productId) }
+    private val lookupIndexes by lazy {
+        val productById = products.associateBy(OpraProduct::id)
+        val visibleProducts = products.filter { canonicalProductId(it.id) == it.id }
+        CatalogLookupIndexes(
+            vendorById = vendors.associateBy(OpraVendor::id),
+            productById = productById,
+            visibleProducts = visibleProducts,
+            productsByVendor = visibleProducts.groupBy(OpraProduct::vendorId),
+            profilesByProduct = profiles.groupBy { canonicalProductId(it.productId) },
+        )
+    }
 
-    fun vendor(vendorId: String): OpraVendor? = vendorById[vendorId]
+    fun vendor(vendorId: String): OpraVendor? = lookupIndexes.vendorById[vendorId]
 
     fun canonicalProductId(productId: String): String = resolveProductId(productId)
 
-    fun product(productId: String): OpraProduct? = productById[canonicalProductId(productId)]
+    fun product(productId: String): OpraProduct? = lookupIndexes.productById[canonicalProductId(productId)]
 
     fun productsForVendor(vendorId: String): List<OpraProduct> =
-        productsByVendor[vendorId]
+        lookupIndexes.productsByVendor[vendorId]
             .orEmpty()
             .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
 
     fun profilesForProduct(productId: String): List<OpraEqProfile> =
-        profilesByProduct[canonicalProductId(productId)]
+        lookupIndexes.profilesByProduct[canonicalProductId(productId)]
             .orEmpty()
             .sortedWith(
                 compareBy<OpraEqProfile> { it.author.orEmpty().lowercase(Locale.ROOT) }
@@ -138,7 +144,7 @@ data class OpraCatalog(
             )
 
     fun profileCount(productId: String): Int =
-        profilesByProduct[canonicalProductId(productId)]?.size ?: 0
+        lookupIndexes.profilesByProduct[canonicalProductId(productId)]?.size ?: 0
 
     fun searchProducts(query: String): List<OpraProductSearchResult> {
         val tokens = query
@@ -149,8 +155,8 @@ data class OpraCatalog(
 
         if (tokens.isEmpty()) return emptyList()
 
-        return visibleProducts.mapNotNull { product ->
-            val vendor = vendorById[product.vendorId] ?: return@mapNotNull null
+        return lookupIndexes.visibleProducts.mapNotNull { product ->
+            val vendor = lookupIndexes.vendorById[product.vendorId] ?: return@mapNotNull null
             val haystack = normalizeSearchText(
                 buildString {
                     append(vendor.name)
@@ -177,6 +183,14 @@ data class OpraCatalog(
                 .thenBy { it.product.id },
         )
     }
+
+    private data class CatalogLookupIndexes(
+        val vendorById: Map<String, OpraVendor>,
+        val productById: Map<String, OpraProduct>,
+        val visibleProducts: List<OpraProduct>,
+        val productsByVendor: Map<String, List<OpraProduct>>,
+        val profilesByProduct: Map<String, List<OpraEqProfile>>,
+    )
 
     fun searchGeneralPresets(query: String): List<GeneralEqPreset> {
         val tokens = query

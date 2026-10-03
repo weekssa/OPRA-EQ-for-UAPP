@@ -217,7 +217,9 @@ fun EqLibraryApp(
 
     var selectedDestinationName by rememberSaveable { mutableStateOf(EqLibraryDestination.MyEqs.name) }
     var selectedManagedProductId by rememberSaveable { mutableStateOf<String?>(null) }
-    var pendingExportRequestState by rememberSaveable { mutableStateOf<ArrayList<String>?>(null) }
+    var pendingExportRequestState by rememberSaveable {
+        mutableStateOf<List<String>?>(null)
+    }
     var whatsNewVersion by rememberSaveable { mutableStateOf<String?>(null) }
     var whatsNewNotes by rememberSaveable { mutableStateOf("") }
     var pendingInitialMyDacOpenDeviceName by rememberSaveable {
@@ -854,14 +856,13 @@ fun EqLibraryApp(
                 }
             }
 
-            if (
-                flashFeedback != null &&
-                selectedDestination != EqLibraryDestination.Settings
-            ) {
-                FlashFeedbackBanner(
-                    feedback = flashFeedback!!,
-                    onDismiss = { flashFeedback = null },
-                )
+            if (selectedDestination != EqLibraryDestination.Settings) {
+                flashFeedback?.let { feedback ->
+                    FlashFeedbackBanner(
+                        feedback = feedback,
+                        onDismiss = { flashFeedback = null },
+                    )
+                }
             }
 
             Box(

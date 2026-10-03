@@ -4,6 +4,7 @@ import com.weekssa.opraeqforuapp.domain.catalog.OpraBand
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.export.DeviceEqCapabilities
 import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
+import java.util.TreeSet
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.PI
 import kotlin.math.abs
@@ -149,7 +150,12 @@ sealed interface FiveBandOptimizationResult {
 object Kt02h20FiveBandOptimizer {
     private const val SAMPLE_RATE_HZ = 48_000.0
     private const val RESPONSE_POINTS = 96
+    private const val DENSE_VALIDATION_POINTS = 12_001
     private const val EPSILON = 1e-9
+    private val centerOffsets = listOf(
+        0.75, 0.90, 0.95, 0.98, 0.99, 0.995,
+        1.005, 1.01, 1.02, 1.05, 1.10, 1.25,
+    )
     private val cache = ConcurrentHashMap<CacheKey, FiveBandOptimizationResult>()
 
     fun optimize(
@@ -220,21 +226,28 @@ object Kt02h20FiveBandOptimizer {
                     directMetrics.rmsDb <= spec.maxRmsErrorDb &&
                     directMetrics.maxAbsDb <= spec.maxAbsoluteErrorDb
                 ) {
-                    return FiveBandOptimizationResult.Ready(
-                        FiveBandRepresentation(
-                            bands = exactQuantizedBands,
-                            playbackGainDb = playback.valueDb,
-                            fidelity = DevicePresetFidelity.OPTIMIZED,
-                            rmsErrorDb = directMetrics.rmsDb,
-                            maxAbsoluteErrorDb = directMetrics.maxAbsDb,
-                            usesGeneratedHeadroom = playback.generated,
-                            representationVersion = spec.representationVersion,
-                            sourceBandCount = sourceBands.size,
-                            usedResponseFit = false,
-                            usesNativeQuantization = !bandQuantizationExact ||
-                                (sourcePreamp != null && abs(playback.valueDb - sourcePreamp) > EPSILON),
-                        ),
-                    )
+                    val denseDirectMetrics = denseResponseError(parsedSource.map(IndexedBand::band), exactQuantizedBands)
+                    if (
+                        denseDirectMetrics != null &&
+                        denseDirectMetrics.rmsDb <= spec.maxRmsErrorDb &&
+                        denseDirectMetrics.maxAbsDb <= spec.maxAbsoluteErrorDb
+                    ) {
+                        return FiveBandOptimizationResult.Ready(
+                            FiveBandRepresentation(
+                                bands = exactQuantizedBands,
+                                playbackGainDb = playback.valueDb,
+                                fidelity = DevicePresetFidelity.OPTIMIZED,
+                                rmsErrorDb = denseDirectMetrics.rmsDb,
+                                maxAbsoluteErrorDb = denseDirectMetrics.maxAbsDb,
+                                usesGeneratedHeadroom = playback.generated,
+                                representationVersion = spec.representationVersion,
+                                sourceBandCount = sourceBands.size,
+                                usedResponseFit = false,
+                                usesNativeQuantization = !bandQuantizationExact ||
+                                    (sourcePreamp != null && abs(playback.valueDb - sourcePreamp) > EPSILON),
+                            ),
+                        )
+                    }
                 }
             } else if (profile.preampGainDb?.takeIf(Double::isFinite) != null) {
                 return FiveBandOptimizationResult.NotSuitable(
@@ -261,6 +274,14 @@ object Kt02h20FiveBandOptimizer {
             )
         }
         val targetBands = fitted.map(IndexedBand::band)
+        val denseMetrics = denseResponseError(parsedSource.map(IndexedBand::band), targetBands)
+            ?: return FiveBandOptimizationResult.NotSuitable("The optimized response could not be densely evaluated safely.")
+        if (denseMetrics.rmsDb > spec.maxRmsErrorDb || denseMetrics.maxAbsDb > spec.maxAbsoluteErrorDb) {
+            return FiveBandOptimizationResult.NotSuitable(
+                "A reliable ${maxBands}-band approximation could not be produced for ${spec.displayName} " +
+                    "(dense RMS ${formatDb(denseMetrics.rmsDb)} dB, max ${formatDb(denseMetrics.maxAbsDb)} dB).",
+            )
+        }
         val playback = playbackGainFor(profile, targetBands, spec)
             ?: return FiveBandOptimizationResult.NotSuitable(
                 "The required playback gain is outside ${spec.displayName}'s current capability profile.",
@@ -271,8 +292,8 @@ object Kt02h20FiveBandOptimizer {
                 bands = targetBands,
                 playbackGainDb = playback.valueDb,
                 fidelity = DevicePresetFidelity.OPTIMIZED,
-                rmsErrorDb = metrics.rmsDb,
-                maxAbsoluteErrorDb = metrics.maxAbsDb,
+                rmsErrorDb = denseMetrics.rmsDb,
+                maxAbsoluteErrorDb = denseMetrics.maxAbsDb,
                 usesGeneratedHeadroom = playback.generated,
                 representationVersion = spec.representationVersion,
                 sourceBandCount = sourceBands.size,
@@ -334,7 +355,7 @@ object Kt02h20FiveBandOptimizer {
     }
 
     private fun generatedHeadroomDb(targetBands: List<Kt02h20Band>): Double? {
-        val targetResponse = response(targetBands) ?: return null
+        val targetResponse = response(targetBands, responseGrid(DENSE_VALIDATION_POINTS, targetBands)) ?: return null
         val peakBoostDb = targetResponse.maxOrNull()?.takeIf(Double::isFinite)?.coerceAtLeast(0.0) ?: return null
         return -peakBoostDb
     }
@@ -464,7 +485,22 @@ object Kt02h20FiveBandOptimizer {
     }
 
     private fun responseError(target: DoubleArray, bands: List<Kt02h20Band>): ErrorMetrics? {
-        val candidate = response(bands) ?: return null
+        val candidate = response(bands, responseGrid(RESPONSE_POINTS)) ?: return null
+        if (candidate.size != target.size) return null
+        return errorMetrics(target, candidate)
+    }
+
+    private fun denseResponseError(
+        sourceBands: List<Kt02h20Band>,
+        targetBands: List<Kt02h20Band>,
+    ): ErrorMetrics? {
+        val grid = responseGrid(DENSE_VALIDATION_POINTS, sourceBands + targetBands)
+        val source = response(sourceBands, grid) ?: return null
+        val target = response(targetBands, grid) ?: return null
+        return errorMetrics(source, target)
+    }
+
+    private fun errorMetrics(target: DoubleArray, candidate: DoubleArray): ErrorMetrics? {
         if (candidate.size != target.size) return null
         var squared = 0.0
         var maxAbs = 0.0
@@ -478,20 +514,23 @@ object Kt02h20FiveBandOptimizer {
     }
 
     private fun response(bands: List<Kt02h20Band>): DoubleArray? {
-        val grid = responseGrid()
+        return response(bands, responseGrid(RESPONSE_POINTS))
+    }
+
+    private fun response(bands: List<Kt02h20Band>, grid: DoubleArray): DoubleArray? {
+        val biquads = bands.map { rbjBiquad(it) ?: return null }
         val result = DoubleArray(grid.size)
         grid.forEachIndexed { index, frequency ->
             var sumDb = 0.0
-            bands.forEach { band ->
-                sumDb += bandResponseDb(band, frequency) ?: return null
+            biquads.forEach { biquad ->
+                sumDb += biquadResponseDb(biquad, frequency) ?: return null
             }
             result[index] = sumDb
         }
         return result
     }
 
-    private fun bandResponseDb(band: Kt02h20Band, frequency: Double): Double? {
-        val biquad = rbjBiquad(band) ?: return null
+    private fun biquadResponseDb(biquad: Biquad, frequency: Double): Double? {
         val omega = 2.0 * PI * frequency / SAMPLE_RATE_HZ
         val c1 = cos(omega)
         val s1 = sin(omega)
@@ -552,9 +591,22 @@ object Kt02h20FiveBandOptimizer {
         return Biquad(values[0] / a0, values[1] / a0, values[2] / a0, values[4] / a0, values[5] / a0)
     }
 
-    private fun responseGrid(): DoubleArray = DoubleArray(RESPONSE_POINTS) { index ->
-        val fraction = index.toDouble() / (RESPONSE_POINTS - 1).toDouble()
-        20.0 * (20_000.0 / 20.0).pow(fraction)
+    private fun responseGrid(pointCount: Int, bands: List<Kt02h20Band> = emptyList()): DoubleArray {
+        val frequencies = TreeSet<Double>()
+        repeat(pointCount) { index ->
+            val fraction = index.toDouble() / (pointCount - 1).toDouble()
+            frequencies += 20.0 * (20_000.0 / 20.0).pow(fraction)
+        }
+        bands.forEach { band ->
+            if (band.frequencyHz in 20.0..20_000.0) {
+                frequencies += band.frequencyHz
+                centerOffsets.forEach { scale ->
+                    val nearby = band.frequencyHz * scale
+                    if (nearby in 20.0..20_000.0) frequencies += nearby
+                }
+            }
+        }
+        return frequencies.toDoubleArray()
     }
 
     private fun OpraBand.toHardwareBandOrNull(): Kt02h20Band? {
@@ -599,12 +651,21 @@ object Kt02h20FiveBandOptimizer {
         val cap = spec.capabilities
         val min = cap.minPreampDb
         val max = cap.maxPreampDb
-        if (min != null && max != null && value !in min..max) return null
+        val boundedValue = if (conservativeAttenuation && min != null && max != null) {
+            when {
+                value < min && min - value <= EPSILON -> min
+                value > max && value - max <= EPSILON -> max
+                else -> value
+            }
+        } else {
+            value
+        }
+        if (min != null && max != null && boundedValue !in min..max) return null
         val step = spec.quantization.preampStepDb
         val quantized = when {
-            step == null -> value
-            conservativeAttenuation && value < 0.0 -> floor(value / step) * step
-            else -> quantize(value, step)
+            step == null -> boundedValue
+            conservativeAttenuation && boundedValue < 0.0 -> floor((boundedValue + EPSILON) / step) * step
+            else -> quantize(boundedValue, step)
         }
         if (min != null && max != null && quantized !in min..max) return null
         return quantized

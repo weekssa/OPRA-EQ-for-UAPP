@@ -1,5 +1,6 @@
 package com.weekssa.opraeqforuapp.data.kt02h20
 
+import android.annotation.SuppressLint
 import android.content.Context
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300GainStateStore
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300PersistencePending
@@ -46,12 +47,14 @@ class Ew300GainStatePreferences(context: Context) : Ew300GainStateStore {
     override fun readPersistencePending(deviceFingerprintKey: String): Ew300PersistencePending? =
         preferences.getString(pendingKey(deviceFingerprintKey), null)?.let(::decodePending)
 
-    override fun writePersistencePending(deviceFingerprintKey: String, pending: Ew300PersistencePending?) {
+    // This recovery record must reach disk before the first hardware mutation. Production calls run
+    // in DacSessionRepository's Dispatchers.Default-owned mutation scope, not on the UI thread.
+    @SuppressLint("ApplySharedPref")
+    override fun writePersistencePending(deviceFingerprintKey: String, pending: Ew300PersistencePending?): Boolean =
         preferences.edit().apply {
             if (pending == null) remove(pendingKey(deviceFingerprintKey))
             else putString(pendingKey(deviceFingerprintKey), encodePending(pending))
         }.commit()
-    }
 
     companion object {
         private const val PREFERENCES_NAME = "ew300_flash_state"

@@ -88,7 +88,7 @@ class PresetExportPlanTest {
         assertTrue(blackPearl.candidates.all { it.deviceName == ExportDevice.BLACK_PEARL.displayName })
         assertTrue(blackPearl.candidates.all { it.relativeDirectory.startsWith("${ExportDevice.BLACK_PEARL.folderName}/") })
         assertTrue(blackPearl.candidates.all { it.fidelity == DevicePresetFidelity.EXACT })
-        assertTrue(blackPearl.candidates.single().generatedFingerprint.endsWith(":BLACK_PEARL:v3"))
+        assertTrue(blackPearl.candidates.single().generatedFingerprint.endsWith(":BLACK_PEARL:v4"))
 
         val toppingTune = buildEqLibraryExportPlan(listOf(headphone), ExportDevice.TOPPING_TUNE)
         assertEquals(1, toppingTune.candidates.size)

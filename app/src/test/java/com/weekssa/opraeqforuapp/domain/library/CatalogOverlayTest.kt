@@ -6,6 +6,7 @@ import com.weekssa.opraeqforuapp.domain.catalog.OpraCatalog
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.OpraProduct
 import com.weekssa.opraeqforuapp.domain.catalog.OpraVendor
+import java.util.Locale
 import org.junit.Test
 
 class CatalogOverlayTest {
@@ -107,6 +108,70 @@ class CatalogOverlayTest {
             .isEqualTo("Target: RTINGS.com · Source: OPRA · Slightly adds bass.")
         assertThat(merged.profiles.single { it.id == "senselab" }.details)
             .isEqualTo("Target: SenseLab Aizu · Source: OPRA · Slightly adds bass.")
+    }
+
+    @Test
+    fun legacyAcousticSignatureKeepsFixedPrecisionAndNegativeZero() {
+        val profile = profile("rounded", "edition-xs", "Rounded values").copy(
+            preampGainDb = -0.0001,
+            bands = listOf(
+                OpraBand(
+                    type = "pk",
+                    frequency = 2.675,
+                    gainDb = 2.675,
+                    q = 2.675,
+                    slope = 1.23445,
+                ),
+            ),
+        )
+
+        assertThat(profile.legacyAcousticSignature())
+            .isEqualTo("preamp=-0.000;PK|2.675|2.675|2.6750|1.2345")
+    }
+
+    @Test
+    fun legacyAcousticSignatureMatchesFormatterAcrossSampledValues() {
+        val values = listOf(
+            -2.675,
+            -1.23456,
+            -0.0001,
+            0.0,
+            0.1,
+            0.12345,
+            2.675,
+            12_345.6789,
+        ) + (0 until 64).map { index -> (index - 32) / 1234.567 }
+        val profile = profile("sampled", "edition-xs", "Sampled values").copy(
+            preampGainDb = values.first(),
+            bands = values.map { value ->
+                OpraBand(
+                    type = "peak_dip",
+                    frequency = value,
+                    gainDb = value,
+                    q = value,
+                    slope = value,
+                )
+            },
+        )
+        val expectedBands = values.map { value ->
+            listOf(
+                "PK",
+                String.format(Locale.US, "%.3f", value),
+                String.format(Locale.US, "%.3f", value),
+                String.format(Locale.US, "%.4f", value),
+                String.format(Locale.US, "%.4f", value),
+            ).joinToString("|")
+        }.sorted()
+        val expected = buildString {
+            append("preamp=")
+            append(String.format(Locale.US, "%.3f", values.first()))
+            expectedBands.forEach { band ->
+                append(';')
+                append(band)
+            }
+        }
+
+        assertThat(profile.legacyAcousticSignature()).isEqualTo(expected)
     }
 
     @Test

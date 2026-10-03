@@ -785,3 +785,43 @@ qualification evidence. The fix remains limited to source-neutral catalog Favori
 does not add a DAC support claim. The public v0.7.1 GitHub release and APK remain the production
 distribution for this patch; Google Play setup remains deferred under the current release policy.
 There is no remaining owner action required for this GitHub release closeout.
+
+### 2026-10-02 v0.7.2 stabilization phase
+
+The isolated branch `codex/v0.7.2-stabilization` preserves immutable v0.7.1 source
+`c48f6a5daa08a5e03475b2e415fe80b41d3357db` as an ancestor and merges the then-current `origin/main`
+documentation/catalog update. Android metadata now targets versionName `0.7.2` and versionCode `9`;
+package ID, SDK levels, hardware identity matching, hardware authorization, and USB protocol
+encoding remain unchanged. EW300 persistence qualification now stops before its existing mutation
+path when its local recovery checkpoint cannot be durably stored.
+
+The DSP investigation confirmed the 96-point response grid can under-read a +12 dB/Q=10 Peak at
+978.371245 Hz by 4.392811513 dB. Two coincident +12 dB/Q=10 Peaks at 978 Hz show an 8.683458274 dB
+coarse-grid under-read. Production retains its fast 96-point fitting/graph grid, while generated
+headroom and final optimizer acceptance now use dense response checks. The test-only independent
+oracle covers positive and negative high-Q filters, band edges, interacting peaks, supported
+shelves, target quantization, and a multi-band fit rejected by dense final validation. Before the
+version metadata change, the local JVM suite passed 724 tests with no failures, errors,
+or skips; Android lint had 0 errors, 111 warnings, and 2 hints, with no diagnostics in the changed
+DSP source/tests. The final versioned run is pending. No physical DAC was connected or mutated.
+
+The committed v0.7.2/code 9 candidate `1c36349ca3edb69061a34b44d385670380f60512` passed 727 JVM
+tests, lint with 0 errors, debug and release assembly, forced Kotlin compilation, R8 mapping
+verification, and API 35 instrumentation (25 tests). The repository Python suite passed 235 tests;
+release contract, catalog registry/sample, actionlint, ShellCheck, and diff checks passed. A fresh
+wipe/install API 26 ARM64 smoke built from that exact source rendered the manufacturer, 1MORE model,
+and `oratory1990` profile lists, then remained resumed/alive for a 60-second observation with no
+AndroidRuntime error. The smoke used a temporary local signer and is not official candidate
+provenance. Final Dalvik use was 47,111 KiB of 49,152 KiB. The first same-commit attempt was
+contaminated by overlapping UIAutomation diagnostics and is preserved separately; the serialized
+clean rerun passed. Exact APK hashes, temporary signer, memory data, and both attempt records are in
+`docs/release-engineering/v0.7.2/ARTIFACTS.md`. Exact PR-head CI, review, merge, signed candidate,
+tag, and release remain pending.
+
+The v0.7.2 stabilization branch is under PR validation. PR #65 targets `main` and was initially
+opened at head `c81f329b35773141ee7ba583468eaa9e8d7e009b`. Its Android UI, CodeQL, catalog,
+community-coverage, dependency-submission, API 26 x86_64 smoke, and Android build checks passed on
+that initial head. This post-PR status checkpoint advances the head, so confirm its full rerun
+before merge. No signed candidate, v0.7.2 tag, or public release exists yet. Exact current state
+and later evidence belong in `docs/release-engineering/v0.7.2/` and the v0.7.2 section of
+`docs/PUBLIC_RELEASE_CHECKLIST.md`.

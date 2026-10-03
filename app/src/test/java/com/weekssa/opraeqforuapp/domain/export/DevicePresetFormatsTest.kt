@@ -82,7 +82,7 @@ class DevicePresetFormatsTest {
         assertTrue(!blackPearl.content.contains("ON HSC"))
         assertEquals(DevicePresetFidelity.EXACT, blackPearl.fidelity)
         assertTrue(blackPearl.transformation.contains("file path's filters and playback gain"))
-        assertEquals(3, blackPearl.representationVersion)
+        assertEquals(4, blackPearl.representationVersion)
     }
 
     @Test

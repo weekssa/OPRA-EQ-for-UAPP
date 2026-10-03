@@ -15,6 +15,7 @@ import com.weekssa.opraeqforuapp.domain.library.HeadphoneAliasGroup
 import com.weekssa.opraeqforuapp.domain.library.HeadphoneIdentity
 import com.weekssa.opraeqforuapp.domain.library.ProvenanceTier
 import com.weekssa.opraeqforuapp.domain.library.RedistributionPolicy
+import java.io.File
 import java.io.IOException
 import kotlin.io.path.createTempDirectory
 import kotlinx.coroutines.runBlocking
@@ -26,6 +27,38 @@ import org.junit.Test
 
 class CanonicalCatalogRepositoryTest {
     private val json = Json { prettyPrint = true }
+
+    @Test
+    fun largeCachedCatalogCanBeLoadedFromDisk() = runBlocking {
+        val root = createTempDirectory(prefix = "canonical-catalog-large-").toFile()
+        try {
+            val catalogDirectory = File(root, "eq-library/catalog")
+            assertTrue(catalogDirectory.mkdirs())
+            val catalogFile = File(catalogDirectory, "catalog.json")
+            val payload = json.encodeToString(sampleSnapshot("large-rev"))
+            val padding = CharArray(64 * 1024) { ' ' }
+            catalogFile.outputStream().bufferedWriter(Charsets.UTF_8).use { writer ->
+                writer.write(payload)
+                repeat(320) { writer.write(padding) }
+            }
+            assertTrue(catalogFile.length() > 20L * 1024L * 1024L)
+            assertTrue(catalogFile.setLastModified(1234L))
+
+            val repository = CanonicalCatalogRepository(
+                root,
+                CanonicalCatalogSource { error("Fresh cached catalog should not fetch") },
+                json = json,
+                nowMillis = { 1234L },
+            )
+
+            repository.initialize()
+
+            val ready = repository.state.value as CanonicalCatalogState.Ready
+            assertEquals("large-rev", ready.snapshot.profiles.single().latestRevision.revisionId)
+        } finally {
+            root.deleteRecursively()
+        }
+    }
 
     @Test
     fun validDownloadIsPromotedAndLoaded() = runBlocking {

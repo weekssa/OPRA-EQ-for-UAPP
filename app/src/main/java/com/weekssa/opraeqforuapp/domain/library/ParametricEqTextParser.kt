@@ -72,7 +72,7 @@ object ParametricEqTextParser {
                 } else {
                     preamp = match.groupValues[1].toDoubleOrNull()
                     preampSeen = true
-                    if (preamp == null || !preamp!!.isFinite()) {
+                    if (preamp?.isFinite() != true) {
                         errors += "Line $lineNumber: invalid Preamp value."
                     }
                 }

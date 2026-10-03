@@ -20,8 +20,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromStream
 
 sealed interface CanonicalCatalogState {
     data object Loading : CanonicalCatalogState
@@ -174,10 +176,11 @@ class CanonicalCatalogRepository(
         }
     }
 
+    @OptIn(ExperimentalSerializationApi::class)
     private suspend fun loadSnapshot(file: File): CatalogSnapshot? = withContext(Dispatchers.IO) {
         if (!file.isFile) return@withContext null
         try {
-            json.decodeFromString<CatalogSnapshot>(file.readText(Charsets.UTF_8))
+            file.inputStream().use { input -> json.decodeFromStream<CatalogSnapshot>(input) }
         } catch (_: IOException) {
             null
         } catch (_: SerializationException) {
