@@ -40,7 +40,7 @@ Status markers: [ ] pending, [x] complete, [!] failed/recovery active, [-] not a
 - [x] R8 verification passes on source commit `e63fc4bf`; at least one app class is renamed
 - [x] PR-head emulator UI/API35 instrumentation passes 25/25 on exact head `e7f2fc937e9b265770296dbdc4cbb40a4e5e13c9`, artifact `11263771217`
 - [x] Minimum-SDK/API-26 smoke passes on exact PR head `e7f2fc937e9b265770296dbdc4cbb40a4e5e13c9`; fresh-wipe x86_64 minified release install reaches Manufacturers, remains alive/resumed after the 60-second observation, and has no app-process AndroidRuntime error; artifact `11262861589`
-- [x] Relevant Python, catalog, source, and release-script tests pass: 235 Python tests and all catalog/release contracts
+- [x] Initial Python, catalog, source, and release-script checks passed on product commit `1c36349ca3edb69061a34b44d385670380f60512`: 235 Python tests and all catalog/release contracts; current digest-fix validation is recorded below at 238/238
 - [x] actionlint passes; ShellCheck passes where applicable
 - [x] Full 731-test Gradle, lint, debug/release, and R8 checks pass on source commit `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4`
 - [x] `git diff --check` and tracked Markdown U+2014 scan pass after this ledger status sync
