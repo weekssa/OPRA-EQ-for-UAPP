@@ -7,6 +7,7 @@
 - Branch: `codex/v0.7.2-stabilization`
 - Verified release base: `v0.7.1` at `c48f6a5daa08a5e03475b2e415fe80b41d3357db`, versionName `0.7.1`, versionCode `8`
 - Current pushed checkpoint: `d37e114d466d681138140a0280a7c988235c3c94`
+- Latest local candidate commit: `1c36349ca3edb69061a34b44d385670380f60512` (one commit ahead of the remote branch; a documentation-only ledger update is now pending)
 - Release target: versionName `0.7.2`, versionCode `9`
 - No physical DAC was connected or mutated.
 
@@ -18,8 +19,8 @@
 - Exact generated-headroom range-boundary rounding corrected without changing strict source-authored preamp validation.
 - Dense regressions cover maximum-Q positive/negative boosts, 20 Hz/20 kHz edges, interacting filters, the source shelf corpus, target quantization, and a six-band JA11 fit rejected by dense validation.
 - Finite-hardware representation versions advanced; export fingerprint expectation updated.
-- Complete JVM suite on the dirty v0.7.2/code 9 worktree: 727 tests passed, 0 failures/errors/skips.
-- Android lint on the dirty candidate: 0 errors, 111 warnings, 2 hints. Review found only existing patterns in unchanged code and no new actionable warning in changed code.
+- Complete JVM suite on commit `1c36349ca3edb69061a34b44d385670380f60512`: 727 tests passed, 0 failures/errors/skips.
+- Android lint on the committed candidate: 0 errors, 111 warnings, 2 hints. Review found only existing patterns in unchanged code and no new actionable warning in changed code.
 - Debug and release assembly passed. Forced `compileDebugKotlin --rerun-tasks` passed; its two warnings are in unchanged files. R8 mapping verification passed with at least one app class renamed.
 - API 35 instrumentation passed 25 tests with 0 failures/errors/skips on the local ARM64 API 35 emulator.
 - Repository Python suite passed 235 tests. Release contract, 15-source catalog registry, 14-sample Favorite validation, actionlint, ShellCheck, and `git diff --check` passed.
@@ -28,21 +29,22 @@
 - Release automation changes and previous review-finding fixes are recorded in their corresponding investigation and gate files.
 - API 26 startup follow-up OOMs were traced beyond the canonical file read: eager catalog indexes, per-profile formatted acoustic signatures, and main-thread overlay work. Lookup indexes are lazy, acoustic dedup retains compact collision-checked fingerprints, numeric formatting avoids formatter allocation except on rounding boundaries, and catalog rendering runs on `Dispatchers.Default`.
 - Focused `CatalogOverlayTest` and `CanonicalFirstCatalogRepositoryTest` pass, including fixed-precision/negative-zero formatting checks.
-- Latest local API 26 cold smoke from the dirty 0.7.2/code 9 worktree completed the catalog overlay, rendered the manufacturer/model/profile UI, and remained resumed/alive after a 60-second observation with no AndroidRuntime error. The smoke APK and signer are local-only, not final candidate evidence. The earlier 13-minute run is preserved separately.
-- The API 26 CI smoke in `.github/workflows/android-ci.yml` now waits for the EQ Library tab and manufacturer list, then observes the process for 60 seconds. actionlint passed; exact PR-head CI and a committed-source rerun remain pending.
+- Exact-commit API 26 smoke on `1c36349ca3edb69061a34b44d385670380f60512` used a fresh wipe/install, rendered manufacturer, 1MORE model, and `oratory1990` profile UI, remained resumed/alive after 60 seconds, and had no AndroidRuntime error. The smoke signer is local-only. Final Dalvik use was 47,111 of 49,152 KiB. Evidence is in `.unlazy/v0.7.2-autonomous-release/evidence/api26-final/RESULT.md`.
+- An earlier exact-commit smoke attempt logged OOM while overlapping UIAutomation diagnostics caused an Android system-process service-registration crash. That contaminated attempt is recorded separately; a serialized clean rerun passed.
+- The API 26 CI smoke in `.github/workflows/android-ci.yml` waits for the EQ Library tab and manufacturer list, then observes the process for 60 seconds. actionlint passed; exact PR-head CI remains pending.
 - An independent read-only review agent scanned the working diff and found no confirmed correctness or regression finding. This does not replace exact PR-head review.
 
 ## Current working changes
 
-The worktree contains uncommitted release automation, safe Kotlin/UI/persistence fixes, version metadata, and synchronized release documentation. The pushed branch includes the current DSP checkpoint and a clean merge of current `origin/main`; the immutable v0.7.1 commit remains an ancestor.
+The committed candidate at `1c36349ca3edb69061a34b44d385670380f60512` contains release automation, safe Kotlin/UI/persistence fixes, version metadata, and synchronized release documentation. A follow-up documentation commit recording exact-source/API-26 evidence is pending. The candidate descends from a clean merge of current `origin/main`; immutable v0.7.1 remains an ancestor.
 
 ## Next
 
-1. Finish synchronizing the local release ledger, commit the coherent v0.7.2/code 9 candidate, and push without force.
-2. Repeat release-critical local validation and API 26 smoke against that exact commit.
-3. Open the PR, obtain exact-head independent review and required checks, then merge under protection.
+1. Commit the exact-source/API-26 ledger update and push the branch without force.
+2. Create the PR, obtain exact-head independent review and required checks, then merge under protection.
+3. Reverify merged main and generate the main-only signed candidate.
 4. Verify the exact merged-main signed artifact before immutable tagging/publication.
 
 ## Current failure
 
-No API 26 startup failure is currently reproduced on the latest dirty worktree source. The local gates pass, but exact committed-source validation, CI x86_64 verification, PR review, merge, signed candidate, and release gates remain pending. No v0.7.2 tag or public release exists.
+No API 26 startup failure was reproduced on the latest clean committed-source smoke, though memory headroom remains low. Exact PR CI x86_64, PR review, merge, signed candidate, and release gates remain pending. No v0.7.2 tag or public release exists.

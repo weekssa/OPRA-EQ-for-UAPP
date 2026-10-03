@@ -52,12 +52,12 @@ v0.7.1 remains the current public release until the signed v0.7.2 candidate is i
 - [x] Version metadata is set to `0.7.2` / `9` without changing package ID or SDK levels.
 - [x] User-facing v0.7.2 notes describe only implemented behavior and retain existing hardware/UAPP boundaries.
 - [x] Independent dense DSP tests reproduce the old high-Q response miss and cover the production correction.
-- [x] Final local Gradle, emulator, workflow, and repository validations pass on the current dirty candidate; rerun release-critical gates on the committed source.
+- [x] Exact committed source `1c36349ca3edb69061a34b44d385670380f60512` passes the local Gradle, R8, API 35 instrumentation, Python/catalog/release, actionlint, and ShellCheck gates. A fresh wipe/install API 26 ARM64 smoke rendered the manufacturer, 1MORE model, and `oratory1990` profile, then remained resumed/alive for 60 seconds without an AndroidRuntime error. The local smoke used a temporary signer and left only 2,041 KiB free in the 48 MiB Dalvik heap; exact PR CI x86_64 remains required.
 - [ ] Exact-head independent review and required pull request checks pass before merge.
 - [ ] Signed candidate from verified merged main passes independent artifact and install/upgrade checks.
 - [ ] Immutable `v0.7.2` tag and public release assets are verified after publication.
 
-Status: **Preparation in progress. No v0.7.2 tag, candidate APK, or public release exists yet.** Full evidence is maintained in `docs/release-engineering/v0.7.2/`.
+Status: **Preparation in progress. No v0.7.2 PR, official signed candidate, tag, or public release exists yet.** Full evidence, including one contaminated API 26 attempt and the clean exact-source rerun, is maintained in `docs/release-engineering/v0.7.2/`.
 
 ## Previous v0.7.0 state
 

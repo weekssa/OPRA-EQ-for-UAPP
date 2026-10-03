@@ -805,16 +805,18 @@ version metadata change, the local JVM suite passed 724 tests with no failures, 
 or skips; Android lint had 0 errors, 111 warnings, and 2 hints, with no diagnostics in the changed
 DSP source/tests. The final versioned run is pending. No physical DAC was connected or mutated.
 
-The current dirty v0.7.2/code 9 worktree has since passed 727 JVM tests, lint with 0 errors, debug
-and release assembly, forced Kotlin compilation, R8 mapping verification, and API 35 instrumentation
-(25 tests). The repository Python suite passed 235 tests; release contract, catalog registry/sample,
-actionlint, ShellCheck, and diff checks passed. A fresh API 26 ARM64 smoke showed the manufacturer,
-1MORE model, and `oratory1990` profile lists and remained resumed/alive for a 60-second observation
-with no AndroidRuntime error. Exact local artifact hashes, temporary smoke signer, and memory data
-are recorded in `docs/release-engineering/v0.7.2/ARTIFACTS.md`. This smoke used a temporary signer
-and dirty source; it is not official candidate evidence. Re-run release-critical checks and API 26
-smoke on the checkpoint commit. Exact PR-head CI, review, merge, signed candidate, tag, and release
-remain pending.
+The committed v0.7.2/code 9 candidate `1c36349ca3edb69061a34b44d385670380f60512` passed 727 JVM
+tests, lint with 0 errors, debug and release assembly, forced Kotlin compilation, R8 mapping
+verification, and API 35 instrumentation (25 tests). The repository Python suite passed 235 tests;
+release contract, catalog registry/sample, actionlint, ShellCheck, and diff checks passed. A fresh
+wipe/install API 26 ARM64 smoke built from that exact source rendered the manufacturer, 1MORE model,
+and `oratory1990` profile lists, then remained resumed/alive for a 60-second observation with no
+AndroidRuntime error. The smoke used a temporary local signer and is not official candidate
+provenance. Final Dalvik use was 47,111 KiB of 49,152 KiB. The first same-commit attempt was
+contaminated by overlapping UIAutomation diagnostics and is preserved separately; the serialized
+clean rerun passed. Exact APK hashes, temporary signer, memory data, and both attempt records are in
+`docs/release-engineering/v0.7.2/ARTIFACTS.md`. Exact PR-head CI, review, merge, signed candidate,
+tag, and release remain pending.
 
 The v0.7.2 branch remains under local/PR validation. There is no PR, signed candidate, v0.7.2 tag,
 or public release yet. Exact current state and later evidence belong in

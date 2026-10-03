@@ -33,16 +33,16 @@ Status markers: [ ] pending, [x] complete, [!] failed/recovery active, [-] not a
 - [x] Optimizer cache investigated without speculative rewrite
 - [x] No physical DAC writes performed
 - [x] No unverified USB protocol behavior changed
-- [x] Debug build passes on dirty v0.7.2/code 9 candidate; rerun after checkpoint commit
-- [x] Fresh complete JVM suite passes: 727 tests, 0 failures/errors/skips; rerun after checkpoint commit
-- [x] Lint completes with 0 errors and no new actionable warning in changed code; 111 existing warnings and 2 hints remain; rerun after checkpoint commit
-- [x] Release build passes on dirty v0.7.2/code 9 candidate; rerun after checkpoint commit
-- [x] R8 verification passes on dirty v0.7.2/code 9 candidate; rerun after checkpoint commit
+- [x] Debug build passes on committed candidate `1c36349ca3edb69061a34b44d385670380f60512`
+- [x] Fresh complete JVM suite passes on committed candidate: 727 tests, 0 failures/errors/skips
+- [x] Lint passes with 0 errors and no new actionable warning in changed code; 111 existing warnings and 2 hints remain
+- [x] Release build passes on committed v0.7.2/code 9 candidate
+- [x] R8 verification passes on committed candidate; at least one app class is renamed
 - [ ] Instrumentation passes on CI-equivalent emulator
-- [x] Minimum-SDK/API-26 local smoke passes on dirty source; committed-source and CI x86_64 reruns remain required
+- [x] Minimum-SDK/API-26 smoke passes on committed source `1c36349ca3edb69061a34b44d385670380f60512`; exact CI x86_64 rerun remains required
 - [x] Relevant Python, catalog, source, and release-script tests pass: 235 Python tests and all catalog/release contracts
 - [x] actionlint passes; ShellCheck passes where applicable
-- [x] `git diff --check` passed before this ledger synchronization; rerun after final documentation edits
+- [x] Branch diff check passed on the committed candidate before this ledger synchronization; rerun after final documentation edits
 - [x] Full working diff reviewed against v0.7.1; independent read-only review found no confirmed correctness/regression issue
 - [ ] Branch pushed without force
 - [ ] PR created with exact baseline, changes, evidence, and recovery status
