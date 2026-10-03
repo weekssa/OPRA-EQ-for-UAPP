@@ -6,8 +6,9 @@
 - Worktree: `/Users/stephenweeks/.codex/worktrees/a79b/OPRA-EQ-for-UAPP`
 - Branch: `codex/v0.7.2-stabilization`
 - Verified release base: `v0.7.1` at `c48f6a5daa08a5e03475b2e415fe80b41d3357db`, versionName `0.7.1`, versionCode `8`
-- Current pushed checkpoint: `d37e114d466d681138140a0280a7c988235c3c94`
-- Latest local candidate commit: `1c36349ca3edb69061a34b44d385670380f60512` (one commit ahead of the remote branch; a documentation-only ledger update is now pending)
+- Latest pushed checkpoint at initial PR creation: `c81f329b35773141ee7ba583468eaa9e8d7e009b`
+- Product source candidate with local test evidence: `1c36349ca3edb69061a34b44d385670380f60512`
+- PR #65: open from `codex/v0.7.2-stabilization` into `main`; status ledger synchronization is being prepared after initial CI started
 - Release target: versionName `0.7.2`, versionCode `9`
 - No physical DAC was connected or mutated.
 
@@ -33,18 +34,20 @@
 - An earlier exact-commit smoke attempt logged OOM while overlapping UIAutomation diagnostics caused an Android system-process service-registration crash. That contaminated attempt is recorded separately; a serialized clean rerun passed.
 - The API 26 CI smoke in `.github/workflows/android-ci.yml` waits for the EQ Library tab and manufacturer list, then observes the process for 60 seconds. actionlint passed; exact PR-head CI remains pending.
 - An independent read-only review agent scanned the working diff and found no confirmed correctness or regression finding. This does not replace exact PR-head review.
+- All eight checks passed on initial PR head `c81f329b35773141ee7ba583468eaa9e8d7e009b`: Android build, emulator UI, API 26 x86_64 smoke, CodeQL, catalog currentness, community coverage, and dependency submission. This docs-only status checkpoint advances the PR head; verify all checks again on the updated head.
+- Active `Protect main` ruleset prohibits deletion and non-fast-forward updates, has no bypass actors, and has no required reviewer or named status checks. Merge must remain a normal GitHub merge after this task's checks and independent review pass.
 
 ## Current working changes
 
-The committed candidate at `1c36349ca3edb69061a34b44d385670380f60512` contains release automation, safe Kotlin/UI/persistence fixes, version metadata, and synchronized release documentation. A follow-up documentation commit recording exact-source/API-26 evidence is pending. The candidate descends from a clean merge of current `origin/main`; immutable v0.7.1 remains an ancestor.
+The product candidate at `1c36349ca3edb69061a34b44d385670380f60512` contains release automation, safe Kotlin/UI/persistence fixes, version metadata, and synchronized release documentation. Commit `c81f329b` records exact-source/API-26 evidence. PR #65 is open, and every check passed on its initial head. This local status synchronization is documentation-only and causes checks to rerun on the resulting PR head. Immutable v0.7.1 remains an ancestor.
 
 ## Next
 
-1. Commit the exact-source/API-26 ledger update and push the branch without force.
-2. Create the PR, obtain exact-head independent review and required checks, then merge under protection.
+1. Refresh PR #65's exact live head and wait for all checks to pass after the status checkpoint.
+2. Obtain independent exact-head review, then merge under the active main ruleset.
 3. Reverify merged main and generate the main-only signed candidate.
 4. Verify the exact merged-main signed artifact before immutable tagging/publication.
 
 ## Current failure
 
-No API 26 startup failure was reproduced on the latest clean committed-source smoke, though memory headroom remains low. Exact PR CI x86_64, PR review, merge, signed candidate, and release gates remain pending. No v0.7.2 tag or public release exists.
+No API 26 startup failure was reproduced on the latest clean committed-source smoke, though memory headroom remains low. PR #65 is open; exact PR CI, independent review, merge, signed candidate, and release gates remain pending. No v0.7.2 tag or public release exists.

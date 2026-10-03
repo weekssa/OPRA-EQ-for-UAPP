@@ -44,8 +44,8 @@ Status markers: [ ] pending, [x] complete, [!] failed/recovery active, [-] not a
 - [x] actionlint passes; ShellCheck passes where applicable
 - [x] Branch diff check passed on the committed candidate before this ledger synchronization; rerun after final documentation edits
 - [x] Full working diff reviewed against v0.7.1; independent read-only review found no confirmed correctness/regression issue
-- [ ] Branch pushed without force
-- [ ] PR created with exact baseline, changes, evidence, and recovery status
+- [x] Branch pushed without force to `c81f329b35773141ee7ba583468eaa9e8d7e009b`
+- [x] PR #65 created with exact baseline, changes, local evidence, and recovery status: https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/65
 - [ ] Required GitHub CI and independent review pass on exact PR head
 - [ ] PR merged without bypassing branch protection
 - [ ] Merged main reverified on exact SHA

@@ -11,8 +11,8 @@
 - Target metadata: versionName `0.7.2`, versionCode `9`
 - Latest fetched `origin/main` at the last refresh: `afed3dc90b5873218d5e333882528f8c5ddd54a2` (2026-10-02)
 - Latest main merge on this branch: `1530d02f`, with `afed3dc90b5873218d5e333882528f8c5ddd54a2` as its main parent; the v0.7.1 source remains an ancestor
-- Latest pushed stabilization checkpoint: `d37e114d466d681138140a0280a7c988235c3c94`
-- Current local candidate: commit `1c36349ca3edb69061a34b44d385670380f60512`, one commit ahead of the remote branch. Exact-source ledger follow-up remains uncommitted.
+- Product source candidate: commit `1c36349ca3edb69061a34b44d385670380f60512`; exact-source local test evidence is tied to this SHA.
+- Initial PR head: `c81f329b35773141ee7ba583468eaa9e8d7e009b`; subsequent branch commits in this phase only update release documentation. Resolve the current PR head from GitHub before continuing.
 - Physical DAC writes: none
 
 ## Local verification
@@ -38,9 +38,12 @@
 
 ## Remote promotion state
 
-- Remote branch remains at previous checkpoint `d37e114d466d681138140a0280a7c988235c3c94`; local candidate `1c36349ca3edb69061a34b44d385670380f60512` is one commit ahead and unpushed
-- Pull request: none
-- No candidate or PR CI exists yet. The latest observed branch run was unrelated Automatic Dependency Submission run `37057657032` on checkpoint `d37e114d466d681138140a0280a7c988235c3c94`; it succeeded.
+- Initial PR branch head: `c81f329b35773141ee7ba583468eaa9e8d7e009b`; refresh the live branch and PR head after this docs-only checkpoint.
+- Pull request: [#65](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/65), open, base `main` at `afed3dc90b5873218d5e333882528f8c5ddd54a2`
+- All eight initial-head checks on `c81f329b` passed: Android build, emulator UI, API 26 x86_64 smoke, CodeQL, Catalog currentness, Priority community coverage, Automatic Dependency Submission, and `Analyze Kotlin`. This documentation checkpoint advances the PR head; refresh GitHub for the rerun statuses.
+- Initial-head API 26 CI evidence: run `37080978048`, job `min-api-smoke` passed in 9m01s on GitHub x86_64. Artifact `android-api-26-smoke-reports` (ID `11258672015`) was downloaded and inspected: launch completed, manufacturer list became visible, PID `4296` appeared with `MainActivity` resumed, and captured filtered logcat had no fatal exception, OOM, AndroidRuntime, or ANR entry. Exact-head CI will rerun after the documentation checkpoint.
+- Exact-head independent review: pending; no review decision was present.
+- Active `Protect main` ruleset: prevents deletion and non-fast-forward updates, with no bypass actors. It defines no required reviewer or named status checks; the task's CI and independent-review gates still apply.
 - Merge SHA: none
 - Signed candidate workflow/run/artifact: none
 - Release APK SHA-256: none

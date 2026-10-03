@@ -818,6 +818,10 @@ clean rerun passed. Exact APK hashes, temporary signer, memory data, and both at
 `docs/release-engineering/v0.7.2/ARTIFACTS.md`. Exact PR-head CI, review, merge, signed candidate,
 tag, and release remain pending.
 
-The v0.7.2 branch remains under local/PR validation. There is no PR, signed candidate, v0.7.2 tag,
-or public release yet. Exact current state and later evidence belong in
-`docs/release-engineering/v0.7.2/` and the v0.7.2 section of `docs/PUBLIC_RELEASE_CHECKLIST.md`.
+The v0.7.2 stabilization branch is under PR validation. PR #65 targets `main` and was initially
+opened at head `c81f329b35773141ee7ba583468eaa9e8d7e009b`. Its Android UI, CodeQL, catalog,
+community-coverage, dependency-submission, API 26 x86_64 smoke, and Android build checks passed on
+that initial head. This post-PR status checkpoint advances the head, so confirm its full rerun
+before merge. No signed candidate, v0.7.2 tag, or public release exists yet. Exact current state
+and later evidence belong in `docs/release-engineering/v0.7.2/` and the v0.7.2 section of
+`docs/PUBLIC_RELEASE_CHECKLIST.md`.
