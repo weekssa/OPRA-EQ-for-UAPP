@@ -275,6 +275,18 @@ class Ew300PersistenceQualifier(
         reason: String,
     ): Ew300PersistenceQualificationResult {
         val bandRegister = Ew300Protocol.FIRST_BAND_REGISTER
+        // This path also sends baseline-restoration writes. Persist the terminal attempt marker
+        // first so a failed follow-up checkpoint cannot leave TEMPORARY_COMMITTED replayable.
+        if (!persistPending(
+                key,
+                pending.copy(stage = Ew300PersistenceStage.RESTORATION_ATTEMPTED),
+            )
+        ) {
+            return failed(
+                "$reason The restoration attempt could not be durably recorded. No baseline restoration write was sent; stop and share the report.",
+                false,
+            )
+        }
         val restored = transport.writeRegister(bandRegister, pending.baseline.getValue(bandRegister)) &&
             transport.writeRegister(
                 Ew300Protocol.GLOBAL_GAIN_REGISTER,

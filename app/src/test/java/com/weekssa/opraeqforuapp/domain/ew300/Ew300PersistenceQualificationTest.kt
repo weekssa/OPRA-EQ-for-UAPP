@@ -241,6 +241,38 @@ class Ew300PersistenceQualificationTest {
     }
 
     @Test
+    fun helperRestorationMarkerPreventsReplayAfterTransientReadbackAndFailedUncertainCheckpoint() = runBlocking {
+        val transport = FakeTransport(
+            failWriteAt = setOf(3),
+            mismatchFirstTemporaryBandReadback = true,
+        )
+        val store = FakeStore(failPendingStages = setOf(Ew300PersistenceStage.UNCERTAIN))
+        val qualifier = qualifier(transport, store)
+
+        assertTrue(qualifier.advance() is Ew300PersistenceQualificationResult.Failed)
+        assertEquals(3, transport.writeCount)
+        assertEquals(Ew300PersistenceStage.RESTORATION_ATTEMPTED, store.pending?.stage)
+        assertEquals(0, transport.commitCount)
+
+        transport.detachGeneration += 1
+        assertTrue(qualifier(transport, store).advance() is Ew300PersistenceQualificationResult.Failed)
+        assertEquals(3, transport.writeCount)
+        assertEquals(0, transport.commitCount)
+    }
+
+    @Test
+    fun failedHelperRestorationMarkerPreventsTheFirstBaselineWrite() = runBlocking {
+        val transport = FakeTransport(mismatchFirstTemporaryBandReadback = true)
+        val store = FakeStore(failPendingStages = setOf(Ew300PersistenceStage.RESTORATION_ATTEMPTED))
+
+        assertTrue(qualifier(transport, store).advance() is Ew300PersistenceQualificationResult.Failed)
+
+        assertEquals(2, transport.writeCount)
+        assertEquals(Ew300PersistenceStage.TEMPORARY_COMMITTED, store.pending?.stage)
+        assertEquals(0, transport.commitCount)
+    }
+
+    @Test
     fun failedRestorationAttemptCheckpointPreventsBaselineWrite() = runBlocking {
         val transport = FakeTransport()
         val store = FakeStore(failPendingWritesAt = setOf(3))
@@ -255,7 +287,10 @@ class Ew300PersistenceQualificationTest {
         assertEquals(Ew300PersistenceStage.TEMPORARY_COMMITTED, store.pending?.stage)
     }
 
-    private class FakeStore(private val failPendingWritesAt: Set<Int> = emptySet()) : Ew300GainStateStore {
+    private class FakeStore(
+        private val failPendingWritesAt: Set<Int> = emptySet(),
+        private val failPendingStages: Set<Ew300PersistenceStage> = emptySet(),
+    ) : Ew300GainStateStore {
         var gainQualified = false
         var persistenceQualified = false
         var pending: Ew300PersistencePending? = null
@@ -280,7 +315,7 @@ class Ew300PersistenceQualificationTest {
             pending: Ew300PersistencePending?,
         ): Boolean {
             pendingWriteCount += 1
-            if (pendingWriteCount in failPendingWritesAt) return false
+            if (pendingWriteCount in failPendingWritesAt || pending?.stage in failPendingStages) return false
             this.pending = pending
             return true
         }
@@ -300,6 +335,7 @@ class Ew300PersistenceQualificationTest {
         private val mutateOnFailedWrite: Boolean = false,
         private val firstBandType: Int = 0,
         private val initialGlobalGain: ByteArray = byteArrayOf(0xF8.toByte(), 0xF8.toByte(), 0, 0),
+        private val mismatchFirstTemporaryBandReadback: Boolean = false,
         private val beforeWrite: () -> Unit = {},
     ) : Ew300Transport {
         override val deviceFingerprintKey = "exact-ew300-test"
@@ -316,9 +352,18 @@ class Ew300PersistenceQualificationTest {
         var commitCount = 0
         var writeCount = 0
         var readCount = 0
+        private var returnedTransientTemporaryMismatch = false
 
         override suspend fun readRegister(register: Int): ByteArray? {
             readCount += 1
+            if (mismatchFirstTemporaryBandReadback &&
+                !returnedTransientTemporaryMismatch &&
+                writeCount == 2 &&
+                register == Ew300Protocol.FIRST_BAND_REGISTER
+            ) {
+                returnedTransientTemporaryMismatch = true
+                return baseline.getValue(register).copyOf()
+            }
             return state[register]?.copyOf()
         }
         override suspend fun writeRegister(register: Int, data: ByteArray): Boolean {
