@@ -30,12 +30,23 @@ Recovery: verify clean status, fetch tags, confirm v0.7.1 provenance, then creat
 
 Resolution: branch codex/v0.7.2-stabilization now starts at exact v0.7.1 commit c48f6a5daa08a5e03475b2e415fe80b41d3357db. No owner checkout changes were made.
 
-## Active exact-head review finding: EW300 restoration checkpoint replay
+## Resolved exact-head review finding: EW300 restoration checkpoint replay in post-cycle path
 
 Problem: if a baseline-restoration register write failed and persisting the follow-up `UNCERTAIN` state also failed, the durable record could remain `TEMPORARY_COMMITTED`. A later call after process restart could send the restoration write again.
 
 Root cause: the first durable transition after `TEMPORARY_COMMITTED` occurred after the hardware restoration write. The failure of that later checkpoint therefore left the previous retryable state on disk.
 
-Recovery: persist `RESTORATION_ATTEMPTED` before the first baseline-restoration write and treat it as terminal on subsequent calls. If that pre-write checkpoint fails, no baseline write is sent. Added tests for both pre-write checkpoint failure and failed `UNCERTAIN` persistence after an ambiguous restoration write, followed by qualifier recreation.
+Recovery: persist `RESTORATION_ATTEMPTED` before the first baseline-restoration write in `verifyTemporaryAndRestore()` and treat it as terminal on subsequent calls. If that pre-write checkpoint fails, no baseline write is sent. Tests cover pre-write checkpoint failure and failed `UNCERTAIN` persistence after an ambiguous restoration write, followed by qualifier recreation.
 
-Resolution/current state: source commit `40b4f5d8c7b255ebed7cc886158d6e6621a911c4` passes a fresh 729-test Gradle run, lint, debug/release assembly, and R8 verification; the EW300 persistence class passes 15/15. No physical DAC was accessed. The exact PR head `af3f4c596e99e0cf8dce408b982c641c6898de6a` predates the fix and had all checks green, but its independent review returned FAIL on this P2. The fix is committed locally and must be pushed, then pass fresh exact-head CI and independent review before merge.
+
+Resolution/current state: source commit `40b4f5d8c7b255ebed7cc886158d6e6621a911c4` added the durable marker to this path. Independent review of PR head `13bf1f20` then found the same replay risk in a separate helper path; that follow-up is recorded below. Exact-head review on `e63fc4bf` is required before merge.
+
+## Resolved exact-head review finding: EW300 restoration checkpoint replay in pre-commit helper
+
+Problem: `restoreBeforeCommitOrFail()` also sent baseline-restoration writes after a temporary write rejection or transient temporary readback mismatch. It did so before persisting an attempt marker. If its first baseline write failed and saving `UNCERTAIN` failed, the durable state could remain `TEMPORARY_COMMITTED`; after detach and qualifier recreation, a later call could resend restoration.
+
+Root cause: the first fix guarded `verifyTemporaryAndRestore()` but missed a second helper that writes the same baseline registers.
+
+Recovery: commit `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4` persists `RESTORATION_ATTEMPTED` before the helper's first baseline write. Failure to save that marker sends no baseline write. The marker remains terminal if the later `UNCERTAIN` checkpoint fails. Added regressions for transient readback plus failed uncertain persistence across qualifier recreation, and for failure of the helper's pre-write checkpoint.
+
+Resolution/current state: focused EW300 persistence tests pass 17/17. Fresh full local Gradle validation on `e63fc4bf` passes 731 JVM tests, lint with 0 errors, 111 warnings, and 2 hints, debug/release assembly, and R8 mapping verification. No physical DAC was accessed. All eight GitHub checks passed on source head `e63fc4bf`; the ledger commit creates a docs-only descendant requiring fresh exact-head checks and review.

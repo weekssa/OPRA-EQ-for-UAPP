@@ -33,22 +33,22 @@ Status markers: [ ] pending, [x] complete, [!] failed/recovery active, [-] not a
 - [x] Optimizer cache investigated without speculative rewrite
 - [x] No physical DAC writes performed
 - [x] No unverified USB protocol behavior changed
-- [x] Debug build passes on the current local recovery fix
-- [x] Fresh complete JVM suite passes on the current local recovery fix: 729 tests, 0 failures/errors/skips
-- [x] Lint passes on the current local recovery fix with 0 errors, 111 warnings, 2 hints, and no issue in the changed production files
-- [x] Release build passes on the current local v0.7.2/code 9 recovery fix
-- [x] R8 verification passes on the current local recovery fix; at least one app class is renamed
+- [x] Debug build passes on source commit `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4`
+- [x] Fresh complete JVM suite passes on source commit `e63fc4bf`: 731 tests, 0 failures/errors/skips
+- [x] Lint passes on source commit `e63fc4bf` with 0 errors, 111 warnings, 2 hints, and no issue in the changed production files
+- [x] Release build passes on source commit `e63fc4bf`, v0.7.2/code 9
+- [x] R8 verification passes on source commit `e63fc4bf`; at least one app class is renamed
 - [ ] Instrumentation passes on CI-equivalent emulator
 - [x] Minimum-SDK/API-26 smoke passes on product source `1c36349ca3edb69061a34b44d385670380f60512`; exact prior PR head `af3f4c59` x86_64 CI passes; current fix needs fresh CI
 - [x] Relevant Python, catalog, source, and release-script tests pass: 235 Python tests and all catalog/release contracts
 - [x] actionlint passes; ShellCheck passes where applicable
-- [x] Full 729-test Gradle, lint, debug/release, and R8 checks pass on source commit `40b4f5d8c7b255ebed7cc886158d6e6621a911c4`
+- [x] Full 731-test Gradle, lint, debug/release, and R8 checks pass on source commit `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4`
 - [ ] Final `git diff --check` after this ledger update and before push
-- [!] Exact-head independent review found one P2 EW300 restoration replay risk; a durable pre-write marker and two local regression cases now address it, with exact-head review pending
+- [!] Exact-head reviews found two EW300 restoration replay risks in separate paths; both now checkpoint the durable attempt marker before writing and are covered by regression cases. Exact-head review remains pending.
 - [x] Branch pushed without force to `c81f329b35773141ee7ba583468eaa9e8d7e009b`
 - [x] PR #65 created with exact baseline, changes, local evidence, and recovery status: https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/65
-- [ ] Push recovery-fix branch and refresh PR head without force
-- [ ] Required GitHub CI and independent review pass on the exact head containing the recovery fix
+- [x] Push recovery-fix branch normally without force: source head `e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4`
+- [ ] Required GitHub CI and independent review pass on the exact head containing both recovery fixes
 - [ ] PR merged without bypassing branch protection
 - [ ] Merged main reverified on exact SHA
 - [ ] Signed release candidate generated from verified merged main

@@ -2,7 +2,7 @@
 
 MISSION: v0.7.2 stabilization and release
 
-CURRENT PHASE: repair the exact-head review finding; local validation passes, and the fix is being prepared for a fresh PR-head review and CI run
+CURRENT PHASE: second EW300 replay path fixed and pushed; exact-head CI is running and independent review is pending
 
 CURRENT WORKTREE: /Users/stephenweeks/.codex/worktrees/a79b/OPRA-EQ-for-UAPP
 
@@ -10,21 +10,21 @@ CURRENT BRANCH: codex/v0.7.2-stabilization
 
 BASELINE: v0.7.1 -> c48f6a5daa08a5e03475b2e415fe80b41d3357db
 
-CURRENT HEAD: Last pushed PR head is af3f4c596e99e0cf8dce408b982c641c6898de6a. The local branch/worktree contains recovery fix commit 40b4f5d8c7b255ebed7cc886158d6e6621a911c4 and its ledger sync; neither has been pushed yet.
+CURRENT HEAD: Tested production source commit is e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4. The release ledger may be a docs-only descendant; resolve the live checkout and PR SHA before relying on CI or review results.
 
 VERSION: 0.7.2 / 9
 
-LAST VERIFIED COMPLETION: exact source commit 40b4f5d8c7b255ebed7cc886158d6e6621a911c4 passed a fresh full Gradle run: 729 JVM tests, 0 failures/errors/skips; lint 0 errors, 111 warnings, 2 hints; debug/release assembly; and R8 mapping verification. The EW300 persistence suite passed 15/15, including the failed-checkpoint-after-restoration regression. Existing API 35, Python, API 26, and remote CI evidence remains bound to its recorded earlier source/head.
+LAST VERIFIED COMPLETION: exact source commit e63fc4bf5be629135b0fd56449bad4c1b0bfd1b4 passed a forced full Gradle run: 731 JVM tests, 0 failures/errors/skips; lint 0 errors, 111 warnings, 2 hints; debug/release assembly; and R8 mapping verification. The EW300 persistence suite passed 17/17, including both restoration paths and qualifier recreation after failed checkpoints. Earlier API 35, Python, and API 26 local evidence remains tied to its recorded source. All eight GitHub checks passed on source head e63fc4bf; the docs-only ledger commit requires a fresh run.
 
-NEXT EXACT ACTION: finish the final diff check and push the local recovery-fix branch normally, then refresh PR #65 and require all checks plus a new independent review on the exact pushed head.
+NEXT EXACT ACTION: if the ledger sync is still uncommitted, finish its diff check and push normally; then resolve the exact PR head, complete its CI and independent review, and repair any finding before merge.
 
-CURRENT FAILURE: the independent review of PR head af3f4c59 returned FAIL with one P2: a failed UNCERTAIN checkpoint after a rejected restoration write could leave TEMPORARY_COMMITTED persisted and replay the restoration after restart. Commit 40b4f5d8 adds a durable RESTORATION_ATTEMPTED marker before that write. Local regression and full Gradle checks pass; exact-head CI/review remain pending.
+CURRENT FAILURE: independent reviews of heads af3f4c59 and 13bf1f20 found two P2 replay windows in separate baseline-restoration paths. Commits 40b4f5d8 and e63fc4bf now checkpoint RESTORATION_ATTEMPTED before writes in both paths, with regression coverage. Exact-head CI and review on e63fc4bf remain pending.
 
-LAST GREEN GATES: prior PR head af3f4c596e99e0cf8dce408b982c641c6898de6a passed all eight checks: Android build, emulator UI, API 26 x86_64 smoke, CodeQL, catalog currentness, priority community coverage, dependency submission, and Analyze Kotlin. The API 26 artifact was downloaded and inspected. This local fix is not included in those results.
+LAST GREEN GATES: all eight checks pass on source head e63fc4bf. Android/API26/UI run 37087067275, Analyze Kotlin run 37087067259, CodeQL check 111100633597, Catalog run 37087067266, Priority community run 37087067347, and dependency submission run 37087067174. Prior head af3f4c59 artifacts are historical and predate both recovery fixes.
 
 ACTIVE PR: https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/65
 
-ACTIVE CI RUN: NONE for the unpushed recovery fix. Previous exact-head runs are recorded in ARTIFACTS.md.
+ACTIVE CI RUN: All checks passed on source head e63fc4bf. The pending docs-only descendant triggers a fresh run; refresh live status after it is pushed.
 
 ACTIVE RELEASE RUN: NONE
 
