@@ -215,14 +215,18 @@ class UiModernizationFlowsTest {
     }
 
     @Test
-    fun dpadMovesFromHeadphoneSearchToTabsAndDirectResults() {
+    fun keyboardAndDpadSearchOpensDirectModelResults() {
         composeRule.setContent {
             OpraEqTheme(ThemeMode.Light) {
                 TestBrowseScreen(testCatalog())
             }
         }
 
-        composeRule.onNodeWithText("Search headphones…").performTextInput("WH-1000XM4")
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        composeRule.onNodeWithText("Search headphones…").performClick()
+        instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_X)
+        instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_M)
+        composeRule.waitForIdle()
         composeRule.onNodeWithText("Search headphones…").performKeyInput {
             keyDown(Key.DirectionDown)
             keyUp(Key.DirectionDown)
@@ -241,7 +245,6 @@ class UiModernizationFlowsTest {
         }
         composeRule.waitForIdle()
         composeRule.onNodeWithText("Test creator").assertIsDisplayed()
-        val instrumentation = InstrumentationRegistry.getInstrumentation()
         repeat(2) { instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP) }
         composeRule.onNodeWithText("Target: USB Audio Player PRO / ToneBoosters", substring = true)
             .assertIsFocused()
