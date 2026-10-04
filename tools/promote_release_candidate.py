@@ -77,6 +77,21 @@ def require_matching_sha256_digest(actual: str, expected: str, mismatch_message:
     require(actual_digest == expected_digest, mismatch_message)
 
 
+def normalize_release_body(value: str) -> str:
+    """Allow one optional final LF from GitHub's release-body round-trip."""
+    return value[:-1] if value.endswith("\n") else value
+
+
+def require_release_name_and_body(actual: dict[str, Any], *, tag: str, release_notes: str) -> None:
+    """Require the published release to read back with its versioned title and curated body."""
+    require(actual.get("name") == f"EQ Library {tag}",
+            "public release readback did not confirm the expected release name")
+    actual_body = actual.get("body")
+    require(isinstance(actual_body, str) and
+            normalize_release_body(actual_body) == normalize_release_body(release_notes),
+            "public release readback did not confirm the expected release body")
+
+
 def sha256_hex(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
@@ -802,6 +817,7 @@ def _verify_or_create_draft(api: GitHubApi, candidate: dict[str, Any], release_n
     })
     require(created.get("tag_name") == tag and created.get("draft") is True,
             "GitHub did not create the expected private draft release")
+    require_release_name_and_body(created, tag=tag, release_notes=release_notes)
     require(resolve_candidate_annotated_tag(
         api,
         tag=tag,
@@ -863,6 +879,7 @@ def publish_release(api: GitHubApi, *, candidate: dict[str, Any], assets: dict[s
     final = api.json("GET", api.repo_path + "/releases/tags/" + urllib.parse.quote(tag, safe=""))
     require(final.get("draft") is False and final.get("prerelease") is False and final.get("tag_name") == tag,
             "public release readback did not confirm the expected published state")
+    require_release_name_and_body(final, tag=tag, release_notes=release_notes)
     require(resolve_candidate_annotated_tag(
         api,
         tag=tag,

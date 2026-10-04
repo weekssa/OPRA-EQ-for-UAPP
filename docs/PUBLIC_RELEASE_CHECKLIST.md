@@ -49,7 +49,7 @@ Status: **Published under the owner's conditional approval; all merge, candidate
 
 The v0.7.2 public release is latest. It uses versionName `0.7.2`, versionCode `9`, package `com.weekssa.opraeqforuapp`, and source commit `b8e90b9b53fc63ea00fefa499d7d4bd6ce4d55ea`.
 
-- [x] Startup catalog, dense DSP response, EW300 persistence, import validation, and existing support boundaries are covered by the release notes and regression evidence.
+- [x] Startup catalog, dense DSP response, EW300 persistence, and existing support boundaries are covered by the release notes and regression evidence. Strict imported filter-gain validation predates v0.7.2; its earlier release-note claim is corrected in the post-release erratum below.
 - [x] PR #65 product changes merged at `a60411bebfdbd1cea4218d3bde45013bb7ed26a9`; PR #66 fixed the digest comparison and merged normally at exact release source `b8e90b9b53fc63ea00fefa499d7d4bd6ce4d55ea`.
 - [x] All seven exact-head checks passed on PR #66 head `11275d510f3a0b9b1ad4aa4edae2c25bd2044b4b`; independent code and documentation reviews passed.
 - [x] Post-merge validation passed: Python tool suite 238/238 under bundled Python 3.12; promotion contract; catalog registry (15 sources); Favorite coverage (14 samples across 13 profiles, 2 exclusions). The Android CI gate passed on the exact PR tree, including unit tests, lint, debug/release assembly, R8, emulator UI, and API 26 smoke.
@@ -61,6 +61,8 @@ The v0.7.2 public release is latest. It uses versionName `0.7.2`, versionCode `9
 - [x] No physical DAC writes were performed, and no DAC support claim was added.
 
 Status: **v0.7.2 is published and latest.** The former promotion run `37096259477` is a resolved historical failure; its digest correction is in PR #66 and the fresh candidate/promotion passed. The earlier beta run `37093821378` remains testing evidence only. The 51 transitive Maven Dependabot alerts in Gradle/build/emulator/test tooling remain separately tracked; none was found in v0.7.2 `releaseRuntimeClasspath` or the mapped minified DEX scan, while build-environment risk remains. Full evidence is in `docs/release-engineering/v0.7.2/`.
+
+Post-release documentation correction: the earlier v0.7.2 note incorrectly presented rejection of invalid or missing imported filter gains as new. Strict filter-gain validation predated v0.7.2 and did not change in this release. The only v0.7.2 parser source edit rewrote the existing finite-value check for an explicit `Preamp:` line as a null-safe check; behavior is unchanged, and an absent preamp remains absent. This correction changes documentation only.
 
 ## Previous v0.7.0 state
 

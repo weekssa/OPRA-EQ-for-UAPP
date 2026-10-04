@@ -137,6 +137,134 @@ class ReleasePromotionTest(unittest.TestCase):
                 f"sha256:{self.digest}", "not-a-digest", "artifact digest mismatch"
             )
 
+    def test_published_release_name_and_body_match(self):
+        promotion.require_release_name_and_body(
+            {"name": "EQ Library v1.2.3", "body": "# Notes\n"},
+            tag="v1.2.3",
+            release_notes="# Notes\n",
+        )
+
+    def test_published_release_name_mismatch_fails(self):
+        with self.assertRaisesRegex(promotion.PromotionError, "expected release name"):
+            promotion.require_release_name_and_body(
+                {"name": "Wrong title", "body": "# Notes\n"},
+                tag=TAG,
+                release_notes="# Notes\n",
+            )
+
+    def test_published_release_body_mismatch_fails(self):
+        with self.assertRaisesRegex(promotion.PromotionError, "expected release body"):
+            promotion.require_release_name_and_body(
+                {"name": "EQ Library v0.7.2", "body": "# Different notes\n"},
+                tag=TAG,
+                release_notes="# Notes\n",
+            )
+
+    def test_published_release_body_normalizes_one_trailing_newline(self):
+        promotion.require_release_name_and_body(
+            {"name": "EQ Library v0.7.2", "body": "# Notes"},
+            tag=TAG,
+            release_notes="# Notes\n",
+        )
+
+    def test_published_release_body_rejects_extra_trailing_blank_line(self):
+        with self.assertRaisesRegex(promotion.PromotionError, "expected release body"):
+            promotion.require_release_name_and_body(
+                {"name": "EQ Library v0.7.2", "body": "# Notes\n\n"},
+                tag=TAG,
+                release_notes="# Notes\n",
+            )
+
+    def test_published_release_body_does_not_rewrite_internal_line_endings(self):
+        with self.assertRaisesRegex(promotion.PromotionError, "expected release body"):
+            promotion.require_release_name_and_body(
+                {"name": "EQ Library v0.7.2", "body": "# Notes\r\nSection\r\n"},
+                tag=TAG,
+                release_notes="# Notes\nSection\n",
+            )
+
+    def test_new_draft_release_metadata_is_checked_before_return(self):
+        candidate = self.validate()
+        candidate.update(candidate_run_id=RUN_ID, candidate_artifact_id=ARTIFACT_ID)
+
+        class DraftApi:
+            repo_path = "/repos/weekssa/OPRA-EQ-for-UAPP"
+
+            def __init__(self, created):
+                self.created = created
+                self.calls = []
+
+            def optional_json(self, path):
+                self.calls.append(("OPTIONAL", path))
+                return None
+
+            def json(self, method, path, payload=None):
+                self.calls.append((method, path, payload))
+                return copy.deepcopy(self.created)
+
+        created = {
+            "id": 12,
+            "tag_name": TAG,
+            "name": f"EQ Library {TAG}",
+            "body": "# Notes\n",
+            "draft": True,
+            "prerelease": False,
+            "assets": [],
+        }
+        api = DraftApi(created)
+        with (
+            mock.patch.object(promotion, "resolve_candidate_annotated_tag", return_value=SOURCE_SHA),
+            mock.patch.object(promotion, "current_main_sha", return_value=SOURCE_SHA),
+            mock.patch.object(promotion, "require_release_version_advances"),
+        ):
+            result = promotion._verify_or_create_draft(api, candidate, "# Notes\n")
+        self.assertEqual(created, result)
+        self.assertEqual(1, sum(call[0] == "POST" for call in api.calls))
+
+    def test_new_draft_release_metadata_mismatch_fails_before_return(self):
+        candidate = self.validate()
+        candidate.update(candidate_run_id=RUN_ID, candidate_artifact_id=ARTIFACT_ID)
+
+        class DraftApi:
+            repo_path = "/repos/weekssa/OPRA-EQ-for-UAPP"
+
+            def __init__(self, created):
+                self.created = created
+                self.calls = []
+
+            def optional_json(self, path):
+                self.calls.append(("OPTIONAL", path))
+                return None
+
+            def json(self, method, path, payload=None):
+                self.calls.append((method, path, payload))
+                return copy.deepcopy(self.created)
+
+        for field, value, expected in (
+            ("name", "Wrong title", "expected release name"),
+            ("body", "# Altered notes\n", "expected release body"),
+        ):
+            with self.subTest(field=field):
+                created = {
+                    "id": 12,
+                    "tag_name": TAG,
+                    "name": f"EQ Library {TAG}",
+                    "body": "# Notes\n",
+                    "draft": True,
+                    "prerelease": False,
+                    "assets": [],
+                }
+                created[field] = value
+                api = DraftApi(created)
+                with (
+                    mock.patch.object(promotion, "resolve_candidate_annotated_tag", return_value=SOURCE_SHA),
+                    mock.patch.object(promotion, "current_main_sha", return_value=SOURCE_SHA),
+                    mock.patch.object(promotion, "require_release_version_advances"),
+                ):
+                    with self.assertRaisesRegex(promotion.PromotionError, expected):
+                        promotion._verify_or_create_draft(api, candidate, "# Notes\n")
+                self.assertEqual(1, sum(call[0] == "POST" for call in api.calls))
+
     def test_tag_command_accepts_prefixed_github_digest_from_verifier(self):
         github_digest = f"sha256:{self.digest}"
         args = argparse.Namespace(
@@ -738,6 +866,8 @@ class ReleasePromotionTest(unittest.TestCase):
                  "draft": True, "prerelease": False, "assets": []}
         final = {
             "id": 12,
+            "name": f"EQ Library {TAG}",
+            "body": "# Notes\n",
             "tag_name": TAG,
             "draft": False,
             "prerelease": False,
@@ -779,6 +909,63 @@ class ReleasePromotionTest(unittest.TestCase):
         self.assertNotIn("tag_name", mutations[0][2])
         self.assertEqual("true", mutations[0][2]["make_latest"])
         self.assertIn(("GET", api.repo_path + "/releases/latest", None), api.calls)
+
+    def test_publish_rejects_published_release_metadata_mismatch(self):
+        candidate = self.validate()
+        logs = {
+            "apksigner-verification.txt": SIGNER_REPORT,
+            "zipalign-verification.txt": ALIGNMENT_REPORT,
+        }
+        assets = promotion.release_assets(candidate, logs, RUN_ID, ARTIFACT_ID, "34567")
+        source_sha = candidate["source_sha"]
+        draft = {"id": 12, "tag_name": TAG, "target_commitish": source_sha,
+                 "draft": True, "prerelease": False, "assets": []}
+
+        for field, value, expected in (
+            ("name", "Wrong title", "expected release name"),
+            ("body", "# Altered notes\n", "expected release body"),
+        ):
+            with self.subTest(field=field):
+                final = {
+                    "id": 12,
+                    "name": f"EQ Library {TAG}",
+                    "body": "# Notes\n",
+                    "tag_name": TAG,
+                    "draft": False,
+                    "prerelease": False,
+                }
+                final[field] = value
+
+                class PublishApi:
+                    repo_path = "/repos/weekssa/OPRA-EQ-for-UAPP"
+
+                    def __init__(self):
+                        self.calls = []
+
+                    def json(self, method, path, payload=None):
+                        self.calls.append((method, path, payload))
+                        if method == "PATCH":
+                            return {"id": 12, "tag_name": TAG, "draft": False}
+                        return final
+
+                api = PublishApi()
+                verified_assets = {name: {"name": name} for name in assets}
+                with (
+                    mock.patch.object(promotion, "_verify_or_create_draft", return_value=draft),
+                    mock.patch.object(promotion, "_upload_asset"),
+                    mock.patch.object(promotion, "_verify_release_assets", return_value=verified_assets),
+                    mock.patch.object(promotion, "_verify_public_asset_downloads"),
+                    mock.patch.object(promotion, "resolve_candidate_annotated_tag",
+                                      side_effect=[source_sha, source_sha]),
+                    mock.patch.object(promotion, "current_main_sha", return_value=source_sha),
+                    mock.patch.object(promotion, "require_release_version_advances"),
+                ):
+                    with self.assertRaisesRegex(promotion.PromotionError, expected):
+                        promotion.publish_release(api, candidate=candidate, assets=assets,
+                                                  release_notes="# Notes\n")
+
+                self.assertEqual(1, sum(call[0] == "PATCH" for call in api.calls))
+                self.assertFalse(any(call[1].endswith("/releases/latest") for call in api.calls))
 
     def test_publish_stops_before_mutation_when_asset_set_is_incomplete(self):
         candidate = self.validate()
@@ -839,6 +1026,8 @@ class ReleasePromotionTest(unittest.TestCase):
         }
         final = {
             "id": 12,
+            "name": f"EQ Library {TAG}",
+            "body": "# Notes\n",
             "tag_name": TAG,
             "target_commitish": candidate["source_sha"],
             "draft": False,
