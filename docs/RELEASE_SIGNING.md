@@ -136,6 +136,20 @@ hardware qualification from a candidate's build/install/cold-launch result.
 
 ## Public release gate (exact-candidate promotion)
 
+### Record release-engineering execution provenance
+
+For each future release, add concise execution-provenance rows to that version's `ARTIFACTS.md`. Record skills and tools separately; do not infer use from installation or availability. Use `not declared` when a version or source is unavailable, and `NO` when an item was inspected but not invoked.
+
+| Skill | Source/version | Purpose in this release | Actually invoked |
+|---|---|---|---|
+| `<skill name>` | `<source and version, or not declared>` | `<specific use>` | `YES` / `NO` |
+
+| Tool | Version | Trusted source | Purpose in this release | Verification/hash | Actually invoked |
+|---|---|---|---|---|---|
+| `<tool name>` | `<version>` | `<official source or configured runtime>` | `<specific use>` | `<published digest/checksum when downloaded manually, otherwise not applicable>` | `YES` / `NO` |
+
+Record manually downloaded tool checksums before running the tools. Do not backfill missing historical provenance from memory or current availability; state that it is not verifiable.
+
 For a future version, complete the applicable release gates and receive explicit owner approval
 before public publication. The v0.7.1 source-wide Favorite release is published; its exact candidate,
 publication, and post-release evidence is recorded in `docs/PUBLIC_RELEASE_CHECKLIST.md`.

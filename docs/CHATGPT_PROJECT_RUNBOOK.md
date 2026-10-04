@@ -851,3 +851,13 @@ artifact ID, archive digest, and exact source. `/releases/latest` resolves to v0
 DAC writes occurred, and the release adds no DAC support claim. The earlier digest-prefix promotion
 failure is resolved; the original beta artifact remains testing-only. Build/test-toolchain
 Dependabot alerts remain separately tracked as recorded in the release ledger.
+
+### 2026-10-04 v0.7.2 post-release documentation correction
+
+The published release note initially presented invalid or missing imported filter-gain rejection as
+a v0.7.2 change. That strict validation predates v0.7.2 and did not change in this release. The only
+v0.7.2 parser source edit replaced the existing explicit-Preamp finite-value check with a null-safe
+expression with the same behavior; an absent preamp remains absent. The versioned release notes,
+changelog, public release checklist, and remediation ledger record the explicit post-release
+correction and its public GitHub Release body readback. The published APK, signer, version, and
+annotated tag target are unchanged.
