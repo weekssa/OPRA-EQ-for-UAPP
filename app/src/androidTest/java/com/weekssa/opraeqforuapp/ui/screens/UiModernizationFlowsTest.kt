@@ -237,7 +237,7 @@ class UiModernizationFlowsTest {
             keyDown(Key.DirectionDown)
             keyUp(Key.DirectionDown)
         }
-        val resultRow = composeRule.onAllNodesWithText("WH-1000XM4")[1]
+        val resultRow = composeRule.onNodeWithText("WH-1000XM4")
         resultRow.assertIsFocused()
         resultRow.performKeyInput {
             keyDown(Key.DirectionCenter)
