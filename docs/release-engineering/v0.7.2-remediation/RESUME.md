@@ -1,12 +1,12 @@
 # v0.7.2 governance remediation resume
 
-Current phase: Implementation is committed; preparing final PR-head checks and push.
-Branch: `codex/v0.7.2-governance-remediation`
-HEAD: `897099ceb727aeb2d13fbfd4442802d8b3b38948` (validated implementation commit; next checkpoint commit is documentation-only)
-Last completed action: Committed F1 and F3-F6 changes as `897099ceb727aeb2d13fbfd4442802d8b3b38948` after reviewing the staged scope; F1 closeout and F3/F4/F5/F6 changes are recorded; focused suite (48), full Python suite (247), contract, actionlint, ShellCheck, and `git diff --check` pass.
-Next exact action: Finish this documentation-only checkpoint update, run the exact branch-scope check gates, push, open the requested PR, and continue through CI and merge.
-Active failure: Public v0.7.2 Release text still contains the old filter-gain claim; the tag ruleset is not yet installed; immutable Releases are disabled; no PR or CI run exists.
-PR: None.
-CI: Not run; no PR exists.
-GitHub governance status: Current pre-write readback sees only the active `Protect main` branch ruleset; repository immutable-release endpoint reads `enabled=false`; release object reports `immutable=false`; tag still peels to `b8e90b9b53fc63ea00fefa499d7d4bd6ce4d55ea`; authenticated `gh` is available with repo/workflow scopes.
-Human action required: None identified; user explicitly authorized GitHub governance operations.
+Current phase: Remediation outcomes, maintained records, and evidence bundle are complete; publish the final post-merge documentation snapshot.
+Branch: `codex/v0.7.2-remediation-closeout`
+HEAD: Documentation branch is based on PR #68 merge `468436d8236248bf1f017b1a503113cd41f81d73`; refresh the exact branch SHA from GitHub when resuming.
+Last completed action: PR #68 merged after all seven exact-head checks passed; active stable-tag ruleset and repository immutable-release setting were applied and read back; public erratum body, unchanged six assets, tag, APK checksum, signer, package, and version were verified; 12-file bundle and ZIP were created.
+Next exact action: Check the live status of this documentation-only branch/PR, merge after its required checks pass, then refresh `main` and the final public tag, Release, assets, and APK readbacks. Do not repeat any release mutation.
+Active failure: None. GitHub's live Release API/UI report `immutable=true` for v0.7.2 while its setup guide says the setting applies to future releases only; preserve this observation without generalizing.
+PR: Primary remediation [#68](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/68) merged at `468436d8236248bf1f017b1a503113cd41f81d73`; this final documentation snapshot is on the current closeout branch.
+CI: PASS, 7/7 checks on PR #68 head `85daba251b85995a77e1675174f4ef6946d427fd`; check live closeout PR status before acting.
+GitHub governance status: Active stable-tag ruleset ID `24444174` protects matching tags against update/deletion with an empty bypass list and unrestricted creation. Repository immutable-release setting reads enabled; release ID `402346895` reads immutable true. `v0.7.2` still peels to `b8e90b9b53fc63ea00fefa499d7d4bd6ce4d55ea`.
+Human action required: NONE.

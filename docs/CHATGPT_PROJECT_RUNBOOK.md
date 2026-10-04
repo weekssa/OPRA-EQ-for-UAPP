@@ -861,3 +861,17 @@ expression with the same behavior; an absent preamp remains absent. The versione
 changelog, public release checklist, and remediation ledger record the explicit post-release
 correction and its public GitHub Release body readback. The published APK, signer, version, and
 annotated tag target are unchanged.
+
+Governance remediation PR #68 merged to `main` as `468436d8236248bf1f017b1a503113cd41f81d73`
+after all seven required checks passed on exact PR head `85daba251b85995a77e1675174f4ef6946d427fd`.
+Active repository ruleset [Protect stable release tags](https://github.com/weekssa/OPRA-EQ-for-UAPP/rules/24444174)
+(ID `24444174`) restricts updates and deletions for stable version-shaped tags, has no bypass actor,
+and permits creation; `Protect main` was left unchanged. The repository immutable-release endpoint
+reads enabled, and release ID `402346895` currently reads `immutable: true` in both API and UI. The
+current GitHub setup guide says enabling applies to future releases, so record this as the observed
+live result for v0.7.2 and do not generalize retroactive behavior. The public body exactly matches
+the corrected versioned notes; all six uploaded asset IDs, sizes, and digests remain unchanged. A
+fresh public APK download retained SHA-256 `efdd63ddb305d0624f805cc53e4ce27aae7d1ddeb169e8f965302d0f290ba64a`,
+the pinned signer, package `com.weekssa.opraeqforuapp`, versionName `0.7.2`, versionCode `9`, and
+the tag's exact source `b8e90b9b53fc63ea00fefa499d7d4bd6ce4d55ea`. See
+`docs/release-engineering/v0.7.2-remediation/` for complete readbacks and the evidence bundle.
