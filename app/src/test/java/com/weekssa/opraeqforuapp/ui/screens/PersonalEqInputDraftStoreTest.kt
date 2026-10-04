@@ -24,7 +24,7 @@ class PersonalEqInputDraftStoreTest {
     }
 
     @Test
-    fun largeTextIsStoredOutsideSavedStateAndRestoredFromPrivateFile() {
+    fun largeTextRemainsAvailableForRepeatedSavedStateRestoration() {
         val root = Files.createTempDirectory("personal-eq-draft-large").toFile()
         val store = PersonalEqInputDraftStore(root)
         val draftId = UUID.randomUUID().toString()
@@ -38,6 +38,9 @@ class PersonalEqInputDraftStoreTest {
         assertFalse(saved.contains(source))
         assertTrue(store.backingFile(draftId).isFile)
         assertEquals(source, store.decode(draftId, saved))
+        assertTrue(store.backingFile(draftId).isFile)
+        assertEquals(source, store.decode(draftId, saved))
+        store.delete(draftId)
         assertFalse(store.backingFile(draftId).exists())
         root.deleteRecursively()
     }

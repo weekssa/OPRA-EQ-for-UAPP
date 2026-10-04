@@ -342,7 +342,7 @@ internal fun ProfileSelectionEditor(
                     Text("Target fit: ${outputStatusLabel(targetStatus, exportTargets.activeTarget)}")
                     deviceAdaptationSummary(profile, exportTargets.activeTarget)?.let { Text(it) }
                     Text(
-                        if (profile.id in stagedSelectedIds) "Currently in My EQs" else "Not currently in My EQs",
+                        if (profile.id in baselineSelectedIds) "Currently in My EQs" else "Not currently in My EQs",
                         style = MaterialTheme.typography.labelLarge,
                     )
                     Text(

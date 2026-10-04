@@ -54,7 +54,6 @@ internal class PersonalEqInputDraftStore(
         saved == FILE_PREFIX + draftId -> {
             val file = draftFile(draftId)
             runCatching { file.readText(Charsets.UTF_8) }
-                .onSuccess { file.delete() }
                 .getOrElse { RESTORE_FAILURE_MARKER }
         }
         saved.startsWith(FILE_PREFIX) -> RESTORE_FAILURE_MARKER
