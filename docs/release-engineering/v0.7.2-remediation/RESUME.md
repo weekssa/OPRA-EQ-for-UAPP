@@ -1,10 +1,10 @@
 # v0.7.2 governance remediation resume
 
-Current phase: Implementation and local tests pass; preparing exact diff review and commit.
+Current phase: Implementation is committed; preparing final PR-head checks and push.
 Branch: `codex/v0.7.2-governance-remediation`
-HEAD: `daef0560bc120aebfe9d8910a1b867a9f9390c15` (implementation uncommitted)
-Last completed action: Re-read the live GitHub release/tag/ruleset/immutability state; F1 closeout and F3/F4/F5/F6 changes are recorded; focused suite (48), full Python suite (247), contract, actionlint, ShellCheck, and current `git diff --check` pass.
-Next exact action: Review the complete tracked diff and source boundary, finalize remediation records, stage only intended paths, commit, push, open PR, and continue through CI and merge.
+HEAD: `897099ceb727aeb2d13fbfd4442802d8b3b38948` (validated implementation commit; next checkpoint commit is documentation-only)
+Last completed action: Committed F1 and F3-F6 changes as `897099ceb727aeb2d13fbfd4442802d8b3b38948` after reviewing the staged scope; F1 closeout and F3/F4/F5/F6 changes are recorded; focused suite (48), full Python suite (247), contract, actionlint, ShellCheck, and `git diff --check` pass.
+Next exact action: Finish this documentation-only checkpoint update, run the exact branch-scope check gates, push, open the requested PR, and continue through CI and merge.
 Active failure: Public v0.7.2 Release text still contains the old filter-gain claim; the tag ruleset is not yet installed; immutable Releases are disabled; no PR or CI run exists.
 PR: None.
 CI: Not run; no PR exists.
