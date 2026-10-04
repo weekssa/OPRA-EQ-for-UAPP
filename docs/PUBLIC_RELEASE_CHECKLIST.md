@@ -64,6 +64,12 @@ Status: **v0.7.2 is published and latest.** The former promotion run `3709625947
 
 Post-release documentation correction: the earlier v0.7.2 note incorrectly presented rejection of invalid or missing imported filter gains as new. Strict filter-gain validation predated v0.7.2 and did not change in this release. The only v0.7.2 parser source edit rewrote the existing finite-value check for an explicit `Preamp:` line as a null-safe check; behavior is unchanged, and an absent preamp remains absent. This correction changes documentation only.
 
+- [x] Governance remediation PR #68 merged at `468436d8236248bf1f017b1a503113cd41f81d73` after all seven exact-head checks passed on `85daba251b85995a77e1675174f4ef6946d427fd`.
+- [x] Public Release ID `402346895` retains title `EQ Library v0.7.2`; its body exactly matches `docs/releases/v0.7.2.md` (3,709 UTF-8 characters; SHA-256 `6943b87df850485fa037df0822fbb013a35acf81fb1943d4553157a5abc707aa`). All six uploaded asset IDs, sizes, and digests remain unchanged.
+- [x] Active stable-tag ruleset ID `24444174` protects matching tags against update/deletion, has no bypass actor, and leaves creation unrestricted; existing `Protect main` is unchanged.
+- [x] Repository immutable-release setting reads enabled; release API and UI read `immutable=true` for v0.7.2. GitHub's setup guide documents future-release scope; the observed API/UI result is recorded without generalizing retroactive behavior.
+- [x] Fresh public APK download remains 2,835,216 bytes and SHA-256 `efdd63ddb305d0624f805cc53e4ce27aae7d1ddeb169e8f965302d0f290ba64a`; signer `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`; package/version `com.weekssa.opraeqforuapp` / `0.7.2` / `9`; annotated tag still peels to `b8e90b9b53fc63ea00fefa499d7d4bd6ce4d55ea`.
+
 ## Previous v0.7.0 state
 
 - [x] Exact v0.7.0 software, security, dependency, release, and signed-artifact gates completed.
