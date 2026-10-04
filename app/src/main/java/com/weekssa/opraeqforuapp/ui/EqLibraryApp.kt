@@ -4,12 +4,16 @@ import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.Refresh
@@ -22,6 +26,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarDuration
@@ -38,6 +44,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.BuildConfig
@@ -47,15 +55,22 @@ import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
 import com.weekssa.opraeqforuapp.domain.catalog.GeneralEqPreset
 import com.weekssa.opraeqforuapp.domain.dac.DacDeviceId
+import com.weekssa.opraeqforuapp.domain.dac.DacStateFreshness
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationOutcome
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationStatus
 import com.weekssa.opraeqforuapp.domain.ew300.Ew300OperationTrace
 import com.weekssa.opraeqforuapp.domain.library.SavedEqKind
+import com.weekssa.opraeqforuapp.domain.library.SavedEqRecord
 import com.weekssa.opraeqforuapp.domain.library.SavedGeneralEqRecord
+import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.domain.managed.withHiddenReviewPromptsSuppressed
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationStatus
 import com.weekssa.opraeqforuapp.domain.update.SemVer
+import com.weekssa.opraeqforuapp.ui.components.ConnectedDeviceSurface
+import com.weekssa.opraeqforuapp.ui.components.ContextualDeviceChoiceSurface
+import com.weekssa.opraeqforuapp.ui.components.ExportReviewDialog
+import com.weekssa.opraeqforuapp.ui.components.ExportReviewItem
 import com.weekssa.opraeqforuapp.ui.components.PostUpdateBanner
 import com.weekssa.opraeqforuapp.ui.components.FlashFeedback
 import com.weekssa.opraeqforuapp.ui.components.FlashFeedbackBanner
@@ -99,6 +114,77 @@ private sealed interface ActiveOutputExportRequest {
 private fun ew300OperationSignature(trace: Ew300OperationTrace): String =
     listOf(trace.operationId, trace.outcome, trace.stateKnown, trace.finalReadbackMatched)
         .joinToString("|")
+
+private data class DeviceContextSummary(
+    val title: String,
+    val status: String,
+    val isCurrent: Boolean,
+    val requiresChoice: Boolean = false,
+)
+
+private fun EqLibraryUiState.deviceContextSummary(): DeviceContextSummary? {
+    val supported = dacRecognitionState.recognizedDeviceIds
+        .filter { it == DacDeviceId.TRN_BLACK_PEARL || it == DacDeviceId.FIIO_JA11 || it == DacDeviceId.SIMGOT_EW300 }
+        .sortedBy(DacDeviceId::ordinal)
+    if (supported.isEmpty()) return null
+    if (supported.size > 1) {
+        return DeviceContextSummary(
+            title = "Supported DACs",
+            status = "${supported.size} devices recognized this app session · Choose in My DAC",
+            isCurrent = false,
+            requiresChoice = true,
+        )
+    }
+
+    val device = supported.single()
+    val title = when (device) {
+        DacDeviceId.TRN_BLACK_PEARL -> "TRN Black Pearl"
+        DacDeviceId.FIIO_JA11 -> "FiiO JA11"
+        DacDeviceId.SIMGOT_EW300 -> "SIMGOT EW300 DSP"
+        DacDeviceId.JCALLY_JM12_STOCK -> return null
+    }
+    val connection = when (device) {
+        DacDeviceId.TRN_BLACK_PEARL -> blackPearlConnectionState
+        DacDeviceId.FIIO_JA11 -> fiioJa11ConnectionState
+        DacDeviceId.SIMGOT_EW300 -> ew300ConnectionState
+        DacDeviceId.JCALLY_JM12_STOCK -> return null
+    }
+    val hardwareEq = when (device) {
+        DacDeviceId.TRN_BLACK_PEARL -> blackPearlHardwareEqState
+        DacDeviceId.FIIO_JA11 -> fiioJa11HardwareEqState
+        DacDeviceId.SIMGOT_EW300 -> ew300HardwareEqState
+        DacDeviceId.JCALLY_JM12_STOCK -> return null
+    }
+    val connected = when (connection) {
+        BlackPearlConnectionState.Connected, Kt02h20ConnectionState.Connected -> true
+        else -> false
+    }
+    val status = when (connection) {
+        BlackPearlConnectionState.Connected, Kt02h20ConnectionState.Connected -> when {
+            hardwareEq.freshness == DacStateFreshness.CURRENT -> "Connected · State current"
+            hardwareEq.isReading -> "Connected · Reading device state"
+            hardwareEq.bundle != null -> "Connected · Last read is stale"
+            else -> "Connected · Waiting for first device read"
+        }
+        BlackPearlConnectionState.Connecting, Kt02h20ConnectionState.Connecting ->
+            "Connecting · No settings have changed"
+        is Kt02h20ConnectionState.PermissionRequired -> "Permission needed · Allow USB access in My DAC"
+        is BlackPearlConnectionState.Error, is Kt02h20ConnectionState.Error ->
+            "Connection issue · Open My DAC to review"
+        else -> if (device in dacRecognitionState.presentDeviceIds) {
+            "Device detected · Open My DAC to connect"
+        } else if (hardwareEq.bundle != null) {
+            "Disconnected · Last read is historical"
+        } else {
+            "Disconnected · No current device state"
+        }
+    }
+    return DeviceContextSummary(
+        title = title,
+        status = status,
+        isCurrent = connected && hardwareEq.freshness == DacStateFreshness.CURRENT,
+    )
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -216,8 +302,12 @@ fun EqLibraryApp(
     val onDirectEw300FlashEnabledChange = actions.onDirectEw300FlashEnabledChange
 
     var selectedDestinationName by rememberSaveable { mutableStateOf(EqLibraryDestination.MyEqs.name) }
+    var myDacWorkspaceOpen by rememberSaveable { mutableStateOf(false) }
     var selectedManagedProductId by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingExportRequestState by rememberSaveable {
+        mutableStateOf<List<String>?>(null)
+    }
+    var pendingExportReviewState by rememberSaveable {
         mutableStateOf<List<String>?>(null)
     }
     var whatsNewVersion by rememberSaveable { mutableStateOf<String?>(null) }
@@ -226,10 +316,15 @@ fun EqLibraryApp(
         mutableStateOf(initialMyDacOpenDeviceId?.name)
     }
 
-    val destinations = remember(state.dacRecognitionState.hasRecognizedDevice) {
-        eqLibraryDestinations(showMyDac = state.dacRecognitionState.hasRecognizedDevice)
+    val rootDestinations = remember { eqLibraryRootDestinations() }
+    val selectedRootDestination = restoreEqLibraryDestination(selectedDestinationName, rootDestinations)
+    val selectedDestination = if (
+        myDacWorkspaceOpen && state.dacRecognitionState.hasRecognizedDevice
+    ) {
+        EqLibraryDestination.MyDac
+    } else {
+        selectedRootDestination
     }
-    val selectedDestination = restoreEqLibraryDestination(selectedDestinationName, destinations)
     val activeOutput = appPreferences.exportTargets.activeTarget
     val enabledOutputs = remember(appPreferences.exportTargets) {
         ExportDevice.selectableOutputs.filter(appPreferences.exportTargets::isSelected)
@@ -262,8 +357,6 @@ fun EqLibraryApp(
         }
     }
     val exportFolderPermissionFailedMessage = stringResource(R.string.export_folder_permission_failed)
-    val myDacDetectedMessage = stringResource(R.string.my_dac_detected_prompt)
-    val openMyDacActionLabel = stringResource(R.string.my_dac_action_open)
     val favoriteProfileIds = remember(savedEqs) {
         savedEqs.asSequence()
             .filter { it.kind == SavedEqKind.Favorite }
@@ -283,6 +376,7 @@ fun EqLibraryApp(
     val selectedManagedHeadphone = selectedManagedProductId?.let { productId ->
         managedHeadphonesForUi.firstOrNull { it.productId == productId }
     }
+    val deviceContextSummary = state.deviceContextSummary()
 
     LaunchedEffect(
         pendingInitialMyDacOpenDeviceName,
@@ -297,33 +391,22 @@ fun EqLibraryApp(
         ) {
             onConnectDacForMyDac(requestedDeviceId)
             selectedManagedProductId = null
-            selectedDestinationName = EqLibraryDestination.MyDac.name
+            myDacWorkspaceOpen = true
             pendingInitialMyDacOpenDeviceName = null
         }
     }
 
-    MyDacRecognitionPromptEffect(
-        recognitionState = state.dacRecognitionState,
-        isMyDacOpen = selectedDestination == EqLibraryDestination.MyDac ||
-            pendingInitialMyDacOpenDeviceName != null,
-        snackbarHostState = snackbarHostState,
-        detectedMessage = myDacDetectedMessage,
-        openActionLabel = openMyDacActionLabel,
-        isAnyDacConnected = state.blackPearlConnectionState is BlackPearlConnectionState.Connected ||
-            state.fiioJa11ConnectionState is Kt02h20ConnectionState.Connected ||
-            state.ew300ConnectionState is Kt02h20ConnectionState.Connected,
-        suppressWhileOperationRunning = state.ew300OperationStatus is Ew300OperationStatus.Running,
-        onOpenMyDac = {
-            selectedManagedProductId = null
-            selectedDestinationName = EqLibraryDestination.MyDac.name
-        },
-    )
-
-    LaunchedEffect(destinations, selectedDestinationName) {
-        val restored = restoreEqLibraryDestination(selectedDestinationName, destinations)
+    LaunchedEffect(rootDestinations, selectedDestinationName) {
+        val restored = restoreEqLibraryDestination(selectedDestinationName, rootDestinations)
         if (restored.name != selectedDestinationName) {
-            onCloseMyDacEditor()
             selectedDestinationName = restored.name
+        }
+    }
+
+    LaunchedEffect(myDacWorkspaceOpen, state.dacRecognitionState.hasRecognizedDevice) {
+        if (myDacWorkspaceOpen && !state.dacRecognitionState.hasRecognizedDevice) {
+            onCloseMyDacEditor()
+            myDacWorkspaceOpen = false
         }
     }
 
@@ -705,7 +788,12 @@ fun EqLibraryApp(
     val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         val request = restoreActiveOutputExportRequest(pendingExportRequestState)
         pendingExportRequestState = null
-        if (uri == null) return@rememberLauncherForActivityResult
+        if (uri == null) {
+            scope.launch {
+                snackbarHostState.showSnackbar("No folder selected. Nothing was exported. Choose an export again to continue.")
+            }
+            return@rememberLauncherForActivityResult
+        }
         scope.launch {
             if (!onPersistExportTree(uri)) {
                 snackbarHostState.showSnackbar(exportFolderPermissionFailedMessage)
@@ -735,21 +823,32 @@ fun EqLibraryApp(
         }
     }
 
-    val requestExportAll = { runExportRequest(ActiveOutputExportRequest.AllManaged(activeOutput)) }
+    val openExportReview: (ActiveOutputExportRequest) -> Unit = { request ->
+        if (request.device.supportsFileExport) {
+            pendingExportReviewState = request.toSaveableState()
+        } else {
+            scope.launch {
+                snackbarHostState.showSnackbar(
+                    "${request.device.displayName} has no verified import file. Connect it and use My DAC for supported hardware actions, or select UAPP to export XML and import it there.",
+                )
+            }
+        }
+    }
+    val requestExportAll = { openExportReview(ActiveOutputExportRequest.AllManaged(activeOutput)) }
     val requestExportProduct: (String) -> Unit = { productId ->
-        runExportRequest(ActiveOutputExportRequest.Product(productId, activeOutput))
+        openExportReview(ActiveOutputExportRequest.Product(productId, activeOutput))
     }
     val requestExportManagedProfile: (String, String) -> Unit = { productId, profileId ->
-        runExportRequest(ActiveOutputExportRequest.ManagedProfile(productId, profileId, activeOutput))
+        openExportReview(ActiveOutputExportRequest.ManagedProfile(productId, profileId, activeOutput))
     }
     val requestExportSavedEq: (String) -> Unit = { entryId ->
-        runExportRequest(ActiveOutputExportRequest.SavedEq(entryId, activeOutput))
+        openExportReview(ActiveOutputExportRequest.SavedEq(entryId, activeOutput))
     }
     val requestExportGeneralEq: (String) -> Unit = { presetId ->
-        runExportRequest(ActiveOutputExportRequest.GeneralEq(presetId, activeOutput))
+        openExportReview(ActiveOutputExportRequest.GeneralEq(presetId, activeOutput))
     }
     val requestExportGeneralEqs: (Set<String>) -> Unit = { presetIds ->
-        runExportRequest(ActiveOutputExportRequest.GeneralEqBatch(presetIds, activeOutput))
+        openExportReview(ActiveOutputExportRequest.GeneralEqBatch(presetIds, activeOutput))
     }
     val requestCatalogRefresh = {
         if (!catalogBusy) {
@@ -760,24 +859,42 @@ fun EqLibraryApp(
         scope.launch { snackbarHostState.showSnackbar(onCheckForUpdates()) }
     }
 
-    BackHandler(
-        enabled = selectedDestination == EqLibraryDestination.Settings ||
-            selectedDestination == EqLibraryDestination.MyDac,
-    ) {
-        if (selectedDestination == EqLibraryDestination.MyDac &&
-            (onBackMyDacEditor() || onBackFiioJa11Editor() || onBackEw300Editor())
-        ) {
-            return@BackHandler
-        }
-        onCloseMyDacEditor()
+    val handleMyDacEditorBack = {
+        onBackMyDacEditor() || onBackFiioJa11Editor() || onBackEw300Editor()
+    }
+    val useNavigationRail = LocalConfiguration.current.screenWidthDp >= 600
+    val selectRootDestination: (EqLibraryDestination) -> Unit = { destination ->
+        if (selectedDestination == EqLibraryDestination.MyDac) onCloseMyDacEditor()
+        myDacWorkspaceOpen = false
         selectedManagedProductId = null
-        selectedDestinationName = EqLibraryDestination.MyEqs.name
+        selectedDestinationName = destination.name
+    }
+    BackHandler(
+        enabled = hasDestinationBackHandler(selectedDestination),
+    ) {
+        if (handleMyDacEditorBack()) return@BackHandler
+        onCloseMyDacEditor()
+        myDacWorkspaceOpen = false
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(selectedDestination.labelResId)) },
+                navigationIcon = {
+                    if (selectedDestination == EqLibraryDestination.MyDac) {
+                        IconButton(
+                            onClick = {
+                                if (!handleMyDacEditorBack()) {
+                                    onCloseMyDacEditor()
+                                    myDacWorkspaceOpen = false
+                                }
+                            },
+                        ) {
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
+                        }
+                    }
+                },
                 actions = {
                     if (selectedDestination == EqLibraryDestination.EqLibrary) {
                         IconButton(onClick = requestCatalogRefresh, enabled = !catalogBusy) {
@@ -795,316 +912,334 @@ fun EqLibraryApp(
             )
         },
         bottomBar = {
-            NavigationBar {
-                destinations.forEach { destination ->
-                    NavigationBarItem(
-                        selected = selectedDestination == destination,
-                        onClick = {
-                            if (
-                                selectedDestination == EqLibraryDestination.MyDac &&
-                                destination != EqLibraryDestination.MyDac
-                            ) {
-                                onCloseMyDacEditor()
-                            }
-                            selectedManagedProductId = null
-                            selectedDestinationName = destination.name
-                        },
-                        icon = {
-                            Icon(
-                                imageVector = when (destination) {
-                                    EqLibraryDestination.MyEqs -> Icons.Outlined.Star
-                                    EqLibraryDestination.MyDac -> Icons.Outlined.Usb
-                                    EqLibraryDestination.EqLibrary -> Icons.Outlined.Explore
-                                    EqLibraryDestination.Settings -> Icons.Outlined.Settings
-                                },
-                                contentDescription = null,
-                            )
-                        },
-                        label = { Text(stringResource(destination.labelResId)) },
-                    )
+            if (!useNavigationRail) {
+                NavigationBar {
+                    rootDestinations.forEach { destination ->
+                        NavigationBarItem(
+                            selected = !myDacWorkspaceOpen && selectedRootDestination == destination,
+                            onClick = { selectRootDestination(destination) },
+                            icon = { RootDestinationIcon(destination) },
+                            label = { Text(stringResource(destination.labelResId)) },
+                        )
+                    }
                 }
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
+        Row(
+            modifier = Modifier.fillMaxSize().padding(innerPadding),
         ) {
-            if (
-                selectedDestination == EqLibraryDestination.MyEqs ||
-                selectedDestination == EqLibraryDestination.EqLibrary
-            ) {
-                TargetContextSelector(
-                    activeTarget = activeOutput,
-                    enabledTargets = enabledOutputs,
-                    onTargetChange = onSessionActiveExportTargetChange,
-                )
-                when {
-                    updateBannerVersion != null -> UpdateAvailableBanner(
-                        version = updateBannerVersion,
-                        onWhatsNew = { showWhatsNew(updateBannerVersion, appPreferences.updates.releaseNotes) },
-                        onGetUpdate = { appPreferences.updates.releaseUrl?.let(onOpenUrl) },
-                        onDismiss = { scope.launch { onDismissUpdate(updateBannerVersion) } },
-                    )
-                    postUpdateVersion != null -> PostUpdateBanner(
-                        version = postUpdateVersion,
-                        onWhatsNew = { showWhatsNew(postUpdateVersion, appPreferences.updates.releaseNotes) },
-                        onDismiss = { scope.launch { onDismissPostUpdate() } },
-                    )
+            if (useNavigationRail) {
+                NavigationRail(modifier = Modifier.fillMaxHeight()) {
+                    rootDestinations.forEach { destination ->
+                        NavigationRailItem(
+                            selected = !myDacWorkspaceOpen && selectedRootDestination == destination,
+                            onClick = { selectRootDestination(destination) },
+                            icon = { RootDestinationIcon(destination) },
+                            label = { Text(stringResource(destination.labelResId)) },
+                        )
+                    }
                 }
             }
-
-            if (selectedDestination != EqLibraryDestination.Settings) {
-                flashFeedback?.let { feedback ->
-                    FlashFeedbackBanner(
-                        feedback = feedback,
-                        onDismiss = { flashFeedback = null },
-                    )
-                }
-            }
-
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
+                modifier = Modifier.weight(1f).fillMaxHeight(),
+                contentAlignment = Alignment.TopCenter,
             ) {
-                when (selectedDestination) {
-                    EqLibraryDestination.MyEqs -> {
-                        if (selectedManagedHeadphone != null) {
-                            ManagedHeadphoneDetailScreen(
-                                headphone = selectedManagedHeadphone,
-                                catalogState = catalogState,
-                                profileVisibility = appPreferences.profileVisibility,
-                                exportTargets = appPreferences.exportTargets,
-                                exportCurrentness = exportCurrentness,
-                                favoriteProfileIds = favoriteProfileIds,
-                                directBlackPearlFlashEnabled = appPreferences.directBlackPearlFlashEnabled,
-                                blackPearlConnectionState = blackPearlConnectionState,
-                                onConnectBlackPearl = onConnectBlackPearl,
-                                directFiioJa11FlashEnabled = appPreferences.directFiioJa11FlashEnabled,
-                                fiioJa11ConnectionState = fiioJa11ConnectionState,
-                                onConnectFiioJa11 = onConnectFiioJa11,
-                                directEw300FlashEnabled = appPreferences.directEw300FlashEnabled,
-                                ew300ConnectionState = ew300ConnectionState,
-                                onConnectEw300 = onConnectEw300,
-                                directJcallyJm12FlashEnabled = appPreferences.directJcallyJm12FlashEnabled,
-                                jcallyJm12ConnectionState = jcallyJm12ConnectionState,
-                                onConnectJcallyJm12 = onConnectJcallyJm12,
-                                onFlashManagedProfile = { profileId ->
-                                    flashSuspendWithFeedback(activeOutput) {
-                                        onFlashManagedProfile(selectedManagedHeadphone.productId, profileId)
-                                    }
-                                },
-                                onToggleFavorite = onToggleFavorite,
-                                onHideCanonicalProfile = { canonicalProfileId ->
-                                    onHideCanonicalProfiles(setOf(canonicalProfileId))
-                                },
-                                onLoadManagedHeadphone = onLoadManagedHeadphone,
-                                onSaveSelection = onSaveSelection,
-                                onRemoveHeadphone = onRemoveHeadphone,
-                                onRemoveManagedProfile = onRemoveManagedProfile,
-                                onRemoveManagedHeadphone = onRemoveManagedHeadphone,
-                                onDeleteSavedFilesForProfiles = onDeleteSavedFilesForProfiles,
-                                onDeleteSavedFilesForProduct = onDeleteSavedFilesForProduct,
-                                onMarkReviewed = onMarkReviewed,
-                                onExportProduct = requestExportProduct,
-                                onExportProfile = { profileId ->
-                                    requestExportManagedProfile(selectedManagedHeadphone.productId, profileId)
-                                },
-                                onMessage = ::showMessage,
-                                onOpenUrl = onOpenUrl,
-                                onBack = { selectedManagedProductId = null },
-                                modifier = Modifier.fillMaxSize(),
+                Column(
+                    modifier = Modifier
+                        .widthIn(max = 960.dp)
+                        .fillMaxWidth()
+                        .fillMaxHeight(),
+                ) {
+                if (selectedDestination != EqLibraryDestination.MyDac) {
+                    deviceContextSummary?.let { context ->
+                        if (context.requiresChoice) {
+                            ContextualDeviceChoiceSurface(
+                                title = context.title,
+                                status = context.status,
+                                onOpen = { myDacWorkspaceOpen = true },
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                             )
                         } else {
-                            MyEqsHomeScreen(
-                                managedHeadphones = managedHeadphonesForUi,
-                                savedEqs = savedEqs,
-                                savedGeneralEqs = savedGeneralEqs,
-                                activeOutput = activeOutput,
-                                exportCurrentness = exportCurrentness,
-                                directBlackPearlFlashEnabled = appPreferences.directBlackPearlFlashEnabled,
-                                blackPearlConnectionState = blackPearlConnectionState,
-                                onConnectBlackPearl = onConnectBlackPearl,
-                                onResetBlackPearl = onResetBlackPearl,
-                                directFiioJa11FlashEnabled = appPreferences.directFiioJa11FlashEnabled,
-                                fiioJa11ConnectionState = fiioJa11ConnectionState,
-                                onConnectFiioJa11 = onConnectFiioJa11,
-                                onResetFiioJa11 = onResetFiioJa11,
-                                directEw300FlashEnabled = appPreferences.directEw300FlashEnabled,
-                                ew300ConnectionState = ew300ConnectionState,
-                                onConnectEw300 = onConnectEw300,
-                                onResetEw300 = onResetEw300,
-                                directJcallyJm12FlashEnabled = appPreferences.directJcallyJm12FlashEnabled,
-                                jcallyJm12ConnectionState = jcallyJm12ConnectionState,
-                                onConnectJcallyJm12 = onConnectJcallyJm12,
-                                onResetJcallyJm12 = onResetJcallyJm12,
-                                onExportAll = requestExportAll,
-                                onOpenHeadphone = { selectedManagedProductId = it },
-                                onImportPersonal = onImportPersonal,
-                                onDeleteSavedEq = onDeleteSavedEq,
-                                onExportSavedEq = requestExportSavedEq,
-                                onFlashSavedEq = { entryId ->
-                                    flashSuspendWithFeedback(activeOutput) { onFlashSavedEq(entryId) }
-                                },
-                                onRemoveGeneralEq = onRemoveGeneralEq,
-                                onExportGeneralEq = requestExportGeneralEq,
-                                onFlashGeneralEq = { presetId ->
-                                    flashSuspendWithFeedback(activeOutput) { onFlashGeneralEq(presetId) }
-                                },
-                                onMessage = ::showMessage,
-                                modifier = Modifier.fillMaxSize(),
+                            ConnectedDeviceSurface(
+                                deviceName = context.title,
+                                status = context.status,
+                                isCurrent = context.isCurrent,
+                                onOpen = { myDacWorkspaceOpen = true },
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                             )
                         }
                     }
-
-                    EqLibraryDestination.MyDac -> MyDacRootScreen(
-                        recognitionState = state.dacRecognitionState,
-                        catalogState = state.catalogState,
-                        blackPearlConnectionState = state.blackPearlConnectionState,
-                        fiioJa11ConnectionState = state.fiioJa11ConnectionState,
-                        ew300ConnectionState = state.ew300ConnectionState,
-                        blackPearlHardwareEqState = state.blackPearlHardwareEqState,
-                        fiioJa11HardwareEqState = state.fiioJa11HardwareEqState,
-                        ew300HardwareEqState = state.ew300HardwareEqState,
-                        blackPearlHardwareEqMatch = state.blackPearlHardwareEqMatch,
-                        blackPearlManagedHeadphones = state.blackPearlManagedHeadphones,
-                        blackPearlSavedEqs = state.blackPearlSavedEqs,
-                        blackPearlSavedGeneralEqs = state.blackPearlSavedGeneralEqs,
-                        blackPearlEditorState = state.blackPearlEditorState,
-                        fiioJa11EditorState = state.fiioJa11EditorState,
-                        ew300EditorState = state.ew300EditorState,
-                        ew300OperationTrace = state.ew300OperationTrace,
-                        ew300OperationStatus = state.ew300OperationStatus,
-                        fiioJa11OperationTrace = state.fiioJa11OperationTrace,
-                        fiioJa11OperationStatus = state.fiioJa11OperationStatus,
-                        blackPearlQualificationState = state.blackPearlQualificationState,
-                        fiioJa11DeviceState = state.fiioJa11DeviceState,
-                        ew300PlaybackGainState = state.ew300PlaybackGainState,
-                        onConnectDac = onConnectDacForMyDac,
-                        onOpenBlackPearlEditor = onOpenBlackPearlEditor,
-                        onCloseBlackPearlEditor = onCloseMyDacEditor,
-                        onSelectBlackPearlEditorBand = onSelectBlackPearlEditorBand,
-                        onShowBlackPearlEditorAllBands = onShowBlackPearlEditorAllBands,
-                        onShowBlackPearlEditorReview = onShowBlackPearlEditorReview,
-                        onUpdateBlackPearlEditorBand = onUpdateBlackPearlEditorBand,
-                        onUseSafeBlackPearlEditorGain = onUseSafeBlackPearlEditorGain,
-                        onResetBlackPearlEditorLocalEdits = onResetBlackPearlEditorLocalEdits,
-                        onApplyBlackPearlEditor = onApplyBlackPearlEditor,
-                        onOpenFiioJa11Editor = onOpenFiioJa11Editor,
-                        onBackFiioJa11Editor = onBackFiioJa11Editor,
-                        onCloseFiioJa11Editor = onCloseFiioJa11Editor,
-                        onSelectFiioJa11EditorBand = onSelectFiioJa11EditorBand,
-                        onShowFiioJa11EditorAllBands = onShowFiioJa11EditorAllBands,
-                        onShowFiioJa11EditorReview = onShowFiioJa11EditorReview,
-                        onUpdateFiioJa11EditorBand = onUpdateFiioJa11EditorBand,
-                        onUseSafeFiioJa11EditorGain = onUseSafeFiioJa11EditorGain,
-                        onResetFiioJa11EditorLocalEdits = onResetFiioJa11EditorLocalEdits,
-                        onApplyFiioJa11Editor = onApplyFiioJa11Editor,
-                        onOpenEw300Editor = onOpenEw300Editor,
-                        onBackEw300Editor = onBackEw300Editor,
-                        onCloseEw300Editor = onCloseEw300Editor,
-                        onSelectEw300EditorBand = onSelectEw300EditorBand,
-                        onShowEw300EditorAllBands = onShowEw300EditorAllBands,
-                        onShowEw300EditorReview = onShowEw300EditorReview,
-                        onUpdateEw300EditorBand = onUpdateEw300EditorBand,
-                        onUseSafeEw300EditorGain = onUseSafeEw300EditorGain,
-                        onResetEw300EditorLocalEdits = onResetEw300EditorLocalEdits,
-                        onApplyEw300Editor = onApplyEw300Editor,
-                        onCaptureBlackPearlDacEq = onCaptureBlackPearlDacEq,
-                        onCaptureEw300DacEq = onCaptureEw300DacEq,
-                        onFlashBlackPearlFromMyDac = { profile ->
-                            flashSuspendWithFeedback(ExportDevice.BLACK_PEARL) {
-                                onFlashBlackPearlFromMyDac(profile)
-                            }
-                        },
-                        onResetBlackPearlFromMyDac = onResetBlackPearlFromMyDac,
-                        onReadBlackPearlQualification = onReadBlackPearlQualificationControls,
-                        onSetBlackPearlDeviceControl = onSetBlackPearlDeviceControl,
-                        onReadFiioJa11DeviceControls = onReadFiioJa11DeviceControls,
-                        onSetFiioJa11OutputVolume = onSetFiioJa11OutputVolume,
-                        onSetFiioJa11EqProgram = onSetFiioJa11EqProgram,
-                        onSetFiioJa11HeadsetControl = onSetFiioJa11HeadsetControl,
-                        onSetFiioJa11UacMode = onSetFiioJa11UacMode,
-                        onResetFiioJa11FromMyDac = onResetFiioJa11FromMyDac,
-                        onResetEw300FromMyDac = onResetEw300FromMyDac,
-                        onRestoreEw300Baseline = onRestoreEw300Baseline,
-                        onRunEw300CapabilityBatch = onRunEw300CapabilityBatch,
-                        onAdvanceEw300PersistenceQualification = onAdvanceEw300PersistenceQualification,
-                        onSetEw300PlaybackGain = onSetEw300PlaybackGain,
-                        onMessage = ::showMessage,
-                        onOperationStatus = ::showOperationStatus,
-                        modifier = Modifier.fillMaxSize(),
+                }
+                if (
+                    selectedDestination == EqLibraryDestination.MyEqs ||
+                    selectedDestination == EqLibraryDestination.EqLibrary
+                ) {
+                    TargetContextSelector(
+                        activeTarget = activeOutput,
+                        enabledTargets = enabledOutputs,
+                        onTargetChange = onSessionActiveExportTargetChange,
                     )
+                    when {
+                        updateBannerVersion != null -> UpdateAvailableBanner(
+                            version = updateBannerVersion,
+                            onWhatsNew = { showWhatsNew(updateBannerVersion, appPreferences.updates.releaseNotes) },
+                            onGetUpdate = { appPreferences.updates.releaseUrl?.let(onOpenUrl) },
+                            onDismiss = { scope.launch { onDismissUpdate(updateBannerVersion) } },
+                        )
+                        postUpdateVersion != null -> PostUpdateBanner(
+                            version = postUpdateVersion,
+                            onWhatsNew = { showWhatsNew(postUpdateVersion, appPreferences.updates.releaseNotes) },
+                            onDismiss = { scope.launch { onDismissPostUpdate() } },
+                        )
+                    }
+                }
 
-                    EqLibraryDestination.EqLibrary -> BrowseOpraScreen(
-                        catalogState = catalogState,
-                        profileVisibility = appPreferences.profileVisibility,
-                        exportTargets = appPreferences.exportTargets,
-                        managedHeadphones = managedHeadphonesForUi,
-                        favoriteProfileIds = favoriteProfileIds,
-                        savedGeneralPresetIds = savedGeneralPresetIds,
-                        hiddenCanonicalProfileIds = appPreferences.hiddenCanonicalProfileIds,
-                        blackPearlConnectionState = blackPearlConnectionState,
-                        onFlashBlackPearlProfile = { profile ->
-                            flashSuspendWithFeedback(ExportDevice.BLACK_PEARL) {
-                                onFlashBlackPearlFromMyDac(profile)
-                            }
-                        },
-                        fiioJa11ConnectionState = fiioJa11ConnectionState,
-                        onFlashFiioJa11Profile = { profile ->
-                            flashSuspendWithFeedback(ExportDevice.FIIO_JA11) {
-                                onFlashFiioJa11FromMyDac(profile)
-                            }
-                        },
-                        ew300ConnectionState = ew300ConnectionState,
-                        onFlashEw300Profile = { profile ->
-                            flashImmediateWithFeedback(ExportDevice.SIMGOT_EW300) {
-                                onFlashEw300FromMyDac(profile)
-                            }
-                        },
-                        onToggleFavorite = onToggleFavorite,
-                        onSaveGeneralPresets = onSaveGeneralPresets,
-                        onHideCanonicalProfiles = onHideCanonicalProfiles,
-                        onLoadManagedHeadphone = onLoadManagedHeadphone,
-                        onSaveSelection = onSaveSelection,
-                        onRemoveHeadphone = onRemoveHeadphone,
-                        onDeleteSavedFilesForProfiles = onDeleteSavedFilesForProfiles,
-                        onDeleteSavedFilesForProduct = onDeleteSavedFilesForProduct,
-                        onExportProduct = requestExportProduct,
-                        onMessage = ::showMessage,
-                        onRefreshCatalog = requestCatalogRefresh,
-                        onOpenUrl = onOpenUrl,
-                        onBackFromRoot = {
-                            selectedManagedProductId = null
-                            selectedDestinationName = EqLibraryDestination.MyEqs.name
-                        },
-                        modifier = Modifier.fillMaxSize(),
-                    )
+                if (selectedDestination != EqLibraryDestination.Settings) {
+                    flashFeedback?.let { feedback ->
+                        FlashFeedbackBanner(
+                            feedback = feedback,
+                            onDismiss = { flashFeedback = null },
+                        )
+                    }
+                }
 
-                    EqLibraryDestination.Settings -> SettingsScreen(
-                        appPreferences = appPreferences,
-                        catalogState = catalogState,
-                        onRefreshCatalog = requestCatalogRefresh,
-                        onChangeExportFolder = { chooseExportFolder(null) },
-                        onCheckForUpdates = requestUpdateCheck,
-                        onWhatsNew = { showWhatsNew(latestVersion, appPreferences.updates.releaseNotes) },
-                        onGetUpdate = { appPreferences.updates.releaseUrl?.let(onOpenUrl) },
-                        onOpenUrl = onOpenUrl,
-                        onThemeModeChange = onThemeModeChange,
-                        onOutputBehaviorChange = onOutputBehaviorChange,
-                        onExportTargetChange = onExportTargetChange,
-                        onActiveExportTargetChange = onActiveExportTargetChange,
-                        onDirectBlackPearlFlashEnabledChange = onDirectBlackPearlFlashEnabledChange,
-                        onDirectFiioJa11FlashEnabledChange = onDirectFiioJa11FlashEnabledChange,
-                        onDirectEw300FlashEnabledChange = onDirectEw300FlashEnabledChange,
-                        hiddenCanonicalProfileIds = appPreferences.hiddenCanonicalProfileIds,
-                        onUnhideCanonicalProfiles = onUnhideCanonicalProfiles,
-                        onMessage = ::showMessage,
-                        modifier = Modifier.fillMaxSize(),
-                    )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                ) {
+                    when (selectedDestination) {
+                        EqLibraryDestination.MyEqs -> {
+                            if (selectedManagedHeadphone != null) {
+                                ManagedHeadphoneDetailScreen(
+                                    headphone = selectedManagedHeadphone,
+                                    catalogState = catalogState,
+                                    profileVisibility = appPreferences.profileVisibility,
+                                    exportTargets = appPreferences.exportTargets,
+                                    exportCurrentness = exportCurrentness,
+                                    favoriteProfileIds = favoriteProfileIds,
+                                    directBlackPearlFlashEnabled = appPreferences.directBlackPearlFlashEnabled,
+                                    blackPearlConnectionState = blackPearlConnectionState,
+                                    onConnectBlackPearl = onConnectBlackPearl,
+                                    directFiioJa11FlashEnabled = appPreferences.directFiioJa11FlashEnabled,
+                                    fiioJa11ConnectionState = fiioJa11ConnectionState,
+                                    onConnectFiioJa11 = onConnectFiioJa11,
+                                    directEw300FlashEnabled = appPreferences.directEw300FlashEnabled,
+                                    ew300ConnectionState = ew300ConnectionState,
+                                    onConnectEw300 = onConnectEw300,
+                                    directJcallyJm12FlashEnabled = appPreferences.directJcallyJm12FlashEnabled,
+                                    jcallyJm12ConnectionState = jcallyJm12ConnectionState,
+                                    onConnectJcallyJm12 = onConnectJcallyJm12,
+                                    onFlashManagedProfile = { profileId ->
+                                        flashSuspendWithFeedback(activeOutput) {
+                                            onFlashManagedProfile(selectedManagedHeadphone.productId, profileId)
+                                        }
+                                    },
+                                    onToggleFavorite = onToggleFavorite,
+                                    onHideCanonicalProfile = { canonicalProfileId ->
+                                        onHideCanonicalProfiles(setOf(canonicalProfileId))
+                                    },
+                                    onLoadManagedHeadphone = onLoadManagedHeadphone,
+                                    onSaveSelection = onSaveSelection,
+                                    onRemoveHeadphone = onRemoveHeadphone,
+                                    onRemoveManagedProfile = onRemoveManagedProfile,
+                                    onRemoveManagedHeadphone = onRemoveManagedHeadphone,
+                                    onDeleteSavedFilesForProfiles = onDeleteSavedFilesForProfiles,
+                                    onDeleteSavedFilesForProduct = onDeleteSavedFilesForProduct,
+                                    onMarkReviewed = onMarkReviewed,
+                                    onExportProduct = requestExportProduct,
+                                    onExportProfile = { profileId ->
+                                        requestExportManagedProfile(selectedManagedHeadphone.productId, profileId)
+                                    },
+                                    onMessage = ::showMessage,
+                                    onOpenUrl = onOpenUrl,
+                                    onBack = { selectedManagedProductId = null },
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                            } else {
+                                MyEqsHomeScreen(
+                                    managedHeadphones = managedHeadphonesForUi,
+                                    savedEqs = savedEqs,
+                                    savedGeneralEqs = savedGeneralEqs,
+                                    activeOutput = activeOutput,
+                                    exportCurrentness = exportCurrentness,
+                                    directBlackPearlFlashEnabled = appPreferences.directBlackPearlFlashEnabled,
+                                    blackPearlConnectionState = blackPearlConnectionState,
+                                    directFiioJa11FlashEnabled = appPreferences.directFiioJa11FlashEnabled,
+                                    fiioJa11ConnectionState = fiioJa11ConnectionState,
+                                    directEw300FlashEnabled = appPreferences.directEw300FlashEnabled,
+                                    ew300ConnectionState = ew300ConnectionState,
+                                    directJcallyJm12FlashEnabled = appPreferences.directJcallyJm12FlashEnabled,
+                                    jcallyJm12ConnectionState = jcallyJm12ConnectionState,
+                                    onBrowseLibrary = {
+                                        selectedManagedProductId = null
+                                        myDacWorkspaceOpen = false
+                                        selectedDestinationName = EqLibraryDestination.EqLibrary.name
+                                    },
+                                    onExportAll = requestExportAll,
+                                    onOpenHeadphone = { selectedManagedProductId = it },
+                                    onImportPersonal = onImportPersonal,
+                                    onDeleteSavedEq = onDeleteSavedEq,
+                                    onExportSavedEq = requestExportSavedEq,
+                                    onFlashSavedEq = { entryId ->
+                                        flashSuspendWithFeedback(activeOutput) { onFlashSavedEq(entryId) }
+                                    },
+                                    onRemoveGeneralEq = onRemoveGeneralEq,
+                                    onExportGeneralEq = requestExportGeneralEq,
+                                    onFlashGeneralEq = { presetId ->
+                                        flashSuspendWithFeedback(activeOutput) { onFlashGeneralEq(presetId) }
+                                    },
+                                    onMessage = ::showMessage,
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                            }
+                        }
+
+                        EqLibraryDestination.MyDac -> MyDacRootScreen(
+                            recognitionState = state.dacRecognitionState,
+                            catalogState = state.catalogState,
+                            blackPearlConnectionState = state.blackPearlConnectionState,
+                            fiioJa11ConnectionState = state.fiioJa11ConnectionState,
+                            ew300ConnectionState = state.ew300ConnectionState,
+                            blackPearlHardwareEqState = state.blackPearlHardwareEqState,
+                            fiioJa11HardwareEqState = state.fiioJa11HardwareEqState,
+                            ew300HardwareEqState = state.ew300HardwareEqState,
+                            blackPearlHardwareEqMatch = state.blackPearlHardwareEqMatch,
+                            blackPearlManagedHeadphones = state.blackPearlManagedHeadphones,
+                            blackPearlSavedEqs = state.blackPearlSavedEqs,
+                            blackPearlSavedGeneralEqs = state.blackPearlSavedGeneralEqs,
+                            blackPearlEditorState = state.blackPearlEditorState,
+                            fiioJa11EditorState = state.fiioJa11EditorState,
+                            ew300EditorState = state.ew300EditorState,
+                            ew300OperationTrace = state.ew300OperationTrace,
+                            ew300OperationStatus = state.ew300OperationStatus,
+                            fiioJa11OperationTrace = state.fiioJa11OperationTrace,
+                            fiioJa11OperationStatus = state.fiioJa11OperationStatus,
+                            blackPearlQualificationState = state.blackPearlQualificationState,
+                            fiioJa11DeviceState = state.fiioJa11DeviceState,
+                            ew300PlaybackGainState = state.ew300PlaybackGainState,
+                            onConnectDac = onConnectDacForMyDac,
+                            onOpenBlackPearlEditor = onOpenBlackPearlEditor,
+                            onCloseBlackPearlEditor = onCloseMyDacEditor,
+                            onSelectBlackPearlEditorBand = onSelectBlackPearlEditorBand,
+                            onShowBlackPearlEditorAllBands = onShowBlackPearlEditorAllBands,
+                            onShowBlackPearlEditorReview = onShowBlackPearlEditorReview,
+                            onUpdateBlackPearlEditorBand = onUpdateBlackPearlEditorBand,
+                            onUseSafeBlackPearlEditorGain = onUseSafeBlackPearlEditorGain,
+                            onResetBlackPearlEditorLocalEdits = onResetBlackPearlEditorLocalEdits,
+                            onApplyBlackPearlEditor = onApplyBlackPearlEditor,
+                            onOpenFiioJa11Editor = onOpenFiioJa11Editor,
+                            onBackFiioJa11Editor = onBackFiioJa11Editor,
+                            onCloseFiioJa11Editor = onCloseFiioJa11Editor,
+                            onSelectFiioJa11EditorBand = onSelectFiioJa11EditorBand,
+                            onShowFiioJa11EditorAllBands = onShowFiioJa11EditorAllBands,
+                            onShowFiioJa11EditorReview = onShowFiioJa11EditorReview,
+                            onUpdateFiioJa11EditorBand = onUpdateFiioJa11EditorBand,
+                            onUseSafeFiioJa11EditorGain = onUseSafeFiioJa11EditorGain,
+                            onResetFiioJa11EditorLocalEdits = onResetFiioJa11EditorLocalEdits,
+                            onApplyFiioJa11Editor = onApplyFiioJa11Editor,
+                            onOpenEw300Editor = onOpenEw300Editor,
+                            onBackEw300Editor = onBackEw300Editor,
+                            onCloseEw300Editor = onCloseEw300Editor,
+                            onSelectEw300EditorBand = onSelectEw300EditorBand,
+                            onShowEw300EditorAllBands = onShowEw300EditorAllBands,
+                            onShowEw300EditorReview = onShowEw300EditorReview,
+                            onUpdateEw300EditorBand = onUpdateEw300EditorBand,
+                            onUseSafeEw300EditorGain = onUseSafeEw300EditorGain,
+                            onResetEw300EditorLocalEdits = onResetEw300EditorLocalEdits,
+                            onApplyEw300Editor = onApplyEw300Editor,
+                            onCaptureBlackPearlDacEq = onCaptureBlackPearlDacEq,
+                            onCaptureEw300DacEq = onCaptureEw300DacEq,
+                            onFlashBlackPearlFromMyDac = { profile ->
+                                flashSuspendWithFeedback(ExportDevice.BLACK_PEARL) {
+                                    onFlashBlackPearlFromMyDac(profile)
+                                }
+                            },
+                            onResetBlackPearlFromMyDac = onResetBlackPearlFromMyDac,
+                            onReadBlackPearlQualification = onReadBlackPearlQualificationControls,
+                            onSetBlackPearlDeviceControl = onSetBlackPearlDeviceControl,
+                            onReadFiioJa11DeviceControls = onReadFiioJa11DeviceControls,
+                            onSetFiioJa11OutputVolume = onSetFiioJa11OutputVolume,
+                            onSetFiioJa11EqProgram = onSetFiioJa11EqProgram,
+                            onSetFiioJa11HeadsetControl = onSetFiioJa11HeadsetControl,
+                            onSetFiioJa11UacMode = onSetFiioJa11UacMode,
+                            onResetFiioJa11FromMyDac = onResetFiioJa11FromMyDac,
+                            onResetEw300FromMyDac = onResetEw300FromMyDac,
+                            onRestoreEw300Baseline = onRestoreEw300Baseline,
+                            onRunEw300CapabilityBatch = onRunEw300CapabilityBatch,
+                            onAdvanceEw300PersistenceQualification = onAdvanceEw300PersistenceQualification,
+                            onSetEw300PlaybackGain = onSetEw300PlaybackGain,
+                            onMessage = ::showMessage,
+                            onOperationStatus = ::showOperationStatus,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+
+                        EqLibraryDestination.EqLibrary -> BrowseOpraScreen(
+                            catalogState = catalogState,
+                            profileVisibility = appPreferences.profileVisibility,
+                            exportTargets = appPreferences.exportTargets,
+                            managedHeadphones = managedHeadphonesForUi,
+                            favoriteProfileIds = favoriteProfileIds,
+                            savedGeneralPresetIds = savedGeneralPresetIds,
+                            hiddenCanonicalProfileIds = appPreferences.hiddenCanonicalProfileIds,
+                            blackPearlConnectionState = blackPearlConnectionState,
+                            onFlashBlackPearlProfile = { profile ->
+                                flashSuspendWithFeedback(ExportDevice.BLACK_PEARL) {
+                                    onFlashBlackPearlFromMyDac(profile)
+                                }
+                            },
+                            fiioJa11ConnectionState = fiioJa11ConnectionState,
+                            onFlashFiioJa11Profile = { profile ->
+                                flashSuspendWithFeedback(ExportDevice.FIIO_JA11) {
+                                    onFlashFiioJa11FromMyDac(profile)
+                                }
+                            },
+                            ew300ConnectionState = ew300ConnectionState,
+                            onFlashEw300Profile = { profile ->
+                                flashImmediateWithFeedback(ExportDevice.SIMGOT_EW300) {
+                                    onFlashEw300FromMyDac(profile)
+                                }
+                            },
+                            onToggleFavorite = onToggleFavorite,
+                            onSaveGeneralPresets = onSaveGeneralPresets,
+                            onHideCanonicalProfiles = onHideCanonicalProfiles,
+                            onLoadManagedHeadphone = onLoadManagedHeadphone,
+                            onSaveSelection = onSaveSelection,
+                            onRemoveHeadphone = onRemoveHeadphone,
+                            onDeleteSavedFilesForProfiles = onDeleteSavedFilesForProfiles,
+                            onDeleteSavedFilesForProduct = onDeleteSavedFilesForProduct,
+                            onExportProduct = requestExportProduct,
+                            onMessage = ::showMessage,
+                            onRefreshCatalog = requestCatalogRefresh,
+                            onOpenUrl = onOpenUrl,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+
+                        EqLibraryDestination.Settings -> SettingsScreen(
+                            appPreferences = appPreferences,
+                            catalogState = catalogState,
+                            onRefreshCatalog = requestCatalogRefresh,
+                            onChangeExportFolder = { chooseExportFolder(null) },
+                            onCheckForUpdates = requestUpdateCheck,
+                            onWhatsNew = { showWhatsNew(latestVersion, appPreferences.updates.releaseNotes) },
+                            onGetUpdate = { appPreferences.updates.releaseUrl?.let(onOpenUrl) },
+                            onOpenUrl = onOpenUrl,
+                            onThemeModeChange = onThemeModeChange,
+                            onOutputBehaviorChange = onOutputBehaviorChange,
+                            onExportTargetChange = onExportTargetChange,
+                            onActiveExportTargetChange = onActiveExportTargetChange,
+                            onDirectBlackPearlFlashEnabledChange = onDirectBlackPearlFlashEnabledChange,
+                            onDirectFiioJa11FlashEnabledChange = onDirectFiioJa11FlashEnabledChange,
+                            onDirectEw300FlashEnabledChange = onDirectEw300FlashEnabledChange,
+                            hiddenCanonicalProfileIds = appPreferences.hiddenCanonicalProfileIds,
+                            onUnhideCanonicalProfiles = onUnhideCanonicalProfiles,
+                            onMessage = ::showMessage,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
+                }
                 }
             }
         }
@@ -1119,6 +1254,85 @@ fun EqLibraryApp(
                 whatsNewNotes = ""
             },
         )
+    }
+
+    restoreActiveOutputExportRequest(pendingExportReviewState)?.let { request ->
+        ExportReviewDialog(
+            device = request.device,
+            items = request.reviewItems(
+                managedHeadphones = managedHeadphones,
+                savedEqs = savedEqs,
+                savedGeneralEqs = savedGeneralEqs,
+            ),
+            onDismiss = { pendingExportReviewState = null },
+            onExport = {
+                pendingExportReviewState = null
+                runExportRequest(request)
+            },
+        )
+    }
+}
+
+private fun ActiveOutputExportRequest.reviewItems(
+    managedHeadphones: List<ManagedHeadphoneRecord>,
+    savedEqs: List<SavedEqRecord>,
+    savedGeneralEqs: List<SavedGeneralEqRecord>,
+): List<ExportReviewItem> {
+    fun fromHeadphone(headphone: ManagedHeadphoneRecord): List<ExportReviewItem> =
+        headphone.profiles.asSequence()
+            .filter { it.selected }
+            .map { profile ->
+                ExportReviewItem(
+                    title = "${headphone.productName} · ${profile.lastKnownProfile.author ?: "Creator information missing"}",
+                    profile = profile.lastKnownProfile,
+                )
+            }
+            .toList()
+
+    return when (this) {
+        is ActiveOutputExportRequest.AllManaged -> managedHeadphones.flatMap(::fromHeadphone)
+        is ActiveOutputExportRequest.Product -> managedHeadphones
+            .firstOrNull { it.productId == productId }
+            ?.let(::fromHeadphone)
+            .orEmpty()
+        is ActiveOutputExportRequest.ManagedProfile -> managedHeadphones
+            .firstOrNull { it.productId == productId }
+            ?.let { headphone ->
+                headphone.profiles
+                    .firstOrNull { it.profileId == profileId && it.selected }
+                    ?.let { profile ->
+                        listOf(
+                            ExportReviewItem(
+                                "${headphone.productName} · ${profile.lastKnownProfile.author ?: "Creator information missing"}",
+                                profile.lastKnownProfile,
+                            ),
+                        )
+                    }
+            }
+            .orEmpty()
+        is ActiveOutputExportRequest.SavedEq -> savedEqs
+            .firstOrNull { it.entryId == entryId && it.kind == SavedEqKind.Personal }
+            ?.let { record ->
+                record.actionProfileOrNull()?.let { profile -> listOf(ExportReviewItem(record.displayName, profile)) }
+            }
+            .orEmpty()
+        is ActiveOutputExportRequest.GeneralEq -> savedGeneralEqs
+            .firstOrNull { it.presetId == presetId }
+            ?.let { record -> record.actionProfileOrNull()?.let { listOf(ExportReviewItem(record.displayName, it)) } }
+            .orEmpty()
+        is ActiveOutputExportRequest.GeneralEqBatch -> savedGeneralEqs
+            .filter { it.presetId in presetIds }
+            .mapNotNull { record -> record.actionProfileOrNull()?.let { ExportReviewItem(record.displayName, it) } }
+    }
+}
+
+@Composable
+private fun RootDestinationIcon(destination: EqLibraryDestination) {
+    when (destination) {
+        EqLibraryDestination.MyEqs -> Icon(Icons.Outlined.Star, contentDescription = null)
+        EqLibraryDestination.MyDac -> Icon(Icons.Outlined.Usb, contentDescription = null)
+        EqLibraryDestination.EqLibrary -> Icon(Icons.Outlined.Explore, contentDescription = null)
+        EqLibraryDestination.Settings -> Icon(Icons.Outlined.Settings, contentDescription = null)
     }
 }
 

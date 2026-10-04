@@ -12,6 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -340,46 +341,80 @@ private fun FiioJa11EqStatus(
     onReset: () -> Unit,
     operationStatus: FiioJa11OperationStatus,
 ) {
-    val program = deviceState.snapshot?.eqProgram
-    Text("Current hardware EQ", fontWeight = FontWeight.SemiBold)
-    when {
-        !connected -> Text(
-            "Reconnect the JA11 to refresh its current EQ state.",
+    val disabledActionButtonColors = ButtonDefaults.buttonColors(
+        disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+        disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    val bundle = hardwareEqState.bundle
+    val hasCurrentReadback = connected && hardwareEqState.freshness == DacStateFreshness.CURRENT
+    val program = deviceState.snapshot?.eqProgram ?: bundle?.snapshot?.activeProgram
+    Text(
+        text = when {
+            hasCurrentReadback -> "Current hardware EQ"
+            bundle != null -> "Last read hardware EQ"
+            else -> "Hardware EQ"
+        },
+        fontWeight = FontWeight.SemiBold,
+    )
+    if (!connected) {
+        Text(
+            "Disconnected. The last verified EQ remains visible but may no longer match the DAC.",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        deviceState.snapshot == null -> Text(
-            "Reading the current JA11 program…",
+    } else if (deviceState.snapshot == null && bundle == null) {
+        Text(
+            if (hardwareEqState.isReading) "Reading the current JA11 program…"
+            else "Refresh the connected JA11 to read its current EQ state.",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        program == FiioJa11Protocol.EqProgram.OFF -> {
-            Text("Flat · EQ Off", style = MaterialTheme.typography.titleMedium)
+    }
+
+    when (program) {
+        FiioJa11Protocol.EqProgram.OFF -> {
+            Text(
+                if (hasCurrentReadback) "Flat · EQ Off" else "Last read: Flat · EQ Off",
+                style = MaterialTheme.typography.titleMedium,
+            )
             Text(
                 "Stored User 1 coefficients are inactive and are not presented as the current acoustic response.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        program == FiioJa11Protocol.EqProgram.VOCAL ||
-            program == FiioJa11Protocol.EqProgram.CLASSIC ||
-            program == FiioJa11Protocol.EqProgram.BASS -> {
-            Text(program.technicalLabel, style = MaterialTheme.typography.titleMedium)
+        FiioJa11Protocol.EqProgram.VOCAL,
+        FiioJa11Protocol.EqProgram.CLASSIC,
+        FiioJa11Protocol.EqProgram.BASS -> {
+            Text(
+                if (hasCurrentReadback) requireNotNull(program).technicalLabel
+                else "Last read: ${requireNotNull(program).technicalLabel}",
+                style = MaterialTheme.typography.titleMedium,
+            )
             Text(
                 "This built-in program is active. Its coefficients are not exposed by the maintained JA11 protocol evidence, so EQ Library does not invent a response graph.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        program == FiioJa11Protocol.EqProgram.USER_1 -> {
-            val bundle = hardwareEqState.bundle
-            if (bundle == null || hardwareEqState.freshness != DacStateFreshness.CURRENT) {
+        FiioJa11Protocol.EqProgram.USER_1 -> {
+            if (bundle == null) {
                 Text(
-                    "User 1 is active, but a current verified five-band read is not available yet.",
+                    "User 1 is active, but a verified five-band EQ read is not available yet.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             } else {
                 val snapshot = bundle.snapshot
                 val curve = HardwareEqResponseEvaluator.evaluate(snapshot.filters)
-                Text("User 1 · 5-band PEQ", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    if (hasCurrentReadback) "User 1 · 5-band PEQ" else "Last read · User 1 · 5-band PEQ",
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                if (!hasCurrentReadback) {
+                    Text(
+                        "These verified values are historical and may no longer match the DAC.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 snapshot.dedicatedEqPreampDb?.let { gain ->
                     Text("Global EQ gain ${"%.2f".format(gain)} dB")
                 }
@@ -387,7 +422,11 @@ private fun FiioJa11EqStatus(
                     DacEqResponseGraph(
                         curve = curve,
                         filters = snapshot.filters,
-                        accessibilityDescription = "Current FiiO JA11 User 1 hardware EQ response",
+                        accessibilityDescription = if (hasCurrentReadback) {
+                            "Current FiiO JA11 User 1 hardware EQ response"
+                        } else {
+                            "Last read FiiO JA11 User 1 hardware EQ response; it may no longer match the device"
+                        },
                     )
                 }
                 snapshot.filters.forEach { filter ->
@@ -398,16 +437,18 @@ private fun FiioJa11EqStatus(
                 }
             }
         }
-        else -> Text(
-            "Current JA11 EQ state is unavailable.",
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        null -> if (deviceState.snapshot == null && bundle == null) {
+            Text("No verified JA11 EQ readback is available.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        } else {
+            Text("Current JA11 EQ state is unavailable.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
 
     if (program == FiioJa11Protocol.EqProgram.USER_1) {
         Button(
             onClick = onEdit,
             enabled = canEdit,
+            colors = disabledActionButtonColors,
             modifier = Modifier.fillMaxWidth(),
         ) { Text("Edit EQ") }
     }
@@ -418,6 +459,7 @@ private fun FiioJa11EqStatus(
             !deviceState.isBusy &&
             deviceState.pendingRestartWrite == null &&
             fiioJa11OperationControlsEnabled(operationStatus),
+        colors = disabledActionButtonColors,
         modifier = Modifier.fillMaxWidth(),
     ) { Text("Reset EQ to flat") }
 

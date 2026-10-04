@@ -5,49 +5,55 @@ import org.junit.Test
 
 class EqLibraryNavigationTest {
     @Test
-    fun baselineDestinationsRemainThreeTabs() {
-        assertThat(eqLibraryDestinations(showMyDac = false))
+    fun persistentRootDestinationsAreAlwaysThreeAndStable() {
+        assertThat(eqLibraryRootDestinations())
             .containsExactly(
                 EqLibraryDestination.MyEqs,
                 EqLibraryDestination.EqLibrary,
                 EqLibraryDestination.Settings,
             )
             .inOrder()
+        assertThat(eqLibraryRootDestinations()).doesNotContain(EqLibraryDestination.MyDac)
     }
 
     @Test
-    fun recognizedDacInsertsMyDacImmediatelyAfterMyEqs() {
-        assertThat(eqLibraryDestinations(showMyDac = true))
-            .containsExactly(
-                EqLibraryDestination.MyEqs,
-                EqLibraryDestination.MyDac,
-                EqLibraryDestination.EqLibrary,
-                EqLibraryDestination.Settings,
-            )
-            .inOrder()
+    fun deviceDoesNotChangeRootNavigationButOpensContextualWorkspaceRoute() {
+        assertThat(eqLibraryRootDestinations()).hasSize(3)
+        assertThat(eqLibraryAvailableDestinations(hasRecognizedDac = false))
+            .doesNotContain(EqLibraryDestination.MyDac)
+        assertThat(eqLibraryAvailableDestinations(hasRecognizedDac = true))
+            .contains(EqLibraryDestination.MyDac)
     }
 
     @Test
-    fun savedDestinationRestoresByIdentityNotPosition() {
-        val withDac = eqLibraryDestinations(showMyDac = true)
+    fun savedRootDestinationRestoresByIdentity() {
+        val roots = eqLibraryRootDestinations()
 
-        assertThat(restoreEqLibraryDestination(EqLibraryDestination.EqLibrary.name, withDac))
+        assertThat(restoreEqLibraryDestination(EqLibraryDestination.EqLibrary.name, roots))
             .isEqualTo(EqLibraryDestination.EqLibrary)
-        assertThat(restoreEqLibraryDestination(EqLibraryDestination.Settings.name, withDac))
+        assertThat(restoreEqLibraryDestination(EqLibraryDestination.Settings.name, roots))
             .isEqualTo(EqLibraryDestination.Settings)
     }
 
     @Test
-    fun coldSessionWithoutDacFallsBackFromSavedMyDacToMyEqs() {
-        val withoutDac = eqLibraryDestinations(showMyDac = false)
+    fun coldSessionWithoutRecognizedDeviceFallsBackFromSavedWorkspaceToMyEqs() {
+        val withoutDac = eqLibraryAvailableDestinations(hasRecognizedDac = false)
 
         assertThat(restoreEqLibraryDestination(EqLibraryDestination.MyDac.name, withoutDac))
             .isEqualTo(EqLibraryDestination.MyEqs)
     }
 
     @Test
+    fun persistentRootsLeaveBackToAndroidWhileMyDacUsesInAppBack() {
+        eqLibraryRootDestinations().forEach { destination ->
+            assertThat(hasDestinationBackHandler(destination)).isFalse()
+        }
+        assertThat(hasDestinationBackHandler(EqLibraryDestination.MyDac)).isTrue()
+    }
+
+    @Test
     fun unknownSavedDestinationFallsBackSafely() {
-        assertThat(restoreEqLibraryDestination("future-destination", eqLibraryDestinations(true)))
+        assertThat(restoreEqLibraryDestination("future-destination", eqLibraryRootDestinations()))
             .isEqualTo(EqLibraryDestination.MyEqs)
     }
 }

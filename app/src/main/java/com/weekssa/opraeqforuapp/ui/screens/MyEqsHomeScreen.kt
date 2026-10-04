@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,6 +19,8 @@ import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material.icons.outlined.Restore
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -38,6 +41,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.RoundedCornerShape
 import com.weekssa.opraeqforuapp.R
 import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.export.ExportCurrentness
@@ -59,6 +64,7 @@ import com.weekssa.opraeqforuapp.domain.library.UnclaimedEqParseState
 import com.weekssa.opraeqforuapp.domain.library.UnclaimedEqRecord
 import com.weekssa.opraeqforuapp.domain.managed.ManagedHeadphoneRecord
 import com.weekssa.opraeqforuapp.ui.LocalUnclaimedEqUiFeature
+import com.weekssa.opraeqforuapp.ui.theme.MaterialThemeEqPalette
 import java.util.Locale
 import kotlinx.coroutines.launch
 
@@ -96,20 +102,13 @@ fun MyEqsHomeScreen(
     exportCurrentness: ExportCurrentness,
     directBlackPearlFlashEnabled: Boolean,
     blackPearlConnectionState: BlackPearlConnectionState,
-    onConnectBlackPearl: () -> Unit,
-    onResetBlackPearl: suspend () -> String,
     directFiioJa11FlashEnabled: Boolean,
     fiioJa11ConnectionState: Kt02h20ConnectionState,
-    onConnectFiioJa11: () -> Unit,
-    onResetFiioJa11: suspend () -> String,
     directJcallyJm12FlashEnabled: Boolean,
     jcallyJm12ConnectionState: Kt02h20ConnectionState,
-    onConnectJcallyJm12: () -> Unit,
-    onResetJcallyJm12: suspend () -> String,
     directEw300FlashEnabled: Boolean = false,
     ew300ConnectionState: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
-    onConnectEw300: () -> Unit = {},
-    onResetEw300: suspend () -> String = { "Reset is not available for this output." },
+    onBrowseLibrary: () -> Unit,
     onExportAll: () -> Unit,
     onOpenHeadphone: (String) -> Unit,
     onImportPersonal: suspend (
@@ -131,16 +130,21 @@ fun MyEqsHomeScreen(
     val scope = rememberCoroutineScope()
     val unclaimedFeature = LocalUnclaimedEqUiFeature.current
     val unclaimedEqs = unclaimedFeature.items
-    var importOpen by remember { mutableStateOf(false) }
+    var importOpen by rememberSaveable { mutableStateOf(false) }
     var pendingFlash by remember { mutableStateOf<PendingHardwareFlash?>(null) }
+    var pendingPersonalRemoval by remember { mutableStateOf<SavedEqRecord?>(null) }
+    var pendingGeneralRemoval by remember { mutableStateOf<SavedGeneralEqRecord?>(null) }
     var flashInProgress by remember { mutableStateOf(false) }
-    var pendingResetDevice by remember { mutableStateOf<ExportDevice?>(null) }
     var pendingRecovery by remember { mutableStateOf<UnclaimedEqRecord?>(null) }
     var recoveryInProgress by remember { mutableStateOf(false) }
     var pendingUnclaimedDelete by remember { mutableStateOf<UnclaimedEqRecord?>(null) }
     var unclaimedExpanded by rememberSaveable { mutableStateOf(false) }
-    val selectedHeadphoneCount = managedHeadphones.sumOf(ManagedHeadphoneRecord::selectedProfileCount)
-    val headphoneSavedEqs = remember(savedEqs) { savedEqs.toList() }
+    val personalEqs = remember(savedEqs) {
+        savedEqs.filter { it.kind == SavedEqKind.Personal || it.kind == SavedEqKind.Unreadable }
+    }
+    val hasOwnedContent = managedHeadphones.isNotEmpty() ||
+        savedGeneralEqs.isNotEmpty() ||
+        personalEqs.isNotEmpty()
     val hardwareFlashOutput = activeOutput in HARDWARE_FLASH_OUTPUTS
     val flashActionsEnabled = isManagedHardwareFlashEnabled(
         activeOutput = activeOutput,
@@ -271,30 +275,50 @@ fun MyEqsHomeScreen(
         )
     }
 
-    pendingResetDevice?.let { device ->
+    pendingPersonalRemoval?.let { record ->
         AlertDialog(
-            onDismissRequest = { pendingResetDevice = null },
-            title = { Text("Reset EQ to flat?") },
-            text = { Text(hardwareResetConfirmation(device)) },
+            onDismissRequest = { pendingPersonalRemoval = null },
+            title = { Text("Remove Personal EQ?") },
+            text = {
+                Text("${record.displayName} will be removed from My EQs. Existing exported files will be kept.")
+            },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        pendingResetDevice = null
+                        pendingPersonalRemoval = null
                         scope.launch {
-                            val message = when (device) {
-                                ExportDevice.BLACK_PEARL -> onResetBlackPearl()
-                                ExportDevice.FIIO_JA11 -> onResetFiioJa11()
-                                ExportDevice.SIMGOT_EW300 -> onResetEw300()
-                                ExportDevice.JCALLY_JM12 -> onResetJcallyJm12()
-                                else -> "Reset is not available for this output."
-                            }
-                            onMessage(message)
+                            onDeleteSavedEq(record.entryId)
+                            onMessage("Personal EQ removed from My EQs. Existing exported files were kept.")
                         }
                     },
-                ) { Text("Reset to flat") }
+                ) { Text("Remove") }
             },
             dismissButton = {
-                TextButton(onClick = { pendingResetDevice = null }) { Text("Cancel") }
+                TextButton(onClick = { pendingPersonalRemoval = null }) { Text("Cancel") }
+            },
+        )
+    }
+
+    pendingGeneralRemoval?.let { record ->
+        AlertDialog(
+            onDismissRequest = { pendingGeneralRemoval = null },
+            title = { Text("Remove General EQ?") },
+            text = {
+                Text("${record.displayName} will be removed from My EQs. Existing exported files will be kept.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        pendingGeneralRemoval = null
+                        scope.launch {
+                            onRemoveGeneralEq(record.presetId)
+                            onMessage("${record.displayName} removed from My EQs. Existing exported files were kept.")
+                        }
+                    },
+                ) { Text("Remove") }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingGeneralRemoval = null }) { Text("Cancel") }
             },
         )
     }
@@ -302,36 +326,6 @@ fun MyEqsHomeScreen(
     LazyColumn(modifier = modifier.fillMaxSize()) {
         item(key = "my-eqs-actions") {
             Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-                when (activeOutput) {
-                    ExportDevice.BLACK_PEARL -> BlackPearlConnectionControl(
-                        enabled = directBlackPearlFlashEnabled,
-                        state = blackPearlConnectionState,
-                        onConnect = onConnectBlackPearl,
-                        onReset = { pendingResetDevice = ExportDevice.BLACK_PEARL },
-                    )
-                    ExportDevice.FIIO_JA11 -> Kt02h20ConnectionControl(
-                        device = ExportDevice.FIIO_JA11,
-                        enabled = directFiioJa11FlashEnabled,
-                        state = fiioJa11ConnectionState,
-                        onConnect = onConnectFiioJa11,
-                        onReset = { pendingResetDevice = ExportDevice.FIIO_JA11 },
-                    )
-                    ExportDevice.SIMGOT_EW300 -> Kt02h20ConnectionControl(
-                        device = ExportDevice.SIMGOT_EW300,
-                        enabled = directEw300FlashEnabled,
-                        state = ew300ConnectionState,
-                        onConnect = onConnectEw300,
-                        onReset = { pendingResetDevice = ExportDevice.SIMGOT_EW300 },
-                    )
-                    ExportDevice.JCALLY_JM12 -> Kt02h20ConnectionControl(
-                        device = ExportDevice.JCALLY_JM12,
-                        enabled = directJcallyJm12FlashEnabled,
-                        state = jcallyJm12ConnectionState,
-                        onConnect = onConnectJcallyJm12,
-                        onReset = { pendingResetDevice = ExportDevice.JCALLY_JM12 },
-                    )
-                    else -> Unit
-                }
                 if (exportCurrentness.hasPendingExport) {
                     Button(onClick = onExportAll) {
                         Icon(Icons.Outlined.FileUpload, contentDescription = null)
@@ -344,12 +338,6 @@ fun MyEqsHomeScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                Text(
-                    text = "$selectedHeadphoneCount headphone EQs · ${savedGeneralEqs.size} General EQs",
-                    modifier = Modifier.padding(top = 2.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
             }
             HorizontalDivider()
         }
@@ -416,12 +404,20 @@ fun MyEqsHomeScreen(
             }
         }
 
+        if (!hasOwnedContent) {
+            item(key = "my-eqs-empty") {
+                EmptyLibraryState(
+                    onBrowseLibrary = onBrowseLibrary,
+                    onImportPersonal = { importOpen = true },
+                )
+            }
+        } else {
         item(key = "headphones-heading") {
-            SectionHeading("Headphones")
+            SectionHeading("Saved Headphones")
         }
-        if (managedHeadphones.isEmpty() && headphoneSavedEqs.isEmpty()) {
+        if (managedHeadphones.isEmpty()) {
             item(key = "headphones-empty") {
-                EmptyMessage("No headphone EQs saved yet. Add them from EQ Library.")
+                EmptyMessage("No headphone EQ selections yet. Add them from EQ Library.")
             }
         } else {
             managedHeadphones
@@ -471,92 +467,10 @@ fun MyEqsHomeScreen(
                     }
                 }
 
-            if (headphoneSavedEqs.isNotEmpty()) {
-                item(key = "saved-headphone-heading") {
-                    SavedImportsHeading(onImport = { importOpen = true })
-                }
-                items(headphoneSavedEqs, key = { "saved:${it.entryId}" }) { record ->
-                    val actionProfile = record.actionProfileOrNull()
-                    val needsExport = actionProfile?.let {
-                        exportCurrentness.needsExport(record.productId, it.id)
-                    } == true
-                    val flashPreview = actionProfile?.let { hardwareFlashPreview(it, activeOutput) }
-                    ListItem(
-                        headlineContent = { Text(record.displayName) },
-                        supportingContent = {
-                            Column {
-                                Text("${record.manufacturer} · ${record.model}")
-                                if (record.savedEqDataInvalid) {
-                                    Text(
-                                        text = stringResource(R.string.saved_eq_invalid_data_notice),
-                                        color = MaterialTheme.colorScheme.error,
-                                    )
-                                }
-                            }
-                        },
-                        trailingContent = {
-                            Row {
-                                if (needsExport) {
-                                    IconButton(onClick = { onExportSavedEq(record.entryId) }) {
-                                        Icon(Icons.Outlined.FileUpload, contentDescription = "Export ${record.displayName}")
-                                    }
-                                }
-                                if (hardwareFlashOutput) {
-                                    TextButton(
-                                        enabled = !flashInProgress && flashActionsEnabled && flashPreview != null,
-                                        onClick = {
-                                            flashPreview?.let { preview ->
-                                                pendingFlash = PendingHardwareFlash.SavedEq(
-                                                    entryId = record.entryId,
-                                                    displayName = record.displayName,
-                                                    preview = preview,
-                                                )
-                                            }
-                                        },
-                                    ) { Text(if (flashInProgress) "Flashing…" else "Flash") }
-                                }
-                                if (record.kind == SavedEqKind.Favorite) {
-                                    IconButton(
-                                        onClick = {
-                                            scope.launch {
-                                                onDeleteSavedEq(record.entryId)
-                                                onMessage("Removed from My EQs favorites. Existing exported files were kept.")
-                                            }
-                                        },
-                                    ) {
-                                        Icon(
-                                            Icons.Outlined.Star,
-                                            contentDescription = "Remove ${record.displayName} from favorites",
-                                        )
-                                    }
-                                } else {
-                                    IconButton(
-                                        onClick = {
-                                            scope.launch {
-                                                onDeleteSavedEq(record.entryId)
-                                                onMessage("EQ removed from My EQs. Existing exported files were kept.")
-                                            }
-                                        },
-                                    ) {
-                                        Icon(Icons.Outlined.Delete, contentDescription = "Remove ${record.displayName}")
-                                    }
-                                }
-                            }
-                        },
-                    )
-                    HorizontalDivider()
-                }
-            }
-        }
-
-        if (headphoneSavedEqs.isEmpty()) {
-            item(key = "saved-headphone-heading-empty") {
-                SavedImportsHeading(onImport = { importOpen = true })
-            }
         }
 
         item(key = "general-heading") {
-            SectionHeading("General EQs")
+            SectionHeading("Saved General EQs")
         }
         if (savedGeneralEqs.isEmpty()) {
             item(key = "general-empty") {
@@ -603,12 +517,70 @@ fun MyEqsHomeScreen(
                                     },
                                 ) { Text(if (flashInProgress) "Flashing…" else "Flash") }
                             }
+                                IconButton(
+                                    onClick = {
+                                        pendingGeneralRemoval = record
+                                    },
+                            ) {
+                                Icon(Icons.Outlined.Delete, contentDescription = "Remove ${record.displayName}")
+                            }
+                        }
+                    },
+                )
+                HorizontalDivider()
+            }
+        }
+
+        item(key = "personal-heading") {
+            SavedImportsHeading(onImport = { importOpen = true })
+        }
+        if (personalEqs.isEmpty()) {
+            item(key = "personal-empty") {
+                EmptyMessage("Import supported parametric EQ text to keep your own EQs on this device.")
+            }
+        } else {
+            items(personalEqs, key = { "personal:${it.entryId}" }) { record ->
+                val actionProfile = record.actionProfileOrNull()
+                val flashPreview = actionProfile?.let { hardwareFlashPreview(it, activeOutput) }
+                ListItem(
+                    headlineContent = { Text(record.displayName) },
+                    supportingContent = {
+                        Column {
+                            Text(listOf(record.manufacturer, record.model).filter(String::isNotBlank).joinToString(" · "))
+                            record.profile.details?.takeIf(String::isNotBlank)?.let { Text(it) }
+                            if (record.savedEqDataInvalid) {
+                                Text(
+                                    stringResource(R.string.saved_eq_invalid_data_notice),
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                            }
+                        }
+                    },
+                    trailingContent = {
+                        Row {
+                            if (hardwareFlashOutput) {
+                                TextButton(
+                                    enabled = !flashInProgress && flashActionsEnabled && flashPreview != null,
+                                    onClick = {
+                                        flashPreview?.let { preview ->
+                                            pendingFlash = PendingHardwareFlash.SavedEq(
+                                                entryId = record.entryId,
+                                                displayName = record.displayName,
+                                                preview = preview,
+                                            )
+                                        }
+                                    },
+                                ) { Text(if (flashInProgress) "Flashing…" else "Flash") }
+                            }
+                            IconButton(
+                                enabled = !record.savedEqDataInvalid,
+                                onClick = { onExportSavedEq(record.entryId) },
+                            ) {
+                                Icon(Icons.Outlined.FileUpload, contentDescription = "Export ${record.displayName}")
+                            }
                             IconButton(
                                 onClick = {
-                                    scope.launch {
-                                        onRemoveGeneralEq(record.presetId)
-                                        onMessage("${record.displayName} removed from My EQs. Existing exported files were kept.")
-                                    }
+                                    pendingPersonalRemoval = record
                                 },
                             ) {
                                 Icon(Icons.Outlined.Delete, contentDescription = "Remove ${record.displayName}")
@@ -618,6 +590,7 @@ fun MyEqsHomeScreen(
                 )
                 HorizontalDivider()
             }
+        }
         }
     }
 }
@@ -762,18 +735,6 @@ private fun hardwareFlashConfirmation(displayName: String, preview: HardwareFlas
     return "Flash $displayName to ${hardwareDeviceTitle(preview.device)}? $fidelity. $gainSentence $persistence Unrelated DAC settings are not changed."
 }
 
-private fun hardwareResetConfirmation(device: ExportDevice): String = when (device) {
-    ExportDevice.BLACK_PEARL ->
-        "This will overwrite all 10 EQ bands in the Black Pearl's current EQ slot with flat settings and remove any playback-gain adjustment previously applied by EQ Library. This may change listening volume. Other DAC settings will not be changed."
-    ExportDevice.FIIO_JA11 ->
-        "This will return all five JA11 PEQ bands and the global EQ gain to flat/0 dB, apply the result, verify it, and save it to the device. Listening volume may change. Other DAC settings will not be changed."
-    ExportDevice.SIMGOT_EW300 ->
-        "This will return all five EW300 PEQ bands to flat, preserve the underlying playback gain, and verify the result. Other DAC settings will not be changed."
-    ExportDevice.JCALLY_JM12 ->
-        "This will return all five stock JM12 PEQ bands to flat and remove EQ Library's tracked playback-gain adjustment. Listening volume may change. Persistence across a full power cycle is still hardware-validation pending. Other DAC settings will not be changed."
-    else -> "Reset is not available for this output."
-}
-
 private fun hardwareDeviceTitle(device: ExportDevice): String = when (device) {
     ExportDevice.BLACK_PEARL -> "Black Pearl"
     ExportDevice.FIIO_JA11 -> "FiiO JA11"
@@ -798,126 +759,6 @@ private fun newEqAttentionText(headphone: ManagedHeadphoneRecord): String? {
 }
 
 @Composable
-fun BlackPearlConnectionControl(
-    enabled: Boolean,
-    state: BlackPearlConnectionState,
-    onConnect: () -> Unit,
-    onReset: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(modifier = modifier.padding(bottom = 12.dp)) {
-        if (!enabled) {
-            Text("Direct Flash is disabled", style = MaterialTheme.typography.labelLarge)
-            Text(
-                text = "Enable direct Flash in Settings → Black Pearl before connecting to the DAC.",
-                modifier = Modifier.padding(top = 4.dp),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            return@Column
-        }
-
-        val connected = state is BlackPearlConnectionState.Connected
-        val connecting = state is BlackPearlConnectionState.Connecting
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Button(
-                onClick = onConnect,
-                enabled = !connected && !connecting,
-                modifier = Modifier.weight(1f),
-            ) {
-                Text(
-                    when {
-                        connected -> "Connected"
-                        connecting -> "Connecting…"
-                        else -> "Connect"
-                    },
-                )
-            }
-            OutlinedButton(
-                onClick = onReset,
-                enabled = connected,
-                modifier = Modifier.weight(1.25f),
-            ) {
-                Text("Reset EQ to flat")
-            }
-        }
-        if (state is BlackPearlConnectionState.Error) {
-            Text(
-                text = state.message,
-                modifier = Modifier.padding(top = 4.dp),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error,
-            )
-        }
-    }
-}
-
-@Composable
-private fun Kt02h20ConnectionControl(
-    device: ExportDevice,
-    enabled: Boolean,
-    state: Kt02h20ConnectionState,
-    onConnect: () -> Unit,
-    onReset: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(modifier = modifier.padding(bottom = 12.dp)) {
-        if (!enabled) {
-            Text("Direct Flash is disabled", style = MaterialTheme.typography.labelLarge)
-            Text(
-                text = "Enable direct Flash in Settings → ${hardwareDeviceTitle(device)} before connecting to the DAC.",
-                modifier = Modifier.padding(top = 4.dp),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            return@Column
-        }
-
-        val connected = state is Kt02h20ConnectionState.Connected
-        val connecting = state is Kt02h20ConnectionState.Connecting
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Button(
-                onClick = onConnect,
-                enabled = !connected && !connecting,
-                modifier = Modifier.weight(1f),
-            ) {
-                Text(
-                    when {
-                        connected -> "Connected"
-                        connecting -> "Connecting…"
-                        else -> "Connect"
-                    },
-                )
-            }
-            OutlinedButton(
-                onClick = onReset,
-                enabled = connected,
-                modifier = Modifier.weight(1.25f),
-            ) { Text("Reset EQ to flat") }
-        }
-        val connectionMessage = when (state) {
-            is Kt02h20ConnectionState.Error -> state.message
-            is Kt02h20ConnectionState.PermissionRequired -> state.message
-            else -> null
-        }
-        if (connectionMessage != null) {
-            Text(
-                text = connectionMessage,
-                modifier = Modifier.padding(top = 4.dp),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error,
-            )
-        }
-    }
-}
-
-@Composable
 private fun SectionHeading(title: String) {
     Text(
         text = title,
@@ -937,6 +778,48 @@ private fun EmptyMessage(message: String) {
 }
 
 @Composable
+private fun EmptyLibraryState(
+    onBrowseLibrary: () -> Unit,
+    onImportPersonal: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val palette = MaterialThemeEqPalette
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 24.dp),
+        shape = RoundedCornerShape(20.dp),
+        border = BorderStroke(1.dp, palette.border),
+        colors = CardDefaults.cardColors(containerColor = palette.surface),
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Text("Build your EQ library", style = MaterialTheme.typography.headlineSmall)
+            Text(
+                "Browse headphone and General EQs, or import supported personal parametric EQ text.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                "EQs saved here stay on this device until you choose to export them or apply them to hardware.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Button(
+                onClick = onBrowseLibrary,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+            ) { Text("Browse EQ Library") }
+            OutlinedButton(
+                onClick = onImportPersonal,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+            ) { Text("Import Personal EQ") }
+        }
+    }
+}
+
+@Composable
 private fun SavedImportsHeading(onImport: () -> Unit) {
     Row(
         modifier = Modifier
@@ -945,7 +828,7 @@ private fun SavedImportsHeading(onImport: () -> Unit) {
         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
     ) {
         Text(
-            text = "Saved EQs",
+            text = "Personal EQs",
             modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,

@@ -125,6 +125,7 @@
     <string name="my_dac_editor_select_band">Select a band</string>
     <string name="my_dac_editor_band">Band %1$d</string>
     <string name="my_dac_editor_band_summary">Band %1$d · %2$s · %3$.0f Hz · %4$+.2f dB · Q %5$.3f</string>
+    <string name="my_dac_editor_band_accessibility">Band %1$d, %2$s, %3$s hertz, %4$s decibels, Q %5$s</string>
     <string name="my_dac_editor_selected_band_summary">%1$s · %2$.0f Hz · %3$+.2f dB · Q %4$.3f</string>
     <string name="my_dac_editor_type">Type</string>
     <string name="my_dac_editor_type_peak">Peak</string>

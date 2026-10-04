@@ -100,14 +100,13 @@ Base top-level destinations:
 - **EQ Library**
 - **Settings**
 
-For approved v0.6 My DAC behavior, after a supported DAC is recognized in the current app session the destinations become:
+In the approved v0.8.0 beta IA, the persistent root destinations remain:
 
 - **My EQs**
-- **My DAC**
 - **EQ Library**
 - **Settings**
 
-`My DAC` sits immediately beside `My EQs`. Once shown in the current app session it remains present after disconnect so navigation does not jump; disconnected device state is explicitly stale/Last read. A later cold launch with no supported DAC may return to the three-destination baseline. USB attach/open behavior, EQ/DEVICE tabs, and all My DAC states follow `docs/V0.6_MY_DAC_APPROVED_DESIGN.md`.
+When a supported DAC is recognized in the current app session, a connected-device context surface opens the in-session **My DAC** workspace. My DAC is not a persistent bottom-navigation tab, does not replace the selected root, and returns to that root on Back. The context surface distinguishes current, stale, connecting, permission, and disconnected states. A cold launch without a recognized supported DAC restores the three roots. USB attach/open behavior, EQ/DEVICE tabs, and hardware state semantics remain governed by `docs/V0.6_MY_DAC_APPROVED_DESIGN.md` and the current capability records.
 
 A supported DAC uses **one app-wide authoritative connection/session**. My EQs, My DAC and EQ Library must not independently reconnect to or reread the same hardware just because the user navigates. A successful connection/reconnection automatically refreshes EQ + DEVICE state; successful hardware changes automatically refresh affected state. Manual Refresh remains an escape hatch for external changes rather than a required ordinary step.
 
@@ -119,7 +118,7 @@ The active output is a global **operating/action context**, not a catalog or own
 
 A physically connected DAC and the active output are distinct concepts. Recognizing/connecting a DAC for My DAC must not silently change the user's global active output unless the approved Automatic-output behavior explicitly makes that connected DAC the effective output context. My DAC always represents actual connected hardware.
 
-Android Back unwinds in-app hierarchy first. Root EQ Library/Settings return to My EQs; only Back from the My EQs root exits. My DAC editor/detail flows unwind to the My DAC root before leaving the destination.
+Android Back unwinds in-app hierarchy first. A My DAC editor/detail flow returns to its My DAC workspace; Back from that workspace returns to the previously selected root. EQ Library product/profile detail returns to the saved browse/search context. Only Back from a root exits the app.
 
 Favorites and local Hide/Unhide are presentation/saved-state features. Hiding a canonical lineage does not delete archive history, My EQs membership, exported files, favorite state, or Flash state.
 
@@ -173,7 +172,7 @@ When notification is ON, eligible new EQs and materially changed selected tuning
 
 The persisted compatibility field name `autoIncludeNewProfiles` may remain internally for migration compatibility, but it must not be interpreted as permission to auto-select future profiles.
 
-**My EQs ownership and selection are device/output-agnostic.** A headphone, Favorite, Personal EQ, captured DAC EQ, or General EQ saved to My EQs remains the same local item when the active target changes. Saving to My EQs does not itself export a file, download anything, or Flash hardware. Target-specific representations/currentness remain derived state and are created/used only by explicit Export/Flash paths.
+**My EQs ownership and selection are device/output-agnostic.** Saved headphone selections, saved General EQs, Personal EQ imports, and captured DAC EQs remain the same local items when the active target changes. Favorites are catalog discovery shortcuts and are not presented as owned My EQs content. Saving to My EQs does not itself export a file, download anything, or Flash hardware. Target-specific representations/currentness remain derived state and are created/used only by explicit Export/Flash paths.
 
 New catalog Favorites and General EQs retain the full canonical profile, exact selected revision,
 and source references. Legacy `OpraEqProfile` values are derived compatibility views, not saved
