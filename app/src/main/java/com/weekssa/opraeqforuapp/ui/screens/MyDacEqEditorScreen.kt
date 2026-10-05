@@ -1,6 +1,5 @@
 package com.weekssa.opraeqforuapp.ui.screens
 
-import android.util.Log
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
@@ -31,7 +30,6 @@ import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -43,7 +41,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.weekssa.opraeqforuapp.BuildConfig
 import com.weekssa.opraeqforuapp.R
 import com.weekssa.opraeqforuapp.domain.dac.DacHeadroomStatus
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqDifference
@@ -60,8 +57,6 @@ import com.weekssa.opraeqforuapp.ui.MyDacEditorUiState
 import com.weekssa.opraeqforuapp.ui.components.DacEqResponseGraph
 import kotlinx.coroutines.launch
 import java.util.Locale
-
-private const val D_PAD_FOCUS_TRACE_TAG = "DEBUG-foc-v0805a"
 
 @Composable
 internal fun DacEqEditorScreen(
@@ -418,18 +413,12 @@ private fun SelectedBandEditor(
                         if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionDown) {
                             if (downFocusRequester != null && downBringIntoViewRequester != null) {
                                 coroutineScope.launch {
-                                    if (BuildConfig.DEBUG) Log.d(D_PAD_FOCUS_TRACE_TAG, "down: relocation start")
                                     downBringIntoViewRequester.bringIntoView()
-                                    if (BuildConfig.DEBUG) Log.d(D_PAD_FOCUS_TRACE_TAG, "down: relocation complete")
                                     repeat(30) { attempt ->
                                         val moved = downFocusRequester.requestFocus()
-                                        if (BuildConfig.DEBUG) {
-                                            Log.d(D_PAD_FOCUS_TRACE_TAG, "down: focus attempt=${attempt + 1} result=$moved")
-                                        }
                                         if (moved) return@launch
                                         if (attempt < 29) withFrameNanos { }
                                     }
-                                    if (BuildConfig.DEBUG) Log.d(D_PAD_FOCUS_TRACE_TAG, "down: focus attempts exhausted")
                                 }
                                 true
                             } else {
@@ -500,15 +489,7 @@ private fun HeadroomCard(
                         )
                         .then(
                             safeGainBringIntoViewRequester?.let(Modifier::bringIntoViewRequester) ?: Modifier,
-                        )
-                        .onFocusChanged { focusState ->
-                            if (BuildConfig.DEBUG) {
-                                Log.d(
-                                    D_PAD_FOCUS_TRACE_TAG,
-                                    "safe-gain: focused=${focusState.isFocused} hasFocus=${focusState.hasFocus}",
-                                )
-                            }
-                        },
+                        ),
                 ) {
                     Text(stringResource(R.string.my_dac_editor_use_safe_gain))
                 }

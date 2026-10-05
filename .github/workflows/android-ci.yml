@@ -171,10 +171,6 @@ jobs:
         id: connected_ui_tests
         run: gradle :app:connectedDebugAndroidTest --stacktrace
 
-      - name: Capture D-pad focus trace after test failure
-        if: ${{ failure() && steps.connected_ui_tests.outcome == 'failure' }}
-        run: adb logcat -d -v brief -s DEBUG-foc-v0805a:D > "$RUNNER_TEMP/dpad-focus.log"
-
       - name: Upload emulator diagnostics
         if: ${{ always() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -182,7 +178,6 @@ jobs:
           name: android-emulator-ui-test-reports
           path: |
             ${{ runner.temp }}/emulator.log
-            ${{ runner.temp }}/dpad-focus.log
             app/build/reports/androidTests/
             app/build/outputs/androidTest-results/
           if-no-files-found: ignore

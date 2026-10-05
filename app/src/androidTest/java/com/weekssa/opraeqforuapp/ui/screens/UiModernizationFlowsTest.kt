@@ -131,7 +131,9 @@ class UiModernizationFlowsTest {
 
     @Test
     fun productionAppShellHasThreeStableRootsAndAnIndependentOutputContext() {
+        lateinit var inputModeManager: InputModeManager
         composeRule.setContent {
+            inputModeManager = LocalInputModeManager.current
             OpraEqTheme(ThemeMode.Light) {
                 EqLibraryApp(
                     state = EqLibraryUiState(
@@ -171,12 +173,14 @@ class UiModernizationFlowsTest {
         )
         settingsTab.performSemanticsAction(SemanticsActions.RequestFocus)
         settingsTab.assertIsFocused()
-        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_LEFT)
+        requestKeyboardMode(inputModeManager, "Root-tab D-pad navigation")
+        sendFocusedComposeKey(Key.DirectionLeft)
         composeRule.waitForIdle()
-        composeRule.onNode(
+        val libraryTab = composeRule.onNode(
             hasText("EQ Library") and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab),
-        ).assertIsFocused().assertIsDisplayed()
-        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER)
+        )
+        libraryTab.assertIsFocused().assertIsDisplayed()
+        sendComposeKey(libraryTab, Key.DirectionCenter)
         composeRule.waitForIdle()
         composeRule.onNodeWithText("Search headphones…").assertIsDisplayed()
     }
@@ -206,6 +210,7 @@ class UiModernizationFlowsTest {
             }
         }
 
+        composeRule.waitForIdle()
         composeRule.onNodeWithText("FiiO JA11").assertIsDisplayed()
         composeRule.onNodeWithText("Connected · Waiting for first device read").assertIsDisplayed()
         composeRule.onNodeWithText("Target: USB Audio Player PRO / ToneBoosters", substring = true)
@@ -244,7 +249,9 @@ class UiModernizationFlowsTest {
     @Test
     fun keyboardAndDpadSearchOpensDirectModelResults() {
         val saveRequests = mutableListOf<Pair<String, Set<String>>>()
+        lateinit var inputModeManager: InputModeManager
         composeRule.setContent {
+            inputModeManager = LocalInputModeManager.current
             OpraEqTheme(ThemeMode.Light) {
                 TestBrowseScreen(
                     catalog = testCatalog(),
@@ -257,6 +264,7 @@ class UiModernizationFlowsTest {
 
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         composeRule.onNodeWithText("Search headphones…").performClick()
+        requestKeyboardMode(inputModeManager, "Keyboard search input")
         instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_X)
         instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_M)
         composeRule.waitForIdle()
@@ -278,17 +286,17 @@ class UiModernizationFlowsTest {
         }
         composeRule.waitForIdle()
         composeRule.onNodeWithText("Test creator").assertIsDisplayed()
-        repeat(2) { instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP) }
+        repeat(2) { sendFocusedComposeKey(Key.DirectionUp) }
         composeRule.onNodeWithText("Target: USB Audio Player PRO / ToneBoosters", substring = true)
             .assertIsFocused()
-        repeat(4) { instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN) }
+        repeat(4) { sendFocusedComposeKey(Key.DirectionDown) }
         val focusedLabels = composeRule.onAllNodes(
             SemanticsMatcher.expectValue(SemanticsProperties.Focused, true),
         ).fetchSemanticsNodes().map { it.config.toString() }
         assertTrue("D-pad focus should reach the first profile row; focused nodes: $focusedLabels", focusedLabels.any {
             it.contains("Test creator")
         })
-        instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT)
+        sendFocusedComposeKey(Key.DirectionRight)
         composeRule.onNodeWithContentDescription("Details for Test creator").assertIsFocused()
         composeRule.onNodeWithContentDescription("Details for Test creator").performKeyInput {
             keyDown(Key.DirectionCenter)
@@ -299,12 +307,12 @@ class UiModernizationFlowsTest {
         addToMyEqs.assertIsDisplayed()
         var attempt = 0
         while (!runCatching { addToMyEqs.assertIsFocused() }.isSuccess && attempt < 40) {
-            instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN)
+            sendFocusedComposeKey(Key.DirectionDown, fallbackNode = addToMyEqs)
             composeRule.waitForIdle()
             attempt += 1
         }
         addToMyEqs.assertIsFocused().assertIsDisplayed()
-        instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER)
+        sendComposeKey(addToMyEqs, Key.DirectionCenter)
         composeRule.waitForIdle()
         composeRule.waitUntil(timeoutMillis = 5_000) { saveRequests.size == 1 }
         composeRule.runOnIdle {
@@ -318,7 +326,9 @@ class UiModernizationFlowsTest {
     fun dpadNavigatesPersonalEqImportThroughSaveCallbackWithoutHardwareAction() {
         var saveRequests = 0
         val saveArguments = mutableListOf<List<String?>>()
+        lateinit var inputModeManager: InputModeManager
         composeRule.setContent {
+            inputModeManager = LocalInputModeManager.current
             OpraEqTheme(ThemeMode.Light) {
                 TestMyEqsScreen(
                     managedHeadphones = emptyList(),
@@ -356,6 +366,7 @@ class UiModernizationFlowsTest {
         composeRule.onNodeWithText("Import Personal EQ").performClick()
         composeRule.onNodeWithText("Equalizer APO / AutoEq text")
             .performTextInput("Filter 1: ON PK Fc 100 Hz Gain 1 dB Q 1.0")
+        requestKeyboardMode(inputModeManager, "Personal EQ import D-pad navigation")
         composeRule.onNodeWithText("Equalizer APO / AutoEq text").performKeyInput {
             keyDown(Key.DirectionDown)
             keyUp(Key.DirectionDown)
@@ -378,7 +389,7 @@ class UiModernizationFlowsTest {
         fun focusAndActivate(label: String) {
             var attempt = 0
             while (!isFocused(label) && attempt < 40) {
-                instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN)
+                sendFocusedComposeKey(Key.DirectionDown)
                 composeRule.waitForIdle()
                 attempt += 1
             }
@@ -387,7 +398,7 @@ class UiModernizationFlowsTest {
             ).fetchSemanticsNodes().map { it.config.toString() }
             assertTrue("D-pad Down reaches $label; focused nodes: $focusedNodes", isFocused(label))
             composeRule.onNodeWithText(label).assertIsFocused().assertIsDisplayed()
-            instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER)
+            sendComposeKey(composeRule.onNodeWithText(label), Key.DirectionCenter)
             composeRule.waitForIdle()
         }
 
@@ -409,13 +420,13 @@ class UiModernizationFlowsTest {
             .performSemanticsAction(SemanticsActions.RequestFocus)
             .assertIsFocused()
         captureV080Screenshot("personal-eq-import-dpad-describe-keyboard-hidden")
-        instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN)
+        sendFocusedComposeKey(Key.DirectionDown)
         composeRule.onNodeWithText("Headphone model").assertIsFocused()
-        instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN)
+        sendFocusedComposeKey(Key.DirectionDown)
         eqNameInput.assertIsFocused()
-        instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN)
+        sendFocusedComposeKey(Key.DirectionDown)
         composeRule.onNodeWithText("Target / note (optional)").assertIsFocused()
-        instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN)
+        sendFocusedComposeKey(Key.DirectionDown)
         composeRule.onNodeWithText("Review EQ").assertIsFocused().assertIsDisplayed()
         focusAndActivate("Review EQ")
         composeRule.onNodeWithText("Step 4 of 5 · Review").assertIsDisplayed()
@@ -710,7 +721,9 @@ class UiModernizationFlowsTest {
     @Test
     fun productionMyDacRecoveryStateWarnsAgainstRepeatingAnUnverifiedApply() {
         val uncertainTrace = fixtureUncertainFiioApplyTrace()
+        lateinit var inputModeManager: InputModeManager
         composeRule.setContent {
+            inputModeManager = LocalInputModeManager.current
             OpraEqTheme(ThemeMode.Light) {
                 EqLibraryApp(
                     state = EqLibraryUiState(
@@ -730,8 +743,13 @@ class UiModernizationFlowsTest {
 
         val openMyDac = composeRule.onNodeWithText("Open My DAC")
         openMyDac.assertIsDisplayed()
+        val myEqsTab = composeRule.onNode(
+            hasText("My EQs") and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab),
+        )
+        myEqsTab.performSemanticsAction(SemanticsActions.RequestFocus).assertIsFocused()
+        requestKeyboardMode(inputModeManager, "My DAC recovery D-pad navigation")
         navigateUpUntilFocused(openMyDac, "Open My DAC", maxAttempts = 80)
-        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER)
+        sendComposeKey(openMyDac, Key.DirectionCenter)
         composeRule.waitForIdle()
         val recoveryMessage = composeRule.onNodeWithText("JA11 Apply not verified")
         val recoveryMessageExists = runCatching {
@@ -748,12 +766,12 @@ class UiModernizationFlowsTest {
             .performScrollTo()
             .assertIsDisplayed()
         val dismissResult = composeRule.onNodeWithContentDescription("Dismiss JA11 Apply result")
-        navigateUpUntilFocused(dismissResult, "Dismiss JA11 Apply result", maxAttempts = 80)
+        dismissResult.performSemanticsAction(SemanticsActions.RequestFocus).assertIsFocused()
         navigateDownUntilFocused("Share operation report")
         composeRule.onNodeWithText("Share operation report").assertIsDisplayed()
         navigateUpUntilFocused(dismissResult, "Dismiss JA11 Apply result")
         dismissResult.assertIsDisplayed()
-        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER)
+        sendComposeKey(dismissResult, Key.DirectionCenter)
         composeRule.onNodeWithText("JA11 Apply not verified").assertDoesNotExist()
         composeRule.waitForIdle()
         captureV080Screenshot("my-dac-recovery-fiio-production-shell-fixture-light-100")
@@ -986,7 +1004,9 @@ class UiModernizationFlowsTest {
             ),
         )
         var applyRequests = 0
+        lateinit var inputModeManager: InputModeManager
         composeRule.setContent {
+            inputModeManager = LocalInputModeManager.current
             OpraEqTheme(ThemeMode.Light) {
                 TestScreenShell(title = "My DAC", showTarget = true) {
                     Column(
@@ -1034,10 +1054,9 @@ class UiModernizationFlowsTest {
         }.getOrDefault(false)
 
         fun tabUntilFocused(label: String) {
-            val instrumentation = InstrumentationRegistry.getInstrumentation()
             var attempt = 0
             while (!isFocused(label) && attempt < 80) {
-                instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_TAB)
+                sendFocusedComposeKey(Key.Tab)
                 composeRule.waitForIdle()
                 attempt += 1
             }
@@ -1045,6 +1064,9 @@ class UiModernizationFlowsTest {
         }
 
         val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val closeEditor = composeRule.onNodeWithText("Close")
+        closeEditor.performSemanticsAction(SemanticsActions.RequestFocus).assertIsFocused()
+        requestKeyboardMode(inputModeManager, "My DAC editor keyboard traversal")
         tabUntilFocused("Frequency (Hz)")
         repeat(3) { instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_FORWARD_DEL) }
         listOf(KeyEvent.KEYCODE_1, KeyEvent.KEYCODE_5, KeyEvent.KEYCODE_5).forEach {
@@ -1057,7 +1079,7 @@ class UiModernizationFlowsTest {
         }
 
         tabUntilFocused("Review changes")
-        instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_ENTER)
+        sendComposeKey(composeRule.onNodeWithText("Review changes"), Key.Enter)
         composeRule.waitForIdle()
         composeRule.onNodeWithText("Review changes").assertIsDisplayed()
         composeRule.onNodeWithText("Complete reviewed hardware target")
@@ -1836,10 +1858,17 @@ class UiModernizationFlowsTest {
         val cancel = composeRule.onNodeWithText("Cancel")
         composeRule.waitForIdle()
         waitForFocus(cancel, "Cancel")
-        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT)
+        cancel.performKeyInput {
+            keyDown(Key.DirectionRight)
+            keyUp(Key.DirectionRight)
+        }
         waitForFocus("Export XML")
-        composeRule.onNodeWithText("Export XML").assertIsDisplayed()
-        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER)
+        val exportXml = composeRule.onNodeWithText("Export XML")
+        exportXml.assertIsDisplayed()
+        exportXml.performKeyInput {
+            keyDown(Key.DirectionCenter)
+            keyUp(Key.DirectionCenter)
+        }
         composeRule.runOnIdle { assertEquals(1, exportCount) }
     }
 
@@ -2182,10 +2211,9 @@ class UiModernizationFlowsTest {
 
     private fun navigateDownUntilFocused(label: String, maxAttempts: Int = 80) {
         val node = composeRule.onNodeWithText(label)
-        val instrumentation = InstrumentationRegistry.getInstrumentation()
         var attempt = 0
         while (!isFocused(node) && attempt < maxAttempts) {
-            instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN)
+            sendFocusedComposeKey(Key.DirectionDown, fallbackNode = node)
             composeRule.waitForIdle()
             attempt += 1
         }
@@ -2201,15 +2229,41 @@ class UiModernizationFlowsTest {
         label: String,
         maxAttempts: Int = 12,
     ) {
-        val instrumentation = InstrumentationRegistry.getInstrumentation()
         var attempt = 0
         while (!isFocused(node) && attempt < maxAttempts) {
-            instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP)
+            sendFocusedComposeKey(Key.DirectionUp, fallbackNode = node)
             composeRule.waitForIdle()
             attempt += 1
         }
         assertTrue("D-pad Up reaches $label", isFocused(node))
         node.assertIsFocused()
+    }
+
+    private fun requestKeyboardMode(inputModeManager: InputModeManager, purpose: String) {
+        composeRule.runOnIdle {
+            assertTrue(
+                "$purpose requires the Compose test to enter keyboard input mode",
+                inputModeManager.requestInputMode(InputMode.Keyboard),
+            )
+        }
+    }
+
+    private fun sendFocusedComposeKey(key: Key, fallbackNode: SemanticsNodeInteraction? = null) {
+        val focusedNodeMatcher = SemanticsMatcher.expectValue(SemanticsProperties.Focused, true)
+        val focusedNodes = composeRule.onAllNodes(focusedNodeMatcher).fetchSemanticsNodes()
+        val target = if (focusedNodes.isNotEmpty()) {
+            composeRule.onAllNodes(focusedNodeMatcher)[0]
+        } else {
+            requireNotNull(fallbackNode) { "Compose key input requires a focused semantics node; key=$key" }
+        }
+        sendComposeKey(target, key)
+    }
+
+    private fun sendComposeKey(target: SemanticsNodeInteraction, key: Key) {
+        target.performKeyInput {
+            keyDown(key)
+            keyUp(key)
+        }
     }
 
     private fun isFocused(node: SemanticsNodeInteraction): Boolean =
