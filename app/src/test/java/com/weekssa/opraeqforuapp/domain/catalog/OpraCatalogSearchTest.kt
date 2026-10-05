@@ -40,6 +40,39 @@ class OpraCatalogSearchTest {
         assertTrue(catalog.searchProducts("oratory1990").isEmpty())
     }
 
+    @Test
+    fun productsForVendorDoesNotRequirePerProfileProductLists() {
+        val products = ArrayList<OpraProduct>(largeCatalogEntryCount)
+        val profiles = ArrayList<OpraEqProfile>(largeCatalogEntryCount)
+        repeat(largeCatalogEntryCount) { index ->
+            val productId = "product-$index"
+            products += OpraProduct(
+                id = productId,
+                vendorId = "vendor",
+                name = "Product $index",
+                type = "headphones",
+                subtype = "over_the_ear",
+            )
+            profiles += OpraEqProfile(
+                id = "eq",
+                productId = productId,
+                author = null,
+                details = null,
+                link = null,
+                profileType = null,
+                preampGainDb = null,
+                bands = null,
+            )
+        }
+        val largeCatalog = OpraCatalog(
+            vendors = listOf(OpraVendor("vendor", "Vendor")),
+            products = products,
+            profiles = profiles,
+        )
+
+        assertEquals(largeCatalogEntryCount, largeCatalog.productsForVendor("vendor").size)
+    }
+
     private fun profile(id: String, productId: String) = OpraEqProfile(
         id = id,
         productId = productId,
@@ -50,4 +83,8 @@ class OpraCatalogSearchTest {
         preampGainDb = 0.0,
         bands = emptyList(),
     )
+
+    private companion object {
+        const val largeCatalogEntryCount = 100_000
+    }
 }

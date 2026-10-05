@@ -18,6 +18,9 @@ interface AppCatalogRepository {
 
     suspend fun refresh(): CatalogRefreshResult
 
+    /** Allows a composite owner to release source rows after it retains a complete merged catalog. */
+    fun releaseInMemoryCatalog() = Unit
+
     /** Returns complete source data only when the current catalog can prove this exact projection. */
     fun resolveCanonicalSelection(profile: OpraEqProfile): CanonicalEqSelection? = null
 

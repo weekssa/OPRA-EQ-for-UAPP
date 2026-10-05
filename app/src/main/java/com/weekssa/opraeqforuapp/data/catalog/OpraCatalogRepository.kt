@@ -118,6 +118,12 @@ class OpraCatalogRepository(
 
     override val state: StateFlow<CatalogState> = mutableState.asStateFlow()
 
+    override fun releaseInMemoryCatalog() {
+        // The combined repository now owns the complete user-facing catalog. The OPRA source file
+        // remains on disk so a process restart can reload it, while this parsed object graph can go.
+        mutableState.value = CatalogState.Loading
+    }
+
     override suspend fun initialize() {
         val cached = loadCurrentCatalog()
         if (cached != null) {

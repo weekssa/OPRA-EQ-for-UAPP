@@ -119,8 +119,11 @@ data class OpraCatalog(
             productById = productById,
             visibleProducts = visibleProducts,
             productsByVendor = visibleProducts.groupBy(OpraProduct::vendorId),
-            profilesByProduct = profiles.groupBy { canonicalProductId(it.productId) },
         )
+    }
+
+    private val profileCountsByProduct by lazy {
+        profiles.groupingBy { canonicalProductId(it.productId) }.eachCount()
     }
 
     fun vendor(vendorId: String): OpraVendor? = lookupIndexes.vendorById[vendorId]
@@ -134,17 +137,20 @@ data class OpraCatalog(
             .orEmpty()
             .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
 
-    fun profilesForProduct(productId: String): List<OpraEqProfile> =
-        lookupIndexes.profilesByProduct[canonicalProductId(productId)]
-            .orEmpty()
+    fun profilesForProduct(productId: String): List<OpraEqProfile> {
+        val canonicalId = canonicalProductId(productId)
+        return profiles.asSequence()
+            .filter { canonicalProductId(it.productId) == canonicalId }
+            .toList()
             .sortedWith(
                 compareBy<OpraEqProfile> { it.author.orEmpty().lowercase(Locale.ROOT) }
                     .thenBy { it.details.orEmpty().lowercase(Locale.ROOT) }
                     .thenBy { it.id },
             )
+    }
 
     fun profileCount(productId: String): Int =
-        lookupIndexes.profilesByProduct[canonicalProductId(productId)]?.size ?: 0
+        profileCountsByProduct[canonicalProductId(productId)] ?: 0
 
     fun searchProducts(query: String): List<OpraProductSearchResult> {
         val tokens = query
@@ -189,7 +195,6 @@ data class OpraCatalog(
         val productById: Map<String, OpraProduct>,
         val visibleProducts: List<OpraProduct>,
         val productsByVendor: Map<String, List<OpraProduct>>,
-        val profilesByProduct: Map<String, List<OpraEqProfile>>,
     )
 
     fun searchGeneralPresets(query: String): List<GeneralEqPreset> {
@@ -238,10 +243,11 @@ data class OpraCatalog(
     }
 
     private fun resolveProductId(productId: String): String {
+        val firstNext = productAliases[productId] ?: return productId
         var current = productId
         val visited = mutableSetOf<String>()
         while (visited.add(current)) {
-            val next = productAliases[current] ?: return current
+            val next = if (current == productId) firstNext else productAliases[current] ?: return current
             if (next == current) return current
             current = next
         }

@@ -48,7 +48,7 @@ class CanonicalFirstCatalogRepository(
         if (ready != null) {
             val eitherSucceeded = canonicalResult is CanonicalCatalogRefreshResult.Success ||
                 legacyResult is CatalogRefreshResult.Success
-            if (eitherSucceeded) {
+            if (eitherSucceeded && (previous == null || ready.catalog !== previous.catalog)) {
                 return CatalogRefreshResult.Success(
                     catalog = ready.catalog,
                     refreshedAtMillis = ready.lastSuccessfulRefreshMillis,
@@ -85,7 +85,9 @@ class CanonicalFirstCatalogRepository(
         // snapshot has not published that exact source record yet. Canonicalize only the current
         // maintained OPRA row with its exact source ID; never derive a Favorite from an arbitrary
         // managed snapshot or from a merely similar acoustic profile.
-        val legacyCatalog = (legacyFallback.state.value as? CatalogState.Ready)?.catalog ?: return null
+        val legacyCatalog = (legacyFallback.state.value as? CatalogState.Ready)?.catalog
+            ?: (mutableState.value as? CatalogState.Ready)?.catalog
+            ?: return null
         val product = legacyCatalog.product(profile.productId) ?: return null
         val vendor = legacyCatalog.vendor(product.vendorId) ?: return null
         val sourceProfile = legacyCatalog.profiles.singleOrNull { candidate ->
@@ -131,6 +133,7 @@ class CanonicalFirstCatalogRepository(
         withContext(Dispatchers.Default) { renderAvailableCatalogInBackground() }
 
     private fun renderAvailableCatalogInBackground(): CatalogState.Ready? {
+        val previous = mutableState.value as? CatalogState.Ready
         val canonicalReady = canonicalRepository.state.value as? CanonicalCatalogState.Ready
         val legacyReady = legacyFallback.state.value as? CatalogState.Ready
         val canonicalCatalog = canonicalReady
@@ -151,6 +154,7 @@ class CanonicalFirstCatalogRepository(
                     generalPresets = canonicalCatalog.generalPresets,
                 )
             }
+            previous != null -> previous.catalog
             canonicalCatalog != null -> canonicalCatalog
             legacyReady != null -> legacyReady.catalog
             else -> {
@@ -159,15 +163,24 @@ class CanonicalFirstCatalogRepository(
             }
         }
 
-        val refreshedAt = maxOf(
-            legacyReady?.lastSuccessfulRefreshMillis ?: Long.MIN_VALUE,
-            canonicalReady?.refreshedAtMillis ?: Long.MIN_VALUE,
-        ).takeIf { it != Long.MIN_VALUE } ?: System.currentTimeMillis()
+        val refreshedAt = if (catalog === previous?.catalog) {
+            previous.lastSuccessfulRefreshMillis
+        } else {
+            maxOf(
+                legacyReady?.lastSuccessfulRefreshMillis ?: Long.MIN_VALUE,
+                canonicalReady?.refreshedAtMillis ?: Long.MIN_VALUE,
+            ).takeIf { it != Long.MIN_VALUE } ?: System.currentTimeMillis()
+        }
 
-        return CatalogState.Ready(
+        val ready = CatalogState.Ready(
             catalog = catalog,
             lastSuccessfulRefreshMillis = refreshedAt,
-        ).also { mutableState.value = it }
+        )
+        mutableState.value = ready
+        if (legacyReady != null && canonicalCatalog != null) {
+            legacyFallback.releaseInMemoryCatalog()
+        }
+        return ready
     }
 
     private fun unavailableState(): CatalogState.Unavailable {
