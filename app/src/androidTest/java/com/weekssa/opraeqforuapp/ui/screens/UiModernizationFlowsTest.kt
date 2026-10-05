@@ -2066,10 +2066,25 @@ class UiModernizationFlowsTest {
                 SemanticsMatcher.expectValue(SemanticsProperties.Focused, true),
             ).fetchSemanticsNodes().map { it.config.toString() }
         }.getOrElse { listOf("unavailable: ${it::class.java.simpleName}: ${it.message}") }
+        var rootHeight = 0
+        var rootWidth = 0
+        var imeGeometry = "imeGeometry=unavailable(api<30)"
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            val decorView = resumedActivityDecorView()
+            rootHeight = decorView?.height ?: 0
+            rootWidth = decorView?.width ?: 0
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+                val rootInsets = decorView?.rootWindowInsets
+                val imeBottom = rootInsets?.getInsets(WindowInsets.Type.ime())?.bottom ?: -1
+                val imeVisible = rootInsets?.isVisible(WindowInsets.Type.ime()) ?: false
+                imeGeometry = "imeBottomPx=$imeBottom imeVisible=$imeVisible"
+            }
+        }
         val activityWindows = resumedActivityWindowDiagnostics()
         val accessibilityWindows = accessibilityWindowDiagnostics()
         return "label=$label; target={$targetState}; displayed=$displayed; " +
-            "focusedNodes=$focusedNodes; resumedActivityWindows=$activityWindows; " +
+            "focusedNodes=$focusedNodes; rootWidth=$rootWidth rootHeight=$rootHeight $imeGeometry; " +
+            "resumedActivityWindows=$activityWindows; " +
             "accessibilityWindows=$accessibilityWindows"
     }
 
