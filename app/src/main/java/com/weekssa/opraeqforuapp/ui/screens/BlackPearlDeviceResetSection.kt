@@ -16,6 +16,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -86,6 +87,7 @@ internal fun BlackPearlDeviceResetSection(
     var dialogOpen by rememberSaveable { mutableStateOf(false) }
     var includeEqReset by rememberSaveable { mutableStateOf(false) }
     var eqResetRunning by rememberSaveable { mutableStateOf(false) }
+    var eqResetStartedInComposition by remember { mutableStateOf(false) }
     var eqResetResult by rememberSaveable { mutableStateOf<String?>(null) }
     var resetStepIndex by rememberSaveable { mutableIntStateOf(IDLE_STEP) }
     var issuedStepIndex by rememberSaveable { mutableIntStateOf(IDLE_STEP) }
@@ -105,6 +107,7 @@ internal fun BlackPearlDeviceResetSection(
         issuedStepIndex,
         issuedFromWriteGeneration,
         eqResetRunning,
+        eqResetStartedInComposition,
         state.isBusy,
         state.activeWriteControlId,
         state.lastVerifiedWriteControlId,
@@ -113,6 +116,25 @@ internal fun BlackPearlDeviceResetSection(
         state.isCurrentSession,
         state.error,
     ) {
+        if (eqResetRunning && !eqResetStartedInComposition) {
+            // The saved running flag outlived the coroutine that owned the EQ reset. Never resume
+            // a possibly interrupted hardware operation automatically after activity/process restore.
+            eqResetRunning = false
+            resetStepIndex = IDLE_STEP
+            issuedStepIndex = IDLE_STEP
+            issuedFromWriteGeneration = null
+            restoreSessionGeneration = null
+            eqResetResult = null
+            onOperationStatus(
+                "EQ reset stopped before verification completed. Refresh DEVICE to review current state.",
+                false,
+            )
+            onMessage(
+                "EQ reset stopped before verification completed. Refresh DEVICE to review current state. " +
+                    "No setting was automatically retried.",
+            )
+            return@LaunchedEffect
+        }
         if (eqResetRunning || resetStepIndex < 0 || state.isBusy) return@LaunchedEffect
 
         val snapshot = state.snapshot
@@ -256,6 +278,7 @@ internal fun BlackPearlDeviceResetSection(
                         issuedStepIndex = IDLE_STEP
                         issuedFromWriteGeneration = null
                         if (includeEqReset) {
+                            eqResetStartedInComposition = true
                             eqResetRunning = true
                             scope.launch {
                                 eqResetResult = onResetEqToFlat()

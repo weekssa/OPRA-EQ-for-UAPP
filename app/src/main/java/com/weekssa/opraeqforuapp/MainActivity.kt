@@ -35,13 +35,15 @@ import kotlinx.coroutines.withContext
 class MainActivity : ComponentActivity() {
     private lateinit var viewModel: EqLibraryViewModel
     private lateinit var unclaimedEqViewModel: UnclaimedEqViewModel
+    private val runtimeDependencies by lazy(LazyThreadSafetyMode.NONE) {
+        createEqLibraryRuntimeDependencies(applicationContext)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         BackgroundSyncScheduler.ensureScheduled(applicationContext)
 
-        val runtimeDependencies = createEqLibraryRuntimeDependencies(applicationContext)
         viewModel = ViewModelProvider(
             this,
             EqLibraryViewModel.Factory { runtimeDependencies.eqLibrary },
