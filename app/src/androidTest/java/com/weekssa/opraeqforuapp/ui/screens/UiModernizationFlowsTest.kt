@@ -1,6 +1,8 @@
 package com.weekssa.opraeqforuapp.ui.screens
 
+import android.graphics.Rect
 import android.view.KeyEvent
+import android.view.WindowInsets
 import android.os.ParcelFileDescriptor
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
@@ -37,6 +39,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.mutableStateOf
@@ -1079,6 +1082,7 @@ class UiModernizationFlowsTest {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
+                            .imePadding()
                             .verticalScroll(rememberScrollState()),
                     ) {
                         DacEqEditorScreen(
@@ -1102,6 +1106,8 @@ class UiModernizationFlowsTest {
         }
 
         composeRule.onNodeWithText("Frequency (Hz)").performScrollTo().performClick()
+        val canInspectImeInsets = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R
+        if (canInspectImeInsets) waitForImeVisible()
         fun dpadDown(label: String) {
             composeRule.onNodeWithText(label).performKeyInput {
                 keyDown(Key.DirectionDown)
@@ -1118,6 +1124,7 @@ class UiModernizationFlowsTest {
         composeRule.waitForIdle()
         waitForFocus("Use safe gain")
         composeRule.onNodeWithText("Use safe gain").assertIsDisplayed()
+        if (canInspectImeInsets) assertFocusedTargetClearsIme("Use safe gain")
         dpadDown("Use safe gain")
         composeRule.onNodeWithText("All bands").assertIsFocused()
         dpadDown("All bands")
@@ -1992,6 +1999,44 @@ class UiModernizationFlowsTest {
         waitForFocus(composeRule.onNodeWithText(label), label)
     }
 
+    private fun waitForImeVisible() {
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            imeBottomInsetPx() > 0
+        }
+    }
+
+    private fun imeBottomInsetPx(): Int {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        var imeBottom = 0
+        instrumentation.runOnMainSync {
+            val decorView = resumedActivityDecorView()
+            val rootInsets = decorView?.rootWindowInsets
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+                imeBottom = rootInsets?.getInsets(WindowInsets.Type.ime())?.bottom ?: 0
+            }
+        }
+        return imeBottom
+    }
+
+    private fun assertFocusedTargetClearsIme(label: String) {
+        val targetBounds = composeRule.onNodeWithText(label).fetchSemanticsNode().boundsInRoot
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        var rootHeight = 0
+        var imeBottom = 0
+        instrumentation.runOnMainSync {
+            val decorView = resumedActivityDecorView()
+            rootHeight = decorView?.height ?: 0
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+                imeBottom = decorView?.rootWindowInsets?.getInsets(WindowInsets.Type.ime())?.bottom ?: 0
+            }
+        }
+        assertTrue(
+            "$label must dismiss the IME or fit above it; targetBottom=${targetBounds.bottom}, " +
+                "rootHeight=$rootHeight, imeBottom=$imeBottom",
+            imeBottom == 0 || targetBounds.bottom <= rootHeight - imeBottom,
+        )
+    }
+
     private fun waitForFocus(node: SemanticsNodeInteraction, label: String) {
         repeat(300) {
             if (isFocused(node)) return
@@ -2022,9 +2067,29 @@ class UiModernizationFlowsTest {
             ).fetchSemanticsNodes().map { it.config.toString() }
         }.getOrElse { listOf("unavailable: ${it::class.java.simpleName}: ${it.message}") }
         val activityWindows = resumedActivityWindowDiagnostics()
+        val accessibilityWindows = accessibilityWindowDiagnostics()
         return "label=$label; target={$targetState}; displayed=$displayed; " +
-            "focusedNodes=$focusedNodes; resumedActivityWindows=$activityWindows"
+            "focusedNodes=$focusedNodes; resumedActivityWindows=$activityWindows; " +
+            "accessibilityWindows=$accessibilityWindows"
     }
+
+    private fun accessibilityWindowDiagnostics(): String {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        return runCatching {
+            instrumentation.uiAutomation.windows.joinToString(prefix = "[", postfix = "]") { window ->
+                val bounds = Rect()
+                window.getBoundsInScreen(bounds)
+                "type=${window.type},active=${window.isActive},focused=${window.isFocused},bounds=$bounds"
+            }
+        }.getOrElse { "unavailable: ${it::class.java.simpleName}: ${it.message}" }
+    }
+
+    private fun resumedActivityDecorView(): android.view.View? =
+        ActivityLifecycleMonitorRegistry.getInstance()
+            .getActivitiesInStage(Stage.RESUMED)
+            .firstOrNull()
+            ?.window
+            ?.decorView
 
     private fun resumedActivityWindowDiagnostics(): String {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
