@@ -263,7 +263,7 @@ class UiModernizationFlowsTest {
             keyUp(Key.DirectionDown)
         }
         val resultRow = composeRule.onNodeWithText("WH-1000XM4")
-        resultRow.assertIsFocused()
+        waitForFocus(resultRow, "WH-1000XM4")
         resultRow.performKeyInput {
             keyDown(Key.DirectionCenter)
             keyUp(Key.DirectionCenter)
@@ -1981,7 +1981,7 @@ class UiModernizationFlowsTest {
     }
 
     private fun waitForFocus(node: SemanticsNodeInteraction, label: String) {
-        composeRule.waitUntil(timeoutMillis = 5_000) {
+        composeRule.mainClock.advanceTimeUntil(timeoutMillis = 5_000) {
             isFocused(node)
         }
         node.assertIsFocused()
