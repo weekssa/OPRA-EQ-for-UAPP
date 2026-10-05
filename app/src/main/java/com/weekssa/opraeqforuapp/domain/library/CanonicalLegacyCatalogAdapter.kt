@@ -119,6 +119,31 @@ object CanonicalLegacyCatalogAdapter {
         return matches.singleOrNull()
     }
 
+    /** Resolve one disk-loaded canonical profile against its exact displayed compatibility row. */
+    fun resolveSelection(
+        profile: CanonicalEqProfile,
+        legacy: OpraEqProfile,
+        compatibilityVendorId: String,
+    ): CanonicalEqSelection? {
+        if (!profile.isHeadphoneProfile || profile.canonicalProfileId != legacy.canonicalProfileId) return null
+        if (compatibilityVendorId.isBlank() || legacy.productId.isBlank()) return null
+
+        val matches = profile.revisions.asSequence()
+            .map { revision ->
+                CanonicalEqSelection(
+                    profile = profile,
+                    selectedRevisionId = revision.revisionId,
+                    compatibilityVendorId = compatibilityVendorId,
+                    compatibilityProductId = legacy.productId,
+                ) to projectRevision(profile, revision, compatibilityVendorId, legacy.productId)
+            }
+            .filter { (_, projected) -> projected.matchesCanonicalProjection(legacy) }
+            .map { it.first }
+            .distinct()
+            .toList()
+        return matches.singleOrNull()
+    }
+
     /**
      * Canonicalizes an exact profile from the maintained OPRA compatibility catalog when the
      * multi-source snapshot has not published that same OPRA record yet. This is intentionally
@@ -151,6 +176,20 @@ object CanonicalLegacyCatalogAdapter {
                     val selection = CanonicalEqSelection(profile, revision.revisionId)
                     selection to generalRevisionPreset(profile, revision)
                 }
+            }
+            .filter { (_, projected) -> projected == preset }
+            .map { it.first }
+            .distinct()
+            .toList()
+        return matches.singleOrNull()
+    }
+
+    /** Resolve one disk-loaded canonical profile against its exact displayed General EQ row. */
+    fun resolveSelection(profile: CanonicalEqProfile, preset: GeneralEqPreset): CanonicalEqSelection? {
+        if (!profile.isGeneralPreset || profile.canonicalProfileId != preset.canonicalProfileId) return null
+        val matches = profile.revisions.asSequence()
+            .map { revision ->
+                CanonicalEqSelection(profile, revision.revisionId) to generalRevisionPreset(profile, revision)
             }
             .filter { (_, projected) -> projected == preset }
             .map { it.first }

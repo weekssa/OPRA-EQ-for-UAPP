@@ -30,14 +30,27 @@ internal fun OpraEqProfile.legacyAcousticSignature(): String? {
 
 /** Computes the signature hash without materializing the full per-profile signature string. */
 internal fun OpraEqProfile.legacyAcousticFingerprintOrNull(): Long? {
-    val normalizedBands = sortedLegacyAcousticBandsOrNull() ?: return null
+    val sourceBands = bands.orEmpty()
+    if (sourceBands.isEmpty()) return null
+
+    // Keep only primitive hashes while deriving the bucket key. The full normalized strings are
+    // still constructed one at a time, but are not all retained and sorted for every profile.
+    val normalizedBandHashes = LongArray(sourceBands.size)
+    var normalizedBandCount = 0
+    sourceBands.forEach { band ->
+        band.legacyAcousticKey()?.let { key ->
+            normalizedBandHashes[normalizedBandCount++] = key.legacyAcousticFingerprint()
+        }
+    }
+    if (normalizedBandCount == 0) return null
+    normalizedBandHashes.sort(0, normalizedBandCount)
 
     var fingerprint = FNV_OFFSET_BASIS
     fingerprint = fingerprintAppend(fingerprint, "preamp=")
     fingerprint = fingerprintAppend(fingerprint, legacyAcousticFormat(preampGainDb ?: 0.0, 3))
-    normalizedBands.forEach { key ->
-        fingerprint = fingerprintAppend(fingerprint, ";")
-        fingerprint = fingerprintAppend(fingerprint, key)
+    fingerprint = fingerprintAppendLong(fingerprint, normalizedBandCount.toLong())
+    for (index in 0 until normalizedBandCount) {
+        fingerprint = fingerprintAppendLong(fingerprint, normalizedBandHashes[index])
     }
     return fingerprint
 }
@@ -53,9 +66,16 @@ private fun OpraEqProfile.sortedLegacyAcousticBandsOrNull(): ArrayList<String>? 
     return normalizedBands
 }
 
-internal fun String.legacyAcousticFingerprint(): Long {
-    var hash = FNV_OFFSET_BASIS
-    return fingerprintAppend(hash, this)
+private fun String.legacyAcousticFingerprint(): Long {
+    return fingerprintAppend(FNV_OFFSET_BASIS, this)
+}
+
+private fun fingerprintAppendLong(initial: Long, value: Long): Long {
+    var hash = initial
+    for (shift in 0..56 step 8) {
+        hash = (hash xor ((value ushr shift) and 0xffL)) * FNV_PRIME
+    }
+    return hash
 }
 
 private fun fingerprintAppend(initial: Long, value: String): Long {

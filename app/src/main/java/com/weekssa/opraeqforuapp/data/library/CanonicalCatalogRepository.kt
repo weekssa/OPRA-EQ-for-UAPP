@@ -1,15 +1,21 @@
 package com.weekssa.opraeqforuapp.data.library
 
+import com.weekssa.opraeqforuapp.domain.library.CanonicalEqProfile
 import com.weekssa.opraeqforuapp.domain.library.CatalogSnapshot
-import com.weekssa.opraeqforuapp.domain.library.EqFilterType
-import com.weekssa.opraeqforuapp.domain.library.HeadphoneIdentity
 import com.weekssa.opraeqforuapp.domain.library.EqFilter
+import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 import com.weekssa.opraeqforuapp.domain.library.EqRevision
+import com.weekssa.opraeqforuapp.domain.library.HeadphoneAliasGroup
+import com.weekssa.opraeqforuapp.domain.library.HeadphoneIdentity
 import com.weekssa.opraeqforuapp.domain.library.hasValidClassification
 import java.io.File
+import java.io.ByteArrayOutputStream
+import java.io.BufferedInputStream
 import java.io.IOException
+import java.io.RandomAccessFile
 import java.net.HttpURLConnection
 import java.net.URL
+import java.nio.charset.StandardCharsets
 import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
@@ -22,6 +28,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 
@@ -29,9 +36,11 @@ sealed interface CanonicalCatalogState {
     data object Loading : CanonicalCatalogState
 
     data class Ready(
-        val snapshot: CatalogSnapshot,
+        /** Null after the composite repository releases the parsed graph after projection. */
+        val snapshot: CatalogSnapshot?,
         val refreshedAtMillis: Long,
         val isRefreshing: Boolean = false,
+        val headphoneAliases: List<HeadphoneAliasGroup> = snapshot?.headphoneAliases.orEmpty(),
     ) : CanonicalCatalogState
 
     data class Unavailable(val reason: CanonicalCatalogFailureReason) : CanonicalCatalogState
@@ -45,7 +54,6 @@ enum class CanonicalCatalogFailureReason {
 
 sealed interface CanonicalCatalogRefreshResult {
     data class Success(
-        val snapshot: CatalogSnapshot,
         val refreshedAtMillis: Long,
     ) : CanonicalCatalogRefreshResult
 
@@ -119,6 +127,8 @@ class CanonicalCatalogRepository(
     private val currentFile = File(catalogDirectory, "catalog.json")
     private val candidateFile = File(catalogDirectory, "catalog.candidate.json")
     private val mutableState = MutableStateFlow<CanonicalCatalogState>(CanonicalCatalogState.Loading)
+    @Volatile
+    private var profileLocations: Map<String, JsonProfileLocation>? = null
 
     val state: StateFlow<CanonicalCatalogState> = mutableState.asStateFlow()
 
@@ -169,8 +179,9 @@ class CanonicalCatalogRepository(
                 return@withLock fail(CanonicalCatalogFailureReason.Storage, previous)
             }
 
+            profileLocations = null
             mutableState.value = CanonicalCatalogState.Ready(candidate, refreshedAt)
-            CanonicalCatalogRefreshResult.Success(candidate, refreshedAt)
+            CanonicalCatalogRefreshResult.Success(refreshedAt)
         } finally {
             candidateFile.delete()
         }
@@ -188,6 +199,52 @@ class CanonicalCatalogRepository(
         } catch (_: IllegalArgumentException) {
             null
         }
+    }
+
+    /**
+     * Drops the full decoded snapshot after its compatibility projection is built. The compact
+     * byte-span index keeps exact canonical selection lookup available without retaining every
+     * source reference, revision and profile wrapper for the life of the process.
+     */
+    fun releaseInMemorySnapshot() {
+        val expectedProfileCount = clearSnapshotFromState() ?: return
+        val locations = runCatching { CanonicalCatalogProfileIndexReader(currentFile, json).read() }
+            .getOrNull()
+            ?.takeIf { it.size == expectedProfileCount }
+            ?: return
+        profileLocations = locations
+    }
+
+    /** Isolated helper lets the decoded graph become unreachable before building the small index. */
+    private fun clearSnapshotFromState(): Int? {
+        val ready = mutableState.value as? CanonicalCatalogState.Ready ?: return null
+        val snapshot = ready.snapshot ?: return null
+        val profileCount = snapshot.profiles.size
+        mutableState.value = ready.copy(
+            snapshot = null,
+            headphoneAliases = ready.headphoneAliases,
+        )
+        return profileCount
+    }
+
+    /** Returns one exact source profile, decoding only that profile from the validated cache. */
+    fun findProfile(canonicalProfileId: String): CanonicalEqProfile? {
+        if (canonicalProfileId.isBlank()) return null
+        val snapshot = (mutableState.value as? CanonicalCatalogState.Ready)?.snapshot
+        if (snapshot != null) {
+            return snapshot.profiles.singleOrNull { it.canonicalProfileId == canonicalProfileId }
+        }
+
+        val location = profileLocations?.get(canonicalProfileId) ?: return null
+        return runCatching {
+            val bytes = ByteArray(location.length)
+            RandomAccessFile(currentFile, "r").use { file ->
+                file.seek(location.offset)
+                file.readFully(bytes)
+            }
+            json.decodeFromString<CanonicalEqProfile>(String(bytes, StandardCharsets.UTF_8))
+                .takeIf { it.canonicalProfileId == canonicalProfileId }
+        }.getOrNull()
     }
 
     private fun isValid(snapshot: CatalogSnapshot): Boolean {

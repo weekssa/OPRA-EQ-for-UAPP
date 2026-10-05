@@ -32,9 +32,17 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
+import androidx.test.espresso.Espresso
+import androidx.test.espresso.accessibility.AccessibilityChecks
+import androidx.test.espresso.matcher.RootMatchers.isDialog
+import androidx.test.espresso.matcher.ViewMatchers.isRoot
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
 import androidx.test.runner.lifecycle.Stage
+import com.google.android.apps.common.testing.accessibility.framework.AccessibilityViewCheckResult
+import com.google.android.apps.common.testing.accessibility.framework.checks.SpeakableTextPresentCheck
+import org.hamcrest.Description
+import org.hamcrest.TypeSafeMatcher
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -210,6 +218,7 @@ class UiModernizationFlowsTest {
             }
         }
 
+        waitForActivityWindowFocus("Android Back returns from My DAC")
         composeRule.waitForIdle()
         composeRule.onNodeWithText("FiiO JA11").assertIsDisplayed()
         composeRule.onNodeWithText("Connected · Waiting for first device read").assertIsDisplayed()
@@ -225,8 +234,9 @@ class UiModernizationFlowsTest {
         composeRule.onNodeWithText("My DAC").assertIsDisplayed()
         assertRootLabelExists("EQ Library")
         assertRootLabelExists("Settings")
-        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
-        composeRule.waitForIdle()
+        waitForActivityWindowFocus("Android Back key dispatch")
+        sendAndroidKeyEvent(KeyEvent.KEYCODE_BACK)
+        waitForText("FiiO JA11")
         composeRule.onNodeWithText("FiiO JA11").assertIsDisplayed()
 
         composeRule.runOnIdle {
@@ -263,57 +273,41 @@ class UiModernizationFlowsTest {
         }
 
         val instrumentation = InstrumentationRegistry.getInstrumentation()
+        waitForActivityWindowFocus("hardware-key search route")
         composeRule.onNodeWithText("Search headphones…").performClick()
         requestKeyboardMode(inputModeManager, "Keyboard search input")
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) waitForImeVisible()
         instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_X)
         instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_M)
         composeRule.waitForIdle()
-        composeRule.onNodeWithText("Search headphones…").performKeyInput {
-            keyDown(Key.DirectionDown)
-            keyUp(Key.DirectionDown)
-        }
-        composeRule.onNodeWithText("Headphones").assertIsFocused()
-
-        composeRule.onNodeWithText("Headphones").performKeyInput {
-            keyDown(Key.DirectionDown)
-            keyUp(Key.DirectionDown)
-        }
+        waitForText("WH-1000XM4")
+        sendAndroidKeyEvent(KeyEvent.KEYCODE_DPAD_DOWN)
+        waitForFocus("Headphones")
+        sendAndroidKeyEvent(KeyEvent.KEYCODE_DPAD_DOWN)
         val resultRow = composeRule.onNodeWithText("WH-1000XM4")
         waitForFocus(resultRow, "WH-1000XM4")
-        resultRow.performKeyInput {
-            keyDown(Key.DirectionCenter)
-            keyUp(Key.DirectionCenter)
-        }
-        composeRule.waitForIdle()
+        sendAndroidKeyEvent(KeyEvent.KEYCODE_DPAD_CENTER)
+        waitForText("Test creator")
         composeRule.onNodeWithText("Test creator").assertIsDisplayed()
-        repeat(2) { sendFocusedComposeKey(Key.DirectionUp) }
-        composeRule.onNodeWithText("Target: USB Audio Player PRO / ToneBoosters", substring = true)
-            .assertIsFocused()
-        repeat(4) { sendFocusedComposeKey(Key.DirectionDown) }
+        val exportTarget = composeRule.onNodeWithText("Target: USB Audio Player PRO / ToneBoosters", substring = true)
+        navigateWithAndroidKey(exportTarget, "Export target", KeyEvent.KEYCODE_DPAD_UP)
+        val profileAuthor = composeRule.onNodeWithText("Test creator")
+        navigateWithAndroidKey(profileAuthor, "Profile creator", KeyEvent.KEYCODE_DPAD_DOWN)
         val focusedLabels = composeRule.onAllNodes(
             SemanticsMatcher.expectValue(SemanticsProperties.Focused, true),
         ).fetchSemanticsNodes().map { it.config.toString() }
-        assertTrue("D-pad focus should reach the first profile row; focused nodes: $focusedLabels", focusedLabels.any {
+        assertTrue("Android D-pad focus should reach the first profile row; focused nodes: $focusedLabels", focusedLabels.any {
             it.contains("Test creator")
         })
-        sendFocusedComposeKey(Key.DirectionRight)
-        composeRule.onNodeWithContentDescription("Details for Test creator").assertIsFocused()
-        composeRule.onNodeWithContentDescription("Details for Test creator").performKeyInput {
-            keyDown(Key.DirectionCenter)
-            keyUp(Key.DirectionCenter)
-        }
-        composeRule.onNodeWithText("Filter response preview").assertIsDisplayed()
+        sendAndroidKeyEvent(KeyEvent.KEYCODE_DPAD_RIGHT)
+        val detailsButton = composeRule.onNodeWithContentDescription("Details for Test creator")
+        waitForFocus(detailsButton, "Details for Test creator")
+        sendAndroidKeyEvent(KeyEvent.KEYCODE_DPAD_CENTER)
+        waitForText("Filter response preview")
         val addToMyEqs = composeRule.onNodeWithText("Add to My EQs")
         addToMyEqs.assertIsDisplayed()
-        var attempt = 0
-        while (!runCatching { addToMyEqs.assertIsFocused() }.isSuccess && attempt < 40) {
-            sendFocusedComposeKey(Key.DirectionDown, fallbackNode = addToMyEqs)
-            composeRule.waitForIdle()
-            attempt += 1
-        }
-        addToMyEqs.assertIsFocused().assertIsDisplayed()
-        sendComposeKey(addToMyEqs, Key.DirectionCenter)
-        composeRule.waitForIdle()
+        navigateWithAndroidKey(addToMyEqs, "Add to My EQs", KeyEvent.KEYCODE_DPAD_DOWN, maxAttempts = 40)
+        sendAndroidKeyEvent(KeyEvent.KEYCODE_DPAD_CENTER)
         composeRule.waitUntil(timeoutMillis = 5_000) { saveRequests.size == 1 }
         composeRule.runOnIdle {
             assertEquals(1, saveRequests.size)
@@ -741,6 +735,7 @@ class UiModernizationFlowsTest {
             }
         }
 
+        waitForActivityWindowFocus("hardware D-pad recovery route")
         val openMyDac = composeRule.onNodeWithText("Open My DAC")
         openMyDac.assertIsDisplayed()
         val myEqsTab = composeRule.onNode(
@@ -748,9 +743,9 @@ class UiModernizationFlowsTest {
         )
         myEqsTab.performSemanticsAction(SemanticsActions.RequestFocus).assertIsFocused()
         requestKeyboardMode(inputModeManager, "My DAC recovery D-pad navigation")
-        navigateUpUntilFocused(openMyDac, "Open My DAC", maxAttempts = 80)
-        sendComposeKey(openMyDac, Key.DirectionCenter)
-        composeRule.waitForIdle()
+        navigateWithAndroidKey(openMyDac, "Open My DAC", KeyEvent.KEYCODE_DPAD_UP, maxAttempts = 80)
+        sendAndroidKeyEvent(KeyEvent.KEYCODE_DPAD_CENTER)
+        waitForText("JA11 Apply not verified")
         val recoveryMessage = composeRule.onNodeWithText("JA11 Apply not verified")
         val recoveryMessageExists = runCatching {
             recoveryMessage.fetchSemanticsNode()
@@ -767,11 +762,15 @@ class UiModernizationFlowsTest {
             .assertIsDisplayed()
         val dismissResult = composeRule.onNodeWithContentDescription("Dismiss JA11 Apply result")
         dismissResult.performSemanticsAction(SemanticsActions.RequestFocus).assertIsFocused()
-        navigateDownUntilFocused("Share operation report")
+        navigateWithAndroidKey(
+            composeRule.onNodeWithText("Share operation report"),
+            "Share operation report",
+            KeyEvent.KEYCODE_DPAD_DOWN,
+        )
         composeRule.onNodeWithText("Share operation report").assertIsDisplayed()
-        navigateUpUntilFocused(dismissResult, "Dismiss JA11 Apply result")
+        navigateWithAndroidKey(dismissResult, "Dismiss JA11 Apply result", KeyEvent.KEYCODE_DPAD_UP)
         dismissResult.assertIsDisplayed()
-        sendComposeKey(dismissResult, Key.DirectionCenter)
+        sendAndroidKeyEvent(KeyEvent.KEYCODE_DPAD_CENTER)
         composeRule.onNodeWithText("JA11 Apply not verified").assertDoesNotExist()
         composeRule.waitForIdle()
         captureV080Screenshot("my-dac-recovery-fiio-production-shell-fixture-light-100")
@@ -998,7 +997,7 @@ class UiModernizationFlowsTest {
     fun myDacEditorExactValuesAndReviewAreReachableWithKeyboardKeys() {
         val state = mutableStateOf(
             MyDacEditorUiState(
-                stage = MyDacEditorStage.EDIT,
+                stage = MyDacEditorStage.ALL_BANDS,
                 workingCopy = fiioJa11EditorWorkingCopy(),
                 selectedBandIndex = 0,
             ),
@@ -1018,8 +1017,15 @@ class UiModernizationFlowsTest {
                             state = state.value,
                             onRetryOpen = { error("A current snapshot is available") },
                             onClose = {},
-                            onSelectBand = { error("Keyboard traversal retains the selected band") },
-                            onShowAllBands = { error("The tested route is directly to Review") },
+                            onSelectBand = { bandIndex ->
+                                state.value = state.value.copy(
+                                    stage = MyDacEditorStage.EDIT,
+                                    selectedBandIndex = bandIndex,
+                                )
+                            },
+                            onShowAllBands = {
+                                state.value = state.value.copy(stage = MyDacEditorStage.ALL_BANDS)
+                            },
                             onShowReview = {
                                 state.value = state.value.copy(stage = MyDacEditorStage.REVIEW)
                             },
@@ -1056,31 +1062,43 @@ class UiModernizationFlowsTest {
         fun tabUntilFocused(label: String) {
             var attempt = 0
             while (!isFocused(label) && attempt < 80) {
-                sendFocusedComposeKey(Key.Tab)
-                composeRule.waitForIdle()
+                sendAndroidKeyEvent(KeyEvent.KEYCODE_TAB)
                 attempt += 1
             }
             assertTrue("Keyboard Tab reaches $label", isFocused(label))
         }
 
         val instrumentation = InstrumentationRegistry.getInstrumentation()
+        waitForActivityWindowFocus("hardware-key band selection")
+        val firstBand = composeRule.onNodeWithText("Band 1", substring = true)
+        firstBand.performScrollTo().performSemanticsAction(SemanticsActions.RequestFocus).assertIsFocused()
+        sendAndroidKeyEvent(KeyEvent.KEYCODE_DPAD_DOWN)
+        val secondBand = composeRule.onNodeWithText("Band 2", substring = true)
+        waitForFocus(secondBand, "Band 2")
+        sendAndroidKeyEvent(KeyEvent.KEYCODE_DPAD_CENTER)
+        waitForText("Frequency (Hz)")
+        composeRule.runOnIdle { assertEquals(1, state.value.selectedBandIndex) }
+
         val closeEditor = composeRule.onNodeWithText("Close")
         closeEditor.performSemanticsAction(SemanticsActions.RequestFocus).assertIsFocused()
         requestKeyboardMode(inputModeManager, "My DAC editor keyboard traversal")
         tabUntilFocused("Frequency (Hz)")
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) waitForImeVisible()
         repeat(3) { instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_FORWARD_DEL) }
         listOf(KeyEvent.KEYCODE_1, KeyEvent.KEYCODE_5, KeyEvent.KEYCODE_5).forEach {
             instrumentation.sendKeyDownUpSync(it)
         }
-        composeRule.waitForIdle()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            state.value.workingCopy?.filters?.getOrNull(1)?.frequencyHz == 155.0
+        }
         composeRule.runOnIdle {
-            assertEquals(155.0, state.value.workingCopy?.filters?.first()?.frequencyHz ?: -1.0, 0.0)
+            assertEquals(155.0, state.value.workingCopy?.filters?.getOrNull(1)?.frequencyHz ?: -1.0, 0.0)
             assertEquals(0, applyRequests)
         }
 
         tabUntilFocused("Review changes")
-        sendComposeKey(composeRule.onNodeWithText("Review changes"), Key.Enter)
-        composeRule.waitForIdle()
+        sendAndroidKeyEvent(KeyEvent.KEYCODE_ENTER)
+        composeRule.waitUntil(timeoutMillis = 5_000) { state.value.stage == MyDacEditorStage.REVIEW }
         composeRule.onNodeWithText("Review changes").assertIsDisplayed()
         composeRule.onNodeWithText("Complete reviewed hardware target")
             .performScrollTo()
@@ -1132,6 +1150,7 @@ class UiModernizationFlowsTest {
             }
         }
 
+        waitForActivityWindowFocus("hardware D-pad editor route")
         composeRule.onNodeWithText("Frequency (Hz)").performScrollTo().performClick()
         val canInspectImeInsets = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R
         if (canInspectImeInsets) waitForImeVisible()
@@ -1142,10 +1161,8 @@ class UiModernizationFlowsTest {
             )
         }
         fun dpadDown(label: String) {
-            composeRule.onNodeWithText(label).performKeyInput {
-                keyDown(Key.DirectionDown)
-                keyUp(Key.DirectionDown)
-            }
+            composeRule.onNodeWithText(label).assertIsFocused()
+            sendAndroidKeyEvent(KeyEvent.KEYCODE_DPAD_DOWN)
         }
 
         dpadDown("Frequency (Hz)")
@@ -1161,19 +1178,10 @@ class UiModernizationFlowsTest {
         dpadDown("Use safe gain")
         composeRule.onNodeWithText("All bands").assertIsFocused()
         dpadDown("All bands")
-        val focusedNodes = composeRule.onAllNodes(
-            SemanticsMatcher.expectValue(SemanticsProperties.Focused, true),
-        ).fetchSemanticsNodes().map { it.config.toString() }
-        assertTrue("D-pad Down reaches Review changes; focused nodes: $focusedNodes", runCatching {
-            composeRule.onNodeWithText("Review changes")
-                .fetchSemanticsNode()
-                .config[SemanticsProperties.Focused]
-        }.getOrDefault(false))
-        composeRule.onNodeWithText("Review changes").performKeyInput {
-            keyDown(Key.DirectionCenter)
-            keyUp(Key.DirectionCenter)
-        }
-        composeRule.waitForIdle()
+        val reviewChanges = composeRule.onNodeWithText("Review changes")
+        waitForFocus(reviewChanges, "Review changes")
+        sendAndroidKeyEvent(KeyEvent.KEYCODE_DPAD_CENTER)
+        composeRule.waitUntil(timeoutMillis = 5_000) { state.value.stage == MyDacEditorStage.REVIEW }
         composeRule.onNodeWithText("Complete reviewed hardware target").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("Apply to DAC").performScrollTo().assertIsNotEnabled()
         composeRule.runOnIdle { assertEquals(0, applyRequests) }
@@ -1250,6 +1258,90 @@ class UiModernizationFlowsTest {
         val minimumTouchTarget = with(composeRule.density) { 48.dp.toPx() }
         assertTrue("Ten-band control is at least 48dp wide", tenthBandBounds.width >= minimumTouchTarget)
         assertTrue("Ten-band control is at least 48dp high", tenthBandBounds.height >= minimumTouchTarget)
+    }
+
+    @Test
+    fun accessibilityFrameworkChecksBrowseEditorAndReviewDialogTrees() {
+        val currentSurface = mutableStateOf(0)
+        val editorState = MyDacEditorUiState(
+            stage = MyDacEditorStage.EDIT,
+            workingCopy = fiioJa11EditorWorkingCopy(),
+            selectedBandIndex = 0,
+        )
+        AccessibilityChecks.enable()
+            .setRunChecksFromRootView(true)
+            .setSuppressingResultMatcher(object : TypeSafeMatcher<AccessibilityViewCheckResult>() {
+                override fun describeTo(description: Description) {
+                    description.appendText("Compose host wrapper speakable-text result")
+                }
+
+                override fun matchesSafely(item: AccessibilityViewCheckResult): Boolean =
+                    item.view?.javaClass?.name == "androidx.compose.ui.platform.AndroidComposeView" &&
+                        item.accessibilityHierarchyCheck == SpeakableTextPresentCheck::class.java
+            })
+        try {
+            composeRule.setContent {
+                OpraEqTheme(ThemeMode.Light) {
+                    when (currentSurface.value) {
+                        0 -> TestBrowseScreen(
+                            catalog = testCatalog(),
+                            onSaveSelection = { _, _, _ -> },
+                        )
+                        1 -> TestScreenShell(title = "My DAC", showTarget = true) {
+                            Column(
+                                Modifier
+                                    .fillMaxSize()
+                                    .verticalScroll(rememberScrollState()),
+                            ) {
+                                DacEqEditorScreen(
+                                    state = editorState,
+                                    onRetryOpen = {},
+                                    onClose = {},
+                                    onSelectBand = {},
+                                    onShowAllBands = {},
+                                    onShowReview = {},
+                                    onUpdateBand = { _, _, _, _, _ -> },
+                                    onUseSafeGain = {},
+                                    onResetEdits = {},
+                                    onApply = {},
+                                    dacLabel = "FiiO JA11",
+                                )
+                            }
+                        }
+                        else -> TestScreenShell(title = "EQ Library", showTarget = true) {
+                            ExportReviewDialog(
+                                device = ExportDevice.UAPP,
+                                items = listOf(
+                                    ExportReviewItem("WH-1000XM4 · Test creator", testCatalog().profiles.single()),
+                                ),
+                                onDismiss = {},
+                                onExport = {},
+                            )
+                        }
+                    }
+                }
+            }
+            composeRule.waitForIdle()
+            runAccessibilityFrameworkCheck()
+
+            composeRule.onNodeWithText("Search headphones…").performClick().performTextInput("XM4")
+            composeRule.onNodeWithText("WH-1000XM4").assertIsDisplayed()
+            runAccessibilityFrameworkCheck()
+
+            composeRule.onNodeWithText("WH-1000XM4").performClick()
+            composeRule.onNodeWithText("Test creator").assertIsDisplayed()
+            runAccessibilityFrameworkCheck()
+
+            composeRule.runOnIdle { currentSurface.value = 1 }
+            composeRule.waitForIdle()
+            runAccessibilityFrameworkCheck()
+
+            composeRule.runOnIdle { currentSurface.value = 2 }
+            composeRule.waitForIdle()
+            runAccessibilityFrameworkCheck(dialogWindow = true)
+        } finally {
+            AccessibilityChecks.disable()
+        }
     }
 
     @Test
@@ -1840,6 +1932,7 @@ class UiModernizationFlowsTest {
             }
         }
 
+        waitForActivityWindowFocus("hardware D-pad export dialog route")
         composeRule.runOnIdle {
             assertTrue(
                 "Dialog focus test requires the Compose test to enter keyboard input mode",
@@ -1858,17 +1951,11 @@ class UiModernizationFlowsTest {
         val cancel = composeRule.onNodeWithText("Cancel")
         composeRule.waitForIdle()
         waitForFocus(cancel, "Cancel")
-        cancel.performKeyInput {
-            keyDown(Key.DirectionRight)
-            keyUp(Key.DirectionRight)
-        }
+        sendAndroidKeyEvent(KeyEvent.KEYCODE_DPAD_RIGHT)
         waitForFocus("Export XML")
         val exportXml = composeRule.onNodeWithText("Export XML")
         exportXml.assertIsDisplayed()
-        exportXml.performKeyInput {
-            keyDown(Key.DirectionCenter)
-            keyUp(Key.DirectionCenter)
-        }
+        sendAndroidKeyEvent(KeyEvent.KEYCODE_DPAD_CENTER)
         composeRule.runOnIdle { assertEquals(1, exportCount) }
     }
 
@@ -2050,6 +2137,62 @@ class UiModernizationFlowsTest {
 
     private fun waitForFocus(label: String) {
         waitForFocus(composeRule.onNodeWithText(label), label)
+    }
+
+    private fun waitForActivityWindowFocus(context: String) {
+        val receivedFocus = runCatching {
+            composeRule.waitUntil(timeoutMillis = 10_000) {
+                var focused = false
+                InstrumentationRegistry.getInstrumentation().runOnMainSync {
+                    focused = resumedActivityDecorView()?.hasWindowFocus() == true
+                }
+                focused
+            }
+        }.isSuccess
+        assertTrue(
+            "$context requires a focused resumed Activity window; ${resumedActivityWindowDiagnostics()}; " +
+                imeWindowDiagnostics(),
+            receivedFocus,
+        )
+    }
+
+    private fun runAccessibilityFrameworkCheck(dialogWindow: Boolean = false) {
+        val rootView = Espresso.onView(isRoot())
+        if (dialogWindow) {
+            rootView.inRoot(isDialog()).check(AccessibilityChecks.accessibilityAssertion())
+        } else {
+            rootView.check(AccessibilityChecks.accessibilityAssertion())
+        }
+    }
+
+    private fun waitForText(text: String, substring: Boolean = true) {
+        composeRule.waitUntil(timeoutMillis = 10_000) {
+            composeRule.onAllNodesWithText(text, substring = substring)
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+    }
+
+    private fun navigateWithAndroidKey(
+        node: SemanticsNodeInteraction,
+        label: String,
+        keyCode: Int,
+        maxAttempts: Int = 80,
+    ) {
+        var attempt = 0
+        while (!isFocused(node) && attempt < maxAttempts) {
+            sendAndroidKeyEvent(keyCode)
+            attempt += 1
+        }
+        assertTrue(
+            "Android key code $keyCode reaches $label; ${focusFailureDiagnostics(node, label)}",
+            isFocused(node),
+        )
+        node.assertIsFocused().assertIsDisplayed()
+    }
+
+    private fun sendAndroidKeyEvent(keyCode: Int) {
+        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(keyCode)
+        composeRule.waitForIdle()
     }
 
     private fun waitForImeVisible() {

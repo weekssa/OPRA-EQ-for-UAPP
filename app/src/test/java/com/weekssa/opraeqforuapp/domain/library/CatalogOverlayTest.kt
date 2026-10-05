@@ -158,8 +158,44 @@ class CatalogOverlayTest {
 
         assertThat(profile.legacyAcousticSignature())
             .isEqualTo("preamp=-0.000;PK|2.675|2.675|2.6750|1.2345")
-        assertThat(profile.legacyAcousticFingerprintOrNull())
-            .isEqualTo(profile.legacyAcousticSignature()?.legacyAcousticFingerprint())
+        assertThat(profile.legacyAcousticFingerprintOrNull()).isNotNull()
+    }
+
+    @Test
+    fun legacyAcousticFingerprintIsOrderAliasAndMultiplicityInvariant() {
+        val repeatedPeak = OpraBand(
+            type = "pk",
+            frequency = 100.0,
+            gainDb = 2.0,
+            q = 1.0,
+            slope = 0.0,
+        )
+        val shelf = OpraBand(
+            type = "low_shelf",
+            frequency = 80.0,
+            gainDb = -1.5,
+            q = 0.8,
+            slope = 12.0,
+        )
+        val original = profile("original", "edition-xs", "Original").copy(
+            preampGainDb = -3.25,
+            bands = listOf(repeatedPeak, repeatedPeak, shelf),
+        )
+        val mirror = profile("mirror", "edition-xs", "Mirror").copy(
+            preampGainDb = -3.25,
+            bands = listOf(
+                shelf.copy(type = "ls"),
+                repeatedPeak.copy(type = "peak_dip"),
+                repeatedPeak.copy(type = "peq"),
+            ),
+        )
+        val missingRepeatedPeak = original.copy(bands = listOf(repeatedPeak, shelf))
+
+        assertThat(original.legacyAcousticSignature()).isEqualTo(mirror.legacyAcousticSignature())
+        assertThat(original.legacyAcousticFingerprintOrNull())
+            .isEqualTo(mirror.legacyAcousticFingerprintOrNull())
+        assertThat(missingRepeatedPeak.legacyAcousticFingerprintOrNull())
+            .isNotEqualTo(original.legacyAcousticFingerprintOrNull())
     }
 
     @Test
@@ -211,8 +247,11 @@ class CatalogOverlayTest {
             }
         }
 
+        val permutedProfile = profile.copy(bands = profile.bands.orEmpty().reversed())
         assertThat(profile.legacyAcousticSignature()).isEqualTo(expected)
-        assertThat(profile.legacyAcousticFingerprintOrNull()).isEqualTo(expected.legacyAcousticFingerprint())
+        assertThat(profile.legacyAcousticSignature()).isEqualTo(permutedProfile.legacyAcousticSignature())
+        assertThat(profile.legacyAcousticFingerprintOrNull())
+            .isEqualTo(permutedProfile.legacyAcousticFingerprintOrNull())
     }
 
     @Test
