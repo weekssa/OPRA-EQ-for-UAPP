@@ -1981,9 +1981,14 @@ class UiModernizationFlowsTest {
     }
 
     private fun waitForFocus(node: SemanticsNodeInteraction, label: String) {
-        composeRule.mainClock.advanceTimeUntil(timeoutMillis = 5_000) {
-            isFocused(node)
+        repeat(300) {
+            if (isFocused(node)) return
+            composeRule.mainClock.advanceTimeByFrame()
         }
+        val focusedNodes = composeRule.onAllNodes(
+            SemanticsMatcher.expectValue(SemanticsProperties.Focused, true),
+        ).fetchSemanticsNodes().map { it.config.toString() }
+        assertTrue("Timed out waiting for focus on $label; focused nodes: $focusedNodes", isFocused(node))
         node.assertIsFocused()
     }
 
@@ -2020,7 +2025,9 @@ class UiModernizationFlowsTest {
     }
 
     private fun isFocused(node: SemanticsNodeInteraction): Boolean =
-        node.fetchSemanticsNode().config[SemanticsProperties.Focused]
+        runCatching {
+            node.fetchSemanticsNode().config[SemanticsProperties.Focused]
+        }.getOrDefault(false)
 
 private fun noOpEqLibraryActions(
     onConnectDacForMyDac: (DacDeviceId) -> Unit = {},
