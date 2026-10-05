@@ -115,6 +115,13 @@ internal fun PersonalEqImportScreen(
         disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
         disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
     )
+    val dpadDownToNextFocus = Modifier.onPreviewKeyEvent { event ->
+        if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionDown) {
+            focusManager.moveFocus(FocusDirection.Down)
+        } else {
+            false
+        }
+    }
 
     fun setInputText(value: String, fileName: String? = null) {
         if (value.length > MAX_IMPORT_CHARACTERS) {
@@ -236,14 +243,7 @@ internal fun PersonalEqImportScreen(
                         label = { Text("Equalizer APO / AutoEq text") },
                         minLines = 8,
                         maxLines = 16,
-                        modifier = Modifier
-                            .onPreviewKeyEvent { event ->
-                                if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionDown) {
-                                    focusManager.moveFocus(FocusDirection.Down)
-                                } else {
-                                    false
-                                }
-                            }
+                        modifier = dpadDownToNextFocus
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 8.dp),
                     )
@@ -302,28 +302,28 @@ internal fun PersonalEqImportScreen(
                             onValueChange = { manufacturer = it },
                             label = { Text("Manufacturer") },
                             singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = dpadDownToNextFocus.fillMaxWidth(),
                         )
                         OutlinedTextField(
                             value = model,
                             onValueChange = { model = it },
                             label = { Text("Headphone model") },
                             singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = dpadDownToNextFocus.fillMaxWidth(),
                         )
                         OutlinedTextField(
                             value = displayName,
                             onValueChange = { displayName = it },
                             label = { Text("EQ name") },
                             singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = dpadDownToNextFocus.fillMaxWidth(),
                         )
                         OutlinedTextField(
                             value = target,
                             onValueChange = { target = it },
                             label = { Text("Target / note (optional)") },
                             singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = dpadDownToNextFocus.fillMaxWidth(),
                         )
                     }
                 }

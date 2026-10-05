@@ -1,6 +1,7 @@
 package com.weekssa.opraeqforuapp.ui.screens
 
 import android.view.KeyEvent
+import android.os.ParcelFileDescriptor
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotSelected
@@ -21,6 +22,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performKeyInput
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
@@ -50,6 +52,8 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
 import com.weekssa.opraeqforuapp.data.catalog.CatalogState
@@ -152,6 +156,20 @@ class UiModernizationFlowsTest {
             .assertIsDisplayed()
         composeRule.waitForIdle()
         captureV080Screenshot("app-shell-settings-light-100")
+
+        val settingsTab = composeRule.onNode(
+            hasText("Settings") and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab),
+        )
+        settingsTab.performSemanticsAction(SemanticsActions.RequestFocus)
+        settingsTab.assertIsFocused()
+        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_LEFT)
+        composeRule.waitForIdle()
+        composeRule.onNode(
+            hasText("EQ Library") and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab),
+        ).assertIsFocused().assertIsDisplayed()
+        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER)
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Search headphones…").assertIsDisplayed()
     }
 
     @Test
@@ -216,9 +234,15 @@ class UiModernizationFlowsTest {
 
     @Test
     fun keyboardAndDpadSearchOpensDirectModelResults() {
+        val saveRequests = mutableListOf<Pair<String, Set<String>>>()
         composeRule.setContent {
             OpraEqTheme(ThemeMode.Light) {
-                TestBrowseScreen(testCatalog())
+                TestBrowseScreen(
+                    catalog = testCatalog(),
+                    onSaveSelection = { productId, profileIds, _ ->
+                        saveRequests += productId to profileIds
+                    },
+                )
             }
         }
 
@@ -262,17 +286,60 @@ class UiModernizationFlowsTest {
             keyUp(Key.DirectionCenter)
         }
         composeRule.onNodeWithText("Filter response preview").assertIsDisplayed()
-        composeRule.onNodeWithText("Add to My EQs").assertIsDisplayed()
+        val addToMyEqs = composeRule.onNodeWithText("Add to My EQs")
+        addToMyEqs.assertIsDisplayed()
+        var attempt = 0
+        while (!runCatching { addToMyEqs.assertIsFocused() }.isSuccess && attempt < 40) {
+            instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN)
+            composeRule.waitForIdle()
+            attempt += 1
+        }
+        addToMyEqs.assertIsFocused().assertIsDisplayed()
+        instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER)
+        composeRule.waitForIdle()
+        composeRule.waitUntil(timeoutMillis = 5_000) { saveRequests.size == 1 }
+        composeRule.runOnIdle {
+            assertEquals(1, saveRequests.size)
+            assertEquals("sony-wh-1000xm4", saveRequests.single().first)
+            assertEquals(setOf("wh-xm4-profile"), saveRequests.single().second)
+        }
     }
 
     @Test
-    fun dpadMovesFromPersonalEqInputToParseWithoutSaving() {
+    fun dpadNavigatesPersonalEqImportThroughSaveCallbackWithoutHardwareAction() {
+        var saveRequests = 0
+        val saveArguments = mutableListOf<List<String?>>()
         composeRule.setContent {
             OpraEqTheme(ThemeMode.Light) {
                 TestMyEqsScreen(
                     managedHeadphones = emptyList(),
                     savedEqs = emptyList(),
                     savedGeneralEqs = emptyList(),
+                    onImportPersonal = { manufacturer, model, name, target, text ->
+                        saveRequests += 1
+                        saveArguments += listOf(manufacturer, model, name, target, text)
+                        SavedEqRecord(
+                            entryId = "dpad-personal-import",
+                            kind = SavedEqKind.Personal,
+                            sourceProfileId = null,
+                            productId = "dpad-personal-import",
+                            manufacturer = manufacturer,
+                            model = model,
+                            displayName = name,
+                            profile = OpraEqProfile(
+                                id = "dpad-personal-profile",
+                                productId = "dpad-personal-import",
+                                author = "Local import",
+                                details = null,
+                                link = null,
+                                profileType = "ParametricEQ",
+                                preampGainDb = null,
+                                bands = emptyList(),
+                            ),
+                            createdAtMillis = 1L,
+                            updatedAtMillis = 1L,
+                        )
+                    },
                 )
             }
         }
@@ -294,6 +361,57 @@ class UiModernizationFlowsTest {
         composeRule.onNodeWithText("Step 2 of 5 · Parse").assertIsDisplayed()
         composeRule.onNodeWithText("Continue to description").assertIsEnabled()
         captureV080Screenshot("personal-eq-import-dpad-parse-result")
+
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        fun isFocused(label: String): Boolean = runCatching {
+            composeRule.onNodeWithText(label).fetchSemanticsNode().config[SemanticsProperties.Focused]
+        }.getOrDefault(false)
+        fun focusAndActivate(label: String) {
+            var attempt = 0
+            while (!isFocused(label) && attempt < 40) {
+                instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN)
+                composeRule.waitForIdle()
+                attempt += 1
+            }
+            val focusedNodes = composeRule.onAllNodes(
+                SemanticsMatcher.expectValue(SemanticsProperties.Focused, true),
+            ).fetchSemanticsNodes().map { it.config.toString() }
+            assertTrue("D-pad Down reaches $label; focused nodes: $focusedNodes", isFocused(label))
+            composeRule.onNodeWithText(label).assertIsFocused().assertIsDisplayed()
+            instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER)
+            composeRule.waitForIdle()
+        }
+
+        focusAndActivate("Continue to description")
+        composeRule.onNodeWithText("Step 3 of 5 · Describe").assertIsDisplayed()
+        composeRule.onNodeWithText("Manufacturer").performScrollTo().performTextInput("Fixture")
+        composeRule.onNodeWithText("Headphone model").performScrollTo().performTextInput("Model One")
+        composeRule.onNodeWithText("EQ name").performScrollTo().performTextInput("Warm")
+        composeRule.onNodeWithText("Step 3 of 5 · Describe").assertIsDisplayed()
+        captureV080Screenshot("personal-eq-import-dpad-describe-filled")
+        val eqNameInput = composeRule.onNode(hasSetTextAction() and hasText("Warm"))
+        ParcelFileDescriptor.AutoCloseInputStream(
+            instrumentation.uiAutomation.executeShellCommand("input keyevent KEYCODE_BACK"),
+        ).use { it.readBytes() }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Step 3 of 5 · Describe").assertIsDisplayed()
+        eqNameInput
+            .performSemanticsAction(SemanticsActions.RequestFocus)
+            .assertIsFocused()
+        captureV080Screenshot("personal-eq-import-dpad-describe-keyboard-hidden")
+        focusAndActivate("Review EQ")
+        composeRule.onNodeWithText("Step 4 of 5 · Review").assertIsDisplayed()
+        focusAndActivate("Continue to save")
+        composeRule.onNodeWithText("Step 5 of 5 · Save").assertIsDisplayed()
+        focusAndActivate("Save to My EQs")
+        composeRule.waitUntil(timeoutMillis = 5_000) { saveRequests == 1 }
+        composeRule.runOnIdle {
+            assertEquals(1, saveRequests)
+            assertEquals(
+                listOf("Fixture", "Model One", "Warm", null, "Filter 1: ON PK Fc 100 Hz Gain 1 dB Q 1.0"),
+                saveArguments.single(),
+            )
+        }
     }
 
     @Test
@@ -597,6 +715,12 @@ class UiModernizationFlowsTest {
         composeRule.onNodeWithText("Do not retry the hardware action", substring = true)
             .performScrollTo()
             .assertIsDisplayed()
+        val dismissResult = composeRule.onNodeWithContentDescription("Dismiss JA11 Apply result")
+        dismissResult.performScrollTo()
+            .performSemanticsAction(SemanticsActions.RequestFocus)
+            .assertIsFocused()
+        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER)
+        composeRule.onNodeWithText("JA11 Apply not verified").assertDoesNotExist()
         composeRule.waitForIdle()
         captureV080Screenshot("my-dac-recovery-fiio-production-shell-fixture-light-100")
     }
@@ -1647,7 +1771,12 @@ class UiModernizationFlowsTest {
             .assertIsDisplayed()
         composeRule.waitForIdle()
         captureV080Screenshot("uapp-export-review-light-100")
-        composeRule.onNodeWithText("Export XML").performClick()
+        val cancel = composeRule.onNodeWithText("Cancel")
+        cancel.performSemanticsAction(SemanticsActions.RequestFocus).assertIsFocused()
+        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT)
+        val exportXml = composeRule.onNodeWithText("Export XML")
+        exportXml.assertIsFocused().assertIsDisplayed()
+        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER)
         composeRule.runOnIdle { assertEquals(1, exportCount) }
     }
 
@@ -1715,6 +1844,8 @@ class UiModernizationFlowsTest {
         managedHeadphones: List<ManagedHeadphoneRecord>,
         savedEqs: List<SavedEqRecord>,
         savedGeneralEqs: List<SavedGeneralEqRecord>,
+        onImportPersonal: suspend (String, String, String, String?, String) -> SavedEqRecord =
+            { _, _, _, _, _ -> error("Import was not submitted") },
     ) {
         TestScreenShell(title = "My EQs", showTarget = true) {
         MyEqsHomeScreen(
@@ -1732,7 +1863,7 @@ class UiModernizationFlowsTest {
             onBrowseLibrary = {},
             onExportAll = {},
             onOpenHeadphone = {},
-            onImportPersonal = { _, _, _, _, _ -> error("Import was not submitted") },
+            onImportPersonal = onImportPersonal,
             onDeleteSavedEq = {},
             onExportSavedEq = {},
             onFlashSavedEq = { "" },
