@@ -15,6 +15,7 @@ internal fun captureV080Screenshot(name: String) {
     val bitmap = requireNotNull(instrumentation.uiAutomation.takeScreenshot()) {
         "Could not capture v0.8.0 UI screenshot: $name"
     }
+    instrumentation.waitForIdleSync()
     val directory = InstrumentationRegistry.getArguments()
         .getString("additionalTestOutputDir")
         ?.let(::File)
@@ -38,4 +39,5 @@ internal fun captureV080Screenshot(name: String) {
     }
     check(temporary.renameTo(destination)) { "Could not finalize v0.8.0 UI screenshot: $name" }
     bitmap.recycle()
+    instrumentation.waitForIdleSync()
 }
