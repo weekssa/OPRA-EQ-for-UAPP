@@ -57,7 +57,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.input.InputMode
+import androidx.compose.ui.input.InputModeManager
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -1076,7 +1079,9 @@ class UiModernizationFlowsTest {
             ),
         )
         var applyRequests = 0
+        lateinit var inputModeManager: InputModeManager
         composeRule.setContent {
+            inputModeManager = LocalInputModeManager.current
             OpraEqTheme(ThemeMode.Light) {
                 TestScreenShell(title = "My DAC", showTarget = true) {
                     Column(
@@ -1108,6 +1113,12 @@ class UiModernizationFlowsTest {
         composeRule.onNodeWithText("Frequency (Hz)").performScrollTo().performClick()
         val canInspectImeInsets = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R
         if (canInspectImeInsets) waitForImeVisible()
+        composeRule.runOnIdle {
+            assertTrue(
+                "D-pad traversal requires the Compose test to enter keyboard input mode",
+                inputModeManager.requestInputMode(InputMode.Keyboard),
+            )
+        }
         fun dpadDown(label: String) {
             composeRule.onNodeWithText(label).performKeyInput {
                 keyDown(Key.DirectionDown)
@@ -1787,19 +1798,32 @@ class UiModernizationFlowsTest {
     @Test
     fun uappExportReviewShowsCompatibilityAndRequiresExplicitExport() {
         var exportCount = 0
+        val exportReviewVisible = mutableStateOf(false)
         val profile = testCatalog().profiles.single()
+        lateinit var inputModeManager: InputModeManager
         composeRule.setContent {
+            inputModeManager = LocalInputModeManager.current
             OpraEqTheme(ThemeMode.Light) {
-            TestScreenShell(title = "EQ Library", showTarget = true) {
-            TestBrowseContent(testCatalog())
-            ExportReviewDialog(
-                device = ExportDevice.UAPP,
-                items = listOf(ExportReviewItem("WH-1000XM4 · Test creator", profile)),
-                onDismiss = {},
-                onExport = { exportCount += 1 },
+                TestScreenShell(title = "EQ Library", showTarget = true) {
+                    TestBrowseContent(testCatalog())
+                    if (exportReviewVisible.value) {
+                        ExportReviewDialog(
+                            device = ExportDevice.UAPP,
+                            items = listOf(ExportReviewItem("WH-1000XM4 · Test creator", profile)),
+                            onDismiss = {},
+                            onExport = { exportCount += 1 },
+                        )
+                    }
+                }
+            }
+        }
+
+        composeRule.runOnIdle {
+            assertTrue(
+                "Dialog focus test requires the Compose test to enter keyboard input mode",
+                inputModeManager.requestInputMode(InputMode.Keyboard),
             )
-            }
-            }
+            exportReviewVisible.value = true
         }
 
         composeRule.onNodeWithText("Export for UAPP").assertIsDisplayed()
