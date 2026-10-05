@@ -24,6 +24,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
@@ -411,13 +412,14 @@ private fun SelectedBandEditor(
                     .onPreviewKeyEvent { event ->
                         if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionDown) {
                             if (downFocusRequester != null && downBringIntoViewRequester != null) {
-                                val focusRequested = downFocusRequester.requestFocus()
-                                if (focusRequested) {
-                                    coroutineScope.launch {
-                                        downBringIntoViewRequester.bringIntoView()
+                                coroutineScope.launch {
+                                    downBringIntoViewRequester.bringIntoView()
+                                    repeat(3) { attempt ->
+                                        if (downFocusRequester.requestFocus()) return@launch
+                                        if (attempt < 2) withFrameNanos { }
                                     }
                                 }
-                                focusRequested
+                                true
                             } else {
                                 focusManager.moveFocus(FocusDirection.Down)
                             }
