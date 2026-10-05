@@ -17,8 +17,7 @@ private const val FNV_PRIME = 1099511628211L
  * to the same identity.
  */
 internal fun OpraEqProfile.legacyAcousticSignature(): String? {
-    val normalizedBands = bands.orEmpty().mapNotNull(OpraBand::legacyAcousticKey).sorted()
-    if (normalizedBands.isEmpty()) return null
+    val normalizedBands = sortedLegacyAcousticBandsOrNull() ?: return null
     return buildString {
         append("preamp=")
         append(legacyAcousticFormat(preampGainDb ?: 0.0, 3))
@@ -31,8 +30,7 @@ internal fun OpraEqProfile.legacyAcousticSignature(): String? {
 
 /** Computes the signature hash without materializing the full per-profile signature string. */
 internal fun OpraEqProfile.legacyAcousticFingerprintOrNull(): Long? {
-    val normalizedBands = bands.orEmpty().mapNotNull(OpraBand::legacyAcousticKey).sorted()
-    if (normalizedBands.isEmpty()) return null
+    val normalizedBands = sortedLegacyAcousticBandsOrNull() ?: return null
 
     var fingerprint = FNV_OFFSET_BASIS
     fingerprint = fingerprintAppend(fingerprint, "preamp=")
@@ -42,6 +40,17 @@ internal fun OpraEqProfile.legacyAcousticFingerprintOrNull(): Long? {
         fingerprint = fingerprintAppend(fingerprint, key)
     }
     return fingerprint
+}
+
+private fun OpraEqProfile.sortedLegacyAcousticBandsOrNull(): ArrayList<String>? {
+    val sourceBands = bands.orEmpty()
+    if (sourceBands.isEmpty()) return null
+
+    val normalizedBands = ArrayList<String>(sourceBands.size)
+    sourceBands.forEach { band -> band.legacyAcousticKey()?.let(normalizedBands::add) }
+    if (normalizedBands.isEmpty()) return null
+    normalizedBands.sort()
+    return normalizedBands
 }
 
 internal fun String.legacyAcousticFingerprint(): Long {
@@ -62,13 +71,13 @@ private fun OpraBand.legacyAcousticKey(): String? {
     return buildString {
         append(normalizedLegacyFilterType(type))
         append('|')
-        append(legacyAcousticFormat(frequencyValue, 3))
+        appendLegacyAcousticFormat(frequencyValue, 3)
         append('|')
-        append(legacyAcousticFormat(gainDb ?: 0.0, 3))
+        appendLegacyAcousticFormat(gainDb ?: 0.0, 3)
         append('|')
-        append(legacyAcousticFormat(q ?: 0.0, 4))
+        appendLegacyAcousticFormat(q ?: 0.0, 4)
         append('|')
-        append(legacyAcousticFormat(slope ?: 0.0, 4))
+        appendLegacyAcousticFormat(slope ?: 0.0, 4)
     }
 }
 
@@ -82,23 +91,41 @@ private fun normalizedLegacyFilterType(value: String?): String = when (value?.tr
 }
 
 private fun legacyAcousticFormat(value: Double, decimals: Int): String {
-    if (!value.isFinite() || decimals !in 3..4) return legacyAcousticFormatSlow(value, decimals)
+    return buildString(16) { appendLegacyAcousticFormat(value, decimals) }
+}
+
+/** Appends the stable acoustic value without allocating an intermediate String per field. */
+private fun StringBuilder.appendLegacyAcousticFormat(value: Double, decimals: Int) {
+    if (!value.isFinite() || decimals !in 3..4) {
+        append(legacyAcousticFormatSlow(value, decimals))
+        return
+    }
 
     val unitsPerWhole = if (decimals == 3) 1_000L else 10_000L
     val scaled = abs(value) * unitsPerWhole
     if (!scaled.isFinite() || scaled >= Long.MAX_VALUE.toDouble() - 1.0) {
-        return legacyAcousticFormatSlow(value, decimals)
+        append(legacyAcousticFormatSlow(value, decimals))
+        return
     }
 
     val lower = floor(scaled)
     val fraction = scaled - lower
-    if (abs(fraction - 0.5) <= 0.0000001) return legacyAcousticFormatSlow(value, decimals)
+    if (abs(fraction - 0.5) <= 0.0000001) {
+        append(legacyAcousticFormatSlow(value, decimals))
+        return
+    }
 
     val rounded = (lower + if (fraction > 0.5) 1.0 else 0.0).toLong()
-    val sign = if (java.lang.Double.doubleToRawLongBits(value) < 0L) "-" else ""
-    val whole = rounded / unitsPerWhole
-    val fractional = (rounded % unitsPerWhole).toString().padStart(decimals, '0')
-    return "$sign$whole.$fractional"
+    if (java.lang.Double.doubleToRawLongBits(value) < 0L) append('-')
+    append(rounded / unitsPerWhole)
+    append('.')
+    var remainingFraction = rounded % unitsPerWhole
+    var place = unitsPerWhole / 10
+    repeat(decimals) {
+        append(('0'.code + (remainingFraction / place).toInt()).toChar())
+        remainingFraction %= place
+        if (place > 1L) place /= 10
+    }
 }
 
 private fun legacyAcousticFormatSlow(value: Double, decimals: Int): String =

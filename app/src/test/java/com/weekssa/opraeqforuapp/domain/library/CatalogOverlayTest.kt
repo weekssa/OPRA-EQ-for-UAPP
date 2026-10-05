@@ -172,7 +172,14 @@ class CatalogOverlayTest {
             0.1,
             0.12345,
             2.675,
+            1.2345,
+            1.23455,
             12_345.6789,
+            Double.MIN_VALUE,
+            Double.MAX_VALUE,
+            Double.NEGATIVE_INFINITY,
+            Double.POSITIVE_INFINITY,
+            Double.NaN,
         ) + (0 until 64).map { index -> (index - 32) / 1234.567 }
         val profile = profile("sampled", "edition-xs", "Sampled values").copy(
             preampGainDb = values.first(),
