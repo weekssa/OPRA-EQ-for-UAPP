@@ -151,6 +151,19 @@ jobs:
           fi
           adb shell input keyevent 82
 
+      - name: Enable software keyboard with emulated keyboard
+        shell: bash
+        run: |
+          set -euo pipefail
+          avd_config="$ANDROID_AVD_HOME/opra_ci_api_35.avd/config.ini"
+          grep '^hw.keyboard=' "$avd_config"
+          ime_setting_before="$(adb shell settings get secure show_ime_with_hard_keyboard | tr -d '\r')"
+          printf 'show_ime_with_hard_keyboard before=%s\n' "$ime_setting_before"
+          adb shell settings put secure show_ime_with_hard_keyboard 1
+          ime_setting="$(adb shell settings get secure show_ime_with_hard_keyboard | tr -d '\r')"
+          printf 'show_ime_with_hard_keyboard after=%s\n' "$ime_setting"
+          test "$ime_setting" = "1"
+
       - name: Clear emulator logcat before UI tests
         run: adb logcat -c
 
@@ -159,7 +172,7 @@ jobs:
         run: gradle :app:connectedDebugAndroidTest --stacktrace
 
       - name: Capture D-pad focus trace after test failure
-        if: ${{ steps.connected_ui_tests.outcome == 'failure' }}
+        if: ${{ failure() && steps.connected_ui_tests.outcome == 'failure' }}
         run: adb logcat -d -v brief -s DEBUG-foc-v0805a:D > "$RUNNER_TEMP/dpad-focus.log"
 
       - name: Upload emulator diagnostics

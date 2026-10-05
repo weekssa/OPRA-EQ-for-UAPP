@@ -2000,9 +2000,35 @@ class UiModernizationFlowsTest {
     }
 
     private fun waitForImeVisible() {
-        composeRule.waitUntil(timeoutMillis = 5_000) {
-            imeBottomInsetPx() > 0
+        val failure = runCatching {
+            composeRule.waitUntil(timeoutMillis = 5_000) {
+                imeBottomInsetPx() > 0
+            }
+        }.exceptionOrNull()
+        if (failure != null) {
+            throw AssertionError(
+                "IME did not become visible; ${failure::class.java.simpleName}: ${failure.message}; " +
+                    imeWindowDiagnostics(),
+            )
         }
+    }
+
+    private fun imeWindowDiagnostics(): String {
+        var rootHeight = 0
+        var rootWidth = 0
+        var imeBottom = -1
+        var imeVisible = false
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            val decorView = resumedActivityDecorView()
+            rootHeight = decorView?.height ?: 0
+            rootWidth = decorView?.width ?: 0
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+                val rootInsets = decorView?.rootWindowInsets
+                imeBottom = rootInsets?.getInsets(WindowInsets.Type.ime())?.bottom ?: -1
+                imeVisible = rootInsets?.isVisible(WindowInsets.Type.ime()) ?: false
+            }
+        }
+        return "rootWidth=$rootWidth rootHeight=$rootHeight imeBottomPx=$imeBottom imeVisible=$imeVisible"
     }
 
     private fun imeBottomInsetPx(): Int {
