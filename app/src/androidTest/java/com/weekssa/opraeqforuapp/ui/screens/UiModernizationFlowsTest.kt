@@ -31,6 +31,8 @@ import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
+import androidx.test.runner.lifecycle.Stage
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -725,7 +727,17 @@ class UiModernizationFlowsTest {
         navigateUpUntilFocused(openMyDac, "Open My DAC", maxAttempts = 80)
         InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER)
         composeRule.waitForIdle()
-        composeRule.onNodeWithText("JA11 Apply not verified").performScrollTo().assertIsDisplayed()
+        val recoveryMessage = composeRule.onNodeWithText("JA11 Apply not verified")
+        val recoveryMessageExists = runCatching {
+            recoveryMessage.fetchSemanticsNode()
+            true
+        }.getOrDefault(false)
+        assertTrue(
+            "Activating Open My DAC did not expose the JA11 recovery message. " +
+                focusFailureDiagnostics(openMyDac, "Open My DAC"),
+            recoveryMessageExists,
+        )
+        recoveryMessage.performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("Do not retry the hardware action", substring = true)
             .performScrollTo()
             .assertIsDisplayed()
@@ -1985,11 +1997,57 @@ class UiModernizationFlowsTest {
             if (isFocused(node)) return
             composeRule.mainClock.advanceTimeByFrame()
         }
-        val focusedNodes = composeRule.onAllNodes(
-            SemanticsMatcher.expectValue(SemanticsProperties.Focused, true),
-        ).fetchSemanticsNodes().map { it.config.toString() }
-        assertTrue("Timed out waiting for focus on $label; focused nodes: $focusedNodes", isFocused(node))
+        val focusedBeforeDiagnostic = isFocused(node)
+        assertTrue(
+            "Timed out waiting for focus on $label; ${focusFailureDiagnostics(node, label)}",
+            focusedBeforeDiagnostic,
+        )
         node.assertIsFocused()
+    }
+
+    private fun focusFailureDiagnostics(node: SemanticsNodeInteraction, label: String): String {
+        val targetState = runCatching {
+            val semanticsNode = node.fetchSemanticsNode()
+            "present=true boundsInRoot=${semanticsNode.boundsInRoot} config=${semanticsNode.config}"
+        }.getOrElse { error ->
+            "present=false error=${error::class.java.simpleName}:${error.message}"
+        }
+        val displayed = runCatching {
+            node.assertIsDisplayed()
+            true
+        }.getOrDefault(false)
+        val focusedNodes = runCatching {
+            composeRule.onAllNodes(
+                SemanticsMatcher.expectValue(SemanticsProperties.Focused, true),
+            ).fetchSemanticsNodes().map { it.config.toString() }
+        }.getOrElse { listOf("unavailable: ${it::class.java.simpleName}: ${it.message}") }
+        val activityWindows = resumedActivityWindowDiagnostics()
+        return "label=$label; target={$targetState}; displayed=$displayed; " +
+            "focusedNodes=$focusedNodes; resumedActivityWindows=$activityWindows"
+    }
+
+    private fun resumedActivityWindowDiagnostics(): String {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val resumedActivities = mutableListOf<android.app.Activity>()
+        instrumentation.runOnMainSync {
+            ActivityLifecycleMonitorRegistry.getInstance()
+                .getActivitiesInStage(Stage.RESUMED)
+                .forEach(resumedActivities::add)
+        }
+        if (resumedActivities.isEmpty()) return "none"
+
+        return resumedActivities.joinToString(prefix = "[", postfix = "]") { activity ->
+            var windowState = "unavailable"
+            instrumentation.runOnMainSync {
+                val decorView = activity.window.decorView
+                val focusedView = decorView.findFocus()
+                windowState = "activity=${activity::class.java.simpleName}," +
+                    "windowFocus=${decorView.hasWindowFocus()}," +
+                    "decorHasFocus=${decorView.hasFocus()}," +
+                    "focusedView=${focusedView?.javaClass?.simpleName ?: "none"}"
+            }
+            windowState
+        }
     }
 
     private fun navigateDownUntilFocused(label: String, maxAttempts: Int = 80) {
