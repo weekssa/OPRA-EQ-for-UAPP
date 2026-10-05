@@ -42,6 +42,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
@@ -240,6 +241,7 @@ fun EqLibraryApp(
     val onFlashBlackPearlFromMyDac = actions.onFlashBlackPearlFromMyDac
     val onResetBlackPearlFromMyDac = actions.onResetBlackPearlFromMyDac
     val onReadBlackPearlQualificationControls = actions.onReadBlackPearlQualificationControls
+    val onReadBlackPearlEqSnapshot = actions.onReadBlackPearlEqSnapshot
     val onSetBlackPearlDeviceControl = actions.onSetBlackPearlDeviceControl
     val onReadFiioJa11DeviceControls = actions.onReadFiioJa11DeviceControls
     val onSetFiioJa11OutputVolume = actions.onSetFiioJa11OutputVolume
@@ -315,6 +317,7 @@ fun EqLibraryApp(
     var pendingInitialMyDacOpenDeviceName by rememberSaveable {
         mutableStateOf(initialMyDacOpenDeviceId?.name)
     }
+    val myDacDestinationStateHolder = rememberSaveableStateHolder()
 
     val rootDestinations = remember { eqLibraryRootDestinations() }
     val selectedRootDestination = restoreEqLibraryDestination(selectedDestinationName, rootDestinations)
@@ -1097,7 +1100,10 @@ fun EqLibraryApp(
                             }
                         }
 
-                        EqLibraryDestination.MyDac -> MyDacRootScreen(
+                        EqLibraryDestination.MyDac -> myDacDestinationStateHolder.SaveableStateProvider(
+                            EqLibraryDestination.MyDac.name,
+                        ) {
+                            MyDacRootScreen(
                             recognitionState = state.dacRecognitionState,
                             catalogState = state.catalogState,
                             blackPearlConnectionState = state.blackPearlConnectionState,
@@ -1159,6 +1165,7 @@ fun EqLibraryApp(
                             },
                             onResetBlackPearlFromMyDac = onResetBlackPearlFromMyDac,
                             onReadBlackPearlQualification = onReadBlackPearlQualificationControls,
+                            onReadBlackPearlEqSnapshot = onReadBlackPearlEqSnapshot,
                             onSetBlackPearlDeviceControl = onSetBlackPearlDeviceControl,
                             onReadFiioJa11DeviceControls = onReadFiioJa11DeviceControls,
                             onSetFiioJa11OutputVolume = onSetFiioJa11OutputVolume,
@@ -1173,8 +1180,9 @@ fun EqLibraryApp(
                             onSetEw300PlaybackGain = onSetEw300PlaybackGain,
                             onMessage = ::showMessage,
                             onOperationStatus = ::showOperationStatus,
-                            modifier = Modifier.fillMaxSize(),
-                        )
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        }
 
                         EqLibraryDestination.EqLibrary -> BrowseOpraScreen(
                             catalogState = catalogState,

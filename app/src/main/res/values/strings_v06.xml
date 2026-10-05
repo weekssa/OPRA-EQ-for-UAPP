@@ -17,6 +17,7 @@
     <string name="my_dac_action_retry_connect">Try again</string>
     <string name="my_dac_reading_eq">Reading EQ…</string>
     <string name="my_dac_no_verified_eq">No verified hardware EQ read yet.</string>
+    <string name="my_dac_eq_read_failed">Could not read the current EQ. No device setting was changed.</string>
     <string name="my_dac_current_hardware">Verified current hardware</string>
     <string name="my_dac_last_read">Last read · not current hardware</string>
     <string name="my_dac_eq_flat">Flat</string>

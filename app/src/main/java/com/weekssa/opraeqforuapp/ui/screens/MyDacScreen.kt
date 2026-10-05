@@ -26,6 +26,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -99,6 +100,7 @@ fun MyDacScreen(
     onFlashBlackPearlFromMyDac: suspend (OpraEqProfile) -> String,
     onResetBlackPearlFromMyDac: suspend () -> String,
     onReadBlackPearlQualification: () -> Unit,
+    onReadBlackPearlEqSnapshot: () -> Unit,
     onSetBlackPearlDeviceControl: (DacControlId, DacControlValue) -> Unit,
     onMessage: (String) -> Unit,
     onOperationStatus: (String, Boolean) -> Unit,
@@ -111,6 +113,7 @@ fun MyDacScreen(
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
     var saveDacEqOpen by remember { mutableStateOf(false) }
     var resetEqOpen by remember { mutableStateOf(false) }
+    val blackPearlDeviceTabStateHolder = rememberSaveableStateHolder()
 
     LaunchedEffect(recognized, present, selectedDeviceName) {
         val selected = selectedDeviceName?.let { name ->
@@ -330,14 +333,19 @@ fun MyDacScreen(
                     onSetBlackPearlDeviceControl = onSetBlackPearlDeviceControl,
                 )
                 if (selectedDevice == DacDeviceId.TRN_BLACK_PEARL) {
-                    BlackPearlDeviceResetSection(
-                        state = blackPearlQualificationState,
-                        enabled = blackPearlConnectionState is BlackPearlConnectionState.Connected,
-                        onSetDeviceControl = onSetBlackPearlDeviceControl,
-                        onResetEqToFlat = onResetBlackPearlFromMyDac,
-                        onMessage = onMessage,
-                        onOperationStatus = onOperationStatus,
-                    )
+                    blackPearlDeviceTabStateHolder.SaveableStateProvider("black-pearl-device-reset") {
+                        BlackPearlDeviceResetSection(
+                            state = blackPearlQualificationState,
+                            hardwareEqState = blackPearlHardwareEqState,
+                            enabled = blackPearlConnectionState is BlackPearlConnectionState.Connected,
+                            onSetDeviceControl = onSetBlackPearlDeviceControl,
+                            onResetEqToFlat = onResetBlackPearlFromMyDac,
+                            onReadCurrentEq = onReadBlackPearlEqSnapshot,
+                            onRefreshDevice = onReadBlackPearlQualification,
+                            onMessage = onMessage,
+                            onOperationStatus = onOperationStatus,
+                        )
+                    }
                 }
             }
         }

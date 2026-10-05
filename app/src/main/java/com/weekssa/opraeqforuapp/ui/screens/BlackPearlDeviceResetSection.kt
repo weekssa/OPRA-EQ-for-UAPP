@@ -7,8 +7,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -22,12 +24,20 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.weekssa.opraeqforuapp.R
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceDefaults
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlDeviceDefaultStep
 import com.weekssa.opraeqforuapp.domain.dac.DacControlId
 import com.weekssa.opraeqforuapp.domain.dac.DacControlValue
+import com.weekssa.opraeqforuapp.domain.dac.DacStateFreshness
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqResponseEvaluator
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
+import com.weekssa.opraeqforuapp.domain.dac.isAcousticallyActive
 import com.weekssa.opraeqforuapp.ui.BlackPearlQualificationUiState
+import com.weekssa.opraeqforuapp.ui.components.DacEqResponseGraph
 import com.weekssa.opraeqforuapp.ui.components.PremiumSectionLabel
 import com.weekssa.opraeqforuapp.ui.components.PremiumValueRow
 import kotlinx.coroutines.launch
@@ -77,9 +87,12 @@ internal fun blackPearlRestoreStepVerification(
 @Composable
 internal fun BlackPearlDeviceResetSection(
     state: BlackPearlQualificationUiState,
+    hardwareEqState: HardwareEqSnapshotState,
     enabled: Boolean,
     onSetDeviceControl: (DacControlId, DacControlValue) -> Unit,
     onResetEqToFlat: suspend () -> String,
+    onReadCurrentEq: () -> Unit,
+    onRefreshDevice: () -> Unit,
     onMessage: (String) -> Unit,
     onOperationStatus: (String, Boolean) -> Unit,
 ) {
@@ -89,6 +102,7 @@ internal fun BlackPearlDeviceResetSection(
     var eqResetRunning by rememberSaveable { mutableStateOf(false) }
     var eqResetStartedInComposition by remember { mutableStateOf(false) }
     var eqResetResult by rememberSaveable { mutableStateOf<String?>(null) }
+    var eqSnapshotRequested by rememberSaveable { mutableStateOf(false) }
     var resetStepIndex by rememberSaveable { mutableIntStateOf(IDLE_STEP) }
     var issuedStepIndex by rememberSaveable { mutableIntStateOf(IDLE_STEP) }
     var issuedFromWriteGeneration by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -101,13 +115,19 @@ internal fun BlackPearlDeviceResetSection(
         !state.isBusy &&
         state.error == null &&
         !resetInProgress
+    val eqResetRecoveryRequired = eqResetRunning && !eqResetStartedInComposition
+
+    LaunchedEffect(eqResetRecoveryRequired) {
+        if (eqResetRecoveryRequired) {
+            onOperationStatus("Black Pearl reset status needs review.", false)
+        }
+    }
 
     LaunchedEffect(
         resetStepIndex,
         issuedStepIndex,
         issuedFromWriteGeneration,
         eqResetRunning,
-        eqResetStartedInComposition,
         state.isBusy,
         state.activeWriteControlId,
         state.lastVerifiedWriteControlId,
@@ -116,25 +136,6 @@ internal fun BlackPearlDeviceResetSection(
         state.isCurrentSession,
         state.error,
     ) {
-        if (eqResetRunning && !eqResetStartedInComposition) {
-            // The saved running flag outlived the coroutine that owned the EQ reset. Never resume
-            // a possibly interrupted hardware operation automatically after activity/process restore.
-            eqResetRunning = false
-            resetStepIndex = IDLE_STEP
-            issuedStepIndex = IDLE_STEP
-            issuedFromWriteGeneration = null
-            restoreSessionGeneration = null
-            eqResetResult = null
-            onOperationStatus(
-                "EQ reset stopped before verification completed. Refresh DEVICE to review current state.",
-                false,
-            )
-            onMessage(
-                "EQ reset stopped before verification completed. Refresh DEVICE to review current state. " +
-                    "No setting was automatically retried.",
-            )
-            return@LaunchedEffect
-        }
         if (eqResetRunning || resetStepIndex < 0 || state.isBusy) return@LaunchedEffect
 
         val snapshot = state.snapshot
@@ -213,8 +214,47 @@ internal fun BlackPearlDeviceResetSection(
                 issuedFromWriteGeneration = null
                 onMessage(
                     "Restore stopped because the verified Black Pearl setting did not match the requested value. " +
-                        "Volume may remain at 0%. Refresh DEVICE, then adjust Volume when ready. No setting was automatically retried.",
+                    "Volume may remain at 0%. Refresh DEVICE, then adjust Volume when ready. No setting was automatically retried.",
                 )
+            }
+        }
+    }
+
+    if (eqResetRecoveryRequired) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    text = "Reset outcome needs review",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = "The reset may have changed EQ or DEVICE settings. Its final result is unknown, and it will not be repeated automatically. Read the current EQ and DEVICE values before using the remaining device controls. Restore defaults stays unavailable while this saved recovery state is active.",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                OutlinedButton(
+                    onClick = {
+                        eqSnapshotRequested = true
+                        onReadCurrentEq()
+                    },
+                    enabled = enabled && !hardwareEqState.isReading,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Read current EQ")
+                }
+                if (eqSnapshotRequested) BlackPearlRecoveryEqReadout(hardwareEqState)
+                OutlinedButton(
+                    onClick = onRefreshDevice,
+                    enabled = enabled,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Refresh DEVICE")
+                }
             }
         }
     }
@@ -270,6 +310,7 @@ internal fun BlackPearlDeviceResetSection(
                     onClick = {
                         dialogOpen = false
                         eqResetResult = null
+                        eqSnapshotRequested = false
                         onOperationStatus(
                             if (includeEqReset) "Resetting EQ to flat…" else "Restoring device defaults…",
                             true,
@@ -299,6 +340,75 @@ internal fun BlackPearlDeviceResetSection(
             },
         )
     }
+}
+
+@Composable
+private fun BlackPearlRecoveryEqReadout(state: HardwareEqSnapshotState) {
+    if (state.isReading) {
+        Text(
+            text = stringResource(R.string.my_dac_reading_eq),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+
+    val bundle = state.bundle
+    if (bundle == null) {
+        Text(
+            text = stringResource(
+                if (state.readFailed) R.string.my_dac_eq_read_failed else R.string.my_dac_no_verified_eq,
+            ),
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (state.readFailed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        return
+    }
+
+    PremiumSectionLabel(
+        text = stringResource(
+            if (state.freshness == DacStateFreshness.CURRENT && !state.isReading) {
+                R.string.my_dac_current_hardware
+            } else {
+                R.string.my_dac_last_read
+            },
+        ),
+        divider = false,
+    )
+    if (state.readFailed) {
+        Text(
+            text = stringResource(R.string.my_dac_eq_read_failed),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.error,
+        )
+    }
+
+    val filters = bundle.snapshot.filters
+    val responseCurve = remember(filters) { HardwareEqResponseEvaluator.evaluate(filters) }
+    if (responseCurve == null) {
+        Text(
+            text = stringResource(R.string.my_dac_response_unavailable),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    } else {
+        val activeBandCount = filters.count { filter -> filter.isAcousticallyActive() }
+        DacEqResponseGraph(
+            curve = responseCurve,
+            filters = filters,
+            accessibilityDescription = stringResource(
+                R.string.my_dac_response_graph_accessibility,
+                activeBandCount,
+                responseCurve.minimumGainDb,
+                responseCurve.maximumGainDb,
+            ),
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+    Text(
+        text = stringResource(R.string.my_dac_filter_count, filters.size),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
 }
 
 private const val IDLE_STEP = -1

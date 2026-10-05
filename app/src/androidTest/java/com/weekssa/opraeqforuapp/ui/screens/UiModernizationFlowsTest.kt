@@ -220,7 +220,10 @@ class UiModernizationFlowsTest {
 
         waitForActivityWindowFocus("Android Back returns from My DAC")
         composeRule.waitForIdle()
-        composeRule.onNodeWithText("FiiO JA11").assertIsDisplayed()
+        waitForDisplayed(
+            composeRule.onNodeWithText("FiiO JA11"),
+            "recognized device context after initial composition",
+        )
         composeRule.onNodeWithText("Connected · Waiting for first device read").assertIsDisplayed()
         composeRule.onNodeWithText("Target: USB Audio Player PRO / ToneBoosters", substring = true)
             .assertIsDisplayed()
@@ -237,7 +240,14 @@ class UiModernizationFlowsTest {
         waitForActivityWindowFocus("Android Back key dispatch")
         sendAndroidKeyEvent(KeyEvent.KEYCODE_BACK)
         waitForText("FiiO JA11")
-        composeRule.onNodeWithText("FiiO JA11").assertIsDisplayed()
+        waitForDisplayed(
+            composeRule.onNodeWithText("FiiO JA11"),
+            "recognized device context after Android Back",
+        )
+        waitForDisplayed(
+            composeRule.onNodeWithText("Open My DAC"),
+            "My DAC action after Android Back",
+        )
 
         composeRule.runOnIdle {
             state.value = state.value.copy(
@@ -272,14 +282,15 @@ class UiModernizationFlowsTest {
             }
         }
 
-        val instrumentation = InstrumentationRegistry.getInstrumentation()
         waitForActivityWindowFocus("hardware-key search route")
-        composeRule.onNodeWithText("Search headphones…").performClick()
+        val searchField = composeRule.onNodeWithText("Search headphones…")
+        searchField.performClick()
         requestKeyboardMode(inputModeManager, "Keyboard search input")
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) waitForImeVisible()
-        instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_X)
-        instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_M)
-        composeRule.waitForIdle()
+        waitForFocus(searchField, "headphone search field")
+        sendAndroidKeyEvent(KeyEvent.KEYCODE_X)
+        waitForText("x", substring = false)
+        sendAndroidKeyEvent(KeyEvent.KEYCODE_M)
+        waitForText("xm", substring = false)
         waitForText("WH-1000XM4")
         sendAndroidKeyEvent(KeyEvent.KEYCODE_DPAD_DOWN)
         waitForFocus("Headphones")
@@ -1171,7 +1182,6 @@ class UiModernizationFlowsTest {
             assertTrue("Keyboard Tab reaches $label", isFocused(label))
         }
 
-        val instrumentation = InstrumentationRegistry.getInstrumentation()
         waitForActivityWindowFocus("hardware-key band selection")
         val firstBand = composeRule.onNodeWithText("Band 1", substring = true)
         firstBand.performScrollTo().performSemanticsAction(SemanticsActions.RequestFocus).assertIsFocused()
@@ -1186,10 +1196,11 @@ class UiModernizationFlowsTest {
         closeEditor.performSemanticsAction(SemanticsActions.RequestFocus).assertIsFocused()
         requestKeyboardMode(inputModeManager, "My DAC editor keyboard traversal")
         tabUntilFocused("Frequency (Hz)")
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) waitForImeVisible()
-        repeat(3) { instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_FORWARD_DEL) }
+        val frequencyField = composeRule.onNodeWithText("Frequency (Hz)")
+        waitForFocus(frequencyField, "frequency numeric editor")
+        repeat(3) { sendAndroidKeyEvent(KeyEvent.KEYCODE_FORWARD_DEL) }
         listOf(KeyEvent.KEYCODE_1, KeyEvent.KEYCODE_5, KeyEvent.KEYCODE_5).forEach {
-            instrumentation.sendKeyDownUpSync(it)
+            sendAndroidKeyEvent(it)
         }
         composeRule.waitUntil(timeoutMillis = 5_000) {
             state.value.workingCopy?.filters?.getOrNull(1)?.frequencyHz == 155.0
@@ -1254,15 +1265,12 @@ class UiModernizationFlowsTest {
         }
 
         waitForActivityWindowFocus("hardware D-pad editor route")
-        composeRule.onNodeWithText("Frequency (Hz)").performScrollTo().performClick()
+        requestKeyboardMode(inputModeManager, "My DAC D-pad traversal")
+        val frequencyField = composeRule.onNodeWithText("Frequency (Hz)")
+        frequencyField.performScrollTo().performClick()
+        waitForFocus(frequencyField, "frequency field before D-pad traversal")
+        waitForFocus(frequencyField, "frequency field after input mode change")
         val canInspectImeInsets = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R
-        if (canInspectImeInsets) waitForImeVisible()
-        composeRule.runOnIdle {
-            assertTrue(
-                "D-pad traversal requires the Compose test to enter keyboard input mode",
-                inputModeManager.requestInputMode(InputMode.Keyboard),
-            )
-        }
         fun dpadDown(label: String) {
             composeRule.onNodeWithText(label).assertIsFocused()
             sendAndroidKeyEvent(KeyEvent.KEYCODE_DPAD_DOWN)
@@ -2275,6 +2283,18 @@ class UiModernizationFlowsTest {
         }
     }
 
+    private fun waitForDisplayed(node: SemanticsNodeInteraction, context: String) {
+        val displayed = runCatching {
+            composeRule.waitUntil(timeoutMillis = 10_000) {
+                runCatching { node.assertIsDisplayed() }.isSuccess
+            }
+        }.isSuccess
+        assertTrue(
+            "$context did not become visible; ${resumedActivityWindowDiagnostics()}; ${imeWindowDiagnostics()}",
+            displayed,
+        )
+    }
+
     private fun navigateWithAndroidKey(
         node: SemanticsNodeInteraction,
         label: String,
@@ -2298,20 +2318,6 @@ class UiModernizationFlowsTest {
         composeRule.waitForIdle()
     }
 
-    private fun waitForImeVisible() {
-        val failure = runCatching {
-            composeRule.waitUntil(timeoutMillis = 5_000) {
-                imeBottomInsetPx() > 0
-            }
-        }.exceptionOrNull()
-        if (failure != null) {
-            throw AssertionError(
-                "IME did not become visible; ${failure::class.java.simpleName}: ${failure.message}; " +
-                    imeWindowDiagnostics(),
-            )
-        }
-    }
-
     private fun imeWindowDiagnostics(): String {
         var rootHeight = 0
         var rootWidth = 0
@@ -2328,19 +2334,6 @@ class UiModernizationFlowsTest {
             }
         }
         return "rootWidth=$rootWidth rootHeight=$rootHeight imeBottomPx=$imeBottom imeVisible=$imeVisible"
-    }
-
-    private fun imeBottomInsetPx(): Int {
-        val instrumentation = InstrumentationRegistry.getInstrumentation()
-        var imeBottom = 0
-        instrumentation.runOnMainSync {
-            val decorView = resumedActivityDecorView()
-            val rootInsets = decorView?.rootWindowInsets
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-                imeBottom = rootInsets?.getInsets(WindowInsets.Type.ime())?.bottom ?: 0
-            }
-        }
-        return imeBottom
     }
 
     private fun assertFocusedTargetClearsIme(label: String) {
@@ -2419,7 +2412,9 @@ class UiModernizationFlowsTest {
             instrumentation.uiAutomation.windows.joinToString(prefix = "[", postfix = "]") { window ->
                 val bounds = Rect()
                 window.getBoundsInScreen(bounds)
-                "type=${window.type},active=${window.isActive},focused=${window.isFocused},bounds=$bounds"
+                val packageName = runCatching { window.root?.packageName?.toString() }.getOrNull()
+                "type=${window.type},active=${window.isActive},focused=${window.isFocused}," +
+                    "package=$packageName,bounds=$bounds"
             }
         }.getOrElse { "unavailable: ${it::class.java.simpleName}: ${it.message}" }
     }
@@ -2522,6 +2517,7 @@ private fun noOpEqLibraryActions(
     onApplyFiioJa11Editor: () -> Unit = {},
     onRefreshCatalog: () -> String = { "Fixture catalog is current." },
     onUnhideCanonicalProfiles: suspend (Set<String>) -> Unit = {},
+    onReadBlackPearlEqSnapshot: () -> Unit = {},
 ) = EqLibraryActions(
         onConnectDacForMyDac = onConnectDacForMyDac,
         onOpenBlackPearlEditor = {},
@@ -2559,6 +2555,7 @@ private fun noOpEqLibraryActions(
         onFlashBlackPearlFromMyDac = { error("Hardware writes are not part of the app-shell test") },
         onResetBlackPearlFromMyDac = { error("Hardware writes are not part of the app-shell test") },
         onReadBlackPearlQualificationControls = {},
+        onReadBlackPearlEqSnapshot = onReadBlackPearlEqSnapshot,
         onSetBlackPearlDeviceControl = { _, _ -> },
         onReadFiioJa11DeviceControls = {},
         onSetFiioJa11OutputVolume = {},

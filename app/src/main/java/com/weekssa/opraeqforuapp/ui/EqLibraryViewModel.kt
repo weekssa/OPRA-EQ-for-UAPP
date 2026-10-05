@@ -1249,6 +1249,11 @@ class EqLibraryViewModel(
         viewModelScope.launch { refreshBlackPearlDeviceState() }
     }
 
+    fun readBlackPearlEqSnapshot() {
+        if (hardwareRepository.blackPearlConnectionState.value !is BlackPearlConnectionState.Connected) return
+        viewModelScope.launch { hardwareRepository.readBlackPearlSnapshot() }
+    }
+
     private suspend fun refreshBlackPearlDeviceState() {
         if (mutableBlackPearlQualificationState.value.isBusy) return
         mutableBlackPearlQualificationState.update(BlackPearlQualificationUiState::beginRead)
