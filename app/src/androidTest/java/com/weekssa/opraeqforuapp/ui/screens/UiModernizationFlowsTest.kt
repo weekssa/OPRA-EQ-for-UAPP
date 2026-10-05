@@ -720,18 +720,18 @@ class UiModernizationFlowsTest {
             }
         }
 
-        composeRule.onNodeWithText("Open My DAC").performClick()
+        val openMyDac = composeRule.onNodeWithText("Open My DAC")
+        openMyDac.assertIsDisplayed()
+        navigateUpUntilFocused(openMyDac, "Open My DAC", maxAttempts = 80)
+        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER)
+        composeRule.waitForIdle()
         composeRule.onNodeWithText("JA11 Apply not verified").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("Do not retry the hardware action", substring = true)
             .performScrollTo()
             .assertIsDisplayed()
         val dismissResult = composeRule.onNodeWithContentDescription("Dismiss JA11 Apply result")
-        dismissResult
-            .performScrollTo()
-            .performSemanticsAction(SemanticsActions.RequestFocus)
-        waitForFocus(dismissResult, "Dismiss JA11 Apply result")
-        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN)
-        waitForFocus("Share operation report")
+        navigateUpUntilFocused(dismissResult, "Dismiss JA11 Apply result", maxAttempts = 80)
+        navigateDownUntilFocused("Share operation report")
         composeRule.onNodeWithText("Share operation report").assertIsDisplayed()
         navigateUpUntilFocused(dismissResult, "Dismiss JA11 Apply result")
         dismissResult.assertIsDisplayed()
@@ -1102,6 +1102,7 @@ class UiModernizationFlowsTest {
         dpadDown("Gain (dB)")
         composeRule.onNodeWithText("Q").assertIsFocused()
         dpadDown("Q")
+        composeRule.onNodeWithText("Use safe gain").assertIsDisplayed()
         waitForFocus("Use safe gain")
         composeRule.onNodeWithText("Use safe gain").assertIsDisplayed()
         dpadDown("Use safe gain")
@@ -1789,8 +1790,8 @@ class UiModernizationFlowsTest {
         composeRule.waitForIdle()
         captureV080Screenshot("uapp-export-review-light-100")
         val cancel = composeRule.onNodeWithText("Cancel")
-        cancel.performSemanticsAction(SemanticsActions.RequestFocus)
-        waitForFocus("Cancel")
+        composeRule.waitForIdle()
+        waitForFocus(cancel, "Cancel")
         InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT)
         waitForFocus("Export XML")
         composeRule.onNodeWithText("Export XML").assertIsDisplayed()
@@ -1985,10 +1986,30 @@ class UiModernizationFlowsTest {
         node.assertIsFocused()
     }
 
-    private fun navigateUpUntilFocused(node: SemanticsNodeInteraction, label: String) {
+    private fun navigateDownUntilFocused(label: String, maxAttempts: Int = 80) {
+        val node = composeRule.onNodeWithText(label)
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         var attempt = 0
-        while (!isFocused(node) && attempt < 12) {
+        while (!isFocused(node) && attempt < maxAttempts) {
+            instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN)
+            composeRule.waitForIdle()
+            attempt += 1
+        }
+        val focusedNodes = composeRule.onAllNodes(
+            SemanticsMatcher.expectValue(SemanticsProperties.Focused, true),
+        ).fetchSemanticsNodes().map { it.config.toString() }
+        assertTrue("D-pad Down reaches $label; focused nodes: $focusedNodes", isFocused(node))
+        node.assertIsFocused().assertIsDisplayed()
+    }
+
+    private fun navigateUpUntilFocused(
+        node: SemanticsNodeInteraction,
+        label: String,
+        maxAttempts: Int = 12,
+    ) {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        var attempt = 0
+        while (!isFocused(node) && attempt < maxAttempts) {
             instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_UP)
             composeRule.waitForIdle()
             attempt += 1
@@ -1997,9 +2018,8 @@ class UiModernizationFlowsTest {
         node.assertIsFocused()
     }
 
-    private fun isFocused(node: SemanticsNodeInteraction): Boolean = runCatching {
+    private fun isFocused(node: SemanticsNodeInteraction): Boolean =
         node.fetchSemanticsNode().config[SemanticsProperties.Focused]
-    }.getOrDefault(false)
 
 private fun noOpEqLibraryActions(
     onConnectDacForMyDac: (DacDeviceId) -> Unit = {},

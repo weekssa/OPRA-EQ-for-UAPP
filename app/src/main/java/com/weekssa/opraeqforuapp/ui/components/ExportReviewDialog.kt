@@ -14,8 +14,12 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.assessUappCompatibility
@@ -38,6 +42,7 @@ internal fun ExportReviewDialog(
     onExport: () -> Unit,
 ) {
     if (!device.supportsFileExport) {
+        val okFocusRequester = remember { FocusRequester() }
         AlertDialog(
             onDismissRequest = onDismiss,
             title = { Text("File export unavailable") },
@@ -47,7 +52,13 @@ internal fun ExportReviewDialog(
                 )
             },
             confirmButton = {
-                TextButton(onClick = onDismiss, modifier = Modifier.heightIn(min = 48.dp)) {
+                LaunchedEffect(okFocusRequester) {
+                    okFocusRequester.requestFocus()
+                }
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.heightIn(min = 48.dp).focusRequester(okFocusRequester),
+                ) {
                     Text("OK")
                 }
             },
@@ -57,6 +68,7 @@ internal fun ExportReviewDialog(
 
     val exportableItems = items.filter { assessDeviceExportability(it.profile, device) != DeviceExportability.NOT_REPRESENTABLE }
     val isUapp = device == ExportDevice.UAPP
+    val cancelFocusRequester = remember { FocusRequester() }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -102,7 +114,13 @@ internal fun ExportReviewDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss, modifier = Modifier.heightIn(min = 48.dp)) {
+            LaunchedEffect(cancelFocusRequester) {
+                cancelFocusRequester.requestFocus()
+            }
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.heightIn(min = 48.dp).focusRequester(cancelFocusRequester),
+            ) {
                 Text("Cancel")
             }
         },

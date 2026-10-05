@@ -411,11 +411,13 @@ private fun SelectedBandEditor(
                     .onPreviewKeyEvent { event ->
                         if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionDown) {
                             if (downFocusRequester != null && downBringIntoViewRequester != null) {
-                                coroutineScope.launch {
-                                    downBringIntoViewRequester.bringIntoView()
-                                    downFocusRequester.requestFocus()
+                                val focusRequested = downFocusRequester.requestFocus()
+                                if (focusRequested) {
+                                    coroutineScope.launch {
+                                        downBringIntoViewRequester.bringIntoView()
+                                    }
                                 }
-                                true
+                                focusRequested
                             } else {
                                 focusManager.moveFocus(FocusDirection.Down)
                             }
