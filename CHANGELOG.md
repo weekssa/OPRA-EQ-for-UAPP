@@ -17,6 +17,8 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 - Added a target-specific UAPP export review and completion guidance. Exported ToneBoosters XML still requires the user to import it in USB Audio Player PRO; EQ Library does not control Android audio.
 - Grouped settings by Output, Library, Appearance, Updates, and Support, and render What's New markdown as formatted release notes.
 - Applied the fixed light and dark palettes, improved responsive layouts and large-text behavior, and exposed full band values to screen readers.
+- Improved D-pad navigation across root tabs, profile saving, staged Personal EQ import, My DAC review, export review, and recovery controls. The conditional safe-gain action now scrolls into view as it receives focus from the Q field.
+- Improved recovery after an interrupted optional Black Pearl EQ reset: the app now asks you to refresh DEVICE and does not replay reset steps after state restoration.
 - Kept last-known JA11 EQ values visible as historical after disconnect and disabled edits until a fresh readback is available.
 
 ### Scope and compatibility
