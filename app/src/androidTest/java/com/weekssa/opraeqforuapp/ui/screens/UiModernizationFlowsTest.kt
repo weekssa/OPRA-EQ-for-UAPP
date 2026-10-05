@@ -962,7 +962,7 @@ class UiModernizationFlowsTest {
         dpadDown("Gain (dB)")
         composeRule.onNodeWithText("Q").assertIsFocused()
         dpadDown("Q")
-        composeRule.onNodeWithText("Use safe gain").assertIsFocused()
+        composeRule.onNodeWithText("Use safe gain").assertIsFocused().assertIsDisplayed()
         dpadDown("Use safe gain")
         composeRule.onNodeWithText("All bands").assertIsFocused()
         dpadDown("All bands")

@@ -22,9 +22,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -50,6 +54,7 @@ import com.weekssa.opraeqforuapp.ui.MyDacEditorError
 import com.weekssa.opraeqforuapp.ui.MyDacEditorStage
 import com.weekssa.opraeqforuapp.ui.MyDacEditorUiState
 import com.weekssa.opraeqforuapp.ui.components.DacEqResponseGraph
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 @Composable
@@ -171,6 +176,9 @@ private fun EditorMain(
 ) {
     val working = requireNotNull(state.workingCopy)
     val curve = working.responseCurve
+    val safeGainAvailable = working.headroomAssessment?.status == DacHeadroomStatus.ADJUSTMENT_REQUIRED
+    val safeGainFocusRequester = remember { FocusRequester() }
+    val safeGainBringIntoViewRequester = remember { BringIntoViewRequester() }
     if (curve == null) {
         Text(
             text = stringResource(R.string.my_dac_response_unavailable),
@@ -210,10 +218,17 @@ private fun EditorMain(
         SelectedBandEditor(
             filter = selected,
             onUpdate = onUpdateBand,
+            downFocusRequester = safeGainFocusRequester.takeIf { safeGainAvailable },
+            downBringIntoViewRequester = safeGainBringIntoViewRequester.takeIf { safeGainAvailable },
         )
     }
 
-    HeadroomCard(working = working, onUseSafeGain = onUseSafeGain)
+    HeadroomCard(
+        working = working,
+        onUseSafeGain = onUseSafeGain,
+        safeGainFocusRequester = safeGainFocusRequester.takeIf { safeGainAvailable },
+        safeGainBringIntoViewRequester = safeGainBringIntoViewRequester.takeIf { safeGainAvailable },
+    )
     EditorIssues(working)
 
     Row(
@@ -280,8 +295,11 @@ private fun BandChips(
 private fun SelectedBandEditor(
     filter: HardwareEqFilter,
     onUpdate: (Int, EqFilterType, Double, Double, Double) -> Unit,
+    downFocusRequester: FocusRequester?,
+    downBringIntoViewRequester: BringIntoViewRequester?,
 ) {
     val focusManager = LocalFocusManager.current
+    val coroutineScope = rememberCoroutineScope()
     var frequencyText by remember(filter.index, filter.frequencyHz) {
         mutableStateOf(editableNumber(filter.frequencyHz))
     }
@@ -387,9 +405,20 @@ private fun SelectedBandEditor(
                 label = { Text(stringResource(R.string.my_dac_editor_q)) },
                 singleLine = true,
                 modifier = Modifier
+                    .focusProperties {
+                        downFocusRequester?.let { down = it }
+                    }
                     .onPreviewKeyEvent { event ->
                         if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionDown) {
-                            focusManager.moveFocus(FocusDirection.Down)
+                            if (downFocusRequester != null && downBringIntoViewRequester != null) {
+                                coroutineScope.launch {
+                                    downBringIntoViewRequester.bringIntoView()
+                                    downFocusRequester.requestFocus()
+                                }
+                                true
+                            } else {
+                                focusManager.moveFocus(FocusDirection.Down)
+                            }
                         } else {
                             false
                         }
@@ -404,6 +433,8 @@ private fun SelectedBandEditor(
 private fun HeadroomCard(
     working: HardwareEqEditWorkingCopy,
     onUseSafeGain: () -> Unit,
+    safeGainFocusRequester: FocusRequester?,
+    safeGainBringIntoViewRequester: BringIntoViewRequester?,
 ) {
     val assessment = working.headroomAssessment ?: return
     Card(modifier = Modifier.fillMaxWidth()) {
@@ -444,7 +475,17 @@ private fun HeadroomCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             if (assessment.status == DacHeadroomStatus.ADJUSTMENT_REQUIRED) {
-                Button(onClick = onUseSafeGain, modifier = Modifier.fillMaxWidth()) {
+                Button(
+                    onClick = onUseSafeGain,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .then(
+                            safeGainFocusRequester?.let(Modifier::focusRequester) ?: Modifier,
+                        )
+                        .then(
+                            safeGainBringIntoViewRequester?.let(Modifier::bringIntoViewRequester) ?: Modifier,
+                        ),
+                ) {
                     Text(stringResource(R.string.my_dac_editor_use_safe_gain))
                 }
             }
