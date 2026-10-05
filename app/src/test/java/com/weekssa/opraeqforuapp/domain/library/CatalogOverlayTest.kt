@@ -111,6 +111,37 @@ class CatalogOverlayTest {
     }
 
     @Test
+    fun higherPreferenceAcousticDuplicateReplacesTheFirstRowWithoutChangingItsPosition() {
+        val legacy = OpraCatalog(
+            vendors = listOf(vendor("hifiman", "HIFIMAN")),
+            products = listOf(product("edition-xs", "hifiman", "Edition XS")),
+            profiles = listOf(
+                profileWithBand("legacy-rtings", "edition-xs", "Target_Rtings_com", "pk", 100.0),
+                profile("without-bands", "edition-xs", "No filters"),
+            ),
+        )
+        val canonical = OpraCatalog(
+            vendors = emptyList(),
+            products = emptyList(),
+            profiles = listOf(
+                profileWithBand(
+                    "eq-library:curated@latest",
+                    "edition-xs",
+                    "Latest · Target: Harman · Source: Curated",
+                    "peak_dip",
+                    100.0,
+                ),
+            ),
+        )
+
+        val merged = overlayCanonicalCatalog(legacy, canonical)
+
+        assertThat(merged.profiles.map(OpraEqProfile::id).toList())
+            .containsExactly("eq-library:curated@latest", "without-bands")
+            .inOrder()
+    }
+
+    @Test
     fun legacyAcousticSignatureKeepsFixedPrecisionAndNegativeZero() {
         val profile = profile("rounded", "edition-xs", "Rounded values").copy(
             preampGainDb = -0.0001,
@@ -127,6 +158,8 @@ class CatalogOverlayTest {
 
         assertThat(profile.legacyAcousticSignature())
             .isEqualTo("preamp=-0.000;PK|2.675|2.675|2.6750|1.2345")
+        assertThat(profile.legacyAcousticFingerprintOrNull())
+            .isEqualTo(profile.legacyAcousticSignature()?.legacyAcousticFingerprint())
     }
 
     @Test
@@ -172,6 +205,7 @@ class CatalogOverlayTest {
         }
 
         assertThat(profile.legacyAcousticSignature()).isEqualTo(expected)
+        assertThat(profile.legacyAcousticFingerprintOrNull()).isEqualTo(expected.legacyAcousticFingerprint())
     }
 
     @Test
@@ -281,6 +315,45 @@ class CatalogOverlayTest {
         assertThat(merged.productAliases).hasSize(count)
         assertThat(merged.product("eq-library-product:2999")?.name).isEqualTo("Model 2999")
         assertThat(merged.product("legacy-2999")?.name).isEqualTo("Model 2999")
+    }
+
+    @Test
+    fun largeCanonicalProfileOverlayRetainsEveryDistinctTuning() {
+        val profileCount = 100_000
+        val sharedBands = listOf(OpraBand("PK", 100.0, 1.0, 1.0, null))
+        val legacy = OpraCatalog(
+            vendors = listOf(vendor("maker", "Maker")),
+            products = listOf(product("edition-xs", "maker", "Edition XS")),
+            profiles = emptyList(),
+        )
+        val canonical = OpraCatalog(
+            vendors = emptyList(),
+            products = emptyList(),
+            profiles = (0 until profileCount).map { index ->
+                OpraEqProfile(
+                    id = "eq-library:memory-$index",
+                    productId = "edition-xs",
+                    author = "Catalog fixture",
+                    details = "Source: fixture",
+                    link = null,
+                    profileType = "parametric_eq",
+                    preampGainDb = index.toDouble(),
+                    bands = sharedBands,
+                )
+            },
+        )
+
+        val merged = try {
+            overlayCanonicalCatalog(legacy, canonical)
+        } catch (failure: OutOfMemoryError) {
+            throw AssertionError("Catalog overlay exceeded the constrained test heap", failure)
+        }
+
+        assertThat(merged.profiles).hasSize(profileCount)
+        assertThat(merged.profiles.first().id).isEqualTo("eq-library:memory-0")
+        assertThat(merged.profiles.last().id).isEqualTo("eq-library:memory-${profileCount - 1}")
+        assertThat(merged.profiles[profileCount / 2].preampGainDb)
+            .isEqualTo((profileCount / 2).toDouble())
     }
 
     private fun vendor(id: String, name: String) = OpraVendor(id, name)

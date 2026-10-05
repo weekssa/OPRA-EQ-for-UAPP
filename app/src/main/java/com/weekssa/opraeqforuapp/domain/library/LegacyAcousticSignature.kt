@@ -29,9 +29,29 @@ internal fun OpraEqProfile.legacyAcousticSignature(): String? {
     }
 }
 
+/** Computes the signature hash without materializing the full per-profile signature string. */
+internal fun OpraEqProfile.legacyAcousticFingerprintOrNull(): Long? {
+    val normalizedBands = bands.orEmpty().mapNotNull(OpraBand::legacyAcousticKey).sorted()
+    if (normalizedBands.isEmpty()) return null
+
+    var fingerprint = FNV_OFFSET_BASIS
+    fingerprint = fingerprintAppend(fingerprint, "preamp=")
+    fingerprint = fingerprintAppend(fingerprint, legacyAcousticFormat(preampGainDb ?: 0.0, 3))
+    normalizedBands.forEach { key ->
+        fingerprint = fingerprintAppend(fingerprint, ";")
+        fingerprint = fingerprintAppend(fingerprint, key)
+    }
+    return fingerprint
+}
+
 internal fun String.legacyAcousticFingerprint(): Long {
     var hash = FNV_OFFSET_BASIS
-    for (character in this) {
+    return fingerprintAppend(hash, this)
+}
+
+private fun fingerprintAppend(initial: Long, value: String): Long {
+    var hash = initial
+    for (character in value) {
         hash = (hash xor character.code.toLong()) * FNV_PRIME
     }
     return hash

@@ -1,3 +1,5 @@
+import org.gradle.api.tasks.testing.Test
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
@@ -105,4 +107,10 @@ dependencies {
     androidTestImplementation("androidx.test:runner:1.7.0")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+}
+
+// Allows the catalog stress regression to run in a heap matching the minimum supported device.
+val catalogOverlayTestMaxHeap = providers.gradleProperty("catalogOverlayTestMaxHeap")
+tasks.withType<Test>().configureEach {
+    catalogOverlayTestMaxHeap.orNull?.let { maxHeapSize = it }
 }
