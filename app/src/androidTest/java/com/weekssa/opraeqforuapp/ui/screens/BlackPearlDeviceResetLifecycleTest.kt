@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.fillMaxSize
@@ -77,5 +78,6 @@ class BlackPearlDeviceResetLifecycleTest {
         assertTrue(operationStatuses.any { (message, running) ->
             !running && message.contains("Refresh DEVICE")
         })
+        composeRule.onNodeWithText("Restore defaults").assertIsEnabled()
     }
 }

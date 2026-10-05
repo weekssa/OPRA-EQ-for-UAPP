@@ -1,8 +1,10 @@
 package com.weekssa.opraeqforuapp.ui.screens
 
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -19,6 +21,7 @@ import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11OperationTrace
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
 import com.weekssa.opraeqforuapp.ui.FiioJa11DeviceUiState
 import com.weekssa.opraeqforuapp.ui.MyDacEditorUiState
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
@@ -38,6 +41,23 @@ class FiioJa11MyDacContentTest {
         composeRule.onNodeWithText(FIIO_JA11_TECHNICAL_REPORT_LABEL).performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Dismiss JA11 Apply result").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("Flash successful", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun completedEditorApplyResultRestoresWithoutStartingAnotherMutation() {
+        val restorationTester = StateRestorationTester(composeRule)
+        var applyRequests = 0
+        val trace = editorApplyTrace()
+        setContentForTrace(
+            trace = trace,
+            restorationTester = restorationTester,
+            onApply = { applyRequests += 1 },
+        )
+
+        composeRule.onNodeWithText("JA11 Apply verified").performScrollTo().assertIsDisplayed()
+        restorationTester.emulateSavedInstanceStateRestore()
+        composeRule.onNodeWithText("JA11 Apply verified").performScrollTo().assertIsDisplayed()
+        composeRule.runOnIdle { assertEquals("result restoration cannot reissue Apply", 0, applyRequests) }
     }
 
     @Test
@@ -76,7 +96,11 @@ class FiioJa11MyDacContentTest {
         composeRule.onNodeWithText("JA11 Apply verified").assertDoesNotExist()
     }
 
-    private fun setContentForTrace(trace: FiioJa11OperationTrace) {
+    private fun setContentForTrace(
+        trace: FiioJa11OperationTrace,
+        restorationTester: StateRestorationTester? = null,
+        onApply: () -> Unit = {},
+    ) {
         val bundle = requireNotNull(
             HardwareEqSnapshotFactory.fiioJa11(
                 nativeBands = List(FiioJa11Protocol.BAND_COUNT) { index ->
@@ -88,7 +112,7 @@ class FiioJa11MyDacContentTest {
             ),
         )
 
-        composeRule.setContent {
+        val content: @Composable () -> Unit = {
             FiioJa11MyDacContent(
                 connectionState = Kt02h20ConnectionState.Connected,
                 hardwareEqState = HardwareEqSnapshotState(
@@ -124,11 +148,16 @@ class FiioJa11MyDacContentTest {
                 onUpdateBand = { _, _, _, _, _ -> },
                 onUseSafeGain = {},
                 onResetEdits = {},
-                onApply = {},
+                onApply = { onApply() },
                 operationTrace = trace,
                 operationStatus = FiioJa11OperationStatus.Completed(trace),
                 onMessage = {},
             )
+        }
+        if (restorationTester == null) {
+            composeRule.setContent { content() }
+        } else {
+            restorationTester.setContent { content() }
         }
     }
 

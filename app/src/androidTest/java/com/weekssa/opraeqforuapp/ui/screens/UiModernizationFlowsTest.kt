@@ -715,8 +715,10 @@ class UiModernizationFlowsTest {
     @Test
     fun productionMyDacRecoveryStateWarnsAgainstRepeatingAnUnverifiedApply() {
         val uncertainTrace = fixtureUncertainFiioApplyTrace()
+        val restorationTester = StateRestorationTester(composeRule)
         lateinit var inputModeManager: InputModeManager
-        composeRule.setContent {
+        var applyRequests = 0
+        restorationTester.setContent {
             inputModeManager = LocalInputModeManager.current
             OpraEqTheme(ThemeMode.Light) {
                 EqLibraryApp(
@@ -730,7 +732,7 @@ class UiModernizationFlowsTest {
                         fiioJa11OperationTrace = uncertainTrace,
                         fiioJa11OperationStatus = FiioJa11OperationStatus.Completed(uncertainTrace),
                     ),
-                    actions = noOpEqLibraryActions(),
+                    actions = noOpEqLibraryActions(onApplyFiioJa11Editor = { applyRequests += 1 }),
                 )
             }
         }
@@ -760,6 +762,12 @@ class UiModernizationFlowsTest {
         composeRule.onNodeWithText("Do not retry the hardware action", substring = true)
             .performScrollTo()
             .assertIsDisplayed()
+        restorationTester.emulateSavedInstanceStateRestore()
+        composeRule.onNodeWithText("JA11 Apply not verified").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Do not retry the hardware action", substring = true)
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeRule.runOnIdle { assertEquals(0, applyRequests) }
         val dismissResult = composeRule.onNodeWithContentDescription("Dismiss JA11 Apply result")
         dismissResult.performSemanticsAction(SemanticsActions.RequestFocus).assertIsFocused()
         navigateWithAndroidKey(
@@ -773,6 +781,7 @@ class UiModernizationFlowsTest {
         sendAndroidKeyEvent(KeyEvent.KEYCODE_DPAD_CENTER)
         composeRule.onNodeWithText("JA11 Apply not verified").assertDoesNotExist()
         composeRule.waitForIdle()
+        composeRule.runOnIdle { assertEquals(0, applyRequests) }
         captureV080Screenshot("my-dac-recovery-fiio-production-shell-fixture-light-100")
     }
 
@@ -991,6 +1000,100 @@ class UiModernizationFlowsTest {
         composeRule.onNodeWithText("155 Hz", substring = true).performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("Apply to DAC").performScrollTo().assertIsNotEnabled()
         composeRule.runOnIdle { assertEquals(0, applyRequests) }
+    }
+
+    @Test
+    fun myDacDraftReviewAndApplyingStateRestoreWithoutInvokingApplyAgain() {
+        val restorationTester = StateRestorationTester(composeRule)
+        val initialWorkingCopy = HardwareEqEditor.useSafeGain(
+            fiioJa11EditorWorkingCopy(),
+            HardwareEqEditSpecs.FIIO_JA11,
+        )
+        val state = mutableStateOf(
+            MyDacEditorUiState(
+                stage = MyDacEditorStage.EDIT,
+                workingCopy = initialWorkingCopy,
+                selectedBandIndex = 0,
+            ),
+        )
+        var applyRequests = 0
+        restorationTester.setContent {
+            OpraEqTheme(ThemeMode.Light) {
+                TestScreenShell(title = "My DAC", showTarget = true) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState()),
+                    ) {
+                        DacEqEditorScreen(
+                            state = state.value,
+                            onRetryOpen = { error("Fresh snapshot is already available") },
+                            onClose = {},
+                            onSelectBand = { index -> state.value = state.value.copy(selectedBandIndex = index) },
+                            onShowAllBands = { state.value = state.value.copy(stage = MyDacEditorStage.ALL_BANDS) },
+                            onShowReview = { state.value = state.value.copy(stage = MyDacEditorStage.REVIEW) },
+                            onUpdateBand = { index, type, frequency, gain, q ->
+                                val current = requireNotNull(state.value.workingCopy)
+                                state.value = state.value.copy(
+                                    workingCopy = HardwareEqEditor.updateFilter(
+                                        workingCopy = current,
+                                        spec = HardwareEqEditSpecs.FIIO_JA11,
+                                        bandIndex = index,
+                                        type = type,
+                                        frequencyHz = frequency,
+                                        gainDb = gain,
+                                        q = q,
+                                    ),
+                                )
+                            },
+                            onUseSafeGain = { error("Safe gain is already planned for this fixture") },
+                            onResetEdits = { error("Reset is not part of this lifecycle test") },
+                            onApply = {
+                                applyRequests += 1
+                                state.value = state.value.copy(applyStatus = MyDacEditorApplyStatus.APPLYING)
+                            },
+                            dacLabel = "FiiO JA11",
+                        )
+                    }
+                }
+            }
+        }
+
+        composeRule.onNodeWithText("Frequency (Hz)")
+            .performScrollTo()
+            .performTextReplacement("155")
+        composeRule.waitForIdle()
+        composeRule.runOnIdle {
+            assertEquals(155.0, state.value.workingCopy?.filters?.first()?.frequencyHz ?: -1.0, 0.0)
+            assertEquals(0, applyRequests)
+        }
+        restorationTester.emulateSavedInstanceStateRestore()
+        composeRule.onNodeWithText("Frequency (Hz)").performScrollTo()
+        composeRule.runOnIdle {
+            assertEquals(155.0, state.value.workingCopy?.filters?.first()?.frequencyHz ?: -1.0, 0.0)
+            assertEquals(0, applyRequests)
+        }
+
+        composeRule.onNodeWithText("Review changes").performScrollTo().performClick()
+        composeRule.onNodeWithText("Complete reviewed hardware target").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("155 Hz", substring = true).performScrollTo().assertIsDisplayed()
+        restorationTester.emulateSavedInstanceStateRestore()
+        composeRule.onNodeWithText("Complete reviewed hardware target").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("155 Hz", substring = true).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Apply to DAC").performScrollTo().performClick()
+        composeRule.onNodeWithText("Applying and verifying…").performScrollTo().assertIsDisplayed()
+        composeRule.runOnIdle {
+            assertEquals(1, applyRequests)
+            assertEquals(MyDacEditorApplyStatus.APPLYING, state.value.applyStatus)
+        }
+
+        restorationTester.emulateSavedInstanceStateRestore()
+        composeRule.onNodeWithText("Applying and verifying…").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Apply to DAC").performScrollTo().assertIsNotEnabled()
+        composeRule.runOnIdle {
+            assertEquals("reconstruction must not invoke the pending hardware callback twice", 1, applyRequests)
+            assertEquals(MyDacEditorApplyStatus.APPLYING, state.value.applyStatus)
+        }
     }
 
     @Test
@@ -2416,6 +2519,7 @@ class UiModernizationFlowsTest {
 
 private fun noOpEqLibraryActions(
     onConnectDacForMyDac: (DacDeviceId) -> Unit = {},
+    onApplyFiioJa11Editor: () -> Unit = {},
     onRefreshCatalog: () -> String = { "Fixture catalog is current." },
     onUnhideCanonicalProfiles: suspend (Set<String>) -> Unit = {},
 ) = EqLibraryActions(
@@ -2439,7 +2543,7 @@ private fun noOpEqLibraryActions(
         onUpdateFiioJa11EditorBand = { _, _, _, _, _ -> },
         onUseSafeFiioJa11EditorGain = {},
         onResetFiioJa11EditorLocalEdits = {},
-        onApplyFiioJa11Editor = {},
+        onApplyFiioJa11Editor = onApplyFiioJa11Editor,
         onOpenEw300Editor = {},
         onBackEw300Editor = { false },
         onCloseEw300Editor = {},

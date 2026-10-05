@@ -129,6 +129,9 @@ class CanonicalCatalogRepository(
     private val mutableState = MutableStateFlow<CanonicalCatalogState>(CanonicalCatalogState.Loading)
     @Volatile
     private var profileLocations: Map<String, JsonProfileLocation>? = null
+    /** Small in-memory fallback keeps canonical General EQ rows actionable if disk indexing fails. */
+    @Volatile
+    private var generalProfilesFallback: Map<String, CanonicalEqProfile> = emptyMap()
 
     val state: StateFlow<CanonicalCatalogState> = mutableState.asStateFlow()
 
@@ -180,6 +183,7 @@ class CanonicalCatalogRepository(
             }
 
             profileLocations = null
+            generalProfilesFallback = emptyMap()
             mutableState.value = CanonicalCatalogState.Ready(candidate, refreshedAt)
             CanonicalCatalogRefreshResult.Success(refreshedAt)
         } finally {
@@ -207,25 +211,35 @@ class CanonicalCatalogRepository(
      * source reference, revision and profile wrapper for the life of the process.
      */
     fun releaseInMemorySnapshot() {
-        val expectedProfileCount = clearSnapshotFromState() ?: return
+        val released = clearSnapshotFromState() ?: return
         val locations = runCatching { CanonicalCatalogProfileIndexReader(currentFile, json).read() }
             .getOrNull()
-            ?.takeIf { it.size == expectedProfileCount }
-            ?: return
+            ?.takeIf { it.size == released.expectedProfileCount }
         profileLocations = locations
     }
 
     /** Isolated helper lets the decoded graph become unreachable before building the small index. */
-    private fun clearSnapshotFromState(): Int? {
+    private fun clearSnapshotFromState(): ReleasedCatalogSnapshot? {
         val ready = mutableState.value as? CanonicalCatalogState.Ready ?: return null
         val snapshot = ready.snapshot ?: return null
-        val profileCount = snapshot.profiles.size
+        val released = ReleasedCatalogSnapshot(
+            expectedProfileCount = snapshot.profiles.size,
+            generalProfiles = snapshot.profiles.asSequence()
+                .filter(CanonicalEqProfile::isGeneralPreset)
+                .associateBy(CanonicalEqProfile::canonicalProfileId),
+        )
+        generalProfilesFallback = released.generalProfiles
         mutableState.value = ready.copy(
             snapshot = null,
             headphoneAliases = ready.headphoneAliases,
         )
-        return profileCount
+        return released
     }
+
+    private data class ReleasedCatalogSnapshot(
+        val expectedProfileCount: Int,
+        val generalProfiles: Map<String, CanonicalEqProfile>,
+    )
 
     /** Returns one exact source profile, decoding only that profile from the validated cache. */
     fun findProfile(canonicalProfileId: String): CanonicalEqProfile? {
@@ -235,7 +249,8 @@ class CanonicalCatalogRepository(
             return snapshot.profiles.singleOrNull { it.canonicalProfileId == canonicalProfileId }
         }
 
-        val location = profileLocations?.get(canonicalProfileId) ?: return null
+        val fallback = generalProfilesFallback[canonicalProfileId]
+        val location = profileLocations?.get(canonicalProfileId) ?: return fallback
         return runCatching {
             val bytes = ByteArray(location.length)
             RandomAccessFile(currentFile, "r").use { file ->
@@ -244,7 +259,7 @@ class CanonicalCatalogRepository(
             }
             json.decodeFromString<CanonicalEqProfile>(String(bytes, StandardCharsets.UTF_8))
                 .takeIf { it.canonicalProfileId == canonicalProfileId }
-        }.getOrNull()
+        }.getOrNull() ?: fallback
     }
 
     private fun isValid(snapshot: CatalogSnapshot): Boolean {

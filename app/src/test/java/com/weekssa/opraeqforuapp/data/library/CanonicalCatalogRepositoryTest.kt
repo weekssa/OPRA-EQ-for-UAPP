@@ -107,6 +107,34 @@ class CanonicalCatalogRepositoryTest {
     }
 
     @Test
+    fun generalProfilesRemainResolvableWhenCompactDiskIndexCannotBeRead() = runBlocking {
+        val root = createTempDirectory(prefix = "canonical-catalog-idx-fallback-").toFile()
+        try {
+            val snapshot = sampleSnapshot("rev-1").copy(
+                profiles = listOf(sampleGeneralEffect()),
+            )
+            val repository = CanonicalCatalogRepository(
+                root,
+                CanonicalCatalogSource { destination -> destination.writeText(json.encodeToString(snapshot)) },
+                nowMillis = { 1234L },
+            )
+            assertTrue(repository.refresh() is CanonicalCatalogRefreshResult.Success)
+
+            val catalogFile = File(root, "eq-library/catalog/catalog.json")
+            assertTrue("remove the source file to force the compact-index failure path", catalogFile.delete())
+            repository.releaseInMemorySnapshot()
+
+            assertNull((repository.state.value as CanonicalCatalogState.Ready).snapshot)
+            assertEquals(
+                sampleGeneralEffect(),
+                repository.findProfile("general-effect:bass-boost"),
+            )
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
     fun invalidGeneralClassificationCannotReplaceLastKnownGoodSnapshot() = runBlocking {
         val root = createTempDirectory(prefix = "canonical-catalog-").toFile()
         try {
