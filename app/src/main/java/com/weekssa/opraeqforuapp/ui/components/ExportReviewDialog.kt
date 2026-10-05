@@ -64,7 +64,7 @@ internal fun ExportReviewDialog(
                     modifier = Modifier
                         .heightIn(min = 48.dp)
                         .focusRequester(okFocusRequester)
-                        .onFocusChanged { okFocused.value = it.isFocused },
+                        .onFocusChanged { okFocused.value = it.hasFocus },
                 ) {
                     Text("OK")
                 }
@@ -128,7 +128,7 @@ internal fun ExportReviewDialog(
                 modifier = Modifier
                     .heightIn(min = 48.dp)
                     .focusRequester(cancelFocusRequester)
-                    .onFocusChanged { cancelFocused.value = it.isFocused },
+                    .onFocusChanged { cancelFocused.value = it.hasFocus },
             ) {
                 Text("Cancel")
             }
@@ -144,7 +144,7 @@ private fun RequestDialogInitialFocus(
     val isWindowFocused = LocalWindowInfo.current.isWindowFocused
     LaunchedEffect(focusRequester, isWindowFocused) {
         if (!isWindowFocused) {
-            repeat(6) {
+            repeat(30) {
                 if (targetFocused.value) return@LaunchedEffect
                 withFrameNanos { }
             }
