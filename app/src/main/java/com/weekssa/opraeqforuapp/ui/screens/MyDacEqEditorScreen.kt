@@ -413,10 +413,12 @@ private fun SelectedBandEditor(
                         if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionDown) {
                             if (downFocusRequester != null && downBringIntoViewRequester != null) {
                                 coroutineScope.launch {
-                                    downBringIntoViewRequester.bringIntoView()
-                                    repeat(3) { attempt ->
+                                    launch {
+                                        downBringIntoViewRequester.bringIntoView()
+                                    }
+                                    repeat(30) { attempt ->
                                         if (downFocusRequester.requestFocus()) return@launch
-                                        if (attempt < 2) withFrameNanos { }
+                                        if (attempt < 29) withFrameNanos { }
                                     }
                                 }
                                 true

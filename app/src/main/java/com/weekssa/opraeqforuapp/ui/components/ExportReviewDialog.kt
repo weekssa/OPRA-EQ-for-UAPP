@@ -17,12 +17,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.assessUappCompatibility
@@ -30,7 +28,6 @@ import com.weekssa.opraeqforuapp.domain.export.DeviceExportability
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.domain.export.assessDeviceExportability
 import com.weekssa.opraeqforuapp.domain.export.deviceAdaptationSummary
-import kotlinx.coroutines.flow.first
 import java.util.Locale
 
 internal data class ExportReviewItem(
@@ -129,12 +126,10 @@ internal fun ExportReviewDialog(
 
 @Composable
 private fun RequestDialogInitialFocus(focusRequester: FocusRequester) {
-    val windowInfo = LocalWindowInfo.current
-    LaunchedEffect(focusRequester, windowInfo) {
-        snapshotFlow { windowInfo.isWindowFocused }.first { it }
-        repeat(5) { attempt ->
+    LaunchedEffect(focusRequester) {
+        repeat(30) { attempt ->
             if (focusRequester.requestFocus()) return@LaunchedEffect
-            if (attempt < 4) withFrameNanos { }
+            if (attempt < 29) withFrameNanos { }
         }
     }
 }
