@@ -16,11 +16,15 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.assessUappCompatibility
@@ -44,6 +48,7 @@ internal fun ExportReviewDialog(
 ) {
     if (!device.supportsFileExport) {
         val okFocusRequester = remember { FocusRequester() }
+        val okFocused = remember { mutableStateOf(false) }
         AlertDialog(
             onDismissRequest = onDismiss,
             title = { Text("File export unavailable") },
@@ -53,10 +58,13 @@ internal fun ExportReviewDialog(
                 )
             },
             confirmButton = {
-                RequestDialogInitialFocus(okFocusRequester)
+                RequestDialogInitialFocus(okFocusRequester, okFocused)
                 TextButton(
                     onClick = onDismiss,
-                    modifier = Modifier.heightIn(min = 48.dp).focusRequester(okFocusRequester),
+                    modifier = Modifier
+                        .heightIn(min = 48.dp)
+                        .focusRequester(okFocusRequester)
+                        .onFocusChanged { okFocused.value = it.isFocused },
                 ) {
                     Text("OK")
                 }
@@ -68,6 +76,7 @@ internal fun ExportReviewDialog(
     val exportableItems = items.filter { assessDeviceExportability(it.profile, device) != DeviceExportability.NOT_REPRESENTABLE }
     val isUapp = device == ExportDevice.UAPP
     val cancelFocusRequester = remember { FocusRequester() }
+    val cancelFocused = remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -113,10 +122,13 @@ internal fun ExportReviewDialog(
             }
         },
         dismissButton = {
-            RequestDialogInitialFocus(cancelFocusRequester)
+            RequestDialogInitialFocus(cancelFocusRequester, cancelFocused)
             TextButton(
                 onClick = onDismiss,
-                modifier = Modifier.heightIn(min = 48.dp).focusRequester(cancelFocusRequester),
+                modifier = Modifier
+                    .heightIn(min = 48.dp)
+                    .focusRequester(cancelFocusRequester)
+                    .onFocusChanged { cancelFocused.value = it.isFocused },
             ) {
                 Text("Cancel")
             }
@@ -125,11 +137,22 @@ internal fun ExportReviewDialog(
 }
 
 @Composable
-private fun RequestDialogInitialFocus(focusRequester: FocusRequester) {
-    LaunchedEffect(focusRequester) {
-        repeat(30) { attempt ->
-            if (focusRequester.requestFocus()) return@LaunchedEffect
-            if (attempt < 29) withFrameNanos { }
+private fun RequestDialogInitialFocus(
+    focusRequester: FocusRequester,
+    targetFocused: State<Boolean>,
+) {
+    val isWindowFocused = LocalWindowInfo.current.isWindowFocused
+    LaunchedEffect(focusRequester, isWindowFocused) {
+        if (!isWindowFocused) {
+            repeat(6) {
+                if (targetFocused.value) return@LaunchedEffect
+                withFrameNanos { }
+            }
+        }
+        repeat(30) {
+            if (targetFocused.value) return@LaunchedEffect
+            focusRequester.requestFocus()
+            withFrameNanos { }
         }
     }
 }
