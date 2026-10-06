@@ -1,6 +1,6 @@
 # v0.8.0 Beta — Final Physical Session Plan
 
-**Disposition: PLAN PREPARED; current exact-head CI and the three-pass API35 stability series are in progress.** This is a read-only physical qualification plan, not permission to begin. Start only after every required check and stability run for the exact candidate below is green and the owner confirms the consolidated session.
+**Disposition: PLAN PREPARED; current exact-head CI is green and API35 stability is at 2/3; the final pass is in progress.** This is a read-only physical qualification plan, not permission to begin. Start only after every required check and stability run for the exact candidate below is green and the owner confirms the consolidated session.
 
 ## Exact candidate
 

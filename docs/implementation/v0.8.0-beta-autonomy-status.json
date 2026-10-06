@@ -1,5 +1,5 @@
 {
-  "timestamp_utc": "2026-10-06T07:14:14Z",
+  "timestamp_utc": "2026-10-06T07:33:45Z",
   "state": "RUNNING",
   "current_gate": "G3 \u2014 Final physical plan ready",
   "next_gate": "C05-C \u2014 Real Black Pearl production identity/session/read/navigation",
@@ -21,7 +21,7 @@
   "pr_base": "c702ef0149b4c647446639cfcb0ab25c09159db3",
   "pr_current_body_stale": true,
   "ci": {
-    "as_of_utc": "2026-10-06T07:14:14Z",
+    "as_of_utc": "2026-10-06T07:33:45Z",
     "exact_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
     "workflows": [
       {
@@ -52,19 +52,20 @@
     "android_jobs": [
       {
         "name": "build",
-        "job_id": 112150825803,
-        "status": "in_progress",
-        "conclusion": null
-      },
-      {
-        "name": "min-api-smoke",
-        "job_id": 112150826117,
+        "job_id": 112159668961,
         "status": "completed",
         "conclusion": "success"
       },
       {
+        "name": "min-api-smoke",
+        "job_id": 112159668075,
+        "status": "completed",
+        "conclusion": "success",
+        "incidental_workflow_rerun": true
+      },
+      {
         "name": "emulator-ui-test",
-        "job_id": 112150826255,
+        "job_id": 112159666615,
         "status": "in_progress",
         "conclusion": null
       }
@@ -108,12 +109,21 @@
     "previous_candidate_full_suite_runs": 3,
     "previous_candidate_results": "63/63 each; original four focus/input failures did not recur",
     "current_candidate_required_consecutive_full_suite_passes": 3,
-    "current_candidate_passes_recorded": 0,
+    "current_candidate_passes_recorded": 2,
     "current_candidate_exact_head_run": 37427641822,
     "current_run_status": "in_progress",
-    "next_action": "After current exact-head suite succeeds, run two more consecutive API35 full instrumentation jobs on the exact same candidate; diagnose any failure before a justified affected retry.",
+    "next_action": "Inspect final job 112159666615. If green, stop API35 after 3/3; if failed, diagnose the actual report/log before any affected retry.",
     "stop_after_three_consecutive_passes": true,
-    "current_candidate_full_suite_job_id": 112150826255
+    "current_candidate_full_suite_job_id": 112150826255,
+    "current_candidate_run_1": {
+      "job_id": 112150826255,
+      "result": "64/64; 0 failures; 0 skipped"
+    },
+    "current_candidate_run_2": {
+      "job_id": 112155299351,
+      "result": "64/64; 0 failures; 0 skipped"
+    },
+    "current_candidate_run_3_job_id": 112159666615
   },
   "api26": {
     "state": "PASS_CLOSED",
@@ -129,7 +139,12 @@
     ],
     "survival": "same app PID and resumed MainActivity survived 60 seconds in populated Library",
     "crash_oom": "AndroidRuntime fatal-process check found no app fatal record; no separate all-pattern OOM scan is claimed",
-    "rerun": false
+    "rerun": false,
+    "current_workflow_smoke_side_effects": [
+      112155345804,
+      112159668075
+    ],
+    "current_workflow_smoke_disposition": "Incidental cold-install-only jobs from targeted API35 workflow reruns; no populated-Library diagnostics or reanalysis. The closed API26 MUST gate remains unchanged."
   },
   "process_reconstruction_no_replay": {
     "state": "PASS_AUTOMATED",
@@ -153,7 +168,7 @@
   "owner_action_required_now": false,
   "pixel_required_now": false,
   "physical_session_ready": false,
-  "physical_session_readiness_reason": "Current exact-head CI and three consecutive API35 full-suite passes on the test-updated candidate are still pending; explicit owner session confirmation is required before C05-C.",
+  "physical_session_readiness_reason": "Two of three exact-candidate API35 full-suite passes are complete; the final pass is in progress. Explicit owner session confirmation is required before C05-C.",
   "estimated_pixel_minutes": {
     "target": 10,
     "hard_limit": 15
@@ -184,9 +199,9 @@
     "mission closeout"
   ],
   "next_actions": [
-    "Inspect current Android CI and CodeQL results; diagnose any real failure from logs/reports.",
-    "If exact-head API35 passes, run only its API35 UI job twice more and stop after three consecutive exact-candidate full-suite passes.",
-    "When all exact-head gates pass, publish one consolidated C05-C readiness request and wait for explicit owner session confirmation."
+    "Inspect final API35 job 112159666615 and diagnose its actual report/log if it fails; otherwise record 3/3 exact-candidate full-suite passes.",
+    "Refresh exact PR head/base and every required status context while keeping the app candidate/tree unchanged.",
+    "On green completion, update status/JSON, issue #71, and PR body at the readiness transition; send one C05-C session notice and wait for explicit owner confirmation."
   ],
   "issue": "https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/71",
   "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex/v0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md",
