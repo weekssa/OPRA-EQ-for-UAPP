@@ -17,6 +17,10 @@ Deliver complete, polished product outcomes—not isolated code changes, diagnos
 - Never commit credentials, signing keys, tokens, passwords, private reports, or unrelated user data.
 - Before every write or push, verify the repository, branch, working tree, and intended files. Preserve unrelated and user-owned changes.
 
+### Current v0.8.0 beta execution amendment
+
+For the active v0.8.0 beta mission, load `docs/implementation/v0.8.0-beta-master-directive.md` and its bootstrap sequence before acting. Version 1.0 is the current owner-approved execution contract: it explicitly defers manual TalkBack for this beta, corrects the main-only signing order, preserves Class B and the C05 split, and conditionally authorizes merge/publication after all listed gates pass. It controls where older v0.8 execution wording conflicts; keep the locked product/design baseline intact.
+
 ## Mandatory source-of-truth order
 
 At the start of every substantive task:
@@ -138,7 +142,7 @@ For release work, continue through:
 
 Use SemVer. During development use `0.x`; the current EW300 milestone targets `versionName 0.7.0` and `versionCode 7` unless maintained release documents record a later owner-approved decision.
 
-Never merge, close preserved evidence PRs, publish a release, or make a public hardware-support claim without explicit owner approval. After approval, complete the authorized merge/publication action and verify the public tag, release page, APK, checksum, signer/provenance, and update metadata.
+Never merge, close preserved evidence PRs, publish a release, or make a public hardware-support claim without explicit owner approval, except when a current direct owner instruction explicitly grants conditional authority. For v0.8.0 beta, the owner-approved master directive grants that authority after every required pre-merge and post-merge gate passes. Verify the exact merged SHA, public tag/release page, APK, checksum, signer/provenance, and update metadata.
 
 ## Task handoff and context maintenance
 

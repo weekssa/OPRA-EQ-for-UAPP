@@ -33,6 +33,8 @@ Before substantive work, read this file and the current documents relevant to th
 
 Historical plans remain useful context, but this runbook, current architecture, current release-specific plan, and later explicit decisions control where wording conflicts.
 
+For the active v0.8.0 beta, the current execution contract is [`docs/implementation/v0.8.0-beta-master-directive.md`](implementation/v0.8.0-beta-master-directive.md) version 1.0. It preserves the locked product/design mission while applying current owner-approved release order, C05 safety, and scope amendments. Manual TalkBack is deferred and non-blocking for this beta; automated accessibility evidence remains in scope. The directive grants conditional merge and prerelease authority after every required gate passes, so no routine approval pause is needed on that mission.
+
 ## 2026-09-22 EW300 evidence and release continuation
 
 Owner reports E043-E046 are tied to signed executable source `7599dd52fc9e8c58c96e021f581b86a669dcc148`: E043 read-only capability PASS, E044 Flash PASS, E045 exact-baseline Restore PASS (`restorationVerified=true`), and E046 Reset PASS for the exact fingerprint. Each mutation recorded 11 writes, exactly one Save, zero permission requests before the first write, matching replacement identity/generation, final readback, and known state. Total permission requests were one per operation. Replay and competing-job telemetry remain null/unmeasured, not zero. Do not repeat these operations or the accepted E001 Save qualification.
@@ -304,7 +306,7 @@ For Android hardware work, require the smallest meaningful layers of evidence:
 
 Physical evidence attaches to the exact transaction behavior tested. Pure Compose/navigation/string refactors do not invalidate protocol qualification unless connection ownership, read timing, write sequencing, values, persistence commands, verification rules, or session behavior change.
 
-Use SemVer. Keep v0.x during development; v1.0.0 is the first stable release. Never merge or publish a development release without explicit project-owner authorization.
+Use SemVer. Keep v0.x during development; v1.0.0 is the first stable release. Never merge or publish a development release without explicit project-owner authorization, except where a current direct owner instruction grants conditional authority. For v0.8.0 beta, follow the exact gate and release order in `docs/implementation/v0.8.0-beta-master-directive.md`.
 ## 2026-09-15 corrective checkpoint
 
 The owner-reported `431cbfa` test failed Restore defaults (premature stop at 0%) and page-density review. The current corrective work and genuine-failure policy are maintained at `docs/V0.6_MY_DAC_STATUS.md`. Restore completion is tied to the exact write cycle and original USB session; all final targets must match. No failed setting is automatically retried. Managed detail and General EQ headers/actions are compact and scrollable. A new exact signed beta needs focused physical review; historical PASS pins do not qualify these corrections. PR #16 remains open/draft and v0.5.0 remains public.

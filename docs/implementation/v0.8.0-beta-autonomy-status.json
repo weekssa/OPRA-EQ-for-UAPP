@@ -1,8 +1,8 @@
 {
-  "timestamp_utc": "2026-10-06T18:07:26Z",
+  "timestamp_utc": "2026-10-06T20:07:09Z",
   "state": "RUNNING",
-  "current_gate": "G3 \u2014 Final physical plan ready; awaiting owner-confirmed C05-C session",
-  "next_gate": "C05-C \u2014 Real Black Pearl production identity/session/read/navigation",
+  "current_gate": "G4 — Read-only C05-C physical qualification; awaiting renewed Pixel availability for an already-attached resume",
+  "next_gate": "G5 — Independent pre-merge verification after C05-C passes",
   "candidate_branch": "codex/v0.8.0-beta-ux",
   "candidate_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
   "candidate_tree": "e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d",
@@ -16,12 +16,12 @@
   "candidate_apk_sha256": "f33818309d55571166d91e501065706ddbb8faf180833b03bb6eb948e6bffed1",
   "candidate_apk_is_official_signed_beta": false,
   "pr": 70,
-  "pr_state": "open_draft_exact_head_checks_green_base_c702_mergeable_clean",
+  "pr_state": "open_draft_exact_head_checks_green_base_c702_mergeable_clean_body_update_pending",
   "pr_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
   "pr_base": "c702ef0149b4c647446639cfcb0ab25c09159db3",
-  "pr_current_body_stale": false,
+  "pr_current_body_stale": true,
   "ci": {
-    "as_of_utc": "2026-10-06T08:48:43Z",
+    "as_of_utc": "2026-10-06T19:46:00Z",
     "exact_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
     "workflows": [
       {
@@ -141,7 +141,8 @@
       "junit_summary": "64 tests; 0 failures; 0 errors; 0 skipped; both formerly affected tests passed",
       "consecutive_passes_after": 3,
       "api26_disposition": "Incidental cold install only; no Library or heap diagnostics; API26 gate remains closed"
-    }
+    },
+    "total_exact_head_check_runs": 8
   },
   "c05": {
     "qualification_model": "owner-approved split evidence; not a waiver",
@@ -165,22 +166,38 @@
       ]
     },
     "C_real_black_pearl_session_read_navigation": {
-      "state": "READY_WAITING_OWNER_CONFIRMATION",
+      "state": "STOPPED_INCOMPLETE_NOT_PASS",
+      "physical_attempt_utc": "2026-10-06T19:25:17Z",
       "required": [
         "exact device identity",
         "authoritative Android recognition/session",
-        "initial EQ and DEVICE reads",
-        "navigate away/back while attached",
-        "explicit final reads",
-        "unchanged state and no unexpected writes"
+        "initial and final EQ reads",
+        "initial and final DEVICE reads",
+        "attached navigation away/back",
+        "unchanged comparable state",
+        "bounded no-setting-mutation claim"
       ],
       "mutation_required": false,
-      "readiness": "read-only plan complete; no ADB/device access until explicit confirmation"
+      "attempt_result": {
+        "pixel": "Pixel 9 tokay API 37 over wireless ADB",
+        "black_pearl_usb_fingerprint": "VID:PID 3302:43e8; TTGK Technology; TE-C; serial 330243E8260129",
+        "app_presentation": "TRN Black Pearl / Connected; initial EQ label Verified current hardware; Flat, zero active bands, 10 filters, slot 1, playback gain +13.00 dB",
+        "completed": "exact candidate/APK verified and initial EQ presentation captured",
+        "not_completed": "DEVICE refresh; attached away/back navigation; final explicit EQ and DEVICE reads; before/after state comparison",
+        "safety": "No Reset, Apply, Flash, Save, DEVICE setter, fault, disconnect, process kill, or restorative write was issued.",
+        "report": ".unlazy/v080-beta/evidence/c05c-20261006T182006Z/C05-C-stop-report.txt",
+        "report_sha256": "e32ff687c5574894652a98f1512bdaa3f2147c9e319770f81d656115e6558d6e"
+      },
+      "plan_revision": "2.2",
+      "plan_review": "G3 PASS, independently reviewed for already-attached resume only; fresh attachment/connect not approved",
+      "read_semantics": "Protocol READ sends output request reports; transport may reissue one timed-out nondestructive read once automatically. No manual retry. No zero-USB-traffic claim.",
+      "readiness": "Pixel released; no ADB/USB/device work until G3 passes and a new short physical session is requested."
     },
     "D_independent_qualification_review": {
       "state": "PASS",
       "review_count": 1,
-      "evidence": "Independent review on 2026-10-06 verified production-route fake no-replay coverage, E20 process reconstruction, unchanged protected paths, the remaining physical identity/session/read/navigation requirement, and truthful evidence boundaries; no concrete C05 gap or unsupported physical claim found."
+      "evidence": "Independent review on 2026-10-06 verified production-route fake no-replay coverage, E20 process reconstruction, unchanged protected paths, the remaining physical identity/session/read/navigation requirement, and truthful evidence boundaries; no concrete C05 gap or unsupported physical claim found.",
+      "plan_revision_2_review": "PASS for plan revision 2.2 already-attached resume path; no new connection/reconnect. Frozen candidate verified unchanged."
     },
     "physical_fault_injection_required": false,
     "old_non_flat_eq_reset_precondition_applies_to_read_only_c05c": false,
@@ -321,23 +338,22 @@
   },
   "owner_action_required_now": true,
   "pixel_required_now": true,
-  "physical_session_ready": true,
-  "physical_session_readiness_reason": "C05-A, C05-B, and C05-D passed; the deterministic read-only C05-C plan is prepared; all exact-head workflows pass and API35 has 3 consecutive full-suite passes. BASE-DRIFT-B is reconciled: the current-main catalog passed targeted publication/archive validation and 8/8 PublishedCatalogTest tests, with no Android app/test path overlap. PR #70 remains at the frozen head and GitHub reports mergeable=true / clean; the active main ruleset has no up-to-date requirement. Waiting only for explicit owner confirmation before device access. No ADB/device state access has occurred.",
+  "physical_session_ready": false,
+  "physical_session_readiness_reason": "G3 PASS is limited to FINAL_PHYSICAL_SESSION_PLAN.md revision 2.2 already-attached resume path. C05-C remains STOPPED_INCOMPLETE_NOT_PASS. The Pixel was released. G4 requires renewed phone availability while the Black Pearl remains attached, then fresh exact candidate/APK, wireless ADB, exact fingerprint, and already-current app session checks. If the DAC is absent or session inactive, stop without reconnecting.",
   "estimated_pixel_minutes": {
     "target": 10,
     "hard_limit": 15
   },
-  "watchdog_mode": "READY_FOR_FINAL_PHYSICAL_SESSION_WAITING_OWNER_CONFIRMATION",
-  "loop_status": "API35_PASS_3_OF_3; EXACT_HEAD_CI_GREEN; C05_A_B_D_PASS; BASE_DRIFT_B_VALIDATED; PR_MERGEABLE_CLEAN; C05_C_PLAN_READY; WAITING_OWNER_CONFIRMATION; NO_DEVICE_ACCESS",
+  "watchdog_mode": "G4_WAITING_FOR_PIXEL_AVAILABILITY_ATTACHED_RESUME_ONLY",
+  "loop_status": "API35_PASS_3_OF_3; API26_PASS_CLOSED; EXACT_HEAD_CI_8_OF_8_GREEN; BASE_DRIFT_B; C05_A_B_D_PASS; C05_C_STOPPED_NOT_PASS; G3_PASS_ATTACHED_RESUME_ONLY; PHONE_RELEASED; AWAITING_PHYSICAL_AVAILABILITY",
   "stable_latest_release": "v0.7.2",
   "merge_or_publish_performed": false,
   "nonphysical_gates_open": [
-    "C05-C physical qualification after explicit owner confirmation",
-    "Independent pre-merge verification after C05-C",
-    "Post-merge signed artifact and upgrade gates"
+    "G5 independent pre-merge verification after G4",
+    "G6-G12 ordered merge/sign/upgrade/clean-install/publication/bundle/closeout"
   ],
   "physical_gates_open": [
-    "C05-C read-only Black Pearl identity/session/read/navigation and no-unexpected-mutation evidence"
+    "G4/C05-C read-only Black Pearl identity/session/EQ+DEVICE reads/navigation/final-read evidence; resume only if still attached/current session"
   ],
   "downstream_gates": [
     "Independent pre-merge verification",
@@ -351,9 +367,9 @@
     "mission closeout"
   ],
   "next_actions": [
-    "Wait for the owner's explicit confirmation: READY FOR FINAL PHYSICAL SESSION, with the Pixel 9 unlocked/on the M4 Mac Wi-Fi and Black Pearl attached over USB-C.",
-    "After confirmation, verify the exact candidate HEAD/tree and app/test trees, PR #70 head/reported base/checks, candidate APK identity/hash, and fresh wireless ADB discovery. Record current main separately and classify only any new delta; the validated catalog-only BASE-DRIFT-B does not delay C05-C.",
-    "Run the read-only C05-C procedure in FINAL_PHYSICAL_SESSION_PLAN.md; after successful evidence, continue independent pre-merge verification. Do not merge or publish until all ordered release gates pass."
+    "Commit and push the reconciled control-plane documentation, then update issue #71, PR #70 body, and hourly watchdog bootstrap; leave the frozen app/test candidate unchanged.",
+    "Request one short Pixel 9 session with the Black Pearl left attached if it remains attached from the stopped attempt. Resume only after fresh exact candidate/APK and wireless-ADB checks; stop if absent or not already connected/current.",
+    "After C05-C passes, reconcile/hash physical evidence, perform independent pre-merge verification, refresh exact PR/base/check state, then continue the authorized merge → main-only signing → signed upgrade/clean-install → independent artifact verification → prerelease → review bundle/closeout order."
   ],
   "issue": "https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/71",
   "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex/v0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md",
@@ -361,7 +377,7 @@
   "app_dir_tree": "42977ce481bc76aa85b866610672e35e35d6cde6",
   "pr_mergeable": true,
   "pr_mergeable_state": "clean",
-  "main_head_observed": "d2f743610133edc68b48550aca7f3a4591dc09c0",
+  "main_head_observed": "79d600529621257136adb4d9e1a97e8ae8521d7e",
   "main_advanced_since_pr_snapshot": {
     "prior_main_and_pr_api_base": "c702ef0149b4c647446639cfcb0ab25c09159db3",
     "commit": "58d5c3a25a6d25ec463c1c41ecae049b22a8471d",
@@ -414,17 +430,17 @@
     "classic_branch_protection_independently_inspected": false
   },
   "pr_base_ref": "main",
-  "pr_snapshot_as_of_utc": "2026-10-06T18:01:36Z",
-  "integration_base_sha": "d2f743610133edc68b48550aca7f3a4591dc09c0",
+  "pr_snapshot_as_of_utc": "2026-10-06T20:04:00Z",
+  "integration_base_sha": "79d600529621257136adb4d9e1a97e8ae8521d7e",
   "app_src_test_tree": "470979fb22a91c4514534badda6c2cc2032abfb6",
   "app_src_android_test_tree": "da2b4f31e18025ebd00f0a84f274e0e8a8624800",
   "base_drift_reconciliation": {
     "classification": "BASE-DRIFT-B",
-    "state": "PASS_CLOSED_AS_C05C_BLOCKER",
+    "state": "PASS_FOR_PHYSICAL_SESSION; RECHECK_ANY_NEW_DELTA_BEFORE_MERGE",
     "recorded_pr_base_sha": "c702ef0149b4c647446639cfcb0ab25c09159db3",
     "pr_base_ref": "main",
-    "current_integration_base_sha": "d2f743610133edc68b48550aca7f3a4591dc09c0",
-    "as_of_utc": "2026-10-06T18:07:26Z",
+    "current_integration_base_sha": "79d600529621257136adb4d9e1a97e8ae8521d7e",
+    "as_of_utc": "2026-10-06T20:04:00Z",
     "changed_paths_c702_to_d2f7436": [
       "catalog/catalog.json",
       "catalog/discovery/github_candidates.json",
@@ -459,6 +475,121 @@
       "up_to_date_required_by_observed_ruleset": false,
       "classic_protection_independently_inspected": false
     },
-    "candidate_rebase_required": false
-  }
+    "candidate_rebase_required": false,
+    "current_main_delta": {
+      "changed_paths_since_pr_base": [
+        "catalog/catalog.json",
+        "catalog/discovery/github_candidates.json",
+        "catalog/discovery/headphone_identity_audit.json",
+        "catalog/source_health.json"
+      ],
+      "newest_commit": "79d600529621257136adb4d9e1a97e8ae8521d7e",
+      "addition": "community-e143e7603e79782c14832c27",
+      "candidate_app_test_path_overlap": [],
+      "main_checks": "audit and submit-gradle successful",
+      "candidate_rebase_or_apk_rebuild_for_physical_session": false,
+      "premerge_recheck_required": true
+    }
+  },
+  "master_directive": {
+    "path": "docs/implementation/v0.8.0-beta-master-directive.md",
+    "version": "1.0",
+    "commit": "9b8bc9197730f31731c40b82e012b84055390747",
+    "body_sha256": "422638dc4dd6486c72453415c818dbda09e2810827401c8372dea27a24443e3a",
+    "loaded": "YES",
+    "bootstrap_order": [
+      "master directive",
+      "locked mission",
+      "autonomy status",
+      "FINAL_PHYSICAL_SESSION_PLAN.md",
+      "acceptance evidence",
+      "hardware evidence",
+      "post-physical continuation",
+      "mission ledger and relevant Unlazy state"
+    ],
+    "last_updated_utc": "2026-10-06T20:05:51Z"
+  },
+  "current_owner_action": "Make the Pixel 9 available for one short session with the Black Pearl left attached if it remains attached from the stopped attempt. Do not unplug/replug or reconnect. If it is no longer attached, report that and stop under the current plan.",
+  "gates_G0_G12": [
+    {
+      "gate": "G0",
+      "name": "Canonical directive / candidate identity",
+      "state": "PASS"
+    },
+    {
+      "gate": "G1",
+      "name": "Non-physical implementation",
+      "state": "PASS"
+    },
+    {
+      "gate": "G2",
+      "name": "Hardware scope / protected-path audit",
+      "state": "PASS"
+    },
+    {
+      "gate": "G3",
+      "name": "Final physical plan ready",
+      "state": "PASS_ATTACHED_RESUME_PATH_ONLY"
+    },
+    {
+      "gate": "G4",
+      "name": "Required physical qualification",
+      "state": "PENDING_OWNER_PIXEL_AVAILABILITY"
+    },
+    {
+      "gate": "G5",
+      "name": "Independent pre-merge verification",
+      "state": "PENDING_G4"
+    },
+    {
+      "gate": "G6",
+      "name": "Exact qualified tree merged",
+      "state": "PENDING_G5"
+    },
+    {
+      "gate": "G7",
+      "name": "Official signed artifact",
+      "state": "PENDING_G6"
+    },
+    {
+      "gate": "G8",
+      "name": "Signed stable-to-beta upgrade",
+      "state": "PENDING_G7"
+    },
+    {
+      "gate": "G9",
+      "name": "Signed clean install / independent artifact verification",
+      "state": "PENDING_G7_G8"
+    },
+    {
+      "gate": "G10",
+      "name": "Beta/prerelease publication",
+      "state": "PENDING_G9"
+    },
+    {
+      "gate": "G11",
+      "name": "Review bundle",
+      "state": "PENDING_G10"
+    },
+    {
+      "gate": "G12",
+      "name": "Closeout",
+      "state": "PENDING_G11"
+    }
+  ],
+  "manual_talkback": "DEFERRED_NON_BLOCKING_FOR_V0.8.0_BETA",
+  "main_current_checks": [
+    {
+      "name": "audit",
+      "job_id": 112450451826,
+      "conclusion": "success"
+    },
+    {
+      "name": "submit-gradle",
+      "job_id": 112437017475,
+      "conclusion": "success"
+    }
+  ],
+  "g3_plan_ready_for_attached_resume": true,
+  "g3_plan_not_approved_for_fresh_attach": true
 }
