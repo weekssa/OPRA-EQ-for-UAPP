@@ -1,5 +1,5 @@
 {
-  "timestamp_utc": "2026-10-06T20:35:28Z",
+  "timestamp_utc": "2026-10-06T20:38:23Z",
   "state": "RUNNING",
   "current_gate": "G3 — independent review of corrected C05-C plan revision 2.3",
   "next_gate": "G4 — read-only C05-C physical session after G3 review and fresh owner availability",
@@ -368,9 +368,9 @@
     "mission closeout"
   ],
   "next_actions": [
-    "Record the first v1.1 policy commit in resume/status metadata and verify the body hash remains exact.",
     "Complete one independent frozen-source review of FINAL_PHYSICAL_SESSION_PLAN.md revision 2.3; fix and re-review any material discrepancy.",
-    "Only after G3 passes, request fresh Pixel 9 availability with the Black Pearl left attached if it remains attached; run the exact plan or stop and release if prerequisites fail."
+    "If accepted, synchronize G3 to status, issue #71, PR #70, and the hourly watchdog; then request fresh Pixel 9 availability once.",
+    "After C05-C succeeds, reconcile/hash physical evidence, independently verify pre-merge readiness, then continue in the master directive order."
   ],
   "issue": "https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/71",
   "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex/v0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md",
@@ -502,8 +502,8 @@
   "master_directive": {
     "path": "docs/implementation/v0.8.0-beta-master-directive.md",
     "version": "1.1",
-    "commit": "PENDING_FIRST_V1.1_COMMIT",
-    "body_sha256": "ed2fa336d9f0dc77ca804dc272ba836a6ea87e9d15293585ac8fc59b62bd6bdc",
+    "commit": "6d8455ecba1fdfd1a90612901162ac1de5e87f86",
+    "body_sha256": "66ec92db9f671e528011b28f67cd2a31f2e6ba5362a02be2c4e5c4d4a2c9c85e",
     "loaded": "YES",
     "bootstrap_order": [
       "resume manifest",
@@ -512,14 +512,14 @@
       "refresh live GitHub/release state needed for next action",
       "read only the relevant sections/files for that gate"
     ],
-    "last_updated_utc": "2026-10-06T20:35:28Z"
+    "last_updated_utc": "2026-10-06T20:38:23Z"
   },
   "current_owner_action": "No owner action now. After G3 passes, make the released Pixel 9 available for one short session with the Black Pearl left attached if it remains attached; do not reconnect.",
   "gates_G0_G12": [
     {
       "gate": "G0",
       "name": "Canonical directive / candidate identity",
-      "state": "IN_PROGRESS_MASTER_METADATA_PENDING"
+      "state": "PASS"
     },
     {
       "gate": "G1",
