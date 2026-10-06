@@ -1,5 +1,5 @@
 {
-  "timestamp_utc": "2026-10-06T21:43:56Z",
+  "timestamp_utc": "2026-10-06T21:45:50Z",
   "state": "RUNNING",
   "current_gate": "G4 — C05-C awaits one fresh owner availability statement after the prior phone release",
   "next_gate": "G4 — read-only C05-C session, only if the Black Pearl remains attached and the production session is already current",
@@ -16,12 +16,12 @@
   "candidate_apk_sha256": "f33818309d55571166d91e501065706ddbb8faf180833b03bb6eb948e6bffed1",
   "candidate_apk_is_official_signed_beta": false,
   "pr": 70,
-  "pr_state": "open_draft_exact_head_checks_green_base_c702_mergeable_clean; PR/issue/watchdog sync in progress",
+  "pr_state": "open_draft_exact_head_checks_green_base_c702_mergeable_clean; master_v1.1_plan_2.5_control_surfaces_synced",
   "pr_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
   "pr_base": "c702ef0149b4c647446639cfcb0ab25c09159db3",
-  "pr_current_body_stale": true,
+  "pr_current_body_stale": false,
   "ci": {
-    "as_of_utc": "2026-10-06T21:41:12Z",
+    "as_of_utc": "2026-10-06T21:45:50Z",
     "exact_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
     "workflows": [
       {
@@ -145,7 +145,7 @@
     "total_exact_head_check_runs": 8,
     "check_run_snapshot": {
       "all_completed_success": true,
-      "as_of_utc": "2026-10-06T21:41:12Z",
+      "as_of_utc": "2026-10-06T21:45:50Z",
       "head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
       "total_count": 8,
       "checks": [
@@ -390,8 +390,8 @@
     "target": 10,
     "hard_limit": 15
   },
-  "watchdog_mode": "RESUME_FIRST_VERIFY_MASTER_HASH_STATUS_THEN_EXECUTE_NEXT_ACTION; G3_PLAN_2_5_PASS_ATTACHED_RESUME_WAIT_FRESH_AVAILABILITY; HEARTBEAT_V1_1_SYNCED",
-  "loop_status": "G3_PLAN_2_5_SAME_REVIEWER_PASS_ATTACHED_RESUME_ONLY; PRIOR_PIXEL_SESSION_RELEASED; FRESH_OWNER_AVAILABILITY_REQUIRED; FROZEN_CANDIDATE_UNCHANGED; NO_DEVICE_ACCESS",
+  "watchdog_mode": "RESUME_FIRST_VERIFY_MASTER_HASH_STATUS_THEN_EXECUTE_NEXT_ACTION; G3_PLAN_2_5_PASS_ATTACHED_RESUME_WAIT_FRESH_AVAILABILITY; CONTROL_SURFACES_SYNCED",
+  "loop_status": "G3_PLAN_2_5_PASS_ATTACHED_RESUME_ONLY; CONTROL_SURFACES_SYNCED; PRIOR_PIXEL_SESSION_RELEASED; FRESH_OWNER_AVAILABILITY_REQUIRED; FROZEN_CANDIDATE_UNCHANGED; NO_DEVICE_ACCESS",
   "stable_latest_release": "v0.7.2",
   "merge_or_publish_performed": false,
   "nonphysical_gates_open": [
@@ -413,9 +413,9 @@
     "mission closeout"
   ],
   "next_actions": [
-    "Re-read the pushed control-plane branch, issue #71, PR #70 body/head/checks/base, active heartbeat, and stable/latest release to verify their synchronized v1.1 / revision 2.5 state.",
-    "Request one fresh statement that the released Pixel 9 is available, with the Black Pearl left attached if it remains attached; do not use ADB/USB before it arrives.",
-    "After C05-C succeeds, reconcile/hash physical evidence, independently verify pre-merge readiness, then continue in the master directive order."
+    "Obtain one fresh statement that the released Pixel 9 is available now; leave the Black Pearl attached if it remains attached. Do not use ADB/USB before the statement.",
+    "After that statement, reverify the exact candidate/APK and wireless ADB; continue only if the exact Black Pearl remains attached and the production session is already current, otherwise stop and release the phone without reconnecting.",
+    "After C05-C succeeds, release the phone, reconcile/hash physical evidence, perform independent pre-merge verification, then continue in the master directive order."
   ],
   "issue": "https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/71",
   "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex/v0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md",
@@ -475,7 +475,7 @@
     ],
     "pr_api_base_as_of_2026_10_06T17_00Z": "c702ef0149b4c647446639cfcb0ab25c09159db3",
     "pr_api_head_as_of_2026_10_06T17_00Z": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
-    "resolved_as_of_utc": "2026-10-06T21:41:12Z",
+    "resolved_as_of_utc": "2026-10-06T21:45:50Z",
     "latest_main_head": "79d600529621257136adb4d9e1a97e8ae8521d7e",
     "pr_mergeable": true,
     "pr_mergeable_state": "clean",
@@ -483,7 +483,7 @@
     "classic_branch_protection_independently_inspected": false
   },
   "pr_base_ref": "main",
-  "pr_snapshot_as_of_utc": "2026-10-06T21:41:12Z",
+  "pr_snapshot_as_of_utc": "2026-10-06T21:45:50Z",
   "integration_base_sha": "79d600529621257136adb4d9e1a97e8ae8521d7e",
   "app_src_test_tree": "470979fb22a91c4514534badda6c2cc2032abfb6",
   "app_src_android_test_tree": "da2b4f31e18025ebd00f0a84f274e0e8a8624800",
@@ -493,7 +493,7 @@
     "recorded_pr_base_sha": "c702ef0149b4c647446639cfcb0ab25c09159db3",
     "pr_base_ref": "main",
     "current_integration_base_sha": "79d600529621257136adb4d9e1a97e8ae8521d7e",
-    "as_of_utc": "2026-10-06T21:41:12Z",
+    "as_of_utc": "2026-10-06T21:45:50Z",
     "changed_paths_c702_to_d2f7436": [
       "catalog/catalog.json",
       "catalog/discovery/github_candidates.json",
@@ -516,7 +516,7 @@
     },
     "artifact_effect": "No Android source/test or APK input changed; external catalog metadata only; candidate APK hash remains pinned and unmodified.",
     "pr_snapshot": {
-      "as_of_utc": "2026-10-06T21:41:12Z",
+      "as_of_utc": "2026-10-06T21:45:50Z",
       "base_sha": "c702ef0149b4c647446639cfcb0ab25c09159db3",
       "head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
       "exact_head_check_runs": "8/8 completed_success",
@@ -559,7 +559,7 @@
     ],
     "last_updated_utc": "2026-10-06T21:32:39Z"
   },
-  "current_owner_action": "One fresh statement that the released Pixel 9 is available after G3 approval; leave the Black Pearl attached if it remains attached.",
+  "current_owner_action": "One fresh statement that the released Pixel 9 is available now; leave the Black Pearl attached if it remains attached. No ADB/USB before the statement.",
   "gates_G0_G12": [
     {
       "gate": "G0",
@@ -642,9 +642,18 @@
   ],
   "g3_plan_ready_for_attached_resume": true,
   "g3_plan_not_approved_for_fresh_attach": true,
-  "issue_updated_at_utc": "2026-10-06T20:07:54Z",
-  "issue_body_current": false,
+  "issue_updated_at_utc": "2026-10-06T21:45:27Z",
+  "issue_body_current": true,
   "watchdog_prompt_updated": true,
-  "watchdog_prompt_updated_utc": "2026-10-06T21:43:56Z",
-  "control_plane_checkpoint_pushed": "d3648a460fafbf2441a720deec0b44757bc23f15"
+  "watchdog_prompt_updated_utc": "2026-10-06T21:43:56.195Z",
+  "control_plane_checkpoint_pushed": "02bd16253253c7b335f7368e80f0a4c2f23dcf68",
+  "pr_updated_at_utc": "2026-10-06T21:45:28Z",
+  "control_plane_checkpoint_tree": "a2699a32263ebfd2df6f0bdacf78de7f1e35051c",
+  "control_plane_branch": {
+    "name": "codex/v0.8.0-beta-watch",
+    "head": "02bd16253253c7b335f7368e80f0a4c2f23dcf68",
+    "tree": "a2699a32263ebfd2df6f0bdacf78de7f1e35051c",
+    "remote_matches_local": true,
+    "as_of_utc": "2026-10-06T21:45:50Z"
+  }
 }
