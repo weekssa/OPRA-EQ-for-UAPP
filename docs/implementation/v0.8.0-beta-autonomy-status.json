@@ -1,5 +1,5 @@
 {
-  "timestamp_utc": "2026-10-06T20:07:09Z",
+  "timestamp_utc": "2026-10-06T20:09:14Z",
   "state": "RUNNING",
   "current_gate": "G4 — Read-only C05-C physical qualification; awaiting renewed Pixel availability for an already-attached resume",
   "next_gate": "G5 — Independent pre-merge verification after C05-C passes",
@@ -16,12 +16,12 @@
   "candidate_apk_sha256": "f33818309d55571166d91e501065706ddbb8faf180833b03bb6eb948e6bffed1",
   "candidate_apk_is_official_signed_beta": false,
   "pr": 70,
-  "pr_state": "open_draft_exact_head_checks_green_base_c702_mergeable_clean_body_update_pending",
+  "pr_state": "open_draft_exact_head_checks_green_base_c702_mergeable_clean_body_current",
   "pr_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
   "pr_base": "c702ef0149b4c647446639cfcb0ab25c09159db3",
-  "pr_current_body_stale": true,
+  "pr_current_body_stale": false,
   "ci": {
-    "as_of_utc": "2026-10-06T19:46:00Z",
+    "as_of_utc": "2026-10-06T20:07:55Z",
     "exact_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
     "workflows": [
       {
@@ -367,9 +367,9 @@
     "mission closeout"
   ],
   "next_actions": [
-    "Commit and push the reconciled control-plane documentation, then update issue #71, PR #70 body, and hourly watchdog bootstrap; leave the frozen app/test candidate unchanged.",
-    "Request one short Pixel 9 session with the Black Pearl left attached if it remains attached from the stopped attempt. Resume only after fresh exact candidate/APK and wireless-ADB checks; stop if absent or not already connected/current.",
-    "After C05-C passes, reconcile/hash physical evidence, perform independent pre-merge verification, refresh exact PR/base/check state, then continue the authorized merge → main-only signing → signed upgrade/clean-install → independent artifact verification → prerelease → review bundle/closeout order."
+    "Wait for renewed owner Pixel 9 availability, leaving the Black Pearl attached if it remains attached from the stopped attempt. Do not use ADB/USB or inspect hardware until a fresh availability statement arrives.",
+    "On availability, reverify exact frozen candidate/APK, PR/checks/base, wireless ADB, Black Pearl fingerprint, and already-current production session. Stop and release if any requirement fails; do not reconnect.",
+    "After C05-C succeeds, reconcile/hash physical evidence, perform independent pre-merge verification, refresh exact PR/base/check state, then continue the authorized merge → main-only signing → signed upgrade/clean-install → independent artifact verification → prerelease → review bundle/closeout order."
   ],
   "issue": "https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/71",
   "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex/v0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md",
@@ -430,7 +430,7 @@
     "classic_branch_protection_independently_inspected": false
   },
   "pr_base_ref": "main",
-  "pr_snapshot_as_of_utc": "2026-10-06T20:04:00Z",
+  "pr_snapshot_as_of_utc": "2026-10-06T20:07:55Z",
   "integration_base_sha": "79d600529621257136adb4d9e1a97e8ae8521d7e",
   "app_src_test_tree": "470979fb22a91c4514534badda6c2cc2032abfb6",
   "app_src_android_test_tree": "da2b4f31e18025ebd00f0a84f274e0e8a8624800",
@@ -591,5 +591,10 @@
     }
   ],
   "g3_plan_ready_for_attached_resume": true,
-  "g3_plan_not_approved_for_fresh_attach": true
+  "g3_plan_not_approved_for_fresh_attach": true,
+  "issue_updated_at_utc": "2026-10-06T20:07:54Z",
+  "issue_body_current": true,
+  "watchdog_prompt_updated": true,
+  "watchdog_prompt_updated_utc": "2026-10-06T20:07:55Z",
+  "control_plane_checkpoint_pushed": "d3648a460fafbf2441a720deec0b44757bc23f15"
 }
