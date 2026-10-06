@@ -1,8 +1,8 @@
 {
-  "timestamp_utc": "2026-10-06T08:09:48Z",
+  "timestamp_utc": "2026-10-06T08:22:02Z",
   "state": "RUNNING",
-  "current_gate": "G3 — Final physical plan ready",
-  "next_gate": "C05-C — Real Black Pearl production identity/session/read/navigation",
+  "current_gate": "G3 \u2014 Final physical plan ready",
+  "next_gate": "C05-C \u2014 Real Black Pearl production identity/session/read/navigation",
   "candidate_branch": "codex/v0.8.0-beta-ux",
   "candidate_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
   "candidate_tree": "e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d",
@@ -16,12 +16,12 @@
   "candidate_apk_sha256": "f33818309d55571166d91e501065706ddbb8faf180833b03bb6eb948e6bffed1",
   "candidate_apk_is_official_signed_beta": false,
   "pr": 70,
-  "pr_state": "open_draft_checks_running",
+  "pr_state": "open_draft_checks_green",
   "pr_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
   "pr_base": "c702ef0149b4c647446639cfcb0ab25c09159db3",
   "pr_current_body_stale": true,
   "ci": {
-    "as_of_utc": "2026-10-06T08:09:48Z",
+    "as_of_utc": "2026-10-06T08:22:02Z",
     "exact_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
     "workflows": [
       {
@@ -39,8 +39,8 @@
       {
         "name": "Android CI",
         "run_id": 37427641822,
-        "status": "in_progress",
-        "conclusion": null
+        "status": "completed",
+        "conclusion": "success"
       },
       {
         "name": "CodeQL",
@@ -70,22 +70,30 @@
         "status": "completed",
         "conclusion": "success",
         "incidental_workflow_rerun": true,
-        "attempt": 2
+        "attempt": 2,
+        "api26_library_diagnostics": false
       },
       {
         "name": "emulator-ui-test",
         "job_id": 112171539825,
-        "status": "in_progress",
-        "conclusion": null,
-        "attempt": 2
+        "status": "completed",
+        "conclusion": "success",
+        "attempt": 2,
+        "report_artifact_id": 11397899612,
+        "junit_summary": "64 tests; 0 failures; 0 errors; 0 skipped"
       }
     ],
     "api35_exact_head_retry": {
       "workflow_run_id": 37427641822,
       "job_id": 112171539825,
-      "status": "in_progress",
+      "status": "completed_success",
       "api26_cold_install_side_effect_job_id": 112171541652,
-      "api26_side_effect_conclusion": "success; cold install only; API26 Library gate remains closed"
+      "api26_side_effect_conclusion": "success; cold install only; API26 Library gate remains closed",
+      "artifact_id": 11397899612,
+      "artifact_sha256": "d3282086aa8cc8b0858fbc0e93d62d6a55b4c622359fb6772e37653d69bde3db",
+      "result": "64 tests; 0 failures; 0 errors; 0 skipped",
+      "both_previously_affected_tests_passed": true,
+      "api26_side_effect_disposition": "Incidental cold install only; no Library or heap diagnostics; API26 gate remains closed"
     }
   },
   "c05": {
@@ -136,10 +144,10 @@
     "previous_candidate_full_suite_runs": 3,
     "previous_candidate_results": "63/63 each; original four focus/input failures did not recur",
     "current_candidate_required_consecutive_full_suite_passes": 3,
-    "current_candidate_passes_recorded": 2,
+    "current_candidate_passes_recorded": 1,
     "current_candidate_exact_head_run": 37427641822,
-    "current_run_status": "retry_in_progress_after_attempt_failure",
-    "next_action": "The 64-test exact-head run failed after two clean runs. Artifact review found an emulator EGL stall, Nexus Launcher SIGKILL/ANR and window-focus loss overlapping the two incomplete tests; no app crash/OOM or callback-count assertion failure was recorded, but causality is not proven. The diagnosed full API35 UI rerun is in progress as job 112171539825. Do not duplicate it; inspect the full report/log on completion and investigate before any further retry if it fails.",
+    "current_run_status": "pass_1_of_3_after_run_3_failure",
+    "next_action": "Queue one full exact-head API35 suite. If any test fails, stop and diagnose before another retry. Stop API35 after three consecutive passes.",
     "stop_after_three_consecutive_passes": true,
     "current_candidate_full_suite_job_id": 112150826255,
     "current_candidate_run_1": {
@@ -151,7 +159,7 @@
       "result": "64/64; 0 failures; 0 skipped"
     },
     "current_candidate_run_3_job_id": 112159666615,
-    "current_candidate_consecutive_passes": 0,
+    "current_candidate_consecutive_passes": 1,
     "current_candidate_run_3": {
       "run_id": 37427641822,
       "job_id": 112159666615,
@@ -185,10 +193,22 @@
     "current_candidate_retry": {
       "workflow_run_id": 37427641822,
       "job_id": 112171539825,
-      "status": "in_progress",
-      "attempt_scope": "Full exact-head API35 UI instrumentation suite; only failed UI job rerun",
+      "status": "completed_success",
+      "attempt_scope": "Full exact-head API35 UI suite rerun; 64/64 passed with zero failures, errors, or skipped tests",
       "api26_side_effect_job_id": 112171541652,
-      "api26_side_effect_disposition": "Cold install only; no Library or heap diagnostics; gate remains closed"
+      "api26_side_effect_disposition": "Cold install only; no Library or heap diagnostics; gate remains closed",
+      "artifact_id": 11397899612,
+      "artifact_sha256": "d3282086aa8cc8b0858fbc0e93d62d6a55b4c622359fb6772e37653d69bde3db",
+      "junit_summary": "64 tests; 0 failures; 0 errors; 0 skipped; both previously affected tests passed"
+    },
+    "current_candidate_run_4": {
+      "run_id": 37427641822,
+      "job_id": 112171539825,
+      "rerun_attempt": 2,
+      "artifact_id": 11397899612,
+      "artifact_sha256": "d3282086aa8cc8b0858fbc0e93d62d6a55b4c622359fb6772e37653d69bde3db",
+      "result": "64/64; 0 failures; 0 errors; 0 skipped",
+      "previously_affected_tests": "both passed"
     }
   },
   "api26": {
@@ -234,17 +254,17 @@
   "owner_action_required_now": false,
   "pixel_required_now": false,
   "physical_session_ready": false,
-  "physical_session_readiness_reason": "Exact-head API35 attempt 3 failed two assertions; the earlier two passes no longer form a consecutive stability series. Diagnose first; owner confirmation is still required before C05-C.",
+  "physical_session_readiness_reason": "API35 exact-head clean streak is 1/3; two more consecutive full-suite passes and current exact-head checks are required, followed by explicit owner confirmation before C05-C.",
   "estimated_pixel_minutes": {
     "target": 10,
     "hard_limit": 15
   },
-  "watchdog_mode": "RUNNING_API35_RETRY_IN_PROGRESS",
-  "loop_status": "RUNNER_WINDOW_FOCUS_DISTURBANCE_RECORDED; CAUSALITY_NOT_PROVEN; API35_RETRY_IN_PROGRESS",
+  "watchdog_mode": "RUNNING_API35_PASS1_OF3",
+  "loop_status": "API35_FULL_SUITE_PASS_1_OF_3; EXACT_CANDIDATE_FROZEN; API26_CLOSED",
   "stable_latest_release": "v0.7.2",
   "merge_or_publish_performed": false,
   "nonphysical_gates_open": [
-    "Exact-head Android CI and three consecutive API35 full-suite passes",
+    "Two remaining exact-head API35 full-suite passes",
     "C05-C physical qualification after exact-head gates and owner session confirmation",
     "Independent pre-merge verification",
     "Post-merge signed artifact and upgrade gates"
@@ -264,9 +284,9 @@
     "mission closeout"
   ],
   "next_actions": [
-    "C05-D independent PASS, exact protected-path audit, corrected physical-plan CI summary, and the current retry state are recorded in the canonical control-plane status and physical plan.",
-    "Inspect in-progress full API35 exact-head job 112171539825; do not duplicate it. Current consecutive-pass streak is 0; API26 remains closed.",
-    "Inspect the complete report/log before any further retry if a test fails; after three consecutive exact-head full-suite passes and all checks green, send the single physical-session notice and wait for explicit confirmation."
+    "Record the exact-head API35 rerun result: job 112171539825 passed 64/64; report artifact 11397899612 SHA-256 d3282086aa8cc8b0858fbc0e93d62d6a55b4c622359fb6772e37653d69bde3db. The clean streak is 1/3.",
+    "Queue one further full API35 exact-head suite; do not run API26 Library diagnostics. If any test fails, inspect its report/log and diagnose before any further retry.",
+    "After three consecutive exact-head full-suite passes and all checks green, prepare the single physical-session readiness notice and wait for explicit owner confirmation."
   ],
   "issue": "https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/71",
   "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex/v0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md",
