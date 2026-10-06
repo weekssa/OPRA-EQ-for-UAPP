@@ -1,75 +1,195 @@
 {
-  "timestamp_utc": "2026-10-06T06:29:45Z",
-  "state": "BLOCKED",
-  "current_gate": "G3 — Final physical plan ready",
-  "next_gate": "G4 — Physical qualification complete (C05)",
+  "timestamp_utc": "2026-10-06T07:14:14Z",
+  "state": "RUNNING",
+  "current_gate": "G3 \u2014 Final physical plan ready",
+  "next_gate": "C05-C \u2014 Real Black Pearl production identity/session/read/navigation",
   "candidate_branch": "codex/v0.8.0-beta-ux",
-  "candidate_head": "acd95df543632e57ae46cd68e714a35f94781f43",
-  "candidate_tree": "0594c8887a5a066407700ad8e4906a0b3a93033d",
+  "candidate_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
+  "candidate_tree": "e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d",
   "app_source_commit": "f24b1582e22b19fc75757a61186361b71eab3974",
-  "app_tree": "337889667a9974967ab0d80ba880268b470eeab2",
+  "app_src_main_tree": "857d02a53d0df44fb0bd46e5ddad3b319dc48dab",
+  "app_production_source_changed_in_current_candidate": false,
+  "current_candidate_changes": [
+    "test-only lifecycle/navigation instrumentation",
+    "maintained candidate evidence"
+  ],
   "candidate_apk_sha256": "f33818309d55571166d91e501065706ddbb8faf180833b03bb6eb948e6bffed1",
+  "candidate_apk_is_official_signed_beta": false,
   "pr": 70,
-  "pr_head": "acd95df543632e57ae46cd68e714a35f94781f43",
+  "pr_state": "open_draft_mergeable",
+  "pr_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
   "pr_base": "c702ef0149b4c647446639cfcb0ab25c09159db3",
-  "current_task": "Hold the Class B candidate frozen while C05 has no maintained safe, objectively observable reset-cancellation procedure.",
-  "last_progress_utc": "2026-10-06T05:49:48Z",
-  "last_progress_evidence": "Two stable read-only Mac IORegistry snapshots, five seconds apart, uniquely identified Black Pearl, JA11, and EW300 simultaneously.",
-  "same_task_heartbeats": 0,
-  "same_task_heartbeats_note": "Initial baseline for the master-directive control plane; earlier superseded-prompt scheduler counts are not observable.",
-  "minutes_without_progress": 40,
+  "pr_current_body_stale": true,
+  "ci": {
+    "as_of_utc": "2026-10-06T07:14:14Z",
+    "exact_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
+    "workflows": [
+      {
+        "name": "Catalog currentness CI",
+        "run_id": 37427641890,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Priority community coverage CI",
+        "run_id": 37427641910,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Android CI",
+        "run_id": 37427641822,
+        "status": "in_progress",
+        "conclusion": null
+      },
+      {
+        "name": "CodeQL",
+        "run_id": 37427641849,
+        "status": "completed",
+        "conclusion": "success"
+      }
+    ],
+    "android_jobs": [
+      {
+        "name": "build",
+        "job_id": 112150825803,
+        "status": "in_progress",
+        "conclusion": null
+      },
+      {
+        "name": "min-api-smoke",
+        "job_id": 112150826117,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "emulator-ui-test",
+        "job_id": 112150826255,
+        "status": "in_progress",
+        "conclusion": null
+      }
+    ]
+  },
+  "c05": {
+    "qualification_model": "owner-approved split evidence; not a waiver",
+    "class": "Class B",
+    "A_automated_recovery_no_replay": {
+      "state": "PASS",
+      "evidence": "E23; focused API35 production-route instrumentation 1/1; E20 fake-backed OS process reconstruction"
+    },
+    "B_protected_hardware_path_audit": {
+      "state": "PASS",
+      "base": "9b1a83b4a0bc8d7cad4a1f10ab99ff92c3259e3c",
+      "protected_path_delta": "none"
+    },
+    "C_real_black_pearl_session_read_navigation": {
+      "state": "PENDING_PHYSICAL",
+      "required": [
+        "exact device identity",
+        "authoritative Android recognition/session",
+        "initial EQ and DEVICE reads",
+        "navigate away/back while attached",
+        "explicit final reads",
+        "unchanged state and no unexpected writes"
+      ],
+      "mutation_required": false
+    },
+    "D_independent_qualification_review": {
+      "state": "PASS",
+      "review_count": 1
+    },
+    "physical_fault_injection_required": false,
+    "old_non_flat_eq_reset_precondition_applies_to_read_only_c05c": false,
+    "non_flat_requirement_rationale": "It applied to the old checkbox-on Reset test; C05-C is read-only and invokes no Reset.",
+    "talkback": "OWNER_REPORTED_PASS for current recovery warning by direct touch; wording and semantics are unchanged; no repeat requested."
+  },
+  "api35": {
+    "previous_candidate": "acd95df543632e57ae46cd68e714a35f94781f43",
+    "previous_candidate_full_suite_runs": 3,
+    "previous_candidate_results": "63/63 each; original four focus/input failures did not recur",
+    "current_candidate_required_consecutive_full_suite_passes": 3,
+    "current_candidate_passes_recorded": 0,
+    "current_candidate_exact_head_run": 37427641822,
+    "current_run_status": "in_progress",
+    "next_action": "After current exact-head suite succeeds, run two more consecutive API35 full instrumentation jobs on the exact same candidate; diagnose any failure before a justified affected retry.",
+    "stop_after_three_consecutive_passes": true,
+    "current_candidate_full_suite_job_id": 112150826255
+  },
+  "api26": {
+    "state": "PASS_CLOSED",
+    "configuration": {
+      "avd": "repository-default Pixel 2",
+      "api": 26,
+      "abi": "x86_64",
+      "heap_growth_limit": "48m"
+    },
+    "populated_library": [
+      "Manufacturers",
+      "1Custom"
+    ],
+    "survival": "same app PID and resumed MainActivity survived 60 seconds in populated Library",
+    "crash_oom": "AndroidRuntime fatal-process check found no app fatal record; no separate all-pattern OOM scan is claimed",
+    "rerun": false
+  },
+  "process_reconstruction_no_replay": {
+    "state": "PASS_AUTOMATED",
+    "real_hardware_process_kill_during_mutation": false,
+    "reset_callback_count": 1,
+    "device_writes": 0
+  },
+  "automated_accessibility": {
+    "state": "PASS_RECORDED_SCOPE",
+    "evidence": [
+      "Compose semantics",
+      "Accessibility Test Framework",
+      "Android KeyEvent keyboard/D-pad",
+      "large text",
+      "touch targets",
+      "contrast",
+      "responsive layouts"
+    ],
+    "physical_keyboard_claimed": false
+  },
+  "owner_action_required_now": false,
+  "pixel_required_now": false,
+  "physical_session_ready": false,
+  "physical_session_readiness_reason": "Current exact-head CI and three consecutive API35 full-suite passes on the test-updated candidate are still pending; explicit owner session confirmation is required before C05-C.",
+  "estimated_pixel_minutes": {
+    "target": 10,
+    "hard_limit": 15
+  },
+  "watchdog_mode": "RUNNING_WAIT_EXACT_HEAD_CI_AND_API35_STABILITY",
   "loop_status": "CLEAR",
-  "watchdog_mode": "BLOCKED_READ_ONLY_NO_EVIDENCE_DELTA",
-  "closed_investigations": [
-    "Mac Black Pearl feasibility and three-DAC identity enumeration",
-    "Historical C05 procedure search",
-    "Independent C05 safety review",
-    "Bounded Class B redesign review"
-  ],
-  "one_time_prephysical_preparation_complete": true,
-  "hourly_no_delta_output": "NO EVIDENCE DELTA — BLOCKED STATE UNCHANGED",
-  "notify_only_if": [
-    "New evidence changes the C05 conclusion or establishes a safe procedure",
-    "The app/test candidate changes",
-    "PR/CI health materially regresses",
-    "Another genuine release blocker or signing prerequisite changes",
-    "The mission reaches READY FOR FINAL PHYSICAL SESSION or COMPLETE",
-    "Owner action is required"
-  ],
-  "reopen_closed_investigations_only_if": [
-    "Materially new maintained evidence",
-    "Intentional app/test source change",
-    "Owner-approved qualification-contract change",
-    "Discovery of an existing safe procedure"
-  ],
+  "stable_latest_release": "v0.7.2",
+  "merge_or_publish_performed": false,
   "nonphysical_gates_open": [
-    "G3 — Final physical plan readiness is blocked because C05 has no maintained safe interruption procedure."
+    "Exact-head Android CI/CodeQL completion",
+    "Three consecutive exact-candidate API35 full-suite passes",
+    "C05-C physical qualification",
+    "Independent pre-merge verification",
+    "Post-merge signed artifact and upgrade gates"
   ],
   "physical_gates_open": [
-    "G4 — Black Pearl C05 physical qualification and exact original-state restoration."
+    "C05-C read-only Black Pearl identity/session/read/navigation and no-unexpected-mutation evidence"
   ],
   "downstream_gates": [
-    "G5 merge after physical pass and independent pre-merge verification",
-    "G6 official main-only signed beta artifact",
-    "G7 signed v0.7.2-to-beta persisted-state upgrade",
-    "G8 final clean install/core smoke and independent signed-artifact verification",
-    "G9 v0.8.0 prerelease publication",
-    "G10 final review bundle",
-    "G11 mission closeout"
+    "Independent pre-merge verification",
+    "Exact qualified-tree merge",
+    "Official main-only signed beta artifact",
+    "Exact signed v0.7.2-to-beta persisted-state upgrade",
+    "Final clean install/core smoke",
+    "Independent signed-artifact verification",
+    "v0.8.0 prerelease",
+    "review bundle",
+    "mission closeout"
   ],
-  "waiting_external": [],
-  "watchdog_engine": "Active hourly local Codex heartbeat; durable status/control plane is on this GitHub branch and issue #71; heartbeat execution depends on local app/host availability.",
-  "owner_notifications": "Owner account subscribed to issue #71; issue updates are limited to meaningful evidence transitions.",
-  "owner_action_required": false,
-  "physical_session_ready": false,
-  "estimated_pixel_minutes": null,
-  "app_test_source_changed_since_frozen_qualification": false,
-  "hardware_classification": "Class B",
   "next_actions": [
-    "In hourly blocked-watchdog mode, check only the material-change signals listed in the canonical status; do not re-enter a closed investigation.",
-    "If genuinely new maintained evidence could change C05, perform one bounded reevaluation and update G3 from that evidence.",
-    "Only if G3 becomes PASS, prepare one consolidated owner-facing physical session; otherwise keep the Pixel and Black Pearl untouched."
+    "Inspect current Android CI and CodeQL results; diagnose any real failure from logs/reports.",
+    "If exact-head API35 passes, run only its API35 UI job twice more and stop after three consecutive exact-candidate full-suite passes.",
+    "When all exact-head gates pass, publish one consolidated C05-C readiness request and wait for explicit owner session confirmation."
   ],
   "issue": "https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/71",
-  "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex/v0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md"
+  "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex/v0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md",
+  "physical_plan": "docs/implementation/FINAL_PHYSICAL_SESSION_PLAN.md",
+  "app_dir_tree": "42977ce481bc76aa85b866610672e35e35d6cde6"
 }
