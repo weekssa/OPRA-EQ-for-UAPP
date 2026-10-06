@@ -1,5 +1,5 @@
 {
-  "timestamp_utc": "2026-10-06T05:58:05Z",
+  "timestamp_utc": "2026-10-06T06:29:45Z",
   "state": "BLOCKED",
   "current_gate": "G3 — Final physical plan ready",
   "next_gate": "G4 — Physical qualification complete (C05)",
@@ -17,8 +17,31 @@
   "last_progress_evidence": "Two stable read-only Mac IORegistry snapshots, five seconds apart, uniquely identified Black Pearl, JA11, and EW300 simultaneously.",
   "same_task_heartbeats": 0,
   "same_task_heartbeats_note": "Initial baseline for the master-directive control plane; earlier superseded-prompt scheduler counts are not observable.",
-  "minutes_without_progress": 8,
+  "minutes_without_progress": 40,
   "loop_status": "CLEAR",
+  "watchdog_mode": "BLOCKED_READ_ONLY_NO_EVIDENCE_DELTA",
+  "closed_investigations": [
+    "Mac Black Pearl feasibility and three-DAC identity enumeration",
+    "Historical C05 procedure search",
+    "Independent C05 safety review",
+    "Bounded Class B redesign review"
+  ],
+  "one_time_prephysical_preparation_complete": true,
+  "hourly_no_delta_output": "NO EVIDENCE DELTA — BLOCKED STATE UNCHANGED",
+  "notify_only_if": [
+    "New evidence changes the C05 conclusion or establishes a safe procedure",
+    "The app/test candidate changes",
+    "PR/CI health materially regresses",
+    "Another genuine release blocker or signing prerequisite changes",
+    "The mission reaches READY FOR FINAL PHYSICAL SESSION or COMPLETE",
+    "Owner action is required"
+  ],
+  "reopen_closed_investigations_only_if": [
+    "Materially new maintained evidence",
+    "Intentional app/test source change",
+    "Owner-approved qualification-contract change",
+    "Discovery of an existing safe procedure"
+  ],
   "nonphysical_gates_open": [
     "G3 — Final physical plan readiness is blocked because C05 has no maintained safe interruption procedure."
   ],
@@ -43,9 +66,9 @@
   "app_test_source_changed_since_frozen_qualification": false,
   "hardware_classification": "Class B",
   "next_actions": [
-    "Keep the status and definitive session/release records aligned with evidence changes, not timestamp-only edits.",
-    "Recheck frozen app/test HEAD, PR #70 head/checks, and stable/latest release during the hourly watchdog; do not rerun closed tests.",
-    "If maintained evidence establishes a safe C05 procedure, reevaluate G3 and prepare one consolidated session; otherwise do not touch the Pixel or Black Pearl."
+    "In hourly blocked-watchdog mode, check only the material-change signals listed in the canonical status; do not re-enter a closed investigation.",
+    "If genuinely new maintained evidence could change C05, perform one bounded reevaluation and update G3 from that evidence.",
+    "Only if G3 becomes PASS, prepare one consolidated owner-facing physical session; otherwise keep the Pixel and Black Pearl untouched."
   ],
   "issue": "https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/71",
   "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex/v0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md"
