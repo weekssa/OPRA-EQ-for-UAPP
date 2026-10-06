@@ -1,8 +1,8 @@
 {
-  "timestamp_utc": "2026-10-06T20:38:23Z",
+  "timestamp_utc": "2026-10-06T21:43:56Z",
   "state": "RUNNING",
-  "current_gate": "G3 — independent review of corrected C05-C plan revision 2.3",
-  "next_gate": "G4 — read-only C05-C physical session after G3 review and fresh owner availability",
+  "current_gate": "G4 — C05-C awaits one fresh owner availability statement after the prior phone release",
+  "next_gate": "G4 — read-only C05-C session, only if the Black Pearl remains attached and the production session is already current",
   "candidate_branch": "codex/v0.8.0-beta-ux",
   "candidate_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
   "candidate_tree": "e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d",
@@ -16,12 +16,12 @@
   "candidate_apk_sha256": "f33818309d55571166d91e501065706ddbb8faf180833b03bb6eb948e6bffed1",
   "candidate_apk_is_official_signed_beta": false,
   "pr": 70,
-  "pr_state": "open_draft_exact_head_checks_green_base_c702_mergeable_clean; description refresh pending v1.1 plan review",
+  "pr_state": "open_draft_exact_head_checks_green_base_c702_mergeable_clean; PR/issue/watchdog sync in progress",
   "pr_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
   "pr_base": "c702ef0149b4c647446639cfcb0ab25c09159db3",
   "pr_current_body_stale": true,
   "ci": {
-    "as_of_utc": "2026-10-06T20:07:55Z",
+    "as_of_utc": "2026-10-06T21:41:12Z",
     "exact_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
     "workflows": [
       {
@@ -142,7 +142,55 @@
       "consecutive_passes_after": 3,
       "api26_disposition": "Incidental cold install only; no Library or heap diagnostics; API26 gate remains closed"
     },
-    "total_exact_head_check_runs": 8
+    "total_exact_head_check_runs": 8,
+    "check_run_snapshot": {
+      "all_completed_success": true,
+      "as_of_utc": "2026-10-06T21:41:12Z",
+      "head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
+      "total_count": 8,
+      "checks": [
+        {
+          "job_id": 112181047518,
+          "name": "build",
+          "conclusion": "success"
+        },
+        {
+          "job_id": 112181046209,
+          "name": "min-api-smoke",
+          "conclusion": "success"
+        },
+        {
+          "job_id": 112181045077,
+          "name": "emulator-ui-test",
+          "conclusion": "success"
+        },
+        {
+          "job_id": 112152334761,
+          "name": "CodeQL",
+          "conclusion": "success"
+        },
+        {
+          "job_id": 112150826284,
+          "name": "validate-priority-community",
+          "conclusion": "success"
+        },
+        {
+          "job_id": 112150826043,
+          "name": "validate",
+          "conclusion": "success"
+        },
+        {
+          "job_id": 112150825874,
+          "name": "Analyze Kotlin",
+          "conclusion": "success"
+        },
+        {
+          "job_id": 112150813291,
+          "name": "submit-gradle",
+          "conclusion": "success"
+        }
+      ]
+    }
   },
   "c05": {
     "qualification_model": "owner-approved split evidence; not a waiver",
@@ -188,16 +236,17 @@
         "report": ".unlazy/v080-beta/evidence/c05c-20261006T182006Z/C05-C-stop-report.txt",
         "report_sha256": "e32ff687c5574894652a98f1512bdaa3f2147c9e319770f81d656115e6558d6e"
       },
-      "plan_revision": "2.3",
-      "plan_review": "PENDING independent review; attached-resume path only; no fresh attach/connect",
+      "plan_revision": "2.5",
+      "plan_review": "PASS: the same independent reviewer approved revision 2.5 against frozen candidate HEAD 5c7d19cf2f77e448a97a1ee9d520ad4d408f120f/tree e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d for the already-attached/current-session path only. Revision 2.3 was NOT PASS because the path was not ignored; revision 2.4 was NOT PASS because git status was required to report a not-yet-created directory. Revision 2.5 uses prospective-file git check-ignore checks before phone use and before evidence writes. No fresh attach/connect is approved.",
       "read_semantics": "Protocol READ sends output request reports; transport may reissue one timed-out nondestructive read once automatically. No manual retry. No zero-USB-traffic claim.",
-      "readiness": "No device access until plan review passes and the owner gives fresh availability. Then proceed only if the exact device remains attached and the production session is already current."
+      "readiness": "G3 PASS for attached-resume path only. Await one fresh owner availability statement after prior phone release; then proceed only if exact unit remains attached and production session is already current."
     },
     "D_independent_qualification_review": {
       "state": "PASS",
       "review_count": 1,
       "evidence": "Independent review on 2026-10-06 verified production-route fake no-replay coverage, E20 process reconstruction, unchanged protected paths, the remaining physical identity/session/read/navigation requirement, and truthful evidence boundaries; no concrete C05 gap or unsupported physical claim found.",
-      "plan_revision_2_review": "PASS for plan revision 2.2 already-attached resume path; no new connection/reconnect. Frozen candidate verified unchanged."
+      "plan_revision_2_review": "PASS for plan revision 2.2 already-attached resume path; no new connection/reconnect. Frozen candidate verified unchanged.",
+      "plan_revision_5_review": "PASS on 2026-10-06 by the same independent reviewer against the frozen candidate; attached/current-session path only; no fresh attach/connect."
     },
     "physical_fault_injection_required": false,
     "old_non_flat_eq_reset_precondition_applies_to_read_only_c05c": false,
@@ -211,89 +260,86 @@
     "current_candidate_required_consecutive_full_suite_passes": 3,
     "current_candidate_passes_recorded": 3,
     "current_candidate_exact_head_run": 37427641822,
-    "current_run_status": "pass_3_of_3_complete_stop_reruns",
+    "current_run_status": "PASS_3_OF_3_COMPLETE_STOP_RERUNS",
     "next_action": "Required exact-head API35 stability is complete at 3/3. Do not rerun unless a new candidate invalidates the evidence.",
     "stop_after_three_consecutive_passes": true,
-    "current_candidate_full_suite_job_id": 112150826255,
-    "current_candidate_run_1": {
-      "job_id": 112150826255,
-      "result": "64/64; 0 failures; 0 skipped"
-    },
-    "current_candidate_run_2": {
-      "job_id": 112155299351,
-      "result": "64/64; 0 failures; 0 skipped"
-    },
-    "current_candidate_run_3_job_id": 112159666615,
+    "current_candidate_full_suite_job_id": 112181045077,
     "current_candidate_consecutive_passes": 3,
-    "current_candidate_run_3": {
-      "run_id": 37427641822,
-      "job_id": 112159666615,
-      "artifact_id": 11397470717,
-      "artifact_sha256": "a9511db0ab332cc44ced51a75e54a7dfbf7299e24fa0f9d80c32135358920ac5",
-      "result": "64 tests; 2 failures; 0 errors; 0 skipped",
-      "failed_tests": [
+    "stability_runs": [
+      {
+        "job_id": 112171539825,
+        "workflow_run_id": 37427641822,
+        "attempt": 2,
+        "artifact_id": 11397899612,
+        "artifact_sha256": "d3282086aa8cc8b0858fbc0e93d62d6a55b4c622359fb6772e37653d69bde3db",
+        "result": "64 tests; 0 failures; 0 errors; 0 skipped",
+        "previously_affected_tests": "both passed"
+      },
+      {
+        "job_id": 112177030919,
+        "workflow_run_id": 37427641822,
+        "attempt": 3,
+        "artifact_id": 11399423407,
+        "artifact_sha256": "0f252788a553c3f51286dcf1a59ffe1137d3974252978d3a1bbc16791621bf55",
+        "result": "64 tests; 0 failures; 0 errors; 0 skipped",
+        "previously_affected_tests": "both passed"
+      },
+      {
+        "job_id": 112181045077,
+        "workflow_run_id": 37427641822,
+        "attempt": 4,
+        "artifact_id": 11400405767,
+        "artifact_sha256": "3eb0f7ed51db453d95945cd9920ae7ec588dca22102e3920b3d850164a71d757",
+        "result": "64 tests; 0 failures; 0 errors; 0 skipped",
+        "previously_affected_tests": "both passed"
+      }
+    ],
+    "final_junit_artifact_id": 11400405767,
+    "final_junit_sha256": "3eb0f7ed51db453d95945cd9920ae7ec588dca22102e3920b3d850164a71d757",
+    "final_junit_summary": "64 tests; 0 failures; 0 errors; 0 skipped; both formerly affected tests passed",
+    "earlier_same_head_attempts_before_required_stability": {
+      "candidate_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
+      "sequence": [
         {
-          "name": "interruptedEqResetIsNotReplayedAndLeavesAnActionableRecoveryState",
-          "line": 161,
-          "failure": "Espresso RootViewWithoutFocusException; window focus false; following no-replay/write assertions were not reached."
+          "job_id": 112150826255,
+          "result": "64/64; 0 failures; 0 skipped"
         },
         {
-          "name": "recoverySurvivesProductionMyDacTabAndRootNavigationWithoutReplayingCallbacks",
-          "line": 299,
-          "failure": "ComposeTimeoutException waiting for fake EQ-read callback after KEYCODE_DPAD_CENTER; remaining reads/navigation/no-write assertions were not reached."
+          "job_id": 112155299351,
+          "result": "64/64; 0 failures; 0 skipped"
+        },
+        {
+          "run_id": 37427641822,
+          "job_id": 112159666615,
+          "artifact_id": 11397470717,
+          "artifact_sha256": "a9511db0ab332cc44ced51a75e54a7dfbf7299e24fa0f9d80c32135358920ac5",
+          "result": "64 tests; 2 failures; 0 errors; 0 skipped",
+          "failed_tests": [
+            {
+              "name": "interruptedEqResetIsNotReplayedAndLeavesAnActionableRecoveryState",
+              "line": 161,
+              "failure": "Espresso RootViewWithoutFocusException; window focus false; following no-replay/write assertions were not reached."
+            },
+            {
+              "name": "recoverySurvivesProductionMyDacTabAndRootNavigationWithoutReplayingCallbacks",
+              "line": 299,
+              "failure": "ComposeTimeoutException waiting for fake EQ-read callback after KEYCODE_DPAD_CENTER; remaining reads/navigation/no-write assertions were not reached."
+            }
+          ],
+          "runner_evidence": [
+            "07:41:47.409Z EGL_emulation reports 67,630 ms average and 404,359 ms maximum frame timing",
+            "07:41:47.949Z Nexus Launcher PID 1175 exits SIGKILL",
+            "07:41:48.265Z InputManager reports an Application Not Responding channel for Nexus Launcher",
+            "07:41:52.894Z test Activity is PAUSED during second timeout",
+            "07:41:54.095Z Compose timeout recorded"
+          ],
+          "diagnosis": "Likely emulator window/input instability; causality for the DPAD callback miss is not proven. No app fatal exception or app OOM; end-run MemAvailable about 1.2 GB. Both tests passed in exact-head pass 2. No product defect is demonstrated.",
+          "pass2_comparison_artifact_id": 11396188437,
+          "pass2_comparison": "Both affected tests passed on the same exact candidate (8.261 s and 9.062 s).",
+          "api26_disposition": "Closed gate unchanged; incidental cold-install job only; no Library or heap diagnostics."
         }
       ],
-      "runner_evidence": [
-        "07:41:47.409Z EGL_emulation reports 67,630 ms average and 404,359 ms maximum frame timing",
-        "07:41:47.949Z Nexus Launcher PID 1175 exits SIGKILL",
-        "07:41:48.265Z InputManager reports an Application Not Responding channel for Nexus Launcher",
-        "07:41:52.894Z test Activity is PAUSED during second timeout",
-        "07:41:54.095Z Compose timeout recorded"
-      ],
-      "diagnosis": "Likely emulator window/input instability; causality for the DPAD callback miss is not proven. No app fatal exception or app OOM; end-run MemAvailable about 1.2 GB. Both tests passed in exact-head pass 2. No product defect is demonstrated.",
-      "pass2_comparison_artifact_id": 11396188437,
-      "pass2_comparison": "Both affected tests passed on the same exact candidate (8.261 s and 9.062 s).",
-      "api26_disposition": "Closed gate unchanged; incidental cold-install job only; no Library or heap diagnostics."
-    },
-    "current_candidate_retry": {
-      "workflow_run_id": 37427641822,
-      "job_id": 112171539825,
-      "status": "completed_success",
-      "attempt_scope": "Full exact-head API35 UI suite rerun; 64/64 passed with zero failures, errors, or skipped tests",
-      "api26_side_effect_job_id": 112171541652,
-      "api26_side_effect_disposition": "Cold install only; no Library or heap diagnostics; gate remains closed",
-      "artifact_id": 11397899612,
-      "artifact_sha256": "d3282086aa8cc8b0858fbc0e93d62d6a55b4c622359fb6772e37653d69bde3db",
-      "junit_summary": "64 tests; 0 failures; 0 errors; 0 skipped; both previously affected tests passed"
-    },
-    "current_candidate_run_4": {
-      "run_id": 37427641822,
-      "job_id": 112171539825,
-      "rerun_attempt": 2,
-      "artifact_id": 11397899612,
-      "artifact_sha256": "d3282086aa8cc8b0858fbc0e93d62d6a55b4c622359fb6772e37653d69bde3db",
-      "result": "64/64; 0 failures; 0 errors; 0 skipped",
-      "previously_affected_tests": "both passed"
-    },
-    "current_candidate_run_5": {
-      "workflow_run_id": 37427641822,
-      "job_id": 112177030919,
-      "attempt": 3,
-      "status": "completed_success",
-      "artifact_id": 11399423407,
-      "artifact_sha256": "0f252788a553c3f51286dcf1a59ffe1137d3974252978d3a1bbc16791621bf55",
-      "result": "64/64; 0 failures; 0 errors; 0 skipped",
-      "previously_affected_tests": "both passed"
-    },
-    "current_candidate_run_6": {
-      "workflow_run_id": 37427641822,
-      "job_id": 112181045077,
-      "attempt": 4,
-      "status": "completed_success",
-      "artifact_id": 11400405767,
-      "artifact_sha256": "3eb0f7ed51db453d95945cd9920ae7ec588dca22102e3920b3d850164a71d757",
-      "result": "64/64; 0 failures; 0 errors; 0 skipped",
-      "previously_affected_tests": "both passed"
+      "disposition": "Preserved historical attempts; this sequence includes a later failure and is not the required consecutive-pass evidence."
     }
   },
   "api26": {
@@ -336,20 +382,19 @@
     ],
     "physical_keyboard_claimed": false
   },
-  "owner_action_required_now": false,
-  "pixel_required_now": false,
+  "owner_action_required_now": true,
+  "pixel_required_now": true,
   "physical_session_ready": false,
-  "physical_session_readiness_reason": "Revision 2.3 is source-corrected but awaits independent review. Do not use the Pixel before review passes and a fresh owner availability statement; the already-attached/current-session precondition remains mandatory.",
+  "physical_session_readiness_reason": "G3 passed for FINAL_PHYSICAL_SESSION_PLAN.md revision 2.5 and the already-attached/current-session path only. The prior session was released. Await one fresh owner availability statement. Do not use ADB/USB or inspect device state before it. Continue only if the exact Black Pearl remains attached and the production session is already current; do not reconnect.",
   "estimated_pixel_minutes": {
     "target": 10,
     "hard_limit": 15
   },
-  "watchdog_mode": "RESUME_FIRST_VERIFY_MASTER_HASH_STATUS_THEN_EXECUTE_NEXT_ACTION; C05C_PLAN_REVIEW_PENDING",
-  "loop_status": "MASTER_V1_1_RESUME_AND_PLAN_2_3_WRITTEN; INDEPENDENT_PLAN_REVIEW_PENDING; FROZEN_CANDIDATE_UNCHANGED; NO_DEVICE_ACCESS",
+  "watchdog_mode": "RESUME_FIRST_VERIFY_MASTER_HASH_STATUS_THEN_EXECUTE_NEXT_ACTION; G3_PLAN_2_5_PASS_ATTACHED_RESUME_WAIT_FRESH_AVAILABILITY; HEARTBEAT_V1_1_SYNCED",
+  "loop_status": "G3_PLAN_2_5_SAME_REVIEWER_PASS_ATTACHED_RESUME_ONLY; PRIOR_PIXEL_SESSION_RELEASED; FRESH_OWNER_AVAILABILITY_REQUIRED; FROZEN_CANDIDATE_UNCHANGED; NO_DEVICE_ACCESS",
   "stable_latest_release": "v0.7.2",
   "merge_or_publish_performed": false,
   "nonphysical_gates_open": [
-    "G3 independent review of physical plan revision 2.3",
     "G5 independent pre-merge verification after G4",
     "G6-G12 ordered merge/sign/upgrade/clean-install/publication/bundle/closeout"
   ],
@@ -368,16 +413,16 @@
     "mission closeout"
   ],
   "next_actions": [
-    "Complete one independent frozen-source review of FINAL_PHYSICAL_SESSION_PLAN.md revision 2.3; fix and re-review any material discrepancy.",
-    "If accepted, synchronize G3 to status, issue #71, PR #70, and the hourly watchdog; then request fresh Pixel 9 availability once.",
+    "Re-read the pushed control-plane branch, issue #71, PR #70 body/head/checks/base, active heartbeat, and stable/latest release to verify their synchronized v1.1 / revision 2.5 state.",
+    "Request one fresh statement that the released Pixel 9 is available, with the Black Pearl left attached if it remains attached; do not use ADB/USB before it arrives.",
     "After C05-C succeeds, reconcile/hash physical evidence, independently verify pre-merge readiness, then continue in the master directive order."
   ],
   "issue": "https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/71",
   "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex/v0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md",
   "physical_plan": {
     "path": "docs/implementation/FINAL_PHYSICAL_SESSION_PLAN.md",
-    "revision": "2.3",
-    "state": "PENDING_INDEPENDENT_REVIEW",
+    "revision": "2.5",
+    "state": "APPROVED_ATTACHED_RESUME_ONLY",
     "scope": "already-attached, already-current production session only",
     "fresh_attach_authorized": false,
     "device_access_before_review": false
@@ -430,15 +475,15 @@
     ],
     "pr_api_base_as_of_2026_10_06T17_00Z": "c702ef0149b4c647446639cfcb0ab25c09159db3",
     "pr_api_head_as_of_2026_10_06T17_00Z": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
-    "resolved_as_of_utc": "2026-10-06T18:01:36Z",
-    "latest_main_head": "d2f743610133edc68b48550aca7f3a4591dc09c0",
+    "resolved_as_of_utc": "2026-10-06T21:41:12Z",
+    "latest_main_head": "79d600529621257136adb4d9e1a97e8ae8521d7e",
     "pr_mergeable": true,
     "pr_mergeable_state": "clean",
     "active_main_ruleset_requires_up_to_date": false,
     "classic_branch_protection_independently_inspected": false
   },
   "pr_base_ref": "main",
-  "pr_snapshot_as_of_utc": "2026-10-06T20:07:55Z",
+  "pr_snapshot_as_of_utc": "2026-10-06T21:41:12Z",
   "integration_base_sha": "79d600529621257136adb4d9e1a97e8ae8521d7e",
   "app_src_test_tree": "470979fb22a91c4514534badda6c2cc2032abfb6",
   "app_src_android_test_tree": "da2b4f31e18025ebd00f0a84f274e0e8a8624800",
@@ -448,7 +493,7 @@
     "recorded_pr_base_sha": "c702ef0149b4c647446639cfcb0ab25c09159db3",
     "pr_base_ref": "main",
     "current_integration_base_sha": "79d600529621257136adb4d9e1a97e8ae8521d7e",
-    "as_of_utc": "2026-10-06T20:04:00Z",
+    "as_of_utc": "2026-10-06T21:41:12Z",
     "changed_paths_c702_to_d2f7436": [
       "catalog/catalog.json",
       "catalog/discovery/github_candidates.json",
@@ -471,12 +516,12 @@
     },
     "artifact_effect": "No Android source/test or APK input changed; external catalog metadata only; candidate APK hash remains pinned and unmodified.",
     "pr_snapshot": {
-      "as_of_utc": "2026-10-06T18:01:36Z",
-      "head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
+      "as_of_utc": "2026-10-06T21:41:12Z",
       "base_sha": "c702ef0149b4c647446639cfcb0ab25c09159db3",
+      "head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
+      "exact_head_check_runs": "8/8 completed_success",
       "mergeable": true,
-      "mergeable_state": "clean",
-      "exact_head_check_runs": "8/8 completed_success"
+      "mergeable_state": "clean"
     },
     "branch_policy": {
       "active_main_ruleset": "Protect main",
@@ -503,7 +548,7 @@
     "path": "docs/implementation/v0.8.0-beta-master-directive.md",
     "version": "1.1",
     "commit": "6d8455ecba1fdfd1a90612901162ac1de5e87f86",
-    "body_sha256": "66ec92db9f671e528011b28f67cd2a31f2e6ba5362a02be2c4e5c4d4a2c9c85e",
+    "body_sha256": "2ac4ff4ea1825f4165d04e19ee3fc9103fffe2097f19d41dd19728c800dad8f7",
     "loaded": "YES",
     "bootstrap_order": [
       "resume manifest",
@@ -512,9 +557,9 @@
       "refresh live GitHub/release state needed for next action",
       "read only the relevant sections/files for that gate"
     ],
-    "last_updated_utc": "2026-10-06T20:38:23Z"
+    "last_updated_utc": "2026-10-06T21:32:39Z"
   },
-  "current_owner_action": "No owner action now. After G3 passes, make the released Pixel 9 available for one short session with the Black Pearl left attached if it remains attached; do not reconnect.",
+  "current_owner_action": "One fresh statement that the released Pixel 9 is available after G3 approval; leave the Black Pearl attached if it remains attached.",
   "gates_G0_G12": [
     {
       "gate": "G0",
@@ -534,12 +579,12 @@
     {
       "gate": "G3",
       "name": "Final physical plan ready",
-      "state": "PENDING_INDEPENDENT_REVIEW_REVISION_2_3_ATTACHED_RESUME_ONLY"
+      "state": "PASS_ATTACHED_RESUME_ONLY"
     },
     {
       "gate": "G4",
       "name": "Required physical qualification",
-      "state": "PENDING_G3_AND_FRESH_OWNER_PIXEL_AVAILABILITY"
+      "state": "PENDING_FRESH_OWNER_AVAILABILITY"
     },
     {
       "gate": "G5",
@@ -595,11 +640,11 @@
       "conclusion": "success"
     }
   ],
-  "g3_plan_ready_for_attached_resume": false,
+  "g3_plan_ready_for_attached_resume": true,
   "g3_plan_not_approved_for_fresh_attach": true,
   "issue_updated_at_utc": "2026-10-06T20:07:54Z",
   "issue_body_current": false,
-  "watchdog_prompt_updated": false,
-  "watchdog_prompt_updated_utc": null,
+  "watchdog_prompt_updated": true,
+  "watchdog_prompt_updated_utc": "2026-10-06T21:43:56Z",
   "control_plane_checkpoint_pushed": "d3648a460fafbf2441a720deec0b44757bc23f15"
 }

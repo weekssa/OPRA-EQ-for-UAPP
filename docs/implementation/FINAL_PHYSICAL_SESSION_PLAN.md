@@ -1,9 +1,9 @@
 # v0.8.0 Beta — Final Physical Session Plan
 
-**Plan revision:** 2.3
-**Disposition:** PENDING INDEPENDENT REVIEW. The physical session remains attached-resume-only. Continue only if the exact Black Pearl and current production session are already present; otherwise stop and release the Pixel. No new attach/connect flow is qualified.
+**Plan revision:** 2.5
+**Disposition:** INDEPENDENT REVIEW PASS for the already-attached/current-session path only. The physical session remains attached-resume-only. Continue only if the exact Black Pearl and current production session are already present; otherwise stop and release the Pixel. No new attach/connect flow is qualified. Revision 2.5 retains the verified local Git exclude for raw evidence and checks a prospective file before creating the session directory; it does not change the app/test candidate.
 **Master directive:** `docs/implementation/v0.8.0-beta-master-directive.md`, version 1.1; introduction commit and body hash are recorded in the directive and resume manifest.
-**Review basis:** frozen app/test candidate plus the exact-source read-path audit. This revision adds a per-step state/action/USB-effect/UI-result/evidence/abort contract. No product or test change is proposed.
+**Review basis:** frozen app/test candidate plus the exact-source read-path audit. The same independent reviewer returned PASS on 2026-10-06 for revision 2.5 at candidate HEAD `5c7d19cf2f77e448a97a1ee9d520ad4d408f120f`, tree `e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d`. Review covers the already-attached/current-session path only. This revision adds a per-step state/action/USB-effect/UI-result/evidence/abort contract. No product or test change is proposed.
 
 ## Purpose and current boundary
 
@@ -50,12 +50,12 @@ Each step specifies the expected UI/state, exact action, USB effect, expected UI
 ### A. Mac-side preflight before using the Pixel
 
 #### Step 1 — Verify the frozen local candidate and APK
-- **UI/state:** No device session; the candidate checkout is read-only for this plan.
-- **Action:** Verify candidate branch/HEAD/tree, app/main/test/androidTest/app trees, local APK SHA-256, package/version/code, and signer against the pinned identity above.
+- **UI/state:** No device session; tracked candidate files remain read-only. Local Git exclude metadata may be verified for raw evidence handling.
+- **Action:** Verify candidate branch/HEAD/tree, app/main/test/androidTest/app trees, local APK SHA-256, package/version/code, and signer against the pinned identity above. Before any phone or ADB access, also choose a unique UTC session ID and verify that a prospective file under `.unlazy/v080-beta/evidence/c05c-<UTC-session-id>/` is ignored in this exact candidate checkout: run `git check-ignore -v --no-index` on a prospective filename and require the repository-local exclude rule `/.unlazy/v080-beta/evidence/c05c-*/` from the file resolved by `git rev-parse --git-path info/exclude`. If the rule is absent, add only that rule to the repository-local exclude file returned by that command, from this exact candidate checkout, and repeat the check. This changes local Git metadata only, not the tracked candidate/tree. Do not create the session directory or request/use the Pixel until the prospective path is positively verified as ignored.
 - **USB effect:** NO USB.
 - **Expected UI result:** Not applicable; exact local identity matches.
-- **Expected physical evidence:** None. This is only a prerequisite check.
-- **Abort:** Any identity/hash mismatch, missing APK, dirty tracked candidate tree, or package/signer mismatch; do not access the Pixel.
+- **Expected physical evidence:** None. Record the candidate identity and the verified local evidence destination as preflight metadata; this is not device evidence.
+- **Abort:** Any identity/hash mismatch, missing APK, dirty tracked candidate tree, package/signer mismatch, or failure to verify that the prospective evidence path is ignored; do not access the Pixel.
 
 #### Step 2 — Refresh live release prerequisites
 - **UI/state:** PR #70 remains open/draft at the frozen candidate; no device is accessed.
@@ -161,11 +161,11 @@ Each step specifies the expected UI/state, exact action, USB effect, expected UI
 
 #### Step 14 — Capture final evidence and complete safely
 - **UI/state:** Final reads are complete and app shows no active read/write.
-- **Action:** Capture final PID/activity, USB descriptors via wireless ADB, screenshots/UI hierarchy, non-cleared app logcat, UTC timestamps, commands, and artifact SHA-256 values. Store raw evidence in a new unique ignored `.unlazy/v080-beta/evidence/c05c-<UTC-session-id>/` directory; never overwrite the stopped report or commit raw captures.
+- **Action:** Before creating the session directory or writing any artifact, re-run `git check-ignore -v --no-index` on a prospective file at the exact destination (for example, `.unlazy/v080-beta/evidence/c05c-<UTC-session-id>/commands.txt`) and require the repository-local exclude rule `/.unlazy/v080-beta/evidence/c05c-*/`. This check is valid before the file or directory exists; do not use a missing-path `git status` result as evidence. Then capture final PID/activity, USB descriptors via wireless ADB, screenshots/UI hierarchy, non-cleared app logcat, UTC timestamps, commands, and artifact SHA-256 values. Store raw evidence in the new unique `.unlazy/v080-beta/evidence/c05c-<UTC-session-id>/` directory under the verified repository-local exclude rule; never overwrite the stopped report or commit raw captures.
 - **USB effect:** NO USB to the DAC from these observations; wireless ADB only.
 - **Expected UI result:** Final positive current-session presentation; no active operation.
 - **Expected physical evidence:** Hash-indexed evidence establishing exact identity, baseline/final displayed values, attached navigation, and no state-changing control invoked. It does not establish zero USB reports or raw bit-for-bit equality.
-- **Abort:** Any unexpected value difference, missing evidence, or ambiguous state; preserve what exists, do no repair/restoration write, stop, and release the Pixel.
+- **Abort:** Ignore verification fails, any unexpected value difference, missing evidence, or ambiguous state; preserve what exists, do no repair/restoration write, stop, and release the Pixel.
 
 #### Step 15 — Release phone and report outcome
 - **UI/state:** No hardware operation is active; all collected evidence is saved locally.
