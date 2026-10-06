@@ -1,5 +1,5 @@
 {
-  "timestamp_utc": "2026-10-06T16:03:05Z",
+  "timestamp_utc": "2026-10-06T17:01:38Z",
   "state": "RUNNING",
   "current_gate": "G3 \u2014 Final physical plan ready; awaiting owner-confirmed C05-C session",
   "next_gate": "C05-C \u2014 Real Black Pearl production identity/session/read/navigation",
@@ -322,7 +322,7 @@
   "owner_action_required_now": true,
   "pixel_required_now": true,
   "physical_session_ready": true,
-  "physical_session_readiness_reason": "C05-A, C05-B, and C05-D passed; deterministic read-only C05-C plan is prepared; all exact-head workflows pass and API35 has 3 consecutive full-suite passes. Waiting for explicit owner confirmation before device access. main advanced by a catalog-only commit after the recorded PR base; candidate changed paths do not overlap, but GitHub still reports the old base and mergeability unknown, so recheck PR base/head/checks before starting any physical session.",
+  "physical_session_readiness_reason": "C05-A, C05-B, and C05-D passed; deterministic read-only C05-C plan is prepared; all exact-head workflows pass and API35 has 3 consecutive full-suite passes. Waiting for explicit owner confirmation before device access. main has advanced through two catalog-only commits after the recorded PR base; candidate changed paths do not overlap, but GitHub still reports the old base and mergeability unknown, so recheck PR base/head/checks before starting any physical session.",
   "estimated_pixel_minutes": {
     "target": 10,
     "hard_limit": 15
@@ -362,7 +362,7 @@
   "app_dir_tree": "42977ce481bc76aa85b866610672e35e35d6cde6",
   "pr_mergeable": null,
   "pr_mergeable_state": "unknown",
-  "main_head_observed": "58d5c3a25a6d25ec463c1c41ecae049b22a8471d",
+  "main_head_observed": "85b1bd4b45112518ce4d6be1c9b263605daaf674",
   "main_advanced_since_pr_snapshot": {
     "prior_main_and_pr_api_base": "c702ef0149b4c647446639cfcb0ab25c09159db3",
     "commit": "58d5c3a25a6d25ec463c1c41ecae049b22a8471d",
@@ -376,6 +376,26 @@
     ],
     "candidate_path_overlap": [],
     "pr_api_base_as_of_2026_10_06T16_02Z": "c702ef0149b4c647446639cfcb0ab25c09159db3",
-    "mergeability_refresh_pending": true
+    "mergeability_refresh_pending": true,
+    "subsequent_commits": [
+      {
+        "commit": "85b1bd4b45112518ce4d6be1c9b263605daaf674",
+        "parent": "58d5c3a25a6d25ec463c1c41ecae049b22a8471d",
+        "commit_time_utc": "2026-10-06T16:55:39Z",
+        "subject": "Refresh curated community EQ catalog",
+        "changed_paths": [
+          "catalog/catalog.json"
+        ],
+        "candidate_path_overlap": []
+      }
+    ],
+    "all_changed_paths_since_pr_snapshot": [
+      "catalog/catalog.json",
+      "catalog/discovery/github_candidates.json",
+      "catalog/discovery/headphone_identity_audit.json",
+      "catalog/source_health.json"
+    ],
+    "pr_api_base_as_of_2026_10_06T17_00Z": "c702ef0149b4c647446639cfcb0ab25c09159db3",
+    "pr_api_head_as_of_2026_10_06T17_00Z": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f"
   }
 }
