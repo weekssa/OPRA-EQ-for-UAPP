@@ -1,5 +1,5 @@
 {
-  "timestamp_utc": "2026-10-06T17:01:38Z",
+  "timestamp_utc": "2026-10-06T18:07:26Z",
   "state": "RUNNING",
   "current_gate": "G3 \u2014 Final physical plan ready; awaiting owner-confirmed C05-C session",
   "next_gate": "C05-C \u2014 Real Black Pearl production identity/session/read/navigation",
@@ -16,7 +16,7 @@
   "candidate_apk_sha256": "f33818309d55571166d91e501065706ddbb8faf180833b03bb6eb948e6bffed1",
   "candidate_apk_is_official_signed_beta": false,
   "pr": 70,
-  "pr_state": "open_draft_exact_head_checks_green_base_refresh_pending",
+  "pr_state": "open_draft_exact_head_checks_green_base_c702_mergeable_clean",
   "pr_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
   "pr_base": "c702ef0149b4c647446639cfcb0ab25c09159db3",
   "pr_current_body_stale": false,
@@ -322,20 +322,19 @@
   "owner_action_required_now": true,
   "pixel_required_now": true,
   "physical_session_ready": true,
-  "physical_session_readiness_reason": "C05-A, C05-B, and C05-D passed; deterministic read-only C05-C plan is prepared; all exact-head workflows pass and API35 has 3 consecutive full-suite passes. Waiting for explicit owner confirmation before device access. main has advanced through two catalog-only commits after the recorded PR base; candidate changed paths do not overlap, but GitHub still reports the old base and mergeability unknown, so recheck PR base/head/checks before starting any physical session.",
+  "physical_session_readiness_reason": "C05-A, C05-B, and C05-D passed; the deterministic read-only C05-C plan is prepared; all exact-head workflows pass and API35 has 3 consecutive full-suite passes. BASE-DRIFT-B is reconciled: the current-main catalog passed targeted publication/archive validation and 8/8 PublishedCatalogTest tests, with no Android app/test path overlap. PR #70 remains at the frozen head and GitHub reports mergeable=true / clean; the active main ruleset has no up-to-date requirement. Waiting only for explicit owner confirmation before device access. No ADB/device state access has occurred.",
   "estimated_pixel_minutes": {
     "target": 10,
     "hard_limit": 15
   },
-  "watchdog_mode": "READY_FOR_FINAL_PHYSICAL_SESSION_WAITING_OWNER_CONFIRMATION_AND_PR_BASE_REFRESH",
-  "loop_status": "API35_PASS_3_OF_3; EXACT_HEAD_CI_GREEN; C05_A_B_D_PASS; C05_C_PLAN_READY; WAITING_OWNER_CONFIRMATION; PR_BASE_REFRESH_PENDING; NO_DEVICE_ACCESS",
+  "watchdog_mode": "READY_FOR_FINAL_PHYSICAL_SESSION_WAITING_OWNER_CONFIRMATION",
+  "loop_status": "API35_PASS_3_OF_3; EXACT_HEAD_CI_GREEN; C05_A_B_D_PASS; BASE_DRIFT_B_VALIDATED; PR_MERGEABLE_CLEAN; C05_C_PLAN_READY; WAITING_OWNER_CONFIRMATION; NO_DEVICE_ACCESS",
   "stable_latest_release": "v0.7.2",
   "merge_or_publish_performed": false,
   "nonphysical_gates_open": [
     "C05-C physical qualification after explicit owner confirmation",
     "Independent pre-merge verification after C05-C",
-    "Post-merge signed artifact and upgrade gates",
-    "PR #70 base/mergeability refresh after the catalog-only main advance"
+    "Post-merge signed artifact and upgrade gates"
   ],
   "physical_gates_open": [
     "C05-C read-only Black Pearl identity/session/read/navigation and no-unexpected-mutation evidence"
@@ -352,17 +351,17 @@
     "mission closeout"
   ],
   "next_actions": [
-    "Wait for explicit owner confirmation: READY FOR FINAL PHYSICAL SESSION, with the Pixel 9 unlocked/on the M4 Mac Wi-Fi and Black Pearl attached over USB-C; monitor for GitHub to settle PR #70 base and mergeability after the catalog-only main update.",
-    "After confirmation and PR-base refresh, verify the frozen candidate/tree, PR #70 head/base/checks, APK identity/hash, and current wireless ADB discovery; proceed only if the refreshed identity is unambiguous.",
-    "After physical C05-C evidence, continue independent pre-merge verification; do not merge or publish until all ordered release gates pass."
+    "Wait for the owner's explicit confirmation: READY FOR FINAL PHYSICAL SESSION, with the Pixel 9 unlocked/on the M4 Mac Wi-Fi and Black Pearl attached over USB-C.",
+    "After confirmation, verify the exact candidate HEAD/tree and app/test trees, PR #70 head/reported base/checks, candidate APK identity/hash, and fresh wireless ADB discovery. Record current main separately and classify only any new delta; the validated catalog-only BASE-DRIFT-B does not delay C05-C.",
+    "Run the read-only C05-C procedure in FINAL_PHYSICAL_SESSION_PLAN.md; after successful evidence, continue independent pre-merge verification. Do not merge or publish until all ordered release gates pass."
   ],
   "issue": "https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/71",
   "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex/v0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md",
   "physical_plan": "docs/implementation/FINAL_PHYSICAL_SESSION_PLAN.md",
   "app_dir_tree": "42977ce481bc76aa85b866610672e35e35d6cde6",
-  "pr_mergeable": null,
-  "pr_mergeable_state": "unknown",
-  "main_head_observed": "85b1bd4b45112518ce4d6be1c9b263605daaf674",
+  "pr_mergeable": true,
+  "pr_mergeable_state": "clean",
+  "main_head_observed": "d2f743610133edc68b48550aca7f3a4591dc09c0",
   "main_advanced_since_pr_snapshot": {
     "prior_main_and_pr_api_base": "c702ef0149b4c647446639cfcb0ab25c09159db3",
     "commit": "58d5c3a25a6d25ec463c1c41ecae049b22a8471d",
@@ -376,13 +375,23 @@
     ],
     "candidate_path_overlap": [],
     "pr_api_base_as_of_2026_10_06T16_02Z": "c702ef0149b4c647446639cfcb0ab25c09159db3",
-    "mergeability_refresh_pending": true,
+    "mergeability_refresh_pending": false,
     "subsequent_commits": [
       {
         "commit": "85b1bd4b45112518ce4d6be1c9b263605daaf674",
         "parent": "58d5c3a25a6d25ec463c1c41ecae049b22a8471d",
         "commit_time_utc": "2026-10-06T16:55:39Z",
         "subject": "Refresh curated community EQ catalog",
+        "changed_paths": [
+          "catalog/catalog.json"
+        ],
+        "candidate_path_overlap": []
+      },
+      {
+        "commit": "d2f743610133edc68b48550aca7f3a4591dc09c0",
+        "parent": "85b1bd4b45112518ce4d6be1c9b263605daaf674",
+        "commit_time_utc": "2026-10-06T17:17:28Z",
+        "subject": "Refresh community and General EQ sources",
         "changed_paths": [
           "catalog/catalog.json"
         ],
@@ -396,6 +405,60 @@
       "catalog/source_health.json"
     ],
     "pr_api_base_as_of_2026_10_06T17_00Z": "c702ef0149b4c647446639cfcb0ab25c09159db3",
-    "pr_api_head_as_of_2026_10_06T17_00Z": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f"
+    "pr_api_head_as_of_2026_10_06T17_00Z": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
+    "resolved_as_of_utc": "2026-10-06T18:01:36Z",
+    "latest_main_head": "d2f743610133edc68b48550aca7f3a4591dc09c0",
+    "pr_mergeable": true,
+    "pr_mergeable_state": "clean",
+    "active_main_ruleset_requires_up_to_date": false,
+    "classic_branch_protection_independently_inspected": false
+  },
+  "pr_base_ref": "main",
+  "pr_snapshot_as_of_utc": "2026-10-06T18:01:36Z",
+  "integration_base_sha": "d2f743610133edc68b48550aca7f3a4591dc09c0",
+  "app_src_test_tree": "470979fb22a91c4514534badda6c2cc2032abfb6",
+  "app_src_android_test_tree": "da2b4f31e18025ebd00f0a84f274e0e8a8624800",
+  "base_drift_reconciliation": {
+    "classification": "BASE-DRIFT-B",
+    "state": "PASS_CLOSED_AS_C05C_BLOCKER",
+    "recorded_pr_base_sha": "c702ef0149b4c647446639cfcb0ab25c09159db3",
+    "pr_base_ref": "main",
+    "current_integration_base_sha": "d2f743610133edc68b48550aca7f3a4591dc09c0",
+    "as_of_utc": "2026-10-06T18:07:26Z",
+    "changed_paths_c702_to_d2f7436": [
+      "catalog/catalog.json",
+      "catalog/discovery/github_candidates.json",
+      "catalog/discovery/headphone_identity_audit.json",
+      "catalog/source_health.json"
+    ],
+    "candidate_path_overlap": [],
+    "catalog_semantic_sha256_excluding_generated_at": "8ef8e3d653e25bc80d972e0dc6256a22424e0b5e726098c04c2fc593dc6d60a9",
+    "catalog_counts": {
+      "profiles": 8931,
+      "sources": 2,
+      "headphone_aliases": 31
+    },
+    "targeted_validation": {
+      "exact_catalog_ref": "d2f743610133edc68b48550aca7f3a4591dc09c0",
+      "publisher_schema_and_archive_validation": "PASS",
+      "published_catalog_tests": "8/8 PASS",
+      "validated_snapshot_sha256": "1573cf3224c089f8ec49b41ccfc60705f0b4336d59e06e487b4f581840a49ba3",
+      "android_build_or_matrix_rerun": false
+    },
+    "artifact_effect": "No Android source/test or APK input changed; external catalog metadata only; candidate APK hash remains pinned and unmodified.",
+    "pr_snapshot": {
+      "as_of_utc": "2026-10-06T18:01:36Z",
+      "head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
+      "base_sha": "c702ef0149b4c647446639cfcb0ab25c09159db3",
+      "mergeable": true,
+      "mergeable_state": "clean",
+      "exact_head_check_runs": "8/8 completed_success"
+    },
+    "branch_policy": {
+      "active_main_ruleset": "Protect main",
+      "up_to_date_required_by_observed_ruleset": false,
+      "classic_protection_independently_inspected": false
+    },
+    "candidate_rebase_required": false
   }
 }
