@@ -1,93 +1,124 @@
 # v0.8.0 Beta — Final Physical Session Plan
 
-**Disposition: FINAL PHYSICAL SESSION CANNOT BE SAFELY DEFINED.** Do not request/use the Pixel for C05 under the current maintained procedure. This file is the single definitive plan/disposition; it is not permission to begin a hardware operation.
+**Disposition: PLAN PREPARED; exact-head CI is queued.** This is a read-only physical qualification plan, not permission to begin. Start only after every required check for the exact candidate below is green and the owner confirms the consolidated session.
 
-## Candidate
+## Exact candidate
 
-- Application/test branch: `codex/v0.8.0-beta-ux`
-- Frozen app/test HEAD: `acd95df543632e57ae46cd68e714a35f94781f43`
-- Frozen tree: `0594c8887a5a066407700ad8e4906a0b3a93033d`
-- App-source commit: `f24b1582e22b19fc75757a61186361b71eab3974`
-- App tree: `337889667a9974967ab0d80ba880268b470eeab2`
-- Candidate APK available in the frozen checkout: `app/build/outputs/apk/debug/app-debug.apk`
+- Repository: `weekssa/OPRA-EQ-for-UAPP`
+- App/test branch: `codex/v0.8.0-beta-ux`
+- Candidate HEAD: `5c7d19cf2f77e448a97a1ee9d520ad4d408f120f`
+- Candidate tree: `e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d`
+- App production-source commit: `f24b1582e22b19fc75757a61186361b71eab3974`
+- `app/src/main` tree: `857d02a53d0df44fb0bd46e5ddad3b319dc48dab` (unchanged by the test/evidence-only commits)
+- Candidate-matched local debug APK: `app/build/outputs/apk/debug/app-debug.apk`
 - APK SHA-256: `f33818309d55571166d91e501065706ddbb8faf180833b03bb6eb948e6bffed1`
-- Package/version: `com.weekssa.opraeqforuapp`, `0.8.0-beta` / code `10`; debug-signed, not the official beta artifact.
-- PR #70: open/draft, exact head matches frozen HEAD; base `main` `c702ef0149b4c647446639cfcb0ab25c09159db3`; 8/8 checks successful at 2026-10-06 05:45 UTC.
-- Classification: **Class B**, unchanged.
+- APK package/version: `com.weekssa.opraeqforuapp`, `0.8.0-beta` / version code `10`; debug signer SHA-256 `cbd57d13316c2ca9e59fb810135ea71567fd22132b0d7f4640e92dc4434f0e14`. This is not the official signed beta artifact.
+- PR #70 is open/draft, base `main` at `c702ef0149b4c647446639cfcb0ab25c09159db3`, head matches this candidate. At 2026-10-06 07:05 UTC, the new exact-head checks had started and seven check runs were queued. Recheck all required checks on the same exact HEAD immediately before the session.
+- Classification remains **Class B**. The candidate changes recovery-state lifetime, navigation retention, and action eligibility. No hardware protocol implementation changed.
 
-## Required and optional equipment
+## C05 qualification split
 
-If a future maintained procedure makes G3 pass, required equipment is the M4 Mac mini, owner's Pixel 9, TRN Black Pearl, and one shared Wi-Fi network for wireless ADB. The Pixel USB-C port must remain connected only to the active DAC. Headphones/listening device are not required under the current wording/evidence because no additional human-heard TalkBack check is required. If that gate changes, headphones and a separate owner `READY` response become required.
+- **C05-A — PASS:** focused API35 test `recoverySurvivesProductionMyDacTabAndRootNavigationWithoutReplayingCallbacks()` passed 1/1 on AVD serial `emulator-5556`. It restores saved state in production `EqLibraryApp`/`MyDacScreen`, retains recovery through root/tab transitions, leaves Restore defaults disabled, counts one suspended fake reset, observes only explicit EQ/DEVICE reads, and observes zero DEVICE writes. E20 separately records fake-backed Android OS process reconstruction/no-replay. Neither test uses a DAC.
+- **C05-B — PASS:** protected protocol, identity, transport, session, mutation sequence, quantization, persistence, readback, DSP, and device-capability implementation paths are unchanged from the mission base.
+- **C05-D — PASS:** the single independent qualification review accepted the split evidence model and found no unsupported claim.
+- **C05-C — pending this physical session:** qualify exact Black Pearl recognition and Android session, current-state reads, attached-device navigation stability, truthful post-navigation state, explicit final reads, and no unexpected physical mutation. This physical session does not create the synthetic recovery fault.
 
-Optional only: FiiO JA11 and SIMGOT EW300 DSP. Both optional Pixel smokes are **NO**; they cannot add a release gate and are not needed to establish identity. The Mac-only identities are recorded in [`v0.8.0-beta-mac-readonly-enumeration.md`](v0.8.0-beta-mac-readonly-enumeration.md).
+The owner-approved strategy clarification and automated result are recorded in candidate acceptance evidence E23. Historical E22 remains supplemental and is not relabeled as this read-only run.
 
-## Owner actions
+## Scope and safety boundary
 
-**Required now: none.** Do not connect the Pixel for this gate.
+Required hardware is the owner's Pixel 9 and the exact TRN Black Pearl over USB-C. The M4 Mac mini connects to Pixel over wireless ADB, keeping the Pixel USB-C port available for the DAC. No headphones are required. JA11/EW300 checks are excluded.
 
-If and only if an updated maintained safe procedure makes G3 pass, the single consolidated session would require the owner to: be present for the phone/DAC session; keep Pixel and Mac on the same Wi-Fi; enable wireless debugging; provide the current pairing endpoint/code privately in the active session if pairing is needed (never store the code); connect the Black Pearl to the Pixel USB-C port when asked; and explicitly confirm each required cable/device transition. No current ADB address or pairing code is treated as durable.
+This session is **read-only with respect to the DAC**. Do not open Restore defaults or Reset, change DEVICE controls, apply/flash/save an EQ, create a recovery fault, disconnect the DAC, kill/restart the app process during an operation, or retry an uncertain read/write. Do not change EQ to meet the superseded non-flat reset precondition. No state is intentionally changed, so no restoration write is planned. If anything changes unexpectedly, capture it and stop without trying to repair or replay it.
 
-Human-heard TalkBack: **no additional check currently required**. The owner previously reported that direct touch made the recovery warning audible, and the relevant wording is unchanged. A changed wording or newly applicable requirement would need a warning and a separate explicit `READY` response before any heard check.
+The prior direct-touch owner-reported TalkBack audibility remains sufficient because the recovery warning wording and semantics are unchanged. Do not repeat an audible check. If that condition changes, request a separate `READY FOR TALKBACK CHECK` and wait for explicit `READY` before audio output.
 
-## Codex actions and session ordering
+## Owner action and start condition
 
-No Android physical action is authorized by this plan. If G3 is changed by new maintained evidence, replace this blocked disposition with an exact procedure before requesting the Pixel. The minimum sequence to prepare then is:
+After exact-head checks pass, the owner should confirm one final session, keep Pixel and Mac on the same Wi-Fi, unlock the Pixel, and attach the Black Pearl to the Pixel's USB-C port. The owner need not tap any mutation control. If the current ADB pairing is lost, enable Wireless debugging and provide the current ephemeral pairing endpoint/code only for the active session; never save a pairing code in evidence.
 
-1. Reverify frozen HEAD/tree/app tree, APK SHA, PR head, current checks, and the maintained procedure; stop if any identity differs.
-2. Verify wireless ADB pairing/connection, shell, logcat, screenshot, package/version, launch, and process/activity inspection before the DAC is attached. Never use wired ADB.
-3. Capture the exact Black Pearl identity and fresh full EQ/DEVICE state, including all ten bands, active slot, tracked playback gain, volume, filter, gain mode, topology, balance, microphone gain, and UAC state. Save original-state evidence before any write.
-4. Confirm the active EQ is known and non-flat. The maintained restore-defaults checklist permits an existing non-flat state or flashing a known non-flat saved EQ first. The previous session's Flat baseline does not satisfy this precondition.
-5. Proceed with one authorized Restore defaults/reset-recovery sequence only if the replacement maintained procedure identifies the objectively safe transition and observable stage. That missing step is why this sequence cannot currently be executed or estimated.
-6. On uncertainty, stop and observe. Never replay Reset, disconnect USB, kill the process, or infer safety from elapsed time.
-7. Obtain explicit current EQ and DEVICE reads without replaying a mutation; restore every captured original value and verify complete final readback.
-8. Capture UI/screenshots, focused PID logcat, process/activity state, test identity, readbacks, stop decisions, and exact restoration evidence; release the Pixel immediately.
+Before any ADB/device action, verify PR #70 still has the exact HEAD/tree above, the app APK hash still matches, required CI is green, and the owner has confirmed the session. Stop if source, artifact, PR base/head, or check identity differs.
 
-The required C05 step is not supplied by the maintained checklist or mission §48. The last physical recovery observation began from Flat and was initiated by navigating Back approximately 120 ms after Reset while a generic `Resetting EQ to flat…` state was visible. The HID stage and lower-level write count were unknown. Repeating this would recreate the known unsafe ambiguity.
+## Wireless ADB and artifact commands
 
-## Wireless ADB and prepared diagnostics
-
-Use current on-screen Developer options values only; earlier IP addresses/ports and six-digit pairing codes expire. Pair only if necessary, and do not write a pairing code to logs or evidence:
+Run from the repository on the Mac. Prefer an existing paired mDNS service; old chat IPs, ports, and pairing codes are expired and must not be reused.
 
 ```sh
-./tools/codex-android adb pair <current-pairing-host>:<pairing-port>
-./tools/codex-android adb connect <current-debugging-host>:<debugging-port>
+./tools/codex-android adb mdns services
+./tools/codex-android adb connect <current-adb-tls-connect-host:port>
 ./tools/codex-android adb devices -l
+./tools/codex-android adb -s <wireless-serial> shell getprop ro.product.model
+./tools/codex-android adb -s <wireless-serial> shell getprop ro.product.device
+./tools/codex-android adb -s <wireless-serial> shell getprop ro.build.version.sdk
+shasum -a 256 app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Before any DAC-sensitive step, verify connected wireless device, shell, package, launch, activity/process and screenshot. Prepared command patterns (not run now):
+Only if pairing is actually necessary, enter the current code silently so it is not added to shell history; the code is still passed transiently to `adb pair` and must not be copied into logs or evidence:
+
+```zsh
+read -r -s 'opraPairCode?Current Wireless debugging pairing code: '
+./tools/codex-android adb pair <current-pairing-host:port> "$opraPairCode"
+unset opraPairCode
+./tools/codex-android adb connect <current-adb-tls-connect-host:port>
+```
+
+Use only the wireless serial shown by `adb devices -l` for every later command. Confirm the Pixel model/device/API. If the exact debug APK is not already installed, run:
 
 ```sh
-./tools/codex-android adb -s <wireless-serial> shell getprop ro.product.model
-./tools/codex-android adb -s <wireless-serial> install -r <exact-candidate-apk>
-./tools/codex-android adb -s <wireless-serial> shell dumpsys package com.weekssa.opraeqforuapp
-./tools/codex-android adb -s <wireless-serial> shell monkey -p com.weekssa.opraeqforuapp 1
-./tools/codex-android adb -s <wireless-serial> shell pidof com.weekssa.opraeqforuapp
-./tools/codex-android adb -s <wireless-serial> shell dumpsys activity activities
-./tools/codex-android adb -s <wireless-serial> exec-out screencap -p > <evidence-dir>/screen.png
-./tools/codex-android adb -s <wireless-serial> logcat -v threadtime --pid=<app-pid>
+./tools/codex-android adb -s <wireless-serial> install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Do not clear the Android log buffer. Keep original binary/raw outputs and a short index; inspect logs after the phone session. The exact debug APK above was already built from this frozen app-source tree and hashed; do not rebuild it merely for this watch update.
+If install fails due to signer/version conflict, do not uninstall or replace the existing package; stop and report the blocker. Launch the app with:
 
-## Starting state, non-flat requirement, and C05 procedure
+```sh
+./tools/codex-android adb -s <wireless-serial> shell am start -W -n com.weekssa.opraeqforuapp/.MainActivity
+```
 
-- Original state: must be captured fresh at the session start. Historical-only reference from the prior Pixel session: EQ Flat / 10 filters / slot 1 / +13.00 dB; DEVICE Volume 80% / FAST-LL / LOW / CLASS AB / Centered / microphone 0 dB / UAC 2.0. It is not current state and cannot substitute for a fresh read.
-- Required non-flat state: the maintained checklist §E requires a known non-flat EQ before checkbox-on Restore defaults. An existing non-flat current slot is acceptable; otherwise the checklist allows flashing a known non-flat saved EQ first. No state change should be staged until an exact safe procedure and original-state restoration have been planned.
-- Safe C05 procedure: **NONE FOUND**. One independent reviewer concluded `NO — SAFE PROCEDURE NOT DEFINED BY MAINTAINED EVIDENCE`. The bounded Class B redesign review also concluded no source-supported minimal redesign safely eliminates the physical gate. Keep Class B.
-- Observable transition / expected stage: **undefined** for cancellation during the multi-report reset. Do not substitute timing, a generic progress string, or an undocumented HID stage.
+## Single-session procedure
 
-## Pass, abort, no-replay, readback, and restoration criteria
+Create a new, unique local evidence directory under `.unlazy/v080-beta/evidence/`; do not overwrite an earlier record. Save the exact candidate/PR/check snapshot and local APK digest there.
 
-No physical pass can be claimed until an updated procedure defines a safe transition and is approved in the maintained plan. The required outcome, if such a plan exists, must include: exact candidate/device identity; required known non-flat starting EQ; recovery state retained across the defined navigation/lifecycle transition; Restore defaults/action eligibility remains blocked during recovery; zero automatic second mutation callbacks; explicit non-mutating EQ/DEVICE observation; complete final native readback; exact restoration of the captured original EQ and DEVICE state; and final verification that all original values match.
+1. Capture pre-session Android USB/session and app identity evidence without issuing a USB write:
 
-Abort before mutation if candidate/APK/PR identity differs, wireless ADB fails, identity is ambiguous, baseline cannot be captured, the EQ is flat when the precondition requires non-flat, playback/volume is unsafe, the device/session changes, or the maintained observable safe stage is absent. Once a hardware action may have begun, do not cancel at an unknown stage or retry; use only the maintained explicit read/observe/recovery path, then restore and verify. If any result is uncertain, stop without replay and preserve evidence.
+   ```sh
+   ./tools/codex-android adb -s <wireless-serial> shell dumpsys usb > <evidence-dir>/usb-before.txt
+   ./tools/codex-android adb -s <wireless-serial> shell pidof com.weekssa.opraeqforuapp > <evidence-dir>/pid-before.txt
+   ./tools/codex-android adb -s <wireless-serial> shell dumpsys activity activities > <evidence-dir>/activities-before.txt
+   ./tools/codex-android adb -s <wireless-serial> exec-out screencap -p > <evidence-dir>/screen-before.png
+   ```
 
-Final readback must verify all ten native EQ bands, active slot, playback gain and tracked delta, plus every captured DEVICE value. Restoration uses the already-qualified app flows only, with explicit user confirmation and one mutation per state transition; each write is followed by readback. If original-state readback fails, stop and preserve device/evidence for safe owner handling; never claim restored.
+2. In the production app, open My DAC and verify it identifies the connected device as TRN Black Pearl and presents the active session truthfully. Capture any currently available USB identity fields; compare the serial to the previously recorded `330243E8260129` only if Android exposes it. The app's authoritative recognition must at least identify the supported Black Pearl; do not infer a serial from VID/PID alone.
 
-## Expected occupancy and final disposition
+3. Use only explicit read actions: `Read current EQ` and `Refresh DEVICE`. Record the fresh EQ snapshot (all values the production read exposes, active slot, and playback gain) and DEVICE values (volume, filter, gain mode, topology, balance, microphone gain, and UAC mode). Capture screenshots and UI hierarchy for every page needed to make the state legible. A read failure or incomplete/ambiguous identity is an abort, not permission to reset or repair.
 
-Optional JA11 smoke: **NO**. Optional EW300 smoke: **NO**.
+4. With Black Pearl still physically attached, navigate from My DAC to EQ Library and back using the visible production navigation. Do not invoke Restore defaults, Reset, Flash, Save, or DEVICE setters. Record whether recognition/session state stays truthful and note the app process ID; do not kill the process or unplug the DAC.
 
-Total expected Pixel occupancy: **not responsibly estimable**, because the required C05 procedure has no safe observable transition. No session may be booked or started from this plan. The owner should continue normal phone use.
+5. After returning, invoke only `Read current EQ` and `Refresh DEVICE` again. Compare all captured values and session presentation with the initial fresh reads. Capture final screenshots and:
 
-Maintained sources: `docs/BLACK_PEARL_V0.6_RESTORE_DEFAULTS_HANDS_ON_CHECKLIST.md` §§A/E/F, `docs/BLACK_PEARL_FLAT_RESET_HANDS_ON_CHECKLIST.md` §§3/8, `docs/implementation/v0.8.0-beta-mission.md` §48, current Black Pearl transaction source, and [watchdog issue #71](https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/71). Detailed C05 disposition is also summarized in [`v0.8.0-beta-autonomy-status.md`](v0.8.0-beta-autonomy-status.md).
+   ```sh
+   ./tools/codex-android adb -s <wireless-serial> shell dumpsys usb > <evidence-dir>/usb-after.txt
+   ./tools/codex-android adb -s <wireless-serial> shell pidof com.weekssa.opraeqforuapp > <evidence-dir>/pid-after.txt
+   ./tools/codex-android adb -s <wireless-serial> shell dumpsys activity activities > <evidence-dir>/activities-after.txt
+   ./tools/codex-android adb -s <wireless-serial> exec-out screencap -p > <evidence-dir>/screen-after.png
+   ```
+
+6. Record exact before/after values, identity/session observations, navigation results, commands, timestamps, candidate/APK/check identity, and artifact hashes. Preserve logs without clearing logcat; if needed, capture app-PID logcat after the session with `adb logcat -d -v threadtime --pid=<app-pid>`. Do not claim a lower-level USB write count from unchanged UI values.
+
+## Pass and abort criteria
+
+**PASS C05-C only if all are observed:**
+
+- Exact candidate, app-source APK hash, PR #70 head/base, and required checks still match and pass.
+- Android identifies the attached unit as the supported TRN Black Pearl and the production app reports the session accurately.
+- Fresh production EQ and DEVICE reads succeed and provide a known baseline.
+- My DAC → EQ Library → My DAC navigation while attached does not silently switch identity, claim a false session, or change read values.
+- Explicit final EQ and DEVICE reads succeed and match the initial values; no DEVICE write, reset, Flash, save, or unexplained state change occurred.
+- Evidence is saved and hashes are recorded. Because the physical session intentionally makes no state changes, no restoration mutation is required.
+
+**ABORT without retry** for a candidate/check mismatch, non-Pixel 9 target, ambiguous Black Pearl identity, absent/unstable Android session, incomplete/failed read, process/session change, unexpected write or value change, or any unclear hardware state. Do not attempt reset, cancellation, disconnection, process kill, or restorative write to make the result green. Preserve evidence and report the exact observation.
+
+## Occupancy
+
+Expected Pixel occupancy is **8–10 minutes**, with a **15-minute hard limit**. Pairing/setup should be completed before starting the timed session. At the limit, stop cleanly after capturing current evidence; do not omit final readback or extend into optional DAC work. Optional JA11/EW300 checks are NO.
+
+Maintained references: `docs/BLACK_PEARL_V0.6_RESTORE_DEFAULTS_HANDS_ON_CHECKLIST.md` §§A/E/F (existing production identity/read/write behavior and stop rules; its mutation checklist is not invoked), `docs/implementation/v0.8.0-beta-mission.md` §48, candidate acceptance evidence E23, and [watchdog issue #71](https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/71).
