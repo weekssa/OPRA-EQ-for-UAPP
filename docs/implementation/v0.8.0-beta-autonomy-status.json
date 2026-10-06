@@ -1,0 +1,50 @@
+{
+  "timestamp_utc": "2026-10-06T05:55:07Z",
+  "state": "BLOCKED",
+  "current_gate": "G3 — Final physical plan ready",
+  "next_gate": "G4 — Physical qualification complete (C05)",
+  "candidate_branch": "codex/v0.8.0-beta-ux",
+  "candidate_head": "acd95df543632e57ae46cd68e714a35f94781f43",
+  "candidate_tree": "0594c8887a5a066407700ad8e4906a0b3a93033d",
+  "app_source_commit": "f24b1582e22b19fc75757a61186361b71eab3974",
+  "app_tree": "337889667a9974967ab0d80ba880268b470eeab2",
+  "candidate_apk_sha256": "f33818309d55571166d91e501065706ddbb8faf180833b03bb6eb948e6bffed1",
+  "pr": 70,
+  "pr_head": "acd95df543632e57ae46cd68e714a35f94781f43",
+  "pr_base": "c702ef0149b4c647446639cfcb0ab25c09159db3",
+  "current_task": "Hold the Class B candidate frozen while C05 has no maintained safe, objectively observable reset-cancellation procedure.",
+  "last_progress_utc": "2026-10-06T05:49:48Z",
+  "last_progress_evidence": "Two stable read-only Mac IORegistry snapshots, five seconds apart, uniquely identified Black Pearl, JA11, and EW300 simultaneously.",
+  "same_task_heartbeats": 0,
+  "same_task_heartbeats_note": "Initial baseline for the master-directive control plane; earlier superseded-prompt scheduler counts are not observable.",
+  "minutes_without_progress": 5,
+  "loop_status": "CLEAR",
+  "nonphysical_gates_open": [
+    "G3 — Final physical plan readiness is blocked because C05 has no maintained safe interruption procedure."
+  ],
+  "physical_gates_open": [
+    "G4 — Black Pearl C05 physical qualification and exact original-state restoration."
+  ],
+  "downstream_gates": [
+    "G5 merge after physical pass and independent pre-merge verification",
+    "G6 official main-only signed beta artifact",
+    "G7 signed v0.7.2-to-beta persisted-state upgrade",
+    "G8 final clean install/core smoke and independent signed-artifact verification",
+    "G9 v0.8.0 prerelease publication",
+    "G10 final review bundle",
+    "G11 mission closeout"
+  ],
+  "waiting_external": [],
+  "owner_action_required": false,
+  "physical_session_ready": false,
+  "estimated_pixel_minutes": null,
+  "app_test_source_changed_since_frozen_qualification": false,
+  "hardware_classification": "Class B",
+  "next_actions": [
+    "Keep the status and definitive session/release records aligned with evidence changes, not timestamp-only edits.",
+    "Recheck frozen app/test HEAD, PR #70 head/checks, and stable/latest release during the hourly watchdog; do not rerun closed tests.",
+    "If maintained evidence establishes a safe C05 procedure, reevaluate G3 and prepare one consolidated session; otherwise do not touch the Pixel or Black Pearl."
+  ],
+  "issue": "https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/71",
+  "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex/v0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md"
+}
