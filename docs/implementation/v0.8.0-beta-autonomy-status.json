@@ -1,5 +1,5 @@
 {
-  "timestamp_utc": "2026-10-06T08:48:43Z",
+  "timestamp_utc": "2026-10-06T16:03:05Z",
   "state": "RUNNING",
   "current_gate": "G3 \u2014 Final physical plan ready; awaiting owner-confirmed C05-C session",
   "next_gate": "C05-C \u2014 Real Black Pearl production identity/session/read/navigation",
@@ -16,7 +16,7 @@
   "candidate_apk_sha256": "f33818309d55571166d91e501065706ddbb8faf180833b03bb6eb948e6bffed1",
   "candidate_apk_is_official_signed_beta": false,
   "pr": 70,
-  "pr_state": "open_draft_checks_green",
+  "pr_state": "open_draft_exact_head_checks_green_base_refresh_pending",
   "pr_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
   "pr_base": "c702ef0149b4c647446639cfcb0ab25c09159db3",
   "pr_current_body_stale": false,
@@ -322,19 +322,20 @@
   "owner_action_required_now": true,
   "pixel_required_now": true,
   "physical_session_ready": true,
-  "physical_session_readiness_reason": "C05-A, C05-B, and C05-D passed; deterministic read-only C05-C plan is prepared; all exact-head workflows pass and API35 has 3 consecutive full-suite passes. Waiting only for explicit owner confirmation before physical device access.",
+  "physical_session_readiness_reason": "C05-A, C05-B, and C05-D passed; deterministic read-only C05-C plan is prepared; all exact-head workflows pass and API35 has 3 consecutive full-suite passes. Waiting for explicit owner confirmation before device access. main advanced by a catalog-only commit after the recorded PR base; candidate changed paths do not overlap, but GitHub still reports the old base and mergeability unknown, so recheck PR base/head/checks before starting any physical session.",
   "estimated_pixel_minutes": {
     "target": 10,
     "hard_limit": 15
   },
-  "watchdog_mode": "READY_FOR_FINAL_PHYSICAL_SESSION_WAITING_OWNER_CONFIRMATION",
-  "loop_status": "API35_PASS_3_OF_3; EXACT_HEAD_CI_GREEN; C05_A_B_D_PASS; C05_C_PLAN_READY; WAITING_OWNER_CONFIRMATION; NO_DEVICE_ACCESS",
+  "watchdog_mode": "READY_FOR_FINAL_PHYSICAL_SESSION_WAITING_OWNER_CONFIRMATION_AND_PR_BASE_REFRESH",
+  "loop_status": "API35_PASS_3_OF_3; EXACT_HEAD_CI_GREEN; C05_A_B_D_PASS; C05_C_PLAN_READY; WAITING_OWNER_CONFIRMATION; PR_BASE_REFRESH_PENDING; NO_DEVICE_ACCESS",
   "stable_latest_release": "v0.7.2",
   "merge_or_publish_performed": false,
   "nonphysical_gates_open": [
     "C05-C physical qualification after explicit owner confirmation",
     "Independent pre-merge verification after C05-C",
-    "Post-merge signed artifact and upgrade gates"
+    "Post-merge signed artifact and upgrade gates",
+    "PR #70 base/mergeability refresh after the catalog-only main advance"
   ],
   "physical_gates_open": [
     "C05-C read-only Black Pearl identity/session/read/navigation and no-unexpected-mutation evidence"
@@ -351,12 +352,30 @@
     "mission closeout"
   ],
   "next_actions": [
-    "Wait for explicit owner confirmation: READY FOR FINAL PHYSICAL SESSION, with the Pixel 9 unlocked/on the M4 Mac Wi-Fi and Black Pearl attached over USB-C.",
-    "After confirmation, verify frozen candidate/PR/checks/APK and current wireless ADB discovery, then follow the exact read-only procedure in docs/implementation/FINAL_PHYSICAL_SESSION_PLAN.md.",
-    "After physical C05-C evidence, continue independent pre-merge verification; do not merge or publish until all ordered gates pass."
+    "Wait for explicit owner confirmation: READY FOR FINAL PHYSICAL SESSION, with the Pixel 9 unlocked/on the M4 Mac Wi-Fi and Black Pearl attached over USB-C; monitor for GitHub to settle PR #70 base and mergeability after the catalog-only main update.",
+    "After confirmation and PR-base refresh, verify the frozen candidate/tree, PR #70 head/base/checks, APK identity/hash, and current wireless ADB discovery; proceed only if the refreshed identity is unambiguous.",
+    "After physical C05-C evidence, continue independent pre-merge verification; do not merge or publish until all ordered release gates pass."
   ],
   "issue": "https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/71",
   "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex/v0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md",
   "physical_plan": "docs/implementation/FINAL_PHYSICAL_SESSION_PLAN.md",
-  "app_dir_tree": "42977ce481bc76aa85b866610672e35e35d6cde6"
+  "app_dir_tree": "42977ce481bc76aa85b866610672e35e35d6cde6",
+  "pr_mergeable": null,
+  "pr_mergeable_state": "unknown",
+  "main_head_observed": "58d5c3a25a6d25ec463c1c41ecae049b22a8471d",
+  "main_advanced_since_pr_snapshot": {
+    "prior_main_and_pr_api_base": "c702ef0149b4c647446639cfcb0ab25c09159db3",
+    "commit": "58d5c3a25a6d25ec463c1c41ecae049b22a8471d",
+    "commit_time_utc": "2026-10-06T15:56:18Z",
+    "subject": "Refresh EQ catalog currentness",
+    "changed_paths": [
+      "catalog/catalog.json",
+      "catalog/discovery/github_candidates.json",
+      "catalog/discovery/headphone_identity_audit.json",
+      "catalog/source_health.json"
+    ],
+    "candidate_path_overlap": [],
+    "pr_api_base_as_of_2026_10_06T16_02Z": "c702ef0149b4c647446639cfcb0ab25c09159db3",
+    "mergeability_refresh_pending": true
+  }
 }
