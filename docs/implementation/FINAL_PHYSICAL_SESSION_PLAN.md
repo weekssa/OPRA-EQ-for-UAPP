@@ -1,6 +1,6 @@
 # v0.8.0 Beta — Final Physical Session Plan
 
-**Disposition: PLAN PREPARED; current exact-head CI is green and API35 stability is at 2/3; the final pass is in progress.** This is a read-only physical qualification plan, not permission to begin. Start only after every required check and stability run for the exact candidate below is green and the owner confirms the consolidated session.
+**Disposition: PLAN PREPARED; exact-head API35 run 3 failed and the current consecutive-pass streak is 0.** This is a read-only physical qualification plan, not permission to begin. Start only after every required check and three consecutive full-suite API35 runs for the exact candidate below are green and the owner confirms the consolidated session.
 
 ## Exact candidate
 
@@ -13,14 +13,14 @@
 - Candidate-matched local debug APK: `app/build/outputs/apk/debug/app-debug.apk`
 - APK SHA-256: `f33818309d55571166d91e501065706ddbb8faf180833b03bb6eb948e6bffed1`
 - APK package/version: `com.weekssa.opraeqforuapp`, `0.8.0-beta` / version code `10`; debug signer SHA-256 `cbd57d13316c2ca9e59fb810135ea71567fd22132b0d7f4640e92dc4434f0e14`. This is not the official signed beta artifact.
-- PR #70 is open/draft, base `main` at `c702ef0149b4c647446639cfcb0ab25c09159db3`, head matches this candidate. At 2026-10-06 07:05 UTC, the new exact-head checks had started and seven check runs were queued. Recheck all required checks on the same exact HEAD immediately before the session.
+- PR #70 is open/draft, base `main` at `c702ef0149b4c647446639cfcb0ab25c09159db3`, head matches this candidate. At 2026-10-06 07:57 UTC, Catalog (`37427641890`), Priority (`37427641910`), and CodeQL (`37427641849`) passed; Android CI (`37427641822`) failed because API35 UI job `112159666615` had 2 failures in 64 tests. Android build `112159668961` and incidental min-API cold-install job `112159668075` passed. API35 runs 1 (`112150826255`) and 2 (`112155299351`) passed 64/64 each; run 3 failed `interruptedEqResetIsNotReplayedAndLeavesAnActionableRecoveryState` at a no-window-focus check and `recoverySurvivesProductionMyDacTabAndRootNavigationWithoutReplayingCallbacks` while waiting for an explicit fake EQ-read callback after DPAD. The failed-run artifact records an EGL stall, Launcher SIGKILL/ANR, and Activity pause overlapping the failures; causality is not proven and no app fatal/OOM was recorded. Current consecutive streak is 0. Diagnose any further failure before another retry; do not reopen the closed API26 Library gate. Recheck all required checks on the same exact HEAD immediately before the session.
 - Classification remains **Class B**. The candidate changes recovery-state lifetime, navigation retention, and action eligibility. No hardware protocol implementation changed.
 
 ## C05 qualification split
 
 - **C05-A — PASS:** focused API35 test `recoverySurvivesProductionMyDacTabAndRootNavigationWithoutReplayingCallbacks()` passed 1/1 on AVD serial `emulator-5556`. It restores saved state in production `EqLibraryApp`/`MyDacScreen`, retains recovery through root/tab transitions, leaves Restore defaults disabled, counts one suspended fake reset, observes only explicit EQ/DEVICE reads, and observes zero DEVICE writes. E20 separately records fake-backed Android OS process reconstruction/no-replay. Neither test uses a DAC.
 - **C05-B — PASS:** protected protocol, identity, transport, session, mutation sequence, quantization, persistence, readback, DSP, and device-capability implementation paths are unchanged from the mission base.
-- **C05-D — PASS:** the single independent qualification review accepted the split evidence model and found no unsupported claim.
+- **C05-D — PASS:** the independent qualification review on 2026-10-06 accepted the split evidence model, verified the fake-backed no-replay and protected-path audit, confirmed that physical identity/session/read/navigation remains required, and found no unsupported physical claim or missing C05 coverage.
 - **C05-C — pending this physical session:** qualify exact Black Pearl recognition and Android session, current-state reads, attached-device navigation stability, truthful post-navigation state, explicit final reads, and no unexpected physical mutation. This physical session does not create the synthetic recovery fault.
 
 The owner-approved strategy clarification and automated result are recorded in candidate acceptance evidence E23. Historical E22 remains supplemental and is not relabeled as this read-only run.

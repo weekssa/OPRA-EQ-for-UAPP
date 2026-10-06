@@ -1,8 +1,8 @@
 {
-  "timestamp_utc": "2026-10-06T07:33:45Z",
+  "timestamp_utc": "2026-10-06T08:06:44Z",
   "state": "RUNNING",
-  "current_gate": "G3 \u2014 Final physical plan ready",
-  "next_gate": "C05-C \u2014 Real Black Pearl production identity/session/read/navigation",
+  "current_gate": "G3 — Final physical plan ready",
+  "next_gate": "C05-C — Real Black Pearl production identity/session/read/navigation",
   "candidate_branch": "codex/v0.8.0-beta-ux",
   "candidate_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
   "candidate_tree": "e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d",
@@ -16,12 +16,12 @@
   "candidate_apk_sha256": "f33818309d55571166d91e501065706ddbb8faf180833b03bb6eb948e6bffed1",
   "candidate_apk_is_official_signed_beta": false,
   "pr": 70,
-  "pr_state": "open_draft_mergeable",
+  "pr_state": "open_draft_checks_failing",
   "pr_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
   "pr_base": "c702ef0149b4c647446639cfcb0ab25c09159db3",
   "pr_current_body_stale": true,
   "ci": {
-    "as_of_utc": "2026-10-06T07:33:45Z",
+    "as_of_utc": "2026-10-06T07:57:39Z",
     "exact_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
     "workflows": [
       {
@@ -39,8 +39,8 @@
       {
         "name": "Android CI",
         "run_id": 37427641822,
-        "status": "in_progress",
-        "conclusion": null
+        "status": "completed",
+        "conclusion": "failure"
       },
       {
         "name": "CodeQL",
@@ -66,8 +66,8 @@
       {
         "name": "emulator-ui-test",
         "job_id": 112159666615,
-        "status": "in_progress",
-        "conclusion": null
+        "status": "completed",
+        "conclusion": "failure"
       }
     ]
   },
@@ -97,7 +97,8 @@
     },
     "D_independent_qualification_review": {
       "state": "PASS",
-      "review_count": 1
+      "review_count": 1,
+      "evidence": "Independent review on 2026-10-06 verified production-route fake no-replay coverage, E20 process reconstruction, unchanged protected paths, the remaining physical identity/session/read/navigation requirement, and truthful evidence boundaries; no concrete C05 gap or unsupported physical claim found."
     },
     "physical_fault_injection_required": false,
     "old_non_flat_eq_reset_precondition_applies_to_read_only_c05c": false,
@@ -111,8 +112,8 @@
     "current_candidate_required_consecutive_full_suite_passes": 3,
     "current_candidate_passes_recorded": 2,
     "current_candidate_exact_head_run": 37427641822,
-    "current_run_status": "in_progress",
-    "next_action": "Inspect final job 112159666615. If green, stop API35 after 3/3; if failed, diagnose the actual report/log before any affected retry.",
+    "current_run_status": "completed_failure",
+    "next_action": "The 64-test exact-head run failed after two clean runs. Artifact review found an emulator EGL stall, Nexus Launcher SIGKILL/ANR and window-focus loss overlapping the two incomplete tests; no app crash/OOM or callback-count assertion failure was recorded, but causality is not proven. Record this evidence, then run one full exact-head suite to restart the three-pass streak; investigate again before any further retry if it fails.",
     "stop_after_three_consecutive_passes": true,
     "current_candidate_full_suite_job_id": 112150826255,
     "current_candidate_run_1": {
@@ -123,7 +124,38 @@
       "job_id": 112155299351,
       "result": "64/64; 0 failures; 0 skipped"
     },
-    "current_candidate_run_3_job_id": 112159666615
+    "current_candidate_run_3_job_id": 112159666615,
+    "current_candidate_consecutive_passes": 0,
+    "current_candidate_run_3": {
+      "run_id": 37427641822,
+      "job_id": 112159666615,
+      "artifact_id": 11397470717,
+      "artifact_sha256": "a9511db0ab332cc44ced51a75e54a7dfbf7299e24fa0f9d80c32135358920ac5",
+      "result": "64 tests; 2 failures; 0 errors; 0 skipped",
+      "failed_tests": [
+        {
+          "name": "interruptedEqResetIsNotReplayedAndLeavesAnActionableRecoveryState",
+          "line": 161,
+          "failure": "Espresso RootViewWithoutFocusException; window focus false; following no-replay/write assertions were not reached."
+        },
+        {
+          "name": "recoverySurvivesProductionMyDacTabAndRootNavigationWithoutReplayingCallbacks",
+          "line": 299,
+          "failure": "ComposeTimeoutException waiting for fake EQ-read callback after KEYCODE_DPAD_CENTER; remaining reads/navigation/no-write assertions were not reached."
+        }
+      ],
+      "runner_evidence": [
+        "07:41:47.409Z EGL_emulation reports 67,630 ms average and 404,359 ms maximum frame timing",
+        "07:41:47.949Z Nexus Launcher PID 1175 exits SIGKILL",
+        "07:41:48.265Z InputManager reports an Application Not Responding channel for Nexus Launcher",
+        "07:41:52.894Z test Activity is PAUSED during second timeout",
+        "07:41:54.095Z Compose timeout recorded"
+      ],
+      "diagnosis": "Likely emulator window/input instability; causality for the DPAD callback miss is not proven. No app fatal exception or app OOM; end-run MemAvailable about 1.2 GB. Both tests passed in exact-head pass 2. No product defect is demonstrated.",
+      "pass2_comparison_artifact_id": 11396188437,
+      "pass2_comparison": "Both affected tests passed on the same exact candidate (8.261 s and 9.062 s).",
+      "api26_disposition": "Closed gate unchanged; incidental cold-install job only; no Library or heap diagnostics."
+    }
   },
   "api26": {
     "state": "PASS_CLOSED",
@@ -168,19 +200,18 @@
   "owner_action_required_now": false,
   "pixel_required_now": false,
   "physical_session_ready": false,
-  "physical_session_readiness_reason": "Two of three exact-candidate API35 full-suite passes are complete; the final pass is in progress. Explicit owner session confirmation is required before C05-C.",
+  "physical_session_readiness_reason": "Exact-head API35 attempt 3 failed two assertions; the earlier two passes no longer form a consecutive stability series. Diagnose first; owner confirmation is still required before C05-C.",
   "estimated_pixel_minutes": {
     "target": 10,
     "hard_limit": 15
   },
-  "watchdog_mode": "RUNNING_WAIT_EXACT_HEAD_CI_AND_API35_STABILITY",
-  "loop_status": "CLEAR",
+  "watchdog_mode": "RUNNING_API35_FAILURE_REVIEW_AND_STABILITY",
+  "loop_status": "RUNNER_WINDOW_FOCUS_DISTURBANCE_RECORDED; CAUSALITY_NOT_PROVEN; NEXT_EXACT_HEAD_SUITE",
   "stable_latest_release": "v0.7.2",
   "merge_or_publish_performed": false,
   "nonphysical_gates_open": [
-    "Exact-head Android CI/CodeQL completion",
-    "Three consecutive exact-candidate API35 full-suite passes",
-    "C05-C physical qualification",
+    "Exact-head Android CI and three consecutive API35 full-suite passes",
+    "C05-C physical qualification after exact-head gates and owner session confirmation",
     "Independent pre-merge verification",
     "Post-merge signed artifact and upgrade gates"
   ],
@@ -199,9 +230,9 @@
     "mission closeout"
   ],
   "next_actions": [
-    "Inspect final API35 job 112159666615 and diagnose its actual report/log if it fails; otherwise record 3/3 exact-candidate full-suite passes.",
-    "Refresh exact PR head/base and every required status context while keeping the app candidate/tree unchanged.",
-    "On green completion, update status/JSON, issue #71, and PR body at the readiness transition; send one C05-C session notice and wait for explicit owner confirmation."
+    "Record the independent C05-D PASS and correct the stale final-physical-plan CI summary; C05-A/B/D are complete and the C05-C plan remains read-only.",
+    "Run one full API35 exact-head suite on unchanged candidate 5c7d19cf2f77e448a97a1ee9d520ad4d408f120f; the consecutive-pass streak starts at 0 and API26 stays closed.",
+    "Inspect the complete report/log before any further retry if a test fails; after three consecutive exact-head full-suite passes and all checks green, send the single physical-session notice and wait for explicit confirmation."
   ],
   "issue": "https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/71",
   "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex/v0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md",
