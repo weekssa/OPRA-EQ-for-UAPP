@@ -267,10 +267,72 @@ jobs:
             printf 'Expected API 26 emulator, received API %s.\n' "$api_level" >&2
             exit 1
           fi
-          heap_growth_limit="$(adb shell getprop dalvik.vm.heapgrowthlimit | tr -d '\r')"
           abi="$(adb shell getprop ro.product.cpu.abi | tr -d '\r')"
-          printf 'Dalvik heap growth limit: %s\nEmulator ABI: %s\n' "$heap_growth_limit" "$abi" | tee "$RUNNER_TEMP/min-api-runtime.txt"
-          if [[ "$heap_growth_limit" != "48m" || "$abi" != "x86_64" ]]; then
+          if [[ "$abi" != "x86_64" ]]; then
+            printf 'Expected the default API-26 x86_64 profile, received ABI %s.\n' "$abi" >&2
+            exit 1
+          fi
+          heap_growth_limit_before="$(adb shell getprop dalvik.vm.heapgrowthlimit | tr -d '\r')"
+          if [[ -z "$heap_growth_limit_before" ]]; then
+            printf 'API-26 x86_64 image leaves dalvik.vm.heapgrowthlimit unset; applying the required default 48m before app installation.\n'
+            adb root
+            adb wait-for-device
+            shell_uid="$(adb shell id -u | tr -d '\r')"
+            if [[ "$shell_uid" != "0" ]]; then
+              printf 'Could not obtain root to apply the required API-26 48m runtime default.\n' >&2
+              exit 1
+            fi
+            adb shell stop zygote
+            zygote_state=""
+            for attempt in $(seq 1 30); do
+              zygote_state="$(adb shell getprop init.svc.zygote | tr -d '\r')"
+              if [[ "$zygote_state" == "stopped" ]]; then
+                break
+              fi
+              sleep 1
+            done
+            if [[ "$zygote_state" != "stopped" ]]; then
+              printf 'API-26 zygote did not stop before applying the heap-growth limit (state=%s).\n' "$zygote_state" >&2
+              exit 1
+            fi
+            adb shell setprop dalvik.vm.heapgrowthlimit 48m
+            adb shell start zygote
+            heap_growth_limit=""
+            zygote_state=""
+            for attempt in $(seq 1 60); do
+              heap_growth_limit="$(adb shell getprop dalvik.vm.heapgrowthlimit | tr -d '\r')"
+              zygote_state="$(adb shell getprop init.svc.zygote | tr -d '\r')"
+              if [[ "$heap_growth_limit" == "48m" && "$zygote_state" == "running" ]]; then
+                break
+              fi
+              sleep 1
+            done
+            if [[ "$heap_growth_limit" != "48m" || "$zygote_state" != "running" ]]; then
+              printf 'Could not establish the required 48m heap-growth limit before app installation (property=%s, zygote=%s).\n' "$heap_growth_limit" "$zygote_state" >&2
+              exit 1
+            fi
+            package_manager_path=""
+            for attempt in $(seq 1 60); do
+              package_manager_path="$(adb shell pm path android 2>/dev/null | tr -d '\r' || true)"
+              if [[ "$package_manager_path" == package:* ]]; then
+                break
+              fi
+              sleep 1
+            done
+            if [[ "$package_manager_path" != package:* ]]; then
+              printf 'Package Manager did not become ready after restarting zygote.\n' >&2
+              exit 1
+            fi
+          else
+            package_manager_path='not restarted (heap-growth limit already configured)'
+          fi
+          heap_growth_limit="$(adb shell getprop dalvik.vm.heapgrowthlimit | tr -d '\r')"
+          heap_growth_limit_before_report="$heap_growth_limit_before"
+          if [[ -z "$heap_growth_limit_before_report" ]]; then
+            heap_growth_limit_before_report='<unset>'
+          fi
+          printf 'Dalvik heap growth limit before normalization: %s\nDalvik heap growth limit for app launch: %s\nEmulator ABI: %s\nPackage Manager readiness: %s\nZygote state: %s\n' "$heap_growth_limit_before_report" "$heap_growth_limit" "$abi" "$package_manager_path" "$(adb shell getprop init.svc.zygote | tr -d '\r')" | tee "$RUNNER_TEMP/min-api-runtime.txt"
+          if [[ "$heap_growth_limit" != "48m" ]]; then
             printf 'Expected the default API-26 x86_64 profile with a 48m heap growth limit.\n' >&2
             exit 1
           fi
