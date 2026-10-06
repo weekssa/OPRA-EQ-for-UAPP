@@ -1,9 +1,9 @@
 # v0.8.0 Beta — Final Physical Session Plan
 
-**Plan revision:** 2.2
-**Disposition:** G3 PASS FOR THE ALREADY-ATTACHED RESUME PATH ONLY. If the DAC is no longer attached from the stopped attempt, stop; this review does not qualify a fresh attachment/connect flow.
-**Master directive:** `docs/implementation/v0.8.0-beta-master-directive.md`, version 1.0, introduced by commit `9b8bc9197730f31731c40b82e012b84055390747`.
-**Review basis:** frozen app/test candidate plus source audit at exact candidate HEAD; independent read-only review passed on 2026-10-06 for the already-attached resume path. No product or test change is proposed.
+**Plan revision:** 2.3
+**Disposition:** PENDING INDEPENDENT REVIEW. The physical session remains attached-resume-only. Continue only if the exact Black Pearl and current production session are already present; otherwise stop and release the Pixel. No new attach/connect flow is qualified.
+**Master directive:** `docs/implementation/v0.8.0-beta-master-directive.md`, version 1.1; introduction commit and body hash are recorded in the directive and resume manifest.
+**Review basis:** frozen app/test candidate plus the exact-source read-path audit. This revision adds a per-step state/action/USB-effect/UI-result/evidence/abort contract. No product or test change is proposed.
 
 ## Purpose and current boundary
 
@@ -43,34 +43,139 @@ The ordinary Connected UI does not show the recovery-only **Read current EQ** bu
 
 **Read-only terminology and observable limit:** Black Pearl READ operations transmit protocol read-request output reports (`data/blackpearl/AndroidBlackPearlUsbTransport.kt:201-232`). A timed-out nondestructive read can be automatically reissued once in the same session (500 ms timeout, maximum two request attempts; `AndroidBlackPearlUsbTransport.kt:432-436`, `BlackPearlReadRetry.kt:5-30`). This bounded transport behavior is not a manual retry or a setting write. The procedure must not be described as zero USB OUT reports or zero read-request reissues. C05-C can establish that no setting-changing UI/API path was invoked and that all required displayed values match the baseline at the UI's presentation precision; it cannot establish a zero-transfer USB trace or bit-for-bit equality of raw protocol values. EQ band and playback-gain values are rounded for display to 0.01 dB, while raw EQ gain uses 1/256 dB increments (`strings_v06.xml:39,128`; `BlackPearlReadCodec.kt:19,24`; `BlackPearlProtocol.kt:24,93`). DEVICE Volume is displayed as an integer percent and is not a unit-compatible comparison for EQ Playback gain (`BlackPearlDeviceBatchControls.kt:95-99,497-499`). Compare each field only to the same field's baseline/final displayed value; do not compare EQ Playback gain to DEVICE Volume. If DEVICE reports **Inconsistent channel read** for balance, stop and do not pass because the UI suppresses the separate raw left/right pair (`BlackPearlDeviceControlReadCodec.kt:198-204`; `BlackPearlDeviceBatchControls.kt:121-132`). A verified EQ read can initialize app-local gain-baseline metadata if absent (`BlackPearlFlasher.kt:53-56`); this is not a DAC mutation.
 
-## Session steps and stop conditions
+## Step-by-step session procedure
 
-### A. Already-attached resume preflight before any new DAC read
+Each step specifies the expected UI/state, exact action, USB effect, expected UI result, evidence claim, and abort condition. `NO USB` means that the step issues no DAC protocol request; all ADB commands use wireless ADB only. `READ` is a production protocol read request and may send an outbound HID report; the existing transport may reissue one nondestructive request automatically after timeout. Neither label establishes zero physical USB traffic. This is a fresh availability check for the already-attached resume path, not permission to reconnect.
 
-1. Verify the local checkout is still the exact branch, HEAD, candidate tree, app trees, and APK SHA-256 above. Verify package/version and signer from the exact APK. If anything differs, stop and re-evaluate the affected gates; do not proceed on old evidence.
-2. Refresh PR #70 head/base/mergeability/checks, current `origin/main`, current v0.7.2 latest release, and exact APK identity. Require the frozen PR head and all required candidate checks green. Classify new base delta; catalog-only BASE-DRIFT-B does not invalidate this read-only physical plan. Stop on relevant app/test/security overlap, merge conflict, failed required check, or applicable up-to-date policy.
-3. Use wireless ADB only. Discover a current pairing/connect service with `adb mdns services`; verify `adb devices -l` shows the Pixel 9 (`tokay`, API 37) over a network serial, with no USB ADB transport. Verify the installed `com.weekssa.opraeqforuapp` matches the exact candidate by checking package/version/signer and pulling/hashing the installed APK where Android permits. Also hash the local APK. Do not reuse expired IPs, ports, or pairing codes. If wireless discovery or exact installed-artifact verification is ambiguous, stop and release the phone.
-4. This reviewed plan qualifies only an **already-attached resume** from the stopped read-only attempt. The owner already confirmed **connected** during that authorized session. If the Black Pearl remains attached, do not unplug/replug it and do not ask for another connection confirmation. After candidate/APK and wireless-ADB preflight, capture the currently attached USB descriptors, PID, activity, screen, and app state before issuing a new explicit read. Continue only if the exact Black Pearl fingerprint and an already-current production session are both positively visible; otherwise stop. Do not tap Connect, reconnect, grant permission, or initiate any new connection. If the Black Pearl is no longer attached, stop and release the phone; a fresh attach/connect procedure would need its own source-backed plan review before use.
+### A. Mac-side preflight before using the Pixel
 
-### B. Verify the attached Black Pearl and capture initial reads
+#### Step 1 — Verify the frozen local candidate and APK
+- **UI/state:** No device session; the candidate checkout is read-only for this plan.
+- **Action:** Verify candidate branch/HEAD/tree, app/main/test/androidTest/app trees, local APK SHA-256, package/version/code, and signer against the pinned identity above.
+- **USB effect:** NO USB.
+- **Expected UI result:** Not applicable; exact local identity matches.
+- **Expected physical evidence:** None. This is only a prerequisite check.
+- **Abort:** Any identity/hash mismatch, missing APK, dirty tracked candidate tree, or package/signer mismatch; do not access the Pixel.
 
-5. After attached-resume preflight, capture or re-read `dumpsys usb` and visible USB descriptors over wireless ADB. Require the exact prior device fingerprint when exposed: VID/PID `3302:43e8`, manufacturer `TTGK Technology`, product `TE-C`, serial `330243E8260129`. Require the production app to identify **TRN Black Pearl** and already show a connected/current session. If the app is on a root screen, open the connected-device surface for TRN Black Pearl to enter My DAC; with exactly one recognized DAC it should auto-select. This entry action opens the workspace only; it does not connect the DAC. If the app shows **Device detected**, **Connect**, a permission prompt, or any state that requires a new connection/reconnection, stop and do not tap Connect or grant permission. Stop if a different device is selected, a chooser is shown, or identity is ambiguous. The app UI does not display the serial or session-generation ID, so pair app recognition/session presentation with the Android USB descriptor evidence; do not infer identity from VID/PID alone. If the exposed fingerprint differs or app/session state is ambiguous, stop without issuing reads that cannot be tied to the exact unit.
-6. Wait for the connection-triggered EQ and DEVICE read activity to settle. Capture current EQ and DEVICE status. Require the positive EQ label **Verified current hardware** and the DEVICE heading **Current device state** with supporting text **Values verified from the connected DAC** after each read. If either snapshot is absent, busy, stale/Last read, Device settings, failed, or lacks that positive current-state presentation, stop; do not reconnect or manually retry. DEVICE failure text is not necessarily shown in this UI, so absence of the positive current-state indicator is itself a stop.
-7. **Baseline EQ:** in My DAC → EQ, first require the visible EQ status **Verified current hardware**. Tap **Edit EQ** once; the production action performs another fresh read and opens the editor only after that read succeeds. Wait for the editor (not a spinner or error), then open **All bands** and visually record each band row (index, filter type, frequency, gain, Q) and the active slot shown in the editor header. Do not tap a band row: each is an editor action. Capture screenshots/UI hierarchy with timestamps; tap **Close** and verify the My DAC EQ page again says **Verified current hardware**. Record the EQ snapshot's **Playback gain** as displayed in dB. It is a separate field from DEVICE **Volume** in integer percent; do not cross-compare the values or infer a separate global-EQ-gain field. The editor is a local working copy and Close makes no hardware write.
-8. **Baseline DEVICE:** open the DEVICE tab, tap its status **Refresh** once, wait for completed success and require **Current device state** / **Values verified from the connected DAC**. Record every visible DEVICE value: volume (integer percent), DAC filter, gain mode, amplifier topology, balance, microphone gain, and USB audio mode or its explicit unavailable state. If balance reads **Inconsistent channel read**, stop with C05-C not passed; the production UI does not expose the left/right raw values separately in that state. To capture the reported firmware, expand **About this DAC**; this is a local display toggle. No setting row, dialog option, switch, or device action may be opened or changed.
+#### Step 2 — Refresh live release prerequisites
+- **UI/state:** PR #70 remains open/draft at the frozen candidate; no device is accessed.
+- **Action:** Refresh PR head/base/mergeability and exact-head checks, current main delta and policy, issue #71, and latest stable release. Confirm stable/latest remains v0.7.2.
+- **USB effect:** NO USB.
+- **Expected UI result:** All required exact-head checks successful; no candidate-relevant drift or conflict.
+- **Expected physical evidence:** None. This protects candidate provenance only.
+- **Abort:** Candidate head differs, a required check fails/is pending, relevant app/test/security overlap appears, a merge conflict is reported, or release identity is ambiguous.
 
-### C. Attached navigation and final reads
+### B. Wireless Pixel and already-attached-session preflight
 
-9. With the Black Pearl still attached and all operations idle, capture PID, activity, screenshot, and USB descriptors. Use the visible app navigation to go **My DAC → EQ Library → My DAC**; on return, reopen the connected-device surface if needed and select only TRN Black Pearl if it is the sole recognized device. Do not open Settings, choose another device, or invoke any DAC action other than the specified read controls. Record timestamps and verify the same Pixel PID, USB fingerprint, product identity, and positive current-session presentation remain. The app does not expose its internal session-generation ID, so this evidence cannot prove generation equality between checkpoints; each production read checks session currentness during that read. Any observed session loss/change or stale/false UI state is an abort; do not reconnect.
-10. **Final EQ:** return to EQ and first require **Verified current hardware**. Tap **Edit EQ** once; require the editor to open successfully, open **All bands**, capture the complete band values and active slot without tapping any band row, then tap **Close** without editing. Require **Verified current hardware** again on the status page. Compare each final EQ band, slot, and displayed Playback gain with the corresponding baseline field. Values are compared as displayed; the UI rounds EQ gains to 0.01 dB, so the comparison does not establish bit-for-bit raw protocol equality.
-11. **Final DEVICE:** open DEVICE, tap **Refresh** once, require **Current device state** / **Values verified from the connected DAC**, record all fields and the truthful optional UAC state, and compare each final DEVICE field with the same baseline field at displayed precision. Expand **About this DAC** only if necessary to capture firmware. A read failure or missing positive success indicator receives no manual retry; transport's bounded internal retry is allowed and is documented above. If final data differs, balance becomes inconsistent, or the session changes, preserve the evidence and stop without Reset, setter, repair, replay, or another read.
-12. Capture final PID, activity, USB descriptors, screen/UI hierarchy, and app logcat for the session without clearing logs. Record exact wall-clock timestamps, command list, visible read result, and all artifact hashes. Store raw captures in a newly named unique ignored directory under `.unlazy/v080-beta/evidence/c05c-<UTC-session-id>/`; do not reuse or overwrite the previous stopped-attempt directory, and do not commit raw captures. Do not claim zero USB transfers. Record only: no state-changing control was invoked; final explicit production reads matched (or did not match) the captured baseline at displayed precision; no reset/flash/save/setter was used.
+#### Step 3 — Confirm current owner availability and establish wireless ADB
+- **UI/state:** Owner has just made the released Pixel 9 available; Black Pearl is left attached if it remains attached from the stopped session.
+- **Action:** Discover/connect through current wireless ADB service; verify `adb devices -l` identifies Pixel 9 (`tokay`, API 37) on a network serial and shows no USB ADB transport.
+- **USB effect:** NO USB to the DAC; Android control is wireless.
+- **Expected UI result:** One unambiguous Pixel target is available over wireless ADB.
+- **Expected physical evidence:** Timestamped Pixel model/API/network transport confirmation.
+- **Abort:** No fresh owner availability, ambiguous/missing wireless target, or any USB ADB connection; do not switch transports.
 
-### D. Safe completion
+#### Step 4 — Verify the installed application identity
+- **UI/state:** Correct Pixel is selected over wireless ADB; no DAC read is requested.
+- **Action:** Check installed package/version/code/signer and pull/hash the installed APK where Android permits; compare it and the local APK with the pinned candidate identity.
+- **USB effect:** NO USB to the DAC.
+- **Expected UI result:** Installed `com.weekssa.opraeqforuapp`, version `0.8.0-beta` / code 10, signer and SHA-256 match the exact debug candidate.
+- **Expected physical evidence:** Package metadata and local/installed APK hashes.
+- **Abort:** Any mismatch or an installed-artifact hash that cannot be established deterministically; do not open the DAC UI.
 
-13. Confirm the last reads have fully completed and the app shows no active read/write. Because this plan makes no setting changes, no restoration write is expected or permitted. If values changed unexpectedly, leave the unit untouched and report the exact discrepancy.
-14. Stop when final evidence is captured. JA11/EW300 and TalkBack are excluded. Target total Pixel occupancy is 8–10 minutes; hard limit is 15 minutes. If the limit approaches, drop nonessential screenshots/log detail first but never omit final EQ/DEVICE readback. If a deterministic final read cannot safely finish within the limit, stop, capture the exact state, and release the phone; do not extend by improvising.
-15. Release the Pixel immediately after the physical sequence completes or safely stops, using exactly: **PHONE RELEASED — YOU CAN TAKE THE PIXEL BACK**. State whether C05-C passed or stopped and whether any displayed value differed. Continue remaining documentation/review/release work on the Mac.
+#### Step 5 — Verify existing physical identity and production session
+- **UI/state:** The Black Pearl must still be attached from the stopped session; do not change cables or permissions.
+- **Action:** Over wireless ADB inspect Android USB descriptors and app state. Require VID/PID `3302:43e8`, manufacturer `TTGK Technology`, product `TE-C`, serial `330243E8260129`; require production UI identity **TRN Black Pearl** and already-current **Connected** state. If the app is on a root screen, open only the existing connected-device surface; do not initiate connection.
+- **USB effect:** NO USB to the DAC; host descriptor/session metadata inspection only.
+- **Expected UI result:** Exact prior fingerprint is present and the existing My DAC session is already current. The UI does not expose serial or session-generation ID.
+- **Expected physical evidence:** USB fingerprint paired with production identity/current-session presentation, Pixel PID/activity, screenshot/hierarchy timestamp.
+- **Abort:** DAC absent, fingerprint incomplete/mismatched, chooser/different device, **Device detected**, **Connect**, permission prompt, inactive/stale session, or any uncertainty. Do not Connect, reconnect, regrant permission, unplug, or replug.
+
+#### Step 6 — Establish the baseline read screen and idle state
+- **UI/state:** My DAC is open for the already-current Black Pearl. No recovery card or active operation is being acted upon.
+- **Action:** Confirm the normal EQ status is **Verified current hardware** and DEVICE status is **Current device state** / **Values verified from the connected DAC** where currently displayed; wait for any already-running operation to finish without touching it.
+- **USB effect:** NO USB from inspection/wait. Any earlier connection-triggered reads are not counted as this session's fresh baseline.
+- **Expected UI result:** Positive current-state labels, no spinner/error, no active read/write.
+- **Expected physical evidence:** Timestamped initial UI/session snapshot; fresh baseline is established only by Steps 7–10.
+- **Abort:** Stale/Last read, Device settings, missing positive status, read failure, busy operation that does not settle safely, or an unexpected recovery prompt; do not use recovery-only controls.
+
+### C. Production baseline reads
+
+#### Step 7 — Explicit baseline EQ read
+- **UI/state:** My DAC → EQ, with **Verified current hardware** and no active operation.
+- **Action:** Tap normal **Edit EQ** once. `openBlackPearlEditor()` calls `readBlackPearlSnapshot()` before opening the local editor.
+- **USB effect:** READ; a current-session check gates snapshot publication. Transport may make its documented single automatic nondestructive reissue after timeout.
+- **Expected UI result:** Editor opens only after a successful fresh read; otherwise it reports failure and the session stops.
+- **Expected physical evidence:** Exact production EQ read result tied to the still-current session and timestamp.
+- **Abort:** Spinner/error persists, the editor does not open, session changes, or any mutation/review/apply surface is encountered; no manual retry.
+
+#### Step 8 — Record baseline EQ and close locally
+- **UI/state:** Normal EQ editor reached by Step 7; the editor says edits are local only.
+- **Action:** Open **All bands**, record each band index/type/frequency/gain/Q and active slot; record visible Playback gain. Do not tap band rows or change values. Tap **Close** once.
+- **USB effect:** NO USB; All bands and Close are local presentation/state actions.
+- **Expected UI result:** My DAC EQ screen returns with **Verified current hardware**; closing the editor issues no hardware write.
+- **Expected physical evidence:** Complete displayed baseline EQ fields and active slot, screenshot/hierarchy timestamps; Playback gain recorded separately from DEVICE Volume.
+- **Abort:** Any edited value, Apply/Review/Safe gain action, incomplete band view, missing positive status, or unexpected hardware-operation indication.
+
+#### Step 9 — Explicit baseline DEVICE read
+- **UI/state:** My DAC → DEVICE for the same already-current Black Pearl.
+- **Action:** Tap normal **Refresh** once and wait for completed success.
+- **USB effect:** READ through `readBlackPearlQualificationControls()` and its production DEVICE snapshot path; existing bounded automatic read retry only.
+- **Expected UI result:** **Current device state** / **Values verified from the connected DAC**. Record volume, DAC filter, gain mode, amplifier topology, balance, microphone gain, and USB audio mode or its truthful unavailable state.
+- **Expected physical evidence:** Complete displayed baseline DEVICE values with timestamp. Optional unavailable UAC mode alone is not failure.
+- **Abort:** Read failure, missing positive state, **Inconsistent channel read**, session change, or any need to open/edit a setting row; no manual retry or setter.
+
+#### Step 10 — Capture firmware only if needed
+- **UI/state:** Successful baseline DEVICE view.
+- **Action:** If firmware is part of the capture record, expand **About this DAC**; do not touch any setting control.
+- **USB effect:** NO USB; this is a local display toggle.
+- **Expected UI result:** Firmware detail expands without changing current DEVICE values.
+- **Expected physical evidence:** Firmware text/screenshot only if shown.
+- **Abort:** Any action that presents a setter, write, or device command; close/navigate back without activating it.
+
+### D. Attached navigation and explicit final observations
+
+#### Step 11 — Navigate away and back while attached
+- **UI/state:** Both baseline reads completed; no active operation; exact Black Pearl remains attached.
+- **Action:** Use visible root navigation **My DAC → EQ Library**, then the existing visible route back to the already-connected **My DAC** surface. Do not select another output/device. If the existing My DAC surface cannot be reopened without a Connect/reconnect path, stop.
+- **USB effect:** NO USB; the route change retains presentation and does not itself disconnect/reconnect or trigger the final read.
+- **Expected UI result:** TRN Black Pearl and current-session state remain truthful after return. Navigation alone is not treated as a fresh physical read; final observations are Steps 12 and 14.
+- **Expected physical evidence:** Before/after Pixel PID, USB fingerprint, product identity, screenshots/activity and visible current-session status; internal session generation is not exposed and is not claimed.
+- **Abort:** DAC/session/PID changes, stale or false presentation, chooser, missing route, or any Connect/reconnect/permission prompt. Do not reconnect.
+
+#### Step 12 — Explicit final EQ read
+- **UI/state:** Returned to the existing My DAC → EQ surface; require current **Verified current hardware** and idle status.
+- **Action:** Tap normal **Edit EQ** once, wait for fresh read and successful editor, open **All bands**, record all fields/slot, then **Close** without editing.
+- **USB effect:** READ for Edit EQ; All bands/Close issue NO USB.
+- **Expected UI result:** Successful final snapshot and return to **Verified current hardware**.
+- **Expected physical evidence:** Final production EQ observation. Compare each band, slot, and displayed Playback gain to its matching baseline field.
+- **Abort:** Failed/stale read, changed session, incomplete values, or any setting/mutation action; no manual retry.
+
+#### Step 13 — Explicit final DEVICE read
+- **UI/state:** Same returned My DAC session, DEVICE tab, no active operation.
+- **Action:** Tap **Refresh** once and wait for completed success; capture all displayed DEVICE fields and truthful optional UAC state.
+- **USB effect:** READ through the production DEVICE snapshot path; existing bounded automatic read retry only.
+- **Expected UI result:** **Current device state** / **Values verified from the connected DAC**.
+- **Expected physical evidence:** Final DEVICE observation compared field-to-same-field with baseline at displayed precision. An **Inconsistent channel read** is not passable.
+- **Abort:** Read failure, missing current indicator, changed session/value, balance inconsistency, or any need to change settings; no manual retry.
+
+#### Step 14 — Capture final evidence and complete safely
+- **UI/state:** Final reads are complete and app shows no active read/write.
+- **Action:** Capture final PID/activity, USB descriptors via wireless ADB, screenshots/UI hierarchy, non-cleared app logcat, UTC timestamps, commands, and artifact SHA-256 values. Store raw evidence in a new unique ignored `.unlazy/v080-beta/evidence/c05c-<UTC-session-id>/` directory; never overwrite the stopped report or commit raw captures.
+- **USB effect:** NO USB to the DAC from these observations; wireless ADB only.
+- **Expected UI result:** Final positive current-session presentation; no active operation.
+- **Expected physical evidence:** Hash-indexed evidence establishing exact identity, baseline/final displayed values, attached navigation, and no state-changing control invoked. It does not establish zero USB reports or raw bit-for-bit equality.
+- **Abort:** Any unexpected value difference, missing evidence, or ambiguous state; preserve what exists, do no repair/restoration write, stop, and release the Pixel.
+
+#### Step 15 — Release phone and report outcome
+- **UI/state:** No hardware operation is active; all collected evidence is saved locally.
+- **Action:** Perform no further device action. Immediately report **PHONE RELEASED — YOU CAN TAKE THE PIXEL BACK**, with C05-C pass/stopped and any discrepancy.
+- **USB effect:** NO USB.
+- **Expected UI result:** Not applicable; phone is released.
+- **Expected physical evidence:** Session outcome and release timestamp in the sanitized record.
+- **Abort:** If a READ is still active, do not disconnect or kill anything; allow the nondestructive read to settle safely, then release. No setting restoration is needed or permitted because the plan is read-only.
+
+Target total Pixel occupancy is 8–10 minutes; hard planning limit is 15 minutes, except only as necessary to allow an already-active nondestructive read to settle safely. Drop optional screenshots/log details first; do not omit final EQ/DEVICE observations. JA11, EW300, and manual TalkBack are excluded.
 
 ## C05-C acceptance
 
@@ -83,7 +188,7 @@ The ordinary Connected UI does not show the recovery-only **Read current EQ** bu
 - Final explicit EQ and DEVICE reads succeed on the same current session; every required displayed field matches its corresponding baseline field at the UI's presentation precision. An **Inconsistent channel read** balance state is not passable. This comparison does not claim bit-for-bit raw protocol equality where the UI rounds or coarsens values.
 - No state-changing control/API path, Reset, Flash, Save, Apply, DEVICE setter, induced fault, process kill, or disconnect was used. All artifacts and their hashes are recorded. The conclusion is bounded: no state-changing control/API path was invoked, and the required displayed values remained equal across captured production reads at the UI's presentation precision. This does not claim raw bit-for-bit equality or zero USB transfer count.
 
-**Stop / not pass** on any candidate/APK mismatch, wireless ADB ambiguity, Black Pearl no longer attached from the stopped attempt, unknown USB identity, no already-current production session, failed/incomplete read, changed session/PID, stale or false presentation, changed value, unexpected setting mutation, or other unclear state. Preserve the evidence, do not retry manually or attempt repair/restoration, release the phone, and continue Mac-side diagnosis. Do not substitute a fresh attach/connect flow without a separate plan revision and independent review.
+**Stop / not pass** on any candidate/APK mismatch, absent fresh owner availability, wireless ADB ambiguity, Black Pearl no longer attached from the stopped attempt, unknown USB identity, no already-current production session, failed/incomplete read, changed session/PID, stale or false presentation, changed value, unexpected setting mutation, `UNKNOWN` USB effect, or other unclear state. Preserve the evidence, do not retry manually or attempt repair/restoration, release the phone, and continue Mac-side diagnosis. Do not substitute a fresh attach/connect flow without a separate plan revision and independent review.
 
 ## Maintained references
 

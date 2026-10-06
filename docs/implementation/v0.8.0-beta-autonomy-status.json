@@ -1,8 +1,8 @@
 {
-  "timestamp_utc": "2026-10-06T20:09:14Z",
+  "timestamp_utc": "2026-10-06T20:35:28Z",
   "state": "RUNNING",
-  "current_gate": "G4 — Read-only C05-C physical qualification; awaiting renewed Pixel availability for an already-attached resume",
-  "next_gate": "G5 — Independent pre-merge verification after C05-C passes",
+  "current_gate": "G3 — independent review of corrected C05-C plan revision 2.3",
+  "next_gate": "G4 — read-only C05-C physical session after G3 review and fresh owner availability",
   "candidate_branch": "codex/v0.8.0-beta-ux",
   "candidate_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
   "candidate_tree": "e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d",
@@ -16,10 +16,10 @@
   "candidate_apk_sha256": "f33818309d55571166d91e501065706ddbb8faf180833b03bb6eb948e6bffed1",
   "candidate_apk_is_official_signed_beta": false,
   "pr": 70,
-  "pr_state": "open_draft_exact_head_checks_green_base_c702_mergeable_clean_body_current",
+  "pr_state": "open_draft_exact_head_checks_green_base_c702_mergeable_clean; description refresh pending v1.1 plan review",
   "pr_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
   "pr_base": "c702ef0149b4c647446639cfcb0ab25c09159db3",
-  "pr_current_body_stale": false,
+  "pr_current_body_stale": true,
   "ci": {
     "as_of_utc": "2026-10-06T20:07:55Z",
     "exact_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
@@ -188,10 +188,10 @@
         "report": ".unlazy/v080-beta/evidence/c05c-20261006T182006Z/C05-C-stop-report.txt",
         "report_sha256": "e32ff687c5574894652a98f1512bdaa3f2147c9e319770f81d656115e6558d6e"
       },
-      "plan_revision": "2.2",
-      "plan_review": "G3 PASS, independently reviewed for already-attached resume only; fresh attachment/connect not approved",
+      "plan_revision": "2.3",
+      "plan_review": "PENDING independent review; attached-resume path only; no fresh attach/connect",
       "read_semantics": "Protocol READ sends output request reports; transport may reissue one timed-out nondestructive read once automatically. No manual retry. No zero-USB-traffic claim.",
-      "readiness": "Pixel released; no ADB/USB/device work until G3 passes and a new short physical session is requested."
+      "readiness": "No device access until plan review passes and the owner gives fresh availability. Then proceed only if the exact device remains attached and the production session is already current."
     },
     "D_independent_qualification_review": {
       "state": "PASS",
@@ -336,24 +336,25 @@
     ],
     "physical_keyboard_claimed": false
   },
-  "owner_action_required_now": true,
-  "pixel_required_now": true,
+  "owner_action_required_now": false,
+  "pixel_required_now": false,
   "physical_session_ready": false,
-  "physical_session_readiness_reason": "G3 PASS is limited to FINAL_PHYSICAL_SESSION_PLAN.md revision 2.2 already-attached resume path. C05-C remains STOPPED_INCOMPLETE_NOT_PASS. The Pixel was released. G4 requires renewed phone availability while the Black Pearl remains attached, then fresh exact candidate/APK, wireless ADB, exact fingerprint, and already-current app session checks. If the DAC is absent or session inactive, stop without reconnecting.",
+  "physical_session_readiness_reason": "Revision 2.3 is source-corrected but awaits independent review. Do not use the Pixel before review passes and a fresh owner availability statement; the already-attached/current-session precondition remains mandatory.",
   "estimated_pixel_minutes": {
     "target": 10,
     "hard_limit": 15
   },
-  "watchdog_mode": "G4_WAITING_FOR_PIXEL_AVAILABILITY_ATTACHED_RESUME_ONLY",
-  "loop_status": "API35_PASS_3_OF_3; API26_PASS_CLOSED; EXACT_HEAD_CI_8_OF_8_GREEN; BASE_DRIFT_B; C05_A_B_D_PASS; C05_C_STOPPED_NOT_PASS; G3_PASS_ATTACHED_RESUME_ONLY; PHONE_RELEASED; AWAITING_PHYSICAL_AVAILABILITY",
+  "watchdog_mode": "RESUME_FIRST_VERIFY_MASTER_HASH_STATUS_THEN_EXECUTE_NEXT_ACTION; C05C_PLAN_REVIEW_PENDING",
+  "loop_status": "MASTER_V1_1_RESUME_AND_PLAN_2_3_WRITTEN; INDEPENDENT_PLAN_REVIEW_PENDING; FROZEN_CANDIDATE_UNCHANGED; NO_DEVICE_ACCESS",
   "stable_latest_release": "v0.7.2",
   "merge_or_publish_performed": false,
   "nonphysical_gates_open": [
+    "G3 independent review of physical plan revision 2.3",
     "G5 independent pre-merge verification after G4",
     "G6-G12 ordered merge/sign/upgrade/clean-install/publication/bundle/closeout"
   ],
   "physical_gates_open": [
-    "G4/C05-C read-only Black Pearl identity/session/EQ+DEVICE reads/navigation/final-read evidence; resume only if still attached/current session"
+    "G4/C05-C read-only Black Pearl identity/session/EQ+DEVICE reads/navigation/final-read evidence; plan only applies if already attached and current"
   ],
   "downstream_gates": [
     "Independent pre-merge verification",
@@ -367,13 +368,20 @@
     "mission closeout"
   ],
   "next_actions": [
-    "Wait for renewed owner Pixel 9 availability, leaving the Black Pearl attached if it remains attached from the stopped attempt. Do not use ADB/USB or inspect hardware until a fresh availability statement arrives.",
-    "On availability, reverify exact frozen candidate/APK, PR/checks/base, wireless ADB, Black Pearl fingerprint, and already-current production session. Stop and release if any requirement fails; do not reconnect.",
-    "After C05-C succeeds, reconcile/hash physical evidence, perform independent pre-merge verification, refresh exact PR/base/check state, then continue the authorized merge → main-only signing → signed upgrade/clean-install → independent artifact verification → prerelease → review bundle/closeout order."
+    "Record the first v1.1 policy commit in resume/status metadata and verify the body hash remains exact.",
+    "Complete one independent frozen-source review of FINAL_PHYSICAL_SESSION_PLAN.md revision 2.3; fix and re-review any material discrepancy.",
+    "Only after G3 passes, request fresh Pixel 9 availability with the Black Pearl left attached if it remains attached; run the exact plan or stop and release if prerequisites fail."
   ],
   "issue": "https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/71",
   "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex/v0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md",
-  "physical_plan": "docs/implementation/FINAL_PHYSICAL_SESSION_PLAN.md",
+  "physical_plan": {
+    "path": "docs/implementation/FINAL_PHYSICAL_SESSION_PLAN.md",
+    "revision": "2.3",
+    "state": "PENDING_INDEPENDENT_REVIEW",
+    "scope": "already-attached, already-current production session only",
+    "fresh_attach_authorized": false,
+    "device_access_before_review": false
+  },
   "app_dir_tree": "42977ce481bc76aa85b866610672e35e35d6cde6",
   "pr_mergeable": true,
   "pr_mergeable_state": "clean",
@@ -493,28 +501,25 @@
   },
   "master_directive": {
     "path": "docs/implementation/v0.8.0-beta-master-directive.md",
-    "version": "1.0",
-    "commit": "9b8bc9197730f31731c40b82e012b84055390747",
-    "body_sha256": "422638dc4dd6486c72453415c818dbda09e2810827401c8372dea27a24443e3a",
+    "version": "1.1",
+    "commit": "PENDING_FIRST_V1.1_COMMIT",
+    "body_sha256": "ed2fa336d9f0dc77ca804dc272ba836a6ea87e9d15293585ac8fc59b62bd6bdc",
     "loaded": "YES",
     "bootstrap_order": [
-      "master directive",
-      "locked mission",
-      "autonomy status",
-      "FINAL_PHYSICAL_SESSION_PLAN.md",
-      "acceptance evidence",
-      "hardware evidence",
-      "post-physical continuation",
-      "mission ledger and relevant Unlazy state"
+      "resume manifest",
+      "verify master directive version and body SHA-256",
+      "canonical autonomy status",
+      "refresh live GitHub/release state needed for next action",
+      "read only the relevant sections/files for that gate"
     ],
-    "last_updated_utc": "2026-10-06T20:05:51Z"
+    "last_updated_utc": "2026-10-06T20:35:28Z"
   },
-  "current_owner_action": "Make the Pixel 9 available for one short session with the Black Pearl left attached if it remains attached from the stopped attempt. Do not unplug/replug or reconnect. If it is no longer attached, report that and stop under the current plan.",
+  "current_owner_action": "No owner action now. After G3 passes, make the released Pixel 9 available for one short session with the Black Pearl left attached if it remains attached; do not reconnect.",
   "gates_G0_G12": [
     {
       "gate": "G0",
       "name": "Canonical directive / candidate identity",
-      "state": "PASS"
+      "state": "IN_PROGRESS_MASTER_METADATA_PENDING"
     },
     {
       "gate": "G1",
@@ -529,12 +534,12 @@
     {
       "gate": "G3",
       "name": "Final physical plan ready",
-      "state": "PASS_ATTACHED_RESUME_PATH_ONLY"
+      "state": "PENDING_INDEPENDENT_REVIEW_REVISION_2_3_ATTACHED_RESUME_ONLY"
     },
     {
       "gate": "G4",
       "name": "Required physical qualification",
-      "state": "PENDING_OWNER_PIXEL_AVAILABILITY"
+      "state": "PENDING_G3_AND_FRESH_OWNER_PIXEL_AVAILABILITY"
     },
     {
       "gate": "G5",
@@ -590,11 +595,11 @@
       "conclusion": "success"
     }
   ],
-  "g3_plan_ready_for_attached_resume": true,
+  "g3_plan_ready_for_attached_resume": false,
   "g3_plan_not_approved_for_fresh_attach": true,
   "issue_updated_at_utc": "2026-10-06T20:07:54Z",
-  "issue_body_current": true,
-  "watchdog_prompt_updated": true,
-  "watchdog_prompt_updated_utc": "2026-10-06T20:07:55Z",
+  "issue_body_current": false,
+  "watchdog_prompt_updated": false,
+  "watchdog_prompt_updated_utc": null,
   "control_plane_checkpoint_pushed": "d3648a460fafbf2441a720deec0b44757bc23f15"
 }
