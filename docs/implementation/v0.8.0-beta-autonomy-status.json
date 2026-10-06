@@ -1,5 +1,5 @@
 {
-  "timestamp_utc": "2026-10-06T08:06:44Z",
+  "timestamp_utc": "2026-10-06T08:08:23Z",
   "state": "RUNNING",
   "current_gate": "G3 — Final physical plan ready",
   "next_gate": "C05-C — Real Black Pearl production identity/session/read/navigation",
@@ -69,7 +69,14 @@
         "status": "completed",
         "conclusion": "failure"
       }
-    ]
+    ],
+    "api35_exact_head_retry": {
+      "workflow_run_id": 37427641822,
+      "job_id": 112171539825,
+      "status": "queued",
+      "api26_cold_install_side_effect_job_id": 112171541652,
+      "api26_side_effect_conclusion": "success; cold install only; API26 Library gate remains closed"
+    }
   },
   "c05": {
     "qualification_model": "owner-approved split evidence; not a waiver",
@@ -113,7 +120,7 @@
     "current_candidate_passes_recorded": 2,
     "current_candidate_exact_head_run": 37427641822,
     "current_run_status": "completed_failure",
-    "next_action": "The 64-test exact-head run failed after two clean runs. Artifact review found an emulator EGL stall, Nexus Launcher SIGKILL/ANR and window-focus loss overlapping the two incomplete tests; no app crash/OOM or callback-count assertion failure was recorded, but causality is not proven. Record this evidence, then run one full exact-head suite to restart the three-pass streak; investigate again before any further retry if it fails.",
+    "next_action": "The 64-test exact-head run failed after two clean runs. Artifact review found an emulator EGL stall, Nexus Launcher SIGKILL/ANR and window-focus loss overlapping the two incomplete tests; no app crash/OOM or callback-count assertion failure was recorded, but causality is not proven. The diagnosed full API35 UI rerun is queued as job 112171539825. Do not duplicate it; inspect the full report/log on completion and investigate before any further retry if it fails.",
     "stop_after_three_consecutive_passes": true,
     "current_candidate_full_suite_job_id": 112150826255,
     "current_candidate_run_1": {
@@ -155,6 +162,14 @@
       "pass2_comparison_artifact_id": 11396188437,
       "pass2_comparison": "Both affected tests passed on the same exact candidate (8.261 s and 9.062 s).",
       "api26_disposition": "Closed gate unchanged; incidental cold-install job only; no Library or heap diagnostics."
+    },
+    "current_candidate_retry": {
+      "workflow_run_id": 37427641822,
+      "job_id": 112171539825,
+      "status": "queued",
+      "attempt_scope": "Full exact-head API35 UI instrumentation suite; only failed UI job rerun",
+      "api26_side_effect_job_id": 112171541652,
+      "api26_side_effect_disposition": "Cold install only; no Library or heap diagnostics; gate remains closed"
     }
   },
   "api26": {
@@ -205,7 +220,7 @@
     "target": 10,
     "hard_limit": 15
   },
-  "watchdog_mode": "RUNNING_API35_FAILURE_REVIEW_AND_STABILITY",
+  "watchdog_mode": "RUNNING_API35_RETRY_QUEUED",
   "loop_status": "RUNNER_WINDOW_FOCUS_DISTURBANCE_RECORDED; CAUSALITY_NOT_PROVEN; NEXT_EXACT_HEAD_SUITE",
   "stable_latest_release": "v0.7.2",
   "merge_or_publish_performed": false,
@@ -230,8 +245,8 @@
     "mission closeout"
   ],
   "next_actions": [
-    "Record the independent C05-D PASS and correct the stale final-physical-plan CI summary; C05-A/B/D are complete and the C05-C plan remains read-only.",
-    "Run one full API35 exact-head suite on unchanged candidate 5c7d19cf2f77e448a97a1ee9d520ad4d408f120f; the consecutive-pass streak starts at 0 and API26 stays closed.",
+    "C05-D independent PASS and corrected physical-plan CI summary are recorded and pushed on control-plane commit 82ac9422f285a3169da510e370f69348b589d71b.",
+    "Inspect queued full API35 exact-head job 112171539825; do not duplicate it. Current consecutive-pass streak is 0; API26 remains closed.",
     "Inspect the complete report/log before any further retry if a test fails; after three consecutive exact-head full-suite passes and all checks green, send the single physical-session notice and wait for explicit confirmation."
   ],
   "issue": "https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/71",
