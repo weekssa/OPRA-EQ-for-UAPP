@@ -1,8 +1,8 @@
 {
-  "timestamp_utc": "2026-10-07T15:40:32Z",
-  "state": "CONTROL_PUSHED_EXTERNAL_SYNC_PENDING_PLAN_2_47_EXACT_REVIEW_PENDING",
-  "current_gate": "ISSUE_PR_SYNC_AND_PLAN_2_47_EXACT_STATE_REVIEW",
-  "next_gate": "SYNC_ISSUE_PR_THEN_EXACT_STATE_REVIEW",
+  "timestamp_utc": "2026-10-07T15:50:39Z",
+  "state": "EXTERNAL_SURFACES_SYNCED_PLAN_2_47_EXACT_STATE_REVIEW_PENDING",
+  "current_gate": "INDEPENDENT_EXACT_STATE_REVIEW_INCLUDING_G3_PLAN_2_47",
+  "next_gate": "INDEPENDENT_EXACT_STATE_REVIEW_INCLUDING_G3_PLAN_2_47",
   "candidate_branch": "codex/v0.8.0-beta-ux",
   "candidate_head": "3329590db531c31be84e7e28d89209028a688075",
   "candidate_tree": "79808ef8052812427461f480e9abf19c2e930c22",
@@ -90,7 +90,7 @@
   "pr_state": "open/draft",
   "pr_head": "3329590db531c31be84e7e28d89209028a688075",
   "pr_base": "c702ef0149b4c647446639cfcb0ab25c09159db3",
-  "pr_current_body_stale": true,
+  "pr_current_body_stale": false,
   "ci": {
     "head_sha": "3329590db531c31be84e7e28d89209028a688075",
     "as_of_utc": "2026-10-07T15:40:32Z",
@@ -478,9 +478,9 @@
   "owner_action_required_now": false,
   "pixel_required_now": false,
   "physical_session_ready": false,
-  "physical_session_readiness_reason": "Issue #71 / PR #70 synchronization and one independent exact-state review including G3 for plan 2.47 remain. No ADB, USB, or device inspection before review PASS.",
+  "physical_session_readiness_reason": "One independent exact-state review including G3 for plan 2.47 remains pending. The control branch, issue #71, PR #70, and saved hourly prompt are synchronized. No ADB, USB, or device inspection before review PASS.",
   "estimated_pixel_minutes": "5-10 optimization target; no time-only abort",
-  "watchdog_mode": "QUIET_WHILE_UNCHANGED; update only through the supported automation tool; an unavailable tool is not an additional C05-C gate.",
+  "watchdog_mode": "QUIET_WHILE_UNCHANGED; supported automation prompt updated to current master v2.2/plan 2.47; continue status-driven next actions.",
   "loop_status": "PHASE_A_PASS; CONTROL_PUSH_PENDING; PLAN_2_47_EXACT_STATE_REVIEW_PENDING; C05_C_NOT_STARTED",
   "stable_latest_release": "v0.7.2 remains stable/latest; release reports immutable true and prerelease false.",
   "merge_or_publish_performed": false,
@@ -503,12 +503,12 @@
     "mission closeout"
   ],
   "next_actions": [
-    "Synchronize issue #71 and draft PR #70 to the pushed control checkpoint, retaining draft state and dynamic control-branch links.",
-    "Verify the live issue/PR bodies and current control branch tip after the updates.",
-    "Obtain one independent exact-state review including G3 for exact plan 2.47.",
-    "After PASS, run fresh wireless Phase B; if it passes, reuse that binding for C1/Phase C."
+    "Obtain one independent exact-state review of the synchronized current control branch/status, issue #71, PR #70, live candidate/check/base/main/release state, and G3 for plan 2.47.",
+    "If the review returns PASS, run one fresh read-only Phase B using wireless ADB only and the current resolver pins.",
+    "If fresh Phase B passes, reuse its sealed binding for C1 and proceed directly through the maintained read-only Phase C plan.",
+    "On safe completion or stop, release the phone as directed; continue release gates only after C05-C passes."
   ],
-  "issue": "OPEN; body stale pending synchronization to the pushed control checkpoint.",
+  "issue": "OPEN; body synchronized at 2026-10-07T15:49:49Z to the current control status and dynamic branch link.",
   "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex%2Fv0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md (resolve the live control ref dynamically)",
   "physical_plan": {
     "path": "docs/implementation/FINAL_PHYSICAL_SESSION_PLAN.md",
@@ -528,13 +528,13 @@
   "main_head_observed": "79d600529621257136adb4d9e1a97e8ae8521d7e",
   "main_advanced_since_pr_snapshot": true,
   "pr_base_ref": "main",
-  "pr_snapshot_as_of_utc": "2026-10-07T15:40:32Z",
+  "pr_snapshot_as_of_utc": "2026-10-07T15:49:50Z",
   "integration_base_sha": "c702ef0149b4c647446639cfcb0ab25c09159db3",
   "app_src_test_tree": "470979fb22a91c4514534badda6c2cc2032abfb6",
   "app_src_android_test_tree": "da2b4f31e18025ebd00f0a84f274e0e8a8624800",
   "base_drift_reconciliation": "BASE-DRIFT-B; four catalog/currentness-only paths, no app/test overlap; live main is 79d600529621257136adb4d9e1a97e8ae8521d7e, PR base c702ef0149b4c647446639cfcb0ab25c09159db3.",
   "master_directive": "v2.2; body SHA-256 e839578d7b9a68b78a3a8dd2f93d683f48e77d427cc9ffca42d5703e9ac4493f; first introducing commit ced7a2d648dc4d6aa89662665553eea6bafdcb23; metadata seal recorded by this follow-up commit.",
-  "current_owner_action": "None; Pixel 9 availability and Black Pearl attachment are confirmed in the current heartbeat.",
+  "current_owner_action": "None; Pixel 9 availability and Black Pearl attachment have been confirmed for this qualification cycle.",
   "gates_G0_G12": {
     "G0": "PASS; master v2.2 body SHA-256 e839578d7b9a68b78a3a8dd2f93d683f48e77d427cc9ffca42d5703e9ac4493f was introduced by ced7a2d648dc4d6aa89662665553eea6bafdcb23 and metadata-sealed in this follow-up commit.",
     "G1": "PASS; exact frozen candidate CI is 8/8 completed-success; API35/API26 and other closed gates remain closed.",
@@ -601,12 +601,12 @@
       }
     ]
   },
-  "issue_updated_at_utc": "2026-10-07T13:23:50Z",
-  "issue_body_current": false,
-  "watchdog_prompt_updated": false,
-  "watchdog_prompt_updated_utc": null,
+  "issue_updated_at_utc": "2026-10-07T15:49:49Z",
+  "issue_body_current": true,
+  "watchdog_prompt_updated": true,
+  "watchdog_prompt_updated_utc": "2026-10-07T15:50:39Z",
   "control_plane_checkpoint_pushed": true,
-  "pr_updated_at_utc": "2026-10-07T13:23:51Z",
+  "pr_updated_at_utc": "2026-10-07T15:49:50Z",
   "control_plane_branch": "codex/v0.8.0-beta-watch; resolve live origin tip dynamically.",
   "owner_action_required": false,
   "owner_action": null,
@@ -654,7 +654,7 @@
     "readiness_certificate": "NOT READY until one exact-state review of the synchronized checkpoint passes; no separate certificate approval is required."
   },
   "last_observed_control_tree_before_status_commit": "Independent audit reviewed 7ea5b0451e2926a91e579fffbf6a1ec51a550922 / tree 7de8cd0640c38a7de1a2b9e61b3223e0ce69cd53; issue and PR were refreshed at 13:23Z with a dynamic control pointer. Resolve current control tip dynamically.",
-  "next_action": "Synchronize issue #71 and draft PR #70 to the pushed control checkpoint using a dynamic branch link; then obtain one independent exact-state review including G3 for plan 2.47. Do not use ADB before PASS.",
+  "next_action": "Obtain one independent exact-state review of the synchronized current control checkpoint, including G3 for exact plan 2.47. Do not use ADB before PASS.",
   "g3_approved_entry_route": "ONE_SYNCHRONIZED_EXACT_STATE_REVIEW_OF_PLAN_2_47_AND_CONTROL_CHECKPOINT; THEN FRESH_PHASE_B; THEN C1/PHASE_C",
   "g3_attached_connected_session_resume_approved": false,
   "phase_b_binding": {
@@ -704,15 +704,15 @@
     "plan_revision": "2.47",
     "candidate_head": "3329590db531c31be84e7e28d89209028a688075",
     "candidate_tree": "79808ef8052812427461f480e9abf19c2e930c22",
-    "review_scope": "Exact synchronized control status and pushed control tree, master v2.2 body e839578d7b9a68b78a3a8dd2f93d683f48e77d427cc9ffca42d5703e9ac4493f, plan 2.47 G3, live candidate/PR/check/base/main/release facts, resolver/guard pins, and 79/79 offline evidence."
+    "review_scope": "Exact synchronized control status, issue #71, draft PR #70, dynamic branch pointer, master v2.2 body e839578d7b9a68b78a3a8dd2f93d683f48e77d427cc9ffca42d5703e9ac4493f, plan 2.47 G3, current candidate/PR/check/base/main/release facts, resolver/guard pins, and 79/79 offline evidence."
   },
   "first_v1_6_commit": null,
   "external_surfaces": {
-    "issue_71": "STALE; synchronize after this control status update is pushed.",
-    "pr_70_body": "STALE; synchronize after this control status update is pushed; keep draft.",
-    "watchdog": "Current heartbeat prompt is stale at v1.6/plan 2.33. Use supported automation tool; if unavailable, do not edit TOML and do not make it an additional C05-C gate."
+    "issue_71": "SYNCHRONIZED at 2026-10-07T15:49:49Z; dynamic control-branch links.",
+    "pr_70_body": "SYNCHRONIZED at 2026-10-07T15:49:50Z; remains open/draft and dynamically links control branch.",
+    "watchdog": "Updated through supported automation tool at about 15:50Z to master v2.2/plan 2.47; ACTIVE hourly. No TOML edit."
   },
-  "master_directive_loaded": "YES; master v2.2 body hash e839578d7b9a68b78a3a8dd2f93d683f48e77d427cc9ffca42d5703e9ac4493f matches resume; exact candidate and live PR/check/base/release/issue/control-ref facts verified at 2026-10-07T15:40:32Z.",
+  "master_directive_loaded": "YES; master v2.2 body hash e839578d7b9a68b78a3a8dd2f93d683f48e77d427cc9ffca42d5703e9ac4493f matches resume; exact candidate and live GitHub facts verified at 2026-10-07T15:40:32Z.",
   "candidate_change": "Control-plane documentation and ignored Phase B evidence only; no candidate app/test source change.",
   "package": "com.weekssa.opraeqforuapp",
   "version_name": "0.8.0-beta",
@@ -755,9 +755,9 @@
   },
   "physical_session_readiness": {
     "state": "NOT READY",
-    "reason": "Issue/PR synchronization and the single independent exact-state review including G3 for plan 2.47 are still pending. No device access before PASS."
+    "reason": "One independent exact-state review including G3 for plan 2.47 remains pending. No ADB/device access before PASS."
   },
-  "control_plane_local_head": "Last verified branch tip before this status follow-up: 5be36dda1fb7db4031ea83aa4c170021b41f0651; resolve the current branch tip dynamically.",
+  "control_plane_local_head": "Last verified live control checkpoint before this status follow-up: 61c12aeb27123eeefbd86f7d52397647bb4928e4; resolve the current branch tip dynamically.",
   "first_v1_8_commit": null,
   "repeated_session_entry_failure": {
     "triggered": true,
@@ -782,22 +782,22 @@
     "files_modified": false,
     "physical_qualification_result": "NONE; this source/state audit does not pass C05-C/G4."
   },
-  "automation_update_tool_failure": "Last recorded supported-tool failure remains at 13:17Z. The current heartbeat is stale relative to master v2.2/plan 2.47; use the supported tool after status sync, never edit TOML directly.",
+  "automation_update_tool_failure": "Earlier view/update failures remain historical. The supported update succeeded at approximately 2026-10-07T15:50Z; no direct TOML edit was made.",
   "latest_release_verified_at_utc": "2026-10-07T15:40:32Z; latest stable remains immutable published v0.7.2.",
   "phase_c_started": false,
-  "pr_body_current": false,
-  "issue_last_checked_utc": "2026-10-07T15:40:32Z",
-  "pr_last_checked_utc": "2026-10-07T15:40:32Z",
+  "pr_body_current": true,
+  "issue_last_checked_utc": "2026-10-07T15:49:49Z",
+  "pr_last_checked_utc": "2026-10-07T15:49:50Z",
   "current_control_reconciliation_pushed": true,
   "exact_state_consistency_review": {
-    "result": "NOT STARTED; control branch push succeeded, external issue/PR synchronization pending.",
+    "result": "PENDING; control branch, issue #71, PR #70, and saved hourly prompt synchronized; independent review not started.",
     "reviewed_control_head": null,
     "reviewed_control_tree": null,
     "reviewed_at_utc": null,
     "scope": "Review the exact synchronized control status, master v2.2 body e839578d7b9a68b78a3a8dd2f93d683f48e77d427cc9ffca42d5703e9ac4493f, plan 2.47 G3, frozen candidate/PR/check/base/main/release facts, resolver/guard pins, and 79/79 offline evidence. This review is the sole C05-C entry authorization.",
     "device_access": false
   },
-  "issue_71": "STALE; update after the successful control push.",
+  "issue_71": "CURRENT; body updated 2026-10-07T15:49:49Z and links to codex/v0.8.0-beta-watch dynamically.",
   "current_reconciliation_pushed": true,
   "phase_b_current_status": {
     "status": "NOT RUN after resolver change; wait for exact-state review PASS.",
@@ -834,9 +834,9 @@
       "result": "Success; codex/v0.8.0-beta-watch moved from 7ea5b0451e2926a91e579fffbf6a1ec51a550922 to 5be36dda1fb7db4031ea83aa4c170021b41f0651."
     }
   ],
-  "github_write_blocker": "Cleared for Git branch push at about 2026-10-07T15:40Z; external issue/PR synchronization remains pending. Earlier errors are retained in push_attempts.",
-  "control_plane_local_tree": "944778e6aa8a56af8a0a0cf2506468791fffc36e",
-  "control_plane_remote_head_last_seen": "5be36dda1fb7db4031ea83aa4c170021b41f0651",
-  "control_content_checkpoint_sha": "5be36dda1fb7db4031ea83aa4c170021b41f0651",
-  "control_content_checkpoint_tree": "944778e6aa8a56af8a0a0cf2506468791fffc36e"
+  "github_write_blocker": null,
+  "control_plane_local_tree": "ba7677cce5570b6740b6e2df93dfa09d58b752b3",
+  "control_plane_remote_head_last_seen": "61c12aeb27123eeefbd86f7d52397647bb4928e4",
+  "control_content_checkpoint_sha": "61c12aeb27123eeefbd86f7d52397647bb4928e4",
+  "control_content_checkpoint_tree": "ba7677cce5570b6740b6e2df93dfa09d58b752b3"
 }
