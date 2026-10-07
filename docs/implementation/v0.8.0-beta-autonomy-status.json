@@ -1,8 +1,8 @@
 {
-  "timestamp_utc": "2026-10-07T22:21:00Z",
-  "state": "G0_G5_PASS; EXTERNAL_G5_SYNC_PENDING; G6_EXACT_MERGE_NEXT",
-  "current_gate": "G6_G5_PASS_EXTERNAL_SYNC_AND_EXACT_MERGE",
-  "next_gate": "G6_EXACT_QUALIFIED_TREE_MERGE_AND_MERGED_SHA_TREE_VERIFICATION",
+  "timestamp_utc": "2026-10-07T22:25:11Z",
+  "state": "G0_G5_PASS; EXTERNAL_SURFACES_SYNCED; G6_READY_TO_MERGE",
+  "current_gate": "G6_PR_READY_AND_EXACT_MERGE",
+  "next_gate": "G6_EXACT_MERGED_SHA_TREE_VERIFICATION",
   "candidate_branch": "codex/v0.8.0-beta-ux",
   "candidate_head": "3329590db531c31be84e7e28d89209028a688075",
   "candidate_tree": "79808ef8052812427461f480e9abf19c2e930c22",
@@ -85,15 +85,15 @@
     ],
     "stable_latest": "v0.7.2",
     "latest_is_prerelease": false,
-    "pr_body_sync": "Pending G5 PASS refresh."
+    "pr_body_sync": "SYNCHRONIZED at 2026-10-07T22:24:56Z; issue #71 and watcher also record G5 PASS."
   },
-  "pr_state": "open/draft; exact frozen head; mergeable/clean; G5 independent PASS; external G5 synchronization pending",
+  "pr_state": "open/draft; G5 PASS synchronized; exact frozen head; mergeable/clean; 8/8 checks success",
   "pr_head": "3329590db531c31be84e7e28d89209028a688075",
   "pr_base": "c702ef0149b4c647446639cfcb0ab25c09159db3",
-  "pr_current_body_stale": true,
+  "pr_current_body_stale": false,
   "ci": {
     "head_sha": "3329590db531c31be84e7e28d89209028a688075",
-    "as_of_utc": "2026-10-07T22:21:00Z",
+    "as_of_utc": "2026-10-07T22:25:11Z",
     "total": 8,
     "success": 8,
     "in_progress": 0,
@@ -500,11 +500,11 @@
   "physical_session_readiness_reason": "C05-C/G4 passed and the phone was released; no further device access is needed.",
   "estimated_pixel_minutes": "5-10 optimization target; no time-only abort",
   "watchdog_mode": "RELEASE_CONVERGENCE_AFTER_G5_PASS",
-  "loop_status": "G5_FRESH_INDEPENDENT_PREMERGE_PASS; SYNC_EXTERNAL_SURFACES; THEN G6",
+  "loop_status": "G5_PASS; ISSUE_PR_WATCHER_SYNCED; G6_READY_AND_MERGE_PENDING",
   "stable_latest_release": "v0.7.2",
   "merge_or_publish_performed": false,
   "nonphysical_gates_open": [
-    "G6 exact qualified-tree merge and merged-SHA/tree verification",
+    "G6 exact qualified-candidate merge and merged-SHA/tree verification",
     "G7 official main-only signed beta and checksum/signer/provenance",
     "G8 signed stable-to-beta persisted-state upgrade",
     "G9 signed clean install/core smoke and independent artifact verification",
@@ -526,11 +526,11 @@
     "Mission closeout"
   ],
   "next_actions": [
-    "Synchronize G5 PASS to issue #71, PR #70 and the supported hourly watcher.",
-    "Reconfirm frozen candidate/head/base and all required checks; mark PR ready and merge only expected head 3329590db531c31be84e7e28d89209028a688075 through the normal PR operation.",
+    "Mark PR #70 ready after final live head/check verification.",
+    "Merge through the normal GitHub PR operation with expected_head_sha 3329590db531c31be84e7e28d89209028a688075; do not bypass rules.",
     "Verify exact merged main SHA/tree, then continue main-only signing and ordered artifact, upgrade, clean-install, independent-verification, prerelease, bundle and closeout gates."
   ],
-  "issue": "OPEN; G5 PASS synchronization to issue #71 is pending.",
+  "issue": "OPEN; G5 PASS synchronized at 2026-10-07T22:24:58Z",
   "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex%2Fv0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md (resolve the live control ref dynamically)",
   "physical_plan": {
     "path": "docs/implementation/FINAL_PHYSICAL_SESSION_PLAN.md",
@@ -548,7 +548,7 @@
   "main_head_observed": "44c1c065a11b40815f149c814e49cda7b7f7e107",
   "main_advanced_since_pr_snapshot": 8,
   "pr_base_ref": "main",
-  "pr_snapshot_as_of_utc": "2026-10-07T22:21:00Z",
+  "pr_snapshot_as_of_utc": "2026-10-07T22:25:11Z",
   "integration_base_sha": "c702ef0149b4c647446639cfcb0ab25c09159db3",
   "app_src_test_tree": "470979fb22a91c4514534badda6c2cc2032abfb6",
   "app_src_android_test_tree": "da2b4f31e18025ebd00f0a84f274e0e8a8624800",
@@ -573,8 +573,8 @@
     "G2": "PASS; Class B retained; protected hardware paths unchanged.",
     "G3": "PASS for frozen plan 2.48 physical procedure.",
     "G4": "PASS; C05-C read-only physical qualification completed; checksum-verified evidence preserved in ignored session directory.",
-    "G5": "PASS; fresh independent read-only review at control checkpoint bc162b270ec5908697b864369002daeb41495f70; exact candidate/evidence/protected paths/Class B/live integration verified.",
-    "G6": "PENDING; update issue/PR/watcher to G5 PASS, then exact-head ready/merge and merged-SHA/tree verification.",
+    "G5": "PASS; fresh independent review against corrected exact control/evidence state; external status synchronized.",
+    "G6": "PENDING; mark exact-head PR ready, merge with expected head pinned, verify merged SHA/tree.",
     "G7": "PENDING; official main-only signed beta artifact and checksum/signer/provenance verification.",
     "G8": "PENDING; exact signed v0.7.2-to-beta persisted-state upgrade.",
     "G9": "PENDING; signed clean install/core smoke and independent artifact verification.",
@@ -584,11 +584,12 @@
   },
   "manual_talkback": "DEFERRED_NON_BLOCKING_FOR_V0.8.0_BETA",
   "main_current_checks": {
+    "head_sha": "3329590db531c31be84e7e28d89209028a688075",
+    "as_of_utc": "2026-10-07T22:25:11Z",
     "total": 8,
     "success": 8,
     "in_progress": 0,
     "failed": 0,
-    "head_sha": "3329590db531c31be84e7e28d89209028a688075",
     "checks": [
       {
         "name": "CodeQL",
@@ -640,12 +641,12 @@
       }
     ]
   },
-  "issue_updated_at_utc": "2026-10-07T22:12:58Z; body is stale pending G5 PASS update.",
-  "issue_body_current": false,
-  "watchdog_prompt_updated": false,
-  "watchdog_prompt_updated_utc": null,
-  "control_plane_checkpoint_pushed": false,
-  "pr_updated_at_utc": "2026-10-07T22:12:56Z; body is stale pending G5 PASS update.",
+  "issue_updated_at_utc": "2026-10-07T22:24:58Z",
+  "issue_body_current": true,
+  "watchdog_prompt_updated": true,
+  "watchdog_prompt_updated_utc": "2026-10-07T22:24:58.672Z",
+  "control_plane_checkpoint_pushed": true,
+  "pr_updated_at_utc": "2026-10-07T22:24:56Z",
   "control_plane_branch": "codex/v0.8.0-beta-watch; resolve live origin tip dynamically.",
   "owner_action_required": false,
   "owner_action": "None; C05-C is complete and the phone was released. Do not request or use pairing codes or device access.",
@@ -685,7 +686,7 @@
     "readiness_certificate": "READY FOR PHASE B; plan 2.48 physical procedure safety review found no safety issue and the one-time category B metadata correction is applied."
   },
   "last_observed_control_tree_before_status_commit": "f2d641f5a1adc5c80e8e2d943e43e00954607430",
-  "next_action": "Update issue #71, PR #70 and the supported watcher with G5 PASS; then mark exact-head PR ready, merge expected candidate head, and verify exact merged SHA/tree.",
+  "next_action": "Mark PR #70 ready, recheck exact-head checks and mergeability, merge with expected_head_sha pinned to the frozen candidate, then verify merged SHA/tree.",
   "g3_approved_entry_route": "C05-C complete; no entry route required.",
   "g3_attached_connected_session_resume_approved": false,
   "phase_b_binding": {
@@ -741,9 +742,9 @@
   },
   "first_v1_6_commit": null,
   "external_surfaces": {
-    "issue_71": "G5 PASS update pending",
-    "pr_70": "G5 PASS update pending; remains open/draft",
-    "watchdog": "G5 PASS prompt update pending through supported tool"
+    "issue_71": "synchronized at 2026-10-07T22:24:58Z; G5 PASS, G6 exact merge next",
+    "pr_70": "synchronized at 2026-10-07T22:24:56Z; open/draft, exact frozen head, G5 PASS",
+    "watchdog": "updated through supported automation tool at 2026-10-07T22:24:58.672Z; hourly ACTIVE, G5 PASS/G6 merge action"
   },
   "master_directive_loaded": true,
   "candidate_change": "Control-plane status/evidence documentation only; no app/test, candidate tree, protected hardware path, physical acceptance criterion, or Class B change.",
@@ -767,8 +768,8 @@
     "C05_D": "PASS",
     "G3": "PASS plan 2.48",
     "G4": "PASS C05-C",
-    "G5": "PASS; fresh independent read-only G5 verified corrected traceability and exact candidate.",
-    "G6": "PENDING; synchronize G5 PASS, then mark PR ready, merge exact expected head through the normal GitHub PR operation, and verify merged SHA/tree.",
+    "G5": "PASS; fresh independent read-only review verified corrected evidence traceability, exact candidate/APK, 85-entry manifest, empty protected-path delta, Class B, and live PR/base/checks.",
+    "G6": "PENDING; G5 PASS and surfaces synchronized; mark ready, merge exact expected head via normal PR operation, verify merged SHA/tree.",
     "G7": "PENDING",
     "G8": "PENDING",
     "G9": "PENDING",
@@ -786,7 +787,7 @@
     "state": "C05-C PASS / PHONE RELEASED",
     "reason": "Read-only physical qualification complete; evidence manifest verified. No more device access is needed."
   },
-  "control_plane_local_head": "codex/v0.8.0-beta-watch; G5 review used live checkpoint bc162b270ec5908697b864369002daeb41495f70; resolve origin ref dynamically before each write/push.",
+  "control_plane_local_head": "codex/v0.8.0-beta-watch; current head 1c0e8b89c51c55d689e0ae34ba27b0b08ec450ce / tree 9717cb3c4e3d9adc0377211722e66439ae69c33d; resolve live ref dynamically.",
   "first_v1_8_commit": null,
   "repeated_session_entry_failure": {
     "triggered": true,
@@ -812,12 +813,12 @@
     "physical_qualification_result": "NONE; this source/state audit does not pass C05-C/G4."
   },
   "automation_update_tool_failure": "Earlier view/update failures remain historical. The latest supported update succeeded at 2026-10-07T22:13:44Z; no automation TOML was edited.",
-  "latest_release_verified_at_utc": "2026-10-07T22:21:00Z",
+  "latest_release_verified_at_utc": "2026-10-07T22:25:11Z",
   "phase_c_started": true,
-  "pr_body_current": false,
-  "issue_last_checked_utc": "2026-10-07T22:21:00Z",
-  "pr_last_checked_utc": "2026-10-07T22:21:00Z",
-  "current_control_reconciliation_pushed": false,
+  "pr_body_current": true,
+  "issue_last_checked_utc": "2026-10-07T22:24:58Z",
+  "pr_last_checked_utc": "2026-10-07T22:25:11Z",
+  "current_control_reconciliation_pushed": true,
   "exact_state_consistency_review": {
     "result": "CATEGORY_B_METADATA_ONLY; one correction applied; physical procedure safety review clear; no recursive review required.",
     "reviewed_control_head": "81066aa86ae301a0588cd3a349409c0f1cd5d8e7",
@@ -835,8 +836,8 @@
     "previous_checkpoint_result": "NOT PASS at 2026-10-07T16:16Z for synchronized plan 2.48 checkpoint; stale current maintained overlays/status fields found.",
     "previous_checkpoint_reviewed_at_utc": "2026-10-07T16:16:00Z"
   },
-  "issue_71": "OPEN; next update must record fresh G5 PASS and G6 exact merge next.",
-  "current_reconciliation_pushed": false,
+  "issue_71": "OPEN; body synchronized at 2026-10-07T22:24:58Z to G5 PASS and G6 exact merge next.",
+  "current_reconciliation_pushed": true,
   "phase_b_current_status": "PASS; same binding used for C05-C; session completed and phone released.",
   "push_attempts": [
     {
@@ -871,10 +872,10 @@
     }
   ],
   "github_write_blocker": null,
-  "control_plane_local_tree": "Last synchronized correction checkpoint tree cbc01367b2639a1ff10e42deec941eaf28ad837e; resolve the live origin branch dynamically before action.",
-  "control_plane_remote_head_last_seen": "cc3ad6ddc15f1265dd937495bac2a934cd9f0f34",
-  "control_content_checkpoint_sha": "cc3ad6ddc15f1265dd937495bac2a934cd9f0f34",
-  "control_content_checkpoint_tree": "cbc01367b2639a1ff10e42deec941eaf28ad837e",
+  "control_plane_local_tree": "9717cb3c4e3d9adc0377211722e66439ae69c33d",
+  "control_plane_remote_head_last_seen": "1c0e8b89c51c55d689e0ae34ba27b0b08ec450ce",
+  "control_content_checkpoint_sha": "1c0e8b89c51c55d689e0ae34ba27b0b08ec450ce",
+  "control_content_checkpoint_tree": "9717cb3c4e3d9adc0377211722e66439ae69c33d",
   "current_state_review": {
     "result": "CATEGORY_B_METADATA_ONLY; physical procedure safety review clear; one-time correction applied; no repeat review required.",
     "reviewed_control_head": "81066aa86ae301a0588cd3a349409c0f1cd5d8e7",
@@ -886,7 +887,7 @@
     "tests_rerun": false,
     "finding": "CATEGORY B: stale current plan pointer and active JSON next-action/main snapshot only; no physical-procedure safety finding. One-time correction applied; no recursive review required under the owner convergence directive."
   },
-  "current_action": "Synchronize G5 PASS externally; then recheck exact candidate/head/checks, mark PR #70 ready and merge through the normal GitHub PR operation with expected head pinned. Verify merged SHA/tree.",
+  "current_action": "Mark PR #70 ready; merge only expected head 3329590db531c31be84e7e28d89209028a688075 via normal GitHub PR operation; verify exact merged main SHA/tree.",
   "latest_phase_b_attempt": {
     "at_utc": "2026-10-07T21:25:28Z",
     "result": "PASS",
@@ -969,7 +970,7 @@
     ],
     "next_action": "Reconcile every current maintained overlay and duplicate JSON field, push control-only changes, synchronize issue/PR/automation, then obtain one new exact-state review including G3. No device access before PASS."
   },
-  "pr_body_sync": "PENDING; update PR #70 with fresh G5 PASS, exact independent-review identities, live rules/checks and G6 next action.",
+  "pr_body_sync": "SYNCHRONIZED at 2026-10-07T22:24:56Z with issue #71; fresh G5 PASS, exact evidence identities, current PR/base/checks/rules and G6 next action.",
   "current_reconciliation_sync_pending": false,
   "first_g5_review": {
     "result": "NOT PASS",
@@ -1013,6 +1014,10 @@
     ],
     "ruleset_bypass_actors": [],
     "current_user_can_bypass": "never",
-    "branch_protection_read": "403 Resource not accessible by integration; use normal PR merge enforcement, do not bypass."
+    "branch_protection_read": "403 Resource not accessible by integration; use normal PR merge enforcement, do not bypass.",
+    "final_check_at_utc": "2026-10-07T22:25:11Z",
+    "expected_head_sha": "3329590db531c31be84e7e28d89209028a688075",
+    "repository_merge_method_selected": "merge",
+    "pre_merge_ready": "External G5 synchronization complete; exact head/checks/base/mergeability refreshed; PR is still draft until ready transition."
   }
 }
