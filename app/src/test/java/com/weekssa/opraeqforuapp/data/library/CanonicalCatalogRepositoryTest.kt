@@ -22,6 +22,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -54,7 +55,7 @@ class CanonicalCatalogRepositoryTest {
             repository.initialize()
 
             val ready = repository.state.value as CanonicalCatalogState.Ready
-            assertEquals("large-rev", ready.snapshot.profiles.single().latestRevision.revisionId)
+            assertEquals("large-rev", requireNotNull(ready.snapshot).profiles.single().latestRevision.revisionId)
         } finally {
             root.deleteRecursively()
         }
@@ -74,7 +75,7 @@ class CanonicalCatalogRepositoryTest {
 
             assertTrue(result is CanonicalCatalogRefreshResult.Success)
             val ready = repository.state.value as CanonicalCatalogState.Ready
-            assertEquals("rev-1", ready.snapshot.profiles.single().latestRevision.revisionId)
+            assertEquals("rev-1", requireNotNull(ready.snapshot).profiles.single().latestRevision.revisionId)
         } finally {
             root.deleteRecursively()
         }
@@ -96,10 +97,38 @@ class CanonicalCatalogRepositoryTest {
             val result = repository.refresh()
 
             assertTrue(result is CanonicalCatalogRefreshResult.Success)
-            val profile = (repository.state.value as CanonicalCatalogState.Ready).snapshot.profiles.single()
+            val profile = requireNotNull((repository.state.value as CanonicalCatalogState.Ready).snapshot).profiles.single()
             assertEquals(EqProfileScope.GENERAL, profile.scope)
             assertEquals(EqPresetPurpose.EFFECT, profile.purpose)
             assertEquals(null, profile.headphone)
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun generalProfilesRemainResolvableWhenCompactDiskIndexCannotBeRead() = runBlocking {
+        val root = createTempDirectory(prefix = "canonical-catalog-idx-fallback-").toFile()
+        try {
+            val snapshot = sampleSnapshot("rev-1").copy(
+                profiles = listOf(sampleGeneralEffect()),
+            )
+            val repository = CanonicalCatalogRepository(
+                root,
+                CanonicalCatalogSource { destination -> destination.writeText(json.encodeToString(snapshot)) },
+                nowMillis = { 1234L },
+            )
+            assertTrue(repository.refresh() is CanonicalCatalogRefreshResult.Success)
+
+            val catalogFile = File(root, "eq-library/catalog/catalog.json")
+            assertTrue("remove the source file to force the compact-index failure path", catalogFile.delete())
+            repository.releaseInMemorySnapshot()
+
+            assertNull((repository.state.value as CanonicalCatalogState.Ready).snapshot)
+            assertEquals(
+                sampleGeneralEffect(),
+                repository.findProfile("general-effect:bass-boost"),
+            )
         } finally {
             root.deleteRecursively()
         }
@@ -133,7 +162,7 @@ class CanonicalCatalogRepositoryTest {
             assertEquals(CanonicalCatalogFailureReason.InvalidCatalog, failed.reason)
             assertTrue(failed.usingLastKnownGood)
             val ready = repository.state.value as CanonicalCatalogState.Ready
-            assertEquals("rev-1", ready.snapshot.profiles.single().latestRevision.revisionId)
+            assertEquals("rev-1", requireNotNull(ready.snapshot).profiles.single().latestRevision.revisionId)
         } finally {
             root.deleteRecursively()
         }
@@ -156,7 +185,7 @@ class CanonicalCatalogRepositoryTest {
 
             assertTrue(failed.usingLastKnownGood)
             val ready = repository.state.value as CanonicalCatalogState.Ready
-            assertEquals("rev-1", ready.snapshot.profiles.single().latestRevision.revisionId)
+            assertEquals("rev-1", requireNotNull(ready.snapshot).profiles.single().latestRevision.revisionId)
         } finally {
             root.deleteRecursively()
         }
@@ -183,7 +212,7 @@ class CanonicalCatalogRepositoryTest {
             offline.initialize()
 
             val ready = offline.state.value as CanonicalCatalogState.Ready
-            assertEquals("rev-1", ready.snapshot.profiles.single().latestRevision.revisionId)
+            assertEquals("rev-1", requireNotNull(ready.snapshot).profiles.single().latestRevision.revisionId)
             assertTrue(!ready.isRefreshing)
         } finally {
             root.deleteRecursively()
@@ -217,7 +246,7 @@ class CanonicalCatalogRepositoryTest {
             assertEquals(CanonicalCatalogFailureReason.InvalidCatalog, failed.reason)
             assertTrue(failed.usingLastKnownGood)
             val ready = repository.state.value as CanonicalCatalogState.Ready
-            assertEquals("rev-1", ready.snapshot.profiles.single().latestRevision.revisionId)
+            assertEquals("rev-1", requireNotNull(ready.snapshot).profiles.single().latestRevision.revisionId)
         } finally {
             root.deleteRecursively()
         }
@@ -254,7 +283,7 @@ class CanonicalCatalogRepositoryTest {
             assertEquals(CanonicalCatalogFailureReason.InvalidCatalog, failed.reason)
             assertTrue(failed.usingLastKnownGood)
             val ready = repository.state.value as CanonicalCatalogState.Ready
-            assertEquals("rev-1", ready.snapshot.profiles.single().latestRevision.revisionId)
+            assertEquals("rev-1", requireNotNull(ready.snapshot).profiles.single().latestRevision.revisionId)
         } finally {
             root.deleteRecursively()
         }
@@ -292,9 +321,57 @@ class CanonicalCatalogRepositoryTest {
                 assertEquals(
                     "rev-1",
                     (repository.state.value as CanonicalCatalogState.Ready)
-                        .snapshot.profiles.single().latestRevision.revisionId,
+                        .snapshot!!.profiles.single().latestRevision.revisionId,
                 )
             }
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun releasingSnapshotRetainsExactProfileLookupFromValidatedCache() = runBlocking {
+        val root = createTempDirectory(prefix = "canonical-catalog-index-").toFile()
+        try {
+            val firstProfile = sampleSnapshot("rev-indexed").profiles.single()
+            val secondProfile = firstProfile.copy(
+                canonicalProfileId = "sennheiser-hd600:test",
+                revisions = firstProfile.revisions.map { it.copy(revisionId = "rev-indexed-second") },
+            )
+            var snapshot = sampleSnapshot("rev-indexed").copy(
+                profiles = listOf(firstProfile, secondProfile),
+            )
+            val repository = CanonicalCatalogRepository(
+                root,
+                CanonicalCatalogSource { destination -> destination.writeText(json.encodeToString(snapshot)) },
+                nowMillis = { 1234L },
+            )
+            assertTrue(repository.refresh() is CanonicalCatalogRefreshResult.Success)
+
+            repository.releaseInMemorySnapshot()
+
+            val ready = repository.state.value as CanonicalCatalogState.Ready
+            assertNull(ready.snapshot)
+            assertEquals(snapshot.headphoneAliases, ready.headphoneAliases)
+            assertEquals(
+                firstProfile,
+                repository.findProfile(firstProfile.canonicalProfileId),
+            )
+            assertEquals(secondProfile, repository.findProfile(secondProfile.canonicalProfileId))
+            assertNull(repository.findProfile("missing-profile"))
+
+            val refreshedProfile = firstProfile.copy(
+                revisions = firstProfile.revisions.map { it.copy(revisionId = "rev-refreshed") },
+            )
+            snapshot = snapshot.copy(profiles = listOf(refreshedProfile))
+            assertTrue(repository.refresh() is CanonicalCatalogRefreshResult.Success)
+            assertEquals("rev-refreshed", repository.findProfile(firstProfile.canonicalProfileId)
+                ?.latestRevision?.revisionId)
+            assertNull(repository.findProfile(secondProfile.canonicalProfileId))
+
+            repository.releaseInMemorySnapshot()
+            assertEquals("rev-refreshed", repository.findProfile(firstProfile.canonicalProfileId)
+                ?.latestRevision?.revisionId)
         } finally {
             root.deleteRecursively()
         }

@@ -6,6 +6,27 @@ The project uses Semantic Versioning. Development releases remain in the `0.x` s
 
 ## [Unreleased]
 
+## [0.8.0-beta] - 2026-10-04
+
+### UX modernization
+
+- Reorganized the app around three persistent roots: My EQs, EQ Library, and Settings. Supported DAC access remains contextual and does not add a permanent root tab.
+- Separated connected-device context from the selected export target, clarified saved EQ ownership, and kept Favorites and hidden EQ visibility separate from My EQs membership.
+- Added direct headphone model search, an explicit General EQ selection mode, and a profile detail view with discoverable provenance, response preview, fit, and technical information.
+- Reworked Personal EQ import into Input, Parse, Describe, Review, and Save stages. Large drafts use app-private temporary storage so saved-instance-state restoration does not drop the text or save it twice.
+- Added a target-specific UAPP export review and completion guidance. Exported ToneBoosters XML still requires the user to import it in USB Audio Player PRO; EQ Library does not control Android audio.
+- Grouped settings by Output, Library, Appearance, Updates, and Support, and render What's New markdown as formatted release notes.
+- Applied the fixed light and dark palettes, improved responsive layouts and large-text behavior, and exposed full band values to screen readers.
+- Improved D-pad navigation across root tabs, profile saving, staged Personal EQ import, My DAC review, export review, and recovery controls. The conditional safe-gain action now scrolls into view as it receives focus from the Q field.
+- Improved recovery after an interrupted optional Black Pearl EQ reset: the app now asks you to refresh DEVICE and does not replay reset steps after state restoration.
+- Kept last-known JA11 EQ values visible as historical after disconnect and disabled edits until a fresh readback is available.
+
+### Scope and compatibility
+
+- Preserved the v0.7.2 DAC identity rules, USB operation and reconnect behavior, DSP acceptance rules, canonical EQ values, and stored EQ membership.
+- Added no DAC support claim and no live-audio control inside USB Audio Player PRO.
+- The public stable release remains v0.7.2. This beta is not a stable-channel promotion.
+
 ## [0.7.2] - 2026-10-03
 
 ### Stabilization

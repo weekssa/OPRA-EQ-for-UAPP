@@ -5,6 +5,7 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,11 +13,14 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.StarBorder
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -40,6 +44,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -52,7 +59,12 @@ import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.OpraProduct
 import com.weekssa.opraeqforuapp.domain.catalog.assessCompatibility
 import com.weekssa.opraeqforuapp.domain.catalog.isHistoricalRevision
+import com.weekssa.opraeqforuapp.domain.catalog.isUsableParametricSource
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqFilter
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqResponseCurve
+import com.weekssa.opraeqforuapp.domain.dac.HardwareEqResponseEvaluator
 import com.weekssa.opraeqforuapp.domain.library.FavoriteToggleResult
+import com.weekssa.opraeqforuapp.domain.library.EqFilterType
 import com.weekssa.opraeqforuapp.domain.export.DeviceExportability
 import com.weekssa.opraeqforuapp.domain.export.DevicePresetFidelity
 import com.weekssa.opraeqforuapp.domain.export.ExportDevice
@@ -67,6 +79,7 @@ import com.weekssa.opraeqforuapp.domain.model.ProfileCompatibility
 import com.weekssa.opraeqforuapp.domain.settings.ExportTargetPreferences
 import com.weekssa.opraeqforuapp.domain.settings.ProfileVisibilityPreferences
 import com.weekssa.opraeqforuapp.ui.StringSetSaver
+import com.weekssa.opraeqforuapp.ui.components.DacEqResponseGraph
 import java.util.Locale
 import kotlinx.coroutines.launch
 
@@ -181,6 +194,8 @@ internal fun ProfileSelectionEditor(
     }
     var showDiscardDialog by rememberSaveable(selectionContextKey) { mutableStateOf(false) }
     var sourceProblemExplanation by rememberSaveable(selectionContextKey) { mutableStateOf<String?>(null) }
+    var profileDetailId by rememberSaveable(selectionContextKey) { mutableStateOf<String?>(null) }
+    val profileDetail = profileDetailId?.let { id -> profiles.firstOrNull { it.id == id } }
 
     LaunchedEffect(selectionContextKey) {
         val managed = onLoadManagedHeadphone(product.id)
@@ -216,19 +231,23 @@ internal fun ProfileSelectionEditor(
         it.isHistoricalRevision() && it.id in stagedSelectedIds
     }
 
-    fun completeSave() {
+    fun saveSelection(selectedProfileIds: Set<String>, closeDetails: Boolean) {
         scope.launch {
-            onSaveSelection(product.id, stagedSelectedIds, autoInclude)
-            baselineSelectedIds = stagedSelectedIds
+            onSaveSelection(product.id, selectedProfileIds, autoInclude)
+            stagedSelectedIds = selectedProfileIds
+            baselineSelectedIds = selectedProfileIds
             baselineAutoInclude = autoInclude
             managedRecord = onLoadManagedHeadphone(product.id)
-            if (stagedSelectedIds.isEmpty()) {
+            if (closeDetails) profileDetailId = null
+            if (selectedProfileIds.isEmpty()) {
                 onBack()
             } else {
                 onMessage("Saved to My EQs. Export or Flash when you want to send it somewhere.")
             }
         }
     }
+
+    fun completeSave() = saveSelection(stagedSelectedIds, closeDetails = false)
 
     fun requestBack() {
         if (dirty) showDiscardDialog = true else onBack()
@@ -252,6 +271,115 @@ internal fun ProfileSelectionEditor(
             dismissButton = {
                 TextButton(onClick = { showDiscardDialog = false }) {
                     Text(stringResource(R.string.action_keep_editing))
+                }
+            },
+        )
+    }
+
+    profileDetail?.let { profile ->
+        val details = profile.displayDetails()
+        val targetStatus = assessDeviceExportability(profile, exportTargets.activeTarget)
+        val responsePreview = remember(profile.id, profile.bands) { profileResponsePreview(profile) }
+        val detailActionSelection = if (profile.id in stagedSelectedIds) {
+            stagedSelectedIds
+        } else {
+            stagedSelectedIds + profile.id
+        }
+        val detailActionEnabled = profile.isUsableParametricSource() && initialized && managedSelectionCommitEnabled(
+            isManaged = managedRecord != null,
+            stagedSelectedProfileIds = detailActionSelection,
+            baselineSelectedProfileIds = baselineSelectedIds,
+            autoIncludeNewProfiles = autoInclude,
+            baselineAutoIncludeNewProfiles = baselineAutoInclude,
+        )
+        AlertDialog(
+            onDismissRequest = { profileDetailId = null },
+            title = { Text(product.name) },
+            text = {
+                Column(
+                    modifier = Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    profile.author?.takeIf(String::isNotBlank)?.let { Text("Creator: $it") }
+                    details.metadata?.let { Text(it) }
+                    details.soundImpact?.let { Text(it) }
+                    if (!profile.isUsableParametricSource()) {
+                        Text(
+                            stringResource(R.string.source_data_unavailable_for_selection),
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                    if (!profile.isVerified) {
+                        Text(
+                            stringResource(R.string.community_submission_unverified_review),
+                            color = MaterialTheme.colorScheme.tertiary,
+                        )
+                    }
+                    Text("Filter response preview", style = MaterialTheme.typography.titleSmall)
+                    val preview = responsePreview
+                    if (preview == null) {
+                        Text(
+                            if (profile.bands.isNullOrEmpty()) {
+                                "This profile does not provide filter data for a response preview."
+                            } else {
+                                "A response preview is unavailable because one or more source filters are incomplete or unsupported."
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    } else {
+                        val responseDescription = profileResponsePreviewDescription(preview.second)
+                        DacEqResponseGraph(
+                            curve = preview.second,
+                            filters = preview.first,
+                            accessibilityDescription = responseDescription,
+                        )
+                        Text(
+                            "Display preview only. It does not assess safety or headroom, and it does not change the source EQ. Source preamp is listed in Technical details.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Text("Target fit: ${outputStatusLabel(targetStatus, exportTargets.activeTarget)}")
+                    deviceAdaptationSummary(profile, exportTargets.activeTarget)?.let { Text(it) }
+                    Text(
+                        if (profile.id in baselineSelectedIds) "Currently in My EQs" else "Not currently in My EQs",
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                    Text(
+                        "This action saves the current selection to My EQs. You can also stage changes on the profile list.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Button(
+                        onClick = { saveSelection(detailActionSelection, closeDetails = true) },
+                        enabled = detailActionEnabled,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                    ) {
+                        Text(
+                            if (managedRecord == null) "Add to My EQs"
+                            else "Update selection",
+                        )
+                    }
+                    Text("Technical details", style = MaterialTheme.typography.titleSmall)
+                    Text("Profile type: ${profile.profileType ?: "Not provided"}")
+                    Text("Preamp: ${profile.preampGainDb?.let { String.format(Locale.US, "%+.2f dB", it) } ?: "Not provided"}")
+                    Text("${profile.bands?.size ?: 0} EQ bands")
+                    profile.bands.orEmpty().forEachIndexed { index, band ->
+                        Text(
+                            "${index + 1}. ${band.type ?: "Filter"} · ${band.frequency?.let { String.format(Locale.US, "%.1f Hz", it) } ?: "frequency not provided"} · ${band.gainDb?.let { String.format(Locale.US, "%+.2f dB", it) } ?: "gain not provided"} · Q ${band.q?.let { String.format(Locale.US, "%.3f", it) } ?: "not provided"}",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                    profile.link?.let { sourceUrl ->
+                        TextButton(onClick = { onOpenUrl(sourceUrl) }, modifier = Modifier.heightIn(min = 48.dp)) {
+                            Text(stringResource(R.string.action_source))
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { profileDetailId = null }, modifier = Modifier.heightIn(min = 48.dp)) {
+                    Text(stringResource(R.string.action_ok))
                 }
             },
         )
@@ -408,133 +536,11 @@ internal fun ProfileSelectionEditor(
             return@Column
         }
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            OutlinedButton(
-                onClick = { filterDialog = ProfileFilterDimension.Database },
-                enabled = databaseOptions.isNotEmpty(),
-                modifier = Modifier.weight(1f),
-            ) {
-                Text(
-                    if (databaseFilter == null) databaseLabel
-                    else stringResource(R.string.filter_selected_format, databaseLabel),
-                )
-            }
-            OutlinedButton(
-                onClick = { filterDialog = ProfileFilterDimension.Creator },
-                enabled = creatorOptions.isNotEmpty(),
-                modifier = Modifier.weight(1f),
-            ) {
-                Text(
-                    if (creatorFilter == null) creatorLabel
-                    else stringResource(R.string.filter_selected_format, creatorLabel),
-                )
-            }
-            OutlinedButton(
-                onClick = { filterDialog = ProfileFilterDimension.Target },
-                enabled = targetOptions.isNotEmpty(),
-                modifier = Modifier.weight(1f),
-            ) {
-                Text(
-                    if (targetFilter == null) targetLabel
-                    else stringResource(R.string.filter_selected_format, targetLabel),
-                )
-            }
-        }
-
         val activeFilters = listOfNotNull(
             databaseFilter?.let { stringResource(R.string.filter_value_format, databaseLabel, it) },
             creatorFilter?.let { stringResource(R.string.filter_value_format, creatorLabel, it) },
             targetFilter?.let { stringResource(R.string.filter_value_format, targetLabel, it) },
         )
-        if (activeFilters.isNotEmpty()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = activeFilters.joinToString(" · "),
-                    modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                TextButton(
-                    onClick = {
-                        databaseFilter = null
-                        creatorFilter = null
-                        targetFilter = null
-                    },
-                ) { Text(stringResource(R.string.action_clear)) }
-            }
-        }
-
-        if (historicalProfileCount > 0) {
-            TextButton(
-                onClick = { showHistoricalRevisions = !showHistoricalRevisions },
-                modifier = Modifier.padding(horizontal = 8.dp),
-            ) {
-                val historyLabel = if (showHistoricalRevisions) {
-                    stringResource(R.string.history_hide)
-                } else if (selectedHistoricalCount > 0) {
-                    stringResource(
-                        R.string.history_count_with_selected,
-                        historicalProfileCount,
-                        pluralStringResource(R.plurals.selected_count, selectedHistoricalCount, selectedHistoricalCount),
-                    )
-                } else {
-                    stringResource(R.string.history_count, historicalProfileCount)
-                }
-                Text(historyLabel)
-            }
-        }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 0.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            TextButton(onClick = {
-                stagedSelectedIds = stagedSelectedIds + selectableProfileIds(visibleProfiles, includeHistorical = true)
-            }) { Text(stringResource(R.string.action_select_all)) }
-            TextButton(onClick = {
-                stagedSelectedIds = stagedSelectedIds - visibleProfiles.map(OpraEqProfile::id).toSet()
-            }) { Text(stringResource(R.string.action_select_none)) }
-        }
-
-        Text(
-            text = stringResource(R.string.selection_behavior_explanation),
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        if (filteredOutCount > 0) {
-            Text(
-                text = pluralStringResource(R.plurals.profiles_hidden_by_filters, filteredOutCount, filteredOutCount),
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        if (retainedSelectedUnavailable > 0) {
-            Text(
-                text = pluralStringResource(
-                    R.plurals.selected_presets_retained_unavailable,
-                    retainedSelectedUnavailable,
-                    retainedSelectedUnavailable,
-                ),
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-
         val connectedHardwareFlashDevice = connectedLibraryHardwareFlashDevice(
             blackPearlConnected = blackPearlConnected && onFlashBlackPearlProfile != null,
             fiioJa11Connected = fiioJa11Connected && onFlashFiioJa11Profile != null,
@@ -542,6 +548,132 @@ internal fun ProfileSelectionEditor(
         )
 
         LazyColumn(modifier = Modifier.weight(1f)) {
+            item(key = "selection-controls") {
+                Column {
+                    FlowRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        OutlinedButton(
+                            onClick = { filterDialog = ProfileFilterDimension.Database },
+                            enabled = databaseOptions.isNotEmpty(),
+                            modifier = Modifier.heightIn(min = 48.dp),
+                        ) {
+                            Text(
+                                if (databaseFilter == null) databaseLabel
+                                else stringResource(R.string.filter_selected_format, databaseLabel),
+                            )
+                        }
+                        OutlinedButton(
+                            onClick = { filterDialog = ProfileFilterDimension.Creator },
+                            enabled = creatorOptions.isNotEmpty(),
+                            modifier = Modifier.heightIn(min = 48.dp),
+                        ) {
+                            Text(
+                                if (creatorFilter == null) creatorLabel
+                                else stringResource(R.string.filter_selected_format, creatorLabel),
+                            )
+                        }
+                        OutlinedButton(
+                            onClick = { filterDialog = ProfileFilterDimension.Target },
+                            enabled = targetOptions.isNotEmpty(),
+                            modifier = Modifier.heightIn(min = 48.dp),
+                        ) {
+                            Text(
+                                if (targetFilter == null) targetLabel
+                                else stringResource(R.string.filter_selected_format, targetLabel),
+                            )
+                        }
+                    }
+
+                    if (activeFilters.isNotEmpty()) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = activeFilters.joinToString(" · "),
+                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            TextButton(
+                                onClick = {
+                                    databaseFilter = null
+                                    creatorFilter = null
+                                    targetFilter = null
+                                },
+                            ) { Text(stringResource(R.string.action_clear)) }
+                        }
+                    }
+
+                    if (historicalProfileCount > 0) {
+                        TextButton(
+                            onClick = { showHistoricalRevisions = !showHistoricalRevisions },
+                            modifier = Modifier.padding(horizontal = 8.dp),
+                        ) {
+                            val historyLabel = if (showHistoricalRevisions) {
+                                stringResource(R.string.history_hide)
+                            } else if (selectedHistoricalCount > 0) {
+                                stringResource(
+                                    R.string.history_count_with_selected,
+                                    historicalProfileCount,
+                                    pluralStringResource(R.plurals.selected_count, selectedHistoricalCount, selectedHistoricalCount),
+                                )
+                            } else {
+                                stringResource(R.string.history_count, historicalProfileCount)
+                            }
+                            Text(historyLabel)
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        TextButton(onClick = {
+                            stagedSelectedIds = stagedSelectedIds + selectableProfileIds(visibleProfiles, includeHistorical = true)
+                        }) { Text(stringResource(R.string.action_select_all)) }
+                        TextButton(onClick = {
+                            stagedSelectedIds = stagedSelectedIds - visibleProfiles.map(OpraEqProfile::id).toSet()
+                        }) { Text(stringResource(R.string.action_select_none)) }
+                    }
+
+                    Text(
+                        text = stringResource(R.string.selection_behavior_explanation),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    if (filteredOutCount > 0) {
+                        Text(
+                            text = pluralStringResource(R.plurals.profiles_hidden_by_filters, filteredOutCount, filteredOutCount),
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    if (retainedSelectedUnavailable > 0) {
+                        Text(
+                            text = pluralStringResource(
+                                R.plurals.selected_presets_retained_unavailable,
+                                retainedSelectedUnavailable,
+                                retainedSelectedUnavailable,
+                            ),
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
             items(visibleProfiles, key = OpraEqProfile::id) { profile ->
                 val sourceAssessment = profile.assessCompatibility()
                 val activeTarget = exportTargets.activeTarget
@@ -566,6 +698,7 @@ internal fun ProfileSelectionEditor(
                     onSelectionChange = { selected ->
                         stagedSelectedIds = if (selected) stagedSelectedIds + profile.id else stagedSelectedIds - profile.id
                     },
+                    onOpenDetails = { profileDetailId = profile.id },
                     onToggleFavorite = onToggleFavorite?.let { toggle ->
                         {
                             scope.launch {
@@ -592,9 +725,9 @@ internal fun ProfileSelectionEditor(
                     onExplainSourceProblem = {
                         sourceProblemExplanation = sourceAssessment.reason ?: sourceNotUsableDefault
                     },
-                    onFlashHardware = if (hardwareFlashReady && connectedHardwareFlashDevice != null) {
-                        { pendingHardwareFlash = connectedHardwareFlashDevice to profile }
-                    } else null,
+                    onFlashHardware = connectedHardwareFlashDevice
+                        ?.takeIf { hardwareFlashReady }
+                        ?.let { device -> { pendingHardwareFlash = device to profile } },
                 )
                 HorizontalDivider()
             }
@@ -609,11 +742,45 @@ internal fun ProfileSelectionEditor(
         ) {
             Text(
                 if (managedRecord == null) stringResource(R.string.add_to_my_eqs_count, stagedSelectedIds.size)
-                else stringResource(R.string.save_changes_count, stagedSelectedIds.size),
+                else stringResource(R.string.update_selection_count, stagedSelectedIds.size),
             )
         }
     }
 }
+
+private fun profileResponsePreview(
+    profile: OpraEqProfile,
+): Pair<List<HardwareEqFilter>, HardwareEqResponseCurve>? {
+    val bands = profile.bands?.takeIf { it.isNotEmpty() } ?: return null
+    val filters = ArrayList<HardwareEqFilter>(bands.size)
+    bands.forEachIndexed { index, band ->
+        val type = when (band.type) {
+            "peak_dip" -> EqFilterType.PEAK
+            "low_shelf" -> EqFilterType.LOW_SHELF
+            "high_shelf" -> EqFilterType.HIGH_SHELF
+            else -> return null
+        }
+        val frequencyHz = band.frequency?.takeIf { it.isFinite() && it in 20.0..20_000.0 } ?: return null
+        val gainDb = band.gainDb?.takeIf(Double::isFinite) ?: return null
+        val q = band.q?.takeIf { it.isFinite() && it > 0.0 } ?: return null
+        if (band.slope != null) return null
+        filters += HardwareEqFilter(
+            index = index,
+            enabled = true,
+            type = type,
+            frequencyHz = frequencyHz,
+            gainDb = gainDb,
+            q = q,
+        )
+    }
+    val curve = HardwareEqResponseEvaluator.evaluate(filters) ?: return null
+    return filters to curve
+}
+
+private fun profileResponsePreviewDescription(curve: HardwareEqResponseCurve): String =
+    "96-point filter response display preview from 20 Hz to 20 kHz. Sampled filter gain ranges from " +
+        "${String.format(Locale.US, "%+.2f", curve.minimumGainDb)} to " +
+        "${String.format(Locale.US, "%+.2f", curve.maximumGainDb)} dB. This is not a safety or headroom result."
 
 @Composable
 private fun ProfileFilterDialog(
@@ -653,23 +820,33 @@ internal fun ProfileSelectionRow(
     outputStatus: String,
     outputStatusCategory: DeviceExportability,
     onSelectionChange: (Boolean) -> Unit,
+    onOpenDetails: () -> Unit = {},
     onToggleFavorite: (() -> Unit)?,
     onHide: () -> Unit,
     onOpenSource: (() -> Unit)?,
     onExplainSourceProblem: () -> Unit,
     onFlashHardware: (() -> Unit)? = null,
 ) {
+    val detailsFocusRequester = remember(profile.id) { FocusRequester() }
     val compatibility = profile.assessCompatibility()
     val selectable = compatibility.category.isSelectable
     val displayDetails = profile.displayDetails()
     val rowModifier = if (selectable) {
-        Modifier.fillMaxWidth().heightIn(min = 56.dp).toggleable(
-            value = selected,
-            role = Role.Checkbox,
-            onValueChange = onSelectionChange,
-        )
+        Modifier
+            .fillMaxWidth()
+            .heightIn(min = 56.dp)
+            .focusProperties { right = detailsFocusRequester }
+            .toggleable(
+                value = selected,
+                role = Role.Checkbox,
+                onValueChange = onSelectionChange,
+            )
     } else {
-        Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable(onClick = onExplainSourceProblem)
+        Modifier
+            .fillMaxWidth()
+            .heightIn(min = 56.dp)
+            .focusProperties { right = detailsFocusRequester }
+            .clickable(onClick = onExplainSourceProblem)
     }
 
     ListItem(
@@ -727,6 +904,14 @@ internal fun ProfileSelectionRow(
         },
         trailingContent = {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(
+                    onClick = onOpenDetails,
+                    modifier = Modifier
+                        .heightIn(min = 48.dp)
+                        .focusRequester(detailsFocusRequester),
+                ) {
+                    Icon(Icons.Outlined.Info, contentDescription = "Details for ${profile.author ?: "EQ profile"}")
+                }
                 onFlashHardware?.let { flash -> TextButton(onClick = flash) { Text("Flash") } }
                 IconButton(onClick = onHide) {
                     Icon(

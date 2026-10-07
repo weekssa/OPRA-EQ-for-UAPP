@@ -151,7 +151,24 @@ jobs:
           fi
           adb shell input keyevent 82
 
+      - name: Enable software keyboard with emulated keyboard
+        shell: bash
+        run: |
+          set -euo pipefail
+          avd_config="$ANDROID_AVD_HOME/opra_ci_api_35.avd/config.ini"
+          grep '^hw.keyboard=' "$avd_config"
+          ime_setting_before="$(adb shell settings get secure show_ime_with_hard_keyboard | tr -d '\r')"
+          printf 'show_ime_with_hard_keyboard before=%s\n' "$ime_setting_before"
+          adb shell settings put secure show_ime_with_hard_keyboard 1
+          ime_setting="$(adb shell settings get secure show_ime_with_hard_keyboard | tr -d '\r')"
+          printf 'show_ime_with_hard_keyboard after=%s\n' "$ime_setting"
+          test "$ime_setting" = "1"
+
+      - name: Clear emulator logcat before UI tests
+        run: adb logcat -c
+
       - name: Run connected UI tests
+        id: connected_ui_tests
         run: gradle :app:connectedDebugAndroidTest --stacktrace
 
       - name: Upload emulator diagnostics
@@ -250,6 +267,77 @@ jobs:
             printf 'Expected API 26 emulator, received API %s.\n' "$api_level" >&2
             exit 1
           fi
+          abi="$(adb shell getprop ro.product.cpu.abi | tr -d '\r')"
+          if [[ "$abi" != "x86_64" ]]; then
+            printf 'Expected the default API-26 x86_64 profile, received ABI %s.\n' "$abi" >&2
+            exit 1
+          fi
+          heap_growth_limit_before="$(adb shell getprop dalvik.vm.heapgrowthlimit | tr -d '\r')"
+          if [[ -z "$heap_growth_limit_before" ]]; then
+            printf 'API-26 x86_64 image leaves dalvik.vm.heapgrowthlimit unset; applying the required default 48m before app installation.\n'
+            adb root
+            adb wait-for-device
+            shell_uid="$(adb shell id -u | tr -d '\r')"
+            if [[ "$shell_uid" != "0" ]]; then
+              printf 'Could not obtain root to apply the required API-26 48m runtime default.\n' >&2
+              exit 1
+            fi
+            adb shell stop zygote
+            zygote_state=""
+            for attempt in $(seq 1 30); do
+              zygote_state="$(adb shell getprop init.svc.zygote | tr -d '\r')"
+              if [[ "$zygote_state" == "stopped" ]]; then
+                break
+              fi
+              sleep 1
+            done
+            if [[ "$zygote_state" != "stopped" ]]; then
+              printf 'API-26 zygote did not stop before applying the heap-growth limit (state=%s).\n' "$zygote_state" >&2
+              exit 1
+            fi
+            adb shell setprop dalvik.vm.heapgrowthlimit 48m
+            adb shell start zygote
+            heap_growth_limit=""
+            zygote_state=""
+            for attempt in $(seq 1 60); do
+              heap_growth_limit="$(adb shell getprop dalvik.vm.heapgrowthlimit | tr -d '\r')"
+              zygote_state="$(adb shell getprop init.svc.zygote | tr -d '\r')"
+              if [[ "$heap_growth_limit" == "48m" && "$zygote_state" == "running" ]]; then
+                break
+              fi
+              sleep 1
+            done
+            if [[ "$heap_growth_limit" != "48m" || "$zygote_state" != "running" ]]; then
+              printf 'Could not establish the required 48m heap-growth limit before app installation (property=%s, zygote=%s).\n' "$heap_growth_limit" "$zygote_state" >&2
+              exit 1
+            fi
+            package_manager_path=""
+            for attempt in $(seq 1 60); do
+              package_manager_path="$(adb shell pm path android 2>/dev/null | tr -d '\r' || true)"
+              if [[ "$package_manager_path" == package:* ]]; then
+                break
+              fi
+              sleep 1
+            done
+            if [[ "$package_manager_path" != package:* ]]; then
+              printf 'Package Manager did not become ready after restarting zygote.\n' >&2
+              exit 1
+            fi
+          else
+            package_manager_path='not restarted (heap-growth limit already configured)'
+          fi
+          heap_growth_limit="$(adb shell getprop dalvik.vm.heapgrowthlimit | tr -d '\r')"
+          heap_growth_limit_before_report="$heap_growth_limit_before"
+          if [[ -z "$heap_growth_limit_before_report" ]]; then
+            heap_growth_limit_before_report='<unset>'
+          fi
+          printf 'Dalvik heap growth limit before normalization: %s\nDalvik heap growth limit for app launch: %s\nEmulator ABI: %s\nPackage Manager readiness: %s\nZygote state: %s\n' "$heap_growth_limit_before_report" "$heap_growth_limit" "$abi" "$package_manager_path" "$(adb shell getprop init.svc.zygote | tr -d '\r')" | tee "$RUNNER_TEMP/min-api-runtime.txt"
+          if [[ "$heap_growth_limit" != "48m" ]]; then
+            printf 'Expected the default API-26 x86_64 profile with a 48m heap growth limit.\n' >&2
+            exit 1
+          fi
+          grep -E '^(abi\.type|hw\.device\.name|hw\.ramSize|vm\.heapSize|hw\.keyboard)=' \
+            "$ANDROID_AVD_HOME/opra_ci_api_26.avd/config.ini" > "$RUNNER_TEMP/min-api-avd-config.txt"
           release_apks=()
           while IFS= read -r -d '' apk_path; do
             release_apks+=("$apk_path")
@@ -287,6 +375,9 @@ jobs:
           launch_output="$(adb shell am start -W -n com.weekssa.opraeqforuapp/.MainActivity 2>&1)"
           printf '%s\n' "$launch_output" | tee "$RUNNER_TEMP/min-api-launch.txt"
           grep -q '^Status: ok$' "$RUNNER_TEMP/min-api-launch.txt"
+          adb logcat -b all -v threadtime > "$RUNNER_TEMP/min-api-logcat-threadtime.txt" 2>&1 &
+          logcat_pid=$!
+          trap 'kill "$logcat_pid" 2>/dev/null || true' EXIT
           tab_deadline=$((SECONDS + 60))
           while (( SECONDS < tab_deadline )); do
             adb shell uiautomator dump /sdcard/window.xml > /dev/null 2>&1 || true
@@ -301,20 +392,50 @@ jobs:
             exit 1
           fi
           adb shell cat /sdcard/window.xml > "$RUNNER_TEMP/min-api-hierarchy.xml"
-          adb shell input tap 540 1680
+          tap="$(python3 - "$RUNNER_TEMP/min-api-hierarchy.xml" <<'PY'
+          import re
+          import sys
+          import xml.etree.ElementTree as ET
+
+          root = ET.parse(sys.argv[1]).getroot()
+          candidates = []
+          for node in root.iter("node"):
+              if node.attrib.get("text") != "EQ Library":
+                  continue
+              match = re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", node.attrib.get("bounds", ""))
+              if match:
+                  left, top, right, bottom = map(int, match.groups())
+                  candidates.append(((left + right) // 2, (top + bottom) // 2))
+          if not candidates:
+              raise SystemExit("The visible EQ Library navigation control has no bounds.")
+          print(*max(candidates, key=lambda point: point[1]))
+          PY
+          )"
+          read -r tap_x tap_y <<< "$tap"
+          printf 'Tapping visible EQ Library navigation control at %s,%s.\n' "$tap_x" "$tap_y"
+          adb exec-out screencap -p > "$RUNNER_TEMP/min-api-before-library.png"
+          adb shell dumpsys meminfo com.weekssa.opraeqforuapp > "$RUNNER_TEMP/min-api-meminfo-before-library.txt"
+          adb shell input tap "$tap_x" "$tap_y"
           readiness_deadline=$((SECONDS + 300))
           catalog_ready=false
           while (( SECONDS < readiness_deadline )); do
             if ! adb shell pidof com.weekssa.opraeqforuapp > "$RUNNER_TEMP/min-api-pid.txt"; then
+              adb shell uiautomator dump /sdcard/window.xml > /dev/null 2>&1 || true
+              adb shell cat /sdcard/window.xml > "$RUNNER_TEMP/min-api-hierarchy.xml" 2>/dev/null || true
+              adb exec-out screencap -p > "$RUNNER_TEMP/min-api-library.png" 2>/dev/null || true
+              adb shell dumpsys meminfo com.weekssa.opraeqforuapp > "$RUNNER_TEMP/min-api-meminfo.txt" 2>&1 || true
               adb logcat -d -v brief -s AndroidRuntime:E > "$RUNNER_TEMP/min-api-logcat.txt"
               cat "$RUNNER_TEMP/min-api-logcat.txt"
               printf 'App process exited before the EQ catalog became ready.\n' >&2
               exit 1
             fi
             adb shell uiautomator dump /sdcard/window.xml > /dev/null 2>&1 || true
-            if adb shell cat /sdcard/window.xml 2>/dev/null | grep -q 'text="Manufacturers"'; then
+            if adb shell cat /sdcard/window.xml 2>/dev/null | grep -q 'text="Manufacturers"' && \
+              adb shell cat /sdcard/window.xml 2>/dev/null | grep -q 'text="1Custom"'; then
               catalog_ready=true
               adb shell cat /sdcard/window.xml > "$RUNNER_TEMP/min-api-hierarchy.xml"
+              adb exec-out screencap -p > "$RUNNER_TEMP/min-api-library.png"
+              adb shell dumpsys meminfo com.weekssa.opraeqforuapp > "$RUNNER_TEMP/min-api-meminfo.txt"
               break
             fi
             adb logcat -d -v brief -s AndroidRuntime:E > "$RUNNER_TEMP/min-api-logcat.txt"
@@ -326,17 +447,28 @@ jobs:
           done
           if [[ "$catalog_ready" != true ]]; then
             adb shell cat /sdcard/window.xml > "$RUNNER_TEMP/min-api-hierarchy.xml" 2>/dev/null || true
-            printf 'EQ catalog did not reach its manufacturer list within 300 seconds.\n' >&2
+            adb exec-out screencap -p > "$RUNNER_TEMP/min-api-library.png" 2>/dev/null || true
+            adb shell dumpsys meminfo com.weekssa.opraeqforuapp > "$RUNNER_TEMP/min-api-meminfo.txt" 2>&1 || true
+            printf 'EQ catalog did not show its Manufacturers heading and populated 1Custom row within 300 seconds.\n' >&2
             exit 1
           fi
-          printf 'EQ catalog manufacturer list became visible after launch.\n' | tee "$RUNNER_TEMP/min-api-catalog-ready.txt"
-          adb shell pidof com.weekssa.opraeqforuapp
+          printf 'EQ catalog showed the Manufacturers heading and the 1Custom row after Library navigation.\n' | tee "$RUNNER_TEMP/min-api-catalog-ready.txt"
+          pid_before="$(adb shell pidof com.weekssa.opraeqforuapp | tr -d '\r')"
+          printf '%s\n' "$pid_before" | tee "$RUNNER_TEMP/min-api-pid-before-observation.txt"
+          test -n "$pid_before"
           adb shell dumpsys activity activities > "$RUNNER_TEMP/min-api-activities.txt"
           grep -E 'ResumedActivity|mResumedActivity' "$RUNNER_TEMP/min-api-activities.txt" | grep -F 'com.weekssa.opraeqforuapp'
           sleep 60
-          adb shell pidof com.weekssa.opraeqforuapp
+          pid_after="$(adb shell pidof com.weekssa.opraeqforuapp | tr -d '\r')"
+          printf '%s\n' "$pid_after" | tee "$RUNNER_TEMP/min-api-pid-after-observation.txt"
+          if [[ "$pid_after" != "$pid_before" ]]; then
+            printf 'App process changed during the 60-second populated-Library observation.\n' >&2
+            exit 1
+          fi
           adb shell dumpsys activity activities > "$RUNNER_TEMP/min-api-activities.txt"
           grep -E 'ResumedActivity|mResumedActivity' "$RUNNER_TEMP/min-api-activities.txt" | grep -F 'com.weekssa.opraeqforuapp'
+          kill "$logcat_pid" 2>/dev/null || true
+          wait "$logcat_pid" 2>/dev/null || true
           adb logcat -d -v brief -s AndroidRuntime:E > "$RUNNER_TEMP/min-api-logcat.txt"
           if grep -Fq 'Process: com.weekssa.opraeqforuapp' "$RUNNER_TEMP/min-api-logcat.txt"; then
             cat "$RUNNER_TEMP/min-api-logcat.txt"
@@ -355,6 +487,15 @@ jobs:
             ${{ runner.temp }}/min-api-catalog-ready.txt
             ${{ runner.temp }}/min-api-activities.txt
             ${{ runner.temp }}/min-api-hierarchy.xml
+            ${{ runner.temp }}/min-api-runtime.txt
+            ${{ runner.temp }}/min-api-avd-config.txt
+            ${{ runner.temp }}/min-api-meminfo.txt
+            ${{ runner.temp }}/min-api-meminfo-before-library.txt
+            ${{ runner.temp }}/min-api-before-library.png
+            ${{ runner.temp }}/min-api-pid-before-observation.txt
+            ${{ runner.temp }}/min-api-pid-after-observation.txt
+            ${{ runner.temp }}/min-api-library.png
             ${{ runner.temp }}/min-api-logcat.txt
+            ${{ runner.temp }}/min-api-logcat-threadtime.txt
           if-no-files-found: ignore
           retention-days: 14

@@ -1,6 +1,8 @@
 package com.weekssa.opraeqforuapp.ui.screens
 
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,12 +18,27 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.weekssa.opraeqforuapp.R
@@ -38,6 +55,7 @@ import com.weekssa.opraeqforuapp.ui.MyDacEditorError
 import com.weekssa.opraeqforuapp.ui.MyDacEditorStage
 import com.weekssa.opraeqforuapp.ui.MyDacEditorUiState
 import com.weekssa.opraeqforuapp.ui.components.DacEqResponseGraph
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 @Composable
@@ -159,6 +177,9 @@ private fun EditorMain(
 ) {
     val working = requireNotNull(state.workingCopy)
     val curve = working.responseCurve
+    val safeGainAvailable = working.headroomAssessment?.status == DacHeadroomStatus.ADJUSTMENT_REQUIRED
+    val safeGainFocusRequester = remember { FocusRequester() }
+    val safeGainBringIntoViewRequester = remember { BringIntoViewRequester() }
     if (curve == null) {
         Text(
             text = stringResource(R.string.my_dac_response_unavailable),
@@ -198,10 +219,17 @@ private fun EditorMain(
         SelectedBandEditor(
             filter = selected,
             onUpdate = onUpdateBand,
+            downFocusRequester = safeGainFocusRequester.takeIf { safeGainAvailable },
+            downBringIntoViewRequester = safeGainBringIntoViewRequester.takeIf { safeGainAvailable },
         )
     }
 
-    HeadroomCard(working = working, onUseSafeGain = onUseSafeGain)
+    HeadroomCard(
+        working = working,
+        onUseSafeGain = onUseSafeGain,
+        safeGainFocusRequester = safeGainFocusRequester.takeIf { safeGainAvailable },
+        safeGainBringIntoViewRequester = safeGainBringIntoViewRequester.takeIf { safeGainAvailable },
+    )
     EditorIssues(working)
 
     Row(
@@ -241,10 +269,24 @@ private fun BandChips(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         filters.sortedBy(HardwareEqFilter::index).forEach { filter ->
+            val gain = editableNumber(filter.gainDb).let { value ->
+                if (filter.gainDb > 0.0) "+$value" else value
+            }
+            val bandDescription = stringResource(
+                R.string.my_dac_editor_band_accessibility,
+                filter.index + 1,
+                filterTypeLabel(filter.type),
+                editableNumber(filter.frequencyHz),
+                gain,
+                editableNumber(filter.q),
+            )
             FilterChip(
                 selected = filter.index == selectedBandIndex,
                 onClick = { onSelectBand(filter.index) },
                 label = { Text((filter.index + 1).toString()) },
+                modifier = Modifier.semantics(mergeDescendants = true) {
+                    contentDescription = bandDescription
+                },
             )
         }
     }
@@ -254,7 +296,11 @@ private fun BandChips(
 private fun SelectedBandEditor(
     filter: HardwareEqFilter,
     onUpdate: (Int, EqFilterType, Double, Double, Double) -> Unit,
+    downFocusRequester: FocusRequester?,
+    downBringIntoViewRequester: BringIntoViewRequester?,
 ) {
+    val focusManager = LocalFocusManager.current
+    val coroutineScope = rememberCoroutineScope()
     var frequencyText by remember(filter.index, filter.frequencyHz) {
         mutableStateOf(editableNumber(filter.frequencyHz))
     }
@@ -323,7 +369,15 @@ private fun SelectedBandEditor(
                 },
                 label = { Text(stringResource(R.string.my_dac_editor_frequency)) },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .onPreviewKeyEvent { event ->
+                        if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionDown) {
+                            focusManager.moveFocus(FocusDirection.Down)
+                        } else {
+                            false
+                        }
+                    }
+                    .fillMaxWidth(),
             )
             OutlinedTextField(
                 value = gainText,
@@ -333,7 +387,15 @@ private fun SelectedBandEditor(
                 },
                 label = { Text(stringResource(R.string.my_dac_editor_gain)) },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .onPreviewKeyEvent { event ->
+                        if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionDown) {
+                            focusManager.moveFocus(FocusDirection.Down)
+                        } else {
+                            false
+                        }
+                    }
+                    .fillMaxWidth(),
             )
             OutlinedTextField(
                 value = qText,
@@ -343,7 +405,30 @@ private fun SelectedBandEditor(
                 },
                 label = { Text(stringResource(R.string.my_dac_editor_q)) },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .focusProperties {
+                        downFocusRequester?.let { down = it }
+                    }
+                    .onPreviewKeyEvent { event ->
+                        if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionDown) {
+                            if (downFocusRequester != null && downBringIntoViewRequester != null) {
+                                coroutineScope.launch {
+                                    downBringIntoViewRequester.bringIntoView()
+                                    repeat(30) { attempt ->
+                                        val moved = downFocusRequester.requestFocus()
+                                        if (moved) return@launch
+                                        if (attempt < 29) withFrameNanos { }
+                                    }
+                                }
+                                true
+                            } else {
+                                focusManager.moveFocus(FocusDirection.Down)
+                            }
+                        } else {
+                            false
+                        }
+                    }
+                    .fillMaxWidth(),
             )
         }
     }
@@ -353,6 +438,8 @@ private fun SelectedBandEditor(
 private fun HeadroomCard(
     working: HardwareEqEditWorkingCopy,
     onUseSafeGain: () -> Unit,
+    safeGainFocusRequester: FocusRequester?,
+    safeGainBringIntoViewRequester: BringIntoViewRequester?,
 ) {
     val assessment = working.headroomAssessment ?: return
     Card(modifier = Modifier.fillMaxWidth()) {
@@ -393,7 +480,17 @@ private fun HeadroomCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             if (assessment.status == DacHeadroomStatus.ADJUSTMENT_REQUIRED) {
-                Button(onClick = onUseSafeGain, modifier = Modifier.fillMaxWidth()) {
+                Button(
+                    onClick = onUseSafeGain,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .then(
+                            safeGainFocusRequester?.let(Modifier::focusRequester) ?: Modifier,
+                        )
+                        .then(
+                            safeGainBringIntoViewRequester?.let(Modifier::bringIntoViewRequester) ?: Modifier,
+                        ),
+                ) {
                     Text(stringResource(R.string.my_dac_editor_use_safe_gain))
                 }
             }
@@ -470,6 +567,10 @@ private fun ReviewChanges(
     onBack: () -> Unit,
     onApply: (Boolean) -> Unit,
 ) {
+    val reviewTitleRequester = remember { BringIntoViewRequester() }
+    LaunchedEffect(Unit) {
+        reviewTitleRequester.bringIntoView()
+    }
     val working = requireNotNull(state.workingCopy)
     val isApplying = state.applyStatus == MyDacEditorApplyStatus.APPLYING
     val confirmationRequired = state.applyStatus == MyDacEditorApplyStatus.CONFIRMATION_REQUIRED
@@ -486,6 +587,7 @@ private fun ReviewChanges(
             text = stringResource(R.string.my_dac_editor_review_title),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.bringIntoViewRequester(reviewTitleRequester),
         )
         TextButton(onClick = onBack, enabled = !isApplying) {
             Text(stringResource(R.string.my_dac_editor_back_to_editor))

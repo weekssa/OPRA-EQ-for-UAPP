@@ -28,11 +28,14 @@ class CanonicalFirstCatalogRepository(
     private val legacyFallback: AppCatalogRepository,
 ) : AppCatalogRepository {
     private val mutableState = MutableStateFlow<CatalogState>(CatalogState.Loading)
+    @Volatile
+    private var projectedCanonicalCatalog: OpraCatalog? = null
 
     override val state: StateFlow<CatalogState> = mutableState.asStateFlow()
 
     override suspend fun initialize() {
         canonicalRepository.initialize()
+        prepareCanonicalProjection()
         legacyFallback.initialize()
         renderAvailableCatalog()
     }
@@ -42,13 +45,14 @@ class CanonicalFirstCatalogRepository(
         if (previous != null) mutableState.value = previous.copy(isRefreshing = true)
 
         val canonicalResult = canonicalRepository.refresh()
+        prepareCanonicalProjection()
         val legacyResult = legacyFallback.refresh()
         val ready = renderAvailableCatalog()
 
         if (ready != null) {
             val eitherSucceeded = canonicalResult is CanonicalCatalogRefreshResult.Success ||
                 legacyResult is CatalogRefreshResult.Success
-            if (eitherSucceeded) {
+            if (eitherSucceeded && (previous == null || ready.catalog !== previous.catalog)) {
                 return CatalogRefreshResult.Success(
                     catalog = ready.catalog,
                     refreshedAtMillis = ready.lastSuccessfulRefreshMillis,
@@ -74,9 +78,18 @@ class CanonicalFirstCatalogRepository(
     }
 
     override fun resolveCanonicalSelection(profile: com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile): CanonicalEqSelection? {
-        val canonicalSelection = (canonicalRepository.state.value as? CanonicalCatalogState.Ready)
-            ?.snapshot
-            ?.let { CanonicalLegacyCatalogAdapter.resolveSelection(it, profile) }
+        val effectiveCatalog = (mutableState.value as? CatalogState.Ready)?.catalog
+        val displayedProduct = effectiveCatalog?.product(profile.productId)
+        val displayedVendor = displayedProduct?.let { effectiveCatalog.vendor(it.vendorId) }
+        val canonicalSelection = canonicalRepository.findProfile(profile.canonicalProfileId)
+            ?.takeIf { displayedProduct != null && displayedVendor != null }
+            ?.let {
+                CanonicalLegacyCatalogAdapter.resolveSelection(
+                    profile = it,
+                    legacy = profile,
+                    compatibilityVendorId = requireNotNull(displayedVendor).id,
+                )
+            }
         if (canonicalSelection != null) {
             return resolveDisplayedProductAlias(canonicalSelection, profile)
         }
@@ -85,7 +98,9 @@ class CanonicalFirstCatalogRepository(
         // snapshot has not published that exact source record yet. Canonicalize only the current
         // maintained OPRA row with its exact source ID; never derive a Favorite from an arbitrary
         // managed snapshot or from a merely similar acoustic profile.
-        val legacyCatalog = (legacyFallback.state.value as? CatalogState.Ready)?.catalog ?: return null
+        val legacyCatalog = (legacyFallback.state.value as? CatalogState.Ready)?.catalog
+            ?: effectiveCatalog
+            ?: return null
         val product = legacyCatalog.product(profile.productId) ?: return null
         val vendor = legacyCatalog.vendor(product.vendorId) ?: return null
         val sourceProfile = legacyCatalog.profiles.singleOrNull { candidate ->
@@ -123,34 +138,46 @@ class CanonicalFirstCatalogRepository(
     }
 
     override fun resolveCanonicalSelection(preset: com.weekssa.opraeqforuapp.domain.catalog.GeneralEqPreset): CanonicalEqSelection? =
-        (canonicalRepository.state.value as? CanonicalCatalogState.Ready)
-            ?.snapshot
+        canonicalRepository.findProfile(preset.canonicalProfileId)
             ?.let { CanonicalLegacyCatalogAdapter.resolveSelection(it, preset) }
+
+    private suspend fun prepareCanonicalProjection() = withContext(Dispatchers.Default) {
+        val ready = canonicalRepository.state.value as? CanonicalCatalogState.Ready ?: return@withContext
+        val snapshot = ready.snapshot?.takeIf { it.isUsable() } ?: return@withContext
+        projectedCanonicalCatalog = CanonicalLegacyCatalogAdapter.adapt(snapshot)
+        canonicalRepository.releaseInMemorySnapshot()
+    }
 
     private suspend fun renderAvailableCatalog(): CatalogState.Ready? =
         withContext(Dispatchers.Default) { renderAvailableCatalogInBackground() }
 
     private fun renderAvailableCatalogInBackground(): CatalogState.Ready? {
+        val previous = mutableState.value as? CatalogState.Ready
         val canonicalReady = canonicalRepository.state.value as? CanonicalCatalogState.Ready
         val legacyReady = legacyFallback.state.value as? CatalogState.Ready
-        val canonicalCatalog = canonicalReady
-            ?.takeIf { it.snapshot.isUsable() }
-            ?.let {
-                CanonicalLegacyCatalogAdapter.adapt(it.snapshot)
+        val canonicalCatalog = canonicalReady?.snapshot
+            ?.takeIf { it.isUsable() }
+            ?.let { snapshot ->
+                CanonicalLegacyCatalogAdapter.adapt(snapshot).also { projection ->
+                    projectedCanonicalCatalog = projection
+                    canonicalRepository.releaseInMemorySnapshot()
+                }
             }
+            ?: projectedCanonicalCatalog
 
         val catalog: OpraCatalog = when {
             legacyReady != null && canonicalCatalog != null -> {
                 overlayCanonicalCatalog(
                     legacy = legacyReady.catalog,
                     canonical = canonicalCatalog,
-                    headphoneAliases = canonicalReady.snapshot.headphoneAliases,
+                    headphoneAliases = canonicalReady?.headphoneAliases.orEmpty(),
                 ).copy(
                     // General EQs never enter the headphone overlay. Carry the separate canonical
                     // projection alongside it so output selection cannot hide or fake identities.
                     generalPresets = canonicalCatalog.generalPresets,
                 )
             }
+            previous != null -> previous.catalog
             canonicalCatalog != null -> canonicalCatalog
             legacyReady != null -> legacyReady.catalog
             else -> {
@@ -159,15 +186,24 @@ class CanonicalFirstCatalogRepository(
             }
         }
 
-        val refreshedAt = maxOf(
-            legacyReady?.lastSuccessfulRefreshMillis ?: Long.MIN_VALUE,
-            canonicalReady?.refreshedAtMillis ?: Long.MIN_VALUE,
-        ).takeIf { it != Long.MIN_VALUE } ?: System.currentTimeMillis()
+        val refreshedAt = if (catalog === previous?.catalog) {
+            previous.lastSuccessfulRefreshMillis
+        } else {
+            maxOf(
+                legacyReady?.lastSuccessfulRefreshMillis ?: Long.MIN_VALUE,
+                canonicalReady?.refreshedAtMillis ?: Long.MIN_VALUE,
+            ).takeIf { it != Long.MIN_VALUE } ?: System.currentTimeMillis()
+        }
 
-        return CatalogState.Ready(
+        val ready = CatalogState.Ready(
             catalog = catalog,
             lastSuccessfulRefreshMillis = refreshedAt,
-        ).also { mutableState.value = it }
+        )
+        mutableState.value = ready
+        if (legacyReady != null && canonicalCatalog != null) {
+            legacyFallback.releaseInMemoryCatalog()
+        }
+        return ready
     }
 
     private fun unavailableState(): CatalogState.Unavailable {

@@ -64,6 +64,7 @@ private const val PARAEQ_PROJECT_URL = "https://github.com/wabsto1/ParaEQ"
 private enum class SettingsPage {
     ROOT,
     HIDDEN_EQS,
+    HELP,
     ABOUT,
     DATA_SOURCES,
 }
@@ -106,6 +107,13 @@ fun SettingsScreen(
             )
             return
         }
+        SettingsPage.HELP -> {
+            HelpSettingsScreen(
+                onBack = returnToRoot,
+                modifier = modifier,
+            )
+            return
+        }
         SettingsPage.ABOUT -> {
             AboutEqLibraryScreen(
                 onOpenUrl = onOpenUrl,
@@ -130,7 +138,12 @@ fun SettingsScreen(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 16.dp),
     ) {
-        SectionTitle("Output behavior")
+        SectionTitle("Output")
+        Text(
+            "Output behavior",
+            style = MaterialTheme.typography.titleSmall,
+            modifier = Modifier.padding(top = 8.dp, bottom = 2.dp),
+        )
         ThemeOption(
             title = "Automatic (recommended)",
             description = "Use a connected supported DAC when one is available. Otherwise use your Default EQ target.",
@@ -169,8 +182,11 @@ fun SettingsScreen(
             )
         }
 
-        SectionDivider()
-        SectionTitle("Outputs")
+        Text(
+            "Available outputs",
+            style = MaterialTheme.typography.titleSmall,
+            modifier = Modifier.padding(top = 14.dp, bottom = 2.dp),
+        )
         Text(
             text = "Choose the apps, devices, and portable formats you use. These choices determine which options can be selected as your Default EQ target.",
             style = MaterialTheme.typography.bodySmall,
@@ -244,6 +260,34 @@ fun SettingsScreen(
             }
         }
 
+        Text(
+            "Export folder",
+            style = MaterialTheme.typography.titleSmall,
+            modifier = Modifier.padding(top = 14.dp, bottom = 2.dp),
+        )
+        Text("EQ Library root folder")
+        Text(
+            text = appPreferences.exportTreeLabel ?: "Not chosen yet",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = "Saving an EQ to My EQs does not export it. Use Export when you want a file, or Flash to write to a supported DAC. Suggested file location: Documents/EQ Library.",
+            modifier = Modifier.padding(top = 4.dp),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        TextButton(onClick = onChangeExportFolder) {
+            Text(if (appPreferences.exportTreeUri == null) "Choose root folder" else "Change root folder")
+        }
+        if (appPreferences.exportTreeUri != null) {
+            Text(
+                text = "Changing the root affects future exports only. Existing files are not moved or deleted.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
         SectionDivider()
         SectionTitle("Library")
         when (catalogState) {
@@ -297,31 +341,6 @@ fun SettingsScreen(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-
-        SectionDivider()
-        SectionTitle("Export folder")
-        Text("EQ Library root folder")
-        Text(
-            text = appPreferences.exportTreeLabel ?: "Not chosen yet",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = "Saving an EQ to My EQs does not export it. Use Export when you want a file, or Flash to write to a supported DAC. Suggested file location: Documents/EQ Library.",
-            modifier = Modifier.padding(top = 4.dp),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        TextButton(onClick = onChangeExportFolder) {
-            Text(if (appPreferences.exportTreeUri == null) "Choose root folder" else "Change root folder")
-        }
-        if (appPreferences.exportTreeUri != null) {
-            Text(
-                text = "Changing the root affects future exports only. Existing files are not moved or deleted.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
 
         SectionDivider()
         SectionTitle("Appearance")
@@ -389,15 +408,17 @@ fun SettingsScreen(
         )
 
         SectionDivider()
-        SectionTitle("Help & contribute")
+        SectionTitle("Support & information")
         SettingsLinkRow(
             title = "Feedback & EQ submissions",
             description = "Report a problem, suggest an improvement, or submit an EQ source.",
             onClick = { onOpenUrl(EQ_LIBRARY_FEEDBACK_URL) },
         )
-
-        SectionDivider()
-        SectionTitle("About")
+        SettingsLinkRow(
+            title = "Help",
+            description = "Learn how saving, output targets, exports, and DAC actions work.",
+            onClick = { pageName = SettingsPage.HELP.name },
+        )
         SettingsLinkRow(
             title = "About EQ Library",
             description = "Version, privacy, source code, licensing, and independence.",
@@ -483,6 +504,40 @@ private fun OutputOption(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun HelpSettingsScreen(
+    onBack: () -> Unit,
+    modifier: Modifier,
+) {
+    BackHandler(onBack = onBack)
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp, vertical = 8.dp),
+    ) {
+        SettingsSubpageHeader(title = "Help", onBack = onBack)
+        SectionTitle("Save and organize")
+        Text(
+            "My EQs keeps headphone selections, General EQs, and Personal EQ imports on this device. Saving does not export a file or change connected hardware. Favorites are discovery shortcuts in EQ Library.",
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        SectionDivider()
+        SectionTitle("Output target and export")
+        Text(
+            "Your output target controls how EQ Library prepares an EQ for export or a supported hardware action. It does not route Android audio. Export writes a file to the folder you choose; to use it in USB Audio Player PRO, import that file in UAPP yourself.",
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        SectionDivider()
+        SectionTitle("My DAC")
+        Text(
+            "My DAC opens when a supported device is recognized during this app session. Device state may be current, stale, or unavailable; check the status shown on that screen before choosing a device action. Flash and Reset always show a review step before a write.",
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Spacer(Modifier.height(24.dp))
     }
 }
 

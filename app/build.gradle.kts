@@ -1,3 +1,5 @@
+import org.gradle.api.tasks.testing.Test
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
@@ -24,8 +26,8 @@ android {
         applicationId = "com.weekssa.opraeqforuapp"
         minSdk = 26
         targetSdk = 36
-        versionCode = 9
-        versionName = "0.7.2"
+        versionCode = 10
+        versionName = "0.8.0-beta"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "OPRA_CATALOG_URL", "\"${opraCatalogUrl.get()}\"")
@@ -104,5 +106,13 @@ dependencies {
     androidTestImplementation(composeBom)
     androidTestImplementation("androidx.test:runner:1.7.0")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
+    androidTestImplementation("androidx.test.espresso:espresso-accessibility:3.7.0")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+}
+
+// Allows the catalog stress regression to run in a heap matching the minimum supported device.
+val catalogOverlayTestMaxHeap = providers.gradleProperty("catalogOverlayTestMaxHeap")
+tasks.withType<Test>().configureEach {
+    catalogOverlayTestMaxHeap.orNull?.let { maxHeapSize = it }
 }

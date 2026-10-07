@@ -11,21 +11,19 @@ internal enum class EqLibraryDestination(@param:StringRes val labelResId: Int) {
     Settings(R.string.nav_settings),
 }
 
-internal fun eqLibraryDestinations(showMyDac: Boolean): List<EqLibraryDestination> =
-    if (showMyDac) {
-        listOf(
-            EqLibraryDestination.MyEqs,
-            EqLibraryDestination.MyDac,
-            EqLibraryDestination.EqLibrary,
-            EqLibraryDestination.Settings,
-        )
-    } else {
-        listOf(
-            EqLibraryDestination.MyEqs,
-            EqLibraryDestination.EqLibrary,
-            EqLibraryDestination.Settings,
-        )
-    }
+internal fun eqLibraryRootDestinations(): List<EqLibraryDestination> = listOf(
+    EqLibraryDestination.MyEqs,
+    EqLibraryDestination.EqLibrary,
+    EqLibraryDestination.Settings,
+)
+
+/** My DAC is an in-session workspace reached from device context, never a persistent root tab. */
+internal fun eqLibraryAvailableDestinations(hasRecognizedDac: Boolean): List<EqLibraryDestination> =
+    eqLibraryRootDestinations() + if (hasRecognizedDac) listOf(EqLibraryDestination.MyDac) else emptyList()
+
+/** Persistent root destinations leave Back to Android; only the nested My DAC workspace intercepts it. */
+internal fun hasDestinationBackHandler(destination: EqLibraryDestination): Boolean =
+    destination == EqLibraryDestination.MyDac
 
 /**
  * Restores by stable identity. A destination that is unavailable in the current cold session falls

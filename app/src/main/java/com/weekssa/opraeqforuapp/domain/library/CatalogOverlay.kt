@@ -45,7 +45,11 @@ fun overlayCanonicalCatalog(
     val visibleVendorIds = visibleProducts.map(OpraProduct::vendorId).toSet()
 
     val profiles = linkedMapOf<String, OpraEqProfile>()
-    val canonicalProfileIds = canonical.profiles.mapTo(HashSet(canonical.profiles.size), OpraEqProfile::id)
+    val canonicalProfileIds = if (legacy.profiles.isEmpty()) {
+        emptySet()
+    } else {
+        canonical.profiles.mapTo(HashSet(canonical.profiles.size), OpraEqProfile::id)
+    }
     legacy.profiles.forEach { profile ->
         profiles[profile.id] = if (profile.id in canonicalProfileIds) {
             profile
@@ -54,11 +58,11 @@ fun overlayCanonicalCatalog(
         }
     }
     canonical.profiles.forEach { profiles[it.id] = it }
-    val resolvedProfiles = profiles.values.map { profile ->
+    profiles.replaceAll { _, profile ->
         val productId = resolveProductId(profile.productId, aliasResolution.aliases)
         if (productId == profile.productId) profile else profile.copy(productId = productId)
     }
-    val deduplicatedProfiles = deduplicateAcoustically(resolvedProfiles)
+    val deduplicatedProfiles = deduplicateAcoustically(profiles)
 
     return OpraCatalog(
         vendors = vendors.values.filter { it.id in visibleVendorIds },
@@ -228,24 +232,26 @@ private fun normalizeIdentityModel(value: String, manufacturer: String): String 
     }
 }
 
-private fun deduplicateAcoustically(profiles: List<OpraEqProfile>): List<OpraEqProfile> {
-    val retained = linkedMapOf<Any, OpraEqProfile>()
+private fun deduplicateAcoustically(
+    profiles: LinkedHashMap<String, OpraEqProfile>,
+): List<OpraEqProfile> {
+    val retainedIds = HashMap<AcousticFingerprintKey, String>()
     val fingerprintCollisions = linkedMapOf<AcousticFingerprintKey, MutableList<OpraEqProfile>>()
-    profiles.forEach { profile ->
-        val signature = profile.legacyAcousticSignature()
-        if (signature == null) {
-            retained["id:${profile.id}"] = profile
+    val discardedProfileIds = HashSet<String>()
+    profiles.forEach { (profileId, profile) ->
+        val fingerprint = profile.legacyAcousticFingerprintOrNull() ?: return@forEach
+        val key = AcousticFingerprintKey(profile.productId, fingerprint)
+        val retainedId = retainedIds[key]
+        if (retainedId == null) {
+            retainedIds[key] = profileId
             return@forEach
         }
-        val key = AcousticFingerprintKey(profile.productId, signature.legacyAcousticFingerprint())
-        val previous = retained[key]
-        if (previous == null) {
-            retained[key] = profile
-            return@forEach
-        }
+        val signature = profile.legacyAcousticSignature() ?: return@forEach
+        val previous = profiles.getValue(retainedId)
 
         if (previous.legacyAcousticSignature() == signature) {
-            if (profile.preferenceScore() > previous.preferenceScore()) retained[key] = profile
+            if (profile.preferenceScore() > previous.preferenceScore()) profiles[retainedId] = profile
+            discardedProfileIds += profileId
             return@forEach
         }
 
@@ -256,11 +262,20 @@ private fun deduplicateAcoustically(profiles: List<OpraEqProfile>): List<OpraEqP
         } else if (profile.preferenceScore() > collisions[collisionIndex].preferenceScore()) {
             collisions[collisionIndex] = profile
         }
+        discardedProfileIds += profileId
     }
-    return buildList(retained.size + fingerprintCollisions.values.sumOf { it.size }) {
-        addAll(retained.values)
-        fingerprintCollisions.values.forEach(::addAll)
-    }
+
+    // Profile IDs are unique in this ordered map. Removing duplicate and fingerprint-collision
+    // rows here preserves the first-occurrence order without holding a second map of every profile.
+    discardedProfileIds.forEach(profiles::remove)
+    retainedIds.clear()
+    val collisionCount = fingerprintCollisions.values.sumOf { it.size }
+    val deduplicatedProfiles = ArrayList<OpraEqProfile>(profiles.size + collisionCount)
+    deduplicatedProfiles.addAll(profiles.values)
+    fingerprintCollisions.values.forEach(deduplicatedProfiles::addAll)
+    profiles.clear()
+    fingerprintCollisions.clear()
+    return deduplicatedProfiles
 }
 
 private data class AcousticFingerprintKey(val productId: String, val fingerprint: Long)

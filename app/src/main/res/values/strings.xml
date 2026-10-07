@@ -39,7 +39,7 @@
         <item quantity="other">%1$d selected</item>
     </plurals>
     <string name="count_pair">%1$s · %2$s</string>
-    <string name="general_eq_standalone_note">General EQs are standalone presets; v0.3 does not layer them on top of headphone correction EQs.</string>
+    <string name="general_eq_standalone_note">General EQs are standalone presets. EQ Library does not automatically combine them with headphone correction.</string>
     <string name="action_select_all">Select all</string>
     <string name="action_select_none">Select none</string>
     <string name="save_selected_count">Save selected (%1$d)</string>
@@ -56,7 +56,7 @@
     <string name="general_eq_none_visible">No visible General EQs are available. Hidden EQs can be restored from Settings → Hidden EQs.</string>
     <string name="general_eq_none_match">No General EQs match this search and filter.</string>
     <string name="general_parametric_eq">General parametric EQ</string>
-    <string name="saved_in_my_eqs_output">Saved in My EQs for this output</string>
+    <string name="saved_in_my_eqs_output">Saved in My EQs</string>
     <string name="community_submission_unverified">Community submission — not independently verified.</string>
     <string name="community_submission_unverified_review">Community submission — not independently verified. Review the source before use.</string>
     <string name="action_source">Source</string>
@@ -93,6 +93,7 @@
     <string name="source_not_usable_default">This catalog row is not a usable parametric EQ source.</string>
     <string name="add_to_my_eqs_count">Add to My EQs (%1$d)</string>
     <string name="save_changes_count">Save changes (%1$d)</string>
+    <string name="update_selection_count">Update selection (%1$d)</string>
     <string name="action_cancel">Cancel</string>
     <string name="creator_information_missing">Creator information missing</string>
     <string name="source_data_unavailable_for_selection">Source data unavailable for selection</string>
@@ -122,6 +123,14 @@
     <string name="export_review_summary">%1$s · %2$s</string>
     <string name="export_review_summary_with_reason">%1$s · %2$s: %3$s</string>
     <string name="export_write_summary">%1$d new · %2$d updated · %3$d already current.</string>
+    <plurals name="export_uapp_import_guidance">
+        <item quantity="one">Exported for UAPP: 1 XML file is ready. Import it in USB Audio Player PRO yourself; EQ Library does not change Android audio or activate the EQ.</item>
+        <item quantity="other">Exported for UAPP: %1$d XML files are ready. Import them in USB Audio Player PRO yourself; EQ Library does not change Android audio or activate the EQ.</item>
+    </plurals>
+    <plurals name="export_uapp_current_guidance">
+        <item quantity="one">UAPP XML is already current: 1 file is ready. Import it in USB Audio Player PRO yourself; EQ Library does not change Android audio or activate the EQ.</item>
+        <item quantity="other">UAPP XML is already current: %1$d files are ready. Import them in USB Audio Player PRO yourself; EQ Library does not change Android audio or activate the EQ.</item>
+    </plurals>
     <plurals name="export_all_current">
         <item quantity="one">All %1$d selected preset is already current.</item>
         <item quantity="other">All %1$d selected presets are already current.</item>

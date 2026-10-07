@@ -149,7 +149,7 @@ A never-managed headphone begins with no selected EQs. Selection is always expli
 
 Add/Save persists global local-library membership/selection only. It does not initiate file export, open a folder picker, or write hardware. Export and Flash are separate explicit actions that derive the active target representation when invoked.
 
-Managed headphone/profile selection, Favorites, Personal EQs, captured DAC EQs, and General EQs remain the same My EQs items when the active target changes. A target change may alter compatibility, fidelity, currentness, file-export availability, connection controls, or Flash availability, but it must not alter library identity or dismiss an open My EQ detail.
+Managed headphone/profile selections, Personal EQs, captured DAC EQs, and General EQs remain the same My EQs items when the active target changes. Favorites are catalog discovery shortcuts, not owned My EQs content. A target change may alter compatibility, fidelity, currentness, file-export availability, connection context, or Flash availability, but it must not alter library identity or dismiss an open My EQ detail.
 
 A DAC capture records the exact DAC/source-device identity as provenance only. After capture it is a normal Personal EQ and is not owned by that DAC.
 
@@ -343,7 +343,7 @@ My DAC is a hardware-state surface:
 - routine qualified DEVICE choices apply through the safe write/readback transaction rather than staging a fake global Save state;
 - local full-EQ editor changes remain staged until Review -> Apply because those edits intentionally have not reached hardware yet.
 
-Once a recognized supported DAC makes My DAC visible in the current app session, the destination remains session-sticky across disconnect. Retained state is clearly stale/Last read until a fresh successful session/read replaces it.
+The three persistent roots are My EQs, EQ Library, and Settings. A supported DAC opens My DAC as an in-session contextual workspace from the connected-device surface, without changing the selected root or adding a permanent navigation tab. Returning from My DAC restores the previous root. The workspace remains truthful across disconnect, marking retained state stale/Last read until a fresh successful session/read replaces it.
 
 Automatic physical reattach is armed only after that exact DAC has connected successfully once in the current app/ViewModel lifetime. Initial mere detection does not silently open a USB session. Reattach uses the normal permission/open path, reads fresh hardware state, and never pushes cached EQ/DEVICE values to hardware.
 

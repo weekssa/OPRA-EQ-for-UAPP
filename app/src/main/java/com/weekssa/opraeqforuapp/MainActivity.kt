@@ -20,11 +20,14 @@ import com.weekssa.opraeqforuapp.data.sync.CatalogSyncOutcome
 import com.weekssa.opraeqforuapp.data.update.AppUpdateCheckResult
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditSpecs
 import com.weekssa.opraeqforuapp.domain.dac.normalizeHardwareEqUserInput
+import com.weekssa.opraeqforuapp.domain.export.ExportDevice
 import com.weekssa.opraeqforuapp.ui.EqLibraryActions
 import com.weekssa.opraeqforuapp.ui.EqLibraryApp
 import com.weekssa.opraeqforuapp.ui.EqLibraryViewModel
 import com.weekssa.opraeqforuapp.ui.UnclaimedEqViewModel
+import com.weekssa.opraeqforuapp.ui.UappExportCompletionCopy
 import com.weekssa.opraeqforuapp.ui.resolve
+import com.weekssa.opraeqforuapp.ui.uappExportCompletionCopy
 import com.weekssa.opraeqforuapp.ui.theme.OpraEqTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -32,13 +35,15 @@ import kotlinx.coroutines.withContext
 class MainActivity : ComponentActivity() {
     private lateinit var viewModel: EqLibraryViewModel
     private lateinit var unclaimedEqViewModel: UnclaimedEqViewModel
+    private val runtimeDependencies by lazy(LazyThreadSafetyMode.NONE) {
+        createEqLibraryRuntimeDependencies(applicationContext)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         BackgroundSyncScheduler.ensureScheduled(applicationContext)
 
-        val runtimeDependencies = createEqLibraryRuntimeDependencies(applicationContext)
         viewModel = ViewModelProvider(
             this,
             EqLibraryViewModel.Factory { runtimeDependencies.eqLibrary },
@@ -158,6 +163,7 @@ class MainActivity : ComponentActivity() {
             resolve(viewModel.resetBlackPearlFromMyDacToFlat())
         },
         onReadBlackPearlQualificationControls = viewModel::readBlackPearlQualificationControls,
+        onReadBlackPearlEqSnapshot = viewModel::readBlackPearlEqSnapshot,
         onSetBlackPearlDeviceControl = viewModel::setBlackPearlDeviceControl,
         onReadFiioJa11DeviceControls = viewModel::readFiioJa11DeviceControls,
         onSetFiioJa11OutputVolume = viewModel::setFiioJa11OutputVolume,
@@ -219,10 +225,10 @@ class MainActivity : ComponentActivity() {
         onRemoveGeneralEq = viewModel::removeGeneralEq,
         onPersistExportTree = ::persistExportTree,
         onExportSelected = { treeUri, device ->
-            exportMessage(viewModel.exportSelected(treeUri.toString(), device))
+            exportMessage(viewModel.exportSelected(treeUri.toString(), device), device)
         },
         onExportProduct = { treeUri, productId, device ->
-            exportMessage(viewModel.exportProduct(treeUri.toString(), productId, device))
+            exportMessage(viewModel.exportProduct(treeUri.toString(), productId, device), device)
         },
         onExportManagedProfile = { treeUri, productId, profileId, device ->
             exportMessage(
@@ -232,16 +238,17 @@ class MainActivity : ComponentActivity() {
                     profileId,
                     device,
                 ),
+                device,
             )
         },
         onExportSavedEq = { treeUri, entryId, device ->
-            exportMessage(viewModel.exportSavedEq(treeUri.toString(), entryId, device))
+            exportMessage(viewModel.exportSavedEq(treeUri.toString(), entryId, device), device)
         },
         onExportGeneralEq = { treeUri, presetId, device ->
-            exportMessage(viewModel.exportGeneralEq(treeUri.toString(), presetId, device))
+            exportMessage(viewModel.exportGeneralEq(treeUri.toString(), presetId, device), device)
         },
         onExportGeneralEqs = { treeUri, presetIds, device ->
-            exportMessage(viewModel.exportGeneralEqs(treeUri.toString(), presetIds, device))
+            exportMessage(viewModel.exportGeneralEqs(treeUri.toString(), presetIds, device), device)
         },
         onCheckForUpdates = {
             updateCheckMessage(viewModel.checkForUpdates())
@@ -279,7 +286,7 @@ class MainActivity : ComponentActivity() {
         return true
     }
 
-    private fun exportMessage(summary: PresetExportSummary): String {
+    private fun exportMessage(summary: PresetExportSummary, exportDevice: ExportDevice): String {
         val reviewResults = summary.results.filter {
             it is PresetExportItemResult.Conflict || it is PresetExportItemResult.Failed
         }
@@ -328,8 +335,28 @@ class MainActivity : ComponentActivity() {
                 summary.currentCount,
             )
         }
+        val uappGuidanceResource = when (uappExportCompletionCopy(exportDevice, summary)) {
+            UappExportCompletionCopy.EXPORTED -> R.plurals.export_uapp_import_guidance
+            UappExportCompletionCopy.ALREADY_CURRENT -> R.plurals.export_uapp_current_guidance
+            UappExportCompletionCopy.NONE -> null
+        }
+        val messageWithUappGuidance = if (
+            uappGuidanceResource != null
+        ) {
+            "$message\n${resources.getQuantityString(
+                uappGuidanceResource,
+                summary.successfulCount,
+                summary.successfulCount,
+            )}"
+        } else {
+            message
+        }
         val device = summary.results.firstOrNull()?.candidate?.deviceName
-        return if (device == null) message else getString(R.string.device_prefixed_message, device, message)
+        return if (device == null) {
+            messageWithUappGuidance
+        } else {
+            getString(R.string.device_prefixed_message, device, messageWithUappGuidance)
+        }
     }
 
     private fun refreshCatalogMessage(outcome: CatalogSyncOutcome): String {

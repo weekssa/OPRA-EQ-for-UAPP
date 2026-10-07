@@ -12,11 +12,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Clear
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
@@ -39,9 +43,17 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -105,22 +117,33 @@ fun BrowseOpraScreen(
     onMessage: (String) -> Unit,
     onRefreshCatalog: () -> Unit,
     onOpenUrl: (String) -> Unit,
-    onBackFromRoot: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var searchQuery by rememberSaveable { mutableStateOf("") }
+    var headphoneSearchQuery by rememberSaveable { mutableStateOf("") }
+    var generalSearchQuery by rememberSaveable { mutableStateOf("") }
     var selectedVendorId by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedProductId by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedSectionIndex by rememberSaveable { mutableIntStateOf(0) }
     var selectedGeneralFilterIndex by rememberSaveable { mutableIntStateOf(0) }
+    val headphoneRootListState = rememberLazyListState()
+    val headphoneSearchListState = rememberLazyListState()
+    val vendorProductsListState = rememberLazyListState()
+    val generalListState = rememberLazyListState()
+    val saveableStateHolder = rememberSaveableStateHolder()
     val selectedSection = LibrarySection.entries[selectedSectionIndex]
 
-    BackHandler {
+    BackHandler(
+        enabled = selectedProductId != null ||
+            selectedVendorId != null ||
+            (selectedSection == LibrarySection.HEADPHONES && headphoneSearchQuery.isNotBlank()) ||
+            (selectedSection == LibrarySection.GENERAL && generalSearchQuery.isNotBlank()),
+    ) {
         when {
             selectedProductId != null -> selectedProductId = null
             selectedVendorId != null -> selectedVendorId = null
-            searchQuery.isNotBlank() -> searchQuery = ""
-            else -> onBackFromRoot()
+            selectedSection == LibrarySection.HEADPHONES && headphoneSearchQuery.isNotBlank() -> headphoneSearchQuery = ""
+            selectedSection == LibrarySection.GENERAL && generalSearchQuery.isNotBlank() -> generalSearchQuery = ""
+            else -> Unit
         }
     }
 
@@ -156,52 +179,38 @@ fun BrowseOpraScreen(
             }
 
             Column(modifier = modifier.fillMaxSize()) {
-                if (product == null && vendor == null) {
-                    PrimaryTabRow(selectedTabIndex = selectedSectionIndex) {
-                        LibrarySection.entries.forEachIndexed { index, section ->
-                            Tab(
-                                selected = selectedSectionIndex == index,
-                                onClick = {
-                                    selectedSectionIndex = index
-                                    selectedVendorId = null
-                                    selectedProductId = null
-                                    searchQuery = ""
-                                },
-                                text = { Text(stringResource(section.labelResId)) },
-                            )
-                        }
-                    }
-                }
-
                 when {
-                    product != null -> ProfileSelectionEditor(
-                        catalog = catalog,
-                        product = product,
-                        profileVisibility = profileVisibility,
-                        exportTargets = exportTargets,
-                        favoriteProfileIds = favoriteProfileIds,
-                        onToggleFavorite = onToggleFavorite,
-                        onHideCanonicalProfile = { canonicalProfileId ->
-                            onHideCanonicalProfiles(setOf(canonicalProfileId))
-                        },
-                        onLoadManagedHeadphone = onLoadManagedHeadphone,
-                        onSaveSelection = onSaveSelection,
-                        onRemoveHeadphone = onRemoveHeadphone,
-                        onDeleteSavedFilesForProfiles = onDeleteSavedFilesForProfiles,
-                        onDeleteSavedFilesForProduct = onDeleteSavedFilesForProduct,
-                        onExportProduct = onExportProduct,
-                        onMessage = onMessage,
-                        onOpenUrl = onOpenUrl,
-                        onBack = { selectedProductId = null },
-                        blackPearlConnected = blackPearlConnectionState is BlackPearlConnectionState.Connected,
-                        onFlashBlackPearlProfile = onFlashBlackPearlProfile,
-                        fiioJa11Connected = fiioJa11ConnectionState is Kt02h20ConnectionState.Connected,
-                        onFlashFiioJa11Profile = onFlashFiioJa11Profile,
-                        onFlashEw300Profile = onFlashEw300Profile,
-                        ew300Connected = ew300ConnectionState is Kt02h20ConnectionState.Connected,
-                        modifier = Modifier.weight(1f),
-                    )
-                    vendor != null -> VendorProducts(
+                    product != null -> saveableStateHolder.SaveableStateProvider("product:${product.id}") {
+                        ProfileSelectionEditor(
+                            catalog = catalog,
+                            product = product,
+                            profileVisibility = profileVisibility,
+                            exportTargets = exportTargets,
+                            favoriteProfileIds = favoriteProfileIds,
+                            onToggleFavorite = onToggleFavorite,
+                            onHideCanonicalProfile = { canonicalProfileId ->
+                                onHideCanonicalProfiles(setOf(canonicalProfileId))
+                            },
+                            onLoadManagedHeadphone = onLoadManagedHeadphone,
+                            onSaveSelection = onSaveSelection,
+                            onRemoveHeadphone = onRemoveHeadphone,
+                            onDeleteSavedFilesForProfiles = onDeleteSavedFilesForProfiles,
+                            onDeleteSavedFilesForProduct = onDeleteSavedFilesForProduct,
+                            onExportProduct = onExportProduct,
+                            onMessage = onMessage,
+                            onOpenUrl = onOpenUrl,
+                            onBack = { selectedProductId = null },
+                            blackPearlConnected = blackPearlConnectionState is BlackPearlConnectionState.Connected,
+                            onFlashBlackPearlProfile = onFlashBlackPearlProfile,
+                            fiioJa11Connected = fiioJa11ConnectionState is Kt02h20ConnectionState.Connected,
+                            onFlashFiioJa11Profile = onFlashFiioJa11Profile,
+                            onFlashEw300Profile = onFlashEw300Profile,
+                            ew300Connected = ew300ConnectionState is Kt02h20ConnectionState.Connected,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    vendor != null -> saveableStateHolder.SaveableStateProvider("vendor:${vendor.id}") {
+                        VendorProducts(
                         catalog = catalog,
                         vendorId = vendor.id,
                         managedByProduct = managedByProduct,
@@ -210,30 +219,41 @@ fun BrowseOpraScreen(
                             selectedVendorId = null
                             selectedProductId = null
                         },
+                        listState = vendorProductsListState,
                         modifier = Modifier.weight(1f),
-                    )
+                        )
+                    }
                     selectedSection == LibrarySection.HEADPHONES -> HeadphoneBrowseRoot(
                         catalog = catalog,
                         managedByProduct = managedByProduct,
-                        searchQuery = searchQuery,
-                        onSearchQueryChange = { searchQuery = it },
+                        searchQuery = headphoneSearchQuery,
+                        onSearchQueryChange = { headphoneSearchQuery = it },
+                        selectedSectionIndex = selectedSectionIndex,
+                        onSectionSelected = { selectedSectionIndex = it },
                         onVendorSelected = { selectedVendorId = it },
                         onProductSelected = { selectedProductId = it.id },
+                        rootListState = headphoneRootListState,
+                        searchListState = headphoneSearchListState,
                         modifier = Modifier.weight(1f),
                     )
-                    else -> GeneralEqBrowse(
-                        catalog = catalog,
-                        searchQuery = searchQuery,
-                        selectedFilterIndex = selectedGeneralFilterIndex,
-                        savedPresetIds = savedGeneralPresetIds,
-                        onSearchQueryChange = { searchQuery = it },
-                        onFilterSelected = { selectedGeneralFilterIndex = it },
-                        onSavePresets = onSaveGeneralPresets,
-                        onHideCanonicalProfiles = onHideCanonicalProfiles,
-                        onMessage = onMessage,
-                        onOpenUrl = onOpenUrl,
-                        modifier = Modifier.weight(1f),
-                    )
+                    else -> saveableStateHolder.SaveableStateProvider("general-eqs") {
+                        GeneralEqBrowse(
+                            catalog = catalog,
+                            searchQuery = generalSearchQuery,
+                            selectedFilterIndex = selectedGeneralFilterIndex,
+                            selectedSectionIndex = selectedSectionIndex,
+                            savedPresetIds = savedGeneralPresetIds,
+                            onSearchQueryChange = { generalSearchQuery = it },
+                            onFilterSelected = { selectedGeneralFilterIndex = it },
+                            onSectionSelected = { selectedSectionIndex = it },
+                            onSavePresets = onSaveGeneralPresets,
+                            onHideCanonicalProfiles = onHideCanonicalProfiles,
+                            onMessage = onMessage,
+                            onOpenUrl = onOpenUrl,
+                            listState = generalListState,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                 }
             }
         }
@@ -246,8 +266,12 @@ private fun HeadphoneBrowseRoot(
     managedByProduct: Map<String, ManagedHeadphoneRecord>,
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
+    selectedSectionIndex: Int,
+    onSectionSelected: (Int) -> Unit,
     onVendorSelected: (String) -> Unit,
     onProductSelected: (OpraProduct) -> Unit,
+    rootListState: LazyListState,
+    searchListState: LazyListState,
     modifier: Modifier,
 ) {
     Column(
@@ -260,6 +284,10 @@ private fun HeadphoneBrowseRoot(
             onValueChange = onSearchQueryChange,
             labelResId = R.string.search_headphones,
         )
+        LibrarySectionSelector(
+            selectedSectionIndex = selectedSectionIndex,
+            onSectionSelected = onSectionSelected,
+        )
 
         if (searchQuery.isBlank()) {
             val vendors = catalog.vendors.sortedBy { it.name.lowercase() }
@@ -268,7 +296,7 @@ private fun HeadphoneBrowseRoot(
                 modifier = Modifier.padding(vertical = 8.dp),
                 style = MaterialTheme.typography.titleSmall,
             )
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
+            LazyColumn(state = rootListState, modifier = Modifier.fillMaxSize()) {
                 if (vendors.isEmpty()) {
                     item(key = "no-headphones") {
                         Text(
@@ -302,7 +330,7 @@ private fun HeadphoneBrowseRoot(
                     style = MaterialTheme.typography.bodyLarge,
                 )
             } else {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                LazyColumn(state = searchListState, modifier = Modifier.fillMaxSize()) {
                     items(results, key = { it.product.id }) { result ->
                         val managed = managedByProduct[result.product.id]
                         val selectedText = managed?.let {
@@ -343,17 +371,22 @@ private fun GeneralEqBrowse(
     catalog: OpraCatalog,
     searchQuery: String,
     selectedFilterIndex: Int,
+    selectedSectionIndex: Int,
     savedPresetIds: Set<String>,
     onSearchQueryChange: (String) -> Unit,
     onFilterSelected: (Int) -> Unit,
+    onSectionSelected: (Int) -> Unit,
     onSavePresets: suspend (List<GeneralEqPreset>) -> Boolean,
     onHideCanonicalProfiles: suspend (Set<String>) -> Unit,
     onMessage: (String) -> Unit,
     onOpenUrl: (String) -> Unit,
+    listState: LazyListState,
     modifier: Modifier,
 ) {
     val scope = rememberCoroutineScope()
     var showHelp by rememberSaveable { mutableStateOf(false) }
+    var selectionMode by rememberSaveable { mutableStateOf(false) }
+    var detailsPresetId by rememberSaveable { mutableStateOf<String?>(null) }
     val selectedFilter = GeneralFilter.entries[selectedFilterIndex]
     var batchSelectedIds by rememberSaveable(
         catalog,
@@ -376,6 +409,14 @@ private fun GeneralEqBrowse(
         selectedCanonicalIds.size,
     )
     val unavailableSaveMessage = stringResource(R.string.general_eq_save_source_unavailable)
+    val detailsPreset = detailsPresetId?.let { selectedId ->
+        catalog.generalPresets.firstOrNull { it.id == selectedId }
+    }
+
+    BackHandler(enabled = selectionMode) {
+        selectionMode = false
+        batchSelectedIds = emptySet()
+    }
 
     if (showHelp) {
         AlertDialog(
@@ -385,16 +426,58 @@ private fun GeneralEqBrowse(
             confirmButton = { TextButton(onClick = { showHelp = false }) { Text("OK") } },
         )
     }
+    detailsPreset?.let { preset ->
+        AlertDialog(
+            onDismissRequest = { detailsPresetId = null },
+            title = { Text(preset.displayName) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    preset.creator?.takeIf(String::isNotBlank)?.let { Text("By $it") }
+                    Text(preset.soundImpactSummary?.takeIf(String::isNotBlank) ?: stringResource(R.string.general_parametric_eq))
+                    Text("Category: ${preset.category.name.lowercase().replace('_', ' ')}")
+                    Text(if (preset.isVerified) "Verified source" else stringResource(R.string.community_submission_unverified))
+                    if (preset.id in savedPresetIds) Text(stringResource(R.string.saved_in_my_eqs_output))
+                }
+            },
+            confirmButton = {
+                Row {
+                    preset.sourceUrl?.let { sourceUrl ->
+                        TextButton(onClick = { onOpenUrl(sourceUrl) }, modifier = Modifier.heightIn(min = 48.dp)) {
+                            Text(stringResource(R.string.action_source))
+                        }
+                    }
+                    TextButton(onClick = { detailsPresetId = null }) { Text("Close") }
+                }
+            },
+        )
+    }
     LazyColumn(
+        state = listState,
         modifier = modifier
             .fillMaxSize()
             .padding(horizontal = 16.dp),
     ) {
         item {
-            SearchField(
-                value = searchQuery,
-                onValueChange = onSearchQueryChange,
-                labelResId = R.string.search_general_eqs,
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                SearchField(
+                    value = searchQuery,
+                    onValueChange = onSearchQueryChange,
+                    labelResId = R.string.search_general_eqs,
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(
+                    onClick = { showHelp = true },
+                    modifier = Modifier.heightIn(min = 48.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Info,
+                        contentDescription = "About General EQs",
+                    )
+                }
+            }
+            LibrarySectionSelector(
+                selectedSectionIndex = selectedSectionIndex,
+                onSectionSelected = onSectionSelected,
             )
             LazyRow(
                 modifier = Modifier
@@ -408,6 +491,7 @@ private fun GeneralEqBrowse(
                         selected = selectedFilterIndex == index,
                         onClick = { onFilterSelected(index) },
                         label = { Text(stringResource(filter.labelResId)) },
+                        modifier = Modifier.heightIn(min = 48.dp),
                     )
                 }
             }
@@ -415,41 +499,65 @@ private fun GeneralEqBrowse(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                TextButton(
-                    onClick = { batchSelectedIds = batchSelectedIds + matching.map(GeneralEqPreset::id) },
-                    enabled = matching.isNotEmpty(),
-                ) { Text(stringResource(R.string.action_select_all)) }
-                TextButton(
-                    onClick = { batchSelectedIds = batchSelectedIds - matching.map(GeneralEqPreset::id).toSet() },
-                    enabled = selectedPresets.isNotEmpty(),
-                ) { Text(stringResource(R.string.action_select_none)) }
-                if (selectedPresets.isNotEmpty()) {
+                if (selectionMode) {
+                    Text(
+                        text = pluralStringResource(R.plurals.selected_count, batchSelectedIds.size, batchSelectedIds.size),
+                        modifier = Modifier.align(Alignment.CenterVertically).padding(horizontal = 8.dp),
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                    TextButton(
+                        onClick = { batchSelectedIds = batchSelectedIds + matching.map(GeneralEqPreset::id) },
+                        enabled = matching.isNotEmpty(),
+                        modifier = Modifier.heightIn(min = 48.dp),
+                    ) { Text(stringResource(R.string.action_select_all)) }
+                    TextButton(
+                        onClick = { batchSelectedIds = emptySet() },
+                        enabled = batchSelectedIds.isNotEmpty(),
+                        modifier = Modifier.heightIn(min = 48.dp),
+                    ) { Text("Clear selection") }
                     Button(
                         onClick = {
                             val toSave = selectedPresets.toList()
                             scope.launch {
                                 if (onSavePresets(toSave)) {
                                     batchSelectedIds = emptySet()
+                                    selectionMode = false
                                     onMessage(savedMessage)
                                 } else {
                                     onMessage(unavailableSaveMessage)
                                 }
                             }
                         },
+                        enabled = selectedPresets.isNotEmpty(),
                         modifier = Modifier.heightIn(min = 48.dp),
                     ) { Text(stringResource(R.string.save_selected_count, selectedPresets.size)) }
                     TextButton(
+                        enabled = selectedPresets.isNotEmpty(),
                         onClick = {
                             val canonicalIds = selectedCanonicalIds.toSet()
                             scope.launch {
                                 onHideCanonicalProfiles(canonicalIds)
                                 batchSelectedIds = emptySet()
+                                selectionMode = false
                                 onMessage(hiddenMessage)
                             }
                         },
+                        modifier = Modifier.heightIn(min = 48.dp),
                     ) { Text(stringResource(R.string.action_hide_selected)) }
+                    TextButton(
+                        onClick = {
+                            batchSelectedIds = emptySet()
+                            selectionMode = false
+                        },
+                        modifier = Modifier.heightIn(min = 48.dp),
+                    ) { Text("Cancel") }
+                } else {
+                    TextButton(
+                        onClick = { selectionMode = true },
+                        enabled = matching.isNotEmpty(),
+                        modifier = Modifier.heightIn(min = 48.dp),
+                    ) { Text("Select EQs") }
                 }
-                TextButton(onClick = { showHelp = true }) { Text("About") }
             }
         }
 
@@ -491,26 +599,45 @@ private fun GeneralEqBrowse(
                                 )
                             }
                             preset.sourceUrl?.let { sourceUrl ->
-                                TextButton(onClick = { onOpenUrl(sourceUrl) }) {
+                                TextButton(onClick = { onOpenUrl(sourceUrl) }, modifier = Modifier.heightIn(min = 48.dp)) {
                                     Text(stringResource(R.string.action_source))
                                 }
                             }
                         }
                     },
-                    trailingContent = {
-                        Checkbox(
-                            checked = preset.id in batchSelectedIds,
-                            modifier = Modifier.semantics { contentDescription = preset.displayName },
-                            onCheckedChange = { checked ->
-                                batchSelectedIds = if (checked) {
-                                    batchSelectedIds + preset.id
-                                } else {
-                                    batchSelectedIds - preset.id
-                                }
-                            },
-                        )
+                    trailingContent = if (selectionMode) {
+                        {
+                            Checkbox(
+                                checked = preset.id in batchSelectedIds,
+                                modifier = Modifier.semantics { contentDescription = preset.displayName },
+                                onCheckedChange = { checked ->
+                                    batchSelectedIds = if (checked) {
+                                        batchSelectedIds + preset.id
+                                    } else {
+                                        batchSelectedIds - preset.id
+                                    }
+                                },
+                            )
+                        }
+                    } else {
+                        {
+                            IconButton(
+                                onClick = { detailsPresetId = preset.id },
+                                modifier = Modifier.heightIn(min = 48.dp),
+                            ) {
+                                Icon(Icons.Outlined.Info, contentDescription = "Details for ${preset.displayName}")
+                            }
+                        }
                     },
-                    modifier = Modifier.heightIn(min = 56.dp),
+                    modifier = Modifier
+                        .heightIn(min = 56.dp)
+                        .then(if (selectionMode) Modifier.clickable {
+                            batchSelectedIds = if (preset.id in batchSelectedIds) {
+                                batchSelectedIds - preset.id
+                            } else {
+                                batchSelectedIds + preset.id
+                            }
+                        } else Modifier),
                 )
                 HorizontalDivider()
             }
@@ -523,13 +650,24 @@ private fun SearchField(
     value: String,
     onValueChange: (String) -> Unit,
     @StringRes labelResId: Int,
+    modifier: Modifier = Modifier,
 ) {
+    val focusManager = LocalFocusManager.current
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        modifier = Modifier
+        modifier = modifier
+            .onPreviewKeyEvent { event ->
+                if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionDown) {
+                    focusManager.moveFocus(FocusDirection.Down)
+                } else {
+                    false
+                }
+            }
             .fillMaxWidth()
+            .heightIn(min = 52.dp)
             .padding(top = 8.dp, bottom = 6.dp),
+        shape = RoundedCornerShape(10.dp),
         singleLine = true,
         label = { Text(stringResource(labelResId)) },
         trailingIcon = if (value.isNotEmpty()) {
@@ -548,12 +686,29 @@ private fun SearchField(
 }
 
 @Composable
+private fun LibrarySectionSelector(
+    selectedSectionIndex: Int,
+    onSectionSelected: (Int) -> Unit,
+) {
+    PrimaryTabRow(selectedTabIndex = selectedSectionIndex) {
+        LibrarySection.entries.forEachIndexed { index, section ->
+            Tab(
+                selected = selectedSectionIndex == index,
+                onClick = { onSectionSelected(index) },
+                text = { Text(stringResource(section.labelResId)) },
+            )
+        }
+    }
+}
+
+@Composable
 private fun VendorProducts(
     catalog: OpraCatalog,
     vendorId: String,
     managedByProduct: Map<String, ManagedHeadphoneRecord>,
     onProductSelected: (OpraProduct) -> Unit,
     onBack: () -> Unit,
+    listState: LazyListState,
     modifier: Modifier,
 ) {
     val vendor = catalog.vendor(vendorId) ?: return
@@ -568,7 +723,7 @@ private fun VendorProducts(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             style = MaterialTheme.typography.headlineSmall,
         )
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
             items(products, key = { it.id }) { product ->
                 val managed = managedByProduct[product.id]
                 val profileCount = catalog.profileCount(product.id)

@@ -42,7 +42,7 @@ This addendum supersedes the pre-session checklist below for the exercised Black
   `276587734fc863277b83e4310c040cee22c27261075e21fa75d766ded9eef27e`, workflow #1372,
   immutable artifact `10941292707` / `sha256:188d2e4b973e7aab420d4c7d3890dba3407415c1d2c8f935a418acdacdbd8fc3`.
 - Pixel: Google Pixel 9 / `tokay` / API 37 / wireless serial
-  `adb-46141FDAQ003KZ-3AwgSo._adb-tls-connect._tcp`.
+  `[wireless ADB route redacted]`.
 - DAC identity: TTGK Technology TE-C, VID `0x3302`, PID `0x43E8`, serial `330243E8260129`.
 - Baseline: app-connected, verified Flat, 10 filters, active slot 1, playback gain `-25.00 dB`.
 - One authorized action: My EQs -> AFUL -> Explorer -> Flash. No second mutation was attempted.
@@ -468,7 +468,7 @@ The exact signed candidate was installed on Pixel 9 and verified before the one 
 - APK: `EQ-Library-v0.7.0-beta-e1ab5fa.apk`
 - APK SHA-256: `7fffba26f32991ce8c936f725bdc6c3c4b6956d3a0800c539b8d45e6b52a2501`
 - Package/version: `com.weekssa.opraeqforuapp`, `0.7.0` / code `7`
-- Pixel: `tokay`, API 37, wireless serial `adb-46141FDAQ003KZ-3AwgSo._adb-tls-connect._tcp`
+- Pixel: `tokay`, API 37, wireless serial `[wireless ADB route redacted]`
 - Signed-beta workflow: `36375994853`; immutable artifact `10950858857`;
   digest `sha256:b13ca6973a203529c2cf7ea3247bb83f46af17cc89ff9506e460f33488b543b1`
 
@@ -593,7 +593,7 @@ public GitHub `v0.7.0` release, public tag, or public APK release was published 
 #### Black Pearl — exact AFUL Explorer pass
 
 - Pixel: Google Pixel 9, `tokay`, API 37, wireless ADB serial
-  `adb-46141FDAQ003KZ-3AwgSo._adb-tls-connect._tcp`.
+  `[wireless ADB route redacted]`.
 - DAC: TTGK Technology `TE-C`, VID `0x3302`, PID `0x43E8`, serial `330243E8260129`.
 - Fresh baseline: verified current hardware, `Flat`, `10 filters`, `Active slot 1`, playback gain
   `-25.00 dB`.

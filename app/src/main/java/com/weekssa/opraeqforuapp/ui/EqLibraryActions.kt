@@ -59,6 +59,7 @@ class EqLibraryActions(
     val onFlashBlackPearlFromMyDac: suspend (OpraEqProfile) -> String,
     val onResetBlackPearlFromMyDac: suspend () -> String,
     val onReadBlackPearlQualificationControls: () -> Unit,
+    val onReadBlackPearlEqSnapshot: () -> Unit,
     val onSetBlackPearlDeviceControl: (DacControlId, DacControlValue) -> Unit,
     val onReadFiioJa11DeviceControls: () -> Unit,
     val onSetFiioJa11OutputVolume: (Int) -> Unit,

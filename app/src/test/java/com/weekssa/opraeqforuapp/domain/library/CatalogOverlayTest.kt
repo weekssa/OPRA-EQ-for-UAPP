@@ -111,6 +111,37 @@ class CatalogOverlayTest {
     }
 
     @Test
+    fun higherPreferenceAcousticDuplicateReplacesTheFirstRowWithoutChangingItsPosition() {
+        val legacy = OpraCatalog(
+            vendors = listOf(vendor("hifiman", "HIFIMAN")),
+            products = listOf(product("edition-xs", "hifiman", "Edition XS")),
+            profiles = listOf(
+                profileWithBand("legacy-rtings", "edition-xs", "Target_Rtings_com", "pk", 100.0),
+                profile("without-bands", "edition-xs", "No filters"),
+            ),
+        )
+        val canonical = OpraCatalog(
+            vendors = emptyList(),
+            products = emptyList(),
+            profiles = listOf(
+                profileWithBand(
+                    "eq-library:curated@latest",
+                    "edition-xs",
+                    "Latest · Target: Harman · Source: Curated",
+                    "peak_dip",
+                    100.0,
+                ),
+            ),
+        )
+
+        val merged = overlayCanonicalCatalog(legacy, canonical)
+
+        assertThat(merged.profiles.map(OpraEqProfile::id).toList())
+            .containsExactly("eq-library:curated@latest", "without-bands")
+            .inOrder()
+    }
+
+    @Test
     fun legacyAcousticSignatureKeepsFixedPrecisionAndNegativeZero() {
         val profile = profile("rounded", "edition-xs", "Rounded values").copy(
             preampGainDb = -0.0001,
@@ -127,6 +158,44 @@ class CatalogOverlayTest {
 
         assertThat(profile.legacyAcousticSignature())
             .isEqualTo("preamp=-0.000;PK|2.675|2.675|2.6750|1.2345")
+        assertThat(profile.legacyAcousticFingerprintOrNull()).isNotNull()
+    }
+
+    @Test
+    fun legacyAcousticFingerprintIsOrderAliasAndMultiplicityInvariant() {
+        val repeatedPeak = OpraBand(
+            type = "pk",
+            frequency = 100.0,
+            gainDb = 2.0,
+            q = 1.0,
+            slope = 0.0,
+        )
+        val shelf = OpraBand(
+            type = "low_shelf",
+            frequency = 80.0,
+            gainDb = -1.5,
+            q = 0.8,
+            slope = 12.0,
+        )
+        val original = profile("original", "edition-xs", "Original").copy(
+            preampGainDb = -3.25,
+            bands = listOf(repeatedPeak, repeatedPeak, shelf),
+        )
+        val mirror = profile("mirror", "edition-xs", "Mirror").copy(
+            preampGainDb = -3.25,
+            bands = listOf(
+                shelf.copy(type = "ls"),
+                repeatedPeak.copy(type = "peak_dip"),
+                repeatedPeak.copy(type = "peq"),
+            ),
+        )
+        val missingRepeatedPeak = original.copy(bands = listOf(repeatedPeak, shelf))
+
+        assertThat(original.legacyAcousticSignature()).isEqualTo(mirror.legacyAcousticSignature())
+        assertThat(original.legacyAcousticFingerprintOrNull())
+            .isEqualTo(mirror.legacyAcousticFingerprintOrNull())
+        assertThat(missingRepeatedPeak.legacyAcousticFingerprintOrNull())
+            .isNotEqualTo(original.legacyAcousticFingerprintOrNull())
     }
 
     @Test
@@ -139,7 +208,14 @@ class CatalogOverlayTest {
             0.1,
             0.12345,
             2.675,
+            1.2345,
+            1.23455,
             12_345.6789,
+            Double.MIN_VALUE,
+            Double.MAX_VALUE,
+            Double.NEGATIVE_INFINITY,
+            Double.POSITIVE_INFINITY,
+            Double.NaN,
         ) + (0 until 64).map { index -> (index - 32) / 1234.567 }
         val profile = profile("sampled", "edition-xs", "Sampled values").copy(
             preampGainDb = values.first(),
@@ -171,7 +247,11 @@ class CatalogOverlayTest {
             }
         }
 
+        val permutedProfile = profile.copy(bands = profile.bands.orEmpty().reversed())
         assertThat(profile.legacyAcousticSignature()).isEqualTo(expected)
+        assertThat(profile.legacyAcousticSignature()).isEqualTo(permutedProfile.legacyAcousticSignature())
+        assertThat(profile.legacyAcousticFingerprintOrNull())
+            .isEqualTo(permutedProfile.legacyAcousticFingerprintOrNull())
     }
 
     @Test
@@ -281,6 +361,45 @@ class CatalogOverlayTest {
         assertThat(merged.productAliases).hasSize(count)
         assertThat(merged.product("eq-library-product:2999")?.name).isEqualTo("Model 2999")
         assertThat(merged.product("legacy-2999")?.name).isEqualTo("Model 2999")
+    }
+
+    @Test
+    fun largeCanonicalProfileOverlayRetainsEveryDistinctTuning() {
+        val profileCount = 100_000
+        val sharedBands = listOf(OpraBand("PK", 100.0, 1.0, 1.0, null))
+        val legacy = OpraCatalog(
+            vendors = listOf(vendor("maker", "Maker")),
+            products = listOf(product("edition-xs", "maker", "Edition XS")),
+            profiles = emptyList(),
+        )
+        val canonical = OpraCatalog(
+            vendors = emptyList(),
+            products = emptyList(),
+            profiles = (0 until profileCount).map { index ->
+                OpraEqProfile(
+                    id = "eq-library:memory-$index",
+                    productId = "edition-xs",
+                    author = "Catalog fixture",
+                    details = "Source: fixture",
+                    link = null,
+                    profileType = "parametric_eq",
+                    preampGainDb = index.toDouble(),
+                    bands = sharedBands,
+                )
+            },
+        )
+
+        val merged = try {
+            overlayCanonicalCatalog(legacy, canonical)
+        } catch (failure: OutOfMemoryError) {
+            throw AssertionError("Catalog overlay exceeded the constrained test heap", failure)
+        }
+
+        assertThat(merged.profiles).hasSize(profileCount)
+        assertThat(merged.profiles.first().id).isEqualTo("eq-library:memory-0")
+        assertThat(merged.profiles.last().id).isEqualTo("eq-library:memory-${profileCount - 1}")
+        assertThat(merged.profiles[profileCount / 2].preampGainDb)
+            .isEqualTo((profileCount / 2).toDouble())
     }
 
     private fun vendor(id: String, name: String) = OpraVendor(id, name)

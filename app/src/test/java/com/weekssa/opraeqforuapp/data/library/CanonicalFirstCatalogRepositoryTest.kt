@@ -10,11 +10,26 @@ import com.weekssa.opraeqforuapp.domain.catalog.OpraCatalog
 import com.weekssa.opraeqforuapp.domain.catalog.OpraEqProfile
 import com.weekssa.opraeqforuapp.domain.catalog.OpraProduct
 import com.weekssa.opraeqforuapp.domain.catalog.OpraVendor
+import com.weekssa.opraeqforuapp.domain.library.CanonicalEqProfile
+import com.weekssa.opraeqforuapp.domain.library.CatalogSnapshot
+import com.weekssa.opraeqforuapp.domain.library.EqFilter
+import com.weekssa.opraeqforuapp.domain.library.EqFilterType
+import com.weekssa.opraeqforuapp.domain.library.EqPresetPurpose
+import com.weekssa.opraeqforuapp.domain.library.EqProfileScope
+import com.weekssa.opraeqforuapp.domain.library.EqRevision
+import com.weekssa.opraeqforuapp.domain.library.EqSourceKind
+import com.weekssa.opraeqforuapp.domain.library.EqSourceReference
+import com.weekssa.opraeqforuapp.domain.library.EqTarget
+import com.weekssa.opraeqforuapp.domain.library.EqTargetKind
+import com.weekssa.opraeqforuapp.domain.library.ProvenanceTier
+import com.weekssa.opraeqforuapp.domain.library.RedistributionPolicy
 import java.io.IOException
 import java.nio.file.Files
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.junit.Test
 
 class CanonicalFirstCatalogRepositoryTest {
@@ -138,6 +153,45 @@ class CanonicalFirstCatalogRepositoryTest {
         assertThat(repository.resolveCanonicalSelection(profile.copy(preampGainDb = -5.0))).isNull()
     }
 
+    @Test
+    fun mergedCatalogReleasesLegacySourceAndResolvesItsVisibleRows() = runBlocking {
+        val profile = legacyProfile(
+            id = "legacy-visible-profile",
+            productId = "hifiman::edition_xs",
+            author = "Rtings/AutoEQ",
+            preampGainDb = -5.1,
+        )
+        val legacy = FakeCatalogRepository(
+            OpraCatalog(
+                vendors = listOf(OpraVendor("hifiman", "HIFIMAN")),
+                products = listOf(
+                    OpraProduct("hifiman::edition_xs", "hifiman", "Edition XS", "headphones", "over_the_ear"),
+                ),
+                profiles = listOf(profile),
+            ),
+        )
+        val canonical = CanonicalCatalogRepository(
+            filesDir = Files.createTempDirectory("canonical-first-release-test").toFile(),
+            source = { destination -> destination.writeText(Json.encodeToString(unrelatedGeneralSnapshot())) },
+            nowMillis = { 1234L },
+        )
+        val repository = CanonicalFirstCatalogRepository(canonical, legacy)
+
+        repository.initialize()
+
+        assertThat(legacy.releaseCount).isEqualTo(1)
+        assertThat(legacy.state.value).isEqualTo(CatalogState.Loading)
+        val visibleProfile = (repository.state.value as CatalogState.Ready).catalog.profiles
+            .single { it.id == profile.id }
+        assertThat(repository.resolveCanonicalSelection(visibleProfile)).isNotNull()
+
+        val refresh = repository.refresh()
+        assertThat(refresh).isInstanceOf(CatalogRefreshResult.Failure::class.java)
+        assertThat((refresh as CatalogRefreshResult.Failure).usingSavedCatalog).isTrue()
+        assertThat((repository.state.value as CatalogState.Ready).catalog.profiles.map(OpraEqProfile::id))
+            .contains("legacy-visible-profile")
+    }
+
     private fun legacyProfile(
         id: String,
         productId: String,
@@ -158,12 +212,57 @@ class CanonicalFirstCatalogRepositoryTest {
         ),
     )
 
+    private fun unrelatedGeneralSnapshot() = CatalogSnapshot(
+        schemaVersion = 1,
+        generatedAt = "2026-10-04T00:00:00Z",
+        sourceRegistryVersion = "test",
+        profiles = listOf(
+            CanonicalEqProfile(
+                canonicalProfileId = "general:unrelated",
+                scope = EqProfileScope.GENERAL,
+                purpose = EqPresetPurpose.EFFECT,
+                creator = "Tester",
+                target = EqTarget(null, EqTargetKind.UNKNOWN),
+                tuningLabel = "Bass boost",
+                revisions = listOf(
+                    EqRevision(
+                        revisionId = "general-rev",
+                        acousticFingerprint = "general-fingerprint",
+                        preampGainDb = -3.0,
+                        filters = listOf(EqFilter(EqFilterType.LOW_SHELF, 100.0, 3.0, 0.7)),
+                        sourceReferences = listOf(
+                            EqSourceReference(
+                                sourceId = "test",
+                                sourceKind = EqSourceKind.STRUCTURED_CATALOG,
+                                sourceRecordId = "general-record",
+                                url = "https://example.com/eq",
+                                creator = "Tester",
+                                provenanceTier = ProvenanceTier.AUTHORITATIVE,
+                                redistributionPolicy = RedistributionPolicy.ALLOWED,
+                                isPrimary = true,
+                            ),
+                        ),
+                        isLatest = true,
+                    ),
+                ),
+            ),
+        ),
+    )
+
     private class FakeCatalogRepository(catalog: OpraCatalog) : AppCatalogRepository {
-        override val state: StateFlow<CatalogState> = MutableStateFlow(
+        private val mutableState = MutableStateFlow<CatalogState>(
             CatalogState.Ready(catalog = catalog, lastSuccessfulRefreshMillis = 1L),
         )
+        override val state: StateFlow<CatalogState> = mutableState
+        var releaseCount: Int = 0
+            private set
 
         override suspend fun initialize() = Unit
+
+        override fun releaseInMemoryCatalog() {
+            releaseCount += 1
+            mutableState.value = CatalogState.Loading
+        }
 
         override suspend fun refresh(): CatalogRefreshResult = CatalogRefreshResult.Failure(
             reason = CatalogRefreshFailureReason.Network,
