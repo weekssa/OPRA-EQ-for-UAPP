@@ -1,5 +1,5 @@
 {
-  "timestamp_utc": "2026-10-07T21:57:50Z",
+  "timestamp_utc": "2026-10-07T22:01:32Z",
   "state": "C05C_G4_PASS; CONTROL_EVIDENCE_RECONCILIATION; G5_INDEPENDENT_PREMERGE_NEXT",
   "current_gate": "CONTROL_AND_EXTERNAL_STATUS_RECONCILIATION_AFTER_C05C_PASS",
   "next_gate": "G5_INDEPENDENT_PREMERGE_VERIFICATION",
@@ -85,12 +85,12 @@
     ],
     "stable_latest": "v0.7.2",
     "latest_is_prerelease": false,
-    "pr_body_sync": "STALE until the current C05-C PASS and G5 next action are synchronized."
+    "pr_body_sync": "SYNCHRONIZED at 2026-10-07T22:01:06Z with issue #71; both report C05-C/G4 PASS and G5 next; PR remains open/draft."
   },
   "pr_state": "open/draft; exact frozen head; mergeable/clean",
   "pr_head": "3329590db531c31be84e7e28d89209028a688075",
   "pr_base": "c702ef0149b4c647446639cfcb0ab25c09159db3",
-  "pr_current_body_stale": true,
+  "pr_current_body_stale": false,
   "ci": {
     "head_sha": "3329590db531c31be84e7e28d89209028a688075",
     "as_of_utc": "2026-10-07T16:25:17Z",
@@ -526,10 +526,9 @@
     "mission closeout"
   ],
   "next_actions": [
-    "Commit/push control-only evidence reconciliation without changing the app/test candidate or frozen plan.",
-    "Synchronize issue #71, keep PR #70 draft and update its body, and update the existing watcher through the supported tool.",
-    "Run one fresh independent G5 pre-merge review against the exact candidate, evidence, PR/base/checks, and Class B boundaries.",
-    "After G5 PASS, refresh live merge rules/checks, ready and merge exact candidate, verify merged SHA/tree, then continue main-only signing and post-merge gates in order."
+    "Run one fresh independent G5 pre-merge review against the exact candidate, evidence, protected paths, live PR/base/checks, and Class B boundary.",
+    "If G5 passes, refresh current merge rules/checks and exact refs; mark PR ready and merge only the qualified exact head, then verify merged SHA/tree.",
+    "Continue official main-only signing, signed artifact provenance, exact signed upgrade, clean install/core smoke, independent artifact verification, prerelease, review bundle, and closeout in order."
   ],
   "issue": "OPEN; body synchronized at 2026-10-07T16:04:15Z to plan 2.48/current control status.",
   "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex%2Fv0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md (resolve the live control ref dynamically)",
@@ -574,7 +573,7 @@
     "G2": "PASS; Class B retained; protected hardware paths unchanged.",
     "G3": "PASS for frozen plan 2.48 physical procedure.",
     "G4": "PASS; C05-C read-only physical qualification completed; checksum-verified evidence preserved in ignored session directory.",
-    "G5": "NEXT; one independent pre-merge review after status/issue/PR/watcher synchronization.",
+    "G5": "NEXT; one independent pre-merge review after issue/PR/watcher synchronization.",
     "G6": "PENDING; merge exact qualified tree and verify merged SHA/tree after G5.",
     "G7": "PENDING; official main-only signed beta artifact and checksum/signer/provenance verification.",
     "G8": "PENDING; exact signed v0.7.2-to-beta persisted-state upgrade.",
@@ -635,9 +634,9 @@
     ]
   },
   "issue_updated_at_utc": "2026-10-07T16:45:06Z",
-  "issue_body_current": false,
-  "watchdog_prompt_updated": false,
-  "watchdog_prompt_updated_utc": null,
+  "issue_body_current": true,
+  "watchdog_prompt_updated": true,
+  "watchdog_prompt_updated_utc": "2026-10-07T22:01:00Z",
   "control_plane_checkpoint_pushed": true,
   "pr_updated_at_utc": "2026-10-07T16:45:07Z",
   "control_plane_branch": "codex/v0.8.0-beta-watch; resolve live origin tip dynamically.",
@@ -679,7 +678,7 @@
     "readiness_certificate": "READY FOR PHASE B; plan 2.48 physical procedure safety review found no safety issue and the one-time category B metadata correction is applied."
   },
   "last_observed_control_tree_before_status_commit": "f2d641f5a1adc5c80e8e2d943e43e00954607430",
-  "next_action": "C05-C/G4 passed. Reconcile control evidence and synchronize issue #71, draft PR #70, and the watcher; then run one independent G5 pre-merge review. Do not pair or access the phone again.",
+  "next_action": "Run one fresh independent G5 pre-merge review against candidate HEAD 3329590db531c31be84e7e28d89209028a688075, physical evidence, protected-path delta, current PR/base/checks, and Class B boundary. Keep PR #70 draft until PASS.",
   "g3_approved_entry_route": "C05-C complete; no entry route required.",
   "g3_attached_connected_session_resume_approved": false,
   "phase_b_binding": {
@@ -735,9 +734,9 @@
   },
   "first_v1_6_commit": null,
   "external_surfaces": {
-    "issue_71": "stale pending update",
-    "pr_70": "stale pending update; remain draft",
-    "watchdog": "stale pre-C05 route-wait prompt; update through supported automation tool"
+    "issue_71": "synchronized at 2026-10-07T22:01:07Z",
+    "pr_70": "synchronized at 2026-10-07T22:01:06Z; remains open/draft",
+    "watchdog": "updated through supported automation tool at approximately 2026-10-07T22:01Z"
   },
   "master_directive_loaded": true,
   "candidate_change": "Control-plane documentation only; no app/test source, candidate tree, protected path, physical acceptance criterion, or Class B change.",
@@ -808,9 +807,9 @@
   "automation_update_tool_failure": "Earlier view/update failures remain historical. The supported update succeeded at approximately 2026-10-07T15:50Z; no direct TOML edit was made.",
   "latest_release_verified_at_utc": "2026-10-07T21:57:00Z",
   "phase_c_started": true,
-  "pr_body_current": false,
-  "issue_last_checked_utc": "2026-10-07T21:57:00Z",
-  "pr_last_checked_utc": "2026-10-07T21:57:00Z",
+  "pr_body_current": true,
+  "issue_last_checked_utc": "2026-10-07T22:01:32Z",
+  "pr_last_checked_utc": "2026-10-07T22:01:32Z",
   "current_control_reconciliation_pushed": true,
   "exact_state_consistency_review": {
     "result": "CATEGORY_B_METADATA_ONLY; one correction applied; physical procedure safety review clear; no recursive review required.",
@@ -829,7 +828,7 @@
     "previous_checkpoint_result": "NOT PASS at 2026-10-07T16:16Z for synchronized plan 2.48 checkpoint; stale current maintained overlays/status fields found.",
     "previous_checkpoint_reviewed_at_utc": "2026-10-07T16:16:00Z"
   },
-  "issue_71": "OPEN; stale pre-C05 route-wait body; synchronize to C05-C PASS and G5 next action.",
+  "issue_71": "OPEN; synchronized at 2026-10-07T22:01:07Z to C05-C/G4 PASS and G5 next action.",
   "current_reconciliation_pushed": true,
   "phase_b_current_status": "PASS; same binding used for C05-C; session completed and phone released.",
   "push_attempts": [
@@ -880,7 +879,7 @@
     "tests_rerun": false,
     "finding": "CATEGORY B: stale current plan pointer and active JSON next-action/main snapshot only; no physical-procedure safety finding. One-time correction applied; no recursive review required under the owner convergence directive."
   },
-  "current_action": "Update the canonical control record and synchronize external surfaces, then independent G5 review.",
+  "current_action": "One independent G5 pre-merge review of the exact frozen candidate, verified physical evidence, protected paths, and current PR/base/checks.",
   "latest_phase_b_attempt": {
     "at_utc": "2026-10-07T21:25:28Z",
     "result": "PASS",
