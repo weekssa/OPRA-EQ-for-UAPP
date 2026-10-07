@@ -132,7 +132,7 @@ def verify_existing_binding(
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = adb_binding.RedactedArgumentParser(description=__doc__)
     parser.add_argument("--adb", required=True, help="absolute path to Android SDK platform-tools/adb")
     parser.add_argument("--binding", required=True, type=Path, help="ignored Phase B binding.json")
     parser.add_argument("--expected-binding-sha256", required=True, help="exact sealed Phase B binding file SHA-256")

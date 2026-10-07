@@ -254,6 +254,23 @@ class PixelAdbBindingResolveTest(unittest.TestCase):
         self.assertNotIn(PIXEL_ENDPOINT, combined)
         self.assertIn("PIXEL_BINDING_NOT_PASS", combined)
 
+    def test_cli_argument_errors_do_not_echo_raw_target_or_endpoint(self):
+        for secret_argument in (PIXEL_ALIAS, PIXEL_ENDPOINT):
+            with self.subTest(secret_argument=secret_argument):
+                stderr = io.StringIO()
+                with redirect_stdout(io.StringIO()), redirect_stderr(stderr):
+                    with self.assertRaises(SystemExit) as raised:
+                        binding.main([
+                            "--adb", "/fake/adb",
+                            "--output", "/tmp/private-binding",
+                            "--apk", "/tmp/private-app.apk",
+                            secret_argument,
+                        ])
+                self.assertEqual(raised.exception.code, 2)
+                self.assertEqual(stderr.getvalue(), "invalid command-line arguments\n")
+                self.assertNotIn(PIXEL_ALIAS, stderr.getvalue())
+                self.assertNotIn(PIXEL_ENDPOINT, stderr.getvalue())
+
     def test_cli_success_summary_omits_raw_target_endpoint_and_serial(self):
         fake = FakeAdb(
             mdns(f"{PIXEL_INSTANCE} {binding.TLS_CONNECT} {PIXEL_ENDPOINT}"),

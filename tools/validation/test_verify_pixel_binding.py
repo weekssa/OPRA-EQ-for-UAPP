@@ -252,6 +252,28 @@ class VerifyPixelBindingTest(unittest.TestCase):
             self.assertNotIn("Traceback", combined)
             self.assertIn("PIXEL_ENTRY_NOT_PASS", combined)
 
+    def test_cli_argument_errors_do_not_echo_raw_target_or_endpoint(self):
+        for secret_argument in (GENERIC_TARGET, ENDPOINT_TARGET):
+            with self.subTest(secret_argument=secret_argument):
+                stderr = io.StringIO()
+                with patch.object(adb_binding, "run_command") as runner:
+                    with redirect_stdout(io.StringIO()), redirect_stderr(stderr):
+                        with self.assertRaises(SystemExit) as raised:
+                            verify_pixel_binding.main([
+                                "--adb", "/fake/adb",
+                                "--binding", "/tmp/private-binding.json",
+                                "--expected-binding-sha256", "a" * 64,
+                                "--target", ENDPOINT_TARGET,
+                                "--log", "/tmp/private-entry.log",
+                                "--result", "/tmp/private-result.json",
+                                secret_argument,
+                            ])
+                    runner.assert_not_called()
+                self.assertEqual(raised.exception.code, 2)
+                self.assertEqual(stderr.getvalue(), "invalid command-line arguments\n")
+                self.assertNotIn(GENERIC_TARGET, stderr.getvalue())
+                self.assertNotIn(ENDPOINT_TARGET, stderr.getvalue())
+
     def test_rejects_non_pixel_fingerprint_profile_before_app_check(self):
         fake = FakeAdb()
         with tempfile.TemporaryDirectory() as temp:

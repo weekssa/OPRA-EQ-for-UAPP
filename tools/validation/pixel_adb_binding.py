@@ -35,6 +35,11 @@ TLS_CONNECT = "_adb-tls-connect._tcp"
 TLS_PAIRING = "_adb-tls-pairing._tcp"
 
 
+class RedactedArgumentParser(argparse.ArgumentParser):
+    def error(self, message: str) -> None:
+        self.exit(2, "invalid command-line arguments\n")
+
+
 def sha256_text(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
@@ -871,7 +876,7 @@ def resolve(adb: str, output: Path, apk_path: Path) -> dict[str, object]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = RedactedArgumentParser(description=__doc__)
     parser.add_argument("--adb", required=True, help="absolute path to Android SDK platform-tools/adb")
     parser.add_argument("--output", required=True, type=Path, help="new ignored evidence directory")
     parser.add_argument("--apk", required=True, type=Path, help="exact frozen local APK")
