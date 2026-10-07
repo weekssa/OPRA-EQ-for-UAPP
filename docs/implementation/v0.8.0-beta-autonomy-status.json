@@ -1,8 +1,8 @@
 {
-  "timestamp_utc": "2026-10-07T05:23:33Z",
-  "state": "PHASE_A_REPREPARATION_AFTER_E54_OVERLAY_REVIEW_NOT_PASS",
-  "current_gate": "G3 procedure review PASS for plan 2.18; C05-C/G4 remains PARTIAL / NOT PASS. E52 exact-state review returned NOT PASS on ambiguous attachment/Connect permissions and unqualified consumed-helper labeling. E53 corrected those fields; E54 synchronized the correction externally. E54 exact-state review returned NOT PASS because the acceptance-evidence current overlay omitted E52/E53/E54. This checkpoint corrects the overlay; external synchronization and a fresh exact-state review remain. No readiness or device access.",
-  "next_gate": "Push and externally synchronize the corrected current overlay, then obtain exact-state independent PASS on the live tip. Only after PASS may canonical Phase A readiness be issued; fresh owner Pixel availability is required after that notice.",
+  "timestamp_utc": "2026-10-07T05:26:34Z",
+  "state": "PHASE_A_PENDING_EXACT_STATE_REVIEW_E55_SYNCHRONIZED",
+  "current_gate": "G3 procedure review PASS for plan 2.18; C05-C/G4 remains PARTIAL / NOT PASS. E52 exact-state review returned NOT PASS on actor-specific attachment/Connect permissions and consumed-helper reservation labeling. E53 corrected those fields; E54 synchronized the correction. E54 exact-state review returned NOT PASS because the acceptance-evidence current overlay omitted E52/E53/E54. E55 corrected and pushed the overlay; issue #71, PR #70, and the hourly watchdog are synchronized. Exact-state independent review of E55 is pending. No readiness or device access.",
+  "next_gate": "Obtain exact-state independent PASS on synchronized live control tip E55. Only after PASS update canonical Phase A readiness, issue a fresh readiness notice, and require fresh post-readiness Pixel availability.",
   "candidate_branch": "codex/v0.8.0-beta-ux",
   "candidate_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
   "candidate_tree": "e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d",
@@ -19,14 +19,14 @@
   "pr_state": "OPEN_DRAFT",
   "pr_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
   "pr_base": "c702ef0149b4c647446639cfcb0ab25c09159db3",
-  "pr_current_body_stale": true,
+  "pr_current_body_stale": false,
   "ci": {
-    "as_of_utc": "2026-10-07T05:23:33Z",
+    "as_of_utc": "2026-10-07T05:26:34Z",
     "exact_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
     "total_exact_head_check_runs": 8,
     "check_run_snapshot": {
       "all_completed_success": true,
-      "as_of_utc": "2026-10-07T05:23:33Z",
+      "as_of_utc": "2026-10-07T05:26:34Z",
       "head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
       "total_count": 8,
       "checks": [
@@ -122,9 +122,9 @@
         "indexed_file_count": 36
       },
       "plan_revision": "2.18",
-      "plan_review": "G3 PASS for procedure revision 2.18 after all ten assertions; no physical procedure step changed. E52 status review returned NOT PASS on actor-specific attachment/Connect permissions and consumed-helper reservation labeling; E53 corrected those fields and E54 synchronized external state. E54 exact-state review returned NOT PASS because the acceptance-evidence current overlay omitted E52/E53/E54. Overlay correction, external synchronization, and fresh exact-state review remain.",
+      "plan_review": "G3 PASS for procedure revision 2.18 after all ten assertions; no physical procedure step changed. E54 exact-state review returned NOT PASS on stale acceptance-overlay text, not plan steps. E55 corrects and pushes the overlay; issue/PR/watchdog are synchronized and exact-state review of E55 remains pending.",
       "read_semantics": "Production READ sends outbound report(s) and may receive one bounded automatic nondestructive timeout retry; do not claim zero USB traffic or raw-bit equality. Compare same displayed fields at UI precision.",
-      "readiness": "PHASE A NOT READY. E54 exact-state review returned NOT PASS because the acceptance-evidence current overlay omitted the E52 finding and E53/E54 correction and synchronization. This docs-only checkpoint corrects the overlay; synchronize issue/PR/watchdog and obtain exact-state PASS before issuing a new readiness notice. The owner's latest availability statement predates any new readiness notice and cannot be reused. No device access.",
+      "readiness": "PHASE A NOT READY. E54 exact-state review returned NOT PASS because the acceptance-evidence current overlay omitted the E52 finding and E53/E54 updates. E55 corrects and pushes the overlay; issue #71, PR #70, and the hourly watchdog are synchronized. Exact-state review of E55 remains pending. The owner's latest availability statement predates a new readiness notice and cannot be reused. No device access.",
       "prior_attempts": [
         {
           "physical_attempt_utc": "2026-10-06T19:25:17Z",
@@ -368,7 +368,7 @@
   "owner_action_required_now": false,
   "pixel_required_now": false,
   "physical_session_ready": false,
-  "physical_session_readiness_reason": "E54 exact-state independent review returned NOT PASS because the current acceptance-evidence overlay still described the earlier E50/E51 correction state and omitted E52's review finding and the E53/E54 correction and synchronization. This docs-only checkpoint corrects that overlay. Issue #71, PR #70, and the hourly watchdog still need synchronization to the E54 NOT PASS finding before a fresh exact-state review. Phase A remains NOT READY; no device access. Do not reuse the owner's pre-readiness availability response. No ADB/USB/device access before overlay correction, external synchronization, exact-state review PASS, a new readiness notice, and fresh post-readiness availability.",
+  "physical_session_readiness_reason": "E54 exact-state independent review returned NOT PASS because the acceptance-evidence current overlay omitted the E52 finding and E53/E54 correction and synchronization. E55 corrected the overlay and is pushed at cdabfda78407717444cd54a284ac6003a89ed9b4 / tree a88a73fdd8f2d9436279d2bd50b9dbfc0421b740. Issue #71, PR #70, and the active hourly watchdog are synchronized to the E54 NOT PASS and E55 correction; independent exact-state review of E55 remains pending. Phase A is NOT READY; no device access. The owner's prior availability statement predates the new readiness notice and cannot be reused. No ADB/USB/device access before exact-state PASS, a new readiness notice, and fresh post-readiness availability.",
   "estimated_pixel_minutes": {
     "target": 10,
     "hard_limit": 15,
@@ -383,7 +383,7 @@
     "G6-G12 ordered merge/sign/upgrade/clean-install/artifact/publication/review-bundle/closeout"
   ],
   "physical_gates_open": [
-    "Exact-state independent review of corrected current status after E54 NOT PASS; acceptance overlay is being corrected, then issue/PR/watchdog synchronization is required.",
+    "Exact-state independent review of synchronized live control tip E55 after the E54 acceptance-overlay NOT PASS; the correction is pushed and issue/PR/watchdog are synchronized.",
     "G4/C05-C complete read/navigation/final-read session under plan revision 2.18, only after new readiness and fresh post-readiness owner availability."
   ],
   "downstream_gates": [
@@ -398,16 +398,16 @@
     "mission closeout"
   ],
   "next_actions": [
-    "Push the acceptance-evidence current-overlay correction and synchronize issue #71, PR #70, and the hourly watchdog to the E54 NOT PASS finding.",
-    "Have the independent reviewer verify the exact synchronized live tip, plan 2.18 disposition, runner reservation, and external-state alignment.",
-    "Until exact-state PASS, a fresh readiness notice, and fresh post-readiness owner availability, do not use ADB/USB, inspect device state, request the Pixel, or operate hardware."
+    "Have the independent reviewer verify the exact synchronized live tip E55, current status overlay, plan 2.18 disposition, runner reservation, and issue/PR/watchdog alignment.",
+    "If exact-state review passes, synchronize canonical Phase A readiness and issue a fresh readiness notice; then require a fresh current Pixel-availability statement before device access.",
+    "Until review PASS, a fresh readiness notice, and fresh post-readiness owner availability, do not use ADB/USB, inspect device state, request the Pixel, or operate hardware."
   ],
   "issue": "https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/71",
   "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex/v0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md",
   "physical_plan": {
     "path": "docs/implementation/FINAL_PHYSICAL_SESSION_PLAN.md",
     "revision": "2.18",
-    "state": "G3_PASS_PHASE_A_E54_REVIEW_NOT_PASS_OVERLAY_CORRECTION_PENDING",
+    "state": "G3_PASS_PHASE_A_E55_SYNCHRONIZED_FINAL_REVIEW_PENDING",
     "scope": "Phase A off-phone preflight; Phase B fresh owner availability, one-shot wireless-ADB T0, exact candidate/APK/Pixel/DAC verification, cold/disconnected My DAC preflight, production EQ/DEVICE reads, attached navigation, final explicit readback, and immediate release.",
     "device_access_before_review": false,
     "phase_b_entry_policy": {
@@ -456,7 +456,7 @@
       "gate": "G0",
       "name": "Canonical directive / candidate identity",
       "state": "PASS",
-      "evidence": "Frozen candidate/APK and master v1.3 identity are verified. E54 exact-state review returned NOT PASS because the acceptance-evidence overlay omitted the E52/E53/E54 state. This docs-only checkpoint corrects the current overlay; external synchronization and exact-state review remain required before readiness. No phone action is authorized now."
+      "evidence": "Frozen candidate/APK and master v1.3 identity are verified. E54 exact-state review returned NOT PASS because the acceptance-evidence overlay omitted E52/E53/E54. E55 corrects and pushes the current overlay; issue/PR/watchdog are synchronized. Exact-state review of E55 remains required before readiness."
     },
     {
       "gate": "G1",
@@ -472,7 +472,7 @@
       "gate": "G3",
       "name": "Final physical plan ready",
       "state": "PASS",
-      "evidence": "PASS for plan revision 2.18 procedure; all ten assertions passed and the procedure is unchanged. E54 exact-state review returned NOT PASS on stale current acceptance-overlay text, not on plan steps. The overlay correction is in this checkpoint; external synchronization and a fresh exact-state review remain pending."
+      "evidence": "PASS for plan revision 2.18 procedure; all ten assertions passed and the procedure is unchanged. E54 exact-state review returned NOT PASS on stale current acceptance-overlay text, not plan steps. E55 corrects and pushes the overlay; issue/PR/watchdog are synchronized and exact-state review of E55 remains pending."
     },
     {
       "gate": "G4",
@@ -533,20 +533,20 @@
       "conclusion": "success"
     }
   ],
-  "issue_updated_at_utc": "2026-10-07T05:12:45Z",
-  "issue_body_current": false,
-  "watchdog_prompt_updated": false,
-  "watchdog_prompt_updated_utc": "2026-10-07T05:13:35.092Z",
+  "issue_updated_at_utc": "2026-10-07T05:26:17Z",
+  "issue_body_current": true,
+  "watchdog_prompt_updated": true,
+  "watchdog_prompt_updated_utc": "2026-10-07T05:26:18.824Z",
   "control_plane_checkpoint_pushed": true,
-  "pr_updated_at_utc": "2026-10-07T05:12:46Z",
+  "pr_updated_at_utc": "2026-10-07T05:26:18Z",
   "control_plane_branch": {
     "name": "codex/v0.8.0-beta-watch",
     "live_ref_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/tree/codex%2Fv0.8.0-beta-watch",
-    "last_observed_head_before_status_commit": "abf914229c02128635dfcfc1a272bf01bb97440b",
-    "last_observed_tree_before_status_commit": "2070b60193aa717d6dfc7d571c29952e4acdad8e",
+    "last_observed_head_before_status_commit": "cdabfda78407717444cd54a284ac6003a89ed9b4",
+    "last_observed_tree_before_status_commit": "a88a73fdd8f2d9436279d2bd50b9dbfc0421b740",
     "remote_matches_observed_tip_at_snapshot": true,
     "current_head_resolution": "Resolve origin/codex/v0.8.0-beta-watch from live Git at review time; this status file cannot contain its own resulting commit SHA.",
-    "snapshot_as_of_utc": "2026-10-07T05:23:33Z"
+    "snapshot_as_of_utc": "2026-10-07T05:26:34Z"
   },
   "owner_action_required": false,
   "owner_action": "None now. After a new readiness notice, make a fresh current statement that the Pixel 9 is available and have the Black Pearl attached before handoff. Wireless ADB only.",
@@ -556,9 +556,9 @@
     "prerelease": false,
     "draft": false,
     "stable_latest": true,
-    "as_of_utc": "2026-10-07T05:23:33Z",
-    "review": "Stable/latest remains v0.7.2. Phase A is NOT READY after the E54 exact-state review returned NOT PASS on the stale acceptance-evidence current overlay. Correct and synchronize the overlay, then obtain exact-state review.",
-    "remaining": "Obtain exact-state independent PASS on the corrected synchronized control snapshot. If PASS, issue a fresh readiness notice and require fresh post-readiness Pixel availability before Phase B."
+    "as_of_utc": "2026-10-07T05:26:34Z",
+    "review": "Stable/latest remains immutable v0.7.2. Phase A is NOT READY after E54 exact-state review returned NOT PASS on the acceptance-evidence current overlay. E55 corrected the overlay and external issue/PR/watchdog are synchronized; exact-state review of E55 is pending.",
+    "remaining": "Obtain exact-state independent PASS on E55. If PASS, issue a fresh readiness notice and require fresh post-readiness Pixel availability before Phase B."
   },
   "master_body_sha256": "084bca0df0103701bbed74831152074c6f1283d376a8a1930e51ea39016c52ed",
   "master_introducing_commit": "e57eb6ee92155d484cdc20c424546a70672b77e6",
@@ -591,7 +591,7 @@
   },
   "main_current_checks_as_of_utc": "2026-10-07T05:14:43Z",
   "phase_a_preflight": {
-    "state": "PERSISTENT_RUNNER_PREPARED_PENDING_OVERLAY_CORRECTION_EXTERNAL_SYNC_AND_EXACT_STATE_REVIEW",
+    "state": "PERSISTENT_RUNNER_PREPARED_PENDING_E55_EXACT_STATE_REVIEW",
     "candidate_branch": "codex/v0.8.0-beta-ux",
     "candidate_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
     "candidate_tree": "e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d",
@@ -604,11 +604,11 @@
     "debug_signer_sha256": "cbd57d13316c2ca9e59fb810135ea71567fd22132b0d7f4640e92dc4434f0e14",
     "signature": "apksigner verified one Android Debug signer with v2 scheme; not the official beta key",
     "zip_alignment": "Build Tools 36.0.0 zipalign verification successful from the prior exact-APK preflight; APK SHA is unchanged",
-    "live_github_as_of_utc": "2026-10-07T05:23:33Z",
+    "live_github_as_of_utc": "2026-10-07T05:26:34Z",
     "pr": "#70 OPEN_DRAFT; exact frozen head 5c7d19cf2f77e448a97a1ee9d520ad4d408f120f; base main c702ef0149b4c647446639cfcb0ab25c09159db3; mergeable=true",
-    "checks": "8/8 exact-head check-runs completed-success, refreshed 2026-10-07T05:23:33Z: build 112181047518; min-api-smoke 112181046209; emulator-ui-test 112181045077; CodeQL 112152334761; Priority 112150826284; Catalog 112150826043; Kotlin analysis 112150825874; submit-gradle 112150813291",
+    "checks": "8/8 exact-head check-runs completed-success, refreshed 2026-10-07T05:26:34Z: build 112181047518; min-api-smoke 112181046209; emulator-ui-test 112181045077; CodeQL 112152334761; Priority 112150826284; Catalog 112150826043; Kotlin analysis 112150825874; submit-gradle 112150813291",
     "main": "79d600529621257136adb4d9e1a97e8ae8521d7e; 4 ahead / 0 behind; four catalog/currentness paths only; BASE-DRIFT-B",
-    "stable_latest": "v0.7.2; latest release API refreshed at 2026-10-07T05:23:33Z",
+    "stable_latest": "v0.7.2; latest release API refreshed at 2026-10-07T05:26:34Z",
     "source_paths": "ordinary launcher and disconnected card; local-only tabs/navigation; production Edit EQ and DEVICE Refresh reads; attached away/back card route; source-audited",
     "command_syntax": "Plan 2.18 helper bash syntax PASS; sourced in persistent interactive Bash PTY 85646; candidate branch/HEAD/tree/path guards PASS; T0 empty; commands.log 0 bytes; latest recorded same-session liveness checkpoint 2026-10-07T04:05:34Z",
     "evidence_ignore": "candidate worktree .git/info/exclude rule /.unlazy/v080-beta/evidence/c05c-*/ verified for the current unique reservation",
@@ -618,8 +618,8 @@
     "helper_guard": "single-use reservation; empty log/T0; candidate/path guards passed in persistent Bash PTY session 85646; retain this exact session for Phase B",
     "evidence_reservation": "New unique candidate-local ignored path; only preflight.txt, empty commands.log, and prepared helper; no command output/screenshots/manifest/physical capture",
     "device_access": "No ADB/USB/device command in the new reservation. The prior discovery only listed the Pixel service; it was not selected or queried. No device access has occurred during this overlay review.",
-    "review": "Independent runner review PASS. E52 exact-state review returned NOT PASS on ambiguous actor-specific attachment/Connect permissions and consumed-helper reservation labeling. E53 corrected the fields; E54 synchronized issue #71, PR #70, and the watchdog. Independent exact-state review of E54 returned NOT PASS because the acceptance-evidence current overlay omitted E52/E53/E54. This docs-only correction updates the overlay; external synchronization and exact-state review of the corrected live tip remain. No ADB/USB/device access.",
-    "remaining": "Push the overlay correction, synchronize issue/PR/watchdog, and obtain exact-state independent PASS on the current live tip. If PASS, issue fresh readiness and require fresh post-readiness Pixel availability before Phase B.",
+    "review": "Independent runner review PASS. E52 exact-state review returned NOT PASS on actor-specific attachment/Connect permissions and consumed-helper reservation labeling. E53 corrected those fields; E54 synchronized them, but exact-state review of E54 returned NOT PASS because the acceptance-evidence current overlay was stale. E55 corrected and pushed the overlay. Issue #71, PR #70, and the active watchdog are synchronized to the E54 finding and E55 correction at 05:26:17Z, 05:26:18Z, and 05:26:18.824Z. Exact-state review of the synchronized E55 tip remains pending. No ADB/USB/device access.",
+    "remaining": "Obtain exact-state independent PASS on the synchronized E55 live control tip. If PASS, issue fresh readiness and require fresh post-readiness Pixel availability before Phase B.",
     "previous_consumed_session_id": "20261007T031528Z",
     "persistent_runner_session_id": "85646",
     "t0_utc": null,
@@ -627,8 +627,8 @@
     "commands_log_bytes": 0,
     "latest_recorded_liveness_utc": "2026-10-07T04:05:34Z"
   },
-  "last_observed_control_tree_before_status_commit": "c12ee870c8e68132746e32f882c51a51dc64b9b7",
-  "next_action": "Push the acceptance-overlay correction, synchronize issue #71, PR #70, and the active hourly watchdog to the E54 NOT PASS finding, then obtain independent exact-state PASS on the synchronized live tip. Do not issue readiness or use ADB/USB before PASS. The owner's latest availability statement predates a new readiness notice and cannot be reused; require a fresh statement after readiness.",
+  "last_observed_control_tree_before_status_commit": "a88a73fdd8f2d9436279d2bd50b9dbfc0421b740",
+  "next_action": "Have the independent reviewer examine the exact synchronized live control tip E55, plan 2.18 disposition, runner reservation, and issue/PR/watchdog state. Do not issue readiness or use ADB/USB before PASS. The owner's latest availability statement predates a new readiness notice and cannot be reused; require a fresh statement after readiness.",
   "g3_approved_entry_route": "FRESH_PROCESS_COLD_DISCONNECTED_SINGLE_NORMAL_APP_CONNECT",
   "g3_attached_connected_session_resume_approved": false
 }
