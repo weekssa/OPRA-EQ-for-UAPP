@@ -395,7 +395,7 @@ source `e1ab5fa5a65dc2d64624d871ac53d436f792ea6a`, APK SHA-256
 `7fffba26f32991ce8c936f725bdc6c3c4b6956d3a0800c539b8d45e6b52a2501`, package
 `com.weekssa.opraeqforuapp` version `0.7.0` / code `7`, and signed workflow `36375994853`.
 The device was the owner Pixel 9 `tokay`, API 37, wireless serial
-`adb-46141FDAQ003KZ-3AwgSo._adb-tls-connect._tcp`; the connected target was `TRN Black Pearl`.
+`[Pixel TLS-connect alias redacted]`; the connected target was `TRN Black Pearl`.
 
 The read-only baseline showed verified current hardware, Flat, ten filters, and active slot 1. The
 single confirmation displayed `-4.00 dB` native playback-gain adjustment and was accepted once.

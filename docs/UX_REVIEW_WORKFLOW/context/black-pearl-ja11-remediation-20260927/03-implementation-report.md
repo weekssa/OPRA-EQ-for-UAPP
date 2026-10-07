@@ -38,7 +38,7 @@ was not verified and restoration was not attempted. JA11 remains independently `
   `276587734fc863277b83e4310c040cee22c27261075e21fa75d766ded9eef27e`; package
   `com.weekssa.opraeqforuapp`, version `0.7.0` / code `7`.
 - Pixel: Google Pixel 9, `tokay`, Android API 37, wireless ADB serial
-  `adb-46141FDAQ003KZ-3AwgSo._adb-tls-connect._tcp`.
+  `[Pixel TLS-connect alias redacted]`.
 - Black Pearl identity: vendor `0x3302`, product `0x43E8`, manufacturer `TTGK Technology`,
   product `TE-C`, serial `330243E8260129`; identity matched the maintained exact profile.
 - Read-only baseline before mutation: app `Connected`; My DAC showed `Verified current hardware`,
@@ -317,7 +317,7 @@ This session used the exact signed candidate from source SHA
 - APK SHA-256: `af83a5e0148263057b1c43e3b775157ab6aedd9d2c1e3ab0558cef8fa3cea665`
 - Package/version: `com.weekssa.opraeqforuapp`, `0.7.0` / code `7`
 - Pixel: Google Pixel 9, codename `tokay`, Android 17 / API 37
-- ADB target: `adb-46141FDAQ003KZ-3AwgSo._adb-tls-connect._tcp`
+- ADB target: `[Pixel TLS-connect alias redacted]`
 - JA11 identity: VID/PID `0x2972/0x0102`; Android USB host mode remained active
 - Evidence folder: `/tmp/opra-pixel-automated.ZRPv17/`
 
@@ -373,7 +373,7 @@ Apply, Save, Restore, or retry was invoked by this capture.
 Device and identity:
 
 - Pixel 9, codename `tokay`, Android API 37.
-- ADB serial: `adb-46141FDAQ003KZ-3AwgSo._adb-tls-connect._tcp`.
+- ADB serial: `[Pixel TLS-connect alias redacted]`.
 - Black Pearl: TTGK Technology / TE-C, VID `0x3302`, PID `0x43E8`, serial `330243E8260129`.
 - The first temporary-permission response did not grant a usable session and Android re-enumerated
   the DAC; one bounded second connection used the persistent permission choice. The successful
@@ -422,7 +422,7 @@ owner-directed recovery write followed.
 ### Diagnostic package and setup
 
 - Pixel: Google Pixel 9, codename `tokay`, API 37.
-- ADB serial: `adb-46141FDAQ003KZ-3AwgSo._adb-tls-connect._tcp`.
+- ADB serial: `[Pixel TLS-connect alias redacted]`.
 - Black Pearl: TTGK Technology / TE-C, VID `0x3302`, PID `0x43E8`, serial `330243E8260129`.
 - Temporary package: `com.weekssa.opraeqforuapp.bpwdiag`; it was built from the clean source head
   `01a968cac7a61f8cccd30cd26dfbce4c1fab7235` plus uncommitted debug-only instrumentation and was
@@ -575,7 +575,7 @@ current Black Pearl disposition. The tested candidate was the exact combined sig
 - Installed APK SHA-256: `50cee56aa59a8980a61bff42625fe9d839a28189068ba5adddd1a03530ea02d6`.
 - Package/version: `com.weekssa.opraeqforuapp`, `0.7.0` / code `7`; device API 37.
 - Pixel: Google Pixel 9, `tokay`, wireless ADB serial
-  `adb-46141FDAQ003KZ-3AwgSo._adb-tls-connect._tcp`.
+  `[Pixel TLS-connect alias redacted]`.
 - Signed candidate provenance: workflow `36368698803`, immutable APK artifact `10948632352`,
   digest `sha256:3e9fb31a814a8feb30ff0c48ac69a71cddd579e71b90401ddf34e491b8fc45ab`.
 
@@ -788,7 +788,7 @@ attempt. The exact candidate was installed and selected on the owner Pixel 9:
   `7fffba26f32991ce8c936f725bdc6c3c4b6956d3a0800c539b8d45e6b52a2501`.
 - Package/version: `com.weekssa.opraeqforuapp`, `0.7.0` / code `7`.
 - Pixel: Google Pixel 9, `tokay`, API 37, wireless ADB serial
-  `adb-46141FDAQ003KZ-3AwgSo._adb-tls-connect._tcp`.
+  `[Pixel TLS-connect alias redacted]`.
 - Candidate provenance: signed-beta workflow `36375994853`, immutable APK artifact ID
   `10950858857`, digest `sha256:b13ca6973a203529c2cf7ea3247bb83f46af17cc89ff9506e460f33488b543b1`.
 
@@ -828,7 +828,7 @@ Black Pearl volume. Candidate and device identity were rechecked before mutation
 - APK SHA-256: `7fffba26f32991ce8c936f725bdc6c3c4b6956d3a0800c539b8d45e6b52a2501`.
 - Package/version: `com.weekssa.opraeqforuapp`, `0.7.0` / code `7`.
 - Pixel: Google Pixel 9, `tokay`, API 37, wireless ADB serial
-  `adb-46141FDAQ003KZ-3AwgSo._adb-tls-connect._tcp`.
+  `[Pixel TLS-connect alias redacted]`.
 - Black Pearl identity: vendor `0x3302`, product `0x43E8`, manufacturer `TTGK Technology`,
   product `TE-C`, serial `330243E8260129`.
 - Signed-beta workflow `36375994853`; immutable APK artifact `10950858857`, digest

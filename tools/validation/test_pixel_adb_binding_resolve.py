@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import hashlib
+import io
+import json
 import struct
 import subprocess
 import sys
@@ -11,6 +13,7 @@ import tempfile
 import unittest
 import zlib
 from pathlib import Path
+from contextlib import redirect_stderr, redirect_stdout
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -18,7 +21,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import pixel_adb_binding as binding
 
 
-SERIAL = binding.EXPECTED_SERIAL
+SERIAL = "PIXELTESTSERIAL001"
+SERIAL_SHA256 = hashlib.sha256(SERIAL.encode("utf-8")).hexdigest()
 PIXEL_INSTANCE = f"adb-{SERIAL}-route"
 PIXEL_ALIAS = f"{PIXEL_INSTANCE}.{binding.TLS_CONNECT}"
 PIXEL_ENDPOINT = "192.168.50.24:33185"
@@ -163,7 +167,9 @@ class PixelAdbBindingResolveTest(unittest.TestCase):
         apk = output.parent / "local.apk"
         apk.write_bytes(APK_BYTES)
         digest = hashlib.sha256(APK_BYTES).hexdigest()
-        with patch.object(binding, "EXPECTED_APK_SHA256", digest), patch.object(binding, "run_command", side_effect=fake.run):
+        with patch.object(binding, "EXPECTED_APK_SHA256", digest), patch.object(
+            binding, "EXPECTED_SERIAL_SHA256", SERIAL_SHA256
+        ), patch.object(binding, "run_command", side_effect=fake.run):
             return binding.resolve("/fake/adb", output, apk)
 
     def test_already_online_pixel_alias_is_resolved_when_mdns_temporarily_has_no_rows(self):
@@ -175,7 +181,7 @@ class PixelAdbBindingResolveTest(unittest.TestCase):
             result = self.run_binding(fake, Path(temp) / "binding")
 
         self.assertEqual(result["target"], PIXEL_ALIAS)
-        self.assertEqual(result["target_source"], "current-serial-qualified-service-alias")
+        self.assertEqual(result["target_source"], "current-online-tls-connect-alias-unmapped-or-ambiguous-endpoint")
         self.assertIsNone(result["endpoint_last_resolved"])
         self.assertFalse(any(call and call[0] == "connect" for call in fake.calls))
         self.assertFalse(any(call and call[0] == "pair" for call in fake.calls))
@@ -212,7 +218,7 @@ class PixelAdbBindingResolveTest(unittest.TestCase):
             bound = self.run_binding(fake, output)
             self.assertEqual(bound["target"], PIXEL_ALIAS)
             self.assertEqual(bound["transport"], "wireless-adb-only")
-            self.assertEqual(bound["identity"]["serial"], SERIAL)
+            self.assertEqual(bound["identity"]["serial_sha256"], SERIAL_SHA256)
             self.assertEqual(bound["installed_apk"]["sha256"], hashlib.sha256(APK_BYTES).hexdigest())
             self.assertEqual(bound["phase_b_final_recheck"]["identity"], "SAME_PIXEL_STABLE_IDENTITY")
             self.assertEqual(bound["phase_b_final_recheck"]["installed_apk"]["sha256"], hashlib.sha256(APK_BYTES).hexdigest())
@@ -222,6 +228,66 @@ class PixelAdbBindingResolveTest(unittest.TestCase):
             log = (output / "binding.log").read_text()
             self.assertNotIn("private log line", log)
             self.assertNotIn("com.android.launcher", log)
+            self.assertNotIn(PIXEL_ALIAS, log)
+            self.assertNotIn(PIXEL_ENDPOINT, log)
+            self.assertIn("target-sha256=", log)
+            # The ignored private binding is the scoped record that may carry
+            # the ephemeral ADB target needed by the immediately following phase.
+            self.assertEqual(bound["target"], PIXEL_ALIAS)
+
+    def test_cli_failure_diagnostics_do_not_echo_raw_target_or_endpoint(self):
+        secret_error = f"target={PIXEL_ALIAS} endpoint={PIXEL_ENDPOINT}"
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as temp:
+            with patch.object(binding, "resolve", side_effect=binding.ResolutionError(secret_error)):
+                with redirect_stdout(stdout), redirect_stderr(stderr):
+                    result = binding.main([
+                        "--adb", "/fake/adb",
+                        "--output", str(Path(temp) / "binding"),
+                        "--apk", str(Path(temp) / "app.apk"),
+                    ])
+
+        combined = stdout.getvalue() + stderr.getvalue()
+        self.assertEqual(result, 2)
+        self.assertNotIn(PIXEL_ALIAS, combined)
+        self.assertNotIn(PIXEL_ENDPOINT, combined)
+        self.assertIn("PIXEL_BINDING_NOT_PASS", combined)
+
+    def test_cli_success_summary_omits_raw_target_endpoint_and_serial(self):
+        fake = FakeAdb(
+            mdns(f"{PIXEL_INSTANCE} {binding.TLS_CONNECT} {PIXEL_ENDPOINT}"),
+            [devices(f"{PIXEL_ALIAS} device product:tokay model:Pixel_9 transport_id:4")],
+        )
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as temp:
+            output = Path(temp) / "binding"
+            apk = Path(temp) / "local.apk"
+            apk.write_bytes(APK_BYTES)
+            digest = hashlib.sha256(APK_BYTES).hexdigest()
+            with patch.object(binding, "EXPECTED_APK_SHA256", digest), patch.object(
+                binding, "EXPECTED_SERIAL_SHA256", SERIAL_SHA256
+            ), patch.object(binding, "run_command", side_effect=fake.run), redirect_stdout(stdout), redirect_stderr(stderr):
+                result = binding.main([
+                    "--adb", "/fake/adb",
+                    "--output", str(output),
+                    "--apk", str(apk),
+                ])
+
+            combined = stdout.getvalue() + stderr.getvalue()
+            self.assertEqual(result, 0)
+            self.assertNotIn(PIXEL_ALIAS, combined)
+            self.assertNotIn(PIXEL_ENDPOINT, combined)
+            self.assertNotIn(SERIAL, combined)
+            summary = json.loads(stdout.getvalue())
+            self.assertEqual(summary["result"], "PASS")
+            self.assertEqual(summary["target_sha256"], hashlib.sha256(PIXEL_ALIAS.encode()).hexdigest())
+            self.assertEqual(summary["stable_identity"]["serial_sha256"], SERIAL_SHA256)
+            log = (output / "binding.log").read_text()
+            self.assertNotIn(PIXEL_ALIAS, log)
+            self.assertNotIn(PIXEL_ENDPOINT, log)
+            self.assertNotIn(SERIAL, log)
 
     def test_connects_only_current_pixel_tls_service_when_binding_is_needed(self):
         fake = FakeAdb(
@@ -251,18 +317,15 @@ class PixelAdbBindingResolveTest(unittest.TestCase):
                 f"{PIXEL_INSTANCE} {binding.TLS_CONNECT} {PIXEL_ENDPOINT}",
                 f"{second_instance} {binding.TLS_CONNECT} {second_endpoint}",
             ),
-            [
-                devices("emulator-5556 device product:sdk_gphone64_arm64 model:sdk_gphone64_arm64"),
-                devices(
-                    f"{PIXEL_ALIAS} device product:tokay model:Pixel_9 transport_id:7",
-                    f"{second_alias} device product:tokay model:Pixel_9 transport_id:8",
-                ),
-            ],
+            [devices(
+                f"{PIXEL_ALIAS} device product:tokay model:Pixel_9 transport_id:7",
+                f"{second_alias} device product:tokay model:Pixel_9 transport_id:8",
+            )],
         )
         with tempfile.TemporaryDirectory() as temp:
             bound = self.run_binding(fake, Path(temp) / "binding")
             self.assertEqual(bound["target"], min(PIXEL_ALIAS, second_alias))
-            self.assertEqual(set(call[1] for call in fake.calls if call and call[0] == "connect"), {PIXEL_ENDPOINT})
+            self.assertEqual(set(call[1] for call in fake.calls if call and call[0] == "connect"), set())
             self.assertFalse(any(call and call[0] == "disconnect" for call in fake.calls))
 
     def test_duplicate_service_alias_with_different_endpoints_uses_live_alias_without_guessing(self):
@@ -278,7 +341,7 @@ class PixelAdbBindingResolveTest(unittest.TestCase):
             bound = self.run_binding(fake, output)
             self.assertEqual(bound["target"], PIXEL_ALIAS)
             self.assertIsNone(bound["endpoint_last_resolved"])
-            self.assertEqual(bound["target_source"], "current-serial-qualified-service-alias-ambiguous-endpoint")
+            self.assertEqual(bound["target_source"], "current-online-tls-connect-alias-unmapped-or-ambiguous-endpoint")
             self.assertFalse(any(call and call[0] in {"connect", "disconnect", "pair"} for call in fake.calls))
 
     def test_detaches_new_nonpixel_route_when_pixel_is_seen_in_same_refreshed_snapshot(self):
@@ -318,7 +381,7 @@ class PixelAdbBindingResolveTest(unittest.TestCase):
             source="test",
             endpoint=PIXEL_ENDPOINT,
             service_instance=PIXEL_INSTANCE,
-            serial=SERIAL,
+            serial_sha256=SERIAL_SHA256,
             model=binding.EXPECTED_MODEL,
             product=binding.EXPECTED_PRODUCT,
             sdk="37",
@@ -330,7 +393,7 @@ class PixelAdbBindingResolveTest(unittest.TestCase):
             source="phase-b-final-recheck",
             endpoint=target.endpoint,
             service_instance=target.service_instance,
-            serial=target.serial,
+            serial_sha256=target.serial_sha256,
             model=target.model,
             product=target.product,
             sdk=target.sdk,
@@ -350,7 +413,7 @@ class PixelAdbBindingResolveTest(unittest.TestCase):
             source="test",
             endpoint=PIXEL_ENDPOINT,
             service_instance=PIXEL_INSTANCE,
-            serial=SERIAL,
+            serial_sha256=SERIAL_SHA256,
             model=binding.EXPECTED_MODEL,
             product=binding.EXPECTED_PRODUCT,
             sdk="37",
@@ -362,7 +425,7 @@ class PixelAdbBindingResolveTest(unittest.TestCase):
             source="phase-b-final-recheck",
             endpoint=target.endpoint,
             service_instance=target.service_instance,
-            serial=target.serial,
+            serial_sha256=target.serial_sha256,
             model=target.model,
             product=target.product,
             sdk=target.sdk,
@@ -397,7 +460,7 @@ class PixelAdbBindingResolveTest(unittest.TestCase):
             output = Path(temp) / "binding"
             bound = self.run_binding(fake, output)
             self.assertEqual(bound["target"], PIXEL_ENDPOINT)
-            self.assertEqual(bound["identity"]["serial"], SERIAL)
+            self.assertEqual(bound["identity"]["serial_sha256"], SERIAL_SHA256)
             connects = {call[1] for call in fake.calls if call and call[0] == "connect"}
             disconnects = {call[1] for call in fake.calls if call and call[0] == "disconnect"}
             self.assertEqual(connects, {PIXEL_ENDPOINT})
@@ -465,6 +528,41 @@ class PixelAdbBindingResolveTest(unittest.TestCase):
             self.assertEqual(bound["target"], pixel_endpoint)
             self.assertEqual(bound["adb_connect_created_nonpixel_routes_detached"], [nonpixel_endpoint])
             self.assertEqual(bound["adb_connect_created_pixel_route_left_bound"], [pixel_endpoint])
+
+    def test_serial_looking_nonpixel_service_does_not_hide_generic_pixel_service(self):
+        prefixed_nonpixel_endpoint = "192.168.50.21:44771"
+        generic_pixel_endpoint = "192.168.50.24:33185"
+        services = mdns(
+            f"{PIXEL_INSTANCE} {binding.TLS_CONNECT} {prefixed_nonpixel_endpoint}",
+            f"adb-current-route {binding.TLS_CONNECT} {generic_pixel_endpoint}",
+        )
+        fake = FakeAdb(
+            services,
+            [
+                devices("emulator-5556 device product:sdk_gphone64_arm64 model:sdk_gphone64_arm64"),
+                devices(f"{prefixed_nonpixel_endpoint} device transport_id:8"),
+                devices(f"{generic_pixel_endpoint} device transport_id:9"),
+            ],
+            identities={prefixed_nonpixel_endpoint: {
+                "serial": "OTHER-ANDROID-001",
+                "model": "Other Phone",
+                "product": "other",
+                "sdk": "36",
+                "fingerprint": "vendor/other/other:16/build:keys",
+            }},
+        )
+
+        with tempfile.TemporaryDirectory() as temp:
+            bound = self.run_binding(fake, Path(temp) / "binding")
+
+        connects = [call[1] for call in fake.calls if call and call[0] == "connect"]
+        disconnects = [call[1] for call in fake.calls if call and call[0] == "disconnect"]
+        self.assertEqual(connects, [prefixed_nonpixel_endpoint, generic_pixel_endpoint])
+        self.assertEqual(disconnects, [prefixed_nonpixel_endpoint])
+        self.assertEqual(bound["target"], generic_pixel_endpoint)
+        self.assertEqual(bound["identity"]["serial_sha256"], SERIAL_SHA256)
+        self.assertEqual(bound["adb_connect_created_nonpixel_routes_detached"], [prefixed_nonpixel_endpoint])
+        self.assertEqual(bound["adb_connect_created_pixel_route_left_bound"], [generic_pixel_endpoint])
 
     def test_boot_id_disagreement_keeps_multiple_matching_pixels_ambiguous(self):
         second_instance = f"adb-{SERIAL}-route-b"

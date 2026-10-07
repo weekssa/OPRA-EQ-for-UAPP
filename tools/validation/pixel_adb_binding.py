@@ -26,14 +26,21 @@ from typing import Iterable
 from app_activity_checkpoint import ActivityCheckpointError, extract_activity
 
 
-EXPECTED_SERIAL = "46141FDAQ003KZ"
+EXPECTED_SERIAL_SHA256 = "c921897d26153147627f65dd81c921fdddcd94c9757ac12f5b1b33ab4873fef6"
 EXPECTED_MODEL = "Pixel 9"
 EXPECTED_PRODUCT = "tokay"
 PACKAGE = "com.weekssa.opraeqforuapp"
 EXPECTED_APK_SHA256 = "f33818309d55571166d91e501065706ddbb8faf180833b03bb6eb948e6bffed1"
 TLS_CONNECT = "_adb-tls-connect._tcp"
 TLS_PAIRING = "_adb-tls-pairing._tcp"
-SERVICE_PREFIX = f"adb-{EXPECTED_SERIAL}-"
+
+
+def sha256_text(value: str) -> str:
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def target_reference(value: str) -> str:
+    return f"target-sha256={sha256_text(value)}"
 
 
 class ResolutionError(RuntimeError):
@@ -64,7 +71,7 @@ class Identity:
     source: str
     endpoint: str | None
     service_instance: str | None
-    serial: str
+    serial_sha256: str
     model: str
     product: str
     sdk: str
@@ -114,32 +121,35 @@ def parse_mdns_services(text: str) -> tuple[list[Service], int, int]:
             continue
         if fields[0].lower().startswith("list"):
             continue
+        if len(fields) >= 2 and fields[1] == TLS_PAIRING:
+            pairing_count += 1
+            continue
         if len(fields) < 3:
             if any(TLS_CONNECT in field or TLS_PAIRING in field for field in fields):
-                raise ResolutionError(f"malformed mDNS service row: {raw}")
+                if TLS_PAIRING in fields:
+                    pairing_count += 1
+                    continue
+                raise ResolutionError("malformed TLS-connect mDNS service row")
             other_count += 1
             continue
         instance, service_type, endpoint = fields[:3]
-        if service_type == TLS_PAIRING:
-            pairing_count += 1
-            continue
         if service_type != TLS_CONNECT:
             # The official `adb mdns services` output is instance, service
             # type, endpoint. Also tolerate a fully qualified instance in the
             # first column, but normalize it before building ADB row aliases.
             if TLS_CONNECT in service_type or TLS_PAIRING in service_type:
-                raise ResolutionError(f"unexpected mDNS service type column: {service_type}")
+                raise ResolutionError("unexpected mDNS service type column")
             other_count += 1
             continue
         if len(fields) != 3:
-            raise ResolutionError(f"malformed TLS-connect mDNS row: {raw}")
+            raise ResolutionError("malformed TLS-connect mDNS row")
         full_suffix = f".{TLS_CONNECT}"
         if instance.endswith(full_suffix):
             instance = instance[: -len(full_suffix)]
         if not instance or any(ch.isspace() for ch in instance):
-            raise ResolutionError(f"unexpected TLS-connect service instance: {instance!r}")
+            raise ResolutionError("unexpected TLS-connect service instance")
         if not valid_endpoint(endpoint):
-            raise ResolutionError(f"invalid current IP/port endpoint: {endpoint}")
+            raise ResolutionError("invalid current IP/port endpoint")
         services.append(Service(instance, TLS_CONNECT, endpoint))
     # Exact duplicate rows carry no additional target information. Collapse
     # them while retaining distinct services, including services that share an
@@ -165,11 +175,29 @@ def parse_devices(text: str) -> list[DeviceRow]:
     return rows
 
 
+def service_serial_token(value: str) -> str | None:
+    """Return a serial token only from an ADB TLS-connect service alias."""
+    suffix = f".{TLS_CONNECT}"
+    if not value.endswith(suffix):
+        return None
+    instance = value[: -len(suffix)]
+    if not instance.startswith("adb-") or any(ch.isspace() for ch in instance):
+        return None
+    remainder = instance[4:]
+    token, separator, route = remainder.partition("-")
+    if not separator or not token or not route:
+        return None
+    return token
+
+
+def is_tls_connect_service_alias(value: object) -> bool:
+    suffix = f".{TLS_CONNECT}"
+    return isinstance(value, str) and value.endswith(suffix) and not any(ch.isspace() for ch in value)
+
+
 def is_pixel_service_alias(value: str) -> bool:
-    if not value.startswith(SERVICE_PREFIX) or not value.endswith(TLS_CONNECT):
-        return False
-    suffix = value[len(SERVICE_PREFIX) : -len(TLS_CONNECT)].removesuffix(".")
-    return bool(suffix and not any(ch.isspace() for ch in suffix))
+    token = service_serial_token(value)
+    return token is not None and hashlib.sha256(token.encode("utf-8")).hexdigest() == EXPECTED_SERIAL_SHA256
 
 
 def normalize_model(value: str) -> str:
@@ -188,7 +216,7 @@ def run_command(argv: list[str]) -> subprocess.CompletedProcess[bytes]:
     try:
         return subprocess.run(argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False, timeout=60)
     except subprocess.TimeoutExpired as exc:
-        raise ResolutionError(f"ADB command did not complete within the per-command 60-second transport bound: {argv[1:]}") from exc
+        raise ResolutionError("ADB command did not complete within the per-command 60-second transport bound") from exc
 
 
 def text_of(result: subprocess.CompletedProcess[bytes]) -> str:
@@ -308,7 +336,9 @@ def require_success(label: str, result: subprocess.CompletedProcess[bytes]) -> s
     output = text_of(result)
     if result.returncode != 0:
         err = result.stderr.decode("utf-8", errors="replace").replace("\r", "").strip()
-        raise ResolutionError(f"{label} failed with exit {result.returncode}: {err or output}")
+        raise ResolutionError(
+            f"{label} failed with exit {result.returncode}; stdout_present={bool(output)}; stderr_present={bool(err)}"
+        )
     return output
 
 
@@ -317,14 +347,15 @@ def adb_call(adb: str, *args: str) -> subprocess.CompletedProcess[bytes]:
 
 
 def identity_for(adb: str, target: str, source: str, endpoint: str | None, instance: str | None) -> Identity:
-    state = require_success(f"get-state for {target}", adb_call(adb, "-s", target, "get-state"))
+    target_ref = target_reference(target)
+    state = require_success(f"get-state {target_ref}", adb_call(adb, "-s", target, "get-state"))
     if state != "device":
-        raise ResolutionError(f"candidate {target} is not online (get-state={state!r})")
+        raise ResolutionError(f"candidate {target_ref} is not online (get-state={state!r})")
 
     def prop(key: str) -> str:
-        value = require_success(f"{key} for {target}", adb_call(adb, "-s", target, "shell", "getprop", key))
+        value = require_success(f"{key} {target_ref}", adb_call(adb, "-s", target, "shell", "getprop", key))
         if not value or "\n" in value:
-            raise ResolutionError(f"{key} was empty or non-scalar for {target}")
+            raise ResolutionError(f"{key} was empty or non-scalar for {target_ref}")
         return value
 
     boot_result = adb_call(adb, "-s", target, "shell", "cat", "/proc/sys/kernel/random/boot_id")
@@ -336,7 +367,7 @@ def identity_for(adb: str, target: str, source: str, endpoint: str | None, insta
         source=source,
         endpoint=endpoint,
         service_instance=instance,
-        serial=prop("ro.serialno"),
+        serial_sha256=hashlib.sha256(prop("ro.serialno").encode("utf-8")).hexdigest(),
         model=prop("ro.product.model"),
         product=prop("ro.product.device"),
         sdk=prop("ro.build.version.sdk"),
@@ -346,7 +377,7 @@ def identity_for(adb: str, target: str, source: str, endpoint: str | None, insta
 
 
 def canonical_target(identities: list[Identity]) -> Identity | None:
-    matches = [i for i in identities if i.serial == EXPECTED_SERIAL]
+    matches = [i for i in identities if i.serial_sha256 == EXPECTED_SERIAL_SHA256]
     for identity in matches:
         if normalize_model(identity.model) != EXPECTED_MODEL or identity.product != EXPECTED_PRODUCT:
             raise ResolutionError(
@@ -354,6 +385,8 @@ def canonical_target(identities: list[Identity]) -> Identity | None:
             )
         if not identity.sdk.isdigit() or int(identity.sdk) < 35:
             raise ResolutionError(f"unexpected Android SDK for Pixel 9: {identity.sdk!r}")
+        if not identity.fingerprint.startswith("google/tokay/tokay:"):
+            raise ResolutionError("stable serial matched but the Android fingerprint is outside the recorded Pixel 9 profile")
         if identity.route_boot_id and not valid_boot_id(identity.route_boot_id):
             raise ResolutionError("a current Pixel route returned a malformed Android boot ID")
     if not matches:
@@ -361,7 +394,7 @@ def canonical_target(identities: list[Identity]) -> Identity | None:
 
     # Multiple current routes can still identify one Pixel. They are safe to
     # collapse only when every stable Android identity field agrees exactly.
-    stable_profiles = {(i.serial, i.model, i.product, i.sdk, i.fingerprint) for i in matches}
+    stable_profiles = {(i.serial_sha256, i.model, i.product, i.sdk, i.fingerprint) for i in matches}
     if len(stable_profiles) > 1:
         raise ResolutionError(
             "current wireless routes with the expected serial disagree on stable Android identity"
@@ -395,7 +428,7 @@ def disconnect_new_routes(adb: str, endpoints: Iterable[str], log: Path) -> list
         ok = result.returncode == 0 and output.startswith("disconnected ")
         append_log(
             log,
-            f"{datetime.now(timezone.utc).isoformat(timespec='seconds')} disconnect-probed-unrelated-endpoint endpoint={endpoint} exit={result.returncode} success={ok} stderr_present={bool(stderr)}",
+            f"{datetime.now(timezone.utc).isoformat(timespec='seconds')} disconnect-new-adb-route endpoint_sha256={sha256_text(endpoint)} exit={result.returncode} success={ok} stderr_present={bool(stderr)}",
         )
         if not ok:
             failures.append(endpoint)
@@ -407,10 +440,16 @@ def invoke_logged(adb: str, args: list[str], label: str, log: Path, *, redact_ou
     result = adb_call(adb, *args)
     output = text_of(result)
     stderr = result.stderr.decode("utf-8", errors="replace").replace("\r", "").strip()
-    shown = "<redacted>" if redact_output else output
-    append_log(log, f"{started} {label} argv={json.dumps(args)} exit={result.returncode} stdout={json.dumps(shown)} stderr={json.dumps(stderr)}")
+    target = args[args.index("-s") + 1] if "-s" in args and args.index("-s") + 1 < len(args) else None
+    target_log = f" {target_reference(target)}" if target else ""
+    append_log(
+        log,
+        f"{started} {label}{target_log} exit={result.returncode} stdout_bytes={len(result.stdout)} stderr_present={bool(stderr)}",
+    )
     if result.returncode != 0:
-        raise ResolutionError(f"{label} failed with exit {result.returncode}: {stderr or output}")
+        raise ResolutionError(
+            f"{label} failed with exit {result.returncode}; stdout_present={bool(output)}; stderr_present={bool(stderr)}"
+        )
     return output
 
 
@@ -418,11 +457,11 @@ def record_service_snapshot(adb: str, log: Path) -> list[Service]:
     result = adb_call(adb, "mdns", "services")
     output = require_success("mdns services", result)
     services, pairing_count, other_count = parse_mdns_services(output)
-    pixel_services = [service for service in services if service.instance.startswith(SERVICE_PREFIX)]
+    pixel_services = [service for service in services if is_pixel_service_alias(service.adb_transport_alias)]
     other_connect_count = len(services) - len(pixel_services)
     append_log(log, f"{datetime.now(timezone.utc).isoformat(timespec='seconds')} mdns-summary connect_count={len(services)} pairing_ignored={pairing_count} other_ignored={other_count} nonpixel_connect_count={other_connect_count}")
-    for service in pixel_services:
-        append_log(log, f"current-connect-service alias={service.adb_transport_alias} endpoint={service.endpoint}")
+    if pixel_services:
+        append_log(log, f"current-connect-service pixel_alias_count={len(pixel_services)} route_metadata=omitted")
     return services
 
 
@@ -432,13 +471,15 @@ def devices_snapshot(adb: str, label: str, services: list[Service], log: Path) -
     rows = parse_devices(output)
     pixel_aliases = [row for row in rows if is_pixel_service_alias(row.serial)]
     current_endpoints = {service.endpoint for service in services}
-    pixel_endpoint_rows = [row for row in rows if row.serial in current_endpoints and any(s.endpoint == row.serial and s.instance.startswith(SERVICE_PREFIX) for s in services)]
-    usb_pixel_present = any(row.serial == EXPECTED_SERIAL for row in rows)
+    pixel_endpoint_rows = [row for row in rows if row.serial in current_endpoints and any(s.endpoint == row.serial and is_pixel_service_alias(s.adb_transport_alias) for s in services)]
+    usb_pixel_present = any(hashlib.sha256(row.serial.encode("utf-8")).hexdigest() == EXPECTED_SERIAL_SHA256 for row in rows)
     append_log(log, f"{datetime.now(timezone.utc).isoformat(timespec='seconds')} {label} summary row_count={len(rows)} online_count={sum(row.state == 'device' for row in rows)} pixel_service_aliases={len(pixel_aliases)} pixel_endpoint_rows={len(pixel_endpoint_rows)} expected_serial_usb_row={'present' if usb_pixel_present else 'absent'} emulator_rows={sum(row.serial.startswith('emulator-') for row in rows)}")
     for row in pixel_aliases:
-        append_log(log, f"pixel-service-alias state={row.state} serial={row.serial}")
+        alias_hash = hashlib.sha256(row.serial.encode("utf-8")).hexdigest()
+        append_log(log, f"pixel-service-alias state={row.state} alias_sha256={alias_hash}")
     for row in pixel_endpoint_rows:
-        append_log(log, f"pixel-current-endpoint state={row.state} endpoint={row.serial}")
+        target_hash = hashlib.sha256(row.serial.encode("utf-8")).hexdigest()
+        append_log(log, f"pixel-current-endpoint state={row.state} target_sha256={target_hash}")
     return rows
 
 
@@ -451,7 +492,7 @@ def collect_identity_candidates(adb: str, rows: list[DeviceRow], services: list[
     target_states: list[DeviceRow] = []
     seen: set[tuple[str, str | None]] = set()
     for row in rows:
-        if row.serial == EXPECTED_SERIAL:
+        if hashlib.sha256(row.serial.encode("utf-8")).hexdigest() == EXPECTED_SERIAL_SHA256:
             raise ResolutionError("the Pixel serial is listed as a non-Wi-Fi ADB serial; USB ADB is not allowed")
         endpoint = row.serial if valid_endpoint(row.serial) else None
         mapped = by_endpoint.get(endpoint, []) if endpoint else []
@@ -464,21 +505,23 @@ def collect_identity_candidates(adb: str, rows: list[DeviceRow], services: list[
             # identity candidate even when its instance name is ambiguous. If
             # several current services share the endpoint, query that transport
             # once and use the returned Android identity as authority.
-            service = sorted(mapped, key=lambda item: (not item.instance.startswith(SERVICE_PREFIX), item.instance))[0]
+            service = sorted(mapped, key=lambda item: (not is_pixel_service_alias(item.adb_transport_alias), item.instance))[0]
             source = "current-mdns-endpoint-map"
             instance = service.adb_transport_alias
-        elif is_pixel_service_alias(row.serial):
-            # An already-online serial-qualified TLS-connect alias is itself a
-            # current ADB transport, not a remembered host:port endpoint.
+        elif is_tls_connect_service_alias(row.serial):
+            # An already-online TLS-connect alias is itself a
+            # current ADB transport, not a remembered host:port endpoint. Its
+            # service name is only a candidate; stable Android identity below
+            # remains authoritative even when mDNS currently has no row.
             matching_services = [service for service in services if service.adb_transport_alias == row.serial]
             distinct_endpoints = {service.endpoint for service in matching_services}
-            if len(distinct_endpoints) > 1:
+            if not matching_services or len(distinct_endpoints) > 1:
                 # Query the exact already-online alias and retain no guessed
                 # endpoint when service discovery duplicates its name.
                 endpoint = None
-                source = "current-serial-qualified-service-alias-ambiguous-endpoint"
+                source = "current-online-tls-connect-alias-unmapped-or-ambiguous-endpoint"
             else:
-                source = "current-serial-qualified-service-alias"
+                source = "current-online-tls-connect-alias"
             instance = row.serial
             if len(distinct_endpoints) == 1:
                 endpoint = next(iter(distinct_endpoints))
@@ -500,7 +543,7 @@ def collect_identity_candidates(adb: str, rows: list[DeviceRow], services: list[
         else:
             continue  # emulator and unrelated USB/TCP serials are ignored
         if row.state != "device":
-            if is_pixel_service_alias(row.serial) or (endpoint and any(s.instance.startswith(SERVICE_PREFIX) for s in by_endpoint.get(endpoint, []))):
+            if is_pixel_service_alias(row.serial) or (endpoint and any(is_pixel_service_alias(s.adb_transport_alias) for s in by_endpoint.get(endpoint, []))):
                 target_states.append(row)
             continue
         key = (row.serial, endpoint)
@@ -516,22 +559,23 @@ def online_represents_endpoint(endpoint: str, rows: list[DeviceRow], services: l
     return any(row.state == "device" and row.serial in aliases | {endpoint} for row in rows)
 
 
-def pixel_endpoints_to_probe(services: list[Service], rows: list[DeviceRow], candidate_pixel: Identity | None) -> list[str]:
-    # A live Android identity already bound the target. Do not create another
-    # route just to inspect additional service advertisements.
-    if candidate_pixel is not None:
-        return []
-    pixel_services = [service for service in services if service.instance.startswith(SERVICE_PREFIX)]
-    # Prefer strongly serial-qualified Pixel services when advertised. If the
-    # mDNS names do not identify the Pixel, inspect every current TLS-connect
-    # endpoint read-only rather than rejecting the session on name ambiguity.
-    candidates = pixel_services if pixel_services else services
-    endpoints = sorted({service.endpoint for service in candidates})
-    if not endpoints:
-        return []
-    # Every online current service was already queried above. Probe only
-    # current advertised endpoints that do not already have an online row.
-    return [endpoint for endpoint in endpoints if not online_represents_endpoint(endpoint, rows, services)]
+def pixel_endpoints_to_probe(services: list[Service], rows: list[DeviceRow]) -> list[str]:
+    """Return every unrepresented current TLS-connect endpoint in stable order.
+
+    A matching-looking mDNS name is only a probe-order hint. It never excludes
+    generic names or substitutes for a read-only Android identity query.
+    """
+    by_endpoint: dict[str, list[Service]] = {}
+    for service in services:
+        by_endpoint.setdefault(service.endpoint, []).append(service)
+    endpoints = [endpoint for endpoint in by_endpoint if not online_represents_endpoint(endpoint, rows, services)]
+    return sorted(
+        endpoints,
+        key=lambda endpoint: (
+            not any(is_pixel_service_alias(service.adb_transport_alias) for service in by_endpoint[endpoint]),
+            endpoint,
+        ),
+    )
 
 
 def capture_installed_apk(
@@ -565,7 +609,9 @@ def verify_capture_paths(adb: str, target: str, log: Path) -> dict[str, str]:
     screenshot = adb_call(adb, "-s", target, "exec-out", "screencap", "-p")
     if screenshot.returncode != 0 or not valid_png_stream(screenshot.stdout):
         err = screenshot.stderr.decode("utf-8", errors="replace").strip()
-        raise ResolutionError(f"screenshot stream did not return a PNG (exit {screenshot.returncode}): {err}")
+        raise ResolutionError(
+            f"screenshot stream did not return a PNG (exit {screenshot.returncode}; stderr_present={bool(err)})"
+        )
     append_log(log, f"{datetime.now(timezone.utc).isoformat(timespec='seconds')} screenshot-stream=PASS bytes={len(screenshot.stdout)} stored=no")
 
     # Read only one log line and discard it so unrelated app/personal logs are
@@ -573,7 +619,7 @@ def verify_capture_paths(adb: str, target: str, log: Path) -> dict[str, str]:
     logs = adb_call(adb, "-s", target, "logcat", "-d", "-t", "1")
     if logs.returncode != 0:
         err = logs.stderr.decode("utf-8", errors="replace").strip()
-        raise ResolutionError(f"bounded logcat probe failed (exit {logs.returncode}): {err}")
+        raise ResolutionError(f"bounded logcat probe failed (exit {logs.returncode}; stderr_present={bool(err)})")
     append_log(log, f"{datetime.now(timezone.utc).isoformat(timespec='seconds')} logcat-probe=PASS lines=discarded bytes={len(logs.stdout)}")
     return {"shell": "PASS", "screenshot_stream": "PASS_NOT_STORED", "bounded_logcat_probe": "PASS_OUTPUT_DISCARDED"}
 
@@ -610,8 +656,8 @@ def verify_phase_b_final(
 ) -> dict[str, object]:
     """Recheck the same target and clean app/capture state before sealing binding."""
     current = identity_for(adb, target.target, "phase-b-final-recheck", target.endpoint, target.service_instance)
-    stable_before = (target.serial, target.model, target.product, target.sdk, target.fingerprint)
-    stable_now = (current.serial, current.model, current.product, current.sdk, current.fingerprint)
+    stable_before = (target.serial_sha256, target.model, target.product, target.sdk, target.fingerprint)
+    stable_now = (current.serial_sha256, current.model, current.product, current.sdk, current.fingerprint)
     if stable_now != stable_before:
         raise ResolutionError("the final Android identity no longer matches the Pixel identity resolved earlier in Phase B")
     if target.route_boot_id:
@@ -651,16 +697,19 @@ def resolve(adb: str, output: Path, apk_path: Path) -> dict[str, object]:
     first_rows = devices_snapshot(adb, "devices-initial", mdns_services, log)
     identities, blocked = collect_identity_candidates(adb, first_rows, mdns_services, log)
     if blocked:
-        blocked_summary = ", ".join(f"{r.serial}:{r.state}" for r in blocked)
-        raise ResolutionError(f"a current Pixel-qualified ADB row is not online: {blocked_summary}")
+        blocked_states = ",".join(sorted({r.state for r in blocked}))
+        raise ResolutionError(f"a current Pixel-qualified ADB row is not online; blocked_rows={len(blocked)} states={blocked_states}")
 
     candidate_pixel = canonical_target(identities)
 
-    # Probe current TLS-connect services only when no online Android identity
-    # has bound the Pixel. Prefer a serial-qualified service; otherwise the
-    # owner-directed Phase B requires read-only identity queries across current
-    # advertised endpoints because service-name attribution is not sufficient.
-    endpoints_to_probe = pixel_endpoints_to_probe(mdns_services, first_rows, candidate_pixel)
+    # Probe current connect endpoints only while the expected Pixel identity
+    # is still unresolved. Service names determine probe order, never identity;
+    # once the stable Pixel serial/model/product/build tuple is verified, extra
+    # advertised routes cannot improve the target binding and would create
+    # unnecessary ADB transports on the owner's phone.
+    endpoints_to_probe = (
+        [] if candidate_pixel is not None else pixel_endpoints_to_probe(mdns_services, first_rows)
+    )
 
     connect_attempted: list[str] = []
     connected_here: set[str] = set()
@@ -675,21 +724,21 @@ def resolve(adb: str, output: Path, apk_path: Path) -> dict[str, object]:
                 # The ADB server may have completed a connection after the
                 # client timed out. Query the current device list before
                 # deciding whether any cleanup is safe.
-                connect_error = str(exc)
-                append_log(log, f"{datetime.now(timezone.utc).isoformat(timespec='seconds')} connect-current-tls-endpoint endpoint={endpoint} outcome=command-error detail={json.dumps(connect_error)}")
+                connect_error = "command-error"
+                append_log(log, f"{datetime.now(timezone.utc).isoformat(timespec='seconds')} connect-current-tls-endpoint endpoint_sha256={sha256_text(endpoint)} outcome=command-error")
             else:
                 out = text_of(result)
                 err = result.stderr.decode("utf-8", errors="replace").strip()
                 response = "connected" if out.startswith("connected to ") else "already-connected" if out.startswith("already connected to ") else "not-connected"
                 if result.returncode == 0 and response == "connected":
                     connected_here.add(endpoint)
-                append_log(log, f"{datetime.now(timezone.utc).isoformat(timespec='seconds')} connect-current-tls-endpoint endpoint={endpoint} exit={result.returncode} response={response} stderr_present={bool(err)}")
+                append_log(log, f"{datetime.now(timezone.utc).isoformat(timespec='seconds')} connect-current-tls-endpoint endpoint_sha256={sha256_text(endpoint)} exit={result.returncode} response={response} stderr_present={bool(err)}")
 
             refreshed_rows = devices_snapshot(adb, f"devices-after-current-mdns-connect-{len(connect_attempted)}", mdns_services, log)
             new_identities, blocked = collect_identity_candidates(adb, refreshed_rows, mdns_services, log)
             if blocked:
-                blocked_summary = ", ".join(f"{r.serial}:{r.state}" for r in blocked)
-                raise ResolutionError(f"a current Pixel-qualified ADB row is not online: {blocked_summary}")
+                blocked_states = ",".join(sorted({r.state for r in blocked}))
+                raise ResolutionError(f"a current Pixel-qualified ADB row is not online; blocked_rows={len(blocked)} states={blocked_states}")
             identities.extend(new_identities)
             candidate_pixel = canonical_target(identities)
             if candidate_pixel is not None:
@@ -697,42 +746,46 @@ def resolve(adb: str, output: Path, apk_path: Path) -> dict[str, object]:
                     endpoint_identities = [identity for identity in new_identities if identity.endpoint == endpoint]
                     if not endpoint_identities:
                         raise ResolutionError(
-                            f"newly opened current ADB route {endpoint} returned no read-only Android identity; preserving it and stopping Phase B"
+                            "newly opened current ADB route returned no read-only Android identity; preserving it and stopping Phase B"
                         )
                     endpoint_profiles = {
-                        (identity.serial, identity.model, identity.product, identity.sdk, identity.fingerprint)
+                        (identity.serial_sha256, identity.model, identity.product, identity.sdk, identity.fingerprint)
                         for identity in endpoint_identities
                     }
                     if len(endpoint_profiles) != 1:
                         raise ResolutionError(
-                            f"newly opened current ADB route {endpoint} returned conflicting Android identities; preserving it and stopping Phase B"
+                            "newly opened current ADB route returned conflicting Android identities; preserving it and stopping Phase B"
                         )
-                    if all(identity.serial != EXPECTED_SERIAL for identity in endpoint_identities):
+                    if all(identity.serial_sha256 != EXPECTED_SERIAL_SHA256 for identity in endpoint_identities):
                         failures = disconnect_new_routes(adb, [endpoint], log)
                         if failures:
                             raise ResolutionError(
-                                f"newly opened endpoint {endpoint} was positively identified as non-Pixel but could not be detached"
+                                "a newly opened endpoint was positively identified as non-Pixel but could not be detached"
                             )
                         connected_here.remove(endpoint)
                         detached_routes.add(endpoint)
-                    elif any(identity.serial != EXPECTED_SERIAL for identity in endpoint_identities):
+                    elif any(identity.serial_sha256 != EXPECTED_SERIAL_SHA256 for identity in endpoint_identities):
                         raise ResolutionError(
-                            f"newly opened current ADB route {endpoint} returned mixed Pixel and non-Pixel identities; preserving it and stopping Phase B"
+                            "newly opened current ADB route returned mixed Pixel and non-Pixel identities; preserving it and stopping Phase B"
                         )
-                break
+                elif connect_error and not any(identity.endpoint == endpoint for identity in new_identities):
+                    raise ResolutionError("ADB connect timed out for a current endpoint; no read-only identity was recovered, so Phase B stops without disconnecting an uncertain route")
+                if candidate_pixel is not None:
+                    break
+                continue
 
             if endpoint in connected_here:
                 endpoint_identities = [identity for identity in new_identities if identity.endpoint == endpoint]
                 if not endpoint_identities:
                     raise ResolutionError(
-                        f"newly opened current ADB route {endpoint} returned no read-only Android identity; preserving it and stopping Phase B"
+                        "newly opened current ADB route returned no read-only Android identity; preserving it and stopping Phase B"
                     )
-                if any(identity.serial == EXPECTED_SERIAL for identity in endpoint_identities):
+                if any(identity.serial_sha256 == EXPECTED_SERIAL_SHA256 for identity in endpoint_identities):
                     raise ResolutionError("a connected route exposed conflicting Pixel identity data; preserving it and stopping Phase B")
                 failures = disconnect_new_routes(adb, [endpoint], log)
                 if failures:
                     raise ResolutionError(
-                        f"newly opened endpoint {endpoint} was positively identified as non-Pixel but could not be detached"
+                        "a newly opened endpoint was positively identified as non-Pixel but could not be detached"
                     )
                 connected_here.remove(endpoint)
                 detached_routes.add(endpoint)
@@ -741,33 +794,45 @@ def resolve(adb: str, output: Path, apk_path: Path) -> dict[str, object]:
                 # client timeout. Do not disconnect or continue unless the
                 # Pixel identity above resolved; no ownership of this route
                 # can be proven after a timed-out connect.
-                raise ResolutionError(
-                    f"ADB connect timed out for current endpoint {endpoint}; target identity was not resolved, so Phase B stops without disconnecting an uncertain route"
-                )
+                raise ResolutionError("ADB connect timed out for a current endpoint; identity was not resolved, so Phase B stops without disconnecting an uncertain route")
 
     if candidate_pixel is None:
         failures = disconnect_new_routes(adb, connected_here, log)
         if failures:
             raise ResolutionError(
-                f"Pixel identity did not resolve and newly opened candidate ADB routes could not be detached: {', '.join(failures)}"
+                f"Pixel identity did not resolve and {len(failures)} newly opened candidate ADB route(s) could not be detached"
             )
         raise ResolutionError("no currently online wireless ADB target returned the expected Pixel 9 stable identity")
 
     # Prefer an exact current mDNS mapping when one exists. Android's ADB
     # server can retain a live online TLS-connect transport while mDNS
     # discovery temporarily returns no services, though. In that case accept
-    # only the exact already-online serial-qualified service alias that was
+    # only the exact already-online TLS-connect service alias that was
     # queried and whose Android serial/model/product/API were verified above;
     # the final get-state and identity recheck must still pass below.
     current_aliases = {service.adb_transport_alias for service in mdns_services}
     current_endpoints = {service.endpoint for service in mdns_services}
     target_is_current_online_pixel_alias = (
-        candidate_pixel.source.startswith("current-serial-qualified-service-alias")
-        and is_pixel_service_alias(candidate_pixel.target)
+        candidate_pixel.source.startswith("current-online-tls-connect-alias")
+        and is_tls_connect_service_alias(candidate_pixel.target)
         and any(row.serial == candidate_pixel.target and row.state == "device" for row in first_rows)
     )
     if candidate_pixel.target not in current_aliases | current_endpoints and not target_is_current_online_pixel_alias:
         raise ResolutionError("the selected target no longer maps to a current advertised TLS-connect service")
+
+    selected_endpoints = {candidate_pixel.endpoint} if candidate_pixel.endpoint else set()
+    selected_endpoints.update(
+        service.endpoint
+        for service in mdns_services
+        if service.adb_transport_alias == candidate_pixel.target
+    )
+    redundant_new_routes = connected_here - selected_endpoints
+    if redundant_new_routes:
+        failures = disconnect_new_routes(adb, redundant_new_routes, log)
+        if failures:
+            raise ResolutionError("a duplicate newly opened ADB route could not be detached after stable identity comparison")
+        connected_here.difference_update(redundant_new_routes)
+        detached_routes.update(redundant_new_routes)
 
     app_sha = capture_installed_apk(adb, candidate_pixel.target, output, apk_path, log)
     app_entry = verify_app_entry_ready(adb, candidate_pixel.target, log)
@@ -779,6 +844,7 @@ def resolve(adb: str, output: Path, apk_path: Path) -> dict[str, object]:
     # wireless routes reach one live system. Do not persist that per-boot value.
     durable_identity["route_boot_id"] = "not-persisted"
     binding: dict[str, object] = {
+        "schema_version": 1,
         "resolved_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "target": candidate_pixel.target,
         "target_source": candidate_pixel.source,
@@ -786,6 +852,7 @@ def resolve(adb: str, output: Path, apk_path: Path) -> dict[str, object]:
         "service_instance": candidate_pixel.service_instance,
         "transport": "wireless-adb-only",
         "pairing_performed": False,
+        "resolver_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "identity": durable_identity,
         "installed_apk": app_sha,
         "app_entry_readiness": app_entry,
@@ -812,9 +879,34 @@ def main(argv: list[str] | None = None) -> int:
     try:
         binding = resolve(str(args.adb), args.output, args.apk)
     except (ResolutionError, OSError) as exc:
-        print(f"PIXEL_BINDING_NOT_PASS: {exc}", file=sys.stderr)
+        try:
+            append_log(
+                args.output / "binding.log",
+                f"{datetime.now(timezone.utc).isoformat(timespec='seconds')} phase-b=NOT_PASS error_type={type(exc).__name__} detail=redacted",
+            )
+        except OSError:
+            pass
+        print("PIXEL_BINDING_NOT_PASS: read-only target resolution failed; inspect the ignored local binding log", file=sys.stderr)
         return 2
-    print(json.dumps(binding, indent=2))
+    safe_summary = {
+        "result": "PASS",
+        "resolved_at_utc": binding["resolved_at_utc"],
+        "transport": binding["transport"],
+        "target_sha256": hashlib.sha256(str(binding["target"]).encode("utf-8")).hexdigest(),
+        "stable_identity": {
+            "serial_sha256": binding["identity"]["serial_sha256"],
+            "model": binding["identity"]["model"],
+            "product": binding["identity"]["product"],
+            "sdk": binding["identity"]["sdk"],
+            "fingerprint": binding["identity"]["fingerprint"],
+        },
+        "installed_apk_sha256": binding["installed_apk"]["sha256"],
+        "app_entry_readiness": binding["app_entry_readiness"],
+        "capture_readiness": binding["capture_readiness"],
+        "candidate_route_count": len(binding["adb_connect_attempted_endpoints"]),
+        "pairing_performed": binding["pairing_performed"],
+    }
+    print(json.dumps(safe_summary, indent=2))
     return 0
 
 

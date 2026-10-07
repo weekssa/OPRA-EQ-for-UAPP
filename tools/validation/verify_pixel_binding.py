@@ -34,12 +34,48 @@ def verify_existing_binding(
     binding = json.loads(raw)
     if not isinstance(binding, dict):
         raise adb_binding.ResolutionError("binding record is not an object")
+    if type(binding.get("schema_version")) is not int or binding["schema_version"] != 1:
+        raise adb_binding.ResolutionError("binding schema version is not supported")
     if binding.get("transport") != "wireless-adb-only" or binding.get("pairing_performed") is not False:
         raise adb_binding.ResolutionError("binding transport is not the sealed wireless-only, already-paired path")
     if not target or target != binding.get("target"):
         raise adb_binding.ResolutionError("selected target does not exactly match the sealed binding")
-    if not adb_binding.is_pixel_service_alias(target):
-        raise adb_binding.ResolutionError("selected target is not the bound Pixel TLS-connect wireless alias")
+
+    target_source = binding.get("target_source")
+    endpoint = binding.get("endpoint_last_resolved")
+    service_instance = binding.get("service_instance")
+    if service_instance is not None and not isinstance(service_instance, str):
+        raise adb_binding.ResolutionError("sealed service instance has an unsupported type")
+    alias_sources = {
+        "current-online-tls-connect-alias",
+        "current-online-tls-connect-alias-unmapped-or-ambiguous-endpoint",
+        "current-mdns-service-alias",
+        "current-mdns-service-alias-ambiguous-endpoint",
+    }
+    if adb_binding.is_tls_connect_service_alias(target) and target_source in alias_sources:
+        if service_instance != target:
+            raise adb_binding.ResolutionError("sealed TLS-connect target does not match its recorded service alias")
+        if endpoint is not None and (not isinstance(endpoint, str) or not adb_binding.valid_endpoint(endpoint)):
+            raise adb_binding.ResolutionError("sealed TLS-connect endpoint is malformed")
+    elif (
+        isinstance(target, str)
+        and adb_binding.valid_endpoint(target)
+        and target_source == "current-mdns-endpoint-map"
+        and endpoint == target
+        and adb_binding.is_tls_connect_service_alias(service_instance or "")
+    ):
+        pass
+    else:
+        raise adb_binding.ResolutionError("selected target is not a sealed current TLS-connect alias or mapped endpoint")
+
+    resolver_sha256 = binding.get("resolver_sha256")
+    if not isinstance(resolver_sha256, str) or len(resolver_sha256) != 64 or any(
+        character not in "0123456789abcdef" for character in resolver_sha256
+    ):
+        raise adb_binding.ResolutionError("binding resolver SHA-256 is malformed")
+    current_resolver_sha256 = hashlib.sha256(Path(adb_binding.__file__).read_bytes()).hexdigest()
+    if resolver_sha256 != current_resolver_sha256:
+        raise adb_binding.ResolutionError("binding was produced by a different Pixel resolver version")
 
     installed = binding.get("installed_apk")
     if not isinstance(installed, dict) or installed.get("package") != adb_binding.PACKAGE:
@@ -50,11 +86,11 @@ def verify_existing_binding(
     expected = binding.get("identity")
     if not isinstance(expected, dict):
         raise adb_binding.ResolutionError("binding Pixel identity is incomplete")
-    stable_fields = ("serial", "model", "product", "sdk", "fingerprint")
+    stable_fields = ("serial_sha256", "model", "product", "sdk", "fingerprint")
     if any(not isinstance(expected.get(key), str) or not expected[key] for key in stable_fields):
         raise adb_binding.ResolutionError("binding Pixel identity has an empty stable field")
     if (
-        expected["serial"] != adb_binding.EXPECTED_SERIAL
+        expected["serial_sha256"] != adb_binding.EXPECTED_SERIAL_SHA256
         or adb_binding.normalize_model(expected["model"]) != adb_binding.EXPECTED_MODEL
         or expected["product"] != adb_binding.EXPECTED_PRODUCT
         or not expected["sdk"].isdigit()
@@ -63,7 +99,16 @@ def verify_existing_binding(
         raise adb_binding.ResolutionError("binding identity is not the previously qualified Pixel 9")
 
     observed = adb_binding.identity_for(adb, target, "phase-c-entry-recheck", None, None)
-    actual = (observed.serial, observed.model, observed.product, observed.sdk, observed.fingerprint)
+    if (
+        observed.serial_sha256 != adb_binding.EXPECTED_SERIAL_SHA256
+        or adb_binding.normalize_model(observed.model) != adb_binding.EXPECTED_MODEL
+        or observed.product != adb_binding.EXPECTED_PRODUCT
+        or not observed.sdk.isdigit()
+        or int(observed.sdk) < 35
+        or not observed.fingerprint.startswith("google/tokay/tokay:")
+    ):
+        raise adb_binding.ResolutionError("current target does not match the previously qualified Pixel 9 profile")
+    actual = (observed.serial_sha256, observed.model, observed.product, observed.sdk, observed.fingerprint)
     sealed = tuple(expected[key] for key in stable_fields)
     if actual != sealed:
         raise adb_binding.ResolutionError("current target stable identity differs from the sealed Pixel binding")
@@ -75,7 +120,7 @@ def verify_existing_binding(
         "transport": "wireless-adb-only",
         "target_sha256": hashlib.sha256(target.encode("utf-8")).hexdigest(),
         "binding_sha256": hashlib.sha256(raw).hexdigest(),
-        "android_serial_sha256": hashlib.sha256(observed.serial.encode("utf-8")).hexdigest(),
+        "android_serial_sha256": observed.serial_sha256,
         "stable_identity_match": "PASS",
         "app_process": app_entry["process"],
         "resumed_activity": app_entry["resumed_activity"],
