@@ -1,5 +1,5 @@
 {
-  "timestamp_utc": "2026-10-07T16:40:44Z",
+  "timestamp_utc": "2026-10-07T16:45:07Z",
   "state": "WAITING_FOR_OWNER_RESTORE_WIRELESS_ADB_ROUTE; C05-C_STOPPED_BEFORE_C1; NO_DAC_OBSERVATION",
   "current_gate": "PHASE_B_STOPPED_WIRELESS_ADB_ROUTE_UNAVAILABLE",
   "next_gate": "OWNER_RESTORE_EXISTING_PAIRED_WIRELESS_ADB_ROUTE",
@@ -84,13 +84,13 @@
     ],
     "stable_latest": "v0.7.2",
     "latest_is_prerelease": false,
-    "pr_body_sync": "Last synchronized at 2026-10-07T16:26:16Z; text says final review pending. Refresh at next meaningful gate transition; PR remains open/draft.",
+    "pr_body_sync": "SYNCHRONIZED at 2026-10-07T16:45:07Z with issue #71; both report final review category B correction and the Phase B no-route stop/current owner action; PR remains open/draft.",
     "mergeable_state": "clean"
   },
   "pr_state": "open/draft",
   "pr_head": "3329590db531c31be84e7e28d89209028a688075",
   "pr_base": "c702ef0149b4c647446639cfcb0ab25c09159db3",
-  "pr_current_body_stale": true,
+  "pr_current_body_stale": false,
   "ci": {
     "head_sha": "3329590db531c31be84e7e28d89209028a688075",
     "as_of_utc": "2026-10-07T16:25:17Z",
@@ -480,7 +480,7 @@
   "physical_session_ready": false,
   "physical_session_readiness_reason": "Fresh Phase B resolver found no online ADB device and no current TLS-connect mDNS service. Phone released; no Black Pearl descriptor or protocol operation occurred.",
   "estimated_pixel_minutes": "5-10 optimization target; no time-only abort",
-  "watchdog_mode": "OBSERVE_ONLY; updated through supported automation tool to wait for owner restoring existing paired wireless ADB route.",
+  "watchdog_mode": "OBSERVE_ONLY; wait quietly for owner restoration of existing paired wireless ADB route.",
   "loop_status": "PLAN_2_48_REVIEW_NOT_PASS; RECONCILE_CURRENT_CONTROL_OVERLAYS; SYNC_EXTERNAL_SURFACES; REPEAT_EXACT_STATE_REVIEW; C05_C_NOT_STARTED",
   "stable_latest_release": "v0.7.2 remains stable/latest; release reports immutable true and prerelease false.",
   "merge_or_publish_performed": false,
@@ -600,12 +600,12 @@
       }
     ]
   },
-  "issue_updated_at_utc": "2026-10-07T16:04:15Z",
-  "issue_body_current": false,
+  "issue_updated_at_utc": "2026-10-07T16:45:06Z",
+  "issue_body_current": true,
   "watchdog_prompt_updated": true,
   "watchdog_prompt_updated_utc": "2026-10-07T16:43:54Z",
   "control_plane_checkpoint_pushed": true,
-  "pr_updated_at_utc": "2026-10-07T16:04:17Z",
+  "pr_updated_at_utc": "2026-10-07T16:45:07Z",
   "control_plane_branch": "codex/v0.8.0-beta-watch; resolve live origin tip dynamically.",
   "owner_action_required": true,
   "owner_action": "Restore the existing paired wireless ADB route to this Mac so the Pixel appears as an online ADB device or current TLS-connect service; keep the Black Pearl cable unchanged; confirm the route is visible.",
@@ -691,9 +691,9 @@
   },
   "first_v1_6_commit": null,
   "external_surfaces": {
-    "issue_71": "Last synchronized 2026-10-07T16:26:15Z; needs the final-review category B correction and Phase B no-route stop/current owner action.",
-    "pr_70_body": "Last synchronized 2026-10-07T16:26:16Z; draft PR body predates the final-review and Phase B no-route outcome.",
-    "watchdog": "ACTIVE; updated through the supported tool at 2026-10-07T16:43:54Z to wait quietly for the owner to restore the existing paired wireless ADB route."
+    "issue_71": "SYNCHRONIZED 2026-10-07T16:45:06Z; body reports the category B correction, Phase B no-route stop, and exact owner action.",
+    "pr_70_body": "SYNCHRONIZED 2026-10-07T16:45:07Z; draft remains open and body matches issue #71.",
+    "watchdog": "ACTIVE and observational; updated through the supported tool at 2026-10-07T16:43:54Z to wait for restoration of the existing paired wireless ADB route."
   },
   "master_directive_loaded": "YES; master v2.2 body hash c09db756671243ebd2c33e3ff47e360f8909263cc9512dcd633ed57b799cd73a matches resume; final review category B correction applied; Phase B stopped at 2026-10-07T16:40:44Z because no online ADB device/TLS-connect service was visible.",
   "candidate_change": "Control-plane documentation only; no app/test source, candidate tree, protected path, physical acceptance criterion, or Class B change.",
@@ -768,9 +768,9 @@
   "automation_update_tool_failure": "Earlier view/update failures remain historical. The supported update succeeded at approximately 2026-10-07T15:50Z; no direct TOML edit was made.",
   "latest_release_verified_at_utc": "2026-10-07T16:33:00Z; stable/latest v0.7.2, published and non-prerelease.",
   "phase_c_started": false,
-  "pr_body_current": false,
-  "issue_last_checked_utc": "2026-10-07T16:33:00Z",
-  "pr_last_checked_utc": "2026-10-07T16:33:00Z",
+  "pr_body_current": true,
+  "issue_last_checked_utc": "2026-10-07T16:45:07Z",
+  "pr_last_checked_utc": "2026-10-07T16:45:07Z",
   "current_control_reconciliation_pushed": true,
   "exact_state_consistency_review": {
     "result": "CATEGORY_B_METADATA_ONLY; one correction applied; physical procedure safety review clear; no recursive review required.",
@@ -789,7 +789,7 @@
     "previous_checkpoint_result": "NOT PASS at 2026-10-07T16:16Z for synchronized plan 2.48 checkpoint; stale current maintained overlays/status fields found.",
     "previous_checkpoint_reviewed_at_utc": "2026-10-07T16:16:00Z"
   },
-  "issue_71": "OPEN; last synchronized at 2026-10-07T16:26:15Z, before final-review and Phase B failure transitions; refresh on the current owner-action transition.",
+  "issue_71": "OPEN; body synchronized at 2026-10-07T16:45:06Z to final review category B correction and the Phase B no-route stop/current owner action.",
   "current_reconciliation_pushed": true,
   "phase_b_current_status": {
     "status": "NOT PASS at 2026-10-07T16:40:44Z; zero online ADB rows and zero current TLS-connect mDNS services. No binding.json was created. Wait for the owner to restore the existing route; do not retry until a real state change.",
