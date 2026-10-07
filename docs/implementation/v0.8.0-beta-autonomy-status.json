@@ -1,8 +1,8 @@
 {
-  "timestamp_utc": "2026-10-07T09:08:27Z",
-  "state": "PHASE_A_B_PASS_PLAN_2_29_G3_PASS_CONTROL_SYNC_PENDING_EXACT_STATE_REVIEW_PENDING_C05C_NOT_STARTED",
-  "current_gate": "Phase A/B PASS. FINAL_PHYSICAL_SESSION_PLAN.md revision 2.29 passed fresh independent G3 plan review and separate source/read-path review. The readiness certificate is current. The v1.5 control commit, issue #71, draft PR #70, and watchdog require synchronization; independent exact-state review is pending. Current owner statement says Pixel 9 is available and Black Pearl is connected. C05-C/G4 remains PARTIAL / NOT PASS.",
-  "next_gate": "Commit and push the control-only v1.5/plan-2.29 checkpoint, record its first introducing commit, synchronize issue #71/PR #70/watchdog, update canonical status, obtain independent exact-state PASS, then immediately execute Phase C.",
+  "timestamp_utc": "2026-10-07T09:18:29Z",
+  "state": "PHASE_A_B_PASS_PLAN_2_29_G3_PASS_EXTERNAL_SURFACES_SYNCED_EXACT_STATE_REVIEW_PENDING_C05C_NOT_STARTED",
+  "current_gate": "Phase A/B PASS. Plan 2.29 G3 and source/read-path review PASS. Master v1.5 control checkpoint is pushed; issue #71, draft PR #70, and active watchdog are synchronized. Independent exact-state review remains pending. Owner has stated Pixel 9 is available and Black Pearl is connected. C05-C/G4 remains PARTIAL / NOT PASS.",
+  "next_gate": "Push this canonical synchronization snapshot, dynamically verify live control/candidate/PR/checks/issue/main/release/watchdog state, obtain independent exact-state PASS, then execute Phase C immediately.",
   "candidate_branch": "codex/v0.8.0-beta-ux",
   "candidate_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
   "candidate_tree": "e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d",
@@ -19,7 +19,7 @@
   "pr_state": "OPEN_DRAFT",
   "pr_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
   "pr_base": "c702ef0149b4c647446639cfcb0ab25c09159db3",
-  "pr_current_body_stale": true,
+  "pr_current_body_stale": false,
   "ci": {
     "as_of_utc": "2026-10-07T08:50Z",
     "exact_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
@@ -237,9 +237,9 @@
     "old_non_flat_eq_reset_precondition_applies_to_read_only_c05c": false,
     "non_flat_requirement_rationale": "It applied to the old checkbox-on Reset test; C05-C is read-only and invokes no Reset.",
     "talkback": "DEFERRED_NON_BLOCKING_FOR_BETA; historical direct-touch owner report remains supplementary only; no repeat requested.",
-    "plan_review": "Independent G3 PASS for exact plan revision 2.29 at 2026-10-07T08:55Z; source/read-path review PASS. The last G3 finding, candidate-root equality, is fixed. Phase A/B certificate PASS. Synchronized exact-state review remains pending; C05-C is PARTIAL / NOT PASS.",
+    "plan_review": "Independent G3 PASS for exact plan revision 2.29 at 2026-10-07T08:55Z; source/read-path review PASS. Phase A/B and issue/PR/watchdog synchronization PASS; exact-state review remains pending.",
     "orchestration_entry_recovery": {
-      "state": "ENTRY_GUARD_PINNED_AND_TESTED; PLAN_2_29_G3_PASS; EXACT_STATE_REVIEW_PENDING",
+      "state": "ENTRY_GUARD_PINNED_AND_TESTED; PLAN_2_29_G3_PASS; EXTERNAL_SURFACES_SYNCED; EXACT_STATE_REVIEW_PENDING",
       "attempts_before_any_dac_request": "Several selector/helper-order and host wrapper/path setup stops; none queried Black Pearl or issued a DAC protocol request.",
       "root_cause": "Host command orchestration: resolver helper ordering was incorrect on an earlier attempt; later shell redirection preceded directory creation and the wrapper import path was missing. These were fixed before device operations.",
       "correction": "Use one tested pixel_adb_binding.py entrypoint, exact-package activity parser, a fresh ignored output directory created before invocation, and an in-memory subprocess wrapper. Do not ask owner to fix or repeat setup.",
@@ -380,7 +380,7 @@
   "owner_action_required_now": false,
   "pixel_required_now": false,
   "physical_session_ready": false,
-  "physical_session_readiness_reason": "Phase A/B and plan/source G3 PASS; owner has stated Pixel availability and Black Pearl attachment. Phase C remains gated on synchronized control/GitHub/watchdog state and independent exact-state PASS.",
+  "physical_session_readiness_reason": "Phase A/B, plan/source G3, and external synchronization PASS; owner has stated Pixel availability and Black Pearl attachment. Independent exact-state PASS remains the only Phase C entry gate.",
   "estimated_pixel_minutes": "Active Phase C target is 5–10 minutes as an optimization only; no elapsed-time abort applies.",
   "watchdog_mode": "ACTIVE_HOURLY_RESUME_FIRST_EXECUTE_CURRENT_NEXT_ACTION_QUIET_WHEN_UNCHANGED",
   "loop_status": "PHASE_A_B_PASS_PLAN_2_29_G3_PASS_CONTROL_SYNC_PENDING_EXACT_STATE_REVIEW_PENDING_C05C_NOT_STARTED",
@@ -407,18 +407,18 @@
     "mission closeout"
   ],
   "next_actions": [
-    "Commit and push the documentation/control-only v1.5 and plan-2.29 checkpoint; do not stage any .unlazy directory.",
-    "Record the first control commit as the v1.5 introducing commit, then synchronize issue #71, draft PR #70, and the active watchdog to the pushed state.",
-    "Update canonical status and readiness sync fields, push, and obtain independent exact-state PASS against live Git, PR/checks, issue, and watchdog.",
-    "Immediately execute plan 2.29 Phase C over the existing wireless binding and attached Black Pearl; release the Pixel on pass or safe stop."
+    "Push this canonical status/readiness synchronization snapshot and resolve the live control ref dynamically.",
+    "Verify exact candidate and APK identity, PR #70 head/base/mergeability/checks, issue #71, main drift, stable/latest release, and active watchdog against the pushed control state.",
+    "Obtain independent exact-state PASS against the live pushed state.",
+    "Immediately execute plan 2.29 Phase C with the existing wireless binding and attached Black Pearl; release the Pixel after pass or safe stop."
   ],
-  "issue": "Issue #71 is open and stale at 2026-10-07T05:50:10Z; replace its body after the current control checkpoint is pushed.",
+  "issue": "Issue #71 is open and updated 2026-10-07T09:17:44Z to the v1.5/plan-2.29 state; exact-state independent review remains pending.",
   "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex%2Fv0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md (stale remote E58 until current checkpoint is pushed)",
   "physical_plan": {
     "path": "docs/implementation/FINAL_PHYSICAL_SESSION_PLAN.md",
     "revision": "2.29",
-    "state": "G3_PASS_PHASE_A_B_PASS_CONTROL_PUSH_AND_SYNC_PENDING_EXACT_STATE_REVIEW_PENDING",
-    "scope": "Phase A off-phone preflight PASS; Phase B wireless Pixel identity/APK binding PASS; G3 PASS for plan 2.29. Phase C Black Pearl identity/connect/read/navigation/final-readback and contemporaneous PID/USB evidence remains NOT RUN.",
+    "state": "G3_PASS_PHASE_A_B_PASS_EXTERNAL_SURFACES_SYNCED_EXACT_STATE_REVIEW_PENDING",
+    "scope": "Phase A off-phone preflight PASS; Phase B wireless Pixel identity/APK binding PASS; G3 PASS for plan 2.29; issue/PR/watchdog synchronized. Phase C is not started and requires independent exact-state PASS.",
     "device_access_before_review": false,
     "phase_b_entry_policy": {
       "owner_may_use_phone_during_read_only_binding": true,
@@ -431,7 +431,7 @@
       "timer_only_abort": false,
       "phase_b_counts_as_dac_session": false
     },
-    "phase_c_entry_guard": "Phase-A-verified exact candidate and control worktree roots; exact pinned binding SHA-256 b56ba0c388a758b13ba8742ae73530c390c9787a5d6b0f3bc6759e0c724f90d9; silent TLS target/hash derivation; single guard invocation; returned target hash must match before first descriptor observation. G3 PASS; exact-state synchronized review pending."
+    "phase_c_entry_guard": "Phase-A-verified exact candidate/control roots; exact pinned binding SHA-256 b56ba0c388a758b13ba8742ae73530c390c9787a5d6b0f3bc6759e0c724f90d9; silent TLS target/hash derivation; single guard invocation; returned target hash must match before descriptor observation. G3 and external sync PASS; exact-state review pending."
   },
   "app_dir_tree": "42977ce481bc76aa85b866610672e35e35d6cde6",
   "pr_mergeable": true,
@@ -444,13 +444,13 @@
   "app_src_test_tree": "470979fb22a91c4514534badda6c2cc2032abfb6",
   "app_src_android_test_tree": "da2b4f31e18025ebd00f0a84f274e0e8a8624800",
   "base_drift_reconciliation": "BASE-DRIFT-B: current main 79d600529621257136adb4d9e1a97e8ae8521d7e is four commits ahead / zero behind PR base c702ef0149b4c647446639cfcb0ab25c09159db3; live GitHub compare shows only catalog/catalog.json, catalog/discovery/github_candidates.json, catalog/discovery/headphone_identity_audit.json, and catalog/source_health.json, with no app/test overlap.",
-  "master_directive": "v1.5; body SHA-256 b5b0cd1439223c4a04d7230eaa8abbf5c815ba2dd990b3eb36ee8fb89016054d; first introducing control commit c226266b1a08ae5cb1101337f372e0e95da46b79 (local checkpoint not pushed yet).",
+  "master_directive": "v1.5; body SHA-256 b5b0cd1439223c4a04d7230eaa8abbf5c815ba2dd990b3eb36ee8fb89016054d; first introducing control commit c226266b1a08ae5cb1101337f372e0e95da46b79.",
   "current_owner_action": "No further owner setup is required. Plan 2.29 G3 PASS; synchronize control/GitHub/watchdog and obtain exact-state review, then proceed using already-bound Pixel and attached Black Pearl.",
   "gates_G0_G12": {
-    "G0": "PASS_MASTER_V1_5_HASH_AND_FIRST_INTRODUCING_CONTROL_COMMIT_RECORDED; PUSH_AND_SYNC_PENDING",
+    "G0": "PASS_MASTER_V1_5_HASH_AND_FIRST_INTRODUCING_COMMIT_RECORDED_AND_PUSHED",
     "G1": "PASS",
     "G2": "PASS_CLASS_B_RETAINED",
-    "G3": "PLAN_2_29_G3_PASS; SYNCHRONIZED_EXACT_STATE_REVIEW_PENDING",
+    "G3": "PASS_PLAN_2_29_G3_AND_SOURCE_READ_PATH; SYNCHRONIZED_EXACT_STATE_REVIEW_PENDING",
     "G4": "PARTIAL_NOT_PASS_C05C_NOT_STARTED",
     "G5": "PENDING_AFTER_G4",
     "G6": "PENDING_ORDERED_MERGE",
@@ -463,12 +463,12 @@
   },
   "manual_talkback": "DEFERRED_NON_BLOCKING_FOR_V0.8.0_BETA",
   "main_current_checks": "Current main workflow checks were not needed to classify BASE-DRIFT-B; fetch live main checks during pre-merge verification.",
-  "issue_updated_at_utc": "2026-10-07T05:50:10Z; stale, synchronization pending",
-  "issue_body_current": false,
-  "watchdog_prompt_updated": false,
-  "watchdog_prompt_updated_utc": "pending",
-  "control_plane_checkpoint_pushed": false,
-  "pr_updated_at_utc": "pending synchronization after control checkpoint push",
+  "issue_updated_at_utc": "2026-10-07T09:17:44Z",
+  "issue_body_current": true,
+  "watchdog_prompt_updated": true,
+  "watchdog_prompt_updated_utc": "2026-10-07T09:18:29Z",
+  "control_plane_checkpoint_pushed": true,
+  "pr_updated_at_utc": "2026-10-07T09:16:15Z",
   "control_plane_branch": "codex/v0.8.0-beta-watch; live origin tip E58 6a8d13eb91586671a52646fa3391fd9ced8123aa / tree af4f07b39c6c8066d4147e736e6aa7217756b50f, resolved dynamically at 2026-10-07T08:50Z.",
   "owner_action_required": false,
   "owner_action": "None; owner has stated Pixel 9 is available and Black Pearl is connected.",
@@ -517,22 +517,22 @@
     "version_code": 10,
     "debug_signer_sha256": "cbd57d13316c2ca9e59fb810135ea71567fd22132b0d7f4640e92dc4434f0e14",
     "apk_tooling": "aapt/apksigner/zipalign fixed at Android SDK Build Tools 36.0.0 under /Users/stephenweeks/Library/Android/sdk; no Phase C rediscovery.",
-    "live_github_as_of_utc": "2026-10-07T09:07Z",
+    "live_github_as_of_utc": "2026-10-07T09:07Z; issue/PR/watchdog synchronized 09:16Z–09:18Z",
     "pr": "PR #70 open/draft at exact frozen head, base main c702ef0149b4c647446639cfcb0ab25c09159db3, mergeable/clean; PR body remains stale pending control checkpoint push.",
     "checks": "Live exact-head endpoint: 8/8 completed-success (build 112181047518; min-api-smoke 112181046209; emulator-ui-test 112181045077; CodeQL 112152334761; Priority 112150826284; Catalog 112150826043; Kotlin analysis 112150825874; submit-gradle 112150813291).",
     "main": "79d600529621257136adb4d9e1a97e8ae8521d7e; four commits beyond PR base c702ef0149b4c647446639cfcb0ab25c09159db3; catalog/currentness-only delta with no app/test overlap (BASE-DRIFT-B).",
     "stable_latest": "Immutable non-prerelease v0.7.2 remains latest as of 2026-10-07T09:07Z.",
-    "source_paths": "Independent G3 PASS for exact plan revision 2.29 and separate production source/read-path PASS; synchronized exact-state review remains pending.",
+    "source_paths": "Independent G3 PASS for exact plan revision 2.29 and separate production source/read-path PASS; exact-state sync review pending.",
     "evidence_ignore": "Candidate .git/info/exclude: /.unlazy/v080-beta/evidence/pixel-adb-binding-*/ and /.unlazy/v080-beta/evidence/c05c-*/ verified in prior commands.",
     "host_selector_tests": "Combined focused offline resolver/fingerprint/activity/entry-guard suite passed 52/52; no test rerun after documentation-only root-check correction.",
     "preparation_failures": "Shell redirection before directory creation and wrapper import-path errors occurred before resolver/device calls; corrected without consuming a DAC qualification or querying hardware.",
     "owner_setup": "Current owner message states Pixel 9 is available and Black Pearl is connected; no additional owner action is needed.",
     "phase_a_verification": "Both absolute roots resolve exactly; guard exists; sealed binding file SHA matches; 4/4 Bash plan blocks parse; local APK SHA, package/version/code, Debug signer, and zip alignment match.",
-    "pr_and_issue_body": "PR #70 and issue #71 remain stale with former v1.3/two-minute instructions; synchronize after the current control checkpoint and before Phase C."
+    "pr_and_issue_body": "PR #70 and issue #71 synchronized to v1.5/plan 2.29; body current at 2026-10-07T09:16Z/09:17Z. Active watchdog prompt synchronized at 09:18Z."
   },
-  "last_observed_control_tree_before_status_commit": "Last dynamically resolved remote tip at 2026-10-07T09:07Z: E58 6a8d13eb91586671a52646fa3391fd9ced8123aa / tree af4f07b39c6c8066d4147e736e6aa7217756b50f. Resolve the live ref again; local v1.5/plan-2.29 changes are unsynchronized.",
-  "next_action": "Push current v1.5/plan-2.29 control state; synchronize issue #71, PR #70, and watchdog; update canonical status; obtain exact-state PASS; then execute C05-C immediately.",
-  "g3_approved_entry_route": "PLAN_2_29_G3_PASS_CONTROL_SYNC_PENDING_EXACT_STATE_REVIEW_PENDING",
+  "last_observed_control_tree_before_status_commit": "Immediately before this status update the pushed control tip was 071fb6e36ebeb678596fdf3353817610aaf29155 / tree 2b47860d5df3c8ed2093169e026b45ee0c685e9b. Resolve the live ref dynamically after pushing this snapshot.",
+  "next_action": "Push current synchronized status snapshot, dynamically refresh live state, obtain exact-state PASS, then run plan 2.29 C05-C immediately.",
+  "g3_approved_entry_route": "PLAN_2_29_G3_PASS_EXTERNAL_SURFACES_SYNCED_EXACT_STATE_REVIEW_PENDING",
   "g3_attached_connected_session_resume_approved": false,
   "phase_b_binding": {
     "state": "PASS",
@@ -557,7 +557,7 @@
     "dac_or_mutation": "No app UI, USB descriptor, DAC query, protocol request, pairing, or device mutation occurred during Phase B."
   },
   "phase_c_entry_guard": {
-    "state": "OFFLINE_TESTS_PASS_G3_PLAN_2_29_PASS_SYNCHRONIZED_EXACT_STATE_REVIEW_PENDING_NOT_RUN_ON_DEVICE",
+    "state": "OFFLINE_TESTS_PASS_G3_PLAN_2_29_PASS_EXTERNAL_SYNCED_EXACT_STATE_REVIEW_PENDING_NOT_RUN_ON_DEVICE",
     "tool": "tools/validation/verify_pixel_binding.py",
     "focused_suite": "52/52 passed",
     "focused_suite_log": ".unlazy/v080-adb-entry-recovery-20261007/phasec-entry-guard-suite-after-wireless-pinning.log",
@@ -565,6 +565,6 @@
     "binding_sha256": "b56ba0c388a758b13ba8742ae73530c390c9787a5d6b0f3bc6759e0c724f90d9",
     "operations": "Before any target-scoped ADB call, verifies exact binding-file SHA-256 and a serial-qualified Pixel TLS-connect alias; then checks same stable Android identity and absent app process/activity. Target evidence records selector-variable name and SHA-256 only. No discovery/connect/disconnect, package query, app launch, USB descriptor, or DAC request.",
     "run_policy": "Only after G3/readiness/exact-state reviews pass, immediately before the first Black Pearl descriptor observation; invoke once.",
-    "g3_review": "Independent G3 PASS for exact plan revision 2.29 at 2026-10-07T08:55Z; exact-state synchronization review pending."
+    "g3_review": "Independent G3 PASS for exact plan revision 2.29; exact-state synchronization review pending after pushed status snapshot."
   }
 }
