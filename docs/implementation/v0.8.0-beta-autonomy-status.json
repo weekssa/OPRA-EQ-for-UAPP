@@ -1,8 +1,8 @@
 {
-  "timestamp_utc": "2026-10-07T04:41:53Z",
+  "timestamp_utc": "2026-10-07T04:46:00Z",
   "state": "PHASE_A_PENDING_FINAL_INDEPENDENT_REVIEW",
-  "current_gate": "G3 procedure review PASS for plan 2.18; C05-C/G4 remains PARTIAL / NOT PASS. Runner review passed. Final review found only the stale acceptance overlay; E47 correction is pushed at 0155cee7fb326e13a68a6ec7111c5127adf48af4 / tree 47a4da0089bd3a6ce548bd287c7b1c48358e7115. Watchdog prompt updated at 2026-10-07T04:36:39.025Z. Final independent review of the corrected current state remains pending.",
-  "next_gate": "Verify the corrected docs-only checkpoint is the exact live remote tip, refresh current PR/issue/check/release facts, and complete final independent review. Only after PASS issue a new readiness notice and wait for fresh post-readiness owner availability.",
+  "current_gate": "G3 procedure review PASS for plan 2.18; C05-C/G4 remains PARTIAL / NOT PASS. Runner review passed; E47 correction 0155cee7fb326e13a68a6ec7111c5127adf48af4 and E48 control sync 10b82a0ff3fd5f15f16841895cbcf90f95742315 are complete. Review of 10b82a0ff3fd5f15f16841895cbcf90f95742315 returned NOT PASS on stale canonical JSON checkpoint/synchronization fields. This docs-only status checkpoint reconciles them; final independent review of this exact corrected state is pending. No readiness or device access.",
+  "next_gate": "Verify the canonical JSON correction is at the live control tip, refresh only current PR/issue/check/release/base facts needed for review, and obtain exact-state independent PASS. Only after PASS issue a new readiness notice and wait for fresh post-readiness owner availability.",
   "candidate_branch": "codex/v0.8.0-beta-ux",
   "candidate_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
   "candidate_tree": "e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d",
@@ -124,7 +124,7 @@
       "plan_revision": "2.18",
       "plan_review": "G3 PASS: final independent review passed all ten pre-session assertions for plan revision 2.18 on the exact frozen candidate. This is procedure approval only, not physical C05-C acceptance.",
       "read_semantics": "Production READ sends outbound report(s) and may receive one bounded automatic nondestructive timeout retry; do not claim zero USB traffic or raw-bit equality. Compare same displayed fields at UI precision.",
-      "readiness": "PHASE A NOT READY. Runner review passed; control checkpoint ea0dc5b92f2d0c4a2cdc95c74dfede775da3dc21 is pushed and issue/PR/watchdog are synchronized. Final independent review remains pending. C05-C/G4 remains PARTIAL / NOT PASS.",
+      "readiness": "PHASE A NOT READY. Runner review passed. The final review of E48 control commit 10b82a0ff3fd5f15f16841895cbcf90f95742315 returned NOT PASS due to stale canonical JSON plan/readiness checkpoint and synchronization wording. This docs-only checkpoint reconciles those fields; final independent review of the exact corrected state is pending. E47 and E48 synchronization are complete; C05-C/G4 remains PARTIAL / NOT PASS. No device access.",
       "prior_attempts": [
         {
           "physical_attempt_utc": "2026-10-06T19:25:17Z",
@@ -233,7 +233,7 @@
     "old_non_flat_eq_reset_precondition_applies_to_read_only_c05c": false,
     "non_flat_requirement_rationale": "It applied to the old checkbox-on Reset test; C05-C is read-only and invokes no Reset.",
     "talkback": "DEFERRED_NON_BLOCKING_FOR_BETA; historical direct-touch owner report remains supplementary only; no repeat requested.",
-    "plan_review": "G3 PASS for procedure revision 2.18 after all ten assertions. The disposition-header correction changed no procedure step. Final independent review of pushed checkpoint ea0dc5b92f2d0c4a2cdc95c74dfede775da3dc21 and its synchronized surfaces remains pending."
+    "plan_review": "G3 PASS for procedure revision 2.18 after all ten assertions; no physical procedure step changed. Review of control checkpoint 10b82a0ff3fd5f15f16841895cbcf90f95742315 returned NOT PASS on stale JSON gate fields. This docs-only checkpoint corrects those fields; exact-state independent review is pending."
   },
   "api35": {
     "previous_candidate": "acd95df543632e57ae46cd68e714a35f94781f43",
@@ -367,7 +367,7 @@
   "owner_action_required_now": false,
   "pixel_required_now": false,
   "physical_session_ready": false,
-  "physical_session_readiness_reason": "E47 acceptance-overlay correction is pushed at 0155cee7fb326e13a68a6ec7111c5127adf48af4. The exact corrected control state still needs final independent review. The owner availability confirmation preceded the new readiness notice and cannot be reused. No device access until final PASS, a new readiness notice, and fresh post-readiness availability.",
+  "physical_session_readiness_reason": "Review of control commit 10b82a0ff3fd5f15f16841895cbcf90f95742315 returned NOT PASS on stale canonical JSON status fields. This docs-only checkpoint corrects them; exact-state independent re-review is pending. Prior owner availability predates any new readiness notice. No device access until PASS, a new readiness notice, and fresh post-readiness availability.",
   "estimated_pixel_minutes": {
     "target": 10,
     "hard_limit": 15,
@@ -382,7 +382,7 @@
     "G6-G12 ordered merge/sign/upgrade/clean-install/artifact/publication/review-bundle/closeout"
   ],
   "physical_gates_open": [
-    "Phase A independent re-review and control-plane synchronization before readiness is reissued",
+    "Phase A exact-state independent re-review of the corrected canonical status; control-plane synchronization is complete",
     "G4/C05-C complete read/navigation/final-read session under plan revision 2.18, only after fresh post-readiness owner availability"
   ],
   "downstream_gates": [
@@ -397,8 +397,8 @@
     "mission closeout"
   ],
   "next_actions": [
-    "Verify the live control ref contains the E47 correction commit 0155cee7fb326e13a68a6ec7111c5127adf48af4 and refresh only PR #70, issue #71, exact-head checks, base drift, release, and watchdog facts needed for review.",
-    "Have the independent reviewer verify the corrected acceptance overlay, plan 2.18 disposition, runner/evidence reservation, canonical status, and synchronized external state.",
+    "Verify the pushed canonical JSON correction is the live control tip, refresh only current PR/issue/check/release/base facts needed for review, then request an exact-state independent review; no readiness or ADB/USB access until PASS.",
+    "Have the independent reviewer verify the corrected acceptance overlay, plan 2.18 disposition, runner/evidence reservation, canonical status JSON, and aligned external state on the exact pushed control tip.",
     "Do not issue readiness or use ADB/USB before review PASS. After a new readiness notice, wait for a fresh current owner Pixel-availability statement."
   ],
   "issue": "https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/71",
@@ -536,11 +536,11 @@
   "control_plane_branch": {
     "name": "codex/v0.8.0-beta-watch",
     "live_ref_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/tree/codex%2Fv0.8.0-beta-watch",
-    "last_observed_head_before_status_commit": "0155cee7fb326e13a68a6ec7111c5127adf48af4",
-    "last_observed_tree_before_status_commit": "47a4da0089bd3a6ce548bd287c7b1c48358e7115",
+    "last_observed_head_before_status_commit": "10b82a0ff3fd5f15f16841895cbcf90f95742315",
+    "last_observed_tree_before_status_commit": "d7979f0dca39eab1ef0c4b3a12fdcf524898f276",
     "remote_matches_observed_tip_at_snapshot": true,
     "current_head_resolution": "Resolve origin/codex/v0.8.0-beta-watch from live Git at review time; this status file cannot contain its own resulting commit SHA.",
-    "snapshot_as_of_utc": "2026-10-07T04:41:53Z"
+    "snapshot_as_of_utc": "2026-10-07T04:46:00Z"
   },
   "owner_action_required": false,
   "owner_action": "None now. After a new readiness notice, make a fresh current statement that the Pixel 9 is available and have the Black Pearl attached before handoff. Wireless ADB only.",
@@ -550,7 +550,9 @@
     "prerelease": false,
     "draft": false,
     "stable_latest": true,
-    "as_of_utc": "2026-10-07T04:06Z"
+    "as_of_utc": "2026-10-07T04:06Z",
+    "review": "Runner review PASS. E47 and E48 synchronization are complete. Review of 10b82a0ff3fd5f15f16841895cbcf90f95742315 returned NOT PASS on stale canonical JSON gate wording; this docs-only checkpoint reconciles it, and exact-state independent re-review is pending. Issue #71, PR #70, and watchdog continue to report Phase A NOT READY.",
+    "remaining": "Verify the pushed JSON reconciliation, refresh live integration facts, and obtain exact-state independent PASS. If PASS, issue fresh readiness and require fresh post-readiness Pixel availability before Phase B."
   },
   "master_body_sha256": "084bca0df0103701bbed74831152074c6f1283d376a8a1930e51ea39016c52ed",
   "master_introducing_commit": "e57eb6ee92155d484cdc20c424546a70672b77e6",
@@ -619,6 +621,6 @@
     "commands_log_bytes": 0,
     "latest_recorded_liveness_utc": "2026-10-07T04:05:34Z"
   },
-  "last_observed_control_tree_before_status_commit": "47a4da0089bd3a6ce548bd287c7b1c48358e7115",
-  "next_action": "Verify live origin/codex/v0.8.0-beta-watch contains 0155cee7fb326e13a68a6ec7111c5127adf48af4, refresh current PR/issue/check/release facts, then request exact-state independent review; do not issue readiness or access ADB/USB until it passes."
+  "last_observed_control_tree_before_status_commit": "d7979f0dca39eab1ef0c4b3a12fdcf524898f276",
+  "next_action": "Verify the pushed canonical JSON correction is the live control tip, refresh current PR/issue/check/release/base facts needed for review, then request exact-state independent PASS; do not issue readiness or access ADB/USB until it passes."
 }
