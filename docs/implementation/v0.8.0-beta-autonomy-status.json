@@ -1,8 +1,8 @@
 {
-  "timestamp_utc": "2026-10-07T03:50:23Z",
-  "state": "PREFLIGHT_COMPLETE_READY_FOR_PHONE_WAITING_FOR_FRESH_OWNER_AVAILABILITY",
-  "current_gate": "G3 PASS: final independent ten-assertion review approved FINAL_PHYSICAL_SESSION_PLAN.md revision 2.18. C05-C/G4 remains PARTIAL / NOT PASS. Wait for a fresh current owner Pixel-availability statement; no device access until then.",
-  "next_gate": "G4/C05-C physical session under plan 2.18, after the owner freshly makes the Pixel available following the readiness notice.",
+  "timestamp_utc": "2026-10-07T04:01:58Z",
+  "state": "PHASE_A_REPREPARATION_AFTER_WORKFLOW_SESSION_STOP",
+  "current_gate": "Phase A repreparation after a workflow/session stop; G3 remains PASS for plan 2.18 and C05-C/G4 remains PARTIAL / NOT PASS. A fresh persistent-PTY runner is live, but independent review and issue/PR/watchdog synchronization must pass before a new readiness notice.",
+  "next_gate": "Complete Phase A review and synchronization; then await a fresh post-readiness owner Pixel-availability statement before one plan 2.18 C05-C session.",
   "candidate_branch": "codex/v0.8.0-beta-ux",
   "candidate_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
   "candidate_tree": "e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d",
@@ -124,7 +124,7 @@
       "plan_revision": "2.18",
       "plan_review": "G3 PASS: final independent review passed all ten pre-session assertions for plan revision 2.18 on the exact frozen candidate. This is procedure approval only, not physical C05-C acceptance.",
       "read_semantics": "Production READ sends outbound report(s) and may receive one bounded automatic nondestructive timeout retry; do not claim zero USB traffic or raw-bit equality. Compare same displayed fields at UI precision.",
-      "readiness": "PREFLIGHT COMPLETE — READY FOR PHONE. Wait for a fresh current owner Pixel-availability statement after readiness; no ADB/USB/device access before it.",
+      "readiness": "PREFLIGHT COMPLETE \u2014 READY FOR PHONE. Wait for a fresh current owner Pixel-availability statement after readiness; no ADB/USB/device access before it.",
       "prior_attempts": [
         {
           "physical_attempt_utc": "2026-10-06T19:25:17Z",
@@ -233,7 +233,7 @@
     "old_non_flat_eq_reset_precondition_applies_to_read_only_c05c": false,
     "non_flat_requirement_rationale": "It applied to the old checkbox-on Reset test; C05-C is read-only and invokes no Reset.",
     "talkback": "DEFERRED_NON_BLOCKING_FOR_BETA; historical direct-touch owner report remains supplementary only; no repeat requested.",
-    "plan_review": "Preliminary independent static review confirmed helper SHA and assertions 2–10, with no other procedural defect; Phase A and all external control surfaces are synchronized; final ten-assertion G3 verdict is pending."
+    "plan_review": "Preliminary independent static review confirmed helper SHA and assertions 2\u201310, with no other procedural defect; Phase A and all external control surfaces are synchronized; final ten-assertion G3 verdict is pending."
   },
   "api35": {
     "previous_candidate": "acd95df543632e57ae46cd68e714a35f94781f43",
@@ -364,17 +364,17 @@
     ],
     "physical_keyboard_claimed": false
   },
-  "owner_action_required_now": true,
-  "pixel_required_now": true,
-  "physical_session_ready": true,
-  "physical_session_readiness_reason": "Phase A is complete and G3 passed the independent ten-assertion review of plan 2.18. Phase B still requires a fresh current owner Pixel-availability statement after readiness.",
+  "owner_action_required_now": false,
+  "pixel_required_now": false,
+  "physical_session_ready": false,
+  "physical_session_readiness_reason": "The prior Phase B stopped after discovery because the recorder was run in a one-shot non-TTY shell. A new ignored reservation is prepared and a persistent candidate-rooted PTY is live, but independent re-review and issue/PR/watchdog synchronization must pass before a new readiness notice.",
   "estimated_pixel_minutes": {
     "target": 10,
     "hard_limit": 15,
     "entry_checkpoint_minutes": 2
   },
-  "watchdog_mode": "ACTIVE_HOURLY_RESUME_FIRST_WAIT_FOR_FRESH_OWNER_AVAILABILITY",
-  "loop_status": "PHASE_A_COMPLETE_READY_FOR_PHONE_WAITING_FRESH_OWNER_AVAILABILITY_NO_DEVICE_ACCESS",
+  "watchdog_mode": "ACTIVE_HOURLY_RESUME_FIRST_PHASE_A_REPREPARATION_NO_DEVICE_ACCESS",
+  "loop_status": "PHASE_A_REPREPARATION_AFTER_WORKFLOW_SESSION_STOP_NO_DEVICE_ACCESS",
   "stable_latest_release": "v0.7.2",
   "merge_or_publish_performed": false,
   "nonphysical_gates_open": [
@@ -382,7 +382,8 @@
     "G6-G12 ordered merge/sign/upgrade/clean-install/artifact/publication/review-bundle/closeout"
   ],
   "physical_gates_open": [
-    "G4/C05-C complete read/navigation/final-read session under plan revision 2.18, only after fresh owner availability"
+    "Phase A independent re-review and control-plane synchronization before readiness is reissued",
+    "G4/C05-C complete read/navigation/final-read session under plan revision 2.18, only after fresh post-readiness owner availability"
   ],
   "downstream_gates": [
     "Independent pre-merge verification",
@@ -396,15 +397,16 @@
     "mission closeout"
   ],
   "next_actions": [
-    "Wait for a fresh current owner statement, made after the readiness notice, that the Pixel 9 is available. Do not use ADB/USB or inspect the device before that statement.",
-    "Before handoff, ensure the Black Pearl is attached to Pixel USB-C if it is not already. Then use wireless ADB only and execute plan 2.18 exactly; release on completion or any stop condition."
+    "Complete independent review of the new persistent-PTY Phase A reservation and synchronized canonical state. Keep the existing PTY 85646 open and idle; no ADB/USB/device access.",
+    "Commit/push only the intended control-plane documentation, update issue #71, PR #70 body, and existing hourly watchdog with the workflow stop and corrected runner, then issue a fresh readiness notice.",
+    "Wait for a fresh current owner Pixel-availability statement after readiness; then run plan 2.18 in the already-live PTY, wireless ADB only, with the Black Pearl attached before handoff."
   ],
   "issue": "https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/71",
   "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex/v0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md",
   "physical_plan": {
     "path": "docs/implementation/FINAL_PHYSICAL_SESSION_PLAN.md",
     "revision": "2.18",
-    "state": "PENDING_FINAL_INDEPENDENT_REVIEW_2_18",
+    "state": "G3_PASS_PHASE_A_REPREPARATION_PENDING_REVIEW_AND_SYNC",
     "scope": "Phase A off-phone preflight; Phase B fresh owner availability, one-shot wireless-ADB T0, exact candidate/APK/Pixel/DAC verification, cold/disconnected My DAC preflight, production EQ/DEVICE reads, attached navigation, final explicit readback, and immediate release.",
     "fresh_attach_authorized": false,
     "device_access_before_review": false
@@ -415,7 +417,7 @@
   "main_head_observed": "79d600529621257136adb4d9e1a97e8ae8521d7e",
   "main_advanced_since_pr_snapshot": true,
   "pr_base_ref": "main",
-  "pr_snapshot_as_of_utc": "2026-10-07T03:46:16Z",
+  "pr_snapshot_as_of_utc": "2026-10-07T04:01Z",
   "integration_base_sha": "c702ef0149b4c647446639cfcb0ab25c09159db3",
   "app_src_test_tree": "470979fb22a91c4514534badda6c2cc2032abfb6",
   "app_src_android_test_tree": "da2b4f31e18025ebd00f0a84f274e0e8a8624800",
@@ -440,13 +442,13 @@
     "body_sha256": "084bca0df0103701bbed74831152074c6f1283d376a8a1930e51ea39016c52ed",
     "introduced_by_commit": "e57eb6ee92155d484cdc20c424546a70672b77e6"
   },
-  "current_owner_action": "After the readiness notice, make a fresh current statement that the Pixel 9 is available. Ensure the TRN Black Pearl is attached to Pixel USB-C before handoff if it is not already; wireless ADB only.",
+  "current_owner_action": "None now. After a new readiness notice, make a fresh current statement that the Pixel 9 is available; have the Black Pearl attached before handoff. Wireless ADB only.",
   "gates_G0_G12": [
     {
       "gate": "G0",
       "name": "Canonical directive / candidate identity",
       "state": "PASS",
-      "evidence": "Master v1.3 body SHA-256 084bca0df0103701bbed74831152074c6f1283d376a8a1930e51ea39016c52ed; introduction commit e57eb6ee92155d484cdc20c424546a70672b77e6; exact candidate/APK identity match."
+      "evidence": "Master v1.3/body SHA and exact candidate/APK identity verified. External issue/PR/watchdog synchronization for the latest workflow stop is pending."
     },
     {
       "gate": "G1",
@@ -526,62 +528,62 @@
   "g3_plan_ready_for_attached_resume": false,
   "g3_plan_not_approved_for_fresh_attach": false,
   "issue_updated_at_utc": "2026-10-07T03:50:22Z",
-  "issue_body_current": true,
-  "watchdog_prompt_updated": true,
+  "issue_body_current": false,
+  "watchdog_prompt_updated": false,
   "watchdog_prompt_updated_utc": "2026-10-07T03:49:49.996Z",
-  "control_plane_checkpoint_pushed": true,
+  "control_plane_checkpoint_pushed": false,
   "pr_updated_at_utc": "2026-10-07T03:50:21Z",
   "control_plane_branch": {
     "name": "codex/v0.8.0-beta-watch",
     "live_ref_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/tree/codex%2Fv0.8.0-beta-watch",
-    "last_observed_head_before_status_commit": "c81a7186a22756138be8ab8ef4439cb8ef0f6cdd",
-    "last_observed_tree_before_status_commit": "e1af0b92c0c6d83a0372f5b6e9d50f39378727c1",
+    "last_observed_head_before_status_commit": "2b4fe6daaee6aec7ca15a2b3e34a9dc65713efb0",
+    "last_observed_tree_before_status_commit": "0c456aca78f33d8c318f0d5bf9bdfbb91f06c28b",
     "remote_matches_observed_tip_at_snapshot": true,
     "current_head_resolution": "Resolve origin/codex/v0.8.0-beta-watch from live Git at review time; this status file cannot contain its own resulting commit SHA.",
-    "snapshot_as_of_utc": "2026-10-07T03:50:23Z"
+    "snapshot_as_of_utc": "2026-10-07T04:01:58Z"
   },
-  "owner_action_required": true,
-  "owner_action": "After the readiness notice, make a fresh current statement that the Pixel 9 is available. Ensure the TRN Black Pearl is attached to Pixel USB-C before handoff if it is not already; wireless ADB only.",
+  "owner_action_required": false,
+  "owner_action": "None now. After a new readiness notice, make a fresh current statement that the Pixel 9 is available; have the Black Pearl attached before handoff. Wireless ADB only.",
   "physical_session_owner_action_required_after_review": true,
   "latest_release": {
     "tag": "v0.7.2",
     "prerelease": false,
     "draft": false,
     "stable_latest": true,
-    "as_of_utc": "2026-10-07T03:37:07Z"
+    "as_of_utc": "2026-10-07T04:01Z"
   },
   "master_body_sha256": "084bca0df0103701bbed74831152074c6f1283d376a8a1930e51ea39016c52ed",
   "master_introducing_commit": "e57eb6ee92155d484cdc20c424546a70672b77e6",
   "g3_plan_ready_for_cold_disconnected_route": true,
   "latest_c05c_attempt": {
-    "attempt_started_utc": null,
-    "observed_by_utc": "2026-10-07T01:41:13Z",
-    "stop_decision_utc": "2026-10-07T01:43:38Z",
+    "attempt_started_utc": "2026-10-07T03:57:21Z",
+    "observed_by_utc": "2026-10-07T03:57:21Z",
+    "stop_decision_utc": "2026-10-07T03:57:21Z",
     "duration_seconds": null,
     "candidate_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
     "candidate_tree": "e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d",
-    "plan_revision": "2.11",
-    "outcome": "WORKFLOW_PREFLIGHT_STOP; C05-C NOT PASS",
-    "discovery": "adb devices -l output listed a Pixel 9 wireless endpoint and emulator-5556; adb mdns services listed no services. Endpoint not selected or queried.",
+    "plan_revision": "2.18",
+    "outcome": "WORKFLOW_SESSION_STOP; C05-C NOT PASS",
+    "discovery": "The sole adb devices -l output listed adb-46141FDAQ003KZ-3AwgSo._adb-tls-connect._tcp (Pixel 9 Wi-Fi ADB service) and emulator-5556; the Pixel service was not selected or queried.",
     "pixel_endpoint_discovered_in_list": true,
     "pixel_target_selected_or_contacted": false,
     "pixel_or_usb_state_inspected": false,
     "app_launched_or_process_inspected": false,
     "black_pearl_identity_or_state_inspected": false,
+    "owner_reported_black_pearl_attached": true,
     "dac_protocol_read_or_write_sent": false,
     "device_or_cable_state_changed": false,
     "phone_released": true,
-    "reason": "ADB invocation start missing; off-phone APK/GitHub verification overlapped the two-minute entry window. Classify as workflow/preflight defect; do not reconstruct elapsed time.",
-    "evidence_folder": ".unlazy/v080-beta/evidence/c05c-20261007014453Z/",
-    "stop_report_sha256": "39c883ca4df373d9dfab66d411d189e7c3bc119388d78ca93c546b09f0aac26c",
-    "commands_sha256": "2e8e8c4f46cb32c11698ba765409b192e9b7d124b0f4b6fdb2f7f305ef57176d",
-    "reconciliation_sha256": "cfc2acea7611c5529f6d8bba9136c7fb2477219f877167a24da0fd05662b84f0",
-    "evidence_index_sha256": "af82b2469ea4b5fe95a4ff2b59421e734e9f4c4b91de6127df0d3f8846067830",
-    "classification": "WORKFLOW_PREFLIGHT_STOP; no physical-device state, not a product/hardware failure; do not combine with earlier attempt"
+    "reason": "The helper was sourced/run in a one-shot non-TTY shell, so in-memory LAST_OUTPUT/T0/helper state could not persist for the next planned command. The single-use reservation is consumed; do not resume or reconstruct T0.",
+    "evidence_folder": ".unlazy/v080-beta/evidence/c05c-20261007T031528Z/",
+    "commands_log_bytes": 442,
+    "commands_sha256": "909037a604679a15952b93b8928f08f257a5b11294b2d5b8ea3970a1102ff03b",
+    "classification": "WORKFLOW_SESSION_STOP; discovery listed a Pixel endpoint but no target-specific state; not product/hardware failure and not C05-C evidence; do not combine with earlier attempts",
+    "evidence_log_sha256": "909037a604679a15952b93b8928f08f257a5b11294b2d5b8ea3970a1102ff03b"
   },
   "main_current_checks_as_of_utc": "2026-10-07T03:18Z",
   "phase_a_preflight": {
-    "state": "PREFLIGHT_COMPLETE_READY_FOR_PHONE",
+    "state": "PERSISTENT_RUNNER_PREPARED_PENDING_FINAL_REVIEW_AND_SYNC",
     "candidate_branch": "codex/v0.8.0-beta-ux",
     "candidate_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
     "candidate_tree": "e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d",
@@ -594,22 +596,27 @@
     "debug_signer_sha256": "cbd57d13316c2ca9e59fb810135ea71567fd22132b0d7f4640e92dc4434f0e14",
     "signature": "apksigner verified one Android Debug signer with v2 scheme; not the official beta key",
     "zip_alignment": "Build Tools 36.0.0 zipalign verification successful from the prior exact-APK preflight; APK SHA is unchanged",
-    "live_github_as_of_utc": "2026-10-07T03:50:23Z",
-    "pr": "#70 OPEN_DRAFT; exact frozen head; base main c702ef0149b4c647446639cfcb0ab25c09159db3; mergeable/clean; body current as of 2026-10-07T03:50:21Z",
-    "checks": "8/8 exact-head check-runs completed-success, live refreshed 2026-10-07T03:42:37Z: build 112181047518; min-api-smoke 112181046209; emulator-ui-test 112181045077; CodeQL 112152334761; Priority 112150826284; Catalog 112150826043; Kotlin analysis 112150825874; submit-gradle 112150813291",
+    "live_github_as_of_utc": "2026-10-07T04:01Z",
+    "pr": "#70 OPEN_DRAFT; exact frozen head 5c7d19cf2f77e448a97a1ee9d520ad4d408f120f; base main c702ef0149b4c647446639cfcb0ab25c09159db3; mergeable/clean",
+    "checks": "8/8 exact-head check-runs completed-success at latest refresh: build 112181047518; min-api-smoke 112181046209; emulator-ui-test 112181045077; CodeQL 112152334761; Priority 112150826284; Catalog 112150826043; Kotlin analysis 112150825874; submit-gradle 112150813291",
     "main": "79d600529621257136adb4d9e1a97e8ae8521d7e; 4 ahead / 0 behind; four catalog/currentness paths only; BASE-DRIFT-B",
-    "stable_latest": "v0.7.2; public releases endpoint refreshed 2026-10-07T03:42:37Z; published 2026-10-03T05:32:08Z",
+    "stable_latest": "v0.7.2; latest public-release API refresh at 2026-10-07T04:01Z",
     "source_paths": "ordinary launcher and disconnected card; local-only tabs/navigation; production Edit EQ and DEVICE Refresh reads; attached away/back card route; source-audited",
-    "command_syntax": "Plan 2.18 helper /bin/bash -n PASS; helper sourced in idle Bash; local candidate/path guards PASS; T0 empty; no ADB command invoked",
+    "command_syntax": "Plan 2.18 helper /bin/bash -n PASS; sourced in persistent interactive Bash PTY 85646; candidate branch/HEAD/tree/path guards PASS; T0 empty; commands.log 0 bytes; shell alive at 03:59:29Z and 04:01Z",
     "evidence_ignore": "candidate worktree .git/info/exclude rule /.unlazy/v080-beta/evidence/c05c-*/ verified for the current unique reservation",
-    "session_id": "20261007T031528Z",
-    "helper_path": ".unlazy/v080-beta/evidence/c05c-20261007T031528Z/phase-b-recorder.sh",
-    "helper_sha256": "a2afbcd96458e92758834c678a4a03455b9d57dea9f9ad6a6d872a766321734f",
-    "helper_guard": "one-shot T0; rejects non-empty commands.log and any prior outputs/screenshots/manifest/other evidence; requires exact candidate tree",
-    "evidence_reservation": "preflight.txt + empty commands.log + prepared helper only; no capture, output, manifest, or physical evidence",
-    "device_access": "none during Phase A; no ADB/USB command, Pixel query, device inspection, or DAC request",
-    "review": "PASS: independent reviewer passed all ten pre-session assertions for plan 2.18, including live candidate/APK/control/GitHub verification; this does not pass physical C05-C.",
-    "remaining": "Await a fresh current owner Pixel-availability statement made after the readiness notice; then execute the reviewed plan 2.18 Phase B without off-phone preparation."
+    "session_id": "20261007T035827Z",
+    "helper_path": ".unlazy/v080-beta/evidence/c05c-20261007T035827Z/phase-b-recorder.sh",
+    "helper_sha256": "8d78490163f74a24a654ba3253643ba4efde240dad0f1a574ca9a7767b50b2aa",
+    "helper_guard": "single-use reservation; empty log/T0; candidate/path guards passed in persistent Bash PTY session 85646; retain this exact session for Phase B",
+    "evidence_reservation": "New unique candidate-local ignored path; only preflight.txt, empty commands.log, and prepared helper; no command output/screenshots/manifest/physical capture",
+    "device_access": "No ADB/USB/device command in the new reservation. The prior discovery only listed the Pixel service; it was not selected or queried.",
+    "review": "PENDING: independent re-review of the new persistent PTY runner and synchronized status/control surfaces",
+    "remaining": "Independent re-review, control-plane commit/push, issue #71/PR #70/watchdog synchronization, then issue a new readiness notice and await fresh owner availability.",
+    "previous_consumed_session_id": "20261007T031528Z",
+    "persistent_runner_session_id": "85646",
+    "t0_utc": null,
+    "t0_monotonic_ns": null,
+    "commands_log_bytes": 0
   },
-  "last_observed_control_tree_before_status_commit": "e1af0b92c0c6d83a0372f5b6e9d50f39378727c1"
+  "last_observed_control_tree_before_status_commit": "0c456aca78f33d8c318f0d5bf9bdfbb91f06c28b"
 }
