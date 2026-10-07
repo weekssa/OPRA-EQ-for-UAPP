@@ -417,7 +417,7 @@
   "physical_plan": {
     "path": "docs/implementation/FINAL_PHYSICAL_SESSION_PLAN.md",
     "revision": "2.29",
-    "state": "G3_PASS_PHASE_A_B_PASS_SYNC_AND_EXACT_STATE_REVIEW_PENDING",
+    "state": "G3_PASS_PHASE_A_B_PASS_CONTROL_PUSH_AND_SYNC_PENDING_EXACT_STATE_REVIEW_PENDING",
     "scope": "Phase A off-phone preflight PASS; Phase B wireless Pixel identity/APK binding PASS; G3 PASS for plan 2.29. Phase C Black Pearl identity/connect/read/navigation/final-readback and contemporaneous PID/USB evidence remains NOT RUN.",
     "device_access_before_review": false,
     "phase_b_entry_policy": {
@@ -444,10 +444,10 @@
   "app_src_test_tree": "470979fb22a91c4514534badda6c2cc2032abfb6",
   "app_src_android_test_tree": "da2b4f31e18025ebd00f0a84f274e0e8a8624800",
   "base_drift_reconciliation": "BASE-DRIFT-B: current main 79d600529621257136adb4d9e1a97e8ae8521d7e is four commits ahead / zero behind PR base c702ef0149b4c647446639cfcb0ab25c09159db3; live GitHub compare shows only catalog/catalog.json, catalog/discovery/github_candidates.json, catalog/discovery/headphone_identity_audit.json, and catalog/source_health.json, with no app/test overlap.",
-  "master_directive": "v1.5; body SHA-256 b5b0cd1439223c4a04d7230eaa8abbf5c815ba2dd990b3eb36ee8fb89016054d; introducing commit pending first v1.5 control-plane commit.",
+  "master_directive": "v1.5; body SHA-256 b5b0cd1439223c4a04d7230eaa8abbf5c815ba2dd990b3eb36ee8fb89016054d; first introducing control commit c226266b1a08ae5cb1101337f372e0e95da46b79 (local checkpoint not pushed yet).",
   "current_owner_action": "No further owner setup is required. Plan 2.29 G3 PASS; synchronize control/GitHub/watchdog and obtain exact-state review, then proceed using already-bound Pixel and attached Black Pearl.",
   "gates_G0_G12": {
-    "G0": "PENDING_FIRST_V1_5_INTRODUCTION_COMMIT_AND_SELF_REFERENCE_METADATA",
+    "G0": "PASS_MASTER_V1_5_HASH_AND_FIRST_INTRODUCING_CONTROL_COMMIT_RECORDED; PUSH_AND_SYNC_PENDING",
     "G1": "PASS",
     "G2": "PASS_CLASS_B_RETAINED",
     "G3": "PLAN_2_29_G3_PASS; SYNCHRONIZED_EXACT_STATE_REVIEW_PENDING",
@@ -473,9 +473,9 @@
   "owner_action_required": false,
   "owner_action": "None; owner has stated Pixel 9 is available and Black Pearl is connected.",
   "physical_session_owner_action_required_after_review": false,
-  "latest_release": "v0.7.2 remains latest, immutable and not prerelease; latest-release API verified 2026-10-07T08:50Z.",
+  "latest_release": "v0.7.2 remains latest, immutable and not prerelease; latest-release API verified 2026-10-07T09:07Z.",
   "master_body_sha256": "b5b0cd1439223c4a04d7230eaa8abbf5c815ba2dd990b3eb36ee8fb89016054d",
-  "master_introducing_commit": "PENDING_FIRST_V1_5_CONTROL_PLANE_COMMIT",
+  "master_introducing_commit": "c226266b1a08ae5cb1101337f372e0e95da46b79",
   "g3_plan_ready_for_cold_disconnected_route": false,
   "latest_c05c_attempt": {
     "attempt_started_utc": "2026-10-07T03:57:21Z",
@@ -531,7 +531,7 @@
     "pr_and_issue_body": "PR #70 and issue #71 remain stale with former v1.3/two-minute instructions; synchronize after the current control checkpoint and before Phase C."
   },
   "last_observed_control_tree_before_status_commit": "Last dynamically resolved remote tip at 2026-10-07T09:07Z: E58 6a8d13eb91586671a52646fa3391fd9ced8123aa / tree af4f07b39c6c8066d4147e736e6aa7217756b50f. Resolve the live ref again; local v1.5/plan-2.29 changes are unsynchronized.",
-  "next_action": "Commit and push current v1.5/plan-2.29 control state; synchronize issue #71, PR #70, and watchdog; update status; obtain exact-state PASS; then execute C05-C immediately.",
+  "next_action": "Push current v1.5/plan-2.29 control state; synchronize issue #71, PR #70, and watchdog; update canonical status; obtain exact-state PASS; then execute C05-C immediately.",
   "g3_approved_entry_route": "PLAN_2_29_G3_PASS_CONTROL_SYNC_PENDING_EXACT_STATE_REVIEW_PENDING",
   "g3_attached_connected_session_resume_approved": false,
   "phase_b_binding": {
