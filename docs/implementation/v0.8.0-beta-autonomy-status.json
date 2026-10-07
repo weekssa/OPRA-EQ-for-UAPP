@@ -1,8 +1,8 @@
 {
-  "timestamp_utc": "2026-10-07T16:21:28Z",
-  "state": "PLAN_2_48_EXACT_STATE_REVIEW_NOT_PASS_CONTROL_RECORD_RECONCILIATION_REQUIRED",
-  "current_gate": "RECONCILE_STALE_CURRENT_EXECUTION_AND_GATE_OVERLAYS",
-  "next_gate": "EXACT_STATE_REVIEW_INCLUDING_G3_PLAN_2_48_AFTER_SYNC",
+  "timestamp_utc": "2026-10-07T16:26:30Z",
+  "state": "PLAN_2_48_FINAL_EXACT_STATE_REVIEW_PENDING",
+  "current_gate": "FINAL_SYNCHRONIZED_EXACT_STATE_REVIEW_INCLUDING_G3_PLAN_2_48",
+  "next_gate": "PHASE_B_FRESH_WIRELESS_ADB_BINDING_AFTER_FINAL_REVIEW_PASS",
   "candidate_branch": "codex/v0.8.0-beta-ux",
   "candidate_head": "3329590db531c31be84e7e28d89209028a688075",
   "candidate_tree": "79808ef8052812427461f480e9abf19c2e930c22",
@@ -84,16 +84,16 @@
     ],
     "stable_latest": "v0.7.2",
     "latest_is_prerelease": false,
-    "pr_body_sync": "SYNCHRONIZED at 2026-10-07T16:04:17Z; dynamic control-branch links; plan 2.48 exact-state review pending.",
+    "pr_body_sync": "SYNCHRONIZED at 2026-10-07T16:26:16Z; issue #71 updated at 16:26:15Z; active hourly watcher updated through supported tool at about 16:26Z; plan 2.48 final exact-state review pending.",
     "mergeable_state": "clean"
   },
   "pr_state": "open/draft",
   "pr_head": "3329590db531c31be84e7e28d89209028a688075",
   "pr_base": "c702ef0149b4c647446639cfcb0ab25c09159db3",
-  "pr_current_body_stale": true,
+  "pr_current_body_stale": false,
   "ci": {
     "head_sha": "3329590db531c31be84e7e28d89209028a688075",
-    "as_of_utc": "2026-10-07T15:40:32Z",
+    "as_of_utc": "2026-10-07T16:25:17Z",
     "total": 8,
     "success": 8,
     "in_progress": 0,
@@ -198,9 +198,9 @@
         "indexed_file_count": 36
       },
       "plan_revision": "2.48",
-      "plan_review": "NOT PASS at 16:16Z for synchronized plan 2.48 control state; stale current overlays/status fields are being reconciled.",
+      "plan_review": "PENDING: one final exact-state review of the synchronized dynamic control state, including G3 for plan 2.48. Prior checkpoint 15483a570c2d0ecf7adc0adf4a02b87a441fde91 returned NOT PASS at 16:16Z for stale current overlays; corrected in pushed control commit dbddd358d2a74f28f13147920b1446de37872906.",
       "read_semantics": "Production READ sends outbound report(s) and may receive one bounded automatic nondestructive timeout retry; do not claim zero USB traffic or raw-bit equality. Compare same displayed fields at UI precision.",
-      "readiness": "NOT READY until a corrected synchronized plan 2.48 exact-state review passes; no ADB before PASS. Fresh Phase B required after PASS.",
+      "readiness": "NOT READY for ADB/device work until the final exact-state review returns PASS. Fresh Phase B is required after PASS; use that exact binding for C1/Phase C.",
       "prior_attempts": [
         {
           "physical_attempt_utc": "2026-10-06T19:25:17Z",
