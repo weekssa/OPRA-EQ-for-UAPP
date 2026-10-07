@@ -26,6 +26,11 @@ jobs:
           python3 -m unittest discover -s tools -p 'test_promote_release_candidate.py' -v
           python3 tools/promote_release_candidate.py check-contract
 
+      - name: Test qualified beta prerelease publisher contract
+        run: |
+          python3 tools/test_publish_beta_prerelease.py
+          python3 tools/publish_beta_prerelease.py check-contract --project-root .
+
       - name: Set up JDK 17
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
