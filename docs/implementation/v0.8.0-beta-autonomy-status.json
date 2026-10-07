@@ -1,5 +1,5 @@
 {
-  "timestamp_utc": "2026-10-07T12:25:00Z",
+  "timestamp_utc": "2026-10-07T12:25:34Z",
   "state": "PHASE_A_B_PREFLIGHT_CONVERGENCE",
   "current_gate": "Phase A/B PASS; plan 2.37 G3 PASS; 68/68 offline selector/preflight tests PASS. First v1.8 commit is recorded; metadata seal/push and external synchronization remain pending, followed by independent exact-state review. Readiness certificate remains NOT READY; C05-C/G4 PARTIAL / NOT PASS; Phase C not started.",
   "next_gate": "Create and push the v1.8 metadata seal; synchronize issue #71, draft PR #70, and watchdog; obtain independent exact-state PASS; then mark and synchronize readiness PASS before Phase C.",
@@ -574,7 +574,7 @@
     "candidate_tree_verified": true,
     "apk_hash_metadata_signer_alignment_verified": true,
     "sdk_tools_pinned": true,
-    "production_action_audit": "PASS for Edit EQ, DEVICE Refresh, attached local navigation, final read paths.",
+    "production_action_audit": "PASS for Edit EQ, DEVICE Refresh, attached local navigation, final read paths; a separate independent source/state audit of plan 2.37 also passed.",
     "evidence_commands_prepared": true,
     "exact_head_ci_green": true,
     "plan_g3_pass": true,
@@ -704,5 +704,16 @@
     "verification": "The documented five-module offline selector/resolver/entry-guard/fingerprint/activity suite passed 68/68 again at 2026-10-07T12:21Z; Phase B previously passed with exact Pixel identity, installed/local APK match, shell/package/capture readiness, absent app/activity, and same-target recheck. No DAC I/O or mutation.",
     "do_not_request_duplicate_session": true,
     "remaining_entry_conditions": "Push/synchronize control state and obtain independent exact-state PASS; only then issue READY and enter Phase C using the bound target and already-connected Black Pearl."
+  },
+  "independent_source_action_audit": {
+    "state": "PASS",
+    "plan_revision": "2.37",
+    "candidate_head": "3329590db531c31be84e7e28d89209028a688075",
+    "candidate_tree": "79808ef8052812427461f480e9abf19c2e930c22",
+    "scope": "Independent verification that planned actions exist in the expected production UI state: disconnected entry/Connect, Edit EQ read, DEVICE Refresh, local attached navigation/session retention, truthful freshness, and no hidden setter/reconnect path.",
+    "result": "PASS; Connect also triggers expected initial production reads; static known-capability VID/PID presentation is not live USB identity; physical USB fingerprint remains a separate planned observation.",
+    "device_access": false,
+    "files_modified": false,
+    "physical_qualification_result": "NONE; this source/state audit does not pass C05-C/G4."
   }
 }
