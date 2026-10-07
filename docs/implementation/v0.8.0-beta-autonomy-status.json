@@ -1,5 +1,5 @@
 {
-  "timestamp_utc": "2026-10-07T03:37:07Z",
+  "timestamp_utc": "2026-10-07T03:42:37Z",
   "state": "RUNNING_PHASE_A_FINAL_INDEPENDENT_REVIEW",
   "current_gate": "G3 final ten-assertion independent review pending on plan 2.18 after Phase A, issue/PR, and hourly watchdog synchronization. No ADB/USB/device access in Phase A.",
   "next_gate": "Obtain the final independent review of all ten assertions against synchronized plan 2.18, filled preflight evidence, exact candidate/APK, and live control state. If it passes, record the verdict durably, synchronize status/issue/PR/watchdog, then report PREFLIGHT COMPLETE — READY FOR PHONE and await a fresh owner availability statement.",
@@ -21,7 +21,7 @@
   "pr_base": "c702ef0149b4c647446639cfcb0ab25c09159db3",
   "pr_current_body_stale": false,
   "ci": {
-    "as_of_utc": "2026-10-07T03:37:07Z",
+    "as_of_utc": "2026-10-07T03:42:37Z",
     "exact_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
     "total_exact_head_check_runs": 8,
     "check_run_snapshot": {
@@ -416,7 +416,7 @@
   "main_head_observed": "79d600529621257136adb4d9e1a97e8ae8521d7e",
   "main_advanced_since_pr_snapshot": true,
   "pr_base_ref": "main",
-  "pr_snapshot_as_of_utc": "2026-10-07T03:37:07Z",
+  "pr_snapshot_as_of_utc": "2026-10-07T03:42:37Z",
   "integration_base_sha": "c702ef0149b4c647446639cfcb0ab25c09159db3",
   "app_src_test_tree": "470979fb22a91c4514534badda6c2cc2032abfb6",
   "app_src_android_test_tree": "da2b4f31e18025ebd00f0a84f274e0e8a8624800",
@@ -463,7 +463,7 @@
       "gate": "G3",
       "name": "Final physical plan ready",
       "state": "PENDING_FINAL_INDEPENDENT_REVIEW_2_18",
-      "evidence": "Plan revision 2.18 assertions 2–10 passed preliminary static review; current Phase A and external control surfaces synchronized at control checkpoint c5c370aa8cbaaad3056098e449419c53d0184d55 / tree cc3debbd0902e8597c4825d8cacf3a8c814f9733; final all-ten reviewer verdict pending."
+      "evidence": "Plan revision 2.18 assertions 2–10 passed preliminary static review; current Phase A and external control surfaces synchronized at control checkpoint bcfd92ecf4425ea54c5128a73fa6e2dc917b888a / tree d5f12b3c9c3b393a6b041475c725a0ebe7026b4a; final all-ten reviewer verdict pending."
     },
     {
       "gate": "G4",
@@ -526,22 +526,22 @@
   ],
   "g3_plan_ready_for_attached_resume": false,
   "g3_plan_not_approved_for_fresh_attach": true,
-  "issue_updated_at_utc": "2026-10-07T03:36:53Z",
+  "issue_updated_at_utc": "2026-10-07T03:37:37Z",
   "issue_body_current": true,
   "watchdog_prompt_updated": true,
   "watchdog_prompt_updated_utc": "2026-10-07T03:33:50.183Z",
   "control_plane_checkpoint_pushed": true,
-  "pr_updated_at_utc": "2026-10-07T03:36:52Z",
-  "control_plane_checkpoint_tree": "cc3debbd0902e8597c4825d8cacf3a8c814f9733",
+  "pr_updated_at_utc": "2026-10-07T03:37:38Z",
+  "control_plane_checkpoint_tree": "d5f12b3c9c3b393a6b041475c725a0ebe7026b4a",
   "control_plane_branch": {
     "name": "codex/v0.8.0-beta-watch",
     "head_before_documentation_reconciliation": "7de075559af3fa0d3f877f33c2e274ec292e19b1",
     "tree_before_documentation_reconciliation": "75a564e4f6ea834bd07a1e6652a9ae80ebc224ec",
     "remote_matched_before_documentation_reconciliation": true,
-    "synchronized_head": "c5c370aa8cbaaad3056098e449419c53d0184d55",
-    "synchronized_tree": "cc3debbd0902e8597c4825d8cacf3a8c814f9733",
+    "synchronized_head": "bcfd92ecf4425ea54c5128a73fa6e2dc917b888a",
+    "synchronized_tree": "d5f12b3c9c3b393a6b041475c725a0ebe7026b4a",
     "remote_matches_synchronized_head": true,
-    "as_of_utc": "2026-10-07T03:37:07Z"
+    "as_of_utc": "2026-10-07T03:42:37Z"
   },
   "owner_action_required": false,
   "owner_action": "No owner action during Phase A. After the explicit readiness notice, the owner must freshly make the Pixel available and have the Black Pearl attached to Pixel USB-C before handoff if it is not already attached. Wireless ADB only.",
@@ -597,11 +597,11 @@
     "debug_signer_sha256": "cbd57d13316c2ca9e59fb810135ea71567fd22132b0d7f4640e92dc4434f0e14",
     "signature": "apksigner verified one Android Debug signer with v2 scheme; not the official beta key",
     "zip_alignment": "Build Tools 36.0.0 zipalign verification successful from the prior exact-APK preflight; APK SHA is unchanged",
-    "live_github_as_of_utc": "2026-10-07T03:37:07Z",
-    "pr": "#70 OPEN_DRAFT; exact frozen head; base main c702ef0149b4c647446639cfcb0ab25c09159db3; mergeable/clean; body current as of 2026-10-07T03:36:52Z",
-    "checks": "8/8 exact-head check-runs completed-success, live refreshed 2026-10-07T03:34:42Z: build 112181047518; min-api-smoke 112181046209; emulator-ui-test 112181045077; CodeQL 112152334761; Priority 112150826284; Catalog 112150826043; Kotlin analysis 112150825874; submit-gradle 112150813291",
+    "live_github_as_of_utc": "2026-10-07T03:42:37Z",
+    "pr": "#70 OPEN_DRAFT; exact frozen head; base main c702ef0149b4c647446639cfcb0ab25c09159db3; mergeable/clean; body current as of 2026-10-07T03:37:38Z",
+    "checks": "8/8 exact-head check-runs completed-success, live refreshed 2026-10-07T03:42:37Z: build 112181047518; min-api-smoke 112181046209; emulator-ui-test 112181045077; CodeQL 112152334761; Priority 112150826284; Catalog 112150826043; Kotlin analysis 112150825874; submit-gradle 112150813291",
     "main": "79d600529621257136adb4d9e1a97e8ae8521d7e; 4 ahead / 0 behind; four catalog/currentness paths only; BASE-DRIFT-B",
-    "stable_latest": "v0.7.2; public releases endpoint refreshed 2026-10-07T03:34:42Z; published 2026-10-03T05:32:08Z",
+    "stable_latest": "v0.7.2; public releases endpoint refreshed 2026-10-07T03:42:37Z; published 2026-10-03T05:32:08Z",
     "source_paths": "ordinary launcher and disconnected card; local-only tabs/navigation; production Edit EQ and DEVICE Refresh reads; attached away/back card route; source-audited",
     "command_syntax": "Plan 2.18 helper /bin/bash -n PASS; helper sourced in idle Bash; local candidate/path guards PASS; T0 empty; no ADB command invoked",
     "evidence_ignore": "candidate worktree .git/info/exclude rule /.unlazy/v080-beta/evidence/c05c-*/ verified for the current unique reservation",
@@ -611,7 +611,7 @@
     "helper_guard": "one-shot T0; rejects non-empty commands.log and any prior outputs/screenshots/manifest/other evidence; requires exact candidate tree",
     "evidence_reservation": "preflight.txt + empty commands.log + prepared helper only; no capture, output, manifest, or physical evidence",
     "device_access": "none during Phase A; no ADB/USB command, Pixel query, device inspection, or DAC request",
-    "review": "Plan 2.18 static review assertions 2–10 found no concrete defect; Phase A record is populated and issue/PR reflect current control checkpoint; final independent ten-assertion verdict pending.",
+    "review": "Plan 2.18 static review assertions 2–10 found no concrete defect; Phase A record is populated and canonical status references are corrected to the live control checkpoint; final independent ten-assertion verdict pending.",
     "remaining": "Final independent ten-assertion review against synchronized plan/status/preflight/GitHub/watchdog state; if pass, record verdict and readiness state."
   }
 }
