@@ -1,8 +1,8 @@
 {
-  "timestamp_utc": "2026-10-07T22:01:32Z",
-  "state": "C05C_G4_PASS; CONTROL_EVIDENCE_RECONCILIATION; G5_INDEPENDENT_PREMERGE_NEXT",
-  "current_gate": "CONTROL_AND_EXTERNAL_STATUS_RECONCILIATION_AFTER_C05C_PASS",
-  "next_gate": "G5_INDEPENDENT_PREMERGE_VERIFICATION",
+  "timestamp_utc": "2026-10-07T22:10:16Z",
+  "state": "C05C_G4_PASS; G5_FIRST_REVIEW_NOT_PASS; TRACEABILITY_CORRECTION_AND_SYNC",
+  "current_gate": "G5_TRACEABILITY_CORRECTION_AND_EXTERNAL_SYNC",
+  "next_gate": "G5_FRESH_INDEPENDENT_PREMERGE_REVIEW_AFTER_SYNC",
   "candidate_branch": "codex/v0.8.0-beta-ux",
   "candidate_head": "3329590db531c31be84e7e28d89209028a688075",
   "candidate_tree": "79808ef8052812427461f480e9abf19c2e930c22",
@@ -10,7 +10,7 @@
   "app_src_main_tree": "857d02a53d0df44fb0bd46e5ddad3b319dc48dab",
   "app_production_source_changed_in_current_candidate": false,
   "current_candidate_changes": [
-    "Control-only correction of stale execution/gate overlays after exact-state review NOT PASS; no app/test candidate or Class B change."
+    "Control-plane documentation correction for exact C05 binding/evidence traceability after first G5 NOT PASS; frozen app/test candidate and Class B unchanged."
   ],
   "candidate_apk_sha256": "f33818309d55571166d91e501065706ddbb8faf180833b03bb6eb948e6bffed1",
   "candidate_apk_is_official_signed_beta": false,
@@ -90,7 +90,7 @@
   "pr_state": "open/draft; exact frozen head; mergeable/clean",
   "pr_head": "3329590db531c31be84e7e28d89209028a688075",
   "pr_base": "c702ef0149b4c647446639cfcb0ab25c09159db3",
-  "pr_current_body_stale": false,
+  "pr_current_body_stale": true,
   "ci": {
     "head_sha": "3329590db531c31be84e7e28d89209028a688075",
     "as_of_utc": "2026-10-07T16:25:17Z",
@@ -497,10 +497,10 @@
   "owner_action_required_now": false,
   "pixel_required_now": false,
   "physical_session_ready": false,
-  "physical_session_readiness_reason": "C05-C/G4 passed and the phone was released; no more phone or pairing work is required.",
+  "physical_session_readiness_reason": "C05-C/G4 passed and the phone was released; no further device access is needed.",
   "estimated_pixel_minutes": "5-10 optimization target; no time-only abort",
   "watchdog_mode": "RELEASE_CONVERGENCE_AFTER_PHYSICAL_PASS",
-  "loop_status": "G5_INDEPENDENT_REVIEW_PENDING_AFTER_SYNC",
+  "loop_status": "G5_FIRST_REVIEW_NOT_PASS; CORRECTED_CONTROL_EVIDENCE_AWAITING_SYNC_AND_FRESH_REVIEW",
   "stable_latest_release": "v0.7.2",
   "merge_or_publish_performed": false,
   "nonphysical_gates_open": [
@@ -530,7 +530,7 @@
     "If G5 passes, refresh current merge rules/checks and exact refs; mark PR ready and merge only the qualified exact head, then verify merged SHA/tree.",
     "Continue official main-only signing, signed artifact provenance, exact signed upgrade, clean install/core smoke, independent artifact verification, prerelease, review bundle, and closeout in order."
   ],
-  "issue": "OPEN; body synchronized at 2026-10-07T16:04:15Z to plan 2.48/current control status.",
+  "issue": "OPEN; last synchronized at 2026-10-07T22:01:07Z before the G5 NOT PASS and traceability correction; sync required.",
   "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex%2Fv0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md (resolve the live control ref dynamically)",
   "physical_plan": {
     "path": "docs/implementation/FINAL_PHYSICAL_SESSION_PLAN.md",
@@ -634,14 +634,14 @@
     ]
   },
   "issue_updated_at_utc": "2026-10-07T16:45:06Z",
-  "issue_body_current": true,
-  "watchdog_prompt_updated": true,
+  "issue_body_current": false,
+  "watchdog_prompt_updated": false,
   "watchdog_prompt_updated_utc": "2026-10-07T22:01:00Z",
   "control_plane_checkpoint_pushed": true,
   "pr_updated_at_utc": "2026-10-07T16:45:07Z",
   "control_plane_branch": "codex/v0.8.0-beta-watch; resolve live origin tip dynamically.",
   "owner_action_required": false,
-  "owner_action": "Restore the existing paired wireless ADB route to this Mac so the Pixel appears as an online ADB device or current TLS-connect service; keep the Black Pearl cable unchanged; confirm the route is visible.",
+  "owner_action": "None. The physical gate is complete; do not request or use the supplied pairing code.",
   "physical_session_owner_action_required_after_review": false,
   "latest_release": "v0.7.2 remains latest and non-prerelease; immutable true.",
   "master_body_sha256": "c09db756671243ebd2c33e3ff47e360f8909263cc9512dcd633ed57b799cd73a",
@@ -678,7 +678,7 @@
     "readiness_certificate": "READY FOR PHASE B; plan 2.48 physical procedure safety review found no safety issue and the one-time category B metadata correction is applied."
   },
   "last_observed_control_tree_before_status_commit": "f2d641f5a1adc5c80e8e2d943e43e00954607430",
-  "next_action": "Run one fresh independent G5 pre-merge review against candidate HEAD 3329590db531c31be84e7e28d89209028a688075, physical evidence, protected-path delta, current PR/base/checks, and Class B boundary. Keep PR #70 draft until PASS.",
+  "next_action": "Push the control-only traceability correction, synchronize issue #71, draft PR #70 and the existing watcher through supported tools, then obtain a fresh independent G5 review. Keep PR #70 draft; no app/test or physical changes.",
   "g3_approved_entry_route": "C05-C complete; no entry route required.",
   "g3_attached_connected_session_resume_approved": false,
   "phase_b_binding": {
@@ -760,7 +760,7 @@
     "C05_D": "PASS",
     "G3": "PASS plan 2.48",
     "G4": "PASS C05-C",
-    "G5": "NEXT independent pre-merge review",
+    "G5": "FIRST REVIEW NOT PASS: hardware evidence placeholders and ambiguous basename-only Phase B cross-reference. Corrected control record; external sync and fresh independent review pending.",
     "G6": "PENDING",
     "G7": "PENDING",
     "G8": "PENDING",
@@ -807,10 +807,10 @@
   "automation_update_tool_failure": "Earlier view/update failures remain historical. The supported update succeeded at approximately 2026-10-07T15:50Z; no direct TOML edit was made.",
   "latest_release_verified_at_utc": "2026-10-07T21:57:00Z",
   "phase_c_started": true,
-  "pr_body_current": true,
+  "pr_body_current": false,
   "issue_last_checked_utc": "2026-10-07T22:01:32Z",
   "pr_last_checked_utc": "2026-10-07T22:01:32Z",
-  "current_control_reconciliation_pushed": true,
+  "current_control_reconciliation_pushed": false,
   "exact_state_consistency_review": {
     "result": "CATEGORY_B_METADATA_ONLY; one correction applied; physical procedure safety review clear; no recursive review required.",
     "reviewed_control_head": "81066aa86ae301a0588cd3a349409c0f1cd5d8e7",
@@ -828,8 +828,8 @@
     "previous_checkpoint_result": "NOT PASS at 2026-10-07T16:16Z for synchronized plan 2.48 checkpoint; stale current maintained overlays/status fields found.",
     "previous_checkpoint_reviewed_at_utc": "2026-10-07T16:16:00Z"
   },
-  "issue_71": "OPEN; synchronized at 2026-10-07T22:01:07Z to C05-C/G4 PASS and G5 next action.",
-  "current_reconciliation_pushed": true,
+  "issue_71": "OPEN; last synchronized at 22:01:07Z before G5 NOT PASS; update after control checkpoint push.",
+  "current_reconciliation_pushed": false,
   "phase_b_current_status": "PASS; same binding used for C05-C; session completed and phone released.",
   "push_attempts": [
     {
@@ -864,7 +864,7 @@
     }
   ],
   "github_write_blocker": null,
-  "control_plane_local_tree": "control docs will be updated in this checkpoint; verify exact tree before commit.",
+  "control_plane_local_tree": "Control-only correction in progress; record exact tree after commit.",
   "control_plane_remote_head_last_seen": "f6b659b156a8ba51ee392e4107353f176b27c0ab",
   "control_content_checkpoint_sha": "f6b659b156a8ba51ee392e4107353f176b27c0ab",
   "control_content_checkpoint_tree": "f2d641f5a1adc5c80e8e2d943e43e00954607430",
@@ -879,7 +879,7 @@
     "tests_rerun": false,
     "finding": "CATEGORY B: stale current plan pointer and active JSON next-action/main snapshot only; no physical-procedure safety finding. One-time correction applied; no recursive review required under the owner convergence directive."
   },
-  "current_action": "One independent G5 pre-merge review of the exact frozen candidate, verified physical evidence, protected paths, and current PR/base/checks.",
+  "current_action": "Push the control-only traceability correction, synchronize issue #71, draft PR #70 and the existing watcher through supported tools, then obtain a fresh independent G5 review. Keep PR #70 draft; no app/test or physical changes.",
   "latest_phase_b_attempt": {
     "at_utc": "2026-10-07T21:25:28Z",
     "result": "PASS",
@@ -961,5 +961,17 @@
       "Acceptance-evidence and Pixel-binding current overlays still named plan 2.47."
     ],
     "next_action": "Reconcile every current maintained overlay and duplicate JSON field, push control-only changes, synchronize issue/PR/automation, then obtain one new exact-state review including G3. No device access before PASS."
+  },
+  "pr_body_sync": "STALE after the first G5 review returned NOT PASS; corrected control evidence must be synchronized before fresh review.",
+  "current_reconciliation_sync_pending": true,
+  "first_g5_review": {
+    "result": "NOT PASS",
+    "recorded_utc": "2026-10-07T22:10:16Z",
+    "findings": [
+      "Current hardware-evidence record contained literal placeholders for binding/evidence paths and hashes.",
+      "C05 preflight referenced phase-b-summary-reconciliation.txt by basename; the file exists only in the separate sealed Phase B binding directory and is not in the C05 manifest."
+    ],
+    "correction": "Control hardware evidence now records exact paths and digests and explains the cross-directory reference. Raw C05 files and manifest are unchanged.",
+    "fresh_review_required": true
   }
 }
