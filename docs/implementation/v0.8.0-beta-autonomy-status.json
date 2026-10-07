@@ -1,8 +1,8 @@
 {
-  "timestamp_utc": "2026-10-07T16:45:07Z",
-  "state": "WAITING_FOR_OWNER_RESTORE_WIRELESS_ADB_ROUTE; C05-C_STOPPED_BEFORE_C1; NO_DAC_OBSERVATION",
-  "current_gate": "PHASE_B_STOPPED_WIRELESS_ADB_ROUTE_UNAVAILABLE",
-  "next_gate": "OWNER_RESTORE_EXISTING_PAIRED_WIRELESS_ADB_ROUTE",
+  "timestamp_utc": "2026-10-07T21:57:50Z",
+  "state": "C05C_G4_PASS; CONTROL_EVIDENCE_RECONCILIATION; G5_INDEPENDENT_PREMERGE_NEXT",
+  "current_gate": "CONTROL_AND_EXTERNAL_STATUS_RECONCILIATION_AFTER_C05C_PASS",
+  "next_gate": "G5_INDEPENDENT_PREMERGE_VERIFICATION",
   "candidate_branch": "codex/v0.8.0-beta-ux",
   "candidate_head": "3329590db531c31be84e7e28d89209028a688075",
   "candidate_tree": "79808ef8052812427461f480e9abf19c2e930c22",
@@ -18,10 +18,11 @@
     "pr_number": 70,
     "state": "open",
     "draft": true,
-    "mergeable": true,
     "head": "3329590db531c31be84e7e28d89209028a688075",
     "base_ref": "main",
     "base_sha": "c702ef0149b4c647446639cfcb0ab25c09159db3",
+    "mergeable": true,
+    "mergeable_state": "clean",
     "checks": [
       {
         "name": "CodeQL",
@@ -72,10 +73,10 @@
         "conclusion": "success"
       }
     ],
-    "main_sha": "2388181e9edc57311aebc954a7d091f4aebb6bee",
-    "main_ahead_of_pr_base": 5,
+    "main_sha": "44c1c065a11b40815f149c814e49cda7b7f7e107",
+    "main_ahead_of_pr_base": 8,
     "main_behind_pr_base": 0,
-    "base_drift": "BASE-DRIFT-B; five catalog/currentness-only commits, same four paths, no app/test overlap.",
+    "base_drift": "BASE-DRIFT-B; eight catalog/currentness-only commits and zero app/test overlap.",
     "base_drift_paths": [
       "catalog/catalog.json",
       "catalog/discovery/github_candidates.json",
@@ -84,13 +85,12 @@
     ],
     "stable_latest": "v0.7.2",
     "latest_is_prerelease": false,
-    "pr_body_sync": "SYNCHRONIZED at 2026-10-07T16:45:07Z with issue #71; both report final review category B correction and the Phase B no-route stop/current owner action; PR remains open/draft.",
-    "mergeable_state": "clean"
+    "pr_body_sync": "STALE until the current C05-C PASS and G5 next action are synchronized."
   },
-  "pr_state": "open/draft",
+  "pr_state": "open/draft; exact frozen head; mergeable/clean",
   "pr_head": "3329590db531c31be84e7e28d89209028a688075",
   "pr_base": "c702ef0149b4c647446639cfcb0ab25c09159db3",
-  "pr_current_body_stale": false,
+  "pr_current_body_stale": true,
   "ci": {
     "head_sha": "3329590db531c31be84e7e28d89209028a688075",
     "as_of_utc": "2026-10-07T16:25:17Z",
@@ -171,37 +171,55 @@
       ]
     },
     "C_real_black_pearl_session_read_navigation": {
-      "state": "PARTIAL / NOT PASS; prior physical attempt remains incomplete; current Phase B and Phase C have not started.",
-      "physical_attempt_utc": "2026-10-06T23:24:31Z",
+      "state": "PASS",
+      "physical_attempt_utc": "2026-10-07T21:29:31Z",
       "required": [
-        "exact device identity",
-        "authoritative Android recognition/session",
-        "initial and final EQ reads",
-        "initial and final DEVICE reads",
-        "attached navigation away/back",
-        "unchanged comparable state",
+        "exact device identity and installed APK matched sealed Phase B binding",
+        "production EQ and DEVICE baseline reads",
+        "attached navigation away/back while the DAC remained connected",
+        "truthful current connected/session presentation",
+        "explicit final EQ and DEVICE reads",
+        "final PID/activity/USB evidence",
+        "no unexpected displayed hardware value change",
         "bounded no-setting-mutation claim"
       ],
       "mutation_required": false,
       "attempt_result": {
-        "pixel": "Pixel 9 tokay API 37 over wireless ADB; serial [redacted; stable SHA-256 is recorded]",
-        "candidate": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f / e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d",
+        "pixel": "Pixel 9 / tokay / Android 17 (SDK 37), wireless ADB only; exact identity matched sealed binding.",
+        "candidate": "3329590db531c31be84e7e28d89209028a688075 / 79808ef8052812427461f480e9abf19c2e930c22; app source f24b1582e22b19fc75757a61186361b71eab3974.",
         "apk_sha256": "f33818309d55571166d91e501065706ddbb8faf180833b03bb6eb948e6bffed1",
-        "black_pearl_usb_fingerprint": "VID:PID 3302:43e8; TTGK Technology; TE-C; serial 330243E8260129",
-        "completed": "Production baseline and final EQ/DEVICE reads matched at displayed UI precision; My DAC to EQ Library and back navigation completed with Black Pearl attached; all 36 indexed evidence-file hashes verified.",
-        "not_pass_reason": "PARTIAL / NOT PASS because the contemporaneous session log lacks required final post-navigation PID/USB evidence. The 19m45s duration is historical optimization data only under the current directive and is not an acceptance failure; do not backfill or combine the old evidence.",
-        "safety": "No Reset, Apply, Flash, Save, DEVICE setter, permission grant, fault, cable change/disconnect, process kill, or restoration write. No restoration was needed for the read-only procedure.",
-        "evidence_folder": ".unlazy/v080-beta/evidence/c05c-20261006T232431Z-plan26/",
-        "evidence_index_sha256": "8fe77db44506cfe4cca935f8ee6844eb95e4fc09cccc6430b146d3e29aac3c7c",
-        "session_log_sha256": "77c0c257a06c0aa8fb16f597a7fe9509190a1f42102f0a1a737630e25427c514",
-        "retrospective_addendum_sha256": "4a223e023b59be2584b40679b87fa62d364153a4ecab735b0431f56f1aa82a4e",
-        "indexed_file_count": 36
+        "plan_revision": "2.48",
+        "binding_path": ".unlazy/v080-beta/evidence/pixel-adb-binding-20261007T212528486640Z/binding.json",
+        "binding_sha256": "9a59cbf8b53abc9a6471808a0cfb63e22689b09f40f131a48755dbb43db81dbe",
+        "evidence_folder": ".unlazy/v080-beta/evidence/c05c-20261007T212825832635Z/",
+        "manifest_sha256": "e09084b77bf1e1e702628b51195acd4e394786b6f56e076cdeb69bcc211f825e",
+        "indexed_file_count": 85,
+        "completed": "One normal Connect from clean disconnected entry; production baseline EQ and DEVICE reads; attached My DAC -> EQ Library -> My DAC navigation; explicit final EQ/DEVICE reads; final PID/activity/USB observations; 31 field comparison passed at displayed UI precision.",
+        "continuity": "PID 3570 and top-resumed MainActivity remained continuous; parsed USB descriptor fingerprint SHA-256 095d55f58dfa7be9dcd5104684f104fb488d8135f1d0213c0e74213820d9ae6e matched baseline/navigation/final.",
+        "safety": "No Reset, Apply, Flash, Save, DEVICE setter, induced fault, process kill, cable change, disconnect, or restoration write. No unexpected displayed value change. Phone released; Black Pearl cable left connected.",
+        "claim_boundary": "Production READ can send outbound reports and one bounded automatic nondestructive retry. Comparison is at displayed UI precision; no zero USB traffic or raw bit-for-bit equality claim.",
+        "result": "PASS"
       },
       "plan_revision": "2.48",
-      "plan_review": "PENDING: one final exact-state review of the synchronized dynamic control state, including G3 for plan 2.48. Prior checkpoint 15483a570c2d0ecf7adc0adf4a02b87a441fde91 returned NOT PASS at 16:16Z for stale current overlays; corrected in pushed control commit dbddd358d2a74f28f13147920b1446de37872906.",
+      "plan_review": "PASS; independent exact-state review completed at 2026-10-07T16:33Z; category B stale metadata corrected once, no physical-procedure safety finding, no recursive review required.",
       "read_semantics": "Production READ sends outbound report(s) and may receive one bounded automatic nondestructive timeout retry; do not claim zero USB traffic or raw-bit equality. Compare same displayed fields at UI precision.",
-      "readiness": "NOT READY for ADB/device work until the final exact-state review returns PASS. Fresh Phase B is required after PASS; use that exact binding for C1/Phase C.",
+      "readiness": "C05-C/G4 PASS; phone released. No further ADB/device access is needed.",
       "prior_attempts": [
+        {
+          "result_before_current_c05c_pass": "PARTIAL / NOT PASS; preserved without backfill or combination",
+          "pixel": "Pixel 9 tokay API 37 over wireless ADB; serial [redacted; stable SHA-256 is recorded]",
+          "candidate": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f / e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d",
+          "apk_sha256": "f33818309d55571166d91e501065706ddbb8faf180833b03bb6eb948e6bffed1",
+          "black_pearl_usb_fingerprint": "VID:PID 3302:43e8; TTGK Technology; TE-C; serial 330243E8260129",
+          "completed": "Production baseline and final EQ/DEVICE reads matched at displayed UI precision; My DAC to EQ Library and back navigation completed with Black Pearl attached; all 36 indexed evidence-file hashes verified.",
+          "not_pass_reason": "PARTIAL / NOT PASS because the contemporaneous session log lacks required final post-navigation PID/USB evidence. The 19m45s duration is historical optimization data only under the current directive and is not an acceptance failure; do not backfill or combine the old evidence.",
+          "safety": "No Reset, Apply, Flash, Save, DEVICE setter, permission grant, fault, cable change/disconnect, process kill, or restoration write. No restoration was needed for the read-only procedure.",
+          "evidence_folder": ".unlazy/v080-beta/evidence/c05c-20261006T232431Z-plan26/",
+          "evidence_index_sha256": "8fe77db44506cfe4cca935f8ee6844eb95e4fc09cccc6430b146d3e29aac3c7c",
+          "session_log_sha256": "77c0c257a06c0aa8fb16f597a7fe9509190a1f42102f0a1a737630e25427c514",
+          "retrospective_addendum_sha256": "4a223e023b59be2584b40679b87fa62d364153a4ecab735b0431f56f1aa82a4e",
+          "indexed_file_count": 36
+        },
         {
           "physical_attempt_utc": "2026-10-06T19:25:17Z",
           "required": [
@@ -319,7 +337,8 @@
         "target_sha256": "ea0e928373c557974326ae751489246c9aed5fa1c6147051c9b56b48cb373e35",
         "transport": "wireless ADB only",
         "dac_io": false
-      }
+      },
+      "closed_at_utc": "2026-10-07T21:50:28Z"
     },
     "D_independent_qualification_review": {
       "state": "PASS",
@@ -475,22 +494,26 @@
     ],
     "physical_keyboard_claimed": false
   },
-  "owner_action_required_now": true,
+  "owner_action_required_now": false,
   "pixel_required_now": false,
   "physical_session_ready": false,
-  "physical_session_readiness_reason": "Fresh Phase B resolver found no online ADB device and no current TLS-connect mDNS service. Phone released; no Black Pearl descriptor or protocol operation occurred.",
+  "physical_session_readiness_reason": "C05-C/G4 passed and the phone was released; no more phone or pairing work is required.",
   "estimated_pixel_minutes": "5-10 optimization target; no time-only abort",
-  "watchdog_mode": "OBSERVE_ONLY; wait quietly for owner restoration of existing paired wireless ADB route.",
-  "loop_status": "PLAN_2_48_REVIEW_NOT_PASS; RECONCILE_CURRENT_CONTROL_OVERLAYS; SYNC_EXTERNAL_SURFACES; REPEAT_EXACT_STATE_REVIEW; C05_C_NOT_STARTED",
-  "stable_latest_release": "v0.7.2 remains stable/latest; release reports immutable true and prerelease false.",
+  "watchdog_mode": "RELEASE_CONVERGENCE_AFTER_PHYSICAL_PASS",
+  "loop_status": "G5_INDEPENDENT_REVIEW_PENDING_AFTER_SYNC",
+  "stable_latest_release": "v0.7.2",
   "merge_or_publish_performed": false,
   "nonphysical_gates_open": [
-    "One independent exact-state review including G3 for the synchronized plan 2.48 checkpoint."
+    "G5 independent pre-merge verification",
+    "G6 exact merge/SHA",
+    "G7 signing/provenance",
+    "G8 signed upgrade",
+    "G9 clean install and independent artifact",
+    "G10 prerelease",
+    "G11 review bundle",
+    "G12 closeout"
   ],
-  "physical_gates_open": [
-    "Phase B route restoration",
-    "C05-C Phase C"
-  ],
+  "physical_gates_open": [],
   "downstream_gates": [
     "Independent pre-merge verification",
     "Exact qualified-tree merge",
@@ -503,51 +526,62 @@
     "mission closeout"
   ],
   "next_actions": [
-    "Wait for owner action restoring the existing paired wireless ADB route to this Mac; no pairing or cable change is requested.",
-    "After the route is confirmed visible, run one fresh read-only Phase B using the plan 2.48 resolver.",
-    "If Phase B passes, derive C1 values from that exact binding and proceed immediately to C1/Phase C; otherwise stop before DAC observation."
+    "Commit/push control-only evidence reconciliation without changing the app/test candidate or frozen plan.",
+    "Synchronize issue #71, keep PR #70 draft and update its body, and update the existing watcher through the supported tool.",
+    "Run one fresh independent G5 pre-merge review against the exact candidate, evidence, PR/base/checks, and Class B boundaries.",
+    "After G5 PASS, refresh live merge rules/checks, ready and merge exact candidate, verify merged SHA/tree, then continue main-only signing and post-merge gates in order."
   ],
   "issue": "OPEN; body synchronized at 2026-10-07T16:04:15Z to plan 2.48/current control status.",
   "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex%2Fv0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md (resolve the live control ref dynamically)",
   "physical_plan": {
     "path": "docs/implementation/FINAL_PHYSICAL_SESSION_PLAN.md",
     "revision": "2.48",
-    "g3_review": "NOT PASS at 16:16Z for synchronized plan 2.48 checkpoint; refresh review after current overlays and external surfaces are reconciled.",
-    "phase_c_started": false,
+    "g3_review": "PASS",
+    "phase_c_started": true,
     "timer_only_abort": false,
-    "target_active_minutes": "5-10 optimization only; no time-only abort or cap",
-    "binding_path": null,
-    "binding_sha256": null,
-    "session_generation_observability": "UI does not expose numeric USB sessionGeneration; report observed identity/PID/fingerprint/Connected-current UI and successful reads only.",
-    "reason": "After review PASS, use one new ignored Phase B output and derive all C1 binding variables from that fresh result."
+    "binding_path": ".unlazy/v080-beta/evidence/pixel-adb-binding-20261007T212528486640Z/binding.json",
+    "binding_sha256": "9a59cbf8b53abc9a6471808a0cfb63e22689b09f40f131a48755dbb43db81dbe",
+    "reason": "C05-C/G4 passed on exact frozen candidate; no additional phone access required."
   },
   "app_dir_tree": "42977ce481bc76aa85b866610672e35e35d6cde6",
   "pr_mergeable": true,
   "pr_mergeable_state": "clean",
-  "main_head_observed": "2388181e9edc57311aebc954a7d091f4aebb6bee",
-  "main_advanced_since_pr_snapshot": true,
+  "main_head_observed": "44c1c065a11b40815f149c814e49cda7b7f7e107",
+  "main_advanced_since_pr_snapshot": 8,
   "pr_base_ref": "main",
-  "pr_snapshot_as_of_utc": "2026-10-07T16:33:00Z",
+  "pr_snapshot_as_of_utc": "2026-10-07T21:57:00Z",
   "integration_base_sha": "c702ef0149b4c647446639cfcb0ab25c09159db3",
   "app_src_test_tree": "470979fb22a91c4514534badda6c2cc2032abfb6",
   "app_src_android_test_tree": "da2b4f31e18025ebd00f0a84f274e0e8a8624800",
-  "base_drift_reconciliation": "BASE-DRIFT-B; four catalog/currentness-only paths, no app/test overlap; live main is 79d600529621257136adb4d9e1a97e8ae8521d7e, PR base c702ef0149b4c647446639cfcb0ab25c09159db3.",
+  "base_drift_reconciliation": {
+    "classification": "BASE-DRIFT-B",
+    "ahead_by": 8,
+    "behind_by": 0,
+    "changed_paths": [
+      "catalog/catalog.json",
+      "catalog/discovery/github_candidates.json",
+      "catalog/discovery/headphone_identity_audit.json",
+      "catalog/source_health.json"
+    ],
+    "app_test_overlap": false,
+    "action": "No rebase/build indicated; preserve the frozen app/test tree."
+  },
   "master_directive": "v2.2; body SHA-256 c09db756671243ebd2c33e3ff47e360f8909263cc9512dcd633ed57b799cd73a; first introducing commit ced7a2d648dc4d6aa89662665553eea6bafdcb23; one-time category B correction and Phase B failure state recorded.",
-  "current_owner_action": "Restore the existing paired wireless ADB route to this Mac so the Pixel appears as an online ADB device or current TLS-connect service; keep the Black Pearl cable unchanged; confirm the route is visible.",
+  "current_owner_action": "None; no additional physical setup is needed.",
   "gates_G0_G12": {
-    "G0": "PASS; master v2.2 body SHA-256 c09db756671243ebd2c33e3ff47e360f8909263cc9512dcd633ed57b799cd73a matches resume.",
-    "G1": "PASS; exact frozen candidate CI is 8/8 completed-success; API35/API26 and other closed gates remain closed.",
+    "G0": "PASS; master v2.2 body SHA-256 c09db756671243ebd2c33e3ff47e360f8909263cc9512dcd633ed57b799cd73a verified.",
+    "G1": "PASS; frozen candidate CI 8/8 completed-success; API35/API26 and other closed gates remain closed.",
     "G2": "PASS; Class B retained; protected hardware paths unchanged.",
-    "G3": "PASS for plan 2.48 physical procedure; final review category B stale metadata corrected once with no safety finding.",
-    "G4": "NOT PASS; Phase B could not bind the Pixel and Phase C remains unstarted.",
-    "G5": "PENDING after G4: independent pre-merge verification.",
-    "G6": "PENDING exact qualified-tree merge and merged-SHA verification.",
-    "G7": "PENDING official main-only signed beta artifact and provenance.",
-    "G8": "PENDING exact signed v0.7.2-to-beta persisted-state upgrade.",
-    "G9": "PENDING signed clean install/core smoke and independent artifact verification.",
-    "G10": "PENDING authorized prerelease publication.",
-    "G11": "PENDING final review bundle.",
-    "G12": "PENDING watchdog and mission closeout."
+    "G3": "PASS for frozen plan 2.48 physical procedure.",
+    "G4": "PASS; C05-C read-only physical qualification completed; checksum-verified evidence preserved in ignored session directory.",
+    "G5": "NEXT; one independent pre-merge review after status/issue/PR/watcher synchronization.",
+    "G6": "PENDING; merge exact qualified tree and verify merged SHA/tree after G5.",
+    "G7": "PENDING; official main-only signed beta artifact and checksum/signer/provenance verification.",
+    "G8": "PENDING; exact signed v0.7.2-to-beta persisted-state upgrade.",
+    "G9": "PENDING; signed clean install/core smoke and independent artifact verification.",
+    "G10": "PENDING; prerelease publication after prior gates pass.",
+    "G11": "PENDING; final review bundle.",
+    "G12": "PENDING; watcher and mission closeout."
   },
   "manual_talkback": "DEFERRED_NON_BLOCKING_FOR_V0.8.0_BETA",
   "main_current_checks": {
@@ -601,27 +635,36 @@
     ]
   },
   "issue_updated_at_utc": "2026-10-07T16:45:06Z",
-  "issue_body_current": true,
-  "watchdog_prompt_updated": true,
-  "watchdog_prompt_updated_utc": "2026-10-07T16:43:54Z",
+  "issue_body_current": false,
+  "watchdog_prompt_updated": false,
+  "watchdog_prompt_updated_utc": null,
   "control_plane_checkpoint_pushed": true,
   "pr_updated_at_utc": "2026-10-07T16:45:07Z",
   "control_plane_branch": "codex/v0.8.0-beta-watch; resolve live origin tip dynamically.",
-  "owner_action_required": true,
+  "owner_action_required": false,
   "owner_action": "Restore the existing paired wireless ADB route to this Mac so the Pixel appears as an online ADB device or current TLS-connect service; keep the Black Pearl cable unchanged; confirm the route is visible.",
-  "physical_session_owner_action_required_after_review": true,
+  "physical_session_owner_action_required_after_review": false,
   "latest_release": "v0.7.2 remains latest and non-prerelease; immutable true.",
   "master_body_sha256": "c09db756671243ebd2c33e3ff47e360f8909263cc9512dcd633ed57b799cd73a",
   "master_introducing_commit": "ced7a2d648dc4d6aa89662665553eea6bafdcb23",
   "g3_plan_ready_for_cold_disconnected_route": false,
   "latest_c05c_attempt": {
-    "status": "NOT STARTED; current cycle stopped at Phase B before C1.",
-    "session_dir": ".unlazy/v080-beta/evidence/c05c-20261007T163804Z/",
-    "phase_b_log": ".unlazy/v080-beta/evidence/pixel-adb-binding-20261007T164044048183Z/binding.log",
-    "phase_c_started": false,
-    "dac_descriptor_observed": false,
-    "dac_protocol_request": false,
-    "setting_mutation": false,
+    "status": "PASS",
+    "closed_at_utc": "2026-10-07T21:50:28Z",
+    "session_dir": ".unlazy/v080-beta/evidence/c05c-20261007T212825832635Z/",
+    "phase_b_binding_path": ".unlazy/v080-beta/evidence/pixel-adb-binding-20261007T212528486640Z/binding.json",
+    "phase_b_binding_sha256": "9a59cbf8b53abc9a6471808a0cfb63e22689b09f40f131a48755dbb43db81dbe",
+    "phase_c_started": true,
+    "candidate_head": "3329590db531c31be84e7e28d89209028a688075",
+    "candidate_tree": "79808ef8052812427461f480e9abf19c2e930c22",
+    "apk_sha256": "f33818309d55571166d91e501065706ddbb8faf180833b03bb6eb948e6bffed1",
+    "manifest_sha256": "e09084b77bf1e1e702628b51195acd4e394786b6f56e076cdeb69bcc211f825e",
+    "indexed_file_count": 85,
+    "displayed_field_count": 31,
+    "displayed_comparison": "PASS at UI precision",
+    "process_activity_usb": "PASS continuity/identity evidence recorded; no unexpected displayed change",
+    "mutation_performed": false,
+    "restoration_write_applicable": false,
     "phone_released": true
   },
   "main_current_checks_as_of_utc": "2026-10-07T16:33:00Z",
@@ -636,19 +679,20 @@
     "readiness_certificate": "READY FOR PHASE B; plan 2.48 physical procedure safety review found no safety issue and the one-time category B metadata correction is applied."
   },
   "last_observed_control_tree_before_status_commit": "f2d641f5a1adc5c80e8e2d943e43e00954607430",
-  "next_action": "Wait for the owner to restore the existing paired wireless ADB route to this Mac and confirm it is visible. Then run one fresh Phase B. Do not retry absent a real route/state change.",
-  "g3_approved_entry_route": "ONE_SYNCHRONIZED_EXACT_STATE_REVIEW_OF_PLAN_2_48_AND_CONTROL_CHECKPOINT; THEN FRESH_PHASE_B; THEN C1/PHASE_C",
+  "next_action": "C05-C/G4 passed. Reconcile control evidence and synchronize issue #71, draft PR #70, and the watcher; then run one independent G5 pre-merge review. Do not pair or access the phone again.",
+  "g3_approved_entry_route": "C05-C complete; no entry route required.",
   "g3_attached_connected_session_resume_approved": false,
   "phase_b_binding": {
-    "status": "NOT PASS / NO BINDING CREATED",
-    "attempted_at_utc": "2026-10-07T16:40:44Z",
-    "candidate_local_evidence_dir": ".unlazy/v080-beta/evidence/pixel-adb-binding-20261007T164044048183Z/",
-    "sanitized_log": ".unlazy/v080-beta/evidence/pixel-adb-binding-20261007T164044048183Z/binding.log",
-    "result": "mdns connect_count=0; device rows=0; no Phase C binding.json created.",
-    "dac_io": false,
-    "pairing_performed": false,
-    "cable_changed": false,
-    "setting_mutation": false
+    "status": "PASS; sealed binding used by completed C05-C session.",
+    "path": ".unlazy/v080-beta/evidence/pixel-adb-binding-20261007T212528486640Z/binding.json",
+    "sha256": "9a59cbf8b53abc9a6471808a0cfb63e22689b09f40f131a48755dbb43db81dbe",
+    "resolver_sha256": "caef7e50daef26a454c543dd3a51a1f373b922649ae72f5bd657cac3fbb45124",
+    "target_selector_sha256": "ea0e928373c557974326ae751489246c9aed5fa1c6147051c9b56b48cb373e35",
+    "candidate_branch": "codex/v0.8.0-beta-ux",
+    "candidate_head": "3329590db531c31be84e7e28d89209028a688075",
+    "candidate_tree": "79808ef8052812427461f480e9abf19c2e930c22",
+    "apk_sha256": "f33818309d55571166d91e501065706ddbb8faf180833b03bb6eb948e6bffed1",
+    "used_for_c05c": true
   },
   "phase_c_entry_guard": {
     "state": "OFFLINE TESTS PASS 79/79; synchronized plan 2.48 exact-state review pending; not run on device.",
@@ -661,7 +705,7 @@
     "run_policy": "After plan 2.48 exact-state PASS, run one fresh wireless Phase B and derive all C1 binding variables from it; no second independent review pause."
   },
   "plan_review": "Plan 2.48 exact-state review completed at 2026-10-07T16:33Z with category B stale metadata only; no physical-procedure safety finding. The one-time master pointer/status JSON correction is applied; no recursive review.",
-  "current_owner_action_required_after_review": true,
+  "current_owner_action_required_after_review": false,
   "master_directive_version": "2.2",
   "master_directive_body_sha256": "c09db756671243ebd2c33e3ff47e360f8909263cc9512dcd633ed57b799cd73a",
   "g3_review": {
@@ -691,44 +735,40 @@
   },
   "first_v1_6_commit": null,
   "external_surfaces": {
-    "issue_71": "SYNCHRONIZED 2026-10-07T16:45:06Z; body reports the category B correction, Phase B no-route stop, and exact owner action.",
-    "pr_70_body": "SYNCHRONIZED 2026-10-07T16:45:07Z; draft remains open and body matches issue #71.",
-    "watchdog": "ACTIVE and observational; updated through the supported tool at 2026-10-07T16:43:54Z to wait for restoration of the existing paired wireless ADB route."
+    "issue_71": "stale pending update",
+    "pr_70": "stale pending update; remain draft",
+    "watchdog": "stale pre-C05 route-wait prompt; update through supported automation tool"
   },
-  "master_directive_loaded": "YES; master v2.2 body hash c09db756671243ebd2c33e3ff47e360f8909263cc9512dcd633ed57b799cd73a matches resume; final review category B correction applied; Phase B stopped at 2026-10-07T16:40:44Z because no online ADB device/TLS-connect service was visible.",
+  "master_directive_loaded": true,
   "candidate_change": "Control-plane documentation only; no app/test source, candidate tree, protected path, physical acceptance criterion, or Class B change.",
   "package": "com.weekssa.opraeqforuapp",
   "version_name": "0.8.0-beta",
   "version_code": 10,
   "debug_signer_sha256": "cbd57d13316c2ca9e59fb810135ea71567fd22132b0d7f4640e92dc4434f0e14",
   "gates": {
-    "phase_a": "PASS; frozen candidate/APK/metadata, live GitHub facts, source/action audit, tools and evidence paths verified.",
+    "phase_a": "PASS",
     "phase_b": {
-      "status": "NOT PASS at 2026-10-07T16:40:44Z: resolver saw no online ADB device or current TLS-connect mDNS service; no binding created.",
-      "required_after_review": "Wait for the owner to restore the existing paired wireless ADB route, then run one fresh read-only Phase B.",
+      "status": "PASS; sealed wireless binding used by C05-C; no further device access required.",
+      "binding_path": ".unlazy/v080-beta/evidence/pixel-adb-binding-20261007T212528486640Z/binding.json",
+      "binding_sha256": "9a59cbf8b53abc9a6471808a0cfb63e22689b09f40f131a48755dbb43db81dbe",
       "resolver_sha256": "caef7e50daef26a454c543dd3a51a1f373b922649ae72f5bd657cac3fbb45124",
-      "entry_guard_sha256": "4ed865de6a9b83910f77eafc472ceb48092b7f83b233ad1b94f03c7fefbaeeeb",
-      "dac_io_before_phase_c": false
+      "target_selector_sha256": "ea0e928373c557974326ae751489246c9aed5fa1c6147051c9b56b48cb373e35"
     },
+    "phase_c": "PASS; C05-C read-only production qualification completed at 2026-10-07T21:50:28Z.",
     "C05_A": "PASS",
     "C05_B": "PASS",
-    "C05_C": "PARTIAL / NOT PASS; fresh Phase B is transport evidence only; Phase C has not started.",
+    "C05_C": "PASS",
     "C05_D": "PASS",
-    "G3": "PASS for plan 2.48 physical procedure; final review found category B metadata only and the one-time correction is applied.",
-    "exact_state_review": "Completed 2026-10-07T16:33Z; category B metadata only, correction applied once; no repeated review required.",
-    "G4": "NOT PASS; Phase B could not bind the Pixel and C05-C Phase C evidence has not started.",
-    "G5_to_G12": "NOT RUN / ordered behind physical qualification.",
-    "API35": "PASS/CLOSED",
-    "API26": "PASS/CLOSED",
-    "process_no_replay": "PASS/CLOSED.",
-    "automated_accessibility": "PASS/CLOSED",
-    "manual_talkback": "DEFERRED / NON-BLOCKING.",
-    "class": "Class B retained.",
-    "G0": "PASS; master v2.2 body SHA-256 c09db756671243ebd2c33e3ff47e360f8909263cc9512dcd633ed57b799cd73a matches resume.",
-    "C05-C": "PARTIAL / NOT PASS; Phase B and Phase C have not started for current resolver.",
-    "C05-A": "PASS",
-    "C05-B": "PASS",
-    "C05-D": "PASS"
+    "G3": "PASS plan 2.48",
+    "G4": "PASS C05-C",
+    "G5": "NEXT independent pre-merge review",
+    "G6": "PENDING",
+    "G7": "PENDING",
+    "G8": "PENDING",
+    "G9": "PENDING",
+    "G10": "PENDING",
+    "G11": "PENDING",
+    "G12": "PENDING"
   },
   "owner_state": {
     "pixel_available": true,
@@ -737,10 +777,10 @@
     "requires_duplicate_setup_request": false
   },
   "physical_session_readiness": {
-    "state": "WAITING_FOR_OWNER_WIRELESS_ADB_ROUTE",
-    "reason": "Fresh Phase B resolver found no online ADB device and no current TLS-connect mDNS service. Phone released; no Black Pearl descriptor or protocol operation occurred."
+    "state": "C05-C PASS / PHONE RELEASED",
+    "reason": "Read-only physical qualification complete; evidence manifest verified. No more device access is needed."
   },
-  "control_plane_local_head": "codex/v0.8.0-beta-watch at 81066aa86ae301a0588cd3a349409c0f1cd5d8e7 plus one local control-only correction/status update; resolve dynamically.",
+  "control_plane_local_head": "codex/v0.8.0-beta-watch; live ref must be resolved dynamically before write/push.",
   "first_v1_8_commit": null,
   "repeated_session_entry_failure": {
     "triggered": true,
@@ -766,11 +806,11 @@
     "physical_qualification_result": "NONE; this source/state audit does not pass C05-C/G4."
   },
   "automation_update_tool_failure": "Earlier view/update failures remain historical. The supported update succeeded at approximately 2026-10-07T15:50Z; no direct TOML edit was made.",
-  "latest_release_verified_at_utc": "2026-10-07T16:33:00Z; stable/latest v0.7.2, published and non-prerelease.",
-  "phase_c_started": false,
-  "pr_body_current": true,
-  "issue_last_checked_utc": "2026-10-07T16:45:07Z",
-  "pr_last_checked_utc": "2026-10-07T16:45:07Z",
+  "latest_release_verified_at_utc": "2026-10-07T21:57:00Z",
+  "phase_c_started": true,
+  "pr_body_current": false,
+  "issue_last_checked_utc": "2026-10-07T21:57:00Z",
+  "pr_last_checked_utc": "2026-10-07T21:57:00Z",
   "current_control_reconciliation_pushed": true,
   "exact_state_consistency_review": {
     "result": "CATEGORY_B_METADATA_ONLY; one correction applied; physical procedure safety review clear; no recursive review required.",
@@ -789,16 +829,9 @@
     "previous_checkpoint_result": "NOT PASS at 2026-10-07T16:16Z for synchronized plan 2.48 checkpoint; stale current maintained overlays/status fields found.",
     "previous_checkpoint_reviewed_at_utc": "2026-10-07T16:16:00Z"
   },
-  "issue_71": "OPEN; body synchronized at 2026-10-07T16:45:06Z to final review category B correction and the Phase B no-route stop/current owner action.",
+  "issue_71": "OPEN; stale pre-C05 route-wait body; synchronize to C05-C PASS and G5 next action.",
   "current_reconciliation_pushed": true,
-  "phase_b_current_status": {
-    "status": "NOT PASS at 2026-10-07T16:40:44Z; zero online ADB rows and zero current TLS-connect mDNS services. No binding.json was created. Wait for the owner to restore the existing route; do not retry until a real state change.",
-    "required_after_review": "After the existing paired wireless ADB route is restored and confirmed visible, run one fresh read-only Phase B. Do not pair, change cables, or operate the DAC.",
-    "resolver_sha256": "caef7e50daef26a454c543dd3a51a1f373b922649ae72f5bd657cac3fbb45124",
-    "entry_guard_sha256": "4ed865de6a9b83910f77eafc472ceb48092b7f83b233ad1b94f03c7fefbaeeeb",
-    "wireless_adb_only": true,
-    "dac_io_before_phase_c": false
-  },
+  "phase_b_current_status": "PASS; same binding used for C05-C; session completed and phone released.",
   "push_attempts": [
     {
       "utc": "2026-10-07T15:10:06Z",
@@ -832,7 +865,7 @@
     }
   ],
   "github_write_blocker": null,
-  "control_plane_local_tree": null,
+  "control_plane_local_tree": "control docs will be updated in this checkpoint; verify exact tree before commit.",
   "control_plane_remote_head_last_seen": "f6b659b156a8ba51ee392e4107353f176b27c0ab",
   "control_content_checkpoint_sha": "f6b659b156a8ba51ee392e4107353f176b27c0ab",
   "control_content_checkpoint_tree": "f2d641f5a1adc5c80e8e2d943e43e00954607430",
@@ -847,18 +880,15 @@
     "tests_rerun": false,
     "finding": "CATEGORY B: stale current plan pointer and active JSON next-action/main snapshot only; no physical-procedure safety finding. One-time correction applied; no recursive review required under the owner convergence directive."
   },
-  "current_action": "Wait for the owner to restore the existing paired wireless ADB route to this Mac and confirm it is visible. Then run one fresh Phase B. Do not retry absent a real route/state change.",
+  "current_action": "Update the canonical control record and synchronize external surfaces, then independent G5 review.",
   "latest_phase_b_attempt": {
-    "at_utc": "2026-10-07T16:40:44Z",
-    "result": "NOT_PASS",
-    "reason": "Resolver found zero online ADB device rows and zero current TLS-connect mDNS services.",
-    "log_path": ".unlazy/v080-beta/evidence/pixel-adb-binding-20261007T164044048183Z/binding.log",
-    "binding_created": false,
-    "dac_observation": false,
-    "dac_protocol_request": false,
-    "cable_changed": false,
-    "phone_released": true,
-    "next_action": "Restore the existing paired wireless ADB route to this Mac so the Pixel appears as an online ADB device or current TLS-connect service; keep the Black Pearl cable unchanged; confirm the route is visible."
+    "at_utc": "2026-10-07T21:25:28Z",
+    "result": "PASS",
+    "binding_path": ".unlazy/v080-beta/evidence/pixel-adb-binding-20261007T212528486640Z/binding.json",
+    "binding_sha256": "9a59cbf8b53abc9a6471808a0cfb63e22689b09f40f131a48755dbb43db81dbe",
+    "dac_io_before_c1": false,
+    "candidate_and_installed_apk_match": true,
+    "phone_released_after_complete_phase_c": true
   },
   "historical_phase_b_binding": {
     "status": "HISTORICAL / SUPERSEDED; not eligible for plan 2.48 C1. Fresh Phase B is required after exact-state PASS.",
