@@ -1,8 +1,8 @@
 {
-  "timestamp_utc": "2026-10-07T13:03:02Z",
+  "timestamp_utc": "2026-10-07T13:17:12Z",
   "state": "PHASE_A_B_PASS_PLAN_2_39_G3_PASS_WATCHDOG_SYNC_BLOCKED",
-  "current_gate": "Phase A/B PASS; exact plan revisions 2.37, 2.38, and 2.39 G3 PASS; independent source/action audit PASS; supported automation service unavailable after nine exact app-load failures, leaving the hourly watchdog stale; control/issue/PR synchronization and independent exact-state review pending; readiness NOT READY; C05-C/G4 remains PARTIAL / NOT PASS; Phase C has not started.",
-  "next_gate": "Update the existing hourly watchdog through supported automation_update (never edit automation.toml); refresh issue #71 and PR #70 after the status-only push; obtain independent synchronized exact-state PASS; only then mark/synchronize and reverify the readiness certificate. Phase C remains gated.",
+  "current_gate": "Phase A/B PASS; exact plan 2.39 G3 PASS; independent source/action audit PASS; supported automation service unavailable after ten exact app-load failures, leaving the hourly watcher stale at v1.6/plan 2.33; control-document push, external-body refresh, and independent exact-state review pending; readiness NOT READY; C05-C/G4 PARTIAL / NOT PASS; Phase C has not started.",
+  "next_gate": "Push this control-only reconciliation, synchronize issue #71 and draft PR #70 to the current status with a dynamic control-branch pointer, then obtain independent exact-state review. Keep C05-C gated until supported watcher synchronization and readiness review pass.",
   "candidate_branch": "codex/v0.8.0-beta-ux",
   "candidate_head": "3329590db531c31be84e7e28d89209028a688075",
   "candidate_tree": "79808ef8052812427461f480e9abf19c2e930c22",
@@ -25,7 +25,7 @@
     "base_sha": "c702ef0149b4c647446639cfcb0ab25c09159db3",
     "checks": {
       "head_sha": "3329590db531c31be84e7e28d89209028a688075",
-      "as_of_utc": "2026-10-07T12:52:00Z",
+      "as_of_utc": "2026-10-07T13:13:00Z",
       "total": 8,
       "success": 8,
       "in_progress": 0,
@@ -85,7 +85,7 @@
     ],
     "stable_latest": "v0.7.2",
     "latest_is_prerelease": false,
-    "pr_body_sync": "Synchronized at 2026-10-07T12:28Z to previous control checkpoint 8f2ad40b519cd951a109653097e816dd53f85e94; refresh after this uncommitted control reconciliation is pushed.",
+    "pr_body_sync": "Issue #71 and PR #70 bodies were synchronized at 2026-10-07T13:07Z to prior control checkpoint 4fa3ca0cc7b5c76374832db88a171249361a8279; refresh after this local control-only reconciliation is pushed.",
     "mergeable_state": "clean"
   },
   "pr_state": "open/draft",
@@ -94,7 +94,7 @@
   "pr_current_body_stale": true,
   "ci": {
     "head_sha": "3329590db531c31be84e7e28d89209028a688075",
-    "as_of_utc": "2026-10-07T12:21:00Z",
+    "as_of_utc": "2026-10-07T13:13:00Z",
     "total": 8,
     "success": 8,
     "in_progress": 0,
@@ -466,9 +466,9 @@
   "owner_action_required_now": false,
   "pixel_required_now": false,
   "physical_session_ready": false,
-  "physical_session_readiness_reason": "Plan revision 2.39 G3 passes. The supported automation service returned its exact app-load error on nine calls (four prior and five in this control checkpoint); independent synchronized exact-state review and the final readiness certificate remain pending.",
+  "physical_session_readiness_reason": "The supported automation service returned the exact app-load error on ten calls; the saved hourly watcher is stale at v1.6/plan 2.33. The local control reconciliation must be pushed and issue/PR refreshed before independent exact-state review. C05-C remains gated.",
   "estimated_pixel_minutes": "5-10 optimization target; no time-only abort",
-  "watchdog_mode": "STALE_AUTOMATION_PROMPT_TOOL_UNAVAILABLE; NO_DEVICE_IO; RETRY_SUPPORTED_AUTOMATION_UPDATE",
+  "watchdog_mode": "STALE_AUTOMATION_PROMPT_TOOL_UNAVAILABLE; NO_DEVICE_IO; NO_REPEAT_UNCHANGED_CALL",
   "loop_status": "PHASE_A_B_PASS_PLAN_2_39_G3_PENDING_WATCHDOG_SYNC_BLOCKED_C05C_NOT_STARTED",
   "stable_latest_release": "v0.7.2",
   "merge_or_publish_performed": false,
@@ -490,12 +490,13 @@
     "mission closeout"
   ],
   "next_actions": [
-    "Update the existing hourly watcher using the supported automation_update service; never edit automation.toml manually.",
-    "Commit/push this control-only reconciliation and synchronize issue #71 and draft PR #70 to the exact checkpoint.",
-    "Obtain independent synchronized exact-state PASS; then mark/synchronize and independently verify the final readiness certificate.",
-    "Only after those gates pass, begin Phase C with the sealed Pixel binding and owner-confirmed attached Black Pearl."
+    "Commit and push this seven-document control-only status reconciliation after confirming the control branch still has the expected parent.",
+    "Refresh issue #71 and draft PR #70 to reflect the current gate and use a dynamic control-branch pointer.",
+    "Obtain an independent exact-state review of the pushed control ref, live issue/PR, watcher, candidate and checks.",
+    "Do not repeat automation_update while the service error is unchanged; never edit automation.toml manually.",
+    "Keep physical readiness NOT READY and do not use ADB/device/DAC until the watcher is synchronized and readiness review passes."
   ],
-  "issue": "OPEN; issue #71 body synchronized at 2026-10-07T13:03:01Z to pushed control checkpoint 04f4db71b406e666bd1d35a62ea3dfa4320a72f5; verify live after the status-only follow-up is pushed.",
+  "issue": "OPEN; issue #71 body synchronized at 2026-10-07T13:07:52Z to prior pushed control checkpoint 4fa3ca0cc7b5c76374832db88a171249361a8279; refresh after this local control-only reconciliation is pushed.",
   "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex%2Fv0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md (resolve the live control ref dynamically)",
   "physical_plan": {
     "path": "docs/implementation/FINAL_PHYSICAL_SESSION_PLAN.md",
@@ -517,13 +518,13 @@
   "main_head_observed": "79d600529621257136adb4d9e1a97e8ae8521d7e",
   "main_advanced_since_pr_snapshot": true,
   "pr_base_ref": "main",
-  "pr_snapshot_as_of_utc": "2026-10-07T12:52:00Z",
+  "pr_snapshot_as_of_utc": "2026-10-07T13:13:00Z",
   "integration_base_sha": "c702ef0149b4c647446639cfcb0ab25c09159db3",
   "app_src_test_tree": "470979fb22a91c4514534badda6c2cc2032abfb6",
   "app_src_android_test_tree": "da2b4f31e18025ebd00f0a84f274e0e8a8624800",
   "base_drift_reconciliation": "BASE-DRIFT-B; four catalog/currentness-only paths, no app/test overlap; live main is 79d600529621257136adb4d9e1a97e8ae8521d7e, PR base c702ef0149b4c647446639cfcb0ab25c09159db3.",
   "master_directive": "v1.8; body SHA-256 4a44730c833893b8849e49b57194aa9abf0ceb8546f81450ddeef6803cae93a3; introduced by 15610e560779027516c0c126bcfce1e3ecda1cc5; two-commit seal is pushed.",
-  "current_owner_action": "No owner setup action is needed; Pixel availability and Black Pearl connection are confirmed. Do not use ADB/device/DAC until current plan G3, watchdog synchronization, exact-state review, and readiness certificate pass.",
+  "current_owner_action": "No owner setup action is needed; Pixel availability and Black Pearl connection are confirmed. Do not access the phone/device/DAC until watchdog synchronization, independent exact-state review, and readiness certificate pass.",
   "gates_G0_G12": {
     "G0": "PASS: master directive v1.8 body hash verified, first commit 15610e560779027516c0c126bcfce1e3ecda1cc5 recorded, and two-commit seal pushed.",
     "G1": "PASS nonphysical MUST evidence; exact-head CI 8/8 refreshed 2026-10-07T12:52Z.",
@@ -540,13 +541,13 @@
     "G12": "PENDING watchdog and mission closeout."
   },
   "manual_talkback": "DEFERRED_NON_BLOCKING_FOR_V0.8.0_BETA",
-  "main_current_checks": "Live exact-head check-runs API refreshed 2026-10-07T12:52Z: 8/8 completed-success for candidate 3329590db531c31be84e7e28d89209028a688075.",
-  "issue_updated_at_utc": "2026-10-07T13:03:01Z; issue #71 body synchronized to pushed control checkpoint 04f4db71b406e666bd1d35a62ea3dfa4320a72f5.",
-  "issue_body_current": true,
+  "main_current_checks": "Live exact-head check-runs refreshed 2026-10-07T13:13:00Z: 8/8 completed-success for candidate 3329590db531c31be84e7e28d89209028a688075.",
+  "issue_updated_at_utc": "2026-10-07T13:07:52Z; live issue #71 last updated to prior checkpoint 4fa3ca0cc7b5c76374832db88a171249361a8279; checked again 2026-10-07T13:13:00Z.",
+  "issue_body_current": false,
   "watchdog_prompt_updated": false,
-  "watchdog_prompt_updated_utc": "2026-10-07T13:00:51Z: supported automation_update update call failed again with the same app-load error; nine recorded tool failures total; saved prompt remains stale at v1.6/plan 2.33.",
+  "watchdog_prompt_updated_utc": "2026-10-07T13:13Z: the tenth supported automation_update call failed with the same app-load error; saved prompt remains stale at v1.6/plan 2.33.",
   "control_plane_checkpoint_pushed": true,
-  "pr_updated_at_utc": "2026-10-07T13:03:02Z; PR #70 body synchronized to pushed control checkpoint 04f4db71b406e666bd1d35a62ea3dfa4320a72f5.",
+  "pr_updated_at_utc": "2026-10-07T13:07:54Z; live PR #70 last updated to prior checkpoint 4fa3ca0cc7b5c76374832db88a171249361a8279; checked again 2026-10-07T13:13:00Z.",
   "control_plane_branch": "codex/v0.8.0-beta-watch; resolve live origin tip dynamically.",
   "owner_action_required": false,
   "owner_action": null,
@@ -593,8 +594,8 @@
     "plan_g3_pass": true,
     "readiness_certificate": "NOT READY; Phase A/B technical evidence and exact plan 2.39 G3 pass, but watchdog synchronization and independent synchronized exact-state review remain."
   },
-  "last_observed_control_tree_before_status_commit": "Control ref resolved to 04f4db71b406e666bd1d35a62ea3dfa4320a72f5 before this status-only follow-up; resolve dynamically after push.",
-  "next_action": "Retry the supported automation_update only after meaningful service recovery; never edit automation.toml. Push this status-only follow-up and refresh issue #71/PR #70 to its live control-branch status; obtain independent exact-state PASS; then mark/sync and independently verify readiness. Phase C only after all gates pass.",
+  "last_observed_control_tree_before_status_commit": "Live origin control ref resolved dynamically to 4fa3ca0cc7b5c76374832db88a171249361a8279 / tree e3c067bf9f1053502dd7450a665909e06c4a5afc before this status-only reconciliation.",
+  "next_action": "Do not repeat the unchanged automation service call or edit automation TOML. Push this seven-document control-only reconciliation; update issue #71 and PR #70 to the current status using a dynamic control-branch pointer; obtain independent exact-state review. Keep readiness NOT READY and do not access the Pixel/Black Pearl until supported watcher synchronization and independent readiness review pass.",
   "g3_approved_entry_route": "PLAN_2_39_G3_AND_WATCHDOG_SYNC_AND_READINESS_AND_EXACT_STATE_REVIEW_REQUIRED",
   "g3_attached_connected_session_resume_approved": false,
   "phase_b_binding": {
@@ -646,9 +647,9 @@
   },
   "first_v1_6_commit": "52681bbfec66c02c3aeb7a5fac5f726b57596d78",
   "external_surfaces": {
-    "issue_71": "OPEN; body updated 2026-10-07T13:03:01Z to control checkpoint 04f4db71b406e666bd1d35a62ea3dfa4320a72f5; refresh after this status-only follow-up.",
-    "pr_70_body": "OPEN/DRAFT; body updated 2026-10-07T13:03:02Z to control checkpoint 04f4db71b406e666bd1d35a62ea3dfa4320a72f5; refresh after this status-only follow-up.",
-    "watchdog": "STALE v1.6/plan 2.33; nine supported automation_update calls failed with exact app-load error; never edit TOML manually."
+    "issue_71": "OPEN; body updated 2026-10-07T13:07:52Z to prior control checkpoint 4fa3ca0cc7b5c76374832db88a171249361a8279; refresh after this status-only reconciliation is pushed.",
+    "pr_70_body": "OPEN/DRAFT; body updated 2026-10-07T13:07:54Z to prior control checkpoint 4fa3ca0cc7b5c76374832db88a171249361a8279; refresh after this status-only reconciliation is pushed.",
+    "watchdog": "STALE v1.6/plan 2.33; ten supported automation_update calls returned the exact app-load error; do not edit TOML or repeat while unchanged."
   },
   "master_directive_loaded": "YES",
   "candidate_change": "Documentation-only privacy correction in candidate history; no app/test source change. This checkpoint changes control-plane documentation only.",
@@ -704,7 +705,7 @@
     "requires_duplicate_setup_request": false
   },
   "physical_session_readiness": false,
-  "control_plane_local_head": "Local and origin control ref resolved to 04f4db71b406e666bd1d35a62ea3dfa4320a72f5 after push; resolve dynamically after this status-only follow-up.",
+  "control_plane_local_head": "Local and origin control ref resolved to 4fa3ca0cc7b5c76374832db88a171249361a8279 before this docs-only reconciliation; seven intended control documents are modified locally. Resolve dynamically after push.",
   "first_v1_8_commit": "15610e560779027516c0c126bcfce1e3ecda1cc5",
   "repeated_session_entry_failure": {
     "triggered": true,
@@ -731,17 +732,18 @@
   },
   "automation_update_tool_failure": {
     "tool": "mcp__codex_app__automation_update",
-    "attempts_prior_checkpoint": 4,
-    "attempts_this_checkpoint": 5,
-    "recorded_failures_total": 9,
+    "attempts_prior_checkpoint": 9,
+    "attempts_this_checkpoint": 1,
+    "recorded_failures_total": 10,
     "error": "The app could not load this tool. Please try again.",
     "prompt_state": "Saved hourly automation remains stale at master v1.6 / plan 2.33.",
     "manual_toml_edit": "PROHIBITED",
-    "effect": "Watchdog synchronization and independent synchronized exact-state/readiness review remain pending; no Pixel/ADB/device/DAC access occurred in this checkpoint."
+    "effect": "The latest supported view attempt failed. The watcher remains the sole pre-readiness blocker; no ADB/Pixel/USB/DAC operation occurred."
   },
-  "latest_release_verified_at_utc": "2026-10-07T12:52:00Z; latest is published non-prerelease v0.7.2.",
+  "latest_release_verified_at_utc": "2026-10-07T13:13:00Z; latest stable remains published non-prerelease v0.7.2.",
   "phase_c_started": false,
-  "pr_body_current": true,
-  "issue_last_checked_utc": "2026-10-07T13:03:01Z",
-  "pr_last_checked_utc": "2026-10-07T13:03:02Z"
+  "pr_body_current": false,
+  "issue_last_checked_utc": "2026-10-07T13:13:00Z",
+  "pr_last_checked_utc": "2026-10-07T13:13:00Z",
+  "current_control_reconciliation_pushed": false
 }
