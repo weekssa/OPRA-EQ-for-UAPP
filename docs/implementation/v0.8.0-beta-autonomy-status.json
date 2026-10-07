@@ -440,15 +440,15 @@
     "path": "docs/implementation/v0.8.0-beta-master-directive.md",
     "version": "1.3",
     "body_sha256": "084bca0df0103701bbed74831152074c6f1283d376a8a1930e51ea39016c52ed",
-    "introduced_by_commit": "PENDING_CONTROL_COMMIT"
+    "introduced_by_commit": "e57eb6ee92155d484cdc20c424546a70672b77e6"
   },
   "current_owner_action": "No owner action during Phase A. After the explicit readiness notice, the owner must freshly make the Pixel available and have the Black Pearl attached to Pixel USB-C before handoff if it is not already attached. Wireless ADB only.",
   "gates_G0_G12": [
     {
       "gate": "G0",
       "name": "Canonical directive / candidate identity",
-      "state": "PASS_WITH_CONTROL_INTRO_SHA_PENDING",
-      "evidence": "Master v1.3 body SHA-256 084bca0df0103701bbed74831152074c6f1283d376a8a1930e51ea39016c52ed; candidate/APK identity match; introduction commit pending."
+      "state": "PASS",
+      "evidence": "Master v1.3 body SHA-256 084bca0df0103701bbed74831152074c6f1283d376a8a1930e51ea39016c52ed; introduction commit e57eb6ee92155d484cdc20c424546a70672b77e6; candidate/APK identity match."
     },
     {
       "gate": "G1",
@@ -552,7 +552,7 @@
     "as_of_utc": "2026-10-07T03:27Z"
   },
   "master_body_sha256": "084bca0df0103701bbed74831152074c6f1283d376a8a1930e51ea39016c52ed",
-  "master_introducing_commit": "PENDING_CONTROL_COMMIT",
+  "master_introducing_commit": "e57eb6ee92155d484cdc20c424546a70672b77e6",
   "g3_plan_ready_for_cold_disconnected_route": false,
   "latest_c05c_attempt": {
     "attempt_started_utc": null,
