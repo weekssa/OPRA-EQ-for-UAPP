@@ -1,5 +1,5 @@
 {
-  "timestamp_utc": "2026-10-07T23:54:23Z",
+  "timestamp_utc": "2026-10-07T23:56:05Z",
   "state": "G0_G9_PASS; G10_PUBLISHER_ANDROID_CI_IN_PROGRESS; OPEN_BUILD_TEST_DEPENDENCY_ALERTS_RECORDED",
   "current_gate": "G10_BETA_PUBLISHER_PR72",
   "next_gate": "G10_ANDROID_CI_EXACT_HEAD",
@@ -577,7 +577,7 @@
     "Run the dedicated beta publisher once on exact merged main; verify prerelease tag, exact assets, artifact provenance/checksum/signer, and stable/latest v0.7.2.",
     "Prepare and independently verify the exact-membership review bundle, synchronize final status, then close out."
   ],
-  "issue": "OPEN; at 2026-10-07T23:54:23Z records G7-G9 PASS, PR #72 Android CI pending, 56 open transitive Maven alerts, and the passive ADB-list disclosure.",
+  "issue": "OPEN; updated 2026-10-07T23:55:39Z to record PR #72 build/emulator successes, remaining min-API check, 56 open transitive Maven alerts, and passive ADB-list disclosure.",
   "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex%2Fv0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md (resolve the live control ref dynamically)",
   "physical_plan": {
     "path": "docs/implementation/FINAL_PHYSICAL_SESSION_PLAN.md",
@@ -727,10 +727,10 @@
     "total": 9,
     "failed": 2
   },
-  "issue_updated_at_utc": "2026-10-07T23:54:23Z",
+  "issue_updated_at_utc": "2026-10-07T23:55:39Z",
   "issue_body_current": true,
   "watchdog_prompt_updated": true,
-  "watchdog_prompt_updated_utc": "2026-10-07T23:53:03Z",
+  "watchdog_prompt_updated_utc": "2026-10-07T23:56:05Z",
   "control_plane_checkpoint_pushed": true,
   "pr_updated_at_utc": "2026-10-07T22:46:30Z",
   "control_plane_branch": "codex/v0.8.0-beta-watch; resolve live origin tip dynamically.",
@@ -772,7 +772,7 @@
     "readiness_certificate": "READY FOR PHASE B; plan 2.48 physical procedure safety review found no safety issue and the one-time category B metadata correction is applied."
   },
   "last_observed_control_tree_before_status_commit": "cb2fa58bac78da15b156f5e61d48f2ac9b6dcf1c",
-  "next_action": "Monitor only Android CI run 37703940507 for PR #72 exact head 52ee1284cd6208012d217b3f151488b2ae739b8b. Catalog and CodeQL passed. Diagnose only actual failed job evidence; then after all checks pass mark ready, merge exact head, verify resulting main SHA/tree, and run the dedicated publisher once.",
+  "next_action": "Monitor only the min-API job in Android CI run 37703940507 for PR #72 exact head 52ee1284cd6208012d217b3f151488b2ae739b8b. Catalog, CodeQL, build, and emulator UI have passed. If min-API fails, inspect its exact failed step/log and fix only a demonstrated defect; do not duplicate CI.",
   "g3_approved_entry_route": "C05-C complete; no entry route required.",
   "g3_attached_connected_session_resume_approved": false,
   "phase_b_binding": {
@@ -899,12 +899,12 @@
     "files_modified": false,
     "physical_qualification_result": "NONE; this source/state audit does not pass C05-C/G4."
   },
-  "automation_update_tool_failure": "No current failure; supported automation update succeeded at 2026-10-07T23:53:03Z.",
+  "automation_update_tool_failure": "No current failure; supported automation update succeeded at 2026-10-07T23:56:05Z.",
   "latest_release_verified_at_utc": "2026-10-07T23:44:38Z",
   "phase_c_started": true,
   "pr_body_current": true,
-  "issue_last_checked_utc": "2026-10-07T23:54:23Z",
-  "pr_last_checked_utc": "2026-10-07T23:52:09Z",
+  "issue_last_checked_utc": "2026-10-07T23:55:39Z",
+  "pr_last_checked_utc": "2026-10-07T23:54Z",
   "current_control_reconciliation_pushed": true,
   "exact_state_consistency_review": {
     "result": "CATEGORY_B_METADATA_ONLY; one correction applied; physical procedure safety review clear; no recursive review required.",
@@ -923,7 +923,7 @@
     "previous_checkpoint_result": "NOT PASS at 2026-10-07T16:16Z for synchronized plan 2.48 checkpoint; stale current maintained overlays/status fields found.",
     "previous_checkpoint_reviewed_at_utc": "2026-10-07T16:16:00Z"
   },
-  "issue_71": "OPEN; updated/commented at 2026-10-07T23:54:23Z with G10 check state, dependency-alert snapshot, and host-side enumeration note.",
+  "issue_71": "OPEN; updated at 2026-10-07T23:55:39Z. PR #72 G10 has Catalog/CodeQL/build/emulator UI pass; min-API pending.",
   "current_reconciliation_pushed": true,
   "phase_b_current_status": "PASS; same binding used for C05-C; session completed and phone released.",
   "push_attempts": [
@@ -974,7 +974,7 @@
     "tests_rerun": false,
     "finding": "CATEGORY B: stale current plan pointer and active JSON next-action/main snapshot only; no physical-procedure safety finding. One-time correction applied; no recursive review required under the owner convergence directive."
   },
-  "current_action": "G0-G9 PASS. PR #72 Catalog and CodeQL passed; Android CI build, emulator UI, and API-26 jobs remain in progress. Open Dependabot alerts are documented as transitive build/test dependencies; no vulnerable app-runtime version was identified in the current SBOM. A prior passive adb devices -l enumeration was disclosed; no target-scoped or DAC operation followed.",
+  "current_action": "G0-G9 PASS. PR #72 Catalog, CodeQL, build, and emulator UI passed; only its API-26 min-API cold-install job remains in progress. The open dependency-alert and passive-host-ADB disclosures remain recorded.",
   "latest_phase_b_attempt": {
     "at_utc": "2026-10-07T21:25:28Z",
     "result": "PASS",
@@ -1325,9 +1325,9 @@
         "run_id": 37703940507,
         "result": "in_progress",
         "jobs": {
-          "build": "release APK assembly",
-          "emulator-ui-test": "connected UI tests",
-          "min-api-smoke": "API-26 emulator smoke"
+          "build": "success",
+          "emulator-ui-test": "success",
+          "min-api-smoke": "in_progress; starting API-26 emulator and cold-install"
         }
       },
       "codeql": {
@@ -1336,8 +1336,8 @@
       }
     }
   },
-  "next_action_source": "PR #72 exact-head Android CI run 37703940507; control status resolves dynamically from origin/codex/v0.8.0-beta-watch.",
-  "publisher_pr_last_checked_utc": "2026-10-07T23:52:09Z",
+  "next_action_source": "PR #72 exact-head Android CI min-api-smoke job in run 37703940507; resolve control branch dynamically.",
+  "publisher_pr_last_checked_utc": "2026-10-07T23:54Z",
   "dependabot_alert_snapshot": {
     "as_of_utc": "2026-10-07T23:52:38Z",
     "open_count": 56,
