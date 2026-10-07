@@ -1,8 +1,8 @@
 {
-  "timestamp_utc": "2026-10-07T23:47:08Z",
-  "state": "G0_G9_PASS; G10_PUBLISHER_PR72_EXACT_HEAD_CI_PENDING",
+  "timestamp_utc": "2026-10-07T23:54:23Z",
+  "state": "G0_G9_PASS; G10_PUBLISHER_ANDROID_CI_IN_PROGRESS; OPEN_BUILD_TEST_DEPENDENCY_ALERTS_RECORDED",
   "current_gate": "G10_BETA_PUBLISHER_PR72",
-  "next_gate": "G10_EXACT_HEAD_CI_AND_MERGE",
+  "next_gate": "G10_ANDROID_CI_EXACT_HEAD",
   "candidate_branch": "codex/v0.8.0-beta-ux",
   "candidate_head": "3329590db531c31be84e7e28d89209028a688075",
   "candidate_tree": "79808ef8052812427461f480e9abf19c2e930c22",
@@ -552,7 +552,7 @@
   "physical_session_readiness_reason": "C05-C/G4 passed and the phone was released; no further device access is needed.",
   "estimated_pixel_minutes": "5-10 optimization target; no time-only abort",
   "watchdog_mode": "RELEASE_CONVERGENCE_AFTER_G5_PASS",
-  "loop_status": "G0_G9_PASS; PR72_DRAFT; ANDROID_CI_AND_CODEQL_IN_PROGRESS",
+  "loop_status": "G0_G9_PASS; PR72_DRAFT; ANDROID_CI_IN_PROGRESS; CODEQL_CATALOG_PASS",
   "stable_latest_release": "v0.7.2 remains stable/latest; confirmed in issue #71 at 2026-10-07T23:44:38Z.",
   "merge_or_publish_performed": true,
   "nonphysical_gates_open": [
@@ -571,13 +571,13 @@
     "Assemble and independently check the exact-membership review bundle, then synchronize final issue/status/watcher and close out."
   ],
   "next_actions": [
-    "Monitor PR #72 exact-head Android CI run 37703940507 and CodeQL run 37703940594; Catalog currentness run 37703940944 is already success.",
-    "If a check fails, inspect exact job/step/logs and change only code with a demonstrated defect; do not blindly retry.",
-    "Once checks pass, synchronize PR metadata/body, mark PR #72 ready, merge exact head 52ee1284cd6208012d217b3f151488b2ae739b8b, and verify the actual merged main SHA/tree.",
-    "Run the dedicated beta publisher once on exact merged main; independently verify prerelease tag, exact assets, artifact provenance/checksum/signer, and stable/latest v0.7.2.",
-    "Prepare and independently verify the exact-membership review bundle, synchronize release status, and close out."
+    "Monitor Android CI run 37703940507; Catalog currentness run 37703940944 and CodeQL run 37703940594 are success.",
+    "If Android CI fails, inspect exact job/step/logs and change only code with a demonstrated defect; do not blindly retry.",
+    "Once checks pass, synchronize PR metadata/body, mark PR #72 ready, merge exact head 52ee1284cd6208012d217b3f151488b2ae739b8b, and verify actual main SHA/tree.",
+    "Run the dedicated beta publisher once on exact merged main; verify prerelease tag, exact assets, artifact provenance/checksum/signer, and stable/latest v0.7.2.",
+    "Prepare and independently verify the exact-membership review bundle, synchronize final status, then close out."
   ],
-  "issue": "OPEN; synchronized at 2026-10-07T23:44:38Z to G7/G8/G9 PASS, G10 PR #72 exact-head CI pending, and stable/latest v0.7.2.",
+  "issue": "OPEN; at 2026-10-07T23:54:23Z records G7-G9 PASS, PR #72 Android CI pending, 56 open transitive Maven alerts, and the passive ADB-list disclosure.",
   "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex%2Fv0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md (resolve the live control ref dynamically)",
   "physical_plan": {
     "path": "docs/implementation/FINAL_PHYSICAL_SESSION_PLAN.md",
@@ -622,10 +622,10 @@
     "G4": "PASS; C05-C read-only qualification complete and evidence manifest verified; phone released.",
     "G5": "PASS; independent pre-merge review passed.",
     "G6": "PASS; exact qualified candidate merged normally at main SHA 4190c6ca51694ea0a80583a83fd3cb09b5088a7d/tree 80822fea05dd8845a4dac23c19d090eeface00a9.",
-    "G7": "PASS; official main-only signed beta run 37697940678, artifact/APK/source/package/version/signer/provenance verified.",
+    "G7": "PASS; official signed artifact and source/package/version/checksum/signer/provenance independently verified.",
     "G8": "PASS; exact signed v0.7.2-to-beta persisted-state upgrade passed on API 35.",
-    "G9": "PASS; signed clean install/core smoke and independent artifact review passed on API 35.",
-    "G10": "IN_PROGRESS; dedicated publisher PR #72 is draft at exact head 52ee1284cd6208012d217b3f151488b2ae739b8b. Catalog check passed; Android CI and CodeQL are in progress.",
+    "G9": "PASS; signed clean install/core smoke and independent artifact review passed.",
+    "G10": "IN_PROGRESS; publisher PR #72 Catalog and CodeQL passed; Android CI build, emulator UI, and min-API jobs remain in progress.",
     "G11": "PENDING; final exact-membership review bundle.",
     "G12": "PENDING; synchronize final status/watcher and mission closeout."
   },
@@ -727,10 +727,10 @@
     "total": 9,
     "failed": 2
   },
-  "issue_updated_at_utc": "2026-10-07T23:44:38Z",
+  "issue_updated_at_utc": "2026-10-07T23:54:23Z",
   "issue_body_current": true,
   "watchdog_prompt_updated": true,
-  "watchdog_prompt_updated_utc": "2026-10-07T23:47:08Z",
+  "watchdog_prompt_updated_utc": "2026-10-07T23:53:03Z",
   "control_plane_checkpoint_pushed": true,
   "pr_updated_at_utc": "2026-10-07T22:46:30Z",
   "control_plane_branch": "codex/v0.8.0-beta-watch; resolve live origin tip dynamically.",
@@ -772,7 +772,7 @@
     "readiness_certificate": "READY FOR PHASE B; plan 2.48 physical procedure safety review found no safety issue and the one-time category B metadata correction is applied."
   },
   "last_observed_control_tree_before_status_commit": "cb2fa58bac78da15b156f5e61d48f2ac9b6dcf1c",
-  "next_action": "Monitor only exact-head PR #72 Android CI run 37703940507 and CodeQL run 37703940594. Diagnose any failed step; do not duplicate checks. After all required checks pass, update PR body, mark ready, merge exact reviewed head, verify actual main SHA/tree, then run the dedicated publisher once.",
+  "next_action": "Monitor only Android CI run 37703940507 for PR #72 exact head 52ee1284cd6208012d217b3f151488b2ae739b8b. Catalog and CodeQL passed. Diagnose only actual failed job evidence; then after all checks pass mark ready, merge exact head, verify resulting main SHA/tree, and run the dedicated publisher once.",
   "g3_approved_entry_route": "C05-C complete; no entry route required.",
   "g3_attached_connected_session_resume_approved": false,
   "phase_b_binding": {
@@ -859,9 +859,10 @@
     "G7": "PASS; official artifact/provenance verified.",
     "G8": "PASS; signed in-place upgrade verified.",
     "G9": "PASS; clean-install/core smoke and independent artifact review passed.",
-    "G10": "IN_PROGRESS; PR #72 exact-head CI pending.",
+    "G10": "IN_PROGRESS; Catalog and CodeQL pass; Android CI run 37703940507 is in progress.",
     "G11": "PENDING",
-    "G12": "PENDING"
+    "G12": "PENDING",
+    "dependabot_alert_snapshot": "56 open transitive Maven alerts on settings.gradle.kts; 3 critical, 22 high, 28 medium, 3 low; SBOM paths indicate build/test tooling and no vulnerable app-runtime version was identified; not a clean scan."
   },
   "owner_state": {
     "pixel_available": true,
@@ -898,12 +899,12 @@
     "files_modified": false,
     "physical_qualification_result": "NONE; this source/state audit does not pass C05-C/G4."
   },
-  "automation_update_tool_failure": "No current failure; supported automation update succeeded at 2026-10-07T23:47:08Z. No automation TOML was edited.",
+  "automation_update_tool_failure": "No current failure; supported automation update succeeded at 2026-10-07T23:53:03Z.",
   "latest_release_verified_at_utc": "2026-10-07T23:44:38Z",
   "phase_c_started": true,
   "pr_body_current": true,
-  "issue_last_checked_utc": "2026-10-07T23:44:38Z",
-  "pr_last_checked_utc": "2026-10-07T23:47:08Z",
+  "issue_last_checked_utc": "2026-10-07T23:54:23Z",
+  "pr_last_checked_utc": "2026-10-07T23:52:09Z",
   "current_control_reconciliation_pushed": true,
   "exact_state_consistency_review": {
     "result": "CATEGORY_B_METADATA_ONLY; one correction applied; physical procedure safety review clear; no recursive review required.",
@@ -922,7 +923,7 @@
     "previous_checkpoint_result": "NOT PASS at 2026-10-07T16:16Z for synchronized plan 2.48 checkpoint; stale current maintained overlays/status fields found.",
     "previous_checkpoint_reviewed_at_utc": "2026-10-07T16:16:00Z"
   },
-  "issue_71": "OPEN; issue #71 current at 2026-10-07T23:44:38Z with G7-G9 PASS and G10 PR #72 pending exact-head CI.",
+  "issue_71": "OPEN; updated/commented at 2026-10-07T23:54:23Z with G10 check state, dependency-alert snapshot, and host-side enumeration note.",
   "current_reconciliation_pushed": true,
   "phase_b_current_status": "PASS; same binding used for C05-C; session completed and phone released.",
   "push_attempts": [
@@ -973,7 +974,7 @@
     "tests_rerun": false,
     "finding": "CATEGORY B: stale current plan pointer and active JSON next-action/main snapshot only; no physical-procedure safety finding. One-time correction applied; no recursive review required under the owner convergence directive."
   },
-  "current_action": "G0-G9 PASS. Publisher PR #72 is open/draft at exact head 52ee1284cd6208012d217b3f151488b2ae739b8b, based on main 4190c6ca51694ea0a80583a83fd3cb09b5088a7d. Catalog CI succeeded; Android CI run 37703940507 and CodeQL run 37703940594 remain in progress.",
+  "current_action": "G0-G9 PASS. PR #72 Catalog and CodeQL passed; Android CI build, emulator UI, and API-26 jobs remain in progress. Open Dependabot alerts are documented as transitive build/test dependencies; no vulnerable app-runtime version was identified in the current SBOM. A prior passive adb devices -l enumeration was disclosed; no target-scoped or DAC operation followed.",
   "latest_phase_b_attempt": {
     "at_utc": "2026-10-07T21:25:28Z",
     "result": "PASS",
@@ -1322,14 +1323,64 @@
       },
       "android_ci": {
         "run_id": 37703940507,
-        "result": "in_progress"
+        "result": "in_progress",
+        "jobs": {
+          "build": "release APK assembly",
+          "emulator-ui-test": "connected UI tests",
+          "min-api-smoke": "API-26 emulator smoke"
+        }
       },
       "codeql": {
         "run_id": 37703940594,
-        "result": "in_progress"
+        "result": "success"
       }
     }
   },
-  "next_action_source": "PR #72 exact-head workflow runs; canonical docs synchronized in control commit after this status snapshot.",
-  "publisher_pr_last_checked_utc": "2026-10-07T23:47:08Z"
+  "next_action_source": "PR #72 exact-head Android CI run 37703940507; control status resolves dynamically from origin/codex/v0.8.0-beta-watch.",
+  "publisher_pr_last_checked_utc": "2026-10-07T23:52:09Z",
+  "dependabot_alert_snapshot": {
+    "as_of_utc": "2026-10-07T23:52:38Z",
+    "open_count": 56,
+    "severity_counts": {
+      "critical": 3,
+      "high": 22,
+      "medium": 28,
+      "low": 3
+    },
+    "ecosystem": "maven",
+    "relationship": "transitive",
+    "manifest": "settings.gradle.kts",
+    "sbom_assessment": "Alert-bearing versions trace through Android Gradle/lint plugins, Android test-platform tooling, and Espresso accessibility-test dependencies. No vulnerable app-runtime version was identified in the current dependency graph; alerts remain open and the scan is not clean.",
+    "critical_alerts": [
+      {
+        "ghsa": "GHSA-9pwp-9qqc-pr26",
+        "package": "org.bouncycastle:bcprov-jdk18on",
+        "range": "< 1.85",
+        "first_patched": "1.85"
+      },
+      {
+        "ghsa": "GHSA-c4c3-7fpv-j4q5",
+        "package": "io.netty:netty-handler",
+        "range": "<= 4.1.136.Final",
+        "first_patched": "4.1.137.Final"
+      },
+      {
+        "ghsa": "GHSA-574f-3g2m-x479",
+        "package": "org.bouncycastle:bcprov-jdk18on",
+        "range": ">= 1.59, <= 1.80.1",
+        "first_patched": "1.80.2"
+      }
+    ]
+  },
+  "security_finding": "56 open transitive Maven Dependabot alerts are present on main; current SBOM paths indicate Android build/test tooling, with no vulnerable app-runtime version identified. Alerts remain unresolved; no clean-scan claim.",
+  "host_adb_enumeration": {
+    "occurred_at_utc_approx": "2026-10-07T23:08Z",
+    "command": "adb devices -l",
+    "classification": "one passive host device-list enumeration",
+    "result_summary": "an online TLS row was observed; exact serial/endpoint is not retained in controls",
+    "followed_by": "no target-scoped Android shell/package/APK query, app launch/UI, USB descriptor read, Black Pearl protocol request, or hardware mutation",
+    "repeated": false,
+    "effect": "no known app, USB, DAC, or hardware state change; C05-C evidence unchanged",
+    "remaining_action": "no device access is required or authorized for remaining release gates"
+  }
 }
