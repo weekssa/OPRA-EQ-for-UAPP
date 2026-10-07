@@ -1,8 +1,8 @@
 {
-  "timestamp_utc": "2026-10-07T09:18:29Z",
+  "timestamp_utc": "2026-10-07T09:21:48Z",
   "state": "PHASE_A_B_PASS_PLAN_2_29_G3_PASS_EXTERNAL_SURFACES_SYNCED_EXACT_STATE_REVIEW_PENDING_C05C_NOT_STARTED",
   "current_gate": "Phase A/B PASS. Plan 2.29 G3 and source/read-path review PASS. Master v1.5 control checkpoint is pushed; issue #71, draft PR #70, and active watchdog are synchronized. Independent exact-state review remains pending. Owner has stated Pixel 9 is available and Black Pearl is connected. C05-C/G4 remains PARTIAL / NOT PASS.",
-  "next_gate": "Push this canonical synchronization snapshot, dynamically verify live control/candidate/PR/checks/issue/main/release/watchdog state, obtain independent exact-state PASS, then execute Phase C immediately.",
+  "next_gate": "Push this canonical timestamp/synchronization snapshot, dynamically refresh the live control and mission refs, obtain independent exact-state PASS, then execute Phase C immediately.",
   "candidate_branch": "codex/v0.8.0-beta-ux",
   "candidate_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
   "candidate_tree": "e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d",
@@ -412,7 +412,7 @@
     "Obtain independent exact-state PASS against the live pushed state.",
     "Immediately execute plan 2.29 Phase C with the existing wireless binding and attached Black Pearl; release the Pixel after pass or safe stop."
   ],
-  "issue": "Issue #71 is open and updated 2026-10-07T09:17:44Z to the v1.5/plan-2.29 state; exact-state independent review remains pending.",
+  "issue": "Issue #71 is open and updated 2026-10-07T09:21:10Z; its current body states all external surfaces are synchronized and exact-state review is pending.",
   "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex%2Fv0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md (stale remote E58 until current checkpoint is pushed)",
   "physical_plan": {
     "path": "docs/implementation/FINAL_PHYSICAL_SESSION_PLAN.md",
@@ -463,10 +463,10 @@
   },
   "manual_talkback": "DEFERRED_NON_BLOCKING_FOR_V0.8.0_BETA",
   "main_current_checks": "Current main workflow checks were not needed to classify BASE-DRIFT-B; fetch live main checks during pre-merge verification.",
-  "issue_updated_at_utc": "2026-10-07T09:17:44Z",
+  "issue_updated_at_utc": "2026-10-07T09:21:10Z",
   "issue_body_current": true,
   "watchdog_prompt_updated": true,
-  "watchdog_prompt_updated_utc": "2026-10-07T09:18:29Z",
+  "watchdog_prompt_updated_utc": "2026-10-07T09:21:36Z",
   "control_plane_checkpoint_pushed": true,
   "pr_updated_at_utc": "2026-10-07T09:16:15Z",
   "control_plane_branch": "codex/v0.8.0-beta-watch; live origin tip E58 6a8d13eb91586671a52646fa3391fd9ced8123aa / tree af4f07b39c6c8066d4147e736e6aa7217756b50f, resolved dynamically at 2026-10-07T08:50Z.",
@@ -528,10 +528,10 @@
     "preparation_failures": "Shell redirection before directory creation and wrapper import-path errors occurred before resolver/device calls; corrected without consuming a DAC qualification or querying hardware.",
     "owner_setup": "Current owner message states Pixel 9 is available and Black Pearl is connected; no additional owner action is needed.",
     "phase_a_verification": "Both absolute roots resolve exactly; guard exists; sealed binding file SHA matches; 4/4 Bash plan blocks parse; local APK SHA, package/version/code, Debug signer, and zip alignment match.",
-    "pr_and_issue_body": "PR #70 and issue #71 synchronized to v1.5/plan 2.29; body current at 2026-10-07T09:16Z/09:17Z. Active watchdog prompt synchronized at 09:18Z."
+    "pr_and_issue_body": "PR #70 updated 2026-10-07T09:16:15Z; issue #71 updated 2026-10-07T09:21:10Z; active watchdog updated 2026-10-07T09:21:36Z. All three surfaces match master v1.5/plan 2.29; exact-state review remains pending."
   },
-  "last_observed_control_tree_before_status_commit": "Immediately before this status update the pushed control tip was 071fb6e36ebeb678596fdf3353817610aaf29155 / tree 2b47860d5df3c8ed2093169e026b45ee0c685e9b. Resolve the live ref dynamically after pushing this snapshot.",
-  "next_action": "Push current synchronized status snapshot, dynamically refresh live state, obtain exact-state PASS, then run plan 2.29 C05-C immediately.",
+  "last_observed_control_tree_before_status_commit": "Immediately before this status update the live control tip was 4484684f4721f7f527ea3420e30ffab71d871e3f / tree 8bd439d09df6b0bfb2c79b2e979b59e2b923f935. Resolve the live ref dynamically after pushing this snapshot.",
+  "next_action": "Push the canonical synchronization snapshot, verify live state dynamically, obtain exact-state PASS, then run plan 2.29 C05-C immediately.",
   "g3_approved_entry_route": "PLAN_2_29_G3_PASS_EXTERNAL_SURFACES_SYNCED_EXACT_STATE_REVIEW_PENDING",
   "g3_attached_connected_session_resume_approved": false,
   "phase_b_binding": {
