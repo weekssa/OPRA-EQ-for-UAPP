@@ -1,8 +1,8 @@
 {
-  "timestamp_utc": "2026-10-06T21:45:50Z",
+  "timestamp_utc": "2026-10-07T00:37:17Z",
   "state": "RUNNING",
-  "current_gate": "G4 — C05-C awaits one fresh owner availability statement after the prior phone release",
-  "next_gate": "G4 — read-only C05-C session, only if the Black Pearl remains attached and the production session is already current",
+  "current_gate": "G3 independent review pending for FINAL_PHYSICAL_SESSION_PLAN.md revision 2.8; G4/C05-C PARTIAL / NOT PASS after the 2026-10-06 19m45s session exceeded the 15-minute cap and missed contemporaneous final PID/USB capture",
+  "next_gate": "Complete independent G3 review of plan revision 2.8; after it passes and off-phone preparation is complete, obtain one fresh owner statement that the released Pixel 9 is available, then execute one complete bounded C05-C session",
   "candidate_branch": "codex/v0.8.0-beta-ux",
   "candidate_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
   "candidate_tree": "e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d",
@@ -16,12 +16,12 @@
   "candidate_apk_sha256": "f33818309d55571166d91e501065706ddbb8faf180833b03bb6eb948e6bffed1",
   "candidate_apk_is_official_signed_beta": false,
   "pr": 70,
-  "pr_state": "open_draft_exact_head_checks_green_base_c702_mergeable_clean; master_v1.1_plan_2.5_control_surfaces_synced",
+  "pr_state": "open_draft_exact_head_checks_8_of_8_green_base_c702_mergeable_clean; master_v1.2_plan_2.7_review_pending_control_surfaces_local_unsynced",
   "pr_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
   "pr_base": "c702ef0149b4c647446639cfcb0ab25c09159db3",
   "pr_current_body_stale": false,
   "ci": {
-    "as_of_utc": "2026-10-06T21:45:50Z",
+    "as_of_utc": "2026-10-07T00:08Z",
     "exact_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
     "workflows": [
       {
@@ -145,7 +145,7 @@
     "total_exact_head_check_runs": 8,
     "check_run_snapshot": {
       "all_completed_success": true,
-      "as_of_utc": "2026-10-06T21:45:50Z",
+      "as_of_utc": "2026-10-07T00:08Z",
       "head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
       "total_count": 8,
       "checks": [
@@ -214,8 +214,8 @@
       ]
     },
     "C_real_black_pearl_session_read_navigation": {
-      "state": "STOPPED_INCOMPLETE_NOT_PASS",
-      "physical_attempt_utc": "2026-10-06T19:25:17Z",
+      "state": "PARTIAL_NOT_PASS",
+      "physical_attempt_utc": "2026-10-06T23:24:31Z",
       "required": [
         "exact device identity",
         "authoritative Android recognition/session",
@@ -227,31 +227,70 @@
       ],
       "mutation_required": false,
       "attempt_result": {
-        "pixel": "Pixel 9 tokay API 37 over wireless ADB",
+        "pixel": "Pixel 9 tokay API 37 over wireless ADB; serial 46141FDAQ003KZ",
+        "candidate": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f / e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d",
+        "apk_sha256": "f33818309d55571166d91e501065706ddbb8faf180833b03bb6eb948e6bffed1",
         "black_pearl_usb_fingerprint": "VID:PID 3302:43e8; TTGK Technology; TE-C; serial 330243E8260129",
-        "app_presentation": "TRN Black Pearl / Connected; initial EQ label Verified current hardware; Flat, zero active bands, 10 filters, slot 1, playback gain +13.00 dB",
-        "completed": "exact candidate/APK verified and initial EQ presentation captured",
-        "not_completed": "DEVICE refresh; attached away/back navigation; final explicit EQ and DEVICE reads; before/after state comparison",
-        "safety": "No Reset, Apply, Flash, Save, DEVICE setter, fault, disconnect, process kill, or restorative write was issued.",
-        "report": ".unlazy/v080-beta/evidence/c05c-20261006T182006Z/C05-C-stop-report.txt",
-        "report_sha256": "e32ff687c5574894652a98f1512bdaa3f2147c9e319770f81d656115e6558d6e"
+        "completed": "Production baseline and final EQ/DEVICE reads matched at displayed UI precision; My DAC to EQ Library and back navigation completed with Black Pearl attached; all 36 indexed evidence-file hashes verified.",
+        "not_pass_reason": "19m45s occupancy exceeded the 15-minute hard cap by 4m45s; no read was active at the 15-minute point; final post-navigation PID/USB-descriptor output was absent from contemporaneous log and the later addendum cannot backfill it. Preserve PARTIAL / NOT PASS and require one complete new single-session run; do not combine prior captures with a supplement.",
+        "safety": "No Reset, Apply, Flash, Save, DEVICE setter, permission grant, fault, cable change/disconnect, process kill, or restoration write. No restoration was needed for the read-only procedure.",
+        "evidence_folder": ".unlazy/v080-beta/evidence/c05c-20261006T232431Z-plan26/",
+        "evidence_index_sha256": "8fe77db44506cfe4cca935f8ee6844eb95e4fc09cccc6430b146d3e29aac3c7c",
+        "session_log_sha256": "77c0c257a06c0aa8fb16f597a7fe9509190a1f42102f0a1a737630e25427c514",
+        "retrospective_addendum_sha256": "4a223e023b59be2584b40679b87fa62d364153a4ecab735b0431f56f1aa82a4e",
+        "indexed_file_count": 36
       },
-      "plan_revision": "2.5",
-      "plan_review": "PASS: the same independent reviewer approved revision 2.5 against frozen candidate HEAD 5c7d19cf2f77e448a97a1ee9d520ad4d408f120f/tree e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d for the already-attached/current-session path only. Revision 2.3 was NOT PASS because the path was not ignored; revision 2.4 was NOT PASS because git status was required to report a not-yet-created directory. Revision 2.5 uses prospective-file git check-ignore checks before phone use and before evidence writes. No fresh attach/connect is approved.",
-      "read_semantics": "Protocol READ sends output request reports; transport may reissue one timed-out nondestructive read once automatically. No manual retry. No zero-USB-traffic claim.",
-      "readiness": "G3 PASS for attached-resume path only. Await one fresh owner availability statement after prior phone release; then proceed only if exact unit remains attached and production session is already current."
+      "plan_revision": "2.6",
+      "plan_review": "Plan revision 2.6 had independent G3 PASS only for already-current or one owner-operated entry route. The owner directly authorized the agent to perform the listed one-time UI launch and normal Connect for the 2026-10-06 attempt; that direct authorization did not waive the time/evidence acceptance gates. Revision 2.7 explicitly records this narrow agent scope and adds contemporaneous PID/fingerprint checkpoints. Its independent G3 review is pending.",
+      "read_semantics": "Production READ emits an outbound request report and may reissue one timed-out nondestructive read once automatically. No manual retry. Do not claim zero USB traffic or raw bit-for-bit equality; compare same displayed fields at UI precision.",
+      "readiness": "C05-C is PARTIAL / NOT PASS. Pixel was released. Wait for revision 2.8 G3 review and all off-phone preparation, then obtain one fresh owner Pixel-availability statement before any ADB/USB. New complete single-session run required; no combining or retrospective backfill.",
+      "prior_attempts": [
+        {
+          "physical_attempt_utc": "2026-10-06T19:25:17Z",
+          "required": [
+            "exact device identity",
+            "authoritative Android recognition/session",
+            "initial and final EQ reads",
+            "initial and final DEVICE reads",
+            "attached navigation away/back",
+            "unchanged comparable state",
+            "bounded no-setting-mutation claim"
+          ],
+          "mutation_required": false,
+          "attempt_result": {
+            "pixel": "Pixel 9 tokay API 37 over wireless ADB",
+            "black_pearl_usb_fingerprint": "VID:PID 3302:43e8; TTGK Technology; TE-C; serial 330243E8260129",
+            "app_presentation": "TRN Black Pearl / Connected; initial EQ label Verified current hardware; Flat, zero active bands, 10 filters, slot 1, playback gain +13.00 dB",
+            "completed": "exact candidate/APK verified and initial EQ presentation captured",
+            "not_completed": "DEVICE refresh; attached away/back navigation; final explicit EQ and DEVICE reads; before/after state comparison",
+            "safety": "No Reset, Apply, Flash, Save, DEVICE setter, fault, disconnect, process kill, or restorative write was issued.",
+            "report": ".unlazy/v080-beta/evidence/c05c-20261006T182006Z/C05-C-stop-report.txt",
+            "report_sha256": "e32ff687c5574894652a98f1512bdaa3f2147c9e319770f81d656115e6558d6e"
+          },
+          "plan_revision": "2.5",
+          "plan_review": "PASS: the same independent reviewer approved revision 2.5 against frozen candidate HEAD 5c7d19cf2f77e448a97a1ee9d520ad4d408f120f/tree e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d for the already-attached/current-session path only. Revision 2.3 was NOT PASS because the path was not ignored; revision 2.4 was NOT PASS because git status was required to report a not-yet-created directory. Revision 2.5 uses prospective-file git check-ignore checks before phone use and before evidence writes. No fresh attach/connect is approved.",
+          "read_semantics": "Protocol READ sends output request reports; transport may reissue one timed-out nondestructive read once automatically. No manual retry. No zero-USB-traffic claim.",
+          "readiness": "G3 PASS for attached-resume path only. Await one fresh owner availability statement after prior phone release; then proceed only if exact unit remains attached and production session is already current."
+        }
+      ],
+      "physical_attempt_finished_utc": "2026-10-06T23:44:16Z",
+      "duration_seconds": 1185,
+      "occupancy_target_seconds": 600,
+      "hard_limit_seconds": 900,
+      "hard_limit_overrun_seconds": 285
     },
     "D_independent_qualification_review": {
       "state": "PASS",
       "review_count": 1,
       "evidence": "Independent review on 2026-10-06 verified production-route fake no-replay coverage, E20 process reconstruction, unchanged protected paths, the remaining physical identity/session/read/navigation requirement, and truthful evidence boundaries; no concrete C05 gap or unsupported physical claim found.",
       "plan_revision_2_review": "PASS for plan revision 2.2 already-attached resume path; no new connection/reconnect. Frozen candidate verified unchanged.",
-      "plan_revision_5_review": "PASS on 2026-10-06 by the same independent reviewer against the frozen candidate; attached/current-session path only; no fresh attach/connect."
+      "plan_revision_5_review": "PASS on 2026-10-06 by the same independent reviewer against the frozen candidate; attached/current-session path only; no fresh attach/connect.",
+      "plan_revision_2_8_review": "PENDING; revision 2.7 review returned NOT PASS for actor/authorization wording. The renewed narrow scope and matching acceptance actor are recorded in revision 2.8; independent review is pending."
     },
     "physical_fault_injection_required": false,
     "old_non_flat_eq_reset_precondition_applies_to_read_only_c05c": false,
     "non_flat_requirement_rationale": "It applied to the old checkbox-on Reset test; C05-C is read-only and invokes no Reset.",
-    "talkback": "OWNER_REPORTED_PASS for current recovery warning by direct touch; wording and semantics are unchanged; no repeat requested."
+    "talkback": "DEFERRED_NON_BLOCKING_FOR_BETA; historical direct-touch owner report remains supplementary only; no repeat requested."
   },
   "api35": {
     "previous_candidate": "acd95df543632e57ae46cd68e714a35f94781f43",
@@ -382,16 +421,16 @@
     ],
     "physical_keyboard_claimed": false
   },
-  "owner_action_required_now": true,
-  "pixel_required_now": true,
+  "owner_action_required_now": false,
+  "pixel_required_now": false,
   "physical_session_ready": false,
-  "physical_session_readiness_reason": "G3 passed for FINAL_PHYSICAL_SESSION_PLAN.md revision 2.5 and the already-attached/current-session path only. The prior session was released. Await one fresh owner availability statement. Do not use ADB/USB or inspect device state before it. Continue only if the exact Black Pearl remains attached and the production session is already current; do not reconnect.",
+  "physical_session_readiness_reason": "G3 plan revision 2.8 review is pending. C05-C is PARTIAL / NOT PASS because the 2026-10-06 session exceeded the 15-minute hard cap and lacked contemporaneous final post-navigation PID/USB-descriptor capture. The Pixel was released. No device access until review passes, off-phone preparation completes, and a fresh owner availability statement is received.",
   "estimated_pixel_minutes": {
     "target": 10,
     "hard_limit": 15
   },
-  "watchdog_mode": "RESUME_FIRST_VERIFY_MASTER_HASH_STATUS_THEN_EXECUTE_NEXT_ACTION; G3_PLAN_2_5_PASS_ATTACHED_RESUME_WAIT_FRESH_AVAILABILITY; CONTROL_SURFACES_SYNCED",
-  "loop_status": "G3_PLAN_2_5_PASS_ATTACHED_RESUME_ONLY; CONTROL_SURFACES_SYNCED; PRIOR_PIXEL_SESSION_RELEASED; FRESH_OWNER_AVAILABILITY_REQUIRED; FROZEN_CANDIDATE_UNCHANGED; NO_DEVICE_ACCESS",
+  "watchdog_mode": "RESUME_FIRST_VERIFY_MASTER_HASH_STATUS_THEN_EXECUTE_NEXT_ACTION; G3_PLAN_2_7_REVIEW_PENDING; C05_C_PARTIAL_NOT_PASS; PIXEL_RELEASED; NO_DEVICE_ACCESS",
+  "loop_status": "MASTER_V1_2; G3_PLAN_2_7_REVIEW_PENDING; G4_C05_C_PARTIAL_NOT_PASS; PIXEL_RELEASED; FROZEN_CANDIDATE_UNCHANGED; CLASS_B_RETAINED; NO_DEVICE_ACCESS",
   "stable_latest_release": "v0.7.2",
   "merge_or_publish_performed": false,
   "nonphysical_gates_open": [
@@ -399,7 +438,8 @@
     "G6-G12 ordered merge/sign/upgrade/clean-install/publication/bundle/closeout"
   ],
   "physical_gates_open": [
-    "G4/C05-C read-only Black Pearl identity/session/EQ+DEVICE reads/navigation/final-read evidence; plan only applies if already attached and current"
+    "G3 independent source-grounded review of FINAL_PHYSICAL_SESSION_PLAN.md revision 2.8, which covers the owner-authorized one-time agent app launch/normal Connect/exact permission path and strict evidence/time checkpoints",
+    "G4/C05-C complete single-session Black Pearl identity/session/EQ+DEVICE baseline and final reads/navigation evidence; prior attempt is PARTIAL / NOT PASS and cannot be combined with a supplement"
   ],
   "downstream_gates": [
     "Independent pre-merge verification",
@@ -413,17 +453,17 @@
     "mission closeout"
   ],
   "next_actions": [
-    "Obtain one fresh statement that the released Pixel 9 is available now; leave the Black Pearl attached if it remains attached. Do not use ADB/USB before the statement.",
-    "After that statement, reverify the exact candidate/APK and wireless ADB; continue only if the exact Black Pearl remains attached and the production session is already current, otherwise stop and release the phone without reconnecting.",
-    "After C05-C succeeds, release the phone, reconcile/hash physical evidence, perform independent pre-merge verification, then continue in the master directive order."
+    "Complete independent review of physical plan revision 2.8 against the exact frozen candidate and current owner-authorized UI scope; do not access the phone during review.",
+    "After review passes and all off-phone preparation is complete, request one fresh owner statement that the released Pixel 9 is available; verify exact candidate/APK, wireless ADB, attached Black Pearl identity, and follow plan 2.8 with no improvisation.",
+    "After a compliant C05-C pass, release the phone, reconcile/hash physical evidence, perform independent pre-merge verification, then continue the authorized merge and post-merge signing/upgrade/clean-install/artifact/publication/review-bundle/closeout order."
   ],
   "issue": "https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/71",
   "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex/v0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md",
   "physical_plan": {
     "path": "docs/implementation/FINAL_PHYSICAL_SESSION_PLAN.md",
-    "revision": "2.5",
-    "state": "APPROVED_ATTACHED_RESUME_ONLY",
-    "scope": "already-attached, already-current production session only",
+    "revision": "2.8",
+    "state": "DRAFT_PENDING_INDEPENDENT_G3_REVIEW",
+    "scope": "one complete read-only C05-C session; already-attached Black Pearl; current owner authorization permits one agent launch, one normal Connect, and one exact permission approval at most after availability; no mutations/reconnect/cable changes",
     "fresh_attach_authorized": false,
     "device_access_before_review": false
   },
@@ -475,7 +515,7 @@
     ],
     "pr_api_base_as_of_2026_10_06T17_00Z": "c702ef0149b4c647446639cfcb0ab25c09159db3",
     "pr_api_head_as_of_2026_10_06T17_00Z": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
-    "resolved_as_of_utc": "2026-10-06T21:45:50Z",
+    "resolved_as_of_utc": "2026-10-07T00:08:31Z",
     "latest_main_head": "79d600529621257136adb4d9e1a97e8ae8521d7e",
     "pr_mergeable": true,
     "pr_mergeable_state": "clean",
@@ -483,7 +523,7 @@
     "classic_branch_protection_independently_inspected": false
   },
   "pr_base_ref": "main",
-  "pr_snapshot_as_of_utc": "2026-10-06T21:45:50Z",
+  "pr_snapshot_as_of_utc": "2026-10-07T00:34:09Z",
   "integration_base_sha": "79d600529621257136adb4d9e1a97e8ae8521d7e",
   "app_src_test_tree": "470979fb22a91c4514534badda6c2cc2032abfb6",
   "app_src_android_test_tree": "da2b4f31e18025ebd00f0a84f274e0e8a8624800",
@@ -493,7 +533,7 @@
     "recorded_pr_base_sha": "c702ef0149b4c647446639cfcb0ab25c09159db3",
     "pr_base_ref": "main",
     "current_integration_base_sha": "79d600529621257136adb4d9e1a97e8ae8521d7e",
-    "as_of_utc": "2026-10-06T21:45:50Z",
+    "as_of_utc": "2026-10-07T00:08:31Z",
     "changed_paths_c702_to_d2f7436": [
       "catalog/catalog.json",
       "catalog/discovery/github_candidates.json",
@@ -516,7 +556,7 @@
     },
     "artifact_effect": "No Android source/test or APK input changed; external catalog metadata only; candidate APK hash remains pinned and unmodified.",
     "pr_snapshot": {
-      "as_of_utc": "2026-10-06T21:45:50Z",
+      "as_of_utc": "2026-10-07T00:08:31Z",
       "base_sha": "c702ef0149b4c647446639cfcb0ab25c09159db3",
       "head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
       "exact_head_check_runs": "8/8 completed_success",
@@ -546,25 +586,16 @@
   },
   "master_directive": {
     "path": "docs/implementation/v0.8.0-beta-master-directive.md",
-    "version": "1.1",
-    "commit": "6d8455ecba1fdfd1a90612901162ac1de5e87f86",
-    "body_sha256": "2ac4ff4ea1825f4165d04e19ee3fc9103fffe2097f19d41dd19728c800dad8f7",
-    "loaded": "YES",
-    "bootstrap_order": [
-      "resume manifest",
-      "verify master directive version and body SHA-256",
-      "canonical autonomy status",
-      "refresh live GitHub/release state needed for next action",
-      "read only the relevant sections/files for that gate"
-    ],
-    "last_updated_utc": "2026-10-06T21:32:39Z"
+    "version": "1.2",
+    "body_sha256": "338175826d1b944635cbf9e60f53b75261633a2144586c7375ff0a72f4e7fe0f",
+    "introduced_by_commit": "PENDING_FIRST_COMMIT"
   },
-  "current_owner_action": "One fresh statement that the released Pixel 9 is available now; leave the Black Pearl attached if it remains attached. No ADB/USB before the statement.",
+  "current_owner_action": "None while independent G3 review and off-phone preparation are in progress. After plan revision 2.8 passes and preparation is complete, request one fresh statement that the released Pixel 9 is available; no ADB/USB before that statement.",
   "gates_G0_G12": [
     {
       "gate": "G0",
       "name": "Canonical directive / candidate identity",
-      "state": "PASS"
+      "state": "PASS_PENDING_FINAL_HASH_AND_INTRODUCING_COMMIT_SYNCHRONIZATION"
     },
     {
       "gate": "G1",
@@ -579,12 +610,14 @@
     {
       "gate": "G3",
       "name": "Final physical plan ready",
-      "state": "PASS_ATTACHED_RESUME_ONLY"
+      "state": "PENDING_INDEPENDENT_REVIEW_PLAN_2_8",
+      "evidence": "Revision 2.7 review returned NOT PASS: acceptance wording named owner as Connect/permission actor despite agent-operated steps, and master authorization was limited to the 2026-10-06 attempt. Current user direction renews only the bounded launch/Connect/exact-permission scope; revision 2.8 reconciles it and awaits independent review."
     },
     {
       "gate": "G4",
       "name": "Required physical qualification",
-      "state": "PENDING_FRESH_OWNER_AVAILABILITY"
+      "state": "PARTIAL_NOT_PASS_HARD_LIMIT_OVERRUN_AND_FINAL_PID_USB_CAPTURE_GAP",
+      "evidence": "19m45s complete baseline/navigation/final read attempt exceeded 15-minute cap; final post-navigation PID/descriptor capture not contemporaneous. Full new single-session run required."
     },
     {
       "gate": "G5",
@@ -645,15 +678,27 @@
   "issue_updated_at_utc": "2026-10-06T21:45:27Z",
   "issue_body_current": true,
   "watchdog_prompt_updated": true,
-  "watchdog_prompt_updated_utc": "2026-10-06T21:43:56.195Z",
+  "watchdog_prompt_updated_utc": "2026-10-07T00:37:17Z",
   "control_plane_checkpoint_pushed": "02bd16253253c7b335f7368e80f0a4c2f23dcf68",
   "pr_updated_at_utc": "2026-10-06T21:45:28Z",
   "control_plane_checkpoint_tree": "a2699a32263ebfd2df6f0bdacf78de7f1e35051c",
   "control_plane_branch": {
     "name": "codex/v0.8.0-beta-watch",
-    "head": "02bd16253253c7b335f7368e80f0a4c2f23dcf68",
-    "tree": "a2699a32263ebfd2df6f0bdacf78de7f1e35051c",
+    "head": "7486fdf140121a8fd4d3f76faca44912c6c90206",
+    "tree": "fd942de05fc589888913437f2e2c88aa0c33e3c4",
     "remote_matches_local": true,
-    "as_of_utc": "2026-10-06T21:45:50Z"
-  }
+    "as_of_utc": "2026-10-07T00:34:09Z"
+  },
+  "owner_action_required": false,
+  "owner_action": "After plan revision 2.8 passes independent review and all off-phone preparation is complete, request one fresh current Pixel 9 availability statement; no owner action is needed while review is pending.",
+  "physical_session_owner_action_required_after_review": true,
+  "latest_release": {
+    "tag": "v0.7.2",
+    "prerelease": false,
+    "draft": false,
+    "stable_latest": true,
+    "as_of_utc": "2026-10-07T00:34:09Z"
+  },
+  "master_body_sha256": "338175826d1b944635cbf9e60f53b75261633a2144586c7375ff0a72f4e7fe0f",
+  "master_introducing_commit": "PENDING_FIRST_COMMIT"
 }
