@@ -1,8 +1,8 @@
 {
-  "timestamp_utc": "2026-10-07T03:46:16Z",
-  "state": "RUNNING_PHASE_A_FINAL_INDEPENDENT_REVIEW",
-  "current_gate": "G3 final ten-assertion independent review pending on plan 2.18 after Phase A, issue/PR, and hourly watchdog synchronization. No ADB/USB/device access in Phase A.",
-  "next_gate": "Obtain the final independent review of all ten assertions against synchronized plan 2.18, filled preflight evidence, exact candidate/APK, and live control state. If it passes, record the verdict durably, synchronize status/issue/PR/watchdog, then report PREFLIGHT COMPLETE — READY FOR PHONE and await a fresh owner availability statement.",
+  "timestamp_utc": "2026-10-07T03:50:23Z",
+  "state": "PREFLIGHT_COMPLETE_READY_FOR_PHONE_WAITING_FOR_FRESH_OWNER_AVAILABILITY",
+  "current_gate": "G3 PASS: final independent ten-assertion review approved FINAL_PHYSICAL_SESSION_PLAN.md revision 2.18. C05-C/G4 remains PARTIAL / NOT PASS. Wait for a fresh current owner Pixel-availability statement; no device access until then.",
+  "next_gate": "G4/C05-C physical session under plan 2.18, after the owner freshly makes the Pixel available following the readiness notice.",
   "candidate_branch": "codex/v0.8.0-beta-ux",
   "candidate_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
   "candidate_tree": "e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d",
@@ -122,9 +122,9 @@
         "indexed_file_count": 36
       },
       "plan_revision": "2.18",
-      "plan_review": "Independent static reviewer confirmed helper SHA and assertions 2-10, with no other procedural defect; final ten-assertion G3 verdict is pending synchronized Phase A assertion 1 and current control-plane/GitHub state.",
+      "plan_review": "G3 PASS: final independent review passed all ten pre-session assertions for plan revision 2.18 on the exact frozen candidate. This is procedure approval only, not physical C05-C acceptance.",
       "read_semantics": "Production READ sends outbound report(s) and may receive one bounded automatic nondestructive timeout retry; do not claim zero USB traffic or raw-bit equality. Compare same displayed fields at UI precision.",
-      "readiness": "Off-phone candidate/APK/source/GitHub/command/evidence preparation is recorded in the unique ignored reservation. Do not access the Pixel during Phase A. Await final independent plan verdict and control-plane synchronization; only then issue readiness and require a fresh owner availability statement.",
+      "readiness": "PREFLIGHT COMPLETE — READY FOR PHONE. Wait for a fresh current owner Pixel-availability statement after readiness; no ADB/USB/device access before it.",
       "prior_attempts": [
         {
           "physical_attempt_utc": "2026-10-06T19:25:17Z",
@@ -364,26 +364,25 @@
     ],
     "physical_keyboard_claimed": false
   },
-  "owner_action_required_now": false,
-  "pixel_required_now": false,
-  "physical_session_ready": false,
-  "physical_session_readiness_reason": "Final independent ten-assertion review is pending. Phase A remains off-phone; after review and readiness, require a fresh current owner Pixel-availability statement.",
+  "owner_action_required_now": true,
+  "pixel_required_now": true,
+  "physical_session_ready": true,
+  "physical_session_readiness_reason": "Phase A is complete and G3 passed the independent ten-assertion review of plan 2.18. Phase B still requires a fresh current owner Pixel-availability statement after readiness.",
   "estimated_pixel_minutes": {
     "target": 10,
     "hard_limit": 15,
     "entry_checkpoint_minutes": 2
   },
-  "watchdog_mode": "ACTIVE_HOURLY_RESUME_FIRST_PHASE_A_THEN_ACTIONABLE_NEXT_GATE",
-  "loop_status": "PHASE_A_OFF_PHONE_PREFLIGHT_IN_PROGRESS_NO_PIXEL_ACCESS",
+  "watchdog_mode": "ACTIVE_HOURLY_RESUME_FIRST_WAIT_FOR_FRESH_OWNER_AVAILABILITY",
+  "loop_status": "PHASE_A_COMPLETE_READY_FOR_PHONE_WAITING_FRESH_OWNER_AVAILABILITY_NO_DEVICE_ACCESS",
   "stable_latest_release": "v0.7.2",
   "merge_or_publish_performed": false,
   "nonphysical_gates_open": [
-    "G3 final independent review of physical plan revision 2.18 and complete control-plane synchronization",
     "G5 final independent pre-merge verification pending G4/C05-C",
     "G6-G12 ordered merge/sign/upgrade/clean-install/artifact/publication/review-bundle/closeout"
   ],
   "physical_gates_open": [
-    "G4/C05-C complete read/navigation session under plan revision 2.18, only after G3 and fresh owner availability"
+    "G4/C05-C complete read/navigation/final-read session under plan revision 2.18, only after fresh owner availability"
   ],
   "downstream_gates": [
     "Independent pre-merge verification",
@@ -397,8 +396,8 @@
     "mission closeout"
   ],
   "next_actions": [
-    "Obtain the final independent ten-assertion review of plan revision 2.18 against the synchronized status/master/live PR/check/base/release/issue/watchdog state and filled candidate-local preflight record. No ADB/device access.",
-    "If and only if the review passes, record the verdict in acceptance/status/ledger, synchronize issue #71, PR #70, and the hourly watchdog, then report PREFLIGHT COMPLETE — READY FOR PHONE and wait for a fresh owner Pixel-availability statement."
+    "Wait for a fresh current owner statement, made after the readiness notice, that the Pixel 9 is available. Do not use ADB/USB or inspect the device before that statement.",
+    "Before handoff, ensure the Black Pearl is attached to Pixel USB-C if it is not already. Then use wireless ADB only and execute plan 2.18 exactly; release on completion or any stop condition."
   ],
   "issue": "https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/71",
   "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex/v0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md",
@@ -441,7 +440,7 @@
     "body_sha256": "084bca0df0103701bbed74831152074c6f1283d376a8a1930e51ea39016c52ed",
     "introduced_by_commit": "e57eb6ee92155d484cdc20c424546a70672b77e6"
   },
-  "current_owner_action": "No owner action during Phase A. After the explicit readiness notice, the owner must freshly make the Pixel available and have the Black Pearl attached to Pixel USB-C before handoff if it is not already attached. Wireless ADB only.",
+  "current_owner_action": "After the readiness notice, make a fresh current statement that the Pixel 9 is available. Ensure the TRN Black Pearl is attached to Pixel USB-C before handoff if it is not already; wireless ADB only.",
   "gates_G0_G12": [
     {
       "gate": "G0",
@@ -462,8 +461,8 @@
     {
       "gate": "G3",
       "name": "Final physical plan ready",
-      "state": "PENDING_FINAL_INDEPENDENT_REVIEW_2_18",
-      "evidence": "Plan revision 2.18 assertions 2–10 passed preliminary static review; at 2026-10-07T03:46:16Z, Phase A and external control surfaces were synchronized against live control branch 5ff1549676d4643da282e2b9e31daa60e62d2ca2 / tree 13c37cf1b42690edf89729bb793a8340c97dd950; final all-ten reviewer verdict pending."
+      "state": "PASS",
+      "evidence": "Final independent reviewer passed all ten pre-session assertions for plan revision 2.18 at the exact frozen candidate/APK and synchronized live control state as of 2026-10-07T03:50:23Z; this is G3 procedure approval, not C05-C physical pass."
     },
     {
       "gate": "G4",
@@ -525,24 +524,24 @@
     }
   ],
   "g3_plan_ready_for_attached_resume": false,
-  "g3_plan_not_approved_for_fresh_attach": true,
-  "issue_updated_at_utc": "2026-10-07T03:46:15Z",
+  "g3_plan_not_approved_for_fresh_attach": false,
+  "issue_updated_at_utc": "2026-10-07T03:50:22Z",
   "issue_body_current": true,
   "watchdog_prompt_updated": true,
-  "watchdog_prompt_updated_utc": "2026-10-07T03:33:50.183Z",
+  "watchdog_prompt_updated_utc": "2026-10-07T03:49:49.996Z",
   "control_plane_checkpoint_pushed": true,
-  "pr_updated_at_utc": "2026-10-07T03:46:16Z",
+  "pr_updated_at_utc": "2026-10-07T03:50:21Z",
   "control_plane_branch": {
     "name": "codex/v0.8.0-beta-watch",
     "live_ref_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/tree/codex%2Fv0.8.0-beta-watch",
-    "last_observed_head_before_status_commit": "5ff1549676d4643da282e2b9e31daa60e62d2ca2",
-    "last_observed_tree_before_status_commit": "13c37cf1b42690edf89729bb793a8340c97dd950",
+    "last_observed_head_before_status_commit": "c81a7186a22756138be8ab8ef4439cb8ef0f6cdd",
+    "last_observed_tree_before_status_commit": "e1af0b92c0c6d83a0372f5b6e9d50f39378727c1",
     "remote_matches_observed_tip_at_snapshot": true,
     "current_head_resolution": "Resolve origin/codex/v0.8.0-beta-watch from live Git at review time; this status file cannot contain its own resulting commit SHA.",
-    "snapshot_as_of_utc": "2026-10-07T03:46:16Z"
+    "snapshot_as_of_utc": "2026-10-07T03:50:23Z"
   },
-  "owner_action_required": false,
-  "owner_action": "No owner action during Phase A. After the explicit readiness notice, the owner must freshly make the Pixel available and have the Black Pearl attached to Pixel USB-C before handoff if it is not already attached. Wireless ADB only.",
+  "owner_action_required": true,
+  "owner_action": "After the readiness notice, make a fresh current statement that the Pixel 9 is available. Ensure the TRN Black Pearl is attached to Pixel USB-C before handoff if it is not already; wireless ADB only.",
   "physical_session_owner_action_required_after_review": true,
   "latest_release": {
     "tag": "v0.7.2",
@@ -553,7 +552,7 @@
   },
   "master_body_sha256": "084bca0df0103701bbed74831152074c6f1283d376a8a1930e51ea39016c52ed",
   "master_introducing_commit": "e57eb6ee92155d484cdc20c424546a70672b77e6",
-  "g3_plan_ready_for_cold_disconnected_route": false,
+  "g3_plan_ready_for_cold_disconnected_route": true,
   "latest_c05c_attempt": {
     "attempt_started_utc": null,
     "observed_by_utc": "2026-10-07T01:41:13Z",
@@ -582,7 +581,7 @@
   },
   "main_current_checks_as_of_utc": "2026-10-07T03:18Z",
   "phase_a_preflight": {
-    "state": "COMPLETE_PENDING_FINAL_INDEPENDENT_REVIEW",
+    "state": "PREFLIGHT_COMPLETE_READY_FOR_PHONE",
     "candidate_branch": "codex/v0.8.0-beta-ux",
     "candidate_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
     "candidate_tree": "e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d",
@@ -595,8 +594,8 @@
     "debug_signer_sha256": "cbd57d13316c2ca9e59fb810135ea71567fd22132b0d7f4640e92dc4434f0e14",
     "signature": "apksigner verified one Android Debug signer with v2 scheme; not the official beta key",
     "zip_alignment": "Build Tools 36.0.0 zipalign verification successful from the prior exact-APK preflight; APK SHA is unchanged",
-    "live_github_as_of_utc": "2026-10-07T03:46:16Z",
-    "pr": "#70 OPEN_DRAFT; exact frozen head; base main c702ef0149b4c647446639cfcb0ab25c09159db3; mergeable/clean; body current as of 2026-10-07T03:46:16Z",
+    "live_github_as_of_utc": "2026-10-07T03:50:23Z",
+    "pr": "#70 OPEN_DRAFT; exact frozen head; base main c702ef0149b4c647446639cfcb0ab25c09159db3; mergeable/clean; body current as of 2026-10-07T03:50:21Z",
     "checks": "8/8 exact-head check-runs completed-success, live refreshed 2026-10-07T03:42:37Z: build 112181047518; min-api-smoke 112181046209; emulator-ui-test 112181045077; CodeQL 112152334761; Priority 112150826284; Catalog 112150826043; Kotlin analysis 112150825874; submit-gradle 112150813291",
     "main": "79d600529621257136adb4d9e1a97e8ae8521d7e; 4 ahead / 0 behind; four catalog/currentness paths only; BASE-DRIFT-B",
     "stable_latest": "v0.7.2; public releases endpoint refreshed 2026-10-07T03:42:37Z; published 2026-10-03T05:32:08Z",
@@ -609,8 +608,8 @@
     "helper_guard": "one-shot T0; rejects non-empty commands.log and any prior outputs/screenshots/manifest/other evidence; requires exact candidate tree",
     "evidence_reservation": "preflight.txt + empty commands.log + prepared helper only; no capture, output, manifest, or physical evidence",
     "device_access": "none during Phase A; no ADB/USB command, Pixel query, device inspection, or DAC request",
-    "review": "Plan 2.18 static review assertions 2–10 found no concrete defect; Phase A record is populated; issue/PR link the live control branch and the status instructs live-ref resolution; final independent ten-assertion verdict pending.",
-    "remaining": "Final independent ten-assertion review against synchronized plan/status/preflight/GitHub/watchdog state; if pass, record verdict and readiness state."
+    "review": "PASS: independent reviewer passed all ten pre-session assertions for plan 2.18, including live candidate/APK/control/GitHub verification; this does not pass physical C05-C.",
+    "remaining": "Await a fresh current owner Pixel-availability statement made after the readiness notice; then execute the reviewed plan 2.18 Phase B without off-phone preparation."
   },
-  "last_observed_control_tree_before_status_commit": "13c37cf1b42690edf89729bb793a8340c97dd950"
+  "last_observed_control_tree_before_status_commit": "e1af0b92c0c6d83a0372f5b6e9d50f39378727c1"
 }
