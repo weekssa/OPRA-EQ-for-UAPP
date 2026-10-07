@@ -1,8 +1,8 @@
 {
-  "timestamp_utc": "2026-10-07T10:51:45Z",
-  "state": "PHASE_A_B_PASS_PLAN_2_33_G3_PASS_CONTROL_V1_6_SELF_REFERENCE_PENDING_EXACT_STATE_REVIEW_PENDING_C05C_NOT_STARTED",
-  "current_gate": "Phase A/B PASS. Independent G3 review of physical plan 2.33 PASS. v1.6 control self-reference, GitHub/watchdog synchronization, and independent exact-state review remain pending; C05-C/G4 remains PARTIAL / NOT PASS.",
-  "next_gate": "Seal and push the v1.6 control checkpoint, synchronize issue #71/PR #70/watchdog, obtain independent exact-state PASS, then execute Phase C.",
+  "timestamp_utc": "2026-10-07T10:57:24Z",
+  "state": "PHASE_A_B_PASS_PLAN_2_33_G3_PASS_V1_6_SELF_REFERENCE_SEALED_EXTERNAL_SYNC_PENDING_EXACT_STATE_REVIEW_PENDING_C05C_NOT_STARTED",
+  "current_gate": "Phase A/B PASS. Independent G3 plan 2.33 PASS. Master v1.6 first-commit/self-reference seal is complete locally; push, issue/PR/watchdog synchronization, and independent exact-state review remain before C05-C/G4.",
+  "next_gate": "Push the sealed v1.6 control checkpoint; synchronize issue #71/PR #70/watchdog; obtain independent exact-state PASS; then execute Phase C.",
   "candidate_branch": "codex/v0.8.0-beta-ux",
   "candidate_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
   "candidate_tree": "e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d",
@@ -399,8 +399,7 @@
   "stable_latest_release": "v0.7.2",
   "merge_or_publish_performed": false,
   "nonphysical_gates_open": [
-    "G0 v1.6 first-introducing commit/self-reference seal and live control/GitHub/watchdog synchronization plus independent exact-state review.",
-    "G0 v1.6 introducing commit/self-reference seal and live control/GitHub/watchdog synchronization.",
+    "Push the sealed v1.6 first control checkpoint 52681bbfec66c02c3aeb7a5fac5f726b57596d78; synchronize issue #71, PR #70, and watchdog; pass exact-state review.",
     "G5 final independent pre-merge verification after G4/C05-C.",
     "G6-G12 ordered merge/sign/upgrade/clean-install/artifact/publication/review-bundle/closeout."
   ],
@@ -461,7 +460,7 @@
   "master_directive": "v1.6; body SHA-256 37fe9b4e08094433aa6dfc0902500dacea457dd79aee5d7881726ce6d85cc6b1; introducing commit pending.",
   "current_owner_action": "No owner action is required. Pixel availability and Black Pearl attachment are confirmed in the current turn. Complete the pending plan review, synchronize the control checkpoint, and perform exact-state review.",
   "gates_G0_G12": {
-    "G0": "IN_PROGRESS_MASTER_V1_6_BODY_HASH_RECORDED_INTRODUCING_COMMIT_PENDING",
+    "G0": "PASS_V1_6_INTRODUCED_AND_SEALED_AT_52681bbfec66c02c3aeb7a5fac5f726b57596d78",
     "G1": "PASS_NONPHYSICAL_MUST_AND_EXACT_HEAD_CI",
     "G2": "PASS_CLASS_B_RETAINED_PROTECTED_PATHS_UNCHANGED",
     "G3": "PASS_PLAN_REVISION_2_33_INDEPENDENT_REVIEW",
@@ -546,7 +545,7 @@
     "pr_and_issue_body": "PR and issue are stale and await v1.6/plan-2.33 synchronized update; current watchdog prompt is also stale."
   },
   "last_observed_control_tree_before_status_commit": "Immediately before this checkpoint the live control tip was 269a9b469d593bb9a998c8d038d43b74949b1722 / tree 9f4aa4908b7dbf99a089eecf3d3cfc874fd3f956 at 2026-10-07T10:34Z. Resolve the live ref dynamically after pushing this snapshot.",
-  "next_action": "Complete the v1.6 self-reference seal and final control-doc consistency/privacy/syntax review; push; synchronize issue #71, draft PR #70, and the active watchdog; obtain independent exact-state PASS; then execute Phase C under plan 2.33.",
+  "next_action": "Push the locally sealed v1.6 control checkpoint; synchronize issue #71, draft PR #70, and active watchdog; obtain independent exact-state PASS; then execute Phase C under plan 2.33.",
   "g3_approved_entry_route": "PLAN_2_33_G3_PASS_EXTERNAL_SURFACES_SYNC_PENDING_EXACT_STATE_REVIEW_PENDING",
   "g3_attached_connected_session_resume_approved": false,
   "phase_b_binding": {
@@ -595,6 +594,7 @@
     "candidate_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
     "candidate_tree": "e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d",
     "review_scope": "About-this-DAC baseline/final evidence; manifest write order; production UI/read/navigation behavior; safety boundary; exact frozen candidate.",
-    "exact_state_review": "PENDING after control push and issue/PR/watchdog synchronization"
-  }
+    "exact_state_review": "PENDING after push and issue/PR/watchdog synchronization"
+  },
+  "first_v1_6_commit": "52681bbfec66c02c3aeb7a5fac5f726b57596d78"
 }
