@@ -1,8 +1,8 @@
 {
-  "timestamp_utc": "2026-10-07T12:22:11Z",
+  "timestamp_utc": "2026-10-07T12:25:00Z",
   "state": "PHASE_A_B_PREFLIGHT_CONVERGENCE",
-  "current_gate": "Phase A/B PASS; plan 2.37 G3 PASS; selector/preflight repeated-entry defect fixed and 68/68 offline tests pass. Control self-reference seal/external synchronization and independent exact-state review remain pending; readiness certificate NOT READY; C05-C/G4 PARTIAL / NOT PASS; Phase C not started.",
-  "next_gate": "Seal/push v1.8 control docs; synchronize issue #71, draft PR #70, and watchdog; obtain independent synchronized exact-state PASS; mark and synchronize the readiness certificate PASS; then begin Phase C.",
+  "current_gate": "Phase A/B PASS; plan 2.37 G3 PASS; 68/68 offline selector/preflight tests PASS. First v1.8 commit is recorded; metadata seal/push and external synchronization remain pending, followed by independent exact-state review. Readiness certificate remains NOT READY; C05-C/G4 PARTIAL / NOT PASS; Phase C not started.",
+  "next_gate": "Create and push the v1.8 metadata seal; synchronize issue #71, draft PR #70, and watchdog; obtain independent exact-state PASS; then mark and synchronize readiness PASS before Phase C.",
   "candidate_branch": "codex/v0.8.0-beta-ux",
   "candidate_head": "3329590db531c31be84e7e28d89209028a688075",
   "candidate_tree": "79808ef8052812427461f480e9abf19c2e930c22",
@@ -454,7 +454,7 @@
   "owner_action_required_now": false,
   "pixel_required_now": false,
   "physical_session_ready": false,
-  "physical_session_readiness_reason": "Plan 2.37 G3 PASS and Phase A/B PASS; 68/68 corrected offline selector/preflight suite passed. Control self-reference seal/external sync and independent synchronized exact-state review remain pending.",
+  "physical_session_readiness_reason": "Phase A/B and plan 2.37 G3 PASS; offline selector suite 68/68; the self-reference metadata seal must be pushed, external surfaces synchronized, and independent exact-state review completed.",
   "estimated_pixel_minutes": "5-10 optimization target; no time-only abort",
   "watchdog_mode": "ACTIVE_HOURLY_RESUME_FIRST_EXECUTE_CURRENT_NEXT_ACTION_QUIET_WHEN_UNCHANGED",
   "loop_status": "PHASE_A_B_PASS_PLAN_2_37_G3_PASS_CONTROL_SEAL_SYNC_EXACT_STATE_REVIEW_PENDING_C05C_NOT_STARTED",
@@ -480,10 +480,11 @@
     "mission closeout"
   ],
   "next_actions": [
-    "complete and push the v1.8 self-reference control checkpoint",
-    "synchronize issue #71, draft PR #70, and the hourly watchdog to the pushed control state",
-    "obtain independent synchronized exact-state PASS, mark the readiness certificate PASS, then resynchronize the final checkpoint",
-    "begin Phase C using the sealed Phase B target and connected Black Pearl; release the phone after safe completion or stop"
+    "create and verify the two-commit v1.8 self-reference seal",
+    "push codex/v0.8.0-beta-watch after verifying the exact remote base and staged files",
+    "synchronize issue #71, draft PR #70, and the hourly watchdog",
+    "obtain independent synchronized exact-state PASS; then mark/synchronize readiness PASS and verify the final checkpoint",
+    "begin Phase C immediately using the already-bound wireless target and connected Black Pearl"
   ],
   "issue": "OPEN; issue #71 body needs synchronization after the plan 2.37 control checkpoint is pushed.",
   "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex%2Fv0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md (resolve the live control ref dynamically)",
@@ -508,10 +509,10 @@
   "app_src_test_tree": "470979fb22a91c4514534badda6c2cc2032abfb6",
   "app_src_android_test_tree": "da2b4f31e18025ebd00f0a84f274e0e8a8624800",
   "base_drift_reconciliation": "BASE-DRIFT-B; four catalog/currentness-only paths, no app/test overlap.",
-  "master_directive": "v1.8; body SHA-256 4a44730c833893b8849e49b57194aa9abf0ceb8546f81450ddeef6803cae93a3; introducing commit pending self-reference seal.",
+  "master_directive": "v1.8; body SHA-256 4a44730c833893b8849e49b57194aa9abf0ceb8546f81450ddeef6803cae93a3; introduced by 15610e560779027516c0c126bcfce1e3ecda1cc5; metadata seal pending push.",
   "current_owner_action": "No owner action is required. Pixel availability and Black Pearl connection are confirmed; finish control synchronization and independent exact-state review.",
   "gates_G0_G12": {
-    "G0": "PENDING v1.8 two-commit self-reference seal; body digest verified as 4a44730c833893b8849e49b57194aa9abf0ceb8546f81450ddeef6803cae93a3.",
+    "G0": "PENDING completion/push of the v1.8 two-commit self-reference seal; body digest verified as 4a44730c833893b8849e49b57194aa9abf0ceb8546f81450ddeef6803cae93a3; first commit 15610e560779027516c0c126bcfce1e3ecda1cc5.",
     "G1": "PASS nonphysical MUST evidence and exact-head CI 8/8.",
     "G2": "PASS Class B retained; protected paths unchanged.",
     "G3": "PASS: independent review of exact physical plan revision 2.37.",
@@ -539,7 +540,7 @@
   "physical_session_owner_action_required_after_review": false,
   "latest_release": "v0.7.2; live public latest confirmed 2026-10-07T12:08Z.",
   "master_body_sha256": "4a44730c833893b8849e49b57194aa9abf0ceb8546f81450ddeef6803cae93a3",
-  "master_introducing_commit": "PENDING_FIRST_V1_8_COMMIT",
+  "master_introducing_commit": "15610e560779027516c0c126bcfce1e3ecda1cc5",
   "g3_plan_ready_for_cold_disconnected_route": false,
   "latest_c05c_attempt": {
     "attempt_started_utc": "2026-10-07T03:57:21Z",
@@ -579,8 +580,8 @@
     "plan_g3_pass": true,
     "readiness_certificate": "NOT READY until control synchronization and independent synchronized exact-state review pass."
   },
-  "last_observed_control_tree_before_status_commit": "Local worktree is based on 1bb67d550fe09276e399f94c178b21ffbdab76b7; dynamically verify origin/codex/v0.8.0-beta-watch after push.",
-  "next_action": "Commit and push the two-commit v1.8 self-reference seal recording exact plan 2.37 G3 PASS; synchronize issue #71, draft PR #70, and watchdog; obtain independent exact-state review; only after PASS mark and synchronize the readiness certificate PASS and perform a final exact-state check; then begin Phase C with the already-bound Pixel and connected Black Pearl.",
+  "last_observed_control_tree_before_status_commit": "Resolve origin/codex/v0.8.0-beta-watch dynamically after pushing the metadata seal; local branch is one first-commit descendant of the recorded base.",
+  "next_action": "Create the metadata seal referencing first v1.8 commit 15610e560779027516c0c126bcfce1e3ecda1cc5; verify and push the two-commit control checkpoint; synchronize issue #71, draft PR #70, and watchdog; obtain independent exact-state PASS; only then mark and synchronize readiness PASS, verify the final exact state, and start Phase C.",
   "g3_approved_entry_route": "PLAN_2_37_G3_PASS_CONTROL_SYNC_AND_EXACT_STATE_REVIEW_PENDING",
   "g3_attached_connected_session_resume_approved": false,
   "phase_b_binding": {
@@ -690,8 +691,8 @@
     "requires_duplicate_setup_request": false
   },
   "physical_session_readiness": false,
-  "control_plane_local_head": "Local control checkpoint pending two-commit seal/push; resolve live origin/codex/v0.8.0-beta-watch dynamically.",
-  "first_v1_8_commit": "PENDING_FIRST_V1_8_COMMIT",
+  "control_plane_local_head": "v1.8 metadata seal commit is being prepared over first commit 15610e560779027516c0c126bcfce1e3ecda1cc5; push both commits after verifying the exact staged set.",
+  "first_v1_8_commit": "15610e560779027516c0c126bcfce1e3ecda1cc5",
   "repeated_session_entry_failure": {
     "triggered": true,
     "classification": "HOST_ORCHESTRATION_DEFECT_ONLY; no Pixel identity query or DAC request occurred during the earlier stopped attempts; no C05-C failure or hardware mutation is inferred.",
