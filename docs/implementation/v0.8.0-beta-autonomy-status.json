@@ -1,8 +1,8 @@
 {
-  "timestamp_utc": "2026-10-07T04:01:58Z",
-  "state": "PHASE_A_REPREPARATION_AFTER_WORKFLOW_SESSION_STOP",
-  "current_gate": "Phase A repreparation after a workflow/session stop; G3 remains PASS for plan 2.18 and C05-C/G4 remains PARTIAL / NOT PASS. A fresh persistent-PTY runner is live, but independent review and issue/PR/watchdog synchronization must pass before a new readiness notice.",
-  "next_gate": "Complete Phase A review and synchronization; then await a fresh post-readiness owner Pixel-availability statement before one plan 2.18 C05-C session.",
+  "timestamp_utc": "2026-10-07T04:17:58Z",
+  "state": "PHASE_A_REPREPARATION_PENDING_FINAL_CONTROL_REVIEW",
+  "current_gate": "G3 procedure approval PASS for plan 2.18. C05-C/G4 remains PARTIAL / NOT PASS. Independent runner review passed; the stale plan disposition header was corrected without changing procedure steps. Issue/PR/watchdog now reflect that state. Final independent review of the exact pushed canonical record remains pending.",
+  "next_gate": "Push the synchronized docs-only control checkpoint, obtain final independent review, then issue a new Phase A readiness notice. Only a fresh post-readiness Pixel-availability statement may start Phase B.",
   "candidate_branch": "codex/v0.8.0-beta-ux",
   "candidate_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
   "candidate_tree": "e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d",
@@ -124,7 +124,7 @@
       "plan_revision": "2.18",
       "plan_review": "G3 PASS: final independent review passed all ten pre-session assertions for plan revision 2.18 on the exact frozen candidate. This is procedure approval only, not physical C05-C acceptance.",
       "read_semantics": "Production READ sends outbound report(s) and may receive one bounded automatic nondestructive timeout retry; do not claim zero USB traffic or raw-bit equality. Compare same displayed fields at UI precision.",
-      "readiness": "PREFLIGHT COMPLETE \u2014 READY FOR PHONE. Wait for a fresh current owner Pixel-availability statement after readiness; no ADB/USB/device access before it.",
+      "readiness": "PHASE A NOT READY. Runner review passed, issue/PR and watchdog reflect current workflow status, but the synchronized canonical control checkpoint needs final independent review. C05-C/G4 remains PARTIAL / NOT PASS.",
       "prior_attempts": [
         {
           "physical_attempt_utc": "2026-10-06T19:25:17Z",
@@ -233,7 +233,7 @@
     "old_non_flat_eq_reset_precondition_applies_to_read_only_c05c": false,
     "non_flat_requirement_rationale": "It applied to the old checkbox-on Reset test; C05-C is read-only and invokes no Reset.",
     "talkback": "DEFERRED_NON_BLOCKING_FOR_BETA; historical direct-touch owner report remains supplementary only; no repeat requested.",
-    "plan_review": "Preliminary independent static review confirmed helper SHA and assertions 2\u201310, with no other procedural defect; Phase A and all external control surfaces are synchronized; final ten-assertion G3 verdict is pending."
+    "plan_review": "G3 PASS for procedure revision 2.18 after all ten assertions. The disposition-header correction changed no procedure step. Final independent review of the exact pushed status/control surfaces remains pending."
   },
   "api35": {
     "previous_candidate": "acd95df543632e57ae46cd68e714a35f94781f43",
@@ -367,7 +367,7 @@
   "owner_action_required_now": false,
   "pixel_required_now": false,
   "physical_session_ready": false,
-  "physical_session_readiness_reason": "The prior Phase B stopped after discovery because the recorder was run in a one-shot non-TTY shell. A new ignored reservation is prepared and a persistent candidate-rooted PTY is live, but independent re-review and issue/PR/watchdog synchronization must pass before a new readiness notice.",
+  "physical_session_readiness_reason": "Independent review of the runner passed, issue #71 and PR #70 reflect that result, and the watchdog records the latest checkpoint. The canonical docs-only checkpoint still needs to be pushed and independently reviewed. No ADB/USB/device access before a new readiness notice and fresh owner availability.",
   "estimated_pixel_minutes": {
     "target": 10,
     "hard_limit": 15,
@@ -397,9 +397,9 @@
     "mission closeout"
   ],
   "next_actions": [
-    "Complete independent review of the new persistent-PTY Phase A reservation and synchronized canonical state. Keep the existing PTY 85646 open and idle; no ADB/USB/device access.",
-    "Commit/push only the intended control-plane documentation, update issue #71, PR #70 body, and existing hourly watchdog with the workflow stop and corrected runner, then issue a fresh readiness notice.",
-    "Wait for a fresh current owner Pixel-availability statement after readiness; then run plan 2.18 in the already-live PTY, wireless ADB only, with the Black Pearl attached before handoff."
+    "Validate and commit the documentation-only control-plane changes; preserve unrelated ignored directories and candidate-local evidence.",
+    "Push the control branch, resolve the exact live ref, and request the independent reviewer to verify the corrected plan disposition plus synchronized canonical and external state.",
+    "Do not issue readiness or use ADB/USB until that final review passes; after readiness, wait for a fresh owner Pixel-availability statement."
   ],
   "issue": "https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/71",
   "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex/v0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md",
@@ -417,7 +417,7 @@
   "main_head_observed": "79d600529621257136adb4d9e1a97e8ae8521d7e",
   "main_advanced_since_pr_snapshot": true,
   "pr_base_ref": "main",
-  "pr_snapshot_as_of_utc": "2026-10-07T04:01Z",
+  "pr_snapshot_as_of_utc": "2026-10-07T04:16Z",
   "integration_base_sha": "c702ef0149b4c647446639cfcb0ab25c09159db3",
   "app_src_test_tree": "470979fb22a91c4514534badda6c2cc2032abfb6",
   "app_src_android_test_tree": "da2b4f31e18025ebd00f0a84f274e0e8a8624800",
@@ -442,13 +442,13 @@
     "body_sha256": "084bca0df0103701bbed74831152074c6f1283d376a8a1930e51ea39016c52ed",
     "introduced_by_commit": "e57eb6ee92155d484cdc20c424546a70672b77e6"
   },
-  "current_owner_action": "None now. After a new readiness notice, make a fresh current statement that the Pixel 9 is available; have the Black Pearl attached before handoff. Wireless ADB only.",
+  "current_owner_action": "None now. After the next readiness notice, make a fresh current statement that the Pixel 9 is available and have the Black Pearl attached before handoff. Wireless ADB only.",
   "gates_G0_G12": [
     {
       "gate": "G0",
       "name": "Canonical directive / candidate identity",
       "state": "PASS",
-      "evidence": "Master v1.3/body SHA and exact candidate/APK identity verified. External issue/PR/watchdog synchronization for the latest workflow stop is pending."
+      "evidence": "Exact candidate/APK and master v1.3 identity verified. Issue/PR/watchdog describe the workflow stop and runner review; canonical checkpoint push and final independent review remain."
     },
     {
       "gate": "G1",
@@ -464,7 +464,7 @@
       "gate": "G3",
       "name": "Final physical plan ready",
       "state": "PASS",
-      "evidence": "Final independent reviewer passed all ten pre-session assertions for plan revision 2.18 at the exact frozen candidate/APK and synchronized live control state as of 2026-10-07T03:50:23Z; this is G3 procedure approval, not C05-C physical pass."
+      "evidence": "PASS for plan revision 2.18 procedure; all ten assertions passed. The disposition-only header correction changed no procedure step; final review of the pushed synchronized record remains before readiness."
     },
     {
       "gate": "G4",
@@ -527,30 +527,30 @@
   ],
   "g3_plan_ready_for_attached_resume": false,
   "g3_plan_not_approved_for_fresh_attach": false,
-  "issue_updated_at_utc": "2026-10-07T03:50:22Z",
-  "issue_body_current": false,
-  "watchdog_prompt_updated": false,
-  "watchdog_prompt_updated_utc": "2026-10-07T03:49:49.996Z",
+  "issue_updated_at_utc": "2026-10-07T04:16:00Z",
+  "issue_body_current": true,
+  "watchdog_prompt_updated": true,
+  "watchdog_prompt_updated_utc": "2026-10-07T04:14:16Z",
   "control_plane_checkpoint_pushed": false,
-  "pr_updated_at_utc": "2026-10-07T03:50:21Z",
+  "pr_updated_at_utc": "2026-10-07T04:16:01Z",
   "control_plane_branch": {
     "name": "codex/v0.8.0-beta-watch",
     "live_ref_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/tree/codex%2Fv0.8.0-beta-watch",
-    "last_observed_head_before_status_commit": "2b4fe6daaee6aec7ca15a2b3e34a9dc65713efb0",
-    "last_observed_tree_before_status_commit": "0c456aca78f33d8c318f0d5bf9bdfbb91f06c28b",
+    "last_observed_head_before_status_commit": "5a3fd8ab6b5cc880658a10887e2e930c1a2d2ade",
+    "last_observed_tree_before_status_commit": "789f83b55bb28ceb2c908016f799b9a84e769df2",
     "remote_matches_observed_tip_at_snapshot": true,
     "current_head_resolution": "Resolve origin/codex/v0.8.0-beta-watch from live Git at review time; this status file cannot contain its own resulting commit SHA.",
-    "snapshot_as_of_utc": "2026-10-07T04:01:58Z"
+    "snapshot_as_of_utc": "2026-10-07T04:17:58Z"
   },
   "owner_action_required": false,
-  "owner_action": "None now. After a new readiness notice, make a fresh current statement that the Pixel 9 is available; have the Black Pearl attached before handoff. Wireless ADB only.",
+  "owner_action": "None now. After the next readiness notice, make a fresh current statement that the Pixel 9 is available and have the Black Pearl attached before handoff. Wireless ADB only.",
   "physical_session_owner_action_required_after_review": true,
   "latest_release": {
     "tag": "v0.7.2",
     "prerelease": false,
     "draft": false,
     "stable_latest": true,
-    "as_of_utc": "2026-10-07T04:01Z"
+    "as_of_utc": "2026-10-07T04:06Z"
   },
   "master_body_sha256": "084bca0df0103701bbed74831152074c6f1283d376a8a1930e51ea39016c52ed",
   "master_introducing_commit": "e57eb6ee92155d484cdc20c424546a70672b77e6",
@@ -583,7 +583,7 @@
   },
   "main_current_checks_as_of_utc": "2026-10-07T03:18Z",
   "phase_a_preflight": {
-    "state": "PERSISTENT_RUNNER_PREPARED_PENDING_FINAL_REVIEW_AND_SYNC",
+    "state": "PERSISTENT_RUNNER_PREPARED_PENDING_FINAL_CONTROL_REVIEW",
     "candidate_branch": "codex/v0.8.0-beta-ux",
     "candidate_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
     "candidate_tree": "e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d",
@@ -596,13 +596,13 @@
     "debug_signer_sha256": "cbd57d13316c2ca9e59fb810135ea71567fd22132b0d7f4640e92dc4434f0e14",
     "signature": "apksigner verified one Android Debug signer with v2 scheme; not the official beta key",
     "zip_alignment": "Build Tools 36.0.0 zipalign verification successful from the prior exact-APK preflight; APK SHA is unchanged",
-    "live_github_as_of_utc": "2026-10-07T04:01Z",
+    "live_github_as_of_utc": "2026-10-07T04:16Z",
     "pr": "#70 OPEN_DRAFT; exact frozen head 5c7d19cf2f77e448a97a1ee9d520ad4d408f120f; base main c702ef0149b4c647446639cfcb0ab25c09159db3; mergeable/clean",
     "checks": "8/8 exact-head check-runs completed-success at latest refresh: build 112181047518; min-api-smoke 112181046209; emulator-ui-test 112181045077; CodeQL 112152334761; Priority 112150826284; Catalog 112150826043; Kotlin analysis 112150825874; submit-gradle 112150813291",
     "main": "79d600529621257136adb4d9e1a97e8ae8521d7e; 4 ahead / 0 behind; four catalog/currentness paths only; BASE-DRIFT-B",
-    "stable_latest": "v0.7.2; latest public-release API refresh at 2026-10-07T04:01Z",
+    "stable_latest": "v0.7.2; latest public-release API refresh at 2026-10-07T04:06Z",
     "source_paths": "ordinary launcher and disconnected card; local-only tabs/navigation; production Edit EQ and DEVICE Refresh reads; attached away/back card route; source-audited",
-    "command_syntax": "Plan 2.18 helper /bin/bash -n PASS; sourced in persistent interactive Bash PTY 85646; candidate branch/HEAD/tree/path guards PASS; T0 empty; commands.log 0 bytes; shell alive at 03:59:29Z and 04:01Z",
+    "command_syntax": "Plan 2.18 helper bash syntax PASS; sourced in persistent interactive Bash PTY 85646; candidate branch/HEAD/tree/path guards PASS; T0 empty; commands.log 0 bytes; latest recorded same-session liveness checkpoint 2026-10-07T04:05:34Z",
     "evidence_ignore": "candidate worktree .git/info/exclude rule /.unlazy/v080-beta/evidence/c05c-*/ verified for the current unique reservation",
     "session_id": "20261007T035827Z",
     "helper_path": ".unlazy/v080-beta/evidence/c05c-20261007T035827Z/phase-b-recorder.sh",
@@ -610,13 +610,15 @@
     "helper_guard": "single-use reservation; empty log/T0; candidate/path guards passed in persistent Bash PTY session 85646; retain this exact session for Phase B",
     "evidence_reservation": "New unique candidate-local ignored path; only preflight.txt, empty commands.log, and prepared helper; no command output/screenshots/manifest/physical capture",
     "device_access": "No ADB/USB/device command in the new reservation. The prior discovery only listed the Pixel service; it was not selected or queried.",
-    "review": "PENDING: independent re-review of the new persistent PTY runner and synchronized status/control surfaces",
-    "remaining": "Independent re-review, control-plane commit/push, issue #71/PR #70/watchdog synchronization, then issue a new readiness notice and await fresh owner availability.",
+    "review": "Independent runner review PASS. Issue/PR and watchdog synchronized to Phase A not-ready state. Final independent review of the exact pushed canonical control state remains pending; do not claim current runner visibility.",
+    "remaining": "Push this control-plane checkpoint, refresh the live ref, obtain final independent review, then issue a fresh readiness notice and await a new owner availability statement.",
     "previous_consumed_session_id": "20261007T031528Z",
     "persistent_runner_session_id": "85646",
     "t0_utc": null,
     "t0_monotonic_ns": null,
-    "commands_log_bytes": 0
+    "commands_log_bytes": 0,
+    "latest_recorded_liveness_utc": "2026-10-07T04:05:34Z"
   },
-  "last_observed_control_tree_before_status_commit": "0c456aca78f33d8c318f0d5bf9bdfbb91f06c28b"
+  "last_observed_control_tree_before_status_commit": "789f83b55bb28ceb2c908016f799b9a84e769df2",
+  "next_action": "Push only the prepared control-plane documentation checkpoint, then ask the independent reviewer to verify the exact pushed plan/status/issue/PR/watchdog state."
 }
