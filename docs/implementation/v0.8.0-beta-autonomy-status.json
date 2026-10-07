@@ -1,8 +1,8 @@
 {
-  "timestamp_utc": "2026-10-07T01:29:46Z",
-  "state": "RUNNING_WAITING_FOR_PHYSICAL_GATE_AFTER_PRELIMINARY_G5_SOFTWARE_AUDIT",
-  "current_gate": "G3 PASS for FINAL_PHYSICAL_SESSION_PLAN.md revision 2.11 restricted cold/disconnected route; G4/C05-C PARTIAL / NOT PASS. Latest 2026-10-07 discovery attempt stopped before Pixel target selection: emulator-5556 only, no mDNS services; no Pixel/device query or DAC protocol request occurred; phone released.",
-  "next_gate": "Finish documentation-only control sync. Then wait for fresh post-release Pixel availability and a currently discoverable wireless ADB endpoint; only then run one complete plan 2.11 C05-C session.",
+  "timestamp_utc": "2026-10-07T03:31:00Z",
+  "state": "RUNNING_PHASE_A_OFF_PHONE_PREFLIGHT",
+  "current_gate": "C05-C/G4 PARTIAL_NOT_PASS. Plan 2.18 has fixes for the 2.17 one-shot T0 and evidence-reservation findings. Static review found no other concrete defect in assertions 2-10; final all-ten verdict awaits synchronized status/master/live GitHub state. No Pixel/ADB/USB access during Phase A.",
+  "next_gate": "Finalize the master hash and matching resume/status/plan references; obtain the final independent ten-assertion verdict on plan 2.18; commit/push only control-plane docs; update issue #71, PR #70, and the existing watchdog; refresh live truth. Only then report PREFLIGHT COMPLETE — READY FOR PHONE and await a fresh owner availability statement before Phase B.",
   "candidate_branch": "codex/v0.8.0-beta-ux",
   "candidate_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
   "candidate_tree": "e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d",
@@ -21,131 +21,12 @@
   "pr_base": "c702ef0149b4c647446639cfcb0ab25c09159db3",
   "pr_current_body_stale": true,
   "ci": {
-    "as_of_utc": "2026-10-07T01:29:46Z",
+    "as_of_utc": "2026-10-07T03:18Z",
     "exact_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
-    "workflows": [
-      {
-        "name": "Catalog currentness CI",
-        "run_id": 37427641890,
-        "status": "completed",
-        "conclusion": "success"
-      },
-      {
-        "name": "Priority community coverage CI",
-        "run_id": 37427641910,
-        "status": "completed",
-        "conclusion": "success"
-      },
-      {
-        "name": "Android CI",
-        "run_id": 37427641822,
-        "status": "completed",
-        "conclusion": "success"
-      },
-      {
-        "name": "CodeQL",
-        "run_id": 37427641849,
-        "status": "completed",
-        "conclusion": "success"
-      }
-    ],
-    "android_jobs": [
-      {
-        "name": "emulator-ui-test",
-        "job_id": 112159666615,
-        "status": "completed",
-        "conclusion": "failure",
-        "attempt": 1
-      },
-      {
-        "name": "build",
-        "job_id": 112171541098,
-        "status": "completed",
-        "conclusion": "success",
-        "attempt": 2
-      },
-      {
-        "name": "min-api-smoke",
-        "job_id": 112171541652,
-        "status": "completed",
-        "conclusion": "success",
-        "incidental_workflow_rerun": true,
-        "attempt": 2,
-        "api26_library_diagnostics": false
-      },
-      {
-        "name": "emulator-ui-test",
-        "job_id": 112171539825,
-        "status": "completed",
-        "conclusion": "success",
-        "attempt": 2,
-        "report_artifact_id": 11397899612,
-        "junit_summary": "64 tests; 0 failures; 0 errors; 0 skipped"
-      },
-      {
-        "name": "emulator-ui-test",
-        "job_id": 112177030919,
-        "status": "completed",
-        "conclusion": "success",
-        "attempt": 3,
-        "report_artifact_id": 11399423407,
-        "junit_summary": "64 tests; 0 failures; 0 errors; 0 skipped"
-      },
-      {
-        "name": "min-api-smoke",
-        "job_id": 112177032503,
-        "status": "completed",
-        "conclusion": "success",
-        "attempt": 3,
-        "incidental_workflow_rerun": true,
-        "api26_library_diagnostics": false
-      },
-      {
-        "name": "build",
-        "job_id": 112177032768,
-        "status": "completed",
-        "conclusion": "success",
-        "attempt": 3
-      },
-      {
-        "name": "emulator-ui-test",
-        "job_id": 112181045077,
-        "status": "completed",
-        "conclusion": "success",
-        "attempt": 4,
-        "report_artifact_id": 11400405767,
-        "junit_summary": "64 tests; 0 failures; 0 errors; 0 skipped"
-      }
-    ],
-    "api35_exact_head_retry": {
-      "workflow_run_id": 37427641822,
-      "job_id": 112171539825,
-      "status": "completed_success",
-      "api26_cold_install_side_effect_job_id": 112171541652,
-      "api26_side_effect_conclusion": "success; cold install only; API26 Library gate remains closed",
-      "artifact_id": 11397899612,
-      "artifact_sha256": "d3282086aa8cc8b0858fbc0e93d62d6a55b4c622359fb6772e37653d69bde3db",
-      "result": "64 tests; 0 failures; 0 errors; 0 skipped",
-      "both_previously_affected_tests_passed": true,
-      "api26_side_effect_disposition": "Incidental cold install only; no Library or heap diagnostics; API26 gate remains closed"
-    },
-    "current_api35_full_suite": {
-      "workflow_run_id": 37427641822,
-      "job_id": 112181045077,
-      "attempt": 4,
-      "status": "completed_success",
-      "candidate_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
-      "prior_consecutive_passes": 2,
-      "artifact_id": 11400405767,
-      "artifact_sha256": "3eb0f7ed51db453d95945cd9920ae7ec588dca22102e3920b3d850164a71d757",
-      "junit_summary": "64 tests; 0 failures; 0 errors; 0 skipped; both formerly affected tests passed",
-      "consecutive_passes_after": 3,
-      "api26_disposition": "Incidental cold install only; no Library or heap diagnostics; API26 gate remains closed"
-    },
     "total_exact_head_check_runs": 8,
     "check_run_snapshot": {
       "all_completed_success": true,
-      "as_of_utc": "2026-10-07T01:29:46Z",
+      "as_of_utc": "2026-10-07T03:18Z",
       "head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
       "total_count": 8,
       "checks": [
@@ -214,7 +95,7 @@
       ]
     },
     "C_real_black_pearl_session_read_navigation": {
-      "state": "PARTIAL_NOT_PASS",
+      "state": "PARTIAL_NOT_PASS_WORKFLOW_PREFLIGHT_STOP",
       "physical_attempt_utc": "2026-10-06T23:24:31Z",
       "required": [
         "exact device identity",
@@ -240,10 +121,10 @@
         "retrospective_addendum_sha256": "4a223e023b59be2584b40679b87fa62d364153a4ecab735b0431f56f1aa82a4e",
         "indexed_file_count": 36
       },
-      "plan_revision": "2.11",
-      "plan_review": "PASS: independent source-path audit and plan reviewer approved revision 2.11 only for the cold/disconnected route against candidate 5c7d19cf2f77e448a97a1ee9d520ad4d408f120f/tree e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d. Package process must be absent; use ordinary launcher only, never ACTION_USB_DEVICE_ATTACHED; compose DEVICE while the fresh transport is Disconnected; observe five seconds with clean entry/end captures; abort on restore/recovery state; then at most one normal Connect and one exact permission approval. Existing-process/current-session and Connected-card routes are excluded.",
-      "read_semantics": "Production READ emits an outbound request report and may reissue one timed-out nondestructive read once automatically. No manual retry. Do not claim zero USB traffic or raw bit-for-bit equality; compare same displayed fields at UI precision.",
-      "readiness": "G3 plan 2.11 is PASS only for the restricted cold/disconnected route. Latest discovery stopped before Pixel target selection; no Pixel/device query or DAC request occurred and the phone was released. Require a fresh post-release availability statement and currently discoverable wireless ADB endpoint before any new device access; never reuse prior pairing codes/ports or combine attempts.",
+      "plan_revision": "2.18",
+      "plan_review": "Independent static reviewer confirmed helper SHA and assertions 2-10, with no other procedural defect; final ten-assertion G3 verdict is pending synchronized Phase A assertion 1 and current control-plane/GitHub state.",
+      "read_semantics": "Production READ sends outbound report(s) and may receive one bounded automatic nondestructive timeout retry; do not claim zero USB traffic or raw-bit equality. Compare same displayed fields at UI precision.",
+      "readiness": "Off-phone candidate/APK/source/GitHub/command/evidence preparation is recorded in the unique ignored reservation. Do not access the Pixel during Phase A. Await final independent plan verdict and control-plane synchronization; only then issue readiness and require a fresh owner availability statement.",
       "prior_attempts": [
         {
           "physical_attempt_utc": "2026-10-06T19:25:17Z",
@@ -299,7 +180,44 @@
         "commands_sha256": "c5a4fe28d62cb42dec64661c3aa83c7c56f92ecf585f14564639f11698534281",
         "evidence_index_sha256": "5e5f2cbe5a5a89f55da897fd2194fa454b25c894abd51cda2eab8c4aebaf09f4",
         "classification": "DISCOVERY_STOP_ONLY; no physical device evidence; do not combine with earlier attempt"
-      }
+      },
+      "latest_workflow_stop": {
+        "attempt_started_utc": null,
+        "observed_by_utc": "2026-10-07T01:41:13Z",
+        "stop_decision_utc": "2026-10-07T01:43:38Z",
+        "duration_seconds": null,
+        "candidate_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
+        "candidate_tree": "e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d",
+        "plan_revision": "2.11",
+        "outcome": "WORKFLOW_PREFLIGHT_STOP; C05-C NOT PASS",
+        "discovery": "adb devices -l output listed a Pixel 9 wireless endpoint and emulator-5556; adb mdns services listed no services. Endpoint not selected or queried.",
+        "pixel_endpoint_discovered_in_list": true,
+        "pixel_target_selected_or_contacted": false,
+        "pixel_or_usb_state_inspected": false,
+        "app_launched_or_process_inspected": false,
+        "black_pearl_identity_or_state_inspected": false,
+        "dac_protocol_read_or_write_sent": false,
+        "device_or_cable_state_changed": false,
+        "phone_released": true,
+        "reason": "ADB invocation start missing; off-phone APK/GitHub verification overlapped the two-minute entry window. Classify as workflow/preflight defect; do not reconstruct elapsed time.",
+        "evidence_folder": ".unlazy/v080-beta/evidence/c05c-20261007014453Z/",
+        "stop_report_sha256": "39c883ca4df373d9dfab66d411d189e7c3bc119388d78ca93c546b09f0aac26c",
+        "commands_sha256": "2e8e8c4f46cb32c11698ba765409b192e9b7d124b0f4b6fdb2f7f305ef57176d",
+        "reconciliation_sha256": "cfc2acea7611c5529f6d8bba9136c7fb2477219f877167a24da0fd05662b84f0",
+        "evidence_index_sha256": "af82b2469ea4b5fe95a4ff2b59421e734e9f4c4b91de6127df0d3f8846067830",
+        "classification": "WORKFLOW_PREFLIGHT_STOP; no physical-device state, not a product/hardware failure; do not combine with earlier attempt"
+      },
+      "two_phase_model": {
+        "phase_a": "OFF_PHONE_PREPARATION_IN_PROGRESS",
+        "phase_b": "NOT_STARTED",
+        "t0": "Immediately before the first prepared wireless-ADB discovery/connection command after Phase A review passes and owner freshly makes Pixel available.",
+        "checkpoint": "T0+2 minutes; exact Pixel/APK/DAC identity, pre-launch package PID absent, launcher entry, clean disconnected DEVICE checkpoint complete.",
+        "phone_use_now": false
+      },
+      "plan_review_findings_2_17": "NOT PASS: duplicate t0-discovery could replace T0; reservation did not prove empty command log/no prior output, screenshots, or manifest. Corrected in plan 2.18.",
+      "plan_2_18_helper_sha256": "a2afbcd96458e92758834c678a4a03455b9d57dea9f9ad6a6d872a766321734f",
+      "t0_one_shot": true,
+      "single_use_evidence_reservation": true
     },
     "D_independent_qualification_review": {
       "state": "PASS",
@@ -448,21 +366,23 @@
   "owner_action_required_now": false,
   "pixel_required_now": false,
   "physical_session_ready": false,
-  "physical_session_readiness_reason": "G3 passes for plan 2.11 restricted route, but latest discovery found no Pixel wireless target/service and the phone was released. Do not use ADB/USB or inspect device state until fresh post-release availability and a discoverable current wireless endpoint are present.",
+  "physical_session_readiness_reason": "Final ten-assertion independent review and complete control-plane synchronization remain. No phone use is authorized during Phase A; after readiness, require a fresh current Pixel-availability statement.",
   "estimated_pixel_minutes": {
     "target": 10,
-    "hard_limit": 15
+    "hard_limit": 15,
+    "entry_checkpoint_minutes": 2
   },
-  "watchdog_mode": "MASTER_V1_2_HASH_b135; G3_PLAN_2_11_COLD_DISCONNECTED_PASS; G4_C05_C_PARTIAL_NO_PIXEL_TARGET; WAIT_FRESH_POST_RELEASE_AVAILABILITY_AND_CURRENT_WIRELESS_ENDPOINT; NO_ADB_UNTIL_THEN; PRELIMINARY_G5_SOFTWARE_AUDIT_COMPLETE; EXACT_CANDIDATE_CLASS_B_FROZEN",
-  "loop_status": "FROZEN_CANDIDATE_UNCHANGED; CLASS_B_RETAINED; C05C_DISCOVERY_STOP_NO_TARGET; PHONE_RELEASED; PRELIMINARY_G5_COMPLETE_FINAL_PENDING_G4; WAIT_FOR_FRESH_AVAILABILITY_AND_WIRELESS_ENDPOINT",
+  "watchdog_mode": "ACTIVE_HOURLY_RESUME_FIRST_PHASE_A_THEN_ACTIONABLE_NEXT_GATE",
+  "loop_status": "PHASE_A_OFF_PHONE_PREFLIGHT_IN_PROGRESS_NO_PIXEL_ACCESS",
   "stable_latest_release": "v0.7.2",
   "merge_or_publish_performed": false,
   "nonphysical_gates_open": [
-    "G5 final independent pre-merge verification pending G4/C05-C; preliminary software audit complete and must be reverified against physical evidence",
-    "G6-G12 ordered merge/sign/upgrade/clean-install/publication/bundle/closeout"
+    "G3 final independent review of physical plan revision 2.18 and complete control-plane synchronization",
+    "G5 final independent pre-merge verification pending G4/C05-C",
+    "G6-G12 ordered merge/sign/upgrade/clean-install/artifact/publication/review-bundle/closeout"
   ],
   "physical_gates_open": [
-    "G4/C05-C complete single-session Black Pearl identity/session/EQ+DEVICE baseline and final reads/navigation under plan 2.11; earlier 2026-10-06 attempt remains partial; 2026-10-07 no-target stop is not physical evidence"
+    "G4/C05-C complete read/navigation session under plan revision 2.18, only after G3 and fresh owner availability"
   ],
   "downstream_gates": [
     "Independent pre-merge verification",
@@ -476,17 +396,18 @@
     "mission closeout"
   ],
   "next_actions": [
-    "Finish and push the documentation-only control-plane reconciliation; synchronize Issue #71, PR #70, and the existing watchdog.",
-    "Wait quietly for fresh post-release Pixel availability and a currently discoverable wireless ADB endpoint; do not use ADB/USB or old pairing codes before that condition.",
-    "After C05-C passes, reconcile/hash the physical evidence, complete final G5, then continue in exact merge/sign/upgrade/clean-install/artifact/publication/review-bundle/closeout order."
+    "Complete the docs-only control-plane synchronization for master v1.3, plan revision 2.18, current Phase A evidence, and exact live PR/base/check/release state; preserve untracked ignored evidence.",
+    "Commit the initial synchronized control-doc checkpoint, record that commit as the v1.3 introduction, finalize references in a second docs-only commit, and push only intended tracked documents.",
+    "Update issue #71, PR #70 description, and the existing hourly watchdog; refresh exact candidate/PR/base/check/release/issue truth.",
+    "Obtain and record the final independent all-ten review verdict against the synchronized state; only if it passes report PREFLIGHT COMPLETE — READY FOR PHONE and require a fresh post-readiness Pixel availability statement."
   ],
   "issue": "https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/71",
   "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex/v0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md",
   "physical_plan": {
     "path": "docs/implementation/FINAL_PHYSICAL_SESSION_PLAN.md",
-    "revision": "2.11",
-    "state": "G3_PASS_COLD_DISCONNECTED_ROUTE_ONLY",
-    "scope": "One complete read-only C05-C session: Black Pearl already attached; package process absent; ordinary launcher only; compose DEVICE while disconnected; clean five-second observation; at most one normal Connect and one exact permission approval. Existing process/session and Connected-card routes excluded.",
+    "revision": "2.18",
+    "state": "PENDING_FINAL_INDEPENDENT_REVIEW_AND_CONTROL_SYNC",
+    "scope": "Phase A off-phone preflight; Phase B fresh owner availability, one-shot wireless-ADB T0, exact candidate/APK/Pixel/DAC verification, cold/disconnected My DAC preflight, production EQ/DEVICE reads, attached navigation, final explicit readback, and immediate release.",
     "fresh_attach_authorized": false,
     "device_access_before_review": false
   },
@@ -494,132 +415,40 @@
   "pr_mergeable": true,
   "pr_mergeable_state": "clean",
   "main_head_observed": "79d600529621257136adb4d9e1a97e8ae8521d7e",
-  "main_advanced_since_pr_snapshot": {
-    "prior_main_and_pr_api_base": "c702ef0149b4c647446639cfcb0ab25c09159db3",
-    "commit": "58d5c3a25a6d25ec463c1c41ecae049b22a8471d",
-    "commit_time_utc": "2026-10-06T15:56:18Z",
-    "subject": "Refresh EQ catalog currentness",
+  "main_advanced_since_pr_snapshot": true,
+  "pr_base_ref": "main",
+  "pr_snapshot_as_of_utc": "2026-10-07T03:27Z",
+  "integration_base_sha": "c702ef0149b4c647446639cfcb0ab25c09159db3",
+  "app_src_test_tree": "470979fb22a91c4514534badda6c2cc2032abfb6",
+  "app_src_android_test_tree": "da2b4f31e18025ebd00f0a84f274e0e8a8624800",
+  "base_drift_reconciliation": {
+    "classification": "BASE-DRIFT-B",
     "changed_paths": [
       "catalog/catalog.json",
       "catalog/discovery/github_candidates.json",
       "catalog/discovery/headphone_identity_audit.json",
       "catalog/source_health.json"
     ],
-    "candidate_path_overlap": [],
-    "pr_api_base_as_of_2026_10_06T16_02Z": "c702ef0149b4c647446639cfcb0ab25c09159db3",
-    "mergeability_refresh_pending": false,
-    "subsequent_commits": [
-      {
-        "commit": "85b1bd4b45112518ce4d6be1c9b263605daaf674",
-        "parent": "58d5c3a25a6d25ec463c1c41ecae049b22a8471d",
-        "commit_time_utc": "2026-10-06T16:55:39Z",
-        "subject": "Refresh curated community EQ catalog",
-        "changed_paths": [
-          "catalog/catalog.json"
-        ],
-        "candidate_path_overlap": []
-      },
-      {
-        "commit": "d2f743610133edc68b48550aca7f3a4591dc09c0",
-        "parent": "85b1bd4b45112518ce4d6be1c9b263605daaf674",
-        "commit_time_utc": "2026-10-06T17:17:28Z",
-        "subject": "Refresh community and General EQ sources",
-        "changed_paths": [
-          "catalog/catalog.json"
-        ],
-        "candidate_path_overlap": []
-      }
-    ],
-    "all_changed_paths_since_pr_snapshot": [
-      "catalog/catalog.json",
-      "catalog/discovery/github_candidates.json",
-      "catalog/discovery/headphone_identity_audit.json",
-      "catalog/source_health.json"
-    ],
-    "pr_api_base_as_of_2026_10_06T17_00Z": "c702ef0149b4c647446639cfcb0ab25c09159db3",
-    "pr_api_head_as_of_2026_10_06T17_00Z": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
-    "resolved_as_of_utc": "2026-10-07T00:08:31Z",
-    "latest_main_head": "79d600529621257136adb4d9e1a97e8ae8521d7e",
-    "pr_mergeable": true,
-    "pr_mergeable_state": "clean",
-    "active_main_ruleset_requires_up_to_date": false,
-    "classic_branch_protection_independently_inspected": false
-  },
-  "pr_base_ref": "main",
-  "pr_snapshot_as_of_utc": "2026-10-07T01:23:24Z",
-  "integration_base_sha": "79d600529621257136adb4d9e1a97e8ae8521d7e",
-  "app_src_test_tree": "470979fb22a91c4514534badda6c2cc2032abfb6",
-  "app_src_android_test_tree": "da2b4f31e18025ebd00f0a84f274e0e8a8624800",
-  "base_drift_reconciliation": {
-    "classification": "BASE-DRIFT-B",
-    "state": "PASS_FOR_PHYSICAL_SESSION; RECHECK_ANY_NEW_DELTA_BEFORE_MERGE",
-    "recorded_pr_base_sha": "c702ef0149b4c647446639cfcb0ab25c09159db3",
-    "pr_base_ref": "main",
-    "current_integration_base_sha": "79d600529621257136adb4d9e1a97e8ae8521d7e",
-    "as_of_utc": "2026-10-07T00:08:31Z",
-    "changed_paths_c702_to_d2f7436": [
-      "catalog/catalog.json",
-      "catalog/discovery/github_candidates.json",
-      "catalog/discovery/headphone_identity_audit.json",
-      "catalog/source_health.json"
-    ],
-    "candidate_path_overlap": [],
-    "catalog_semantic_sha256_excluding_generated_at": "8ef8e3d653e25bc80d972e0dc6256a22424e0b5e726098c04c2fc593dc6d60a9",
-    "catalog_counts": {
-      "profiles": 8931,
-      "sources": 2,
-      "headphone_aliases": 31
-    },
-    "targeted_validation": {
-      "exact_catalog_ref": "d2f743610133edc68b48550aca7f3a4591dc09c0",
-      "publisher_schema_and_archive_validation": "PASS",
-      "published_catalog_tests": "8/8 PASS",
-      "validated_snapshot_sha256": "1573cf3224c089f8ec49b41ccfc60705f0b4336d59e06e487b4f581840a49ba3",
-      "android_build_or_matrix_rerun": false
-    },
-    "artifact_effect": "No Android source/test or APK input changed; external catalog metadata only; candidate APK hash remains pinned and unmodified.",
-    "pr_snapshot": {
-      "as_of_utc": "2026-10-07T00:08:31Z",
-      "base_sha": "c702ef0149b4c647446639cfcb0ab25c09159db3",
-      "head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
-      "exact_head_check_runs": "8/8 completed_success",
-      "mergeable": true,
-      "mergeable_state": "clean"
-    },
-    "branch_policy": {
-      "active_main_ruleset": "Protect main",
-      "up_to_date_required_by_observed_ruleset": false,
-      "classic_protection_independently_inspected": false
-    },
-    "candidate_rebase_required": false,
-    "current_main_delta": {
-      "changed_paths_since_pr_base": [
-        "catalog/catalog.json",
-        "catalog/discovery/github_candidates.json",
-        "catalog/discovery/headphone_identity_audit.json",
-        "catalog/source_health.json"
-      ],
-      "newest_commit": "79d600529621257136adb4d9e1a97e8ae8521d7e",
-      "addition": "community-e143e7603e79782c14832c27",
-      "candidate_app_test_path_overlap": [],
-      "main_checks": "audit and submit-gradle successful",
-      "candidate_rebase_or_apk_rebuild_for_physical_session": false,
-      "premerge_recheck_required": true
-    }
+    "candidate_app_test_path_overlap": [],
+    "candidate_rebase_or_rebuild_for_this_drift": false,
+    "premerge_recheck_required": true,
+    "comparison_as_of_utc": "2026-10-07T03:27Z",
+    "ahead_by": 4,
+    "behind_by": 0
   },
   "master_directive": {
     "path": "docs/implementation/v0.8.0-beta-master-directive.md",
-    "version": "1.2",
-    "body_sha256": "b135b3c799b58ef6069d601e33011cc673a8549a5be9ebe1d31af8ad849c7fe6",
-    "introduced_by_commit": "aada5283e4f5777cd925be4f7cc5582c94678378"
+    "version": "1.3",
+    "body_sha256": "084bca0df0103701bbed74831152074c6f1283d376a8a1930e51ea39016c52ed",
+    "introduced_by_commit": "PENDING_CONTROL_COMMIT"
   },
-  "current_owner_action": "No routine input for current software/documentation work. After the 2026-10-07 stop, physical work requires fresh post-release availability plus a current wireless ADB endpoint.",
+  "current_owner_action": "No owner action during Phase A. After the explicit readiness notice, the owner must freshly make the Pixel available and have the Black Pearl attached to Pixel USB-C before handoff if it is not already attached. Wireless ADB only.",
   "gates_G0_G12": [
     {
       "gate": "G0",
       "name": "Canonical directive / candidate identity",
-      "state": "PASS",
-      "evidence": "Master v1.2 body SHA-256 b135b3c799b58ef6069d601e33011cc673a8549a5be9ebe1d31af8ad849c7fe6 synchronized to introducing commit aada5283e4f5777cd925be4f7cc5582c94678378; exact frozen candidate identity matches."
+      "state": "PASS_WITH_CONTROL_INTRO_SHA_PENDING",
+      "evidence": "Master v1.3 body SHA-256 084bca0df0103701bbed74831152074c6f1283d376a8a1930e51ea39016c52ed; candidate/APK identity match; introduction commit pending."
     },
     {
       "gate": "G1",
@@ -634,20 +463,18 @@
     {
       "gate": "G3",
       "name": "Final physical plan ready",
-      "state": "PASS_PLAN_2_11_COLD_DISCONNECTED_ROUTE_ONLY",
-      "evidence": "Independent source-path and plan review passed only for plan 2.11 restricted cold/disconnected route."
+      "state": "PENDING_FINAL_INDEPENDENT_REVIEW_2_18_AND_CONTROL_SYNC",
+      "evidence": "Plan revision 2.18 has passed assertions 2–10 in preliminary review; final all-ten verdict follows synchronized Phase A/status/live state."
     },
     {
       "gate": "G4",
       "name": "Required physical qualification",
-      "state": "PARTIAL_NOT_PASS_NO_PIXEL_TARGET_DISCOVERED",
-      "evidence": "The 2026-10-06 physical attempt remains partial. A separate 2026-10-07 discovery attempt found emulator-5556 only and no mDNS services, stopped before Pixel target selection, and sent no device/DAC command."
+      "state": "PARTIAL_NOT_PASS"
     },
     {
       "gate": "G5",
       "name": "Independent pre-merge verification",
-      "state": "PRELIMINARY_SOFTWARE_AUDIT_COMPLETE_FINAL_PENDING_G4",
-      "evidence": "Independent candidate/APK/protected-path/PR/check/base-drift software audit is preliminary only; final G5 depends on C05-C evidence."
+      "state": "PRELIMINARY_SOFTWARE_AUDIT_COMPLETE_FINAL_PENDING_G4"
     },
     {
       "gate": "G6",
@@ -700,42 +527,44 @@
   ],
   "g3_plan_ready_for_attached_resume": false,
   "g3_plan_not_approved_for_fresh_attach": true,
-  "issue_updated_at_utc": "2026-10-07T01:21:31Z",
+  "issue_updated_at_utc": "2026-10-07T01:36:03Z",
   "issue_body_current": false,
   "watchdog_prompt_updated": false,
-  "watchdog_prompt_updated_utc": "2026-10-07T01:18:04Z",
+  "watchdog_prompt_updated_utc": null,
   "control_plane_checkpoint_pushed": false,
-  "pr_updated_at_utc": "2026-10-07T01:23:24Z",
+  "pr_updated_at_utc": "2026-10-07T01:37:11Z",
   "control_plane_checkpoint_tree": null,
   "control_plane_branch": {
     "name": "codex/v0.8.0-beta-watch",
-    "head_before_documentation_reconciliation": "a005aa68bf6dee92ea7bef86858aea9e37a244d5",
-    "tree_before_documentation_reconciliation": "5ec55ce94f6479700065bd994e5afcc488c9d803",
+    "head_before_documentation_reconciliation": "7de075559af3fa0d3f877f33c2e274ec292e19b1",
+    "tree_before_documentation_reconciliation": "75a564e4f6ea834bd07a1e6652a9ae80ebc224ec",
     "remote_matched_before_documentation_reconciliation": true,
-    "as_of_utc": "2026-10-07T01:29:46Z"
+    "as_of_utc": "2026-10-07T03:23:39Z"
   },
   "owner_action_required": false,
-  "owner_action": "None for safe Mac-side work. A new physical session requires a fresh post-release Pixel availability statement and a currently discoverable wireless ADB endpoint; do not reuse old pairing codes/ports or switch to USB.",
+  "owner_action": "No owner action during Phase A. After the explicit readiness notice, the owner must freshly make the Pixel available and have the Black Pearl attached to Pixel USB-C before handoff if it is not already attached. Wireless ADB only.",
   "physical_session_owner_action_required_after_review": true,
   "latest_release": {
     "tag": "v0.7.2",
     "prerelease": false,
     "draft": false,
     "stable_latest": true,
-    "as_of_utc": "2026-10-07T01:29:46Z"
+    "as_of_utc": "2026-10-07T03:27Z"
   },
-  "master_body_sha256": "b135b3c799b58ef6069d601e33011cc673a8549a5be9ebe1d31af8ad849c7fe6",
-  "master_introducing_commit": "aada5283e4f5777cd925be4f7cc5582c94678378",
-  "g3_plan_ready_for_cold_disconnected_route": true,
+  "master_body_sha256": "084bca0df0103701bbed74831152074c6f1283d376a8a1930e51ea39016c52ed",
+  "master_introducing_commit": "PENDING_CONTROL_COMMIT",
+  "g3_plan_ready_for_cold_disconnected_route": false,
   "latest_c05c_attempt": {
-    "attempt_started_utc": "2026-10-07T01:19:39Z",
-    "attempt_ended_utc": "2026-10-07T01:19:49Z",
-    "duration_seconds": 10,
+    "attempt_started_utc": null,
+    "observed_by_utc": "2026-10-07T01:41:13Z",
+    "stop_decision_utc": "2026-10-07T01:43:38Z",
+    "duration_seconds": null,
     "candidate_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
     "candidate_tree": "e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d",
     "plan_revision": "2.11",
-    "outcome": "STOPPED_BEFORE_PIXEL_TARGET_SELECTION; C05-C NOT PASS",
-    "discovery": "adb devices -l listed only emulator-5556; adb mdns services listed no services",
+    "outcome": "WORKFLOW_PREFLIGHT_STOP; C05-C NOT PASS",
+    "discovery": "adb devices -l output listed a Pixel 9 wireless endpoint and emulator-5556; adb mdns services listed no services. Endpoint not selected or queried.",
+    "pixel_endpoint_discovered_in_list": true,
     "pixel_target_selected_or_contacted": false,
     "pixel_or_usb_state_inspected": false,
     "app_launched_or_process_inspected": false,
@@ -743,10 +572,44 @@
     "dac_protocol_read_or_write_sent": false,
     "device_or_cable_state_changed": false,
     "phone_released": true,
-    "evidence_folder": ".unlazy/v080-beta/evidence/c05c-20261007011920Z/",
-    "stop_report_sha256": "7bba47c743c416bab7eafe25b311d0d8bf557c40ffdb24e63d2d17d37cb9d720",
-    "commands_sha256": "c5a4fe28d62cb42dec64661c3aa83c7c56f92ecf585f14564639f11698534281",
-    "evidence_index_sha256": "5e5f2cbe5a5a89f55da897fd2194fa454b25c894abd51cda2eab8c4aebaf09f4",
-    "classification": "DISCOVERY_STOP_ONLY; no physical device evidence; do not combine with earlier attempt"
+    "reason": "ADB invocation start missing; off-phone APK/GitHub verification overlapped the two-minute entry window. Classify as workflow/preflight defect; do not reconstruct elapsed time.",
+    "evidence_folder": ".unlazy/v080-beta/evidence/c05c-20261007014453Z/",
+    "stop_report_sha256": "39c883ca4df373d9dfab66d411d189e7c3bc119388d78ca93c546b09f0aac26c",
+    "commands_sha256": "2e8e8c4f46cb32c11698ba765409b192e9b7d124b0f4b6fdb2f7f305ef57176d",
+    "reconciliation_sha256": "cfc2acea7611c5529f6d8bba9136c7fb2477219f877167a24da0fd05662b84f0",
+    "evidence_index_sha256": "af82b2469ea4b5fe95a4ff2b59421e734e9f4c4b91de6127df0d3f8846067830",
+    "classification": "WORKFLOW_PREFLIGHT_STOP; no physical-device state, not a product/hardware failure; do not combine with earlier attempt"
+  },
+  "main_current_checks_as_of_utc": "2026-10-07T03:18Z",
+  "phase_a_preflight": {
+    "state": "COMPLETE_PENDING_FINAL_INDEPENDENT_REVIEW_AND_CONTROL_SYNC",
+    "candidate_branch": "codex/v0.8.0-beta-ux",
+    "candidate_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
+    "candidate_tree": "e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d",
+    "app_source_commit": "f24b1582e22b19fc75757a61186361b71eab3974",
+    "apk_path": "app/build/outputs/apk/debug/app-debug.apk",
+    "apk_sha256": "f33818309d55571166d91e501065706ddbb8faf180833b03bb6eb948e6bffed1",
+    "package": "com.weekssa.opraeqforuapp",
+    "version_name": "0.8.0-beta",
+    "version_code": 10,
+    "debug_signer_sha256": "cbd57d13316c2ca9e59fb810135ea71567fd22132b0d7f4640e92dc4434f0e14",
+    "signature": "apksigner verified one Android Debug signer with v2 scheme; not the official beta key",
+    "zip_alignment": "Build Tools 36.0.0 zipalign verification successful from the prior exact-APK preflight; APK SHA is unchanged",
+    "live_github_as_of_utc": "2026-10-07T03:27Z",
+    "pr": "#70 OPEN_DRAFT; exact frozen head; base main c702ef0149b4c647446639cfcb0ab25c09159db3; mergeable/clean",
+    "checks": "8/8 exact-head check runs completed-success; IDs recorded in check_run_snapshot",
+    "main": "79d600529621257136adb4d9e1a97e8ae8521d7e; 4 ahead / 0 behind; four catalog/currentness paths only; BASE-DRIFT-B",
+    "stable_latest": "v0.7.2",
+    "source_paths": "ordinary launcher and disconnected card; local-only tabs/navigation; production Edit EQ and DEVICE Refresh reads; attached away/back card route; source-audited",
+    "command_syntax": "Plan 2.18 helper /bin/bash -n PASS; helper sourced in idle Bash; local candidate/path guards PASS; T0 empty; no ADB command invoked",
+    "evidence_ignore": "candidate worktree .git/info/exclude rule /.unlazy/v080-beta/evidence/c05c-*/ verified for the current unique reservation",
+    "session_id": "20261007T031528Z",
+    "helper_path": ".unlazy/v080-beta/evidence/c05c-20261007T031528Z/phase-b-recorder.sh",
+    "helper_sha256": "a2afbcd96458e92758834c678a4a03455b9d57dea9f9ad6a6d872a766321734f",
+    "helper_guard": "one-shot T0; rejects non-empty commands.log and any prior outputs/screenshots/manifest/other evidence; requires exact candidate tree",
+    "evidence_reservation": "preflight.txt + empty commands.log + prepared helper only; no capture, output, manifest, or physical evidence",
+    "device_access": "none during Phase A; no ADB/USB command, Pixel query, device inspection, or DAC request",
+    "review": "plan 2.18 static review found no concrete defect in assertions 2–10; final all-ten verdict awaits synchronized assertion 1/status/hash state",
+    "remaining": "final independent ten-assertion review; docs-only control commit/push; synchronize issue #71, PR #70 body, and hourly watchdog; final live state refresh"
   }
 }
