@@ -1,8 +1,8 @@
 {
-  "timestamp_utc": "2026-10-07T22:34:13Z",
-  "state": "G0_G6_PASS; MERGED_SHA_CI_IN_PROGRESS; G7_PENDING",
-  "current_gate": "G7_POSTMERGE_EXACT_SHA_CI",
-  "next_gate": "G7_OFFICIAL_MAIN_ONLY_SIGNED_ARTIFACT",
+  "timestamp_utc": "2026-10-07T22:46:42Z",
+  "state": "G0_G7_MERGED_CI_PASS; OFFICIAL_SIGNED_BETA_IN_PROGRESS; G7_ARTIFACT_PENDING",
+  "current_gate": "G7_OFFICIAL_MAIN_ONLY_SIGNED_BETA",
+  "next_gate": "G7_SIGNED_ARTIFACT_PROVENANCE",
   "candidate_branch": "codex/v0.8.0-beta-ux",
   "candidate_head": "3329590db531c31be84e7e28d89209028a688075",
   "candidate_tree": "79808ef8052812427461f480e9abf19c2e930c22",
@@ -107,78 +107,78 @@
   "ci": {
     "head_sha": "4190c6ca51694ea0a80583a83fd3cb09b5088a7d",
     "tree": "80822fea05dd8845a4dac23c19d090eeface00a9",
-    "as_of_utc": "2026-10-07T22:34:13Z",
+    "as_of_utc": "2026-10-07T22:45:35Z",
     "total_check_runs": 9,
-    "success": 1,
-    "in_progress": 5,
+    "success": 6,
+    "in_progress": 0,
     "failure": 2,
     "skipped": 1,
     "checks": [
       {
         "name": "process-submission",
-        "run_id": "37696982441",
-        "check_run_id": "113051020919",
+        "run_id": 37696982441,
+        "check_run_id": 113051020919,
         "status": "completed",
         "conclusion": "skipped",
         "classification": "issue-triggered source-submission workflow; skipped"
       },
       {
         "name": "Dependabot",
-        "run_id": "37696510900",
-        "check_run_id": "113049472133",
+        "run_id": 37696510900,
+        "check_run_id": 113049472133,
         "status": "completed",
         "conclusion": "failure",
         "classification": "dynamic security-update automation; dependency_not_found in dependency snapshot; not retried"
       },
       {
         "name": "Dependabot",
-        "run_id": "37696395411",
-        "check_run_id": "113049082950",
+        "run_id": 37696395411,
+        "check_run_id": 113049082950,
         "status": "completed",
         "conclusion": "failure",
         "classification": "dynamic security-update automation; dependency_not_found in dependency snapshot; not retried"
       },
       {
         "name": "submit-gradle",
-        "run_id": "37696312714",
-        "check_run_id": "113048808752",
+        "run_id": 37696312714,
+        "check_run_id": 113048808752,
         "status": "completed",
         "conclusion": "success"
       },
       {
         "name": "emulator-ui-test",
-        "run_id": "37696314040",
-        "check_run_id": "113048808267",
-        "status": "in_progress",
-        "conclusion": null
+        "run_id": 37696314040,
+        "check_run_id": 113048808267,
+        "status": "completed",
+        "conclusion": "success"
       },
       {
         "name": "build",
-        "run_id": "37696314040",
-        "check_run_id": "113048808187",
-        "status": "in_progress",
-        "conclusion": null
+        "run_id": 37696314040,
+        "check_run_id": 113048808187,
+        "status": "completed",
+        "conclusion": "success"
       },
       {
         "name": "min-api-smoke",
-        "run_id": "37696314040",
-        "check_run_id": "113048807964",
-        "status": "in_progress",
-        "conclusion": null
+        "run_id": 37696314040,
+        "check_run_id": 113048807964,
+        "status": "completed",
+        "conclusion": "success"
       },
       {
         "name": "Analyze Kotlin",
-        "run_id": "37696314065",
-        "check_run_id": "113048807958",
-        "status": "in_progress",
-        "conclusion": null
+        "run_id": 37696314065,
+        "check_run_id": 113048807958,
+        "status": "completed",
+        "conclusion": "success"
       },
       {
         "name": "dependency-submission",
-        "run_id": "37696313982",
-        "check_run_id": "113048807576",
-        "status": "in_progress",
-        "conclusion": null
+        "run_id": 37696313982,
+        "check_run_id": 113048807576,
+        "status": "completed",
+        "conclusion": "success"
       }
     ],
     "release_ci_required": [
@@ -552,11 +552,11 @@
   "physical_session_readiness_reason": "C05-C/G4 passed and the phone was released; no further device access is needed.",
   "estimated_pixel_minutes": "5-10 optimization target; no time-only abort",
   "watchdog_mode": "RELEASE_CONVERGENCE_AFTER_G5_PASS",
-  "loop_status": "G6_PASS; MERGED_MAIN_CI_IN_PROGRESS; G7_PENDING",
+  "loop_status": "G7_MERGED_CI_PASS; SIGNED_BETA_RUN_1378_IN_PROGRESS; G7_ARTIFACT_PENDING",
   "stable_latest_release": "v0.7.2",
   "merge_or_publish_performed": true,
   "nonphysical_gates_open": [
-    "G7 exact merged-SHA release checks and official main-only signed beta artifact/provenance",
+    "G7 official main-only signed beta artifact and independent checksum/signer/provenance verification",
     "G8 exact signed v0.7.2-to-beta persisted-state upgrade",
     "G9 signed clean install/core smoke and independent artifact verification",
     "G10 authorized v0.8.0 beta prerelease after all prior gates",
@@ -565,21 +565,19 @@
   ],
   "physical_gates_open": [],
   "downstream_gates": [
-    "Wait for exact merged-SHA Android CI, API-26 smoke, UI, Kotlin/CodeQL, submit-gradle, and dependency-submission statuses; investigate actual failures, do not rerun indiscriminately.",
-    "Run the official main-only signed-beta workflow on exact main SHA 4190c6ca51694ea0a80583a83fd3cb09b5088a7d with candidate_target black-pearl-ja11 after applicable checks pass.",
-    "Independently verify signed APK source SHA, package/version/code, SHA-256, pinned signer, immutable workflow run/artifact ID and digest, and provenance.",
-    "Pass exact signed v0.7.2-to-v0.8.0-beta persisted-state upgrade and signed clean-install/core smoke.",
+    "Monitor the single official signed-beta workflow run 37697940678 on exact main SHA 4190c6ca51694ea0a80583a83fd3cb09b5088a7d; diagnose actual failures, do not dispatch a duplicate.",
+    "If signing succeeds, independently verify source SHA, candidate target, package/version/code, APK SHA-256, pinned signer, immutable workflow artifact ID/digest, and provenance.",
+    "Pass exact signed v0.7.2-to-beta persisted-state upgrade and signed clean-install/core smoke.",
     "Independently verify exact signed artifact and all gate evidence.",
     "Publish the authorized v0.8.0 beta prerelease only after every ordered gate passes; keep v0.7.2 latest until publication.",
-    "Assemble/check exact-membership review bundle, synchronize docs/issues/watcher, and close out."
+    "Assemble/check the exact-membership final review bundle, synchronize docs/issues/watcher, and close out."
   ],
   "next_actions": [
-    "Wait for applicable exact merged-SHA Android build, emulator UI, API-26 smoke, Kotlin/CodeQL, and dependency-submission checks; investigate real failures without blindly rerunning.",
-    "Dispatch exactly one official main-only signed-beta workflow from exact main SHA 4190c6ca51694ea0a80583a83fd3cb09b5088a7d with candidate_target black-pearl-ja11 after applicable checks pass.",
-    "Independently verify the signed artifact checksum, package/version/code, pinned signer, source SHA, workflow run/artifact ID and digest, and provenance.",
-    "Complete exact signed v0.7.2-to-beta upgrade, signed clean-install/core smoke, independent artifact verification, authorized prerelease, exact-membership review bundle, and closeout."
+    "Monitor official signed-beta workflow run 37697940678 for exact source SHA 4190c6ca51694ea0a80583a83fd3cb09b5088a7d and candidate target black-pearl-ja11.",
+    "Verify the signed APK checksum, package/version/code, pinned signer, source SHA, immutable artifact ID/digest, and provenance before upgrade/publication.",
+    "Complete exact signed v0.7.2-to-beta upgrade, signed clean install/core smoke, independent artifact verification, authorized prerelease, exact-membership review bundle, and closeout in order."
   ],
-  "issue": "OPEN; synchronized to G6 PASS and G7 exact merged-SHA CI pending at 2026-10-07T22:33:52Z",
+  "issue": "OPEN; synchronized to all six exact merged-SHA check successes and signed-beta run 37697940678 in progress at 2026-10-07T22:46:29Z.",
   "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex%2Fv0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md (resolve the live control ref dynamically)",
   "physical_plan": {
     "path": "docs/implementation/FINAL_PHYSICAL_SESSION_PLAN.md",
@@ -624,7 +622,7 @@
     "G4": "PASS; C05-C read-only physical qualification completed; checksum-verified evidence preserved in ignored session directory.",
     "G5": "PASS; fresh independent review against corrected exact control/evidence state; external status synchronized.",
     "G6": "PASS; exact qualified candidate merged normally; main SHA/tree 4190c6ca51694ea0a80583a83fd3cb09b5088a7d / 80822fea05dd8845a4dac23c19d090eeface00a9 verified.",
-    "G7": "PENDING; merged-source CI pending, then official main-only signed beta artifact checksum/signer/provenance.",
+    "G7": "IN_PROGRESS; six applicable exact-merge checks passed; official main-only signed-beta run #1378 / 37697940678 is running on merge SHA 4190c6ca51694ea0a80583a83fd3cb09b5088a7d.",
     "G8": "PENDING; exact signed v0.7.2-to-beta persisted-state upgrade.",
     "G9": "PENDING; signed clean install/core smoke and independent artifact verification.",
     "G10": "PENDING; prerelease publication after prior gates pass.",
@@ -635,78 +633,78 @@
   "main_current_checks": {
     "head_sha": "4190c6ca51694ea0a80583a83fd3cb09b5088a7d",
     "tree": "80822fea05dd8845a4dac23c19d090eeface00a9",
-    "as_of_utc": "2026-10-07T22:34:13Z",
+    "as_of_utc": "2026-10-07T22:45:35Z",
     "total_check_runs": 9,
-    "success": 1,
-    "in_progress": 5,
+    "success": 6,
+    "in_progress": 0,
     "failure": 2,
     "skipped": 1,
     "checks": [
       {
         "name": "process-submission",
-        "run_id": "37696982441",
-        "check_run_id": "113051020919",
+        "run_id": 37696982441,
+        "check_run_id": 113051020919,
         "status": "completed",
         "conclusion": "skipped",
         "classification": "issue-triggered source-submission workflow; skipped"
       },
       {
         "name": "Dependabot",
-        "run_id": "37696510900",
-        "check_run_id": "113049472133",
+        "run_id": 37696510900,
+        "check_run_id": 113049472133,
         "status": "completed",
         "conclusion": "failure",
         "classification": "dynamic security-update automation; dependency_not_found in dependency snapshot; not retried"
       },
       {
         "name": "Dependabot",
-        "run_id": "37696395411",
-        "check_run_id": "113049082950",
+        "run_id": 37696395411,
+        "check_run_id": 113049082950,
         "status": "completed",
         "conclusion": "failure",
         "classification": "dynamic security-update automation; dependency_not_found in dependency snapshot; not retried"
       },
       {
         "name": "submit-gradle",
-        "run_id": "37696312714",
-        "check_run_id": "113048808752",
+        "run_id": 37696312714,
+        "check_run_id": 113048808752,
         "status": "completed",
         "conclusion": "success"
       },
       {
         "name": "emulator-ui-test",
-        "run_id": "37696314040",
-        "check_run_id": "113048808267",
-        "status": "in_progress",
-        "conclusion": null
+        "run_id": 37696314040,
+        "check_run_id": 113048808267,
+        "status": "completed",
+        "conclusion": "success"
       },
       {
         "name": "build",
-        "run_id": "37696314040",
-        "check_run_id": "113048808187",
-        "status": "in_progress",
-        "conclusion": null
+        "run_id": 37696314040,
+        "check_run_id": 113048808187,
+        "status": "completed",
+        "conclusion": "success"
       },
       {
         "name": "min-api-smoke",
-        "run_id": "37696314040",
-        "check_run_id": "113048807964",
-        "status": "in_progress",
-        "conclusion": null
+        "run_id": 37696314040,
+        "check_run_id": 113048807964,
+        "status": "completed",
+        "conclusion": "success"
       },
       {
         "name": "Analyze Kotlin",
-        "run_id": "37696314065",
-        "check_run_id": "113048807958",
-        "status": "in_progress",
-        "conclusion": null
+        "run_id": 37696314065,
+        "check_run_id": 113048807958,
+        "status": "completed",
+        "conclusion": "success"
       },
       {
         "name": "dependency-submission",
-        "run_id": "37696313982",
-        "check_run_id": "113048807576",
-        "status": "in_progress",
-        "conclusion": null
+        "run_id": 37696313982,
+        "check_run_id": 113048807576,
+        "status": "completed",
+        "conclusion": "success"
       }
     ],
     "release_ci_required": [
@@ -729,12 +727,12 @@
     "total": 9,
     "failed": 2
   },
-  "issue_updated_at_utc": "2026-10-07T22:33:52Z",
+  "issue_updated_at_utc": "2026-10-07T22:46:29Z",
   "issue_body_current": true,
   "watchdog_prompt_updated": true,
-  "watchdog_prompt_updated_utc": "2026-10-07T22:24:58.672Z",
+  "watchdog_prompt_updated_utc": "2026-10-07T22:46Z",
   "control_plane_checkpoint_pushed": true,
-  "pr_updated_at_utc": "2026-10-07T22:27:35Z",
+  "pr_updated_at_utc": "2026-10-07T22:46:30Z",
   "control_plane_branch": "codex/v0.8.0-beta-watch; resolve live origin tip dynamically.",
   "owner_action_required": false,
   "owner_action": "None; C05-C is complete and the phone was released. Do not request or use pairing codes or device access.",
@@ -762,7 +760,7 @@
     "restoration_write_applicable": false,
     "phone_released": true
   },
-  "main_current_checks_as_of_utc": "2026-10-07T22:34:13Z",
+  "main_current_checks_as_of_utc": "2026-10-07T22:45:35Z",
   "phase_a_preflight": {
     "candidate_tree_verified": true,
     "apk_hash_metadata_signer_alignment_verified": true,
@@ -773,8 +771,8 @@
     "plan_g3_pass": true,
     "readiness_certificate": "READY FOR PHASE B; plan 2.48 physical procedure safety review found no safety issue and the one-time category B metadata correction is applied."
   },
-  "last_observed_control_tree_before_status_commit": "c028d49fa133972202de5762bd83dd02660888b4",
-  "next_action": "Wait for exact merged-SHA Android build, emulator UI, API-26 smoke, Kotlin/CodeQL, and dependency-submission check runs to complete. Investigate real failures. Do not manually rerun suites or dispatch the signer until applicable merged-source checks pass.",
+  "last_observed_control_tree_before_status_commit": "cb2fa58bac78da15b156f5e61d48f2ac9b6dcf1c",
+  "next_action": "Monitor only official signed-beta run 37697940678. If successful, verify immutable artifact id/digest, APK SHA-256, source SHA, package/version/code, pinned signer, manifest target, and provenance before signed upgrade and clean-install gates.",
   "g3_approved_entry_route": "C05-C complete; no entry route required.",
   "g3_attached_connected_session_resume_approved": false,
   "phase_b_binding": {
@@ -830,9 +828,9 @@
   },
   "first_v1_6_commit": null,
   "external_surfaces": {
-    "issue_71": "synchronized at 2026-10-07T22:33:52Z; issue remains open; G6 PASS and G7 post-merge checks in progress",
-    "pr_70": "synchronized at 2026-10-07T22:33:51Z; PR closed/merged with exact merge SHA/tree and current G7 snapshot",
-    "watchdog": "updated through supported automation tool at approximately 2026-10-07T22:34:01Z; hourly ACTIVE; next action is monitor merged-SHA CI, no phone access"
+    "issue_71": "synchronized at 2026-10-07T22:46:29Z; open; six applicable exact merged-SHA checks passed; signed-beta run 37697940678 in progress",
+    "pr_70": "synchronized at 2026-10-07T22:46:30Z; closed/merged with exact merge SHA/tree; G7 signing run 37697940678 in progress",
+    "watchdog": "updated through supported automation tool at approximately 2026-10-07T22:46Z; hourly ACTIVE; monitors only official signing run 37697940678 and later ordered gates; no device access"
   },
   "master_directive_loaded": true,
   "candidate_change": "Control-plane status/evidence documentation only; no app/test, candidate tree, protected hardware path, physical acceptance criterion, or Class B change.",
@@ -858,7 +856,7 @@
     "G4": "PASS C05-C",
     "G5": "PASS; fresh independent read-only review verified corrected evidence traceability, exact candidate/APK, 85-entry manifest, empty protected-path delta, Class B, and live PR/base/checks.",
     "G6": "PASS; PR #70 merged normally at 4190c6ca51694ea0a80583a83fd3cb09b5088a7d, tree 80822fea05dd8845a4dac23c19d090eeface00a9; exact qualified candidate 3329590db531c31be84e7e28d89209028a688075 is second parent.",
-    "G7": "PENDING; exact merged-SHA release checks still in progress; official main-only signed beta and provenance not started.",
+    "G7": "IN_PROGRESS; exact merged-source build/UI/API-26/Kotlin-CodeQL/submit-gradle/dependency-submission checks passed; signed-beta run 37697940678 is building the official artifact.",
     "G8": "PENDING",
     "G9": "PENDING",
     "G10": "PENDING",
@@ -875,7 +873,7 @@
     "state": "C05-C PASS / PHONE RELEASED",
     "reason": "Read-only physical qualification complete; evidence manifest verified. No more device access is needed."
   },
-  "control_plane_local_head": "701a93b67acb3828d36ca262d5a59c53918b259e",
+  "control_plane_local_head": "1925dd2cefaf3418dc966c85c838090d0e58477d",
   "first_v1_8_commit": null,
   "repeated_session_entry_failure": {
     "triggered": true,
@@ -901,10 +899,10 @@
     "physical_qualification_result": "NONE; this source/state audit does not pass C05-C/G4."
   },
   "automation_update_tool_failure": "Earlier view/update failures remain historical. The latest supported update succeeded at 2026-10-07T22:13:44Z; no automation TOML was edited.",
-  "latest_release_verified_at_utc": "2026-10-07T22:30:55Z",
+  "latest_release_verified_at_utc": "2026-10-07T22:45:35Z",
   "phase_c_started": true,
   "pr_body_current": true,
-  "issue_last_checked_utc": "2026-10-07T22:34:05Z",
+  "issue_last_checked_utc": "2026-10-07T22:46:29Z",
   "pr_last_checked_utc": "2026-10-07T22:33:51Z",
   "current_control_reconciliation_pushed": true,
   "exact_state_consistency_review": {
@@ -924,7 +922,7 @@
     "previous_checkpoint_result": "NOT PASS at 2026-10-07T16:16Z for synchronized plan 2.48 checkpoint; stale current maintained overlays/status fields found.",
     "previous_checkpoint_reviewed_at_utc": "2026-10-07T16:16:00Z"
   },
-  "issue_71": "OPEN; body synchronized to G6 merge and post-merge CI at 2026-10-07T22:33:52Z.",
+  "issue_71": "OPEN; synchronized at 2026-10-07T22:46:29Z to G7 merged-CI PASS and signed-beta run #1378 in progress.",
   "current_reconciliation_pushed": true,
   "phase_b_current_status": "PASS; same binding used for C05-C; session completed and phone released.",
   "push_attempts": [
@@ -960,10 +958,10 @@
     }
   ],
   "github_write_blocker": null,
-  "control_plane_local_tree": "c028d49fa133972202de5762bd83dd02660888b4",
-  "control_plane_remote_head_last_seen": "701a93b67acb3828d36ca262d5a59c53918b259e",
-  "control_content_checkpoint_sha": "1c0e8b89c51c55d689e0ae34ba27b0b08ec450ce",
-  "control_content_checkpoint_tree": "9717cb3c4e3d9adc0377211722e66439ae69c33d",
+  "control_plane_local_tree": "cb2fa58bac78da15b156f5e61d48f2ac9b6dcf1c",
+  "control_plane_remote_head_last_seen": "1925dd2cefaf3418dc966c85c838090d0e58477d",
+  "control_content_checkpoint_sha": "1925dd2cefaf3418dc966c85c838090d0e58477d",
+  "control_content_checkpoint_tree": "cb2fa58bac78da15b156f5e61d48f2ac9b6dcf1c",
   "current_state_review": {
     "result": "CATEGORY_B_METADATA_ONLY; physical procedure safety review clear; one-time correction applied; no repeat review required.",
     "reviewed_control_head": "81066aa86ae301a0588cd3a349409c0f1cd5d8e7",
@@ -975,7 +973,7 @@
     "tests_rerun": false,
     "finding": "CATEGORY B: stale current plan pointer and active JSON next-action/main snapshot only; no physical-procedure safety finding. One-time correction applied; no recursive review required under the owner convergence directive."
   },
-  "current_action": "G6 exact merge and tree are verified; monitor only CI attached to main SHA 4190c6ca51694ea0a80583a83fd3cb09b5088a7d, then use the official main-only signer after applicable checks pass.",
+  "current_action": "G0-G6 and six applicable exact-merge checks PASS; official signed-beta run #1378 is building exact merged main SHA 4190c6ca51694ea0a80583a83fd3cb09b5088a7d with candidate_target black-pearl-ja11.",
   "latest_phase_b_attempt": {
     "at_utc": "2026-10-07T21:25:28Z",
     "result": "PASS",
@@ -1058,7 +1056,7 @@
     ],
     "next_action": "Reconcile every current maintained overlay and duplicate JSON field, push control-only changes, synchronize issue/PR/automation, then obtain one new exact-state review including G3. No device access before PASS."
   },
-  "pr_body_sync": "SYNCHRONIZED at 2026-10-07T22:33:51Z; merged SHA/tree and exact merged-SHA checks in progress.",
+  "pr_body_sync": "SYNCHRONIZED at 2026-10-07T22:46:30Z; PR #70 closed/merged; exact merged checks pass; signed-beta run 37697940678 in progress.",
   "current_reconciliation_sync_pending": false,
   "first_g5_review": {
     "result": "NOT PASS",
@@ -1283,5 +1281,20 @@
   "beta_published": false,
   "prerelease_published": false,
   "latest_stable_preserved": true,
-  "main_behind_pr_snapshot": 0
+  "main_behind_pr_snapshot": 0,
+  "signed_beta_workflow": {
+    "workflow": "Signed EQ Library Beta Candidate",
+    "path": ".github/workflows/signed-beta.yml",
+    "run_number": 1378,
+    "run_id": 37697940678,
+    "job_id": 113054184720,
+    "source_sha": "4190c6ca51694ea0a80583a83fd3cb09b5088a7d",
+    "branch": "main",
+    "candidate_target": "black-pearl-ja11",
+    "dispatched_at_utc": "2026-10-07T22:43Z",
+    "status": "in_progress",
+    "current_step": "Run beta gate and build release APK",
+    "artifact_available": false,
+    "duplicate_dispatch": "none; one run only"
+  }
 }
