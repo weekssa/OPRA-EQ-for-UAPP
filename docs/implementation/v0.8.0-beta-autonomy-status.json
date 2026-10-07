@@ -1,7 +1,7 @@
 {
-  "timestamp_utc": "2026-10-07T04:35:43Z",
+  "timestamp_utc": "2026-10-07T04:41:53Z",
   "state": "PHASE_A_PENDING_FINAL_INDEPENDENT_REVIEW",
-  "current_gate": "G3 procedure review PASS for plan 2.18; the runner review and previous control-plane synchronization passed. Final review of pushed checkpoint 2d56451f596ad9486eeef165a1130ed494b40a06 returned NOT PASS solely because the acceptance overlay still said synchronization was pending. E47 corrects that sentence in this docs-only checkpoint; C05-C/G4 remains PARTIAL / NOT PASS and final exact-state review remains required.",
+  "current_gate": "G3 procedure review PASS for plan 2.18; C05-C/G4 remains PARTIAL / NOT PASS. Runner review passed. Final review found only the stale acceptance overlay; E47 correction is pushed at 0155cee7fb326e13a68a6ec7111c5127adf48af4 / tree 47a4da0089bd3a6ce548bd287c7b1c48358e7115. Watchdog prompt updated at 2026-10-07T04:36:39.025Z. Final independent review of the corrected current state remains pending.",
   "next_gate": "Verify the corrected docs-only checkpoint is the exact live remote tip, refresh current PR/issue/check/release facts, and complete final independent review. Only after PASS issue a new readiness notice and wait for fresh post-readiness owner availability.",
   "candidate_branch": "codex/v0.8.0-beta-ux",
   "candidate_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
@@ -367,7 +367,7 @@
   "owner_action_required_now": false,
   "pixel_required_now": false,
   "physical_session_ready": false,
-  "physical_session_readiness_reason": "The final reviewer found only a stale acceptance-overlay sentence; E47 corrects it in the docs-only checkpoint. Final independent review of the exact corrected pushed state remains pending. The owner availability confirmation preceded the new readiness notice and cannot be reused. No device access until final PASS, a new readiness notice, and a fresh post-readiness availability statement.",
+  "physical_session_readiness_reason": "E47 acceptance-overlay correction is pushed at 0155cee7fb326e13a68a6ec7111c5127adf48af4. The exact corrected control state still needs final independent review. The owner availability confirmation preceded the new readiness notice and cannot be reused. No device access until final PASS, a new readiness notice, and fresh post-readiness availability.",
   "estimated_pixel_minutes": {
     "target": 10,
     "hard_limit": 15,
@@ -397,7 +397,7 @@
     "mission closeout"
   ],
   "next_actions": [
-    "Verify the corrected docs-only control state is the exact live origin/codex/v0.8.0-beta-watch tip and refresh only PR #70, issue #71, exact-head checks, base drift, release, and watchdog facts needed for review.",
+    "Verify the live control ref contains the E47 correction commit 0155cee7fb326e13a68a6ec7111c5127adf48af4 and refresh only PR #70, issue #71, exact-head checks, base drift, release, and watchdog facts needed for review.",
     "Have the independent reviewer verify the corrected acceptance overlay, plan 2.18 disposition, runner/evidence reservation, canonical status, and synchronized external state.",
     "Do not issue readiness or use ADB/USB before review PASS. After a new readiness notice, wait for a fresh current owner Pixel-availability statement."
   ],
@@ -417,7 +417,7 @@
   "main_head_observed": "79d600529621257136adb4d9e1a97e8ae8521d7e",
   "main_advanced_since_pr_snapshot": true,
   "pr_base_ref": "main",
-  "pr_snapshot_as_of_utc": "2026-10-07T04:22Z",
+  "pr_snapshot_as_of_utc": "2026-10-07T04:41Z",
   "integration_base_sha": "c702ef0149b4c647446639cfcb0ab25c09159db3",
   "app_src_test_tree": "470979fb22a91c4514534badda6c2cc2032abfb6",
   "app_src_android_test_tree": "da2b4f31e18025ebd00f0a84f274e0e8a8624800",
@@ -530,17 +530,17 @@
   "issue_updated_at_utc": "2026-10-07T04:22:34Z",
   "issue_body_current": true,
   "watchdog_prompt_updated": true,
-  "watchdog_prompt_updated_utc": "2026-10-07T04:23:34Z",
+  "watchdog_prompt_updated_utc": "2026-10-07T04:36:39.025Z",
   "control_plane_checkpoint_pushed": true,
   "pr_updated_at_utc": "2026-10-07T04:22:35Z",
   "control_plane_branch": {
     "name": "codex/v0.8.0-beta-watch",
     "live_ref_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/tree/codex%2Fv0.8.0-beta-watch",
-    "last_observed_head_before_status_commit": "2d56451f596ad9486eeef165a1130ed494b40a06",
-    "last_observed_tree_before_status_commit": "d251828350e3142ea505b4f312da04fd4cf80f47",
+    "last_observed_head_before_status_commit": "0155cee7fb326e13a68a6ec7111c5127adf48af4",
+    "last_observed_tree_before_status_commit": "47a4da0089bd3a6ce548bd287c7b1c48358e7115",
     "remote_matches_observed_tip_at_snapshot": true,
     "current_head_resolution": "Resolve origin/codex/v0.8.0-beta-watch from live Git at review time; this status file cannot contain its own resulting commit SHA.",
-    "snapshot_as_of_utc": "2026-10-07T04:35:43Z"
+    "snapshot_as_of_utc": "2026-10-07T04:41:53Z"
   },
   "owner_action_required": false,
   "owner_action": "None now. After a new readiness notice, make a fresh current statement that the Pixel 9 is available and have the Black Pearl attached before handoff. Wireless ADB only.",
@@ -610,8 +610,8 @@
     "helper_guard": "single-use reservation; empty log/T0; candidate/path guards passed in persistent Bash PTY session 85646; retain this exact session for Phase B",
     "evidence_reservation": "New unique candidate-local ignored path; only preflight.txt, empty commands.log, and prepared helper; no command output/screenshots/manifest/physical capture",
     "device_access": "No ADB/USB/device command in the new reservation. The prior discovery only listed the Pixel service; it was not selected or queried.",
-    "review": "Independent runner review PASS. The final independent review of pushed checkpoint 2d56451f596ad9486eeef165a1130ed494b40a06 found only the stale acceptance-overlay sentence; E47 corrects it without changing plan 2.18 or candidate. Final independent re-review of the corrected exact pushed control state remains pending.",
-    "remaining": "Verify the corrected control docs are pushed at the live branch tip, refresh the external facts required for review, then complete final independent review. If PASS, issue readiness and require fresh post-readiness Pixel availability before Phase B.",
+    "review": "Independent runner review PASS. E47 acceptance-overlay correction is pushed at 0155cee7fb326e13a68a6ec7111c5127adf48af4 / tree 47a4da0089bd3a6ce548bd287c7b1c48358e7115; watchdog prompt updated at 2026-10-07T04:36:39.025Z. Issue #71 and PR #70 still report Phase A NOT READY and final review pending. Final independent review of the corrected exact state remains pending.",
+    "remaining": "Verify the current live control tip contains the pushed correction, refresh the integration facts, then complete exact-state final independent review. If PASS, issue readiness and require fresh post-readiness Pixel availability before Phase B.",
     "previous_consumed_session_id": "20261007T031528Z",
     "persistent_runner_session_id": "85646",
     "t0_utc": null,
@@ -619,6 +619,6 @@
     "commands_log_bytes": 0,
     "latest_recorded_liveness_utc": "2026-10-07T04:05:34Z"
   },
-  "last_observed_control_tree_before_status_commit": "d251828350e3142ea505b4f312da04fd4cf80f47",
-  "next_action": "Verify the corrected pushed control checkpoint and perform the exact-state independent review; do not issue readiness or use ADB/USB until that review passes."
+  "last_observed_control_tree_before_status_commit": "47a4da0089bd3a6ce548bd287c7b1c48358e7115",
+  "next_action": "Verify live origin/codex/v0.8.0-beta-watch contains 0155cee7fb326e13a68a6ec7111c5127adf48af4, refresh current PR/issue/check/release facts, then request exact-state independent review; do not issue readiness or access ADB/USB until it passes."
 }
