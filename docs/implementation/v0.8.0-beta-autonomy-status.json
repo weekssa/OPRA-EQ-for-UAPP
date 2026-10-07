@@ -1,8 +1,8 @@
 {
-  "timestamp_utc": "2026-10-07T16:04:42Z",
-  "state": "EXTERNAL_SURFACES_SYNCED_PLAN_2_48_EXACT_STATE_REVIEW_PENDING",
-  "current_gate": "INDEPENDENT_EXACT_STATE_REVIEW_INCLUDING_G3_PLAN_2_48",
-  "next_gate": "INDEPENDENT_EXACT_STATE_REVIEW_INCLUDING_G3_PLAN_2_48",
+  "timestamp_utc": "2026-10-07T16:21:28Z",
+  "state": "PLAN_2_48_EXACT_STATE_REVIEW_NOT_PASS_CONTROL_RECORD_RECONCILIATION_REQUIRED",
+  "current_gate": "RECONCILE_STALE_CURRENT_EXECUTION_AND_GATE_OVERLAYS",
+  "next_gate": "EXACT_STATE_REVIEW_INCLUDING_G3_PLAN_2_48_AFTER_SYNC",
   "candidate_branch": "codex/v0.8.0-beta-ux",
   "candidate_head": "3329590db531c31be84e7e28d89209028a688075",
   "candidate_tree": "79808ef8052812427461f480e9abf19c2e930c22",
@@ -10,7 +10,7 @@
   "app_src_main_tree": "857d02a53d0df44fb0bd46e5ddad3b319dc48dab",
   "app_production_source_changed_in_current_candidate": false,
   "current_candidate_changes": [
-    "Control-only plan 2.48/master/resume/status/ledger reconciliation; no app/test candidate changes"
+    "Control-only correction of stale execution/gate overlays after exact-state review NOT PASS; no app/test candidate or Class B change."
   ],
   "candidate_apk_sha256": "f33818309d55571166d91e501065706ddbb8faf180833b03bb6eb948e6bffed1",
   "candidate_apk_is_official_signed_beta": false,
@@ -90,7 +90,7 @@
   "pr_state": "open/draft",
   "pr_head": "3329590db531c31be84e7e28d89209028a688075",
   "pr_base": "c702ef0149b4c647446639cfcb0ab25c09159db3",
-  "pr_current_body_stale": false,
+  "pr_current_body_stale": true,
   "ci": {
     "head_sha": "3329590db531c31be84e7e28d89209028a688075",
     "as_of_utc": "2026-10-07T15:40:32Z",
@@ -198,9 +198,9 @@
         "indexed_file_count": 36
       },
       "plan_revision": "2.48",
-      "plan_review": "PENDING one synchronized exact-state review including G3 for plan 2.48; prior plan 2.47 NOT PASS binding contradiction is repaired.",
+      "plan_review": "NOT PASS at 16:16Z for synchronized plan 2.48 control state; stale current overlays/status fields are being reconciled.",
       "read_semantics": "Production READ sends outbound report(s) and may receive one bounded automatic nondestructive timeout retry; do not claim zero USB traffic or raw-bit equality. Compare same displayed fields at UI precision.",
-      "readiness": "NOT READY until plan 2.48 exact-state review passes; no ADB before PASS. Fresh Phase B required after PASS.",
+      "readiness": "NOT READY until a corrected synchronized plan 2.48 exact-state review passes; no ADB before PASS. Fresh Phase B required after PASS.",
       "prior_attempts": [
         {
           "physical_attempt_utc": "2026-10-06T19:25:17Z",
@@ -289,7 +289,7 @@
       "single_use_evidence_reservation": true,
       "plan_2_18_consumed_reservation_id": "20261007T031528Z",
       "plan_2_18_consumed_reservation_helper_sha256": "a2afbcd96458e92758834c678a4a03455b9d57dea9f9ad6a6d872a766321734f",
-      "current_phase_status": "Plan 2.48/G3 exact-state review pending; Phase B/Phase C have not started; C05-C/G4 PARTIAL / NOT PASS.",
+      "current_phase_status": "Exact-state review of plan 2.48 control checkpoint NOT PASS; correction/synchronization required; Phase B/Phase C not started.",
       "independent_source_review": "PASS for production action/navigation semantics; exact plan 2.48 G3 review pending.",
       "current_disposition": "C05-C remains PARTIAL / NOT PASS because the prior physical attempt lacks contemporaneous final post-navigation PID/USB evidence. The former duration cap is superseded and is not a current failure criterion.",
       "physical_session_ready": false,
@@ -335,16 +335,16 @@
     "old_non_flat_eq_reset_precondition_applies_to_read_only_c05c": false,
     "non_flat_requirement_rationale": "It applied to the old checkbox-on Reset test; C05-C is read-only and invokes no Reset.",
     "talkback": "DEFERRED_NON_BLOCKING_FOR_BETA; historical direct-touch owner report remains supplementary only; no repeat requested.",
-    "plan_review": "Plan 2.47 review NOT PASS finding repaired in plan 2.48; new synchronized exact-state review including G3 is pending.",
+    "plan_review": "Plan 2.47 NOT PASS binding finding is repaired in 2.48; synchronized plan 2.48 exact-state review returned NOT PASS at 16:16Z due stale maintained current overlays.",
     "orchestration_entry_recovery": "PASS: current resolver/entry guard reject ambiguous or mismatched state before ADB; focused 79/79 suite passed.",
-    "current_phase_status": "Phase A PASS; plan 2.48 correction/push, issue/PR synchronization, and supported automation update PASS; exact-state review pending; Phase B/Phase C not started; C05-C/G4 PARTIAL / NOT PASS.",
+    "current_phase_status": "Phase A PASS; plan 2.48 fresh-binding correction PASS; exact-state review NOT PASS due stale control records; Phase B/Phase C not started; C05-C/G4 PARTIAL / NOT PASS.",
     "plan_revision": "2.48",
-    "readiness": "NOT READY for ADB or Phase C until one synchronized exact-state review returns PASS; after PASS, fresh Phase B is required.",
-    "state": "PHASE_A_B_PASS_PLAN_2_40_G3_PENDING_WATCHER_SYNC_BLOCKED_C05C_NOT_STARTED",
+    "readiness": "NOT READY for ADB or Phase C until corrected synchronized control state receives a new exact-state PASS; then fresh Phase B is required.",
+    "state": "PHASE_A_PASS_PLAN_2_48_EXACT_STATE_REVIEW_NOT_PASS_CONTROL_RECORD_RECONCILIATION_C05C_NOT_STARTED",
     "focused_offline_suite": "79/79 PASS for selector/resolver/entry-guard/fingerprint/activity modules, including binding-versus-plan resolver-pin mismatch rejection before ADB.",
     "three_phase_model": "Phase A off-phone preparation PASS; Phase B fresh read-only wireless ADB binding after exact-state PASS; Phase C only after successful binding and C1.",
     "current_disposition": "Wait for independent exact-state review PASS for synchronized plan 2.48; then fresh Phase B followed by C1/Phase C. No device access before PASS.",
-    "independent_source_review": "PASS for production action/state semantics; new exact plan 2.48 G3 review pending."
+    "independent_source_review": "PASS for production action/state semantics; synchronized plan 2.48 exact-state review NOT PASS due stale current control overlays."
   },
   "api35": {
     "previous_candidate": "acd95df543632e57ae46cd68e714a35f94781f43",
@@ -478,10 +478,10 @@
   "owner_action_required_now": false,
   "pixel_required_now": false,
   "physical_session_ready": false,
-  "physical_session_readiness_reason": "One independent exact-state review including G3 for the synchronized plan 2.48 checkpoint remains pending. No ADB, USB, or device inspection before PASS.",
+  "physical_session_readiness_reason": "Synchronized plan 2.48 exact-state review returned NOT PASS; current control records and external surfaces must be reconciled before any ADB.",
   "estimated_pixel_minutes": "5-10 optimization target; no time-only abort",
   "watchdog_mode": "QUIET_WHILE_UNCHANGED; supported automation tool updated at 2026-10-07T16:04:41Z to master v2.2/plan 2.48; no TOML edit.",
-  "loop_status": "PHASE_A_PASS; PLAN_2_47_REVIEW_NOT_PASS_REPAIRED_IN_2_48; CONTROL_PUSH_AND_SURFACE_SYNC_PASS; EXACT_STATE_REVIEW_2_48_PENDING; C05_C_NOT_STARTED",
+  "loop_status": "PLAN_2_48_REVIEW_NOT_PASS; RECONCILE_CURRENT_CONTROL_OVERLAYS; SYNC_EXTERNAL_SURFACES; REPEAT_EXACT_STATE_REVIEW; C05_C_NOT_STARTED",
   "stable_latest_release": "v0.7.2 remains stable/latest; release reports immutable true and prerelease false.",
   "merge_or_publish_performed": false,
   "nonphysical_gates_open": [
@@ -502,17 +502,17 @@
     "mission closeout"
   ],
   "next_actions": [
-    "Obtain one independent exact-state review including G3 for the exact synchronized plan 2.48 checkpoint; no ADB before PASS.",
-    "If review passes, run one fresh wireless Phase B, verify its resolver/schema/digest and identity/APK/app-state, then use that same binding for C1.",
-    "Continue the read-only Phase C procedure, or safely stop/release on any actual ambiguity, mismatch, failed/stale read, unsafe state, unexpected change, or unrecoverable evidence failure.",
-    "After C05-C passes, continue ordered pre-merge and release gates."
+    "Reconcile stale current control overlays and JSON fields identified by the 16:16Z exact-state review.",
+    "Push control-only changes; update issue #71 and draft PR #70 and update the existing hourly automation through the supported product tool.",
+    "Record the synchronization and obtain one independent exact-state review including G3 for the final dynamic control checkpoint.",
+    "Only after PASS, run fresh wireless Phase B and continue through C1/Phase C if every prerequisite passes."
   ],
   "issue": "OPEN; body synchronized at 2026-10-07T16:04:15Z to plan 2.48/current control status.",
   "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex%2Fv0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md (resolve the live control ref dynamically)",
   "physical_plan": {
     "path": "docs/implementation/FINAL_PHYSICAL_SESSION_PLAN.md",
     "revision": "2.48",
-    "g3_review": "PENDING one synchronized exact-state review including G3; plan 2.47 NOT PASS finding is repaired.",
+    "g3_review": "NOT PASS at 16:16Z for synchronized plan 2.48 checkpoint; refresh review after current overlays and external surfaces are reconciled.",
     "phase_c_started": false,
     "timer_only_abort": false,
     "target_active_minutes": "5-10 optimization only; no time-only abort or cap",
@@ -538,7 +538,7 @@
     "G0": "PASS; master v2.2 body SHA-256 4b31fc263075a86a41bcf9bb5e1cb43f9c98a0b62a16690369dcab1ec177d251 matches resume.",
     "G1": "PASS; exact frozen candidate CI is 8/8 completed-success; API35/API26 and other closed gates remain closed.",
     "G2": "PASS; Class B retained; protected hardware paths unchanged.",
-    "G3": "PENDING one independent exact-state review including G3 for synchronized plan 2.48; plan 2.47 NOT PASS finding is repaired.",
+    "G3": "NOT PASS at 16:16Z for synchronized plan 2.48 exact-state review; current overlays/status fields must be reconciled.",
     "G4": "NOT PASS; fresh Phase B after G3 PASS and complete C05-C evidence remain outstanding.",
     "G5": "PENDING after G4: independent pre-merge verification.",
     "G6": "PENDING exact qualified-tree merge and merged-SHA verification.",
@@ -601,8 +601,8 @@
     ]
   },
   "issue_updated_at_utc": "2026-10-07T16:04:15Z",
-  "issue_body_current": true,
-  "watchdog_prompt_updated": true,
+  "issue_body_current": false,
+  "watchdog_prompt_updated": false,
   "watchdog_prompt_updated_utc": "2026-10-07T16:04:41Z",
   "control_plane_checkpoint_pushed": true,
   "pr_updated_at_utc": "2026-10-07T16:04:17Z",
@@ -646,14 +646,14 @@
     "candidate_tree_verified": true,
     "apk_hash_metadata_signer_alignment_verified": true,
     "sdk_tools_pinned": true,
-    "production_action_audit": "PASS for production action semantics; plan 2.48 exact G3 review is pending.",
+    "production_action_audit": "PASS for production action semantics; synchronized plan 2.48 exact-state review returned NOT PASS because current overlays were stale.",
     "evidence_commands_prepared": true,
     "exact_head_ci_green": true,
     "plan_g3_pass": false,
-    "readiness_certificate": "NOT READY until the synchronized exact-state review including G3 for plan 2.48 passes; no separate certificate approval is required."
+    "readiness_certificate": "NOT READY; exact-state review including G3 for synchronized plan 2.48 returned NOT PASS. No separate certificate approval is required."
   },
   "last_observed_control_tree_before_status_commit": "f2d641f5a1adc5c80e8e2d943e43e00954607430",
-  "next_action": "Obtain one independent exact-state review including G3 for synchronized plan 2.48 against the live dynamic control branch, current PR/check/base/main/release and issue/automation facts. Do not use ADB before PASS.",
+  "next_action": "Reconcile AGENTS.md, runbook, status JSON/Markdown, acceptance evidence, Pixel binding, physical-readiness, and hardware-evidence current overlays; push, synchronize issue #71/PR #70/automation through supported tools, record sync, then obtain new exact-state G3 review. No ADB before PASS.",
   "g3_approved_entry_route": "ONE_SYNCHRONIZED_EXACT_STATE_REVIEW_OF_PLAN_2_48_AND_CONTROL_CHECKPOINT; THEN FRESH_PHASE_B; THEN C1/PHASE_C",
   "g3_attached_connected_session_resume_approved": false,
   "phase_b_binding": {
@@ -694,12 +694,12 @@
     "operations": "Verifies exact current binding/resolver/schema, stable Pixel identity, installed APK hash, and absent app process/activity. No pairing, route reconnect, app launch, USB descriptor, or DAC request.",
     "run_policy": "After plan 2.48 exact-state PASS, run one fresh wireless Phase B and derive all C1 binding variables from it; no second independent review pause."
   },
-  "plan_review": "Plan revision 2.48/G3 awaits one synchronized independent exact-state review; plan 2.47 NOT PASS finding is repaired.",
+  "plan_review": "NOT PASS at 2026-10-07T16:16Z for synchronized plan 2.48 control state; fresh-binding procedure itself is corrected, but current maintained overlays/status JSON were stale.",
   "current_owner_action_required_after_review": false,
   "master_directive_version": "2.2",
   "master_directive_body_sha256": "4b31fc263075a86a41bcf9bb5e1cb43f9c98a0b62a16690369dcab1ec177d251",
   "g3_review": {
-    "state": "PENDING for synchronized plan 2.48 checkpoint",
+    "state": "NOT PASS for synchronized plan 2.48 checkpoint; current control overlays/status fields were stale.",
     "plan_revision": "2.48",
     "previous_review": {
       "result": "NOT PASS",
@@ -714,16 +714,25 @@
     "control_plan_content_checkpoint": "f6b659b156a8ba51ee392e4107353f176b27c0ab",
     "control_plan_content_tree": "f2d641f5a1adc5c80e8e2d943e43e00954607430",
     "review_scope": "Exact synchronized control status, issue #71, draft PR #70, dynamic branch pointer, master v2.2 body hash, plan 2.48 G3, live candidate/PR/check/base/main/release facts, resolver/guard pins, and 79/79 offline evidence.",
-    "next_action": "Review the exact pushed status-only follow-up and current dynamic control ref; on PASS authorize fresh Phase B.",
-    "device_access": false
+    "next_action": "Reconcile every current maintained overlay and duplicate JSON field, push control-only changes, synchronize issue/PR/automation, then obtain one new exact-state review including G3. No device access before PASS.",
+    "device_access": false,
+    "reviewed_control_head": "15483a570c2d0ecf7adc0adf4a02b87a441fde91",
+    "reviewed_control_tree": "1d64c083d9922eecfa79b5f8a7851329f62731ca",
+    "reviewed_at_utc": "2026-10-07T16:16:00Z",
+    "finding": [
+      "AGENTS.md named master v1.8 as current instead of master v2.2.",
+      "Runbook current overlay still named plan 2.47.",
+      "Status JSON retained 68/68, an obsolete push/synchronization prerequisite, a stale READY sequence, and plan 2.47 source-audit fields.",
+      "Acceptance-evidence and Pixel-binding current overlays still named plan 2.47."
+    ]
   },
   "first_v1_6_commit": null,
   "external_surfaces": {
-    "issue_71": "SYNCHRONIZED at 2026-10-07T16:04:15Z; body describes plan 2.48 and links dynamically to control branch.",
-    "pr_70_body": "SYNCHRONIZED at 2026-10-07T16:04:17Z; remains open/draft and links dynamically to control branch.",
-    "watchdog": "Updated through supported product tool at 2026-10-07T16:04:41Z to master v2.2/hash and plan 2.48; ACTIVE. No TOML edit."
+    "issue_71": "NEEDS UPDATE after control-document correction; last body sync 2026-10-07T16:04:15Z described plan 2.48 exact-state review as pending.",
+    "pr_70_body": "NEEDS UPDATE after control-document correction; last body sync 2026-10-07T16:04:17Z described plan 2.48 exact-state review as pending; PR remains open/draft.",
+    "watchdog": "ACTIVE v2.2/plan 2.48; needs supported-tool update to record the 16:16Z NOT PASS and control-document repair. Do not edit TOML."
   },
-  "master_directive_loaded": "YES; master v2.2 body hash 4b31fc263075a86a41bcf9bb5e1cb43f9c98a0b62a16690369dcab1ec177d251 matches resume; exact candidate and live GitHub facts refreshed at 2026-10-07T15:59Z.",
+  "master_directive_loaded": "YES; master v2.2 body hash 4b31fc263075a86a41bcf9bb5e1cb43f9c98a0b62a16690369dcab1ec177d251 matches resume; candidate/PR/check/base/main/release facts refreshed at 2026-10-07T16:16:00Z; synchronized plan 2.48 review NOT PASS.",
   "candidate_change": "Control-plane documentation only; no app/test source, candidate tree, protected path, physical acceptance criterion, or Class B change.",
   "package": "com.weekssa.opraeqforuapp",
   "version_name": "0.8.0-beta",
@@ -742,8 +751,8 @@
     "C05_B": "PASS",
     "C05_C": "PARTIAL / NOT PASS; fresh Phase B is transport evidence only; Phase C has not started.",
     "C05_D": "PASS",
-    "G3": "PENDING exact-state review of synchronized plan 2.48.",
-    "exact_state_review": "PENDING for synchronized plan 2.48; sole C05-C entry authorization. Prior plan 2.47 NOT PASS is recorded.",
+    "G3": "NOT PASS for synchronized plan 2.48 control checkpoint; correct stale maintained overlays and repeat exact-state review.",
+    "exact_state_review": "NOT PASS at 16:16Z; sole C05-C entry authorization remains unsatisfied. Plan 2.47 binding finding is repaired; current record synchronization is not.",
     "G4": "NOT PASS; fresh Phase B and complete C05-C physical evidence remain outstanding.",
     "G5_to_G12": "NOT RUN / ordered behind physical qualification.",
     "API35": "PASS/CLOSED",
@@ -766,7 +775,7 @@
   },
   "physical_session_readiness": {
     "state": "NOT READY",
-    "reason": "One independent exact-state review including G3 for the synchronized plan 2.48 checkpoint remains pending. No ADB, USB, or device inspection before PASS."
+    "reason": "Synchronized plan 2.48 exact-state review returned NOT PASS at 16:16Z; reconcile stale current overlays and resynchronize. No ADB, USB, or device inspection before a new PASS."
   },
   "control_plane_local_head": "Resolve local HEAD and origin/codex/v0.8.0-beta-watch dynamically; last plan 2.48 content push is recorded in E96.",
   "first_v1_8_commit": null,
@@ -778,13 +787,13 @@
       "host-side APK/GitHub/tool preparation timing"
     ],
     "resolution": "Selector resolution now distinguishes TLS-connect from pairing-only services, probes plausible current connect endpoints read-only, uniquely binds the Pixel by stable Android identity, and uses one explicit target; pinned APK tool paths and preflight are prepared off-phone.",
-    "verification": "The documented five-module offline selector/resolver/entry-guard/fingerprint/activity suite passed 68/68 again at 2026-10-07T12:21Z; Phase B previously passed with exact Pixel identity, installed/local APK match, shell/package/capture readiness, absent app/activity, and same-target recheck. No DAC I/O or mutation.",
+    "verification": "The current five-module offline selector/resolver/entry-guard/fingerprint/activity result is recorded as 79/79 in plan/ledger; reviewer did not rerun and did not locate a retained raw transcript in inspected evidence logs. Prior Phase B evidence is historical only. No DAC I/O or mutation.",
     "do_not_request_duplicate_session": true,
-    "remaining_entry_conditions": "Push/synchronize control state and obtain independent exact-state PASS; only then issue READY and enter Phase C using the bound target and already-connected Black Pearl."
+    "remaining_entry_conditions": "Correct and synchronize maintained control records, obtain a new independent exact-state PASS, then run fresh wireless Phase B and proceed only with its same binding through C1/Phase C."
   },
   "independent_source_action_audit": {
-    "state": "PASS for planned production action/state semantics; does not replace exact plan 2.47 G3 in the synchronized review.",
-    "plan_revision": "Production sequence reviewed; plan 2.47 exact G3 is pending.",
+    "state": "PASS for planned production action/state semantics; does not replace exact plan 2.48 G3, whose synchronized exact-state review returned NOT PASS.",
+    "plan_revision": "Production sequence reviewed; plan 2.48 exact G3/exact-state gate returned NOT PASS because current maintained overlays were stale.",
     "candidate_head": "3329590db531c31be84e7e28d89209028a688075",
     "candidate_tree": "79808ef8052812427461f480e9abf19c2e930c22",
     "scope": "Independent verification that planned actions exist in the expected production UI state: disconnected entry/Connect, Edit EQ read, DEVICE Refresh, local attached navigation/session retention, truthful freshness, and no hidden setter/reconnect path.",
@@ -794,28 +803,35 @@
     "physical_qualification_result": "NONE; this source/state audit does not pass C05-C/G4."
   },
   "automation_update_tool_failure": "Earlier view/update failures remain historical. The supported update succeeded at approximately 2026-10-07T15:50Z; no direct TOML edit was made.",
-  "latest_release_verified_at_utc": "2026-10-07T15:59Z; stable/latest v0.7.2.",
+  "latest_release_verified_at_utc": "2026-10-07T16:16:00Z; stable/latest v0.7.2.",
   "phase_c_started": false,
-  "pr_body_current": true,
-  "issue_last_checked_utc": "2026-10-07T16:04:15Z",
-  "pr_last_checked_utc": "2026-10-07T16:04:17Z",
+  "pr_body_current": false,
+  "issue_last_checked_utc": "2026-10-07T16:16:00Z",
+  "pr_last_checked_utc": "2026-10-07T16:16:00Z",
   "current_control_reconciliation_pushed": true,
   "exact_state_consistency_review": {
-    "result": "PENDING for the synchronized plan 2.48 checkpoint; previous plan 2.47 review was NOT PASS and has been corrected.",
-    "reviewed_control_head": null,
-    "reviewed_control_tree": null,
-    "reviewed_at_utc": null,
+    "result": "NOT PASS at 2026-10-07T16:16Z for synchronized plan 2.48 checkpoint; stale current maintained overlays/status fields found.",
+    "reviewed_control_head": "15483a570c2d0ecf7adc0adf4a02b87a441fde91",
+    "reviewed_control_tree": "1d64c083d9922eecfa79b5f8a7851329f62731ca",
+    "reviewed_at_utc": "2026-10-07T16:16:00Z",
     "previous_reviewed_control_head": "686d4298e542968a79350923c4776c59fbb42c01",
     "previous_reviewed_control_tree": "3d8a1b4a434f806930cd9d121935ec077ba77f18",
     "previous_review_result": "NOT PASS; see E95.",
     "scope": "Review the current dynamic control branch, synchronized status/issue #71/draft PR #70/saved automation, master v2.2 hash, exact plan 2.48 G3, frozen candidate/PR/check/base/main/release facts, resolver/guard pins, and 79/79 evidence. This review is the sole C05-C entry authorization.",
-    "device_access": false
+    "device_access": false,
+    "latest_review_findings": [
+      "AGENTS.md named master v1.8 as current instead of master v2.2.",
+      "Runbook current overlay still named plan 2.47.",
+      "Status JSON retained 68/68, an obsolete push/synchronization prerequisite, a stale READY sequence, and plan 2.47 source-audit fields.",
+      "Acceptance-evidence and Pixel-binding current overlays still named plan 2.47."
+    ],
+    "next_action": "Reconcile every current maintained overlay and duplicate JSON field, push control-only changes, synchronize issue/PR/automation, then obtain one new exact-state review including G3. No device access before PASS."
   },
-  "issue_71": "CURRENT; updated 2026-10-07T16:04:15Z; links dynamically to codex/v0.8.0-beta-watch and describes plan 2.48.",
+  "issue_71": "OPEN; last updated 2026-10-07T16:04:15Z; body needs update after plan 2.48 exact-state NOT PASS.",
   "current_reconciliation_pushed": true,
   "phase_b_current_status": {
-    "status": "NOT RUN; do not run ADB until new exact-state review for plan 2.48 passes.",
-    "required_after_review": "Run fresh one-shot read-only wireless Phase B; if PASS, derive C1 variables from that same binding and continue Phase C.",
+    "status": "NOT RUN for the current resolver; exact-state review returned NOT PASS; no ADB before a new PASS.",
+    "required_after_review": "After the corrected synchronized exact-state review passes, run one fresh read-only wireless Phase B; verify resolver/schema pins and digest, then derive every C1 binding value from that same output.",
     "resolver_sha256": "caef7e50daef26a454c543dd3a51a1f373b922649ae72f5bd657cac3fbb45124",
     "entry_guard_sha256": "4ed865de6a9b83910f77eafc472ceb48092b7f83b233ad1b94f03c7fefbaeeeb",
     "wireless_adb_only": true,
@@ -857,5 +873,16 @@
   "control_plane_local_tree": null,
   "control_plane_remote_head_last_seen": "f6b659b156a8ba51ee392e4107353f176b27c0ab",
   "control_content_checkpoint_sha": "f6b659b156a8ba51ee392e4107353f176b27c0ab",
-  "control_content_checkpoint_tree": "f2d641f5a1adc5c80e8e2d943e43e00954607430"
+  "control_content_checkpoint_tree": "f2d641f5a1adc5c80e8e2d943e43e00954607430",
+  "current_state_review": {
+    "result": "NOT PASS",
+    "control_head": "15483a570c2d0ecf7adc0adf4a02b87a441fde91",
+    "control_tree": "1d64c083d9922eecfa79b5f8a7851329f62731ca",
+    "candidate_head": "3329590db531c31be84e7e28d89209028a688075",
+    "candidate_tree": "79808ef8052812427461f480e9abf19c2e930c22",
+    "observed_at_utc": "2026-10-07T16:16:00Z",
+    "device_access": false,
+    "tests_rerun": false,
+    "finding": "Plan 2.48 fresh-binding commands are corrected, but maintained root/runbook/status/acceptance/binding records still contained stale current master, plan, and gate status."
+  }
 }
