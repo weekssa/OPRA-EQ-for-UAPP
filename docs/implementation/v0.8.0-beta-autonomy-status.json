@@ -1,8 +1,8 @@
 {
-  "timestamp_utc": "2026-10-07T05:35:48Z",
-  "state": "PHASE_A_PENDING_EXACT_STATE_REVIEW_OF_SYNCHRONIZED_STATE",
-  "current_gate": "G3 procedure review PASS for plan 2.18; C05-C/G4 remains PARTIAL / NOT PASS. E54 exact-state review returned NOT PASS because the acceptance-evidence current overlay omitted E52/E53/E54. E55 corrected the overlay; E56 records E55 synchronization and was synchronized to issue #71, PR #70, and the active watchdog. An independent E56 review was paused before verdict after identifying stale E55 next-action pointers in resume/status. This docs-only checkpoint corrects those pointers. Exact-state review of the current synchronized live control state remains pending. No readiness or device access.",
-  "next_gate": "Ensure issue #71, PR #70, and the active watchdog reflect the current NOT READY disposition, then obtain exact-state independent PASS on the dynamically resolved synchronized live control state. Only after PASS update canonical Phase A readiness, issue a fresh readiness notice, and require fresh post-readiness Pixel availability.",
+  "timestamp_utc": "2026-10-07T05:44:45Z",
+  "state": "PREFLIGHT_COMPLETE_READY_FOR_PHONE_WAITING_FOR_FRESH_OWNER_AVAILABILITY",
+  "current_gate": "Phase A COMPLETE — READY FOR PHONE after independent exact-state review PASS of synchronized live E57 a1de744f1caff70d532ef48adff8cb81759a9619 / tree 2d65cf6916e1af08a9f9b754fdcfe6fecb24455b. G3 procedure review remains PASS for plan 2.18; C05-C/G4 remains PARTIAL / NOT PASS. Await a fresh post-notice owner Pixel 9 availability statement; no device access has occurred.",
+  "next_gate": "Await a fresh current owner statement that the Pixel 9 is available after the Phase A READY notice now reflected on issue #71, PR #70, and the watchdog. Only then begin plan 2.18 Phase B/T0; keep all device access closed until the fresh statement.",
   "candidate_branch": "codex/v0.8.0-beta-ux",
   "candidate_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
   "candidate_tree": "e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d",
@@ -15,7 +15,7 @@
   ],
   "candidate_apk_sha256": "f33818309d55571166d91e501065706ddbb8faf180833b03bb6eb948e6bffed1",
   "candidate_apk_is_official_signed_beta": false,
-  "pr": "https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/70",
+  "pr": "#70 OPEN_DRAFT at the exact frozen candidate; base main c702ef0149b4c647446639cfcb0ab25c09159db3; mergeable/clean; Phase A READY notice now synchronized, fresh owner availability pending.",
   "pr_state": "OPEN_DRAFT",
   "pr_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
   "pr_base": "c702ef0149b4c647446639cfcb0ab25c09159db3",
@@ -122,9 +122,9 @@
         "indexed_file_count": 36
       },
       "plan_revision": "2.18",
-      "plan_review": "G3 PASS for procedure revision 2.18 after all ten assertions; no physical procedure step changed. E54 exact-state review returned NOT PASS on stale acceptance-overlay text, not plan steps. E55 corrected the overlay; E56 records and externally synchronizes that correction. The independent review of E56 was paused before verdict after stale E55 next-action pointers were found in resume/status. This docs-only checkpoint corrects those pointers; exact-state review of the dynamically resolved current synchronized control state remains pending.",
+      "plan_review": "G3 PASS for plan revision 2.18 after all ten procedure assertions. Independent exact-state review of synchronized live E57 a1de744f1caff70d532ef48adff8cb81759a9619 / tree 2d65cf6916e1af08a9f9b754fdcfe6fecb24455b also PASS; no procedure change or new physical evidence. Phase A is ready; a fresh post-notice owner availability statement is required before Phase B.",
       "read_semantics": "Production READ sends outbound report(s) and may receive one bounded automatic nondestructive timeout retry; do not claim zero USB traffic or raw-bit equality. Compare same displayed fields at UI precision.",
-      "readiness": "PHASE A NOT READY. E54 exact-state review returned NOT PASS because the acceptance-evidence current overlay omitted E52/E53/E54. E55 corrected the overlay; E56 recorded that correction's external synchronization. The E56 independent review paused before verdict after stale E55 next-action pointers were found in resume/status. This docs-only checkpoint corrects those pointers. Exact-state review of the current synchronized state remains pending. The owner's latest availability statement predates a new readiness notice and cannot be reused. No device access.",
+      "readiness": "PHASE A COMPLETE — READY FOR PHONE after independent exact-state review of synchronized E57 passed. C05-C/G4 remains PARTIAL / NOT PASS. The owner must make a fresh current Pixel availability statement after this notice; the earlier confirmed message predates it. No device access before that fresh statement.",
       "prior_attempts": [
         {
           "physical_attempt_utc": "2026-10-06T19:25:17Z",
@@ -234,7 +234,7 @@
     "old_non_flat_eq_reset_precondition_applies_to_read_only_c05c": false,
     "non_flat_requirement_rationale": "It applied to the old checkbox-on Reset test; C05-C is read-only and invokes no Reset.",
     "talkback": "DEFERRED_NON_BLOCKING_FOR_BETA; historical direct-touch owner report remains supplementary only; no repeat requested.",
-    "plan_review": "G3 PASS for procedure revision 2.18 after all ten assertions; no physical procedure step changed. E52 status review returned NOT PASS on ambiguous owner/agent attachment and Connect authorization plus the consumed-helper hash label. E53 corrects the JSON fields and external status is synchronized; exact-state review of the live control tip remains pending."
+    "plan_review": "G3 PASS for plan revision 2.18 after ten assertions; independent exact-state review of synchronized live E57 a1de744f1caff70d532ef48adff8cb81759a9619 / tree 2d65cf6916e1af08a9f9b754fdcfe6fecb24455b PASS. Phase A is ready for phone; C05-C remains PARTIAL / NOT PASS pending fresh post-notice owner availability and the physical run."
   },
   "api35": {
     "previous_candidate": "acd95df543632e57ae46cd68e714a35f94781f43",
@@ -365,17 +365,17 @@
     ],
     "physical_keyboard_claimed": false
   },
-  "owner_action_required_now": false,
-  "pixel_required_now": false,
-  "physical_session_ready": false,
-  "physical_session_readiness_reason": "E54 exact-state independent review returned NOT PASS because the acceptance-evidence current overlay omitted E52/E53/E54. E55 corrected the overlay; E56 records its external synchronization at issue #71 05:30:55Z, PR #70 05:31:08Z, and watchdog 05:31:29.875Z. An independent E56 review was paused before verdict after stale E55 next-action pointers were noticed in resume/status. This docs-only checkpoint corrects those pointers. Phase A is NOT READY; exact-state review of the current synchronized control state is pending. The owner's latest availability statement predates a new readiness notice and cannot be reused. No ADB/USB/device access before exact-state PASS, a new readiness notice, and fresh post-readiness availability.",
+  "owner_action_required_now": true,
+  "pixel_required_now": true,
+  "physical_session_ready": true,
+  "physical_session_readiness_reason": "Phase A is complete and G3/exact-state review passed for plan 2.18 and synchronized live E57. A fresh current owner Pixel 9 availability statement made after this readiness notice is required before Phase B. The owner’s latest confirmed message predates this notice and cannot be reused. No ADB/USB/device access until the fresh post-notice statement.",
   "estimated_pixel_minutes": {
     "target": 10,
     "hard_limit": 15,
     "entry_checkpoint_minutes": 2
   },
-  "watchdog_mode": "ACTIVE_HOURLY_RESUME_FIRST_PHASE_A_REPREPARATION_NO_DEVICE_ACCESS",
-  "loop_status": "PHASE_A_REPREPARATION_AFTER_WORKFLOW_SESSION_STOP_NO_DEVICE_ACCESS",
+  "watchdog_mode": "ACTIVE_HOURLY_RESUME_FIRST_WAITING_FRESH_OWNER_AVAILABILITY_NO_DEVICE_ACCESS",
+  "loop_status": "PHASE_A_READY_WAITING_FRESH_POST_NOTICE_AVAILABILITY_NO_DEVICE_ACCESS",
   "stable_latest_release": "v0.7.2",
   "merge_or_publish_performed": false,
   "nonphysical_gates_open": [
@@ -383,8 +383,8 @@
     "G6-G12 ordered merge/sign/upgrade/clean-install/artifact/publication/review-bundle/closeout"
   ],
   "physical_gates_open": [
-    "Exact-state independent review of the dynamically resolved, currently synchronized control state; Phase A remains NOT READY until PASS.",
-    "G4/C05-C complete read/navigation/final-read session under plan revision 2.18, only after new readiness and fresh post-readiness owner availability."
+    "Fresh current owner statement that the Pixel 9 is available after the Phase A readiness notice; no device access before it.",
+    "G4/C05-C complete read/navigation/final-read session under plan revision 2.18, only after post-notice owner availability and exact Phase B entry checks."
   ],
   "downstream_gates": [
     "Independent pre-merge verification",
@@ -398,16 +398,16 @@
     "mission closeout"
   ],
   "next_actions": [
-    "Ensure issue #71, PR #70, and the active watchdog reflect the current NOT READY disposition; have the independent reviewer verify the dynamically resolved synchronized control state, current overlay, plan 2.18, runner reservation, and live issue/PR/watchdog alignment.",
-    "If exact-state review passes, synchronize canonical Phase A readiness and issue a fresh readiness notice; then require a fresh current Pixel-availability statement before device access.",
-    "Until review PASS, a fresh readiness notice, and fresh post-readiness owner availability, do not use ADB/USB, inspect device state, request the Pixel, or operate hardware."
+    "Wait for a fresh current owner statement that the Pixel 9 is available after the Phase A READY notice on issue #71, PR #70, and the active watchdog. The earlier confirmed message predates that notice; do not start Phase B or use ADB/USB until the fresh post-notice statement.",
+    "After that statement, execute plan 2.18 Phase B exactly with wireless ADB only; abort and release on any missing or ambiguous prerequisite.",
+    "Until fresh post-notice owner availability, do not use ADB/USB, inspect device state, request/use the Pixel, or operate hardware."
   ],
-  "issue": "https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/71",
+  "issue": "Issue #71 open; Phase A READY notice synchronized, fresh owner availability pending.",
   "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex/v0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md",
   "physical_plan": {
     "path": "docs/implementation/FINAL_PHYSICAL_SESSION_PLAN.md",
     "revision": "2.18",
-    "state": "G3_PASS_PHASE_A_SYNCHRONIZED_LIVE_STATE_REVIEW_PENDING",
+    "state": "G3_PASS_PHASE_A_READY_WAITING_FRESH_OWNER_AVAILABILITY",
     "scope": "Phase A off-phone preflight; Phase B fresh owner availability, one-shot wireless-ADB T0, exact candidate/APK/Pixel/DAC verification, cold/disconnected My DAC preflight, production EQ/DEVICE reads, attached navigation, final explicit readback, and immediate release.",
     "device_access_before_review": false,
     "phase_b_entry_policy": {
@@ -425,7 +425,7 @@
   "main_head_observed": "79d600529621257136adb4d9e1a97e8ae8521d7e",
   "main_advanced_since_pr_snapshot": true,
   "pr_base_ref": "main",
-  "pr_snapshot_as_of_utc": "2026-10-07T05:14:43Z",
+  "pr_snapshot_as_of_utc": "2026-10-07T05:44:45Z",
   "integration_base_sha": "c702ef0149b4c647446639cfcb0ab25c09159db3",
   "app_src_test_tree": "470979fb22a91c4514534badda6c2cc2032abfb6",
   "app_src_android_test_tree": "da2b4f31e18025ebd00f0a84f274e0e8a8624800",
@@ -450,13 +450,13 @@
     "body_sha256": "084bca0df0103701bbed74831152074c6f1283d376a8a1930e51ea39016c52ed",
     "introduced_by_commit": "e57eb6ee92155d484cdc20c424546a70672b77e6"
   },
-  "current_owner_action": "None now. After a new readiness notice, make a fresh current statement that the Pixel 9 is available and have the Black Pearl attached before handoff. Wireless ADB only.",
+  "current_owner_action": "After the Phase A READY notice, make a fresh current statement that the Pixel 9 is available. Before handoff, ensure the Black Pearl is attached to Pixel USB-C if it is not already; wireless ADB only.",
   "gates_G0_G12": [
     {
       "gate": "G0",
       "name": "Canonical directive / candidate identity",
       "state": "PASS",
-      "evidence": "Frozen candidate/APK and master v1.3 identity are verified. E54 exact-state review returned NOT PASS because the acceptance-evidence overlay omitted E52/E53/E54. E55 corrected the current overlay; E56 records that synchronized state. Exact-state review of the current synchronized control state remains required before readiness."
+      "evidence": "Frozen candidate/APK and master v1.3/hash verified. E57 a1de744f1caff70d532ef48adff8cb81759a9619 / tree 2d65cf6916e1af08a9f9b754fdcfe6fecb24455b is the dynamically resolved synchronized control state; independent exact-state review PASS. Phase A readiness notice is being synchronized; fresh post-notice Pixel availability remains required."
     },
     {
       "gate": "G1",
@@ -472,7 +472,7 @@
       "gate": "G3",
       "name": "Final physical plan ready",
       "state": "PASS",
-      "evidence": "PASS for plan revision 2.18 procedure; all ten assertions passed and the procedure is unchanged. E54 exact-state review returned NOT PASS on stale current acceptance-overlay text, not plan steps. E55 corrected the overlay; E56 records the synchronized state. Exact-state review of the current synchronized control state remains pending."
+      "evidence": "PASS for plan 2.18 after all ten assertions; exact-state independent review of synchronized live E57 a1de744f1caff70d532ef48adff8cb81759a9619 / tree 2d65cf6916e1af08a9f9b754fdcfe6fecb24455b also PASS. No procedure or candidate change."
     },
     {
       "gate": "G4",
@@ -533,32 +533,32 @@
       "conclusion": "success"
     }
   ],
-  "issue_updated_at_utc": "2026-10-07T05:30:55Z",
+  "issue_updated_at_utc": "2026-10-07T05:37:26Z",
   "issue_body_current": true,
   "watchdog_prompt_updated": true,
-  "watchdog_prompt_updated_utc": "2026-10-07T05:31:29.875Z",
+  "watchdog_prompt_updated_utc": "2026-10-07T05:37:41.272Z",
   "control_plane_checkpoint_pushed": true,
-  "pr_updated_at_utc": "2026-10-07T05:31:08Z",
+  "pr_updated_at_utc": "2026-10-07T05:37:27Z",
   "control_plane_branch": {
     "name": "codex/v0.8.0-beta-watch",
     "live_ref_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/tree/codex%2Fv0.8.0-beta-watch",
-    "last_observed_head_before_status_commit": "842c5d380039f6c9cdf1e030fc5ab102e8a47aa2",
-    "last_observed_tree_before_status_commit": "638ab765a6a212ddb0976c80f46ce61d5e951a3f",
+    "last_observed_head_before_status_commit": "a1de744f1caff70d532ef48adff8cb81759a9619",
+    "last_observed_tree_before_status_commit": "2d65cf6916e1af08a9f9b754fdcfe6fecb24455b",
     "remote_matches_observed_tip_at_snapshot": true,
     "current_head_resolution": "Resolve origin/codex/v0.8.0-beta-watch from live Git at review time; this status file cannot contain its own resulting commit SHA.",
-    "snapshot_as_of_utc": "2026-10-07T05:31:36Z"
+    "snapshot_as_of_utc": "2026-10-07T05:44:45Z"
   },
-  "owner_action_required": false,
-  "owner_action": "None now. After a new readiness notice, make a fresh current statement that the Pixel 9 is available and have the Black Pearl attached before handoff. Wireless ADB only.",
+  "owner_action_required": true,
+  "owner_action": "After the Phase A READY notice, make a fresh current statement that the Pixel 9 is available. Before handoff, ensure the Black Pearl is attached to Pixel USB-C if it is not already; wireless ADB only.",
   "physical_session_owner_action_required_after_review": true,
   "latest_release": {
     "tag": "v0.7.2",
     "prerelease": false,
     "draft": false,
     "stable_latest": true,
-    "as_of_utc": "2026-10-07T05:31:36Z",
-    "review": "Stable/latest remains immutable v0.7.2. Phase A is NOT READY after E54 exact-state review returned NOT PASS on the acceptance-evidence current overlay. E55 corrected the overlay; E56 records the E55 synchronization and external surfaces were updated to E56. An independent E56 review was paused before verdict on stale E55 next-action pointers in resume/status; this checkpoint corrects those pointers. Exact-state review of the current synchronized state remains pending.",
-    "remaining": "Ensure issue #71, PR #70, and the active watchdog reflect the current NOT READY disposition, then obtain exact-state independent PASS on the dynamically resolved synchronized live state. If PASS, issue a fresh readiness notice and require fresh post-readiness Pixel availability before Phase B."
+    "as_of_utc": "2026-10-07T05:44:29Z",
+    "review": "Stable/latest remains immutable v0.7.2. Exact-state independent review of synchronized E57 PASS; Phase A is READY FOR PHONE, with fresh post-notice owner Pixel availability required before G4/C05-C.",
+    "remaining": "Await a fresh current owner Pixel-availability statement after the Phase A READY notice, then start the reviewed plan 2.18 session only if all Phase B preconditions pass."
   },
   "master_body_sha256": "084bca0df0103701bbed74831152074c6f1283d376a8a1930e51ea39016c52ed",
   "master_introducing_commit": "e57eb6ee92155d484cdc20c424546a70672b77e6",
@@ -589,9 +589,9 @@
     "classification": "WORKFLOW_SESSION_STOP; discovery listed a Pixel endpoint but no target-specific state; not product/hardware failure and not C05-C evidence; do not combine with earlier attempts",
     "evidence_log_sha256": "909037a604679a15952b93b8928f08f257a5b11294b2d5b8ea3970a1102ff03b"
   },
-  "main_current_checks_as_of_utc": "2026-10-07T05:14:43Z",
+  "main_current_checks_as_of_utc": "2026-10-07T05:44:45Z",
   "phase_a_preflight": {
-    "state": "PERSISTENT_RUNNER_PREPARED_PENDING_EXACT_STATE_REVIEW_OF_SYNCHRONIZED_LIVE_STATE",
+    "state": "PREFLIGHT_COMPLETE_READY_FOR_PHONE",
     "candidate_branch": "codex/v0.8.0-beta-ux",
     "candidate_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
     "candidate_tree": "e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d",
@@ -604,22 +604,22 @@
     "debug_signer_sha256": "cbd57d13316c2ca9e59fb810135ea71567fd22132b0d7f4640e92dc4434f0e14",
     "signature": "apksigner verified one Android Debug signer with v2 scheme; not the official beta key",
     "zip_alignment": "Build Tools 36.0.0 zipalign verification successful from the prior exact-APK preflight; APK SHA is unchanged",
-    "live_github_as_of_utc": "2026-10-07T05:31:36Z",
+    "live_github_as_of_utc": "2026-10-07T05:44:45Z",
     "pr": "#70 OPEN_DRAFT; exact frozen head 5c7d19cf2f77e448a97a1ee9d520ad4d408f120f; base main c702ef0149b4c647446639cfcb0ab25c09159db3; mergeable=true",
-    "checks": "8/8 exact-head check-runs completed-success, refreshed 2026-10-07T05:31:36Z: build 112181047518; min-api-smoke 112181046209; emulator-ui-test 112181045077; CodeQL 112152334761; Priority 112150826284; Catalog 112150826043; Kotlin analysis 112150825874; submit-gradle 112150813291",
+    "checks": "8/8 exact-head check-runs completed-success, refreshed 2026-10-07T05:44:45Z: build 112181047518; min-api-smoke 112181046209; emulator-ui-test 112181045077; CodeQL 112152334761; Priority 112150826284; Catalog 112150826043; Kotlin analysis 112150825874; submit-gradle 112150813291",
     "main": "79d600529621257136adb4d9e1a97e8ae8521d7e; 4 ahead / 0 behind; four catalog/currentness paths only; BASE-DRIFT-B",
-    "stable_latest": "v0.7.2; latest release API refreshed at 2026-10-07T05:26:34Z",
+    "stable_latest": "v0.7.2; latest release API refreshed at 2026-10-07T05:44:45Z",
     "source_paths": "ordinary launcher and disconnected card; local-only tabs/navigation; production Edit EQ and DEVICE Refresh reads; attached away/back card route; source-audited",
     "command_syntax": "Plan 2.18 helper bash syntax PASS; sourced in persistent interactive Bash PTY 85646; candidate branch/HEAD/tree/path guards PASS; T0 empty; commands.log 0 bytes; latest recorded same-session liveness checkpoint 2026-10-07T04:05:34Z",
     "evidence_ignore": "candidate worktree .git/info/exclude rule /.unlazy/v080-beta/evidence/c05c-*/ verified for the current unique reservation",
     "session_id": "20261007T035827Z",
     "helper_path": ".unlazy/v080-beta/evidence/c05c-20261007T035827Z/phase-b-recorder.sh",
     "helper_sha256": "8d78490163f74a24a654ba3253643ba4efde240dad0f1a574ca9a7767b50b2aa",
-    "helper_guard": "single-use reservation; empty log/T0; candidate/path guards passed in persistent Bash PTY session 85646; retain this exact session for Phase B",
+    "helper_guard": "Single-use reservation with empty log/T0 and candidate/path guards passed in persistent Bash PTY session 85646. Latest recorded liveness is 2026-10-07T04:05:34Z, not proof of current availability; reuse only if independently known alive, otherwise reprepare and review before T0.",
     "evidence_reservation": "New unique candidate-local ignored path; only preflight.txt, empty commands.log, and prepared helper; no command output/screenshots/manifest/physical capture",
     "device_access": "No ADB/USB/device command in the new reservation. The prior discovery only listed the Pixel service; it was not selected or queried. No device access has occurred during this overlay review.",
-    "review": "Independent runner review PASS. E52 returned NOT PASS on actor-specific attachment/Connect permissions and consumed-helper labeling. E53 corrected those fields; E54 synchronized them, but E54 exact-state review returned NOT PASS because the acceptance overlay was stale. E55 corrected the overlay and was synchronized at issue #71 05:26:17Z, PR #70 05:26:18Z, and watchdog 05:26:18.824Z. E56 records that sync and was synchronized at issue #71 05:30:55Z, PR #70 05:31:08Z, and watchdog 05:31:29.875Z. An independent E56 review was paused before verdict after stale E55 pointers in resume/status were identified; this checkpoint corrects those pointers. No ADB/USB/device access.",
-    "remaining": "Ensure issue #71, PR #70, and the active watchdog reflect the current NOT READY disposition; obtain exact-state independent PASS on the dynamically resolved synchronized live state. If PASS, issue fresh readiness and require fresh post-readiness Pixel availability before Phase B.",
+    "review": "PASS: independent exact-state review of synchronized live E57 a1de744f1caff70d532ef48adff8cb81759a9619 / tree 2d65cf6916e1af08a9f9b754fdcfe6fecb24455b. Reviewer verified frozen candidate/APK and hash, master v1.3/body hash, acceptance overlay and dynamic next action, G3 plan 2.18 disposition, active three-file ignored reservation with empty commands.log and separately labeled consumed helper, and issue #71 / draft PR #70 / watchdog E57 alignment. The 04:05:34Z PTY checkpoint is historical only, not current liveness. No ADB/USB/device access or edits occurred during the review.",
+    "remaining": "Await a fresh current owner statement that the Pixel 9 is available after this readiness notice. Do not use ADB/USB or inspect device state before that statement.",
     "previous_consumed_session_id": "20261007T031528Z",
     "persistent_runner_session_id": "85646",
     "t0_utc": null,
@@ -628,7 +628,7 @@
     "latest_recorded_liveness_utc": "2026-10-07T04:05:34Z"
   },
   "last_observed_control_tree_before_status_commit": "638ab765a6a212ddb0976c80f46ce61d5e951a3f",
-  "next_action": "Ensure issue #71, PR #70, and the active watchdog reflect the current NOT READY disposition. Have the independent reviewer examine the dynamically resolved synchronized live state, plan 2.18 disposition, runner reservation, and live GitHub facts. Do not issue readiness or use ADB/USB before PASS. The owner's latest availability statement predates readiness and cannot be reused; require fresh availability after a new notice.",
+  "next_action": "Wait for a fresh current owner statement that the Pixel 9 is available after the Phase A READY notice on issue #71, PR #70, and the active watchdog. The earlier confirmed message predates that notice; do not start Phase B or use ADB/USB until the fresh post-notice statement.",
   "g3_approved_entry_route": "FRESH_PROCESS_COLD_DISCONNECTED_SINGLE_NORMAL_APP_CONNECT",
   "g3_attached_connected_session_resume_approved": false
 }
