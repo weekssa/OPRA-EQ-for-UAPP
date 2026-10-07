@@ -1,8 +1,8 @@
 {
-  "timestamp_utc": "2026-10-07T04:52:56Z",
+  "timestamp_utc": "2026-10-07T04:56:29Z",
   "state": "PHASE_A_PENDING_FINAL_INDEPENDENT_REVIEW",
-  "current_gate": "G3 procedure review PASS for plan 2.18; C05-C/G4 remains PARTIAL / NOT PASS. Runner review passed. E48 status review returned NOT PASS; E50 control commit d13c12ca46ec13b4229abca814921d357ac0995a corrected the reported fields, but its exact-state review was paused without verdict after a self-audit found residual stale physical_plan.state and G0 evidence fields. This docs-only checkpoint corrects those fields; final independent review of this exact state is pending. No readiness or device access.",
-  "next_gate": "Validate and push this docs-only status correction, verify the live control tip, refresh the live PR/issue/check/base/release facts, and obtain exact-state independent PASS. Only after PASS issue a new readiness notice and wait for fresh post-readiness owner availability.",
+  "current_gate": "G3 procedure review PASS for plan 2.18; C05-C/G4 remains PARTIAL / NOT PASS. Runner review passed. E48 status review returned NOT PASS; E50 corrected its findings; E51 corrected the two residual current JSON fields and is pushed at the live control tip. The final independent exact-state review of the current tip is pending. Issue #71, PR #70, and watchdog are synchronized to NOT READY. No readiness or device access.",
+  "next_gate": "Obtain exact-state independent PASS on the current live control tip; only then issue a fresh Phase A readiness notice and wait for new owner availability.",
   "candidate_branch": "codex/v0.8.0-beta-ux",
   "candidate_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
   "candidate_tree": "e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d",
@@ -21,12 +21,12 @@
   "pr_base": "c702ef0149b4c647446639cfcb0ab25c09159db3",
   "pr_current_body_stale": false,
   "ci": {
-    "as_of_utc": "2026-10-07T04:49:05Z",
+    "as_of_utc": "2026-10-07T04:56:29Z",
     "exact_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
     "total_exact_head_check_runs": 8,
     "check_run_snapshot": {
       "all_completed_success": true,
-      "as_of_utc": "2026-10-07T04:49:05Z",
+      "as_of_utc": "2026-10-07T04:56:29Z",
       "head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
       "total_count": 8,
       "checks": [
@@ -233,7 +233,7 @@
     "old_non_flat_eq_reset_precondition_applies_to_read_only_c05c": false,
     "non_flat_requirement_rationale": "It applied to the old checkbox-on Reset test; C05-C is read-only and invokes no Reset.",
     "talkback": "DEFERRED_NON_BLOCKING_FOR_BETA; historical direct-touch owner report remains supplementary only; no repeat requested.",
-    "plan_review": "G3 PASS for procedure revision 2.18 after all ten assertions; no physical procedure step changed. E48 status review returned NOT PASS; E50 corrected its findings, but exact-state review of E50 was paused without verdict when two residual current JSON fields were found. This checkpoint fixes those fields and awaits exact-state independent review."
+    "plan_review": "G3 PASS for procedure revision 2.18 after all ten assertions; no physical procedure step changed. E48 status review returned NOT PASS; E50 and E51 corrected its reported current-status findings. Final exact-state independent review of the current live control tip is pending."
   },
   "api35": {
     "previous_candidate": "acd95df543632e57ae46cd68e714a35f94781f43",
@@ -367,7 +367,7 @@
   "owner_action_required_now": false,
   "pixel_required_now": false,
   "physical_session_ready": false,
-  "physical_session_readiness_reason": "E48 review returned NOT PASS; E50 corrected the reported fields, but exact-state review was paused without verdict after two residual current JSON fields were found. This checkpoint corrects them; exact-state independent review is pending. The owner’s latest `confirmed` availability statement preceded a new readiness notice and cannot be reused. No device access before review PASS, new readiness, and fresh post-readiness availability.",
+  "physical_session_readiness_reason": "E51 corrects the two residual current JSON fields and is pushed. Final independent review of the exact live control tip is pending. The owner’s latest `confirmed` availability statement preceded a new readiness notice and cannot be reused. No device access before review PASS, new readiness, and fresh post-readiness availability.",
   "estimated_pixel_minutes": {
     "target": 10,
     "hard_limit": 15,
@@ -382,7 +382,7 @@
     "G6-G12 ordered merge/sign/upgrade/clean-install/artifact/publication/review-bundle/closeout"
   ],
   "physical_gates_open": [
-    "Push and obtain exact-state independent review of the corrected canonical status; control-plane synchronization is otherwise complete.",
+    "Exact-state independent review of the current live control status; E51 correction and issue/PR/watchdog synchronization are complete.",
     "G4/C05-C complete read/navigation/final-read session under plan revision 2.18, only after new readiness and fresh post-readiness owner availability."
   ],
   "downstream_gates": [
@@ -397,9 +397,9 @@
     "mission closeout"
   ],
   "next_actions": [
-    "Validate and push this docs-only JSON/status correction, preserving the frozen candidate and all ignored evidence.",
-    "Verify the remote control tip and refresh current PR #70, issue #71, exact-head checks, main/base drift, and stable latest v0.7.2 facts.",
-    "Have the independent reviewer examine the exact pushed status, plan 2.18 disposition, runner reservation, and aligned external state. Only after PASS issue fresh readiness, then wait for a fresh owner availability statement."
+    "Verify the current live control tip and refreshed PR #70, issue #71, exact-head check, base-drift, stable-release, and watchdog facts.",
+    "Have the independent reviewer inspect the exact current canonical status, plan 2.18 disposition, runner reservation, and aligned external state; correct only a demonstrated discrepancy.",
+    "If review passes, synchronize readiness, issue a fresh Phase A readiness notice, then require a fresh current Pixel-availability statement before any device access."
   ],
   "issue": "https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/71",
   "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex/v0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md",
@@ -417,7 +417,7 @@
   "main_head_observed": "79d600529621257136adb4d9e1a97e8ae8521d7e",
   "main_advanced_since_pr_snapshot": true,
   "pr_base_ref": "main",
-  "pr_snapshot_as_of_utc": "2026-10-07T04:49:05Z",
+  "pr_snapshot_as_of_utc": "2026-10-07T04:56:29Z",
   "integration_base_sha": "c702ef0149b4c647446639cfcb0ab25c09159db3",
   "app_src_test_tree": "470979fb22a91c4514534badda6c2cc2032abfb6",
   "app_src_android_test_tree": "da2b4f31e18025ebd00f0a84f274e0e8a8624800",
@@ -432,7 +432,7 @@
     "candidate_app_test_path_overlap": [],
     "candidate_rebase_or_rebuild_for_this_drift": false,
     "premerge_recheck_required": true,
-    "comparison_as_of_utc": "2026-10-07T04:49:05Z",
+    "comparison_as_of_utc": "2026-10-07T04:56:29Z",
     "ahead_by": 4,
     "behind_by": 0
   },
@@ -448,7 +448,7 @@
       "gate": "G0",
       "name": "Canonical directive / candidate identity",
       "state": "PASS",
-      "evidence": "Frozen candidate/APK and master v1.3 identity are verified. E50 is pushed and control-plane synchronization is complete; this docs-only correction repairs two residual current JSON fields. Final independent review of the exact pushed correction remains a prerequisite to readiness. No phone action is authorized now."
+      "evidence": "Frozen candidate/APK and master v1.3 identity are verified. E51 corrected the two residual current JSON fields and is pushed. Final independent review of the current live control tip remains a prerequisite to readiness. No phone action is authorized now."
     },
     {
       "gate": "G1",
@@ -464,7 +464,7 @@
       "gate": "G3",
       "name": "Final physical plan ready",
       "state": "PASS",
-      "evidence": "PASS for plan revision 2.18 procedure; all ten assertions passed and the procedure is unchanged. E48 status review returned NOT PASS; E50 addressed its reported findings, and its exact-state review was paused without verdict when two residual current JSON fields were found. This correction awaits exact-state independent review."
+      "evidence": "PASS for plan revision 2.18 procedure; all ten assertions passed and the procedure is unchanged. E48 status review returned NOT PASS; E50 and E51 corrected the reported current-status fields. Final exact-state independent review of the current live control tip is pending."
     },
     {
       "gate": "G4",
@@ -527,20 +527,20 @@
   ],
   "g3_plan_ready_for_attached_resume": false,
   "g3_plan_not_approved_for_fresh_attach": false,
-  "issue_updated_at_utc": "2026-10-07T04:22:34Z",
+  "issue_updated_at_utc": "2026-10-07T04:56:21Z",
   "issue_body_current": true,
   "watchdog_prompt_updated": true,
-  "watchdog_prompt_updated_utc": "2026-10-07T04:36:39.025Z",
+  "watchdog_prompt_updated_utc": "2026-10-07T04:56:07.613Z",
   "control_plane_checkpoint_pushed": true,
-  "pr_updated_at_utc": "2026-10-07T04:22:35Z",
+  "pr_updated_at_utc": "2026-10-07T04:56:20Z",
   "control_plane_branch": {
     "name": "codex/v0.8.0-beta-watch",
     "live_ref_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/tree/codex%2Fv0.8.0-beta-watch",
-    "last_observed_head_before_status_commit": "d13c12ca46ec13b4229abca814921d357ac0995a",
-    "last_observed_tree_before_status_commit": "cb0f4084ac762fb10f804f40ecd156e90b4054e0",
+    "last_observed_head_before_status_commit": "9abbfa657baf4ee4acce86d4c3aac0aa4286b730",
+    "last_observed_tree_before_status_commit": "ea90bc0e32a1108bf6d869cc0fc50246acd13ab3",
     "remote_matches_observed_tip_at_snapshot": true,
     "current_head_resolution": "Resolve origin/codex/v0.8.0-beta-watch from live Git at review time; this status file cannot contain its own resulting commit SHA.",
-    "snapshot_as_of_utc": "2026-10-07T04:49:05Z"
+    "snapshot_as_of_utc": "2026-10-07T04:56:29Z"
   },
   "owner_action_required": false,
   "owner_action": "None now. After a new readiness notice, make a fresh current statement that the Pixel 9 is available and have the Black Pearl attached before handoff. Wireless ADB only.",
@@ -550,9 +550,9 @@
     "prerelease": false,
     "draft": false,
     "stable_latest": true,
-    "as_of_utc": "2026-10-07T04:49:05Z",
-    "review": "Stable/latest remains v0.7.2. Phase A control-state review is pending: E50 was pushed, then its exact-state review was paused without verdict after two residual current JSON fields were found. This checkpoint corrects them; no readiness or device access until an exact-state PASS.",
-    "remaining": "Push this status correction and obtain exact-state independent PASS. If PASS, issue a new readiness notice and require fresh post-readiness Pixel availability before Phase B."
+    "as_of_utc": "2026-10-07T04:56:29Z",
+    "review": "Stable/latest remains v0.7.2. Phase A is NOT READY; the E51 status correction is pushed and exact-state independent review of the current live control tip is pending.",
+    "remaining": "Obtain exact-state independent PASS. If PASS, issue fresh readiness and require fresh post-readiness Pixel availability before Phase B."
   },
   "master_body_sha256": "084bca0df0103701bbed74831152074c6f1283d376a8a1930e51ea39016c52ed",
   "master_introducing_commit": "e57eb6ee92155d484cdc20c424546a70672b77e6",
@@ -583,7 +583,7 @@
     "classification": "WORKFLOW_SESSION_STOP; discovery listed a Pixel endpoint but no target-specific state; not product/hardware failure and not C05-C evidence; do not combine with earlier attempts",
     "evidence_log_sha256": "909037a604679a15952b93b8928f08f257a5b11294b2d5b8ea3970a1102ff03b"
   },
-  "main_current_checks_as_of_utc": "2026-10-07T04:49:05Z",
+  "main_current_checks_as_of_utc": "2026-10-07T04:56:29Z",
   "phase_a_preflight": {
     "state": "PERSISTENT_RUNNER_PREPARED_PENDING_FINAL_INDEPENDENT_REVIEW",
     "candidate_branch": "codex/v0.8.0-beta-ux",
@@ -598,7 +598,7 @@
     "debug_signer_sha256": "cbd57d13316c2ca9e59fb810135ea71567fd22132b0d7f4640e92dc4434f0e14",
     "signature": "apksigner verified one Android Debug signer with v2 scheme; not the official beta key",
     "zip_alignment": "Build Tools 36.0.0 zipalign verification successful from the prior exact-APK preflight; APK SHA is unchanged",
-    "live_github_as_of_utc": "2026-10-07T04:49:05Z",
+    "live_github_as_of_utc": "2026-10-07T04:56:29Z",
     "pr": "#70 OPEN_DRAFT; exact frozen head 5c7d19cf2f77e448a97a1ee9d520ad4d408f120f; base main c702ef0149b4c647446639cfcb0ab25c09159db3; mergeable=true",
     "checks": "8/8 exact-head check-runs completed-success as of 2026-10-07T04:49Z: build 112181047518; min-api-smoke 112181046209; emulator-ui-test 112181045077; CodeQL 112152334761; Priority 112150826284; Catalog 112150826043; Kotlin analysis 112150825874; submit-gradle 112150813291",
     "main": "79d600529621257136adb4d9e1a97e8ae8521d7e; 4 ahead / 0 behind; four catalog/currentness paths only; BASE-DRIFT-B",
@@ -612,8 +612,8 @@
     "helper_guard": "single-use reservation; empty log/T0; candidate/path guards passed in persistent Bash PTY session 85646; retain this exact session for Phase B",
     "evidence_reservation": "New unique candidate-local ignored path; only preflight.txt, empty commands.log, and prepared helper; no command output/screenshots/manifest/physical capture",
     "device_access": "No ADB/USB/device command in the new reservation. The prior discovery only listed the Pixel service; it was not selected or queried.",
-    "review": "Independent runner review PASS. E48 status review returned NOT PASS on stale current JSON fields. E50 corrected the reported discrepancies and was pushed; its exact-state review was paused without verdict after a self-audit found residual stale physical_plan.state and G0 evidence fields. This correction repairs those fields. Final independent review of the exact pushed state is pending. Issue #71 and PR #70 remain NOT READY.",
-    "remaining": "Push this docs-only correction, verify the live control tip and refresh current integration facts, then obtain exact-state independent PASS. If PASS, issue new readiness and require fresh post-readiness Pixel availability before Phase B.",
+    "review": "Independent runner review PASS. E48 status review returned NOT PASS; E50 and E51 corrected the reported current-status fields. E51 is pushed; final exact-state independent review of the current live tip remains pending. Issue #71, PR #70, and the watchdog report NOT READY.",
+    "remaining": "Resolve the live control tip and obtain exact-state independent PASS. If PASS, issue new readiness and require fresh post-readiness Pixel availability before Phase B.",
     "previous_consumed_session_id": "20261007T031528Z",
     "persistent_runner_session_id": "85646",
     "t0_utc": null,
@@ -621,6 +621,6 @@
     "commands_log_bytes": 0,
     "latest_recorded_liveness_utc": "2026-10-07T04:05:34Z"
   },
-  "last_observed_control_tree_before_status_commit": "cb0f4084ac762fb10f804f40ecd156e90b4054e0",
-  "next_action": "Validate and push this docs-only correction, confirm it is at the live control tip, then request exact-state independent PASS; do not issue readiness or access ADB/USB until it passes."
+  "last_observed_control_tree_before_status_commit": "ea90bc0e32a1108bf6d869cc0fc50246acd13ab3",
+  "next_action": "Have the independent reviewer verify the exact current live control tip, plan 2.18 disposition, runner reservation, and aligned issue/PR/watchdog; do not issue readiness or access ADB/USB until PASS."
 }
