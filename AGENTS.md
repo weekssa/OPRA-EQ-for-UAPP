@@ -19,7 +19,7 @@ Deliver complete, polished product outcomes—not isolated code changes, diagnos
 
 ### Current v0.8.0 beta execution amendment
 
-For the active v0.8.0 beta mission, load `docs/implementation/v0.8.0-beta-resume.md` first, verify its referenced `docs/implementation/v0.8.0-beta-master-directive.md` version/hash, then read the canonical autonomy status. Master version 1.1 is the current owner-approved execution contract: it explicitly defers manual TalkBack for this beta, corrects the main-only signing order, preserves Class B and the C05 split, and conditionally authorizes merge/publication after all listed gates pass. Follow its BOOTSTRAP STALL recovery and read only the documents needed for the active gate; do not stop after bootstrap. It controls where older v0.8 execution wording conflicts; keep the locked product/design baseline intact.
+For the active v0.8.0 beta mission, load `docs/implementation/v0.8.0-beta-resume.md` first, verify its referenced `docs/implementation/v0.8.0-beta-master-directive.md` version/hash, then read the canonical autonomy status. Master version 1.5 is the current owner-approved execution contract: it explicitly defers manual TalkBack for this beta, corrects the main-only signing order, preserves Class B and the C05 split, defines the Phase A off-phone / Phase B wireless target binding / Phase C active DAC sequence, removes every timer-only abort, and conditionally authorizes merge/publication after all listed gates pass. Follow its BOOTSTRAP STALL recovery and read only the documents needed for the active gate; do not stop after bootstrap. It controls where older v0.8 execution wording conflicts; keep the locked product/design baseline intact.
 
 ## Mandatory source-of-truth order
 
