@@ -1,8 +1,8 @@
 {
-  "timestamp_utc": "2026-10-07T13:21:14Z",
-  "state": "PHASE_A_B_PASS_PLAN_2_39_G3_PASS_WATCHDOG_SYNC_BLOCKED",
-  "current_gate": "Phase A/B PASS; exact plan 2.39 G3 PASS; independent source/action audit PASS; issue #71, PR #70, and control documents synchronized to the dynamic control branch; independent exact-state review pending; saved watcher remains stale at v1.6/plan 2.33 after ten app-load failures; readiness NOT READY; C05-C/G4 PARTIAL / NOT PASS; Phase C has not started.",
-  "next_gate": "Obtain independent exact-state review of the synchronized control branch, issue #71, PR #70, saved watcher, frozen candidate, and exact-head checks. Do not access the phone/DAC until watcher synchronization and readiness pass.",
+  "timestamp_utc": "2026-10-07T15:04:33Z",
+  "state": "CONTROL_2_2_PLAN_2_47_EXACT_STATE_REVIEW_PENDING_C05C_NOT_STARTED",
+  "current_gate": "SYNCHRONIZED_EXACT_STATE_REVIEW_PENDING",
+  "next_gate": "EXACT_STATE_REVIEW_G3_PLAN_2_47",
   "candidate_branch": "codex/v0.8.0-beta-ux",
   "candidate_head": "3329590db531c31be84e7e28d89209028a688075",
   "candidate_tree": "79808ef8052812427461f480e9abf19c2e930c22",
@@ -10,8 +10,7 @@
   "app_src_main_tree": "857d02a53d0df44fb0bd46e5ddad3b319dc48dab",
   "app_production_source_changed_in_current_candidate": false,
   "current_candidate_changes": [
-    "read-only selector privacy/input validation fixes and tests in the control plane only",
-    "canonical mission/status documentation synchronization in the control plane only"
+    "control-only plan/status/host-tool regression synchronization; no app/test candidate changes"
   ],
   "candidate_apk_sha256": "f33818309d55571166d91e501065706ddbb8faf180833b03bb6eb948e6bffed1",
   "candidate_apk_is_official_signed_beta": false,
@@ -23,60 +22,60 @@
     "head": "3329590db531c31be84e7e28d89209028a688075",
     "base_ref": "main",
     "base_sha": "c702ef0149b4c647446639cfcb0ab25c09159db3",
-    "checks": {
-      "head_sha": "3329590db531c31be84e7e28d89209028a688075",
-      "as_of_utc": "2026-10-07T13:13:00Z",
-      "total": 8,
-      "success": 8,
-      "in_progress": 0,
-      "failed": 0,
-      "runs": [
-        {
-          "name": "CodeQL",
-          "status": "completed",
-          "conclusion": "success"
-        },
-        {
-          "name": "validate-priority-community",
-          "status": "completed",
-          "conclusion": "success"
-        },
-        {
-          "name": "emulator-ui-test",
-          "status": "completed",
-          "conclusion": "success"
-        },
-        {
-          "name": "build",
-          "status": "completed",
-          "conclusion": "success"
-        },
-        {
-          "name": "Analyze Kotlin",
-          "status": "completed",
-          "conclusion": "success"
-        },
-        {
-          "name": "min-api-smoke",
-          "status": "completed",
-          "conclusion": "success"
-        },
-        {
-          "name": "validate",
-          "status": "completed",
-          "conclusion": "success"
-        },
-        {
-          "name": "submit-gradle",
-          "status": "completed",
-          "conclusion": "success"
-        }
-      ]
-    },
+    "checks": [
+      {
+        "name": "CodeQL",
+        "run_id": "112773231014",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "validate-priority-community",
+        "run_id": "112771227569",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "emulator-ui-test",
+        "run_id": "112771226848",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "build",
+        "run_id": "112771226724",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Analyze Kotlin",
+        "run_id": "112771226678",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "min-api-smoke",
+        "run_id": "112771226500",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "validate",
+        "run_id": "112771226051",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "submit-gradle",
+        "run_id": "112771215747",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    ],
     "main_sha": "79d600529621257136adb4d9e1a97e8ae8521d7e",
     "main_ahead_of_pr_base": 4,
     "main_behind_pr_base": 0,
-    "base_drift": "BASE-DRIFT-B",
+    "base_drift": "BASE-DRIFT-B; four catalog/currentness-only paths, no app/test overlap.",
     "base_drift_paths": [
       "catalog/catalog.json",
       "catalog/discovery/github_candidates.json",
@@ -85,16 +84,16 @@
     ],
     "stable_latest": "v0.7.2",
     "latest_is_prerelease": false,
-    "pr_body_sync": "Issue #71 and PR #70 were updated at 2026-10-07T13:20:31Z and 13:20:33Z after the control-only status push; both point dynamically to the live control branch and reflect the current gate.",
+    "pr_body_sync": "STALE; synchronize after control push.",
     "mergeable_state": "clean"
   },
   "pr_state": "open/draft",
   "pr_head": "3329590db531c31be84e7e28d89209028a688075",
   "pr_base": "c702ef0149b4c647446639cfcb0ab25c09159db3",
-  "pr_current_body_stale": false,
+  "pr_current_body_stale": true,
   "ci": {
     "head_sha": "3329590db531c31be84e7e28d89209028a688075",
-    "as_of_utc": "2026-10-07T13:13:00Z",
+    "as_of_utc": "2026-10-07T15:04:33Z",
     "total": 8,
     "success": 8,
     "in_progress": 0,
@@ -102,41 +101,49 @@
     "runs": [
       {
         "name": "CodeQL",
+        "run_id": "112773231014",
         "status": "completed",
         "conclusion": "success"
       },
       {
         "name": "validate-priority-community",
+        "run_id": "112771227569",
         "status": "completed",
         "conclusion": "success"
       },
       {
         "name": "emulator-ui-test",
+        "run_id": "112771226848",
         "status": "completed",
         "conclusion": "success"
       },
       {
         "name": "build",
+        "run_id": "112771226724",
         "status": "completed",
         "conclusion": "success"
       },
       {
         "name": "Analyze Kotlin",
+        "run_id": "112771226678",
         "status": "completed",
         "conclusion": "success"
       },
       {
         "name": "min-api-smoke",
+        "run_id": "112771226500",
         "status": "completed",
         "conclusion": "success"
       },
       {
         "name": "validate",
+        "run_id": "112771226051",
         "status": "completed",
         "conclusion": "success"
       },
       {
         "name": "submit-gradle",
+        "run_id": "112771215747",
         "status": "completed",
         "conclusion": "success"
       }
@@ -164,7 +171,7 @@
       ]
     },
     "C_real_black_pearl_session_read_navigation": {
-      "state": "PARTIAL / NOT PASS; Phase C has not started.",
+      "state": "PARTIAL / NOT PASS; prior physical attempt remains incomplete; Phase C has not started.",
       "physical_attempt_utc": "2026-10-06T23:24:31Z",
       "required": [
         "exact device identity",
@@ -190,10 +197,10 @@
         "retrospective_addendum_sha256": "4a223e023b59be2584b40679b87fa62d364153a4ecab735b0431f56f1aa82a4e",
         "indexed_file_count": 36
       },
-      "plan_revision": "2.39",
-      "plan_review": "G3 PASS for exact plans 2.37, 2.38, and 2.39; revision 2.39 changes only administrative authorization wording. Synchronized exact-state review remains pending.",
+      "plan_revision": "2.47",
+      "plan_review": "PENDING one synchronized exact-state review; that review also evaluates G3 for exact plan 2.47 and is the sole C05-C entry authorization.",
       "read_semantics": "Production READ sends outbound report(s) and may receive one bounded automatic nondestructive timeout retry; do not claim zero USB traffic or raw-bit equality. Compare same displayed fields at UI precision.",
-      "readiness": "Owner availability and Black Pearl attachment confirmed; Phase A/B and exact plan 2.39 G3 PASS. Watchdog and external control-surface synchronization plus independent exact-state review remain required; C05-C has not started.",
+      "readiness": "NOT READY pending that exact-state review; no separate watcher/certificate review gate. After PASS, fresh Phase B is required because the previous resolver binding is superseded.",
       "prior_attempts": [
         {
           "physical_attempt_utc": "2026-10-06T19:25:17Z",
@@ -282,8 +289,8 @@
       "single_use_evidence_reservation": true,
       "plan_2_18_consumed_reservation_id": "20261007T031528Z",
       "plan_2_18_consumed_reservation_helper_sha256": "a2afbcd96458e92758834c678a4a03455b9d57dea9f9ad6a6d872a766321734f",
-      "current_phase_status": "Phase A/B PASS; plan 2.37/2.38/2.39 G3 PASS; watchdog sync and synchronized exact-state review pending; Phase C not started; C05-C/G4 PARTIAL / NOT PASS.",
-      "independent_source_review": "PASS: source audit supports Edit EQ, DEVICE Refresh, local navigation/session retention, truthful freshness, no setter path, bounded READ retry, and no timer-only abort. Exact plan 2.37/2.38 G3 passed; plan 2.39 administrative wording check pending. Synchronized exact-state review remains pending.",
+      "current_phase_status": "Phase A technical preflight PASS; plan 2.47 exact-state review pending; Phase B not run for current resolver; Phase C not started; C05-C/G4 PARTIAL / NOT PASS.",
+      "independent_source_review": "PASS for production actions/navigation and source semantics; numeric USB session generation is not exposed. Exact plan 2.47 G3 is pending.",
       "current_disposition": "C05-C remains PARTIAL / NOT PASS because the prior physical attempt lacks contemporaneous final post-navigation PID/USB evidence. The former duration cap is superseded and is not a current failure criterion.",
       "physical_session_ready": false,
       "historical_two_phase_model": {
@@ -303,7 +310,16 @@
         "previous_overrun_seconds": 285,
         "status": "HISTORICAL_ONLY; do not use as a current pass/fail or abort rule."
       },
-      "time_only_abort": false
+      "time_only_abort": false,
+      "current_binding": {
+        "resolved_at_utc": "2026-10-07T13:29:11Z",
+        "path": ".unlazy/v080-beta/evidence/pixel-adb-binding-20261007T132835Z/binding.json",
+        "sha256": "0981992c58250c1de5439a5890b8d72ce33bc19e4bc49fd39949af27553e23b5",
+        "resolver_sha256": "85cbd82218c5f5335d014fa2574735873b317e175147495e7f28bbe31273ad4f",
+        "target_sha256": "ea0e928373c557974326ae751489246c9aed5fa1c6147051c9b56b48cb373e35",
+        "transport": "wireless ADB only",
+        "dac_io": false
+      }
     },
     "D_independent_qualification_review": {
       "state": "PASS",
@@ -319,20 +335,16 @@
     "old_non_flat_eq_reset_precondition_applies_to_read_only_c05c": false,
     "non_flat_requirement_rationale": "It applied to the old checkbox-on Reset test; C05-C is read-only and invokes no Reset.",
     "talkback": "DEFERRED_NON_BLOCKING_FOR_BETA; historical direct-touch owner report remains supplementary only; no repeat requested.",
-    "plan_review": "G3 PASS for exact plan revisions 2.37, 2.38, and 2.39; revision 2.39 changes only administrative wording with no Phase C sequence change. Synchronized exact-state review remains pending.",
-    "orchestration_entry_recovery": "Repeated pre-DAC selector/wrapper failures classified as orchestration defects; selector privacy/identity path and tests corrected; full focused suite 68/68; no DAC request or mutation occurred.",
-    "current_phase_status": "Phase A/B PASS; plan 2.37/2.38/2.39 G3 PASS; watchdog sync and synchronized exact-state review pending; Phase C not started; C05-C/G4 PARTIAL / NOT PASS.",
-    "plan_revision": "2.39",
-    "readiness": "NOT READY: Phase A/B and plan 2.39 G3 pass; supported watchdog/external control synchronization and independent synchronized exact-state review remain required. Owner availability and Black Pearl attachment are confirmed.",
-    "state": "PHASE_A_B_READY_PLAN_2_39_G3_PENDING_WATCHDOG_SYNC_BLOCKED_C05C_NOT_STARTED",
-    "focused_offline_suite": "68/68 passed with the five-module command. Plan 2.36 fixed the verifier-file assertion; plan 2.37 only redacted a retained Phase B serial print, with Phase C unchanged.",
-    "three_phase_model": {
-      "phase_a": "OFF_PHONE_PREFLIGHT_PASS",
-      "phase_b": "WIRELESS_PIXEL_BINDING_PASS_NOT_DAC_SESSION",
-      "phase_c": "ACTIVE_BLACK_PEARL_QUALIFICATION_NOT_STARTED"
-    },
-    "current_disposition": "C05-C remains PARTIAL / NOT PASS pending one complete compliant read-only physical run. Host entry failures are orchestration-only and do not count as C05-C results.",
-    "independent_source_review": "PASS: source audit supports Edit EQ, DEVICE Refresh, attached local navigation/session retention, truthful freshness, no setter path, bounded READ retry, and no timer-only abort. Exact plan 2.37/2.38/2.39 G3 PASS; synchronized exact-state review remains pending."
+    "plan_review": "PENDING exact plan 2.47/G3 in the synchronized independent exact-state review; no separate watcher/certificate review gate.",
+    "orchestration_entry_recovery": "PASS: current resolver/entry guard reject ambiguous or mismatched state before ADB; focused 79/79 suite passed.",
+    "current_phase_status": "Phase A technical preflight PASS; plan 2.47 exact-state review pending; Phase B not run for current resolver; Phase C not started; C05-C/G4 PARTIAL / NOT PASS.",
+    "plan_revision": "2.47",
+    "readiness": "NOT READY for ADB or Phase C until one synchronized exact-state review returns PASS; after PASS, fresh Phase B is required.",
+    "state": "PHASE_A_B_PASS_PLAN_2_40_G3_PENDING_WATCHER_SYNC_BLOCKED_C05C_NOT_STARTED",
+    "focused_offline_suite": "79/79 PASS for selector/resolver/entry-guard/fingerprint/activity modules, including binding-versus-plan resolver-pin mismatch rejection before ADB.",
+    "three_phase_model": "Phase A off-phone preparation PASS; Phase B fresh read-only wireless ADB binding after exact-state PASS; Phase C only after successful binding and C1.",
+    "current_disposition": "Phase A technical preflight PASS; exact-state review for plan 2.47 pending; no ADB until PASS; fresh Phase B then C1/Phase C.",
+    "independent_source_review": "PASS for production action/state semantics; numeric USB session generation is not exposed. Exact plan 2.47 G3 is pending in the synchronized exact-state review."
   },
   "api35": {
     "previous_candidate": "acd95df543632e57ae46cd68e714a35f94781f43",
@@ -466,17 +478,17 @@
   "owner_action_required_now": false,
   "pixel_required_now": false,
   "physical_session_ready": false,
-  "physical_session_readiness_reason": "The saved watcher remains stale at v1.6/plan 2.33 after ten supported automation_update app-load failures. Control docs, issue #71, and PR #70 are synchronized; independent exact-state review is still pending. Keep C05-C gated.",
+  "physical_session_readiness_reason": "One synchronized independent exact-state review remains pending. It includes G3 for exact plan 2.47 and is the sole C05-C entry authorization; do not use ADB before PASS.",
   "estimated_pixel_minutes": "5-10 optimization target; no time-only abort",
-  "watchdog_mode": "STALE_AUTOMATION_PROMPT_TOOL_UNAVAILABLE; NO_DEVICE_IO; NO_REPEAT_UNCHANGED_CALL",
-  "loop_status": "PHASE_A_B_PASS_PLAN_2_39_G3_PENDING_WATCHDOG_SYNC_BLOCKED_C05C_NOT_STARTED",
-  "stable_latest_release": "v0.7.2",
+  "watchdog_mode": "QUIET_WHILE_UNCHANGED; saved prompt may be updated only via supported automation tool; watcher update is not a separate C05-C gate.",
+  "loop_status": "PHASE_A_PASS; PLAN_2_47_EXACT_STATE_REVIEW_PENDING; C05_C_NOT_STARTED",
+  "stable_latest_release": "v0.7.2 remains stable/latest; release reports immutable true and prerelease false.",
   "merge_or_publish_performed": false,
   "nonphysical_gates_open": [
-    "Supported automation watcher synchronization, issue/PR synchronization to the pushed control checkpoint, independent synchronized exact-state review, and final readiness certificate."
+    "One synchronized independent exact-state review of the pushed control checkpoint, including exact plan 2.47 G3."
   ],
   "physical_gates_open": [
-    "G4/C05-C complete read/navigation/final-read physical run; readiness certificate and synchronized exact-state review remain pending."
+    "Fresh read-only Phase B after review PASS, then full C05-C/G4 physical run."
   ],
   "downstream_gates": [
     "Independent pre-merge verification",
@@ -490,25 +502,25 @@
     "mission closeout"
   ],
   "next_actions": [
-    "Obtain an independent exact-state review of the current dynamic control ref, issue #71, PR #70, saved watcher, candidate, and exact-head checks.",
-    "Do not repeat automation_update while the app-load error is unchanged; never edit automation.toml manually.",
-    "Keep physical readiness NOT READY and do not use ADB/device/DAC until watcher synchronization and readiness review pass."
+    "Validate hashes, JSON, references, and the 79/79 focused host-tool suite.",
+    "Commit and push only the control branch; keep candidate app/test tree and Class B unchanged.",
+    "Synchronize issue #71 and PR #70 to the pushed control state, retaining draft.",
+    "Obtain one independent exact-state review that includes G3 for plan 2.47.",
+    "After PASS, run fresh wireless Phase B; if it passes, continue directly through C1/Phase C."
   ],
-  "issue": "OPEN; issue #71 body synchronized at 2026-10-07T13:20:31Z to the dynamically resolved control branch; independent exact-state review remains pending.",
+  "issue": "OPEN; synchronize issue #71 after control checkpoint push.",
   "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex%2Fv0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md (resolve the live control ref dynamically)",
   "physical_plan": {
     "path": "docs/implementation/FINAL_PHYSICAL_SESSION_PLAN.md",
-    "revision": "2.39",
-    "g3_review": "PASS for exact revision 2.39; independent review confirms only administrative precondition wording changed from 2.38 and Phase C procedure/acceptance body is unchanged. Exact revisions 2.37 and 2.38 also PASS.",
-    "previous_g3_passes": [
-      "2.37",
-      "2.38"
-    ],
-    "synchronized_exact_state_review": "PENDING until this control reconciliation, the supported hourly watchdog, issue #71, and PR #70 are synchronized.",
+    "revision": "2.47",
+    "g3_review": "PENDING one synchronized exact-state review; no Phase B/Phase C device work before PASS.",
     "phase_c_started": false,
     "timer_only_abort": false,
     "target_active_minutes": "5-10 optimization only; no time-only abort or cap",
-    "phase_c_entry_guard": "Sealed binding and same-target identity check once before descriptor observation; no discovery/reconnect."
+    "binding_path": null,
+    "binding_sha256": null,
+    "session_generation_observability": "UI does not expose numeric USB sessionGeneration; report observed identity/PID/fingerprint/Connected-current UI and successful reads only.",
+    "reason": "Plan 2.47 awaits synchronized exact-state review; the prior resolver binding is historical only. No ADB is allowed before PASS."
   },
   "app_dir_tree": "42977ce481bc76aa85b866610672e35e35d6cde6",
   "pr_mergeable": true,
@@ -516,21 +528,21 @@
   "main_head_observed": "79d600529621257136adb4d9e1a97e8ae8521d7e",
   "main_advanced_since_pr_snapshot": true,
   "pr_base_ref": "main",
-  "pr_snapshot_as_of_utc": "2026-10-07T13:13:00Z",
+  "pr_snapshot_as_of_utc": "2026-10-07T15:04:33Z",
   "integration_base_sha": "c702ef0149b4c647446639cfcb0ab25c09159db3",
   "app_src_test_tree": "470979fb22a91c4514534badda6c2cc2032abfb6",
   "app_src_android_test_tree": "da2b4f31e18025ebd00f0a84f274e0e8a8624800",
   "base_drift_reconciliation": "BASE-DRIFT-B; four catalog/currentness-only paths, no app/test overlap; live main is 79d600529621257136adb4d9e1a97e8ae8521d7e, PR base c702ef0149b4c647446639cfcb0ab25c09159db3.",
-  "master_directive": "v1.8; body SHA-256 4a44730c833893b8849e49b57194aa9abf0ceb8546f81450ddeef6803cae93a3; introduced by 15610e560779027516c0c126bcfce1e3ecda1cc5; two-commit seal is pushed.",
-  "current_owner_action": "No owner setup action is needed; Pixel availability and Black Pearl connection are confirmed. Do not access the phone/device/DAC until watchdog synchronization, independent exact-state review, and readiness certificate pass.",
+  "master_directive": "v2.2; body SHA-256 e839578d7b9a68b78a3a8dd2f93d683f48e77d427cc9ffca42d5703e9ac4493f; introducing commit pending final metadata seal.",
+  "current_owner_action": "None; Pixel availability and Black Pearl attachment already confirmed in the current conversation.",
   "gates_G0_G12": {
-    "G0": "PASS: master directive v1.8 body hash verified, first commit 15610e560779027516c0c126bcfce1e3ecda1cc5 recorded, and two-commit seal pushed.",
-    "G1": "PASS nonphysical MUST evidence; exact-head CI 8/8 refreshed 2026-10-07T12:52Z.",
-    "G2": "PASS Class B retained; protected paths unchanged.",
-    "G3": "PASS for exact FINAL_PHYSICAL_SESSION_PLAN.md revision 2.39; synchronized exact-state review/readiness still pending.",
-    "G4": "NOT PASS pending one complete compliant C05-C read-only physical run after all readiness gates pass.",
+    "G0": "PENDING final metadata seal; master v2.2 body SHA-256 e839578d7b9a68b78a3a8dd2f93d683f48e77d427cc9ffca42d5703e9ac4493f verified.",
+    "G1": "PASS; exact frozen candidate CI is 8/8 completed-success; API35/API26 and other closed gates remain closed.",
+    "G2": "PASS; Class B retained; protected hardware paths unchanged.",
+    "G3": "PENDING the one exact-state review of plan 2.47; this review is also the sole C05-C entry authorization.",
+    "G4": "NOT PASS; fresh Phase B after review and complete compliant C05-C physical evidence remain outstanding.",
     "G5": "PENDING after G4: independent pre-merge verification.",
-    "G6": "PENDING ordered merge of exact qualified tree and merged-SHA verification.",
+    "G6": "PENDING exact qualified-tree merge and merged-SHA verification.",
     "G7": "PENDING official main-only signed beta artifact and provenance.",
     "G8": "PENDING exact signed v0.7.2-to-beta persisted-state upgrade.",
     "G9": "PENDING signed clean install/core smoke and independent artifact verification.",
@@ -539,20 +551,69 @@
     "G12": "PENDING watchdog and mission closeout."
   },
   "manual_talkback": "DEFERRED_NON_BLOCKING_FOR_V0.8.0_BETA",
-  "main_current_checks": "Live exact-head check-runs refreshed 2026-10-07T13:13:00Z: 8/8 completed-success for candidate 3329590db531c31be84e7e28d89209028a688075.",
-  "issue_updated_at_utc": "2026-10-07T13:20:31Z; issue #71 refreshed to dynamic control-branch status.",
-  "issue_body_current": true,
+  "main_current_checks": {
+    "head_sha": "3329590db531c31be84e7e28d89209028a688075",
+    "as_of_utc": "2026-10-07T15:04:33Z",
+    "total": 8,
+    "success": 8,
+    "in_progress": 0,
+    "failed": 0,
+    "runs": [
+      {
+        "name": "CodeQL",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "validate-priority-community",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "emulator-ui-test",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "build",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Analyze Kotlin",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "min-api-smoke",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "validate",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "submit-gradle",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "issue_updated_at_utc": "2026-10-07T13:23:50Z",
+  "issue_body_current": false,
   "watchdog_prompt_updated": false,
-  "watchdog_prompt_updated_utc": "2026-10-07T13:13Z: the tenth supported automation_update call failed with the same app-load error; saved prompt remains stale at v1.6/plan 2.33.",
-  "control_plane_checkpoint_pushed": true,
-  "pr_updated_at_utc": "2026-10-07T13:20:33Z; PR #70 refreshed to dynamic control-branch status and remains open/draft.",
+  "watchdog_prompt_updated_utc": null,
+  "control_plane_checkpoint_pushed": false,
+  "pr_updated_at_utc": "STALE; synchronize after control checkpoint push.",
   "control_plane_branch": "codex/v0.8.0-beta-watch; resolve live origin tip dynamically.",
   "owner_action_required": false,
   "owner_action": null,
   "physical_session_owner_action_required_after_review": false,
-  "latest_release": "v0.7.2; published non-prerelease and remains stable/latest.",
-  "master_body_sha256": "4a44730c833893b8849e49b57194aa9abf0ceb8546f81450ddeef6803cae93a3",
-  "master_introducing_commit": "15610e560779027516c0c126bcfce1e3ecda1cc5",
+  "latest_release": "v0.7.2 remains latest and non-prerelease; immutable true.",
+  "master_body_sha256": "e839578d7b9a68b78a3a8dd2f93d683f48e77d427cc9ffca42d5703e9ac4493f",
+  "master_introducing_commit": null,
   "g3_plan_ready_for_cold_disconnected_route": false,
   "latest_c05c_attempt": {
     "attempt_started_utc": "2026-10-07T03:57:21Z",
@@ -581,29 +642,29 @@
     "evidence_log_sha256": "909037a604679a15952b93b8928f08f257a5b11294b2d5b8ea3970a1102ff03b",
     "record_scope": "Historical plan 2.18 host-workflow stop before any Phase C/DAC activity; not a C05-C result and not a current T0/session reservation."
   },
-  "main_current_checks_as_of_utc": "2026-10-07T12:52:00Z",
+  "main_current_checks_as_of_utc": "2026-10-07T15:04:33Z",
   "phase_a_preflight": {
     "candidate_tree_verified": true,
     "apk_hash_metadata_signer_alignment_verified": true,
     "sdk_tools_pinned": true,
-    "production_action_audit": "PASS for Edit EQ, DEVICE Refresh, attached local navigation, and final read paths; independent source/state audit PASS for plan 2.37; exact plan 2.39 G3 PASS.",
+    "production_action_audit": "PASS for production action semantics; exact plan 2.47 G3 pending the synchronized exact-state review.",
     "evidence_commands_prepared": true,
     "exact_head_ci_green": true,
-    "plan_g3_pass": true,
-    "readiness_certificate": "NOT READY; Phase A/B technical evidence and exact plan 2.39 G3 pass, but watchdog synchronization and independent synchronized exact-state review remain."
+    "plan_g3_pass": false,
+    "readiness_certificate": "NOT READY until one exact-state review of the synchronized checkpoint passes; no separate certificate approval is required."
   },
-  "last_observed_control_tree_before_status_commit": "E86 pushed at 13:20Z; issue #71 and PR #70 were then synchronized to the dynamic control-branch pointer. Resolve current control tip dynamically.",
-  "next_action": "Obtain independent exact-state review of the dynamically resolved control branch, issue #71, PR #70, saved watcher, candidate, and exact-head checks. Do not repeat the unchanged automation service call or edit TOML; do not access the Pixel/Black Pearl until watcher synchronization and readiness pass.",
-  "g3_approved_entry_route": "PLAN_2_39_G3_AND_WATCHDOG_SYNC_AND_READINESS_AND_EXACT_STATE_REVIEW_REQUIRED",
+  "last_observed_control_tree_before_status_commit": "Independent audit reviewed 7ea5b0451e2926a91e579fffbf6a1ec51a550922 / tree 7de8cd0640c38a7de1a2b9e61b3223e0ce69cd53; issue and PR were refreshed at 13:23Z with a dynamic control pointer. Resolve current control tip dynamically.",
+  "next_action": "Validate control-only docs/host-tool regression and directive hash; commit/push control branch; synchronize issue #71 and PR #70; obtain one independent exact-state review including G3 for plan 2.47. Do not use ADB before PASS. After PASS, run fresh wireless Phase B, then proceed directly to C1/Phase C if it passes.",
+  "g3_approved_entry_route": "ONE_SYNCHRONIZED_EXACT_STATE_REVIEW_OF_PLAN_2_47_AND_CONTROL_CHECKPOINT; THEN FRESH_PHASE_B; THEN C1/PHASE_C",
   "g3_attached_connected_session_resume_approved": false,
   "phase_b_binding": {
-    "status": "PASS",
-    "resolved_at_utc": "2026-10-07T11:18:59Z",
-    "transport": "wireless ADB",
-    "binding_path": ".unlazy/v080-beta/evidence/pixel-adb-binding-20261007T111820Z/binding.json",
-    "binding_sha256": "bafdfe0b3505c804f7a0d0b913877a17f46d129590b91a9cbadee172cc96c51f",
+    "status": "HISTORICAL / SUPERSEDED FOR PLAN 2.47; created before current endpoint-wide identity-consistency resolver.",
+    "resolved_at_utc": "2026-10-07T13:29:11Z",
+    "transport": "wireless ADB only",
+    "binding_path": ".unlazy/v080-beta/evidence/pixel-adb-binding-20261007T132835Z/binding.json",
+    "binding_sha256": "0981992c58250c1de5439a5890b8d72ce33bc19e4bc49fd39949af27553e23b5",
     "resolver_sha256": "85cbd82218c5f5335d014fa2574735873b317e175147495e7f28bbe31273ad4f",
-    "target_sha256": "ea0e928373c557974326ae75186361c9aed5fa1c6147051c9b56b48cb373e35",
+    "target_sha256": "ea0e928373c557974326ae751489246c9aed5fa1c6147051c9b56b48cb373e35",
     "stable_serial_sha256": "c921897d26153147627f65dd81c921fdddcd94c9757ac12f5b1b33ab4873fef6",
     "schema_version": 1,
     "model": "Pixel 9",
@@ -617,94 +678,87 @@
     "app_process_absent": true,
     "resumed_activity_absent": true,
     "same_target_recheck": true,
+    "adb_connect_attempted": false,
+    "pairing_performed": false,
     "dac_io": false,
     "usb_descriptor_query": false,
-    "setting_mutation": false
+    "setting_mutation": false,
+    "not_eligible_for_current_c1": true
   },
   "phase_c_entry_guard": {
-    "state": "OFFLINE_TESTS_PASS_68_OF_68_PLAN_2_39_G3_PASS_NOT_RUN_ON_DEVICE",
+    "state": "OFFLINE_TESTS_PASS_79_OF_79; exact-state review pending; not run on device",
     "tool": "tools/validation/verify_pixel_binding.py",
-    "focused_suite": "68/68 passed with the documented five-module command",
-    "binding_sha256": "bafdfe0b3505c804f7a0d0b913877a17f46d129590b91a9cbadee172cc96c51f",
-    "resolver_sha256": "85cbd82218c5f5335d014fa2574735873b317e175147495e7f28bbe31273ad4f",
-    "target_sha256": "ea0e928373c557974326ae75186361c9aed5fa1c6147051c9b56b48cb373e35",
-    "operations": "Verifies exact binding hash, resolver hash, schema, target source/type, stable Pixel identity, and absent app process/activity. No discovery/reconnect, package query, app launch, USB descriptor, or DAC request.",
-    "run_policy": "After G3, readiness, and synchronized exact-state review pass; invoke once before first Black Pearl descriptor observation.",
-    "g3_review": "PASS for exact plan revision 2.39"
+    "focused_suite": "79/79 passed for current resolver/guard/fingerprint/activity modules, including mismatched binding resolver pin rejected before ADB",
+    "binding_sha256": "created only by the required fresh Phase B after exact-state review",
+    "resolver_sha256": "caef7e50daef26a454c543dd3a51a1f373b922649ae72f5bd657cac3fbb45124",
+    "entry_guard_sha256": "4ed865de6a9b83910f77eafc472ceb48092b7f83b233ad1b94f03c7fefbaeeeb",
+    "operations": "Verifies exact current binding/resolver/schema, stable Pixel identity, installed APK hash, and absent app process/activity. No pairing, route reconnect, app launch, USB descriptor, or DAC request.",
+    "run_policy": "After the one synchronized exact-state review returns PASS, run fresh wireless Phase B, then use that binding once in C1; no second independent review pause."
   },
-  "plan_review": "G3 PASS for exact plan revisions 2.37, 2.38, and 2.39; revision 2.39 is an administrative clarification with unchanged Phase C procedure. Synchronized exact-state review pending.",
+  "plan_review": "Plan revision 2.47; its exact G3 result is pending the single synchronized independent exact-state review.",
   "current_owner_action_required_after_review": false,
-  "master_directive_version": "1.8",
-  "master_directive_body_sha256": "4a44730c833893b8849e49b57194aa9abf0ceb8546f81450ddeef6803cae93a3",
+  "master_directive_version": "2.2",
+  "master_directive_body_sha256": "e839578d7b9a68b78a3a8dd2f93d683f48e77d427cc9ffca42d5703e9ac4493f",
   "g3_review": {
-    "state": "PASS",
-    "plan_revision": "2.39",
+    "state": "PENDING",
+    "plan_revision": "2.47",
     "candidate_head": "3329590db531c31be84e7e28d89209028a688075",
     "candidate_tree": "79808ef8052812427461f480e9abf19c2e930c22",
-    "review_scope": "Independent exact-plan G3 review confirms revision 2.39 changes only administrative authorization precondition wording from revision 2.38; Phase C procedure, acceptance criteria, evidence, safety conditions, exact candidate/APK/binding pins, and four shell syntax checks remain valid. G3 plan approval does not authorize Phase C until synchronized exact-state review and readiness pass."
+    "review_scope": "Exact synchronized control status at the pushed checkpoint, master v2.2 body e839578d7b9a68b78a3a8dd2f93d683f48e77d427cc9ffca42d5703e9ac4493f, plan 2.47 G3, current candidate/PR/check/base/release facts, resolver/guard pins, and 79/79 offline evidence. This review is the sole C05-C entry authorization."
   },
-  "first_v1_6_commit": "52681bbfec66c02c3aeb7a5fac5f726b57596d78",
+  "first_v1_6_commit": null,
   "external_surfaces": {
-    "issue_71": "OPEN; body updated 2026-10-07T13:20:31Z after control push; dynamically points to the canonical control branch.",
-    "pr_70_body": "OPEN/DRAFT; body updated 2026-10-07T13:20:33Z after control push; dynamically points to the canonical control branch.",
-    "watchdog": "STALE v1.6/plan 2.33; ten supported automation_update calls returned the exact app-load error; do not edit TOML or repeat while unchanged."
+    "issue_71": "PENDING synchronization after control push.",
+    "pr_70_body": "PENDING synchronization after control push; keep draft.",
+    "watchdog": "Saved prompt may be stale; use supported automation tool, never edit TOML. Its availability is not a separate C05-C gate."
   },
-  "master_directive_loaded": "YES",
-  "candidate_change": "Documentation-only privacy correction in candidate history; no app/test source change. This checkpoint changes control-plane documentation only.",
+  "master_directive_loaded": "YES; master v2.2 body hash e839578d7b9a68b78a3a8dd2f93d683f48e77d427cc9ffca42d5703e9ac4493f matches resume and live candidate/GitHub facts verified at 2026-10-07T15:04:33Z.",
+  "candidate_change": "Control-plane documentation and ignored Phase B evidence only; no candidate app/test source change.",
   "package": "com.weekssa.opraeqforuapp",
   "version_name": "0.8.0-beta",
   "version_code": 10,
   "debug_signer_sha256": "cbd57d13316c2ca9e59fb810135ea71567fd22132b0d7f4640e92dc4434f0e14",
   "gates": {
-    "phase_a": "OFF-PHONE TECHNICAL PREFLIGHT PASS; exact plan 2.39 G3 PASS; synchronized exact-state review/readiness pending.",
+    "phase_a": "PASS; frozen candidate/APK/metadata, live GitHub facts, source/action audit, tools and evidence paths verified.",
     "phase_b": {
-      "status": "PASS",
-      "resolved_at_utc": "2026-10-07T11:18:59Z",
-      "transport": "wireless ADB",
-      "binding_path": ".unlazy/v080-beta/evidence/pixel-adb-binding-20261007T111820Z/binding.json",
-      "binding_sha256": "bafdfe0b3505c804f7a0d0b913877a17f46d129590b91a9cbadee172cc96c51f",
-      "resolver_sha256": "85cbd82218c5f5335d014fa2574735873b317e175147495e7f28bbe31273ad4f",
-      "target_sha256": "ea0e928373c557974326ae75186361c9aed5fa1c6147051c9b56b48cb373e35",
-      "stable_serial_sha256": "c921897d26153147627f65dd81c921fdddcd94c9757ac12f5b1b33ab4873fef6",
-      "schema_version": 1,
-      "model": "Pixel 9",
-      "product": "tokay",
-      "api": 37,
-      "installed_apk_matches_local": true,
-      "shell": true,
-      "package_query": true,
-      "screenshot_stream_valid_not_stored": true,
-      "bounded_logcat_output_discarded": true,
-      "app_process_absent": true,
-      "resumed_activity_absent": true,
-      "same_target_recheck": true,
-      "dac_io": false,
-      "usb_descriptor_query": false,
-      "setting_mutation": false
+      "status": "NOT RUN after current resolver change; no accepted current Phase B binding before review PASS.",
+      "required_after_review": "Fresh read-only wireless Phase B; reuse that binding directly for C1 if every check passes.",
+      "resolver_sha256": "caef7e50daef26a454c543dd3a51a1f373b922649ae72f5bd657cac3fbb45124",
+      "entry_guard_sha256": "4ed865de6a9b83910f77eafc472ceb48092b7f83b233ad1b94f03c7fefbaeeeb",
+      "dac_io_before_phase_c": false
     },
     "C05_A": "PASS",
     "C05_B": "PASS",
-    "C05_C": "PARTIAL / NOT PASS; no Phase C operation has started.",
+    "C05_C": "PARTIAL / NOT PASS; fresh Phase B is transport evidence only; Phase C has not started.",
     "C05_D": "PASS",
-    "G3": "PASS for exact plan revision 2.39; this is plan approval only and does not pass C05-C/G4.",
-    "exact_state_review": "PENDING synchronized current control/issue/PR/watchdog state.",
+    "G3": "PENDING exact FINAL_PHYSICAL_SESSION_PLAN.md revision 2.47 G3 in the single synchronized exact-state review.",
+    "exact_state_review": "PENDING for the synchronized plan 2.47 checkpoint; sole C05-C entry authorization.",
     "G4": "NOT PASS; C05-C remains partial and current Phase C has not started.",
     "G5_to_G12": "NOT RUN / ordered behind physical qualification.",
-    "API35": "PASS/CLOSED; no rerun absent invalidation.",
-    "API26": "PASS/CLOSED; no rerun absent invalidation.",
+    "API35": "PASS/CLOSED",
+    "API26": "PASS/CLOSED",
     "process_no_replay": "PASS/CLOSED.",
-    "automated_accessibility": "PASS/CLOSED.",
+    "automated_accessibility": "PASS/CLOSED",
     "manual_talkback": "DEFERRED / NON-BLOCKING.",
-    "class": "Class B retained."
+    "class": "Class B retained.",
+    "G0": "PENDING final metadata seal; master v2.2 body SHA-256 e839578d7b9a68b78a3a8dd2f93d683f48e77d427cc9ffca42d5703e9ac4493f verified.",
+    "C05-C": "PARTIAL / NOT PASS; Phase C not started.",
+    "C05-A": "PASS",
+    "C05-B": "PASS",
+    "C05-D": "PASS"
   },
   "owner_state": {
     "pixel_available": true,
     "black_pearl_connected": true,
+    "availability_confirmed_in_current_turn": true,
     "requires_duplicate_setup_request": false
   },
-  "physical_session_readiness": false,
-  "control_plane_local_head": "The E86 control-only checkpoint is pushed to origin; current control tip must be resolved dynamically. This follow-up records issue/PR synchronization; no candidate source changes.",
-  "first_v1_8_commit": "15610e560779027516c0c126bcfce1e3ecda1cc5",
+  "physical_session_readiness": {
+    "state": "NOT READY",
+    "reason": "The synchronized exact-state review including plan 2.47 G3 is pending; no ADB or device inspection before PASS."
+  },
+  "control_plane_local_head": "7ea5b0451e2926a91e579fffbf6a1ec51a550922; synchronized control edits pending.",
+  "first_v1_8_commit": null,
   "repeated_session_entry_failure": {
     "triggered": true,
     "classification": "HOST_ORCHESTRATION_DEFECT_ONLY; no Pixel identity query or DAC request occurred during the earlier stopped attempts; no C05-C failure or hardware mutation is inferred.",
@@ -718,8 +772,8 @@
     "remaining_entry_conditions": "Push/synchronize control state and obtain independent exact-state PASS; only then issue READY and enter Phase C using the bound target and already-connected Black Pearl."
   },
   "independent_source_action_audit": {
-    "state": "PASS",
-    "plan_revision": "2.37",
+    "state": "PASS for planned production action/state semantics; does not replace exact plan 2.47 G3 in the synchronized review.",
+    "plan_revision": "Production sequence reviewed; plan 2.47 exact G3 is pending.",
     "candidate_head": "3329590db531c31be84e7e28d89209028a688075",
     "candidate_tree": "79808ef8052812427461f480e9abf19c2e930c22",
     "scope": "Independent verification that planned actions exist in the expected production UI state: disconnected entry/Connect, Edit EQ read, DEVICE Refresh, local attached navigation/session retention, truthful freshness, and no hidden setter/reconnect path.",
@@ -728,20 +782,29 @@
     "files_modified": false,
     "physical_qualification_result": "NONE; this source/state audit does not pass C05-C/G4."
   },
-  "automation_update_tool_failure": {
-    "tool": "mcp__codex_app__automation_update",
-    "attempts_prior_checkpoint": 9,
-    "attempts_this_checkpoint": 1,
-    "recorded_failures_total": 10,
-    "error": "The app could not load this tool. Please try again.",
-    "prompt_state": "Saved hourly automation remains stale at master v1.6 / plan 2.33.",
-    "manual_toml_edit": "PROHIBITED",
-    "effect": "The tenth supported view attempt failed. Watcher synchronization remains the readiness blocker; no ADB/Pixel/USB/DAC operation occurred."
-  },
-  "latest_release_verified_at_utc": "2026-10-07T13:13:00Z; latest stable remains published non-prerelease v0.7.2.",
+  "automation_update_tool_failure": "Prior supported-tool calls returned app-load error; retry after this synchronized control state changes, never edit TOML.",
+  "latest_release_verified_at_utc": "2026-10-07T15:04:33Z; latest stable remains immutable published non-prerelease v0.7.2.",
   "phase_c_started": false,
-  "pr_body_current": true,
-  "issue_last_checked_utc": "2026-10-07T13:20:33Z",
-  "pr_last_checked_utc": "2026-10-07T13:20:33Z",
-  "current_control_reconciliation_pushed": true
+  "pr_body_current": false,
+  "issue_last_checked_utc": "2026-10-07T15:04:33Z",
+  "pr_last_checked_utc": "2026-10-07T15:04:33Z",
+  "current_control_reconciliation_pushed": false,
+  "exact_state_consistency_review": {
+    "result": "PENDING_FOR_CURRENT_PUSHED_CHECKPOINT",
+    "reviewed_control_head": null,
+    "reviewed_control_tree": null,
+    "reviewed_at_utc": null,
+    "scope": "Exact synchronized control status at the pushed checkpoint, master v2.2 body e839578d7b9a68b78a3a8dd2f93d683f48e77d427cc9ffca42d5703e9ac4493f, plan 2.47 G3, current candidate/PR/check/base/release facts, resolver/guard pins, and 79/79 offline evidence. This review is the sole C05-C entry authorization.",
+    "device_access": false
+  },
+  "issue_71": "PENDING synchronization after control push.",
+  "current_reconciliation_pushed": false,
+  "phase_b_current_status": {
+    "status": "NOT RUN after resolver change; wait for exact-state review PASS.",
+    "required_after_review": "Fresh Phase B PASS over wireless ADB only.",
+    "resolver_sha256": "caef7e50daef26a454c543dd3a51a1f373b922649ae72f5bd657cac3fbb45124",
+    "entry_guard_sha256": "4ed865de6a9b83910f77eafc472ceb48092b7f83b233ad1b94f03c7fefbaeeeb",
+    "wireless_adb_only": true,
+    "dac_io_before_phase_c": false
+  }
 }

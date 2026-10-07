@@ -78,13 +78,30 @@ def devices(*rows: str) -> str:
 
 
 class FakeAdb:
-    def __init__(self, services: str, device_snapshots: list[str], *, pm_paths: str | None = None, fail: str | None = None, fingerprints: dict[str, str] | None = None, identities: dict[str, dict[str, str]] | None = None):
+    def __init__(
+        self,
+        services: str,
+        device_snapshots: list[str],
+        *,
+        pm_paths: str | None = None,
+        fail: str | None = None,
+        fingerprints: dict[str, str] | None = None,
+        identities: dict[str, dict[str, str]] | None = None,
+        connect_result: tuple[int, bytes, bytes] | None = None,
+        connect_results: dict[str, tuple[int, bytes, bytes]] | None = None,
+        disconnect_result: tuple[int, bytes, bytes] | None = None,
+        connect_raises: bool = False,
+    ):
         self.services = services
         self.device_snapshots = device_snapshots
         self.pm_paths = pm_paths if pm_paths is not None else f"package:/data/app/~~candidate/base.apk\n"
         self.fail = fail
         self.fingerprints = fingerprints or {}
         self.identities = identities or {}
+        self.connect_result = connect_result
+        self.connect_results = connect_results or {}
+        self.disconnect_result = disconnect_result
+        self.connect_raises = connect_raises
         self.calls: list[list[str]] = []
         self.device_call_count = 0
         self.apk_bytes = APK_BYTES
@@ -103,10 +120,19 @@ class FakeAdb:
             self.device_call_count += 1
             return result(stdout=self.device_snapshots[index].encode())
         if args and args[0] == "connect":
+            if self.connect_raises:
+                raise binding.ResolutionError("simulated ADB connect transport timeout")
+            connect_result = self.connect_results.get(args[1], self.connect_result)
+            if connect_result is not None:
+                code, stdout, stderr = connect_result
+                return result(code=code, stdout=stdout, stderr=stderr)
             return result(stdout=f"connected to {args[1]}\n".encode())
         if args and args[0] == "disconnect":
             if self.fail == "disconnect":
                 return result(code=1, stderr=b"disconnect failed")
+            if self.disconnect_result is not None:
+                code, stdout, stderr = self.disconnect_result
+                return result(code=code, stdout=stdout, stderr=stderr)
             return result(stdout=f"disconnected {args[1]}\n".encode())
         if len(args) >= 3 and args[0] == "-s":
             target = args[1]
@@ -324,6 +350,278 @@ class PixelAdbBindingResolveTest(unittest.TestCase):
             self.assertEqual(connects, [PIXEL_ENDPOINT])
             self.assertNotIn(OTHER_ENDPOINT, connects)
             self.assertFalse(any(call and call[0] in {"pair", "disconnect"} for call in fake.calls))
+
+    def test_ambiguous_connect_result_stops_before_accepting_pixel_or_probing_next_route(self):
+        nonpixel_endpoint = "192.168.50.20:44771"
+        pixel_endpoint = "192.168.50.24:33185"
+        fake = FakeAdb(
+            mdns(
+                f"adb-current-a {binding.TLS_CONNECT} {nonpixel_endpoint}",
+                f"adb-current-b {binding.TLS_CONNECT} {pixel_endpoint}",
+            ),
+            [
+                devices("emulator-5556 device product:sdk_gphone64_arm64 model:sdk_gphone64_arm64"),
+                devices(
+                    f"{nonpixel_endpoint} device transport_id:8",
+                    f"{pixel_endpoint} device transport_id:9",
+                ),
+            ],
+            identities={nonpixel_endpoint: {
+                "serial": "OTHER-ANDROID-001",
+                "model": "Other Phone",
+                "product": "other",
+                "sdk": "36",
+                "fingerprint": "vendor/other/other:16/build:keys",
+            }},
+            connect_result=(0, b"unexpected ADB response\\n", b""),
+        )
+        with tempfile.TemporaryDirectory() as temp:
+            with self.assertRaisesRegex(binding.ResolutionError, "connect result was ambiguous"):
+                self.run_binding(fake, Path(temp) / "binding")
+
+        connects = [call[1] for call in fake.calls if call and call[0] == "connect"]
+        disconnects = [call[1] for call in fake.calls if call and call[0] == "disconnect"]
+        self.assertEqual(connects, [nonpixel_endpoint])
+        self.assertEqual(disconnects, [])
+        self.assertFalse(any(call and call[0] == "pair" for call in fake.calls))
+
+    def test_non_exact_connect_acknowledgements_never_claim_route_ownership(self):
+        endpoint = "192.168.50.20:44771"
+        cases = (
+            ("leading stdout whitespace", f" connected to {endpoint}\n".encode(), b""),
+            ("trailing stdout whitespace", f"connected to {endpoint} \n".encode(), b""),
+            ("whitespace-only stderr", f"connected to {endpoint}\n".encode(), b" \t"),
+        )
+        for label, stdout, stderr in cases:
+            with self.subTest(label=label):
+                fake = FakeAdb(
+                    mdns(f"adb-current-route {binding.TLS_CONNECT} {endpoint}"),
+                    [
+                        devices("emulator-5556 device product:sdk_gphone64_arm64 model:sdk_gphone64_arm64"),
+                        devices(f"{endpoint} device transport_id:8"),
+                    ],
+                    identities={endpoint: {
+                        "serial": "OTHER-ANDROID-001",
+                        "model": "Other Phone",
+                        "product": "other",
+                        "sdk": "36",
+                        "fingerprint": "vendor/other/other:16/build:keys",
+                    }},
+                    connect_result=(0, stdout, stderr),
+                )
+                with tempfile.TemporaryDirectory() as temp:
+                    with self.assertRaisesRegex(binding.ResolutionError, "connect result was ambiguous"):
+                        self.run_binding(fake, Path(temp) / "binding")
+
+                connects = [call[1] for call in fake.calls if call and call[0] == "connect"]
+                disconnects = [call[1] for call in fake.calls if call and call[0] == "disconnect"]
+                self.assertEqual(connects, [endpoint])
+                self.assertEqual(disconnects, [])
+                self.assertFalse(any(call and call[0] == "pair" for call in fake.calls))
+
+    def test_ambiguous_connect_result_rejects_mixed_pixel_and_nonpixel_identities_for_same_endpoint(self):
+        pixel_alias = f"adb-{SERIAL}-same-endpoint-a.{binding.TLS_CONNECT}"
+        other_alias = f"adb-OTHERDEVICE-same-endpoint-b.{binding.TLS_CONNECT}"
+        shared_endpoint = "192.168.50.26:33187"
+        later_endpoint = "192.168.50.28:33189"
+        fake = FakeAdb(
+            mdns(
+                f"adb-{SERIAL}-same-endpoint-a {binding.TLS_CONNECT} {shared_endpoint}",
+                f"adb-OTHERDEVICE-same-endpoint-b {binding.TLS_CONNECT} {shared_endpoint}",
+                f"adb-later-route {binding.TLS_CONNECT} {later_endpoint}",
+            ),
+            [
+                devices("emulator-5556 device product:sdk_gphone64_arm64 model:sdk_gphone64_arm64"),
+                devices(f"{pixel_alias} device transport_id:21", f"{other_alias} device transport_id:22"),
+            ],
+            identities={
+                pixel_alias: {
+                    "serial": SERIAL,
+                    "model": "Pixel 9",
+                    "product": "tokay",
+                    "sdk": "37",
+                    "fingerprint": "google/tokay/tokay:17/build:keys",
+                },
+                other_alias: {
+                    "serial": "OTHER-ANDROID-002",
+                    "model": "Other Phone",
+                    "product": "other",
+                    "sdk": "36",
+                    "fingerprint": "vendor/other/other:16/build:keys",
+                },
+            },
+            connect_results={shared_endpoint: (0, b"unexpected ADB response\\n", b"")},
+        )
+        with tempfile.TemporaryDirectory() as temp:
+            with self.assertRaisesRegex(binding.ResolutionError, "conflicting Android identity profiles"):
+                self.run_binding(fake, Path(temp) / "binding")
+
+        connects = [call[1] for call in fake.calls if call and call[0] == "connect"]
+        disconnects = [call[1] for call in fake.calls if call and call[0] == "disconnect"]
+        self.assertEqual(connects, [shared_endpoint])
+        self.assertNotIn(later_endpoint, connects)
+        self.assertEqual(disconnects, [])
+        self.assertFalse(any(call and call[0] == "pair" for call in fake.calls))
+
+    def test_already_connected_mixed_identity_endpoint_fails_closed_without_cleanup(self):
+        pixel_alias = f"adb-{SERIAL}-already-online-a.{binding.TLS_CONNECT}"
+        other_alias = f"adb-OTHERDEVICE-already-online-b.{binding.TLS_CONNECT}"
+        shared_endpoint = "192.168.50.27:33188"
+        fake = FakeAdb(
+            mdns(
+                f"adb-{SERIAL}-already-online-a {binding.TLS_CONNECT} {shared_endpoint}",
+                f"adb-OTHERDEVICE-already-online-b {binding.TLS_CONNECT} {shared_endpoint}",
+            ),
+            [devices(f"{pixel_alias} device transport_id:31", f"{other_alias} device transport_id:32")],
+            identities={
+                pixel_alias: {
+                    "serial": SERIAL,
+                    "model": "Pixel 9",
+                    "product": "tokay",
+                    "sdk": "37",
+                    "fingerprint": "google/tokay/tokay:17/build:keys",
+                },
+                other_alias: {
+                    "serial": "OTHER-ANDROID-004",
+                    "model": "Other Phone",
+                    "product": "other",
+                    "sdk": "36",
+                    "fingerprint": "vendor/other/other:16/build:keys",
+                },
+            },
+        )
+        with tempfile.TemporaryDirectory() as temp:
+            with self.assertRaisesRegex(binding.ResolutionError, "conflicting Android identity profiles"):
+                self.run_binding(fake, Path(temp) / "binding")
+
+        self.assertFalse(any(call and call[0] in {"connect", "disconnect", "pair"} for call in fake.calls))
+
+    def test_exact_already_connected_result_with_mixed_identity_endpoint_fails_closed(self):
+        pixel_alias = f"adb-{SERIAL}-already-connected-a.{binding.TLS_CONNECT}"
+        other_alias = f"adb-OTHERDEVICE-already-connected-b.{binding.TLS_CONNECT}"
+        shared_endpoint = "192.168.50.29:33190"
+        fake = FakeAdb(
+            mdns(
+                f"adb-{SERIAL}-already-connected-a {binding.TLS_CONNECT} {shared_endpoint}",
+                f"adb-OTHERDEVICE-already-connected-b {binding.TLS_CONNECT} {shared_endpoint}",
+            ),
+            [
+                devices("emulator-5556 device product:sdk_gphone64_arm64 model:sdk_gphone64_arm64"),
+                devices(f"{pixel_alias} device transport_id:41", f"{other_alias} device transport_id:42"),
+            ],
+            identities={
+                pixel_alias: {
+                    "serial": SERIAL,
+                    "model": "Pixel 9",
+                    "product": "tokay",
+                    "sdk": "37",
+                    "fingerprint": "google/tokay/tokay:17/build:keys",
+                },
+                other_alias: {
+                    "serial": "OTHER-ANDROID-005",
+                    "model": "Other Phone",
+                    "product": "other",
+                    "sdk": "36",
+                    "fingerprint": "vendor/other/other:16/build:keys",
+                },
+            },
+            connect_results={
+                shared_endpoint: (0, f"already connected to {shared_endpoint}".encode(), b""),
+            },
+        )
+        with tempfile.TemporaryDirectory() as temp:
+            with self.assertRaisesRegex(binding.ResolutionError, "conflicting Android identity profiles"):
+                self.run_binding(fake, Path(temp) / "binding")
+
+        self.assertEqual(
+            [call[1] for call in fake.calls if call and call[0] == "connect"],
+            [shared_endpoint],
+        )
+        self.assertFalse(any(call and call[0] in {"disconnect", "pair"} for call in fake.calls))
+
+    def test_exact_already_connected_nonpixel_route_is_preserved_while_pixel_route_is_bound(self):
+        nonpixel_endpoint = "192.168.50.20:44771"
+        pixel_endpoint = "192.168.50.24:33185"
+        fake = FakeAdb(
+            mdns(
+                f"{OTHER_INSTANCE} {binding.TLS_CONNECT} {nonpixel_endpoint}",
+                f"adb-candidate-route {binding.TLS_CONNECT} {pixel_endpoint}",
+            ),
+            [
+                devices("emulator-5556 device product:sdk_gphone64_arm64 model:sdk_gphone64_arm64"),
+                devices(f"{nonpixel_endpoint} device transport_id:8"),
+                devices(f"{nonpixel_endpoint} device transport_id:8", f"{pixel_endpoint} device transport_id:9"),
+                devices(f"{nonpixel_endpoint} device transport_id:8", f"{pixel_endpoint} device transport_id:9"),
+            ],
+            identities={
+                nonpixel_endpoint: {
+                    "serial": "OTHER-ANDROID-003",
+                    "model": "Other Phone",
+                    "product": "other",
+                    "sdk": "36",
+                    "fingerprint": "vendor/other/other:16/build:keys",
+                },
+            },
+            connect_results={
+                nonpixel_endpoint: (0, f"already connected to {nonpixel_endpoint}".encode(), b""),
+                pixel_endpoint: (0, f"connected to {pixel_endpoint}".encode(), b""),
+            },
+        )
+        with tempfile.TemporaryDirectory() as temp:
+            bound = self.run_binding(fake, Path(temp) / "binding")
+
+        self.assertEqual(bound["target"], pixel_endpoint)
+        connects = [call[1] for call in fake.calls if call and call[0] == "connect"]
+        disconnects = [call[1] for call in fake.calls if call and call[0] == "disconnect"]
+        self.assertEqual(connects, [nonpixel_endpoint, pixel_endpoint])
+        self.assertEqual(disconnects, [])
+        self.assertFalse(any(call and call[0] == "pair" for call in fake.calls))
+        self.assertEqual(bound["adb_connect_created_pixel_route_left_bound"], [pixel_endpoint])
+
+    def test_already_connected_route_without_endpoint_local_identity_stops_before_accepting_other_pixel_route(self):
+        existing_endpoint = "192.168.50.20:44771"
+        other_pixel_endpoint = "192.168.50.24:33185"
+        other_pixel_alias = f"adb-candidate-route.{binding.TLS_CONNECT}"
+        fake = FakeAdb(
+            mdns(
+                f"adb-existing-route {binding.TLS_CONNECT} {existing_endpoint}",
+                f"adb-candidate-route {binding.TLS_CONNECT} {other_pixel_endpoint}",
+            ),
+            [
+                devices("emulator-5556 device product:sdk_gphone64_arm64 model:sdk_gphone64_arm64"),
+                devices(f"{other_pixel_alias} device transport_id:9"),
+            ],
+            connect_results={
+                existing_endpoint: (0, f"already connected to {existing_endpoint}".encode(), b""),
+            },
+        )
+
+        with tempfile.TemporaryDirectory() as temp:
+            with self.assertRaisesRegex(binding.ResolutionError, "existing route but the endpoint returned no current"):
+                self.run_binding(fake, Path(temp) / "binding")
+
+        connects = [call[1] for call in fake.calls if call and call[0] == "connect"]
+        disconnects = [call[1] for call in fake.calls if call and call[0] == "disconnect"]
+        self.assertEqual(connects, [existing_endpoint])
+        self.assertEqual(disconnects, [])
+
+    def test_connect_command_error_with_no_current_endpoint_identity_fails_closed_as_resolution_error(self):
+        endpoint = "192.168.50.24:33185"
+        fake = FakeAdb(
+            mdns(f"adb-candidate-route {binding.TLS_CONNECT} {endpoint}"),
+            [
+                devices("emulator-5556 device product:sdk_gphone64_arm64 model:sdk_gphone64_arm64"),
+                devices(),
+            ],
+            connect_raises=True,
+        )
+
+        with tempfile.TemporaryDirectory() as temp:
+            with self.assertRaisesRegex(binding.ResolutionError, "connect result was ambiguous"):
+                self.run_binding(fake, Path(temp) / "binding")
+
+        self.assertEqual([call[1] for call in fake.calls if call and call[0] == "connect"], [endpoint])
+        self.assertFalse(any(call and call[0] == "disconnect" for call in fake.calls))
 
     def test_multiple_pixel_services_are_identity_checked_and_canonicalized(self):
         second_instance = f"adb-{SERIAL}-route-b"
@@ -657,6 +955,43 @@ class PixelAdbBindingResolveTest(unittest.TestCase):
                 self.run_binding(fake, Path(temp) / "binding")
             connects = [call[1] for call in fake.calls if call and call[0] == "connect"]
             self.assertEqual(connects, [nonpixel_endpoint])
+
+    def test_ambiguous_cleanup_acknowledgements_do_not_detach_or_probe_later_endpoints(self):
+        nonpixel_endpoint = "192.168.50.20:44771"
+        later_pixel_endpoint = "192.168.50.24:33185"
+        cases = (
+            ("wrong endpoint", (0, b"disconnected 192.168.50.21:44772\n", b"")),
+            ("malformed acknowledgement", (0, b"disconnected route\n", b"")),
+            ("stderr despite exact stdout", (0, f"disconnected {nonpixel_endpoint}\n".encode(), b"warning")),
+        )
+        for label, disconnect_result in cases:
+            with self.subTest(label=label):
+                fake = FakeAdb(
+                    mdns(
+                        f"adb-route-nonpixel {binding.TLS_CONNECT} {nonpixel_endpoint}",
+                        f"adb-route-pixel {binding.TLS_CONNECT} {later_pixel_endpoint}",
+                    ),
+                    [
+                        devices("emulator-5556 device product:sdk_gphone64_arm64 model:sdk_gphone64_arm64"),
+                        devices(f"{nonpixel_endpoint} device transport_id:8"),
+                    ],
+                    identities={nonpixel_endpoint: {
+                        "serial": "OTHER-ANDROID-001",
+                        "model": "Other Phone",
+                        "product": "other",
+                        "sdk": "36",
+                        "fingerprint": "vendor/other/other:16/build:keys",
+                    }},
+                    disconnect_result=disconnect_result,
+                )
+                with tempfile.TemporaryDirectory() as temp:
+                    with self.assertRaisesRegex(binding.ResolutionError, "could not be detached"):
+                        self.run_binding(fake, Path(temp) / "binding")
+
+                connects = [call[1] for call in fake.calls if call and call[0] == "connect"]
+                disconnects = [call[1] for call in fake.calls if call and call[0] == "disconnect"]
+                self.assertEqual(connects, [nonpixel_endpoint])
+                self.assertEqual(disconnects, [nonpixel_endpoint])
 
     def test_unmapped_tcp_device_row_is_not_queried_as_a_remembered_target(self):
         stale_endpoint = "192.168.50.24:33185"

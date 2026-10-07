@@ -382,6 +382,27 @@ def identity_for(adb: str, target: str, source: str, endpoint: str | None, insta
 
 
 def canonical_target(identities: list[Identity]) -> Identity | None:
+    # One live ADB transport endpoint cannot safely identify multiple Android
+    # devices, even when only one row resembles the expected Pixel. Enforce
+    # endpoint-wide agreement before considering the Pixel subset so an
+    # already-connected or initially-online mixed identity is not accepted.
+    profiles_by_endpoint: dict[str, set[tuple[str, str, str, str, str]]] = {}
+    for identity in identities:
+        if identity.endpoint:
+            profiles_by_endpoint.setdefault(identity.endpoint, set()).add(
+                (
+                    identity.serial_sha256,
+                    identity.model,
+                    identity.product,
+                    identity.sdk,
+                    identity.fingerprint,
+                )
+            )
+    if any(len(profiles) > 1 for profiles in profiles_by_endpoint.values()):
+        raise ResolutionError(
+            "current wireless ADB endpoint returned conflicting Android identity profiles; preserving routes and stopping Phase B"
+        )
+
     matches = [i for i in identities if i.serial_sha256 == EXPECTED_SERIAL_SHA256]
     for identity in matches:
         if normalize_model(identity.model) != EXPECTED_MODEL or identity.product != EXPECTED_PRODUCT:
@@ -428,15 +449,26 @@ def disconnect_new_routes(adb: str, endpoints: Iterable[str], log: Path) -> list
     failures: list[str] = []
     for endpoint in sorted(set(endpoints)):
         result = adb_call(adb, "disconnect", endpoint)
-        output = text_of(result)
-        stderr = result.stderr.decode("utf-8", errors="replace").replace("\r", "").strip()
-        ok = result.returncode == 0 and output.startswith("disconnected ")
+        output = result.stdout.decode("utf-8", errors="replace").replace("\r\n", "\n")
+        stderr_present = bool(result.stderr)
+        expected = f"disconnected {endpoint}"
+        # ADB emits one newline-terminated acknowledgement. Accept that exact
+        # form (or the exact text without its terminal newline), but never a
+        # prefix, another endpoint, extra output, or any stderr. Cleanup
+        # ownership is safety-critical: an ambiguous acknowledgement must
+        # stop resolution and must not be recorded as a detached route.
+        ok = (
+            result.returncode == 0
+            and output in {expected, expected + "\n"}
+            and not stderr_present
+        )
         append_log(
             log,
-            f"{datetime.now(timezone.utc).isoformat(timespec='seconds')} disconnect-new-adb-route endpoint_sha256={sha256_text(endpoint)} exit={result.returncode} success={ok} stderr_present={bool(stderr)}",
+            f"{datetime.now(timezone.utc).isoformat(timespec='seconds')} disconnect-new-adb-route endpoint_sha256={sha256_text(endpoint)} exit={result.returncode} success={ok} stderr_present={stderr_present}",
         )
         if not ok:
             failures.append(endpoint)
+            break
     return failures
 
 
@@ -723,21 +755,45 @@ def resolve(adb: str, output: Path, apk_path: Path) -> dict[str, object]:
         for endpoint in endpoints_to_probe:
             connect_attempted.append(endpoint)
             connect_error: str | None = None
+            response: str | None = None
             try:
                 result = adb_call(adb, "connect", endpoint)
-            except ResolutionError as exc:
+            except ResolutionError:
                 # The ADB server may have completed a connection after the
                 # client timed out. Query the current device list before
                 # deciding whether any cleanup is safe.
                 connect_error = "command-error"
                 append_log(log, f"{datetime.now(timezone.utc).isoformat(timespec='seconds')} connect-current-tls-endpoint endpoint_sha256={sha256_text(endpoint)} outcome=command-error")
             else:
-                out = text_of(result)
-                err = result.stderr.decode("utf-8", errors="replace").strip()
-                response = "connected" if out.startswith("connected to ") else "already-connected" if out.startswith("already connected to ") else "not-connected"
-                if result.returncode == 0 and response == "connected":
+                # Route ownership depends on the exact acknowledgement. Do
+                # not trim whitespace or otherwise normalize command output:
+                # only the documented response, with CRLF normalized and at
+                # most one terminal LF, proves that this resolver opened the
+                # route. Any stderr byte is also significant.
+                response_text = result.stdout.decode("utf-8", errors="replace").replace("\r\n", "\n")
+                stderr_present = bool(result.stderr)
+                response = (
+                    "connected"
+                    if result.returncode == 0 and not stderr_present and response_text in {
+                        f"connected to {endpoint}",
+                        f"connected to {endpoint}\n",
+                    }
+                    else "already-connected"
+                    if result.returncode == 0 and not stderr_present and response_text in {
+                        f"already connected to {endpoint}",
+                        f"already connected to {endpoint}\n",
+                    }
+                    else "ambiguous"
+                )
+                if response == "connected":
                     connected_here.add(endpoint)
-                append_log(log, f"{datetime.now(timezone.utc).isoformat(timespec='seconds')} connect-current-tls-endpoint endpoint_sha256={sha256_text(endpoint)} exit={result.returncode} response={response} stderr_present={bool(err)}")
+                elif response == "ambiguous":
+                    # An unfamiliar or failed response does not establish
+                    # whether this command created an ADB route. Resolve only
+                    # the advertised endpoint read-only below; never detach
+                    # or continue past an uncertain non-Pixel route.
+                    connect_error = "ambiguous-result"
+                append_log(log, f"{datetime.now(timezone.utc).isoformat(timespec='seconds')} connect-current-tls-endpoint endpoint_sha256={sha256_text(endpoint)} exit={result.returncode} response={response} stderr_present={stderr_present}")
 
             refreshed_rows = devices_snapshot(adb, f"devices-after-current-mdns-connect-{len(connect_attempted)}", mdns_services, log)
             new_identities, blocked = collect_identity_candidates(adb, refreshed_rows, mdns_services, log)
@@ -746,6 +802,41 @@ def resolve(adb: str, output: Path, apk_path: Path) -> dict[str, object]:
                 raise ResolutionError(f"a current Pixel-qualified ADB row is not online; blocked_rows={len(blocked)} states={blocked_states}")
             identities.extend(new_identities)
             candidate_pixel = canonical_target(identities)
+            if response == "already-connected":
+                # The acknowledgement names a route that pre-existed this
+                # resolver. Before accepting identity evidence from any
+                # other route, require this endpoint itself to appear in the
+                # refreshed device snapshot with one consistent read-only
+                # Android profile. Preserve it if that evidence is missing or
+                # ambiguous; it is not ours to detach.
+                endpoint_identities = [identity for identity in new_identities if identity.endpoint == endpoint]
+                endpoint_profiles = {
+                    (identity.serial_sha256, identity.model, identity.product, identity.sdk, identity.fingerprint)
+                    for identity in endpoint_identities
+                }
+                if not endpoint_identities:
+                    raise ResolutionError(
+                        "ADB reported an existing route but the endpoint returned no current read-only Android identity; preserving routes and stopping Phase B"
+                    )
+                if len(endpoint_profiles) != 1:
+                    raise ResolutionError(
+                        "ADB reported an existing route but the endpoint returned conflicting Android identities; preserving routes and stopping Phase B"
+                    )
+            if connect_error:
+                endpoint_identities = [identity for identity in new_identities if identity.endpoint == endpoint]
+                endpoint_profiles = {
+                    (identity.serial_sha256, identity.model, identity.product, identity.sdk, identity.fingerprint)
+                    for identity in endpoint_identities
+                }
+                if len(endpoint_profiles) > 1:
+                    raise ResolutionError(
+                        "ADB connect result was ambiguous and the endpoint returned conflicting Android identities; preserving any uncertain route and stopping Phase B"
+                    )
+                endpoint_pixel = canonical_target(endpoint_identities)
+                if endpoint_pixel is None:
+                    raise ResolutionError(
+                        "ADB connect result was ambiguous and the endpoint did not resolve to the expected Pixel; preserving any uncertain route and stopping Phase B"
+                    )
             if candidate_pixel is not None:
                 if endpoint in connected_here:
                     endpoint_identities = [identity for identity in new_identities if identity.endpoint == endpoint]
@@ -773,8 +864,6 @@ def resolve(adb: str, output: Path, apk_path: Path) -> dict[str, object]:
                         raise ResolutionError(
                             "newly opened current ADB route returned mixed Pixel and non-Pixel identities; preserving it and stopping Phase B"
                         )
-                elif connect_error and not any(identity.endpoint == endpoint for identity in new_identities):
-                    raise ResolutionError("ADB connect timed out for a current endpoint; no read-only identity was recovered, so Phase B stops without disconnecting an uncertain route")
                 if candidate_pixel is not None:
                     break
                 continue
@@ -794,13 +883,6 @@ def resolve(adb: str, output: Path, apk_path: Path) -> dict[str, object]:
                     )
                 connected_here.remove(endpoint)
                 detached_routes.add(endpoint)
-            elif connect_error:
-                # The connect may have completed in the ADB server despite the
-                # client timeout. Do not disconnect or continue unless the
-                # Pixel identity above resolved; no ownership of this route
-                # can be proven after a timed-out connect.
-                raise ResolutionError("ADB connect timed out for a current endpoint; identity was not resolved, so Phase B stops without disconnecting an uncertain route")
-
     if candidate_pixel is None:
         failures = disconnect_new_routes(adb, connected_here, log)
         if failures:

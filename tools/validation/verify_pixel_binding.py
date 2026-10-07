@@ -11,6 +11,7 @@ import argparse
 import hashlib
 import json
 import sys
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -23,6 +24,8 @@ def verify_existing_binding(
     target: str,
     expected_binding_sha256: str,
     log: Path,
+    apk_path: Path,
+    expected_binding_resolver_sha256: str | None = None,
 ) -> dict[str, str]:
     raw = binding_path.read_bytes()
     if len(expected_binding_sha256) != 64 or any(
@@ -69,13 +72,21 @@ def verify_existing_binding(
         raise adb_binding.ResolutionError("selected target is not a sealed current TLS-connect alias or mapped endpoint")
 
     resolver_sha256 = binding.get("resolver_sha256")
+    if expected_binding_resolver_sha256 is None:
+        expected_binding_resolver_sha256 = hashlib.sha256(Path(adb_binding.__file__).read_bytes()).hexdigest()
     if not isinstance(resolver_sha256, str) or len(resolver_sha256) != 64 or any(
         character not in "0123456789abcdef" for character in resolver_sha256
     ):
         raise adb_binding.ResolutionError("binding resolver SHA-256 is malformed")
+    if len(expected_binding_resolver_sha256) != 64 or any(
+        character not in "0123456789abcdef" for character in expected_binding_resolver_sha256
+    ):
+        raise adb_binding.ResolutionError("expected binding resolver SHA-256 is malformed")
     current_resolver_sha256 = hashlib.sha256(Path(adb_binding.__file__).read_bytes()).hexdigest()
-    if resolver_sha256 != current_resolver_sha256:
-        raise adb_binding.ResolutionError("binding was produced by a different Pixel resolver version")
+    if expected_binding_resolver_sha256 != current_resolver_sha256:
+        raise adb_binding.ResolutionError("plan-pinned Phase B resolver SHA-256 differs from the current resolver")
+    if resolver_sha256 != expected_binding_resolver_sha256:
+        raise adb_binding.ResolutionError("binding resolver SHA-256 differs from the plan-pinned Phase B resolver")
 
     installed = binding.get("installed_apk")
     if not isinstance(installed, dict) or installed.get("package") != adb_binding.PACKAGE:
@@ -113,6 +124,19 @@ def verify_existing_binding(
     if actual != sealed:
         raise adb_binding.ResolutionError("current target stable identity differs from the sealed Pixel binding")
 
+    # Revalidate the installed bytes immediately before any Phase C USB/DAC
+    # observation. Keep the pulled package outside the evidence directory and
+    # remove it automatically after the hash comparison.
+    with tempfile.TemporaryDirectory(prefix="opra-v080-entry-apk-") as temporary:
+        installed = adb_binding.capture_installed_apk(
+            adb,
+            target,
+            Path(temporary),
+            apk_path,
+            log,
+            filename="installed-base.apk",
+        )
+
     app_entry = adb_binding.verify_app_entry_ready(adb, target, log)
     result = {
         "checked_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -120,8 +144,12 @@ def verify_existing_binding(
         "transport": "wireless-adb-only",
         "target_sha256": hashlib.sha256(target.encode("utf-8")).hexdigest(),
         "binding_sha256": hashlib.sha256(raw).hexdigest(),
+        "binding_resolver_sha256": resolver_sha256,
+        "entry_guard_resolver_sha256": current_resolver_sha256,
         "android_serial_sha256": observed.serial_sha256,
         "stable_identity_match": "PASS",
+        "installed_apk_match": "PASS",
+        "installed_apk_sha256": installed["sha256"],
         "app_process": app_entry["process"],
         "resumed_activity": app_entry["resumed_activity"],
         "dac_query": "NOT_PERFORMED",
@@ -138,11 +166,18 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--expected-binding-sha256", required=True, help="exact sealed Phase B binding file SHA-256")
     parser.add_argument("--target", required=True, help="exact target string already stored in binding.json")
     parser.add_argument("--log", required=True, type=Path, help="ignored local log used by the app-absence checkpoint")
+    parser.add_argument("--apk", required=True, type=Path, help="frozen candidate APK to compare with the installed base APK")
+    parser.add_argument(
+        "--expected-binding-resolver-sha256",
+        required=True,
+        help="exact Phase B resolver SHA-256 used to create the binding and verified against current code",
+    )
     parser.add_argument("--result", required=True, type=Path, help="ignored path for sanitized JSON result")
     args = parser.parse_args(argv)
     try:
         result = verify_existing_binding(
-            str(args.adb), args.binding, args.target, args.expected_binding_sha256, args.log
+            str(args.adb), args.binding, args.target, args.expected_binding_sha256, args.log, args.apk,
+            args.expected_binding_resolver_sha256,
         )
         args.result.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     except (adb_binding.ResolutionError, OSError, ValueError, TypeError, KeyError, json.JSONDecodeError):

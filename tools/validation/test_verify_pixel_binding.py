@@ -27,6 +27,21 @@ TARGET = f"adb-{TEST_SERIAL}-route.{adb_binding.TLS_CONNECT}"
 GENERIC_TARGET = f"adb-currentroute.{adb_binding.TLS_CONNECT}"
 ENDPOINT_TARGET = "192.168.50.24:33185"
 FINGERPRINT = "google/tokay/tokay:17/CP3A.261005.005/16271449:user/release-keys"
+TEST_APK_BYTES = b"frozen-candidate-apk-fixture"
+TEST_APK_SHA256 = hashlib.sha256(TEST_APK_BYTES).hexdigest()
+ORIGINAL_TEMPORARY_DIRECTORY = tempfile.TemporaryDirectory
+
+
+def candidate_apk_for(binding_path: Path) -> Path:
+    apk_path = binding_path.parent / "candidate.apk"
+    apk_path.write_bytes(TEST_APK_BYTES)
+    return apk_path
+
+
+def tracked_temporary_directory(paths: list[Path], *args, **kwargs):
+    directory = ORIGINAL_TEMPORARY_DIRECTORY(*args, **kwargs)
+    paths.append(Path(directory.name))
+    return directory
 
 
 def sealed_binding(
@@ -63,10 +78,18 @@ def write_binding(path: Path, binding: dict[str, object]) -> str:
 
 
 class FakeAdb:
-    def __init__(self, *, target: str = TARGET, changed: str | None = None, process: bool = False):
+    def __init__(
+        self,
+        *,
+        target: str = TARGET,
+        changed: str | None = None,
+        process: bool = False,
+        installed_apk: bytes = TEST_APK_BYTES,
+    ):
         self.target = target
         self.changed = changed
         self.process = process
+        self.installed_apk = installed_apk
         self.calls: list[list[str]] = []
 
     def run(self, argv: list[str]) -> subprocess.CompletedProcess[bytes]:
@@ -74,8 +97,15 @@ class FakeAdb:
         self.calls.append(args)
         if args[:3] == ["-s", self.target, "get-state"]:
             return subprocess.CompletedProcess(argv, 0, b"device\n", b"")
+        if args[:3] == ["-s", self.target, "pull"]:
+            Path(args[4]).write_bytes(self.installed_apk)
+            return subprocess.CompletedProcess(argv, 0, b"1 file pulled\n", b"")
         if args[:3] == ["-s", self.target, "shell"]:
             op = args[3:]
+            if op == ["pm", "path", adb_binding.PACKAGE]:
+                return subprocess.CompletedProcess(
+                    argv, 0, f"package:/data/app/{adb_binding.PACKAGE}/base.apk\n".encode(), b""
+                )
             if op[:1] == ["getprop"]:
                 values = {
                     "ro.serialno": TEST_SERIAL,
@@ -103,8 +133,11 @@ class VerifyPixelBindingTest(unittest.TestCase):
     def setUp(self):
         self.serial_patch = patch.object(adb_binding, "EXPECTED_SERIAL_SHA256", TEST_SERIAL_SHA256)
         self.serial_patch.start()
+        self.apk_hash_patch = patch.object(adb_binding, "EXPECTED_APK_SHA256", TEST_APK_SHA256)
+        self.apk_hash_patch.start()
 
     def tearDown(self):
+        self.apk_hash_patch.stop()
         self.serial_patch.stop()
 
     def test_passes_when_same_online_pixel_and_app_is_absent(self):
@@ -114,16 +147,30 @@ class VerifyPixelBindingTest(unittest.TestCase):
             binding_path = root / "binding.json"
             expected_sha256 = write_binding(binding_path, sealed_binding())
             log = root / "entry.log"
-            with patch.object(adb_binding, "run_command", side_effect=fake.run):
+            temporary_paths: list[Path] = []
+            with (
+                patch.object(adb_binding, "run_command", side_effect=fake.run),
+                patch.object(
+                    verify_pixel_binding.tempfile,
+                    "TemporaryDirectory",
+                    side_effect=lambda *args, **kwargs: tracked_temporary_directory(temporary_paths, *args, **kwargs),
+                ),
+            ):
                 result = verify_pixel_binding.verify_existing_binding(
-                    "/fake/adb", binding_path, TARGET, expected_sha256, log
+                    "/fake/adb", binding_path, TARGET, expected_sha256, log, candidate_apk_for(binding_path)
                 )
 
+        self.assertEqual(len(temporary_paths), 1)
+        self.assertFalse(temporary_paths[0].exists())
         self.assertEqual(result["result"], "PASS")
         self.assertEqual(result["stable_identity_match"], "PASS")
+        self.assertEqual(result["installed_apk_match"], "PASS")
+        self.assertEqual(result["installed_apk_sha256"], TEST_APK_SHA256)
         self.assertEqual(result["app_process"], "ABSENT")
         self.assertIn('"dac_query": "NOT_PERFORMED"', json.dumps(result))
         self.assertFalse(any("mdns" in call or call[:1] == ["connect"] for call in fake.calls))
+        self.assertTrue(any(call[2:4] == ["shell", "pm"] for call in fake.calls))
+        self.assertTrue(any(call[2] == "pull" for call in fake.calls))
 
     def test_passes_for_generic_current_mdns_tls_connect_alias(self):
         fake = FakeAdb(target=GENERIC_TARGET)
@@ -139,7 +186,8 @@ class VerifyPixelBindingTest(unittest.TestCase):
             expected_sha256 = write_binding(binding_path, binding)
             with patch.object(adb_binding, "run_command", side_effect=fake.run):
                 result = verify_pixel_binding.verify_existing_binding(
-                    "/fake/adb", binding_path, GENERIC_TARGET, expected_sha256, root / "entry.log"
+                    "/fake/adb", binding_path, GENERIC_TARGET, expected_sha256, root / "entry.log",
+                    candidate_apk_for(binding_path)
                 )
 
         self.assertEqual(result["result"], "PASS")
@@ -159,11 +207,39 @@ class VerifyPixelBindingTest(unittest.TestCase):
             expected_sha256 = write_binding(binding_path, binding)
             with patch.object(adb_binding, "run_command", side_effect=fake.run):
                 result = verify_pixel_binding.verify_existing_binding(
-                    "/fake/adb", binding_path, ENDPOINT_TARGET, expected_sha256, root / "entry.log"
+                    "/fake/adb", binding_path, ENDPOINT_TARGET, expected_sha256, root / "entry.log",
+                    candidate_apk_for(binding_path)
                 )
 
         self.assertEqual(result["result"], "PASS")
         self.assertTrue(all(call[:2] == ["-s", ENDPOINT_TARGET] for call in fake.calls))
+
+    def test_rejects_installed_apk_mismatch_before_app_state_or_dac_observation(self):
+        fake = FakeAdb(installed_apk=TEST_APK_BYTES + b"-different")
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            binding_path = root / "binding.json"
+            expected_sha256 = write_binding(binding_path, sealed_binding())
+            temporary_paths: list[Path] = []
+            with (
+                patch.object(adb_binding, "run_command", side_effect=fake.run),
+                patch.object(
+                    verify_pixel_binding.tempfile,
+                    "TemporaryDirectory",
+                    side_effect=lambda *args, **kwargs: tracked_temporary_directory(temporary_paths, *args, **kwargs),
+                ),
+            ):
+                with self.assertRaisesRegex(adb_binding.ResolutionError, "installed base.apk bytes"):
+                    verify_pixel_binding.verify_existing_binding(
+                        "/fake/adb", binding_path, TARGET, expected_sha256, root / "entry.log",
+                        candidate_apk_for(binding_path)
+                    )
+
+        self.assertEqual(len(temporary_paths), 1)
+        self.assertFalse(temporary_paths[0].exists())
+        self.assertTrue(any(call[2] == "pull" for call in fake.calls))
+        self.assertFalse(any(call[-2:] == ["pidof", adb_binding.PACKAGE] for call in fake.calls))
+        self.assertFalse(any(call[-3:] == ["dumpsys", "usb"] for call in fake.calls))
 
     def test_rejects_endpoint_target_without_exact_current_mdns_binding(self):
         fake = FakeAdb(target=ENDPOINT_TARGET)
@@ -179,7 +255,8 @@ class VerifyPixelBindingTest(unittest.TestCase):
             with patch.object(adb_binding, "run_command", side_effect=fake.run):
                 with self.assertRaises(adb_binding.ResolutionError):
                     verify_pixel_binding.verify_existing_binding(
-                        "/fake/adb", binding_path, ENDPOINT_TARGET, expected_sha256, Path(temp) / "entry.log"
+                        "/fake/adb", binding_path, ENDPOINT_TARGET, expected_sha256, Path(temp) / "entry.log",
+                        candidate_apk_for(binding_path)
                     )
         self.assertEqual(fake.calls, [])
 
@@ -197,7 +274,8 @@ class VerifyPixelBindingTest(unittest.TestCase):
             with patch.object(adb_binding, "run_command", side_effect=fake.run):
                 with self.assertRaises(adb_binding.ResolutionError):
                     verify_pixel_binding.verify_existing_binding(
-                        "/fake/adb", binding_path, "phone.local:5555", expected_sha256, Path(temp) / "entry.log"
+                        "/fake/adb", binding_path, "phone.local:5555", expected_sha256, Path(temp) / "entry.log",
+                        candidate_apk_for(binding_path)
                     )
         self.assertEqual(fake.calls, [])
 
@@ -216,7 +294,8 @@ class VerifyPixelBindingTest(unittest.TestCase):
                 with patch.object(adb_binding, "run_command", side_effect=fake.run):
                     with self.assertRaisesRegex(adb_binding.ResolutionError, "service instance"):
                         verify_pixel_binding.verify_existing_binding(
-                            "/fake/adb", binding_path, ENDPOINT_TARGET, expected_sha256, Path(temp) / "entry.log"
+                            "/fake/adb", binding_path, ENDPOINT_TARGET, expected_sha256, Path(temp) / "entry.log",
+                            candidate_apk_for(binding_path)
                         )
                 self.assertEqual(fake.calls, [])
 
@@ -241,6 +320,8 @@ class VerifyPixelBindingTest(unittest.TestCase):
                         "--expected-binding-sha256", expected_sha256,
                         "--target", ENDPOINT_TARGET,
                         "--log", str(root / "entry.log"),
+                        "--apk", str(candidate_apk_for(binding_path)),
+                        "--expected-binding-resolver-sha256", hashlib.sha256(Path(adb_binding.__file__).read_bytes()).hexdigest(),
                         "--result", str(root / "result.json"),
                     ])
                 runner.assert_not_called()
@@ -265,6 +346,7 @@ class VerifyPixelBindingTest(unittest.TestCase):
                                 "--expected-binding-sha256", "a" * 64,
                                 "--target", ENDPOINT_TARGET,
                                 "--log", "/tmp/private-entry.log",
+                                "--apk", "/tmp/candidate.apk",
                                 "--result", "/tmp/private-result.json",
                                 secret_argument,
                             ])
@@ -285,11 +367,27 @@ class VerifyPixelBindingTest(unittest.TestCase):
             with patch.object(adb_binding, "run_command", side_effect=fake.run):
                 with self.assertRaises(adb_binding.ResolutionError):
                     verify_pixel_binding.verify_existing_binding(
-                        "/fake/adb", binding_path, TARGET, expected_sha256, root / "entry.log"
+                        "/fake/adb", binding_path, TARGET, expected_sha256, root / "entry.log",
+                        candidate_apk_for(binding_path)
                     )
         self.assertEqual(fake.calls, [])
 
-    def test_rejects_binding_from_different_resolver_version_before_adb(self):
+    def test_rejects_binding_resolver_that_differs_from_plan_pin_before_adb(self):
+        fake = FakeAdb()
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            binding_path = root / "binding.json"
+            binding = sealed_binding()
+            expected_sha256 = write_binding(binding_path, binding)
+            with patch.object(adb_binding, "run_command", side_effect=fake.run):
+                with self.assertRaisesRegex(adb_binding.ResolutionError, "plan-pinned Phase B resolver"):
+                    verify_pixel_binding.verify_existing_binding(
+                        "/fake/adb", binding_path, TARGET, expected_sha256, root / "entry.log",
+                        candidate_apk_for(binding_path), "0" * 64
+                    )
+        self.assertEqual(fake.calls, [])
+
+    def test_rejects_binding_resolver_hash_different_from_matching_plan_pin_before_adb(self):
         fake = FakeAdb()
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -298,9 +396,13 @@ class VerifyPixelBindingTest(unittest.TestCase):
             binding["resolver_sha256"] = "0" * 64
             expected_sha256 = write_binding(binding_path, binding)
             with patch.object(adb_binding, "run_command", side_effect=fake.run):
-                with self.assertRaisesRegex(adb_binding.ResolutionError, "different Pixel resolver"):
+                with self.assertRaisesRegex(
+                    adb_binding.ResolutionError,
+                    "binding resolver SHA-256 differs from the plan-pinned Phase B resolver",
+                ):
                     verify_pixel_binding.verify_existing_binding(
-                        "/fake/adb", binding_path, TARGET, expected_sha256, root / "entry.log"
+                        "/fake/adb", binding_path, TARGET, expected_sha256, root / "entry.log",
+                        candidate_apk_for(binding_path), RESOLVER_SHA256
                     )
         self.assertEqual(fake.calls, [])
 
@@ -315,7 +417,8 @@ class VerifyPixelBindingTest(unittest.TestCase):
             with patch.object(adb_binding, "run_command", side_effect=fake.run):
                 with self.assertRaisesRegex(adb_binding.ResolutionError, "schema version"):
                     verify_pixel_binding.verify_existing_binding(
-                        "/fake/adb", binding_path, TARGET, expected_sha256, root / "entry.log"
+                        "/fake/adb", binding_path, TARGET, expected_sha256, root / "entry.log",
+                        candidate_apk_for(binding_path)
                     )
         self.assertEqual(fake.calls, [])
 
@@ -327,7 +430,8 @@ class VerifyPixelBindingTest(unittest.TestCase):
             with patch.object(adb_binding, "run_command", side_effect=fake.run):
                 with self.assertRaises(adb_binding.ResolutionError):
                     verify_pixel_binding.verify_existing_binding(
-                        "/fake/adb", binding_path, "other-target", expected_sha256, Path(temp) / "entry.log"
+                        "/fake/adb", binding_path, "other-target", expected_sha256, Path(temp) / "entry.log",
+                        candidate_apk_for(binding_path)
                     )
         self.assertEqual(fake.calls, [])
 
@@ -341,7 +445,8 @@ class VerifyPixelBindingTest(unittest.TestCase):
             with patch.object(adb_binding, "run_command", side_effect=fake.run):
                 with self.assertRaises(adb_binding.ResolutionError):
                     verify_pixel_binding.verify_existing_binding(
-                        "/fake/adb", binding_path, TEST_SERIAL, expected_sha256, Path(temp) / "entry.log"
+                        "/fake/adb", binding_path, TEST_SERIAL, expected_sha256, Path(temp) / "entry.log",
+                        candidate_apk_for(binding_path)
                     )
         self.assertEqual(fake.calls, [])
 
@@ -353,7 +458,8 @@ class VerifyPixelBindingTest(unittest.TestCase):
             with patch.object(adb_binding, "run_command", side_effect=fake.run):
                 with self.assertRaises(adb_binding.ResolutionError):
                     verify_pixel_binding.verify_existing_binding(
-                        "/fake/adb", binding_path, TARGET, "0" * 64, Path(temp) / "entry.log"
+                        "/fake/adb", binding_path, TARGET, "0" * 64, Path(temp) / "entry.log",
+                        candidate_apk_for(binding_path)
                     )
         self.assertEqual(fake.calls, [])
 
@@ -365,7 +471,8 @@ class VerifyPixelBindingTest(unittest.TestCase):
             with patch.object(adb_binding, "run_command", side_effect=fake.run):
                 with self.assertRaises(adb_binding.ResolutionError):
                     verify_pixel_binding.verify_existing_binding(
-                        "/fake/adb", binding_path, TARGET, expected_sha256, Path(temp) / "entry.log"
+                        "/fake/adb", binding_path, TARGET, expected_sha256, Path(temp) / "entry.log",
+                        candidate_apk_for(binding_path)
                     )
         self.assertFalse(any(call[-2:] == ["pidof", adb_binding.PACKAGE] for call in fake.calls))
 
@@ -377,7 +484,8 @@ class VerifyPixelBindingTest(unittest.TestCase):
             with patch.object(adb_binding, "run_command", side_effect=fake.run):
                 with self.assertRaises(adb_binding.ResolutionError):
                     verify_pixel_binding.verify_existing_binding(
-                        "/fake/adb", binding_path, TARGET, expected_sha256, Path(temp) / "entry.log"
+                        "/fake/adb", binding_path, TARGET, expected_sha256, Path(temp) / "entry.log",
+                        candidate_apk_for(binding_path)
                     )
         self.assertFalse(any(call[-3:] == ["dumpsys", "activity", "activities"] for call in fake.calls))
 
