@@ -246,7 +246,7 @@ Current closeout status: **SOFTWARE_VERIFIED; PUBLIC SIGNED RELEASE PENDING WORK
 - Candidate source: `e1ab5fa5a65dc2d64624d871ac53d436f792ea6a`; APK SHA-256
   `7fffba26f32991ce8c936f725bdc6c3c4b6956d3a0800c539b8d45e6b52a2501`.
 - Device: Pixel 9 `tokay`, API 37, wireless serial
-  `adb-46141FDAQ003KZ-3AwgSo._adb-tls-connect._tcp`; target `TRN Black Pearl`.
+  `[wireless ADB route redacted]`; target `TRN Black Pearl`.
 - Preflight baseline: **PASS** for connected/verified Flat state, ten filters, active slot 1.
 - One authorized `AFUL Explorer -> Flash`: **PASS** for reaching the guarded transaction boundary.
 - Terminal result: **PASS** for truthful fail-closed behavior; **PHYSICAL_FAIL / PRECHECK_BLOCKED**
