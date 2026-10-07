@@ -1,8 +1,8 @@
 {
-  "timestamp_utc": "2026-10-07T01:15:56Z",
+  "timestamp_utc": "2026-10-07T01:18:11Z",
   "state": "RUNNING",
   "current_gate": "G3 PASS for FINAL_PHYSICAL_SESSION_PLAN.md revision 2.11 restricted cold/disconnected route; G4/C05-C PARTIAL / NOT PASS after the 2026-10-06 19m45s session exceeded the 15-minute cap and missed contemporaneous final PID/USB capture",
-  "next_gate": "Push the documentation-only G3 PASS checkpoint, synchronize issue/PR/watchdog, then use the owner's already-current availability/authorization for one complete bounded plan 2.11 C05-C session",
+  "next_gate": "Reverify frozen candidate/APK/PR/check/evidence-ignore state and perform one complete bounded plan 2.11 C05-C session under the already-current owner authorization",
   "candidate_branch": "codex/v0.8.0-beta-ux",
   "candidate_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
   "candidate_tree": "e11669f0d67f9fb3c3762ea814f16fb7c4bdab8d",
@@ -16,10 +16,10 @@
   "candidate_apk_sha256": "f33818309d55571166d91e501065706ddbb8faf180833b03bb6eb948e6bffed1",
   "candidate_apk_is_official_signed_beta": false,
   "pr": 70,
-  "pr_state": "open_draft_exact_head_checks_8_of_8_green_base_c702_mergeable_clean; master_v1.2_plan_2.11_g3_pass_c05c_partial_control_checkpoint_pending_push",
+  "pr_state": "open_draft_exact_head_checks_8_of_8_green_base_c702_mergeable_clean; master_v1.2_plan_2.11_g3_pass_c05c_partial_control_surfaces_synchronized",
   "pr_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
   "pr_base": "c702ef0149b4c647446639cfcb0ab25c09159db3",
-  "pr_current_body_stale": true,
+  "pr_current_body_stale": false,
   "ci": {
     "as_of_utc": "2026-10-07T01:14:55Z",
     "exact_head": "5c7d19cf2f77e448a97a1ee9d520ad4d408f120f",
@@ -426,7 +426,7 @@
   "owner_action_required_now": false,
   "pixel_required_now": true,
   "physical_session_ready": true,
-  "physical_session_readiness_reason": "G3 PASS for plan 2.11 restricted cold/disconnected route. Owner has already supplied current Pixel 9 availability and authorization and reported the Black Pearl connected; do not ask again. The docs-only checkpoint is being pushed. Before first wireless ADB, reverify the frozen candidate/APK, live PR/checks, exact Pixel/APK and Black Pearl fingerprint, absent app PID, and prospective ignored evidence path. Proceed only through ordinary launcher entry, DEVICE composed while visibly Disconnected, and five clean seconds; otherwise stop and release.",
+  "physical_session_readiness_reason": "G3 PASS for plan 2.11 restricted cold/disconnected route. The owner confirmed current Pixel 9 availability/unlocked status, Black Pearl connected, and authorization. Control checkpoint, issue, PR description, and watchdog are synchronized. Reverify exact candidate/APK/PR/check/evidence-ignore before the first wireless ADB command; proceed only if the Black Pearl fingerprint matches, the package process is absent, and the ordinary-launcher disconnected DEVICE preflight is clean for five seconds. Otherwise stop and release.",
   "estimated_pixel_minutes": {
     "target": 10,
     "hard_limit": 15
@@ -454,8 +454,8 @@
     "mission closeout"
   ],
   "next_actions": [
-    "Commit and push the reviewed plan 2.11 and current G3 PASS/C05-C partial docs-only control checkpoint; synchronize issue #71, PR #70 body, and the existing watchdog.",
-    "Use the owner's already-current availability and authorization without asking again. Reverify exact candidate/APK/PR/check/evidence-ignore state and execute one bounded plan 2.11 session over wireless ADB only. Stop and release if any cold/disconnected preflight is not exact and clean.",
+    "Reverify the exact frozen candidate/APK, current PR head/base/checks, and prospective ignored evidence path; then execute one bounded plan 2.11 C05-C session over wireless ADB only.",
+    "Stop and release the Pixel if any identity, process, disconnected-preflight, UI, read, or timing checkpoint is missing or ambiguous; preserve the evidence as PARTIAL / NOT PASS without retry or mutation.",
     "After a compliant C05-C pass, release the phone, reconcile/hash physical evidence, perform independent pre-merge verification, then continue the authorized merge and post-merge signing/upgrade/clean-install/artifact/publication/review-bundle/closeout order."
   ],
   "issue": "https://github.com/weekssa/OPRA-EQ-for-UAPP/issues/71",
@@ -677,19 +677,19 @@
   ],
   "g3_plan_ready_for_attached_resume": true,
   "g3_plan_not_approved_for_fresh_attach": true,
-  "issue_updated_at_utc": null,
-  "issue_body_current": false,
-  "watchdog_prompt_updated": false,
-  "watchdog_prompt_updated_utc": null,
-  "control_plane_checkpoint_pushed": false,
-  "pr_updated_at_utc": "2026-10-06T21:45:28Z",
+  "issue_updated_at_utc": "2026-10-07T01:17:11Z",
+  "issue_body_current": true,
+  "watchdog_prompt_updated": true,
+  "watchdog_prompt_updated_utc": "2026-10-07T01:18:04Z",
+  "control_plane_checkpoint_pushed": true,
+  "pr_updated_at_utc": "2026-10-07T01:17:40Z",
   "control_plane_checkpoint_tree": null,
   "control_plane_branch": {
     "name": "codex/v0.8.0-beta-watch",
-    "head": "aada5283685d09a25466d6381a1f800e12fd84e1",
-    "tree": "pending-local-tree-after-document-sync",
-    "remote_matches_local": false,
-    "as_of_utc": "2026-10-07T00:42:17Z"
+    "head": "08acd57765805e54cb1bce4d803e066cf74f16ae",
+    "tree": "ebbddd96d2760912412ad39fd6ca0535828395b5",
+    "remote_matches_local": true,
+    "as_of_utc": "2026-10-07T01:18:11Z"
   },
   "owner_action_required": false,
   "owner_action": "No additional owner action; current availability and authorization have already been supplied.",
