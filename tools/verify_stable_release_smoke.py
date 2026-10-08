@@ -190,7 +190,8 @@ class Device:
 
 def seed_persisted_state(device: Device) -> None:
     device.tap_text(("My EQs",))
-    device.tap_text(("Import PEQ", "Import Personal EQ"))
+    device.tap_text(("Import", "Import PEQ", "Import Personal EQ"))
+    device.wait_text(("Import Personal EQ", "Import personal PEQ"), timeout=30)
     time.sleep(0.4)
     hierarchy = device.dump("import-open")
     visible = " ".join(Device._node_value(node) for node in hierarchy.iter("node"))
@@ -209,7 +210,7 @@ def seed_persisted_state(device: Device) -> None:
         device.tap_text(("Continue to save",))
         device.wait_text(("Step 5 of 5 · Save",), timeout=30)
         device.tap_text(("Save to My EQs",))
-    elif "Import personal PEQ" in visible:
+    elif is_legacy_personal_eq_import_form(visible):
         device.type_text("Manufacturer", FIXTURE_MANUFACTURER)
         device.type_text("Headphone model", FIXTURE_MODEL)
         device.type_text("EQ name", FIXTURE_EQ_NAME)
@@ -226,6 +227,10 @@ def seed_persisted_state(device: Device) -> None:
     device.tap_text(("Manual",))
     assert_checked(device, "Manual")
     device.screenshot("seeded-settings-manual")
+
+
+def is_legacy_personal_eq_import_form(visible: str) -> bool:
+    return "import personal peq" in visible.casefold()
 
 
 def assert_checked(device: Device, label: str) -> None:

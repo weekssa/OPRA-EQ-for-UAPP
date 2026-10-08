@@ -10,6 +10,7 @@ from pathlib import Path
 from unittest import mock
 
 import promote_release_candidate as promotion
+import verify_stable_release_smoke as stable_smoke
 
 
 SOURCE_SHA = "a" * 40
@@ -820,6 +821,19 @@ class ReleasePromotionTest(unittest.TestCase):
         self.assertLess(upgrade_step.index('if [[ "$RELEASE_TAG" == "v0.8.0" ]]; then'),
                         upgrade_step.index("tools/verify_stable_release_smoke.py clean-install"))
         self.assertIn("apk-sha256sums.txt", upgrade_step)
+
+    def test_stable_smoke_uses_current_personal_eq_import_entrypoint(self):
+        project = Path(__file__).resolve().parents[1]
+        smoke = (project / "tools/verify_stable_release_smoke.py").read_text(encoding="utf-8")
+        seed = smoke.split("def seed_persisted_state", 1)[1].split("\ndef ", 1)[0]
+        self.assertIn('device.tap_text(("Import", "Import PEQ", "Import Personal EQ"))', seed)
+        self.assertIn(
+            'device.wait_text(("Import Personal EQ", "Import personal PEQ"), timeout=30)', seed
+        )
+
+    def test_stable_smoke_recognizes_current_and_legacy_personal_eq_import_screens(self):
+        self.assertFalse(stable_smoke.is_legacy_personal_eq_import_form("Import Personal EQ"))
+        self.assertTrue(stable_smoke.is_legacy_personal_eq_import_form("Import personal PEQ"))
 
     def test_generic_stable_promotion_does_not_fetch_beta_upgrade_baseline(self):
         candidate = {"release_tag": "v0.9.0"}
