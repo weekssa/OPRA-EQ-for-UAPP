@@ -215,7 +215,7 @@ def seed_persisted_state(device: Device) -> None:
         device.type_text("Headphone model", FIXTURE_MODEL)
         device.type_text("EQ name", FIXTURE_EQ_NAME)
         device.type_text("Equalizer APO / AutoEq text", FIXTURE_PEQ)
-        device.tap_text(("Save",))
+        device.tap_text(("Save & export", "Save"))
     else:
         raise SmokeError("The expected Personal EQ import form did not open")
 

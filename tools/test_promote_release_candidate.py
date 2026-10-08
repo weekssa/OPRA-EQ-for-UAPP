@@ -1343,7 +1343,7 @@ class StableReleaseSmokeTest(unittest.TestCase):
             ],
             device.text_entries,
         )
-        self.assertIn(("Save",), device.taps)
+        self.assertIn(("Save & export", "Save"), device.taps)
         self.assertIn(("Manual",), device.taps)
 
 
