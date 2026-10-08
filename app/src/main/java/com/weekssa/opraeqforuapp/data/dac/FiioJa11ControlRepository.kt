@@ -1,5 +1,6 @@
 package com.weekssa.opraeqforuapp.data.dac
 
+import com.weekssa.opraeqforuapp.data.kt02h20.Ja11DiagnosticLog
 import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
 import com.weekssa.opraeqforuapp.domain.dac.DacControlId
 import com.weekssa.opraeqforuapp.domain.dac.DacControlValidation
@@ -14,7 +15,7 @@ import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11ReportWriteOutcome
 interface FiioJa11DeviceControlSource {
     val sessionGeneration: Long
     val connectedProductId: Int?
-    /** Stable physical-device key with the UAC-specific PID removed. */
+    /** Stable physical-device key with re-enumeration-specific PID/HID interface removed. */
     val deviceIdentityKey: String?
         get() = null
     fun isSessionCurrent(sessionGeneration: Long): Boolean
@@ -120,16 +121,35 @@ class FiioJa11ControlRepository(
     }
 
     fun isReplacementSessionCurrent(pending: FiioJa11PendingRestartWrite): Boolean {
+        return isSupportedReplacementSessionCurrent(pending) &&
+            source.deviceIdentityKey == pending.deviceIdentityKey
+    }
+
+    fun isSupportedReplacementSessionCurrent(pending: FiioJa11PendingRestartWrite): Boolean {
         val generation = source.sessionGeneration
         return generation > 0L &&
             generation != pending.previousSessionGeneration &&
             source.isSessionCurrent(generation) &&
-            source.connectedProductId?.let(FiioJa11Protocol::supportsProductId) == true &&
-            source.deviceIdentityKey == pending.deviceIdentityKey
+            source.connectedProductId?.let(FiioJa11Protocol::supportsProductId) == true
     }
 
-    suspend fun readSnapshot(): FiioJa11ControlReadResult =
-        operationGate.withExclusiveOperation { readSnapshotUnlocked() }
+    suspend fun readSnapshot(): FiioJa11ControlReadResult = operationGate.withExclusiveOperation {
+        val result = readSnapshotUnlocked()
+        if (result is FiioJa11ControlReadResult.Success) {
+            val identityKey = source.deviceIdentityKey
+            val snapshotSessionStillCurrent =
+                source.sessionGeneration == result.snapshot.sessionGeneration &&
+                    source.isSessionCurrent(result.snapshot.sessionGeneration)
+            Ja11DiagnosticLog.eventForDevice(
+                "FiiO JA11",
+                "RESTART_IDENTITY_AVAILABILITY",
+                "identityAvailable" to (snapshotSessionStillCurrent && !identityKey.isNullOrBlank()),
+                "sessionCurrent" to snapshotSessionStillCurrent,
+                "sessionGeneration" to result.snapshot.sessionGeneration,
+            )
+        }
+        result
+    }
 
     suspend fun writeControl(intent: DacWriteIntent): FiioJa11ControlWriteResult =
         operationGate.withExclusiveOperation {
@@ -175,8 +195,13 @@ class FiioJa11ControlRepository(
                     baseline.sessionGeneration,
                 )
             }
-            val deviceIdentityKey = source.deviceIdentityKey?.takeIf(String::isNotBlank)
-                ?: return@withExclusiveOperation FiioJa11ControlWriteResult.ReadFailed(intent.controlId, "USB identity")
+            val requiresSessionRestart = FiioJa11DeviceControls.requiresSessionRestart(intent.controlId)
+            val deviceIdentityKey = if (requiresSessionRestart) {
+                source.deviceIdentityKey?.takeIf(String::isNotBlank)
+                    ?: return@withExclusiveOperation FiioJa11ControlWriteResult.ReadFailed(intent.controlId, "USB identity")
+            } else {
+                null
+            }
             if (!source.isSessionCurrent(generation)) {
                 return@withExclusiveOperation FiioJa11ControlWriteResult.StaleBaseline(
                     intent.controlId,
@@ -206,7 +231,7 @@ class FiioJa11ControlRepository(
                 FiioJa11ReportWriteOutcome.INCOMPLETE_OR_UNKNOWN ->
                     return@withExclusiveOperation FiioJa11ControlWriteResult.WriteUncertain(intent.controlId)
                 FiioJa11ReportWriteOutcome.COMPLETED_WITH_SESSION_CHANGE -> {
-                    if (FiioJa11DeviceControls.requiresSessionRestart(intent.controlId)) {
+                    if (requiresSessionRestart) {
                         // The transport knows the complete report finished before the expected
                         // restart. Preserve that logical target for replacement-session readback.
                     } else {
@@ -216,13 +241,13 @@ class FiioJa11ControlRepository(
                 FiioJa11ReportWriteOutcome.COMPLETED -> Unit
             }
 
-            if (FiioJa11DeviceControls.requiresSessionRestart(intent.controlId)) {
+            if (requiresSessionRestart) {
                 return@withExclusiveOperation FiioJa11ControlWriteResult.ReconnectRequired(
                     FiioJa11PendingRestartWrite(
                         controlId = intent.controlId,
                         requestedValue = intent.requestedValue,
                         previousSessionGeneration = generation,
-                        deviceIdentityKey = deviceIdentityKey,
+                        deviceIdentityKey = checkNotNull(deviceIdentityKey),
                         baseline = baseline,
                     ),
                 )
@@ -251,10 +276,18 @@ class FiioJa11ControlRepository(
             verifyReadback(intent.controlId, intent.requestedValue, baseline, readback)
         }
 
-    suspend fun verifyRestartedControl(pending: FiioJa11PendingRestartWrite): FiioJa11ControlWriteResult =
-        operationGate.withExclusiveOperation {
+    suspend fun verifyRestartedControl(pending: FiioJa11PendingRestartWrite): FiioJa11ControlWriteResult {
+        val result = operationGate.withExclusiveOperation {
             val generation = source.sessionGeneration
-            if (generation <= 0L || !source.isSessionCurrent(generation)) {
+            val sessionCurrent = generation > 0L && source.isSessionCurrent(generation)
+            Ja11DiagnosticLog.eventForDevice(
+                "FiiO JA11",
+                "RESTART_VERIFY_ATTEMPT",
+                "expectedSessionGeneration" to pending.previousSessionGeneration,
+                "actualSessionGeneration" to generation,
+                "sessionCurrent" to sessionCurrent,
+            )
+            if (!sessionCurrent) {
                 return@withExclusiveOperation FiioJa11ControlWriteResult.NotConnected(pending.controlId)
             }
             if (generation == pending.previousSessionGeneration) {
@@ -264,10 +297,23 @@ class FiioJa11ControlRepository(
                     generation,
                 )
             }
-            if (source.connectedProductId?.takeIf(FiioJa11Protocol::supportsProductId) == null) {
+            val productId = source.connectedProductId
+            val supportedProductId = productId?.let(FiioJa11Protocol::supportsProductId) == true
+            Ja11DiagnosticLog.eventForDevice(
+                "FiiO JA11",
+                "RESTART_VERIFY_DEVICE",
+                "productId" to productId,
+                "supportedProductId" to supportedProductId,
+            )
+            if (!supportedProductId) {
                 return@withExclusiveOperation FiioJa11ControlWriteResult.NotConnected(pending.controlId)
             }
             val identity = source.deviceIdentityKey
+            Ja11DiagnosticLog.eventForDevice(
+                "FiiO JA11",
+                "RESTART_VERIFY_IDENTITY",
+                "identityMatches" to (identity == pending.deviceIdentityKey),
+            )
             if (identity != pending.deviceIdentityKey) {
                 return@withExclusiveOperation FiioJa11ControlWriteResult.WrongDevice(pending.controlId)
             }
@@ -318,6 +364,15 @@ class FiioJa11ControlRepository(
             }
             verifyReadback(pending.controlId, pending.requestedValue, pending.baseline, readback, afterRestart = true)
         }
+        Ja11DiagnosticLog.eventForDevice(
+            "FiiO JA11",
+            "RESTART_VERIFY_RESULT",
+            "controlId" to pending.controlId.value,
+            "result" to result.javaClass.simpleName,
+            "sessionGeneration" to source.sessionGeneration,
+        )
+        return result
+    }
 
     private fun verifyReadback(
         controlId: DacControlId,

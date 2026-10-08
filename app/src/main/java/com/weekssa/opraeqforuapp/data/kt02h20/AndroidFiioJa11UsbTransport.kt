@@ -30,10 +30,7 @@ class AndroidFiioJa11UsbTransport(
     override val deviceFingerprintKey: String?
         get() = hid.deviceFingerprintKey
     val deviceIdentityKey: String?
-        get() = hid.deviceFingerprintKey
-            ?.split('|')
-            ?.filterNot { it.startsWith("pid=") }
-            ?.joinToString("|")
+        get() = fiioJa11PhysicalIdentityKey(hid.deviceFingerprintKey)
     override val usbProductId: Int?
         get() = hid.connectedProductId
     override val sessionGeneration: Long

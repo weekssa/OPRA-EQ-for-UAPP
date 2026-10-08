@@ -1,6 +1,7 @@
 package com.weekssa.opraeqforuapp.data.dac
 
 import com.google.common.truth.Truth.assertThat
+import com.weekssa.opraeqforuapp.data.kt02h20.fiioJa11PhysicalIdentityKey
 import com.weekssa.opraeqforuapp.domain.dac.DacControlValue
 import com.weekssa.opraeqforuapp.domain.dac.DacWriteIntent
 import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceControls
@@ -42,6 +43,23 @@ class FiioJa11ControlRepositoryTest {
         assertThat(source.outputVolume).isEqualTo(58)
         assertThat(source.eqProgram).isEqualTo(FiioJa11Protocol.EqProgram.USER_1)
         assertThat(source.uacMode).isEqualTo(FiioJa11Protocol.UacMode.UAC_2)
+    }
+
+    @Test
+    fun sameSessionVolumeWriteDoesNotRequireRestartIdentity() = runBlocking {
+        val source = FakeSource().apply { missingIdentity = true }
+
+        val result = FiioJa11ControlRepository(source).writeControl(
+            DacWriteIntent(
+                controlId = FiioJa11DeviceControls.OUTPUT_VOLUME,
+                expectedSessionGeneration = 7L,
+                requestedValue = DacControlValue.Numeric(58.0),
+            ),
+        )
+
+        assertThat(result).isInstanceOf(FiioJa11ControlWriteResult.Verified::class.java)
+        assertThat(source.volumeWrites).containsExactly(58)
+        assertThat(source.outputVolume).isEqualTo(58)
     }
 
     @Test
@@ -150,6 +168,71 @@ class FiioJa11ControlRepositoryTest {
             assertThat(source.headsetWrites).containsExactly(requested)
         }
         Unit
+    }
+
+    @Test
+    fun restartVerificationAcceptsSameJa11WhenMicStateSelectsAnotherHidInterface() = runBlocking {
+        listOf(
+            Triple(true, false, 3 to 2),
+            Triple(false, true, 2 to 3),
+        ).forEach { (initial, requested, interfaces) ->
+            val source = FakeSource(
+                initialHeadsetControlEnabled = initial,
+                initialHidInterfaceId = interfaces.first,
+                restartWriteOutcome = FiioJa11ReportWriteOutcome.COMPLETED_WITH_SESSION_CHANGE,
+            )
+            val repository = FiioJa11ControlRepository(source)
+            val write = repository.writeControl(
+                DacWriteIntent(
+                    controlId = FiioJa11DeviceControls.HEADSET_CONTROL,
+                    expectedSessionGeneration = 7L,
+                    requestedValue = DacControlValue.Toggle(requested),
+                ),
+            ) as FiioJa11ControlWriteResult.ReconnectRequired
+            val pending = write.pending
+            val readsBeforeReplacement = source.firmwareReadCount
+
+            source.selectedHidInterfaceId = interfaces.second
+
+            assertThat(source.deviceIdentityKey).isEqualTo(pending.deviceIdentityKey)
+            assertThat(repository.isReplacementSessionCurrent(pending)).isTrue()
+            val verified = repository.verifyRestartedControl(pending)
+
+            assertThat(verified).isInstanceOf(FiioJa11ControlWriteResult.Verified::class.java)
+            assertThat((verified as FiioJa11ControlWriteResult.Verified).snapshot.sessionGeneration)
+                .isEqualTo(8L)
+            assertThat(source.firmwareReadCount).isGreaterThan(readsBeforeReplacement)
+            assertThat(source.headsetWrites).containsExactly(requested)
+        }
+        Unit
+    }
+
+    @Test
+    fun restartWriteRequiresAStableSerialIdentityBeforeItCanBeScheduled() = runBlocking {
+        val source = FakeSource()
+        source.missingIdentity = true
+        val repository = FiioJa11ControlRepository(source)
+        val baseline = (repository.readSnapshot() as FiioJa11ControlReadResult.Success).snapshot
+
+        val pending = repository.createPendingRestartWrite(
+            controlId = FiioJa11DeviceControls.HEADSET_CONTROL,
+            requestedValue = DacControlValue.Toggle(false),
+            baseline = baseline,
+        )
+
+        assertThat(pending).isNull()
+        val result = repository.writeControl(
+            DacWriteIntent(
+                controlId = FiioJa11DeviceControls.HEADSET_CONTROL,
+                expectedSessionGeneration = baseline.sessionGeneration,
+                requestedValue = DacControlValue.Toggle(false),
+            ),
+        )
+
+        assertThat(result).isEqualTo(
+            FiioJa11ControlWriteResult.ReadFailed(FiioJa11DeviceControls.HEADSET_CONTROL, "USB identity"),
+        )
+        assertThat(source.headsetWrites).isEmpty()
     }
 
     @Test
@@ -341,16 +424,24 @@ class FiioJa11ControlRepositoryTest {
         var changeSessionBeforeNextWrite: Boolean = false,
         initialProductId: Int = FiioJa11Protocol.PRODUCT_ID_UAC_2,
         initialUacMode: FiioJa11Protocol.UacMode = FiioJa11Protocol.UacMode.UAC_2,
+        initialHidInterfaceId: Int = 3,
         private val restartWriteOutcome: FiioJa11ReportWriteOutcome = FiioJa11ReportWriteOutcome.COMPLETED,
     ) : FiioJa11DeviceControlSource {
         override var sessionGeneration: Long = 7L
         var productId: Int = initialProductId
-        private var identityKey: String = "ja11-test-identity"
+        private var identityKey: String = "fixture-only-ja11-identity"
+        private var identityOverride: String? = null
+        var missingIdentity: Boolean = false
+        var selectedHidInterfaceId: Int = initialHidInterfaceId
         var replaceIdentityWhenRead: Boolean = false
         var firmwareReadCount: Int = 0
         override var deviceIdentityKey: String?
             get() {
-                val current = identityKey
+                if (missingIdentity) return null
+                val current = identityOverride ?: fiioJa11PhysicalIdentityKey(
+                    "vid=2972|pid=${productId.toString(16)}|manufacturer=FiiO|product=JA11|" +
+                        "serial=$identityKey|interface=$selectedHidInterfaceId",
+                )
                 if (replaceIdentityWhenRead) {
                     replaceIdentityWhenRead = false
                     identityKey = "different-ja11-identity"
@@ -359,7 +450,7 @@ class FiioJa11ControlRepositoryTest {
                 return current
             }
             set(value) {
-                identityKey = value.orEmpty()
+                identityOverride = value
             }
         var current = true
         var outputVolume = 59
