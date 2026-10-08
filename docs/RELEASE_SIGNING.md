@@ -94,11 +94,18 @@ commit. It verifies GitHub's artifact digest against the downloaded ZIP, require
 file set, recomputes the private R8 mapping digest and confirms a renamed app class, and validates
 the manifest, APK checksum, package/version, pinned signer, APK v2/v3 signatures, alignment, and
 Android package metadata. The workflow also
-downloads the latest public release APK, verifies its digest and signer, then installs it on a clean
-API 35 emulator and upgrades that install with the exact candidate APK before a cold launch.
+downloads and verifies both the latest public stable APK and, for the v0.8.0 stable promotion, the
+exact immutable `v0.8.0-beta` APK. It checks GitHub asset digests, package/version/code, pinned
+signer, and alignment before using either APK. The API 35 promotion lane then runs on the exact
+candidate bytes: a v0.7.2 persisted-state in-place upgrade, a separate beta-to-stable persisted-state
+in-place upgrade, and a distinct stable clean install with core navigation/catalog checks. Each
+upgrade seeds and rechecks a Personal EQ Room row, the Manual DataStore preference, and populated
+Library readiness. The lane records APK hashes, install outputs, package dumps, UI hierarchy and
+screenshots, and crash-buffer evidence before the publisher can create its annotated tag.
 
 The promotion workflow orders three gates. First, the read-only verification job validates the
-candidate and completes the clean API 35 install, in-place upgrade, and cold launch. Second, a
+candidate and completes every required API 35 install, persisted-state upgrade, and cold-launch
+gate. Second, a
 separate tag job rechecks the immutable Actions artifact and creates an annotated candidate tag only after
 verification succeeds. Its tag message binds the `Release-Tag`, `Source-SHA`, `Candidate-Run-ID`,
 `Candidate-Artifact-ID`, and `Candidate-Artifact-SHA256` to the exact candidate. It rejects lightweight tags, mismatched annotations,

@@ -38,6 +38,8 @@ jobs:
       candidate_version_name: ${{ steps.verify.outputs.candidate_version_name }}
       candidate_version_code: ${{ steps.verify.outputs.candidate_version_code }}
       baseline_version_code: ${{ steps.verify.outputs.baseline_version_code }}
+      beta_baseline_tag: ${{ steps.verify.outputs.beta_baseline_tag }}
+      beta_baseline_version_code: ${{ steps.verify.outputs.beta_baseline_version_code }}
     permissions:
       actions: read
       contents: read
@@ -80,13 +82,21 @@ jobs:
             --archive-out "$RUNNER_TEMP/promotion-transfer/candidate.zip" \
             --apk-out "$RUNNER_TEMP/promotion-transfer/candidate.apk" \
             --baseline-apk-out "$RUNNER_TEMP/promotion-transfer/baseline.apk" \
+            --beta-apk-out "$RUNNER_TEMP/promotion-transfer/beta-baseline.apk" \
             --github-output "$GITHUB_OUTPUT"
 
-      - name: Install exact candidate over the latest public release on API 35
+      - name: Verify signed stable install and upgrade paths on API 35
         env:
+          RELEASE_TAG: ${{ inputs.tag }}
+          CANDIDATE_SOURCE_SHA: ${{ github.sha }}
+          BASELINE_TAG: ${{ steps.verify.outputs.baseline_tag }}
+          BASELINE_VERSION_NAME: ${{ steps.verify.outputs.baseline_tag }}
           BASELINE_VERSION_CODE: ${{ steps.verify.outputs.baseline_version_code }}
-          CANDIDATE_VERSION_CODE: ${{ steps.verify.outputs.candidate_version_code }}
+          BETA_BASELINE_TAG: ${{ steps.verify.outputs.beta_baseline_tag }}
+          BETA_BASELINE_VERSION_NAME: "0.8.0-beta"
+          BETA_BASELINE_VERSION_CODE: ${{ steps.verify.outputs.beta_baseline_version_code }}
           CANDIDATE_VERSION_NAME: ${{ steps.verify.outputs.candidate_version_name }}
+          CANDIDATE_VERSION_CODE: ${{ steps.verify.outputs.candidate_version_code }}
         shell: bash
         run: |
           set -euo pipefail
@@ -122,32 +132,58 @@ jobs:
             fi
             sleep 5
           done
-          build_tools="$ANDROID_HOME/build-tools/36.0.0"
-          "$build_tools/aapt" dump badging "$RUNNER_TEMP/promotion-transfer/baseline.apk" |
-            grep -F "package: name='com.weekssa.opraeqforuapp'" >/dev/null
-          baseline_code="$("$build_tools/aapt" dump badging "$RUNNER_TEMP/promotion-transfer/baseline.apk" | sed -n "s/^package: .*versionCode='\([0-9][0-9]*\)'.*/\1/p" | head -n 1)"
-          test -n "$baseline_code"
-          test "$baseline_code" = "$BASELINE_VERSION_CODE"
-          adb install "$RUNNER_TEMP/promotion-transfer/baseline.apk"
-          baseline_package="$(adb shell dumpsys package com.weekssa.opraeqforuapp)"
-          echo "$baseline_package" | grep -q "versionCode=$baseline_code"
-          candidate_code="$("$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$RUNNER_TEMP/promotion-transfer/candidate.apk" | sed -n "s/^package: .*versionCode='\([0-9][0-9]*\)'.*/\1/p" | head -n 1)"
-          test -n "$candidate_code"
-          test "$candidate_code" = "$CANDIDATE_VERSION_CODE"
-          install_output="$(adb install -r "$RUNNER_TEMP/promotion-transfer/candidate.apk")"
-          echo "$install_output"
-          package_dump="$(adb shell dumpsys package com.weekssa.opraeqforuapp)"
-          echo "$package_dump" | grep -q "versionCode=$candidate_code"
-          echo "$package_dump" | grep -Fq "versionName=${CANDIDATE_VERSION_NAME}"
-          adb shell am force-stop com.weekssa.opraeqforuapp
-          if ! launch_output="$(adb shell am start -W -n com.weekssa.opraeqforuapp/.MainActivity 2>&1)"; then
-            echo "$launch_output"
-            adb logcat -d > "$RUNNER_TEMP/promotion-logcat.txt" || true
+          mkdir -p "$RUNNER_TEMP/stable-release-evidence"
+          if [[ "$RELEASE_TAG" == "v0.8.0" && "$BASELINE_TAG" != "v0.7.2" ]]; then
+            echo "v0.8.0 stable qualification requires the exact v0.7.2 upgrade baseline" >&2
             exit 1
           fi
-          echo "$launch_output"
-          echo "$launch_output" | grep -q 'Status: ok'
-          sleep 5
+          {
+            printf 'release_tag=%s\n' "$RELEASE_TAG"
+            printf 'candidate_source_sha=%s\n' "$CANDIDATE_SOURCE_SHA"
+            printf 'stable_baseline_tag=%s\n' "$BASELINE_TAG"
+            printf 'stable_baseline_version_code=%s\n' "$BASELINE_VERSION_CODE"
+            printf 'candidate_version_name=%s\n' "$CANDIDATE_VERSION_NAME"
+            printf 'candidate_version_code=%s\n' "$CANDIDATE_VERSION_CODE"
+          } > "$RUNNER_TEMP/stable-release-evidence/release-identity.txt"
+          sha256sum \
+            "$RUNNER_TEMP/promotion-transfer/baseline.apk" \
+            "$RUNNER_TEMP/promotion-transfer/candidate.apk" \
+            > "$RUNNER_TEMP/stable-release-evidence/apk-sha256sums.txt"
+          python3 tools/verify_stable_release_smoke.py upgrade \
+            --baseline-apk "$RUNNER_TEMP/promotion-transfer/baseline.apk" \
+            --baseline-version-name "${BASELINE_VERSION_NAME#v}" \
+            --baseline-version-code "$BASELINE_VERSION_CODE" \
+            --candidate-apk "$RUNNER_TEMP/promotion-transfer/candidate.apk" \
+            --candidate-version-name "$CANDIDATE_VERSION_NAME" \
+            --candidate-version-code "$CANDIDATE_VERSION_CODE" \
+            --evidence-dir "$RUNNER_TEMP/stable-release-evidence/${BASELINE_TAG}-to-${RELEASE_TAG}"
+          adb uninstall com.weekssa.opraeqforuapp
+          if [[ "$RELEASE_TAG" == "v0.8.0" ]]; then
+            if [[ "$BETA_BASELINE_TAG" != "v0.8.0-beta" ]]; then
+              echo "v0.8.0 stable qualification requires the exact v0.8.0-beta upgrade baseline" >&2
+              exit 1
+            fi
+            {
+              printf 'beta_baseline_tag=%s\n' "$BETA_BASELINE_TAG"
+              printf 'beta_baseline_version_code=%s\n' "$BETA_BASELINE_VERSION_CODE"
+            } >> "$RUNNER_TEMP/stable-release-evidence/release-identity.txt"
+            sha256sum "$RUNNER_TEMP/promotion-transfer/beta-baseline.apk" \
+              >> "$RUNNER_TEMP/stable-release-evidence/apk-sha256sums.txt"
+            python3 tools/verify_stable_release_smoke.py upgrade \
+              --baseline-apk "$RUNNER_TEMP/promotion-transfer/beta-baseline.apk" \
+              --baseline-version-name "$BETA_BASELINE_VERSION_NAME" \
+              --baseline-version-code "$BETA_BASELINE_VERSION_CODE" \
+              --candidate-apk "$RUNNER_TEMP/promotion-transfer/candidate.apk" \
+              --candidate-version-name "$CANDIDATE_VERSION_NAME" \
+              --candidate-version-code "$CANDIDATE_VERSION_CODE" \
+              --evidence-dir "$RUNNER_TEMP/stable-release-evidence/beta-to-stable"
+            adb uninstall com.weekssa.opraeqforuapp
+          fi
+          python3 tools/verify_stable_release_smoke.py clean-install \
+            --candidate-apk "$RUNNER_TEMP/promotion-transfer/candidate.apk" \
+            --candidate-version-name "$CANDIDATE_VERSION_NAME" \
+            --candidate-version-code "$CANDIDATE_VERSION_CODE" \
+            --evidence-dir "$RUNNER_TEMP/stable-release-evidence/stable-clean-install"
           adb logcat -d > "$RUNNER_TEMP/promotion-logcat.txt"
 
       - name: Upload promotion emulator diagnostics
@@ -158,6 +194,7 @@ jobs:
           path: |
             ${{ runner.temp }}/promotion-emulator.log
             ${{ runner.temp }}/promotion-logcat.txt
+            ${{ runner.temp }}/stable-release-evidence/
           if-no-files-found: ignore
           retention-days: 14
 

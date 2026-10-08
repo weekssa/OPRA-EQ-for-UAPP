@@ -22,6 +22,29 @@ The checklist is organized around the **current release state**. Detailed histor
   and never rebuilds or re-signs the APK.
 - [x] The repository front page describes the current **EQ Library** product rather than the original OPRA-only workflow.
 
+## v0.8.0 stable promotion — in progress
+
+The current public latest release remains [v0.7.2](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.7.2), and the
+immutable [v0.8.0-beta prerelease](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.8.0-beta) is preserved. No stable
+`v0.8.0` tag or release exists yet. Do not describe v0.8.0 as published or latest until the signed
+artifact and public release readbacks below pass.
+
+- [x] Bounded readiness audit verified live `main` `0f4236b64c6642b4cd7c1a0ffe2b0d9778330f01`, tree `e31fe181c012a5cd48d0573efe7e8a3d88e383a8`, with beta merge `4190c6ca51694ea0a80583a83fd3cb09b5088a7d` as its ancestor and the immutable beta tag pointing to that source.
+- [x] The only commits since the beta merge are the publisher changes merged in PR #72. The `app/src/main` tree at beta source and current main is identical (`857d02a53d0df44fb0bd46e5ddad3b319dc48dab`); production/runtime/hardware behavior did not change.
+- [x] Stable metadata is `versionName 0.8.0`, `versionCode 11`, package `com.weekssa.opraeqforuapp`; code 11 is the next legal code above beta code 10.
+- [x] The stable publisher now verifies the exact immutable beta APK and runs separate signed v0.7.2 upgrade, beta upgrade, and stable clean-install/core-navigation lanes on API 35 before tagging or publishing.
+- [x] Curated stable notes and a stable-version What's New renderer assertion are prepared. Android UI execution remains pending exact-head CI.
+- [x] Dependency state was refreshed once for `releaseRuntimeClasspath`. Current Dependabot alert inventory and alert-to-runtime mapping could not be verified after an earlier endpoint request was rejected; no clean scan or current zero-runtime-alert claim is made. The prior beta-era alert snapshot is historical only.
+- [ ] Exact stable-promotion PR checks and the single independent pre-merge review pass.
+- [ ] Merge the exact reviewed candidate and read back merged source SHA/tree.
+- [ ] Produce and independently verify the official main-only signed stable candidate.
+- [ ] Pass v0.7.2-to-stable and beta-to-stable persisted-state upgrades plus stable clean-install/core smoke on the exact signed APK.
+- [ ] Complete one independent final artifact review, then publish v0.8.0 as non-prerelease/latest.
+- [ ] Independently verify public tag/source/assets/checksums/signer/provenance/latest; update current documentation and create the final evidence bundle.
+
+Status: **Stable candidate preparation is in progress. v0.7.2 remains stable/latest; beta remains immutable history.** No Pixel,
+DAC, ADB/USB, TalkBack, or optional hardware work is part of this mission.
+
 ## Historical v0.7.1 release closeout
 
 - [x] Public release [v0.7.1](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.7.1) is published, non-draft, non-prerelease, and returned by `/releases/latest`.
