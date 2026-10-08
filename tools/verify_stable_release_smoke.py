@@ -248,11 +248,38 @@ def is_legacy_personal_eq_import_form(visible: str) -> bool:
 
 
 def assert_checked(device: Device, label: str) -> None:
-    node = device.wait_text((label,), timeout=30)
-    # Compose's RadioButton semantics are exposed to UiAutomator as the node's
-    # checked state. Do not infer a selected preference from its label alone.
-    if node.attrib.get("checked", "").lower() != "true":
-        raise SmokeError(f"Preference {label!r} was not exposed as checked in accessibility state: {node.attrib}")
+    root = device.dump("current")
+    parents = {child: parent for parent in root.iter() for child in parent}
+    matching_nodes = []
+    checked_semantics = []
+    expected = label.casefold()
+
+    for node in root.iter("node"):
+        values = tuple(
+            node.attrib.get(key, "").casefold()
+            for key in ("text", "content-desc", "contentDescription", "hint")
+        )
+        if not any(value == expected for value in values if value):
+            continue
+        if BOUNDS_RE.fullmatch(node.attrib.get("bounds", "")) is None:
+            continue
+
+        matching_nodes.append(node.attrib)
+        semantic_node = node
+        while semantic_node is not root:
+            if semantic_node.attrib.get("checkable", "").lower() == "true":
+                checked_semantics.append(semantic_node.attrib)
+                if semantic_node.attrib.get("checked", "").lower() == "true":
+                    return
+                break
+            semantic_node = parents.get(semantic_node, root)
+
+    if not matching_nodes:
+        raise SmokeError(f"Preference {label!r} was not visible in the accessibility state")
+    raise SmokeError(
+        f"Preference {label!r} did not expose a checked semantic node: "
+        f"matching_labels={matching_nodes}; checkable_ancestors={checked_semantics}"
+    )
 
 
 def wait_for_catalog(device: Device, prefix: str) -> None:

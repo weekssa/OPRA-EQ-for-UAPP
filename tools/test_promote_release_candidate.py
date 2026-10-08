@@ -6,6 +6,7 @@ import json
 import tempfile
 import unittest
 import zipfile
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from unittest import mock
 
@@ -838,6 +839,31 @@ class ReleasePromotionTest(unittest.TestCase):
         self.assertFalse(stable_smoke.is_legacy_personal_eq_import_form(f"Import Personal EQ {fields[:20]}"))
         self.assertFalse(stable_smoke.is_legacy_personal_eq_import_form(f"Unrelated screen {fields}"))
 
+    def test_stable_smoke_accepts_checked_parent_semantics_for_preference_text(self):
+        hierarchy = ET.fromstring(
+            '<hierarchy><node class="android.view.View" checkable="true" checked="true" '
+            'bounds="[53,611][1027,800]"><node class="android.widget.TextView" text="Manual" '
+            'checkable="false" checked="false" bounds="[148,632][295,695]" />'
+            '</node></hierarchy>'
+        )
+        device = mock.Mock()
+        device.dump.return_value = hierarchy
+
+        stable_smoke.assert_checked(device, "Manual")
+
+    def test_stable_smoke_does_not_accept_unchecked_preference_parent(self):
+        hierarchy = ET.fromstring(
+            '<hierarchy><node class="android.view.View" checkable="true" checked="false" '
+            'bounds="[53,611][1027,800]"><node class="android.widget.TextView" text="Manual" '
+            'checkable="false" checked="false" bounds="[148,632][295,695]" />'
+            '</node></hierarchy>'
+        )
+        device = mock.Mock()
+        device.dump.return_value = hierarchy
+
+        with self.assertRaisesRegex(stable_smoke.SmokeError, "did not expose a checked semantic node"):
+            stable_smoke.assert_checked(device, "Manual")
+
     def test_generic_stable_promotion_does_not_fetch_beta_upgrade_baseline(self):
         candidate = {"release_tag": "v0.9.0"}
         baseline = {"baseline_tag": "v0.8.0", "baseline_version_code": "11"}
@@ -1305,6 +1331,19 @@ class StableReleaseSmokeTest(unittest.TestCase):
         hierarchy = stable_smoke.ET.Element("hierarchy")
         for label in labels:
             stable_smoke.ET.SubElement(hierarchy, "node", {"text": label})
+        settings_hierarchy = stable_smoke.ET.Element("hierarchy")
+        selected_preference = stable_smoke.ET.SubElement(
+            settings_hierarchy,
+            "node",
+            {"class": "android.view.View", "checkable": "true", "checked": "true",
+             "bounds": "[53,611][1027,800]"},
+        )
+        stable_smoke.ET.SubElement(
+            selected_preference,
+            "node",
+            {"class": "android.widget.TextView", "text": "Manual", "checkable": "false",
+             "checked": "false", "bounds": "[148,632][295,695]"},
+        )
 
         class FakeDevice:
             def __init__(self):
@@ -1322,6 +1361,8 @@ class StableReleaseSmokeTest(unittest.TestCase):
                 )
 
             def dump(self, _name):
+                if ("Manual",) in self.taps:
+                    return settings_hierarchy
                 return hierarchy
 
             def type_text(self, label, value, **_kwargs):
