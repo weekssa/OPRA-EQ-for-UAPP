@@ -46,7 +46,7 @@ Optional environment:
 Actions:
   list             show current adb devices
   inspect          verify Pixel 9 and report basic OS properties
-  verify-identity  require the latest successful snapshot's stable JA11 identity boolean
+  verify-identity  require a current candidate-process snapshot and stable JA11 identity boolean
   start-logcat     start private local full-logcat capture
   stop-logcat      stop the local capture process (serial may be blank)
   install          install only the frozen JA11 diagnostic APK
@@ -224,16 +224,30 @@ case "$ACTION" in
     if [ -e "$EVENTS" ]; then echo "Preserving existing identity event log; use a new evidence directory." >&2; exit 12; fi
     "$ADB_BIN" -s "$SERIAL" logcat -d -v threadtime JA11_DIAG:I '*:S' > "$EVENTS"
     chmod 600 "$EVENTS"
-    SNAPSHOT_POSITION="$(grep -nF 'event=SNAPSHOT_READ_COMPLETE' "$EVENTS" | tail -n 1 | cut -d: -f1 || true)"
-    IDENTITY_POSITION="$(grep -nF 'event=RESTART_IDENTITY_AVAILABILITY' "$EVENTS" | tail -n 1 | cut -d: -f1 || true)"
-    SNAPSHOT_LINE="$(if [ -n "$SNAPSHOT_POSITION" ]; then sed -n "${SNAPSHOT_POSITION}p" "$EVENTS"; fi)"
-    IDENTITY_LINE="$(if [ -n "$IDENTITY_POSITION" ]; then sed -n "${IDENTITY_POSITION}p" "$EVENTS"; fi)"
+    BUILD_ENTRY="$(awk '/event=APP_BUILD_INFO/ {position = NR; pid = $3; line = $0} END {if (position) printf "%d\t%s\t%s", position, pid, line}' "$EVENTS")"
+    BUILD_POSITION=""
+    BUILD_PID=""
+    BUILD_LINE=""
+    IFS="$(printf '\t')" read -r BUILD_POSITION BUILD_PID BUILD_LINE <<< "$BUILD_ENTRY"
+    if [ -z "$BUILD_POSITION" ] || [ -z "$BUILD_PID" ] || \
+       [[ "$BUILD_LINE" != *"package=$PACKAGE"* || "$BUILD_LINE" != *"versionName=0.8.0-ja11diag"* || "$BUILD_LINE" != *"versionCode=11"* || "$BUILD_LINE" != *"debuggable=true"* || "$BUILD_LINE" != *"sourceSha=$SOURCE_SHA"* || "$BUILD_LINE" != *"ja11DiagnosticsEnabled=true"* ]]; then
+      echo "The latest diagnostic build-info event does not identify the frozen candidate; stop." >&2
+      exit 14
+    fi
+    SNAPSHOT_ENTRY="$(awk -v build="$BUILD_POSITION" -v pid="$BUILD_PID" 'NR > build && $3 == pid && index($0, "event=SNAPSHOT_READ_COMPLETE") {position = NR; line = $0} END {if (position) printf "%d\t%s", position, line}' "$EVENTS")"
+    IDENTITY_ENTRY="$(awk -v build="$BUILD_POSITION" -v pid="$BUILD_PID" 'NR > build && $3 == pid && index($0, "event=RESTART_IDENTITY_AVAILABILITY") {position = NR; line = $0} END {if (position) printf "%d\t%s", position, line}' "$EVENTS")"
+    SNAPSHOT_POSITION=""
+    SNAPSHOT_LINE=""
+    IDENTITY_POSITION=""
+    IDENTITY_LINE=""
+    IFS="$(printf '\t')" read -r SNAPSHOT_POSITION SNAPSHOT_LINE <<< "$SNAPSHOT_ENTRY"
+    IFS="$(printf '\t')" read -r IDENTITY_POSITION IDENTITY_LINE <<< "$IDENTITY_ENTRY"
     SNAPSHOT_GENERATION="$(printf '%s\n' "$SNAPSHOT_LINE" | sed -n 's/.*sessionGeneration=\([0-9][0-9]*\).*/\1/p')"
     IDENTITY_GENERATION="$(printf '%s\n' "$IDENTITY_LINE" | sed -n 's/.*sessionGeneration=\([0-9][0-9]*\).*/\1/p')"
     SNAPSHOT_SOURCE="$(printf '%s\n' "$SNAPSHOT_LINE" | sed -n 's/.*sourceSha=\([0-9a-f][0-9a-f]*\).*/\1/p')"
     printf '%s\n' "$IDENTITY_LINE"
     if [ -z "$SNAPSHOT_GENERATION" ] || [ -z "$IDENTITY_GENERATION" ] || [ -z "$SNAPSHOT_SOURCE" ] || \
-       [ "$SNAPSHOT_SOURCE" != "$SOURCE_SHA" ] || [ "$IDENTITY_POSITION" -le "$SNAPSHOT_POSITION" ] || \
+       [ "$SNAPSHOT_SOURCE" != "$SOURCE_SHA" ] || \
        [ "$SNAPSHOT_GENERATION" != "$IDENTITY_GENERATION" ] || \
        [[ "$IDENTITY_LINE" != *"identityAvailable=true"* || "$IDENTITY_LINE" != *"sessionCurrent=true"* ]]; then
       echo "The latest complete snapshot does not have a current stable restart identity; stop before any restart-control write." >&2
