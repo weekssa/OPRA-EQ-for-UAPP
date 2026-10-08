@@ -34,3 +34,13 @@ Promotion run #8 (`37749785239`) installed and launched the signed v0.7.2 baseli
 The original UI job `113167112522` and one diagnosed retry `113170893509` each reported two test-harness failures (64 tests, 2 failures, 0 errors/skips). The report showed the accessibility assertion ran without window focus after saved-state restoration, and native key injection did not reach the fake read callback. The artifacts contained no app crash, ANR, or OOM. Commit `3e557e1a` contains a test-only host/input harness correction preserving no-replay assertions and independent native Android D-pad coverage; the exact-head API 35 suite then passed 64/64.
 
 The dependency graph refresh is recorded in `MISSION.md`. GitHub reported 56 repository vulnerabilities; item-level current alerts/runtime mapping could not be retrieved. This is not a clean security scan and does not rule out runtime exposure.
+
+
+## Final exact-merge and promotion result — PASS (2026-10-08)
+
+The earlier pending rows above are retained as historical attempts; final evidence supersedes their interim state.
+
+- Exact merged main: `54823e1a464f8b716a32c4f4808037fc0cdd99bd`, tree `e20330e2c4921823ecdf2881db0bf6fa1b3c3c0d`; PR #77 exact-head checks/review and all applicable exact-merge checks passed. Android CI `37766209677` passed on attempt 2; the single retry was limited to the diagnosed focus-only UI job and passed 64/64.
+- Official signed stable APK: main-only signing run `37769090436`, artifact `11546549425`, APK SHA-256 `2ea1d4b76a840e7448fddba556c3dc03aba19870eeb2499182af7d5759cce54b`, package/version/code `com.weekssa.opraeqforuapp` / `0.8.0` / `11`, pinned signer SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`.
+- Promotion run `37770238047`, API 35 job `113287763621`, passed exact candidate validation followed by: signed v0.7.2 persisted-state upgrade (`STABLE_RELEASE_SMOKE_PASSED`), signed beta persisted-state upgrade (`STABLE_RELEASE_SMOKE_PASSED`), and signed stable clean install/core smoke (`STABLE_RELEASE_SMOKE_PASSED`). Tag and publish jobs passed after the verification job.
+- Public release assets and digests, signer/provenance, and `/releases/latest` were independently checked; details are in `ARTIFACTS.md` and `docs/PUBLIC_RELEASE_CHECKLIST.md`. The immutable beta is preserved.
