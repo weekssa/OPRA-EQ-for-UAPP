@@ -418,7 +418,7 @@
       "url": "https://github.com/Wei1234c/DRC/blob/ded8cd0d2cfa2feadd94fb98e5acd1739b006a7e/notebooks/results/JamBox ParametricEQ.txt"
     },
     {
-      "candidate_id": "github-e8d852c32d8c9a83e3f16f17",
+      "candidate_id": "github-60d2e122665bb2943436db90",
       "content_sha": "bd26933dc7aa5ecfba6a444e8221bc0a14f18a35",
       "creator": null,
       "creator_is_explicit": false,
@@ -441,7 +441,7 @@
       "source_record_id": "ern775/nixon:system/modules/equalizers/Q10_ParametricEQ.txt:bd26933dc7aa5ecfba6a444e8221bc0a14f18a35",
       "source_updated_at": null,
       "status": "new_candidate",
-      "url": "https://github.com/ern775/nixon/blob/e5be64babe3b7c8b75aa12a9bcdcdf14c1f8ee6c/system/modules/equalizers/Q10_ParametricEQ.txt"
+      "url": "https://github.com/ern775/nixon/blob/06c26c718723ac5908025dc1794642776f0cd795/system/modules/equalizers/Q10_ParametricEQ.txt"
     },
     {
       "candidate_id": "github-bfcba12aeb010dca8c023310",
