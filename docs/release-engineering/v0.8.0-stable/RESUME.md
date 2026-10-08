@@ -1,6 +1,6 @@
 # v0.8.0 stable promotion — resume
 
-Updated: 2026-10-08T06:34:37Z
+Updated: 2026-10-08T06:38:46Z
 
 ## Current state
 
@@ -9,7 +9,7 @@ Updated: 2026-10-08T06:34:37Z
 - Last refreshed `main`: `0f4236b64c6642b4cd7c1a0ffe2b0d9778330f01`, tree `e31fe181c012a5cd48d0573efe7e8a3d88e383a8`.
 - Last exact app/test candidate verified by PR CI: `3e557e1a0f7868bc5cf54f9e363da0c9e3c41bbd`, tree `680564d2488e54c194488d67d8d006ba22a6ee3f`.
 - Qualified beta merge/source: `4190c6ca51694ea0a80583a83fd3cb09b5088a7d`; the production app-source tree remains `857d02a53d0df44fb0bd46e5ddad3b319dc48dab` on both beta and stable-promotion candidate.
-- PR [#73](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/73) is open and draft against `main`. Its last live head/base read was `3e557e1a0f7868bc5cf54f9e363da0c9e3c41bbd` / `0f4236b64c6642b4cd7c1a0ffe2b0d9778330f01`; all four exact-head PR workflows passed. This status-only checkpoint advances the branch; after it is pushed, refresh the new live PR head and applicable checks before marking ready or merging.
+- PR [#73](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/73) is open and draft against `main`. The last live PR head/base read was `17494acd5e6f974e79adaf58675499caa765f811` / `0f4236b64c6642b4cd7c1a0ffe2b0d9778330f01`. On that documentation-only head, Android CI `37738430621` and CodeQL `37738430589` were in progress; Catalog currentness `37738430666` and Priority community coverage `37738430590` had passed. The preceding test-bearing head `3e557e1a0f7868bc5cf54f9e363da0c9e3c41bbd` passed all four PR workflows. Refresh live head/base/checks before marking ready or merging.
 - GitHub `/releases/latest` currently resolves to stable `v0.7.2`; the published `v0.8.0-beta` remains a prerelease. The `v0.8.0` tag is absent from the current remote tag listing. Do not move latest before the ordered stable gates pass.
 
 ## Completed
@@ -27,7 +27,7 @@ Updated: 2026-10-08T06:34:37Z
 
 ## Next action
 
-After pushing this status-only checkpoint, refresh live PR #73 head/base/checks. Require applicable checks on the resulting head to pass, synchronize the PR body with the exact results, mark it ready, and merge the exact reviewed candidate under repository rules. Verify the actual merged `main` SHA/tree before starting the main-only signed stable candidate workflow. Keep README current-version/download links on v0.7.2 until stable publication is independently verified. Do not use Pixel, ADB/USB, or DAC hardware.
+Finish monitoring the four PR checks for `17494acd5e6f974e79adaf58675499caa765f811`; if a later commit moves the branch, refresh the exact live head and its checks. After all applicable checks pass, synchronize the PR body with the final results, mark it ready, and merge the exact reviewed candidate under repository rules. Verify the actual merged `main` SHA/tree before starting the main-only signed stable candidate workflow. Keep README current-version/download links on v0.7.2 until stable publication is independently verified. Do not use Pixel, ADB/USB, or DAC hardware.
 
 ## Preserve
 

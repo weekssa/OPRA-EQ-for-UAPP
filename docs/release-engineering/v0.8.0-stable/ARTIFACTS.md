@@ -12,7 +12,7 @@ This file is append-only release evidence. `NOT RUN` means no evidence is yet av
 - Exact-head CI at `3e557e1a`: PASS. Android CI run `37736600658` (build/unit/lint/assembly job `113177438410`, API 26 job `113177438121`, API 35 UI job `113177438418`); CodeQL `37736600633`; Catalog currentness `37736600706`; Priority community coverage `37736600726`.
 - API 35 JUnit: 64 tests, 0 failures/errors/skips; artifact `11531339710`, digest `sha256:2692842828d81789c085ea2a09d52c5ad6566997a5c819142104190a60e31888`.
 - API 26 smoke: PASS; diagnostic artifact `11532521333`, digest `sha256:1ecf8c9203030da778b8e02d1e23cecd89628b0e379eb0a67e3adad64375db46`.
-- The branch is receiving a documentation-only evidence refresh; after push, re-resolve the exact head and applicable checks before marking PR #73 ready or merging.
+- Documentation-only checkpoint `17494acd5e6f974e79adaf58675499caa765f811` is the latest recorded PR head. Android CI `37738430621` and CodeQL `37738430589` were running at the last read; Catalog currentness `37738430666` and Priority community coverage `37738430590` had passed. Re-resolve the live head and all applicable checks before marking PR #73 ready or merging.
 - Merged main SHA/tree: NOT RUN
 
 ## Official stable artifact
