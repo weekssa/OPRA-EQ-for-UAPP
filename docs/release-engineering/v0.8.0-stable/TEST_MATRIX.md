@@ -18,10 +18,16 @@ The exact application/test candidate below was `3e557e1a0f7868bc5cf54f9e363da0c9
 | Priority community coverage | PASS | Run `37736600726`, validation job `113177438768` |
 | Android-test Kotlin source compilation | PASS locally | `./tools/codex-android :app:compileDebugAndroidTestKotlin --max-workers=2` |
 | Local JVM test launch | NOT EXECUTED | A previous local Gradle launch failed before assertions because the custom cache lacked generated `gradle-worker.jar`; remote exact-head Android CI passed the unit-test step. No local unit assertion failure occurred. |
-| Signed v0.7.2 -> stable persisted-state upgrade | NOT RUN | Exact official stable APK; main-only promotion workflow after signing |
+| Signed v0.7.2 -> stable persisted-state upgrade | ATTEMPTED; gate not passed | Promotion run `37749785239`, API 35 job `113219908517`, installed and launched the v0.7.2 baseline, then stopped while seeding persisted state because the helper failed to recognize its exact `Import personal EQ` form. No fixture was saved, the v0.8.0 candidate was not installed, and no in-place upgrade occurred; see the continuation below. |
 | Signed beta -> stable persisted-state upgrade | NOT RUN | Exact official beta and stable APKs; main-only promotion workflow after signing |
 | Stable signed clean install/core smoke | NOT RUN | Exact official stable APK; main-only promotion workflow after signing |
 | Public release verification | NOT RUN | Tag, source, assets, checksum, signer, provenance, and latest metadata after publication |
+
+## Stable promotion continuation — 2026-10-08
+
+PR #74 merged at main `984477c773f9f388e93583a61f6459dbc8e27ae1`, tree `eede4100c1917019358fdb2c1afc7b1b656f2c61`. The exact main-only stable candidate was signed successfully by run `37748076250`; artifact `11536942838` has ZIP SHA-256 `6347f3a141d829df9d0848cd729099f36116799a3f0c09e1145880f799d827d3`. Its APK SHA-256 is `ce9ee7f1cef006b9c02e9236144504505547789fc5adad05bf8ec8e812d9f7ff`; package/version/code and pinned signer were independently verified. This signing result is tied to main `984477c...` and must be renewed if the follow-up helper change merges.
+
+Promotion run #8 (`37749785239`) installed and launched the signed v0.7.2 baseline, then failed while seeding its persisted-state fixture. Diagnostics artifact `11537199862` (SHA-256 `7a9d962855e84c4dd054ce6b380ba8ebe234642388f3d2165c7af7e7b98f515b`) captures the legacy form labels. The helper expected `Import personal PEQ` and a `Parametric EQ text` field, while the observed form is titled `Import personal EQ` and exposes `Equalizer APO / AutoEq text`. No fixture was saved; the v0.8.0 candidate was not installed, so no in-place upgrade was attempted. The defect is confined to release-test tooling; it does not establish an app failure or upgrade result. Candidate-tag and publication jobs were skipped. The beta-to-stable lane and clean-install lane were not reached. A narrow matcher/field correction and regression tests are in PR #75; its local suite passes 56/56 and contract validation passes, while exact-head CI is still running and a new main-only stable artifact/promotion run remains required.
 
 ## First API 35 attempts and correction
 

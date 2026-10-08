@@ -214,7 +214,7 @@ def seed_persisted_state(device: Device) -> None:
         device.type_text("Manufacturer", FIXTURE_MANUFACTURER)
         device.type_text("Headphone model", FIXTURE_MODEL)
         device.type_text("EQ name", FIXTURE_EQ_NAME)
-        device.type_text("Parametric EQ text", FIXTURE_PEQ)
+        device.type_text("Equalizer APO / AutoEq text", FIXTURE_PEQ)
         device.tap_text(("Save",))
     else:
         raise SmokeError("The expected Personal EQ import form did not open")
@@ -230,7 +230,21 @@ def seed_persisted_state(device: Device) -> None:
 
 
 def is_legacy_personal_eq_import_form(visible: str) -> bool:
-    return "import personal peq" in visible.casefold()
+    normalized = " ".join(visible.casefold().split())
+    has_import_heading = any(
+        heading in normalized
+        for heading in ("import personal eq", "import personal peq")
+    )
+    return has_import_heading and all(
+        label in normalized
+        for label in (
+            "manufacturer",
+            "headphone model",
+            "eq name",
+            "paste peq text",
+            "equalizer apo / autoeq text",
+        )
+    )
 
 
 def assert_checked(device: Device, label: str) -> None:
