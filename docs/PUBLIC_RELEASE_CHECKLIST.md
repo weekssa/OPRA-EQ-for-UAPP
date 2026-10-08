@@ -34,7 +34,7 @@ artifact and public release readbacks below pass.
 - [x] Stable metadata is `versionName 0.8.0`, `versionCode 11`, package `com.weekssa.opraeqforuapp`; code 11 is the next legal code above beta code 10.
 - [x] The stable publisher now verifies the exact immutable beta APK and runs separate signed v0.7.2 upgrade, beta upgrade, and stable clean-install/core-navigation lanes on API 35 before tagging or publishing.
 - [x] Curated stable notes and a stable-version What's New renderer assertion are prepared. Android UI execution remains pending exact-head CI.
-- [x] Dependency state was refreshed once for `releaseRuntimeClasspath`. Current Dependabot alert inventory and alert-to-runtime mapping could not be verified after an earlier endpoint request was rejected; no clean scan or current zero-runtime-alert claim is made. The prior beta-era alert snapshot is historical only.
+- [x] Dependency state was refreshed once for `releaseRuntimeClasspath`. GitHub's branch-push response on 2026-10-08 reported 56 repository vulnerabilities; the public Dependabot page returned 404 that day, so item-level alerts and current alert-to-runtime mapping could not be verified. No clean scan or current zero-runtime-alert claim is made.
 - [ ] Exact stable-promotion PR checks and the single independent pre-merge review pass.
 - [ ] Merge the exact reviewed candidate and read back merged source SHA/tree.
 - [ ] Produce and independently verify the official main-only signed stable candidate.
