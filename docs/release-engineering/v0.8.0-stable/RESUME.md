@@ -1,6 +1,6 @@
 # v0.8.0 stable promotion — resume
 
-Updated: 2026-10-08T05:34:55Z
+Updated: 2026-10-08T05:36:14Z
 
 ## Current state
 
@@ -9,7 +9,7 @@ Updated: 2026-10-08T05:34:55Z
 - Base HEAD/tree: `0f4236b64c6642b4cd7c1a0ffe2b0d9778330f01` / `e31fe181c012a5cd48d0573efe7e8a3d88e383a8`
 - Expected exact beta source parent: `4190c6ca51694ea0a80583a83fd3cb09b5088a7d`
 - App production source tree is unchanged from beta: `857d02a53d0df44fb0bd46e5ddad3b319dc48dab`.
-- Candidate commit `f95f803b6cadea34cdd49bdd2f57190d958444c3` is pushed on `codex/v0.8.0-stable-promotion` at base `0f4236b64c6642b4cd7c1a0ffe2b0d9778330f01`; there is no stable PR, merge SHA, stable candidate APK, tag, or release yet.
+- Draft PR [#73](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/73) is open against `main` from `codex/v0.8.0-stable-promotion`. Its live head/checks must be refreshed after this checkpoint update; no merge SHA, stable candidate APK, stable tag, or stable release exists yet.
 - Live GitHub latest is stable `v0.7.2`; immutable prerelease `v0.8.0-beta` remains published; `v0.8.0` tag is absent.
 
 ## Completed
@@ -27,7 +27,7 @@ Updated: 2026-10-08T05:34:55Z
 
 ## Next action
 
-Inspect the complete candidate diff and workflow shell blocks, finalize evidence/gate synchronization, commit and push the stable branch, create the draft PR, and obtain exact-head CI plus one independent pre-merge review. Do not retry the local Gradle worker-launch failure in the unchanged cache; remote exact-head unit CI is authoritative for G7. Do not update README current-version links until the stable public artifact is independently verified. Do not use devices or hardware. After merge, use the repository's main-only signed-candidate and promotion workflows in the order in `MISSION.md`.
+Refresh PR #73's exact head/base/checks, complete one independent review of that exact candidate, resolve only demonstrated findings, and merge after all ordered pre-merge gates pass. Do not retry the local Gradle worker-launch failure in the unchanged cache; remote exact-head unit CI is authoritative for G7. Do not update README current-version links until the stable public artifact is independently verified. Do not use devices or hardware. After merge, use the repository's main-only signed-candidate and promotion workflows in the order in `MISSION.md`.
 
 ## Preserve
 

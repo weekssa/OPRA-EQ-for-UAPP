@@ -5,8 +5,8 @@ This file is append-only release evidence. `NOT RUN` means no evidence is yet av
 ## Pre-merge identity
 
 - Starting main: `0f4236b64c6642b4cd7c1a0ffe2b0d9778330f01` (tree `e31fe181c012a5cd48d0573efe7e8a3d88e383a8`)
-- Stable PR: NOT CREATED
-- Exact PR head and tree: NOT RUN
+- Stable PR: draft [#73](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/73), open against `main`.
+- Exact live PR head/tree and checks: refresh after this checkpoint update before review or merge.
 - Independent pre-merge reviewer: NOT RUN
 - Exact-head CI: NOT RUN
 - Merged main SHA/tree: NOT RUN
