@@ -57,6 +57,7 @@ android {
             versionNameSuffix = "-ja11diag"
             matchingFallbacks += listOf("debug")
             buildConfigField("boolean", "JA11_DIAGNOSTICS_ENABLED", "true")
+            buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"${candidateSourceSha.get()}\"")
         }
     }
 

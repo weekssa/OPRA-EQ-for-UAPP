@@ -48,6 +48,7 @@ class MainActivity : ComponentActivity() {
             "versionName" to BuildConfig.VERSION_NAME,
             "versionCode" to BuildConfig.VERSION_CODE,
             "debuggable" to BuildConfig.DEBUG,
+            "sourceSha" to BuildConfig.CANDIDATE_SOURCE_SHA,
             "ja11DiagnosticsEnabled" to BuildConfig.JA11_DIAGNOSTICS_ENABLED,
         )
         enableEdgeToEdge()
