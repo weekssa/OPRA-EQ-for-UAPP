@@ -1,8 +1,8 @@
 {
-  "timestamp_utc": "2026-10-07T23:56:05Z",
-  "state": "G0_G9_PASS; G10_PUBLISHER_ANDROID_CI_IN_PROGRESS; OPEN_BUILD_TEST_DEPENDENCY_ALERTS_RECORDED",
+  "timestamp_utc": "2026-10-08T00:05:13Z",
+  "state": "G0_G9_PASS; G10_MIN_API_RETRY_IN_PROGRESS; OPEN_BUILD_TEST_DEPENDENCY_ALERTS_RECORDED",
   "current_gate": "G10_BETA_PUBLISHER_PR72",
-  "next_gate": "G10_ANDROID_CI_EXACT_HEAD",
+  "next_gate": "G10_ANDROID_CI_MIN_API_RETRY",
   "candidate_branch": "codex/v0.8.0-beta-ux",
   "candidate_head": "3329590db531c31be84e7e28d89209028a688075",
   "candidate_tree": "79808ef8052812427461f480e9abf19c2e930c22",
@@ -552,28 +552,26 @@
   "physical_session_readiness_reason": "C05-C/G4 passed and the phone was released; no further device access is needed.",
   "estimated_pixel_minutes": "5-10 optimization target; no time-only abort",
   "watchdog_mode": "RELEASE_CONVERGENCE_AFTER_G5_PASS",
-  "loop_status": "G0_G9_PASS; PR72_DRAFT; ANDROID_CI_IN_PROGRESS; CODEQL_CATALOG_PASS",
+  "loop_status": "G0_G9_PASS; PR72_DRAFT; FIRST_MIN_API_INFRA_FAILURE_DIAGNOSED; MIN_API_RETRY_IN_PROGRESS; CODEQL_CATALOG_PASS",
   "stable_latest_release": "v0.7.2 remains stable/latest; confirmed in issue #71 at 2026-10-07T23:44:38Z.",
   "merge_or_publish_performed": true,
   "nonphysical_gates_open": [
-    "G7 official main-only signed beta artifact and independent checksum/signer/provenance verification",
-    "G8 exact signed v0.7.2-to-beta persisted-state upgrade",
-    "G9 signed clean install/core smoke and independent artifact verification",
-    "G10 authorized v0.8.0 beta prerelease after all prior gates",
+    "G10 publisher PR #72 exact-head checks, merge, and authorized beta prerelease after all ordered gates",
     "G11 exact-membership final review bundle",
     "G12 status/watchdog/mission closeout"
   ],
   "physical_gates_open": [],
   "downstream_gates": [
-    "Monitor exact-head PR #72 Android CI run 37703940507 and CodeQL run 37703940594; Catalog currentness run 37703940944 passed.",
-    "After exact checks pass, mark PR ready and merge exact head 52ee1284cd6208012d217b3f151488b2ae739b8b; verify resulting main SHA/tree.",
+    "Monitor only min-API retry job 113078411594 in Android CI run 37703940507; do not dispatch a duplicate.",
+    "After all exact checks pass, mark PR ready and merge exact reviewed head 52ee1284cd6208012d217b3f151488b2ae739b8b; verify resulting main SHA/tree.",
     "Run the dedicated main-only beta publisher once against exact merged main; verify tag, APK/checksum/signer/provenance/assets and stable/latest pointer.",
     "Assemble and independently check the exact-membership review bundle, then synchronize final issue/status/watcher and close out."
   ],
   "next_actions": [
-    "Monitor Android CI run 37703940507; Catalog currentness run 37703940944 and CodeQL run 37703940594 are success.",
-    "If Android CI fails, inspect exact job/step/logs and change only code with a demonstrated defect; do not blindly retry.",
-    "Once checks pass, synchronize PR metadata/body, mark PR #72 ready, merge exact head 52ee1284cd6208012d217b3f151488b2ae739b8b, and verify actual main SHA/tree.",
+    "Monitor only min-API retry job 113078411594 in Android CI run 37703940507; Catalog, CodeQL, build, and emulator UI have succeeded on exact PR #72 head.",
+    "The first min-API job 113073720769 failed after an Android 8.0 system_server boot exception prevented post-restart network validation; artifact 11519535327 shows the app alive and offline-catalog UI without app OOM/fatal crash. The merged-source API-26 gate had already passed at 48 MiB.",
+    "If retry succeeds, refresh exact-head checks, synchronize PR metadata/body, mark PR #72 ready, merge exact reviewed head 52ee1284cd6208012d217b3f151488b2ae739b8b, and verify actual main SHA/tree.",
+    "If retry fails, inspect its exact artifacts/logs before any further retry or source change; do not retry blindly.",
     "Run the dedicated beta publisher once on exact merged main; verify prerelease tag, exact assets, artifact provenance/checksum/signer, and stable/latest v0.7.2.",
     "Prepare and independently verify the exact-membership review bundle, synchronize final status, then close out."
   ],
@@ -625,7 +623,7 @@
     "G7": "PASS; official signed artifact and source/package/version/checksum/signer/provenance independently verified.",
     "G8": "PASS; exact signed v0.7.2-to-beta persisted-state upgrade passed on API 35.",
     "G9": "PASS; signed clean install/core smoke and independent artifact review passed.",
-    "G10": "IN_PROGRESS; publisher PR #72 Catalog and CodeQL passed; Android CI build, emulator UI, and min-API jobs remain in progress.",
+    "G10": "IN_PROGRESS; first PR #72 min-API attempt failed due Android 8.0 emulator system_server boot/network failure (artifact inspected; app alive, no app OOM/crash); bounded retry job 113078411594 is in progress. Catalog, CodeQL, build, and emulator UI pass.",
     "G11": "PENDING; final exact-membership review bundle.",
     "G12": "PENDING; synchronize final status/watcher and mission closeout."
   },
@@ -727,10 +725,10 @@
     "total": 9,
     "failed": 2
   },
-  "issue_updated_at_utc": "2026-10-07T23:55:39Z",
+  "issue_updated_at_utc": "2026-10-08T00:04:52Z",
   "issue_body_current": true,
   "watchdog_prompt_updated": true,
-  "watchdog_prompt_updated_utc": "2026-10-07T23:56:05Z",
+  "watchdog_prompt_updated_utc": "2026-10-08T00:05:13Z",
   "control_plane_checkpoint_pushed": true,
   "pr_updated_at_utc": "2026-10-07T22:46:30Z",
   "control_plane_branch": "codex/v0.8.0-beta-watch; resolve live origin tip dynamically.",
@@ -771,8 +769,8 @@
     "plan_g3_pass": true,
     "readiness_certificate": "READY FOR PHASE B; plan 2.48 physical procedure safety review found no safety issue and the one-time category B metadata correction is applied."
   },
-  "last_observed_control_tree_before_status_commit": "cb2fa58bac78da15b156f5e61d48f2ac9b6dcf1c",
-  "next_action": "Monitor only the min-API job in Android CI run 37703940507 for PR #72 exact head 52ee1284cd6208012d217b3f151488b2ae739b8b. Catalog, CodeQL, build, and emulator UI have passed. If min-API fails, inspect its exact failed step/log and fix only a demonstrated defect; do not duplicate CI.",
+  "last_observed_control_tree_before_status_commit": "f8235a74125c6d9dc02a2f351d631bc7f3c3a48a",
+  "next_action": "Monitor retry job 113078411594 for PR #72 exact head 52ee1284cd6208012d217b3f151488b2ae739b8b in Android CI run 37703940507. The first failure artifact 11519535327 was inspected: Android 8.0 system_server crashed during boot, followed by unvalidated network and catalog offline UI; app PID 5378 survived with no app OOM/fatal crash. The same merged-source API-26 gate passed previously at the required 48 MiB configuration. Do not dispatch another retry while this one runs; if it fails, inspect its exact artifact/log before deciding next action.",
   "g3_approved_entry_route": "C05-C complete; no entry route required.",
   "g3_attached_connected_session_resume_approved": false,
   "phase_b_binding": {
@@ -900,11 +898,11 @@
     "physical_qualification_result": "NONE; this source/state audit does not pass C05-C/G4."
   },
   "automation_update_tool_failure": "No current failure; supported automation update succeeded at 2026-10-07T23:56:05Z.",
-  "latest_release_verified_at_utc": "2026-10-07T23:44:38Z",
+  "latest_release_verified_at_utc": "2026-10-08T00:05:13Z",
   "phase_c_started": true,
   "pr_body_current": true,
-  "issue_last_checked_utc": "2026-10-07T23:55:39Z",
-  "pr_last_checked_utc": "2026-10-07T23:54Z",
+  "issue_last_checked_utc": "2026-10-08T00:05:13Z",
+  "pr_last_checked_utc": "2026-10-08T00:05:13Z",
   "current_control_reconciliation_pushed": true,
   "exact_state_consistency_review": {
     "result": "CATEGORY_B_METADATA_ONLY; one correction applied; physical procedure safety review clear; no recursive review required.",
@@ -923,7 +921,7 @@
     "previous_checkpoint_result": "NOT PASS at 2026-10-07T16:16Z for synchronized plan 2.48 checkpoint; stale current maintained overlays/status fields found.",
     "previous_checkpoint_reviewed_at_utc": "2026-10-07T16:16:00Z"
   },
-  "issue_71": "OPEN; updated at 2026-10-07T23:55:39Z. PR #72 G10 has Catalog/CodeQL/build/emulator UI pass; min-API pending.",
+  "issue_71": "OPEN; G10 first min-API attempt failed after Android 8.0 emulator system_server boot/network failure; artifact diagnosed; only failed job rerun, job 113078411594 in progress.",
   "current_reconciliation_pushed": true,
   "phase_b_current_status": "PASS; same binding used for C05-C; session completed and phone released.",
   "push_attempts": [
@@ -974,7 +972,7 @@
     "tests_rerun": false,
     "finding": "CATEGORY B: stale current plan pointer and active JSON next-action/main snapshot only; no physical-procedure safety finding. One-time correction applied; no recursive review required under the owner convergence directive."
   },
-  "current_action": "G0-G9 PASS. PR #72 Catalog, CodeQL, build, and emulator UI passed; only its API-26 min-API cold-install job remains in progress. The open dependency-alert and passive-host-ADB disclosures remain recorded.",
+  "current_action": "G0-G9 PASS. PR #72 first min-API job failed following Android 8.0 system_server boot/network failure; app remained alive in the offline catalog state with no app OOM/crash. Only that failed job was rerun after diagnosis; retry 113078411594 is in progress. Keep PR #72 draft and monitor that job only.",
   "latest_phase_b_attempt": {
     "at_utc": "2026-10-07T21:25:28Z",
     "result": "PASS",
@@ -1323,21 +1321,31 @@
       },
       "android_ci": {
         "run_id": 37703940507,
-        "result": "in_progress",
+        "result": "in_progress; first min-api attempt failed, failed job rerun is in progress",
         "jobs": {
-          "build": "success",
-          "emulator-ui-test": "success",
-          "min-api-smoke": "in_progress; starting API-26 emulator and cold-install"
-        }
+          "build": "success; retry job 113078412990",
+          "emulator-ui-test": "success; retry job 113078413599",
+          "min-api-smoke": "first attempt failed at 113073720769; bounded retry 113078411594 in progress"
+        },
+        "first_min_api_attempt": {
+          "job_id": 113073720769,
+          "result": "failure",
+          "artifact_id": 11519535327,
+          "artifact_sha256": "28957adafdf1ae347aca67980c52ae7280ca5c2db3214d324a7b7704e30f4212",
+          "root_cause": "Android 8.0 system_server fatal boot exception in DevicePolicyManagerService; after system-server restart API-26 network did not validate, app showed offline catalog state, PID 5378 remained alive, and no app OOM/fatal crash was recorded."
+        },
+        "retry_job_id": 113078411594,
+        "closed_api26_candidate_gate": "PASS remains valid; exact merged-source run 37696314040 passed at x86_64 Pixel 2/API-26 and 48 MiB."
       },
       "codeql": {
         "run_id": 37703940594,
         "result": "success"
       }
-    }
+    },
+    "last_checked_utc": "2026-10-08T00:02:19Z"
   },
-  "next_action_source": "PR #72 exact-head Android CI min-api-smoke job in run 37703940507; resolve control branch dynamically.",
-  "publisher_pr_last_checked_utc": "2026-10-07T23:54Z",
+  "next_action_source": "PR #72 min-api-smoke bounded retry job 113078411594 in run 37703940507; exact head 52ee1284cd6208012d217b3f151488b2ae739b8b; failure artifact 11519535327 diagnosed.",
+  "publisher_pr_last_checked_utc": "2026-10-08T00:05:13Z",
   "dependabot_alert_snapshot": {
     "as_of_utc": "2026-10-07T23:52:38Z",
     "open_count": 56,
@@ -1382,5 +1390,14 @@
     "repeated": false,
     "effect": "no known app, USB, DAC, or hardware state change; C05-C evidence unchanged",
     "remaining_action": "no device access is required or authorized for remaining release gates"
+  },
+  "publisher_min_api_failure": {
+    "first_attempt_job_id": 113073720769,
+    "artifact_id": 11519535327,
+    "artifact_sha256": "28957adafdf1ae347aca67980c52ae7280ca5c2db3214d324a7b7704e30f4212",
+    "observed": "Android 8.0 system_server fatal boot exception in DevicePolicyManagerService, then network not validated after system-server restart; app displayed catalog offline UI and PID 5378 remained alive; no app OOM or app-process fatal exception was recorded.",
+    "classification": "emulator boot/network failure; no evidence of a frozen candidate app defect; prior exact merged-source API-26 gate remains PASS at 48 MiB.",
+    "retry_job_id": 113078411594,
+    "retry_status": "in_progress"
   }
 }
