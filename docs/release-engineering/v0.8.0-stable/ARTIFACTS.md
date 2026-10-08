@@ -6,9 +6,13 @@ This file is append-only release evidence. `NOT RUN` means no evidence is yet av
 
 - Starting main: `0f4236b64c6642b4cd7c1a0ffe2b0d9778330f01` (tree `e31fe181c012a5cd48d0573efe7e8a3d88e383a8`)
 - Stable PR: draft [#73](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/73), open against `main`.
-- Exact live PR head/tree and checks: refresh after this checkpoint update before review or merge.
-- Independent pre-merge reviewer: NOT RUN
-- Exact-head CI: NOT RUN
+- Last exact app/test PR head/tree: `3e557e1a0f7868bc5cf54f9e363da0c9e3c41bbd` / `680564d2488e54c194488d67d8d006ba22a6ee3f`; live PR head must be refreshed before merge.
+- Production app-source tree: `857d02a53d0df44fb0bd46e5ddad3b319dc48dab`, matching the qualified beta.
+- Independent pre-merge reviewer: PASS on the complete stable delta and the narrow test-only correction at `3e557e1a`; no correctness blocker.
+- Exact-head CI at `3e557e1a`: PASS. Android CI run `37736600658` (build/unit/lint/assembly job `113177438410`, API 26 job `113177438121`, API 35 UI job `113177438418`); CodeQL `37736600633`; Catalog currentness `37736600706`; Priority community coverage `37736600726`.
+- API 35 JUnit: 64 tests, 0 failures/errors/skips; artifact `11531339710`, digest `sha256:2692842828d81789c085ea2a09d52c5ad6566997a5c819142104190a60e31888`.
+- API 26 smoke: PASS; diagnostic artifact `11532521333`, digest `sha256:1ecf8c9203030da778b8e02d1e23cecd89628b0e379eb0a67e3adad64375db46`.
+- The branch is receiving a documentation-only evidence refresh; after push, re-resolve the exact head and applicable checks before marking PR #73 ready or merging.
 - Merged main SHA/tree: NOT RUN
 
 ## Official stable artifact
