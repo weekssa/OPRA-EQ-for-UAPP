@@ -178,3 +178,36 @@ tag binds the same run, artifact, and archive digest. A retry may continue that 
 verified asset set. It may not retarget a draft or reuse the tag for another source or artifact.
 Mismatched notes, assets, tag metadata, a changed `main`, or an unavailable candidate require
 owner-reviewed recovery before another attempt.
+
+## Beta prerelease publication (v0.8.0-beta)
+
+The stable `.github/workflows/promote-signed-release.yml` workflow accepts strict
+`vMAJOR.MINOR.PATCH` tags and publishes stable releases with `prerelease:false` and
+`make_latest:true`. Never use that workflow for a beta tag. Manual GitHub Release UI publication
+is not the repository's approved route.
+
+The dedicated main-only `.github/workflows/publish-beta-prerelease.yml` workflow is pinned to the
+single qualified v0.8.0 beta tuple: source `4190c6ca51694ea0a80583a83fd3cb09b5088a7d`, Signed EQ
+Library Beta Candidate run `37697940678`, artifact `11517325354`, and its recorded ZIP digest. It
+has no user-supplied tag or artifact inputs. Before any write it verifies the successful run and
+same-repository artifact, exact archive digest and file set, build-time manifest, APK checksum,
+package/version, pinned signer, v2/v3 signatures, alignment, R8 mapping, exact notes, stable latest
+v0.7.2, publisher checkout on main, and unchanged frozen app/test trees. The read-only job has
+`actions:read` and `contents:read`; only the later publish job receives `contents:write`.
+
+After verification, the publisher creates or resumes only an annotated `v0.8.0-beta` tag that
+binds the exact source, candidate workflow/run/artifact/archive digest, APK checksum, and release
+notes digest. It never moves or deletes a tag. It creates/resumes only the matching draft, uploads
+the exact signed APK bytes plus checksum, final beta release manifest, provenance, and signing /
+alignment reports, and verifies GitHub's asset digests and downloaded bytes. The original
+build-time candidate manifest, `.idsig`, and private R8 mapping are not public assets; the manifest
+contains a pre-qualification `outstanding` note and must not be presented as current release status.
+The final draft is published explicitly with `prerelease:true` and `make_latest:false`; readback
+must confirm the immutable release, annotated tag target, exact assets, and `/releases/latest` still
+at non-prerelease v0.7.2. A retry accepts only that same exact tag, notes, source, artifact, and
+matching partial draft; any conflict fails closed.
+
+The workflow concurrency group serializes publisher dispatches. Do not manually edit the beta
+tag, draft, or its assets while publication is running; GitHub does not provide an atomic
+compare-and-publish operation, so an unrelated concurrent release edit can only be detected by
+the final readback after GitHub has processed the publish request.
