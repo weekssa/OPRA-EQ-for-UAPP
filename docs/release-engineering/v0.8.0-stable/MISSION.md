@@ -28,11 +28,13 @@ Promote the exact qualified v0.8.0-beta production source to the official stable
 
 No Pixel, DAC, ADB/USB, TalkBack, headphones, JA11, or EW300 work is authorized or needed for this stable promotion. Existing beta physical evidence remains applicable because the production app source tree is unchanged.
 
-## Dependency caveat
+## Initial dependency snapshot (preliminary)
 
 One successful `releaseRuntimeClasspath` dependency graph refresh was completed for this mission. During the 2026-10-08 branch push, GitHub reported 56 repository vulnerabilities. A direct read of the repository's public Dependabot page returned 404 on 2026-10-08, and the earlier alert endpoint request was rejected, so item-level current alerts and a current alert-to-runtime mapping remain unavailable. A beta-era report traced alerts through build/test tooling, but it cannot substitute for a current mapping. Do not claim a clean scan or that current runtime alert exposure was ruled out.
 
 
 ## Mission completion — 2026-10-08
 
-**COMPLETE.** Exact main `54823e1a464f8b716a32c4f4808037fc0cdd99bd` was signed, independently verified, passed the signed v0.7.2 upgrade, beta-to-stable upgrade and clean-install/core smoke, then was published as immutable stable v0.8.0 and verified as GitHub latest. Public assets match the verified candidate; beta remains an immutable prerelease. Current checklist and final artifact evidence are in `../../PUBLIC_RELEASE_CHECKLIST.md` and `ARTIFACTS.md`. The remaining repository documentation PR and review-bundle/automation cleanup are closeout records only; they do not alter the published app tree or artifact.
+**COMPLETE.** Exact main `54823e1a464f8b716a32c4f4808037fc0cdd99bd` was signed, independently verified, passed the signed v0.7.2 upgrade, beta-to-stable upgrade and clean-install/core smoke, then was published as immutable stable v0.8.0 and verified as GitHub latest. Public assets match the verified candidate; beta remains an immutable prerelease. Post-publication documentation PR #78 merged normally as `4a15516ccc9852657716325cba629da16df27d26` / tree `bd2cd70964b1a3bb705dc5b20a22e79a19c26828`; its exact-head and exact-main checks passed. Release issue #71 is closed as completed. The final bundle, automation disposition, and release closeout evidence are recorded in `ARTIFACTS.md` and the current `RESUME.md`. No release, hardware, or app-source work remains.
+
+Final dependency disposition: the 2026-10-08 authenticated Dependabot snapshot identified 56 open transitive Maven alerts in build/test tooling (3 critical, 22 high, 28 medium, 3 low). The refreshed `releaseRuntimeClasspath` had no alert-bearing coordinates; no vulnerable app-runtime dependency path was identified in that graph. No clean vulnerability scan or DEX scan is claimed. See `ARTIFACTS.md` and `../../PUBLIC_RELEASE_CHECKLIST.md` for the final disposition.
