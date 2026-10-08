@@ -1,6 +1,6 @@
 # FiiO JA11 v0.8.1 acceptance package
 
-This folder contains the exact phone-session procedure and small host tools for the one prepared Pixel/JA11 window. The phone gate remains unrequested until the frozen candidate, exact-head checks and fresh Mac ADB preflight are complete.
+This folder contains the exact phone-session procedure and small host tools for the one prepared Pixel/JA11 window. The frozen candidate, exact-head checks on `9e9cb4ac6a0f540310139bd347d21a01fb1fb5b1`, and a fresh host-only Mac ADB preflight are complete. Before the owner is asked for a window, any newer PR head must pass its checks and receive a fresh preflight.
 
 ## Frozen diagnostic candidate
 
@@ -11,7 +11,7 @@ This folder contains the exact phone-session procedure and small host tools for 
 - versionName/versionCode: `0.8.0-ja11diag` / `11`
 - Debug certificate SHA-256: `73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`
 
-This replacement candidate is locally validated and bound to the committed source above. Exact-head PR checks and a fresh host-only ADB preflight are still required before requesting another phone window. It has been installed/launched only on clean API 35 emulator `emulator-5560`; `APP_BUILD_INFO` reported the exact source SHA. The prior J019 physical candidate is superseded and must not be reinstalled.
+This replacement candidate is locally validated and bound to the committed source above. All eight required PR checks passed on head `9e9cb4ac6a0f540310139bd347d21a01fb1fb5b1`, followed by host-only ADB preflight on 2026-10-08. It has been installed/launched only on clean API 35 emulator `emulator-5560`; `APP_BUILD_INFO` reported the exact source SHA. The prior J019 physical candidate is superseded and must not be reinstalled. Refresh PR checks and host discovery if a newer commit is pushed before the phone window.
 
 The prior APK left on the Pixel by J019 has SHA-256 `85e06ca0db818586a7eb2eab3378a1b21949b3c8593e1318536ec651d8369305`, package `com.weekssa.opraeqforuapp.ja11diag`, version `0.8.0-ja11diag`/11, and the same debug certificate SHA-256. The install helper verifies this exact prior package before `adb install -r` of the replacement, preserving its app data.
 

@@ -46,9 +46,12 @@ The replacement remediation source is `a78808443c71d688e0f338e96495847569fe12f7`
 `com.weekssa.opraeqforuapp.ja11diag`, version `0.8.0-ja11diag`/11, debug signer SHA-256
 `73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`. The remediation passed local
 JVM/build/lint/R8 gates and 64 API 35 emulator instrumentation cases; the APK was installed and its
-source-bound build event verified on the emulator only. The exact-unit serial availability and
-restart behavior remain physically unverified. Exact-head CI and the next bounded owner session are
-pending; no hardware support or public release claim follows from this software evidence.
+source-bound build event verified on the emulator only. All eight required PR checks passed on exact
+head `9e9cb4ac6a0f540310139bd347d21a01fb1fb5b1`, followed by host-only ADB preflight. The exact-unit
+serial availability and restart behavior remain physically unverified. The next bounded owner
+session is pending; if another commit advances the PR before that session, recheck exact-head CI and
+refresh host discovery. No hardware support or public release claim follows from this software
+evidence.
 
 | Capability | Decision | Evidence / boundary |
 | --- | --- | --- |
