@@ -31,3 +31,8 @@ No Pixel, DAC, ADB/USB, TalkBack, headphones, JA11, or EW300 work is authorized 
 ## Dependency caveat
 
 One successful `releaseRuntimeClasspath` dependency graph refresh was completed for this mission. During the 2026-10-08 branch push, GitHub reported 56 repository vulnerabilities. A direct read of the repository's public Dependabot page returned 404 on 2026-10-08, and the earlier alert endpoint request was rejected, so item-level current alerts and a current alert-to-runtime mapping remain unavailable. A beta-era report traced alerts through build/test tooling, but it cannot substitute for a current mapping. Do not claim a clean scan or that current runtime alert exposure was ruled out.
+
+
+## Mission completion — 2026-10-08
+
+**COMPLETE.** Exact main `54823e1a464f8b716a32c4f4808037fc0cdd99bd` was signed, independently verified, passed the signed v0.7.2 upgrade, beta-to-stable upgrade and clean-install/core smoke, then was published as immutable stable v0.8.0 and verified as GitHub latest. Public assets match the verified candidate; beta remains an immutable prerelease. Current checklist and final artifact evidence are in `../../PUBLIC_RELEASE_CHECKLIST.md` and `ARTIFACTS.md`. The remaining repository documentation PR and review-bundle/automation cleanup are closeout records only; they do not alter the published app tree or artifact.

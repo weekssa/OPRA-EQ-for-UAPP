@@ -23,6 +23,12 @@ The project uses Semantic Versioning. The `0.x` series is pre-1.0; a version wit
 - Keeps the v0.7.2 DAC identity, USB transaction/reconnect, DSP acceptance, canonical EQ, and saved-data behavior; this release adds no DAC support claim or live-audio control in USB Audio Player PRO.
 - Uses versionCode 11, advancing the signed v0.8.0-beta versionCode 10 while retaining package identity `com.weekssa.opraeqforuapp` for in-place upgrades.
 
+### Stable publication
+
+- Published the signed stable v0.8.0 release from exact main source `54823e1a464f8b716a32c4f4808037fc0cdd99bd`. Official candidate run `37769090436` produced artifact `11546549425`; promotion run `37770238047` passed signed v0.7.2 and beta in-place upgrades plus the clean-install/core smoke before publication.
+- The public APK SHA-256 is `2ea1d4b76a840e7448fddba556c3dc03aba19870eeb2499182af7d5759cce54b`; the pinned signer certificate SHA-256 is `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`.
+- The annotated `v0.8.0` tag binds the exact source and candidate artifact. All six uploaded release assets were downloaded and matched GitHub's asset digests; the public APK matches the signed candidate. The immutable v0.8.0-beta prerelease remains preserved.
+
 ## [0.8.0-beta] - 2026-10-04
 
 ### UX modernization
@@ -42,7 +48,7 @@ The project uses Semantic Versioning. The `0.x` series is pre-1.0; a version wit
 
 - Preserved the v0.7.2 DAC identity rules, USB operation and reconnect behavior, DSP acceptance rules, canonical EQ values, and stored EQ membership.
 - Added no DAC support claim and no live-audio control inside USB Audio Player PRO.
-- The public stable release remains v0.7.2. This beta is not a stable-channel promotion.
+- At beta publication on 2026-10-04, stable/latest was v0.7.2. The later stable promotion is recorded in the v0.8.0 entry above; the beta remains a separate immutable prerelease.
 
 ## [0.7.2] - 2026-10-03
 

@@ -874,3 +874,14 @@ fresh public APK download retained SHA-256 `efdd63ddb305d0624f805cc53e4ce27aae7d
 the pinned signer, package `com.weekssa.opraeqforuapp`, versionName `0.7.2`, versionCode `9`, and
 the tag's exact source `b8e90b9b53fc63ea00fefa499d7d4bd6ce4d55ea`. See
 `docs/release-engineering/v0.7.2-remediation/` for complete readbacks and the evidence bundle.
+
+
+## 2026-10-08 v0.8.0 stable publication — current release closeout
+
+EQ Library v0.8.0 is the current public stable/latest release. The immutable v0.8.0-beta prerelease remains preserved as historical beta evidence; v0.7.2 is the previous stable release. The stable artifact uses package `com.weekssa.opraeqforuapp`, versionName `0.8.0`, versionCode `11`, exact main source `54823e1a464f8b716a32c4f4808037fc0cdd99bd`, tree `e20330e2c4921823ecdf2881db0bf6fa1b3c3c0d`, APK SHA-256 `2ea1d4b76a840e7448fddba556c3dc03aba19870eeb2499182af7d5759cce54b`, and pinned signer SHA-256 `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`.
+
+Main-only signing run `37769090436` produced artifact `11546549425` (ZIP SHA-256 `2305f7fc18b3b9d391ac96f01b438e12ea4d025a690805443d3bab8f6ff364a7`). Promotion run `37770238047` passed v0.7.2-to-stable persisted-state upgrade, beta-to-stable persisted-state upgrade, and stable clean-install/core smoke before creating the annotated tag and publishing. One independent final-artifact review passed before publication. Tag `v0.8.0` peels to the exact main source; immutable release `406758581` is non-draft, non-prerelease and `/releases/latest`. All six public assets were downloaded and matched the GitHub SHA-256 metadata; public APK bytes equal the signed candidate. See [stable release artifacts](release-engineering/v0.8.0-stable/ARTIFACTS.md), [public release checklist](PUBLIC_RELEASE_CHECKLIST.md), and the local `.unlazy/v080-stable-promotion/` evidence/review bundle.
+
+The qualified beta production app-source tree is unchanged, so existing C05 Class B physical qualification remains applicable. The exact read-only C05-C evidence passed on 2026-10-07 under plan revision 2.48; no phone/DAC/ADB/USB action was repeated for stable. Class B remains the honest hardware-change classification.
+
+Dependency caveat: the 2026-10-08 refresh found 56 open transitive Maven alerts in build/test tooling. The refreshed stable `releaseRuntimeClasspath` contained no alert-bearing coordinates; this is not a clean vulnerability scan, and no DEX scan was performed.
