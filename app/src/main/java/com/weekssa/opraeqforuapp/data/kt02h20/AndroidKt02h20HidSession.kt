@@ -13,6 +13,8 @@ import android.hardware.usb.UsbInterface
 import android.hardware.usb.UsbManager
 import android.os.Build
 import androidx.core.content.ContextCompat
+import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11ReportWriteOutcome
+import com.weekssa.opraeqforuapp.domain.kt02h20.classifyJa11ReportWriteOutcome
 import java.io.Closeable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -105,7 +107,8 @@ internal class AndroidKt02h20HidSession(
         expectedGeneration > 0L &&
             currentSessionGeneration == expectedGeneration &&
             detachSequence == expectedDetachGeneration &&
-            session != null &&
+            session?.generation == expectedGeneration &&
+            session?.detachGeneration == expectedDetachGeneration &&
             state.value is Kt02h20ConnectionState.Connected
 
     private val receiver = object : BroadcastReceiver() {
@@ -114,7 +117,14 @@ internal class AndroidKt02h20HidSession(
             if (!device.matchesTarget()) return
             when (intent.action) {
                 permissionAction -> {
-                    if (usbManager.hasPermission(device)) {
+                    val granted = usbManager.hasPermission(device)
+                    Ja11DiagnosticLog.eventForDevice(
+                        deviceLabel,
+                        "USB_PERMISSION_RESULT",
+                        "pid" to device.productId,
+                        "granted" to granted,
+                    )
+                    if (granted) {
                         openAsync(device)
                     } else {
                         mutableState.value = Kt02h20ConnectionState.PermissionRequired(
@@ -123,22 +133,62 @@ internal class AndroidKt02h20HidSession(
                     }
                 }
                 UsbManager.ACTION_USB_DEVICE_DETACHED -> {
+                    val currentSession = session
+                    if (currentSession == null || !currentSession.matchesDetach(device.productId, device.deviceName)) {
+                        // A delayed detach broadcast for the old UAC PID (or a second matching
+                        // device) must not invalidate a newer session that is already open.
+                        Ja11DiagnosticLog.eventForDevice(
+                            deviceLabel,
+                            "USB_DETACH_IGNORED",
+                            "pid" to device.productId,
+                            "currentPid" to currentSession?.productId,
+                            "currentSessionGeneration" to currentSession?.generation,
+                            "currentDetachGeneration" to currentSession?.detachGeneration,
+                        )
+                        mutablePresent.value = findDevice() != null
+                        return
+                    }
                     // A device reset can emit DETACHED/ATTACHED during a mutating operation.
                     // Publish the physical absence immediately so the reconnect policy cannot
                     // open a new handle against the old UsbDevice while the reset is in flight.
                     // The actual close still runs under the session mutex before any replacement
                     // session can be opened.
+                    val detachedSession = currentSession
+                    Ja11DiagnosticLog.eventForDevice(
+                        deviceLabel,
+                        "USB_DETACH",
+                        "pid" to device.productId,
+                        "sessionGeneration" to detachedSession.generation,
+                        "detachGenerationBefore" to detachSequence,
+                    )
                     detachSequence = nextSessionGeneration(detachSequence)
+                    val detachAtEvent = detachSequence
                     mutablePresent.value = false
                     mutableState.value = Kt02h20ConnectionState.Disconnected
                     scope.launch {
-                        mutex.withLock { closeSessionLocked() }
+                        mutex.withLock {
+                            if (session?.generation == detachedSession.generation &&
+                                session?.detachGeneration == detachedSession.detachGeneration &&
+                                detachSequence == detachAtEvent
+                            ) {
+                                closeSessionLocked()
+                            }
+                        }
                         mutablePresent.value = findDevice() != null
                     }
                 }
                 UsbManager.ACTION_USB_DEVICE_ATTACHED -> {
+                    val hasPermission = usbManager.hasPermission(device)
+                    Ja11DiagnosticLog.eventForDevice(
+                        deviceLabel,
+                        "USB_ATTACH",
+                        "pid" to device.productId,
+                        "permissionGranted" to hasPermission,
+                        "sessionGeneration" to currentSessionGeneration,
+                        "detachGeneration" to detachSequence,
+                    )
                     mutablePresent.value = true
-                    if (mutableState.value is Kt02h20ConnectionState.Connecting && usbManager.hasPermission(device)) {
+                    if (mutableState.value is Kt02h20ConnectionState.Connecting && hasPermission) {
                         openAsync(device)
                     }
                 }
@@ -155,18 +205,31 @@ internal class AndroidKt02h20HidSession(
     fun connect() {
         val device = findDevice()
         if (device == null) {
+            Ja11DiagnosticLog.eventForDevice(deviceLabel, "CONNECT_NO_DEVICE")
             mutablePresent.value = false
             mutableState.value = Kt02h20ConnectionState.Error(
                 "$deviceLabel not detected. Connect the DAC by USB and try again.",
             )
             return
         }
+        Ja11DiagnosticLog.eventForDevice(
+            deviceLabel,
+            "CONNECT_REQUEST",
+            "pid" to device.productId,
+            "permissionGranted" to usbManager.hasPermission(device),
+            "sessionGeneration" to currentSessionGeneration,
+            "detachGeneration" to detachSequence,
+        )
         mutablePresent.value = true
         // Connect is intentionally idempotent. During an EW300 commit the USB function can
         // disappear and re-enumerate; the permission callback, attach callback, and reconnect
         // policy may all observe that transition. Do not queue duplicate permission requests or
         // competing open jobs while one connection attempt is already in flight.
-        if (session != null) {
+        val current = session
+        if (current != null &&
+            current.detachGeneration == detachSequence &&
+            state.value is Kt02h20ConnectionState.Connected
+        ) {
             mutableState.value = Kt02h20ConnectionState.Connected
             return
         }
@@ -187,6 +250,12 @@ internal class AndroidKt02h20HidSession(
                 PendingIntent.FLAG_UPDATE_CURRENT or mutabilityFlag,
             )
             permissionRequests += 1L
+            Ja11DiagnosticLog.eventForDevice(
+                deviceLabel,
+                "USB_PERMISSION_REQUESTED",
+                "pid" to device.productId,
+                "requestCount" to permissionRequests,
+            )
             usbManager.requestPermission(device, permissionIntent)
             startPermissionFallback()
         }
@@ -206,6 +275,103 @@ internal class AndroidKt02h20HidSession(
             if (written != report.size) return@withLock false
             if (settleMillis > 0) delay(settleMillis)
             true
+        }
+    }
+
+    /**
+     * Sends one JA11 report only through the session captured by its caller. A complete report is
+     * kept distinct from a later session change during settling so restart-capable controls can
+     * verify the requested value on a replacement session without retrying the report.
+     */
+    suspend fun sendJa11Report(
+        report: ByteArray,
+        expectedGeneration: Long,
+        expectedDetachGeneration: Long,
+        settleMillis: Long,
+    ): FiioJa11ReportWriteOutcome = withContext(Dispatchers.IO) {
+        mutex.withLock {
+            val current = session
+            if (current == null ||
+                currentSessionGeneration != expectedGeneration ||
+                current.generation != expectedGeneration ||
+                detachSequence != expectedDetachGeneration ||
+                current.detachGeneration != expectedDetachGeneration ||
+                state.value !is Kt02h20ConnectionState.Connected
+            ) {
+                Ja11DiagnosticLog.eventForDevice(
+                    deviceLabel,
+                    "JA11_REPORT_REJECTED_STALE",
+                    "command" to report.getOrNull(5)?.toInt()?.and(0xFF),
+                    "bytesExpected" to report.size,
+                    "actualPid" to current?.productId,
+                    "approvedPids" to productIds.sorted().joinToString(","),
+                    "expectedSessionGeneration" to expectedGeneration,
+                    "actualSessionGeneration" to current?.generation,
+                    "expectedDetachGeneration" to expectedDetachGeneration,
+                    "actualDetachGeneration" to detachSequence,
+                )
+                return@withLock classifyJa11ReportWriteOutcome(
+                    reportWasComplete = false,
+                    sessionCurrentBeforeSend = false,
+                    sessionCurrentAfterSettle = false,
+                )
+            }
+            Ja11DiagnosticLog.eventForDevice(
+                deviceLabel,
+                "JA11_REPORT_SEND_STARTED",
+                "command" to report.getOrNull(5)?.toInt()?.and(0xFF),
+                "bytesExpected" to report.size,
+                "pid" to current.productId,
+                "sessionGeneration" to current.generation,
+                "detachGeneration" to current.detachGeneration,
+            )
+            val written = runCatching {
+                current.connection.bulkTransfer(
+                    current.endpointOut,
+                    report,
+                    report.size,
+                    TRANSFER_TIMEOUT_MILLIS,
+                )
+            }.getOrDefault(-1)
+            if (written != report.size) {
+                val outcome = classifyJa11ReportWriteOutcome(
+                    reportWasComplete = false,
+                    sessionCurrentBeforeSend = true,
+                    sessionCurrentAfterSettle = isCurrentSession(expectedGeneration, expectedDetachGeneration),
+                )
+                Ja11DiagnosticLog.eventForDevice(
+                    deviceLabel,
+                    "JA11_REPORT_SEND_RESULT",
+                    "command" to report.getOrNull(5)?.toInt()?.and(0xFF),
+                    "bytesExpected" to report.size,
+                    "bytesWritten" to written,
+                    "pid" to current.productId,
+                    "sessionGeneration" to current.generation,
+                    "detachGeneration" to current.detachGeneration,
+                    "outcome" to outcome.name,
+                )
+                return@withLock outcome
+            }
+            if (settleMillis > 0) delay(settleMillis)
+            val outcome = classifyJa11ReportWriteOutcome(
+                reportWasComplete = true,
+                sessionCurrentBeforeSend = true,
+                sessionCurrentAfterSettle = isCurrentSession(expectedGeneration, expectedDetachGeneration),
+            )
+            Ja11DiagnosticLog.eventForDevice(
+                deviceLabel,
+                "JA11_REPORT_SEND_RESULT",
+                "command" to report.getOrNull(5)?.toInt()?.and(0xFF),
+                "bytesExpected" to report.size,
+                "bytesWritten" to written,
+                "pid" to current.productId,
+                "sessionGeneration" to current.generation,
+                "detachGeneration" to current.detachGeneration,
+                "settleMillis" to settleMillis,
+                "currentAfterSettle" to isCurrentSession(expectedGeneration, expectedDetachGeneration),
+                "outcome" to outcome.name,
+            )
+            outcome
         }
     }
 
@@ -241,6 +407,61 @@ internal class AndroidKt02h20HidSession(
                 if (read >= minResponseBytes) {
                     val candidate = response.copyOf(read)
                     if (acceptResponse(candidate)) return@withLock candidate
+                }
+                delay(READ_RETRY_DELAY_MILLIS)
+            }
+            null
+        }
+    }
+
+    /** JA11-only read exchange pinned to the session captured before the baseline field read. */
+    suspend fun exchangeJa11(
+        report: ByteArray,
+        expectedGeneration: Long,
+        expectedDetachGeneration: Long,
+        minResponseBytes: Int,
+        timeoutMillis: Long = RESPONSE_TIMEOUT_MILLIS,
+        acceptResponse: (ByteArray) -> Boolean = { true },
+    ): ByteArray? = withContext(Dispatchers.IO) {
+        mutex.withLock {
+            val current = session
+            if (current == null ||
+                currentSessionGeneration != expectedGeneration ||
+                current.generation != expectedGeneration ||
+                detachSequence != expectedDetachGeneration ||
+                current.detachGeneration != expectedDetachGeneration ||
+                state.value !is Kt02h20ConnectionState.Connected
+            ) {
+                return@withLock null
+            }
+            drainInput(current)
+            val written = runCatching {
+                current.connection.bulkTransfer(
+                    current.endpointOut,
+                    report,
+                    report.size,
+                    TRANSFER_TIMEOUT_MILLIS,
+                )
+            }.getOrDefault(-1)
+            if (written != report.size) return@withLock null
+            val deadline = System.currentTimeMillis() + timeoutMillis
+            while (System.currentTimeMillis() < deadline) {
+                val response = ByteArray(maxOf(current.endpointIn.maxPacketSize, 64))
+                val read = runCatching {
+                    current.connection.bulkTransfer(
+                        current.endpointIn,
+                        response,
+                        response.size,
+                        READ_POLL_MILLIS,
+                    )
+                }.getOrDefault(-1)
+                if (read >= minResponseBytes) {
+                    val candidate = response.copyOf(read)
+                    if (acceptResponse(candidate)) {
+                        return@withLock candidate.takeIf {
+                            isCurrentSession(expectedGeneration, expectedDetachGeneration)
+                        }
+                    }
                 }
                 delay(READ_RETRY_DELAY_MILLIS)
             }
@@ -314,18 +535,35 @@ internal class AndroidKt02h20HidSession(
     }
 
     private fun openAsync(device: UsbDevice) {
+        Ja11DiagnosticLog.eventForDevice(
+            deviceLabel,
+            "USB_OPEN_REQUEST",
+            "pid" to device.productId,
+            "sessionGeneration" to currentSessionGeneration,
+            "detachGeneration" to detachSequence,
+        )
         scope.launch {
             mutex.withLock {
                 // Permission and attach broadcasts can both request an open for the same
                 // UsbDevice. The first successful opener owns the session; later jobs must leave
                 // it alone instead of closing and replacing a live handle.
-                if (session != null) {
+                val current = session
+                if (current != null &&
+                    current.detachGeneration == detachSequence &&
+                    state.value is Kt02h20ConnectionState.Connected
+                ) {
                     mutableState.value = Kt02h20ConnectionState.Connected
                     return@withLock
                 }
                 closeSessionLocked()
                 val connection = runCatching { usbManager.openDevice(device) }.getOrNull()
                 if (connection == null) {
+                    Ja11DiagnosticLog.eventForDevice(
+                        deviceLabel,
+                        "USB_OPEN_FAILED",
+                        "pid" to device.productId,
+                        "reason" to "open_device_null",
+                    )
                     mutableState.value = Kt02h20ConnectionState.Error(
                         "Android could not open the $deviceLabel USB device.",
                     )
@@ -337,11 +575,18 @@ internal class AndroidKt02h20HidSession(
                 }.getOrDefault(false)
                 if (!claimed) {
                     connection.close()
+                    Ja11DiagnosticLog.eventForDevice(
+                        deviceLabel,
+                        "USB_OPEN_FAILED",
+                        "pid" to device.productId,
+                        "reason" to "hid_claim_failed",
+                    )
                     mutableState.value = Kt02h20ConnectionState.Error(
                         "Android could not claim the $deviceLabel PEQ HID interface.",
                     )
                     return@withLock
                 }
+                lastSessionGeneration = nextSessionGeneration(lastSessionGeneration)
                 session = UsbSession(
                     connection = connection,
                     usbInterface = descriptor.usbInterface,
@@ -349,10 +594,19 @@ internal class AndroidKt02h20HidSession(
                     endpointOut = descriptor.endpointOut,
                     productId = device.productId,
                     fingerprintKey = fingerprintKey(device, descriptor.usbInterface),
+                    deviceName = device.deviceName,
+                    generation = lastSessionGeneration,
+                    detachGeneration = detachSequence,
                 )
-                lastSessionGeneration = nextSessionGeneration(lastSessionGeneration)
                 currentSessionGeneration = lastSessionGeneration
                 mutableState.value = Kt02h20ConnectionState.Connected
+                Ja11DiagnosticLog.eventForDevice(
+                    deviceLabel,
+                    "USB_SESSION_OPENED",
+                    "pid" to device.productId,
+                    "sessionGeneration" to lastSessionGeneration,
+                    "detachGeneration" to detachSequence,
+                )
             }
         }
     }
@@ -413,6 +667,13 @@ internal class AndroidKt02h20HidSession(
 
     private fun closeSessionLocked() {
         val current = session ?: return
+        Ja11DiagnosticLog.eventForDevice(
+            deviceLabel,
+            "USB_SESSION_CLOSED",
+            "pid" to current.productId,
+            "sessionGeneration" to current.generation,
+            "detachGeneration" to current.detachGeneration,
+        )
         session = null
         currentSessionGeneration = 0L
         runCatching { current.connection.releaseInterface(current.usbInterface) }
@@ -465,7 +726,13 @@ internal class AndroidKt02h20HidSession(
         val endpointOut: UsbEndpoint,
         val productId: Int,
         val fingerprintKey: String,
-    )
+        val deviceName: String,
+        val generation: Long,
+        val detachGeneration: Long,
+    ) {
+        fun matchesDetach(detachedProductId: Int, detachedDeviceName: String): Boolean =
+            productId == detachedProductId && deviceName == detachedDeviceName
+    }
 
     private companion object {
         const val TRANSFER_TIMEOUT_MILLIS = 300

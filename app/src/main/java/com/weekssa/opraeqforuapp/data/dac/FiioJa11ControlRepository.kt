@@ -9,10 +9,14 @@ import com.weekssa.opraeqforuapp.domain.dac.validateForWrite
 import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceControls
 import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceSnapshot
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
+import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11ReportWriteOutcome
 
 interface FiioJa11DeviceControlSource {
     val sessionGeneration: Long
     val connectedProductId: Int?
+    /** Stable physical-device key with the UAC-specific PID removed. */
+    val deviceIdentityKey: String?
+        get() = null
     fun isSessionCurrent(sessionGeneration: Long): Boolean
     suspend fun readOutputVolume(): Int?
     suspend fun readSampleRateLabel(): String?
@@ -20,10 +24,19 @@ interface FiioJa11DeviceControlSource {
     suspend fun readHeadsetControlEnabled(): Boolean?
     suspend fun readEqProgram(): FiioJa11Protocol.EqProgram?
     suspend fun readUacMode(): FiioJa11Protocol.UacMode?
-    suspend fun writeOutputVolume(level: Int): Boolean
-    suspend fun writeHeadsetControlEnabled(enabled: Boolean): Boolean
-    suspend fun writeEqProgram(program: FiioJa11Protocol.EqProgram): Boolean
-    suspend fun writeUacMode(mode: FiioJa11Protocol.UacMode): Boolean
+    suspend fun writeOutputVolume(level: Int, expectedSessionGeneration: Long): FiioJa11ReportWriteOutcome
+    suspend fun writeHeadsetControlEnabled(
+        enabled: Boolean,
+        expectedSessionGeneration: Long,
+    ): FiioJa11ReportWriteOutcome
+    suspend fun writeEqProgram(
+        program: FiioJa11Protocol.EqProgram,
+        expectedSessionGeneration: Long,
+    ): FiioJa11ReportWriteOutcome
+    suspend fun writeUacMode(
+        mode: FiioJa11Protocol.UacMode,
+        expectedSessionGeneration: Long,
+    ): FiioJa11ReportWriteOutcome
 }
 
 sealed interface FiioJa11ControlReadResult {
@@ -37,6 +50,7 @@ data class FiioJa11PendingRestartWrite(
     val controlId: DacControlId,
     val requestedValue: DacControlValue,
     val previousSessionGeneration: Long,
+    val deviceIdentityKey: String,
     val baseline: FiioJa11DeviceSnapshot,
 )
 
@@ -58,6 +72,8 @@ sealed interface FiioJa11ControlWriteResult {
     ) : FiioJa11ControlWriteResult
     data class ReadFailed(val controlId: DacControlId, val field: String) : FiioJa11ControlWriteResult
     data class TransferFailed(val controlId: DacControlId) : FiioJa11ControlWriteResult
+    data class WriteUncertain(val controlId: DacControlId) : FiioJa11ControlWriteResult
+    data class WrongDevice(val controlId: DacControlId) : FiioJa11ControlWriteResult
     data class ReadbackMismatch(
         val controlId: DacControlId,
         val requestedValue: DacControlValue,
@@ -84,6 +100,34 @@ class FiioJa11ControlRepository(
     private val source: FiioJa11DeviceControlSource,
     private val operationGate: DacOperationGate = MutexDacOperationGate(),
 ) {
+    fun createPendingRestartWrite(
+        controlId: DacControlId,
+        requestedValue: DacControlValue,
+        baseline: FiioJa11DeviceSnapshot,
+    ): FiioJa11PendingRestartWrite? {
+        if (!FiioJa11DeviceControls.requiresSessionRestart(controlId)) return null
+        val deviceIdentityKey = source.deviceIdentityKey?.takeIf(String::isNotBlank) ?: return null
+        if (baseline.sessionGeneration != source.sessionGeneration || !source.isSessionCurrent(baseline.sessionGeneration)) {
+            return null
+        }
+        return FiioJa11PendingRestartWrite(
+            controlId = controlId,
+            requestedValue = requestedValue,
+            previousSessionGeneration = baseline.sessionGeneration,
+            deviceIdentityKey = deviceIdentityKey,
+            baseline = baseline,
+        )
+    }
+
+    fun isReplacementSessionCurrent(pending: FiioJa11PendingRestartWrite): Boolean {
+        val generation = source.sessionGeneration
+        return generation > 0L &&
+            generation != pending.previousSessionGeneration &&
+            source.isSessionCurrent(generation) &&
+            source.connectedProductId?.let(FiioJa11Protocol::supportsProductId) == true &&
+            source.deviceIdentityKey == pending.deviceIdentityKey
+    }
+
     suspend fun readSnapshot(): FiioJa11ControlReadResult =
         operationGate.withExclusiveOperation { readSnapshotUnlocked() }
 
@@ -131,6 +175,15 @@ class FiioJa11ControlRepository(
                     baseline.sessionGeneration,
                 )
             }
+            val deviceIdentityKey = source.deviceIdentityKey?.takeIf(String::isNotBlank)
+                ?: return@withExclusiveOperation FiioJa11ControlWriteResult.ReadFailed(intent.controlId, "USB identity")
+            if (!source.isSessionCurrent(generation)) {
+                return@withExclusiveOperation FiioJa11ControlWriteResult.StaleBaseline(
+                    intent.controlId,
+                    generation,
+                    source.sessionGeneration,
+                )
+            }
 
             val baselineValue = FiioJa11DeviceControls.valueFromSnapshot(intent.controlId, baseline)
             if (baselineValue == intent.requestedValue) {
@@ -142,12 +195,25 @@ class FiioJa11ControlRepository(
                 )
             }
 
-            if (!writeTarget(intent.controlId, intent.requestedValue)) {
-                return@withExclusiveOperation if (source.isSessionCurrent(generation)) {
-                    FiioJa11ControlWriteResult.TransferFailed(intent.controlId)
-                } else {
-                    FiioJa11ControlWriteResult.StaleBaseline(intent.controlId, generation, source.sessionGeneration)
+            val writeOutcome = writeTarget(intent.controlId, intent.requestedValue, generation)
+            when (writeOutcome) {
+                FiioJa11ReportWriteOutcome.STALE_BEFORE_SEND ->
+                    return@withExclusiveOperation FiioJa11ControlWriteResult.StaleBaseline(
+                        intent.controlId,
+                        generation,
+                        source.sessionGeneration,
+                    )
+                FiioJa11ReportWriteOutcome.INCOMPLETE_OR_UNKNOWN ->
+                    return@withExclusiveOperation FiioJa11ControlWriteResult.WriteUncertain(intent.controlId)
+                FiioJa11ReportWriteOutcome.COMPLETED_WITH_SESSION_CHANGE -> {
+                    if (FiioJa11DeviceControls.requiresSessionRestart(intent.controlId)) {
+                        // The transport knows the complete report finished before the expected
+                        // restart. Preserve that logical target for replacement-session readback.
+                    } else {
+                        return@withExclusiveOperation FiioJa11ControlWriteResult.WriteUncertain(intent.controlId)
+                    }
                 }
+                FiioJa11ReportWriteOutcome.COMPLETED -> Unit
             }
 
             if (FiioJa11DeviceControls.requiresSessionRestart(intent.controlId)) {
@@ -156,6 +222,7 @@ class FiioJa11ControlRepository(
                         controlId = intent.controlId,
                         requestedValue = intent.requestedValue,
                         previousSessionGeneration = generation,
+                        deviceIdentityKey = deviceIdentityKey,
                         baseline = baseline,
                     ),
                 )
@@ -197,7 +264,39 @@ class FiioJa11ControlRepository(
                     generation,
                 )
             }
-            val readback = when (val read = readSnapshotUnlocked()) {
+            if (source.connectedProductId?.takeIf(FiioJa11Protocol::supportsProductId) == null) {
+                return@withExclusiveOperation FiioJa11ControlWriteResult.NotConnected(pending.controlId)
+            }
+            val identity = source.deviceIdentityKey
+            if (identity != pending.deviceIdentityKey) {
+                return@withExclusiveOperation FiioJa11ControlWriteResult.WrongDevice(pending.controlId)
+            }
+            if (source.sessionGeneration != generation || !source.isSessionCurrent(generation)) {
+                return@withExclusiveOperation if (source.deviceIdentityKey != pending.deviceIdentityKey) {
+                    FiioJa11ControlWriteResult.WrongDevice(pending.controlId)
+                } else {
+                    FiioJa11ControlWriteResult.StaleBaseline(
+                        pending.controlId,
+                        generation,
+                        source.sessionGeneration,
+                    )
+                }
+            }
+            val read = readSnapshotUnlocked(
+                expectedSessionGeneration = generation,
+                expectedDeviceIdentityKey = identity,
+            )
+            if (source.deviceIdentityKey != pending.deviceIdentityKey) {
+                return@withExclusiveOperation FiioJa11ControlWriteResult.WrongDevice(pending.controlId)
+            }
+            if (source.sessionGeneration != generation || !source.isSessionCurrent(generation)) {
+                return@withExclusiveOperation FiioJa11ControlWriteResult.StaleBaseline(
+                    pending.controlId,
+                    generation,
+                    source.sessionGeneration,
+                )
+            }
+            val readback = when (read) {
                 is FiioJa11ControlReadResult.Success -> read.snapshot
                 FiioJa11ControlReadResult.NotConnected ->
                     return@withExclusiveOperation FiioJa11ControlWriteResult.NotConnected(pending.controlId)
@@ -209,6 +308,13 @@ class FiioJa11ControlRepository(
                     )
                 is FiioJa11ControlReadResult.ReadFailed ->
                     return@withExclusiveOperation FiioJa11ControlWriteResult.ReadFailed(pending.controlId, read.field)
+            }
+            if (readback.sessionGeneration != generation) {
+                return@withExclusiveOperation FiioJa11ControlWriteResult.StaleBaseline(
+                    pending.controlId,
+                    generation,
+                    readback.sessionGeneration,
+                )
             }
             verifyReadback(pending.controlId, pending.requestedValue, pending.baseline, readback, afterRestart = true)
         }
@@ -231,13 +337,21 @@ class FiioJa11ControlRepository(
         return FiioJa11ControlWriteResult.Verified(controlId, requestedValue, baseline, readback)
     }
 
-    private suspend fun readSnapshotUnlocked(): FiioJa11ControlReadResult {
-        val generation = source.sessionGeneration
-        if (generation <= 0L || !source.isSessionCurrent(generation)) return FiioJa11ControlReadResult.NotConnected
+    private suspend fun readSnapshotUnlocked(
+        expectedSessionGeneration: Long? = null,
+        expectedDeviceIdentityKey: String? = null,
+    ): FiioJa11ControlReadResult {
+        val generation = expectedSessionGeneration ?: source.sessionGeneration
+        fun sessionMatches(): Boolean =
+            source.sessionGeneration == generation &&
+                source.isSessionCurrent(generation) &&
+                (expectedDeviceIdentityKey == null || source.deviceIdentityKey == expectedDeviceIdentityKey)
+
+        if (generation <= 0L || !sessionMatches()) return FiioJa11ControlReadResult.NotConnected
 
         suspend fun <T> field(name: String, read: suspend () -> T?): T? {
-            if (!source.isSessionCurrent(generation)) return null
-            return read()?.takeIf { source.isSessionCurrent(generation) }
+            if (!sessionMatches()) return null
+            return read()?.takeIf { sessionMatches() }
         }
 
         val productId = source.connectedProductId?.takeIf(FiioJa11Protocol::supportsProductId)
@@ -255,7 +369,7 @@ class FiioJa11ControlRepository(
         val uac = field("UAC mode", source::readUacMode)
             ?: return failedOrChanged(generation, "UAC mode")
         if (uac.productId != productId) return FiioJa11ControlReadResult.ReadFailed("UAC mode / USB identity")
-        if (!source.isSessionCurrent(generation)) return FiioJa11ControlReadResult.SessionChanged
+        if (!sessionMatches()) return FiioJa11ControlReadResult.SessionChanged
 
         return FiioJa11ControlReadResult.Success(
             FiioJa11DeviceSnapshot(
@@ -271,25 +385,57 @@ class FiioJa11ControlRepository(
         )
     }
 
-    private suspend fun writeTarget(controlId: DacControlId, value: DacControlValue): Boolean = when (controlId) {
+    private suspend fun writeTarget(
+        controlId: DacControlId,
+        value: DacControlValue,
+        expectedGeneration: Long,
+    ): FiioJa11ReportWriteOutcome = when (controlId) {
         FiioJa11DeviceControls.OUTPUT_VOLUME -> {
-            val requested = (value as? DacControlValue.Numeric)?.value ?: return false
-            if (requested % 1.0 != 0.0) return false
-            source.writeOutputVolume(requested.toInt())
+            val requested = (value as? DacControlValue.Numeric)?.value
+                ?: return FiioJa11ReportWriteOutcome.INCOMPLETE_OR_UNKNOWN
+            if (requested % 1.0 != 0.0) return FiioJa11ReportWriteOutcome.INCOMPLETE_OR_UNKNOWN
+            writeOrdinaryTarget(expectedGeneration) { source.writeOutputVolume(requested.toInt(), expectedGeneration) }
         }
         FiioJa11DeviceControls.EQ_PROGRAM -> {
-            val valueId = (value as? DacControlValue.Discrete)?.valueId ?: return false
-            source.writeEqProgram(FiioJa11DeviceControls.eqProgram(valueId) ?: return false)
+            val valueId = (value as? DacControlValue.Discrete)?.valueId
+                ?: return FiioJa11ReportWriteOutcome.INCOMPLETE_OR_UNKNOWN
+            val program = FiioJa11DeviceControls.eqProgram(valueId)
+                ?: return FiioJa11ReportWriteOutcome.INCOMPLETE_OR_UNKNOWN
+            writeOrdinaryTarget(expectedGeneration) { source.writeEqProgram(program, expectedGeneration) }
         }
         FiioJa11DeviceControls.HEADSET_CONTROL -> {
-            val enabled = (value as? DacControlValue.Toggle)?.enabled ?: return false
-            source.writeHeadsetControlEnabled(enabled)
+            val enabled = (value as? DacControlValue.Toggle)?.enabled
+                ?: return FiioJa11ReportWriteOutcome.INCOMPLETE_OR_UNKNOWN
+            if (!source.isSessionCurrent(expectedGeneration)) return FiioJa11ReportWriteOutcome.STALE_BEFORE_SEND
+            source.writeHeadsetControlEnabled(enabled, expectedGeneration)
         }
         FiioJa11DeviceControls.UAC_MODE -> {
-            val valueId = (value as? DacControlValue.Discrete)?.valueId ?: return false
-            source.writeUacMode(FiioJa11DeviceControls.uacMode(valueId) ?: return false)
+            val valueId = (value as? DacControlValue.Discrete)?.valueId
+                ?: return FiioJa11ReportWriteOutcome.INCOMPLETE_OR_UNKNOWN
+            val mode = FiioJa11DeviceControls.uacMode(valueId)
+                ?: return FiioJa11ReportWriteOutcome.INCOMPLETE_OR_UNKNOWN
+            if (!source.isSessionCurrent(expectedGeneration)) return FiioJa11ReportWriteOutcome.STALE_BEFORE_SEND
+            source.writeUacMode(mode, expectedGeneration)
         }
-        else -> false
+        else -> FiioJa11ReportWriteOutcome.INCOMPLETE_OR_UNKNOWN
+    }
+
+    private suspend fun writeOrdinaryTarget(
+        expectedGeneration: Long,
+        write: suspend () -> FiioJa11ReportWriteOutcome,
+    ): FiioJa11ReportWriteOutcome {
+        if (!source.isSessionCurrent(expectedGeneration)) return FiioJa11ReportWriteOutcome.STALE_BEFORE_SEND
+        return when (write()) {
+            FiioJa11ReportWriteOutcome.COMPLETED -> if (source.isSessionCurrent(expectedGeneration)) {
+                FiioJa11ReportWriteOutcome.COMPLETED
+            } else {
+                FiioJa11ReportWriteOutcome.INCOMPLETE_OR_UNKNOWN
+            }
+            FiioJa11ReportWriteOutcome.COMPLETED_WITH_SESSION_CHANGE,
+            FiioJa11ReportWriteOutcome.INCOMPLETE_OR_UNKNOWN,
+            -> FiioJa11ReportWriteOutcome.INCOMPLETE_OR_UNKNOWN
+            FiioJa11ReportWriteOutcome.STALE_BEFORE_SEND -> FiioJa11ReportWriteOutcome.STALE_BEFORE_SEND
+        }
     }
 
     private fun unrelatedChangedFields(
@@ -323,6 +469,8 @@ class SessionFiioJa11DeviceControlSource(
         get() = sessions.fiioJa11Transport.sessionGeneration
     override val connectedProductId: Int?
         get() = sessions.fiioJa11Transport.connectedProductId
+    override val deviceIdentityKey: String?
+        get() = sessions.fiioJa11Transport.deviceIdentityKey
 
     override fun isSessionCurrent(sessionGeneration: Long): Boolean =
         sessions.fiioJa11ConnectionState.value is Kt02h20ConnectionState.Connected &&
@@ -334,10 +482,23 @@ class SessionFiioJa11DeviceControlSource(
     override suspend fun readHeadsetControlEnabled(): Boolean? = sessions.fiioJa11Transport.readHeadsetControlEnabled()
     override suspend fun readEqProgram(): FiioJa11Protocol.EqProgram? = sessions.fiioJa11Transport.readEqProgram()
     override suspend fun readUacMode(): FiioJa11Protocol.UacMode? = sessions.fiioJa11Transport.readUacMode()
-    override suspend fun writeOutputVolume(level: Int): Boolean = sessions.fiioJa11Transport.writeOutputVolume(level)
-    override suspend fun writeHeadsetControlEnabled(enabled: Boolean): Boolean =
-        sessions.fiioJa11Transport.writeHeadsetControlEnabled(enabled)
-    override suspend fun writeEqProgram(program: FiioJa11Protocol.EqProgram): Boolean =
-        sessions.fiioJa11Transport.writeEqProgram(program)
-    override suspend fun writeUacMode(mode: FiioJa11Protocol.UacMode): Boolean = sessions.fiioJa11Transport.writeUacMode(mode)
+    override suspend fun writeOutputVolume(
+        level: Int,
+        expectedSessionGeneration: Long,
+    ): FiioJa11ReportWriteOutcome =
+        sessions.fiioJa11Transport.writeOutputVolume(level, expectedSessionGeneration)
+    override suspend fun writeHeadsetControlEnabled(
+        enabled: Boolean,
+        expectedSessionGeneration: Long,
+    ): FiioJa11ReportWriteOutcome =
+        sessions.fiioJa11Transport.writeHeadsetControlEnabled(enabled, expectedSessionGeneration)
+    override suspend fun writeEqProgram(
+        program: FiioJa11Protocol.EqProgram,
+        expectedSessionGeneration: Long,
+    ): FiioJa11ReportWriteOutcome = sessions.fiioJa11Transport.writeEqProgram(program, expectedSessionGeneration)
+    override suspend fun writeUacMode(
+        mode: FiioJa11Protocol.UacMode,
+        expectedSessionGeneration: Long,
+    ): FiioJa11ReportWriteOutcome =
+        sessions.fiioJa11Transport.writeUacMode(mode, expectedSessionGeneration)
 }

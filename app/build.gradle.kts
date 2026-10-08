@@ -33,6 +33,7 @@ android {
         buildConfigField("String", "OPRA_CATALOG_URL", "\"${opraCatalogUrl.get()}\"")
         buildConfigField("String", "CANONICAL_CATALOG_URL", "\"${canonicalCatalogUrl.get()}\"")
         buildConfigField("String", "LATEST_RELEASE_API_URL", "\"${latestReleaseApiUrl.get()}\"")
+        buildConfigField("boolean", "JA11_DIAGNOSTICS_ENABLED", "false")
         buildConfigField("boolean", "EW300_PERSISTENCE_QUALIFICATION_ENABLED", "false")
         buildConfigField("boolean", "EW300_FLASH_VALIDATION_ENABLED", "false")
         buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"local-unqualified\"")
@@ -49,6 +50,13 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+        }
+        create("ja11Diagnostic") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".ja11diag"
+            versionNameSuffix = "-ja11diag"
+            matchingFallbacks += listOf("debug")
+            buildConfigField("boolean", "JA11_DIAGNOSTICS_ENABLED", "true")
         }
     }
 

@@ -172,6 +172,7 @@ class HardwareEqRepository(
                 deviceFingerprintKey = fingerprintKey,
                 usbProductId = productId,
                 snapshotBundle = bundle,
+                detachGeneration = dacSessionRepository.fiioJa11Transport.detachGeneration,
             )
         }.getOrNull()
     }

@@ -131,6 +131,77 @@ class FiioJa11FlasherTest {
     }
 
     @Test
+    fun oneFlashWorksFromUserOneVocalAndOffWithoutPreliminaryMutation() = runBlocking {
+        listOf(
+            FiioJa11Protocol.EqProgram.USER_1,
+            FiioJa11Protocol.EqProgram.VOCAL,
+            FiioJa11Protocol.EqProgram.OFF,
+        ).forEach { initialProgram ->
+            val transport = FakeJa11Transport(initialProgram = initialProgram)
+
+            val result = FiioJa11Flasher(transport).flash(exactProfile())
+
+            assertTrue("$initialProgram: $result", result is Kt02h20FlashResult.Success)
+            assertEquals(
+                listOf(0x15, 0x15, 0x15, 0x15, 0x15, 0x17, 0x16, 0x18, 0x19),
+                transport.sentCommands,
+            )
+            assertEquals(1, transport.saveCount)
+        }
+    }
+
+    @Test
+    fun unexpectedSessionChangeAfterFirstBandStopsAllLaterCommandsAndDoesNotSave() = runBlocking {
+        val transport = FakeJa11Transport(changeSessionAfterCommandNumber = 1)
+
+        val result = FiioJa11Flasher(transport).flash(exactProfile())
+
+        assertTrue(result.toString(), result is Kt02h20FlashResult.TransferFailed)
+        assertEquals(listOf(0x15), transport.sentCommands)
+        assertEquals(listOf(1L), transport.sentAtGenerations)
+        assertEquals(0, transport.saveCount)
+    }
+
+    @Test
+    fun unexpectedSessionChangeAfterApplyStopsBeforePreSaveReadsAndSave() = runBlocking {
+        val transport = FakeJa11Transport(changeSessionAfterCommandNumber = 8)
+
+        val result = FiioJa11Flasher(transport).flash(exactProfile())
+
+        assertTrue(result.toString(), result is Kt02h20FlashResult.TransferFailed)
+        assertEquals(listOf(0x15, 0x15, 0x15, 0x15, 0x15, 0x17, 0x16, 0x18), transport.sentCommands)
+        assertEquals(0, transport.bandReadsAfterWrites)
+        assertEquals(0, transport.globalGainReadsAfterWrites)
+        assertEquals(0, transport.programReadsAfterWrites)
+        assertEquals(0, transport.saveCount)
+    }
+
+    @Test
+    fun finalFlashVerificationUsesReplacementSessionAfterSaveRestart() = runBlocking {
+        val transport = FakeJa11Transport(reconnectAfterSave = true)
+
+        val result = FiioJa11Flasher(transport).flash(exactProfile())
+
+        assertTrue(result.toString(), result is Kt02h20FlashResult.Success)
+        assertEquals(1, transport.saveCount)
+        assertEquals(1L, transport.sentAtGenerations.last())
+        assertTrue(transport.readGenerations.takeLast(7).all { it == 2L })
+    }
+
+    @Test
+    fun saveThatDetachesDuringItsSettleUsesFreshSessionForFinalVerification() = runBlocking {
+        val transport = FakeJa11Transport(changeSessionAfterCommandNumber = 9)
+
+        val result = FiioJa11Flasher(transport).flash(exactProfile())
+
+        assertTrue(result.toString(), result is Kt02h20FlashResult.Success)
+        assertEquals(1, transport.saveCount)
+        assertEquals(listOf(0x15, 0x15, 0x15, 0x15, 0x15, 0x17, 0x16, 0x18, 0x19), transport.sentCommands)
+        assertEquals(2L, transport.sessionGeneration)
+        assertTrue(transport.readGenerations.takeLast(7).all { it == 2L })
+    }
+
+    @Test
     fun applyFailureNeverAttemptsPersistentSave() = runBlocking {
         val transport = FakeJa11Transport(failCommand = 0x18)
         val result = FiioJa11Flasher(transport).flash(exactProfile())
@@ -146,6 +217,16 @@ class FiioJa11FlasherTest {
         val result = FiioJa11Flasher(transport).flash(exactProfile())
 
         assertTrue(result is Kt02h20FlashResult.DeviceUnavailable)
+        assertTrue(transport.sentCommands.isEmpty())
+    }
+
+    @Test
+    fun preflightSessionChangePreventsAllWrites() = runBlocking {
+        val transport = FakeJa11Transport(changeSessionDuringBaselineRead = true)
+
+        val result = FiioJa11Flasher(transport).flash(exactProfile())
+
+        assertTrue(result.toString(), result is Kt02h20FlashResult.DeviceUnavailable)
         assertTrue(transport.sentCommands.isEmpty())
     }
 
@@ -275,6 +356,45 @@ class FiioJa11FlasherTest {
         )
     }
 
+    @Test
+    fun resetStopsAfterSessionChangesDuringFirstBandWrite() = runBlocking {
+        val transport = FakeJa11Transport(changeSessionAfterCommandNumber = 1)
+
+        val result = FiioJa11Flasher(transport).resetToFlat()
+
+        assertTrue(result.toString(), result is Kt02h20FlatResetResult.TransferFailed)
+        assertEquals(listOf(0x15), transport.sentCommands)
+        assertEquals(0, transport.saveCount)
+    }
+
+    @Test
+    fun editorApplyStopsAfterSessionChangesDuringFirstBandWrite() = runBlocking {
+        val transport = FakeJa11Transport(changeSessionAfterCommandNumber = 1)
+        val baseline = editorBaseline(transport)
+        val started = HardwareEqEditor.startFromCurrent(
+            snapshotState = HardwareEqSnapshotState().publishCurrent(baseline.snapshotBundle),
+            spec = HardwareEqEditSpecs.FIIO_JA11,
+        ) as HardwareEqEditorStartResult.Ready
+        val edited = HardwareEqEditor.updateFilter(
+            started.workingCopy,
+            HardwareEqEditSpecs.FIIO_JA11,
+            0,
+            EqFilterType.PEAK,
+            80.0,
+            1.0,
+            0.7,
+        )
+
+        val result = FiioJa11Flasher(transport).applyEditorWorkingCopy(
+            HardwareEqEditor.useSafeGain(edited, HardwareEqEditSpecs.FIIO_JA11),
+            baseline,
+        )
+
+        assertTrue(result.toString(), result is FiioJa11EditorApplyResult.TransferFailed)
+        assertEquals(listOf(0x15), transport.sentCommands)
+        assertEquals(0, transport.saveCount)
+    }
+
     private fun exactProfile(): OpraEqProfile = OpraEqProfile(
         id = "ja11-flash",
         productId = "product",
@@ -315,14 +435,20 @@ class FiioJa11FlasherTest {
         private val saveReconnectAccepted: Boolean = true,
         private val postSaveGlobalGainDb: Double? = null,
         private val postWriteGlobalGainDb: Double? = null,
+        private val changeSessionAfterCommandNumber: Int? = null,
+        private val reconnectAfterSave: Boolean = false,
+        private val changeSessionDuringBaselineRead: Boolean = false,
     ) : FiioJa11Transport {
         override val deviceFingerprintKey: String = "serial=ja11-test|vid=2972"
         override val usbProductId: Int = FiioJa11Protocol.PRODUCT_ID_UAC_2
         override var sessionGeneration: Long = 1L
+        override var detachGeneration: Long = 0L
         val bands = FiioJa11Protocol.completeBands(emptyList()).toMutableList()
         var globalGainDb: Double = 0.0
         var program: FiioJa11Protocol.EqProgram = initialProgram
         val sentCommands = mutableListOf<Int>()
+        val sentAtGenerations = mutableListOf<Long>()
+        val readGenerations = mutableListOf<Long>()
         var saveCount = 0
         var writeStarted = false
         var bandReadsAfterWrites = 0
@@ -342,28 +468,53 @@ class FiioJa11FlasherTest {
         }
 
         override suspend fun readBand(index: Int): FiioJa11Protocol.Band? {
+            readGenerations += sessionGeneration
             if (!readable) return null
             if (writeStarted) bandReadsAfterWrites++
             return bands[index]
         }
 
+        override suspend fun readBandInSession(
+            index: Int,
+            expected: FiioJa11SessionToken,
+        ): FiioJa11Protocol.Band? = readPinned(expected) { readBand(index) }
+
         override suspend fun readGlobalGainDb(): Double? {
+            readGenerations += sessionGeneration
             if (!readable) return null
             if (writeStarted) globalGainReadsAfterWrites++
             return if (writeStarted) postWriteGlobalGainDb ?: globalGainDb else globalGainDb
         }
 
+        override suspend fun readGlobalGainDbInSession(expected: FiioJa11SessionToken): Double? =
+            readPinned(expected, ::readGlobalGainDb)
+
         override suspend fun readFirmwareVersion(): String? = "2.20"
 
+        override suspend fun readFirmwareVersionInSession(expected: FiioJa11SessionToken): String? =
+            readPinned(expected, ::readFirmwareVersion)
+
         override suspend fun readEqProgram(): FiioJa11Protocol.EqProgram? {
+            readGenerations += sessionGeneration
             if (!readable) return null
             if (writeStarted) programReadsAfterWrites++
-            return program
+            val value = program
+            if (changeSessionDuringBaselineRead && !writeStarted) changeSession()
+            return value
         }
 
-        override suspend fun saveToFlash(): Boolean {
-            val accepted = sendReport(FiioJa11Protocol.saveToFlashReport()) && saveReconnectAccepted
-            if (accepted) postSaveGlobalGainDb?.let { globalGainDb = it }
+        override suspend fun readEqProgramInSession(
+            expected: FiioJa11SessionToken,
+        ): FiioJa11Protocol.EqProgram? = readPinned(expected, ::readEqProgram)
+
+        override suspend fun saveToFlash(expected: FiioJa11SessionToken): Boolean {
+            val accepted = ja11RestartWriteWasAccepted(
+                sendReportInSession(FiioJa11Protocol.saveToFlashReport(), expected),
+            ) && saveReconnectAccepted
+            if (accepted) {
+                postSaveGlobalGainDb?.let { globalGainDb = it }
+                if (reconnectAfterSave) changeSession()
+            }
             return accepted
         }
 
@@ -371,6 +522,7 @@ class FiioJa11FlasherTest {
             writeStarted = true
             val command = report[5].toInt() and 0xFF
             sentCommands += command
+            sentAtGenerations += sessionGeneration
             if (command == failCommand) {
                 if (traceActive) traceEvents += traceEvent(report, succeeded = false)
                 return false
@@ -407,7 +559,21 @@ class FiioJa11FlasherTest {
                 0x19 -> saveCount++
             }
             if (traceActive) traceEvents += traceEvent(report, succeeded = true)
+            if (sentCommands.size == changeSessionAfterCommandNumber) changeSession()
             return true
+        }
+
+        private suspend fun <T> readPinned(
+            expected: FiioJa11SessionToken,
+            read: suspend () -> T?,
+        ): T? {
+            if (!isCurrentSession(expected)) return null
+            return read()?.takeIf { isCurrentSession(expected) }
+        }
+
+        private fun changeSession() {
+            sessionGeneration++
+            detachGeneration++
         }
 
         private fun traceEvent(report: ByteArray, succeeded: Boolean): FiioJa11TransportEvent =

@@ -14,6 +14,7 @@ import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshFailureReason
 import com.weekssa.opraeqforuapp.data.catalog.CatalogRefreshResult
 import com.weekssa.opraeqforuapp.data.export.PresetExportItemResult
 import com.weekssa.opraeqforuapp.data.export.PresetExportSummary
+import com.weekssa.opraeqforuapp.data.kt02h20.Ja11DiagnosticLog
 import com.weekssa.opraeqforuapp.data.preferences.SessionExportTarget
 import com.weekssa.opraeqforuapp.data.sync.BackgroundSyncScheduler
 import com.weekssa.opraeqforuapp.data.sync.CatalogSyncOutcome
@@ -41,6 +42,14 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Ja11DiagnosticLog.event(
+            "APP_BUILD_INFO",
+            "package" to BuildConfig.APPLICATION_ID,
+            "versionName" to BuildConfig.VERSION_NAME,
+            "versionCode" to BuildConfig.VERSION_CODE,
+            "debuggable" to BuildConfig.DEBUG,
+            "ja11DiagnosticsEnabled" to BuildConfig.JA11_DIAGNOSTICS_ENABLED,
+        )
         enableEdgeToEdge()
         BackgroundSyncScheduler.ensureScheduled(applicationContext)
 

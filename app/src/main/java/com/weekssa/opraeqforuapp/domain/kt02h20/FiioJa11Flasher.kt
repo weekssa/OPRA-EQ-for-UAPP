@@ -34,14 +34,42 @@ interface FiioJa11Transport {
     suspend fun readEqProgram(): FiioJa11Protocol.EqProgram?
     /** Optional read-only firmware metadata used to identify protocol-semantic differences. */
     suspend fun readFirmwareVersion(): String? = null
+
+    /** Fail closed unless the transport can pin this read to the transaction's exact USB session. */
+    suspend fun readBandInSession(index: Int, expected: FiioJa11SessionToken): FiioJa11Protocol.Band? = null
+    suspend fun readGlobalGainDbInSession(expected: FiioJa11SessionToken): Double? = null
+    suspend fun readEqProgramInSession(expected: FiioJa11SessionToken): FiioJa11Protocol.EqProgram? = null
+    suspend fun readFirmwareVersionInSession(expected: FiioJa11SessionToken): String? = null
+
     suspend fun sendReport(report: ByteArray): Boolean
+
+    fun isCurrentSession(expected: FiioJa11SessionToken): Boolean =
+        deviceFingerprintKey == expected.deviceFingerprintKey &&
+            usbProductId == expected.usbProductId &&
+            sessionGeneration == expected.sessionGeneration &&
+            detachGeneration == expected.detachGeneration
+
+    /** Sends only if the transaction's exact USB session is still current. */
+    suspend fun sendReportInSession(
+        report: ByteArray,
+        expected: FiioJa11SessionToken,
+    ): FiioJa11ReportWriteOutcome {
+        if (!isCurrentSession(expected)) return FiioJa11ReportWriteOutcome.STALE_BEFORE_SEND
+        if (!sendReport(report)) return FiioJa11ReportWriteOutcome.INCOMPLETE_OR_UNKNOWN
+        return if (isCurrentSession(expected)) {
+            FiioJa11ReportWriteOutcome.COMPLETED
+        } else {
+            FiioJa11ReportWriteOutcome.COMPLETED_WITH_SESSION_CHANGE
+        }
+    }
 
     /**
      * Save is a device-specific lifecycle boundary. The default keeps deterministic fakes and
      * non-Android transports compatible; Android JA11 overrides it to await the documented
      * power-cycle/re-enumeration before final readback.
      */
-    suspend fun saveToFlash(): Boolean = sendReport(FiioJa11Protocol.saveToFlashReport())
+    suspend fun saveToFlash(expected: FiioJa11SessionToken): Boolean =
+        ja11RestartWriteWasAccepted(sendReportInSession(FiioJa11Protocol.saveToFlashReport(), expected))
 }
 
 /**
@@ -106,15 +134,26 @@ class FiioJa11Flasher(
         val targetBands = FiioJa11Protocol.completeBands(representation.bands)
         trace.target(profile, representation, targetBands)
 
-        val baselineProgram = transport.readEqProgram()
-        val baselineGlobalGainDb = transport.readGlobalGainDb()
-        val baselineBands = (0 until FiioJa11Protocol.BAND_COUNT).map { index ->
-            transport.readBand(index)
+        val transactionSession = captureCurrentSessionToken()
+            ?: return Kt02h20FlashResult.DeviceUnavailable(
+                "Couldn’t confirm the current FiiO JA11 USB identity and session. No EQ changes were written.",
+            )
+
+        val baselineProgram = readInSession(transactionSession) { transport.readEqProgramInSession(transactionSession) }
+        val baselineGlobalGainDb = readInSession(transactionSession) {
+            transport.readGlobalGainDbInSession(transactionSession)
         }
-        val firmwareVersion = transport.readFirmwareVersion()
-        if (baselineProgram == null || baselineGlobalGainDb == null || baselineBands.any { it == null }) {
+        val baselineBands = (0 until FiioJa11Protocol.BAND_COUNT).map { index ->
+            readInSession(transactionSession) { transport.readBandInSession(index, transactionSession) }
+        }
+        val firmwareVersion = readInSession(transactionSession) {
+            transport.readFirmwareVersionInSession(transactionSession)
+        }
+        if (!transport.isCurrentSession(transactionSession) ||
+            baselineProgram == null || baselineGlobalGainDb == null || baselineBands.any { it == null }
+        ) {
             return Kt02h20FlashResult.DeviceUnavailable(
-                "Couldn’t read the FiiO JA11 PEQ state. Reconnect the DAC and try again.",
+                "Couldn’t read one complete FiiO JA11 PEQ baseline from the same USB session. No EQ changes were written.",
             )
         }
         trace.baselineRead(
@@ -126,41 +165,58 @@ class FiioJa11Flasher(
 
         trace.stage(FiioJa11OperationStage.WRITING)
         targetBands.forEachIndexed { index, band ->
-            if (!transport.sendReport(FiioJa11Protocol.writeBandReport(index, band))) {
+            if (!sendPreSaveReport(FiioJa11Protocol.writeBandReport(index, band), transactionSession)) {
                 return Kt02h20FlashResult.TransferFailed(
-                    "FiiO JA11 stopped accepting PEQ data at band ${index + 1} of ${FiioJa11Protocol.BAND_COUNT}. The preset was not reported as applied.",
+                    "The FiiO JA11 USB session changed or stopped confirming reports at band ${index + 1} of ${FiioJa11Protocol.BAND_COUNT}. No later commands were sent and the preset was not reported as applied.",
                 )
             }
         }
-        if (!transport.sendReport(FiioJa11Protocol.writeGlobalGainReport(representation.playbackGainDb))) {
+        if (!sendPreSaveReport(FiioJa11Protocol.writeGlobalGainReport(representation.playbackGainDb), transactionSession)) {
             return Kt02h20FlashResult.TransferFailed(
-                "FiiO JA11 did not accept the required global EQ gain. The preset was not reported as applied.",
+                "The FiiO JA11 USB session changed or stopped confirming the global EQ gain report. No later commands were sent.",
             )
         }
-        if (!transport.sendReport(FiioJa11Protocol.writeEqProgramReport(FiioJa11Protocol.EqProgram.USER_1))) {
+        if (!sendPreSaveReport(
+                FiioJa11Protocol.writeEqProgramReport(FiioJa11Protocol.EqProgram.USER_1),
+                transactionSession,
+            )
+        ) {
             return Kt02h20FlashResult.TransferFailed(
-                "FiiO JA11 did not accept selection of the User 1 PEQ program. The preset was not reported as applied.",
+                "The FiiO JA11 USB session changed or stopped confirming the User 1 selection. No later commands were sent.",
             )
         }
-        if (!transport.sendReport(FiioJa11Protocol.applyReport())) {
+        if (!sendPreSaveReport(FiioJa11Protocol.applyReport(), transactionSession)) {
             return Kt02h20FlashResult.TransferFailed(
-                "FiiO JA11 did not accept the Apply command. Reconnect the DAC and try again.",
+                "The FiiO JA11 USB session changed or stopped confirming Apply. No Save was sent.",
             )
         }
         trace.stage(FiioJa11OperationStage.APPLY_SENT)
 
-        verifyTarget(targetBands, representation.playbackGainDb, trace, "VOLATILE_READBACK")?.let { reason ->
+        verifyTarget(targetBands, representation.playbackGainDb, transactionSession, trace, "VOLATILE_READBACK")?.let { reason ->
             return Kt02h20FlashResult.VerificationFailed(reason)
         }
 
         trace.saveSent()
-        if (!transport.saveToFlash()) {
+        if (!transport.saveToFlash(transactionSession)) {
             return Kt02h20FlashResult.TransferFailed(
                 "The PEQ was applied to the FiiO JA11, but the device did not complete the persistent Save/reconnect boundary.",
             )
         }
 
-        verifyTarget(targetBands, representation.playbackGainDb, trace, "FINAL_READBACK")?.let { reason ->
+        val finalSession = captureCurrentSessionToken()
+            ?.takeIf { samePhysicalDevice(transactionSession, it) }
+            ?: return Kt02h20FlashResult.VerificationFailed(
+                "FiiO JA11 completed Save, but the final USB session did not match the device that started Flash.",
+            )
+        if (finalSession.detachGeneration != transactionSession.detachGeneration &&
+            finalSession.sessionGeneration == transactionSession.sessionGeneration
+        ) {
+            return Kt02h20FlashResult.VerificationFailed(
+                "FiiO JA11 detached during Save without a confirmed replacement session. Final readback was not attempted.",
+            )
+        }
+
+        verifyTarget(targetBands, representation.playbackGainDb, finalSession, trace, "FINAL_READBACK")?.let { reason ->
             return Kt02h20FlashResult.VerificationFailed(
                 "FiiO JA11 accepted Save, but the final readback did not match the intended PEQ. $reason",
             )
@@ -247,11 +303,14 @@ class FiioJa11Flasher(
                 "The FiiO JA11 identity or USB session changed after the editor was opened. No editor changes were written.",
             )
         }
+        val transactionSession = baseline.sessionToken()
         trace.stage(FiioJa11OperationStage.AUTHORIZED_SESSION)
 
         // This is the mandatory immediate pre-write token comparison, even when the generation has
         // not changed. A background DEVICE operation or external state change must invalidate Apply.
-        val currentProgram = transport.readEqProgram()
+        val currentProgram = readInSession(transactionSession) {
+            transport.readEqProgramInSession(transactionSession)
+        }
             ?: return FiioJa11EditorApplyResult.DeviceUnavailable(
                 "Couldn’t re-read the active FiiO JA11 program before Apply. No editor changes were written.",
             )
@@ -260,8 +319,12 @@ class FiioJa11Flasher(
                 "FiiO JA11 is no longer on User 1. No editor changes were written; read the current EQ again.",
             )
         }
-        val currentBands = (0 until FiioJa11Protocol.BAND_COUNT).map { index -> transport.readBand(index) }
-        val currentGlobalGainDb = transport.readGlobalGainDb()
+        val currentBands = (0 until FiioJa11Protocol.BAND_COUNT).map { index ->
+            readInSession(transactionSession) { transport.readBandInSession(index, transactionSession) }
+        }
+        val currentGlobalGainDb = readInSession(transactionSession) {
+            transport.readGlobalGainDbInSession(transactionSession)
+        }
         if (currentBands.any { it == null } || currentGlobalGainDb == null) {
             return FiioJa11EditorApplyResult.DeviceUnavailable(
                 "Couldn’t complete the fresh five-band JA11 read before Apply. No editor changes were written.",
@@ -316,41 +379,50 @@ class FiioJa11Flasher(
 
         trace.stage(FiioJa11OperationStage.WRITING)
         targetBands.forEachIndexed { index, band ->
-            if (!transport.sendReport(FiioJa11Protocol.writeBandReport(index, band))) {
+            if (!sendPreSaveReport(FiioJa11Protocol.writeBandReport(index, band), transactionSession)) {
                 return FiioJa11EditorApplyResult.TransferFailed(
-                    "FiiO JA11 stopped accepting the reviewed editor value at band ${index + 1}. The requested state was not verified.",
+                    "The FiiO JA11 USB session changed or stopped confirming the reviewed editor value at band ${index + 1}. No later commands were sent.",
                 )
             }
         }
-        if (!transport.sendReport(FiioJa11Protocol.writeGlobalGainReport(quantizedGlobalGainDb))) {
+        if (!sendPreSaveReport(FiioJa11Protocol.writeGlobalGainReport(quantizedGlobalGainDb), transactionSession)) {
             return FiioJa11EditorApplyResult.TransferFailed(
-                "FiiO JA11 did not accept the reviewed global EQ gain. The requested state was not verified.",
+                "The FiiO JA11 USB session changed or stopped confirming the reviewed global EQ gain. No later commands were sent.",
             )
         }
-        if (!transport.sendReport(FiioJa11Protocol.writeEqProgramReport(FiioJa11Protocol.EqProgram.USER_1))) {
+        if (!sendPreSaveReport(
+                FiioJa11Protocol.writeEqProgramReport(FiioJa11Protocol.EqProgram.USER_1),
+                transactionSession,
+            )
+        ) {
             return FiioJa11EditorApplyResult.TransferFailed(
-                "FiiO JA11 did not accept selection of User 1. The requested state was not verified.",
+                "The FiiO JA11 USB session changed or stopped confirming User 1 selection. No later commands were sent.",
             )
         }
-        if (!transport.sendReport(FiioJa11Protocol.applyReport())) {
+        if (!sendPreSaveReport(FiioJa11Protocol.applyReport(), transactionSession)) {
             return FiioJa11EditorApplyResult.TransferFailed(
-                "FiiO JA11 did not accept Apply. The requested state was not verified.",
+                "The FiiO JA11 USB session changed or stopped confirming Apply. No Save was sent.",
             )
         }
         trace.stage(FiioJa11OperationStage.APPLY_SENT)
 
-        verifyTarget(targetBands, quantizedGlobalGainDb, trace, "VOLATILE_READBACK")?.let { reason ->
+        verifyTarget(targetBands, quantizedGlobalGainDb, transactionSession, trace, "VOLATILE_READBACK")?.let { reason ->
             return FiioJa11EditorApplyResult.VerificationFailed(
                 "FiiO JA11 editor Apply was not verified. $reason",
             )
         }
         trace.saveSent()
-        if (!transport.saveToFlash()) {
+        if (!transport.saveToFlash(transactionSession)) {
             return FiioJa11EditorApplyResult.TransferFailed(
                 "FiiO JA11 applied the reviewed EQ, but the one Save/reconnect boundary did not complete. The requested state was not verified.",
             )
         }
-        verifyTarget(targetBands, quantizedGlobalGainDb, trace, "FINAL_READBACK")?.let { reason ->
+        val finalSession = captureCurrentSessionToken()
+            ?.takeIf { samePhysicalDevice(transactionSession, it) }
+            ?: return FiioJa11EditorApplyResult.VerificationFailed(
+                "FiiO JA11 completed Save, but the final USB session did not match the device that started editor Apply.",
+            )
+        verifyTarget(targetBands, quantizedGlobalGainDb, finalSession, trace, "FINAL_READBACK")?.let { reason ->
             return FiioJa11EditorApplyResult.VerificationFailed(
                 "FiiO JA11 editor Apply was not verified after Save. $reason",
             )
@@ -361,7 +433,8 @@ class FiioJa11Flasher(
     private fun sameAuthorizedIdentity(baseline: FiioJa11EditorBaseline): Boolean =
         transport.deviceFingerprintKey == baseline.deviceFingerprintKey &&
             transport.usbProductId == baseline.usbProductId &&
-            transport.sessionGeneration == baseline.sessionGeneration
+            transport.sessionGeneration == baseline.sessionGeneration &&
+            transport.detachGeneration == baseline.detachGeneration
 
     private fun HardwareEqFilter.toJa11Band(): FiioJa11Protocol.Band = FiioJa11Protocol.Band(
         type = when (type) {
@@ -376,15 +449,25 @@ class FiioJa11Flasher(
     )
 
     private suspend fun resetInternal(trace: FiioJa11OperationTraceBuilder): Kt02h20FlatResetResult {
-        val baselineProgram = transport.readEqProgram()
-        val baselineGlobalGainDb = transport.readGlobalGainDb()
-        val baselineBands = (0 until FiioJa11Protocol.BAND_COUNT).map { index ->
-            transport.readBand(index)
+        val transactionSession = captureCurrentSessionToken()
+            ?: return Kt02h20FlatResetResult.DeviceUnavailable(
+                "Couldn’t confirm the current FiiO JA11 USB identity and session. No EQ changes were written.",
+            )
+        val baselineProgram = readInSession(transactionSession) { transport.readEqProgramInSession(transactionSession) }
+        val baselineGlobalGainDb = readInSession(transactionSession) {
+            transport.readGlobalGainDbInSession(transactionSession)
         }
-        val firmwareVersion = transport.readFirmwareVersion()
-        if (baselineProgram == null || baselineGlobalGainDb == null || baselineBands.any { it == null }) {
+        val baselineBands = (0 until FiioJa11Protocol.BAND_COUNT).map { index ->
+            readInSession(transactionSession) { transport.readBandInSession(index, transactionSession) }
+        }
+        val firmwareVersion = readInSession(transactionSession) {
+            transport.readFirmwareVersionInSession(transactionSession)
+        }
+        if (!transport.isCurrentSession(transactionSession) ||
+            baselineProgram == null || baselineGlobalGainDb == null || baselineBands.any { it == null }
+        ) {
             return Kt02h20FlatResetResult.DeviceUnavailable(
-                "Couldn’t read the FiiO JA11 PEQ state. Reconnect the DAC and try again.",
+                "Couldn’t read one complete FiiO JA11 PEQ baseline from the same USB session. No EQ changes were written.",
             )
         }
         trace.baselineRead(
@@ -396,36 +479,47 @@ class FiioJa11Flasher(
         val flatBands = FiioJa11Protocol.completeBands(emptyList())
         trace.stage(FiioJa11OperationStage.WRITING)
         flatBands.forEachIndexed { index, band ->
-            if (!transport.sendReport(FiioJa11Protocol.writeBandReport(index, band))) {
+            if (!sendPreSaveReport(FiioJa11Protocol.writeBandReport(index, band), transactionSession)) {
                 return Kt02h20FlatResetResult.TransferFailed(
-                    "FiiO JA11 stopped accepting the flat-EQ reset at band ${index + 1} of ${FiioJa11Protocol.BAND_COUNT}.",
+                    "The FiiO JA11 USB session changed or stopped confirming the flat-EQ reset at band ${index + 1} of ${FiioJa11Protocol.BAND_COUNT}. No later commands were sent.",
                 )
             }
         }
-        if (!transport.sendReport(FiioJa11Protocol.writeGlobalGainReport(0.0))) {
+        if (!sendPreSaveReport(FiioJa11Protocol.writeGlobalGainReport(0.0), transactionSession)) {
             return Kt02h20FlatResetResult.TransferFailed(
-                "FiiO JA11 did not accept the 0 dB global EQ gain for Reset.",
+                "The FiiO JA11 USB session changed or stopped confirming 0 dB global EQ gain. No later commands were sent.",
             )
         }
-        if (!transport.sendReport(FiioJa11Protocol.writeEqProgramReport(FiioJa11Protocol.EqProgram.USER_1))) {
+        if (!sendPreSaveReport(
+                FiioJa11Protocol.writeEqProgramReport(FiioJa11Protocol.EqProgram.USER_1),
+                transactionSession,
+            )
+        ) {
             return Kt02h20FlatResetResult.TransferFailed(
-                "FiiO JA11 did not accept selection of the flat User 1 EQ for Reset.",
+                "The FiiO JA11 USB session changed or stopped confirming the flat User 1 selection. No later commands were sent.",
             )
         }
-        if (!transport.sendReport(FiioJa11Protocol.applyReport())) {
-            return Kt02h20FlatResetResult.TransferFailed("FiiO JA11 did not accept the flat-EQ Apply command.")
+        if (!sendPreSaveReport(FiioJa11Protocol.applyReport(), transactionSession)) {
+            return Kt02h20FlatResetResult.TransferFailed(
+                "The FiiO JA11 USB session changed or stopped confirming Reset Apply. No Save was sent.",
+            )
         }
         trace.stage(FiioJa11OperationStage.APPLY_SENT)
-        verifyTarget(flatBands, 0.0, trace, "VOLATILE_READBACK")?.let { reason ->
+        verifyTarget(flatBands, 0.0, transactionSession, trace, "VOLATILE_READBACK")?.let { reason ->
             return Kt02h20FlatResetResult.VerificationFailed(reason)
         }
         trace.saveSent()
-        if (!transport.saveToFlash()) {
+        if (!transport.saveToFlash(transactionSession)) {
             return Kt02h20FlatResetResult.TransferFailed(
                 "The FiiO JA11 PEQ is flat in the current session, but the device did not complete the persistent Save/reconnect boundary.",
             )
         }
-        verifyTarget(flatBands, 0.0, trace, "FINAL_READBACK")?.let { reason ->
+        val finalSession = captureCurrentSessionToken()
+            ?.takeIf { samePhysicalDevice(transactionSession, it) }
+            ?: return Kt02h20FlatResetResult.VerificationFailed(
+                "FiiO JA11 completed Save, but the final USB session did not match the device that started Reset.",
+            )
+        verifyTarget(flatBands, 0.0, finalSession, trace, "FINAL_READBACK")?.let { reason ->
             return Kt02h20FlatResetResult.VerificationFailed(
                 "FiiO JA11 accepted Save, but the final flat-EQ readback did not match. $reason",
             )
@@ -439,23 +533,37 @@ class FiioJa11Flasher(
     private suspend fun verifyTarget(
         expectedBands: List<FiioJa11Protocol.Band>,
         expectedGlobalGainDb: Double,
+        expectedSession: FiioJa11SessionToken,
         trace: FiioJa11OperationTraceBuilder? = null,
         phase: String = "VOLATILE_READBACK",
     ): String? {
-        if (transport.readEqProgram() != FiioJa11Protocol.EqProgram.USER_1) {
+        if (!transport.isCurrentSession(expectedSession)) {
+            return "The authorized FiiO JA11 USB session changed before readback."
+        }
+        val activeProgram = readInSession(expectedSession) { transport.readEqProgramInSession(expectedSession) }
+            ?: return "Couldn’t verify the active JA11 EQ program because the authorized USB session stopped responding."
+        if (activeProgram != FiioJa11Protocol.EqProgram.USER_1) {
             return "JA11 User 1 was not the active EQ program after Apply."
         }
         expectedBands.forEachIndexed { index, expected ->
-            val actual = transport.readBand(index)
-                ?: return "Couldn’t read back JA11 band ${index + 1}."
+            val actual = readInSession(expectedSession) { transport.readBandInSession(index, expectedSession) }
+                ?: return if (transport.isCurrentSession(expectedSession)) {
+                    "Couldn’t read back JA11 band ${index + 1}."
+                } else {
+                    "The authorized FiiO JA11 USB session changed before band ${index + 1} readback."
+                }
             if (!FiioJa11Protocol.nearlyMatches(expected, actual)) {
                 return "JA11 band ${index + 1} readback did not match the intended value."
             }
         }
-        val actualGain = transport.readGlobalGainDb()
+        val actualGain = readInSession(expectedSession) { transport.readGlobalGainDbInSession(expectedSession) }
             ?: run {
                 trace?.compare(phase, null)
-                return "Couldn’t read back the JA11 global EQ gain."
+                return if (transport.isCurrentSession(expectedSession)) {
+                    "Couldn’t read back the JA11 global EQ gain."
+                } else {
+                    "The authorized FiiO JA11 USB session changed before global-gain readback."
+                }
             }
         val wireExpected = FiioJa11Protocol.quantizedGlobalGainDb(expectedGlobalGainDb)
         trace?.compare(phase, actualGain)
@@ -464,6 +572,42 @@ class FiioJa11Flasher(
         }
         return null
     }
+
+    private fun captureCurrentSessionToken(): FiioJa11SessionToken? {
+        val fingerprint = transport.deviceFingerprintKey ?: return null
+        val productId = transport.usbProductId ?: return null
+        return runCatching {
+            FiioJa11SessionToken(
+                deviceFingerprintKey = fingerprint,
+                usbProductId = productId,
+                sessionGeneration = transport.sessionGeneration,
+                detachGeneration = transport.detachGeneration,
+            )
+        }.getOrNull()?.takeIf(transport::isCurrentSession)
+    }
+
+    private suspend fun <T> readInSession(
+        expected: FiioJa11SessionToken,
+        read: suspend () -> T?,
+    ): T? {
+        if (!transport.isCurrentSession(expected)) return null
+        val value = read()
+        return value?.takeIf { transport.isCurrentSession(expected) }
+    }
+
+    private suspend fun sendPreSaveReport(
+        report: ByteArray,
+        expected: FiioJa11SessionToken,
+    ): Boolean = transport.sendReportInSession(report, expected) == FiioJa11ReportWriteOutcome.COMPLETED
+
+    private fun samePhysicalDevice(
+        expected: FiioJa11SessionToken,
+        actual: FiioJa11SessionToken,
+    ): Boolean = expected.usbProductId == actual.usbProductId &&
+        stableJa11Identity(expected.deviceFingerprintKey) == stableJa11Identity(actual.deviceFingerprintKey)
+
+    private fun stableJa11Identity(fingerprintKey: String): String =
+        fingerprintKey.split('|').filterNot { it.startsWith("pid=") }.joinToString("|")
 
     private suspend fun resetWithTrace(): Kt02h20FlatResetResult {
         val operationId = traceStore.begin("RESET")
