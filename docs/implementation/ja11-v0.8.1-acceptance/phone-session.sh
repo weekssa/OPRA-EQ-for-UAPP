@@ -2,11 +2,13 @@
 set -euo pipefail
 umask 077
 
-SOURCE_SHA="3f5e0c3a39687e27d962dd7f7f80d2667ff396ae"
-EXPECTED_APK_SHA="85e06ca0db818586a7eb2eab3378a1b21949b3c8593e1318536ec651d8369305"
+SOURCE_SHA="a78808443c71d688e0f338e96495847569fe12f7"
+EXPECTED_APK_SHA="7beb5bcebbc0dc40a68b33de911cc8722d76d3f0ff2e98685b1fa25e17caed61"
+PREVIOUS_APK_SHA="85e06ca0db818586a7eb2eab3378a1b21949b3c8593e1318536ec651d8369305"
+DEBUG_SIGNER_SHA="73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41"
 PACKAGE="com.weekssa.opraeqforuapp.ja11diag"
 ACTIVITY="com.weekssa.opraeqforuapp.MainActivity"
-REMOTE_PROFILE="/sdcard/Download/ja11-v081-baseline-3f5e0c3a-20261008.txt"
+REMOTE_PROFILE="/sdcard/Download/ja11-v081-baseline-a7880844-20261008.txt"
 
 ADB_BIN="${JA11_ADB_BIN:-}"
 if [ -z "$ADB_BIN" ] && [ -n "${ANDROID_SDK_ROOT:-}" ]; then
@@ -28,6 +30,7 @@ ACTION="${2-}"
 PROFILE="${3-}"
 EVIDENCE_DIR="${JA11_EVIDENCE_DIR:-}"
 APK="${JA11_CANDIDATE_APK:-}"
+APKSIGNER_BIN="${JA11_APKSIGNER_BIN:-$(command -v apksigner || true)}"
 
 usage() {
   cat <<'EOF'
@@ -43,6 +46,7 @@ Optional environment:
 Actions:
   list             show current adb devices
   inspect          verify Pixel 9 and report basic OS properties
+  verify-identity  require the latest successful snapshot's stable JA11 identity boolean
   start-logcat     start private local full-logcat capture
   stop-logcat      stop the local capture process (serial may be blank)
   install          install only the frozen JA11 diagnostic APK
@@ -112,6 +116,53 @@ save_package_dump() {
   chmod 600 "$dump"
   grep -E 'versionCode=|versionName=|debuggable=' "$dump" || true
 }
+verify_apk() {
+  local file="$1" expected_sha="$2" label="$3" actual_sha cert_output actual_cert
+  if [ -z "$APKSIGNER_BIN" ] || [ ! -x "$APKSIGNER_BIN" ]; then
+    echo "Set JA11_APKSIGNER_BIN to the Android SDK apksigner binary." >&2
+    return 6
+  fi
+  actual_sha="$(shasum -a 256 "$file" | awk '{print $1}')"
+  if [ "$actual_sha" != "$expected_sha" ]; then
+    echo "$label APK checksum mismatch; stop." >&2
+    return 7
+  fi
+  cert_output="$("$APKSIGNER_BIN" verify --print-certs "$file")"
+  actual_cert="$(printf '%s\n' "$cert_output" | awk -F': ' '/Signer #1 certificate SHA-256 digest:/ {print $2; exit}' | tr -d ':' | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')"
+  if [ "$actual_cert" != "$DEBUG_SIGNER_SHA" ]; then
+    echo "$label APK signer mismatch; stop." >&2
+    return 8
+  fi
+}
+verify_previous_installed_candidate() {
+  local paths count installed_path stamp pulled actual_sha dump_path dump
+  paths="$("$ADB_BIN" -s "$SERIAL" shell pm path "$PACKAGE" | tr -d '\r')"
+  count="$(printf '%s\n' "$paths" | awk '/^package:/ {n++} END {print n+0}')"
+  if [ "$count" -ne 1 ]; then
+    echo "The installed diagnostic package does not have exactly one APK path; stop." >&2
+    return 9
+  fi
+  installed_path="$(printf '%s\n' "$paths" | sed -n 's/^package://p')"
+  stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+  pulled="$EVIDENCE_DIR/previous-ja11diag-base-$stamp.apk"
+  dump_path="$EVIDENCE_DIR/previous-ja11diag-package-$stamp.txt"
+  if [ -e "$pulled" ] || [ -e "$dump_path" ]; then
+    echo "Preserving existing prior-candidate evidence; use a new private evidence directory." >&2
+    return 10
+  fi
+  "$ADB_BIN" -s "$SERIAL" pull "$installed_path" "$pulled" >/dev/null
+  chmod 600 "$pulled"
+  verify_apk "$pulled" "$PREVIOUS_APK_SHA" "Previously installed"
+  dump="$("$ADB_BIN" -s "$SERIAL" shell dumpsys package "$PACKAGE" | tr -d '\r')"
+  printf '%s\n' "$dump" > "$dump_path"
+  chmod 600 "$dump_path"
+  if ! printf '%s\n' "$dump" | grep -Fq 'versionName=0.8.0-ja11diag' || \
+     ! printf '%s\n' "$dump" | grep -Eq 'versionCode=11([[:space:]]|$)'; then
+    echo "Installed diagnostic package version is not the exact prior J019 candidate; stop." >&2
+    return 11
+  fi
+  echo "Exact prior diagnostic APK and signer verified; its app data will be preserved by in-place update."
+}
 
 case "$ACTION" in
   inspect)
@@ -138,16 +189,14 @@ case "$ACTION" in
       echo "Set JA11_CANDIDATE_APK to the frozen diagnostic APK." >&2
       exit 6
     fi
-    ACTUAL_SHA="$(shasum -a 256 "$APK" | awk '{print $1}')"
-    if [ "$ACTUAL_SHA" != "$EXPECTED_APK_SHA" ]; then
-      echo "Frozen APK checksum mismatch; stop." >&2
-      exit 7
+    verify_apk "$APK" "$EXPECTED_APK_SHA" "Frozen candidate"
+    PACKAGE_PATHS="$("$ADB_BIN" -s "$SERIAL" shell pm path "$PACKAGE" | tr -d '\r')"
+    if printf '%s\n' "$PACKAGE_PATHS" | grep -q '^package:'; then
+      verify_previous_installed_candidate
+      "$ADB_BIN" -s "$SERIAL" install -r "$APK"
+    else
+      "$ADB_BIN" -s "$SERIAL" install "$APK"
     fi
-    if "$ADB_BIN" -s "$SERIAL" shell pm path "$PACKAGE" | grep -q '^package:'; then
-      echo "The diagnostic package is already installed; stop and resume from its current state." >&2
-      exit 8
-    fi
-    "$ADB_BIN" -s "$SERIAL" install "$APK"
     save_package_dump
     ;;
   launch)
@@ -162,7 +211,35 @@ case "$ACTION" in
     if [ -e "$EVENTS" ]; then echo "Preserving existing event log; use a new evidence directory." >&2; exit 11; fi
     "$ADB_BIN" -s "$SERIAL" logcat -d -v threadtime JA11_DIAG:I '*:S' > "$EVENTS"
     chmod 600 "$EVENTS"
-    grep -F "event=APP_BUILD_INFO" "$EVENTS" | grep -F "package=$PACKAGE" | grep -F "versionName=0.8.0-ja11diag" | grep -F "versionCode=11" | grep -F "debuggable=true" | grep -F "sourceSha=$SOURCE_SHA" | grep -F "ja11DiagnosticsEnabled=true"
+    BUILD_LINE="$(grep -F 'event=APP_BUILD_INFO' "$EVENTS" | tail -n 1 || true)"
+    printf '%s\n' "$BUILD_LINE"
+    if [ -z "$BUILD_LINE" ] || [[ "$BUILD_LINE" != *"package=$PACKAGE"* || "$BUILD_LINE" != *"versionName=0.8.0-ja11diag"* || "$BUILD_LINE" != *"versionCode=11"* || "$BUILD_LINE" != *"debuggable=true"* || "$BUILD_LINE" != *"sourceSha=$SOURCE_SHA"* || "$BUILD_LINE" != *"ja11DiagnosticsEnabled=true"* ]]; then
+      echo "The latest diagnostic build-info event does not match the frozen candidate; stop." >&2
+      exit 14
+    fi
+    ;;
+  verify-identity)
+    verify_pixel
+    EVENTS="$EVIDENCE_DIR/ja11-identity-availability-$(date -u +%Y%m%dT%H%M%SZ).txt"
+    if [ -e "$EVENTS" ]; then echo "Preserving existing identity event log; use a new evidence directory." >&2; exit 12; fi
+    "$ADB_BIN" -s "$SERIAL" logcat -d -v threadtime JA11_DIAG:I '*:S' > "$EVENTS"
+    chmod 600 "$EVENTS"
+    SNAPSHOT_POSITION="$(grep -nF 'event=SNAPSHOT_READ_COMPLETE' "$EVENTS" | tail -n 1 | cut -d: -f1 || true)"
+    IDENTITY_POSITION="$(grep -nF 'event=RESTART_IDENTITY_AVAILABILITY' "$EVENTS" | tail -n 1 | cut -d: -f1 || true)"
+    SNAPSHOT_LINE="$(if [ -n "$SNAPSHOT_POSITION" ]; then sed -n "${SNAPSHOT_POSITION}p" "$EVENTS"; fi)"
+    IDENTITY_LINE="$(if [ -n "$IDENTITY_POSITION" ]; then sed -n "${IDENTITY_POSITION}p" "$EVENTS"; fi)"
+    SNAPSHOT_GENERATION="$(printf '%s\n' "$SNAPSHOT_LINE" | sed -n 's/.*sessionGeneration=\([0-9][0-9]*\).*/\1/p')"
+    IDENTITY_GENERATION="$(printf '%s\n' "$IDENTITY_LINE" | sed -n 's/.*sessionGeneration=\([0-9][0-9]*\).*/\1/p')"
+    SNAPSHOT_SOURCE="$(printf '%s\n' "$SNAPSHOT_LINE" | sed -n 's/.*sourceSha=\([0-9a-f][0-9a-f]*\).*/\1/p')"
+    printf '%s\n' "$IDENTITY_LINE"
+    if [ -z "$SNAPSHOT_GENERATION" ] || [ -z "$IDENTITY_GENERATION" ] || [ -z "$SNAPSHOT_SOURCE" ] || \
+       [ "$SNAPSHOT_SOURCE" != "$SOURCE_SHA" ] || [ "$IDENTITY_POSITION" -le "$SNAPSHOT_POSITION" ] || \
+       [ "$SNAPSHOT_GENERATION" != "$IDENTITY_GENERATION" ] || \
+       [[ "$IDENTITY_LINE" != *"identityAvailable=true"* || "$IDENTITY_LINE" != *"sessionCurrent=true"* ]]; then
+      echo "The latest complete snapshot does not have a current stable restart identity; stop before any restart-control write." >&2
+      exit 15
+    fi
+    echo "Stable restart identity is available for snapshot session $SNAPSHOT_GENERATION; no serial or fingerprint was recorded."
     ;;
   stage-profile)
     verify_pixel

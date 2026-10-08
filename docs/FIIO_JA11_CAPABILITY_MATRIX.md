@@ -22,6 +22,34 @@ reconnect path, and restoration path are evidenced; explicit power-cycle retenti
 qualification remain pending. J012 and earlier candidates remain historical negative evidence and
 must not be reused.
 
+## 2026-10-08 J019 headset restart verification update
+
+J019 used diagnostic source `3f5e0c3a39687e27d962dd7f7f80d2667ff396ae`, APK SHA-256
+`85e06ca0db818586a7eb2eab3378a1b21949b3c8593e1318536ec651d8369305`, on a Pixel 9 and the
+owner's JA11 (`0x2972:0x0102`, firmware `2.20`). The On-to-Off transition automatically read back
+successfully. The Off-to-On write completed, re-enumerated and its fresh User 1 snapshot matched,
+but automatic DEVICE verification timed out and UI remained Off. A separate read-only Refresh then
+showed On and the exact original state. Tests B/C/D were not run. See J019 in the validation ledger.
+
+The failure is tied to that exact superseded APK. USB descriptor evidence shows HID interface ID
+`3 → 2 → 3`, while the app did not log which interface it selected; identity mismatch is plausible
+but not proven. A cancellable `collectLatest` verifier was another plausible cause. Current
+remediation removes PID/interface from the restart identity and gives verification to a timeout-owned
+watchdog, retaining generation checks. Restart writes also require one nonblank serial; J019 did not
+capture whether this JA11 exposes one. The new candidate must establish this read-only before any
+restart mutation. Do not generalize J019 to a permanent protocol root cause or support claim.
+
+The replacement remediation source is `a78808443c71d688e0f338e96495847569fe12f7`, tree
+`87c1879af02ea421032c95363244f0f364924d3a`. Its diagnostic APK is
+`opra-eq-ja11diag-0.8.0-source-a7880844.apk`, SHA-256
+`7beb5bcebbc0dc40a68b33de911cc8722d76d3f0ff2e98685b1fa25e17caed61`, package
+`com.weekssa.opraeqforuapp.ja11diag`, version `0.8.0-ja11diag`/11, debug signer SHA-256
+`73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`. The remediation passed local
+JVM/build/lint/R8 gates and 64 API 35 emulator instrumentation cases; the APK was installed and its
+source-bound build event verified on the emulator only. The exact-unit serial availability and
+restart behavior remain physically unverified. Exact-head CI and the next bounded owner session are
+pending; no hardware support or public release claim follows from this software evidence.
+
 | Capability | Decision | Evidence / boundary |
 | --- | --- | --- |
 | Exact JA11 USB identity, VID `0x2972`, UAC PIDs `0x0101`/`0x0102` | SUPPORTED_AND_IMPLEMENTED; physical pending | Strict allowlist and dynamic HID interface discovery are implemented. Physical identity/PID for J001 was not captured. |
@@ -35,16 +63,19 @@ must not be reused.
 | Complete baseline capture and failed-operation restoration | EXACT FLAT-STATE RESTORATION PASS; GENERAL RESTORATION PENDING | J017's Reset report captures the flashed target as baseline and ends with a final raw readback matching the Flash report's original flat baseline. This proves the observed flat-state restoration path, not arbitrary-state restoration. No automatic retry is added. |
 | Session-generation enforcement across Flash | SUPPORTED_AND_IMPLEMENTED; AUTOMATED GATES PASS; PHYSICAL PENDING | The JA11 Android transport pins reads and ordinary writes to one session/detach generation; Save remains the explicit lifecycle exception and waits for its reconnect boundary. Focused tests, Android CI, signed emulator install/cold launch, and the exact signed candidate all pass. Physical lifecycle behavior remains unqualified. |
 | Output volume, presets, headset/UAC controls | SOFTWARE IMPLEMENTED; PHYSICAL PENDING | These controls are outside the failed EQ-gain root-cause boundary; owner reports that general controls work do not qualify Flash or persistence. |
+| Headset/mic restart and automatic DEVICE verification | IMPLEMENTED; J019 FAILED ON SUPERSEDED CANDIDATE; REPLACEMENT PHYSICAL GATE PENDING | One On-to-Off transition verified; the Off-to-On restoration write completed but the automatic verifier timed out. Read-only refresh confirmed Mic On and baseline restoration. J019 did not establish the cause; interface-ID identity drift and verifier cancellation remain hypotheses. |
+| Stable JA11 identity across restart | SOFTWARE GATED ON A UNIQUE NONBLANK SERIAL; EXACT-UNIT AVAILABILITY UNKNOWN | The replacement verifier ignores expected PID/HID-interface changes but requires one serial field to distinguish devices. Same-session controls do not depend on this identity. Check availability read-only before restart testing; fail closed if missing or ambiguous. |
 | Firmware update, bootloader, cross-flash, raw command console | UNSAFE_OR_OUT_OF_SCOPE | No JA11 firmware mutation or arbitrary command surface is authorized in this task. |
 | Public JA11 support/release claim | UNSAFE_OR_OUT_OF_SCOPE | J017 closes the observed reconnect/restoration evidence gap for one session but does not close explicit power-cycle retention or the complete qualification checklist. Keep public support and final-release claims owner-controlled. |
 
 ## Matrix rule
 
-J017 is the latest accepted owner evidence and its Flash/Reset session is consumed; there is no
-safe reason to repeat that mutation. The observed reconnect/restoration path is accepted for the
-exact candidate and state recorded in the ledger. Do not convert the remaining power-cycle evidence
-gap into a protocol change, tolerance change, retry, or support claim. Any future physical session
-requires a new exact candidate and a bounded owner-approved plan for the specific unresolved gate.
+J019 is the latest physical record for headset restart verification; J017 remains the accepted
+Flash/Reset and restoration record. J019's uncertain automatic result was not retried, and its
+replacement candidate must be tested under a new exact-candidate plan. Do not convert either
+record's remaining evidence gaps into a protocol change, tolerance change, retry, or support claim.
+Any future physical session requires a new exact candidate and a bounded owner-approved plan for the
+specific unresolved gate.
 
 ## 2026-09-25 independent protocol-oracle matrix
 

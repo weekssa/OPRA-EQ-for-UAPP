@@ -5,12 +5,15 @@ Run only after the owner is available and the prepared exact candidate is still 
 ## Before any mutation
 
 1. Resolve the current wireless runtime endpoint using `adb devices -l`. If the existing Pixel is online, verify its model with the prepared script and select exactly one explicit serial. If discovery is empty, use the mission ADB recovery ladder; pairing details are a last step only.
-2. Verify manufacturer `Google`, model `Pixel 9`, exact Ja11 diagnostic package `com.weekssa.opraeqforuapp.ja11diag`, version `0.8.0-ja11diag`/11, and source SHA `3f5e0c3a39687e27d962dd7f7f80d2667ff396ae`. Install only the frozen APK if the diagnostic package is absent; if `.ja11diag` is already installed, stop and resume from its current state rather than replacing it. Do not touch the stable package.
-3. Start full local log capture to the private acceptance directory, launch diagnostic package, and confirm the `APP_BUILD_INFO` event has the exact package, source SHA, version and diagnostics enabled.
+2. Verify manufacturer `Google` and model `Pixel 9`. Inspect only the diagnostic package `com.weekssa.opraeqforuapp.ja11diag`. If absent, install the exact frozen candidate. If present, pull its sole installed `base.apk` into the private evidence directory and require its SHA-256 to equal the prior J019 APK `85e06ca0db818586a7eb2eab3378a1b21949b3c8593e1318536ec651d8369305`, package/version to be `0.8.0-ja11diag`/11, and debug signer SHA-256 to be `73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`. Then update only that package using `adb install -r` so its data remains. Any other installed candidate/signature is a stop. Never uninstall or update the stable package.
+3. Start full local log capture to the private acceptance directory, launch the replacement diagnostic package, and confirm `APP_BUILD_INFO` has the exact package, replacement source SHA, version and diagnostics enabled.
 4. Attach the JA11 and use the app's normal identity gate. Confirm VID `2972`, PID `0101` or `0102`, firmware `2.20` when readable, and one fresh session. If identity is ambiguous or another DAC appears, stop without sending commands.
 5. Capture the initial state before any mutation: volume, mic/headset state, program, UAC, sample rate, global gain, all five User 1 bands, firmware, PID and session generation. Obtain bands/global gain from a complete `SNAPSHOT_READ_COMPLETE` event, source SHA and session generation included. Save a sanitized baseline record in the private evidence folder. The current snapshot reader supports this event only while the active program is Off or User 1. If the initial program is Vocal, Classic or Bass, do not change it and do not mutate anything; release the phone and resume off-phone with a revised safe baseline path. No mutation until the complete baseline exists.
+6. Before Test A or Test B, require the latest successful `RESTART_IDENTITY_AVAILABILITY` event to show `identityAvailable=true`, `sessionCurrent=true` and the same session generation as the complete snapshot. This event reveals no serial or fingerprint. If identity is unavailable, missing, stale or mismatched, stop before any restart-control write and release the phone; do not use an attempted restart as an identity probe.
 
-## Test A: microphone/headset control
+## Test A: microphone/headset control — retry after J019 failure
+
+J019 on the prior `3f5e0c3` candidate verified On-to-Off but timed out during automatic Off-to-On verification. A read-only refresh later confirmed Mic On and exact baseline restoration; no write was retried. The replacement candidate must repeat Test A from the newly captured current baseline. This does not establish J019's root cause or transfer its result to the new candidate.
 
 - Choose the opposite of the original mic/headset control value.
 - Trigger one change in My DAC → DEVICE. Do not retry if the write result is uncertain.
@@ -29,7 +32,7 @@ Run only after the owner is available and the prepared exact candidate is still 
 ## Test C: one Flash from Off
 
 1. Generate the temporary baseline profile from the exact candidate's complete snapshot event. Do not hand transcribe protocol data. Review its six fields against the app's imported preview and require JA11 optimization status **Exact**.
-2. Import with My EQs → Import Personal EQ using these temporary test labels: Manufacturer `JA11 Acceptance`, Headphone model `User 1 Baseline`, EQ name `JA11 v0.8.1 baseline 3f5e0c3a`; then stage the imported item.
+2. Import with My EQs → Import Personal EQ using these temporary test labels: Manufacturer `JA11 Acceptance`, Headphone model `User 1 Baseline`, EQ name `JA11 v0.8.1 baseline a7880844`; then stage the imported item.
 3. Read current program. If needed, select Off using the ordinary DEVICE selector; freshly verify Off. Record the state. Do not use Reset or any preliminary reboot.
 4. Press **Flash exactly once**. Let the existing transaction run to a terminal state. The expected sequence remains five band writes, global gain, select User 1, Apply, pre-Save verification, exactly one Save, then fresh-session final readback if restart occurs.
 5. Pass only if the UI reports verified success, logs show exactly one Save command (`0x19`), no old-session continuation, and final User 1 bands/gain match the baseline values exactly. A restart requires a new session and final authoritative readback. A log gap or uncertain outcome is a failure/stop, not permission to retry.

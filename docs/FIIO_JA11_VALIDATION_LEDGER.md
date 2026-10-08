@@ -109,3 +109,42 @@ SHA-256 was `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747`. 
 J018 does not promote JA11 hardware status. The complete User 1 editor/apply software path is
 verified, while power-cycle retention and broader physical qualification remain bounded by the
 exact J016/J017 reports and are not generalized to the public release.
+
+## 2026-10-08 J019 — automatic headset restart verification failure
+
+J019 is exact-candidate physical negative evidence for the JA11 DEVICE headset/microphone
+cross-re-enumeration verification path. It does not invalidate the distinct J016/J017 EQ Flash and
+restoration results and does not establish a protocol root cause.
+
+- Candidate source `3f5e0c3a39687e27d962dd7f7f80d2667ff396ae`; diagnostic APK
+  `opra-eq-ja11diag-0.8.0-source-3f5e0c3a.apk`, SHA-256
+  `85e06ca0db818586a7eb2eab3378a1b21949b3c8593e1318536ec651d8369305`; package
+  `com.weekssa.opraeqforuapp.ja11diag`, version `0.8.0-ja11diag`/11; debug signer certificate
+  SHA-256 `73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`.
+- Physical context: Pixel 9; FiiO JA11 VID/PID `0x2972:0x0102`; firmware `2.20`. The private
+  report, logs and screenshots are retained at
+  `/private/tmp/ja11-v0.8.1-acceptance-3f5e0c3a/evidence`. Serial and full fingerprint are
+  intentionally omitted from this repository.
+- Complete pre-mutation baseline: volume 30/60; mic/headset On; program Off; UAC 2.0; sample rate
+  384 kHz; global EQ gain `-3.7 dB`; five 0.0 dB Peak/Dip bands at 1000, 2000, 5000, 8000 and
+  10000 Hz, each Q 0.7.
+- One On-to-Off write (`0x12`) completed and session 1 detached; session 2 read fresh state and
+  automatically displayed Mic Off. One Off-to-On restoration write (`0x12`) completed and session
+  2 detached; session 3 read a matching complete User 1 EQ snapshot, but automatic DEVICE
+  verification timed out and UI remained Mic Off. No write was retried. A later read-only Refresh
+  read Mic On in session 3. Volume, program, UAC, full User 1 bank and gain matched the original
+  baseline; restoration is confirmed.
+- Stop boundary: Tests B/C/D, UAC, Flash, Reset, profile staging, and physical unplug/reconnect were
+  **NOT RUN**. No Save occurred. The Pixel was released with the diagnostic app and app data
+  preserved. This record proves the automatic Mic-On verifier defect on the exact superseded
+  candidate and confirms read-only baseline restoration; it does not prove JA11-wide support,
+  another candidate's behavior, or a root cause.
+- Descriptor evidence recorded the class-3 HID interface ID changing `3 → 2 → 3`; the app did not
+  record its selected interface, so this is a candidate explanation only. Cancellation of the
+  previous inline verifier during `collectLatest` was another plausible explanation. The replacement
+  implementation removes PID/interface from the stable restart key and transfers verifier ownership
+  to a reconnect watchdog while preserving per-session generation checks. It requires a unique
+  nonblank serial for restart controls and leaves same-session controls available without one. J019
+  did not establish whether the owner's JA11 exposes that serial. The replacement source/APK and any
+  follow-up physical result must be recorded as a new exact-candidate record; J019 must not be
+  rewritten as a pass.

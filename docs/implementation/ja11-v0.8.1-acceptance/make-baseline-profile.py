@@ -6,7 +6,7 @@ from pathlib import Path
 import re
 import sys
 
-SOURCE_SHA = "3f5e0c3a39687e27d962dd7f7f80d2667ff396ae"
+SOURCE_SHA = "a78808443c71d688e0f338e96495847569fe12f7"
 EVENT = "event=SNAPSHOT_READ_COMPLETE"
 TYPE_MAP = {"peak_dip": "PK", "low_shelf": "LS", "high_shelf": "HS"}
 FIELD_RE = re.compile(r"([A-Za-z][A-Za-z0-9]*)=([^\s]+)")
