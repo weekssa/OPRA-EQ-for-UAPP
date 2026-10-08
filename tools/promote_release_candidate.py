@@ -392,6 +392,61 @@ def download_and_verify_upgrade_baseline(api: "GitHubApi", candidate: dict[str, 
             "baseline_apk_sha256": sha256_hex(apk_bytes)}
 
 
+def download_and_verify_beta_upgrade_baseline(api: "GitHubApi", candidate: dict[str, Any], build_tools: Path,
+                                               output_path: Path) -> dict[str, str]:
+    """Fetch only the immutable official v0.8.0-beta artifact for the second upgrade lane."""
+    beta_tag = "v0.8.0-beta"
+    release = api.json("GET", api.repo_path + "/releases/tags/" + urllib.parse.quote(beta_tag, safe=""))
+    require(release.get("tag_name") == beta_tag and release.get("draft") is False and
+            release.get("prerelease") is True and release.get("immutable") is True and
+            isinstance(release.get("published_at"), str) and bool(release.get("published_at")),
+            "the exact immutable v0.8.0-beta prerelease is not publicly available")
+    assets = release.get("assets")
+    require(isinstance(assets, list), "beta release asset list is malformed")
+    apk_name = f"EQ-Library-{beta_tag}.apk"
+    matching = [asset for asset in assets if isinstance(asset, dict) and asset.get("name") == apk_name]
+    require(len(matching) == 1, "beta release does not contain exactly one expected APK asset")
+    asset = matching[0]
+    require(asset.get("state") == "uploaded", "official beta APK is not fully uploaded")
+    digest = asset.get("digest", "")
+    require(re.fullmatch(r"sha256:[0-9a-f]{64}", digest) is not None,
+            "GitHub did not provide the official beta APK asset digest")
+    asset_id = asset.get("id")
+    require(isinstance(asset_id, int) and asset_id > 0, "official beta APK asset ID is invalid")
+    url = api.api_url + api.repo_path + f"/releases/assets/{asset_id}"
+    _, apk_bytes, _ = api.request_bytes(url, accept="application/octet-stream", max_bytes=MAX_MEMBER_BYTES)
+    require(sha256_hex(apk_bytes) == normalize_sha256(digest),
+            "downloaded official beta APK does not match its GitHub asset digest")
+    beta_logs, beta_version_code = verify_android_apk(
+        apk_bytes,
+        build_tools=build_tools,
+        signer_sha256=candidate["signer_sha256"],
+        expected_version_name="0.8.0-beta",
+        expected_version_code=10,
+    )
+    require(beta_version_code < candidate["version_code"],
+            "stable candidate versionCode does not advance the official beta APK")
+    require("Verification successful" in beta_logs["zipalign-verification.txt"].decode("utf-8"),
+            "official beta APK did not pass alignment verification")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_bytes(apk_bytes)
+    return {"beta_baseline_tag": beta_tag, "beta_baseline_version_code": str(beta_version_code),
+            "beta_baseline_apk_sha256": sha256_hex(apk_bytes)}
+
+
+def download_and_verify_upgrade_baselines(api: "GitHubApi", candidate: dict[str, Any], build_tools: Path,
+                                          baseline_output_path: Path,
+                                          beta_output_path: Path | None = None) -> dict[str, str]:
+    """Verify the current stable baseline, adding the beta lane only for v0.8.0."""
+    if candidate["release_tag"] == "v0.8.0":
+        require(beta_output_path is not None,
+                "v0.8.0 stable promotion requires an output path for the exact beta upgrade baseline")
+    baselines = download_and_verify_upgrade_baseline(api, candidate, build_tools, baseline_output_path)
+    if candidate["release_tag"] == "v0.8.0":
+        baselines.update(download_and_verify_beta_upgrade_baseline(api, candidate, build_tools, beta_output_path))
+    return baselines
+
+
 class _NoCredentialRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[no-untyped-def]
         redirected = super().redirect_request(req, fp, code, msg, headers, newurl)
@@ -945,8 +1000,9 @@ def command_verify(args: argparse.Namespace) -> None:
     apk_path = Path(args.apk_out)
     apk_path.parent.mkdir(parents=True, exist_ok=True)
     apk_path.write_bytes(candidate["files"][candidate["apk_name"]])
-    baseline = download_and_verify_upgrade_baseline(
-        api, candidate, Path(args.build_tools), Path(args.baseline_apk_out)
+    baselines = download_and_verify_upgrade_baselines(
+        api, candidate, Path(args.build_tools), Path(args.baseline_apk_out),
+        Path(args.beta_apk_out) if args.beta_apk_out else None,
     )
     write_outputs(Path(args.github_output), {
         "release_tag": candidate["release_tag"],
@@ -956,9 +1012,11 @@ def command_verify(args: argparse.Namespace) -> None:
         "candidate_artifact_id": str(args.candidate_artifact_id),
         "candidate_version_name": candidate["manifest"]["versionName"],
         "candidate_version_code": str(candidate["version_code"]),
-        **baseline,
+        **baselines,
     })
-    print(f"UPGRADE_BASELINE_VERIFIED tag={baseline['baseline_tag']} version_code={baseline['baseline_version_code']} apk_sha256={baseline['baseline_apk_sha256']}")
+    print(f"UPGRADE_BASELINE_VERIFIED tag={baselines['baseline_tag']} version_code={baselines['baseline_version_code']} apk_sha256={baselines['baseline_apk_sha256']}")
+    if "beta_baseline_tag" in baselines:
+        print(f"BETA_UPGRADE_BASELINE_VERIFIED tag={baselines['beta_baseline_tag']} version_code={baselines['beta_baseline_version_code']} apk_sha256={baselines['beta_baseline_apk_sha256']}")
     print(f"CANDIDATE_VERIFIED tag={candidate['release_tag']} source={candidate['source_sha']} apk_sha256={candidate['apk_sha256']} artifact_sha256={candidate['artifact_digest']}")
 
 
@@ -1045,6 +1103,8 @@ def check_contract(project_root: Path) -> None:
     checklist = (project_root / "docs/PUBLIC_RELEASE_CHECKLIST.md").read_text(encoding="utf-8")
     mobile_publisher = (project_root / "tools/publish_mobile_test_candidate.sh").read_text(encoding="utf-8")
     publisher = (project_root / "tools/promote_release_candidate.py").read_text(encoding="utf-8")
+    stable_smoke = (project_root / "tools/verify_stable_release_smoke.py").read_text(encoding="utf-8")
+    whats_new_test = (project_root / "app/src/androidTest/java/com/weekssa/opraeqforuapp/ui/screens/UiModernizationFlowsTest.kt").read_text(encoding="utf-8")
     required = [
         "workflow_dispatch:",
         "candidate_run_id:",
@@ -1061,12 +1121,34 @@ def check_contract(project_root: Path) -> None:
         "persist-credentials: false",
         "--apk-out",
         "--baseline-apk-out",
+        "--beta-apk-out",
+        "tools/verify_stable_release_smoke.py upgrade",
+        "tools/verify_stable_release_smoke.py clean-install",
+        "clean-install",
         'export ANDROID_AVD_HOME="$avd_home"',
-        "Install exact candidate over the latest public release on API 35",
-        "adb install -r",
+        "Verify signed stable install and upgrade paths on API 35",
+        'if [[ "$RELEASE_TAG" == "v0.8.0" && "$BASELINE_TAG" != "v0.7.2" ]]',
+        'if [[ "$RELEASE_TAG" == "v0.8.0" ]]; then',
+        'if [[ "$BETA_BASELINE_TAG" != "v0.8.0-beta" ]]',
+        "apk-sha256sums.txt",
     ]
     for marker in required:
         require(marker in workflow, f"promotion workflow contract is missing {marker!r}")
+    require("beta_baseline_apk_sha256" in publisher and
+            "downloaded official beta APK does not match its GitHub asset digest" in publisher and
+            "expected_version_code=10" in publisher and
+            'candidate["release_tag"] == "v0.8.0"' in publisher,
+            "publisher does not verify the exact signed beta baseline")
+    require("Manual DataStore preference" in stable_smoke and
+            "Personal EQ Room row" in stable_smoke and
+            "clean install" in stable_smoke and
+            '"1Custom"' in stable_smoke and
+            'device.run("install", "-r", args.candidate_apk' in stable_smoke,
+            "stable emulator helper does not verify persisted state and clean catalog readiness")
+    require("whatsNewFormatsStableReleaseNotesWithoutExposingMarkup" in whats_new_test and
+            'version = "0.8.0"' in whats_new_test and
+            "signed v0.8.0 APK" in whats_new_test,
+            "Android UI coverage does not render the stable v0.8.0 release-note format")
     verify_index = workflow.index("  verify-candidate:")
     tag_index = workflow.index("  create-candidate-tag:")
     publish_index = workflow.index("  publish:")
@@ -1077,14 +1159,17 @@ def check_contract(project_root: Path) -> None:
             "permissions:\n      actions: read\n      contents: write" in tag_job and
             "needs.verify-candidate.outputs.artifact_digest" in tag_job,
             "annotated tag job must consume a verified candidate and scope write permission to tag creation")
-    upgrade_step = workflow.split(
-        "- name: Install exact candidate over the latest public release on API 35\n", 1
+    emulator_step = workflow.split(
+        "- name: Verify signed stable install and upgrade paths on API 35\n", 1
     )[1].split("\n      - name: Upload promotion emulator diagnostics", 1)[0]
-    require("${{ needs.verify-candidate.outputs." not in upgrade_step,
+    require("${{ needs.verify-candidate.outputs." not in emulator_step,
             "same-job emulator checks must not read verify-candidate through needs")
-    for output in ("baseline_version_code", "candidate_version_code", "candidate_version_name"):
-        require(f"${{{{ steps.verify.outputs.{output} }}}}" in upgrade_step,
+    for output in ("baseline_version_code", "baseline_tag", "beta_baseline_version_code",
+                   "candidate_version_code", "candidate_version_name"):
+        require(f"${{{{ steps.verify.outputs.{output} }}}}" in emulator_step,
                 f"API 35 emulator check does not consume verify-step output {output!r}")
+    require("release-identity.txt" in emulator_step and "sha256sum" in emulator_step,
+            "API 35 stable artifact evidence must bind source/version and all tested APK digests")
     require('"/releases/latest"' in publisher and '"make_latest": "true"' in publisher and
             '"release-provenance.json"' in publisher,
             "publisher does not preserve its latest metadata and provenance contract")
@@ -1206,6 +1291,7 @@ def build_parser() -> argparse.ArgumentParser:
             sub.add_argument("--archive-out", required=True)
             sub.add_argument("--apk-out", required=True)
             sub.add_argument("--baseline-apk-out", required=True)
+            sub.add_argument("--beta-apk-out")
             sub.add_argument("--github-output", required=True)
         elif command == "tag":
             sub.add_argument("--artifact-digest", required=True)

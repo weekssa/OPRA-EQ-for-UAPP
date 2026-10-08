@@ -2,9 +2,26 @@
 
 All notable changes to **OPRA EQ for UAPP / EQ Library** will be documented in this file.
 
-The project uses Semantic Versioning. Development releases remain in the `0.x` series until the first stable `v1.0.0` release.
+The project uses Semantic Versioning. The `0.x` series is pre-1.0; a version without a prerelease suffix, such as `0.8.0`, is a stable public release.
 
 ## [Unreleased]
+
+## [0.8.0] - 2026-10-08
+
+### EQ Library modernization
+
+- Reorganized the app around My EQs, EQ Library, and Settings while keeping supported DAC access contextual.
+- Separated connected-device context from the chosen EQ target and clarified ownership for saved headphone EQs, General EQs, and Personal EQs.
+- Added direct headphone model search, explicit General EQ browsing, and profile details with provenance, response preview, fit, and technical information.
+- Reworked Personal EQ import into clear input, parse, description, review, and save steps, with recovery for long drafts after an interruption.
+- Added explicit UAPP/ToneBoosters export review and completion guidance; exported files still need to be imported in USB Audio Player PRO.
+- Improved Settings organization, What's New formatting, light and dark palettes, responsive/large-text layouts, screen-reader band values, and keyboard/D-pad navigation.
+- If a Black Pearl EQ reset is interrupted, the app checks current device state without repeating the reset automatically; disconnected FiiO JA11 values stay labeled as historical until the app reads them again.
+
+### Compatibility
+
+- Keeps the v0.7.2 DAC identity, USB transaction/reconnect, DSP acceptance, canonical EQ, and saved-data behavior; this release adds no DAC support claim or live-audio control in USB Audio Player PRO.
+- Uses versionCode 11, advancing the signed v0.8.0-beta versionCode 10 while retaining package identity `com.weekssa.opraeqforuapp` for in-place upgrades.
 
 ## [0.8.0-beta] - 2026-10-04
 

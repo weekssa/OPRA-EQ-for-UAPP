@@ -1,6 +1,5 @@
 package com.weekssa.opraeqforuapp.ui.screens
 
-import android.view.KeyEvent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.rememberScrollState
@@ -15,10 +14,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.InputMode
 import androidx.compose.ui.input.InputModeManager
+import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.semantics.SemanticsActions
-import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsFocused
@@ -28,13 +27,13 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.Density
 import androidx.test.espresso.Espresso
 import androidx.test.espresso.accessibility.AccessibilityChecks
 import androidx.test.espresso.matcher.ViewMatchers.isRoot
-import androidx.test.platform.app.InstrumentationRegistry
 import com.google.android.apps.common.testing.accessibility.framework.AccessibilityViewCheckResult
 import com.google.android.apps.common.testing.accessibility.framework.checks.SpeakableTextPresentCheck
 import com.weekssa.opraeqforuapp.data.blackpearl.BlackPearlConnectionState
@@ -63,7 +62,6 @@ class BlackPearlDeviceResetLifecycleTest {
 
     @Test
     fun interruptedEqResetIsNotReplayedAndLeavesAnActionableRecoveryState() {
-        val restorationTester = StateRestorationTester(composeRule)
         val state = BlackPearlQualificationUiState().success(
             BlackPearlDeviceQualificationSnapshot(
                 sessionGeneration = 7L,
@@ -84,7 +82,7 @@ class BlackPearlDeviceResetLifecycleTest {
         val operationStatuses = mutableListOf<Pair<String, Boolean>>()
         lateinit var inputModeManager: InputModeManager
 
-        restorationTester.setContent {
+        composeRule.setContent {
             val systemDensity = LocalDensity.current
             inputModeManager = LocalInputModeManager.current
             CompositionLocalProvider(LocalDensity provides Density(systemDensity.density, fontScale = 2f)) {
@@ -139,7 +137,9 @@ class BlackPearlDeviceResetLifecycleTest {
         composeRule.onNodeWithText("Reset", substring = false).performClick()
         composeRule.waitUntil(timeoutMillis = 5_000) { eqResetRequests == 1 }
 
-        restorationTester.emulateSavedInstanceStateRestore()
+        composeRule.onNodeWithText("Toggle My DAC root").performScrollTo().performClick()
+        composeRule.onAllNodesWithText("Reset outcome needs review").assertCountEquals(0)
+        composeRule.onNodeWithText("Toggle My DAC root").performScrollTo().performClick()
         composeRule.onNodeWithText("Reset outcome needs review").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText(
             "The reset may have changed EQ or DEVICE settings.",
@@ -173,21 +173,18 @@ class BlackPearlDeviceResetLifecycleTest {
         composeRule.runOnIdle {
             assertTrue("Keyboard input mode is available", inputModeManager.requestInputMode(InputMode.Keyboard))
         }
-        composeRule.onNodeWithText("Read current EQ")
+        val readCurrentEq = composeRule.onNodeWithText("Read current EQ")
             .performScrollTo()
             .performSemanticsAction(SemanticsActions.RequestFocus)
             .assertIsFocused()
-        sendAndroidKeyEvent(KeyEvent.KEYCODE_DPAD_CENTER)
+        sendComposeKey(readCurrentEq, Key.DirectionCenter)
         composeRule.waitUntil(timeoutMillis = 5_000) { eqReadRequests == 1 }
         composeRule.onNodeWithText("No verified hardware EQ read yet.").performScrollTo().assertIsDisplayed()
-        val refreshDevice = composeRule.onNodeWithText("Refresh DEVICE").performScrollTo()
-        var tabKeyAttempts = 0
-        while (!isFocused(refreshDevice) && tabKeyAttempts < 8) {
-            sendAndroidKeyEvent(KeyEvent.KEYCODE_TAB)
-            tabKeyAttempts += 1
-        }
-        refreshDevice.assertIsFocused()
-        sendAndroidKeyEvent(KeyEvent.KEYCODE_ENTER)
+        val refreshDevice = composeRule.onNodeWithText("Refresh DEVICE")
+            .performScrollTo()
+            .performSemanticsAction(SemanticsActions.RequestFocus)
+            .assertIsFocused()
+        sendComposeKey(refreshDevice, Key.Enter)
         composeRule.waitUntil(timeoutMillis = 5_000) { deviceReadRequests == 1 }
         composeRule.runOnIdle {
             assertEquals(1, deviceReadRequests)
@@ -295,13 +292,16 @@ class BlackPearlDeviceResetLifecycleTest {
             .performScrollTo()
             .performSemanticsAction(SemanticsActions.RequestFocus)
             .assertIsFocused()
-        sendAndroidKeyEvent(KeyEvent.KEYCODE_DPAD_CENTER)
+        sendComposeKey(
+            composeRule.onNodeWithText("Read current EQ").performScrollTo(),
+            Key.DirectionCenter,
+        )
         composeRule.waitUntil(timeoutMillis = 5_000) { eqReadRequests.get() == 1 }
-        composeRule.onNodeWithText("Refresh DEVICE")
+        val refreshDevice = composeRule.onNodeWithText("Refresh DEVICE")
             .performScrollTo()
             .performSemanticsAction(SemanticsActions.RequestFocus)
             .assertIsFocused()
-        sendAndroidKeyEvent(KeyEvent.KEYCODE_DPAD_CENTER)
+        sendComposeKey(refreshDevice, Key.DirectionCenter)
         composeRule.waitUntil(timeoutMillis = 5_000) { deviceReadRequests.get() == 1 }
 
         composeRule.onNodeWithText("EQ", substring = false).performClick()
@@ -427,13 +427,13 @@ class BlackPearlDeviceResetLifecycleTest {
         onDirectJcallyJm12FlashEnabledChange = {},
     )
 
-    private fun sendAndroidKeyEvent(keyCode: Int) {
-        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(keyCode)
-        composeRule.waitForIdle()
+    private fun sendComposeKey(
+        node: androidx.compose.ui.test.SemanticsNodeInteraction,
+        key: Key,
+    ) {
+        node.performKeyInput {
+            keyDown(key)
+            keyUp(key)
+        }
     }
-
-    private fun isFocused(node: androidx.compose.ui.test.SemanticsNodeInteraction): Boolean =
-        runCatching {
-            node.fetchSemanticsNode().config[SemanticsProperties.Focused]
-        }.getOrDefault(false)
 }

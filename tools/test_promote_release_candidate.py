@@ -804,12 +804,55 @@ class ReleasePromotionTest(unittest.TestCase):
             encoding="utf-8"
         )
         upgrade_step = workflow.split(
-            "- name: Install exact candidate over the latest public release on API 35\n", 1
+            "- name: Verify signed stable install and upgrade paths on API 35\n", 1
         )[1].split("\n      - name: Upload promotion emulator diagnostics", 1)[0]
         self.assertNotIn("${{ needs.verify-candidate.outputs.", upgrade_step)
-        for output in ("baseline_version_code", "candidate_version_code", "candidate_version_name"):
+        for output in ("baseline_version_code", "baseline_tag", "beta_baseline_version_code",
+                       "beta_baseline_tag", "candidate_version_code", "candidate_version_name"):
             with self.subTest(output=output):
                 self.assertIn(f"${{{{ steps.verify.outputs.{output} }}}}", upgrade_step)
+        self.assertIn("tools/verify_stable_release_smoke.py upgrade", upgrade_step)
+        self.assertIn("tools/verify_stable_release_smoke.py clean-install", upgrade_step)
+        self.assertIn('if [[ "$RELEASE_TAG" == "v0.8.0" && "$BASELINE_TAG" != "v0.7.2" ]]', upgrade_step)
+        v080_lane = upgrade_step.split('if [[ "$RELEASE_TAG" == "v0.8.0" ]]; then', 1)[1].split("\n          fi", 1)[0]
+        self.assertIn('if [[ "$BETA_BASELINE_TAG" != "v0.8.0-beta" ]]', v080_lane)
+        self.assertIn('--baseline-apk "$RUNNER_TEMP/promotion-transfer/beta-baseline.apk"', v080_lane)
+        self.assertLess(upgrade_step.index('if [[ "$RELEASE_TAG" == "v0.8.0" ]]; then'),
+                        upgrade_step.index("tools/verify_stable_release_smoke.py clean-install"))
+        self.assertIn("apk-sha256sums.txt", upgrade_step)
+
+    def test_generic_stable_promotion_does_not_fetch_beta_upgrade_baseline(self):
+        candidate = {"release_tag": "v0.9.0"}
+        baseline = {"baseline_tag": "v0.8.0", "baseline_version_code": "11"}
+        with (
+            mock.patch.object(promotion, "download_and_verify_upgrade_baseline", return_value=baseline) as stable,
+            mock.patch.object(promotion, "download_and_verify_beta_upgrade_baseline") as beta,
+        ):
+            result = promotion.download_and_verify_upgrade_baselines(
+                object(), candidate, Path("unused"), Path("baseline.apk")
+            )
+        stable.assert_called_once()
+        beta.assert_not_called()
+        self.assertEqual(baseline, result)
+
+    def test_v080_stable_promotion_requires_and_fetches_exact_beta_upgrade_baseline(self):
+        candidate = {"release_tag": "v0.8.0"}
+        baseline = {"baseline_tag": "v0.7.2", "baseline_version_code": "9"}
+        beta_baseline = {"beta_baseline_tag": "v0.8.0-beta", "beta_baseline_version_code": "10"}
+        api = object()
+        with (
+            mock.patch.object(promotion, "download_and_verify_upgrade_baseline", return_value=baseline),
+            mock.patch.object(promotion, "download_and_verify_beta_upgrade_baseline", return_value=beta_baseline) as beta,
+        ):
+            with self.assertRaisesRegex(promotion.PromotionError, "requires an output path"):
+                promotion.download_and_verify_upgrade_baselines(
+                    api, candidate, Path("unused"), Path("baseline.apk")
+                )
+            result = promotion.download_and_verify_upgrade_baselines(
+                api, candidate, Path("unused"), Path("baseline.apk"), Path("beta.apk")
+            )
+        beta.assert_called_once_with(api, candidate, Path("unused"), Path("beta.apk"))
+        self.assertEqual({**baseline, **beta_baseline}, result)
 
     def test_latest_release_baseline_is_verified_before_emulator_upgrade(self):
         candidate = self.validate()
@@ -853,6 +896,96 @@ class ReleasePromotionTest(unittest.TestCase):
             self.assertEqual(APK, output.read_bytes())
             self.assertEqual("v0.7.1", summary["baseline_tag"])
             self.assertEqual(apk_sha, summary["baseline_apk_sha256"])
+
+    def test_exact_immutable_beta_baseline_is_verified_before_emulator_upgrade(self):
+        candidate = self.validate()
+        candidate["release_tag"] = "v0.8.0"
+        candidate["version_code"] = 11
+        apk_sha = hashlib.sha256(APK).hexdigest()
+        test_case = self
+
+        class BetaApi:
+            api_url = "https://api.github.com"
+            repo_path = "/repos/weekssa/OPRA-EQ-for-UAPP"
+
+            def json(self, method, path, payload=None):
+                test_case.assertEqual("GET", method)
+                test_case.assertEqual(self.repo_path + "/releases/tags/v0.8.0-beta", path)
+                return {
+                    "tag_name": "v0.8.0-beta",
+                    "draft": False,
+                    "prerelease": True,
+                    "immutable": True,
+                    "published_at": "2026-10-08T00:00:00Z",
+                    "assets": [{
+                        "id": 99,
+                        "name": "EQ-Library-v0.8.0-beta.apk",
+                        "state": "uploaded",
+                        "digest": f"sha256:{apk_sha}",
+                    }],
+                }
+
+            def request_bytes(self, url, **kwargs):
+                test_case.assertTrue(url.endswith("/releases/assets/99"))
+                test_case.assertEqual("application/octet-stream", kwargs["accept"])
+                return 200, APK, {}
+
+        with tempfile.TemporaryDirectory(prefix="beta-upgrade-baseline-test-") as temporary:
+            output = Path(temporary) / "beta-baseline.apk"
+            with mock.patch.object(
+                promotion,
+                "verify_android_apk",
+                return_value=({"zipalign-verification.txt": ALIGNMENT_REPORT}, 10),
+            ) as verify:
+                summary = promotion.download_and_verify_beta_upgrade_baseline(
+                    BetaApi(), candidate, Path("unused"), output
+                )
+            verify.assert_called_once_with(
+                APK,
+                build_tools=Path("unused"),
+                signer_sha256=SIGNER,
+                expected_version_name="0.8.0-beta",
+                expected_version_code=10,
+            )
+            self.assertEqual(APK, output.read_bytes())
+            self.assertEqual("v0.8.0-beta", summary["beta_baseline_tag"])
+            self.assertEqual("10", summary["beta_baseline_version_code"])
+            self.assertEqual(apk_sha, summary["beta_baseline_apk_sha256"])
+
+    def test_beta_upgrade_baseline_rejects_nonimmutable_or_nonprerelease_release(self):
+        candidate = self.validate()
+        valid = {
+            "tag_name": "v0.8.0-beta",
+            "draft": False,
+            "prerelease": True,
+            "immutable": True,
+            "published_at": "2026-10-08T00:00:00Z",
+            "assets": [],
+        }
+        for changes in (
+            {"immutable": False},
+            {"prerelease": False},
+            {"draft": True},
+            {"tag_name": "v0.8.0"},
+            {"published_at": None},
+        ):
+            with self.subTest(changes=changes):
+                release = {**valid, **changes}
+
+                class BetaApi:
+                    api_url = "https://api.github.com"
+                    repo_path = "/repos/weekssa/OPRA-EQ-for-UAPP"
+
+                    def json(self, method, path, payload=None):
+                        return release
+
+                    def request_bytes(self, *args, **kwargs):
+                        test_case.fail("invalid beta release must fail before artifact download")
+
+                with self.assertRaisesRegex(promotion.PromotionError, "immutable v0.8.0-beta prerelease"):
+                    promotion.download_and_verify_beta_upgrade_baseline(
+                        BetaApi(), candidate, Path("unused"), Path("unused.apk")
+                    )
 
     def test_publish_does_not_publish_until_every_asset_readback_passes(self):
         candidate = self.validate()

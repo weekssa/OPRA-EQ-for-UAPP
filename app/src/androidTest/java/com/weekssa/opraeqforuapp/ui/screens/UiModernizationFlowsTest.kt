@@ -1997,25 +1997,27 @@ class UiModernizationFlowsTest {
     }
 
     @Test
-    fun whatsNewFormatsMarkdownInsteadOfExposingMarkup() {
+    fun whatsNewFormatsStableReleaseNotesWithoutExposingMarkup() {
         composeRule.setContent {
             OpraEqTheme(ThemeMode.Light) {
             TestScreenShell(title = "EQ Library", showTarget = true) {
             TestBrowseContent(testCatalog())
             WhatsNewDialog(
-                version = "0.8.0-beta",
-                notes = "# What's New\n\n- **Fixed navigation**\n- [Read the guide](https://example.invalid/guide)",
+                version = "0.8.0",
+                notes = "# EQ Library v0.8.0\n\n## What's new\n\n- **My EQs, EQ Library, and Settings** are the three persistent app destinations. Supported DAC access stays contextual.\n\n## Install and upgrade\n\nDownload the [signed v0.8.0 APK](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/download/v0.8.0/EQ-Library-v0.8.0.apk) from the [v0.8.0 stable release](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.8.0).",
                 onDismiss = {},
             )
             }
             }
         }
 
-        composeRule.onNodeWithText("What’s new in v0.8.0-beta").assertIsDisplayed()
-        composeRule.onNodeWithText("What's New").assertIsDisplayed()
-        composeRule.onNodeWithText("Fixed navigation").assertIsDisplayed()
-        composeRule.onNodeWithText("Read the guide").assertIsDisplayed()
-        composeRule.onNodeWithText("**Fixed navigation**").assertDoesNotExist()
+        composeRule.onNodeWithText("What’s new in v0.8.0").assertIsDisplayed()
+        composeRule.onNodeWithText("EQ Library v0.8.0").assertIsDisplayed()
+        composeRule.onNodeWithText("What's new").assertIsDisplayed()
+        composeRule.onNodeWithText("My EQs, EQ Library, and Settings", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("signed v0.8.0 APK", substring = true).assertExists()
+        composeRule.onNodeWithText("**My EQs, EQ Library, and Settings**", substring = true).assertDoesNotExist()
+        composeRule.onNodeWithText("[signed v0.8.0 APK]", substring = true).assertDoesNotExist()
         composeRule.waitForIdle()
         captureV080Screenshot("whats-new-light-100")
     }
