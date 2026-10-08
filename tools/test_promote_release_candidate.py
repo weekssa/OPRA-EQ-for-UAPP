@@ -832,8 +832,11 @@ class ReleasePromotionTest(unittest.TestCase):
         )
 
     def test_stable_smoke_recognizes_current_and_legacy_personal_eq_import_screens(self):
-        self.assertFalse(stable_smoke.is_legacy_personal_eq_import_form("Import Personal EQ"))
-        self.assertTrue(stable_smoke.is_legacy_personal_eq_import_form("Import personal PEQ"))
+        fields = "Manufacturer Headphone model EQ name Paste PEQ text Equalizer APO / AutoEq text"
+        self.assertTrue(stable_smoke.is_legacy_personal_eq_import_form(f"Import personal EQ {fields}"))
+        self.assertTrue(stable_smoke.is_legacy_personal_eq_import_form(f"Import personal PEQ {fields}"))
+        self.assertFalse(stable_smoke.is_legacy_personal_eq_import_form(f"Import Personal EQ {fields[:20]}"))
+        self.assertFalse(stable_smoke.is_legacy_personal_eq_import_form(f"Unrelated screen {fields}"))
 
     def test_generic_stable_promotion_does_not_fetch_beta_upgrade_baseline(self):
         candidate = {"release_tag": "v0.9.0"}
@@ -1270,6 +1273,78 @@ class ReleasePromotionTest(unittest.TestCase):
         )
         with self.assertRaisesRegex(promotion.PromotionError, "does not match this exact signed candidate"):
             promotion._preserve_matching_provenance(RetryApi(), draft, candidate, assets)
+
+
+class StableReleaseSmokeTest(unittest.TestCase):
+    def test_legacy_import_form_matches_recorded_v072_labels(self):
+        visible = " ".join((
+            "Import personal EQ",
+            "Supported input: Equalizer APO / AutoEq parametric text",
+            "Paste PEQ text",
+            "Manufacturer",
+            "Headphone model",
+            "EQ name",
+            "Target / note (optional)",
+            "Equalizer APO / AutoEq text",
+        ))
+        self.assertTrue(stable_smoke.is_legacy_personal_eq_import_form(visible))
+
+        incomplete = visible.replace("Equalizer APO / AutoEq text", "")
+        self.assertFalse(stable_smoke.is_legacy_personal_eq_import_form(incomplete))
+
+    def test_legacy_import_seed_uses_visible_peq_field_label(self):
+        labels = (
+            "Import personal EQ",
+            "Paste PEQ text",
+            "Manufacturer",
+            "Headphone model",
+            "EQ name",
+            "Target / note (optional)",
+            "Equalizer APO / AutoEq text",
+        )
+        hierarchy = stable_smoke.ET.Element("hierarchy")
+        for label in labels:
+            stable_smoke.ET.SubElement(hierarchy, "node", {"text": label})
+
+        class FakeDevice:
+            def __init__(self):
+                self.text_entries = []
+                self.taps = []
+                self.screenshots = []
+
+            def tap_text(self, requested, **_kwargs):
+                self.taps.append(tuple(requested))
+
+            def wait_text(self, requested, **_kwargs):
+                label = requested[0]
+                return stable_smoke.ET.Element(
+                    "node", {"text": label, "checked": "true" if label == "Manual" else "false"}
+                )
+
+            def dump(self, _name):
+                return hierarchy
+
+            def type_text(self, label, value, **_kwargs):
+                self.text_entries.append((label, value))
+
+            def screenshot(self, name):
+                self.screenshots.append(name)
+
+        device = FakeDevice()
+        with mock.patch.object(stable_smoke.time, "sleep"):
+            stable_smoke.seed_persisted_state(device)
+
+        self.assertEqual(
+            [
+                ("Manufacturer", stable_smoke.FIXTURE_MANUFACTURER),
+                ("Headphone model", stable_smoke.FIXTURE_MODEL),
+                ("EQ name", stable_smoke.FIXTURE_EQ_NAME),
+                ("Equalizer APO / AutoEq text", stable_smoke.FIXTURE_PEQ),
+            ],
+            device.text_entries,
+        )
+        self.assertIn(("Save",), device.taps)
+        self.assertIn(("Manual",), device.taps)
 
 
 if __name__ == "__main__":
