@@ -190,7 +190,8 @@ class Device:
 
 def seed_persisted_state(device: Device) -> None:
     device.tap_text(("My EQs",))
-    device.tap_text(("Import PEQ", "Import Personal EQ"))
+    device.tap_text(("Import", "Import PEQ", "Import Personal EQ"))
+    device.wait_text(("Import Personal EQ",), timeout=30)
     time.sleep(0.4)
     hierarchy = device.dump("import-open")
     visible = " ".join(Device._node_value(node) for node in hierarchy.iter("node"))
