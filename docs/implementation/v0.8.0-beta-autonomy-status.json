@@ -1,8 +1,8 @@
 {
-  "timestamp_utc": "2026-10-08T00:43:00Z",
-  "state": "G0_G11_PASS; IMMUTABLE_BETA_PRERELEASE_PUBLISHED; G12_EXTERNAL_CLOSEOUT_IN_PROGRESS; STABLE_LATEST_V0.7.2",
-  "current_gate": "G12_CLOSEOUT",
-  "next_gate": "G12_EXTERNAL_SYNC_AND_FINAL_VERIFICATION",
+  "timestamp_utc": "2026-10-08T00:45:00Z",
+  "state": "MISSION_COMPLETE; G0_G12_PASS; IMMUTABLE_BETA_PRERELEASE_PUBLISHED; STABLE_LATEST_V0.7.2",
+  "current_gate": "MISSION_COMPLETE",
+  "next_gate": "NONE",
   "candidate_branch": "codex/v0.8.0-beta-ux",
   "candidate_head": "3329590db531c31be84e7e28d89209028a688075",
   "candidate_tree": "79808ef8052812427461f480e9abf19c2e930c22",
@@ -551,21 +551,15 @@
   "physical_session_ready": false,
   "physical_session_readiness_reason": "C05-C/G4 passed and the phone was released; no further device access is needed.",
   "estimated_pixel_minutes": "5-10 optimization target; no time-only abort",
-  "watchdog_mode": "FINAL_CLOSEOUT",
-  "loop_status": "G0_G11_PASS; PR72_MERGED; IMMUTABLE_BETA_PUBLISHED; G12_ISSUE_AND_WATCHER_SYNC_PENDING",
-  "stable_latest_release": "v0.8.0-beta is immutable prerelease; /releases/latest remains stable non-prerelease v0.7.2.",
+  "watchdog_mode": "RETIRED_MISSION_COMPLETE",
+  "loop_status": "G0_G12_PASS; ISSUE71_CLOSED_COMPLETED; WATCHDOG_RETIRED; NO_NEXT_ACTION",
+  "stable_latest_release": "Immutable prerelease v0.8.0-beta published; /releases/latest remains stable non-prerelease v0.7.2.",
   "merge_or_publish_performed": true,
-  "nonphysical_gates_open": [
-    "G12 final status/issue/watchdog synchronization and verification"
-  ],
+  "nonphysical_gates_open": [],
   "physical_gates_open": [],
-  "downstream_gates": [
-    "Synchronize final closeout to issue #71, close issue #71 as completed, retire the completed watchdog automation, and verify pushed refs/release/bundle."
-  ],
-  "next_actions": [
-    "Complete G12 external issue/watchdog synchronization and final verification; no product, test, hardware, merge, or publishing action remains."
-  ],
-  "issue": "OPEN; final release closeout body/closure pending G12.",
+  "downstream_gates": [],
+  "next_actions": [],
+  "issue": "CLOSED / completed; synchronized final release and bundle status at 2026-10-08T00:45:28Z.",
   "canonical_status_url": "https://github.com/weekssa/OPRA-EQ-for-UAPP/blob/codex%2Fv0.8.0-beta-watch/docs/implementation/v0.8.0-beta-autonomy-status.md (resolve the live control ref dynamically)",
   "physical_plan": {
     "path": "docs/implementation/FINAL_PHYSICAL_SESSION_PLAN.md",
@@ -615,7 +609,7 @@
     "G9": "PASS; signed clean install/core smoke and independent artifact review passed",
     "G10": "PASS; publisher PR #72 checks and merge passed; diagnosed min-api retry passed after first emulator infrastructure failure",
     "G11": "PASS; immutable prerelease/public bytes/checksum/signer/provenance and stable/latest policy independently verified",
-    "G12": "IN_PROGRESS; issue #71 final completion/closure, watchdog retirement, and final live-ref verification pending."
+    "G12": "PASS; issue #71 closed as completed, watchdog retired, final docs pushed, and live refs/release/bundle verified."
   },
   "manual_talkback": "DEFERRED_NON_BLOCKING_FOR_V0.8.0_BETA",
   "main_current_checks": {
@@ -715,17 +709,17 @@
     "total": 9,
     "failed": 2
   },
-  "issue_updated_at_utc": "2026-10-08T00:04:52Z",
+  "issue_updated_at_utc": "2026-10-08T00:45:28Z",
   "issue_body_current": true,
   "watchdog_prompt_updated": true,
   "watchdog_prompt_updated_utc": "2026-10-08T00:05:13Z",
-  "control_plane_checkpoint_pushed": false,
+  "control_plane_checkpoint_pushed": true,
   "pr_updated_at_utc": "2026-10-07T22:46:30Z",
   "control_plane_branch": "codex/v0.8.0-beta-watch; resolve live origin tip dynamically.",
   "owner_action_required": false,
-  "owner_action": "None; all remaining actions are authorized closeout synchronization and verification.",
+  "owner_action": "None; mission complete.",
   "physical_session_owner_action_required_after_review": false,
-  "latest_release": "v0.8.0-beta is immutable prerelease; /releases/latest remains stable non-prerelease v0.7.2.",
+  "latest_release": "Immutable prerelease v0.8.0-beta published; /releases/latest remains stable non-prerelease v0.7.2.",
   "master_body_sha256": "c09db756671243ebd2c33e3ff47e360f8909263cc9512dcd633ed57b799cd73a",
   "master_introducing_commit": "ced7a2d648dc4d6aa89662665553eea6bafdcb23",
   "g3_plan_ready_for_cold_disconnected_route": false,
@@ -760,7 +754,7 @@
     "readiness_certificate": "READY FOR PHASE B; plan 2.48 physical procedure safety review found no safety issue and the one-time category B metadata correction is applied."
   },
   "last_observed_control_tree_before_status_commit": "f8235a74125c6d9dc02a2f351d631bc7f3c3a48a",
-  "next_action": "Update issue #71 with final verified release/bundle status and close it as completed; retire automation opra-v0-8-physical-qualification-watch; push final docs-only control checkpoint; verify refs and public release.",
+  "next_action": "None; G0-G12 are complete, issue #71 is closed, the completed watchdog is retired, and final refs/release/bundle were verified.",
   "g3_approved_entry_route": "C05-C complete; no entry route required.",
   "g3_attached_connected_session_resume_approved": false,
   "phase_b_binding": {
@@ -816,10 +810,10 @@
   },
   "first_v1_6_commit": null,
   "external_surfaces": {
-    "issue_71": "OPEN; final status and closure are the remaining G12 action.",
+    "issue_71": "closed/completed at 2026-10-08T00:45:28Z; final candidate, release, bundle, and dependency caveat recorded.",
     "pr_70": "closed/merged at exact qualified candidate; no further PR70 action.",
-    "pr_72": "closed/merged at 0f4236b64c6642b4cd7c1a0ffe2b0d9778330f01; exact required checks passed after diagnosed API-26 retry.",
-    "watchdog": "Hourly automation opra-v0-8-physical-qualification-watch is to be retired after issue/status synchronization."
+    "pr_72": "closed/merged at 0f4236b64c6642b4cd7c1a0ffe2b0d9778330f01; required checks passed after diagnosed API-26 retry.",
+    "watchdog": "automation opra-v0-8-physical-qualification-watch deleted through the supported Codex automation tool."
   },
   "master_directive_loaded": true,
   "candidate_change": "Control-plane status/evidence documentation only; no app/test, candidate tree, protected hardware path, physical acceptance criterion, or Class B change.",
@@ -850,7 +844,7 @@
     "G9": "PASS; clean-install/core smoke and independent artifact review passed.",
     "G10": "PASS; PR #72 exact-head checks passed including diagnosed min-API retry; PR #72 merged at main 0f4236b64c6642b4cd7c1a0ffe2b0d9778330f01.",
     "G11": "PASS; independent final exact-membership review bundle audit; ZIP SHA-256 fa6b802ffee4701a59660820d899c2efd5be5ce5e9e4b00400a62b5339d662c2.",
-    "G12": "IN_PROGRESS; final issue #71/automation/control-ref closeout.",
+    "G12": "PASS; issue #71 closed as completed; watchdog retired; final control state pushed and refs verified.",
     "dependabot_alert_snapshot": "56 open transitive Maven alerts on settings.gradle.kts; 3 critical, 22 high, 28 medium, 3 low; SBOM paths indicate build/test tooling and no vulnerable app-runtime version was identified; not a clean scan."
   },
   "owner_state": {
@@ -863,7 +857,7 @@
     "state": "C05-C PASS / PHONE RELEASED",
     "reason": "Read-only physical qualification complete; evidence manifest verified. No more device access is needed."
   },
-  "control_plane_local_head": "Resolve dynamically from the local control branch; do not store this status commit’s own SHA.",
+  "control_plane_local_head": "Resolve dynamically from codex/v0.8.0-beta-watch; this status does not embed its own commit SHA.",
   "first_v1_8_commit": null,
   "repeated_session_entry_failure": {
     "triggered": true,
@@ -892,9 +886,9 @@
   "latest_release_verified_at_utc": "2026-10-08T00:05:13Z",
   "phase_c_started": true,
   "pr_body_current": true,
-  "issue_last_checked_utc": "2026-10-08T00:05:13Z",
+  "issue_last_checked_utc": "2026-10-08T00:45:28Z",
   "pr_last_checked_utc": "2026-10-08T00:05:13Z",
-  "current_control_reconciliation_pushed": false,
+  "current_control_reconciliation_pushed": true,
   "exact_state_consistency_review": {
     "result": "CATEGORY_B_METADATA_ONLY; one correction applied; physical procedure safety review clear; no recursive review required.",
     "reviewed_control_head": "81066aa86ae301a0588cd3a349409c0f1cd5d8e7",
@@ -912,8 +906,8 @@
     "previous_checkpoint_result": "NOT PASS at 2026-10-07T16:16Z for synchronized plan 2.48 checkpoint; stale current maintained overlays/status fields found.",
     "previous_checkpoint_reviewed_at_utc": "2026-10-07T16:16:00Z"
   },
-  "issue_71": "OPEN; G10 first min-API attempt failed after Android 8.0 emulator system_server boot/network failure; artifact diagnosed; only failed job rerun, job 113078411594 in progress.",
-  "current_reconciliation_pushed": false,
+  "issue_71": "CLOSED as completed at 2026-10-08T00:45:28Z; final release and review-bundle status recorded.",
+  "current_reconciliation_pushed": true,
   "phase_b_current_status": "PASS; same binding used for C05-C; session completed and phone released.",
   "push_attempts": [
     {
@@ -948,8 +942,8 @@
     }
   ],
   "github_write_blocker": null,
-  "control_plane_local_tree": "Resolve dynamically from the local control branch.",
-  "control_plane_remote_head_last_seen": "Resolve origin/codex/v0.8.0-beta-watch dynamically after final push.",
+  "control_plane_local_tree": "Resolve dynamically from codex/v0.8.0-beta-watch.",
+  "control_plane_remote_head_last_seen": "Resolved dynamically after the final closeout push; equals local codex/v0.8.0-beta-watch.",
   "control_content_checkpoint_sha": "1925dd2cefaf3418dc966c85c838090d0e58477d",
   "control_content_checkpoint_tree": "cb2fa58bac78da15b156f5e61d48f2ac9b6dcf1c",
   "current_state_review": {
@@ -963,7 +957,7 @@
     "tests_rerun": false,
     "finding": "CATEGORY B: stale current plan pointer and active JSON next-action/main snapshot only; no physical-procedure safety finding. One-time correction applied; no recursive review required under the owner convergence directive."
   },
-  "current_action": "G0-G11 PASS; immutable v0.8.0-beta prerelease and exact-membership review bundle independently verified. G12 external synchronization is the only remaining gate.",
+  "current_action": "Mission complete. No product, test, hardware, merge, signing, publishing, or closeout action remains.",
   "latest_phase_b_attempt": {
     "at_utc": "2026-10-07T21:25:28Z",
     "result": "PASS",
@@ -1396,7 +1390,7 @@
     "zip_sha256": "fa6b802ffee4701a59660820d899c2efd5be5ce5e9e4b00400a62b5339d662c2",
     "direct_file_count": 12,
     "archive_member_count": 11,
-    "independent_review": "PASS",
+    "independent_review": "PASS; final G11 audit completed before closeout.",
     "checksums_crc_membership_acceptance_provenance_signature_patch": "PASS"
   },
   "current_main": {
@@ -1408,8 +1402,9 @@
   },
   "automation_closeout": {
     "id": "opra-v0-8-physical-qualification-watch",
-    "status": "PENDING_RETIREMENT"
+    "status": "DELETED"
   },
   "prerelease_release_id": 406271597,
-  "review_bundle_sha256": "fa6b802ffee4701a59660820d899c2efd5be5ce5e9e4b00400a62b5339d662c2"
+  "review_bundle_sha256": "fa6b802ffee4701a59660820d899c2efd5be5ce5e9e4b00400a62b5339d662c2",
+  "control_plane_checkpoint_before_final_closeout_commit": "e0bccf0ea71a7327afceb25942f8d1fa2cff972d"
 }
