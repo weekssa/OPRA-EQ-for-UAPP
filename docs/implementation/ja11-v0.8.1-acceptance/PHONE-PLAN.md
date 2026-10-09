@@ -1,6 +1,6 @@
 # JA11 v0.8.1 physical acceptance plan
 
-## Current Model D window — exact candidate not frozen
+## Current Model D candidate — off-phone qualification
 
 The 2026-10-09 owner-approved Model D policy supersedes the serial-required instructions in the
 historical J024 procedure below. J024 remains a read-only result: both Android serial readers
@@ -8,11 +8,23 @@ returned null from a permissioned, current JA11 session, and no write occurred. 
 remains J020; Mic Off is the last verified value and restoring the original Mic On state remains
 outstanding.
 
-Do not use the Pixel until the new implementation, local/emulator gates, independent review, exact
-PR-head CI, and candidate artifact verification are complete. No current source SHA or APK hash is
-frozen yet. When those gates pass, request a new explicit phone window with the exact candidate,
-tests, expected writes/resets, Android permission interaction, phone occupancy, pass/fail criteria,
-and restoration obligations. Wait for confirmation before any physical action.
+Production source commit `1d19067c9150aae1b09e01fafb8af3647bf65f71` and its exact diagnostic APK have
+been built and artifact-verified. APK SHA-256 is
+`23adf9f4955b056f110562362717c706767b7e3ecc50225c07439a3ff5c23711`; package/version/code is
+`com.weekssa.opraeqforuapp.ja11diag`, `0.8.0-ja11diag` / `11`; signer SHA-256 is
+`73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`. The exact diagnostic APK
+cold-launched on the isolated API 35 AVD and reported the exact source SHA. All 64 applicable tests
+passed on the same source snapshot's debug test variant because the project does not provide a
+diagnostic-variant instrumentation APK. All eight checks pass on the app-source SHA. The
+documentation/helper successor is a separate PR head and must also pass all eight checks before
+the physical candidate is frozen. Candidate and rollback artifact pins have been verified
+host-only, without enumerating an Android device.
+
+Do not use the Pixel until local/emulator gates, independent review, all eight checks on the exact
+final PR head, candidate artifact verification, and host-only preflight are complete. When those
+gates pass, request a new explicit phone window with the exact candidate, tests, expected writes/resets, Android
+permission interaction, phone occupancy, pass/fail criteria, and restoration obligations. Wait for
+confirmation before any physical action.
 
 During that window, install and verify the exact candidate and begin with a read-only full baseline.
 Require the supported VID/PID allowlist, valid fresh HID session, current permission/generation, and

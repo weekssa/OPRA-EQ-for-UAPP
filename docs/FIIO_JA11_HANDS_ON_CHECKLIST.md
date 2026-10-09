@@ -3,9 +3,10 @@
 ## 2026-10-09 Model D physical acceptance gate — current
 
 The owner-approved Model D policy supersedes the serial-required gates in the historical
-2026-10-08 sections below. No Model D candidate has been frozen and no phone action is authorized
-yet. Keep the Pixel unused until the implementation, focused and full local gates, independent
-review, exact PR-head CI, emulator, and artifact provenance all pass. Then request a new explicit
+2026-10-08 sections below. The source-bound candidate passes local gates, API 35 emulator
+instrumentation, independent review, and all eight checks on its app-source commit; the candidate
+metadata/docs successor must also pass all eight checks on its exact PR head. Keep the Pixel unused
+until that live exact-head CI and the remaining preflight are confirmed. Then request a new explicit
 phone window with the exact source/APK, test plan, expected writes/resets, Android permission
 interaction, occupancy, pass/fail conditions, and restoration obligations.
 

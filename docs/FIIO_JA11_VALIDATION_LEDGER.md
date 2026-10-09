@@ -16,13 +16,14 @@ rewrite or broaden this append-only hardware evidence.
 ## Current disposition
 
 As of 2026-10-09, the owner-approved Model D policy makes serial optional continuity evidence and
-supersedes older operational conclusions that a null serial blocks JA11 use or mutation. The new
-implementation is being qualified off-phone; its local tests, emulator instrumentation, independent
-review, exact-head CI, and candidate provenance are pending. No physical Model D result exists, and
-no phone action may begin until all those gates pass and the owner confirms a new phone window.
-J024 remains the latest physical read-only session and J020 the latest mutation; their recorded
-device observations remain unchanged. Mic Off is the last verified value and Mic On restoration is
-outstanding.
+supersedes older operational conclusions that a null serial blocks JA11 use or mutation. Production
+source `1d19067c9150aae1b09e01fafb8af3647bf65f71` passes local qualification, the API 35 emulator
+gate, independent review, and all eight CI checks on that app-source SHA; its exact diagnostic APK
+provenance is verified. The exact live PR-head checks must pass on the documentation/helper
+successor before the phone-window report. Candidate and rollback artifact pins pass host-only
+verification. No physical Model D result exists. J024 remains the latest physical read-only session
+and J020 the latest mutation; their recorded device observations remain unchanged. Mic Off is the
+last verified value and Mic On restoration is outstanding.
 
 JA11 has historical physical Flash/Save/final-readback and observed reconnect/restoration passes on
 the exact J016/J017 candidates; explicit power-cycle retention and full hardware qualification
@@ -39,7 +40,10 @@ APK, infer the identity failure's underlying cause, or make a public JA11 suppor
 The `0x17` global-gain codec correction remains proven by the official FiiO Control JA11 codec and
 historical physical evidence. J012 remains valid negative evidence for the superseded codec.
 
-## 2026-10-09 owner-approved Model D — software qualification pending
+## 2026-10-09 owner-approved Model D — initial implementation checkpoint (superseded status)
+
+This paragraph records the first pending state when the implementation was still uncommitted. The
+latest measured Model D candidate and its current gates are recorded at the end of this ledger.
 
 Model D requires one exact supported JA11 candidate for initial selection and restart continuation,
 valid uniquely selected HID interface/endpoints, current permission, a fresh claimed connection and
@@ -375,3 +379,62 @@ the available evidence does not distinguish an absent serial descriptor from an 
 descriptor read. Do not substitute VID/PID, product name, firmware, or port path for serial
 continuity when both sessions provide serial. Future physical work remains gated on the exact Model D
 candidate, its off-phone gates, and a new owner-confirmed phone window.
+
+## 2026-10-09 Model D exact candidate — off-phone gates (no physical evidence)
+
+Production app source commit `1d19067c9150aae1b09e01fafb8af3647bf65f71`, tree
+`e108d58a6863e594a6dadbc0d2f4fb745583c5a3`, implements the owner-approved Model D policy. Local
+qualification on this source includes 856 JVM tests with zero failures/errors/skips, lint,
+debug/release/diagnostic and Android-test compile/assembly, R8, and focused JA11 identity/session,
+Mic/UAC, Flash/Reset, stale-callback, no-replay, and candidate-cardinality regressions. Updated
+`phone-session.sh` candidate/rollback pins pass shell syntax and fake-ADB fixtures, including sole
+serialless acceptance, zero/multiple candidate rejection, stale-session rejection, later ambiguity,
+and output redaction.
+
+The source-bound diagnostic artifact is
+`opra-eq-ja11diag-0.8.0-source-1d19067c.apk`, SHA-256
+`23adf9f4955b056f110562362717c706767b7e3ecc50225c07439a3ff5c23711`, package
+`com.weekssa.opraeqforuapp.ja11diag`, version `0.8.0-ja11diag`/11, with one Android Debug signer
+certificate SHA-256
+`73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`. APK v2 verification passed;
+generated BuildConfig and runtime `APP_BUILD_INFO` report the exact source SHA. These artifacts are
+private at `/private/tmp/ja11-v0.8.1-model-d-1d19067c/`.
+
+On isolated wiped API 35 AVD `ja11-v081-api35-clean-20261008` at explicit target `emulator-5580`
+(Android 15 / SDK 35), the exact `.ja11diag` APK installed and cold-launched successfully. Runtime
+`APP_BUILD_INFO` matched the exact candidate source and diagnostics were enabled. All 64 applicable
+Android instrumentation tests passed in 95.573 seconds against the same production source snapshot's
+`debug` test variant. The project does not generate a JA11-diagnostic Android-test variant; the
+separate debug app BuildConfig reports `local-unqualified`, so source binding for the candidate is
+established by the exact diagnostic APK's own BuildConfig and runtime log instead.
+
+An independent read-only follow-up review examined JA11 transport, repository, session/token/identity,
+Flasher, ViewModel/UI and tests; it answered all ten owner questions and found no remaining actionable
+defect. It confirmed the attach-during-open and delayed same-path/PID detach races are fenced by their
+regressions. Android cannot distinguish identical same-path/PID serialless units before attach/detach
+callbacks are processed; the implementation makes no same-unit claim during that interval.
+
+At this ledger update, PR #80 head is the production source commit above. Five of eight check runs
+were successful and three were still in progress on that head; this is not a final exact-head CI pass.
+The candidate metadata/helper/docs successor must receive its own eight successful checks before the
+phone-window request. No Pixel or JA11 command, read, or write occurred for this candidate. No
+physical acceptance, same-device identity, hardware-state readback, or release/support claim is
+proved by these software, artifact, review, or emulator results. The physical plan remains gated on
+final exact-head CI, host-only preflight, and a fresh explicit owner phone-window confirmation.
+
+## 2026-10-09 Model D source-head CI confirmation
+
+All eight required check runs pass on exact production app-source commit
+`1d19067c9150aae1b09e01fafb8af3647bf65f71`: `build`, `emulator-ui-test`, `min-api-smoke`, CodeQL,
+Analyze Kotlin, `validate`, `validate-priority-community`, and `submit-gradle`. The Android CI run is
+[37901813099](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/37901813099); separate checks:
+[CodeQL](https://github.com/weekssa/OPRA-EQ-for-UAPP/runs/113727793185),
+[Analyze Kotlin](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/37901812737),
+[validate](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/37901812646),
+[validate-priority-community](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/37901812841), and
+[submit-gradle](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/37901809027).
+
+This confirms CI for the production app-source SHA and the candidate APK's source. Candidate metadata,
+acceptance-plan, and helper-pin documentation is being committed separately; require all eight
+checks again on the exact live PR head after that successor is pushed. No Pixel or JA11 command was
+issued, and this CI result does not establish physical behavior or change J020/J021/J024 evidence.

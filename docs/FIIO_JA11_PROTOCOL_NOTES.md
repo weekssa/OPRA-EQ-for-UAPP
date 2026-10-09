@@ -1,6 +1,6 @@
 # FiiO / JadeAudio JA11 protocol notes
 
-Status: **JA11 codec correction and historical Flash/reconnect/restoration paths remain evidenced only on their exact candidates; J020 remains the last mutation and Mic Off the last verified state; J021 and J024 remain read-only observations; the owner approved Model D on 2026-10-09 and its local gates and independent review pass; exact candidate/emulator/CI qualification and physical acceptance remain pending**
+Status: **JA11 codec correction and historical Flash/reconnect/restoration paths remain evidenced only on their exact candidates; J020 remains the last mutation and Mic Off the last verified state; J021 and J024 remain read-only observations; the owner approved Model D on 2026-10-09; local qualification, API 35 emulator, independent review, exact candidate provenance, and all eight checks on app-source commit `1d19067c` pass; verify all eight checks on the final live PR head before requesting the phone window; physical acceptance remains pending**
 
 ## 2026-10-09 owner-approved Model D — current identity and restart policy
 

@@ -1056,3 +1056,24 @@ phone window. The authorized physical order starts with an exact-candidate read-
 reads Off, restoring it to the original On state is the first mutation, with expected-reset handling
 and authoritative post-reconnect readback; if it reads On, skip the write. Stop and release the Pixel
 if identity/cardinality, permission, generation, write outcome, or readback becomes uncertain.
+
+## 2026-10-09 JA11 Model D off-phone candidate checkpoint
+
+Production source commit `1d19067c9150aae1b09e01fafb8af3647bf65f71` implements the approved
+serial-optional, exact-one-candidate policy. The source-bound diagnostic APK is
+`opra-eq-ja11diag-0.8.0-source-1d19067c.apk`, SHA-256
+`23adf9f4955b056f110562362717c706767b7e3ecc50225c07439a3ff5c23711`, package
+`com.weekssa.opraeqforuapp.ja11diag`, version `0.8.0-ja11diag` / 11, signer certificate SHA-256
+`73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`. Local qualification,
+isolated API 35 cold launch and 64 applicable instrumentation tests, independent review, and all
+eight CI checks on the app-source SHA pass. Instrumentation ran against the same source snapshot's
+`debug` variant because there is no diagnostic-variant Android-test APK; the diagnostic APK itself
+reported its exact source SHA through BuildConfig and runtime `APP_BUILD_INFO`.
+
+Before any phone-window request, require all eight checks on the exact live PR #80 head after its
+candidate-metadata and helper-pin documentation changes, reverify candidate/rollback provenance,
+and present the exact source/APK and physical-plan report. The Pixel has not been used for Model D.
+Do not install the candidate, read JA11 identity, or perform a physical write until a new explicit
+owner phone-window confirmation. If granted later, begin with candidate verification and a read-only
+full baseline; if Mic is Off, restore Mic On as the first mutation with expected-reset handling and
+authoritative post-reconnect readback.
