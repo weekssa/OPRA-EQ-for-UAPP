@@ -6,6 +6,38 @@ The project uses Semantic Versioning. The `0.x` series is pre-1.0; a version wit
 
 ## [Unreleased]
 
+### FiiO JA11 lifecycle correction
+
+- Keep expected-restart control verification pending across Android's initial USB permission
+  fallback, with request/device/detach fencing and a JA11-specific hard deadline. Obsolete or late
+  callbacks cannot acquire a session; unique permission tokens also prevent stale grants matching
+  recreated sessions with reused request IDs. Uncertain hardware writes are never replayed.
+- Treat a usable USB serial as optional continuity evidence. JA11 connection and same-session
+  controls require an exact supported VID/PID, valid HID endpoints, permission, a fresh current
+  session, and one unambiguous supported candidate. No serial is required to read or start a
+  restart-capable control.
+- For expected resets, require the accepted write, observed detach, invalidated old session, fresh
+  permission/open/claim, new generation, exactly one supported replacement, and authoritative fresh
+  readback. Reject a serial mismatch when both sessions provide a serial; when serial is absent,
+  report only that the requested state was verified on the sole returning supported JA11. Reject
+  zero or multiple candidates and never replay an uncertain write.
+- Apply candidate ambiguity and final-readback checks to JA11 Flash/Save/Reset without changing
+  protocol sequencing or volume/preset persistence claims. Physical acceptance remains pending;
+  this unreleased software change makes no JA11 support claim.
+- Before JA11 Flash or Reset writes any band or global gain, select User 1 when needed and verify
+  it in the same current session; editor Apply checks User 1 immediately before data writes. An
+  uncertain selection/readback stops before data writes, Apply, or Save. This ordering correction
+  is locally and emulator qualified; exact-head CI and physical requalification remain pending.
+- After an accepted JA11 Save, retain the operation token through a 1-second detach observation and
+  a 45-second total reconnect deadline. If a session changes during final readback, wait for that
+  operation's replacement and verify by readback only; never resend band/gain writes, Apply, or Save.
+  Cancellation now publishes a terminal unknown-state result and releases the pending restart token.
+- The prior candidate physically accepted one Save, then detached 677 ms later during band 4 final
+  readback. USB permission had already been granted; a fresh snapshot matched the original state,
+  and no Save retry occurred. Test C failed on that exact candidate and Test D was not run. The
+  late-reconnect correction is locally/API 35 qualified; exact PR-head CI and physical requalification
+  remain pending.
+
 ## [0.8.0] - 2026-10-08
 
 ### EQ Library modernization

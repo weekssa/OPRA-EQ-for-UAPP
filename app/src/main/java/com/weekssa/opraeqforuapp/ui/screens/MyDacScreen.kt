@@ -384,9 +384,10 @@ internal fun shouldOfferMyDacConnect(
             blackPearl is BlackPearlConnectionState.Disconnected ||
                 blackPearl is BlackPearlConnectionState.Error
         DacDeviceId.FIIO_JA11 ->
-                fiioJa11 is Kt02h20ConnectionState.Disconnected ||
+            fiioJa11 is Kt02h20ConnectionState.Disconnected ||
                 fiioJa11 is Kt02h20ConnectionState.Error ||
-                fiioJa11 is Kt02h20ConnectionState.PermissionRequired
+                (fiioJa11 is Kt02h20ConnectionState.PermissionRequired &&
+                    fiioJa11.retryAvailable)
         DacDeviceId.SIMGOT_EW300 ->
             ew300 is Kt02h20ConnectionState.Disconnected ||
                 ew300 is Kt02h20ConnectionState.Error ||
@@ -406,7 +407,8 @@ internal fun hasMyDacConnectionError(
     jcallyJm12: Kt02h20ConnectionState = Kt02h20ConnectionState.Disconnected,
 ): Boolean = when (deviceId) {
     DacDeviceId.TRN_BLACK_PEARL -> blackPearl is BlackPearlConnectionState.Error
-    DacDeviceId.FIIO_JA11 -> fiioJa11 is Kt02h20ConnectionState.Error || fiioJa11 is Kt02h20ConnectionState.PermissionRequired
+    DacDeviceId.FIIO_JA11 -> fiioJa11 is Kt02h20ConnectionState.Error ||
+        (fiioJa11 is Kt02h20ConnectionState.PermissionRequired && fiioJa11.retryAvailable)
     DacDeviceId.SIMGOT_EW300 -> ew300 is Kt02h20ConnectionState.Error || ew300 is Kt02h20ConnectionState.PermissionRequired
     DacDeviceId.JCALLY_JM12_STOCK -> jcallyJm12 is Kt02h20ConnectionState.Error || jcallyJm12 is Kt02h20ConnectionState.PermissionRequired
 }

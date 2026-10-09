@@ -13,6 +13,8 @@ import com.weekssa.opraeqforuapp.data.dac.DacControlRepository
 import com.weekssa.opraeqforuapp.data.dac.FiioJa11ControlReadResult
 import com.weekssa.opraeqforuapp.data.dac.FiioJa11ControlRepository
 import com.weekssa.opraeqforuapp.data.dac.FiioJa11ControlWriteResult
+import com.weekssa.opraeqforuapp.data.dac.FiioJa11PendingRestartWrite
+import com.weekssa.opraeqforuapp.data.dac.FiioJa11ReplacementSessionStatus
 import com.weekssa.opraeqforuapp.data.export.ExportCurrentness
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupRepository
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
@@ -20,6 +22,7 @@ import com.weekssa.opraeqforuapp.data.export.PresetExportRepository
 import com.weekssa.opraeqforuapp.data.export.PresetExportSummary
 import com.weekssa.opraeqforuapp.data.hardware.HardwareEqRepository
 import com.weekssa.opraeqforuapp.data.kt02h20.Kt02h20ConnectionState
+import com.weekssa.opraeqforuapp.data.kt02h20.Ja11DiagnosticLog
 import com.weekssa.opraeqforuapp.data.library.SavedEqRepository
 import com.weekssa.opraeqforuapp.data.library.SavedGeneralEqRepository
 import com.weekssa.opraeqforuapp.data.managed.ManagedHeadphonesRepository
@@ -86,6 +89,8 @@ import com.weekssa.opraeqforuapp.domain.settings.OutputBehavior
 import com.weekssa.opraeqforuapp.domain.settings.ThemeMode
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -208,6 +213,7 @@ class EqLibraryViewModel(
     private var fiioJa11EditorBaseline: FiioJa11EditorBaseline? = null
     private val mutableBlackPearlQualificationState = MutableStateFlow(BlackPearlQualificationUiState())
     private val mutableFiioJa11DeviceState = MutableStateFlow(FiioJa11DeviceUiState())
+    private var fiioJa11RestartTimeoutJob: Job? = null
     private val mutableEw300PlaybackGainState = MutableStateFlow(Ew300PlaybackGainUiState())
     private val mutableBlackPearlKnownLineage = MutableStateFlow<BlackPearlKnownLineage?>(null)
     private val mutableBlackPearlFlashOutcome = MutableStateFlow<BlackPearlFlashUiOutcome?>(null)
@@ -450,8 +456,7 @@ class EqLibraryViewModel(
                 when (state) {
                     Kt02h20ConnectionState.Connected -> {
                         val pending = mutableFiioJa11DeviceState.value.pendingRestartWrite
-                        if (pending != null) verifyPendingFiioJa11Control(pending)
-                        else refreshFiioJa11DeviceState()
+                        if (pending == null) refreshFiioJa11DeviceState()
                     }
                     else -> mutableFiioJa11DeviceState.update(FiioJa11DeviceUiState::markStale)
                 }
@@ -547,7 +552,24 @@ class EqLibraryViewModel(
             return
         }
 
-        mutableFiioJa11DeviceState.value = state.beginWrite(controlId)
+        val pendingRestart = if (FiioJa11DeviceControls.requiresSessionRestart(controlId)) {
+            fiioJa11ControlRepository.createPendingRestartWrite(controlId, value, snapshot)
+                ?: run {
+                    val message = if (fiioJa11ControlRepository.supportedJa11CandidateCount > 1) {
+                        "More than one supported FiiO JA11 is connected. Disconnect the extra device, then read the current state."
+                    } else {
+                        "Connect one supported FiiO JA11 and read its current state before changing this setting."
+                    }
+                    mutableFiioJa11DeviceState.value = state.failure(
+                        message,
+                    )
+                    return
+                }
+        } else {
+            null
+        }
+        mutableFiioJa11DeviceState.value = pendingRestart?.let(state::beginRestartWrite)
+            ?: state.beginWrite(controlId)
         viewModelScope.launch {
             when (
                 val result = fiioJa11ControlRepository.writeControl(
@@ -556,9 +578,11 @@ class EqLibraryViewModel(
                         requestedValue = value,
                         expectedSessionGeneration = snapshot.sessionGeneration,
                     ),
+                    preparedRestartWrite = pendingRestart,
                 )
             ) {
                 is FiioJa11ControlWriteResult.Verified -> {
+                    pendingRestart?.let(fiioJa11ControlRepository::releaseRestartTransaction)
                     mutableFiioJa11DeviceState.value =
                         mutableFiioJa11DeviceState.value.verified(controlId, result.snapshot)
                     if (controlId == FiioJa11DeviceControls.EQ_PROGRAM) {
@@ -566,8 +590,11 @@ class EqLibraryViewModel(
                     }
                 }
                 is FiioJa11ControlWriteResult.ReconnectRequired -> {
-                    mutableFiioJa11DeviceState.value =
-                        mutableFiioJa11DeviceState.value.reconnectRequired(result.pending)
+                    val updated = mutableFiioJa11DeviceState.value.reconnectRequired(result.pending)
+                    mutableFiioJa11DeviceState.value = updated
+                    if (updated.pendingRestartWrite == result.pending) {
+                        startFiioJa11RestartTimeout(result.pending)
+                    }
                 }
                 else -> mutableFiioJa11DeviceState.value = mutableFiioJa11DeviceState.value.failure(
                     fiioJa11WriteFailureMessage(result),
@@ -594,18 +621,114 @@ class EqLibraryViewModel(
     }
 
     private suspend fun verifyPendingFiioJa11Control(
-        pending: com.weekssa.opraeqforuapp.data.dac.FiioJa11PendingRestartWrite,
-    ) {
-        when (val result = fiioJa11ControlRepository.verifyRestartedControl(pending)) {
+        pending: FiioJa11PendingRestartWrite,
+    ): Boolean {
+        if (mutableFiioJa11DeviceState.value.pendingRestartWrite != pending) return true
+        Ja11DiagnosticLog.eventForDevice(
+            "FiiO JA11",
+            "RESTART_VERIFY_SCHEDULED",
+            "controlId" to pending.controlId.value,
+            "expectedSessionGeneration" to pending.previousSessionGeneration,
+            "replacementSessionCurrent" to fiioJa11ControlRepository.isReplacementSessionCurrent(pending),
+        )
+        var result = fiioJa11ControlRepository.verifyRestartedControl(pending)
+        if (result is FiioJa11ControlWriteResult.StaleBaseline &&
+            result.expectedSessionGeneration == pending.previousSessionGeneration &&
+            result.actualSessionGeneration == pending.previousSessionGeneration
+        ) {
+            mutableFiioJa11DeviceState.value = mutableFiioJa11DeviceState.value.awaitingReconnect(
+                "Reconnecting to FiiO JA11 to verify the requested change…",
+            )
+            return false
+        }
+        if (result is FiioJa11ControlWriteResult.WrongDevice) {
+            mutableFiioJa11DeviceState.value = mutableFiioJa11DeviceState.value.awaitingReconnect(
+                "A different USB device is connected. Waiting for the FiiO JA11 that started this change before verifying it.",
+            )
+            return false
+        }
+        if (result.isReadOnlyVerificationRetryable() &&
+            fiioJa11ControlRepository.isReplacementSessionCurrent(pending)
+        ) {
+            delay(JA11_RESTART_READ_RETRY_DELAY_MILLIS)
+            if (mutableFiioJa11DeviceState.value.pendingRestartWrite != pending) return true
+            result = fiioJa11ControlRepository.verifyRestartedControl(pending)
+        }
+        if (mutableFiioJa11DeviceState.value.pendingRestartWrite != pending) return true
+        when (result) {
             is FiioJa11ControlWriteResult.Verified -> {
+                fiioJa11RestartTimeoutJob = null
+                fiioJa11ControlRepository.releaseRestartTransaction(pending)
                 mutableFiioJa11DeviceState.value =
                     mutableFiioJa11DeviceState.value.verified(result.controlId, result.snapshot)
-                hardwareRepository.readFiioJa11Snapshot()
+                viewModelScope.launch { hardwareRepository.readFiioJa11Snapshot() }
+                return true
             }
-            else -> mutableFiioJa11DeviceState.value = mutableFiioJa11DeviceState.value.failure(
-                fiioJa11WriteFailureMessage(result),
+            else -> {
+                finishFiioJa11RestartFailure(pending, fiioJa11PendingFailureMessage(result))
+                return true
+            }
+        }
+    }
+
+    private fun startFiioJa11RestartTimeout(pending: FiioJa11PendingRestartWrite) {
+        fiioJa11RestartTimeoutJob?.cancel()
+        fiioJa11RestartTimeoutJob = viewModelScope.launch {
+            runFiioJa11RestartVerificationWatchdog(
+                connectionStates = hardwareRepository.fiioJa11ConnectionState,
+                timeoutMillis = JA11_RESTART_VERIFICATION_TIMEOUT_MILLIS,
+                isPending = { mutableFiioJa11DeviceState.value.pendingRestartWrite == pending },
+                isReplacementSessionCurrent = {
+                    fiioJa11ControlRepository.isReplacementSessionCurrent(pending)
+                },
+                verifyReplacementSession = { verifyPendingFiioJa11Control(pending) },
+                onPermissionRequired = {
+                    finishFiioJa11RestartFailure(
+                        pending,
+                        "Android USB permission was not granted, so the requested FiiO JA11 change could not be verified. Reconnect and read the current state before changing it again.",
+                    )
+                },
+                onConnectionError = {
+                    val message = if (fiioJa11ControlRepository.replacementSessionStatus(pending) ==
+                        FiioJa11ReplacementSessionStatus.AMBIGUOUS_CANDIDATES
+                    ) {
+                        "More than one supported FiiO JA11 returned. Disconnect the extra device, reconnect one JA11, then read its current state. The requested change was not verified."
+                    } else {
+                        "FiiO JA11 could not reconnect, so the requested change could not be verified. Reconnect and read the current state before changing it again."
+                    }
+                    finishFiioJa11RestartFailure(
+                        pending,
+                        message,
+                    )
+                },
+                onTimeout = {
+                    val replacementStatus = fiioJa11ControlRepository.replacementSessionStatus(pending)
+                    val message = when (replacementStatus) {
+                        FiioJa11ReplacementSessionStatus.IDENTITY_MISMATCH ->
+                            "FiiO JA11 returned with a different reported serial. The change could not be verified. Reconnect the JA11 that started the change and read its current state."
+                        FiioJa11ReplacementSessionStatus.AMBIGUOUS_CANDIDATES ->
+                            "More than one supported FiiO JA11 returned. Disconnect the extra device, reconnect one JA11, then read its current state. The requested change was not verified."
+                        FiioJa11ReplacementSessionStatus.EXPECTED_DETACH_NOT_OBSERVED ->
+                            "FiiO JA11 did not complete the expected USB reset. The requested change was not verified and was not repeated. Read its current state before trying again."
+                        FiioJa11ReplacementSessionStatus.WRITE_NOT_ACCEPTED ->
+                            "FiiO JA11 did not confirm that the requested change was accepted. Its state is uncertain; read the current state before trying again."
+                        FiioJa11ReplacementSessionStatus.READY ->
+                            "FiiO JA11 reconnected, but its current state could not be confirmed before verification timed out. Reconnect and read the current state before changing it again."
+                        else ->
+                            "FiiO JA11 did not return in time, so the requested change could not be verified. Reconnect and read the current state before changing it again."
+                    }
+                    finishFiioJa11RestartFailure(pending, message)
+                },
             )
         }
+    }
+
+    private fun finishFiioJa11RestartFailure(pending: FiioJa11PendingRestartWrite, message: String) {
+        if (mutableFiioJa11DeviceState.value.pendingRestartWrite != pending) return
+        fiioJa11RestartTimeoutJob = null
+        fiioJa11ControlRepository.releaseRestartTransaction(pending)
+        hardwareRepository.cancelFiioJa11ConnectAttempt(terminalErrorMessage = message)
+        mutableFiioJa11DeviceState.value = mutableFiioJa11DeviceState.value.failure(message)
     }
 
     private fun fiioJa11WriteFailureMessage(result: FiioJa11ControlWriteResult): String = when (result) {
@@ -614,11 +737,38 @@ class EqLibraryViewModel(
         is FiioJa11ControlWriteResult.StaleBaseline -> "The FiiO JA11 USB session changed. Read the current state and try again."
         is FiioJa11ControlWriteResult.ReadFailed -> "Could not verify ${result.field}. The change was not reported as successful."
         is FiioJa11ControlWriteResult.TransferFailed -> "FiiO JA11 did not accept the setting change."
+        is FiioJa11ControlWriteResult.WriteUncertain ->
+            "FiiO JA11 may have received this change, but its state could not be confirmed. Reconnect and read the current state before trying another change."
+        is FiioJa11ControlWriteResult.WrongDevice ->
+            "The connected USB device is not the FiiO JA11 that started this change. Its result could not be verified."
+        is FiioJa11ControlWriteResult.AmbiguousCandidates ->
+            "More than one supported FiiO JA11 is connected. Disconnect the extra device before changing this setting."
         is FiioJa11ControlWriteResult.ReadbackMismatch -> "FiiO JA11 readback did not match the requested setting."
         is FiioJa11ControlWriteResult.UnrelatedStateChanged ->
             "FiiO JA11 changed unrelated state (${result.changedFields.joinToString()}). The change was not reported as successful."
         is FiioJa11ControlWriteResult.ReconnectRequired -> "Reconnect FiiO JA11 so the change can be verified."
         is FiioJa11ControlWriteResult.Verified -> "Verified."
+    }
+
+    private fun fiioJa11PendingFailureMessage(result: FiioJa11ControlWriteResult): String = when (result) {
+        is FiioJa11ControlWriteResult.ReadbackMismatch ->
+            "FiiO JA11 returned a different value than requested. The change was not verified; read the current state before making another change."
+        is FiioJa11ControlWriteResult.UnrelatedStateChanged ->
+            "FiiO JA11 returned with other device state changed. The requested change was not verified; read the current state before making another change."
+        is FiioJa11ControlWriteResult.WrongDevice ->
+            "A different USB device returned. The FiiO JA11 change could not be verified; reconnect the JA11 and read its current state."
+        is FiioJa11ControlWriteResult.AmbiguousCandidates ->
+            "More than one supported FiiO JA11 returned. Disconnect the extra device; the requested change was not verified."
+        is FiioJa11ControlWriteResult.ReadFailed,
+        is FiioJa11ControlWriteResult.NotConnected,
+        is FiioJa11ControlWriteResult.StaleBaseline,
+        -> "The replacement FiiO JA11 session could not be read reliably. The change was not verified; reconnect and read the current state."
+        is FiioJa11ControlWriteResult.WriteUncertain,
+        is FiioJa11ControlWriteResult.TransferFailed,
+        is FiioJa11ControlWriteResult.InvalidRequest,
+        is FiioJa11ControlWriteResult.ReconnectRequired,
+        is FiioJa11ControlWriteResult.Verified,
+        -> fiioJa11WriteFailureMessage(result)
     }
 
     fun openBlackPearlEditor() {
@@ -2063,9 +2213,20 @@ class EqLibraryViewModel(
     )
 
     companion object {
+        private const val JA11_RESTART_VERIFICATION_TIMEOUT_MILLIS = 25_000L
+        private const val JA11_RESTART_READ_RETRY_DELAY_MILLIS = 150L
         private const val STOP_TIMEOUT_MILLIS = 5_000L
         private const val ZERO_GAIN_EPSILON = 0.000_001
         private const val FOREGROUND_REFRESH_INTERVAL_MILLIS = 24L * 60L * 60L * 1000L
         private const val FOREGROUND_RETRY_THROTTLE_MILLIS = 15L * 60L * 1000L
     }
+}
+
+private fun FiioJa11ControlWriteResult.isReadOnlyVerificationRetryable(): Boolean = when (this) {
+    is FiioJa11ControlWriteResult.NotConnected,
+    is FiioJa11ControlWriteResult.ReadFailed,
+    -> true
+    is FiioJa11ControlWriteResult.StaleBaseline ->
+        expectedSessionGeneration != actualSessionGeneration
+    else -> false
 }

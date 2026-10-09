@@ -128,7 +128,7 @@ class DacSessionRepository(
             connectionState = fiioJa11ConnectionState,
             isConnected = { state -> state is Kt02h20ConnectionState.Connected },
             isDisconnected = { state -> state is Kt02h20ConnectionState.Disconnected },
-            connect = fiioJa11Transport::connect,
+            connect = fiioJa11Transport::connectAutomatically,
         )
         observeAutomaticReconnect(
             present = ew300Transport.present,
@@ -143,6 +143,8 @@ class DacSessionRepository(
 
     fun connectBlackPearl() = blackPearlTransport.connect()
     fun connectFiioJa11() = fiioJa11Transport.connect()
+    fun cancelFiioJa11ConnectAttempt(terminalErrorMessage: String? = null) =
+        fiioJa11Transport.cancelPendingConnectAttempt(terminalErrorMessage)
     fun connectEw300() {
         ew300ReconnectGate.beginManualConnect()
         ew300Transport.connect()
@@ -172,7 +174,7 @@ class DacSessionRepository(
     fun isFiioJa11SessionCurrent(sessionGeneration: Long): Boolean =
         sessionGeneration > 0L &&
             fiioJa11ConnectionState.value is Kt02h20ConnectionState.Connected &&
-            fiioJa11Transport.sessionGeneration == sessionGeneration
+            fiioJa11Transport.isCurrentSession(sessionGeneration, fiioJa11Transport.detachGeneration)
 
     fun isEw300SessionCurrent(sessionGeneration: Long): Boolean =
         sessionGeneration > 0L &&

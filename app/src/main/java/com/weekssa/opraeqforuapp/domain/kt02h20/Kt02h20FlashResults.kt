@@ -8,12 +8,14 @@ data class FiioJa11EditorBaseline(
     val deviceFingerprintKey: String,
     val usbProductId: Int,
     val snapshotBundle: HardwareEqSnapshotBundle,
+    val detachGeneration: Long = 0L,
 ) {
     init {
         require(deviceFingerprintKey.isNotBlank()) { "JA11 editor baseline requires an exact identity key." }
         require(usbProductId in FiioJa11Protocol.SUPPORTED_PRODUCT_IDS) {
             "JA11 editor baseline requires a supported USB product identity."
         }
+        require(detachGeneration >= 0L)
         require(snapshotBundle.snapshot.deviceId == DacDeviceId.FIIO_JA11)
         require(snapshotBundle.snapshot.activeProgram == FiioJa11Protocol.EqProgram.USER_1)
         require(snapshotBundle.snapshot.filters.size == FiioJa11Protocol.BAND_COUNT)
@@ -24,6 +26,13 @@ data class FiioJa11EditorBaseline(
 
     val sessionGeneration: Long
         get() = snapshotBundle.snapshot.sessionGeneration
+
+    fun sessionToken(): FiioJa11SessionToken = FiioJa11SessionToken(
+        deviceFingerprintKey = deviceFingerprintKey,
+        usbProductId = usbProductId,
+        sessionGeneration = sessionGeneration,
+        detachGeneration = detachGeneration,
+    )
 }
 
 sealed interface Kt02h20FlashResult {

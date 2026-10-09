@@ -1,5 +1,7 @@
 package com.weekssa.opraeqforuapp.data.dac
 
+import com.weekssa.opraeqforuapp.BuildConfig
+import com.weekssa.opraeqforuapp.data.kt02h20.Ja11DiagnosticLog
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlProtocol
 import com.weekssa.opraeqforuapp.domain.blackpearl.BlackPearlReadCodec
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotBundle
@@ -69,6 +71,19 @@ class FiioJa11SnapshotReader(
             }
         }
         val globalEqGainDb = source.readGlobalGainDb() ?: return null
+        if (BuildConfig.JA11_DIAGNOSTICS_ENABLED) {
+            // Off hides the inactive bank in normal UI, but physical acceptance still needs its exact baseline.
+            Ja11DiagnosticLog.event(
+                "SNAPSHOT_READ_COMPLETE",
+                "sourceSha" to BuildConfig.CANDIDATE_SOURCE_SHA,
+                "sessionGeneration" to sessionGeneration,
+                "activeProgram" to program.name,
+                "globalEqGainDb" to globalEqGainDb,
+                *bands.mapIndexed { index, band ->
+                    "band$index" to "${band.type},${band.frequencyHz},${band.gainDb},${band.q}"
+                }.toTypedArray(),
+            )
+        }
         return HardwareEqSnapshotFactory.fiioJa11(
             nativeBands = bands,
             globalEqGainDb = globalEqGainDb,

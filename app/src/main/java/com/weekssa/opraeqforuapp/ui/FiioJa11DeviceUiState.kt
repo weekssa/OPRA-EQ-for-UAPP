@@ -11,6 +11,7 @@ data class FiioJa11DeviceUiState(
     val snapshot: FiioJa11DeviceSnapshot? = null,
     val isCurrentSession: Boolean = false,
     val pendingRestartWrite: FiioJa11PendingRestartWrite? = null,
+    val terminalRestartWrite: FiioJa11PendingRestartWrite? = null,
     val lastVerifiedWriteControlId: DacControlId? = null,
     val error: String? = null,
 ) {
@@ -53,6 +54,18 @@ data class FiioJa11DeviceUiState(
         error = null,
     )
 
+    /** Registers the restart-verification identity before its USB report can trigger detach. */
+    fun beginRestartWrite(pending: FiioJa11PendingRestartWrite): FiioJa11DeviceUiState = copy(
+        isReading = false,
+        isWriting = true,
+        activeWriteControlId = pending.controlId,
+        isCurrentSession = false,
+        pendingRestartWrite = pending,
+        terminalRestartWrite = null,
+        lastVerifiedWriteControlId = null,
+        error = null,
+    )
+
     fun verified(
         controlId: DacControlId,
         snapshot: FiioJa11DeviceSnapshot,
@@ -63,18 +76,41 @@ data class FiioJa11DeviceUiState(
         snapshot = snapshot,
         isCurrentSession = true,
         pendingRestartWrite = null,
+        terminalRestartWrite = null,
         lastVerifiedWriteControlId = controlId,
         error = null,
     )
 
-    fun reconnectRequired(pending: FiioJa11PendingRestartWrite): FiioJa11DeviceUiState = copy(
+    fun reconnectRequired(pending: FiioJa11PendingRestartWrite): FiioJa11DeviceUiState {
+        // The replacement session can connect and finish verification before the write coroutine
+        // publishes its ReconnectRequired result. Preserve that terminal success if it won the race.
+        if (pendingRestartWrite == null &&
+            lastVerifiedWriteControlId == pending.controlId &&
+            snapshot?.sessionGeneration != pending.previousSessionGeneration
+        ) {
+            return this
+        }
+        // A delayed result from an earlier write must not replace a newer user's pending intent.
+        if (pendingRestartWrite != null && !pendingRestartWrite.sameLogicalRestartWrite(pending)) return this
+        if (terminalRestartWrite?.sameLogicalRestartWrite(pending) == true) return this
+        return copy(
+            isReading = false,
+            isWriting = false,
+            activeWriteControlId = null,
+            isCurrentSession = false,
+            pendingRestartWrite = pending,
+            terminalRestartWrite = null,
+            lastVerifiedWriteControlId = null,
+            error = null,
+        )
+    }
+
+    fun awaitingReconnect(message: String): FiioJa11DeviceUiState = copy(
         isReading = false,
         isWriting = false,
         activeWriteControlId = null,
         isCurrentSession = false,
-        pendingRestartWrite = pending,
-        lastVerifiedWriteControlId = null,
-        error = null,
+        error = message,
     )
 
     fun failure(message: String): FiioJa11DeviceUiState = copy(
@@ -82,6 +118,8 @@ data class FiioJa11DeviceUiState(
         isWriting = false,
         activeWriteControlId = null,
         isCurrentSession = false,
+        pendingRestartWrite = null,
+        terminalRestartWrite = pendingRestartWrite ?: terminalRestartWrite,
         lastVerifiedWriteControlId = null,
         error = message,
     )
@@ -97,3 +135,11 @@ data class FiioJa11DeviceUiState(
         isCurrentSession = snapshot != null && current,
     )
 }
+
+private fun FiioJa11PendingRestartWrite.sameLogicalRestartWrite(other: FiioJa11PendingRestartWrite): Boolean =
+    controlId == other.controlId &&
+        requestedValue == other.requestedValue &&
+        previousSessionGeneration == other.previousSessionGeneration &&
+        previousDetachGeneration == other.previousDetachGeneration &&
+        deviceSerialIdentity == other.deviceSerialIdentity &&
+        transactionToken == other.transactionToken

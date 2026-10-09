@@ -22,6 +22,10 @@ android {
     namespace = "com.weekssa.opraeqforuapp"
     compileSdk = 36
 
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
+
     defaultConfig {
         applicationId = "com.weekssa.opraeqforuapp"
         minSdk = 26
@@ -33,6 +37,7 @@ android {
         buildConfigField("String", "OPRA_CATALOG_URL", "\"${opraCatalogUrl.get()}\"")
         buildConfigField("String", "CANONICAL_CATALOG_URL", "\"${canonicalCatalogUrl.get()}\"")
         buildConfigField("String", "LATEST_RELEASE_API_URL", "\"${latestReleaseApiUrl.get()}\"")
+        buildConfigField("boolean", "JA11_DIAGNOSTICS_ENABLED", "false")
         buildConfigField("boolean", "EW300_PERSISTENCE_QUALIFICATION_ENABLED", "false")
         buildConfigField("boolean", "EW300_FLASH_VALIDATION_ENABLED", "false")
         buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"local-unqualified\"")
@@ -49,6 +54,14 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+        }
+        create("ja11Diagnostic") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".ja11diag"
+            versionNameSuffix = "-ja11diag"
+            matchingFallbacks += listOf("debug")
+            buildConfigField("boolean", "JA11_DIAGNOSTICS_ENABLED", "true")
+            buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"${candidateSourceSha.get()}\"")
         }
     }
 
@@ -103,6 +116,7 @@ dependencies {
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("com.google.truth:truth:1.4.4")
+    testImplementation("org.robolectric:robolectric:4.16.1")
     androidTestImplementation(composeBom)
     androidTestImplementation("androidx.test:runner:1.7.0")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")

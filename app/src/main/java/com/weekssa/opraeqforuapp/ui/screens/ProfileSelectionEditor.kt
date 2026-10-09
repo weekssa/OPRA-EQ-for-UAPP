@@ -429,7 +429,7 @@ internal fun ProfileSelectionEditor(
                                     LibraryHardwareFlashDevice.BLACK_PEARL ->
                                         "The current hardware EQ slot will be overwritten and verified."
                                     LibraryHardwareFlashDevice.FIIO_JA11 ->
-                                        "User 1 will be applied, saved, and verified."
+                                        "If needed, User 1 is selected and verified before its five bands and global gain are written, then applied, saved, and verified."
                                     LibraryHardwareFlashDevice.SIMGOT_EW300 ->
                                         "The EW300 five-band PEQ will be written and verified for this exact device profile."
                                 },

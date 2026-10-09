@@ -154,7 +154,22 @@ jobs:
             cat "$RUNNER_TEMP/emulator.log"
             exit 1
           fi
-          adb shell input keyevent 82
+          adb shell wm dismiss-keyguard
+          adb shell am start -a android.intent.action.MAIN -c android.intent.category.HOME -W
+          current_focus=""
+          for focus_attempt in $(seq 1 30); do
+            current_focus="$(adb shell dumpsys window 2>/dev/null | tr -d '\r' | sed -n 's/.*mCurrentFocus=//p' | head -n 1 || true)"
+            if [[ "$current_focus" == *"com.google.android.apps.nexuslauncher"* && "$current_focus" != *"Application Not Responding"* ]]; then
+              break
+            fi
+            sleep 1
+          done
+          if [[ "$current_focus" != *"com.google.android.apps.nexuslauncher"* || "$current_focus" == *"Application Not Responding"* ]]; then
+            printf 'Emulator Home did not acquire window focus after boot. Current focus: %s\n' "$current_focus" >&2
+            adb shell dumpsys window >&2
+            exit 1
+          fi
+          printf 'Emulator Home window is focused: %s\n' "$current_focus"
 
       - name: Enable software keyboard with emulated keyboard
         shell: bash
@@ -176,6 +191,28 @@ jobs:
         id: connected_ui_tests
         run: gradle :app:connectedDebugAndroidTest --stacktrace
 
+      - name: Capture emulator window state
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          set +e
+          state_file="$RUNNER_TEMP/emulator-ui-state.txt"
+          {
+            echo "=== adb devices ==="
+            adb devices -l
+            echo "=== power ==="
+            adb shell dumpsys power
+            echo "=== window ==="
+            adb shell dumpsys window
+            echo "=== activities ==="
+            adb shell dumpsys activity activities
+            echo "=== input ==="
+            adb shell dumpsys input
+            echo "=== focus logs ==="
+            adb logcat -d -s ActivityTaskManager:I WindowManager:I InputDispatcher:I KeyguardViewMediator:I
+          } > "$state_file" 2>&1
+          tail -n 80 "$state_file" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload emulator diagnostics
         if: ${{ always() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -183,6 +220,7 @@ jobs:
           name: android-emulator-ui-test-reports
           path: |
             ${{ runner.temp }}/emulator.log
+            ${{ runner.temp }}/emulator-ui-state.txt
             app/build/reports/androidTests/
             app/build/outputs/androidTest-results/
           if-no-files-found: ignore

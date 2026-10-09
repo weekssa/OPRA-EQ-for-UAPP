@@ -48,6 +48,40 @@ class MyDacConnectionPresentationTest {
     }
 
     @Test
+    fun pendingJa11PermissionDoesNotOfferDeadRetryButDenialDoes() {
+        val recognition = recognitionState(DacDeviceId.FIIO_JA11)
+        val pending = Kt02h20ConnectionState.PermissionRequired(
+            "Waiting for Android USB permission.",
+            retryAvailable = false,
+        )
+        val denied = Kt02h20ConnectionState.PermissionRequired("USB permission was denied.")
+
+        assertThat(
+            shouldOfferMyDacConnect(
+                deviceId = DacDeviceId.FIIO_JA11,
+                recognitionState = recognition,
+                blackPearl = BlackPearlConnectionState.Disconnected,
+                fiioJa11 = pending,
+            ),
+        ).isFalse()
+        assertThat(
+            hasMyDacConnectionError(
+                deviceId = DacDeviceId.FIIO_JA11,
+                blackPearl = BlackPearlConnectionState.Disconnected,
+                fiioJa11 = pending,
+            ),
+        ).isFalse()
+        assertThat(
+            shouldOfferMyDacConnect(
+                deviceId = DacDeviceId.FIIO_JA11,
+                recognitionState = recognition,
+                blackPearl = BlackPearlConnectionState.Disconnected,
+                fiioJa11 = denied,
+            ),
+        ).isTrue()
+    }
+
+    @Test
     fun connectedOrConnectingDeviceDoesNotOfferConnect() {
         val recognition = recognitionState(DacDeviceId.JCALLY_JM12_STOCK)
 

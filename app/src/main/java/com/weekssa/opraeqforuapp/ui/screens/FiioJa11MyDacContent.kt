@@ -113,7 +113,7 @@ internal fun FiioJa11MyDacContent(
             title = { Text("Reset JA11 EQ to flat?") },
             text = {
                 Text(
-                    "This overwrites all five User 1 PEQ bands, sets the JA11 global EQ gain to 0 dB, selects User 1, applies, saves, and verifies the final readback.",
+                    "If needed, User 1 is selected and verified before all five flat PEQ bands and 0 dB global gain are written, then applied, saved, and verified.",
                 )
             },
             confirmButton = {
@@ -144,18 +144,29 @@ internal fun FiioJa11MyDacContent(
         )
         if (!connected) {
             Text(
-                text = "Open the current Android USB session to read and manage this connected DAC.",
+            text = if ((connectionState as? Kt02h20ConnectionState.PermissionRequired)
+                        ?.retryAvailable == false
+                ) {
+                    "Waiting for the Android USB permission prompt. Approve it to continue."
+                } else {
+                    "Open the current Android USB session to read and manage this connected DAC."
+                },
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Button(
                 onClick = onConnect,
                 modifier = Modifier.fillMaxWidth(),
+                enabled = (connectionState as? Kt02h20ConnectionState.PermissionRequired)
+                    ?.retryAvailable != false,
             ) {
                 Text(
-                    if (
+                    when {
+                        (connectionState as? Kt02h20ConnectionState.PermissionRequired)
+                            ?.retryAvailable == false -> "Waiting for permission…"
                         connectionState is Kt02h20ConnectionState.Error ||
-                        connectionState is Kt02h20ConnectionState.PermissionRequired
-                    ) "Retry connect" else "Connect",
+                            connectionState is Kt02h20ConnectionState.PermissionRequired -> "Retry connect"
+                        else -> "Connect"
+                    },
                 )
             }
         }
@@ -517,5 +528,6 @@ private fun connectionLabel(state: Kt02h20ConnectionState): String = when (state
     Kt02h20ConnectionState.Connecting -> "Connecting…"
     Kt02h20ConnectionState.Disconnected -> "Disconnected"
     is Kt02h20ConnectionState.Error -> "Connection problem"
-    is Kt02h20ConnectionState.PermissionRequired -> "USB permission required"
+    is Kt02h20ConnectionState.PermissionRequired ->
+        if (state.retryAvailable) "USB permission required" else "Waiting for USB permission…"
 }
