@@ -10,6 +10,13 @@ corrected-code PR head `ef688ca1a2c805c349439eb0e9ac24fb456641ad`; the frozen ap
 documentation-only head. Do not request or use the Pixel until current PR-head review and CI pass
 and the owner is available.
 
+J021 used this `da1f8e2` APK for a read-only initial-session observation and found that
+`UsbDevice.serialNumber` returned null despite permission being granted. It did not test a
+replacement session or perform a write. Do not use this APK for physical mutation. The next
+candidate must include the JA11-only opened-connection serial fallback, then receive a new exact
+source/APK tuple, emulator verification, helper constants, and exact-head PR checks before this
+procedure can begin.
+
 ## J020 diagnostic candidate — superseded; do not install again
 
 - Application source SHA: `a78808443c71d688e0f338e96495847569fe12f7`
@@ -53,6 +60,11 @@ this exact prior package before an in-place `adb install -r` of the corrected AP
 data. A mismatch stops before installation.
 
 The local candidate sidecar `CANDIDATE.md` records the local APK location and exact-head evidence. This package appends no Pixel serials, private network identifiers, raw logs, or hardware-specific personal data to the repository.
+
+`start-logcat` runs as a foreground process so its lifetime is owned by the terminal session and its
+full output is flushed into the private evidence directory. Keep that terminal session open during
+the physical procedure and send Ctrl-C there when capture should stop; do not launch it as a detached
+background job.
 
 ## Preparation tools
 

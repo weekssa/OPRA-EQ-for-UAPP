@@ -208,5 +208,31 @@ Host preparation ran without querying ADB devices or mDNS services: SDK adb
 VPN/proxy, and macOS application firewall disabled. The Pixel's live endpoint remains pending.
 Raw host routing/proxy details and emulator logs are private at
 `/private/tmp/ja11-v0.8.1-acceptance-da1f8e25/`; no Pixel serial, JA11 fingerprint, or hardware
-claim is included here. J020 remains the latest physical record; Mic On restoration remains
-outstanding.
+claim is included here. J020 remains the latest mutation record; J021 below is the latest
+read-only physical observation. Mic On restoration remains outstanding.
+
+## 2026-10-08 J021 — read-only initial-session identity observation
+
+J021 is a read-only observation on the prior corrected diagnostic candidate. It is not a
+replacement-session result, restart verification, mutation test, or physical pass.
+
+- Candidate source `da1f8e25918065667648d676cb669fed4c803f17`; diagnostic APK
+  `opra-eq-ja11diag-0.8.0-source-da1f8e25.apk`, SHA-256
+  `767b42591adc92f0e1662480112bf9efe87ce15f51060d20a7aa39118b8d8c24`; package
+  `com.weekssa.opraeqforuapp.ja11diag`, version `0.8.0-ja11diag`/11; debug signer certificate
+  SHA-256 `73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`.
+- Context: Pixel 9; JA11 firmware `2.20`; VID/PID `0x2972:0x0102`. The owner-only private
+  session folder is `/private/tmp/ja11-v0.8.1-acceptance-da1f8e25/owner-phone-session-20261008`.
+  Device identifiers and raw logs remain private.
+- In the initial connected session, Android USB permission was granted and
+  `UsbDevice.serialNumber` returned null (`READABLE_NULL`). Session generation 1 completed a
+  full read-only snapshot, then reported `identityAvailable=false` while `sessionCurrent=true`.
+  The captured `command=0x12` event is a headset/mic read; J021 contains no write or restart.
+- The J021 candidate did not read `UsbDeviceConnection.getSerial()`. Therefore the observation does
+  not establish whether the USB descriptor lacks a serial, and it does not establish the result of
+  J020's replacement-session lookup. A screenshot showed Mic Off, UAC 2.0, and 384 kHz. The original
+  Mic On restoration remains outstanding; no current state is asserted after releasing the phone.
+- The next source adds a JA11-only read of the opened connection's standard USB serial descriptor
+  only when `UsbDevice.serialNumber` returns null. Blank values and exceptions still leave identity
+  unavailable; other shared transports keep this fallback disabled. This is an off-phone candidate
+  under test and has no physical result yet.

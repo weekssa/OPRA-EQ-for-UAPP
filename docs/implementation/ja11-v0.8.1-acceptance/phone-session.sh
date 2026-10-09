@@ -49,8 +49,7 @@ Actions:
   list             show current adb devices
   inspect          verify Pixel 9 and report basic OS properties
   verify-identity  require a current candidate-process snapshot and stable JA11 identity boolean
-  start-logcat     start private local full-logcat capture
-  stop-logcat      stop the local capture process (serial may be blank)
+  start-logcat     capture full logs in the foreground; stop with Ctrl-C in that terminal
   install          install only the frozen JA11 diagnostic APK
   rollback         restore the exact prior J020 diagnostic APK; no hardware action
   launch           start only the diagnostic package
@@ -70,25 +69,9 @@ if [ -z "$EVIDENCE_DIR" ]; then
 fi
 mkdir -p "$EVIDENCE_DIR"
 chmod 700 "$EVIDENCE_DIR"
-PID_FILE="$EVIDENCE_DIR/logcat-capture.pid"
 LIVE_LOG="$EVIDENCE_DIR/logcat-live.txt"
 
 if [ "$ACTION" = "list" ]; then "$ADB_BIN" devices -l; exit 0; fi
-if [ "$ACTION" = "stop-logcat" ]; then
-  if [ -f "$PID_FILE" ]; then
-    PID="$(sed -n '1p' "$PID_FILE")"
-    CAPTURE_SERIAL="$(sed -n '2p' "$PID_FILE")"
-    COMMAND="$(ps -p "$PID" -o command= 2>/dev/null || true)"
-    if [ -n "$CAPTURE_SERIAL" ] && [[ "$COMMAND" == *"$CAPTURE_SERIAL"* && "$COMMAND" == *"logcat"* ]]; then
-      kill -INT "$PID"
-      rm -f "$PID_FILE"
-    else
-      echo "The saved PID does not identify this adb logcat capture; it was left untouched." >&2
-      exit 10
-    fi
-  fi
-  exit 0
-fi
 if [ -z "$SERIAL" ] || [ "$SERIAL" = "all" ]; then
   echo "A single explicit current Pixel ADB serial is required." >&2
   exit 2
@@ -176,16 +159,14 @@ case "$ACTION" in
     ;;
   start-logcat)
     verify_pixel
-    if [ -e "$PID_FILE" ] || [ -e "$LIVE_LOG" ]; then
+    if [ -e "$LIVE_LOG" ]; then
       echo "This evidence directory already contains a log capture; preserve it and use a new directory." >&2
       exit 5
     fi
     : > "$LIVE_LOG"
     chmod 600 "$LIVE_LOG"
-    nohup "$ADB_BIN" -s "$SERIAL" logcat -v threadtime > "$LIVE_LOG" 2>&1 < /dev/null &
-    printf '%s\n%s\n' "$!" "$SERIAL" > "$PID_FILE"
-    chmod 600 "$PID_FILE"
-    echo "Log capture started in the private evidence directory."
+    echo "Full logcat is capturing to the private evidence directory; stop with Ctrl-C in this terminal."
+    exec "$ADB_BIN" -s "$SERIAL" logcat -v threadtime > "$LIVE_LOG" 2>&1
     ;;
   install)
     verify_pixel

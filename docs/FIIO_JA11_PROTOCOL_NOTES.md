@@ -1,6 +1,26 @@
 # FiiO / JadeAudio JA11 protocol notes
 
-Status: **JA11 codec correction and historical Flash/reconnect/restoration paths remain physically evidenced on their exact candidates; J020 restart verification is incomplete, corrected software/emulator gates and all eight required exact-code-head CI rows pass, Mic On restoration is outstanding, and v0.8.1 physical acceptance is pending**
+Status: **JA11 codec correction and historical Flash/reconnect/restoration paths remain physically evidenced on their exact candidates; J020 mutation verification is incomplete; J021 is a read-only initial-session identity observation; a JA11-only opened-connection serial fallback is under test; Mic On restoration is outstanding**
+
+## 2026-10-08 J021 — Android device serial getter returned null
+
+J021 used source `da1f8e25918065667648d676cb669fed4c803f17` and diagnostic APK SHA-256
+`767b42591adc92f0e1662480112bf9efe87ce15f51060d20a7aa39118b8d8c24` on the Pixel 9 / JA11,
+firmware `2.20`, VID/PID `0x2972:0x0102`. With USB permission granted, the initial session's
+`UsbDevice.serialNumber` getter returned null. The session completed a full read-only snapshot but
+reported `identityAvailable=false` while current. This was not a replacement session and recorded
+no write or restart. The visible Mic Off state means the original Mic On restoration remains
+outstanding.
+
+J021 does not prove the USB descriptor lacks a serial, and it does not resolve J020's replacement
+session. The candidate did not query the serial through its open `UsbDeviceConnection`. Android
+documents `UsbDeviceConnection.getSerial()` as the serial for that opened device connection; the
+current change queries it only when the JA11 device getter returns null. It does not substitute a
+port path, PID, firmware, product name, or interface number. Blank values and exceptions remain
+unavailable, and other shared USB transports do not enable the fallback. The change has automated
+fail-closed regression coverage but no physical result yet. See the [Android connection API
+reference](https://developer.android.com/reference/android/hardware/usb/UsbDeviceConnection) and
+[AOSP USB host implementation](https://android.googlesource.com/platform/system/core/+/3597339226f5c0681631df9039eebf07485c04de/libusbhost/usbhost.c).
 
 ## 2026-10-08 J020 USB permission and replacement identity findings
 

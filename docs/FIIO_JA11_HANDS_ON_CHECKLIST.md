@@ -1,5 +1,23 @@
 # FiiO JA11 hands-on qualification
 
+## 2026-10-08 J021 read-only identity result and next candidate
+
+J021 used the `da1f8e2` diagnostic candidate, Pixel 9 / JA11 firmware `2.20`, and VID/PID
+`0x2972:0x0102`. Android granted USB permission, but `UsbDevice.serialNumber` returned null in the
+initial connected session. The read-only full snapshot completed and reported
+`identityAvailable=false` while the session was current. This was not a replacement-session test;
+no write or restart occurred. A screenshot showed Mic Off, UAC 2.0, and 384 kHz. The original Mic On
+restoration remains outstanding. Raw evidence is private under
+`/private/tmp/ja11-v0.8.1-acceptance-da1f8e25/owner-phone-session-20261008`.
+
+The fallback candidate reads `UsbDeviceConnection.getSerial()` from the same opened JA11 only when
+the device getter returns null. It keeps the unique nonblank serial requirement and does not fall
+back on blank values or exceptions. This is based on Android's documented connection serial API;
+physical behavior remains unverified. The phone is now available. Do not continue until the exact
+new source-bound candidate, local gates, PR #80 checks and artifact provenance are refreshed. If the
+fresh candidate cannot establish identity, stop before mutation and report Mic On restoration as
+unresolved.
+
 ## 2026-10-08 J020 boundary and recovery-first next session
 
 J020 used source `a78808443c71d688e0f338e96495847569fe12f7` and APK SHA-256

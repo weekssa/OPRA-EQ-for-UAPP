@@ -923,10 +923,35 @@ Pixel endpoint remains pending. The prepared phone plan includes an intentional 
 beyond the old 10-second fallback, private screenshot points, and a hash-verified software rollback
 procedure.
 
-While the owner is away, do not address or enumerate the Pixel with ADB and do not interact with
-the JA11. The next physical session begins with a fresh full baseline and identity check; if Mic is
+At that J020 checkpoint the owner was away, so the Pixel was not addressed or enumerated. The next
+physical session was planned to begin with a fresh full baseline and identity check; if Mic is
 still Off, restore it to On as the single Test A mutation. For its first USB permission prompt,
 accept after about 12 seconds to cross the old fallback and remain inside the new 25-second bound.
 Stop if identity is missing/ambiguous, permission fails, or any result is uncertain. Keep Tests
 B/C/D and release gates pending until they pass. No merge, publication, or JA11 support claim
 precedes physical acceptance.
+
+## 2026-10-08 JA11 J021 read-only identity and follow-up
+
+The owner has now made the Pixel available for testing. J021 on the prior corrected diagnostic
+candidate was read-only: Pixel 9 / JA11 firmware `2.20`, VID/PID `0x2972:0x0102`, USB permission
+granted, and the initial-session `UsbDevice.serialNumber` getter returned null. A full snapshot
+completed, but identity was unavailable while the session was current. J021 was not a replacement
+session and included no write or restart. Its `command=0x12` event is a headset/mic read. A captured
+screenshot showed Mic Off, so restoration to the original Mic On state remains outstanding. The
+private evidence is under
+`/private/tmp/ja11-v0.8.1-acceptance-da1f8e25/owner-phone-session-20261008`; do not copy serials,
+fingerprints, raw logs, or screenshots into the repository. J021 does not prove the USB descriptor
+lacks a serial and does not resolve J020's replacement-session result.
+
+The follow-up change reads `UsbDeviceConnection.getSerial()` from the already-open JA11 connection
+only when `UsbDevice.serialNumber` returns null. It remains disabled for other shared transports,
+keeps the unique nonblank serial identity requirement, and leaves identity unavailable for blank
+values and exceptions. Seven new Robolectric regressions cover success, primary getter precedence,
+default-off behavior, blanks, and exceptions. The JA11 session test class and whitespace checks pass;
+full exact-source builds, diagnostic APK verification, PR-head checks, and physical qualification are
+pending. Do not use the Pixel until those gates pass. On the next exact candidate, read a complete
+baseline and verify fresh identity first; if Mic is Off, restore it to On as Test A's single mutation.
+Stop before mutation if identity is unavailable or ambiguous. Never replay an uncertain write. Keep
+Tests B/C/D, official signing, merge, publication, and public JA11 claims pending until their exact
+gates and owner approvals are satisfied.

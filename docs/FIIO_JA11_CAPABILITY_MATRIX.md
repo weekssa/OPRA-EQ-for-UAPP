@@ -105,19 +105,20 @@ head is maintained in PR #80. This does not change the physical boundary.
 | Session-generation enforcement across Flash | SUPPORTED_AND_IMPLEMENTED; AUTOMATED GATES PASS; PHYSICAL PENDING | The JA11 Android transport pins reads and ordinary writes to one session/detach generation; Save remains the explicit lifecycle exception and waits for its reconnect boundary. Focused tests, Android CI, signed emulator install/cold launch, and the exact signed candidate all pass. Physical lifecycle behavior remains unqualified. |
 | Output volume, presets, headset/UAC controls | SOFTWARE IMPLEMENTED; PHYSICAL PENDING | These controls are outside the failed EQ-gain root-cause boundary; owner reports that general controls work do not qualify Flash or persistence. |
 | Headset/mic restart and automatic DEVICE verification | IMPLEMENTED; J020 INCOMPLETE/NEGATIVE ON SUPERSEDED CANDIDATE; CURRENT FIX PHYSICAL PENDING | J020's On-to-Off write completed and a fresh session read Mic Off, but no automatic verifier event was emitted. Permission arrived about 18.5 seconds after request; its interaction with the former 10-second fallback is fixed in software and has automated delayed-grant coverage. Original Mic On restoration remains outstanding. |
-| Stable JA11 identity across restart | SOFTWARE GATED ON A UNIQUE NONBLANK SERIAL; REPLACEMENT SESSION IDENTITY UNAVAILABLE IN J020 | J020 began with an available identity and a current session, then the replacement session was current but its identity key was unavailable. The key requires exactly one nonblank USB serial. The evidence does not distinguish a blank/missing serial descriptor from permission-gated access or a suppressed serial-access exception. The current fix logs only a privacy-safe status category; fail closed if the key is missing or ambiguous. |
+| Stable JA11 identity across restart | UNIQUE NONBLANK USB SERIAL REQUIRED; J021 `UsbDevice.serialNumber` NULL WITH PERMISSION; OPENED-CONNECTION FALLBACK UNDER TEST | J020's replacement session was current but identity was unavailable. J021 separately confirms that the initial-session `UsbDevice.serialNumber` getter returned null with permission granted; it does not prove the descriptor lacks a serial or resolve J020. The current off-phone change reads the opened connection's standard serial only when that getter returns null, only for JA11, and still fails closed for blank values or exceptions. Physical result pending. |
 | Firmware update, bootloader, cross-flash, raw command console | UNSAFE_OR_OUT_OF_SCOPE | No JA11 firmware mutation or arbitrary command surface is authorized in this task. |
 | Public JA11 support/release claim | UNSAFE_OR_OUT_OF_SCOPE | J017 closes the observed reconnect/restoration evidence gap for one session but does not close explicit power-cycle retention or the complete qualification checklist. Keep public support and final-release claims owner-controlled. |
 
 ## Matrix rule
 
-J020 is the latest physical record for headset restart verification; J017 remains the accepted
-Flash/Reset and restoration record. J020's write was not retried; its last verified state is Mic Off
-and restoration to the original Mic On baseline is outstanding. The `da1f8e2` fix candidate has not
-been physically exercised yet. Do not convert either record's remaining evidence gaps into a
+J020 remains the latest mutation record for headset restart verification; J021 is a separate
+read-only initial-session identity observation, and J017 remains the accepted Flash/Reset and
+restoration record. J020's write was not retried; its last verified state is Mic Off and restoration
+to the original Mic On baseline is outstanding. J021 proves only that the Android device serial
+getter returned null with permission granted. Do not convert either record's evidence gaps into a
 weaker identity key, protocol change, tolerance change, retry, or support claim. The next physical
-session must use the exact source-bound candidate above, verify fresh identity before any write,
-restore Mic On first, and stop if replacement identity becomes unavailable.
+session must use the exact source-bound connection-serial candidate, verify fresh identity before
+any write, restore Mic On first, and stop if replacement identity is unavailable.
 
 ## 2026-09-25 independent protocol-oracle matrix
 

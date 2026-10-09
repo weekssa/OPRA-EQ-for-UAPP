@@ -66,6 +66,10 @@ internal class AndroidKt02h20HidSession(
     private val permissionResponseTimeoutMillis: Long = PERMISSION_RESPONSE_TIMEOUT_MILLIS,
     /** Null preserves the shared transport's eligible callback until explicit invalidation. */
     private val permissionPromptMaxDurationMillis: Long? = null,
+    /** Only JA11 opts into the opened-connection serial reader; other shared transports stay unchanged. */
+    private val allowConnectionSerialFallback: Boolean = false,
+    private val deviceSerialReader: (UsbDevice) -> String? = { it.serialNumber },
+    private val connectionSerialReader: (UsbDeviceConnection) -> String? = { it.serial },
 ) : Closeable {
     init {
         require(productIds.isNotEmpty()) { "At least one approved USB PID is required." }
@@ -847,6 +851,9 @@ internal class AndroidKt02h20HidSession(
                     )
                     return@withLock
                 }
+                // Read the identity from the same descriptor/connection we just opened, before
+                // taking the lifecycle gate's monitor. A serial string descriptor read is USB I/O.
+                val openedFingerprintKey = fingerprintKey(device, descriptor.usbInterface, connection)
                 var latestDevice: UsbDevice? = null
                 var openedSession: UsbSession? = null
                 val committed = sessionLifecycleGate.commitAttempt(
@@ -869,7 +876,7 @@ internal class AndroidKt02h20HidSession(
                             endpointIn = descriptor.endpointIn,
                             endpointOut = descriptor.endpointOut,
                             productId = committedDevice.productId,
-                            fingerprintKey = fingerprintKey(committedDevice, descriptor.usbInterface),
+                            fingerprintKey = openedFingerprintKey,
                             deviceName = committedDevice.deviceName,
                             generation = lastSessionGeneration,
                             detachGeneration = detachSequence,
@@ -1069,12 +1076,16 @@ internal class AndroidKt02h20HidSession(
     private fun UsbDevice.matchesTarget(): Boolean =
         this.vendorId == vendorId && this.productId in productIds && deviceIdentityMatcher(this)
 
-    private fun fingerprintKey(device: UsbDevice, usbInterface: UsbInterface): String {
+    private fun fingerprintKey(
+        device: UsbDevice,
+        usbInterface: UsbInterface,
+        connection: UsbDeviceConnection,
+    ): String {
         val manufacturer = runCatching { device.manufacturerName }.getOrNull().orEmpty()
         val product = runCatching { device.productName }.getOrNull().orEmpty()
         var serialStatus = "OTHER_EXCEPTION"
         val serial = try {
-            device.serialNumber.also { value ->
+            deviceSerialReader(device).also { value ->
                 serialStatus = when {
                     value == null -> "READABLE_NULL"
                     value.isBlank() -> "READABLE_BLANK"
@@ -1088,11 +1099,43 @@ internal class AndroidKt02h20HidSession(
             serialStatus = "OTHER_EXCEPTION"
             null
         }
+        var connectionSerialStatus = "NOT_CHECKED"
+        val connectionSerial = if (allowConnectionSerialFallback && serialStatus == "READABLE_NULL") {
+            try {
+                connectionSerialReader(connection).also { value ->
+                    connectionSerialStatus = when {
+                        value == null -> "READABLE_NULL"
+                        value.isBlank() -> "READABLE_BLANK"
+                        else -> "READABLE_NONBLANK"
+                    }
+                }
+            } catch (_: SecurityException) {
+                connectionSerialStatus = "SECURITY_EXCEPTION"
+                null
+            } catch (_: RuntimeException) {
+                connectionSerialStatus = "OTHER_EXCEPTION"
+                null
+            }
+        } else {
+            null
+        }
+        val serialSource = when {
+            serialStatus == "READABLE_NONBLANK" -> "USB_DEVICE"
+            connectionSerialStatus == "READABLE_NONBLANK" -> "USB_CONNECTION"
+            else -> "NONE"
+        }
+        val effectiveSerial = when (serialSource) {
+            "USB_DEVICE" -> serial
+            "USB_CONNECTION" -> connectionSerial
+            else -> null
+        }
         Ja11DiagnosticLog.eventForDevice(
             deviceLabel,
             "USB_IDENTITY_DESCRIPTOR_STATUS",
             "permissionGranted" to usbManager.hasPermission(device),
             "serialStatus" to serialStatus,
+            "connectionSerialStatus" to connectionSerialStatus,
+            "serialSource" to serialSource,
             "productId" to device.productId,
         )
         return (listOf(
@@ -1100,7 +1143,7 @@ internal class AndroidKt02h20HidSession(
             "pid=${device.productId.toString(16)}",
             "manufacturer=${manufacturer.trim()}",
             "product=${product.trim()}",
-            "serial=${serial.orEmpty().trim()}",
+            "serial=${effectiveSerial.orEmpty().trim()}",
         ) + additionalFingerprintFields(device).map { (key, value) -> "$key=${value.trim()}" } +
             "interface=${usbInterface.id}").joinToString("|")
     }

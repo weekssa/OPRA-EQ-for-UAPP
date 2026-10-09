@@ -25,6 +25,7 @@ class AndroidFiioJa11UsbTransport(
         permissionSuffix = "FIIO_JA11",
         blockRetryWhilePermissionPending = true,
         permissionPromptMaxDurationMillis = JA11_PERMISSION_PROMPT_MAX_DURATION_MILLIS,
+        allowConnectionSerialFallback = true,
     )
 
     val state: StateFlow<Kt02h20ConnectionState> = hid.state

@@ -6,6 +6,7 @@ import android.content.Intent
 import android.hardware.usb.UsbConfiguration
 import android.hardware.usb.UsbConstants
 import android.hardware.usb.UsbDevice
+import android.hardware.usb.UsbDeviceConnection
 import android.hardware.usb.UsbEndpoint
 import android.hardware.usb.UsbInterface
 import android.hardware.usb.UsbManager
@@ -43,6 +44,207 @@ class AndroidKt02h20HidSessionTest {
         usbManager = context.getSystemService(Context.USB_SERVICE) as UsbManager
         usbShadow = Shadows.shadowOf(usbManager)
         requestedPermissions.clear()
+    }
+
+    @Test
+    fun openedConnectionSerialCanFillOnlyTheMissingJa11DeviceSerial() = runBlocking {
+        val device = usbDevice(
+            deviceName = "/dev/bus/usb/001/007",
+            productId = 0x0102,
+            serial = null,
+            interfaceId = 3,
+        )
+        usbShadow.addOrUpdateUsbDevice(device, true)
+        var connectionSerialReads = 0
+        val hid = newSession(
+            blockRetryWhilePermissionPending = true,
+            permissionResponseTimeoutMillis = 500,
+            permissionPromptMaxDurationMillis = 25_000,
+            allowConnectionSerialFallback = true,
+            deviceSerialReader = { null },
+            connectionSerialReader = {
+                connectionSerialReads += 1
+                "connection-only-serial"
+            },
+        )
+
+        hid.connect()
+
+        assertThat(awaitState { it is Kt02h20ConnectionState.Connected })
+            .isEqualTo(Kt02h20ConnectionState.Connected)
+        assertThat(connectionSerialReads).isEqualTo(1)
+        assertThat(fiioJa11PhysicalIdentityKey(hid.deviceFingerprintKey))
+            .isEqualTo("vid=2972|manufacturer=FiiO|product=JA11|serial=connection-only-serial")
+    }
+
+    @Test
+    fun connectionSerialFallbackIsNotUsedWhenJa11DeviceSerialIsPresent() = runBlocking {
+        val device = usbDevice(
+            deviceName = "/dev/bus/usb/001/008",
+            productId = 0x0102,
+            serial = "device-serial",
+            interfaceId = 3,
+        )
+        usbShadow.addOrUpdateUsbDevice(device, true)
+        var connectionSerialReads = 0
+        val hid = newSession(
+            blockRetryWhilePermissionPending = true,
+            permissionResponseTimeoutMillis = 500,
+            permissionPromptMaxDurationMillis = 25_000,
+            allowConnectionSerialFallback = true,
+            deviceSerialReader = { "device-serial" },
+            connectionSerialReader = {
+                connectionSerialReads += 1
+                "connection-only-serial"
+            },
+        )
+
+        hid.connect()
+
+        assertThat(awaitState { it is Kt02h20ConnectionState.Connected })
+            .isEqualTo(Kt02h20ConnectionState.Connected)
+        assertThat(connectionSerialReads).isEqualTo(0)
+        assertThat(fiioJa11PhysicalIdentityKey(hid.deviceFingerprintKey))
+            .isEqualTo("vid=2972|manufacturer=FiiO|product=JA11|serial=device-serial")
+    }
+
+    @Test
+    fun connectionSerialFallbackIsDisabledByDefault() = runBlocking {
+        val device = usbDevice(
+            deviceName = "/dev/bus/usb/001/009",
+            productId = 0x0102,
+            serial = null,
+            interfaceId = 3,
+        )
+        usbShadow.addOrUpdateUsbDevice(device, true)
+        var connectionSerialReads = 0
+        val hid = newSession(
+            blockRetryWhilePermissionPending = true,
+            permissionResponseTimeoutMillis = 500,
+            permissionPromptMaxDurationMillis = 25_000,
+            deviceSerialReader = { null },
+            connectionSerialReader = {
+                connectionSerialReads += 1
+                "connection-only-serial"
+            },
+        )
+
+        hid.connect()
+
+        assertThat(awaitState { it is Kt02h20ConnectionState.Connected })
+            .isEqualTo(Kt02h20ConnectionState.Connected)
+        assertThat(connectionSerialReads).isEqualTo(0)
+        assertThat(fiioJa11PhysicalIdentityKey(hid.deviceFingerprintKey)).isNull()
+    }
+
+    @Test
+    fun blankDeviceSerialDoesNotTriggerConnectionFallback() = runBlocking {
+        val device = usbDevice(
+            deviceName = "/dev/bus/usb/001/010",
+            productId = 0x0102,
+            serial = null,
+            interfaceId = 3,
+        )
+        usbShadow.addOrUpdateUsbDevice(device, true)
+        var connectionSerialReads = 0
+        val hid = newSession(
+            blockRetryWhilePermissionPending = true,
+            permissionResponseTimeoutMillis = 500,
+            permissionPromptMaxDurationMillis = 25_000,
+            allowConnectionSerialFallback = true,
+            deviceSerialReader = { "  " },
+            connectionSerialReader = {
+                connectionSerialReads += 1
+                "connection-only-serial"
+            },
+        )
+
+        hid.connect()
+
+        assertThat(awaitState { it is Kt02h20ConnectionState.Connected })
+            .isEqualTo(Kt02h20ConnectionState.Connected)
+        assertThat(connectionSerialReads).isEqualTo(0)
+        assertThat(fiioJa11PhysicalIdentityKey(hid.deviceFingerprintKey)).isNull()
+    }
+
+    @Test
+    fun blankConnectionSerialCannotEstablishJa11Identity() = runBlocking {
+        val device = usbDevice(
+            deviceName = "/dev/bus/usb/001/011",
+            productId = 0x0102,
+            serial = null,
+            interfaceId = 3,
+        )
+        usbShadow.addOrUpdateUsbDevice(device, true)
+        val hid = newSession(
+            blockRetryWhilePermissionPending = true,
+            permissionResponseTimeoutMillis = 500,
+            permissionPromptMaxDurationMillis = 25_000,
+            allowConnectionSerialFallback = true,
+            deviceSerialReader = { null },
+            connectionSerialReader = { "   " },
+        )
+
+        hid.connect()
+
+        assertThat(awaitState { it is Kt02h20ConnectionState.Connected })
+            .isEqualTo(Kt02h20ConnectionState.Connected)
+        assertThat(fiioJa11PhysicalIdentityKey(hid.deviceFingerprintKey)).isNull()
+    }
+
+    @Test
+    fun deviceSerialReadExceptionDoesNotTriggerConnectionFallback() = runBlocking {
+        val device = usbDevice(
+            deviceName = "/dev/bus/usb/001/012",
+            productId = 0x0102,
+            serial = null,
+            interfaceId = 3,
+        )
+        usbShadow.addOrUpdateUsbDevice(device, true)
+        var connectionSerialReads = 0
+        val hid = newSession(
+            blockRetryWhilePermissionPending = true,
+            permissionResponseTimeoutMillis = 500,
+            permissionPromptMaxDurationMillis = 25_000,
+            allowConnectionSerialFallback = true,
+            deviceSerialReader = { throw SecurityException("permission denied") },
+            connectionSerialReader = {
+                connectionSerialReads += 1
+                "connection-only-serial"
+            },
+        )
+
+        hid.connect()
+
+        assertThat(awaitState { it is Kt02h20ConnectionState.Connected })
+            .isEqualTo(Kt02h20ConnectionState.Connected)
+        assertThat(connectionSerialReads).isEqualTo(0)
+        assertThat(fiioJa11PhysicalIdentityKey(hid.deviceFingerprintKey)).isNull()
+    }
+
+    @Test
+    fun connectionSerialReadExceptionLeavesJa11IdentityUnavailable() = runBlocking {
+        val device = usbDevice(
+            deviceName = "/dev/bus/usb/001/013",
+            productId = 0x0102,
+            serial = null,
+            interfaceId = 3,
+        )
+        usbShadow.addOrUpdateUsbDevice(device, true)
+        val hid = newSession(
+            blockRetryWhilePermissionPending = true,
+            permissionResponseTimeoutMillis = 500,
+            permissionPromptMaxDurationMillis = 25_000,
+            allowConnectionSerialFallback = true,
+            deviceSerialReader = { null },
+            connectionSerialReader = { throw SecurityException("connection serial unavailable") },
+        )
+
+        hid.connect()
+
+        assertThat(awaitState { it is Kt02h20ConnectionState.Connected })
+            .isEqualTo(Kt02h20ConnectionState.Connected)
+        assertThat(fiioJa11PhysicalIdentityKey(hid.deviceFingerprintKey)).isNull()
     }
 
     @After
@@ -397,6 +599,9 @@ class AndroidKt02h20HidSessionTest {
         blockRetryWhilePermissionPending: Boolean,
         permissionResponseTimeoutMillis: Long,
         permissionPromptMaxDurationMillis: Long?,
+        allowConnectionSerialFallback: Boolean = false,
+        deviceSerialReader: (UsbDevice) -> String? = { it.serialNumber },
+        connectionSerialReader: (UsbDeviceConnection) -> String? = { it.serial },
     ) = AndroidKt02h20HidSession(
         context = context,
         vendorId = 0x2972,
@@ -407,6 +612,9 @@ class AndroidKt02h20HidSessionTest {
         permissionRequester = { _, pendingIntent -> requestedPermissions += pendingIntent },
         permissionResponseTimeoutMillis = permissionResponseTimeoutMillis,
         permissionPromptMaxDurationMillis = permissionPromptMaxDurationMillis,
+        allowConnectionSerialFallback = allowConnectionSerialFallback,
+        deviceSerialReader = deviceSerialReader,
+        connectionSerialReader = connectionSerialReader,
     ).also { session = it }
 
     private suspend fun awaitState(
@@ -440,7 +648,7 @@ class AndroidKt02h20HidSessionTest {
     private fun usbDevice(
         deviceName: String,
         productId: Int,
-        serial: String,
+        serial: String?,
         interfaceId: Int,
     ): UsbDevice {
         val endpointConstructor = constructorWithParameters(UsbEndpoint::class.java, 4)
