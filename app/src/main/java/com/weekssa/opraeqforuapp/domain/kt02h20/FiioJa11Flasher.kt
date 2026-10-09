@@ -84,9 +84,9 @@ interface FiioJa11Transport {
  * Direct-Flash transaction for the normal FiiO JA11 run-mode PEQ protocol.
  *
  * The five editable coefficients live in User 1. A complete Flash therefore writes every User 1
- * band, writes the global EQ gain, explicitly selects User 1, applies, verifies the active program
- * and coefficients, saves, then verifies again. This prevents a successful write to an inactive
- * User 1 bank from being misreported as an audible EQ change while Vocal/Classic/Bass/Off is active.
+ * band and global EQ gain only after User 1 is the freshly verified active program, applies,
+ * verifies the active program and coefficients, saves, then verifies again. This prevents writes
+ * from landing in the active Off/built-in program bank before a later switch to User 1.
  */
 class FiioJa11Flasher(
     private val transport: FiioJa11Transport,
@@ -172,6 +172,21 @@ class FiioJa11Flasher(
         )
 
         trace.stage(FiioJa11OperationStage.WRITING)
+        when (ensureUserOneActive(transactionSession)) {
+            UserOneActivationResult.ACTIVE -> Unit
+            UserOneActivationResult.READ_UNAVAILABLE -> return Kt02h20FlashResult.DeviceUnavailable(
+                "Couldn’t confirm FiiO JA11 User 1 before the EQ write. No bands or global gain were written.",
+            )
+            UserOneActivationResult.SELECTION_FAILED -> return Kt02h20FlashResult.TransferFailed(
+                "The FiiO JA11 User 1 selection did not complete in the authorized session. User 1 may now be active; no bands or global gain were written. Refresh before any later write.",
+            )
+            UserOneActivationResult.SELECTION_READ_UNAVAILABLE -> return Kt02h20FlashResult.TransferFailed(
+                "FiiO JA11 may have switched to User 1, but the same-session readback did not complete. No bands, global gain, Apply, or Save were sent. Refresh before any later write.",
+            )
+            UserOneActivationResult.SELECTION_NOT_CONFIRMED -> return Kt02h20FlashResult.VerificationFailed(
+                "FiiO JA11 did not confirm User 1 active after selection. No bands or global gain were written.",
+            )
+        }
         targetBands.forEachIndexed { index, band ->
             if (!sendPreSaveReport(FiioJa11Protocol.writeBandReport(index, band), transactionSession)) {
                 return Kt02h20FlashResult.TransferFailed(
@@ -182,15 +197,6 @@ class FiioJa11Flasher(
         if (!sendPreSaveReport(FiioJa11Protocol.writeGlobalGainReport(representation.playbackGainDb), transactionSession)) {
             return Kt02h20FlashResult.TransferFailed(
                 "The FiiO JA11 USB session changed or stopped confirming the global EQ gain report. No later commands were sent.",
-            )
-        }
-        if (!sendPreSaveReport(
-                FiioJa11Protocol.writeEqProgramReport(FiioJa11Protocol.EqProgram.USER_1),
-                transactionSession,
-            )
-        ) {
-            return Kt02h20FlashResult.TransferFailed(
-                "The FiiO JA11 USB session changed or stopped confirming the User 1 selection. No later commands were sent.",
             )
         }
         if (!sendPreSaveReport(FiioJa11Protocol.applyReport(), transactionSession)) {
@@ -234,8 +240,8 @@ class FiioJa11Flasher(
     /**
      * Applies the shared local editor's already-reviewed User 1 working copy. The read immediately
      * before the first write compares one coherent identity/session/program/band/gain token, then
-     * reuses the exact five-band -> global gain -> User 1 -> Apply -> one Save -> final readback
-     * transaction used by direct JA11 Flash.
+     * reuses the exact five-band -> global gain -> Apply -> one Save -> final readback transaction
+     * used by direct JA11 Flash. User 1 is already active and freshly verified before any edit.
      */
     suspend fun applyEditorWorkingCopy(
         workingCopy: HardwareEqEditWorkingCopy,
@@ -378,6 +384,17 @@ class FiioJa11Flasher(
         }
         trace.targetManualEdit(targetBands, quantizedGlobalGainDb)
 
+        val programBeforeWrite = readInSession(transactionSession) {
+            transport.readEqProgramInSession(transactionSession)
+        } ?: return FiioJa11EditorApplyResult.DeviceUnavailable(
+            "Couldn’t confirm active JA11 User 1 immediately before editor writes. No editor changes were written.",
+        )
+        if (programBeforeWrite != FiioJa11Protocol.EqProgram.USER_1) {
+            return FiioJa11EditorApplyResult.StaleBaseline(
+                "FiiO JA11 is no longer on User 1 immediately before editor writes. No editor changes were written; read the current EQ again.",
+            )
+        }
+
         trace.stage(FiioJa11OperationStage.WRITING)
         targetBands.forEachIndexed { index, band ->
             if (!sendPreSaveReport(FiioJa11Protocol.writeBandReport(index, band), transactionSession)) {
@@ -389,15 +406,6 @@ class FiioJa11Flasher(
         if (!sendPreSaveReport(FiioJa11Protocol.writeGlobalGainReport(quantizedGlobalGainDb), transactionSession)) {
             return FiioJa11EditorApplyResult.TransferFailed(
                 "The FiiO JA11 USB session changed or stopped confirming the reviewed global EQ gain. No later commands were sent.",
-            )
-        }
-        if (!sendPreSaveReport(
-                FiioJa11Protocol.writeEqProgramReport(FiioJa11Protocol.EqProgram.USER_1),
-                transactionSession,
-            )
-        ) {
-            return FiioJa11EditorApplyResult.TransferFailed(
-                "The FiiO JA11 USB session changed or stopped confirming User 1 selection. No later commands were sent.",
             )
         }
         if (!sendPreSaveReport(FiioJa11Protocol.applyReport(), transactionSession)) {
@@ -479,6 +487,21 @@ class FiioJa11Flasher(
         )
         val flatBands = FiioJa11Protocol.completeBands(emptyList())
         trace.stage(FiioJa11OperationStage.WRITING)
+        when (ensureUserOneActive(transactionSession)) {
+            UserOneActivationResult.ACTIVE -> Unit
+            UserOneActivationResult.READ_UNAVAILABLE -> return Kt02h20FlatResetResult.DeviceUnavailable(
+                "Couldn’t confirm FiiO JA11 User 1 before the flat-EQ reset. No bands or global gain were written.",
+            )
+            UserOneActivationResult.SELECTION_FAILED -> return Kt02h20FlatResetResult.TransferFailed(
+                "The FiiO JA11 User 1 selection did not complete in the authorized session. User 1 may now be active; no bands or global gain were written. Refresh before any later write.",
+            )
+            UserOneActivationResult.SELECTION_READ_UNAVAILABLE -> return Kt02h20FlatResetResult.TransferFailed(
+                "FiiO JA11 may have switched to User 1, but the same-session readback did not complete. No bands, global gain, Apply, or Save were sent. Refresh before any later write.",
+            )
+            UserOneActivationResult.SELECTION_NOT_CONFIRMED -> return Kt02h20FlatResetResult.VerificationFailed(
+                "FiiO JA11 did not confirm User 1 active after selection. No bands or global gain were written.",
+            )
+        }
         flatBands.forEachIndexed { index, band ->
             if (!sendPreSaveReport(FiioJa11Protocol.writeBandReport(index, band), transactionSession)) {
                 return Kt02h20FlatResetResult.TransferFailed(
@@ -489,15 +512,6 @@ class FiioJa11Flasher(
         if (!sendPreSaveReport(FiioJa11Protocol.writeGlobalGainReport(0.0), transactionSession)) {
             return Kt02h20FlatResetResult.TransferFailed(
                 "The FiiO JA11 USB session changed or stopped confirming 0 dB global EQ gain. No later commands were sent.",
-            )
-        }
-        if (!sendPreSaveReport(
-                FiioJa11Protocol.writeEqProgramReport(FiioJa11Protocol.EqProgram.USER_1),
-                transactionSession,
-            )
-        ) {
-            return Kt02h20FlatResetResult.TransferFailed(
-                "The FiiO JA11 USB session changed or stopped confirming the flat User 1 selection. No later commands were sent.",
             )
         }
         if (!sendPreSaveReport(FiioJa11Protocol.applyReport(), transactionSession)) {
@@ -603,6 +617,24 @@ class FiioJa11Flasher(
         expected: FiioJa11SessionToken,
     ): Boolean = transport.sendReportInSession(report, expected) == FiioJa11ReportWriteOutcome.COMPLETED
 
+    private suspend fun ensureUserOneActive(
+        expected: FiioJa11SessionToken,
+    ): UserOneActivationResult {
+        val activeProgram = readInSession(expected) { transport.readEqProgramInSession(expected) }
+            ?: return UserOneActivationResult.READ_UNAVAILABLE
+        if (activeProgram == FiioJa11Protocol.EqProgram.USER_1) return UserOneActivationResult.ACTIVE
+        if (!sendPreSaveReport(FiioJa11Protocol.writeEqProgramReport(FiioJa11Protocol.EqProgram.USER_1), expected)) {
+            return UserOneActivationResult.SELECTION_FAILED
+        }
+        val selectedProgram = readInSession(expected) { transport.readEqProgramInSession(expected) }
+            ?: return UserOneActivationResult.SELECTION_READ_UNAVAILABLE
+        return if (selectedProgram == FiioJa11Protocol.EqProgram.USER_1) {
+            UserOneActivationResult.ACTIVE
+        } else {
+            UserOneActivationResult.SELECTION_NOT_CONFIRMED
+        }
+    }
+
     private fun acceptablePostSaveSession(
         expected: FiioJa11SessionToken,
         actual: FiioJa11SessionToken,
@@ -659,6 +691,14 @@ class FiioJa11Flasher(
 
     private companion object {
         const val GLOBAL_GAIN_READBACK_TOLERANCE_DB = 0.001
+    }
+
+    private enum class UserOneActivationResult {
+        ACTIVE,
+        READ_UNAVAILABLE,
+        SELECTION_FAILED,
+        SELECTION_READ_UNAVAILABLE,
+        SELECTION_NOT_CONFIRMED,
     }
 }
 
