@@ -1,6 +1,6 @@
 # FiiO / JadeAudio JA11 protocol notes
 
-Status: **JA11 codec correction and historical Flash/reconnect/restoration paths remain physically evidenced on their exact candidates; J020 restart verification is incomplete, corrected software/emulator gates pass, exact-head CI is pending, Mic On restoration is outstanding, and v0.8.1 physical acceptance is pending**
+Status: **JA11 codec correction and historical Flash/reconnect/restoration paths remain physically evidenced on their exact candidates; J020 restart verification is incomplete, corrected software/emulator gates and all eight required exact-code-head CI rows pass, Mic On restoration is outstanding, and v0.8.1 physical acceptance is pending**
 
 ## 2026-10-08 J020 USB permission and replacement identity findings
 
@@ -59,9 +59,11 @@ identity key remains unchanged, and no uncertain mutation is replayed.
 
 Focused delayed-grant/stale-callback regressions and the full 818-test JVM suite passed, as did
 lint/build/R8 gates and all 64 API 35 emulator tests. The source-bound diagnostic APK and emulator
-runtime build event were verified off-phone. This narrows the software lifecycle defect; it does
-not identify why the J020 replacement session lacked a readable identity and does not prove the
-new candidate will pass on this JA11. Exact-head CI and physical acceptance remain pending.
+runtime build event were verified off-phone. All eight required check rows passed on corrected-code
+PR head `ef688ca1a2c805c349439eb0e9ac24fb456641ad`; check PR #80 for any later documentation-only
+head. This narrows the software lifecycle defect; it does not identify why the J020 replacement
+session lacked a readable identity and does not prove the new candidate will pass on this JA11.
+Physical acceptance remains pending.
 
 ## 2026-09-26 J017 physical evidence — observed reconnect and exact restoration
 

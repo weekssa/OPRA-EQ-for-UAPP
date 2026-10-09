@@ -1,8 +1,9 @@
 # JA11 v0.8.1 physical acceptance plan
 
 J020 ended with Mic Off as the last verified state; Mic On restoration remains outstanding. Run
-this procedure only after the owner is available, G2-G5 are complete, and the corrected exact
-candidate is still valid. One bundled session only. Do not perform research/build/documentation
+this procedure only after the owner is available, G2-G5 are complete, all required checks are green
+on the latest live PR #80 head, and the corrected exact candidate is still valid. One bundled session
+only. Do not perform research/build/documentation
 work while the Pixel is occupied.
 Budget about 25–35 minutes if the existing wireless ADB connection is reusable. If ADB recovery
 requires prolonged troubleshooting or pairing setup, stop before attaching the JA11 or mutating it,

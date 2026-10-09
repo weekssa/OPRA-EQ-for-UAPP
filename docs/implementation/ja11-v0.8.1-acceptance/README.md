@@ -4,8 +4,11 @@ This folder contains the one-session Pixel/JA11 procedure and small host tools. 
 incomplete: its replacement session read Mic Off but did not establish restart identity, and
 restoration to Mic On remains outstanding. The corrected application source is frozen at
 `da1f8e25918065667648d676cb669fed4c803f17`; its source-bound diagnostic APK, isolated API 35
-emulator launch, and host-only ADB preparation are complete. Exact-head CI is still pending. Do not
-request or use the Pixel until exact-head review and CI pass and the owner is available.
+emulator launch, and host-only ADB preparation are complete. All eight required checks passed on
+corrected-code PR head `ef688ca1a2c805c349439eb0e9ac24fb456641ad`; the frozen app source is
+`da1f8e25918065667648d676cb669fed4c803f17`. Check PR #80 for the live status of any later
+documentation-only head. Do not request or use the Pixel until current PR-head review and CI pass
+and the owner is available.
 
 ## J020 diagnostic candidate — superseded; do not install again
 
@@ -23,7 +26,7 @@ not transfer to the corrected source.
 
 ## Corrected diagnostic candidate
 
-**Off-phone artifact verified; exact-head CI pending.** App-source commit:
+**Off-phone artifact and corrected-code CI verified; physical qualification pending.** App-source commit:
 `da1f8e25918065667648d676cb669fed4c803f17`; source tree:
 `aa41aba1ddfe37006aab0f1cfdb21c4df63c2481`.
 

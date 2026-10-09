@@ -34,7 +34,7 @@ baseline is incomplete, or identity is missing/ambiguous. Then:
   result and the complete original baseline is restored. Never start another mutation when
   identity is unavailable.
 
-## 2026-10-08 corrected candidate preflight — exact-head CI pending
+## 2026-10-08 corrected candidate preflight — code-head CI PASS; physical gate pending
 
 The corrected source is `da1f8e25918065667648d676cb669fed4c803f17` (tree
 `aa41aba1ddfe37006aab0f1cfdb21c4df63c2481`). Use diagnostic APK
@@ -43,11 +43,13 @@ The corrected source is `da1f8e25918065667648d676cb669fed4c803f17` (tree
 `com.weekssa.opraeqforuapp.ja11diag`, version `0.8.0-ja11diag`/11, debug signer SHA-256
 `73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`. G2/G3 and R8 pass; the
 JVM suite counted 818 tests with zero failures, errors, or skips, and isolated API 35 instrumentation
-passed 64/64. Emulator runtime reported the exact source SHA. These are software/emulator results;
-the replacement candidate has not been used with Pixel or JA11. Require exact-head PR CI before the
-owner-present physical session. The J020 Mic On restoration-first procedure above remains the
-physical sequence and the last verified hardware state remains Mic Off, not a statement of the
-device's current state.
+passed 64/64. Emulator runtime reported the exact source SHA. All eight required check rows passed
+on corrected-code PR head `ef688ca1a2c805c349439eb0e9ac24fb456641ad`; current checks for any later
+documentation-only PR head are visible in PR #80. These are software/emulator results; the
+replacement candidate has not been used with Pixel or JA11. Require green current PR-head checks
+before the owner-present physical session. The J020 Mic On restoration-first procedure above
+remains the physical sequence and the last verified hardware state remains Mic Off, not a statement
+of the device's current state.
 
 ## 2026-09-26 corrected-codec owner gate — J017 FLASH/RECONNECT/RESTORATION PASS / POWER-CYCLE EVIDENCE PENDING / FINAL RELEASE BLOCKED
 

@@ -70,7 +70,7 @@ the serial with PID, product name, firmware, or port path. The last verified mic
 restoration to the original On state is outstanding. No second write, UAC, Flash, Reset, or Tests
 B/C/D occurred.
 
-## 2026-10-08 corrected software candidate — physical qualification pending
+## 2026-10-08 corrected software candidate — exact-code-head CI PASS; physical qualification pending
 
 The implemented correction is committed at source
 `da1f8e25918065667648d676cb669fed4c803f17`. The permission attempt now survives the initial
@@ -87,7 +87,9 @@ diagnostic APK SHA-256 is
 `73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`. This software evidence does
 not establish that the owner's JA11 exposes a readable unique serial after re-enumeration. J020
 remains the latest physical result; Mic On restoration and all replacement-candidate hardware
-acceptance remain pending. Exact PR-head CI is still pending.
+acceptance remain pending. All eight required PR check rows passed on corrected-code head
+`ef688ca1a2c805c349439eb0e9ac24fb456641ad`; the live check state for any later documentation-only
+head is maintained in PR #80. This does not change the physical boundary.
 
 | Capability | Decision | Evidence / boundary |
 | --- | --- | --- |

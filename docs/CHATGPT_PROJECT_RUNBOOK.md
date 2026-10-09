@@ -910,12 +910,18 @@ timing is this unit's observed result, not an Android API guarantee.
 PR #80 remains draft. Corrected source `da1f8e25918065667648d676cb669fed4c803f17` passes G2/G3,
 R8, and all 64 API 35 emulator tests; its exact-source diagnostic APK has SHA-256
 `767b42591adc92f0e1662480112bf9efe87ce15f51060d20a7aa39118b8d8c24` and the expected debug
-signer. The isolated emulator reported the exact `APP_BUILD_INFO` source SHA. Host-only ADB
-preparation has been refreshed without enumerating devices or services; the live Pixel endpoint
-remains pending. The final independent lifecycle and helper/procedure reviews found no actionable
-issue. Exact-head PR CI remains pending until the synchronized handoff is pushed. The prepared
-phone plan now includes an intentional permission wait beyond the old 10-second fallback, private
-screenshot points, and a hash-verified software rollback procedure.
+signer. The isolated emulator reported the exact `APP_BUILD_INFO` source SHA. All eight required
+check rows passed on corrected-code PR head `ef688ca1a2c805c349439eb0e9ac24fb456641ad`: Android
+CI `37876195583`, CodeQL `37876195604`, catalog currentness `37876195587`, priority-community
+coverage `37876195588`, and Gradle dependency submission `37876206094`. The Android CI API-26
+smoke failed twice while emulator DNS/catalog access was unavailable, then passed on a failed-job-only
+retry with the Manufacturers heading, 1Custom row, and 60-second resumed stability; no source or
+workflow workaround was made. The final independent lifecycle and helper/procedure reviews found no
+actionable issue. Any later documentation-only PR head receives its own current check readback in
+PR #80. Host-only ADB preparation was refreshed without enumerating devices or services; the live
+Pixel endpoint remains pending. The prepared phone plan includes an intentional permission wait
+beyond the old 10-second fallback, private screenshot points, and a hash-verified software rollback
+procedure.
 
 While the owner is away, do not address or enumerate the Pixel with ADB and do not interact with
 the JA11. The next physical session begins with a fresh full baseline and identity check; if Mic is
