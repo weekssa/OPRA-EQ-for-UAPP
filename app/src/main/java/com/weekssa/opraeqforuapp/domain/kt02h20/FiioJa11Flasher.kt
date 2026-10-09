@@ -76,8 +76,17 @@ interface FiioJa11Transport {
      * non-Android transports compatible; Android JA11 overrides it to await the documented
      * power-cycle/re-enumeration before final readback.
      */
-    suspend fun saveToFlash(expected: FiioJa11SessionToken): Boolean =
+    suspend fun saveToFlash(
+        expected: FiioJa11SessionToken,
+        transactionToken: String,
+    ): Boolean =
         ja11RestartWriteWasAccepted(sendReportInSession(FiioJa11Protocol.saveToFlashReport(), expected))
+
+    /** Readback-only recovery for a detach that lands after Save's initial observation window. */
+    suspend fun awaitPostSaveReconnect(
+        expected: FiioJa11SessionToken,
+        transactionToken: String,
+    ): Boolean = false
 }
 
 /**
@@ -116,7 +125,10 @@ class FiioJa11Flasher(
         val result = try {
             flashInternal(profile, trace)
         } catch (error: Throwable) {
-            if (error is CancellationException) throw error
+            if (error is CancellationException) {
+                completeCancelledOperation(trace)
+                throw error
+            }
             Kt02h20FlashResult.TransferFailed(
                 "FiiO JA11 operation stopped unexpectedly: ${error.message ?: "unknown transport error"}.",
             )
@@ -211,19 +223,19 @@ class FiioJa11Flasher(
         }
 
         trace.saveSent()
-        if (!transport.saveToFlash(transactionSession)) {
+        if (!transport.saveToFlash(transactionSession, trace.operationId)) {
             return Kt02h20FlashResult.TransferFailed(
                 "The PEQ was applied to the FiiO JA11, but the device did not complete the persistent Save/reconnect boundary.",
             )
         }
 
-        val finalSession = captureCurrentSessionToken()
-            ?.takeIf { acceptablePostSaveSession(transactionSession, it) }
-            ?: return Kt02h20FlashResult.VerificationFailed(
-                "FiiO JA11 completed Save, but a single supported session could not be confirmed for final readback.",
-            )
-
-        verifyTarget(targetBands, representation.playbackGainDb, finalSession, trace, "FINAL_READBACK")?.let { reason ->
+        verifyPostSaveTarget(
+            expectedBands = targetBands,
+            expectedGlobalGainDb = representation.playbackGainDb,
+            originalSession = transactionSession,
+            transactionToken = trace.operationId,
+            trace = trace,
+        )?.let { reason ->
             return Kt02h20FlashResult.VerificationFailed(
                 "FiiO JA11 accepted Save, but the final readback did not match the intended PEQ. $reason",
             )
@@ -264,7 +276,10 @@ class FiioJa11Flasher(
         val result = try {
             applyEditorInternal(workingCopy, baseline, trace)
         } catch (error: Throwable) {
-            if (error is CancellationException) throw error
+            if (error is CancellationException) {
+                completeCancelledOperation(trace)
+                throw error
+            }
             FiioJa11EditorApplyResult.TransferFailed(
                 "FiiO JA11 editor Apply stopped unexpectedly: ${error.message ?: "unknown transport error"}.",
             )
@@ -421,17 +436,18 @@ class FiioJa11Flasher(
             )
         }
         trace.saveSent()
-        if (!transport.saveToFlash(transactionSession)) {
+        if (!transport.saveToFlash(transactionSession, trace.operationId)) {
             return FiioJa11EditorApplyResult.TransferFailed(
                 "FiiO JA11 applied the reviewed EQ, but the one Save/reconnect boundary did not complete. The requested state was not verified.",
             )
         }
-        val finalSession = captureCurrentSessionToken()
-            ?.takeIf { acceptablePostSaveSession(transactionSession, it) }
-            ?: return FiioJa11EditorApplyResult.VerificationFailed(
-                "FiiO JA11 completed Save, but a single supported session could not be confirmed for final readback.",
-            )
-        verifyTarget(targetBands, quantizedGlobalGainDb, finalSession, trace, "FINAL_READBACK")?.let { reason ->
+        verifyPostSaveTarget(
+            expectedBands = targetBands,
+            expectedGlobalGainDb = quantizedGlobalGainDb,
+            originalSession = transactionSession,
+            transactionToken = trace.operationId,
+            trace = trace,
+        )?.let { reason ->
             return FiioJa11EditorApplyResult.VerificationFailed(
                 "FiiO JA11 editor Apply was not verified after Save. $reason",
             )
@@ -524,17 +540,18 @@ class FiioJa11Flasher(
             return Kt02h20FlatResetResult.VerificationFailed(reason)
         }
         trace.saveSent()
-        if (!transport.saveToFlash(transactionSession)) {
+        if (!transport.saveToFlash(transactionSession, trace.operationId)) {
             return Kt02h20FlatResetResult.TransferFailed(
                 "The FiiO JA11 PEQ is flat in the current session, but the device did not complete the persistent Save/reconnect boundary.",
             )
         }
-        val finalSession = captureCurrentSessionToken()
-            ?.takeIf { acceptablePostSaveSession(transactionSession, it) }
-            ?: return Kt02h20FlatResetResult.VerificationFailed(
-                "FiiO JA11 completed Save, but a single supported session could not be confirmed for final readback.",
-            )
-        verifyTarget(flatBands, 0.0, finalSession, trace, "FINAL_READBACK")?.let { reason ->
+        verifyPostSaveTarget(
+            expectedBands = flatBands,
+            expectedGlobalGainDb = 0.0,
+            originalSession = transactionSession,
+            transactionToken = trace.operationId,
+            trace = trace,
+        )?.let { reason ->
             return Kt02h20FlatResetResult.VerificationFailed(
                 "FiiO JA11 accepted Save, but the final flat-EQ readback did not match. $reason",
             )
@@ -656,6 +673,72 @@ class FiioJa11Flasher(
             actual.usbProductId.let(FiioJa11Protocol::supportsProductId)
     }
 
+    /**
+     * Verify Save on the current session, then permit one readback-only replacement-session
+     * verification if USB detach lands during that readback. No write or Save is replayed.
+     */
+    private suspend fun verifyPostSaveTarget(
+        expectedBands: List<FiioJa11Protocol.Band>,
+        expectedGlobalGainDb: Double,
+        originalSession: FiioJa11SessionToken,
+        transactionToken: String,
+        trace: FiioJa11OperationTraceBuilder,
+    ): String? {
+        var finalSession = captureCurrentSessionToken()
+        if (finalSession == null) {
+            if (!transport.awaitPostSaveReconnect(originalSession, transactionToken)) {
+                return "A single supported session could not be confirmed for final readback."
+            }
+            finalSession = captureCurrentSessionToken()
+                ?: return "The post-Save JA11 session did not become available for final readback."
+        }
+        if (!acceptablePostSaveSession(originalSession, finalSession)) {
+            return "A single supported session could not be confirmed for final readback."
+        }
+
+        var failure = verifyTarget(expectedBands, expectedGlobalGainDb, finalSession, trace, "FINAL_READBACK")
+        if (transport.isCurrentSession(finalSession)) return failure
+
+        val firstFailure = failure
+            ?: "The authorized FiiO JA11 USB session changed after final readback."
+        if (!transport.awaitPostSaveReconnect(originalSession, transactionToken)) {
+            return "$firstFailure The post-Save replacement session did not reconnect before the verification deadline."
+        }
+        val replacementSession = captureCurrentSessionToken()
+            ?: return "$firstFailure No current replacement session was available for fresh readback."
+        if (!acceptablePostSaveSession(originalSession, replacementSession) ||
+            replacementSession.sessionGeneration == finalSession.sessionGeneration
+        ) {
+            return "$firstFailure A single supported matching JA11 session could not be confirmed for fresh readback."
+        }
+
+        failure = verifyTarget(
+            expectedBands,
+            expectedGlobalGainDb,
+            replacementSession,
+            trace,
+            // The transport trace records the session change; the value comparison is still the
+            // authoritative post-Save final readback for success reporting.
+            "FINAL_READBACK",
+        )
+        if (failure != null) return failure
+        return if (transport.isCurrentSession(replacementSession)) {
+            null
+        } else {
+            "The authorized FiiO JA11 USB session changed again during final readback."
+        }
+    }
+
+    private fun completeCancelledOperation(trace: FiioJa11OperationTraceBuilder) {
+        trace.complete(
+            outcome = "Cancelled",
+            stateKnown = false,
+            failureReason = "The operation was cancelled before final JA11 hardware readback completed.",
+        )
+        trace.addEvents(runCatching { transport.endTrace() }.getOrDefault(emptyList()))
+        traceStore.publish(trace.build())
+    }
+
     private suspend fun resetWithTrace(): Kt02h20FlatResetResult {
         val operationId = traceStore.begin("RESET")
         transport.beginTrace(operationId)
@@ -674,7 +757,10 @@ class FiioJa11Flasher(
         val result = try {
             resetInternal(trace)
         } catch (error: Throwable) {
-            if (error is CancellationException) throw error
+            if (error is CancellationException) {
+                completeCancelledOperation(trace)
+                throw error
+            }
             Kt02h20FlatResetResult.TransferFailed(
                 "FiiO JA11 reset stopped unexpectedly: ${error.message ?: "unknown transport error"}.",
             )

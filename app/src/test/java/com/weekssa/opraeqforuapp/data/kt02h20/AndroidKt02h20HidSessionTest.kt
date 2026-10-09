@@ -22,6 +22,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -55,6 +56,12 @@ class AndroidKt02h20HidSessionTest {
     }
 
     @Test
+    fun ja11SaveReconnectDeadlineCoversReconnectAndPermissionPromptWindows() {
+        assertThat(JA11_SAVE_RECONNECT_TIMEOUT_MILLIS)
+            .isAtLeast(JA11_PERMISSION_PROMPT_MAX_DURATION_MILLIS + 20_000L)
+    }
+
+    @Test
     fun openedConnectionSerialCanFillOnlyTheMissingJa11DeviceSerial() = runBlocking {
         val device = usbDevice(
             deviceName = "/dev/bus/usb/001/007",
@@ -84,6 +91,66 @@ class AndroidKt02h20HidSessionTest {
         assertThat(hid.deviceSerialIdentity).isEqualTo("connection-only-serial")
         assertThat(fiioJa11SerialIdentity(hid.deviceFingerprintKey))
             .isEqualTo("connection-only-serial")
+    }
+
+    @Test
+    fun optionalSaveReconnectWaitsForDetachAfterTheFormer350MillisecondWindow() = runBlocking {
+        val deviceName = "/dev/bus/usb/001/078"
+        val original = usbDevice(deviceName, 0x0102, null, 3)
+        val replacement = usbDevice(deviceName, 0x0102, null, 3)
+        usbShadow.addOrUpdateUsbDevice(original, true)
+        val hid = newSession(
+            blockRetryWhilePermissionPending = true,
+            permissionResponseTimeoutMillis = 500,
+            permissionPromptMaxDurationMillis = 25_000,
+            requireUniqueTarget = true,
+        )
+
+        hid.connect()
+        assertThat(awaitState { it === Kt02h20ConnectionState.Connected })
+            .isSameInstanceAs(Kt02h20ConnectionState.Connected)
+        val previousGeneration = hid.sessionGeneration
+        val previousDetachGeneration = hid.detachGeneration
+        val transactionToken = "late-save-detach-test"
+        assertThat(hid.setExpectedRestartTransactionToken(transactionToken)).isTrue()
+
+        val reconnect = async {
+            hid.awaitOptionalReconnectAfterMutation(
+                previousGeneration = previousGeneration,
+                previousDetachGeneration = previousDetachGeneration,
+                observationMillis = JA11_SAVE_REENUMERATION_OBSERVATION_MILLIS,
+                timeoutMillis = 2_000,
+            )
+        }
+        delay(500)
+        assertThat(reconnect.isCompleted).isFalse()
+
+        usbShadow.removeUsbDevice(original)
+        context.sendBroadcast(
+            Intent(UsbManager.ACTION_USB_DEVICE_DETACHED)
+                .setPackage(context.packageName)
+                .putExtra(UsbManager.EXTRA_DEVICE, original),
+        )
+        Shadows.shadowOf(Looper.getMainLooper()).idle()
+        assertThat(awaitState { it === Kt02h20ConnectionState.Disconnected })
+            .isSameInstanceAs(Kt02h20ConnectionState.Disconnected)
+        delay(25)
+
+        usbShadow.addOrUpdateUsbDevice(replacement, true)
+        context.sendBroadcast(
+            Intent(UsbManager.ACTION_USB_DEVICE_ATTACHED)
+                .setPackage(context.packageName)
+                .putExtra(UsbManager.EXTRA_DEVICE, replacement),
+        )
+        Shadows.shadowOf(Looper.getMainLooper()).idle()
+        hid.connectAutomatically()
+        assertThat(awaitState { it === Kt02h20ConnectionState.Connected })
+            .isSameInstanceAs(Kt02h20ConnectionState.Connected)
+
+        assertThat(withTimeout(2_000) { reconnect.await() }).isTrue()
+        assertThat(hid.sessionGeneration).isGreaterThan(previousGeneration)
+        assertThat(hid.detachGeneration).isGreaterThan(previousDetachGeneration)
+        hid.clearExpectedRestartTransactionToken(transactionToken)
     }
 
     @Test

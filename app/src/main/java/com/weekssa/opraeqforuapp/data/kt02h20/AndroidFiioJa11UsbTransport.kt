@@ -12,7 +12,10 @@ import com.weekssa.opraeqforuapp.domain.kt02h20.toJa11TraceHex
 import java.io.Closeable
 import kotlinx.coroutines.flow.StateFlow
 
-private const val JA11_PERMISSION_PROMPT_MAX_DURATION_MILLIS = 25_000L
+internal const val JA11_PERMISSION_PROMPT_MAX_DURATION_MILLIS = 25_000L
+internal const val JA11_SAVE_REENUMERATION_OBSERVATION_MILLIS = 1_000L
+// Allow the shared 20s re-enumeration window followed by JA11's full 25s permission-prompt lifetime.
+internal const val JA11_SAVE_RECONNECT_TIMEOUT_MILLIS = 45_000L
 
 class AndroidFiioJa11UsbTransport(
     context: Context,
@@ -63,6 +66,7 @@ class AndroidFiioJa11UsbTransport(
     private val traceLock = Any()
     private var traceStartMillis: Long? = null
     private val traceEvents = mutableListOf<FiioJa11TransportEvent>()
+    private var saveRestartTransactionToken: String? = null
 
     override fun beginTrace(operationId: String) {
         synchronized(traceLock) {
@@ -71,13 +75,26 @@ class AndroidFiioJa11UsbTransport(
         }
     }
 
-    override fun endTrace(): List<FiioJa11TransportEvent> =
-        synchronized(traceLock) {
+    override fun endTrace(): List<FiioJa11TransportEvent> {
+        val (events, transactionToken) = synchronized(traceLock) {
             val result = traceEvents.toList()
+            val token = saveRestartTransactionToken
+            saveRestartTransactionToken = null
             traceStartMillis = null
             traceEvents.clear()
-            result
+            result to token
         }
+        transactionToken?.let { token ->
+            hid.clearExpectedRestartTransactionToken(token)
+            Ja11DiagnosticLog.event(
+                "SAVE_RESTART_TRANSACTION_RELEASED",
+                "transactionToken" to token,
+                "sessionGeneration" to sessionGeneration,
+                "detachGeneration" to detachGeneration,
+            )
+        }
+        return events
+    }
 
     fun connect() = hid.connect()
 
@@ -219,22 +236,85 @@ class AndroidFiioJa11UsbTransport(
             expectedSession = expected,
         )
 
-    override suspend fun saveToFlash(expected: FiioJa11SessionToken): Boolean {
+    override suspend fun saveToFlash(
+        expected: FiioJa11SessionToken,
+        transactionToken: String,
+    ): Boolean {
         if (!isCurrentSession(expected)) return false
+        if (!hid.setExpectedRestartTransactionToken(transactionToken)) return false
+        synchronized(traceLock) {
+            saveRestartTransactionToken = transactionToken
+        }
         val previousGeneration = expected.sessionGeneration
         val previousDetachGeneration = expected.detachGeneration
+        Ja11DiagnosticLog.event(
+            "SAVE_RESTART_TRANSACTION_BOUND",
+            "transactionToken" to transactionToken,
+            "sessionGeneration" to previousGeneration,
+            "detachGeneration" to previousDetachGeneration,
+        )
         if (!ja11RestartWriteWasAccepted(
                 sendReportInSession(FiioJa11Protocol.saveToFlashReport(), expected),
             )
-        ) return false
+        ) {
+            Ja11DiagnosticLog.event(
+                "SAVE_RESTART_WRITE_NOT_ACCEPTED",
+                "transactionToken" to transactionToken,
+                "sessionGeneration" to sessionGeneration,
+                "detachGeneration" to detachGeneration,
+            )
+            return false
+        }
 
         // FiiO documents Save as a chip power-cycle/restart boundary. Final readback must use a
         // fresh session when Android observed detach/attach, while unchanged healthy sessions
         // remain accepted for firmware variants that persist without re-enumerating.
-        return hid.awaitOptionalReconnectAfterMutation(
+        val boundaryComplete = hid.awaitOptionalReconnectAfterMutation(
             previousGeneration = previousGeneration,
             previousDetachGeneration = previousDetachGeneration,
+            observationMillis = JA11_SAVE_REENUMERATION_OBSERVATION_MILLIS,
+            timeoutMillis = JA11_SAVE_RECONNECT_TIMEOUT_MILLIS,
         )
+        Ja11DiagnosticLog.event(
+            "SAVE_RECONNECT_BOUNDARY_RESULT",
+            "transactionToken" to transactionToken,
+            "result" to boundaryComplete,
+            "sessionGeneration" to sessionGeneration,
+            "detachGeneration" to detachGeneration,
+        )
+        return boundaryComplete
+    }
+
+    override suspend fun awaitPostSaveReconnect(
+        expected: FiioJa11SessionToken,
+        transactionToken: String,
+    ): Boolean {
+        if (synchronized(traceLock) { saveRestartTransactionToken } != transactionToken) return false
+        if (isCurrentSession(expected)) return false
+        Ja11DiagnosticLog.event(
+            "SAVE_LATE_RECONNECT_WAIT_STARTED",
+            "transactionToken" to transactionToken,
+            "previousSessionGeneration" to expected.sessionGeneration,
+            "previousDetachGeneration" to expected.detachGeneration,
+            "sessionGeneration" to sessionGeneration,
+            "detachGeneration" to detachGeneration,
+            "supportedCandidateCount" to supportedJa11CandidateCount,
+        )
+        val reconnected = hid.awaitReconnectAfterMutation(
+            previousGeneration = expected.sessionGeneration,
+            previousDetachGeneration = expected.detachGeneration,
+            observationMillis = 0L,
+            timeoutMillis = JA11_SAVE_RECONNECT_TIMEOUT_MILLIS,
+        )
+        Ja11DiagnosticLog.event(
+            "SAVE_LATE_RECONNECT_WAIT_RESULT",
+            "transactionToken" to transactionToken,
+            "result" to reconnected,
+            "sessionGeneration" to sessionGeneration,
+            "detachGeneration" to detachGeneration,
+            "supportedCandidateCount" to supportedJa11CandidateCount,
+        )
+        return reconnected
     }
 
     override suspend fun sendReport(report: ByteArray): Boolean {

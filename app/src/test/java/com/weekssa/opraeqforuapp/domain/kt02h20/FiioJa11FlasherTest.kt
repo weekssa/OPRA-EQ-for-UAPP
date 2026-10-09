@@ -8,6 +8,7 @@ import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditorStartResult
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotFactory
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
+import com.weekssa.opraeqforuapp.ui.screens.fiioJa11OperationStatusPresentation
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -314,6 +315,117 @@ class FiioJa11FlasherTest {
         assertEquals(1, transport.saveCount)
         assertEquals(1, transport.sentCommands.count { it == 0x19 })
         assertTrue(transport.readGenerations.takeLast(7).all { it == 2L })
+    }
+
+    @Test
+    fun delayedSaveDetachDuringFinalReadbackUsesOnlyReplacementSessionAndSendsOneSave() = runBlocking {
+        val transport = FakeJa11Transport(
+            serial = null,
+            detachDuringPostSaveReadBandIndex = 3,
+        )
+        val flasher = FiioJa11Flasher(transport)
+
+        val result = flasher.flash(exactProfile())
+
+        assertTrue(result.toString(), result is Kt02h20FlashResult.Success)
+        assertEquals(1, transport.saveCount)
+        assertEquals(1, transport.sentCommands.count { it == 0x19 })
+        assertEquals(1, transport.postSaveReconnectWaitCount)
+        assertTrue(transport.saveTransactionTokens.single().isNotBlank())
+        assertEquals(2L, transport.sessionGeneration)
+        assertTrue(transport.readGenerations.takeLast(7).all { it == 2L })
+        val trace = requireNotNull(flasher.lastOperationTrace.value)
+        assertEquals("Success", trace.outcome)
+        assertTrue(trace.stateKnown)
+        assertEquals("FINAL_READBACK", trace.comparisonPhase)
+        assertTrue(FiioJa11OperationStage.FINAL_READBACK in trace.stages)
+        assertTrue(FiioJa11OperationStage.VERIFIED in trace.stages)
+        assertTrue(fiioJa11OperationStatusPresentation(trace).verified)
+    }
+
+    @Test
+    fun delayedSaveReconnectTimeoutFailsWithoutRetryingAnyWrite() = runBlocking {
+        val transport = FakeJa11Transport(
+            serial = null,
+            detachDuringPostSaveReadBandIndex = 3,
+            acceptDelayedPostSaveReconnect = false,
+        )
+
+        val result = FiioJa11Flasher(transport).flash(exactProfile())
+
+        assertTrue(result.toString(), result is Kt02h20FlashResult.VerificationFailed)
+        assertEquals(1, transport.saveCount)
+        assertEquals(1, transport.sentCommands.count { it == 0x19 })
+        assertEquals(1, transport.postSaveReconnectWaitCount)
+    }
+
+    @Test
+    fun ambiguousCandidateAfterLateSaveReconnectPreventsSuccessWithoutRetryingSave() = runBlocking {
+        val transport = FakeJa11Transport(
+            serial = null,
+            detachDuringPostSaveReadBandIndex = 3,
+            candidateCountAfterDelayedReconnect = 2,
+        )
+
+        val result = FiioJa11Flasher(transport).flash(exactProfile())
+
+        assertTrue(result.toString(), result is Kt02h20FlashResult.VerificationFailed)
+        assertEquals(1, transport.saveCount)
+        assertEquals(1, transport.sentCommands.count { it == 0x19 })
+        assertEquals(1, transport.postSaveReconnectWaitCount)
+    }
+
+    @Test
+    fun serialMismatchAfterLateSaveReconnectPreventsSuccessWithoutRetryingSave() = runBlocking {
+        val transport = FakeJa11Transport(
+            detachDuringPostSaveReadBandIndex = 3,
+            serialAfterDelayedReconnect = "different-ja11",
+        )
+
+        val result = FiioJa11Flasher(transport).flash(exactProfile())
+
+        assertTrue(result.toString(), result is Kt02h20FlashResult.VerificationFailed)
+        assertEquals(1, transport.saveCount)
+        assertEquals(1, transport.sentCommands.count { it == 0x19 })
+        assertEquals(1, transport.postSaveReconnectWaitCount)
+    }
+
+    @Test
+    fun productIdChangeAfterLateSaveReconnectPreventsSuccessWithoutRetryingSave() = runBlocking {
+        val transport = FakeJa11Transport(
+            detachDuringPostSaveReadBandIndex = 3,
+            productIdAfterDelayedReconnect = FiioJa11Protocol.PRODUCT_ID_UAC_1,
+        )
+
+        val result = FiioJa11Flasher(transport).flash(exactProfile())
+
+        assertTrue(result.toString(), result is Kt02h20FlashResult.VerificationFailed)
+        assertEquals(1, transport.saveCount)
+        assertEquals(1, transport.sentCommands.count { it == 0x19 })
+        assertEquals(1, transport.postSaveReconnectWaitCount)
+    }
+
+    @Test
+    fun cancellationDuringLateSaveReconnectEndsTraceAndDoesNotRetrySave() = runBlocking {
+        val transport = FakeJa11Transport(
+            serial = null,
+            detachDuringPostSaveReadBandIndex = 3,
+            cancelDuringDelayedPostSaveReconnect = true,
+        )
+        val flasher = FiioJa11Flasher(transport)
+
+        val result = runCatching { flasher.flash(exactProfile()) }
+
+        assertTrue(result.exceptionOrNull() is kotlinx.coroutines.CancellationException)
+        assertEquals(1, transport.traceEndCount)
+        assertEquals(1, transport.saveCount)
+        assertEquals(1, transport.sentCommands.count { it == 0x19 })
+        val status = flasher.operationStatus.value as FiioJa11OperationStatus.Completed
+        assertEquals("Cancelled", status.trace.outcome)
+        assertFalse(status.trace.stateKnown)
+        val presentation = fiioJa11OperationStatusPresentation(status.trace)
+        assertFalse(presentation.verified)
+        assertTrue(presentation.message.contains("Do not retry the hardware action"))
     }
 
     @Test
@@ -629,6 +741,12 @@ class FiioJa11FlasherTest {
         private val candidateCountAfterSave: Int? = null,
         private val replacementSerial: String? = null,
         private val replacementProductId: Int? = null,
+        private val detachDuringPostSaveReadBandIndex: Int? = null,
+        private val acceptDelayedPostSaveReconnect: Boolean = true,
+        private val cancelDuringDelayedPostSaveReconnect: Boolean = false,
+        private val candidateCountAfterDelayedReconnect: Int? = null,
+        private val serialAfterDelayedReconnect: String? = null,
+        private val productIdAfterDelayedReconnect: Int? = null,
     ) : FiioJa11Transport {
         override var deviceFingerprintKey: String? = serial?.let { "serial=$it|vid=2972" } ?: "vid=2972"
         override val deviceSerialIdentity: String?
@@ -648,7 +766,10 @@ class FiioJa11FlasherTest {
         val operationHistory = mutableListOf<String>()
         val sentAtGenerations = mutableListOf<Long>()
         val readGenerations = mutableListOf<Long>()
+        val saveTransactionTokens = mutableListOf<String>()
         var saveCount = 0
+        var postSaveReconnectWaitCount = 0
+        var traceEndCount = 0
         var writeStarted = false
         var bandReadsAfterWrites = 0
         var globalGainReadsAfterWrites = 0
@@ -656,6 +777,7 @@ class FiioJa11FlasherTest {
         private var traceActive = false
         private val traceEvents = mutableListOf<FiioJa11TransportEvent>()
         private var programChangedDuringGainRead = false
+        private var lateSaveDetachInjected = false
 
         fun bandsFor(program: FiioJa11Protocol.EqProgram): MutableList<FiioJa11Protocol.Band> =
             requireNotNull(bandsByProgram[program])
@@ -666,6 +788,7 @@ class FiioJa11FlasherTest {
         }
 
         override fun endTrace(): List<FiioJa11TransportEvent> {
+            traceEndCount++
             traceActive = false
             return traceEvents.toList()
         }
@@ -681,7 +804,14 @@ class FiioJa11FlasherTest {
         override suspend fun readBandInSession(
             index: Int,
             expected: FiioJa11SessionToken,
-        ): FiioJa11Protocol.Band? = readPinned(expected) { readBand(index) }
+        ): FiioJa11Protocol.Band? {
+            if (saveCount > 0 && !lateSaveDetachInjected && index == detachDuringPostSaveReadBandIndex) {
+                lateSaveDetachInjected = true
+                changeSession()
+                return null
+            }
+            return readPinned(expected) { readBand(index) }
+        }
 
         override suspend fun readGlobalGainDb(): Double? {
             readGenerations += sessionGeneration
@@ -719,7 +849,8 @@ class FiioJa11FlasherTest {
             expected: FiioJa11SessionToken,
         ): FiioJa11Protocol.EqProgram? = readPinned(expected, ::readEqProgram)
 
-        override suspend fun saveToFlash(expected: FiioJa11SessionToken): Boolean {
+        override suspend fun saveToFlash(expected: FiioJa11SessionToken, transactionToken: String): Boolean {
+            saveTransactionTokens += transactionToken
             val accepted = ja11RestartWriteWasAccepted(
                 sendReportInSession(FiioJa11Protocol.saveToFlashReport(), expected),
             ) && saveReconnectAccepted
@@ -731,6 +862,25 @@ class FiioJa11FlasherTest {
                 if (reconnectAfterSave) changeSession()
             }
             return accepted
+        }
+
+        override suspend fun awaitPostSaveReconnect(
+            expected: FiioJa11SessionToken,
+            transactionToken: String,
+        ): Boolean {
+            postSaveReconnectWaitCount += 1
+            if (cancelDuringDelayedPostSaveReconnect) {
+                throw kotlinx.coroutines.CancellationException("simulated operation cancellation")
+            }
+            if (lateSaveDetachInjected) {
+                candidateCountAfterDelayedReconnect?.let { supportedJa11CandidateCount = it }
+                serialAfterDelayedReconnect?.let { deviceFingerprintKey = "serial=$it|vid=2972" }
+                productIdAfterDelayedReconnect?.let { usbProductId = it }
+            }
+            return acceptDelayedPostSaveReconnect &&
+                saveTransactionTokens.lastOrNull() == transactionToken &&
+                sessionGeneration > expected.sessionGeneration &&
+                detachGeneration > expected.detachGeneration
         }
 
         override suspend fun sendReport(report: ByteArray): Boolean {
