@@ -4,11 +4,12 @@
 
 The owner-approved Model D policy supersedes the serial-required gates in the historical
 2026-10-08 sections below. The source-bound candidate passes local gates, API 35 emulator
-instrumentation, independent review, and all eight checks on its app-source commit; the candidate
-metadata/docs successor must also pass all eight checks on its exact PR head. Keep the Pixel unused
-until that live exact-head CI and the remaining preflight are confirmed. Then request a new explicit
-phone window with the exact source/APK, test plan, expected writes/resets, Android permission
-interaction, occupancy, pass/fail conditions, and restoration obligations.
+instrumentation, independent review, and all eight checks on its app-source commit and checked
+docs/helper head `69076094811c13365bafecb9a1e0cf50be8d14f0`. The initial UI job attempt on that head
+recorded a Nexus Launcher ANR/focus outage; its targeted retry passed 64/64. Keep the Pixel unused
+until all eight checks pass on the exact live PR head and the remaining preflight is confirmed. Then
+request a new explicit phone window with the exact source/APK, test plan, expected writes/resets,
+Android permission interaction, occupancy, pass/fail conditions, and restoration obligations.
 
 Before any write, install and verify that exact candidate, then complete a read-only baseline. The
 JA11 session must show the exact FiiO VID/PID allowlist (`0x2972:0x0101` or `0x2972:0x0102`), one

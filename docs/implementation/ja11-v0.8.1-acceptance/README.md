@@ -83,13 +83,15 @@ tree `fdb6c8d10c8aa865da1a4818d22a7c14b2559b21`.
 
 ## Current Model D candidate — off-phone qualification
 
-The following source-bound diagnostic APK is under qualification. Its artifact bytes, package,
-version, signer, and embedded source SHA are verified. The exact APK cold-launched on the isolated
-API 35 AVD and emitted matching `APP_BUILD_INFO`; all 64 applicable instrumentation tests passed
-against the same production source snapshot's debug test variant. All eight checks pass on the
-app-source commit. The docs/helper successor must also pass all eight checks on its exact live PR
-head before the physical candidate is frozen. Candidate and rollback artifact pins were reverified
-host-only; no Pixel or Android device was enumerated.
+The source-bound diagnostic APK's artifact bytes, package, version, signer, and embedded source SHA
+are verified. The exact APK cold-launched on the isolated API 35 AVD and emitted matching
+`APP_BUILD_INFO`; all 64 applicable instrumentation tests passed against the same production source
+snapshot's debug test variant. All eight checks pass on the app-source commit and on docs/helper PR
+head `69076094811c13365bafecb9a1e0cf50be8d14f0`. That head's first UI attempt exposed a Nexus
+Launcher ANR/focus outage; the targeted retry passed 64/64 with no failures, errors, or skips. A
+status-only docs successor follows this checkpoint and must have its own 8/8 exact-head check before
+the physical candidate is frozen. Candidate and rollback APK pins were reverified host-only; no
+Pixel or Android device was enumerated.
 
 - Production source commit/tree: `1d19067c9150aae1b09e01fafb8af3647bf65f71` /
   `e108d58a6863e594a6dadbc0d2f4fb745583c5a3`.
@@ -98,9 +100,10 @@ host-only; no Pixel or Android device was enumerated.
 - Package/version/code: `com.weekssa.opraeqforuapp.ja11diag`, `0.8.0-ja11diag` / `11`.
 - Debug signer certificate SHA-256: `73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`; APK v2 signature verified.
 - Private APK and sidecar: `/private/tmp/ja11-v0.8.1-model-d-1d19067c/`.
-- PR #80 is open and draft. All eight checks pass on source commit `1d19067c`; after the docs/helper
-  successor is pushed, confirm all eight on that exact PR head. Checks on prior heads do not qualify
-  the final PR state.
+- PR #80 is open and draft. The last checked docs/helper head before this status update is
+  `69076094811c13365bafecb9a1e0cf50be8d14f0`, with all eight checks green, including the UI retry.
+  The exact live head must remain 8/8 green before a phone window; checks on earlier heads do not
+  qualify the final PR state.
 
 The helper below pins this candidate's source and APK hashes plus the verified J024 base APK as
 the prior-installed and rollback artifact. Reverify those pins against the private sidecar before

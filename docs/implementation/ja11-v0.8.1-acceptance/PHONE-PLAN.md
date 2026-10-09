@@ -15,10 +15,14 @@ been built and artifact-verified. APK SHA-256 is
 `73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`. The exact diagnostic APK
 cold-launched on the isolated API 35 AVD and reported the exact source SHA. All 64 applicable tests
 passed on the same source snapshot's debug test variant because the project does not provide a
-diagnostic-variant instrumentation APK. All eight checks pass on the app-source SHA. The
-documentation/helper successor is a separate PR head and must also pass all eight checks before
-the physical candidate is frozen. Candidate and rollback artifact pins have been verified
-host-only, without enumerating an Android device.
+diagnostic-variant instrumentation APK. All eight checks passed on app-source SHA
+`1d19067c9150aae1b09e01fafb8af3647bf65f71` and docs/helper PR head
+`69076094811c13365bafecb9a1e0cf50be8d14f0`. The first UI job attempt on that head failed after a
+recorded Nexus Launcher input-dispatch ANR; its targeted retry passed 64/64 with no failures, errors,
+or skips. Candidate and rollback artifact pins were
+reverified host-only, without enumerating an Android device. This status synchronization creates a
+further docs-only head; require all eight checks on the exact live head before freezing the physical
+candidate.
 
 Do not use the Pixel until local/emulator gates, independent review, all eight checks on the exact
 final PR head, candidate artifact verification, and host-only preflight are complete. When those

@@ -1057,6 +1057,20 @@ reads Off, restoring it to the original On state is the first mutation, with exp
 and authoritative post-reconnect readback; if it reads On, skip the write. Stop and release the Pixel
 if identity/cardinality, permission, generation, write outcome, or readback becomes uncertain.
 
+### 2026-10-09 Model D exact-head CI and artifact checkpoint
+
+Production source `1d19067c9150aae1b09e01fafb8af3647bf65f71` and diagnostic APK
+`23adf9f4955b056f110562362717c706767b7e3ecc50225c07439a3ff5c23711` remain unchanged. The exact
+docs/helper PR head `69076094811c13365bafecb9a1e0cf50be8d14f0` passed all eight checks. Its first
+emulator UI attempt recorded a Nexus Launcher input-dispatch ANR and app-window focus loss; the
+targeted retry passed all 64 instrumentation tests with no failures, errors, or skips. The retry
+report is artifact `11604946659`, SHA-256
+`c2eaf300f9b2f16f8701e79ca27fb6c3d2a3a7bf3a559b55278197950fe2a0fd`. Candidate and rollback APK
+hashes, package/version, v2 signature and signer were reverified host-only. This status update is
+another docs-only PR successor, so read all eight checks on the exact live PR head before requesting
+the phone window. No physical device or JA11 was enumerated or contacted; physical acceptance
+remains gated on a fresh owner confirmation.
+
 ## 2026-10-09 JA11 Model D off-phone candidate checkpoint
 
 Production source commit `1d19067c9150aae1b09e01fafb8af3647bf65f71` implements the approved

@@ -438,3 +438,33 @@ This confirms CI for the production app-source SHA and the candidate APK's sourc
 acceptance-plan, and helper-pin documentation is being committed separately; require all eight
 checks again on the exact live PR head after that successor is pushed. No Pixel or JA11 command was
 issued, and this CI result does not establish physical behavior or change J020/J021/J024 evidence.
+
+## 2026-10-09 Model D checked docs/helper PR head
+
+Production app-source commit `1d19067c9150aae1b09e01fafb8af3647bf65f71` and its exact diagnostic
+APK remain unchanged. Exact docs/helper PR head `69076094811c13365bafecb9a1e0cf50be8d14f0` passed
+all eight required checks: Android CI build, emulator UI, API-26 smoke; CodeQL; Analyze Kotlin;
+`validate`; `validate-priority-community`; and `submit-gradle`. The Android CI run is
+[37904380928](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/37904380928), the targeted
+UI retry job is
+[113739278865](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/37904380928/job/113739278865),
+CodeQL is [113736544021](https://github.com/weekssa/OPRA-EQ-for-UAPP/runs/113736544021), Analyze
+Kotlin is [113734198393](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/37904380929/job/113734198393),
+`validate` is [113734198229](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/37904380924/job/113734198229),
+priority-community coverage is
+[113734198946](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/37904381046/job/113734198946),
+and Gradle submission is
+[113734183636](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/37904374382/job/113734183636).
+The first UI attempt reported focus loss after a Nexus Launcher input-dispatch ANR; the targeted retry
+completed all 64 instrumentation tests with zero failures, errors, or skips. Retry report artifact
+`11604946659` has SHA-256
+`c2eaf300f9b2f16f8701e79ca27fb6c3d2a3a7bf3a559b55278197950fe2a0fd`.
+
+Host-only verification reconfirmed the Model D diagnostic APK SHA-256
+`23adf9f4955b056f110562362717c706767b7e3ecc50225c07439a3ff5c23711` and rollback APK SHA-256
+`ee0fe4fbfaae7b3f959d4122f0c21c128dffdf21d47586376ee383e2534ceb0d`; both report package
+`com.weekssa.opraeqforuapp.ja11diag`, version `0.8.0-ja11diag` / 11, one v2 signer with SHA-256
+`73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`, and the expected launchable
+activity. No Pixel, physical Android device, or JA11 was enumerated or contacted. The status-only
+documentation successor still requires its own exact-head CI pass before any phone-window request;
+physical acceptance and Mic restoration remain pending.
