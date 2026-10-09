@@ -17,8 +17,9 @@ rewrite or broaden this append-only hardware evidence.
 
 JA11 has historical physical Flash/Save/final-readback and observed reconnect/restoration passes on
 the exact J016/J017 candidates; explicit power-cycle retention and full hardware qualification
-remain pending. The latest physical record is J020, an incomplete/negative restart-verification
-result on source `a78808443c71d688e0f338e96495847569fe12f7`. One Mic On-to-Off command completed and
+remain pending. J020 is the latest mutation record and is an incomplete/negative
+restart-verification result on source `a78808443c71d688e0f338e96495847569fe12f7`; newer J021 is a
+read-only identity observation on a different candidate. One Mic On-to-Off command completed and
 the replacement session freshly read Mic Off, but the app did not emit restart-verifier events.
 USB permission arrived about 18.5 seconds after the request, and the replacement session's
 identity was unavailable even though that session was current. The last verified device state is
@@ -236,3 +237,32 @@ replacement-session result, restart verification, mutation test, or physical pas
   only when `UsbDevice.serialNumber` returns null. Blank values and exceptions still leave identity
   unavailable; other shared transports keep this fallback disabled. This is an off-phone candidate
   under test and has no physical result yet.
+
+## 2026-10-08 exact-source software candidate preflight — not physical evidence
+
+The replacement application source is commit `616958037349e2f0e0784a556c6430b0de6ceb18`, tree
+`fdb6c8d10c8aa865da1a4818d22a7c14b2559b21`. Its diagnostic APK is
+`opra-eq-ja11diag-0.8.0-source-61695803.apk`, SHA-256
+`ee0fe4fbfaae7b3f959d4122f0c21c128dffdf21d47586376ee383e2534ceb0d`, package
+`com.weekssa.opraeqforuapp.ja11diag`, version `0.8.0-ja11diag`/11, signed with the established
+debug certificate SHA-256 `73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`.
+
+Local G0/G2/G3 and R8 verification passed. The full JVM XML results contain 825 tests, zero
+failures/errors/skips. The wiped API 35 emulator cold-launched the exact candidate and reported the
+exact source in `APP_BUILD_INFO`; Android instrumentation passed 64/64. Full emulator and
+source-bound log evidence is private under `/private/tmp/ja11-v0.8.1-acceptance-61695803/`. These
+results do not establish physical serial availability or JA11 behavior. Exact final PR-head checks,
+fresh physical identity, restoration of Mic On, and the remaining physical acceptance are pending.
+J020 remains the latest mutation record; J021 remains the latest physical observation.
+
+## 2026-10-08 exact diagnostic artifact revalidation — not physical evidence
+
+During the resumed acceptance preflight, the frozen APK at
+`/private/tmp/ja11-v0.8.1-acceptance-61695803/opra-eq-ja11diag-0.8.0-source-61695803.apk` was
+rechecked. Its SHA-256 remains
+`ee0fe4fbfaae7b3f959d4122f0c21c128dffdf21d47586376ee383e2534ceb0d`; package is
+`com.weekssa.opraeqforuapp.ja11diag`; version is `0.8.0-ja11diag`/11; and `apksigner` verifies one
+v2 signer with certificate SHA-256
+`73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`. The exact source-bound API
+35 emulator launch and 64/64 instrumentation results remain recorded above. This readback proves
+local artifact identity only; physical serial availability and JA11 behavior remain unverified.

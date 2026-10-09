@@ -91,6 +91,16 @@ acceptance remain pending. All eight required PR check rows passed on corrected-
 `ef688ca1a2c805c349439eb0e9ac24fb456641ad`; the live check state for any later documentation-only
 head is maintained in PR #80. This does not change the physical boundary.
 
+## 2026-10-08 opened-connection fallback candidate
+
+The current application source is `616958037349e2f0e0784a556c6430b0de6ceb18`, tree
+`fdb6c8d10c8aa865da1a4818d22a7c14b2559b21`. Its JA11-only fallback reads the serial from the
+already opened connection only when the device-level getter returns null. Local full gates pass,
+the JVM suite has 825 tests with zero failures/errors/skips, and the clean API 35 emulator passed
+64/64 instrumentation. Exact-head PR #80 checks and physical identity/restore testing remain pending.
+This does not prove that the connection exposes the JA11 serial or that identity succeeds after
+re-enumeration.
+
 | Capability | Decision | Evidence / boundary |
 | --- | --- | --- |
 | Exact JA11 USB identity, VID `0x2972`, UAC PIDs `0x0101`/`0x0102` | SUPPORTED_AND_IMPLEMENTED; physical pending | Strict allowlist and dynamic HID interface discovery are implemented. Physical identity/PID for J001 was not captured. |
@@ -105,7 +115,7 @@ head is maintained in PR #80. This does not change the physical boundary.
 | Session-generation enforcement across Flash | SUPPORTED_AND_IMPLEMENTED; AUTOMATED GATES PASS; PHYSICAL PENDING | The JA11 Android transport pins reads and ordinary writes to one session/detach generation; Save remains the explicit lifecycle exception and waits for its reconnect boundary. Focused tests, Android CI, signed emulator install/cold launch, and the exact signed candidate all pass. Physical lifecycle behavior remains unqualified. |
 | Output volume, presets, headset/UAC controls | SOFTWARE IMPLEMENTED; PHYSICAL PENDING | These controls are outside the failed EQ-gain root-cause boundary; owner reports that general controls work do not qualify Flash or persistence. |
 | Headset/mic restart and automatic DEVICE verification | IMPLEMENTED; J020 INCOMPLETE/NEGATIVE ON SUPERSEDED CANDIDATE; CURRENT FIX PHYSICAL PENDING | J020's On-to-Off write completed and a fresh session read Mic Off, but no automatic verifier event was emitted. Permission arrived about 18.5 seconds after request; its interaction with the former 10-second fallback is fixed in software and has automated delayed-grant coverage. Original Mic On restoration remains outstanding. |
-| Stable JA11 identity across restart | UNIQUE NONBLANK USB SERIAL REQUIRED; J021 `UsbDevice.serialNumber` NULL WITH PERMISSION; OPENED-CONNECTION FALLBACK UNDER TEST | J020's replacement session was current but identity was unavailable. J021 separately confirms that the initial-session `UsbDevice.serialNumber` getter returned null with permission granted; it does not prove the descriptor lacks a serial or resolve J020. The current off-phone change reads the opened connection's standard serial only when that getter returns null, only for JA11, and still fails closed for blank values or exceptions. Physical result pending. |
+| Stable JA11 identity across restart | UNIQUE NONBLANK USB SERIAL REQUIRED; JA11-ONLY OPENED-CONNECTION FALLBACK IMPLEMENTED; PHYSICAL RESULT PENDING | J020's replacement session was current but identity was unavailable. J021 separately confirms that the initial-session `UsbDevice.serialNumber` getter returned null with permission granted; it does not prove the descriptor lacks a serial or resolve J020. Source `616958037349e2f0e0784a556c6430b0de6ceb18` reads the opened connection's serial only when that getter returns null, only for JA11; seven new session regressions and local gates pass. Before any write, the read-only helper must see granted permission, JA11 PID `257`/`258`, `serialStatus=READABLE_NULL`, `connectionSerialStatus=READABLE_NONBLANK`, and `serialSource=USB_CONNECTION` before a matching `USB_SESSION_OPENED`, followed by a complete snapshot and current unique-identity result for the same generation. It confirms the emitting process is still live and rejects a later same-generation detach/close. It reports categories only, never the serial. If that real-device proof is unavailable, stop and release the Pixel. |
 | Firmware update, bootloader, cross-flash, raw command console | UNSAFE_OR_OUT_OF_SCOPE | No JA11 firmware mutation or arbitrary command surface is authorized in this task. |
 | Public JA11 support/release claim | UNSAFE_OR_OUT_OF_SCOPE | J017 closes the observed reconnect/restoration evidence gap for one session but does not close explicit power-cycle retention or the complete qualification checklist. Keep public support and final-release claims owner-controlled. |
 
@@ -117,8 +127,11 @@ restoration record. J020's write was not retried; its last verified state is Mic
 to the original Mic On baseline is outstanding. J021 proves only that the Android device serial
 getter returned null with permission granted. Do not convert either record's evidence gaps into a
 weaker identity key, protocol change, tolerance change, retry, or support claim. The next physical
-session must use the exact source-bound connection-serial candidate, verify fresh identity before
-any write, restore Mic On first, and stop if replacement identity is unavailable.
+session must use the exact source-bound connection-serial candidate and verify fresh identity before
+any write. If the complete fresh baseline reads Mic Off, restore Mic On before other tests; if it
+already reads On, record restoration as satisfied and skip Mic writes. Stop if replacement identity
+is unavailable. The current candidate is the exact source in the 2026-10-08 section above; verify its
+latest PR checks before using the Pixel.
 
 ## 2026-09-25 independent protocol-oracle matrix
 

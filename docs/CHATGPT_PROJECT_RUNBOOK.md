@@ -931,6 +931,33 @@ Stop if identity is missing/ambiguous, permission fails, or any result is uncert
 B/C/D and release gates pending until they pass. No merge, publication, or JA11 support claim
 precedes physical acceptance.
 
+## 2026-10-08 JA11 replacement candidate off-phone preflight
+
+The current replacement application source is `616958037349e2f0e0784a556c6430b0de6ceb18`, tree
+`fdb6c8d10c8aa865da1a4818d22a7c14b2559b21`. The JA11 transport reads the serial from the already
+opened connection only when Android's `UsbDevice.serialNumber` getter returns null. This fallback
+is disabled for other shared transports; blank values and exceptions remain unavailable, and the
+unique nonblank serial identity gate is unchanged.
+
+The frozen diagnostic APK is
+`opra-eq-ja11diag-0.8.0-source-61695803.apk`, SHA-256
+`ee0fe4fbfaae7b3f959d4122f0c21c128dffdf21d47586376ee383e2534ceb0d`, package
+`com.weekssa.opraeqforuapp.ja11diag`, version `0.8.0-ja11diag`/11, signer certificate SHA-256
+`73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`. Local G0/G2/G3/R8 gates
+pass, the JVM suite has 825 tests with zero failures/errors/skips, the wiped API 35 emulator
+reported the exact source in `APP_BUILD_INFO`, and Android instrumentation passed 64/64. The
+private artifact and test logs are under `/private/tmp/ja11-v0.8.1-acceptance-61695803/`.
+
+Draft PR #80 remains open. The Pixel is available. A prior host readiness check found an online
+Pixel 9 TLS endpoint, but that endpoint has not been rechecked for this replacement candidate. No
+phone package, shell, USB, or JA11 command has been sent for this candidate. All required checks
+must pass on the final live PR head before using the phone. Begin with a complete read-only baseline
+and unique serial identity. If Mic is Off, one
+verified Off-to-On write is both the required original-state restoration and Test A. If Mic is
+already On, record restoration as satisfied and skip microphone mutations. Stop before mutation if
+identity is missing or ambiguous. J020 remains the latest mutation record with Mic Off
+as the last verified state; J021 remains the latest physical observation and is read-only.
+
 ## 2026-10-08 JA11 J021 read-only identity and follow-up
 
 The owner has now made the Pixel available for testing. J021 on the prior corrected diagnostic
@@ -955,3 +982,33 @@ baseline and verify fresh identity first; if Mic is Off, restore it to On as Tes
 Stop before mutation if identity is unavailable or ambiguous. Never replay an uncertain write. Keep
 Tests B/C/D, official signing, merge, publication, and public JA11 claims pending until their exact
 gates and owner approvals are satisfied.
+
+## 2026-10-08 JA11 current candidate physical gate
+
+The current diagnostic candidate is application source
+`616958037349e2f0e0784a556c6430b0de6ceb18`, APK SHA-256
+`ee0fe4fbfaae7b3f959d4122f0c21c128dffdf21d47586376ee383e2534ceb0d`, package
+`com.weekssa.opraeqforuapp.ja11diag`, version `0.8.0-ja11diag`/11. Its local, emulator,
+instrumentation, and source review gates passed; all required checks must also pass on the final
+live PR #80 head before using the Pixel.
+
+After exact candidate installation and build-info verification, make the first JA11 interaction
+read-only. Before any write, require `phone-session.sh verify-identity` to show the exact candidate
+process, a null `UsbDevice.serialNumber`, a nonblank `UsbDeviceConnection.getSerial()` result with
+permission granted and JA11 PID `0x0101` or `0x0102`, a matching `USB_SESSION_OPENED` product ID,
+and a complete current snapshot plus `identityAvailable=true` / `sessionCurrent=true` for that same
+session generation. The serial status event must report `serialSource=USB_CONNECTION`. The helper
+also verifies the emitting app PID is still running and no later detach or close event invalidated
+that generation. The helper's terminal summary prints only status categories and IDs; it never
+prints the serial or fingerprint. Its mode-0600 private event file retains the captured diagnostic
+stream, including snapshot band and gain values, under the mode-0700 evidence directory. This proves
+the current real-JA11 session used the new opened-connection fallback to
+construct its fail-closed unique identity. Reconnect stability remains to be verified by the first
+permitted expected-restart transaction. If any condition is absent or ambiguous, stop, preserve
+private evidence, release the phone, and continue off-phone diagnosis without a write. After that
+read-only gate and a complete fresh baseline pass, if Mic is Off, the first mutation restores it to
+the original On state. Require expected reset handling and authoritative fresh-session readback;
+never replay an uncertain write. If Mic is already On in the complete fresh baseline, record the
+original state as restored and skip all Mic mutations. Continue the prepared acceptance plan only
+after Mic restoration is verified or the baseline confirms On, and release the Pixel as soon as
+sufficient physical evidence is captured.

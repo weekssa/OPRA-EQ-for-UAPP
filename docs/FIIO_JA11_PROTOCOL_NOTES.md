@@ -1,6 +1,6 @@
 # FiiO / JadeAudio JA11 protocol notes
 
-Status: **JA11 codec correction and historical Flash/reconnect/restoration paths remain physically evidenced on their exact candidates; J020 mutation verification is incomplete; J021 is a read-only initial-session identity observation; a JA11-only opened-connection serial fallback is under test; Mic On restoration is outstanding**
+Status: **JA11 codec correction and historical Flash/reconnect/restoration paths remain physically evidenced on their exact candidates; J020 mutation verification is incomplete; J021 is a read-only initial-session identity observation; source `61695803` implements the JA11-only opened-connection serial fallback with local and emulator gates passed; latest PR-head CI and physical identity/restoration remain pending**
 
 ## 2026-10-08 J021 — Android device serial getter returned null
 
@@ -21,6 +21,20 @@ unavailable, and other shared USB transports do not enable the fallback. The cha
 fail-closed regression coverage but no physical result yet. See the [Android connection API
 reference](https://developer.android.com/reference/android/hardware/usb/UsbDeviceConnection) and
 [AOSP USB host implementation](https://android.googlesource.com/platform/system/core/+/3597339226f5c0681631df9039eebf07485c04de/libusbhost/usbhost.c).
+
+## 2026-10-08 opened-connection serial candidate
+
+Application source `616958037349e2f0e0784a556c6430b0de6ceb18`, tree
+`fdb6c8d10c8aa865da1a4818d22a7c14b2559b21`, adds the Android connection serial as a JA11-only
+fallback when the primary `UsbDevice.serialNumber` getter returns null. The value comes from the
+same opened and claimed connection, before entering the lifecycle gate. Blank values and both
+security/runtime exceptions remain unavailable, other shared transports leave this option off, and
+`fiioJa11PhysicalIdentityKey` still requires one unique nonblank serial. Seven Robolectric identity
+regressions pass; the full local suite reports 825 tests with zero failures/errors/skips. A wiped
+API 35 emulator passed 64/64 instrumentation and the candidate's `APP_BUILD_INFO` source SHA. The
+diagnostic APK SHA-256 is `ee0fe4fbfaae7b3f959d4122f0c21c128dffdf21d47586376ee383e2534ceb0d`.
+These results do not prove the physical JA11 connection yields a serial. Exact latest PR-head checks,
+physical restoration of Mic On, and remaining acceptance tests are pending.
 
 ## 2026-10-08 J020 USB permission and replacement identity findings
 
