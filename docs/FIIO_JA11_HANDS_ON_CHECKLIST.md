@@ -1,26 +1,34 @@
 # FiiO JA11 hands-on qualification
 
-## 2026-10-09 Model D physical acceptance gate — current
+## 2026-10-09 late Save reconnect — current physical gate
 
-The owner-approved Model D policy supersedes the serial-required gates in the historical
-2026-10-08 sections below. Current candidate source is
-`92c11fb0e41ae11b118b2e7bb105234d6606dbdb`; its exact diagnostic APK SHA-256 is
-`ce3f417f20c275fd4d535cf5e70f658d8430af8fdd3f87ea950705fbfd574637`. Local gates, API 35 emulator
-instrumentation, independent app/helper reviews, artifact provenance, and 64/64 Android tests pass.
-Exact-head PR #80 CI remains pending. Keep the Pixel unused until all checks pass on that exact
-head. The user has already authorized this prepared cycle, so no new confirmation is needed unless
-the phone is unavailable or test scope materially changes.
+The current production source is
+`3d7bc1d91e6c39327477d1341bde80e8a37bfbd4`; its frozen diagnostic APK SHA-256 is
+`3b74672a587daeaaf8f562634c5dcecea073f7ad6e01df736f874ee448fc6261`. Exact-source local gates,
+API 35 cold launch/instrumentation, artifact provenance, and production-source review pass. Live PR
+#80 head `186c43b22490281ba2fbfceae52e7fa5d13b9c3b` does not contain this source, so exact-head
+checks remain pending. The helper and current acceptance wording follow Model D; G3a syntax/fixtures
+pass, and independent review of the corrected helper/procedure is complete with no remaining
+actionable findings. Older strict-serial
+requirements below are historical only.
 
-Before any write, install and verify that exact candidate, then complete a read-only baseline. The
-JA11 session must show the exact FiiO VID/PID allowlist (`0x2972:0x0101` or `0x2972:0x0102`), one
-supported candidate, current permission, a fresh opened/claimed HID session, a current generation,
-and a complete snapshot of the original state. A usable USB serial is optional. If both old and new
-sessions provide a serial, reject mismatch; if either is absent, continue only with one supported
-candidate and every expected-reset lifecycle gate. Do not claim the same physical unit when serial
-is absent. Reject zero/multiple candidates and never select the first device by enumeration order.
+Phone needed now: **No.** Finish applicable off-phone work first. Before each new physical session,
+send exactly `PHONE WINDOW READY — PIXEL + JA11 NEEDED` with the exact candidate tuple, purpose,
+planned writes/resets, Android interaction, occupancy, pass/fail meaning, and restoration duty; wait
+for the owner's confirmation. The first device action is read-only: verify the exact candidate,
+permissioned current claimed JA11 session, one supported candidate, current generation, and full
+source-bound baseline. Serial is optional continuity evidence; compare it when both sessions expose
+it and reject mismatch. Without a usable serial, do not claim the same physical unit returned.
 
-The prior authorized candidate restored Mic Off→On and verified Mic On after reconnect. After the
-new candidate passes exact-head CI, install and verify it, then read the exact JA11 identity/session,
+If fresh Mic reads Off, Mic Off-to-On is the first mutation and requires expected-reset handling and
+authoritative fresh Mic-On readback. If Mic already reads On, record restoration as satisfied and
+skip the write. The owner previously selected Always allow; if a prompt still appears after the
+phone window is confirmed, accept immediately and choose Always allow if offered.
+
+The prior exact candidate `92c11fb0` passed Mic Off→On and UAC 2.0→1.0→2.0 with permission granted.
+Its Flash accepted one Save and detached 677 ms later during band 4 final readback; a fresh snapshot
+matched the original state. Test C failed on that candidate; Test D was not run. After the new
+candidate passes exact-head CI, install and verify it, then read the exact JA11 identity/session,
 cardinality, and complete baseline before any write. If the fresh baseline reads Mic Off, Mic Off→On
 is the first mutation; require accepted write, expected detach, old-session invalidation, fresh
 permission/open/claim, a new generation, one candidate, and authoritative fresh Mic-On readback. If

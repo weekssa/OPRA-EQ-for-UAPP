@@ -2,13 +2,13 @@
 set -euo pipefail
 umask 077
 
-SOURCE_SHA="92c11fb0e41ae11b118b2e7bb105234d6606dbdb"
-EXPECTED_APK_SHA="ce3f417f20c275fd4d535cf5e70f658d8430af8fdd3f87ea950705fbfd574637"
+SOURCE_SHA="3d7bc1d91e6c39327477d1341bde80e8a37bfbd4"
+EXPECTED_APK_SHA="3b74672a587daeaaf8f562634c5dcecea073f7ad6e01df736f874ee448fc6261"
 PREVIOUS_APK_SHA="ee0fe4fbfaae7b3f959d4122f0c21c128dffdf21d47586376ee383e2534ceb0d"
 DEBUG_SIGNER_SHA="73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41"
 PACKAGE="com.weekssa.opraeqforuapp.ja11diag"
 ACTIVITY="com.weekssa.opraeqforuapp.MainActivity"
-REMOTE_PROFILE="/sdcard/Download/ja11-v081-baseline-92c11fb0-20261009.txt"
+REMOTE_PROFILE="/sdcard/Download/ja11-v081-baseline-3d7bc1d9-20261009.txt"
 ROLLBACK_APK="${JA11_ROLLBACK_APK:-/private/tmp/ja11-v0.8.1-acceptance-61695803/owner-phone-session-20261009-resume/installed-ja11diag-base.apk}"
 
 ADB_BIN="${JA11_ADB_BIN:-}"
@@ -49,6 +49,7 @@ Actions:
   list             show current adb devices
   inspect          verify Pixel 9 and report basic OS properties
   verify-ja11-session  require one current JA11 candidate and a complete source-bound baseline
+  verify-ja11-reconnect  require a physical detach and one valid returning JA11; compare serials when both exist
   start-logcat     capture full logs in the foreground; stop with Ctrl-C in that terminal
   install          install only the frozen JA11 diagnostic APK
   rollback         restore the exact prior J024 diagnostic APK; no hardware action
@@ -265,7 +266,9 @@ case "$ACTION" in
     fi
     verify_live_capture || exit $?
     ;;
-  verify-ja11-session)
+  verify-ja11-session|verify-ja11-reconnect)
+    REQUIRE_RECONNECT_EVIDENCE=false
+    if [ "$ACTION" = "verify-ja11-reconnect" ]; then REQUIRE_RECONNECT_EVIDENCE=true; fi
     verify_pixel
     EVENTS="$EVIDENCE_DIR/ja11-session-baseline-$(utc_stamp).txt"
     if [ -e "$EVENTS" ]; then echo "Preserving existing JA11 session event log; use a new evidence directory." >&2; exit 12; fi
@@ -304,8 +307,76 @@ case "$ACTION" in
        [ -z "$DEVICE_SERIAL_STATUS" ] || [ -z "$CONNECTION_SERIAL_STATUS" ] || \
        [ -z "$SERIAL_SOURCE" ] || \
        [[ "$DESCRIPTOR_LINE" != *"permissionGranted=true"* ]]; then
-      echo "The latest opened JA11 session lacks a current permissioned descriptor or unique candidate; stop before any write." >&2
+      echo "The latest opened JA11 session lacks a permissioned descriptor or unique supported candidate; stop before any write." >&2
       exit 15
+    fi
+    if [ "$REQUIRE_RECONNECT_EVIDENCE" = true ]; then
+      CONTINUITY_ENTRY="$(awk -v build="$BUILD_POSITION" -v pid="$BUILD_PID" -v session="$SESSION_POSITION" 'NR > session && $3 == pid && index($0, "event=USB_SESSION_IDENTITY_CONTINUITY") {position = NR; line = $0} END {if (position) printf "%d\t%s", position, line}' "$EVENTS")"
+      CONTINUITY_POSITION=""
+      CONTINUITY_LINE=""
+      IFS="$(printf '\t')" read -r CONTINUITY_POSITION CONTINUITY_LINE <<< "$CONTINUITY_ENTRY"
+      PREVIOUS_CONTINUITY_GENERATION="$(printf '%s\n' "$CONTINUITY_LINE" | sed -n 's/.*previousSessionGeneration=\([0-9][0-9]*\).*/\1/p')"
+      CURRENT_CONTINUITY_GENERATION="$(printf '%s\n' "$CONTINUITY_LINE" | sed -n 's/.*sessionGeneration=\([0-9][0-9]*\).*/\1/p')"
+      PREVIOUS_SERIAL_SOURCE="$(printf '%s\n' "$CONTINUITY_LINE" | sed -n 's/.*previousSerialSource=\([A-Z_]*\).*/\1/p')"
+      CURRENT_SERIAL_SOURCE="$(printf '%s\n' "$CONTINUITY_LINE" | sed -n 's/.*serialSource=\([A-Z_]*\).*/\1/p')"
+      PREVIOUS_CONNECTION_SERIAL_STATUS="$(printf '%s\n' "$CONTINUITY_LINE" | sed -n 's/.*previousConnectionSerialStatus=\([A-Z_]*\).*/\1/p')"
+      CURRENT_CONNECTION_SERIAL_STATUS="$(printf '%s\n' "$CONTINUITY_LINE" | sed -n 's/.*connectionSerialStatus=\([A-Z_]*\).*/\1/p')"
+      CONTINUITY_CANDIDATE_COUNT="$(printf '%s\n' "$CONTINUITY_LINE" | sed -n 's/.*supportedCandidateCount=\([0-9][0-9]*\).*/\1/p')"
+      CONTINUITY_SERIAL_AVAILABLE="$(printf '%s\n' "$CONTINUITY_LINE" | sed -n 's/.*serialAvailable=\([^ ]*\).*/\1/p')"
+      CONTINUITY_MATCHES="$(printf '%s\n' "$CONTINUITY_LINE" | sed -n 's/.*serialMatches=\([^ ]*\).*/\1/p')"
+      CONTINUITY_KIND="$(printf '%s\n' "$CONTINUITY_LINE" | sed -n 's/.*continuity=\([A-Z_]*\).*/\1/p')"
+      PREVIOUS_SESSION_OPEN_ENTRY="$(awk -v build="$BUILD_POSITION" -v session="$SESSION_POSITION" -v pid="$BUILD_PID" -v previous="$PREVIOUS_CONTINUITY_GENERATION" 'NR > build && NR < session && $3 == pid && index($0, "event=USB_SESSION_OPENED") && index($0, "sessionGeneration=" previous " ") {position = NR; line = $0} END {if (position) printf "%d\t%s", position, line}' "$EVENTS")"
+      PREVIOUS_SESSION_OPEN_POSITION=""
+      PREVIOUS_SESSION_OPEN_LINE=""
+      IFS="$(printf '\t')" read -r PREVIOUS_SESSION_OPEN_POSITION PREVIOUS_SESSION_OPEN_LINE <<< "$PREVIOUS_SESSION_OPEN_ENTRY"
+      PREVIOUS_OPENED_PRODUCT_ID="$(printf '%s\n' "$PREVIOUS_SESSION_OPEN_LINE" | sed -n 's/.* pid=\([0-9][0-9]*\).*/\1/p')"
+      PREVIOUS_OPENED_CANDIDATE_COUNT="$(printf '%s\n' "$PREVIOUS_SESSION_OPEN_LINE" | sed -n 's/.*supportedCandidateCount=\([0-9][0-9]*\).*/\1/p')"
+      PREVIOUS_SESSION_CLOSE_POSITION="$(awk -v build="$BUILD_POSITION" -v session="$SESSION_POSITION" -v pid="$BUILD_PID" -v previous="$PREVIOUS_CONTINUITY_GENERATION" 'NR > build && NR < session && $3 == pid && index($0, "event=USB_SESSION_CLOSED") && index($0, "sessionGeneration=" previous " ") {position = NR} END {print position+0}' "$EVENTS")"
+      PREVIOUS_SESSION_DETACH_POSITION="$(awk -v build="$BUILD_POSITION" -v session="$SESSION_POSITION" -v pid="$BUILD_PID" -v previous="$PREVIOUS_CONTINUITY_GENERATION" 'NR > build && NR < session && $3 == pid && index($0, "event=USB_DETACH") && index($0, "sessionGeneration=" previous " ") {position = NR} END {print position+0}' "$EVENTS")"
+      if [ -z "$CONTINUITY_POSITION" ] || [ -z "$PREVIOUS_CONTINUITY_GENERATION" ] || \
+         [ -z "$PREVIOUS_SESSION_OPEN_POSITION" ] || \
+         [ "$PREVIOUS_SESSION_OPEN_POSITION" -ge "$PREVIOUS_SESSION_DETACH_POSITION" ] || \
+         { [ "$PREVIOUS_OPENED_PRODUCT_ID" != "257" ] && [ "$PREVIOUS_OPENED_PRODUCT_ID" != "258" ]; } || \
+         [ "$PREVIOUS_OPENED_CANDIDATE_COUNT" != "1" ] || \
+         [ "$CURRENT_CONTINUITY_GENERATION" != "$SESSION_GENERATION" ] || \
+         [ "$PREVIOUS_SESSION_CLOSE_POSITION" -eq 0 ] || \
+         [ "$PREVIOUS_SESSION_DETACH_POSITION" -eq 0 ] || \
+         [ "$PREVIOUS_SESSION_DETACH_POSITION" -ge "$PREVIOUS_SESSION_CLOSE_POSITION" ] || \
+         [ "$CONTINUITY_CANDIDATE_COUNT" != "1" ] || \
+         [ "$CURRENT_SERIAL_SOURCE" != "$SERIAL_SOURCE" ] || \
+         [ "$CURRENT_CONNECTION_SERIAL_STATUS" != "$CONNECTION_SERIAL_STATUS" ]; then
+        echo "The JA11 reconnect lacks a previously opened sole supported session, physical detach, or matching current session; stop before continuing." >&2
+        exit 21
+      fi
+      case "$PREVIOUS_SERIAL_SOURCE" in USB_DEVICE|USB_CONNECTION|NONE) ;; *) echo "The prior serial source status is invalid; stop." >&2; exit 21 ;; esac
+      case "$CURRENT_SERIAL_SOURCE" in USB_DEVICE|USB_CONNECTION|NONE) ;; *) echo "The current serial source status is invalid; stop." >&2; exit 21 ;; esac
+      case "$PREVIOUS_SERIAL_SOURCE:$PREVIOUS_CONNECTION_SERIAL_STATUS" in
+        USB_CONNECTION:READABLE_NONBLANK|USB_DEVICE:NOT_CHECKED|NONE:READABLE_NULL|NONE:READABLE_BLANK|NONE:NOT_CHECKED|NONE:SECURITY_EXCEPTION|NONE:OTHER_EXCEPTION) ;;
+        *) echo "The prior serial source and status categories conflict; stop." >&2; exit 21 ;;
+      esac
+      case "$CURRENT_SERIAL_SOURCE:$CURRENT_CONNECTION_SERIAL_STATUS:$CONTINUITY_SERIAL_AVAILABLE" in
+        USB_CONNECTION:READABLE_NONBLANK:true|USB_DEVICE:NOT_CHECKED:true|NONE:READABLE_NULL:false|NONE:READABLE_BLANK:false|NONE:NOT_CHECKED:false|NONE:SECURITY_EXCEPTION:false|NONE:OTHER_EXCEPTION:false) ;;
+        *) echo "The current serial source and availability categories conflict; stop." >&2; exit 21 ;;
+      esac
+      case "$CONTINUITY_KIND:$CONTINUITY_MATCHES" in
+        SAME_DEVICE_SERIAL_MATCHED:true)
+          if [ "$PREVIOUS_SERIAL_SOURCE" = "NONE" ] || [ "$CURRENT_SERIAL_SOURCE" = "NONE" ] || \
+             [ "$CONTINUITY_SERIAL_AVAILABLE" != "true" ]; then
+            echo "The serial-match event is inconsistent with its availability fields; stop." >&2
+            exit 21
+          fi
+          ;;
+        SERIAL_UNAVAILABLE:false)
+          if [ "$PREVIOUS_SERIAL_SOURCE" != "NONE" ] && [ "$CURRENT_SERIAL_SOURCE" != "NONE" ]; then
+            echo "Serials were available in both sessions but the event did not report a match; stop." >&2
+            exit 21
+          fi
+          ;;
+        *)
+          echo "The reconnect reported a serial mismatch or an unsupported continuity state; stop." >&2
+          exit 21
+          ;;
+      esac
     fi
     SNAPSHOT_ENTRY="$(awk -v build="$BUILD_POSITION" -v pid="$BUILD_PID" 'NR > build && $3 == pid && index($0, "event=SNAPSHOT_READ_COMPLETE") {position = NR; line = $0} END {if (position) printf "%d\t%s", position, line}' "$EVENTS")"
     IDENTITY_ENTRY="$(awk -v build="$BUILD_POSITION" -v pid="$BUILD_PID" 'NR > build && $3 == pid && index($0, "event=RESTART_IDENTITY_AVAILABILITY") {position = NR; line = $0} END {if (position) printf "%d\t%s", position, line}' "$EVENTS")"
@@ -332,6 +403,10 @@ case "$ACTION" in
       echo "The latest complete baseline does not match one current supported JA11 session; stop before any write." >&2
       exit 16
     fi
+    case "$SERIAL_SOURCE:$SERIAL_AVAILABLE" in
+      USB_DEVICE:true|USB_CONNECTION:true|NONE:false) ;;
+      *) echo "The serial availability category is inconsistent; stop before any write." >&2; exit 16 ;;
+    esac
     LATER_AMBIGUOUS_ATTACH_POSITION="$(awk -v session="$SESSION_POSITION" -v pid="$BUILD_PID" 'NR > session && $3 == pid && index($0, "event=USB_ATTACH") { for (i = 1; i <= NF; i++) if (index($i, "supportedCandidateCount=") == 1) { value = $i; sub(/^supportedCandidateCount=/, "", value); if (value + 0 > 1) position = NR } } END {print position+0}' "$EVENTS")"
     if [ "$LATER_AMBIGUOUS_ATTACH_POSITION" -gt 0 ]; then
       echo "A later JA11 attach made candidate selection ambiguous; stop before any write." >&2
@@ -357,7 +432,19 @@ case "$ACTION" in
     printf 'USB_IDENTITY_DESCRIPTOR_STATUS permissionGranted=true serialStatus=%s connectionSerialStatus=%s serialSource=%s productId=%s\n' "$DEVICE_SERIAL_STATUS" "$CONNECTION_SERIAL_STATUS" "$SERIAL_SOURCE" "$DESCRIPTOR_PRODUCT_ID"
     printf 'USB_SESSION_OPENED productId=%s sessionGeneration=%s supportedCandidateCount=%s\n' "$OPENED_PRODUCT_ID" "$SESSION_GENERATION" "$OPENED_CANDIDATE_COUNT"
     printf 'RESTART_IDENTITY_AVAILABILITY sessionGeneration=%s serialAvailable=%s sessionCurrent=true supportedCandidateCount=%s\n' "$SNAPSHOT_GENERATION" "$SERIAL_AVAILABLE" "$IDENTITY_CANDIDATE_COUNT"
-    echo "The exact candidate has a complete current baseline from the sole attached supported JA11. A readable serial is optional continuity evidence; without one, this check makes no claim that the same physical unit was identified. No serial or fingerprint was recorded."
+    if [ "$REQUIRE_RECONNECT_EVIDENCE" = true ]; then
+      printf 'USB_DETACH sessionGeneration=%s observedBeforeSessionClose=true\n' "$PREVIOUS_CONTINUITY_GENERATION"
+      printf 'USB_SESSION_IDENTITY_CONTINUITY previousSessionGeneration=%s sessionGeneration=%s previousSerialSource=%s serialSource=%s previousConnectionSerialStatus=%s connectionSerialStatus=%s serialMatches=%s continuity=%s supportedCandidateCount=%s\n' \
+        "$PREVIOUS_CONTINUITY_GENERATION" "$CURRENT_CONTINUITY_GENERATION" "$PREVIOUS_SERIAL_SOURCE" \
+        "$CURRENT_SERIAL_SOURCE" "$PREVIOUS_CONNECTION_SERIAL_STATUS" "$CURRENT_CONNECTION_SERIAL_STATUS" \
+        "$CONTINUITY_MATCHES" "$CONTINUITY_KIND" "$CONTINUITY_CANDIDATE_COUNT"
+      if [ "$CONTINUITY_KIND" = "SAME_DEVICE_SERIAL_MATCHED" ]; then
+        echo "A physical detach and one returning JA11 were verified; matching serials provide same-unit continuity evidence."
+      else
+        echo "A physical detach and one returning JA11 were verified; serial was unavailable, so same-unit identity is not claimed."
+      fi
+    fi
+    echo "The exact candidate has a complete current baseline from the sole supported JA11. Serial availability and source are reported only as categories; identity values remain private."
     ;;
   stage-profile)
     verify_pixel

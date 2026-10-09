@@ -1,6 +1,7 @@
 # FiiO / JadeAudio JA11 protocol notes
 
-Status: **The owner-approved Model D policy makes serial optional continuity evidence while retaining exact candidate/session/cardinality, expected-reset, authoritative-readback, and no-replay gates. The 2026-10-09 prior candidate restored Mic On and original captured settings; its UAC permission-timing result is inconclusive, and its Flash from Off failed band 1 before Save after writing bands/gain before User 1 selection. The User 1 ordering correction is source `92c11fb0`; local/emulator/artifact/helper and independent-review gates pass, including 64/64 API 35 tests. Exact-head PR #80 CI and physical requalification remain pending.**
+Status: **The owner-approved Model D policy makes serial optional continuity evidence while retaining exact candidate/session/cardinality, expected-reset, authoritative-readback, and no-replay gates. Current source `3d7bc1d91e6c39327477d1341bde80e8a37bfbd4` inherits the late-Save readback-only correction from `ad894129b5002fa33a2a46d47222772657a7a0e3`. Source-bound local, artifact, API 35, and 64/64 instrumentation gates pass; exact PR-head CI and current-candidate physical qualification remain pending. The helper follows Model D; G3a syntax/fixtures pass, and independent helper/procedure review is complete with no remaining actionable findings.**
+
 
 ## 2026-10-09 owner-approved Model D — current identity and restart policy
 
@@ -28,12 +29,25 @@ Never replay an uncertain write.
 
 Flash/Save/Reset preserve their protocol-specific ordering while applying the same no-arbitrary-
 candidate and authoritative-final-readback rules. Keep exactly one logical Flash action and Save.
-Volume and preset persistence remain unresolved until the approved full-power physical test. The
-prior Model D candidate passed its read-only session gate and Mic restoration but failed one Flash
-from Off before Save. The new source `92c11fb0` has no physical result yet; its exact-head CI must
-pass before installing it and running the read-only gate again.
+Volume and preset persistence remain unresolved until the approved full-power physical test. Source
+`92c11fb0` used User 1 before data writes, passed Apply and pre-Save verification, and accepted one
+Save. Its late detach during final readback is a physical failure for that candidate. Do not repeat
+it. Current source `3d7bc1d91e6c39327477d1341bde80e8a37bfbd4` inherits operation-bound readback-only
+reconnection if the session changes during final verification. Its exact APK and API 35 evidence are
+verified off-phone; exact-head CI must pass before installation and the read-only Model D
+session/cardinality/baseline gate. The owner must confirm a new phone window before any device use.
 
-## 2026-10-09 User 1 write-order correction — off-phone candidate
+## 2026-10-09 late Save detach — prior candidate failure and software correction
+
+The prior diagnostic source `92c11fb0e41ae11b118b2e7bb105234d6606dbdb` accepted one Save (`0x19`). The JA11 detached 677 ms later while band 4 final readback was in flight. A fresh session completed one full read-only snapshot matching the original captured state. No Save retry occurred, Test C failed for that APK, Test D did not run, and the Pixel was released. USB permission had already been granted; this was not a permission-timeout failure.
+
+Source `ad894129b5002fa33a2a46d47222772657a7a0e3`, inherited by current source `3d7bc1d91e6c39327477d1341bde80e8a37bfbd4`, keeps the accepted Save bound to the operation through a 1-second initial detach observation and a 45-second total reconnect deadline. If the session changes during final readback, only authoritative readback may continue on one fresh supported replacement. It rejects ambiguity, unsupported PID, a serial mismatch when both sessions provide usable serials, a second replacement, timeout, and cancellation. It never replays data writes, Apply, or Save. Reconnect alone is not success; matching final readback is required.
+
+The current source-bound diagnostic APK SHA-256 is `3b74672a587daeaaf8f562634c5dcecea073f7ad6e01df736f874ee448fc6261`, package `com.weekssa.opraeqforuapp.ja11diag`, version `0.8.0-ja11diag` / 11, signer certificate SHA-256 `73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`. Exact-source local/app gates, API 35 cold launch, 64/64 instrumentation, artifact verification, and production-source review pass. Current PR #80 head `186c43b22490281ba2fbfceae52e7fa5d13b9c3b` does not contain source `3d7bc1d9`; exact-head CI is pending.
+
+Physical qualification begins with an exact-candidate read-only baseline requiring one permissioned current JA11 session, one supported candidate, valid generation, and complete source-bound snapshot. Serial is optional. If both sessions expose usable serials, mismatch fails; without serial, report only state verified on the sole returning supported JA11 and do not claim same-unit identity. Do not address the Pixel until off-phone gates pass and the owner confirms a new `PHONE WINDOW READY — PIXEL + JA11 NEEDED` request. If Mic reads Off, restore it to On as the first mutation using expected-reset handling and authoritative post-reconnect readback; if already On, skip the write.
+
+## 2026-10-09 User 1 write-order correction — prior candidate
 
 Source commit `92c11fb0e41ae11b118b2e7bb105234d6606dbdb` changes JA11 Flash and Reset to read the
 active program, select User 1 if needed, and verify User 1 in the same current session before any

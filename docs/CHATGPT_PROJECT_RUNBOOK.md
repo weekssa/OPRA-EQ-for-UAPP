@@ -1092,7 +1092,7 @@ owner phone-window confirmation. If granted later, begin with candidate verifica
 full baseline; if Mic is Off, restore Mic On as the first mutation with expected-reset handling and
 authoritative post-reconnect readback.
 
-## 2026-10-09 JA11 User 1 write-order correction — current candidate gates
+## 2026-10-09 JA11 User 1 write-order correction — historical candidate checkpoint (superseded)
 
 The current application source is `92c11fb0e41ae11b118b2e7bb105234d6606dbdb`, after merging latest
 `origin/main` `7cbef435f2417381ed967d262574d7f5d1ba188b`. It selects and verifies User 1 in the same
@@ -1108,14 +1108,23 @@ independent app/helper reviews, host artifact provenance, isolated API 35 cold l
 runtime source SHA, and 64/64 source-matched debug instrumentation pass. Exact-head PR #80 CI is
 pending. The Pixel was not queried during this candidate's off-phone gates.
 
-After every required check passes on the exact pushed PR head, continue under the owner's already
-granted testing authorization; do not request another confirmation unless device availability or
-scope changes. Install and verify this exact diagnostic candidate, run the read-only JA11
-current-session/cardinality/complete-baseline gate first, and stop before writes if it is not
-complete. Under the current owner-approved Model D decision, serial status is optional; preserve
-exact supported-device, single-candidate, permission, session-generation, expected-detach,
-authoritative-readback, and no-replay requirements. If Mic is Off, restore Mic On first; if it is
-already On, skip that mutation. The public stable v0.8.0 app is not the physical test candidate.
+The earlier wording in this checkpoint allowed continuing authorization to skip a new phone-window
+confirmation. That procedure is superseded by the later mission Constitution: before every new
+physical session, send `PHONE WINDOW READY — PIXEL + JA11 NEEDED` with the exact candidate and test
+plan, then wait for the owner's confirmation. The source/APK tuple above is historical and is not
+the current physical candidate. Model D serial optionality, exact supported-device/cardinality,
+permission, session-generation, expected-detach, authoritative-readback, and no-replay rules remain
+in force for the current candidate.
 
 This candidate checkpoint does not authorize merging, publishing, or making a new public JA11
 support claim.
+
+## 2026-10-09 late Save reconnect correction — current mission state
+
+The current production source is `3d7bc1d91e6c39327477d1341bde80e8a37bfbd4`. Its exact diagnostic APK SHA-256 is `3b74672a587daeaaf8f562634c5dcecea073f7ad6e01df736f874ee448fc6261`, package `com.weekssa.opraeqforuapp.ja11diag`, version `0.8.0-ja11diag` / code `11`, signer certificate SHA-256 `73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`. It inherits the operation-bound 45-second late-Save reconnect correction from `ad894129b5002fa33a2a46d47222772657a7a0e3`; only readback can continue on one fresh supported replacement. The code never replays data writes, Apply, or Save. This fix is implemented and passed local/emulator gates; current-candidate physical acceptance has not run.
+
+Current GitHub PR #80 head `186c43b22490281ba2fbfceae52e7fa5d13b9c3b` does not contain source `3d7bc1d9`. Exact candidate-head checks remain pending. The current application source and acceptance helper follow owner-approved Model D: serial optional, compare when both sessions expose usable serials, reject mismatch, and never claim same physical unit without a matching usable serial. G3a helper syntax/fixtures pass with output SHA-256 `944d79f424382f0f7979d2e85d610c46cbc3030adab5726b8635b7a9faed34be`; final independent helper/procedure review is complete with no remaining actionable findings. The older PR-head workflow successes do not qualify the current source.
+
+The latest physical run used source `92c11fb0`. It accepted one Save and detached 677 ms later during final band 4 readback; no Save was retried. A fresh complete snapshot matched the original baseline, Test C failed for that source, Test D was not run, and the Pixel was released. Last verified hardware state at release was the original baseline restored; current live state is unknown. The owner's Always allow selection followed that run and does not change its result.
+
+Continue off-phone through corrected-helper review and exact-head checks; G3a helper syntax/fixtures have passed. Phone needed now: **No**. Before each new physical session, send exactly `PHONE WINDOW READY — PIXEL + JA11 NEEDED` with the exact source/APK, purpose, planned writes/resets, Android interaction, occupancy, pass/fail meaning, and restoration obligations; wait for owner confirmation. Start with a read-only exact-candidate, one-supported-candidate, permissioned-current-session, generation, and complete-baseline check. If Mic is Off, restore Mic On as the first mutation with expected-reset handling and authoritative readback; if Mic is On, skip the write. Restore all changed state and release the Pixel promptly. Merge, publication, and public JA11 support claims require separate explicit approval.
