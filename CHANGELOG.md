@@ -6,6 +6,18 @@ The project uses Semantic Versioning. The `0.x` series is pre-1.0; a version wit
 
 ## [Unreleased]
 
+### FiiO JA11 lifecycle correction
+
+- Keep expected-restart control verification pending across Android's initial USB permission
+  fallback, with request/device/detach fencing and a JA11-specific hard deadline. Obsolete or late
+  callbacks cannot acquire a session; unique permission tokens also prevent stale grants matching
+  recreated sessions with reused request IDs. Uncertain hardware writes are never replayed.
+- Record privacy-safe per-session JA11 serial availability so the app can explain why restart
+  verification remains blocked without exposing the serial or relaxing the identity requirement.
+- Clear terminal restart-operation state and preserve the existing fail-closed identity and
+  readback requirements. Physical acceptance remains pending; this unreleased software change
+  makes no JA11 support claim.
+
 ## [0.8.0] - 2026-10-08
 
 ### EQ Library modernization

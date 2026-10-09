@@ -15,16 +15,19 @@ rewrite or broaden this append-only hardware evidence.
 
 ## Current disposition
 
-JA11 is **implemented with a successful physical Flash/Save/final-readback record and an accepted
-observed reconnect/restoration record; explicit power-cycle retention and full hardware
-qualification remain pending**. J012 remains valid negative physical evidence, but its root cause
-is proven by the official FiiO Control JA11 codec: the Android candidate wrote the wrong command
-`0x17` scale and byte order. The corrected codec and signed device-domain quantizer are merged in
-`main` at `c886fdbb2ae326e562dc110b2b779cb075869798`; exact-head Android, emulator, static-analysis,
-catalog, signed-candidate, signer, and immutable-publication gates pass. J017 below records the
-owner’s successful Flash, observed detach/reconnect history, and exact restoration of the
-captured flat baseline on that exact source. The supplied exports do not explicitly identify a
-power-removal event or duration, so no public support or final-release claim follows yet.
+JA11 has historical physical Flash/Save/final-readback and observed reconnect/restoration passes on
+the exact J016/J017 candidates; explicit power-cycle retention and full hardware qualification
+remain pending. The latest physical record is J020, an incomplete/negative restart-verification
+result on source `a78808443c71d688e0f338e96495847569fe12f7`. One Mic On-to-Off command completed and
+the replacement session freshly read Mic Off, but the app did not emit restart-verifier events.
+USB permission arrived about 18.5 seconds after the request, and the replacement session's
+identity was unavailable even though that session was current. The last verified device state is
+Mic Off; restoration to the original Mic On state remains outstanding. J020 does not invalidate
+J016/J017's separate EQ evidence and does not qualify the v0.8.1 fix. Do not reuse its diagnostic
+APK, infer the identity failure's underlying cause, or make a public JA11 support claim.
+
+The `0x17` global-gain codec correction remains proven by the official FiiO Control JA11 codec and
+historical physical evidence. J012 remains valid negative evidence for the superseded codec.
 
 ## Deterministic software value trace for the supplied Jaytiss record
 
@@ -146,5 +149,64 @@ restoration results and does not establish a protocol root cause.
   to a reconnect watchdog while preserving per-session generation checks. It requires a unique
   nonblank serial for restart controls and leaves same-session controls available without one. J019
   did not establish whether the owner's JA11 exposes that serial. The replacement source/APK and any
-  follow-up physical result must be recorded as a new exact-candidate record; J019 must not be
-  rewritten as a pass.
+follow-up physical result must be recorded as a new exact-candidate record; J019 must not be
+rewritten as a pass.
+
+## 2026-10-08 J020 — delayed USB permission and replacement identity unavailable
+
+J020 is incomplete/negative physical evidence for the expected-restart path. It records a
+completed microphone write and fresh device readback, but the app did not complete automatic
+restart verification. It is not a pass and is tied only to the candidate below.
+
+- Candidate source `a78808443c71d688e0f338e96495847569fe12f7`; diagnostic APK
+  `opra-eq-ja11diag-0.8.0-source-a7880844.apk`, SHA-256
+  `7beb5bcebbc0dc40a68b33de911cc8722d76d3f0ff2e98685b1fa25e17caed61`; package
+  `com.weekssa.opraeqforuapp.ja11diag`, version `0.8.0-ja11diag`/11; debug signer certificate
+  SHA-256 `73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`.
+- Physical context: Pixel 9; JA11 firmware `2.20`; VID/PID `0x2972:0x0102`. The raw report,
+  logs, and screenshots remain in the owner-only private evidence bundle. No serial or full
+  fingerprint is copied here.
+- The initial session passed the identity gate (`identityAvailable=true`, `sessionCurrent=true`).
+  One Mic On-to-Off write completed and detached the device. Android granted replacement-session
+  USB permission approximately 18.5 seconds after the request, later than the app's 10-second
+  fallback. The replacement session opened and produced fresh readback: Mic Off; volume 30/60;
+  program Off; UAC 2.0; sample rate 384 kHz; and the complete User 1 gain/band snapshot unchanged.
+- In the replacement session, identity was unavailable while the session was current
+  (`identityAvailable=false`, `sessionCurrent=true`). No `RESTART_VERIFY_*` event was recorded.
+  A pre-permission attach log reported no readable serial value. That observation cannot distinguish
+  a missing/blank descriptor from permission-gated access; the exported record has no raw serial,
+  and the capture did not establish whether the post-permission lookup was blank or raised a
+  security exception.
+- The stable identity key is derived from exactly one nonblank USB serial. The current-session
+  readback proves the device session itself was usable; it does not prove that the replacement
+  session is the same physical JA11. The delayed permission grant and missing identity co-occurred,
+  but the available evidence does not prove that one caused the other. Keep identity fail-closed.
+- No second mutation, restoration write, UAC operation, Flash, Reset, profile staging, or physical
+  unplug/reconnect was performed. Tests B/C/D remain NOT RUN. The last verified microphone state
+  is Off and restoration to the original On state is outstanding. No current device state is
+  asserted after the Pixel was released.
+
+## 2026-10-08 corrected software candidate preflight — no new hardware result
+
+The corrected off-phone candidate is application source
+`da1f8e25918065667648d676cb669fed4c803f17`, tree
+`aa41aba1ddfe37006aab0f1cfdb21c4df63c2481`. Its diagnostic APK is
+`opra-eq-ja11diag-0.8.0-source-da1f8e25.apk`, SHA-256
+`767b42591adc92f0e1662480112bf9efe87ce15f51060d20a7aa39118b8d8c24`; package
+`com.weekssa.opraeqforuapp.ja11diag`, version `0.8.0-ja11diag`/11; debug signer certificate
+SHA-256 `73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`.
+
+The exact-source diagnostic build passed. The focused six-class permission/restart regression suite,
+full G3 gates, R8 mapping verification, and all 64 API 35 instrumentation cases passed. Local XML
+readback counted 818 JVM tests with zero failures, errors, or skips across 129 suites. The APK was
+installed and cold-launched only on isolated API 35 emulator `emulator-5560`; its
+`APP_BUILD_INFO` reports the exact source SHA above. No physical device was enumerated, connected,
+or modified for this preflight. Exact PR-head CI remains a separate gate.
+
+Host preparation ran without querying ADB devices or mDNS services: SDK adb
+`37.0.1-15733141`, isolated ADB mDNS backend check successful, default route present, no active
+VPN/proxy, and macOS application firewall disabled. The Pixel's live endpoint remains pending.
+Raw host routing/proxy details and emulator logs are private at
+`/private/tmp/ja11-v0.8.1-acceptance-da1f8e25/`; no Pixel serial, JA11 fingerprint, or hardware
+claim is included here. J020 remains the latest physical record; Mic On restoration remains
+outstanding.

@@ -1,30 +1,82 @@
 # JA11 v0.8.1 physical acceptance plan
 
-Run only after the owner is available and the prepared exact candidate is still valid. One bundled session only. Do not perform research/build/documentation work while the Pixel is occupied.
+J020 ended with Mic Off as the last verified state; Mic On restoration remains outstanding. Run
+this procedure only after the owner is available, G2-G5 are complete, and the corrected exact
+candidate is still valid. One bundled session only. Do not perform research/build/documentation
+work while the Pixel is occupied.
+Budget about 25–35 minutes if the existing wireless ADB connection is reusable. If ADB recovery
+requires prolonged troubleshooting or pairing setup, stop before attaching the JA11 or mutating it,
+release the phone, and resume host preparation off-phone.
+
+## Frozen off-phone candidate
+
+- App source: `da1f8e25918065667648d676cb669fed4c803f17` (tree
+  `aa41aba1ddfe37006aab0f1cfdb21c4df63c2481`).
+- Diagnostic APK: `opra-eq-ja11diag-0.8.0-source-da1f8e25.apk`.
+- APK SHA-256: `767b42591adc92f0e1662480112bf9efe87ce15f51060d20a7aa39118b8d8c24`.
+- Package/version/code: `com.weekssa.opraeqforuapp.ja11diag`, `0.8.0-ja11diag` / `11`.
+- Debug signer certificate SHA-256:
+  `73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`.
+- Private APK: `/private/tmp/ja11-v0.8.1-acceptance-da1f8e25/opra-eq-ja11diag-0.8.0-source-da1f8e25.apk`.
+- Exact-head PR CI must pass before any phone command. The emulator result is not hardware evidence.
+
+## Install and rollback
+
+Before updating, the helper pulls the installed diagnostic package's `base.apk` into the private
+evidence directory and verifies its exact J020 checksum, package/version, and debug signer. It prints
+the timestamped private backup path. The corrected candidate is installed in place with
+`adb install -r`, preserving app data. Never uninstall the old package as an installation step. If
+install fails, stop, preserve the captured APK and logs, and do not retry or start a JA11 operation.
+If software rollback is needed after no JA11 command was sent, or after the complete original JA11
+state has been freshly verified, run `phone-session.sh "$SERIAL" rollback`. This action verifies the
+installed corrected APK and the exact rollback APK, uses `adb install -r`, then verifies the restored
+package version, checksum, and signer while saving a private APK copy. The action uses the exact
+J020 APK at `/private/tmp/ja11-v0.8.1-acceptance-a7880844/opra-eq-ja11diag-0.8.0-source-a7880844.apk`
+unless `JA11_ROLLBACK_APK` names that same verified artifact. Do not use the superseded J020 build
+for further JA11 interaction. If a hardware result or write is uncertain, do not change app
+versions; preserve logs and resolve the device state first.
 
 ## Before any mutation
 
 1. Resolve the current wireless runtime endpoint using `adb devices -l`. If the existing Pixel is online, verify its model with the prepared script and select exactly one explicit serial. If discovery is empty, use the mission ADB recovery ladder; pairing details are a last step only.
-2. Verify manufacturer `Google` and model `Pixel 9`. Inspect only the diagnostic package `com.weekssa.opraeqforuapp.ja11diag`. If absent, install the exact frozen candidate. If present, pull its sole installed `base.apk` into the private evidence directory and require its SHA-256 to equal the prior J019 APK `85e06ca0db818586a7eb2eab3378a1b21949b3c8593e1318536ec651d8369305`, package/version to be `0.8.0-ja11diag`/11, and debug signer SHA-256 to be `73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`. Then update only that package using `adb install -r` so its data remains. Any other installed candidate/signature is a stop. Never uninstall or update the stable package.
-3. Start full local log capture to the private acceptance directory, launch the replacement diagnostic package, and confirm `APP_BUILD_INFO` has the exact package, replacement source SHA, version and diagnostics enabled.
+2. Verify manufacturer `Google` and model `Pixel 9`. Inspect only the diagnostic package `com.weekssa.opraeqforuapp.ja11diag`. If absent, install the exact corrected candidate. If present, pull its sole installed `base.apk` into the private evidence directory and require its SHA-256 to equal the J020 APK `7beb5bcebbc0dc40a68b33de911cc8722d76d3f0ff2e98685b1fa25e17caed61`, package/version to be `0.8.0-ja11diag`/11, and debug signer SHA-256 to be `73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`. Then update only that package using `adb install -r` so its data remains. Any other installed candidate/signature is a stop. Never uninstall or update the stable package.
+3. Start full local log capture to the private acceptance directory, launch the replacement diagnostic package, and confirm `APP_BUILD_INFO` has the exact package, replacement source SHA, version and diagnostics enabled. Save a local screenshot of the candidate app/build state with `phone-session.sh "$SERIAL" capture-screen`.
 4. Attach the JA11 and use the app's normal identity gate. Confirm VID `2972`, PID `0101` or `0102`, firmware `2.20` when readable, and one fresh session. If identity is ambiguous or another DAC appears, stop without sending commands.
-5. Capture the initial state before any mutation: volume, mic/headset state, program, UAC, sample rate, global gain, all five User 1 bands, firmware, PID and session generation. Obtain bands/global gain from a complete `SNAPSHOT_READ_COMPLETE` event, source SHA and session generation included. Save a sanitized baseline record in the private evidence folder. The current snapshot reader supports this event only while the active program is Off or User 1. If the initial program is Vocal, Classic or Bass, do not change it and do not mutate anything; release the phone and resume off-phone with a revised safe baseline path. No mutation until the complete baseline exists.
-6. Before Test A or Test B, require the helper to find the exact candidate's latest `APP_BUILD_INFO`, followed by both a complete `SNAPSHOT_READ_COMPLETE` event and `RESTART_IDENTITY_AVAILABILITY` from that same app process. The two read events may arrive in either order, but must share the same session generation; the identity event must show `identityAvailable=true` and `sessionCurrent=true`. It reveals no serial or fingerprint. If the current-process evidence is missing, stale, or mismatched, stop before any restart-control write and release the phone; do not use an attempted restart as an identity probe.
+5. Capture the initial state before any mutation: volume, mic/headset state, program, UAC, sample rate, global gain, all five User 1 bands, firmware, PID and session generation. Obtain bands/global gain from a complete `SNAPSHOT_READ_COMPLETE` event, source SHA and session generation included. Save a sanitized baseline record and a screenshot of the My DAC state in the private evidence folder. The current snapshot reader supports this event only while the active program is Off or User 1. If the initial program is Vocal, Classic or Bass, do not change it and do not mutate anything; release the phone and resume off-phone with a revised safe baseline path. No mutation until the complete baseline exists.
+6. Before every restart-control write, require the helper to find the exact corrected candidate's latest `APP_BUILD_INFO`, then a complete `SNAPSHOT_READ_COMPLETE` event and `RESTART_IDENTITY_AVAILABILITY` from that same app process. The read events may arrive in either order, but must share the same session generation; identity must show `identityAvailable=true` and `sessionCurrent=true`. Never expose or record the serial or fingerprint. If current-process evidence is missing, stale, mismatched or identity is unavailable, stop before writing and release the phone; do not use a restart as an identity probe.
 
-## Test A: microphone/headset control — retry after J019 failure
+## Test A: microphone/headset control — J020 recovery and delayed-grant regression
 
-J019 on the prior `3f5e0c3` candidate verified On-to-Off but timed out during automatic Off-to-On verification. A read-only refresh later confirmed Mic On and exact baseline restoration; no write was retried. The replacement candidate must repeat Test A from the newly captured current baseline. This does not establish J019's root cause or transfer its result to the new candidate.
+J020 on the `a7880844` candidate completed On-to-Off, then permission arrived about 18.5 seconds
+after request. A current replacement session read Mic Off and the unchanged EQ baseline but had no
+stable identity; no automatic verifier event occurred. No second write or restoration was
+attempted. The exact corrected candidate must establish fresh identity and restore Mic On first.
 
-- Choose the opposite of the original mic/headset control value.
-- Trigger one change in My DAC → DEVICE. Do not retry if the write result is uncertain.
+- If the fresh baseline reads Mic Off, trigger exactly one Off-to-On write in My DAC → DEVICE. This
+  is both the required restoration and the corrected candidate's Test A. Do not toggle again after
+  terminal success plus fresh On readback and complete baseline verification.
+- If the fresh baseline already reads Mic On, record that the prior restoration is currently
+  satisfied. For candidate-specific Test A, perform one On-to-Off write and, only after its
+  terminal success/readback, one On restoration write; verify the complete original baseline.
+- Before each write require current candidate identity to be available. Never retry an uncertain
+  write. If permission exceeds the 25-second JA11 bound, treat the attempt as terminal; do not
+  replay it. If replacement identity is unavailable, stop all mutations even if read-only data is
+  visible.
+- For the first Test A re-enumeration, if Android shows the USB permission dialog, capture it and
+  leave it pending for about 12 seconds before accepting. This crosses the old 10-second fallback
+  while staying inside the new 25-second deadline. Accept immediately if the prompt appeared late;
+  never wait past 20 seconds from the visible prompt. The helper log records timing. If permission
+  is denied or the attempt reaches its deadline, stop without replaying the write.
 - Require completed command/report evidence, expected detach/re-enumeration if generated, old session closure, a new session generation, fresh read and requested value.
-- If the requested value differs from the original, restore the original once after the first result is fully verified; independently confirm fresh readback.
-- On failure: stop all mutation, reacquire exact JA11 read-only, capture current value/session and logs. No repeated write unless a later off-phone decision and new exact candidate authorize another session.
+- Capture the permission dialog before owner confirmation if it appears, then capture the terminal My DAC readback. Keep screenshots local/private; do not capture serials, fingerprints, or host network details. Use logs and complete snapshots as authoritative evidence.
+- Verify fresh Mic On plus the complete original state before any Test B/C/D operation.
+- On failure: stop all mutation, capture read-only state and logs, and release the phone. Do not infer restoration from detach or a successful USB read.
 
 ## Test B: UAC mode
 
 - Choose the opposite of the original mode.
 - Trigger one change from My DAC → DEVICE. Record starting/ending PID, expected detach, new generation, fresh read and outcome.
+- Capture the terminal UAC readback after reconnection.
 - Require the matching re-enumerated PID (`2972:0101` for UAC 1.0, `2972:0102` for UAC 2.0) and requested fresh readback.
 - Restore original mode once after verified success if it differs; verify original PID and mode on the replacement session.
 - Stop on ambiguous identity, permission failure, uncertain write, missing replacement session or incorrect mode. Do not replay.
@@ -32,11 +84,12 @@ J019 on the prior `3f5e0c3` candidate verified On-to-Off but timed out during au
 ## Test C: one Flash from Off
 
 1. Generate the temporary baseline profile from the exact candidate's complete snapshot event. Do not hand transcribe protocol data. Review its six fields against the app's imported preview and require JA11 optimization status **Exact**.
-2. Import with My EQs → Import Personal EQ using these temporary test labels: Manufacturer `JA11 Acceptance`, Headphone model `User 1 Baseline`, EQ name `JA11 v0.8.1 baseline a7880844`; then stage the imported item.
+2. Import with My EQs → Import Personal EQ using these temporary test labels: Manufacturer `JA11 Acceptance`, Headphone model `User 1 Baseline`, EQ name `JA11 v0.8.1 baseline da1f8e25`; then stage the imported item.
 3. Read current program. If needed, select Off using the ordinary DEVICE selector; freshly verify Off. Record the state. Do not use Reset or any preliminary reboot.
 4. Press **Flash exactly once**. Let the existing transaction run to a terminal state. The expected sequence remains five band writes, global gain, select User 1, Apply, pre-Save verification, exactly one Save, then fresh-session final readback if restart occurs.
 5. Pass only if the UI reports verified success, logs show exactly one Save command (`0x19`), no old-session continuation, and final User 1 bands/gain match the baseline values exactly. A restart requires a new session and final authoritative readback. A log gap or uncertain outcome is a failure/stop, not permission to retry.
-6. If Flash fails: do not press Flash again. Stop mutation. Reacquire exact JA11 read-only and capture active program, the full User 1 bank/gain, last completed command and whether Save was reached. Release the Pixel when state is safe. Investigate off-phone in the same mission.
+6. Capture the terminal Flash result screen and final verified User 1 state.
+7. If Flash fails: do not press Flash again. Stop mutation. Reacquire exact JA11 read-only and capture active program, the full User 1 bank/gain, last completed command and whether Save was reached. Release the Pixel when state is safe. Investigate off-phone in the same mission.
 
 ## Test D: full-power volume/program truth
 
@@ -53,6 +106,7 @@ Only after Flash passes:
 - Preserve the complete original User 1 bank/global gain. The Flash target is derived from that bank. If any coefficient differs, stop and do not use Reset; determine a safe restoration plan off-phone.
 - Restore each changed mic/UAC/volume/program setting to the original value. Restore UAC first if it affects PID/permissions; verify each fresh read after reconnection.
 - Capture final full bank/global gain and DEVICE state; require exact equality to the original baseline for all restorable fields.
+- Capture one final My DAC screenshot after exact original-state readback. Use the timestamped `capture-screen` helper; it saves mode-0600 PNGs directly to the private local evidence folder.
 - Stop log capture, copy logs/screenshots and a sanitized record into the private evidence directory, then remove only the staged test profile from Downloads and uninstall only `com.weekssa.opraeqforuapp.ja11diag` after the app's hardware state is safe and evidence is saved.
 - At that point state: **PHONE RELEASED — YOU CAN TAKE THE PIXEL BACK**.
 

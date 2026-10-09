@@ -2,13 +2,14 @@
 set -euo pipefail
 umask 077
 
-SOURCE_SHA="a78808443c71d688e0f338e96495847569fe12f7"
-EXPECTED_APK_SHA="7beb5bcebbc0dc40a68b33de911cc8722d76d3f0ff2e98685b1fa25e17caed61"
-PREVIOUS_APK_SHA="85e06ca0db818586a7eb2eab3378a1b21949b3c8593e1318536ec651d8369305"
+SOURCE_SHA="da1f8e25918065667648d676cb669fed4c803f17"
+EXPECTED_APK_SHA="767b42591adc92f0e1662480112bf9efe87ce15f51060d20a7aa39118b8d8c24"
+PREVIOUS_APK_SHA="7beb5bcebbc0dc40a68b33de911cc8722d76d3f0ff2e98685b1fa25e17caed61"
 DEBUG_SIGNER_SHA="73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41"
 PACKAGE="com.weekssa.opraeqforuapp.ja11diag"
 ACTIVITY="com.weekssa.opraeqforuapp.MainActivity"
-REMOTE_PROFILE="/sdcard/Download/ja11-v081-baseline-a7880844-20261008.txt"
+REMOTE_PROFILE="/sdcard/Download/ja11-v081-baseline-da1f8e25-20261008.txt"
+ROLLBACK_APK="${JA11_ROLLBACK_APK:-/private/tmp/ja11-v0.8.1-acceptance-a7880844/opra-eq-ja11diag-0.8.0-source-a7880844.apk}"
 
 ADB_BIN="${JA11_ADB_BIN:-}"
 if [ -z "$ADB_BIN" ] && [ -n "${ANDROID_SDK_ROOT:-}" ]; then
@@ -42,6 +43,7 @@ Required environment:
 
 Optional environment:
   JA11_ADB_BIN        exact Android SDK adb binary (otherwise SDK roots/PATH are checked)
+  JA11_ROLLBACK_APK   exact superseded J020 APK used only for safe software rollback
 
 Actions:
   list             show current adb devices
@@ -50,6 +52,7 @@ Actions:
   start-logcat     start private local full-logcat capture
   stop-logcat      stop the local capture process (serial may be blank)
   install          install only the frozen JA11 diagnostic APK
+  rollback         restore the exact prior J020 diagnostic APK; no hardware action
   launch           start only the diagnostic package
   verify           save and verify exact APP_BUILD_INFO diagnostics
   stage-profile    push a generated baseline profile to Downloads
@@ -158,10 +161,11 @@ verify_previous_installed_candidate() {
   chmod 600 "$dump_path"
   if ! printf '%s\n' "$dump" | grep -Fq 'versionName=0.8.0-ja11diag' || \
      ! printf '%s\n' "$dump" | grep -Eq 'versionCode=11([[:space:]]|$)'; then
-    echo "Installed diagnostic package version is not the exact prior J019 candidate; stop." >&2
+    echo "Installed diagnostic package version is not the exact prior J020 candidate; stop." >&2
     return 11
   fi
   echo "Exact prior diagnostic APK and signer verified; its app data will be preserved by in-place update."
+  echo "Verified rollback APK saved at: $pulled"
 }
 
 case "$ACTION" in
@@ -198,6 +202,31 @@ case "$ACTION" in
       "$ADB_BIN" -s "$SERIAL" install "$APK"
     fi
     save_package_dump
+    ;;
+  rollback)
+    verify_pixel
+    if [ ! -f "$ROLLBACK_APK" ]; then
+      echo "The exact J020 rollback APK is unavailable; stop without changing the installed app." >&2
+      exit 6
+    fi
+    verify_apk "$ROLLBACK_APK" "$PREVIOUS_APK_SHA" "J020 rollback"
+    PACKAGE_PATHS="$("$ADB_BIN" -s "$SERIAL" shell pm path "$PACKAGE" | tr -d '\r')"
+    if [ "$(printf '%s\n' "$PACKAGE_PATHS" | awk '/^package:/ {n++} END {print n+0}')" -ne 1 ]; then
+      echo "Rollback requires exactly one installed diagnostic APK path; stop." >&2
+      exit 9
+    fi
+    INSTALLED_PATH="$(printf '%s\n' "$PACKAGE_PATHS" | sed -n 's/^package://p')"
+    STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
+    CURRENT_APK="$EVIDENCE_DIR/current-ja11diag-before-rollback-$STAMP.apk"
+    if [ -e "$CURRENT_APK" ]; then
+      echo "Preserving existing pre-rollback APK evidence; use a new private evidence directory." >&2
+      exit 10
+    fi
+    "$ADB_BIN" -s "$SERIAL" pull "$INSTALLED_PATH" "$CURRENT_APK" >/dev/null
+    chmod 600 "$CURRENT_APK"
+    verify_apk "$CURRENT_APK" "$EXPECTED_APK_SHA" "Installed corrected candidate"
+    "$ADB_BIN" -s "$SERIAL" install -r "$ROLLBACK_APK"
+    verify_previous_installed_candidate
     ;;
   launch)
     verify_pixel

@@ -1,6 +1,67 @@
 # FiiO / JadeAudio JA11 protocol notes
 
-Status: **JA11 global-gain codec correction implemented; Flash/Save/final-readback and observed reconnect/restoration physically verified; explicit power-cycle persistence and full qualification pending**
+Status: **JA11 codec correction and historical Flash/reconnect/restoration paths remain physically evidenced on their exact candidates; J020 restart verification is incomplete, corrected software/emulator gates pass, exact-head CI is pending, Mic On restoration is outstanding, and v0.8.1 physical acceptance is pending**
+
+## 2026-10-08 J020 USB permission and replacement identity findings
+
+J020 recorded one completed Mic On-to-Off write followed by USB detach. Android returned the
+replacement-session permission result about 18.5 seconds after the request. The replacement
+session then opened and read the device state, but its identity status was unavailable while the
+session remained current; no `RESTART_VERIFY_*` event was recorded. The last verified mic state is
+Off, and restoration to the original On state was not attempted.
+
+The stable JA11 restart identity is based on exactly one nonblank USB serial; expected PID and HID
+interface changes are excluded. J020's initial session passed that identity gate. On re-enumeration,
+the attach-side log had no readable serial value before permission; the later session's safe status
+was `identityAvailable=false` with `sessionCurrent=true`. Because the old diagnostic candidate
+suppressed serial-access exceptions and did not record a per-session serial status, the physical
+evidence cannot distinguish a missing/blank descriptor from permission-gated access or a
+post-permission access exception. A successful current session and readback are not identity proof.
+Do not substitute PID, name, firmware, or USB path for the serial key.
+
+The delayed permission and unavailable identity co-occurred, but the captured facts do not establish
+that one caused the other. The current implementation treats them separately: each permission
+attempt carries a request ID, device name/product ID and detach generation; an eligible grant
+re-resolves the current descriptor and checks permission before opening. A 10-second waiting
+fallback no longer destroys the JA11 attempt. JA11 has its own 25-second hard deadline; a grant
+after expiry is stale and requires a fresh Connect action. Retry, detach, explicit terminal
+cancellation and session close invalidate the applicable attempt. There is no automatic mutation
+replay.
+
+Other shared transports retain an eligible late permission callback after their 10-second retry
+fallback until an explicit retry, detach, cancellation, or close; their UI is retryable. JA11's
+prompt has a bounded 25-second lifetime. These policies are covered by Robolectric callback,
+denial, detach, stale-device, duplicate-callback, cancellation, and timeout regressions. Physical
+confirmation of the corrected JA11 path remains pending.
+
+The replacement diagnostic build reports only a per-session serial status category
+(`READABLE_NULL`, `READABLE_BLANK`, `READABLE_NONBLANK`, or exception category), never the serial
+value or a fingerprint. This provides the next physical session a read-only cause clue without
+relaxing the identity policy.
+
+Android documents that `UsbManager.requestPermission` returns the decision through the supplied
+`PendingIntent` extras but specifies no response-time service level. Android also documents that
+`UsbDevice.getSerialNumber()` can return `null`, and can throw `SecurityException` for apps
+targeting Android Q or later when they lack device permission. Those API behaviors make both
+permission-gated access and a missing descriptor plausible; neither proves which occurred in J020.
+See the official [UsbManager reference](https://developer.android.com/reference/android/hardware/usb/UsbManager)
+and [UsbDevice reference](https://developer.android.com/reference/android/hardware/usb/UsbDevice).
+
+## 2026-10-08 corrected source preflight
+
+The correction is committed at source `da1f8e25918065667648d676cb669fed4c803f17`. Its permission
+attempt tracker preserves a late grant after the shared 10-second retryable fallback, and JA11's
+own permission window terminates at 25 seconds. Each attempt is fenced by request ID, USB device
+name/PID, detach generation, and a freshly resolved permissioned `UsbDevice`. A UUID in the
+permission action makes PendingIntent identity unique across HID-session recreation, including
+reused in-memory request IDs. Grants for retired attempts remain stale. The unique-nonblank-serial
+identity key remains unchanged, and no uncertain mutation is replayed.
+
+Focused delayed-grant/stale-callback regressions and the full 818-test JVM suite passed, as did
+lint/build/R8 gates and all 64 API 35 emulator tests. The source-bound diagnostic APK and emulator
+runtime build event were verified off-phone. This narrows the software lifecycle defect; it does
+not identify why the J020 replacement session lacked a readable identity and does not prove the
+new candidate will pass on this JA11. Exact-head CI and physical acceptance remain pending.
 
 ## 2026-09-26 J017 physical evidence — observed reconnect and exact restoration
 

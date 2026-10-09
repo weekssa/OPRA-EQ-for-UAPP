@@ -885,3 +885,42 @@ Main-only signing run `37769090436` produced artifact `11546549425` (ZIP SHA-256
 The qualified beta production app-source tree is unchanged, so existing C05 Class B physical qualification remains applicable. The exact read-only C05-C evidence passed on 2026-10-07 under plan revision 2.48; no phone/DAC/ADB/USB action was repeated for stable. Class B remains the honest hardware-change classification.
 
 Dependency caveat: the 2026-10-08 refresh found 56 open transitive Maven alerts in build/test tooling. The refreshed stable `releaseRuntimeClasspath` contained no alert-bearing coordinates; this is not a clean vulnerability scan, and no DEX scan was performed.
+
+## 2026-10-08 JA11 v0.8.1 continuation — J020 is incomplete
+
+The immutable public v0.8.0 release remains current and unchanged. JA11 J020 used diagnostic source
+`a78808443c71d688e0f338e96495847569fe12f7` and APK SHA-256
+`7beb5bcebbc0dc40a68b33de911cc8722d76d3f0ff2e98685b1fa25e17caed61` on Pixel 9 / JA11 firmware
+2.20, VID/PID `0x2972:0x0102`. The initial session's serial-based identity check passed. One
+Mic On-to-Off write completed and detached; permission for the replacement session arrived about
+18.5 seconds after the request. A current replacement session then read Mic Off and the unchanged
+EQ baseline, but identity was unavailable and no automatic restart-verifier event was recorded.
+No second write or restoration was attempted. The last verified device state is Mic Off and
+restoration to the original Mic On baseline remains outstanding. Tests B/C/D were not run.
+
+The unavailable field is the stable restart identity key, which requires exactly one nonblank USB
+serial. A pre-permission attach observation lacked a readable serial, but the evidence cannot tell
+whether the post-permission serial was absent/blank or access failed. Delayed permission and missing
+identity co-occurred; causation is unknown. Never weaken the identity gate. The in-progress fix
+retains a request-ID/device/PID/detach-generation fenced permission attempt beyond the initial
+10-second UI fallback, bounds JA11's attempt at 25 seconds, re-resolves the permissioned current
+descriptor before opening, and logs only a privacy-safe per-session serial status. The 18.5-second
+timing is this unit's observed result, not an Android API guarantee.
+
+PR #80 remains draft. Corrected source `da1f8e25918065667648d676cb669fed4c803f17` passes G2/G3,
+R8, and all 64 API 35 emulator tests; its exact-source diagnostic APK has SHA-256
+`767b42591adc92f0e1662480112bf9efe87ce15f51060d20a7aa39118b8d8c24` and the expected debug
+signer. The isolated emulator reported the exact `APP_BUILD_INFO` source SHA. Host-only ADB
+preparation has been refreshed without enumerating devices or services; the live Pixel endpoint
+remains pending. The final independent lifecycle and helper/procedure reviews found no actionable
+issue. Exact-head PR CI remains pending until the synchronized handoff is pushed. The prepared
+phone plan now includes an intentional permission wait beyond the old 10-second fallback, private
+screenshot points, and a hash-verified software rollback procedure.
+
+While the owner is away, do not address or enumerate the Pixel with ADB and do not interact with
+the JA11. The next physical session begins with a fresh full baseline and identity check; if Mic is
+still Off, restore it to On as the single Test A mutation. For its first USB permission prompt,
+accept after about 12 seconds to cross the old fallback and remain inside the new 25-second bound.
+Stop if identity is missing/ambiguous, permission fails, or any result is uncertain. Keep Tests
+B/C/D and release gates pending until they pass. No merge, publication, or JA11 support claim
+precedes physical acceptance.
