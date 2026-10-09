@@ -1,6 +1,36 @@
 # FiiO / JadeAudio JA11 protocol notes
 
-Status: **JA11 codec correction and historical Flash/reconnect/restoration paths remain physically evidenced on their exact candidates; J020 mutation verification is incomplete; J021 is a read-only initial-session identity observation; source `61695803` implements the JA11-only opened-connection serial fallback with local and emulator gates passed; latest PR-head CI and physical identity/restoration remain pending**
+Status: **JA11 codec correction and historical Flash/reconnect/restoration paths remain evidenced only on their exact candidates; J020 remains the last mutation and Mic Off the last verified state; J021 and J024 remain read-only observations; the owner approved Model D on 2026-10-09 and its local gates and independent review pass; exact candidate/emulator/CI qualification and physical acceptance remain pending**
+
+## 2026-10-09 owner-approved Model D — current identity and restart policy
+
+The owner approved session-specific identity requirements for the v0.8.1 correction. This section
+supersedes the older J020/J021/J024 operational instructions in this file that make a unique
+nonblank serial mandatory. It does not change their historical evidence: J024's permissioned initial
+JA11 session opened and completed a read-only snapshot, but both Android serial readers returned
+null; no write or reset occurred.
+
+A USB serial is optional continuity evidence. Initial JA11 connection, ordinary reads, same-session
+controls, and scheduling a restart-capable control require the exact supported FiiO vendor/PID set,
+one unambiguous candidate, valid HID interface/endpoints, current Android permission, a successful
+fresh open/claim, and a current session generation. Multiple supported JA11 candidates fail closed
+regardless of serial values; never select by enumeration order. This JA11 rule does not change shared
+non-JA11 transport defaults.
+
+For expected reset/re-enumeration, require an accepted write, expected detach, invalidation of the
+old session, a fresh permissioned descriptor, successful open/claim, a new session generation, one
+supported replacement candidate, and authoritative fresh readback. Compare serials only when both
+sessions provide usable values and reject a mismatch. Missing serial is allowed only when exactly one
+supported candidate passes all operation-continuity checks. Describe the serialless result as
+**requested state verified on the sole returning supported JA11**; never claim same-physical-unit
+verification. Unsolicited reconnect without a pending operation starts a new session and baseline.
+Never replay an uncertain write.
+
+Flash/Save/Reset preserve their protocol-specific ordering while applying the same no-arbitrary-
+candidate and authoritative-final-readback rules. Keep exactly one logical Flash action and Save.
+Volume and preset persistence remain unresolved until the approved full-power physical test. No
+physical acceptance has occurred under Model D yet; J024 remains the latest identity-related physical
+read-only result, J020 remains the latest mutation, and Mic On restoration is outstanding.
 
 ## 2026-10-08 J021 — Android device serial getter returned null
 
@@ -22,7 +52,7 @@ fail-closed regression coverage but no physical result yet. See the [Android con
 reference](https://developer.android.com/reference/android/hardware/usb/UsbDeviceConnection) and
 [AOSP USB host implementation](https://android.googlesource.com/platform/system/core/+/3597339226f5c0681631df9039eebf07485c04de/libusbhost/usbhost.c).
 
-## 2026-10-08 opened-connection serial candidate
+## 2026-10-08 opened-connection serial candidate — J024 candidate, superseded
 
 Application source `616958037349e2f0e0784a556c6430b0de6ceb18`, tree
 `fdb6c8d10c8aa865da1a4818d22a7c14b2559b21`, adds the Android connection serial as a JA11-only

@@ -1,19 +1,22 @@
 # FiiO JA11 v0.8.1 acceptance package
 
-This folder contains the one-session Pixel/JA11 procedure and host tools. J020 remains incomplete:
-its replacement session read Mic Off but did not establish restart identity, and restoration to Mic
-On remains outstanding. J021 was a read-only initial session on the prior `da1f8e2` candidate; it
-showed that Android returned null from `UsbDevice.serialNumber` despite granted USB permission.
-The current replacement source is `616958037349e2f0e0784a556c6430b0de6ceb18`; its exact-source
-diagnostic APK and local/emulator results are recorded below. The owner has made the Pixel available.
-Use it only after every required check passes on the latest live PR #80 head and the exact APK tuple
-is refreshed. Do not use the prior J020 or J021 APK for physical acceptance.
+This folder contains the one-session Pixel/JA11 procedure and host tools. **Current policy: the
+owner-approved Model D makes USB serial optional continuity evidence.** Initial JA11 reads and
+same-session controls require one exact supported JA11 candidate, valid HID endpoints, current
+permission, a fresh claimed connection, and a current generation. Expected-reset verification also
+requires an accepted write, expected detach, old-session invalidation, fresh permission/open/claim,
+one returning candidate, a new generation, and authoritative readback. Compare serials only when
+both sessions provide usable serials; mismatch fails closed. Without serial, success means state was
+verified on the sole returning JA11, not that the same physical unit was proven. Uncertain writes
+are never replayed.
 
-J021 used this `da1f8e2` APK for a read-only initial-session observation and found that
-`UsbDevice.serialNumber` returned null despite permission being granted. It did not test a
-replacement session or perform a write. Do not use this APK for physical mutation. The current
-replacement below adds the JA11-only opened-connection serial fallback while preserving the
-unique nonblank serial requirement.
+J020 remains the latest mutation and Mic Off the last verified value; restoring original Mic On is
+outstanding. J024 was a read-only test of the prior candidate: both Android serial readers returned
+null, and no write occurred. That historical observation does not block Model D, and that APK must
+not be repeated. Finish all off-phone gates, freeze and verify the exact candidate, then request
+**PHONE WINDOW READY — PIXEL + JA11 NEEDED** with the source/APK hashes, tests, expected writes and
+resets, Android permission interaction, occupancy, pass/fail conditions, and restoration obligations.
+Wait for a fresh explicit confirmation before any physical command.
 
 ## J020 diagnostic candidate — superseded; do not install again
 
@@ -50,17 +53,17 @@ not transfer to the corrected source.
 This debuggable diagnostic APK is not the official release artifact and has no physical acceptance
 claim. Do not install the J020 APK again.
 
-The latest candidate installed before the new physical session is the J021 APK with SHA-256
-`767b42591adc92f0e1662480112bf9efe87ce15f51060d20a7aa39118b8d8c24`, package
-`com.weekssa.opraeqforuapp.ja11diag`, version `0.8.0-ja11diag`/11, and debug certificate SHA-256
-`73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`. The install helper verifies
-this exact prior package before an in-place `adb install -r` of the replacement APK, preserving app
-data. A mismatch stops before installation.
+J024 installed the `61695803` APK during its recorded session. The current package contents on the
+Pixel have not been checked since that session. Before the next phone window, verify the installed
+package and update the helper's prior-APK and rollback pins to the exact current artifact; the
+helper must stop on any unknown checksum or signer. The new candidate will be installed in place
+with `adb install -r` so app data is preserved.
 
-## Current replacement diagnostic candidate
+## Historical J024 diagnostic candidate — superseded; do not reuse
 
-**Off-phone build and emulator validation complete; exact latest PR-head checks and physical
-qualification remain pending.** Application source commit `616958037349e2f0e0784a556c6430b0de6ceb18`,
+This exact candidate passed its then-applicable off-phone and PR gates. J024's serial-required stop
+conclusion is superseded by Model D. These results do not qualify the new source, which is not yet
+frozen. Application source commit `616958037349e2f0e0784a556c6430b0de6ceb18`,
 tree `fdb6c8d10c8aa865da1a4818d22a7c14b2559b21`.
 
 - APK: `opra-eq-ja11diag-0.8.0-source-61695803.apk`
@@ -72,43 +75,51 @@ tree `fdb6c8d10c8aa865da1a4818d22a7c14b2559b21`.
   diagnostic/debug/release builds, Android-test compilation and R8 mapping verification passed.
 - Wiped API 35 emulator: exact `APP_BUILD_INFO` source SHA and cold launch passed; instrumentation
   passed 64/64.
-- Exact PR #80 CI must pass on the latest live head before any phone command. These emulator and
-  software results do not establish JA11 hardware behavior.
+- All eight PR #80 checks passed on exact pushed head `f2f6c3b2317f22cf4fe23ce9ddd4878cf957d03d`.
+  J024 then showed that this candidate cannot establish the required identity. The software results
+  do not establish JA11 hardware acceptance, and this APK must not be repeated for the same test.
 
-The J021 APK is the only configured software rollback target. It is superseded and must not be used
-for further physical acceptance.
+The constants below still describe J024/J021 historical artifacts. Refresh the candidate hash,
+source SHA, installed-prior APK verification, rollback artifact, and profile name in the helper and
+this guide after the Model D candidate freezes. Do not run the helper's `install` or `rollback`
+actions until those values match the final candidate sidecar and the verified installed package.
 
 The local candidate sidecar `CANDIDATE.md` records the local APK location and exact-head evidence. This package appends no Pixel serials, private network identifiers, raw logs, or hardware-specific personal data to the repository.
 
 `start-logcat` runs as a foreground process so its lifetime is owned by the terminal session and its
 full output is flushed into the private evidence directory. Keep that terminal session open during
 the physical procedure and send Ctrl-C there when capture should stop; do not launch it as a detached
-background job.
+background job. The `verify` and `verify-ja11-session` actions extract `JA11_DIAG` events from this
+retained local capture, rather than relying on Android's finite current log buffer. Start capture in
+a fresh evidence directory before launching the candidate and keep its foreground ADB process
+running through verification. The helper binds a private PID marker to the capture and confirms the
+matching ADB `logcat -v threadtime` process for the selected Pixel serial is still alive; missing,
+stopped, wrong-target, or replaced captures fail closed. The helper rechecks that binding after
+event extraction and immediately before reporting verification success.
+
+Run `test-phone-session.sh` for synthetic positive and fail-closed coverage of the retained-log
+parser, serialless single-candidate acceptance, zero/multiple candidate rejection, stale sessions,
+later ambiguity, missing/stopped capture, wrong ADB serial, missing build identity, and output
+redaction. It uses fake ADB and never enumerates or contacts a device.
 
 ## Preparation tools
 
 - `make-baseline-profile.py` converts the latest complete `SNAPSHOT_READ_COMPLETE` event for the exact candidate SHA into a temporary Equalizer APO profile and a value summary. It rejects missing fields, wrong source, unsupported types, out-of-range values, values outside JA11 native quantization, and existing output paths.
-- `phone-session.sh` requires one explicit ADB serial, checks that it identifies Google Pixel 9 before package actions, verifies the frozen APK checksum, and operates only on `.ja11diag`. If the prior J021 diagnostic package is installed, it pulls and verifies the exact prior APK checksum and signer before updating in place with `adb install -r`, preserving app data. The `rollback` action is available only for a safe software revert: it verifies the installed corrected APK, reinstalls the exact J021 APK with `-r`, then verifies the restored APK checksum, package/version, and signer. The J021 build is superseded and must not be used for further JA11 acceptance. A different installed build or signature is a stop. The `uninstall` action targets only `.ja11diag`; log, pulled APK, package dump and screenshot output stays in a caller-provided private local evidence directory.
+- `phone-session.sh` requires one explicit ADB serial, checks that it identifies Google Pixel 9 before package actions, verifies the frozen APK checksum, and operates only on `.ja11diag`. Candidate SHA, prior installed APK, rollback APK, and profile name are candidate-specific. Refresh and verify all of them against the final sidecar before any physical window; unknown installed builds or signatures are a stop. Updates use `adb install -r` to preserve app data. The `uninstall` action targets only `.ja11diag`; logs, pulled APKs, package dumps and screenshots stay in a caller-provided private local evidence directory.
 
-Before any write, run `verify-identity` after launching the exact replacement candidate and obtaining
-a complete fresh snapshot. It requires the candidate's `APP_BUILD_INFO`, then a same-process
-`USB_IDENTITY_DESCRIPTOR_STATUS` showing permission granted, a null device serial and a nonblank
-opened-connection serial (`serialSource=USB_CONNECTION`) for PID `257` or `258`, followed by
-`USB_SESSION_OPENED` for the same product ID.
-It then requires the complete snapshot and `RESTART_IDENTITY_AVAILABILITY` for that opened session's
-generation and candidate source SHA. The identity event reveals only booleans and generation; the
-USB descriptor event reveals only status categories and product ID. Neither event records the serial
-or fingerprint. The helper's terminal summary also omits serial and fingerprint. Its mode-0600
-private event file retains the captured diagnostic stream, including snapshot band and gain values,
-under the mode-0700 evidence directory. It also confirms the emitting package PID is still live and
-no later detach or session-close event invalidated the opened generation. This read-only gate proves
-that the current JA11 session's fail-closed unique identity key uses a nonblank serial from the
-opened-connection fallback. If Mic is Off in the complete baseline, its first permitted Off-to-On
-restoration transaction verifies that identity survives real re-enumeration. If Mic is already On,
-record restoration as satisfied and skip Mic writes; reconnect stability is then verified by the
-next permitted expected-restart transaction. If any read-only evidence is missing, stale, mismatched,
-or unavailable, stop before mutation and release the phone. Repeat the current-session identity
-check after each expected restart.
+Before any write, run `verify-ja11-session` after installing/launching the frozen candidate and
+obtaining a complete read-only snapshot. It requires exact `APP_BUILD_INFO`, a same-process
+permissioned JA11 descriptor event, exactly one candidate in both `USB_SESSION_OPENED` and
+`RESTART_IDENTITY_AVAILABILITY`, and a complete current snapshot for the same source SHA, process,
+and generation. A readable serial is optional; the helper reports only serial availability/source
+categories and never prints the serial or fingerprint. It confirms the app process remains live and
+rejects later detach, close, or ambiguous attach events. This is a current-session/cardinality gate,
+not proof of same-unit continuity when serial is absent. If Mic is Off in the complete baseline, its
+first permitted Off-to-On restoration transaction requires accepted write, expected detach, fresh
+permission/open/claim, a sole returning JA11, a new generation, and authoritative Mic-On readback.
+If Mic is already On, record restoration as satisfied and skip the write. Stop before mutation if
+candidate/source, session, baseline, permission, or cardinality evidence is missing or stale. Repeat
+the current-session/cardinality/readback checks after each expected restart.
 
 Set `JA11_ADB_BIN`, `JA11_APKSIGNER_BIN`, `JA11_CANDIDATE_APK`, and `JA11_EVIDENCE_DIR` from the local candidate sidecar when the owner is participating. The exact path/serial are runtime values and do not belong in committed evidence. The script never chooses among devices automatically.
 

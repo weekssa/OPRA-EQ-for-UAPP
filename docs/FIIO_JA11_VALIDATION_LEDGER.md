@@ -15,6 +15,15 @@ rewrite or broaden this append-only hardware evidence.
 
 ## Current disposition
 
+As of 2026-10-09, the owner-approved Model D policy makes serial optional continuity evidence and
+supersedes older operational conclusions that a null serial blocks JA11 use or mutation. The new
+implementation is being qualified off-phone; its local tests, emulator instrumentation, independent
+review, exact-head CI, and candidate provenance are pending. No physical Model D result exists, and
+no phone action may begin until all those gates pass and the owner confirms a new phone window.
+J024 remains the latest physical read-only session and J020 the latest mutation; their recorded
+device observations remain unchanged. Mic Off is the last verified value and Mic On restoration is
+outstanding.
+
 JA11 has historical physical Flash/Save/final-readback and observed reconnect/restoration passes on
 the exact J016/J017 candidates; explicit power-cycle retention and full hardware qualification
 remain pending. J020 is the latest mutation record and is an incomplete/negative
@@ -29,6 +38,22 @@ APK, infer the identity failure's underlying cause, or make a public JA11 suppor
 
 The `0x17` global-gain codec correction remains proven by the official FiiO Control JA11 codec and
 historical physical evidence. J012 remains valid negative evidence for the superseded codec.
+
+## 2026-10-09 owner-approved Model D — software qualification pending
+
+Model D requires one exact supported JA11 candidate for initial selection and restart continuation,
+valid uniquely selected HID interface/endpoints, current permission, a fresh claimed connection and
+generation, accepted operation-bound writes, expected detach for resets, fresh authoritative
+readback, and no automatic replay of uncertain writes. A usable serial is optional; compare it only
+when both sessions expose a usable value and reject mismatch. When serial is absent, the only
+permitted success claim is state verified on the sole returning supported JA11, not the same
+physical unit. Unsolicited reconnect without a pending operation starts a new session and baseline.
+
+At ledger update time the production changes and regressions are still uncommitted. Focused/full
+tests, API 35 instrumentation, independent lifecycle review, all exact-head PR checks, exact
+diagnostic APK provenance, and host-only candidate preflight remain pending. No Model D physical
+test has occurred. These fields will be replaced with measured hashes/results only after the exact
+candidate is frozen and each gate is independently verified.
 
 ## Deterministic software value trace for the supplied Jaytiss record
 
@@ -266,3 +291,87 @@ v2 signer with certificate SHA-256
 `73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`. The exact source-bound API
 35 emulator launch and 64/64 instrumentation results remain recorded above. This readback proves
 local artifact identity only; physical serial availability and JA11 behavior remain unverified.
+
+## 2026-10-09 J022 — exact-candidate phone attempt with JA11 disconnected
+
+After the exact app source, emulator, independent review, and PR-head CI gates passed, the frozen
+diagnostic APK was installed and runtime-verified on the Pixel 9. Candidate source was
+`616958037349e2f0e0784a556c6430b0de6ceb18`; APK SHA-256 was
+`ee0fe4fbfaae7b3f959d4122f0c21c128dffdf21d47586376ee383e2534ceb0d`; package/version/code and
+debug signer are recorded in the preceding preflight entry.
+
+The read-only `verify-identity` helper exited 14 because its filtered current-logcat snapshot did not
+contain the required candidate `APP_BUILD_INFO`. The already-running private continuous log retained
+the candidate build event and a `USB_ATTACH` event, but contained no descriptor-status,
+`USB_SESSION_OPENED`, complete snapshot, or identity-availability event. The owner confirmed that
+the JA11 was disconnected during this attempt. This does not exercise or fail the opened-connection
+serial fallback, and it does not establish a JA11 identity. No JA11 write or control command was
+sent. The Pixel was released after preserving the local evidence at
+`/private/tmp/ja11-v0.8.1-acceptance-61695803/owner-phone-session-20261009/`; the full logs remain
+private and are not copied into the repository.
+
+Off-phone diagnosis found that the helper used a new Android logcat ring-buffer dump for each
+verification step even though the foreground private capture retained the build event. The helper
+now extracts diagnostic events from that retained capture so build and session events share one
+evidence window. This host-side change is untested and must pass its applicable local/helper review
+and exact-head CI gates before another phone test. The identity gate remains open; J020 remains the
+latest mutation record, and Mic On restoration remains outstanding.
+
+## 2026-10-09 J023 — helper-only verification gate closeout
+
+The frozen app source and exact diagnostic APK are unchanged. The private APK SHA-256 still matches
+`ee0fe4fbfaae7b3f959d4122f0c21c128dffdf21d47586376ee383e2534ceb0d`. The phone helper now extracts
+from the same retained private log, binds verification to the active ADB logcat process and selected
+Pixel serial, rechecks capture liveness after extraction and immediately before success, and prints
+only curated identity status summaries. No JA11 serial or fingerprint value is printed.
+
+The fake-ADB regression passed for the positive identity fixture, missing/stopped capture, capture
+loss during the final verification check, wrong selected serial, blank connection serial, missing
+candidate build event, and serial/fingerprint sentinel redaction. Both shell scripts passed `bash
+-n`; `git diff --check` passed; the Unlazy helper gate passed; and independent read-only review
+approved the final helper/test diff. No Android source changed, so under the current owner instruction
+the helper-only delta did not trigger another Android or CI matrix. These checks do not establish
+JA11 identity or physical behavior. The authorized physical session may now proceed with read-only
+identity first. No JA11 write has occurred since J020; original Mic On restoration remains pending.
+
+## 2026-10-09 J024 — historical exact-candidate read-only identity observation
+
+The authorized session used the exact frozen candidate: source
+`616958037349e2f0e0784a556c6430b0de6ceb18`, APK SHA-256
+`ee0fe4fbfaae7b3f959d4122f0c21c128dffdf21d47586376ee383e2534ceb0d`, package
+`com.weekssa.opraeqforuapp.ja11diag`, version `0.8.0-ja11diag`/11, and debug signer SHA-256
+`73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`. The installed APK hash,
+package metadata, signer, and runtime `APP_BUILD_INFO` matched. The Pixel was a Google Pixel 9. The
+app displayed FiiO JA11 connected; diagnostics recorded product ID `258` (`0x0102`) and permission
+granted. This session did not independently capture VID or firmware.
+
+The identity descriptor event reported `serialStatus=READABLE_NULL`,
+`connectionSerialStatus=READABLE_NULL`, and `serialSource=NONE`. Because the device getter was null,
+the JA11-only connection fallback did execute; it returned null. The candidate opened session
+generation 1 and completed the source-bound snapshot with program Off, global EQ gain `-3.7 dB`, and
+five 0 dB Peak/Dip bands at 1000, 2000, 5000, 8000, and 10000 Hz with Q 0.7. The subsequent event
+reported `identityAvailable=false` and `sessionCurrent=true`. Thus the connection was usable for
+read-only reports, but the required unique serial identity was not available.
+
+No hardware write, restart test, Mic change, UAC change, volume/program change, Flash, or Reset was
+sent. The diagnostic trace includes read requests for firmware, sample rate, volume, Mic, and UAC,
+but it did not preserve their decoded values. The last decoded Mic state remains Off from J020; no
+new DEVICE control value is claimed from J024.
+After preserving evidence at
+`/private/tmp/ja11-v0.8.1-acceptance-61695803/owner-phone-session-20261009-resume/`, the diagnostic
+app was force-stopped and the live log capture was stopped. The captured diagnostics have no
+`USB_SESSION_CLOSED` event, so app-level closure was not independently confirmed. The Pixel was
+released immediately after the failed read-only gate.
+
+This is a physical observation that both serial readers returned null on this connected unit and
+candidate, not proof that the JA11 hardware has no serial descriptor: no raw descriptor index or
+string response was captured. The former conclusion that this required stopping all further
+physical work is superseded by the owner-approved Model D policy above; J024's no-write boundary
+remains unchanged. Android's AOSP implementation obtains `getSerial()` through the USB
+`iSerialNumber` string descriptor and can return null when that lookup yields no string
+([framework JNI](https://android.googlesource.com/platform/frameworks/base/+/7647091436c45af2d82f12c9ea9ec77fa309b49b/core/jni/android_hardware_UsbDeviceConnection.cpp#197),
+[USB host serial lookup](https://android.googlesource.com/platform/system/core/+/ec9e7b1/libusbhost/usbhost.c#421));
+the available evidence does not distinguish an absent serial descriptor from an unsuccessful
+descriptor read. Do not substitute VID/PID, product name, firmware, or port path for serial
+continuity when both sessions provide serial. Future physical work remains gated on the exact Model D
+candidate, its off-phone gates, and a new owner-confirmed phone window.

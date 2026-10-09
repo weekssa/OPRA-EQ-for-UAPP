@@ -70,6 +70,8 @@ internal class AndroidKt02h20HidSession(
     private val allowConnectionSerialFallback: Boolean = false,
     private val deviceSerialReader: (UsbDevice) -> String? = { it.serialNumber },
     private val connectionSerialReader: (UsbDeviceConnection) -> String? = { it.serial },
+    /** JA11 refuses arbitrary selection when multiple supported units are attached. */
+    private val requireUniqueTarget: Boolean = false,
 ) : Closeable {
     init {
         require(productIds.isNotEmpty()) { "At least one approved USB PID is required." }
@@ -99,8 +101,13 @@ internal class AndroidKt02h20HidSession(
     private var currentSessionGeneration: Long = 0L
     @Volatile
     private var detachSequence: Long = 0L
+    /** Invalidates an open that began before a JA11 attach/replacement was observed. */
+    @Volatile
+    private var targetAttachSequence: Long = 0L
     @Volatile
     private var permissionRequests: Long = 0L
+    @Volatile
+    private var expectedRestartTransactionToken: String? = null
     private var lastSessionGeneration: Long = 0L
     private var receiverRegistered = false
     // PendingIntent identity survives this session object's lifetime. A unique action prevents a
@@ -119,8 +126,51 @@ internal class AndroidKt02h20HidSession(
     val deviceFingerprintKey: String?
         get() = session?.fingerprintKey
 
+    /** Optional serial read from the same freshly opened USB descriptor/connection. */
+    val deviceSerialIdentity: String?
+        get() = session?.serialIdentity
+
     val permissionRequestCount: Long
         get() = permissionRequests
+
+    /** Current count of all attached devices accepted by this exact transport matcher. */
+    val targetDeviceCount: Int
+        get() = currentTargetDevices().size
+
+    /** Binds automatic post-reset permission/open attempts to the owning Mic/UAC transaction. */
+    fun setExpectedRestartTransactionToken(token: String?): Boolean = sessionLifecycleGate.withLock {
+        val normalized = token?.takeIf(String::isNotBlank)
+        if (normalized == null) {
+            expectedRestartTransactionToken = null
+            true
+        } else if (expectedRestartTransactionToken == null || expectedRestartTransactionToken == normalized) {
+            val activeAttempt = connectAttempts.currentAttempt()
+            if (activeAttempt != null && activeAttempt.transactionToken != normalized) {
+                false
+            } else {
+                expectedRestartTransactionToken = normalized
+                true
+            }
+        } else {
+            false
+        }
+    }
+
+    fun clearExpectedRestartTransactionToken(token: String) {
+        sessionLifecycleGate.withLock {
+            if (expectedRestartTransactionToken != token) return@withLock
+            expectedRestartTransactionToken = null
+            connectAttempts.currentAttempt()
+                ?.takeIf { it.transactionToken == token }
+                ?.let { attempt ->
+                    if (connectAttempts.cancel(attempt.id) && session == null &&
+                        state.value !is Kt02h20ConnectionState.Connected
+                    ) {
+                        mutableState.value = Kt02h20ConnectionState.Disconnected
+                    }
+                }
+        }
+    }
 
     /**
      * A read or ordinary mutation may report success only if the physical session stayed the
@@ -133,7 +183,11 @@ internal class AndroidKt02h20HidSession(
             detachSequence == expectedDetachGeneration &&
             session?.generation == expectedGeneration &&
             session?.detachGeneration == expectedDetachGeneration &&
-            state.value is Kt02h20ConnectionState.Connected
+            state.value is Kt02h20ConnectionState.Connected &&
+            (!requireUniqueTarget || (
+                session?.targetAttachSequence == targetAttachSequence &&
+                    session?.let(::matchesCurrentSessionDescriptor) == true
+                ))
 
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -148,6 +202,7 @@ internal class AndroidKt02h20HidSession(
                         usbManager.hasPermission(device)
                     }
                     val resolution = sessionLifecycleGate.withLock {
+                        val attemptBeforeResolution = connectAttempts.currentAttempt()
                         connectAttempts.resolvePermissionCallback(
                             requestId = requestId,
                             callbackDeviceName = device.deviceName,
@@ -155,7 +210,12 @@ internal class AndroidKt02h20HidSession(
                             currentDetachGeneration = detachSequence,
                             granted = granted,
                         ).also { result ->
-                            if (result is Kt02h20PermissionResolution.Denied) {
+                            if (result is Kt02h20PermissionResolution.Denied &&
+                                attemptBeforeResolution?.let { attempt ->
+                                    attempt.id == requestId &&
+                                        attempt.transactionToken == expectedRestartTransactionToken
+                                } == true
+                            ) {
                                 mutableState.value = Kt02h20ConnectionState.PermissionRequired(
                                     "Android USB permission was denied for $deviceLabel. Grant access, then tap Retry connect.",
                                 )
@@ -167,6 +227,8 @@ internal class AndroidKt02h20HidSession(
                         "USB_PERMISSION_RESULT",
                         "pid" to device.productId,
                         "requestId" to requestId,
+                        "transactionToken" to (resolution as? Kt02h20PermissionResolution.Granted)
+                            ?.attempt?.transactionToken,
                         "granted" to granted,
                         "attemptCurrent" to (resolution !is Kt02h20PermissionResolution.Stale),
                     )
@@ -185,16 +247,22 @@ internal class AndroidKt02h20HidSession(
                                 "currentDeviceFound" to (currentDevice != null),
                                 "currentPermissionGranted" to currentPermissionGranted,
                             )
-                            val anyTargetPresent = currentPermissionedDevice != null || findDevice() != null
+                            val anyTargetPresent = targetDeviceCount > 0
                             val shouldOpen = sessionLifecycleGate.withLock {
-                                if (!connectAttempts.isCurrent(resolution.attempt) ||
-                                    resolution.attempt.detachGeneration != detachSequence
-                                ) {
+                                if (!connectAttempts.isCurrent(resolution.attempt)) {
+                                    false
+                                } else if (resolution.attempt.transactionToken != expectedRestartTransactionToken) {
+                                    connectAttempts.cancel(resolution.attempt.id)
+                                    false
+                                } else if (resolution.attempt.detachGeneration != detachSequence) {
+                                    connectAttempts.cancel(resolution.attempt.id)
                                     false
                                 } else if (currentPermissionedDevice == null) {
                                     connectAttempts.cancel(resolution.attempt.id)
                                     mutablePresent.value = anyTargetPresent
-                                    mutableState.value = if (anyTargetPresent) {
+                                    mutableState.value = if (requireUniqueTarget && targetDeviceCount > 1) {
+                                        Kt02h20ConnectionState.Error(multipleTargetsMessage())
+                                    } else if (anyTargetPresent) {
                                         Kt02h20ConnectionState.PermissionRequired(
                                             "The USB device changed while permission was being granted. Reconnect it, then try again.",
                                         )
@@ -227,7 +295,18 @@ internal class AndroidKt02h20HidSession(
                     val detachGenerationBefore = sessionLifecycleGate.withLock {
                         val generationBeforeDetach = detachSequence
                         val currentSession = session
+                        val indistinguishableCurrentDeviceStillAttached = requireUniqueTarget &&
+                            currentTargetDevices().any { attached ->
+                                attached.deviceName == device.deviceName &&
+                                    attached.productId == device.productId
+                            }
                         when {
+                            indistinguishableCurrentDeviceStillAttached -> {
+                                // The detached broadcast cannot be attributed to this serialless
+                                // same-path/PID session while an indistinguishable candidate is
+                                // still present. Do not treat it as expected-reset evidence.
+                                Unit
+                            }
                             currentSession != null && currentSession.matchesDetach(device.productId, device.deviceName) -> {
                                 // Publish absence before closing so no operation can continue on the old handle.
                                 detachedSession = currentSession
@@ -287,7 +366,7 @@ internal class AndroidKt02h20HidSession(
                                     closeSessionLocked()
                                 }
                             }
-                            mutablePresent.value = findDevice() != null
+                            mutablePresent.value = targetDeviceCount > 0
                         }
                     } else if (permissionAttemptDetached) {
                         Ja11DiagnosticLog.eventForDevice(
@@ -306,30 +385,56 @@ internal class AndroidKt02h20HidSession(
                             "currentPid" to session?.productId,
                             "currentSessionGeneration" to session?.generation,
                             "currentDetachGeneration" to detachSequence,
+                            "reason" to if (requireUniqueTarget && currentTargetDevices().any { attached ->
+                                attached.deviceName == device.deviceName && attached.productId == device.productId
+                            }) "same_path_pid_still_attached" else "no_matching_live_session",
                         )
-                        mutablePresent.value = findDevice() != null
+                        mutablePresent.value = targetDeviceCount > 0
                     }
                 }
                 UsbManager.ACTION_USB_DEVICE_ATTACHED -> {
                     val currentDevice = findCurrentDevice(device.deviceName, device.productId)
                     val hasPermission = currentDevice?.let(usbManager::hasPermission) == true
-                    Ja11DiagnosticLog.eventForDevice(
-                        deviceLabel,
-                        "USB_ATTACH",
-                        "pid" to device.productId,
-                        "permissionGranted" to hasPermission,
-                        "sessionGeneration" to currentSessionGeneration,
-                        "detachGeneration" to detachSequence,
-                    )
-                    mutablePresent.value = true
+                    val currentCandidateCount = targetDeviceCount
+                    mutablePresent.value = targetDeviceCount > 0
                     val openingAttempt = sessionLifecycleGate.withLock {
-                        mutablePresent.value = true
+                        if (requireUniqueTarget && currentDevice != null) {
+                            targetAttachSequence = nextSessionGeneration(targetAttachSequence)
+                        }
+                        val candidateCount = targetDeviceCount
+                        mutablePresent.value = candidateCount > 0
+                        val currentSession = session?.takeIf {
+                            it.detachGeneration == detachSequence &&
+                                state.value is Kt02h20ConnectionState.Connected
+                        }
+                        if (requireUniqueTarget && currentSession != null) {
+                            connectAttempts.cancel()
+                            mutableState.value = Kt02h20ConnectionState.Error(
+                                if (candidateCount > 1) multipleTargetsMessage()
+                                else unexpectedAttachMessage(),
+                            )
+                            closeSession()
+                            return@withLock null
+                        }
+                        if (requireUniqueTarget && candidateCount > 1) {
+                            connectAttempts.cancel()
+                            mutableState.value = Kt02h20ConnectionState.Error(multipleTargetsMessage())
+                            closeSession()
+                            return@withLock null
+                        }
                         val attempt = connectAttempts.currentAttempt() ?: return@withLock null
                         if (attempt.deviceName != device.deviceName ||
                             attempt.productId != device.productId ||
                             attempt.detachGeneration != detachSequence ||
+                            attempt.transactionToken != expectedRestartTransactionToken ||
                             !hasPermission
                         ) {
+                            if (requireUniqueTarget && connectAttempts.isCurrent(attempt)) {
+                                connectAttempts.cancel(attempt.id)
+                                mutableState.value = Kt02h20ConnectionState.Error(
+                                    "$deviceLabel changed while the USB session was opening. Disconnect and reconnect before trying again.",
+                                )
+                            }
                             return@withLock null
                         }
                         val opening = if (attempt.phase == Kt02h20ConnectAttempt.Phase.WAITING_FOR_PERMISSION) {
@@ -340,6 +445,17 @@ internal class AndroidKt02h20HidSession(
                         if (opening != null) mutableState.value = Kt02h20ConnectionState.Connecting
                         opening
                     }
+                    Ja11DiagnosticLog.eventForDevice(
+                        deviceLabel,
+                        "USB_ATTACH",
+                        "pid" to device.productId,
+                        "supportedCandidateCount" to currentCandidateCount,
+                        "permissionGranted" to hasPermission,
+                        "sessionGeneration" to currentSessionGeneration,
+                        "detachGeneration" to detachSequence,
+                        "attachSequence" to targetAttachSequence,
+                        "transactionToken" to expectedRestartTransactionToken,
+                    )
                     openingAttempt?.let(::openAsync)
                 }
             }
@@ -348,7 +464,7 @@ internal class AndroidKt02h20HidSession(
 
     init {
         registerReceiver()
-        mutablePresent.value = findDevice() != null
+        mutablePresent.value = targetDeviceCount > 0
     }
 
     fun connect() = connect(automaticReconnect = false)
@@ -361,12 +477,19 @@ internal class AndroidKt02h20HidSession(
             if (automaticReconnect && mutableState.value !is Kt02h20ConnectionState.Disconnected) {
                 return@withLock
             }
+            val candidateCount = targetDeviceCount
+            if (requireUniqueTarget && candidateCount > 1) {
+                mutablePresent.value = true
+                mutableState.value = Kt02h20ConnectionState.Error(multipleTargetsMessage())
+                return@withLock
+            }
             val device = findDevice()
             if (device == null) {
                 Ja11DiagnosticLog.eventForDevice(deviceLabel, "CONNECT_NO_DEVICE")
-                mutablePresent.value = false
+                mutablePresent.value = candidateCount > 0
                 mutableState.value = Kt02h20ConnectionState.Error(
-                    "$deviceLabel not detected. Connect the DAC by USB and try again.",
+                    if (requireUniqueTarget && candidateCount > 1) multipleTargetsMessage()
+                    else "$deviceLabel not detected. Connect the DAC by USB and try again.",
                 )
                 return@withLock
             }
@@ -420,6 +543,7 @@ internal class AndroidKt02h20HidSession(
                 productId = device.productId,
                 detachGeneration = detachSequence,
                 permissionRequired = !hasPermission,
+                transactionToken = expectedRestartTransactionToken,
             )
             if (hasPermission) {
                 openAsync(attempt)
@@ -446,6 +570,7 @@ internal class AndroidKt02h20HidSession(
                 "requestCount" to permissionRequests,
                 "requestId" to attempt.id,
                 "detachGeneration" to attempt.detachGeneration,
+                "transactionToken" to attempt.transactionToken,
             )
             val requested = runCatching {
                 val requester = permissionRequester
@@ -523,13 +648,7 @@ internal class AndroidKt02h20HidSession(
     ): FiioJa11ReportWriteOutcome = withContext(Dispatchers.IO) {
         mutex.withLock {
             val current = session
-            if (current == null ||
-                currentSessionGeneration != expectedGeneration ||
-                current.generation != expectedGeneration ||
-                detachSequence != expectedDetachGeneration ||
-                current.detachGeneration != expectedDetachGeneration ||
-                state.value !is Kt02h20ConnectionState.Connected
-            ) {
+            if (current == null || !isCurrentSession(expectedGeneration, expectedDetachGeneration)) {
                 Ja11DiagnosticLog.eventForDevice(
                     deviceLabel,
                     "JA11_REPORT_REJECTED_STALE",
@@ -557,6 +676,15 @@ internal class AndroidKt02h20HidSession(
                 "sessionGeneration" to current.generation,
                 "detachGeneration" to current.detachGeneration,
             )
+            // Recheck immediately at the USB boundary in case another JA11 appeared after the
+            // caller captured this session token but before the queued transfer started.
+            if (!isCurrentSession(expectedGeneration, expectedDetachGeneration)) {
+                return@withLock classifyJa11ReportWriteOutcome(
+                    reportWasComplete = false,
+                    sessionCurrentBeforeSend = false,
+                    sessionCurrentAfterSettle = false,
+                )
+            }
             val written = runCatching {
                 current.connection.bulkTransfer(
                     current.endpointOut,
@@ -657,16 +785,13 @@ internal class AndroidKt02h20HidSession(
     ): ByteArray? = withContext(Dispatchers.IO) {
         mutex.withLock {
             val current = session
-            if (current == null ||
-                currentSessionGeneration != expectedGeneration ||
-                current.generation != expectedGeneration ||
-                detachSequence != expectedDetachGeneration ||
-                current.detachGeneration != expectedDetachGeneration ||
-                state.value !is Kt02h20ConnectionState.Connected
-            ) {
+            if (current == null || !isCurrentSession(expectedGeneration, expectedDetachGeneration)) {
                 return@withLock null
             }
-            drainInput(current)
+            if (!drainInput(current) { isCurrentSession(expectedGeneration, expectedDetachGeneration) }) {
+                return@withLock null
+            }
+            if (!isCurrentSession(expectedGeneration, expectedDetachGeneration)) return@withLock null
             val written = runCatching {
                 current.connection.bulkTransfer(
                     current.endpointOut,
@@ -678,6 +803,7 @@ internal class AndroidKt02h20HidSession(
             if (written != report.size) return@withLock null
             val deadline = System.currentTimeMillis() + timeoutMillis
             while (System.currentTimeMillis() < deadline) {
+                if (!isCurrentSession(expectedGeneration, expectedDetachGeneration)) return@withLock null
                 val response = ByteArray(maxOf(current.endpointIn.maxPacketSize, 64))
                 val read = runCatching {
                     current.connection.bulkTransfer(
@@ -756,17 +882,20 @@ internal class AndroidKt02h20HidSession(
         } ?: false
     }
 
-    private fun drainInput(current: UsbSession) {
+    private fun drainInput(current: UsbSession, canTransfer: () -> Boolean = { true }): Boolean {
         val buffer = ByteArray(maxOf(current.endpointIn.maxPacketSize, 64))
         repeat(8) {
+            if (!canTransfer()) return false
             val read = runCatching {
                 current.connection.bulkTransfer(current.endpointIn, buffer, buffer.size, 2)
             }.getOrDefault(-1)
-            if (read <= 0) return
+            if (read <= 0) return true
         }
+        return true
     }
 
     private fun openAsync(attempt: Kt02h20ConnectAttempt) {
+        val attachSequenceAtRequest = targetAttachSequence
         Ja11DiagnosticLog.eventForDevice(
             deviceLabel,
             "USB_OPEN_REQUEST",
@@ -774,17 +903,24 @@ internal class AndroidKt02h20HidSession(
             "requestId" to attempt.id,
             "sessionGeneration" to currentSessionGeneration,
             "detachGeneration" to attempt.detachGeneration,
+            "attachSequence" to attachSequenceAtRequest,
+            "transactionToken" to attempt.transactionToken,
         )
         scope.launch {
             mutex.withLock {
                 val shouldOpen = sessionLifecycleGate.withLock {
                     if (!connectAttempts.isCurrent(attempt)) {
                         false
+                    } else if (attempt.transactionToken != expectedRestartTransactionToken) {
+                        connectAttempts.cancel(attempt.id)
+                        false
                     } else if (attempt.detachGeneration != detachSequence) {
                         connectAttempts.cancel(attempt.id)
                         if (mutableState.value is Kt02h20ConnectionState.Connecting) {
                             mutableState.value = Kt02h20ConnectionState.Disconnected
                         }
+                        false
+                    } else if (requireUniqueTarget && attachSequenceAtRequest != targetAttachSequence) {
                         false
                     } else {
                         // Permission and attach broadcasts can both request an open for the same
@@ -853,18 +989,28 @@ internal class AndroidKt02h20HidSession(
                 }
                 // Read the identity from the same descriptor/connection we just opened, before
                 // taking the lifecycle gate's monitor. A serial string descriptor read is USB I/O.
-                val openedFingerprintKey = fingerprintKey(device, descriptor.usbInterface, connection)
+                val openedIdentity = fingerprintKey(device, descriptor.usbInterface, connection)
                 var latestDevice: UsbDevice? = null
                 var openedSession: UsbSession? = null
                 val committed = sessionLifecycleGate.commitAttempt(
                     tracker = connectAttempts,
                     attempt = attempt,
                     canCommit = {
-                        if (attempt.detachGeneration != detachSequence) {
+                        if (requireUniqueTarget && attachSequenceAtRequest != targetAttachSequence) {
+                            false
+                        } else if (attempt.transactionToken != expectedRestartTransactionToken) {
+                            connectAttempts.cancel(attempt.id)
+                            false
+                        } else if (attempt.detachGeneration != detachSequence) {
                             false
                         } else {
-                            latestDevice = findCurrentPermissionedDevice(attempt)
-                            latestDevice != null
+                            val currentDevice = findCurrentPermissionedDevice(attempt)
+                            latestDevice = currentDevice
+                            currentDevice != null && matchesOpenedDescriptor(
+                                opened = descriptor,
+                                openedSerial = openedIdentity.serialIdentity,
+                                currentDevice = currentDevice,
+                            )
                         }
                     },
                     publishSession = {
@@ -876,10 +1022,12 @@ internal class AndroidKt02h20HidSession(
                             endpointIn = descriptor.endpointIn,
                             endpointOut = descriptor.endpointOut,
                             productId = committedDevice.productId,
-                            fingerprintKey = openedFingerprintKey,
+                            fingerprintKey = openedIdentity.fingerprintKey,
+                            serialIdentity = openedIdentity.serialIdentity,
                             deviceName = committedDevice.deviceName,
                             generation = lastSessionGeneration,
                             detachGeneration = detachSequence,
+                            targetAttachSequence = attachSequenceAtRequest,
                         )
                         session = openedSession
                         currentSessionGeneration = lastSessionGeneration
@@ -889,10 +1037,21 @@ internal class AndroidKt02h20HidSession(
                 if (!committed) {
                     runCatching { connection.releaseInterface(descriptor.usbInterface) }
                     runCatching { connection.close() }
-                    failConnectAttempt(
-                        attempt,
-                        "$deviceLabel changed or the connection was cancelled before its fresh USB session could be published.",
-                    )
+                    if (hasNewerPermissionedOpenForCurrentTarget(attempt, attachSequenceAtRequest)) {
+                        Ja11DiagnosticLog.eventForDevice(
+                            deviceLabel,
+                            "USB_OPEN_REJECTED_STALE_ATTACH",
+                            "pid" to attempt.productId,
+                            "requestId" to attempt.id,
+                            "requestAttachSequence" to attachSequenceAtRequest,
+                            "currentAttachSequence" to targetAttachSequence,
+                        )
+                    } else {
+                        failConnectAttempt(
+                            attempt,
+                            "$deviceLabel changed or the connection was cancelled before its fresh USB session could be published.",
+                        )
+                    }
                     return@withLock
                 }
                 val established = checkNotNull(openedSession)
@@ -900,9 +1059,11 @@ internal class AndroidKt02h20HidSession(
                     deviceLabel,
                     "USB_SESSION_OPENED",
                     "pid" to established.productId,
+                    "supportedCandidateCount" to targetDeviceCount,
                     "requestId" to attempt.id,
                     "sessionGeneration" to established.generation,
                     "detachGeneration" to established.detachGeneration,
+                    "transactionToken" to attempt.transactionToken,
                 )
             }
         }
@@ -910,7 +1071,12 @@ internal class AndroidKt02h20HidSession(
 
     private fun failConnectAttempt(attempt: Kt02h20ConnectAttempt, message: String) {
         val failed = sessionLifecycleGate.withLock {
-            if (!connectAttempts.finish(attempt.id)) {
+            if (!connectAttempts.isCurrent(attempt)) {
+                false
+            } else if (attempt.transactionToken != expectedRestartTransactionToken) {
+                connectAttempts.cancel(attempt.id)
+                false
+            } else if (!connectAttempts.finish(attempt.id)) {
                 false
             } else {
                 mutableState.value = Kt02h20ConnectionState.Error(message)
@@ -923,34 +1089,41 @@ internal class AndroidKt02h20HidSession(
             "USB_OPEN_FAILED",
             "pid" to attempt.productId,
             "requestId" to attempt.id,
+            "transactionToken" to attempt.transactionToken,
             "reason" to "open_attempt_failed",
         )
     }
 
     private fun findCurrentDevice(deviceName: String, productId: Int): UsbDevice? =
-        usbManager.deviceList.values.firstOrNull { device ->
-            device.deviceName == deviceName &&
-                device.productId == productId &&
-                device.matchesTarget()
+        currentTargetDevices().let { candidates ->
+            if (requireUniqueTarget && candidates.size != 1) return null
+            candidates.firstOrNull { device ->
+                device.deviceName == deviceName &&
+                    device.productId == productId &&
+                    device.matchesTarget()
+            }
         }
 
-    private fun findHidInterface(device: UsbDevice): HidInterface? =
-        (0 until device.interfaceCount)
+    private fun findHidInterface(device: UsbDevice): HidInterface? {
+        val validInterfaces = (0 until device.interfaceCount)
             .map(device::getInterface)
             .filter { it.interfaceClass == UsbConstants.USB_CLASS_HID && hidInterfaceMatcher(it) }
             .mapNotNull { intf ->
                 val endpoints = (0 until intf.endpointCount).map(intf::getEndpoint)
-                val input = endpoints.firstOrNull { endpoint ->
+                val inputEndpoints = endpoints.filter { endpoint ->
                     endpoint.direction == UsbConstants.USB_DIR_IN &&
                         endpoint.type == UsbConstants.USB_ENDPOINT_XFER_INT
                 }
-                val output = endpoints.firstOrNull { endpoint ->
+                val outputEndpoints = endpoints.filter { endpoint ->
                     endpoint.direction == UsbConstants.USB_DIR_OUT &&
                         endpoint.type == UsbConstants.USB_ENDPOINT_XFER_INT
                 }
+                val input = if (requireUniqueTarget) inputEndpoints.singleOrNull() else inputEndpoints.firstOrNull()
+                val output = if (requireUniqueTarget) outputEndpoints.singleOrNull() else outputEndpoints.firstOrNull()
                 if (input != null && output != null) HidInterface(intf, input, output) else null
             }
-            .firstOrNull()
+        return if (requireUniqueTarget) validInterfaces.singleOrNull() else validInterfaces.firstOrNull()
+    }
 
     private fun findCurrentPermissionedDevice(attempt: Kt02h20ConnectAttempt): UsbDevice? =
         findCurrentDevice(attempt.deviceName, attempt.productId)?.takeIf { device ->
@@ -961,6 +1134,71 @@ internal class AndroidKt02h20HidSession(
                 permissionGranted = usbManager.hasPermission(device),
             )
         }
+
+    /**
+     * Keeps an opened JA11 handle bound to the sole current permissioned descriptor. Device name
+     * here is a live-session binding only; it is never treated as proof of same-unit continuity.
+     */
+    private fun matchesCurrentSessionDescriptor(current: UsbSession): Boolean {
+        if (requireUniqueTarget && current.targetAttachSequence != targetAttachSequence) return false
+        val candidate = currentTargetDevices().singleOrNull() ?: return false
+        if (candidate.deviceName != current.deviceName ||
+            candidate.productId != current.productId ||
+            !usbManager.hasPermission(candidate)
+        ) {
+            return false
+        }
+        val candidateSerial = readUsableDeviceSerial(candidate)
+        if (current.serialIdentity != null && candidateSerial != null && current.serialIdentity != candidateSerial) {
+            return false
+        }
+        val currentDescriptor = findHidInterface(candidate) ?: return false
+        return currentDescriptor.matches(current)
+    }
+
+    /** Validates session path, selected HID endpoints, and optional serial continuity. */
+    private fun matchesOpenedDescriptor(
+        opened: HidInterface,
+        openedSerial: String?,
+        currentDevice: UsbDevice,
+    ): Boolean {
+        val currentDescriptor = findHidInterface(currentDevice) ?: return false
+        if (!opened.matches(currentDescriptor)) return false
+        val currentSerial = readUsableDeviceSerial(currentDevice)
+        return openedSerial == null || currentSerial == null || openedSerial == currentSerial
+    }
+
+    /** Keeps an attach-triggered fresh open alive while retiring its older in-flight opener. */
+    private fun hasNewerPermissionedOpenForCurrentTarget(
+        attempt: Kt02h20ConnectAttempt,
+        requestAttachSequence: Long,
+    ): Boolean {
+        if (!requireUniqueTarget || requestAttachSequence == targetAttachSequence ||
+            !connectAttempts.isCurrent(attempt)
+        ) {
+            return false
+        }
+        val candidate = currentTargetDevices().singleOrNull() ?: return false
+        return candidate.deviceName == attempt.deviceName &&
+            candidate.productId == attempt.productId &&
+            usbManager.hasPermission(candidate)
+    }
+
+    private fun HidInterface.matches(current: UsbSession): Boolean =
+        usbInterface.id == current.usbInterface.id &&
+            endpointIn.address == current.endpointIn.address &&
+            endpointOut.address == current.endpointOut.address
+
+    private fun HidInterface.matches(other: HidInterface): Boolean =
+        usbInterface.id == other.usbInterface.id &&
+            endpointIn.address == other.endpointIn.address &&
+            endpointOut.address == other.endpointOut.address
+
+    private fun readUsableDeviceSerial(device: UsbDevice): String? =
+        runCatching { deviceSerialReader(device) }
+            .getOrNull()
+            ?.trim()
+            ?.takeIf(String::isNotBlank)
 
     private fun startPermissionFallback(attempt: Kt02h20ConnectAttempt) {
         scope.launch {
@@ -997,13 +1235,13 @@ internal class AndroidKt02h20HidSession(
                 when (result) {
                     Kt02h20PermissionFallbackResolution.Stale -> Unit
                     Kt02h20PermissionFallbackResolution.Disconnected -> {
-                        mutablePresent.value = findDevice() != null
+                        mutablePresent.value = targetDeviceCount > 0
                         mutableState.value = Kt02h20ConnectionState.Error(
                             "$deviceLabel disconnected while Android was requesting USB permission.",
                         )
                     }
                     Kt02h20PermissionFallbackResolution.DeviceChanged -> {
-                        mutablePresent.value = findDevice() != null
+                        mutablePresent.value = targetDeviceCount > 0
                         mutableState.value = Kt02h20ConnectionState.PermissionRequired(
                             "The USB device changed while Android was requesting permission. Reconnect it, then try again.",
                         )
@@ -1030,7 +1268,18 @@ internal class AndroidKt02h20HidSession(
         return fallback
     }
 
-    private fun findDevice(): UsbDevice? = usbManager.deviceList.values.firstOrNull { it.matchesTarget() }
+    private fun currentTargetDevices(): List<UsbDevice> = usbManager.deviceList.values.filter { it.matchesTarget() }
+
+    private fun findDevice(): UsbDevice? {
+        val candidates = currentTargetDevices()
+        return if (requireUniqueTarget) candidates.singleOrNull() else candidates.firstOrNull()
+    }
+
+    private fun multipleTargetsMessage(): String =
+        "More than one supported $deviceLabel is connected. Disconnect the extra device, then try again."
+
+    private fun unexpectedAttachMessage(): String =
+        "A new $deviceLabel appeared before the current USB session disconnected. Disconnect and reconnect before trying again."
 
     private fun registerReceiver() {
         if (receiverRegistered) return
@@ -1080,7 +1329,7 @@ internal class AndroidKt02h20HidSession(
         device: UsbDevice,
         usbInterface: UsbInterface,
         connection: UsbDeviceConnection,
-    ): String {
+    ): UsbIdentityFingerprint {
         val manufacturer = runCatching { device.manufacturerName }.getOrNull().orEmpty()
         val product = runCatching { device.productName }.getOrNull().orEmpty()
         var serialStatus = "OTHER_EXCEPTION"
@@ -1138,7 +1387,7 @@ internal class AndroidKt02h20HidSession(
             "serialSource" to serialSource,
             "productId" to device.productId,
         )
-        return (listOf(
+        val fingerprintKey = (listOf(
             "vid=${device.vendorId.toString(16)}",
             "pid=${device.productId.toString(16)}",
             "manufacturer=${manufacturer.trim()}",
@@ -1146,6 +1395,10 @@ internal class AndroidKt02h20HidSession(
             "serial=${effectiveSerial.orEmpty().trim()}",
         ) + additionalFingerprintFields(device).map { (key, value) -> "$key=${value.trim()}" } +
             "interface=${usbInterface.id}").joinToString("|")
+        return UsbIdentityFingerprint(
+            fingerprintKey = fingerprintKey,
+            serialIdentity = effectiveSerial?.trim()?.takeIf(String::isNotBlank),
+        )
     }
 
     @Suppress("DEPRECATION")
@@ -1161,6 +1414,11 @@ internal class AndroidKt02h20HidSession(
         val endpointOut: UsbEndpoint,
     )
 
+    private data class UsbIdentityFingerprint(
+        val fingerprintKey: String,
+        val serialIdentity: String?,
+    )
+
     private data class UsbSession(
         val connection: UsbDeviceConnection,
         val usbInterface: UsbInterface,
@@ -1168,9 +1426,11 @@ internal class AndroidKt02h20HidSession(
         val endpointOut: UsbEndpoint,
         val productId: Int,
         val fingerprintKey: String,
+        val serialIdentity: String?,
         val deviceName: String,
         val generation: Long,
         val detachGeneration: Long,
+        val targetAttachSequence: Long,
     ) {
         fun matchesDetach(detachedProductId: Int, detachedDeviceName: String): Boolean =
             productId == detachedProductId && deviceName == detachedDeviceName

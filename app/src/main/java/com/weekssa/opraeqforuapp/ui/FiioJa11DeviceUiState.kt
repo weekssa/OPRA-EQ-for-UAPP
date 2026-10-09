@@ -140,4 +140,6 @@ private fun FiioJa11PendingRestartWrite.sameLogicalRestartWrite(other: FiioJa11P
     controlId == other.controlId &&
         requestedValue == other.requestedValue &&
         previousSessionGeneration == other.previousSessionGeneration &&
-        deviceIdentityKey == other.deviceIdentityKey
+        previousDetachGeneration == other.previousDetachGeneration &&
+        deviceSerialIdentity == other.deviceSerialIdentity &&
+        transactionToken == other.transactionToken

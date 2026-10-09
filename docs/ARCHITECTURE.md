@@ -371,9 +371,11 @@ Reset retains the v0.4 fail-safe ordering: validate recoverable baseline, flatte
 
 ## FiiO JA11 architecture
 
-JA11 Direct Flash is a separate transport/protocol implementation with strict identity. Current target:
+JA11 Direct Flash is a separate transport/protocol implementation with an exact VID/PID allowlist
+and unambiguous current-session selection. A USB serial is optional continuity evidence, not a
+support or read/write prerequisite. The current target is:
 
-- VID/PID `0x2972:0x0102`;
+- vendor ID `0x2972`, product IDs `0x0101` and `0x0102` for the supported UAC modes;
 - HID report ID `0x02`;
 - five Peak/Low Shelf/High Shelf bands;
 - filter parameters command `0x15`;
@@ -381,7 +383,22 @@ JA11 Direct Flash is a separate transport/protocol implementation with strict id
 - Apply `0x18`;
 - Save `0x19`.
 
-Android dynamically locates the HID interface containing interrupt IN + OUT endpoints. It does not assume an interface index.
+Android dynamically locates exactly one valid JA11 HID interface with one eligible interrupt IN
+endpoint and one eligible interrupt OUT endpoint. It does not assume an interface index. If more
+than one exact supported JA11 candidate is present, the app fails closed instead of choosing the
+first enumerated device. It verifies current permission, a freshly opened and claimed connection,
+and a current session generation before reads or writes. These stricter selection rules are scoped
+to JA11; shared non-JA11 transport defaults remain unchanged.
+
+An expected reset binds the accepted write to its original session, control/value, transaction,
+generation and detach sequence. Verification requires accepted transport outcome, observed expected
+detach, old-session invalidation, a sole supported replacement candidate, fresh permission and
+open/claim, a new generation, and authoritative fresh physical readback. Compare serials only when
+both old and replacement sessions expose usable values; reject a mismatch. If either is absent, the
+replacement may verify state only when it is the sole supported JA11 and every lifecycle/readback
+gate passes. That result does not prove the same physical unit returned. Unsolicited reconnects
+without a pending operation start a new session and require a fresh baseline. Uncertain writes are
+never replayed.
 
 Flash preflights/readbacks device state, validates the entire target before destructive writes, writes all five slots including flat padding, writes global gain, Applies, verifies, Saves, and performs final verification. Success is not reported early.
 
@@ -389,7 +406,7 @@ Reset writes five flat bands/global 0 dB, Applies/verifies/Saves/verifies.
 
 No verified JA11 external preset-file format is exposed. Direct Flash remains intact.
 
-JA11 remains **Hardware validation pending** until its exact signed Pixel 9 checklist passes.
+JA11 remains **Hardware validation pending** until its exact-candidate Pixel 9 checklist passes.
 
 ## Stock JCALLY JM12 architecture
 

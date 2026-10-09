@@ -14,8 +14,14 @@ import kotlinx.coroutines.CancellationException
 interface FiioJa11Transport {
     val deviceFingerprintKey: String?
         get() = null
+    /** A serial is optional continuity evidence, not a prerequisite for JA11 support. */
+    val deviceSerialIdentity: String?
+        get() = fiioJa11SerialIdentity(deviceFingerprintKey)
     val usbProductId: Int?
         get() = null
+    /** Exact JA11 VID/PID candidates currently attached through the approved transport matcher. */
+    val supportedJa11CandidateCount: Int
+        get() = 1
     val sessionGeneration: Long
         get() = 0L
     val detachGeneration: Long
@@ -44,7 +50,9 @@ interface FiioJa11Transport {
     suspend fun sendReport(report: ByteArray): Boolean
 
     fun isCurrentSession(expected: FiioJa11SessionToken): Boolean =
-        deviceFingerprintKey == expected.deviceFingerprintKey &&
+        supportedJa11CandidateCount == 1 &&
+            deviceFingerprintKey == expected.deviceFingerprintKey &&
+            deviceSerialIdentity == expected.deviceSerialIdentity &&
             usbProductId == expected.usbProductId &&
             sessionGeneration == expected.sessionGeneration &&
             detachGeneration == expected.detachGeneration
@@ -204,17 +212,10 @@ class FiioJa11Flasher(
         }
 
         val finalSession = captureCurrentSessionToken()
-            ?.takeIf { samePhysicalDevice(transactionSession, it) }
+            ?.takeIf { acceptablePostSaveSession(transactionSession, it) }
             ?: return Kt02h20FlashResult.VerificationFailed(
-                "FiiO JA11 completed Save, but the final USB session did not match the device that started Flash.",
+                "FiiO JA11 completed Save, but a single supported session could not be confirmed for final readback.",
             )
-        if (finalSession.detachGeneration != transactionSession.detachGeneration &&
-            finalSession.sessionGeneration == transactionSession.sessionGeneration
-        ) {
-            return Kt02h20FlashResult.VerificationFailed(
-                "FiiO JA11 detached during Save without a confirmed replacement session. Final readback was not attempted.",
-            )
-        }
 
         verifyTarget(targetBands, representation.playbackGainDb, finalSession, trace, "FINAL_READBACK")?.let { reason ->
             return Kt02h20FlashResult.VerificationFailed(
@@ -418,9 +419,9 @@ class FiioJa11Flasher(
             )
         }
         val finalSession = captureCurrentSessionToken()
-            ?.takeIf { samePhysicalDevice(transactionSession, it) }
+            ?.takeIf { acceptablePostSaveSession(transactionSession, it) }
             ?: return FiioJa11EditorApplyResult.VerificationFailed(
-                "FiiO JA11 completed Save, but the final USB session did not match the device that started editor Apply.",
+                "FiiO JA11 completed Save, but a single supported session could not be confirmed for final readback.",
             )
         verifyTarget(targetBands, quantizedGlobalGainDb, finalSession, trace, "FINAL_READBACK")?.let { reason ->
             return FiioJa11EditorApplyResult.VerificationFailed(
@@ -515,9 +516,9 @@ class FiioJa11Flasher(
             )
         }
         val finalSession = captureCurrentSessionToken()
-            ?.takeIf { samePhysicalDevice(transactionSession, it) }
+            ?.takeIf { acceptablePostSaveSession(transactionSession, it) }
             ?: return Kt02h20FlatResetResult.VerificationFailed(
-                "FiiO JA11 completed Save, but the final USB session did not match the device that started Reset.",
+                "FiiO JA11 completed Save, but a single supported session could not be confirmed for final readback.",
             )
         verifyTarget(flatBands, 0.0, finalSession, trace, "FINAL_READBACK")?.let { reason ->
             return Kt02h20FlatResetResult.VerificationFailed(
@@ -574,14 +575,16 @@ class FiioJa11Flasher(
     }
 
     private fun captureCurrentSessionToken(): FiioJa11SessionToken? {
+        if (transport.supportedJa11CandidateCount != 1) return null
         val fingerprint = transport.deviceFingerprintKey ?: return null
-        val productId = transport.usbProductId ?: return null
+        val productId = transport.usbProductId?.takeIf(FiioJa11Protocol::supportsProductId) ?: return null
         return runCatching {
             FiioJa11SessionToken(
                 deviceFingerprintKey = fingerprint,
                 usbProductId = productId,
                 sessionGeneration = transport.sessionGeneration,
                 detachGeneration = transport.detachGeneration,
+                deviceSerialIdentity = transport.deviceSerialIdentity,
             )
         }.getOrNull()?.takeIf(transport::isCurrentSession)
     }
@@ -600,14 +603,26 @@ class FiioJa11Flasher(
         expected: FiioJa11SessionToken,
     ): Boolean = transport.sendReportInSession(report, expected) == FiioJa11ReportWriteOutcome.COMPLETED
 
-    private fun samePhysicalDevice(
+    private fun acceptablePostSaveSession(
         expected: FiioJa11SessionToken,
         actual: FiioJa11SessionToken,
-    ): Boolean = expected.usbProductId == actual.usbProductId &&
-        stableJa11Identity(expected.deviceFingerprintKey) == stableJa11Identity(actual.deviceFingerprintKey)
-
-    private fun stableJa11Identity(fingerprintKey: String): String =
-        fingerprintKey.split('|').filterNot { it.startsWith("pid=") }.joinToString("|")
+    ): Boolean {
+        val candidateCount = transport.supportedJa11CandidateCount
+        if (candidateCount != 1) return false
+        if (fiioJa11RestartContinuityFromSerials(
+            originalSerialIdentity = expected.deviceSerialIdentity,
+            replacementSerialIdentity = transport.deviceSerialIdentity,
+            supportedCandidateCount = candidateCount,
+        ) == null) return false
+        val unchangedSession = actual.sessionGeneration == expected.sessionGeneration &&
+            actual.detachGeneration == expected.detachGeneration &&
+            transport.isCurrentSession(expected)
+        if (unchangedSession) return actual.usbProductId == expected.usbProductId
+        return actual.sessionGeneration > expected.sessionGeneration &&
+            actual.detachGeneration > expected.detachGeneration &&
+            actual.usbProductId == expected.usbProductId &&
+            actual.usbProductId.let(FiioJa11Protocol::supportsProductId)
+    }
 
     private suspend fun resetWithTrace(): Kt02h20FlatResetResult {
         val operationId = traceStore.begin("RESET")

@@ -17,7 +17,7 @@ class FiioJa11DeviceUiStateTest {
             controlId = FiioJa11DeviceControls.UAC_MODE,
             requestedValue = DacControlValue.Discrete(FiioJa11Protocol.UacMode.UAC_1.name.lowercase()),
             previousSessionGeneration = baseline.sessionGeneration,
-            deviceIdentityKey = "ja11-test",
+            deviceSerialIdentity = "ja11-test",
             baseline = baseline,
         )
 
@@ -38,7 +38,7 @@ class FiioJa11DeviceUiStateTest {
             controlId = FiioJa11DeviceControls.HEADSET_CONTROL,
             requestedValue = DacControlValue.Toggle(false),
             previousSessionGeneration = baseline.sessionGeneration,
-            deviceIdentityKey = "ja11-test",
+            deviceSerialIdentity = "ja11-test",
             baseline = baseline,
         )
         val replacement = snapshot(sessionGeneration = 8L).copy(headsetControlEnabled = false)
@@ -59,7 +59,7 @@ class FiioJa11DeviceUiStateTest {
             controlId = FiioJa11DeviceControls.HEADSET_CONTROL,
             requestedValue = DacControlValue.Toggle(false),
             previousSessionGeneration = baseline.sessionGeneration,
-            deviceIdentityKey = "original-ja11",
+            deviceSerialIdentity = "original-ja11",
             baseline = baseline,
         )
 
@@ -81,7 +81,7 @@ class FiioJa11DeviceUiStateTest {
             controlId = FiioJa11DeviceControls.HEADSET_CONTROL,
             requestedValue = DacControlValue.Toggle(false),
             previousSessionGeneration = baseline.sessionGeneration,
-            deviceIdentityKey = "ja11-test",
+            deviceSerialIdentity = "ja11-test",
             baseline = baseline,
         )
 
@@ -119,7 +119,7 @@ class FiioJa11DeviceUiStateTest {
             controlId = FiioJa11DeviceControls.HEADSET_CONTROL,
             requestedValue = DacControlValue.Toggle(false),
             previousSessionGeneration = baseline.sessionGeneration,
-            deviceIdentityKey = "ja11-test",
+            deviceSerialIdentity = "ja11-test",
             baseline = baseline,
         )
         val replacement = snapshot(sessionGeneration = 13L).copy(headsetControlEnabled = false)
@@ -142,7 +142,7 @@ class FiioJa11DeviceUiStateTest {
             controlId = FiioJa11DeviceControls.HEADSET_CONTROL,
             requestedValue = DacControlValue.Toggle(false),
             previousSessionGeneration = firstBaseline.sessionGeneration,
-            deviceIdentityKey = "ja11-test",
+            deviceSerialIdentity = "ja11-test",
             baseline = firstBaseline,
         )
         val secondBaseline = snapshot(sessionGeneration = 21L).copy(headsetControlEnabled = false)
@@ -150,7 +150,7 @@ class FiioJa11DeviceUiStateTest {
             controlId = FiioJa11DeviceControls.HEADSET_CONTROL,
             requestedValue = DacControlValue.Toggle(true),
             previousSessionGeneration = secondBaseline.sessionGeneration,
-            deviceIdentityKey = "ja11-test",
+            deviceSerialIdentity = "ja11-test",
             baseline = secondBaseline,
         )
         val newerWriteState = FiioJa11DeviceUiState(snapshot = secondBaseline)
@@ -170,7 +170,7 @@ class FiioJa11DeviceUiStateTest {
             controlId = FiioJa11DeviceControls.UAC_MODE,
             requestedValue = DacControlValue.Discrete("uac_1"),
             previousSessionGeneration = baseline.sessionGeneration,
-            deviceIdentityKey = "ja11-test",
+            deviceSerialIdentity = "ja11-test",
             baseline = baseline,
         )
         val terminal = FiioJa11DeviceUiState(snapshot = baseline)

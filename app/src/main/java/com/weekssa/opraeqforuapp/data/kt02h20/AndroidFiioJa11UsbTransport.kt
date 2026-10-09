@@ -26,6 +26,7 @@ class AndroidFiioJa11UsbTransport(
         blockRetryWhilePermissionPending = true,
         permissionPromptMaxDurationMillis = JA11_PERMISSION_PROMPT_MAX_DURATION_MILLIS,
         allowConnectionSerialFallback = true,
+        requireUniqueTarget = true,
     )
 
     val state: StateFlow<Kt02h20ConnectionState> = hid.state
@@ -34,8 +35,10 @@ class AndroidFiioJa11UsbTransport(
         get() = hid.connectedProductId
     override val deviceFingerprintKey: String?
         get() = hid.deviceFingerprintKey
-    val deviceIdentityKey: String?
-        get() = fiioJa11PhysicalIdentityKey(hid.deviceFingerprintKey)
+    override val deviceSerialIdentity: String?
+        get() = hid.deviceSerialIdentity
+    override val supportedJa11CandidateCount: Int
+        get() = hid.targetDeviceCount
     override val usbProductId: Int?
         get() = hid.connectedProductId
     override val sessionGeneration: Long
@@ -47,8 +50,15 @@ class AndroidFiioJa11UsbTransport(
 
     override fun isCurrentSession(expected: FiioJa11SessionToken): Boolean =
         deviceFingerprintKey == expected.deviceFingerprintKey &&
+            deviceSerialIdentity == expected.deviceSerialIdentity &&
             usbProductId == expected.usbProductId &&
-            hid.isCurrentSession(expected.sessionGeneration, expected.detachGeneration)
+            isCurrentSession(expected.sessionGeneration, expected.detachGeneration)
+
+    fun isCurrentSession(expectedGeneration: Long, expectedDetachGeneration: Long): Boolean =
+        supportedJa11CandidateCount == 1 &&
+            sessionGeneration == expectedGeneration &&
+            detachGeneration == expectedDetachGeneration &&
+            hid.isCurrentSession(expectedGeneration, expectedDetachGeneration)
 
     private val traceLock = Any()
     private var traceStartMillis: Long? = null
@@ -75,6 +85,12 @@ class AndroidFiioJa11UsbTransport(
 
     fun cancelPendingConnectAttempt(terminalErrorMessage: String? = null) =
         hid.cancelPendingConnectAttempt(terminalErrorMessage)
+
+    fun setExpectedRestartTransactionToken(token: String): Boolean =
+        hid.setExpectedRestartTransactionToken(token)
+
+    fun clearExpectedRestartTransactionToken(token: String) =
+        hid.clearExpectedRestartTransactionToken(token)
 
     suspend fun readOutputVolume(): Int? = exchangeOneByte(
         request = FiioJa11Protocol.readOutputVolumeReport(),
@@ -284,6 +300,7 @@ class AndroidFiioJa11UsbTransport(
                 usbProductId = productId,
                 sessionGeneration = expectedSessionGeneration,
                 detachGeneration = hid.detachGeneration,
+                deviceSerialIdentity = deviceSerialIdentity,
             )
         }.getOrNull()?.takeIf(::isCurrentSession)
     }

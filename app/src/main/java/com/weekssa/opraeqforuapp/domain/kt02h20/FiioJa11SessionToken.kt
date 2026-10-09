@@ -6,6 +6,7 @@ data class FiioJa11SessionToken(
     val usbProductId: Int,
     val sessionGeneration: Long,
     val detachGeneration: Long,
+    val deviceSerialIdentity: String? = fiioJa11SerialIdentity(deviceFingerprintKey),
 ) {
     init {
         require(deviceFingerprintKey.isNotBlank())

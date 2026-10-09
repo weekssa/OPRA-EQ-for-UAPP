@@ -48,7 +48,7 @@ Optional environment:
 Actions:
   list             show current adb devices
   inspect          verify Pixel 9 and report basic OS properties
-  verify-identity  require the opened-connection serial fallback and current stable JA11 identity
+  verify-ja11-session  require one current JA11 candidate and a complete source-bound baseline
   start-logcat     capture full logs in the foreground; stop with Ctrl-C in that terminal
   install          install only the frozen JA11 diagnostic APK
   rollback         restore the exact prior J021 diagnostic APK; no hardware action
@@ -74,6 +74,37 @@ fi
 mkdir -p "$EVIDENCE_DIR"
 chmod 700 "$EVIDENCE_DIR"
 LIVE_LOG="$EVIDENCE_DIR/logcat-live.txt"
+LIVE_PID="$EVIDENCE_DIR/logcat-live.pid"
+
+verify_live_capture() {
+  local capture_pid capture_command
+  if [ ! -s "$LIVE_LOG" ] || [ ! -s "$LIVE_PID" ]; then
+    echo "Start foreground logcat capture before launching the candidate; no bound live capture is available." >&2
+    return 15
+  fi
+  capture_pid="$(cat "$LIVE_PID")"
+  if [[ ! "$capture_pid" =~ ^[0-9]+$ ]] || ! kill -0 "$capture_pid" 2>/dev/null; then
+    echo "The foreground logcat capture for this evidence session is no longer running." >&2
+    return 15
+  fi
+  capture_command="$(ps -ww -p "$capture_pid" -o command= 2>/dev/null || true)"
+  if [[ "$capture_command" != *"$ADB_BIN"* || "$capture_command" != *" -s $SERIAL logcat -v threadtime"* ]]; then
+    echo "The recorded foreground process is not this Pixel's ADB logcat capture." >&2
+    return 15
+  fi
+  if ! kill -0 "$capture_pid" 2>/dev/null; then
+    echo "The foreground logcat capture stopped during verification." >&2
+    return 15
+  fi
+}
+
+capture_diag_events() {
+  local destination="$1"
+  verify_live_capture || return $?
+  awk 'index($0, "JA11_DIAG:") && index($0, "event=") { print }' "$LIVE_LOG" > "$destination"
+  chmod 600 "$destination"
+  verify_live_capture || return $?
+}
 
 if [ "$ACTION" = "list" ]; then "$ADB_BIN" devices -l; exit 0; fi
 if [ -z "$SERIAL" ] || [ "$SERIAL" = "all" ]; then
@@ -163,12 +194,14 @@ case "$ACTION" in
     ;;
   start-logcat)
     verify_pixel
-    if [ -e "$LIVE_LOG" ]; then
+    if [ -e "$LIVE_LOG" ] || [ -e "$LIVE_PID" ]; then
       echo "This evidence directory already contains a log capture; preserve it and use a new directory." >&2
       exit 5
     fi
     : > "$LIVE_LOG"
     chmod 600 "$LIVE_LOG"
+    printf '%s\n' "$$" > "$LIVE_PID"
+    chmod 600 "$LIVE_PID"
     echo "Full logcat is capturing to the private evidence directory; stop with Ctrl-C in this terminal."
     exec "$ADB_BIN" -s "$SERIAL" logcat -v threadtime > "$LIVE_LOG" 2>&1
     ;;
@@ -223,21 +256,20 @@ case "$ACTION" in
     save_package_dump
     EVENTS="$EVIDENCE_DIR/ja11-diag-events-$(utc_stamp).txt"
     if [ -e "$EVENTS" ]; then echo "Preserving existing event log; use a new evidence directory." >&2; exit 11; fi
-    "$ADB_BIN" -s "$SERIAL" logcat -d -v threadtime JA11_DIAG:I '*:S' > "$EVENTS"
-    chmod 600 "$EVENTS"
+    capture_diag_events "$EVENTS"
     BUILD_LINE="$(grep -F 'event=APP_BUILD_INFO' "$EVENTS" | tail -n 1 || true)"
     printf '%s\n' "$BUILD_LINE"
     if [ -z "$BUILD_LINE" ] || [[ "$BUILD_LINE" != *"package=$PACKAGE"* || "$BUILD_LINE" != *"versionName=0.8.0-ja11diag"* || "$BUILD_LINE" != *"versionCode=11"* || "$BUILD_LINE" != *"debuggable=true"* || "$BUILD_LINE" != *"sourceSha=$SOURCE_SHA"* || "$BUILD_LINE" != *"ja11DiagnosticsEnabled=true"* ]]; then
       echo "The latest diagnostic build-info event does not match the frozen candidate; stop." >&2
       exit 14
     fi
+    verify_live_capture || exit $?
     ;;
-  verify-identity)
+  verify-ja11-session)
     verify_pixel
-    EVENTS="$EVIDENCE_DIR/ja11-identity-availability-$(utc_stamp).txt"
-    if [ -e "$EVENTS" ]; then echo "Preserving existing identity event log; use a new evidence directory." >&2; exit 12; fi
-    "$ADB_BIN" -s "$SERIAL" logcat -d -v threadtime JA11_DIAG:I '*:S' > "$EVENTS"
-    chmod 600 "$EVENTS"
+    EVENTS="$EVIDENCE_DIR/ja11-session-baseline-$(utc_stamp).txt"
+    if [ -e "$EVENTS" ]; then echo "Preserving existing JA11 session event log; use a new evidence directory." >&2; exit 12; fi
+    capture_diag_events "$EVENTS"
     BUILD_ENTRY="$(awk '/event=APP_BUILD_INFO/ {position = NR; pid = $3; line = $0} END {if (position) printf "%d\t%s\t%s", position, pid, line}' "$EVENTS")"
     BUILD_POSITION=""
     BUILD_PID=""
@@ -260,15 +292,19 @@ case "$ACTION" in
     DESCRIPTOR_PRODUCT_ID="$(printf '%s\n' "$DESCRIPTOR_LINE" | sed -n 's/.*productId=\([0-9][0-9]*\).*/\1/p')"
     OPENED_PRODUCT_ID="$(printf '%s\n' "$SESSION_LINE" | sed -n 's/.* pid=\([0-9][0-9]*\).*/\1/p')"
     SESSION_GENERATION="$(printf '%s\n' "$SESSION_LINE" | sed -n 's/.*sessionGeneration=\([0-9][0-9]*\).*/\1/p')"
+    OPENED_CANDIDATE_COUNT="$(printf '%s\n' "$SESSION_LINE" | sed -n 's/.*supportedCandidateCount=\([0-9][0-9]*\).*/\1/p')"
+    DEVICE_SERIAL_STATUS="$(printf '%s\n' "$DESCRIPTOR_LINE" | sed -n 's/.*serialStatus=\([A-Z_]*\).*/\1/p')"
+    CONNECTION_SERIAL_STATUS="$(printf '%s\n' "$DESCRIPTOR_LINE" | sed -n 's/.*connectionSerialStatus=\([A-Z_]*\).*/\1/p')"
+    SERIAL_SOURCE="$(printf '%s\n' "$DESCRIPTOR_LINE" | sed -n 's/.*serialSource=\([A-Z_]*\).*/\1/p')"
     if [ -z "$SESSION_POSITION" ] || [ -z "$SESSION_GENERATION" ] || \
        [ -z "$DESCRIPTOR_POSITION" ] || [ "$LATEST_DESCRIPTOR_POSITION" != "$DESCRIPTOR_POSITION" ] || \
        [ -z "$DESCRIPTOR_PRODUCT_ID" ] || [ "$DESCRIPTOR_PRODUCT_ID" != "$OPENED_PRODUCT_ID" ] || \
        { [ "$DESCRIPTOR_PRODUCT_ID" != "257" ] && [ "$DESCRIPTOR_PRODUCT_ID" != "258" ]; } || \
-       [[ "$DESCRIPTOR_LINE" != *"permissionGranted=true"* || \
-          "$DESCRIPTOR_LINE" != *"serialStatus=READABLE_NULL"* || \
-          "$DESCRIPTOR_LINE" != *"connectionSerialStatus=READABLE_NONBLANK"* || \
-          "$DESCRIPTOR_LINE" != *"serialSource=USB_CONNECTION"* ]]; then
-      echo "The latest opened JA11 session is not proven to use its same-connection nonblank serial fallback; stop before any write." >&2
+       [ "$OPENED_CANDIDATE_COUNT" != "1" ] || \
+       [ -z "$DEVICE_SERIAL_STATUS" ] || [ -z "$CONNECTION_SERIAL_STATUS" ] || \
+       [ -z "$SERIAL_SOURCE" ] || \
+       [[ "$DESCRIPTOR_LINE" != *"permissionGranted=true"* ]]; then
+      echo "The latest opened JA11 session lacks a current permissioned descriptor or unique candidate; stop before any write." >&2
       exit 15
     fi
     SNAPSHOT_ENTRY="$(awk -v build="$BUILD_POSITION" -v pid="$BUILD_PID" 'NR > build && $3 == pid && index($0, "event=SNAPSHOT_READ_COMPLETE") {position = NR; line = $0} END {if (position) printf "%d\t%s", position, line}' "$EVENTS")"
@@ -282,36 +318,47 @@ case "$ACTION" in
     SNAPSHOT_GENERATION="$(printf '%s\n' "$SNAPSHOT_LINE" | sed -n 's/.*sessionGeneration=\([0-9][0-9]*\).*/\1/p')"
     IDENTITY_GENERATION="$(printf '%s\n' "$IDENTITY_LINE" | sed -n 's/.*sessionGeneration=\([0-9][0-9]*\).*/\1/p')"
     SNAPSHOT_SOURCE="$(printf '%s\n' "$SNAPSHOT_LINE" | sed -n 's/.*sourceSha=\([0-9a-f][0-9a-f]*\).*/\1/p')"
+    IDENTITY_CANDIDATE_COUNT="$(printf '%s\n' "$IDENTITY_LINE" | sed -n 's/.*supportedCandidateCount=\([0-9][0-9]*\).*/\1/p')"
+    SERIAL_AVAILABLE="$(printf '%s\n' "$IDENTITY_LINE" | sed -n 's/.*serialAvailable=\([^ ]*\).*/\1/p')"
     if [ -z "$SNAPSHOT_GENERATION" ] || [ -z "$IDENTITY_GENERATION" ] || [ -z "$SNAPSHOT_SOURCE" ] || \
        [ -z "$SNAPSHOT_POSITION" ] || [ -z "$IDENTITY_POSITION" ] || \
        [ "$SNAPSHOT_POSITION" -le "$SESSION_POSITION" ] || [ "$IDENTITY_POSITION" -le "$SESSION_POSITION" ] || \
+       [ "$IDENTITY_POSITION" -le "$SNAPSHOT_POSITION" ] || \
        [ "$SNAPSHOT_SOURCE" != "$SOURCE_SHA" ] || \
        [ "$SNAPSHOT_GENERATION" != "$SESSION_GENERATION" ] || \
        [ "$SNAPSHOT_GENERATION" != "$IDENTITY_GENERATION" ] || \
-       [[ "$IDENTITY_LINE" != *"identityAvailable=true"* || "$IDENTITY_LINE" != *"sessionCurrent=true"* ]]; then
-      echo "The latest complete snapshot does not match the opened-connection identity session; stop before any restart-control write." >&2
+       [ "$IDENTITY_CANDIDATE_COUNT" != "1" ] || \
+       [ -z "$SERIAL_AVAILABLE" ] || \
+       [[ "$IDENTITY_LINE" != *"sessionCurrent=true"* ]]; then
+      echo "The latest complete baseline does not match one current supported JA11 session; stop before any write." >&2
       exit 16
+    fi
+    LATER_AMBIGUOUS_ATTACH_POSITION="$(awk -v session="$SESSION_POSITION" -v pid="$BUILD_PID" 'NR > session && $3 == pid && index($0, "event=USB_ATTACH") { for (i = 1; i <= NF; i++) if (index($i, "supportedCandidateCount=") == 1) { value = $i; sub(/^supportedCandidateCount=/, "", value); if (value + 0 > 1) position = NR } } END {print position+0}' "$EVENTS")"
+    if [ "$LATER_AMBIGUOUS_ATTACH_POSITION" -gt 0 ]; then
+      echo "A later JA11 attach made candidate selection ambiguous; stop before any write." >&2
+      exit 17
     fi
     TERMINAL_SESSION_POSITION="$(awk -v session="$SESSION_POSITION" -v pid="$BUILD_PID" -v generation="$SESSION_GENERATION" 'NR > session && $3 == pid && ((index($0, "event=USB_DETACH ") && index($0, "sessionGeneration=" generation " ")) || (index($0, "event=USB_SESSION_CLOSED ") && index($0, "sessionGeneration=" generation " "))) {position = NR} END {print position+0}' "$EVENTS")"
     if [ "$TERMINAL_SESSION_POSITION" -gt 0 ]; then
       echo "The verified JA11 USB session has a later detach or close event; stop before any write." >&2
-      exit 17
+      exit 18
     fi
     if ! CURRENT_PACKAGE_PIDS="$("$ADB_BIN" -s "$SERIAL" shell pidof "$PACKAGE" 2>/dev/null | tr -d '\r' | awk '{$1=$1; print}')"; then
       echo "Cannot confirm that the verified candidate app process is still running; stop before any write." >&2
-      exit 18
+      exit 19
     fi
     case " $CURRENT_PACKAGE_PIDS " in
       *" $BUILD_PID "*) ;;
       *)
         echo "The process that emitted the verified candidate identity is no longer running; stop before any write." >&2
-        exit 19
+        exit 20
         ;;
     esac
-    printf '%s\n' "$DESCRIPTOR_LINE"
-    printf '%s\n' "$SESSION_LINE"
-    printf '%s\n' "$IDENTITY_LINE"
-    echo "The opened-connection fallback returned a nonblank serial; the app's unique-serial identity key is available and current for JA11 session $SNAPSHOT_GENERATION. The session has no later detach/close event and the candidate process is running. Reconnect stability remains to be verified by the first permitted expected-restart transaction; when Mic is Off, its restoration transaction serves that purpose. No serial or fingerprint was recorded."
+    verify_live_capture || exit $?
+    printf 'USB_IDENTITY_DESCRIPTOR_STATUS permissionGranted=true serialStatus=%s connectionSerialStatus=%s serialSource=%s productId=%s\n' "$DEVICE_SERIAL_STATUS" "$CONNECTION_SERIAL_STATUS" "$SERIAL_SOURCE" "$DESCRIPTOR_PRODUCT_ID"
+    printf 'USB_SESSION_OPENED productId=%s sessionGeneration=%s supportedCandidateCount=%s\n' "$OPENED_PRODUCT_ID" "$SESSION_GENERATION" "$OPENED_CANDIDATE_COUNT"
+    printf 'RESTART_IDENTITY_AVAILABILITY sessionGeneration=%s serialAvailable=%s sessionCurrent=true supportedCandidateCount=%s\n' "$SNAPSHOT_GENERATION" "$SERIAL_AVAILABLE" "$IDENTITY_CANDIDATE_COUNT"
+    echo "The exact candidate has a complete current baseline from the sole attached supported JA11. A readable serial is optional continuity evidence; without one, this check makes no claim that the same physical unit was identified. No serial or fingerprint was recorded."
     ;;
   stage-profile)
     verify_pixel

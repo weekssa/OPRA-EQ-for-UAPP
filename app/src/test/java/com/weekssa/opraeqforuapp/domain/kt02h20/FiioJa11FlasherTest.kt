@@ -189,6 +189,67 @@ class FiioJa11FlasherTest {
     }
 
     @Test
+    fun seriallessSoleJa11CanCompleteSaveReconnectAndFreshReadback() = runBlocking {
+        val transport = FakeJa11Transport(serial = null, reconnectAfterSave = true)
+
+        val result = FiioJa11Flasher(transport).flash(exactProfile())
+
+        assertTrue(result.toString(), result is Kt02h20FlashResult.Success)
+        assertEquals(1, transport.saveCount)
+        assertEquals(1, transport.sentCommands.count { it == 0x19 })
+        assertTrue(transport.readGenerations.takeLast(7).all { it == 2L })
+    }
+
+    @Test
+    fun multipleInitialJa11CandidatesPreventFlashBeforeAnyWrite() = runBlocking {
+        val transport = FakeJa11Transport(initialCandidateCount = 2)
+
+        val result = FiioJa11Flasher(transport).flash(exactProfile())
+
+        assertTrue(result.toString(), result is Kt02h20FlashResult.DeviceUnavailable)
+        assertTrue(transport.sentCommands.isEmpty())
+        assertEquals(0, transport.saveCount)
+    }
+
+    @Test
+    fun multipleCandidatesAppearingAfterSavePreventFinalReadback() = runBlocking {
+        val transport = FakeJa11Transport(reconnectAfterSave = true, candidateCountAfterSave = 2)
+
+        val result = FiioJa11Flasher(transport).flash(exactProfile())
+
+        assertTrue(result.toString(), result is Kt02h20FlashResult.VerificationFailed)
+        assertEquals(1, transport.saveCount)
+        assertEquals(1, transport.globalGainReadsAfterWrites)
+    }
+
+    @Test
+    fun serialMismatchAfterSavePreventsFinalReadbackWithoutRetryingSave() = runBlocking {
+        val transport = FakeJa11Transport(reconnectAfterSave = true, replacementSerial = "different-ja11")
+
+        val result = FiioJa11Flasher(transport).flash(exactProfile())
+
+        assertTrue(result.toString(), result is Kt02h20FlashResult.VerificationFailed)
+        assertEquals(1, transport.saveCount)
+        assertEquals(1, transport.sentCommands.count { it == 0x19 })
+        assertEquals(1, transport.globalGainReadsAfterWrites)
+    }
+
+    @Test
+    fun unexpectedPidTransitionDuringFlashSaveFailsClosedBeforeFinalReadback() = runBlocking {
+        val transport = FakeJa11Transport(
+            reconnectAfterSave = true,
+            replacementProductId = FiioJa11Protocol.PRODUCT_ID_UAC_1,
+        )
+
+        val result = FiioJa11Flasher(transport).flash(exactProfile())
+
+        assertTrue(result.toString(), result is Kt02h20FlashResult.VerificationFailed)
+        assertEquals(1, transport.saveCount)
+        assertEquals(1, transport.sentCommands.count { it == 0x19 })
+        assertEquals(1, transport.globalGainReadsAfterWrites)
+    }
+
+    @Test
     fun saveThatDetachesDuringItsSettleUsesFreshSessionForFinalVerification() = runBlocking {
         val transport = FakeJa11Transport(changeSessionAfterCommandNumber = 9)
 
@@ -438,11 +499,19 @@ class FiioJa11FlasherTest {
         private val changeSessionAfterCommandNumber: Int? = null,
         private val reconnectAfterSave: Boolean = false,
         private val changeSessionDuringBaselineRead: Boolean = false,
+        private val serial: String? = "ja11-test",
+        initialCandidateCount: Int = 1,
+        private val candidateCountAfterSave: Int? = null,
+        private val replacementSerial: String? = null,
+        private val replacementProductId: Int? = null,
     ) : FiioJa11Transport {
-        override val deviceFingerprintKey: String = "serial=ja11-test|vid=2972"
-        override val usbProductId: Int = FiioJa11Protocol.PRODUCT_ID_UAC_2
+        override var deviceFingerprintKey: String? = serial?.let { "serial=$it|vid=2972" } ?: "vid=2972"
+        override val deviceSerialIdentity: String?
+            get() = fiioJa11SerialIdentity(deviceFingerprintKey)
+        override var usbProductId: Int = FiioJa11Protocol.PRODUCT_ID_UAC_2
         override var sessionGeneration: Long = 1L
         override var detachGeneration: Long = 0L
+        override var supportedJa11CandidateCount: Int = initialCandidateCount
         val bands = FiioJa11Protocol.completeBands(emptyList()).toMutableList()
         var globalGainDb: Double = 0.0
         var program: FiioJa11Protocol.EqProgram = initialProgram
@@ -513,6 +582,9 @@ class FiioJa11FlasherTest {
             ) && saveReconnectAccepted
             if (accepted) {
                 postSaveGlobalGainDb?.let { globalGainDb = it }
+                candidateCountAfterSave?.let { supportedJa11CandidateCount = it }
+                replacementSerial?.let { deviceFingerprintKey = "serial=$it|vid=2972" }
+                replacementProductId?.let { usbProductId = it }
                 if (reconnectAfterSave) changeSession()
             }
             return accepted

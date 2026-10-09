@@ -174,7 +174,7 @@ class DacSessionRepository(
     fun isFiioJa11SessionCurrent(sessionGeneration: Long): Boolean =
         sessionGeneration > 0L &&
             fiioJa11ConnectionState.value is Kt02h20ConnectionState.Connected &&
-            fiioJa11Transport.sessionGeneration == sessionGeneration
+            fiioJa11Transport.isCurrentSession(sessionGeneration, fiioJa11Transport.detachGeneration)
 
     fun isEw300SessionCurrent(sessionGeneration: Long): Boolean =
         sessionGeneration > 0L &&

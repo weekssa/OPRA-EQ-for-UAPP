@@ -6,6 +6,7 @@ internal data class Kt02h20ConnectAttempt(
     val deviceName: String,
     val productId: Int,
     val detachGeneration: Long,
+    val transactionToken: String? = null,
     val phase: Phase,
 ) {
     enum class Phase {
@@ -84,6 +85,7 @@ internal class Kt02h20ConnectAttemptTracker {
         productId: Int,
         detachGeneration: Long,
         permissionRequired: Boolean,
+        transactionToken: String? = null,
     ): Kt02h20ConnectAttempt {
         nextId = if (nextId == Long.MAX_VALUE) 1L else nextId + 1L
         return Kt02h20ConnectAttempt(
@@ -91,6 +93,7 @@ internal class Kt02h20ConnectAttemptTracker {
             deviceName = deviceName,
             productId = productId,
             detachGeneration = detachGeneration,
+            transactionToken = transactionToken,
             phase = if (permissionRequired) {
                 Kt02h20ConnectAttempt.Phase.WAITING_FOR_PERMISSION
             } else {

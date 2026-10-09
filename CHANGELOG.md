@@ -12,11 +12,18 @@ The project uses Semantic Versioning. The `0.x` series is pre-1.0; a version wit
   fallback, with request/device/detach fencing and a JA11-specific hard deadline. Obsolete or late
   callbacks cannot acquire a session; unique permission tokens also prevent stale grants matching
   recreated sessions with reused request IDs. Uncertain hardware writes are never replayed.
-- Record privacy-safe per-session JA11 serial availability so the app can explain why restart
-  verification remains blocked without exposing the serial or relaxing the identity requirement.
-- Clear terminal restart-operation state and preserve the existing fail-closed identity and
-  readback requirements. Physical acceptance remains pending; this unreleased software change
-  makes no JA11 support claim.
+- Treat a usable USB serial as optional continuity evidence. JA11 connection and same-session
+  controls require an exact supported VID/PID, valid HID endpoints, permission, a fresh current
+  session, and one unambiguous supported candidate. No serial is required to read or start a
+  restart-capable control.
+- For expected resets, require the accepted write, observed detach, invalidated old session, fresh
+  permission/open/claim, new generation, exactly one supported replacement, and authoritative fresh
+  readback. Reject a serial mismatch when both sessions provide a serial; when serial is absent,
+  report only that the requested state was verified on the sole returning supported JA11. Reject
+  zero or multiple candidates and never replay an uncertain write.
+- Apply candidate ambiguity and final-readback checks to JA11 Flash/Save/Reset without changing
+  protocol sequencing or volume/preset persistence claims. Physical acceptance remains pending;
+  this unreleased software change makes no JA11 support claim.
 
 ## [0.8.0] - 2026-10-08
 

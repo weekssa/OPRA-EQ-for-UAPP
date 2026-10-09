@@ -1,6 +1,37 @@
 # FiiO JA11 hands-on qualification
 
-## 2026-10-08 replacement candidate preflight
+## 2026-10-09 Model D physical acceptance gate — current
+
+The owner-approved Model D policy supersedes the serial-required gates in the historical
+2026-10-08 sections below. No Model D candidate has been frozen and no phone action is authorized
+yet. Keep the Pixel unused until the implementation, focused and full local gates, independent
+review, exact PR-head CI, emulator, and artifact provenance all pass. Then request a new explicit
+phone window with the exact source/APK, test plan, expected writes/resets, Android permission
+interaction, occupancy, pass/fail conditions, and restoration obligations.
+
+Before any write, install and verify that exact candidate, then complete a read-only baseline. The
+JA11 session must show the exact FiiO VID/PID allowlist (`0x2972:0x0101` or `0x2972:0x0102`), one
+supported candidate, current permission, a fresh opened/claimed HID session, a current generation,
+and a complete snapshot of the original state. A usable USB serial is optional. If both old and new
+sessions provide a serial, reject mismatch; if either is absent, continue only with one supported
+candidate and every expected-reset lifecycle gate. Do not claim the same physical unit when serial
+is absent. Reject zero/multiple candidates and never select the first device by enumeration order.
+
+The last verified Mic state remains Off from J020 and its restoration to the original On state is
+outstanding. After a complete exact-candidate baseline, Mic Off→On is the first mutation. Require an
+accepted write, expected detach, old-session invalidation, fresh permission/open/claim, a new
+generation, one candidate, and authoritative fresh Mic-On readback. If Mic already reads On, record
+restoration satisfied and skip the write. Never replay an uncertain write. If the identity,
+permission, cardinality, generation, write outcome, or readback gate fails, stop writes, preserve
+private evidence, and release the Pixel immediately.
+
+Continue with the prepared UAC transition/restore, one Flash from Off, and full-power volume/program
+observations only after Mic is restored or the fresh baseline confirms On. Preserve one logical Flash
+action, protocol-required User 1 sequencing, exactly one Save, final authoritative readback, and
+complete original-state restoration. Keep volume/preset persistence claims unverified until the
+full-power check.
+
+## 2026-10-08 replacement candidate preflight — superseded by Model D
 
 The physical session must use source `616958037349e2f0e0784a556c6430b0de6ceb18`, tree
 `fdb6c8d10c8aa865da1a4818d22a7c14b2559b21`, and diagnostic APK SHA-256

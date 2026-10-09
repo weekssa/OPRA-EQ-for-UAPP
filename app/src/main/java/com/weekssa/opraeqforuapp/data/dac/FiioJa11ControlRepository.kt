@@ -11,13 +11,24 @@ import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceControls
 import com.weekssa.opraeqforuapp.domain.fiio.FiioJa11DeviceSnapshot
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11ReportWriteOutcome
+import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11RestartContinuity
+import com.weekssa.opraeqforuapp.domain.kt02h20.fiioJa11RestartContinuityFromSerials
+import com.weekssa.opraeqforuapp.domain.kt02h20.ja11RestartWriteWasAccepted
+import java.util.UUID
 
 interface FiioJa11DeviceControlSource {
     val sessionGeneration: Long
     val connectedProductId: Int?
-    /** Stable physical-device key with re-enumeration-specific PID/HID interface removed. */
-    val deviceIdentityKey: String?
+    /** Optional usable USB serial; it is evidence for unit continuity, never a support prerequisite. */
+    val deviceSerialIdentity: String?
         get() = null
+    val detachGeneration: Long
+        get() = 0L
+    /** Number of currently attached devices accepted by the exact JA11 VID/PID matcher. */
+    val supportedJa11CandidateCount: Int
+        get() = 1
+    fun bindRestartTransaction(transactionToken: String): Boolean = true
+    fun clearRestartTransaction(transactionToken: String) = Unit
     fun isSessionCurrent(sessionGeneration: Long): Boolean
     suspend fun readOutputVolume(): Int?
     suspend fun readSampleRateLabel(): String?
@@ -48,12 +59,21 @@ sealed interface FiioJa11ControlReadResult {
 }
 
 data class FiioJa11PendingRestartWrite(
+    val transactionToken: String = UUID.randomUUID().toString(),
     val controlId: DacControlId,
     val requestedValue: DacControlValue,
     val previousSessionGeneration: Long,
-    val deviceIdentityKey: String,
+    val previousDetachGeneration: Long = 0L,
+    val deviceSerialIdentity: String? = null,
     val baseline: FiioJa11DeviceSnapshot,
+    /** Null while the pre-write operation is being handed to the single owned USB write. */
+    val writeOutcome: FiioJa11ReportWriteOutcome? = null,
 )
+
+enum class FiioJa11RestartVerificationEvidence {
+    SAME_DEVICE_SERIAL_MATCHED,
+    SOLE_RETURNING_JA11_STATE_VERIFIED,
+}
 
 sealed interface FiioJa11ControlWriteResult {
     data class Verified(
@@ -61,6 +81,7 @@ sealed interface FiioJa11ControlWriteResult {
         val requestedValue: DacControlValue,
         val baseline: FiioJa11DeviceSnapshot,
         val snapshot: FiioJa11DeviceSnapshot,
+        val restartEvidence: FiioJa11RestartVerificationEvidence? = null,
     ) : FiioJa11ControlWriteResult
 
     data class ReconnectRequired(val pending: FiioJa11PendingRestartWrite) : FiioJa11ControlWriteResult
@@ -75,6 +96,7 @@ sealed interface FiioJa11ControlWriteResult {
     data class TransferFailed(val controlId: DacControlId) : FiioJa11ControlWriteResult
     data class WriteUncertain(val controlId: DacControlId) : FiioJa11ControlWriteResult
     data class WrongDevice(val controlId: DacControlId) : FiioJa11ControlWriteResult
+    data class AmbiguousCandidates(val controlId: DacControlId, val candidateCount: Int) : FiioJa11ControlWriteResult
     data class ReadbackMismatch(
         val controlId: DacControlId,
         val requestedValue: DacControlValue,
@@ -92,8 +114,11 @@ internal enum class FiioJa11ReplacementSessionStatus {
     NOT_CURRENT,
     OBSERVATION_CHANGED,
     UNSUPPORTED_DEVICE,
-    IDENTITY_UNAVAILABLE,
     IDENTITY_MISMATCH,
+    EXPECTED_DETACH_NOT_OBSERVED,
+    AMBIGUOUS_CANDIDATES,
+    NO_CANDIDATE,
+    WRITE_NOT_ACCEPTED,
     READY,
 }
 
@@ -110,21 +135,27 @@ class FiioJa11ControlRepository(
     private val source: FiioJa11DeviceControlSource,
     private val operationGate: DacOperationGate = MutexDacOperationGate(),
 ) {
+    val supportedJa11CandidateCount: Int
+        get() = source.supportedJa11CandidateCount
+
     fun createPendingRestartWrite(
         controlId: DacControlId,
         requestedValue: DacControlValue,
         baseline: FiioJa11DeviceSnapshot,
     ): FiioJa11PendingRestartWrite? {
         if (!FiioJa11DeviceControls.requiresSessionRestart(controlId)) return null
-        val deviceIdentityKey = source.deviceIdentityKey?.takeIf(String::isNotBlank) ?: return null
-        if (baseline.sessionGeneration != source.sessionGeneration || !source.isSessionCurrent(baseline.sessionGeneration)) {
+        if (source.supportedJa11CandidateCount != 1 ||
+            baseline.sessionGeneration != source.sessionGeneration ||
+            !source.isSessionCurrent(baseline.sessionGeneration)
+        ) {
             return null
         }
         return FiioJa11PendingRestartWrite(
             controlId = controlId,
             requestedValue = requestedValue,
             previousSessionGeneration = baseline.sessionGeneration,
-            deviceIdentityKey = deviceIdentityKey,
+            previousDetachGeneration = source.detachGeneration,
+            deviceSerialIdentity = source.deviceSerialIdentity,
             baseline = baseline,
         )
     }
@@ -134,17 +165,16 @@ class FiioJa11ControlRepository(
     }
 
     fun isSupportedReplacementSessionCurrent(pending: FiioJa11PendingRestartWrite): Boolean =
-        replacementSessionStatus(pending) in setOf(
-            FiioJa11ReplacementSessionStatus.IDENTITY_UNAVAILABLE,
-            FiioJa11ReplacementSessionStatus.IDENTITY_MISMATCH,
-            FiioJa11ReplacementSessionStatus.READY,
-        )
+        replacementSessionStatus(pending) == FiioJa11ReplacementSessionStatus.READY
 
     fun hasStableReplacementIdentity(pending: FiioJa11PendingRestartWrite): Boolean =
-        replacementSessionStatus(pending) in setOf(
-            FiioJa11ReplacementSessionStatus.IDENTITY_MISMATCH,
-            FiioJa11ReplacementSessionStatus.READY,
-        )
+        pending.deviceSerialIdentity != null &&
+            source.deviceSerialIdentity == pending.deviceSerialIdentity &&
+            replacementSessionStatus(pending) == FiioJa11ReplacementSessionStatus.READY
+
+    fun releaseRestartTransaction(pending: FiioJa11PendingRestartWrite) {
+        source.clearRestartTransaction(pending.transactionToken)
+    }
 
     internal fun replacementSessionStatus(
         pending: FiioJa11PendingRestartWrite,
@@ -156,16 +186,23 @@ class FiioJa11ControlRepository(
         val first = captureReplacementSessionObservation()
         val second = captureReplacementSessionObservation()
         val status = when {
+            pending.writeOutcome?.let(::ja11RestartWriteWasAccepted) != true ->
+                FiioJa11ReplacementSessionStatus.WRITE_NOT_ACCEPTED
+            second.supportedCandidateCount > 1 -> FiioJa11ReplacementSessionStatus.AMBIGUOUS_CANDIDATES
+            second.supportedCandidateCount != 1 -> FiioJa11ReplacementSessionStatus.NO_CANDIDATE
             first != second || !second.stable -> FiioJa11ReplacementSessionStatus.OBSERVATION_CHANGED
+            second.detachGeneration <= pending.previousDetachGeneration ->
+                FiioJa11ReplacementSessionStatus.EXPECTED_DETACH_NOT_OBSERVED
             !second.sessionCurrent ||
                 second.generation <= 0L ||
                 second.generation == pending.previousSessionGeneration ->
                 FiioJa11ReplacementSessionStatus.NOT_CURRENT
             second.productId?.let(FiioJa11Protocol::supportsProductId) != true ->
                 FiioJa11ReplacementSessionStatus.UNSUPPORTED_DEVICE
-            second.identityKey.isNullOrBlank() -> FiioJa11ReplacementSessionStatus.IDENTITY_UNAVAILABLE
-            second.identityKey == pending.deviceIdentityKey -> FiioJa11ReplacementSessionStatus.READY
-            else -> FiioJa11ReplacementSessionStatus.IDENTITY_MISMATCH
+            pending.deviceSerialIdentity != null && second.serialIdentity != null &&
+                pending.deviceSerialIdentity != second.serialIdentity ->
+                FiioJa11ReplacementSessionStatus.IDENTITY_MISMATCH
+            else -> FiioJa11ReplacementSessionStatus.READY
         }
         return ReplacementSessionEvaluation(status, second)
     }
@@ -173,20 +210,34 @@ class FiioJa11ControlRepository(
     private fun captureReplacementSessionObservation(): ReplacementSessionObservation {
         val generation = source.sessionGeneration
         val productId = source.connectedProductId
-        val identityKey = source.deviceIdentityKey
+        val serialIdentity = source.deviceSerialIdentity
+        val detachGeneration = source.detachGeneration
+        val supportedCandidateCount = source.supportedJa11CandidateCount
         val current = source.isSessionCurrent(generation)
         val stable = generation == source.sessionGeneration &&
             productId == source.connectedProductId &&
-            identityKey == source.deviceIdentityKey &&
+            serialIdentity == source.deviceSerialIdentity &&
+            detachGeneration == source.detachGeneration &&
+            supportedCandidateCount == source.supportedJa11CandidateCount &&
             current &&
             source.isSessionCurrent(generation)
-        return ReplacementSessionObservation(generation, productId, identityKey, current, stable)
+        return ReplacementSessionObservation(
+            generation = generation,
+            productId = productId,
+            serialIdentity = serialIdentity,
+            detachGeneration = detachGeneration,
+            supportedCandidateCount = supportedCandidateCount,
+            sessionCurrent = current,
+            stable = stable,
+        )
     }
 
     private data class ReplacementSessionObservation(
         val generation: Long,
         val productId: Int?,
-        val identityKey: String?,
+        val serialIdentity: String?,
+        val detachGeneration: Long,
+        val supportedCandidateCount: Int,
         val sessionCurrent: Boolean,
         val stable: Boolean,
     )
@@ -196,29 +247,46 @@ class FiioJa11ControlRepository(
         val observation: ReplacementSessionObservation,
     )
 
-    private fun replacementIdentityFailure(
+    private fun replacementContinuityFailure(
         pending: FiioJa11PendingRestartWrite,
+        expectedObservation: ReplacementSessionObservation,
     ): FiioJa11ControlWriteResult? {
-        val currentIdentity = source.deviceIdentityKey?.takeIf(String::isNotBlank)
-            ?: return FiioJa11ControlWriteResult.ReadFailed(pending.controlId, "USB identity")
-        return if (currentIdentity == pending.deviceIdentityKey) {
-            null
-        } else {
+        val actual = captureReplacementSessionObservation()
+        if (actual.supportedCandidateCount > 1) {
+            return FiioJa11ControlWriteResult.AmbiguousCandidates(
+                pending.controlId,
+                actual.supportedCandidateCount,
+            )
+        }
+        if (actual.supportedCandidateCount != 1) return FiioJa11ControlWriteResult.NotConnected(pending.controlId)
+        if (!actual.stable || actual != expectedObservation) {
+            return FiioJa11ControlWriteResult.StaleBaseline(
+                pending.controlId,
+                expectedObservation.generation,
+                actual.generation,
+            )
+        }
+        return if (pending.deviceSerialIdentity != null && actual.serialIdentity != null &&
+            pending.deviceSerialIdentity != actual.serialIdentity
+        ) {
             FiioJa11ControlWriteResult.WrongDevice(pending.controlId)
+        } else {
+            null
         }
     }
 
     suspend fun readSnapshot(): FiioJa11ControlReadResult = operationGate.withExclusiveOperation {
         val result = readSnapshotUnlocked()
         if (result is FiioJa11ControlReadResult.Success) {
-            val identityKey = source.deviceIdentityKey
+            val serialIdentity = source.deviceSerialIdentity
             val snapshotSessionStillCurrent =
                 source.sessionGeneration == result.snapshot.sessionGeneration &&
                     source.isSessionCurrent(result.snapshot.sessionGeneration)
             Ja11DiagnosticLog.eventForDevice(
                 "FiiO JA11",
                 "RESTART_IDENTITY_AVAILABILITY",
-                "identityAvailable" to (snapshotSessionStillCurrent && !identityKey.isNullOrBlank()),
+                "serialAvailable" to (snapshotSessionStillCurrent && !serialIdentity.isNullOrBlank()),
+                "supportedCandidateCount" to source.supportedJa11CandidateCount,
                 "sessionCurrent" to snapshotSessionStillCurrent,
                 "sessionGeneration" to result.snapshot.sessionGeneration,
             )
@@ -226,7 +294,10 @@ class FiioJa11ControlRepository(
         result
     }
 
-    suspend fun writeControl(intent: DacWriteIntent): FiioJa11ControlWriteResult =
+    suspend fun writeControl(
+        intent: DacWriteIntent,
+        preparedRestartWrite: FiioJa11PendingRestartWrite? = null,
+    ): FiioJa11ControlWriteResult =
         operationGate.withExclusiveOperation {
             val descriptor = FiioJa11DeviceControls.descriptor(intent.controlId)
                 ?: return@withExclusiveOperation FiioJa11ControlWriteResult.InvalidRequest(intent.controlId, null)
@@ -239,7 +310,18 @@ class FiioJa11ControlRepository(
             }
 
             val generation = source.sessionGeneration
-            if (generation <= 0L || !source.isSessionCurrent(generation)) {
+            if (generation <= 0L) {
+                return@withExclusiveOperation FiioJa11ControlWriteResult.NotConnected(intent.controlId)
+            }
+            val initialCandidateCount = source.supportedJa11CandidateCount
+            if (initialCandidateCount != 1) {
+                return@withExclusiveOperation if (initialCandidateCount <= 0) {
+                    FiioJa11ControlWriteResult.NotConnected(intent.controlId)
+                } else {
+                    FiioJa11ControlWriteResult.AmbiguousCandidates(intent.controlId, initialCandidateCount)
+                }
+            }
+            if (!source.isSessionCurrent(generation)) {
                 return@withExclusiveOperation FiioJa11ControlWriteResult.NotConnected(intent.controlId)
             }
             if (generation != intent.expectedSessionGeneration) {
@@ -248,6 +330,16 @@ class FiioJa11ControlRepository(
                     intent.expectedSessionGeneration,
                     generation,
                 )
+            }
+            val requiresSessionRestart = FiioJa11DeviceControls.requiresSessionRestart(intent.controlId)
+            val preBaselineCandidateCount = source.supportedJa11CandidateCount
+            if (requiresSessionRestart && preBaselineCandidateCount != 1) {
+                val candidateCount = preBaselineCandidateCount
+                return@withExclusiveOperation if (candidateCount <= 0) {
+                    FiioJa11ControlWriteResult.NotConnected(intent.controlId)
+                } else {
+                    FiioJa11ControlWriteResult.AmbiguousCandidates(intent.controlId, candidateCount)
+                }
             }
 
             val baseline = when (val read = readSnapshotUnlocked()) {
@@ -270,11 +362,39 @@ class FiioJa11ControlRepository(
                     baseline.sessionGeneration,
                 )
             }
-            val requiresSessionRestart = FiioJa11DeviceControls.requiresSessionRestart(intent.controlId)
-            val deviceIdentityKey = if (requiresSessionRestart) {
-                source.deviceIdentityKey?.takeIf(String::isNotBlank)
-                    ?: return@withExclusiveOperation FiioJa11ControlWriteResult.ReadFailed(intent.controlId, "USB identity")
+            val pendingRestartWrite = if (requiresSessionRestart) {
+                val pending = preparedRestartWrite ?: createPendingRestartWrite(
+                    controlId = intent.controlId,
+                    requestedValue = intent.requestedValue,
+                    baseline = baseline,
+                )
+                if (pending == null) {
+                    val candidateCount = source.supportedJa11CandidateCount
+                    return@withExclusiveOperation if (candidateCount <= 0) {
+                        FiioJa11ControlWriteResult.NotConnected(intent.controlId)
+                    } else {
+                        FiioJa11ControlWriteResult.AmbiguousCandidates(intent.controlId, candidateCount)
+                    }
+                }
+                if (pending.controlId != intent.controlId ||
+                    pending.requestedValue != intent.requestedValue ||
+                    pending.previousSessionGeneration != generation ||
+                    pending.previousDetachGeneration != source.detachGeneration ||
+                    pending.deviceSerialIdentity != source.deviceSerialIdentity ||
+                    pending.baseline != baseline ||
+                    pending.writeOutcome != null
+                ) {
+                    return@withExclusiveOperation FiioJa11ControlWriteResult.StaleBaseline(
+                        intent.controlId,
+                        intent.expectedSessionGeneration,
+                        source.sessionGeneration,
+                    )
+                }
+                pending
             } else {
+                if (preparedRestartWrite != null) {
+                    return@withExclusiveOperation FiioJa11ControlWriteResult.InvalidRequest(intent.controlId, null)
+                }
                 null
             }
             if (!source.isSessionCurrent(generation)) {
@@ -295,7 +415,35 @@ class FiioJa11ControlRepository(
                 )
             }
 
-            val writeOutcome = writeTarget(intent.controlId, intent.requestedValue, generation)
+            val preWriteCandidateCount = source.supportedJa11CandidateCount
+            if (requiresSessionRestart && preWriteCandidateCount != 1) {
+                val candidateCount = preWriteCandidateCount
+                return@withExclusiveOperation if (candidateCount <= 0) {
+                    FiioJa11ControlWriteResult.NotConnected(intent.controlId)
+                } else {
+                    FiioJa11ControlWriteResult.AmbiguousCandidates(intent.controlId, candidateCount)
+                }
+            }
+            val transaction = pendingRestartWrite
+            if (transaction != null && !source.bindRestartTransaction(transaction.transactionToken)) {
+                return@withExclusiveOperation FiioJa11ControlWriteResult.StaleBaseline(
+                    intent.controlId,
+                    generation,
+                    source.sessionGeneration,
+                )
+            }
+            val writeOutcome = try {
+                writeTarget(intent.controlId, intent.requestedValue, generation)
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                transaction?.let { source.clearRestartTransaction(it.transactionToken) }
+                throw cancelled
+            } catch (_: Exception) {
+                transaction?.let { source.clearRestartTransaction(it.transactionToken) }
+                return@withExclusiveOperation FiioJa11ControlWriteResult.WriteUncertain(intent.controlId)
+            }
+            if (transaction != null && !ja11RestartWriteWasAccepted(writeOutcome)) {
+                source.clearRestartTransaction(transaction.transactionToken)
+            }
             when (writeOutcome) {
                 FiioJa11ReportWriteOutcome.STALE_BEFORE_SEND ->
                     return@withExclusiveOperation FiioJa11ControlWriteResult.StaleBaseline(
@@ -317,14 +465,18 @@ class FiioJa11ControlRepository(
             }
 
             if (requiresSessionRestart) {
+                val pending = checkNotNull(pendingRestartWrite).copy(writeOutcome = writeOutcome)
+                Ja11DiagnosticLog.eventForDevice(
+                    "FiiO JA11",
+                    "RESTART_WRITE_ACCEPTED",
+                    "transactionToken" to pending.transactionToken,
+                    "controlId" to pending.controlId.value,
+                    "writeOutcome" to writeOutcome.name,
+                    "previousSessionGeneration" to pending.previousSessionGeneration,
+                    "previousDetachGeneration" to pending.previousDetachGeneration,
+                )
                 return@withExclusiveOperation FiioJa11ControlWriteResult.ReconnectRequired(
-                    FiioJa11PendingRestartWrite(
-                        controlId = intent.controlId,
-                        requestedValue = intent.requestedValue,
-                        previousSessionGeneration = generation,
-                        deviceIdentityKey = checkNotNull(deviceIdentityKey),
-                        baseline = baseline,
-                    ),
+                    pending,
                 )
             }
 
@@ -360,8 +512,12 @@ class FiioJa11ControlRepository(
             Ja11DiagnosticLog.eventForDevice(
                 "FiiO JA11",
                 "RESTART_VERIFY_ATTEMPT",
+                "transactionToken" to pending.transactionToken,
                 "expectedSessionGeneration" to pending.previousSessionGeneration,
                 "actualSessionGeneration" to generation,
+                "expectedDetachGeneration" to pending.previousDetachGeneration,
+                "actualDetachGeneration" to observation.detachGeneration,
+                "supportedCandidateCount" to observation.supportedCandidateCount,
                 "sessionCurrent" to sessionCurrent,
             )
             val productId = observation.productId
@@ -394,23 +550,43 @@ class FiioJa11ControlRepository(
                     )
                 FiioJa11ReplacementSessionStatus.UNSUPPORTED_DEVICE ->
                     return@withExclusiveOperation FiioJa11ControlWriteResult.NotConnected(pending.controlId)
-                FiioJa11ReplacementSessionStatus.IDENTITY_UNAVAILABLE ->
-                    return@withExclusiveOperation FiioJa11ControlWriteResult.ReadFailed(
-                        pending.controlId,
-                        "USB identity",
-                    )
                 FiioJa11ReplacementSessionStatus.IDENTITY_MISMATCH ->
                     return@withExclusiveOperation FiioJa11ControlWriteResult.WrongDevice(pending.controlId)
+                FiioJa11ReplacementSessionStatus.EXPECTED_DETACH_NOT_OBSERVED ->
+                    return@withExclusiveOperation FiioJa11ControlWriteResult.StaleBaseline(
+                        pending.controlId,
+                        pending.previousSessionGeneration,
+                        generation,
+                    )
+                FiioJa11ReplacementSessionStatus.AMBIGUOUS_CANDIDATES ->
+                    return@withExclusiveOperation FiioJa11ControlWriteResult.AmbiguousCandidates(
+                        pending.controlId,
+                        observation.supportedCandidateCount,
+                    )
+                FiioJa11ReplacementSessionStatus.NO_CANDIDATE ->
+                    return@withExclusiveOperation FiioJa11ControlWriteResult.NotConnected(pending.controlId)
+                FiioJa11ReplacementSessionStatus.WRITE_NOT_ACCEPTED ->
+                    return@withExclusiveOperation FiioJa11ControlWriteResult.WriteUncertain(pending.controlId)
                 FiioJa11ReplacementSessionStatus.READY -> Unit
             }
-            val identity = checkNotNull(observation.identityKey)
+            val serialIdentity = observation.serialIdentity
+            val restartEvidence = fiioJa11RestartContinuityFromSerials(
+                originalSerialIdentity = pending.deviceSerialIdentity,
+                replacementSerialIdentity = serialIdentity,
+                supportedCandidateCount = observation.supportedCandidateCount,
+            ) ?: return@withExclusiveOperation FiioJa11ControlWriteResult.WrongDevice(pending.controlId)
             Ja11DiagnosticLog.eventForDevice(
                 "FiiO JA11",
                 "RESTART_VERIFY_IDENTITY",
-                "identityMatches" to (identity == pending.deviceIdentityKey),
+                "transactionToken" to pending.transactionToken,
+                "serialMatches" to (pending.deviceSerialIdentity != null &&
+                    pending.deviceSerialIdentity == serialIdentity),
+                "serialAvailable" to (serialIdentity != null),
+                "supportedCandidateCount" to observation.supportedCandidateCount,
+                "continuity" to restartEvidence.name,
             )
             if (source.sessionGeneration != generation || !source.isSessionCurrent(generation)) {
-                replacementIdentityFailure(pending)?.let { return@withExclusiveOperation it }
+                replacementContinuityFailure(pending, observation)?.let { return@withExclusiveOperation it }
                 return@withExclusiveOperation FiioJa11ControlWriteResult.StaleBaseline(
                     pending.controlId,
                     generation,
@@ -419,9 +595,10 @@ class FiioJa11ControlRepository(
             }
             val read = readSnapshotUnlocked(
                 expectedSessionGeneration = generation,
-                expectedDeviceIdentityKey = identity,
+                expectedSerialIdentity = serialIdentity,
+                compareExpectedSerialIdentity = true,
             )
-            replacementIdentityFailure(pending)?.let { return@withExclusiveOperation it }
+            replacementContinuityFailure(pending, observation)?.let { return@withExclusiveOperation it }
             if (source.sessionGeneration != generation || !source.isSessionCurrent(generation)) {
                 return@withExclusiveOperation FiioJa11ControlWriteResult.StaleBaseline(
                     pending.controlId,
@@ -449,13 +626,26 @@ class FiioJa11ControlRepository(
                     readback.sessionGeneration,
                 )
             }
-            verifyReadback(pending.controlId, pending.requestedValue, pending.baseline, readback, afterRestart = true)
+            verifyReadback(
+                pending.controlId,
+                pending.requestedValue,
+                pending.baseline,
+                readback,
+                afterRestart = true,
+                restartEvidence = if (restartEvidence == FiioJa11RestartContinuity.SAME_DEVICE_SERIAL_MATCHED) {
+                    FiioJa11RestartVerificationEvidence.SAME_DEVICE_SERIAL_MATCHED
+                } else {
+                    FiioJa11RestartVerificationEvidence.SOLE_RETURNING_JA11_STATE_VERIFIED
+                },
+            )
         }
         Ja11DiagnosticLog.eventForDevice(
             "FiiO JA11",
             "RESTART_VERIFY_RESULT",
+            "transactionToken" to pending.transactionToken,
             "controlId" to pending.controlId.value,
             "result" to result.javaClass.simpleName,
+            "restartEvidence" to (result as? FiioJa11ControlWriteResult.Verified)?.restartEvidence?.name,
             "sessionGeneration" to source.sessionGeneration,
         )
         return result
@@ -467,6 +657,7 @@ class FiioJa11ControlRepository(
         baseline: FiioJa11DeviceSnapshot,
         readback: FiioJa11DeviceSnapshot,
         afterRestart: Boolean = false,
+        restartEvidence: FiioJa11RestartVerificationEvidence? = null,
     ): FiioJa11ControlWriteResult {
         val actualValue = FiioJa11DeviceControls.valueFromSnapshot(controlId, readback)
         if (actualValue != requestedValue) {
@@ -476,18 +667,26 @@ class FiioJa11ControlRepository(
         if (changes.isNotEmpty()) {
             return FiioJa11ControlWriteResult.UnrelatedStateChanged(controlId, changes, readback)
         }
-        return FiioJa11ControlWriteResult.Verified(controlId, requestedValue, baseline, readback)
+        return FiioJa11ControlWriteResult.Verified(
+            controlId = controlId,
+            requestedValue = requestedValue,
+            baseline = baseline,
+            snapshot = readback,
+            restartEvidence = restartEvidence,
+        )
     }
 
     private suspend fun readSnapshotUnlocked(
         expectedSessionGeneration: Long? = null,
-        expectedDeviceIdentityKey: String? = null,
+        expectedSerialIdentity: String? = null,
+        compareExpectedSerialIdentity: Boolean = false,
     ): FiioJa11ControlReadResult {
         val generation = expectedSessionGeneration ?: source.sessionGeneration
         fun sessionMatches(): Boolean =
-            source.sessionGeneration == generation &&
+            source.supportedJa11CandidateCount == 1 &&
+                source.sessionGeneration == generation &&
                 source.isSessionCurrent(generation) &&
-                (expectedDeviceIdentityKey == null || source.deviceIdentityKey == expectedDeviceIdentityKey)
+                (!compareExpectedSerialIdentity || source.deviceSerialIdentity == expectedSerialIdentity)
 
         if (generation <= 0L || !sessionMatches()) return FiioJa11ControlReadResult.NotConnected
 
@@ -600,7 +799,9 @@ class FiioJa11ControlRepository(
     }
 
     private fun failedOrChanged(generation: Long, field: String): FiioJa11ControlReadResult =
-        if (source.isSessionCurrent(generation)) FiioJa11ControlReadResult.ReadFailed(field)
+        if (source.supportedJa11CandidateCount == 1 && source.isSessionCurrent(generation)) {
+            FiioJa11ControlReadResult.ReadFailed(field)
+        }
         else FiioJa11ControlReadResult.SessionChanged
 }
 
@@ -611,8 +812,16 @@ class SessionFiioJa11DeviceControlSource(
         get() = sessions.fiioJa11Transport.sessionGeneration
     override val connectedProductId: Int?
         get() = sessions.fiioJa11Transport.connectedProductId
-    override val deviceIdentityKey: String?
-        get() = sessions.fiioJa11Transport.deviceIdentityKey
+    override val deviceSerialIdentity: String?
+        get() = sessions.fiioJa11Transport.deviceSerialIdentity
+    override val detachGeneration: Long
+        get() = sessions.fiioJa11Transport.detachGeneration
+    override val supportedJa11CandidateCount: Int
+        get() = sessions.fiioJa11Transport.supportedJa11CandidateCount
+    override fun bindRestartTransaction(transactionToken: String): Boolean =
+        sessions.fiioJa11Transport.setExpectedRestartTransactionToken(transactionToken)
+    override fun clearRestartTransaction(transactionToken: String) =
+        sessions.fiioJa11Transport.clearExpectedRestartTransactionToken(transactionToken)
 
     override fun isSessionCurrent(sessionGeneration: Long): Boolean =
         sessions.fiioJa11ConnectionState.value is Kt02h20ConnectionState.Connected &&

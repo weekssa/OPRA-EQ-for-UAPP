@@ -888,6 +888,11 @@ Dependency caveat: the 2026-10-08 refresh found 56 open transitive Maven alerts 
 
 ## 2026-10-08 JA11 v0.8.1 continuation — J020 is incomplete
 
+> Historical checkpoint. Its serial-required procedures below describe the J020/J021/J024 policy
+> at that time and are superseded by the owner-approved **2026-10-09 JA11 Model D identity policy**
+> near the end of this section. Use Model D for current JA11 work: serial is optional, candidate
+> ambiguity fails closed, and a serialless success cannot claim same-physical-unit continuity.
+
 The immutable public v0.8.0 release remains current and unchanged. JA11 J020 used diagnostic source
 `a78808443c71d688e0f338e96495847569fe12f7` and APK SHA-256
 `7beb5bcebbc0dc40a68b33de911cc8722d76d3f0ff2e98685b1fa25e17caed61` on Pixel 9 / JA11 firmware
@@ -1012,3 +1017,42 @@ never replay an uncertain write. If Mic is already On in the complete fresh base
 original state as restored and skip all Mic mutations. Continue the prepared acceptance plan only
 after Mic restoration is verified or the baseline confirms On, and release the Pixel as soon as
 sufficient physical evidence is captured.
+
+## 2026-10-09 JA11 Model D identity policy — owner-approved supersession
+
+The owner approved Model D for the JA11 v0.8.1 mission. This policy supersedes the J020/J021/J024
+operational instructions above that require a unique nonblank serial before normal JA11 use or
+physical acceptance. Those older device observations remain historical facts: J020's write left Mic
+Off as its last verified value, J021 observed a null device serial in an initial session, and J024's
+device and opened-connection serial readers both returned null during a read-only session. J024
+performed no write. The new policy does not retroactively change any of those results.
+
+A USB serial is optional continuity evidence. Normal JA11 connection, reads, same-session controls,
+and starting an expected-reset transaction require the exact supported FiiO VID/PID, a valid
+unambiguous HID interface and endpoints, current Android permission, a successful fresh open/claim,
+and a current session generation. Require exactly one supported JA11 candidate whenever the app
+would otherwise select a device. Never pick the first of multiple candidates, even when serials
+match or are duplicated. Leave the shared non-JA11 transport policy unchanged.
+
+For expected reset/re-enumeration, bind the accepted logical write to its original session, requested
+control/value, transaction token, write outcome, generation, detach generation, and bounded
+permission/watchdog owner. Require the accepted write, expected detach and old-session invalidation,
+one plausible supported replacement, fresh permission, open/claim and generation, then authoritative
+fresh readback. Never replay a write whose result is uncertain. Compare serials only when both sessions
+provide a usable serial: mismatch rejects the replacement; absence is not a failure when exactly one
+supported candidate passes every lifecycle gate. A serialless success means **requested state
+verified on the sole returning supported JA11**; it does not prove the same physical unit returned.
+An unsolicited reconnect without a pending logical operation begins a fresh session and baseline.
+
+Apply the same no-arbitrary-selection and fresh-final-readback rules to JA11 Flash, Save, and Reset;
+preserve protocol sequencing and exactly one logical Flash action and one Save. Do not change
+volume/preset persistence claims without physical evidence.
+
+Continue all code, automated testing, independent review, CI, emulator, and exact-candidate work
+off-phone. Do not address the Pixel until those gates pass. Then provide the exact production source
+SHA and diagnostic APK SHA-256, tests, writes/resets, Android permission interaction, occupancy,
+pass/fail conditions, and restoration obligations, and wait for explicit confirmation of the new
+phone window. The authorized physical order starts with an exact-candidate read-only baseline. If Mic
+reads Off, restoring it to the original On state is the first mutation, with expected-reset handling
+and authoritative post-reconnect readback; if it reads On, skip the write. Stop and release the Pixel
+if identity/cardinality, permission, generation, write outcome, or readback becomes uncertain.

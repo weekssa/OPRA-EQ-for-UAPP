@@ -555,8 +555,13 @@ class EqLibraryViewModel(
         val pendingRestart = if (FiioJa11DeviceControls.requiresSessionRestart(controlId)) {
             fiioJa11ControlRepository.createPendingRestartWrite(controlId, value, snapshot)
                 ?: run {
+                    val message = if (fiioJa11ControlRepository.supportedJa11CandidateCount > 1) {
+                        "More than one supported FiiO JA11 is connected. Disconnect the extra device, then read the current state."
+                    } else {
+                        "Connect one supported FiiO JA11 and read its current state before changing this setting."
+                    }
                     mutableFiioJa11DeviceState.value = state.failure(
-                        "Could not confirm the current FiiO JA11 identity. Read its current state before trying again.",
+                        message,
                     )
                     return
                 }
@@ -573,9 +578,11 @@ class EqLibraryViewModel(
                         requestedValue = value,
                         expectedSessionGeneration = snapshot.sessionGeneration,
                     ),
+                    preparedRestartWrite = pendingRestart,
                 )
             ) {
                 is FiioJa11ControlWriteResult.Verified -> {
+                    pendingRestart?.let(fiioJa11ControlRepository::releaseRestartTransaction)
                     mutableFiioJa11DeviceState.value =
                         mutableFiioJa11DeviceState.value.verified(controlId, result.snapshot)
                     if (controlId == FiioJa11DeviceControls.EQ_PROGRAM) {
@@ -651,6 +658,7 @@ class EqLibraryViewModel(
         when (result) {
             is FiioJa11ControlWriteResult.Verified -> {
                 fiioJa11RestartTimeoutJob = null
+                fiioJa11ControlRepository.releaseRestartTransaction(pending)
                 mutableFiioJa11DeviceState.value =
                     mutableFiioJa11DeviceState.value.verified(result.controlId, result.snapshot)
                 viewModelScope.launch { hardwareRepository.readFiioJa11Snapshot() }
@@ -681,18 +689,29 @@ class EqLibraryViewModel(
                     )
                 },
                 onConnectionError = {
+                    val message = if (fiioJa11ControlRepository.replacementSessionStatus(pending) ==
+                        FiioJa11ReplacementSessionStatus.AMBIGUOUS_CANDIDATES
+                    ) {
+                        "More than one supported FiiO JA11 returned. Disconnect the extra device, reconnect one JA11, then read its current state. The requested change was not verified."
+                    } else {
+                        "FiiO JA11 could not reconnect, so the requested change could not be verified. Reconnect and read the current state before changing it again."
+                    }
                     finishFiioJa11RestartFailure(
                         pending,
-                        "FiiO JA11 could not reconnect, so the requested change could not be verified. Reconnect and read the current state before changing it again.",
+                        message,
                     )
                 },
                 onTimeout = {
                     val replacementStatus = fiioJa11ControlRepository.replacementSessionStatus(pending)
                     val message = when (replacementStatus) {
-                        FiioJa11ReplacementSessionStatus.IDENTITY_UNAVAILABLE ->
-                            "FiiO JA11 reconnected, but Android did not provide a stable USB identity for verification. The requested change could not be confirmed. No write was repeated. Reconnect the original JA11 and read its current state before changing it again."
                         FiioJa11ReplacementSessionStatus.IDENTITY_MISMATCH ->
-                            "FiiO JA11 reconnected, but its identity did not match the device that started this change. The change could not be verified. Reconnect the original JA11 and read its current state before changing it again."
+                            "FiiO JA11 returned with a different reported serial. The change could not be verified. Reconnect the JA11 that started the change and read its current state."
+                        FiioJa11ReplacementSessionStatus.AMBIGUOUS_CANDIDATES ->
+                            "More than one supported FiiO JA11 returned. Disconnect the extra device, reconnect one JA11, then read its current state. The requested change was not verified."
+                        FiioJa11ReplacementSessionStatus.EXPECTED_DETACH_NOT_OBSERVED ->
+                            "FiiO JA11 did not complete the expected USB reset. The requested change was not verified and was not repeated. Read its current state before trying again."
+                        FiioJa11ReplacementSessionStatus.WRITE_NOT_ACCEPTED ->
+                            "FiiO JA11 did not confirm that the requested change was accepted. Its state is uncertain; read the current state before trying again."
                         FiioJa11ReplacementSessionStatus.READY ->
                             "FiiO JA11 reconnected, but its current state could not be confirmed before verification timed out. Reconnect and read the current state before changing it again."
                         else ->
@@ -707,6 +726,7 @@ class EqLibraryViewModel(
     private fun finishFiioJa11RestartFailure(pending: FiioJa11PendingRestartWrite, message: String) {
         if (mutableFiioJa11DeviceState.value.pendingRestartWrite != pending) return
         fiioJa11RestartTimeoutJob = null
+        fiioJa11ControlRepository.releaseRestartTransaction(pending)
         hardwareRepository.cancelFiioJa11ConnectAttempt(terminalErrorMessage = message)
         mutableFiioJa11DeviceState.value = mutableFiioJa11DeviceState.value.failure(message)
     }
@@ -721,6 +741,8 @@ class EqLibraryViewModel(
             "FiiO JA11 may have received this change, but its state could not be confirmed. Reconnect and read the current state before trying another change."
         is FiioJa11ControlWriteResult.WrongDevice ->
             "The connected USB device is not the FiiO JA11 that started this change. Its result could not be verified."
+        is FiioJa11ControlWriteResult.AmbiguousCandidates ->
+            "More than one supported FiiO JA11 is connected. Disconnect the extra device before changing this setting."
         is FiioJa11ControlWriteResult.ReadbackMismatch -> "FiiO JA11 readback did not match the requested setting."
         is FiioJa11ControlWriteResult.UnrelatedStateChanged ->
             "FiiO JA11 changed unrelated state (${result.changedFields.joinToString()}). The change was not reported as successful."
@@ -735,6 +757,8 @@ class EqLibraryViewModel(
             "FiiO JA11 returned with other device state changed. The requested change was not verified; read the current state before making another change."
         is FiioJa11ControlWriteResult.WrongDevice ->
             "A different USB device returned. The FiiO JA11 change could not be verified; reconnect the JA11 and read its current state."
+        is FiioJa11ControlWriteResult.AmbiguousCandidates ->
+            "More than one supported FiiO JA11 returned. Disconnect the extra device; the requested change was not verified."
         is FiioJa11ControlWriteResult.ReadFailed,
         is FiioJa11ControlWriteResult.NotConnected,
         is FiioJa11ControlWriteResult.StaleBaseline,
