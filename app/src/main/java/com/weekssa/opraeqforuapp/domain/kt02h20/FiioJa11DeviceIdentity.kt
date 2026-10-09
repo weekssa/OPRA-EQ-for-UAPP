@@ -17,6 +17,26 @@ internal enum class FiioJa11RestartContinuity {
     SOLE_RETURNING_JA11_STATE_VERIFIED,
 }
 
+internal enum class FiioJa11SessionIdentityContinuity {
+    NO_PREVIOUS_SESSION,
+    SAME_DEVICE_SERIAL_MATCHED,
+    SERIAL_UNAVAILABLE,
+    SERIAL_MISMATCH,
+}
+
+internal fun fiioJa11SessionIdentityContinuity(
+    hasPreviousSession: Boolean,
+    previousSerialIdentity: String?,
+    currentSerialIdentity: String?,
+): FiioJa11SessionIdentityContinuity = when {
+    !hasPreviousSession -> FiioJa11SessionIdentityContinuity.NO_PREVIOUS_SESSION
+    previousSerialIdentity.isNullOrBlank() || currentSerialIdentity.isNullOrBlank() ->
+        FiioJa11SessionIdentityContinuity.SERIAL_UNAVAILABLE
+    previousSerialIdentity == currentSerialIdentity ->
+        FiioJa11SessionIdentityContinuity.SAME_DEVICE_SERIAL_MATCHED
+    else -> FiioJa11SessionIdentityContinuity.SERIAL_MISMATCH
+}
+
 /**
  * A stable matching serial adds unit-continuity evidence. Without one, exactly-one-candidate
  * operation continuity can verify returned state but cannot prove that the same physical unit came

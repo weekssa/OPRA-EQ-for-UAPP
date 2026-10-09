@@ -14,7 +14,9 @@ import android.hardware.usb.UsbManager
 import android.os.Build
 import androidx.core.content.ContextCompat
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11ReportWriteOutcome
+import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11SessionIdentityContinuity
 import com.weekssa.opraeqforuapp.domain.kt02h20.classifyJa11ReportWriteOutcome
+import com.weekssa.opraeqforuapp.domain.kt02h20.fiioJa11SessionIdentityContinuity
 import java.io.Closeable
 import java.util.UUID
 import kotlinx.coroutines.CoroutineScope
@@ -109,6 +111,7 @@ internal class AndroidKt02h20HidSession(
     @Volatile
     private var expectedRestartTransactionToken: String? = null
     private var lastSessionGeneration: Long = 0L
+    private var previousSessionIdentity: PreviousSessionIdentity? = null
     private var receiverRegistered = false
     // PendingIntent identity survives this session object's lifetime. A unique action prevents a
     // queued result from an obsolete instance colliding with a new tracker whose IDs restart at 1.
@@ -1024,6 +1027,8 @@ internal class AndroidKt02h20HidSession(
                             productId = committedDevice.productId,
                             fingerprintKey = openedIdentity.fingerprintKey,
                             serialIdentity = openedIdentity.serialIdentity,
+                            serialSource = openedIdentity.serialSource,
+                            connectionSerialStatus = openedIdentity.connectionSerialStatus,
                             deviceName = committedDevice.deviceName,
                             generation = lastSessionGeneration,
                             detachGeneration = detachSequence,
@@ -1065,6 +1070,30 @@ internal class AndroidKt02h20HidSession(
                     "detachGeneration" to established.detachGeneration,
                     "transactionToken" to attempt.transactionToken,
                 )
+                if (allowConnectionSerialFallback) {
+                    val previousIdentity = previousSessionIdentity
+                    val continuity = fiioJa11SessionIdentityContinuity(
+                        hasPreviousSession = previousIdentity != null,
+                        previousSerialIdentity = previousIdentity?.serialIdentity,
+                        currentSerialIdentity = established.serialIdentity,
+                    )
+                    Ja11DiagnosticLog.eventForDevice(
+                        deviceLabel,
+                        "USB_SESSION_IDENTITY_CONTINUITY",
+                        "previousSessionGeneration" to previousIdentity?.generation,
+                        "sessionGeneration" to established.generation,
+                        "previousSerialSource" to previousIdentity?.serialSource,
+                        "serialSource" to established.serialSource,
+                        "previousConnectionSerialStatus" to previousIdentity?.connectionSerialStatus,
+                        "connectionSerialStatus" to established.connectionSerialStatus,
+                        "serialAvailable" to (established.serialIdentity != null),
+                        "serialMatches" to (continuity ==
+                            FiioJa11SessionIdentityContinuity.SAME_DEVICE_SERIAL_MATCHED),
+                        "supportedCandidateCount" to targetDeviceCount,
+                        "continuity" to continuity.name,
+                    )
+                    previousSessionIdentity = null
+                }
             }
         }
     }
@@ -1304,6 +1333,14 @@ internal class AndroidKt02h20HidSession(
             "sessionGeneration" to current.generation,
             "detachGeneration" to current.detachGeneration,
         )
+        if (allowConnectionSerialFallback) {
+            previousSessionIdentity = PreviousSessionIdentity(
+                generation = current.generation,
+                serialIdentity = current.serialIdentity,
+                serialSource = current.serialSource,
+                connectionSerialStatus = current.connectionSerialStatus,
+            )
+        }
         session = null
         currentSessionGeneration = 0L
         runCatching { current.connection.releaseInterface(current.usbInterface) }
@@ -1398,6 +1435,8 @@ internal class AndroidKt02h20HidSession(
         return UsbIdentityFingerprint(
             fingerprintKey = fingerprintKey,
             serialIdentity = effectiveSerial?.trim()?.takeIf(String::isNotBlank),
+            serialSource = serialSource,
+            connectionSerialStatus = connectionSerialStatus,
         )
     }
 
@@ -1417,6 +1456,15 @@ internal class AndroidKt02h20HidSession(
     private data class UsbIdentityFingerprint(
         val fingerprintKey: String,
         val serialIdentity: String?,
+        val serialSource: String,
+        val connectionSerialStatus: String,
+    )
+
+    private data class PreviousSessionIdentity(
+        val generation: Long,
+        val serialIdentity: String?,
+        val serialSource: String,
+        val connectionSerialStatus: String,
     )
 
     private data class UsbSession(
@@ -1427,6 +1475,8 @@ internal class AndroidKt02h20HidSession(
         val productId: Int,
         val fingerprintKey: String,
         val serialIdentity: String?,
+        val serialSource: String,
+        val connectionSerialStatus: String,
         val deviceName: String,
         val generation: Long,
         val detachGeneration: Long,

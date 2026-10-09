@@ -60,4 +60,36 @@ class FiioJa11DeviceIdentityTest {
         assertThat(fiioJa11RestartContinuity(before, after, supportedCandidateCount = 1))
             .isEqualTo(FiioJa11RestartContinuity.SOLE_RETURNING_JA11_STATE_VERIFIED)
     }
+
+    @Test
+    fun manualSessionReconnectReportsOnlyPrivateSerialContinuityCategory() {
+        assertThat(
+            fiioJa11SessionIdentityContinuity(
+                hasPreviousSession = false,
+                previousSerialIdentity = null,
+                currentSerialIdentity = "fixture-only",
+            ),
+        ).isEqualTo(FiioJa11SessionIdentityContinuity.NO_PREVIOUS_SESSION)
+        assertThat(
+            fiioJa11SessionIdentityContinuity(
+                hasPreviousSession = true,
+                previousSerialIdentity = "fixture-only",
+                currentSerialIdentity = "fixture-only",
+            ),
+        ).isEqualTo(FiioJa11SessionIdentityContinuity.SAME_DEVICE_SERIAL_MATCHED)
+        assertThat(
+            fiioJa11SessionIdentityContinuity(
+                hasPreviousSession = true,
+                previousSerialIdentity = "fixture-one",
+                currentSerialIdentity = "fixture-two",
+            ),
+        ).isEqualTo(FiioJa11SessionIdentityContinuity.SERIAL_MISMATCH)
+        assertThat(
+            fiioJa11SessionIdentityContinuity(
+                hasPreviousSession = true,
+                previousSerialIdentity = "fixture-only",
+                currentSerialIdentity = null,
+            ),
+        ).isEqualTo(FiioJa11SessionIdentityContinuity.SERIAL_UNAVAILABLE)
+    }
 }
