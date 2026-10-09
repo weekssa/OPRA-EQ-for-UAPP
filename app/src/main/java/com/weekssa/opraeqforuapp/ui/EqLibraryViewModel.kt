@@ -14,6 +14,7 @@ import com.weekssa.opraeqforuapp.data.dac.FiioJa11ControlReadResult
 import com.weekssa.opraeqforuapp.data.dac.FiioJa11ControlRepository
 import com.weekssa.opraeqforuapp.data.dac.FiioJa11ControlWriteResult
 import com.weekssa.opraeqforuapp.data.dac.FiioJa11PendingRestartWrite
+import com.weekssa.opraeqforuapp.data.dac.FiioJa11ReplacementSessionStatus
 import com.weekssa.opraeqforuapp.data.export.ExportCurrentness
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupRepository
 import com.weekssa.opraeqforuapp.data.export.PresetCleanupSummary
@@ -686,11 +687,13 @@ class EqLibraryViewModel(
                     )
                 },
                 onTimeout = {
-                    val message = when {
-                        fiioJa11ControlRepository.isSupportedReplacementSessionCurrent(pending) &&
-                            !fiioJa11ControlRepository.isReplacementSessionCurrent(pending) ->
+                    val replacementStatus = fiioJa11ControlRepository.replacementSessionStatus(pending)
+                    val message = when (replacementStatus) {
+                        FiioJa11ReplacementSessionStatus.IDENTITY_UNAVAILABLE ->
+                            "FiiO JA11 reconnected, but Android did not provide a stable USB identity for verification. The requested change could not be confirmed. No write was repeated. Reconnect the original JA11 and read its current state before changing it again."
+                        FiioJa11ReplacementSessionStatus.IDENTITY_MISMATCH ->
                             "FiiO JA11 reconnected, but its identity did not match the device that started this change. The change could not be verified. Reconnect the original JA11 and read its current state before changing it again."
-                        fiioJa11ControlRepository.isReplacementSessionCurrent(pending) ->
+                        FiioJa11ReplacementSessionStatus.READY ->
                             "FiiO JA11 reconnected, but its current state could not be confirmed before verification timed out. Reconnect and read the current state before changing it again."
                         else ->
                             "FiiO JA11 did not return in time, so the requested change could not be verified. Reconnect and read the current state before changing it again."
@@ -704,6 +707,7 @@ class EqLibraryViewModel(
     private fun finishFiioJa11RestartFailure(pending: FiioJa11PendingRestartWrite, message: String) {
         if (mutableFiioJa11DeviceState.value.pendingRestartWrite != pending) return
         fiioJa11RestartTimeoutJob = null
+        hardwareRepository.cancelFiioJa11ConnectAttempt(terminalErrorMessage = message)
         mutableFiioJa11DeviceState.value = mutableFiioJa11DeviceState.value.failure(message)
     }
 

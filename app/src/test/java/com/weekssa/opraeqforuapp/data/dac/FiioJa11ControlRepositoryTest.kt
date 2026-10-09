@@ -196,6 +196,7 @@ class FiioJa11ControlRepositoryTest {
 
             assertThat(source.deviceIdentityKey).isEqualTo(pending.deviceIdentityKey)
             assertThat(repository.isReplacementSessionCurrent(pending)).isTrue()
+            assertThat(repository.hasStableReplacementIdentity(pending)).isTrue()
             val verified = repository.verifyRestartedControl(pending)
 
             assertThat(verified).isInstanceOf(FiioJa11ControlWriteResult.Verified::class.java)
@@ -333,6 +334,53 @@ class FiioJa11ControlRepositoryTest {
     }
 
     @Test
+    fun replacementSessionWithoutStableIdentityIsNotReadOrAccepted() = runBlocking {
+        val source = FakeSource()
+        val repository = FiioJa11ControlRepository(source)
+        val first = repository.writeControl(
+            DacWriteIntent(
+                controlId = FiioJa11DeviceControls.HEADSET_CONTROL,
+                expectedSessionGeneration = 7L,
+                requestedValue = DacControlValue.Toggle(false),
+            ),
+        )
+        val pending = (first as FiioJa11ControlWriteResult.ReconnectRequired).pending
+        source.sessionGeneration = 8L
+        source.missingIdentity = true
+        val firmwareReadsBeforeVerification = source.firmwareReadCount
+
+        val result = repository.verifyRestartedControl(pending)
+
+        assertThat(repository.isSupportedReplacementSessionCurrent(pending)).isTrue()
+        assertThat(repository.hasStableReplacementIdentity(pending)).isFalse()
+        assertThat(repository.isReplacementSessionCurrent(pending)).isFalse()
+        assertThat(result).isEqualTo(
+            FiioJa11ControlWriteResult.ReadFailed(FiioJa11DeviceControls.HEADSET_CONTROL, "USB identity"),
+        )
+        assertThat(source.firmwareReadCount).isEqualTo(firmwareReadsBeforeVerification)
+        assertThat(source.headsetWrites).containsExactly(false)
+        Unit
+    }
+
+    @Test
+    fun replacementSessionStatusDoesNotCombineIdentityFromOneGenerationWithAnother() = runBlocking {
+        val source = FakeSource(restartWriteOutcome = FiioJa11ReportWriteOutcome.COMPLETED_WITH_SESSION_CHANGE)
+        val repository = FiioJa11ControlRepository(source)
+        val write = repository.writeControl(
+            DacWriteIntent(
+                controlId = FiioJa11DeviceControls.HEADSET_CONTROL,
+                expectedSessionGeneration = 7L,
+                requestedValue = DacControlValue.Toggle(false),
+            ),
+        ) as FiioJa11ControlWriteResult.ReconnectRequired
+        source.replaceIdentityWhenRead = true
+
+        assertThat(repository.replacementSessionStatus(write.pending))
+            .isEqualTo(FiioJa11ReplacementSessionStatus.OBSERVATION_CHANGED)
+        assertThat(repository.isReplacementSessionCurrent(write.pending)).isFalse()
+    }
+
+    @Test
     fun replacementDeviceAppearingAfterIdentityCheckIsNotReadOrAccepted() = runBlocking {
         val source = FakeSource(restartWriteOutcome = FiioJa11ReportWriteOutcome.COMPLETED_WITH_SESSION_CHANGE)
         val repository = FiioJa11ControlRepository(source)
@@ -348,7 +396,38 @@ class FiioJa11ControlRepositoryTest {
 
         val result = repository.verifyRestartedControl(write.pending)
 
-        assertThat(result).isEqualTo(FiioJa11ControlWriteResult.WrongDevice(FiioJa11DeviceControls.HEADSET_CONTROL))
+        assertThat(result).isEqualTo(
+            FiioJa11ControlWriteResult.StaleBaseline(
+                FiioJa11DeviceControls.HEADSET_CONTROL,
+                write.pending.previousSessionGeneration,
+                source.sessionGeneration,
+            ),
+        )
+        assertThat(source.firmwareReadCount).isEqualTo(firmwareReadsBeforeVerification)
+        assertThat(source.headsetWrites).containsExactly(false)
+        Unit
+    }
+
+    @Test
+    fun replacementIdentityLostAfterWatchdogObservationIsNotReportedAsWrongDevice() = runBlocking {
+        val source = FakeSource(restartWriteOutcome = FiioJa11ReportWriteOutcome.COMPLETED_WITH_SESSION_CHANGE)
+        val repository = FiioJa11ControlRepository(source)
+        val write = repository.writeControl(
+            DacWriteIntent(
+                controlId = FiioJa11DeviceControls.HEADSET_CONTROL,
+                expectedSessionGeneration = 7L,
+                requestedValue = DacControlValue.Toggle(false),
+            ),
+        ) as FiioJa11ControlWriteResult.ReconnectRequired
+        val firmwareReadsBeforeVerification = source.firmwareReadCount
+        assertThat(repository.isReplacementSessionCurrent(write.pending)).isTrue()
+        source.missingIdentity = true
+
+        val result = repository.verifyRestartedControl(write.pending)
+
+        assertThat(result).isEqualTo(
+            FiioJa11ControlWriteResult.ReadFailed(FiioJa11DeviceControls.HEADSET_CONTROL, "USB identity"),
+        )
         assertThat(source.firmwareReadCount).isEqualTo(firmwareReadsBeforeVerification)
         assertThat(source.headsetWrites).containsExactly(false)
         Unit

@@ -12,6 +12,8 @@ import com.weekssa.opraeqforuapp.domain.kt02h20.toJa11TraceHex
 import java.io.Closeable
 import kotlinx.coroutines.flow.StateFlow
 
+private const val JA11_PERMISSION_PROMPT_MAX_DURATION_MILLIS = 25_000L
+
 class AndroidFiioJa11UsbTransport(
     context: Context,
 ) : FiioJa11Transport, Closeable {
@@ -21,6 +23,8 @@ class AndroidFiioJa11UsbTransport(
         productIds = FiioJa11Protocol.SUPPORTED_PRODUCT_IDS,
         deviceLabel = "FiiO JA11",
         permissionSuffix = "FIIO_JA11",
+        blockRetryWhilePermissionPending = true,
+        permissionPromptMaxDurationMillis = JA11_PERMISSION_PROMPT_MAX_DURATION_MILLIS,
     )
 
     val state: StateFlow<Kt02h20ConnectionState> = hid.state
@@ -65,6 +69,11 @@ class AndroidFiioJa11UsbTransport(
         }
 
     fun connect() = hid.connect()
+
+    fun connectAutomatically() = hid.connectAutomatically()
+
+    fun cancelPendingConnectAttempt(terminalErrorMessage: String? = null) =
+        hid.cancelPendingConnectAttempt(terminalErrorMessage)
 
     suspend fun readOutputVolume(): Int? = exchangeOneByte(
         request = FiioJa11Protocol.readOutputVolumeReport(),

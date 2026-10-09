@@ -20,7 +20,8 @@ internal suspend fun runFiioJa11RestartVerificationWatchdog(
     val completed = withTimeoutOrNull<Boolean>(timeoutMillis) {
         while (isPending()) {
             val state = connectionStates.first { connection ->
-                connection is Kt02h20ConnectionState.PermissionRequired ||
+                (connection is Kt02h20ConnectionState.PermissionRequired &&
+                    connection.retryAvailable) ||
                     connection is Kt02h20ConnectionState.Error ||
                     (connection === Kt02h20ConnectionState.Connected && isReplacementSessionCurrent())
             }
@@ -28,8 +29,10 @@ internal suspend fun runFiioJa11RestartVerificationWatchdog(
 
             when (state) {
                 is Kt02h20ConnectionState.PermissionRequired -> {
-                    onPermissionRequired()
-                    return@withTimeoutOrNull true
+                    if (state.retryAvailable) {
+                        onPermissionRequired()
+                        return@withTimeoutOrNull true
+                    }
                 }
                 is Kt02h20ConnectionState.Error -> {
                     onConnectionError()

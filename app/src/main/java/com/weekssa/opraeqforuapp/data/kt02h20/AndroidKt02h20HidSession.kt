@@ -16,6 +16,7 @@ import androidx.core.content.ContextCompat
 import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11ReportWriteOutcome
 import com.weekssa.opraeqforuapp.domain.kt02h20.classifyJa11ReportWriteOutcome
 import java.io.Closeable
+import java.util.UUID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -35,7 +36,11 @@ sealed interface Kt02h20ConnectionState {
     data object Connecting : Kt02h20ConnectionState
     data object Connected : Kt02h20ConnectionState
     data class Error(val message: String) : Kt02h20ConnectionState
-    data class PermissionRequired(val message: String) : Kt02h20ConnectionState
+    data class PermissionRequired(
+        val message: String,
+        /** False only while the JA11 restart flow is waiting for its still-open permission prompt. */
+        val retryAvailable: Boolean = true,
+    ) : Kt02h20ConnectionState
 }
 
 /**
@@ -56,16 +61,29 @@ internal class AndroidKt02h20HidSession(
     private val deviceIdentityMatcher: (UsbDevice) -> Boolean = { true },
     private val hidInterfaceMatcher: (UsbInterface) -> Boolean = { true },
     private val additionalFingerprintFields: (UsbDevice) -> List<Pair<String, String>> = { emptyList() },
+    private val blockRetryWhilePermissionPending: Boolean = false,
+    private val permissionRequester: ((UsbDevice, PendingIntent) -> Unit)? = null,
+    private val permissionResponseTimeoutMillis: Long = PERMISSION_RESPONSE_TIMEOUT_MILLIS,
+    /** Null preserves the shared transport's eligible callback until explicit invalidation. */
+    private val permissionPromptMaxDurationMillis: Long? = null,
 ) : Closeable {
     init {
         require(productIds.isNotEmpty()) { "At least one approved USB PID is required." }
         require(productIds.all { it in 0..0xFFFF }) { "USB PIDs must be 16-bit values." }
+        require(permissionResponseTimeoutMillis >= 0L) { "Permission response timeout cannot be negative." }
+        require(permissionPromptMaxDurationMillis == null ||
+            permissionPromptMaxDurationMillis >= permissionResponseTimeoutMillis
+        ) {
+            "Permission prompt lifetime must be at least as long as its first fallback."
+        }
     }
 
     private val appContext = context.applicationContext
     private val usbManager = appContext.getSystemService(Context.USB_SERVICE) as UsbManager
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val mutex = Mutex()
+    private val sessionLifecycleGate = Kt02h20SessionLifecycleGate()
+    private val connectAttempts = Kt02h20ConnectAttemptTracker()
     private val mutableState = MutableStateFlow<Kt02h20ConnectionState>(Kt02h20ConnectionState.Disconnected)
     val state: StateFlow<Kt02h20ConnectionState> = mutableState.asStateFlow()
     private val mutablePresent = MutableStateFlow(false)
@@ -81,7 +99,9 @@ internal class AndroidKt02h20HidSession(
     private var permissionRequests: Long = 0L
     private var lastSessionGeneration: Long = 0L
     private var receiverRegistered = false
-    private val permissionAction = "${appContext.packageName}.$permissionSuffix.USB_PERMISSION"
+    // PendingIntent identity survives this session object's lifetime. A unique action prevents a
+    // queued result from an obsolete instance colliding with a new tracker whose IDs restart at 1.
+    private val permissionAction = "${appContext.packageName}.$permissionSuffix.USB_PERMISSION.${UUID.randomUUID()}"
 
     val sessionGeneration: Long
         get() = currentSessionGeneration
@@ -117,68 +137,178 @@ internal class AndroidKt02h20HidSession(
             if (!device.matchesTarget()) return
             when (intent.action) {
                 permissionAction -> {
-                    val granted = usbManager.hasPermission(device)
+                    val requestId = intent.getLongExtra(CONNECT_ATTEMPT_ID_EXTRA, INVALID_CONNECT_ATTEMPT_ID)
+                    val granted = if (intent.hasExtra(UsbManager.EXTRA_PERMISSION_GRANTED)) {
+                        intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)
+                    } else {
+                        usbManager.hasPermission(device)
+                    }
+                    val resolution = sessionLifecycleGate.withLock {
+                        connectAttempts.resolvePermissionCallback(
+                            requestId = requestId,
+                            callbackDeviceName = device.deviceName,
+                            callbackProductId = device.productId,
+                            currentDetachGeneration = detachSequence,
+                            granted = granted,
+                        ).also { result ->
+                            if (result is Kt02h20PermissionResolution.Denied) {
+                                mutableState.value = Kt02h20ConnectionState.PermissionRequired(
+                                    "Android USB permission was denied for $deviceLabel. Grant access, then tap Retry connect.",
+                                )
+                            }
+                        }
+                    }
                     Ja11DiagnosticLog.eventForDevice(
                         deviceLabel,
                         "USB_PERMISSION_RESULT",
                         "pid" to device.productId,
+                        "requestId" to requestId,
                         "granted" to granted,
+                        "attemptCurrent" to (resolution !is Kt02h20PermissionResolution.Stale),
                     )
-                    if (granted) {
-                        openAsync(device)
-                    } else {
-                        mutableState.value = Kt02h20ConnectionState.PermissionRequired(
-                            "Android USB permission is required for $deviceLabel. Approve the prompt, then tap Connect to verify the DAC.",
-                        )
+                    when (resolution) {
+                        is Kt02h20PermissionResolution.Granted -> {
+                            val currentDevice = findCurrentDevice(
+                                resolution.attempt.deviceName,
+                                resolution.attempt.productId,
+                            )
+                            val currentPermissionGranted = currentDevice?.let(usbManager::hasPermission) == true
+                            val currentPermissionedDevice = currentDevice?.takeIf { currentPermissionGranted }
+                            Ja11DiagnosticLog.eventForDevice(
+                                deviceLabel,
+                                "USB_PERMISSION_DEVICE_REFRESH",
+                                "pid" to device.productId,
+                                "currentDeviceFound" to (currentDevice != null),
+                                "currentPermissionGranted" to currentPermissionGranted,
+                            )
+                            val anyTargetPresent = currentPermissionedDevice != null || findDevice() != null
+                            val shouldOpen = sessionLifecycleGate.withLock {
+                                if (!connectAttempts.isCurrent(resolution.attempt) ||
+                                    resolution.attempt.detachGeneration != detachSequence
+                                ) {
+                                    false
+                                } else if (currentPermissionedDevice == null) {
+                                    connectAttempts.cancel(resolution.attempt.id)
+                                    mutablePresent.value = anyTargetPresent
+                                    mutableState.value = if (anyTargetPresent) {
+                                        Kt02h20ConnectionState.PermissionRequired(
+                                            "The USB device changed while permission was being granted. Reconnect it, then try again.",
+                                        )
+                                    } else {
+                                        Kt02h20ConnectionState.Disconnected
+                                    }
+                                    false
+                                } else {
+                                    mutableState.value = Kt02h20ConnectionState.Connecting
+                                    true
+                                }
+                            }
+                            if (shouldOpen) openAsync(resolution.attempt)
+                        }
+                        Kt02h20PermissionResolution.Denied -> Unit
+                        Kt02h20PermissionResolution.Stale -> {
+                            Ja11DiagnosticLog.eventForDevice(
+                                deviceLabel,
+                                "USB_PERMISSION_RESULT_IGNORED",
+                                "pid" to device.productId,
+                                "requestId" to requestId,
+                                "reason" to "obsolete_attempt",
+                            )
+                        }
                     }
                 }
                 UsbManager.ACTION_USB_DEVICE_DETACHED -> {
-                    val currentSession = session
-                    if (currentSession == null || !currentSession.matchesDetach(device.productId, device.deviceName)) {
-                        // A delayed detach broadcast for the old UAC PID (or a second matching
-                        // device) must not invalidate a newer session that is already open.
+                    var detachedSession: UsbSession? = null
+                    var permissionAttemptDetached = false
+                    val detachGenerationBefore = sessionLifecycleGate.withLock {
+                        val generationBeforeDetach = detachSequence
+                        val currentSession = session
+                        when {
+                            currentSession != null && currentSession.matchesDetach(device.productId, device.deviceName) -> {
+                                // Publish absence before closing so no operation can continue on the old handle.
+                                detachedSession = currentSession
+                                detachSequence = nextSessionGeneration(detachSequence)
+                                connectAttempts.invalidateStaleAttempt(detachSequence)?.let { staleAttempt ->
+                                    Ja11DiagnosticLog.eventForDevice(
+                                        deviceLabel,
+                                        "USB_CONNECT_ATTEMPT_INVALIDATED_ON_DETACH",
+                                        "requestId" to staleAttempt.id,
+                                        "attemptDetachGeneration" to staleAttempt.detachGeneration,
+                                        "detachGeneration" to detachSequence,
+                                    )
+                                }
+                                mutablePresent.value = false
+                                mutableState.value = Kt02h20ConnectionState.Disconnected
+                            }
+                            currentSession == null && connectAttempts.invalidateForDetach(
+                                deviceName = device.deviceName,
+                                productId = device.productId,
+                                currentDetachGeneration = detachSequence,
+                            ) -> {
+                                // A detach before the first open invalidates the permission/open attempt too.
+                                permissionAttemptDetached = true
+                                detachSequence = nextSessionGeneration(detachSequence)
+                                connectAttempts.invalidateStaleAttempt(detachSequence)?.let { staleAttempt ->
+                                    Ja11DiagnosticLog.eventForDevice(
+                                        deviceLabel,
+                                        "USB_CONNECT_ATTEMPT_INVALIDATED_ON_DETACH",
+                                        "requestId" to staleAttempt.id,
+                                        "attemptDetachGeneration" to staleAttempt.detachGeneration,
+                                        "detachGeneration" to detachSequence,
+                                    )
+                                }
+                                mutablePresent.value = false
+                                mutableState.value = Kt02h20ConnectionState.Disconnected
+                            }
+                            else -> Unit
+                        }
+                        generationBeforeDetach
+                    }
+                    if (detachedSession != null) {
+                        val detached = checkNotNull(detachedSession)
+                        val detachAtEvent = detachSequence
+                        Ja11DiagnosticLog.eventForDevice(
+                            deviceLabel,
+                            "USB_DETACH",
+                            "pid" to device.productId,
+                            "sessionGeneration" to detached.generation,
+                            "detachGenerationBefore" to detachGenerationBefore,
+                        )
+                        scope.launch {
+                            mutex.withLock {
+                                if (session?.generation == detached.generation &&
+                                    session?.detachGeneration == detached.detachGeneration &&
+                                    detachSequence == detachAtEvent
+                                ) {
+                                    closeSessionLocked()
+                                }
+                            }
+                            mutablePresent.value = findDevice() != null
+                        }
+                    } else if (permissionAttemptDetached) {
+                        Ja11DiagnosticLog.eventForDevice(
+                            deviceLabel,
+                            "USB_DETACH_PERMISSION_PENDING",
+                            "pid" to device.productId,
+                            "detachGenerationBefore" to detachGenerationBefore,
+                            "detachGenerationAfter" to detachSequence,
+                        )
+                    } else {
+                        // A delayed detach for the old UAC PID must not invalidate a replacement session.
                         Ja11DiagnosticLog.eventForDevice(
                             deviceLabel,
                             "USB_DETACH_IGNORED",
                             "pid" to device.productId,
-                            "currentPid" to currentSession?.productId,
-                            "currentSessionGeneration" to currentSession?.generation,
-                            "currentDetachGeneration" to currentSession?.detachGeneration,
+                            "currentPid" to session?.productId,
+                            "currentSessionGeneration" to session?.generation,
+                            "currentDetachGeneration" to detachSequence,
                         )
-                        mutablePresent.value = findDevice() != null
-                        return
-                    }
-                    // A device reset can emit DETACHED/ATTACHED during a mutating operation.
-                    // Publish the physical absence immediately so the reconnect policy cannot
-                    // open a new handle against the old UsbDevice while the reset is in flight.
-                    // The actual close still runs under the session mutex before any replacement
-                    // session can be opened.
-                    val detachedSession = currentSession
-                    Ja11DiagnosticLog.eventForDevice(
-                        deviceLabel,
-                        "USB_DETACH",
-                        "pid" to device.productId,
-                        "sessionGeneration" to detachedSession.generation,
-                        "detachGenerationBefore" to detachSequence,
-                    )
-                    detachSequence = nextSessionGeneration(detachSequence)
-                    val detachAtEvent = detachSequence
-                    mutablePresent.value = false
-                    mutableState.value = Kt02h20ConnectionState.Disconnected
-                    scope.launch {
-                        mutex.withLock {
-                            if (session?.generation == detachedSession.generation &&
-                                session?.detachGeneration == detachedSession.detachGeneration &&
-                                detachSequence == detachAtEvent
-                            ) {
-                                closeSessionLocked()
-                            }
-                        }
                         mutablePresent.value = findDevice() != null
                     }
                 }
                 UsbManager.ACTION_USB_DEVICE_ATTACHED -> {
-                    val hasPermission = usbManager.hasPermission(device)
+                    val currentDevice = findCurrentDevice(device.deviceName, device.productId)
+                    val hasPermission = currentDevice?.let(usbManager::hasPermission) == true
                     Ja11DiagnosticLog.eventForDevice(
                         deviceLabel,
                         "USB_ATTACH",
@@ -188,9 +318,25 @@ internal class AndroidKt02h20HidSession(
                         "detachGeneration" to detachSequence,
                     )
                     mutablePresent.value = true
-                    if (mutableState.value is Kt02h20ConnectionState.Connecting && hasPermission) {
-                        openAsync(device)
+                    val openingAttempt = sessionLifecycleGate.withLock {
+                        mutablePresent.value = true
+                        val attempt = connectAttempts.currentAttempt() ?: return@withLock null
+                        if (attempt.deviceName != device.deviceName ||
+                            attempt.productId != device.productId ||
+                            attempt.detachGeneration != detachSequence ||
+                            !hasPermission
+                        ) {
+                            return@withLock null
+                        }
+                        val opening = if (attempt.phase == Kt02h20ConnectAttempt.Phase.WAITING_FOR_PERMISSION) {
+                            connectAttempts.observePermissionGranted(attempt.id, detachSequence)
+                        } else {
+                            attempt
+                        }
+                        if (opening != null) mutableState.value = Kt02h20ConnectionState.Connecting
+                        opening
                     }
+                    openingAttempt?.let(::openAsync)
                 }
             }
         }
@@ -201,43 +347,80 @@ internal class AndroidKt02h20HidSession(
         mutablePresent.value = findDevice() != null
     }
 
-    @Synchronized
-    fun connect() {
-        val device = findDevice()
-        if (device == null) {
-            Ja11DiagnosticLog.eventForDevice(deviceLabel, "CONNECT_NO_DEVICE")
-            mutablePresent.value = false
-            mutableState.value = Kt02h20ConnectionState.Error(
-                "$deviceLabel not detected. Connect the DAC by USB and try again.",
+    fun connect() = connect(automaticReconnect = false)
+
+    /** Revalidates the observed disconnected state after a reconnect callback is dequeued. */
+    fun connectAutomatically() = connect(automaticReconnect = true)
+
+    private fun connect(automaticReconnect: Boolean) {
+        sessionLifecycleGate.withLock {
+            if (automaticReconnect && mutableState.value !is Kt02h20ConnectionState.Disconnected) {
+                return@withLock
+            }
+            val device = findDevice()
+            if (device == null) {
+                Ja11DiagnosticLog.eventForDevice(deviceLabel, "CONNECT_NO_DEVICE")
+                mutablePresent.value = false
+                mutableState.value = Kt02h20ConnectionState.Error(
+                    "$deviceLabel not detected. Connect the DAC by USB and try again.",
+                )
+                return@withLock
+            }
+            val hasPermission = usbManager.hasPermission(device)
+            Ja11DiagnosticLog.eventForDevice(
+                deviceLabel,
+                "CONNECT_REQUEST",
+                "pid" to device.productId,
+                "permissionGranted" to hasPermission,
+                "sessionGeneration" to currentSessionGeneration,
+                "detachGeneration" to detachSequence,
             )
-            return
-        }
-        Ja11DiagnosticLog.eventForDevice(
-            deviceLabel,
-            "CONNECT_REQUEST",
-            "pid" to device.productId,
-            "permissionGranted" to usbManager.hasPermission(device),
-            "sessionGeneration" to currentSessionGeneration,
-            "detachGeneration" to detachSequence,
-        )
-        mutablePresent.value = true
-        // Connect is intentionally idempotent. During an EW300 commit the USB function can
-        // disappear and re-enumerate; the permission callback, attach callback, and reconnect
-        // policy may all observe that transition. Do not queue duplicate permission requests or
-        // competing open jobs while one connection attempt is already in flight.
-        val current = session
-        if (current != null &&
-            current.detachGeneration == detachSequence &&
-            state.value is Kt02h20ConnectionState.Connected
-        ) {
-            mutableState.value = Kt02h20ConnectionState.Connected
-            return
-        }
-        if (mutableState.value is Kt02h20ConnectionState.Connecting) return
-        mutableState.value = Kt02h20ConnectionState.Connecting
-        if (usbManager.hasPermission(device)) {
-            openAsync(device)
-        } else {
+            mutablePresent.value = true
+            // Connect is intentionally idempotent. During a USB re-enumeration the permission
+            // callback, attach callback, and reconnect policy may all observe the transition.
+            // Do not queue duplicate requests or competing open jobs while one attempt is active.
+            val current = session
+            if (current != null &&
+                current.detachGeneration == detachSequence &&
+                state.value is Kt02h20ConnectionState.Connected
+            ) {
+                mutableState.value = Kt02h20ConnectionState.Connected
+                return@withLock
+            }
+            val connectionState = mutableState.value
+            val activeAttempt = connectAttempts.currentAttempt()
+            val waitingForJa11Permission =
+                (connectionState as? Kt02h20ConnectionState.PermissionRequired)?.retryAvailable == false
+            val retryingLatePermissionPrompt =
+                (connectionState as? Kt02h20ConnectionState.PermissionRequired)?.retryAvailable == true &&
+                    activeAttempt?.phase == Kt02h20ConnectAttempt.Phase.WAITING_FOR_PERMISSION
+            if (connectionState is Kt02h20ConnectionState.Connecting ||
+                waitingForJa11Permission ||
+                (activeAttempt != null && !retryingLatePermissionPrompt)
+            ) {
+                return@withLock
+            }
+            if (retryingLatePermissionPrompt) {
+                val superseded = checkNotNull(activeAttempt)
+                connectAttempts.cancel(superseded.id)
+                Ja11DiagnosticLog.eventForDevice(
+                    deviceLabel,
+                    "USB_PERMISSION_ATTEMPT_SUPERSEDED_BY_RETRY",
+                    "pid" to superseded.productId,
+                    "requestId" to superseded.id,
+                )
+            }
+            mutableState.value = Kt02h20ConnectionState.Connecting
+            val attempt = connectAttempts.begin(
+                deviceName = device.deviceName,
+                productId = device.productId,
+                detachGeneration = detachSequence,
+                permissionRequired = !hasPermission,
+            )
+            if (hasPermission) {
+                openAsync(attempt)
+                return@withLock
+            }
             val mutabilityFlag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 PendingIntent.FLAG_MUTABLE
             } else {
@@ -245,8 +428,10 @@ internal class AndroidKt02h20HidSession(
             }
             val permissionIntent = PendingIntent.getBroadcast(
                 appContext,
-                permissionAction.hashCode(),
-                Intent(permissionAction).setPackage(appContext.packageName),
+                attempt.id.toInt(),
+                Intent(permissionAction)
+                    .setPackage(appContext.packageName)
+                    .putExtra(CONNECT_ATTEMPT_ID_EXTRA, attempt.id),
                 PendingIntent.FLAG_UPDATE_CURRENT or mutabilityFlag,
             )
             permissionRequests += 1L
@@ -255,10 +440,53 @@ internal class AndroidKt02h20HidSession(
                 "USB_PERMISSION_REQUESTED",
                 "pid" to device.productId,
                 "requestCount" to permissionRequests,
+                "requestId" to attempt.id,
+                "detachGeneration" to attempt.detachGeneration,
             )
-            usbManager.requestPermission(device, permissionIntent)
-            startPermissionFallback()
+            val requested = runCatching {
+                val requester = permissionRequester
+                if (requester == null) usbManager.requestPermission(device, permissionIntent)
+                else requester(device, permissionIntent)
+            }.isSuccess
+            if (requested) {
+                startPermissionFallback(attempt)
+            } else {
+                connectAttempts.finish(attempt.id)
+                mutableState.value = Kt02h20ConnectionState.PermissionRequired(
+                    "Android could not request USB permission for $deviceLabel. Try Connect again.",
+                )
+            }
         }
+    }
+
+    /** Invalidates an outstanding permission/open attempt after its owning operation terminates. */
+    fun cancelPendingConnectAttempt(terminalErrorMessage: String? = null) {
+        val attempt = sessionLifecycleGate.withLock {
+            val currentAttempt = connectAttempts.currentAttempt()
+            if (currentAttempt == null) {
+                if (terminalErrorMessage != null && mutableState.value !is Kt02h20ConnectionState.Connected) {
+                    mutableState.value = Kt02h20ConnectionState.Error(terminalErrorMessage)
+                }
+                return@withLock null
+            }
+            val cancelled = sessionLifecycleGate.cancelAttempt(connectAttempts, currentAttempt.id) {
+                if (mutableState.value !is Kt02h20ConnectionState.Connected) {
+                    when {
+                        terminalErrorMessage != null ->
+                            mutableState.value = Kt02h20ConnectionState.Error(terminalErrorMessage)
+                        session == null -> mutableState.value = Kt02h20ConnectionState.Disconnected
+                    }
+                }
+            }
+            currentAttempt.takeIf { cancelled }
+        }
+        if (attempt == null) return
+        Ja11DiagnosticLog.eventForDevice(
+            deviceLabel,
+            "USB_CONNECT_ATTEMPT_CANCELLED",
+            "requestId" to attempt.id,
+            "detachGeneration" to attempt.detachGeneration,
+        )
     }
 
     suspend fun send(report: ByteArray, settleMillis: Long = 8L): Boolean = withContext(Dispatchers.IO) {
@@ -534,25 +762,54 @@ internal class AndroidKt02h20HidSession(
         }
     }
 
-    private fun openAsync(device: UsbDevice) {
+    private fun openAsync(attempt: Kt02h20ConnectAttempt) {
         Ja11DiagnosticLog.eventForDevice(
             deviceLabel,
             "USB_OPEN_REQUEST",
-            "pid" to device.productId,
+            "pid" to attempt.productId,
+            "requestId" to attempt.id,
             "sessionGeneration" to currentSessionGeneration,
-            "detachGeneration" to detachSequence,
+            "detachGeneration" to attempt.detachGeneration,
         )
         scope.launch {
             mutex.withLock {
+                val shouldOpen = sessionLifecycleGate.withLock {
+                    if (!connectAttempts.isCurrent(attempt)) {
+                        false
+                    } else if (attempt.detachGeneration != detachSequence) {
+                        connectAttempts.cancel(attempt.id)
+                        if (mutableState.value is Kt02h20ConnectionState.Connecting) {
+                            mutableState.value = Kt02h20ConnectionState.Disconnected
+                        }
+                        false
+                    } else {
+                        // Permission and attach broadcasts can both request an open for the same
+                        // UsbDevice. The first successful opener owns the session; later jobs leave
+                        // it alone instead of closing and replacing a live handle.
+                        val current = session
+                        if (current != null &&
+                            current.detachGeneration == detachSequence &&
+                            current.deviceName == attempt.deviceName &&
+                            current.productId == attempt.productId &&
+                            state.value is Kt02h20ConnectionState.Connected
+                        ) {
+                            connectAttempts.finish(attempt.id)
+                            mutableState.value = Kt02h20ConnectionState.Connected
+                            false
+                        } else {
+                            true
+                        }
+                    }
+                }
+                if (!shouldOpen) return@withLock
                 // Permission and attach broadcasts can both request an open for the same
-                // UsbDevice. The first successful opener owns the session; later jobs must leave
-                // it alone instead of closing and replacing a live handle.
-                val current = session
-                if (current != null &&
-                    current.detachGeneration == detachSequence &&
-                    state.value is Kt02h20ConnectionState.Connected
-                ) {
-                    mutableState.value = Kt02h20ConnectionState.Connected
+                // attempt. A fresh UsbDevice descriptor is resolved for each open.
+                val device = findCurrentPermissionedDevice(attempt)
+                if (device == null) {
+                    failConnectAttempt(
+                        attempt,
+                        "$deviceLabel changed or Android USB permission was unavailable before the session opened.",
+                    )
                     return@withLock
                 }
                 closeSessionLocked()
@@ -562,9 +819,11 @@ internal class AndroidKt02h20HidSession(
                         deviceLabel,
                         "USB_OPEN_FAILED",
                         "pid" to device.productId,
+                        "requestId" to attempt.id,
                         "reason" to "open_device_null",
                     )
-                    mutableState.value = Kt02h20ConnectionState.Error(
+                    failConnectAttempt(
+                        attempt,
                         "Android could not open the $deviceLabel USB device.",
                     )
                     return@withLock
@@ -579,37 +838,94 @@ internal class AndroidKt02h20HidSession(
                         deviceLabel,
                         "USB_OPEN_FAILED",
                         "pid" to device.productId,
+                        "requestId" to attempt.id,
                         "reason" to "hid_claim_failed",
                     )
-                    mutableState.value = Kt02h20ConnectionState.Error(
+                    failConnectAttempt(
+                        attempt,
                         "Android could not claim the $deviceLabel PEQ HID interface.",
                     )
                     return@withLock
                 }
-                lastSessionGeneration = nextSessionGeneration(lastSessionGeneration)
-                session = UsbSession(
-                    connection = connection,
-                    usbInterface = descriptor.usbInterface,
-                    endpointIn = descriptor.endpointIn,
-                    endpointOut = descriptor.endpointOut,
-                    productId = device.productId,
-                    fingerprintKey = fingerprintKey(device, descriptor.usbInterface),
-                    deviceName = device.deviceName,
-                    generation = lastSessionGeneration,
-                    detachGeneration = detachSequence,
+                var latestDevice: UsbDevice? = null
+                var openedSession: UsbSession? = null
+                val committed = sessionLifecycleGate.commitAttempt(
+                    tracker = connectAttempts,
+                    attempt = attempt,
+                    canCommit = {
+                        if (attempt.detachGeneration != detachSequence) {
+                            false
+                        } else {
+                            latestDevice = findCurrentPermissionedDevice(attempt)
+                            latestDevice != null
+                        }
+                    },
+                    publishSession = {
+                        val committedDevice = checkNotNull(latestDevice)
+                        lastSessionGeneration = nextSessionGeneration(lastSessionGeneration)
+                        openedSession = UsbSession(
+                            connection = connection,
+                            usbInterface = descriptor.usbInterface,
+                            endpointIn = descriptor.endpointIn,
+                            endpointOut = descriptor.endpointOut,
+                            productId = committedDevice.productId,
+                            fingerprintKey = fingerprintKey(committedDevice, descriptor.usbInterface),
+                            deviceName = committedDevice.deviceName,
+                            generation = lastSessionGeneration,
+                            detachGeneration = detachSequence,
+                        )
+                        session = openedSession
+                        currentSessionGeneration = lastSessionGeneration
+                        mutableState.value = Kt02h20ConnectionState.Connected
+                    },
                 )
-                currentSessionGeneration = lastSessionGeneration
-                mutableState.value = Kt02h20ConnectionState.Connected
+                if (!committed) {
+                    runCatching { connection.releaseInterface(descriptor.usbInterface) }
+                    runCatching { connection.close() }
+                    failConnectAttempt(
+                        attempt,
+                        "$deviceLabel changed or the connection was cancelled before its fresh USB session could be published.",
+                    )
+                    return@withLock
+                }
+                val established = checkNotNull(openedSession)
                 Ja11DiagnosticLog.eventForDevice(
                     deviceLabel,
                     "USB_SESSION_OPENED",
-                    "pid" to device.productId,
-                    "sessionGeneration" to lastSessionGeneration,
-                    "detachGeneration" to detachSequence,
+                    "pid" to established.productId,
+                    "requestId" to attempt.id,
+                    "sessionGeneration" to established.generation,
+                    "detachGeneration" to established.detachGeneration,
                 )
             }
         }
     }
+
+    private fun failConnectAttempt(attempt: Kt02h20ConnectAttempt, message: String) {
+        val failed = sessionLifecycleGate.withLock {
+            if (!connectAttempts.finish(attempt.id)) {
+                false
+            } else {
+                mutableState.value = Kt02h20ConnectionState.Error(message)
+                true
+            }
+        }
+        if (!failed) return
+        Ja11DiagnosticLog.eventForDevice(
+            deviceLabel,
+            "USB_OPEN_FAILED",
+            "pid" to attempt.productId,
+            "requestId" to attempt.id,
+            "reason" to "open_attempt_failed",
+        )
+    }
+
+    private fun findCurrentDevice(deviceName: String, productId: Int): UsbDevice? =
+        usbManager.deviceList.values.firstOrNull { device ->
+            device.deviceName == deviceName &&
+                device.productId == productId &&
+                device.matchesTarget()
+        }
 
     private fun findHidInterface(device: UsbDevice): HidInterface? =
         (0 until device.interfaceCount)
@@ -629,24 +945,82 @@ internal class AndroidKt02h20HidSession(
             }
             .firstOrNull()
 
-    private fun startPermissionFallback() {
+    private fun findCurrentPermissionedDevice(attempt: Kt02h20ConnectAttempt): UsbDevice? =
+        findCurrentDevice(attempt.deviceName, attempt.productId)?.takeIf { device ->
+            attempt.matchesCurrentPermissionedDevice(
+                currentDeviceName = device.deviceName,
+                currentProductId = device.productId,
+                currentDetachGeneration = detachSequence,
+                permissionGranted = usbManager.hasPermission(device),
+            )
+        }
+
+    private fun startPermissionFallback(attempt: Kt02h20ConnectAttempt) {
         scope.launch {
-            delay(PERMISSION_RESPONSE_TIMEOUT_MILLIS)
-            if (mutableState.value !is Kt02h20ConnectionState.Connecting) return@launch
-            val device = findDevice()
-            when {
-                device == null -> {
-                    mutablePresent.value = false
-                    mutableState.value = Kt02h20ConnectionState.Error(
-                        "$deviceLabel disconnected while Android was requesting USB permission.",
-                    )
+            delay(permissionResponseTimeoutMillis)
+            val firstFallback = resolvePermissionFallback(
+                attempt = attempt,
+                retainPendingPrompt = true,
+            )
+            if (firstFallback != Kt02h20PermissionFallbackResolution.StillPending) return@launch
+
+            // JA11 bounds the prompt to its restart-verification deadline. Other shared-session
+            // transports retain the old request until grant, explicit Retry, detach, cancellation,
+            // or session close so a late Android callback remains compatible with prior behavior.
+            val hardDeadline = permissionPromptMaxDurationMillis ?: return@launch
+            delay(hardDeadline - permissionResponseTimeoutMillis)
+            resolvePermissionFallback(attempt = attempt, retainPendingPrompt = false)
+        }
+    }
+
+    private fun resolvePermissionFallback(
+        attempt: Kt02h20ConnectAttempt,
+        retainPendingPrompt: Boolean,
+    ): Kt02h20PermissionFallbackResolution {
+        val fallback = sessionLifecycleGate.withLock {
+            val currentDevice = findCurrentDevice(attempt.deviceName, attempt.productId)
+            connectAttempts.resolvePermissionFallback(
+                attemptId = attempt.id,
+                currentDeviceName = currentDevice?.deviceName,
+                currentProductId = currentDevice?.productId,
+                currentDetachGeneration = detachSequence,
+                permissionGranted = currentDevice?.let(usbManager::hasPermission) == true,
+                retainPendingPrompt = retainPendingPrompt,
+            ).also { result ->
+                when (result) {
+                    Kt02h20PermissionFallbackResolution.Stale -> Unit
+                    Kt02h20PermissionFallbackResolution.Disconnected -> {
+                        mutablePresent.value = findDevice() != null
+                        mutableState.value = Kt02h20ConnectionState.Error(
+                            "$deviceLabel disconnected while Android was requesting USB permission.",
+                        )
+                    }
+                    Kt02h20PermissionFallbackResolution.DeviceChanged -> {
+                        mutablePresent.value = findDevice() != null
+                        mutableState.value = Kt02h20ConnectionState.PermissionRequired(
+                            "The USB device changed while Android was requesting permission. Reconnect it, then try again.",
+                        )
+                    }
+                    is Kt02h20PermissionFallbackResolution.Open ->
+                        mutableState.value = Kt02h20ConnectionState.Connecting
+                    Kt02h20PermissionFallbackResolution.StillPending ->
+                        mutableState.value = Kt02h20ConnectionState.PermissionRequired(
+                            if (blockRetryWhilePermissionPending) {
+                                "Waiting for Android USB permission for $deviceLabel. Approve the system prompt to continue."
+                            } else {
+                                "Android USB permission is taking longer than expected for $deviceLabel. Approve the system prompt or tap Connect to retry."
+                            },
+                            retryAvailable = !blockRetryWhilePermissionPending,
+                        )
+                    Kt02h20PermissionFallbackResolution.Retryable ->
+                        mutableState.value = Kt02h20ConnectionState.PermissionRequired(
+                            "Android USB permission is required for $deviceLabel. Approve it, then tap Connect to try again.",
+                        )
                 }
-                usbManager.hasPermission(device) -> openAsync(device)
-                else -> mutableState.value = Kt02h20ConnectionState.PermissionRequired(
-                    "Android USB permission is required for $deviceLabel. Approve it, then tap Connect to verify the DAC.",
-                )
             }
         }
+        if (fallback is Kt02h20PermissionFallbackResolution.Open) openAsync(fallback.attempt)
+        return fallback
     }
 
     private fun findDevice(): UsbDevice? = usbManager.deviceList.values.firstOrNull { it.matchesTarget() }
@@ -685,8 +1059,11 @@ internal class AndroidKt02h20HidSession(
             runCatching { appContext.unregisterReceiver(receiver) }
             receiverRegistered = false
         }
+        sessionLifecycleGate.withLock {
+            connectAttempts.cancel()
+            mutableState.value = Kt02h20ConnectionState.Disconnected
+        }
         closeSession()
-        mutableState.value = Kt02h20ConnectionState.Disconnected
     }
 
     private fun UsbDevice.matchesTarget(): Boolean =
@@ -695,13 +1072,35 @@ internal class AndroidKt02h20HidSession(
     private fun fingerprintKey(device: UsbDevice, usbInterface: UsbInterface): String {
         val manufacturer = runCatching { device.manufacturerName }.getOrNull().orEmpty()
         val product = runCatching { device.productName }.getOrNull().orEmpty()
-        val serial = runCatching { device.serialNumber }.getOrNull().orEmpty()
+        var serialStatus = "OTHER_EXCEPTION"
+        val serial = try {
+            device.serialNumber.also { value ->
+                serialStatus = when {
+                    value == null -> "READABLE_NULL"
+                    value.isBlank() -> "READABLE_BLANK"
+                    else -> "READABLE_NONBLANK"
+                }
+            }
+        } catch (_: SecurityException) {
+            serialStatus = "SECURITY_EXCEPTION"
+            null
+        } catch (_: RuntimeException) {
+            serialStatus = "OTHER_EXCEPTION"
+            null
+        }
+        Ja11DiagnosticLog.eventForDevice(
+            deviceLabel,
+            "USB_IDENTITY_DESCRIPTOR_STATUS",
+            "permissionGranted" to usbManager.hasPermission(device),
+            "serialStatus" to serialStatus,
+            "productId" to device.productId,
+        )
         return (listOf(
             "vid=${device.vendorId.toString(16)}",
             "pid=${device.productId.toString(16)}",
             "manufacturer=${manufacturer.trim()}",
             "product=${product.trim()}",
-            "serial=${serial.trim()}",
+            "serial=${serial.orEmpty().trim()}",
         ) + additionalFingerprintFields(device).map { (key, value) -> "$key=${value.trim()}" } +
             "interface=${usbInterface.id}").joinToString("|")
     }
@@ -742,6 +1141,8 @@ internal class AndroidKt02h20HidSession(
         const val PERMISSION_RESPONSE_TIMEOUT_MILLIS = 10_000L
         const val REENUMERATION_OBSERVATION_MILLIS = 350L
         const val RECONNECT_TIMEOUT_MILLIS = 20_000L
+        const val CONNECT_ATTEMPT_ID_EXTRA = "connectAttemptId"
+        const val INVALID_CONNECT_ATTEMPT_ID = -1L
 
         fun nextSessionGeneration(previous: Long): Long =
             if (previous == Long.MAX_VALUE) 1L else previous + 1L

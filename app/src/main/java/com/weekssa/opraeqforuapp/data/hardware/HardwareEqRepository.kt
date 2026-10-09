@@ -123,6 +123,8 @@ class HardwareEqRepository(
 
     fun connectBlackPearl() = dacSessionRepository.connectBlackPearl()
     fun connectFiioJa11() = dacSessionRepository.connectFiioJa11()
+    fun cancelFiioJa11ConnectAttempt(terminalErrorMessage: String? = null) =
+        dacSessionRepository.cancelFiioJa11ConnectAttempt(terminalErrorMessage)
 
     /**
      * Connects EW300 when closed; when the authoritative session is already open, this is the
