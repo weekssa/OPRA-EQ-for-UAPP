@@ -24,6 +24,10 @@ The project uses Semantic Versioning. The `0.x` series is pre-1.0; a version wit
 - Apply candidate ambiguity and final-readback checks to JA11 Flash/Save/Reset without changing
   protocol sequencing or volume/preset persistence claims. Physical acceptance remains pending;
   this unreleased software change makes no JA11 support claim.
+- Before JA11 Flash or Reset writes any band or global gain, select User 1 when needed and verify
+  it in the same current session; editor Apply checks User 1 immediately before data writes. An
+  uncertain selection/readback stops before data writes, Apply, or Save. This ordering correction
+  is locally and emulator qualified; exact-head CI and physical requalification remain pending.
 
 ## [0.8.0] - 2026-10-08
 

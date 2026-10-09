@@ -3,13 +3,13 @@
 ## 2026-10-09 Model D physical acceptance gate — current
 
 The owner-approved Model D policy supersedes the serial-required gates in the historical
-2026-10-08 sections below. The source-bound candidate passes local gates, API 35 emulator
-instrumentation, independent review, and all eight checks on its app-source commit and checked
-docs/helper head `69076094811c13365bafecb9a1e0cf50be8d14f0`. The initial UI job attempt on that head
-recorded a Nexus Launcher ANR/focus outage; its targeted retry passed 64/64. Keep the Pixel unused
-until all eight checks pass on the exact live PR head and the remaining preflight is confirmed. Then
-request a new explicit phone window with the exact source/APK, test plan, expected writes/resets,
-Android permission interaction, occupancy, pass/fail conditions, and restoration obligations.
+2026-10-08 sections below. Current candidate source is
+`92c11fb0e41ae11b118b2e7bb105234d6606dbdb`; its exact diagnostic APK SHA-256 is
+`ce3f417f20c275fd4d535cf5e70f658d8430af8fdd3f87ea950705fbfd574637`. Local gates, API 35 emulator
+instrumentation, independent app/helper reviews, artifact provenance, and 64/64 Android tests pass.
+Exact-head PR #80 CI remains pending. Keep the Pixel unused until all checks pass on that exact
+head. The user has already authorized this prepared cycle, so no new confirmation is needed unless
+the phone is unavailable or test scope materially changes.
 
 Before any write, install and verify that exact candidate, then complete a read-only baseline. The
 JA11 session must show the exact FiiO VID/PID allowlist (`0x2972:0x0101` or `0x2972:0x0102`), one
@@ -19,13 +19,14 @@ sessions provide a serial, reject mismatch; if either is absent, continue only w
 candidate and every expected-reset lifecycle gate. Do not claim the same physical unit when serial
 is absent. Reject zero/multiple candidates and never select the first device by enumeration order.
 
-The last verified Mic state remains Off from J020 and its restoration to the original On state is
-outstanding. After a complete exact-candidate baseline, Mic Off→On is the first mutation. Require an
-accepted write, expected detach, old-session invalidation, fresh permission/open/claim, a new
-generation, one candidate, and authoritative fresh Mic-On readback. If Mic already reads On, record
-restoration satisfied and skip the write. Never replay an uncertain write. If the identity,
-permission, cardinality, generation, write outcome, or readback gate fails, stop writes, preserve
-private evidence, and release the Pixel immediately.
+The prior authorized candidate restored Mic Off→On and verified Mic On after reconnect. After the
+new candidate passes exact-head CI, install and verify it, then read the exact JA11 identity/session,
+cardinality, and complete baseline before any write. If the fresh baseline reads Mic Off, Mic Off→On
+is the first mutation; require accepted write, expected detach, old-session invalidation, fresh
+permission/open/claim, a new generation, one candidate, and authoritative fresh Mic-On readback. If
+Mic already reads On, record restoration satisfied and skip the write. Never replay an uncertain
+write. If identity, permission, cardinality, generation, write outcome, or readback is uncertain,
+stop writes, preserve private evidence, and release the Pixel.
 
 Continue with the prepared UAC transition/restore, one Flash from Off, and full-power volume/program
 observations only after Mic is restored or the fresh baseline confirms On. Preserve one logical Flash

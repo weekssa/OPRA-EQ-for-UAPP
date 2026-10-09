@@ -2,13 +2,13 @@
 set -euo pipefail
 umask 077
 
-SOURCE_SHA="1d19067c9150aae1b09e01fafb8af3647bf65f71"
-EXPECTED_APK_SHA="23adf9f4955b056f110562362717c706767b7e3ecc50225c07439a3ff5c23711"
+SOURCE_SHA="92c11fb0e41ae11b118b2e7bb105234d6606dbdb"
+EXPECTED_APK_SHA="ce3f417f20c275fd4d535cf5e70f658d8430af8fdd3f87ea950705fbfd574637"
 PREVIOUS_APK_SHA="ee0fe4fbfaae7b3f959d4122f0c21c128dffdf21d47586376ee383e2534ceb0d"
 DEBUG_SIGNER_SHA="73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41"
 PACKAGE="com.weekssa.opraeqforuapp.ja11diag"
 ACTIVITY="com.weekssa.opraeqforuapp.MainActivity"
-REMOTE_PROFILE="/sdcard/Download/ja11-v081-baseline-1d19067c-20261009.txt"
+REMOTE_PROFILE="/sdcard/Download/ja11-v081-baseline-92c11fb0-20261009.txt"
 ROLLBACK_APK="${JA11_ROLLBACK_APK:-/private/tmp/ja11-v0.8.1-acceptance-61695803/owner-phone-session-20261009-resume/installed-ja11diag-base.apk}"
 
 ADB_BIN="${JA11_ADB_BIN:-}"
@@ -323,7 +323,6 @@ case "$ACTION" in
     if [ -z "$SNAPSHOT_GENERATION" ] || [ -z "$IDENTITY_GENERATION" ] || [ -z "$SNAPSHOT_SOURCE" ] || \
        [ -z "$SNAPSHOT_POSITION" ] || [ -z "$IDENTITY_POSITION" ] || \
        [ "$SNAPSHOT_POSITION" -le "$SESSION_POSITION" ] || [ "$IDENTITY_POSITION" -le "$SESSION_POSITION" ] || \
-       [ "$IDENTITY_POSITION" -le "$SNAPSHOT_POSITION" ] || \
        [ "$SNAPSHOT_SOURCE" != "$SOURCE_SHA" ] || \
        [ "$SNAPSHOT_GENERATION" != "$SESSION_GENERATION" ] || \
        [ "$SNAPSHOT_GENERATION" != "$IDENTITY_GENERATION" ] || \

@@ -87,6 +87,7 @@ chmod 700 "$FAKE_BIN/ps"
 write_log() {
   local path="$1" serial_mode="${2:-serialless}" candidate_count="${3:-1}" include_build="${4:-yes}"
   local session_current="${5:-true}" later_ambiguous_attach="${6:-no}" identity_count="${7:-$candidate_count}"
+  local identity_first="${8:-yes}"
   local device_status connection_status serial_source serial_available
   case "$serial_mode" in
     serialless)
@@ -121,8 +122,13 @@ write_log() {
   fi
   printf '10-09 00:14:10.100 7943 7943 I JA11_DIAG: event=USB_IDENTITY_DESCRIPTOR_STATUS permissionGranted=true serialStatus=%s connectionSerialStatus=%s serialSource=%s productId=258 serial=SERIAL_SENTINEL fingerprint=FINGERPRINT_SENTINEL\n' "$device_status" "$connection_status" "$serial_source" >> "$path"
   printf '10-09 00:14:10.200 7943 7943 I JA11_DIAG: event=USB_SESSION_OPENED pid=258 sessionGeneration=3 supportedCandidateCount=%s serial=SERIAL_SENTINEL\n' "$candidate_count" >> "$path"
-  printf '10-09 00:14:10.300 7943 7943 I JA11_DIAG: event=SNAPSHOT_READ_COMPLETE sourceSha=%s sessionGeneration=3\n' "$SOURCE_SHA" >> "$path"
-  printf '10-09 00:14:10.400 7943 7943 I JA11_DIAG: event=RESTART_IDENTITY_AVAILABILITY serialAvailable=%s supportedCandidateCount=%s sessionGeneration=3 sessionCurrent=%s fingerprint=FINGERPRINT_SENTINEL\n' "$serial_available" "$identity_count" "$session_current" >> "$path"
+  if [[ "$identity_first" == yes ]]; then
+    printf '10-09 00:14:10.300 7943 7943 I JA11_DIAG: event=RESTART_IDENTITY_AVAILABILITY serialAvailable=%s supportedCandidateCount=%s sessionGeneration=3 sessionCurrent=%s fingerprint=FINGERPRINT_SENTINEL\n' "$serial_available" "$identity_count" "$session_current" >> "$path"
+    printf '10-09 00:14:10.400 7943 7943 I JA11_DIAG: event=SNAPSHOT_READ_COMPLETE sourceSha=%s sessionGeneration=3\n' "$SOURCE_SHA" >> "$path"
+  else
+    printf '10-09 00:14:10.300 7943 7943 I JA11_DIAG: event=SNAPSHOT_READ_COMPLETE sourceSha=%s sessionGeneration=3\n' "$SOURCE_SHA" >> "$path"
+    printf '10-09 00:14:10.400 7943 7943 I JA11_DIAG: event=RESTART_IDENTITY_AVAILABILITY serialAvailable=%s supportedCandidateCount=%s sessionGeneration=3 sessionCurrent=%s fingerprint=FINGERPRINT_SENTINEL\n' "$serial_available" "$identity_count" "$session_current" >> "$path"
+  fi
   if [[ "$later_ambiguous_attach" == yes ]]; then
     printf '10-09 00:14:10.500 7943 7943 I JA11_DIAG: event=USB_ATTACH pid=257 supportedCandidateCount=2\n' >> "$path"
   fi
@@ -165,6 +171,13 @@ grep -q 'supportedCandidateCount=1' "$TMP_ROOT/session.out" || fail "verify-ja11
 if grep -Eq 'SERIAL_SENTINEL|FINGERPRINT_SENTINEL' "$TMP_ROOT/session.out"; then
   fail "verify-ja11-session exposed a raw serial or fingerprint"
 fi
+stop_capture
+
+SNAPSHOT_FIRST="$TMP_ROOT/snapshot-first"
+mkdir -m 700 "$SNAPSHOT_FIRST"
+write_log "$TMP_ROOT/snapshot-first.events" serialless 1 yes true no 1 no
+start_capture "$SNAPSHOT_FIRST" "$TMP_ROOT/snapshot-first.events"
+JA11_ADB_BIN="$ADB" JA11_EVIDENCE_DIR="$SNAPSHOT_FIRST" "$HELPER" fixture verify-ja11-session > "$TMP_ROOT/snapshot-first.out" 2>&1 || fail "verify-ja11-session rejected a sole serialless JA11 when the snapshot completed before identity availability"
 stop_capture
 
 CONNECTION_SERIAL="$TMP_ROOT/connection-serial"

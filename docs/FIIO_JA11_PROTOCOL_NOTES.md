@@ -1,6 +1,6 @@
 # FiiO / JadeAudio JA11 protocol notes
 
-Status: **JA11 codec correction and historical Flash/reconnect/restoration paths remain evidenced only on their exact candidates; J020 remains the last mutation and Mic Off the last verified state; J021 and J024 remain read-only observations; the owner approved Model D on 2026-10-09; local qualification, API 35 emulator, independent review, exact candidate provenance, and all eight checks on app-source commit `1d19067c` and checked docs/helper PR head `69076094811c13365bafecb9a1e0cf50be8d14f0` pass; the first UI attempt recorded a launcher ANR/focus outage and its targeted retry passed 64/64; verify all eight on the exact live PR head before the phone window; physical acceptance remains pending**
+Status: **The owner-approved Model D policy makes serial optional continuity evidence while retaining exact candidate/session/cardinality, expected-reset, authoritative-readback, and no-replay gates. The 2026-10-09 prior candidate restored Mic On and original captured settings; its UAC permission-timing result is inconclusive, and its Flash from Off failed band 1 before Save after writing bands/gain before User 1 selection. The User 1 ordering correction is source `92c11fb0`; local/emulator/artifact/helper and independent-review gates pass, including 64/64 API 35 tests. Exact-head PR #80 CI and physical requalification remain pending.**
 
 ## 2026-10-09 owner-approved Model D — current identity and restart policy
 
@@ -28,9 +28,33 @@ Never replay an uncertain write.
 
 Flash/Save/Reset preserve their protocol-specific ordering while applying the same no-arbitrary-
 candidate and authoritative-final-readback rules. Keep exactly one logical Flash action and Save.
-Volume and preset persistence remain unresolved until the approved full-power physical test. No
-physical acceptance has occurred under Model D yet; J024 remains the latest identity-related physical
-read-only result, J020 remains the latest mutation, and Mic On restoration is outstanding.
+Volume and preset persistence remain unresolved until the approved full-power physical test. The
+prior Model D candidate passed its read-only session gate and Mic restoration but failed one Flash
+from Off before Save. The new source `92c11fb0` has no physical result yet; its exact-head CI must
+pass before installing it and running the read-only gate again.
+
+## 2026-10-09 User 1 write-order correction — off-phone candidate
+
+Source commit `92c11fb0e41ae11b118b2e7bb105234d6606dbdb` changes JA11 Flash and Reset to read the
+active program, select User 1 if needed, and verify User 1 in the same current session before any
+`0x15` band or `0x17` global-gain write. An uncertain selector result stops as `TransferFailed` with
+state unknown before band/gain writes, Apply, or Save. Editor Apply checks fresh User 1 state directly
+before its data writes and does not select User 1 afterward. The confirmation copy discloses
+pre-write User 1 selection.
+
+The physical trace on the previous exact candidate strongly supports this ordering diagnosis but
+does not prove device-side bank semantics: that candidate sent five band writes and global gain
+before selecting User 1, then failed band 1 volatile readback before Save. Software regression tests
+use banked fakes to prove the application command order, not the JA11's hardware behavior.
+
+The diagnostic APK for source `92c11fb0` has SHA-256
+`ce3f417f20c275fd4d535cf5e70f658d8430af8fdd3f87ea950705fbfd574637`; package/version is
+`com.weekssa.opraeqforuapp.ja11diag`, `0.8.0-ja11diag` / 11, with the established debug signer. Full
+local G3 reports 861 JVM tests with zero failures, errors, or skips; lint/build/R8 and helper fixtures
+pass. Independent app and helper reviews found no actionable defect. The exact APK cold-launched on
+isolated API 35 with matching runtime source SHA, and source-matched debug instrumentation passed
+64/64. Exact-head PR #80 CI and physical qualification remain pending; do not reuse the old APK or
+use the Pixel before exact-head CI passes.
 
 ## 2026-10-08 J021 — Android device serial getter returned null
 
@@ -344,6 +368,23 @@ PEQ read/write retains the established v0.5 codec. Response parsing accepts the 
 This value is important to hardware truth. Reading stored User 1 PEQ bands does **not** prove that User 1 is currently active. My DAC must read the active EQ program before presenting User 1 bands as the current acoustic EQ.
 
 If `Off` is active, current EQ response is flat even though stored User 1 parameters may remain on-device. If Vocal/Classic/Bass is active and the device does not provide the actual underlying coefficients, EQ Library must identify the built-in program without inventing a response curve or attributing the stored User 1 bands as current.
+
+### User 1 write ordering
+
+JA11 Flash and Reset must confirm User 1 is the active program before sending any `0x15` band or
+`0x17` global-gain writes. If another program is active, select User 1 with `0x16`, read the active
+program back in the same current USB session, and stop before band/gain writes if that readback is
+missing or differs. Apply, volatile readback, one Save, and final readback follow the data writes.
+Editor Apply is available only from a fresh User 1 snapshot, so it rechecks User 1 immediately
+before writes and does not select User 1 afterward.
+
+This ordering is a fail-closed software contract, not a claim that protocol research has proved
+per-program write-bank semantics. On 2026-10-09, the exact Model D candidate started on Off, wrote
+five bands and global gain, then selected User 1; volatile band 1 readback failed before Save. A
+subsequent read-only User 1 snapshot showed values different from the target. This strongly supports
+the owner's bank-selection diagnosis, but the single run does not prove whether the mismatch came
+from the active-bank write target, selection behavior, or another device-side effect. The new
+ordering requires exact-candidate physical requalification.
 
 ### UAC mode
 

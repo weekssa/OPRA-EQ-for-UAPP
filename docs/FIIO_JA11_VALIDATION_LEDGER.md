@@ -16,26 +16,30 @@ rewrite or broaden this append-only hardware evidence.
 ## Current disposition
 
 As of 2026-10-09, the owner-approved Model D policy makes serial optional continuity evidence and
-supersedes older operational conclusions that a null serial blocks JA11 use or mutation. Production
-source `1d19067c9150aae1b09e01fafb8af3647bf65f71` passes local qualification, the API 35 emulator
-gate, independent review, and all eight CI checks on that app-source SHA; its exact diagnostic APK
-provenance is verified. The exact live PR-head checks must pass on the documentation/helper
-successor before the phone-window report. Candidate and rollback artifact pins pass host-only
-verification. No physical Model D result exists. J024 remains the latest physical read-only session
-and J020 the latest mutation; their recorded device observations remain unchanged. Mic Off is the
-last verified value and Mic On restoration is outstanding.
+supersedes older conclusions that a null serial blocks JA11 use or mutation. Exact candidate source
+`1d19067c9150aae1b09e01fafb8af3647bf65f71` passed its read-only JA11 identity gate and completed
+the authorized physical session recorded below. One Flash from Off failed band 1 volatile readback
+before Save. The app was rolled back to the prior diagnostic APK, the original active program and
+other captured state were restored and read back, evidence was saved, and the Pixel was released.
+Mic On and UAC 2.0 are the latest verified values in that session.
+
+The new software correction is source `92c11fb0e41ae11b118b2e7bb105234d6606dbdb`. Flash and Reset
+select User 1 when needed and verify same-session program readback before band/gain writes; editor
+Apply checks User 1 immediately before writes. Focused/full local gates, helper fixtures, independent
+review, exact candidate artifact provenance, API 35 cold launch, and 64/64 source-matched Android
+tests pass. Exact-head PR #80 CI remains pending. This source has no physical result. After CI passes,
+the already-authorized session may continue only after the exact APK is installed/verified and the
+read-only JA11 current-session/cardinality/baseline gate passes.
 
 JA11 has historical physical Flash/Save/final-readback and observed reconnect/restoration passes on
 the exact J016/J017 candidates; explicit power-cycle retention and full hardware qualification
-remain pending. J020 is the latest mutation record and is an incomplete/negative
-restart-verification result on source `a78808443c71d688e0f338e96495847569fe12f7`; newer J021 is a
-read-only identity observation on a different candidate. One Mic On-to-Off command completed and
-the replacement session freshly read Mic Off, but the app did not emit restart-verifier events.
-USB permission arrived about 18.5 seconds after the request, and the replacement session's
-identity was unavailable even though that session was current. The last verified device state is
-Mic Off; restoration to the original Mic On state remains outstanding. J020 does not invalidate
-J016/J017's separate EQ evidence and does not qualify the v0.8.1 fix. Do not reuse its diagnostic
-APK, infer the identity failure's underlying cause, or make a public JA11 support claim.
+remain pending. J020 remains a historical incomplete/negative restart-verification result on source
+`a78808443c71d688e0f338e96495847569fe12f7`; newer J021 and J024 are read-only identity observations
+on different candidates. J020's last verified Mic Off state and outstanding restoration status
+were true at that earlier checkpoint; the later session below restored and verified Mic On. J020
+does not invalidate J016/J017's separate EQ evidence and does not qualify the v0.8.1 fix. Do not
+reuse its diagnostic APK, infer the identity failure's underlying cause, or make a public JA11
+support claim.
 
 The `0x17` global-gain codec correction remains proven by the official FiiO Control JA11 codec and
 historical physical evidence. J012 remains valid negative evidence for the superseded codec.
@@ -465,6 +469,57 @@ Host-only verification reconfirmed the Model D diagnostic APK SHA-256
 `ee0fe4fbfaae7b3f959d4122f0c21c128dffdf21d47586376ee383e2534ceb0d`; both report package
 `com.weekssa.opraeqforuapp.ja11diag`, version `0.8.0-ja11diag` / 11, one v2 signer with SHA-256
 `73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`, and the expected launchable
-activity. No Pixel, physical Android device, or JA11 was enumerated or contacted. The status-only
-documentation successor still requires its own exact-head CI pass before any phone-window request;
-physical acceptance and Mic restoration remain pending.
+activity. At this checkpoint no Pixel or JA11 had been contacted for Model D physical work; the
+later physical continuation is recorded below.
+
+## 2026-10-09 Model D physical continuation — pre-Save Flash failure, state restored
+
+Exact app source `1d19067c9150aae1b09e01fafb8af3647bf65f71`; diagnostic APK
+`opra-eq-ja11diag-0.8.0-source-1d19067c.apk`, SHA-256
+`23adf9f4955b056f110562362717c706767b7e3ecc50225c07439a3ff5c23711`; package
+`com.weekssa.opraeqforuapp.ja11diag`, version `0.8.0-ja11diag` / code `11`; debug signer SHA-256
+`73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`. The exact candidate passed
+the required read-only identity and baseline checks on the connected JA11 before mutation. Device
+serial is intentionally omitted.
+
+The Mic baseline was Off, so one Mic Off-to-On write was issued and fresh readback verified On. A
+UAC 2.0-to-1.0 operation and readback passed. The UAC 1.0-to-2.0 restore report was accepted and
+the device detached, but permission was granted after the 25-second operation deadline. The
+automatic verifier therefore timed out; a later new read-only session verified UAC 2.0. This is
+permission-timing inconclusive evidence, not a JA11 UAC failure. No uncertain mutation was replayed.
+
+Starting from program Off, one Flash was submitted. The trace shows five `0x15` band writes, then
+`0x17` global gain, then `0x16` User 1 selection and `0x18` Apply. Volatile readback failed at band
+1. The app stopped before persistent `0x19` Save; no retry was attempted. After the failure,
+read-only refresh showed User 1 active with a bank that did not match the target. This strongly
+supports the hypothesis that the data writes occurred before selecting the User 1 bank, but it does
+not prove the device's bank-selection semantics or rule out another device-side cause. Do not
+describe this as a Save/persistence failure.
+
+The original Off program was restored through the normal selector and freshly verified. Final
+captured state was volume 30, Mic On, Off, UAC 2.0, 384 kHz, global gain `-3.7 dB`, and the original
+flat five-band snapshot. The temporary profile was removed, the exact previous diagnostic APK was
+restored and verified, log capture stopped, wireless ADB disconnected, and the Pixel was released.
+Evidence is retained privately at
+`/private/tmp/ja11-v0.8.1-acceptance-61695803/owner-phone-session-20261009T161940Z-model-d-resume/`.
+
+## 2026-10-09 User 1 ordering correction — exact software candidate, no physical result
+
+Application source `92c11fb0e41ae11b118b2e7bb105234d6606dbdb`; diagnostic APK
+`opra-eq-ja11diag-0.8.0-source-92c11fb0.apk`, SHA-256
+`ce3f417f20c275fd4d535cf5e70f658d8430af8fdd3f87ea950705fbfd574637`; package
+`com.weekssa.opraeqforuapp.ja11diag`, version `0.8.0-ja11diag` / code `11`; debug signer SHA-256
+`73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`.
+
+G2/G3/G3a pass: 32 focused Flasher tests; 861 JVM tests with zero failures, errors, or skips; lint,
+debug/release/diagnostic and Android-test compile/assembly, R8, helper syntax and fake-ADB fixtures.
+Independent app-source and helper reviews found no actionable defect. Host verification confirmed
+the APK hash, package/version, v2 signature, signer, and BuildConfig source SHA. On isolated API 35
+AVD `ja11-v081-api35-clean-20261008`, the exact diagnostic APK cold-launched and its runtime event
+reported the matching source SHA. The source-matched debug instrumentation suite passed 64/64 with
+zero failures or skips. Private emulator evidence is at `/private/tmp/ja11-v0.8.1-order-92c11fb0/`.
+
+This record is software/emulator evidence only. The Pixel was not queried for this gate. Exact-head
+PR #80 CI is pending. No JA11 hardware capability is qualified by this candidate yet; use the
+already-authorized physical plan only after its exact-head CI passes and the new candidate's
+read-only session/cardinality/baseline gate succeeds.

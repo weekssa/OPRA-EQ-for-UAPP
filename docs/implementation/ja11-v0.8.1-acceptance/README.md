@@ -10,13 +10,14 @@ both sessions provide usable serials; mismatch fails closed. Without serial, suc
 verified on the sole returning JA11, not that the same physical unit was proven. Uncertain writes
 are never replayed.
 
-J020 remains the latest mutation and Mic Off the last verified value; restoring original Mic On is
-outstanding. J024 was a read-only test of the prior candidate: both Android serial readers returned
-null, and no write occurred. That historical observation does not block Model D, and that APK must
-not be repeated. Finish all off-phone gates, freeze and verify the exact candidate, then request
-**PHONE WINDOW READY — PIXEL + JA11 NEEDED** with the source/APK hashes, tests, expected writes and
-resets, Android permission interaction, occupancy, pass/fail conditions, and restoration obligations.
-Wait for a fresh explicit confirmation before any physical command.
+The latest physical session used source `1d19067c` and passed the Model D read-only session gate.
+It restored Mic Off-to-On. UAC 2.0 was freshly verified after a permission-timing timeout. One
+Flash from Off failed band 1 before Save after writing bands/gain before selecting User 1; the
+captured original program/settings were restored, the previous diagnostic APK was verified, and the
+Pixel was released. The new write-order source `92c11fb0` has passed local, emulator, helper, and
+independent-review gates. Exact-head PR CI remains pending. Do not use the Pixel until those checks
+pass; existing owner authorization covers the prepared plan, so do not request another confirmation
+unless the phone is unavailable or scope changes.
 
 ## J020 diagnostic candidate — superseded; do not install again
 
@@ -81,34 +82,39 @@ tree `fdb6c8d10c8aa865da1a4818d22a7c14b2559b21`.
   J024 then showed that this candidate cannot establish the required identity. The software results
   do not establish JA11 hardware acceptance, and this APK must not be repeated for the same test.
 
-## Current Model D candidate — off-phone qualification
+## Current User 1 ordering candidate — off-phone qualification
 
-The source-bound diagnostic APK's artifact bytes, package, version, signer, and embedded source SHA
-are verified. The exact APK cold-launched on the isolated API 35 AVD and emitted matching
-`APP_BUILD_INFO`; all 64 applicable instrumentation tests passed against the same production source
-snapshot's debug test variant. All eight checks pass on the app-source commit and on docs/helper PR
-head `69076094811c13365bafecb9a1e0cf50be8d14f0`. That head's first UI attempt exposed a Nexus
-Launcher ANR/focus outage; the targeted retry passed 64/64 with no failures, errors, or skips. A
-status-only docs successor follows this checkpoint and must have its own 8/8 exact-head check before
-the physical candidate is frozen. Candidate and rollback APK pins were reverified host-only; no
-Pixel or Android device was enumerated.
+Production source `92c11fb0e41ae11b118b2e7bb105234d6606dbdb` selects User 1 when necessary, confirms
+the selection in the same current session, then writes bands/gain. Reset uses the same pre-write
+gate; editor Apply verifies User 1 immediately before data writes. If selection/readback is uncertain,
+the operation stops before any band/gain/Apply/Save command. The correction is strongly motivated by
+the prior physical trace but JA11 bank semantics still require physical requalification.
 
-- Production source commit/tree: `1d19067c9150aae1b09e01fafb8af3647bf65f71` /
-  `e108d58a6863e594a6dadbc0d2f4fb745583c5a3`.
-- Diagnostic APK: `opra-eq-ja11diag-0.8.0-source-1d19067c.apk`.
-- APK SHA-256: `23adf9f4955b056f110562362717c706767b7e3ecc50225c07439a3ff5c23711`.
+- Diagnostic APK: `opra-eq-ja11diag-0.8.0-source-92c11fb0.apk`.
+- APK SHA-256: `ce3f417f20c275fd4d535cf5e70f658d8430af8fdd3f87ea950705fbfd574637`.
 - Package/version/code: `com.weekssa.opraeqforuapp.ja11diag`, `0.8.0-ja11diag` / `11`.
 - Debug signer certificate SHA-256: `73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`; APK v2 signature verified.
-- Private APK and sidecar: `/private/tmp/ja11-v0.8.1-model-d-1d19067c/`.
-- PR #80 is open and draft. The last checked docs/helper head before this status update is
-  `69076094811c13365bafecb9a1e0cf50be8d14f0`, with all eight checks green, including the UI retry.
-  The exact live head must remain 8/8 green before a phone window; checks on earlier heads do not
-  qualify the final PR state.
+- G2/G3/G3a local gates pass, including 861 JVM tests, lint, debug/release/diagnostic builds,
+  Android-test compile/assembly, R8, and helper fixtures. Independent app/helper reviews found no
+  actionable issue.
+- The exact APK cold-launched on isolated API 35 AVD `ja11-v081-api35-clean-20261008`; runtime
+  build info reported the exact source SHA. Source-matched debug instrumentation passed 64/64 with
+  no failures or skips. No phone ADB target was queried.
+- Exact-head PR #80 CI is pending on the current push; prior-head results do not qualify this source.
+- Private APK and emulator evidence: `/private/tmp/ja11-v0.8.1-order-92c11fb0/`.
 
-The helper below pins this candidate's source and APK hashes plus the verified J024 base APK as
-the prior-installed and rollback artifact. Reverify those pins against the private sidecar before
-any later phone window. Do not run the helper's `install` or `rollback` actions until the final
-phone-window confirmation and all exact-candidate gates pass.
+## Previous Model D candidate — physical baseline only
+
+Source `1d19067c9150aae1b09e01fafb8af3647bf65f71` and APK SHA-256
+`23adf9f4955b056f110562362717c706767b7e3ecc50225c07439a3ff5c23711` were used in the prior
+authorized physical session. That candidate's Mic restore passed, UAC restore was permission-timing
+inconclusive, and Flash from Off failed before Save. It was rolled back and must not be retested.
+All eight checks on its then-current head are historical and do not qualify source `92c11fb0`.
+
+The helper below pins source `92c11fb0` and its APK SHA plus the verified prior-installed/rollback
+APK. Reverify all pins against the private sidecar before use. After exact-head CI passes, the
+existing owner authorization permits installation and read-only identity/session verification. Do
+not send any hardware write until that gate passes.
 
 The private candidate sidecar `CANDIDATE.md` records the local APK location and exact provenance.
 Emulator logs/screenshots and future phone evidence remain in private temporary directories; this

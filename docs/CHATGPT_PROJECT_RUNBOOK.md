@@ -1091,3 +1091,31 @@ Do not install the candidate, read JA11 identity, or perform a physical write un
 owner phone-window confirmation. If granted later, begin with candidate verification and a read-only
 full baseline; if Mic is Off, restore Mic On as the first mutation with expected-reset handling and
 authoritative post-reconnect readback.
+
+## 2026-10-09 JA11 User 1 write-order correction — current candidate gates
+
+The current application source is `92c11fb0e41ae11b118b2e7bb105234d6606dbdb`, after merging latest
+`origin/main` `7cbef435f2417381ed967d262574d7f5d1ba188b`. It selects and verifies User 1 in the same
+current session before JA11 Flash/Reset writes any bands or global gain; editor Apply checks User 1
+immediately before data writes. If selection/readback is uncertain, stop before data writes, Apply,
+or Save. The previous exact candidate's Flash from Off failed band 1 before Save after sending band
+and gain writes before selecting User 1. This supports but does not prove device-side bank semantics.
+
+The exact diagnostic APK SHA-256 is
+`ce3f417f20c275fd4d535cf5e70f658d8430af8fdd3f87ea950705fbfd574637`; package/version is
+`com.weekssa.opraeqforuapp.ja11diag`, `0.8.0-ja11diag` / 11, with the verified debug signer. G2/G3/G3a,
+independent app/helper reviews, host artifact provenance, isolated API 35 cold launch with matching
+runtime source SHA, and 64/64 source-matched debug instrumentation pass. Exact-head PR #80 CI is
+pending. The Pixel was not queried during this candidate's off-phone gates.
+
+After every required check passes on the exact pushed PR head, continue under the owner's already
+granted testing authorization; do not request another confirmation unless device availability or
+scope changes. Install and verify this exact diagnostic candidate, run the read-only JA11
+current-session/cardinality/complete-baseline gate first, and stop before writes if it is not
+complete. Under the current owner-approved Model D decision, serial status is optional; preserve
+exact supported-device, single-candidate, permission, session-generation, expected-detach,
+authoritative-readback, and no-replay requirements. If Mic is Off, restore Mic On first; if it is
+already On, skip that mutation. The public stable v0.8.0 app is not the physical test candidate.
+
+This candidate checkpoint does not authorize merging, publishing, or making a new public JA11
+support claim.
