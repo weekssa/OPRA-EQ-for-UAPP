@@ -1,17 +1,18 @@
 # JA11 v0.8.1 Mission State
 
-As of 2026-10-10. This snapshot applies to the clean implementation branch. Historical physical outcomes remain append-only in the validation ledger.
+As of 2026-10-10. This snapshot applies to release closeout after PR #81 merge. Historical physical outcomes remain append-only in the validation ledger.
 
 ## Candidate and repository
 
 - Repository: `weekssa/OPRA-EQ-for-UAPP`
-- Worktree: `/Users/stephenweeks/.codex/worktrees/ja11-v081-minimal/OPRA-EQ-for-UAPP`
-- Branch: `codex/ja11-v0.8.1-minimal`
-- Branch base at creation: `9b9a1f610025b3d6233d4ff6f0c2309a668577cc`.
+- Current release-preparation worktree: `/Users/stephenweeks/.codex/worktrees/v081-release-prep/OPRA-EQ-for-UAPP`
+- Current release-preparation branch: `codex/v0.8.1-release-notes`, based on merged main `574413091cdfd819387388e501f74b11a2324639`.
+- PR #81 head `4aca1177ac9683d3e51f8219380daf3fb789fe30` merged to main as `574413091cdfd819387388e501f74b11a2324639`. All eight required checks passed on the exact PR head. The merge-commit CI was still running at this snapshot and must pass before candidate dispatch.
 - Frozen production and JA11 transaction source SHA: `9493cf030acb440f92e547fc667f6a5399616045`.
 - Diagnostic report implementation commit: `fc409b7d038632e67dccdeccbd5144f3d3b53bdd` (`Add diagnostic JA11 Flash report access`); it adds only diagnostic application/activity/resources and a diagnostic-only test source set. No `app/src/main` file changed.
-- J029 physical evidence is tied to PR [#81](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/81) head `78deeddd2cce65c22a98fce7e288a608ceb813fd`; all eight required checks passed on that exact head before the run. The subsequent closeout commit is documentation-only and does not alter the tested executable candidate.
-- PR #80 remains open/draft/unmerged as historical evidence; it was not changed.
+- J029 physical evidence is tied to PR [#81](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/81) tested head `78deeddd2cce65c22a98fce7e288a608ceb813fd`; all eight required checks passed on that exact head before the run. Later PR #81 and merge commits changed no `app/src/main` file and do not alter the tested JA11 transaction implementation.
+- PR #80 remains open/draft as historical evidence while v0.8.1 release preparation is completed. Its branch and evidence remain preserved.
+- Public stable/latest remains v0.8.0. At this snapshot no v0.8.1 signed candidate, stable tag, or release exists.
 
 ## Diagnostic-only report access
 
@@ -56,4 +57,4 @@ J028 remains a separate earlier record: Mic was already On, UAC 2.0→1.0→2.0 
 
 ## Exact next action
 
-Continue from `JA11_V081_COMPACT_HANDOFF.md`. Do not use the Pixel or JA11 again for Test C without a concrete invalidation and a new owner-confirmed window. The current phone session is released; remaining work is documentation/PR governance and owner-controlled merge/publication decisions.
+Finish the documentation-only release-preparation PR. Require green checks on its exact head and on the resulting exact main commit before dispatching the main-only Signed Release Candidate workflow for `v0.8.1`. Then verify the signed artifact and run the authorized non-phone API 35 clean-install and v0.8.0 in-place-upgrade checks. Do not use the Pixel or JA11, and stop before creating a public tag or release.

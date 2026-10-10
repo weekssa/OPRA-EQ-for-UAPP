@@ -43,6 +43,10 @@ The 2026-10-08 refresh identified 56 open transitive Maven alerts in build/test 
 
 Status: **v0.8.0 is the current stable/latest release.** The beta remains an immutable historical prerelease. Full candidate, promotion, upgrade, artifact, and public-byte evidence is preserved in `docs/release-engineering/v0.8.0-stable/` and the local review bundle.
 
+## v0.8.1 release preparation — not published
+
+PR #81 is merged as `574413091cdfd819387388e501f74b11a2324639`; its final PR head passed all eight required checks. JA11 physical acceptance J029 remains valid for its exact diagnostic APK and unchanged production transaction source. Versioned v0.8.1 notes are drafted; the signed candidate and API 35 install/upgrade verification remain outstanding. No v0.8.1 stable tag or release exists. The v0.8.0 release above remains the current public stable/latest release. Candidate signing may proceed only from finalized `main`; stop before tag creation or publication pending owner approval.
+
 ## Historical v0.7.1 release closeout
 
 - [x] Public release [v0.7.1](https://github.com/weekssa/OPRA-EQ-for-UAPP/releases/tag/v0.7.1) is published, non-draft, non-prerelease, and returned by `/releases/latest`.
@@ -68,7 +72,7 @@ Status: **Published under the owner's conditional approval; all merge, candidate
 
 ## v0.7.2 release closeout — historical previous stable
 
-The v0.7.2 public release is latest. It uses versionName `0.7.2`, versionCode `9`, package `com.weekssa.opraeqforuapp`, and source commit `b8e90b9b53fc63ea00fefa499d7d4bd6ce4d55ea`.
+At the time of its publication, v0.7.2 was the latest public release. It uses versionName `0.7.2`, versionCode `9`, package `com.weekssa.opraeqforuapp`, and source commit `b8e90b9b53fc63ea00fefa499d7d4bd6ce4d55ea`.
 
 - [x] Startup catalog, dense DSP response, EW300 persistence, and existing support boundaries are covered by the release notes and regression evidence. Strict imported filter-gain validation predates v0.7.2; its earlier release-note claim is corrected in the post-release erratum below.
 - [x] PR #65 product changes merged at `a60411bebfdbd1cea4218d3bde45013bb7ed26a9`; PR #66 fixed the digest comparison and merged normally at exact release source `b8e90b9b53fc63ea00fefa499d7d4bd6ce4d55ea`.
