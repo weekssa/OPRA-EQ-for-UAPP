@@ -11,9 +11,9 @@
 
 ## Branch and PR
 
-- Repository: `weekssa/OPRA-EQ-for-UAPP`; release-preparation branch: `codex/v0.8.1-release-notes`.
+- Repository: `weekssa/OPRA-EQ-for-UAPP`; current closeout branch: `codex/v0.8.1-candidate-closeout`, based on main `b6af9178bbeb07bd4e0d321f08ffec94e4df907b`.
 - PR #81 head `4aca1177ac9683d3e51f8219380daf3fb789fe30` merged as `574413091cdfd819387388e501f74b11a2324639`; all eight required checks passed on that exact PR head. Its tested physical predecessor was `78deeddd2cce65c22a98fce7e288a608ceb813fd`. Diagnostic code commit: `fc409b7d038632e67dccdeccbd5144f3d3b53bdd` (`Add diagnostic JA11 Flash report access`). No `app/src/main` file changed after the accepted transaction source.
-- Exact merge-commit CI was still running at this snapshot. Public stable/latest remains v0.8.0; no v0.8.1 candidate, tag, or release exists yet.
+- PR #82 prepared the release notes and synchronized closeout docs. Its exact head `497018cb017a97a6d5620318acf5ed609f3f0092` passed required checks and merged as `b6af9178bbeb07bd4e0d321f08ffec94e4df907b`; exact-main workflows on that merge were running at this snapshot. Public stable/latest remains v0.8.0; no v0.8.1 candidate, tag, or release exists yet.
 - PR #80 remains open/draft as historical evidence until v0.8.1 release preparation is complete. Preserve its branch and evidence.
 
 ## Exact production SHA and APK SHA
@@ -64,4 +64,4 @@
 
 ## Exact next action
 
-No further phone or JA11 action. Finish the documentation-only release-preparation PR, wait for green exact-head and resulting exact-main checks, then dispatch only the Signed Release Candidate workflow for `v0.8.1`. Verify the signed artifact and API 35 upgrade/clean-install results. Stop before any public tag or release. Do not replay Flash to reconstruct J028 evidence or repeat J029 without a concrete invalidation.
+No further phone or JA11 action. Finish this documentation-only handoff update; after it merges, require green checks on its exact head and resulting exact main commit. Then dispatch only the Signed Release Candidate workflow for `v0.8.1`, verify the signed artifact, and pass API 35 upgrade/clean-install checks. Stop before any public tag or release. Do not replay Flash to reconstruct J028 evidence or repeat J029 without a concrete invalidation.

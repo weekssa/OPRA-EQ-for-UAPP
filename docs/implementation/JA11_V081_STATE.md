@@ -6,8 +6,9 @@ As of 2026-10-10. This snapshot applies to release closeout after PR #81 merge. 
 
 - Repository: `weekssa/OPRA-EQ-for-UAPP`
 - Current release-preparation worktree: `/Users/stephenweeks/.codex/worktrees/v081-release-prep/OPRA-EQ-for-UAPP`
-- Current release-preparation branch: `codex/v0.8.1-release-notes`, based on merged main `574413091cdfd819387388e501f74b11a2324639`.
-- PR #81 head `4aca1177ac9683d3e51f8219380daf3fb789fe30` merged to main as `574413091cdfd819387388e501f74b11a2324639`. All eight required checks passed on the exact PR head. The merge-commit CI was still running at this snapshot and must pass before candidate dispatch.
+- Current release-preparation branch: `codex/v0.8.1-candidate-closeout`, based on merged main `b6af9178bbeb07bd4e0d321f08ffec94e4df907b`.
+- PR #81 head `4aca1177ac9683d3e51f8219380daf3fb789fe30` merged to main as `574413091cdfd819387388e501f74b11a2324639`. All eight required checks passed on the exact PR head; exact-main CI passed after one emulator-focus job retry on the same SHA.
+- PR #82 added the v0.8.1 release notes and synchronized closeout documentation; it merged as `b6af9178bbeb07bd4e0d321f08ffec94e4df907b`. Its exact-head Android CI, CodeQL, and dependency checks passed. Exact-main CI for that merge was running at this snapshot.
 - Frozen production and JA11 transaction source SHA: `9493cf030acb440f92e547fc667f6a5399616045`.
 - Diagnostic report implementation commit: `fc409b7d038632e67dccdeccbd5144f3d3b53bdd` (`Add diagnostic JA11 Flash report access`); it adds only diagnostic application/activity/resources and a diagnostic-only test source set. No `app/src/main` file changed.
 - J029 physical evidence is tied to PR [#81](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/81) tested head `78deeddd2cce65c22a98fce7e288a608ceb813fd`; all eight required checks passed on that exact head before the run. Later PR #81 and merge commits changed no `app/src/main` file and do not alter the tested JA11 transaction implementation.
@@ -57,4 +58,4 @@ J028 remains a separate earlier record: Mic was already On, UAC 2.0→1.0→2.0 
 
 ## Exact next action
 
-Finish the documentation-only release-preparation PR. Require green checks on its exact head and on the resulting exact main commit before dispatching the main-only Signed Release Candidate workflow for `v0.8.1`. Then verify the signed artifact and run the authorized non-phone API 35 clean-install and v0.8.0 in-place-upgrade checks. Do not use the Pixel or JA11, and stop before creating a public tag or release.
+Finish this documentation-only closeout update through its exact-head CI. Then require green CI on the resulting final main commit before dispatching the main-only Signed Release Candidate workflow for `v0.8.1`. Verify the signed artifact and run the authorized non-phone API 35 clean-install and v0.8.0 in-place-upgrade checks. Do not use the Pixel or JA11, and stop before creating a public tag or release.

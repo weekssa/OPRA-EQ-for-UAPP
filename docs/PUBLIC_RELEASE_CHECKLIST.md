@@ -45,7 +45,7 @@ Status: **v0.8.0 is the current stable/latest release.** The beta remains an imm
 
 ## v0.8.1 release preparation — not published
 
-PR #81 is merged as `574413091cdfd819387388e501f74b11a2324639`; its final PR head passed all eight required checks. JA11 physical acceptance J029 remains valid for its exact diagnostic APK and unchanged production transaction source. Versioned v0.8.1 notes are drafted; the signed candidate and API 35 install/upgrade verification remain outstanding. No v0.8.1 stable tag or release exists. The v0.8.0 release above remains the current public stable/latest release. Candidate signing may proceed only from finalized `main`; stop before tag creation or publication pending owner approval.
+PR #81 is merged as `574413091cdfd819387388e501f74b11a2324639`; release-notes PR #82 is merged as `b6af9178bbeb07bd4e0d321f08ffec94e4df907b`. Both exact PR heads passed their required checks. JA11 physical acceptance J029 remains valid for its exact diagnostic APK and unchanged production transaction source. Versioned v0.8.1 notes are on main; the signed candidate and API 35 install/upgrade verification remain outstanding. No v0.8.1 stable tag or release exists. The v0.8.0 release above remains the current public stable/latest release. Candidate signing may proceed only from finalized `main`; stop before tag creation or publication pending owner approval.
 
 ## Historical v0.7.1 release closeout
 
