@@ -7,31 +7,36 @@ This checklist preserves prior physical evidence. The executable procedure remai
 [`JA11_V081_GATE_MATRIX.md`](implementation/JA11_V081_GATE_MATRIX.md), and
 [`ja11-v0.8.1-acceptance/PHONE-PLAN.md`](implementation/ja11-v0.8.1-acceptance/PHONE-PLAN.md).
 
-The clean implementation branch `codex/ja11-v0.8.1-minimal` is based on
+The clean implementation branch `codex/ja11-v0.8.1-minimal` is at open/draft PR #81, based on
 `9b9a1f610025b3d6233d4ff6f0c2309a668577cc`, with frozen production source
-`9493cf030acb440f92e547fc667f6a5399616045`. Local G1-G7 pass, including seven production Android
-USB-session Robolectric tests and 768 JVM tests. Fresh independent review and exact-head CI on the
-revised PR #81 head remain pending. The host-verified diagnostic APK SHA-256 is
-`98ee2eb876ec0d6d5bcfcebebdf55e1c77f2f7edfbecfd59322a94e5feea48ae`; package
+`9493cf030acb440f92e547fc667f6a5399616045`. Diagnostic-only report access is implemented in
+`ja11Diagnostic`; local lint, assembly, and focused API 35 instrumentation pass (4/4). Verify all
+required CI checks on the live exact PR head before physical work. Independent review confirms the
+corrected Mic restoration procedure.
+The diagnostic APK SHA-256 is
+`44040493c7263ae7d7e6f41be7389534d07977427cc8002494097fbf3c868848`; package
 `com.weekssa.opraeqforuapp.ja11diag`, version `0.8.1-ja11diag` / code `12`, signer certificate
-SHA-256 `73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`. It embeds the source
-SHA and was host-verified, clean-installed, and cold-launched on the isolated API 35 emulator.
-PR #80 remains open and historical.
+SHA-256 `73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`. The new APK has not
+been used with Pixel or JA11. PR #80 remains open, draft, and historical.
 
-J027 is partial physical evidence on source `9493cf030acb440f92e547fc667f6a5399616045`, prior
-PR #81 head `2e81dc99f4335aaa70645fad33adb391626e7cdc`, and the APK above. It records Mic already On,
-a successful UAC round trip with fresh readback, and a matching fresh User 1 readback after one Flash
-action from Off. The transaction report expired before capture, so wire-level Save count is not
-established; Test D was not run, and cleanup/restoration/release were not verified. Do not relabel J027
-to the revised PR head. Current live phone/DAC state is unknown.
+J027 remains a partial earlier physical record. J028 completed the resumed session on the same
+production source and byte-identical APK. The physical session began under PR #81 head
+`2e81dc99f4335aaa70645fad33adb391626e7cdc`; the later current head has no `app/src/main` runtime
+diff, but do not relabel the original session start to the later PR head. J028 verified one supported
+JA11 session, Mic already On, the UAC round trip, and a Test D volume/program return from 20/Off to
+60/User 1 after owner power removal. The final full baseline was restored, the temporary profile
+was removed, and the Pixel was released. The Flash fresh readback matched the baseline, but its
+transaction report was not captured; Save count is unverified and Test C remains incomplete.
 
-The owner reported the Pixel + JA11 window ready on 2026-10-10. Begin the prepared physical session
-only after the exact candidate tuple is reported and all off-phone gates pass. Start with candidate
-verification and a read-only full baseline, restore Mic to On first only if the baseline reads Off,
-then perform the prepared UAC and single-Flash sequence, only still-required full-power observations,
-complete baseline restoration, evidence capture, and prompt Pixel release. Serial remains optional
-continuity evidence under Model D; compare it when both sessions have usable serials and reject
-mismatch. Without matching serial evidence, do not claim same-unit proof.
+The J028 phone window is closed. Do not resume its physical session or repeat Flash to recover the
+missing report. An off-phone scan of 133 original J028 capture files found no report artifact or
+structured Save-count field, so Test C remains incomplete. Existing Mic/UAC/power-cycle results stay
+attributed to their exact historical source/APK; the diagnostic-only UI change does not invalidate
+them. The owner's official FiiO app behavior observation is recorded in the
+[capability matrix](FIIO_JA11_CAPABILITY_MATRIX.md) and [validation ledger](FIIO_JA11_VALIDATION_LEDGER.md)
+as reference evidence only, not packet proof. Model D keeps serial optional and permits only a
+single-supported-candidate/readback claim without matching serial evidence. Do not use Pixel until
+the exact diagnostic candidate gates pass and a new Test C phone window is confirmed.
 
 ### Preserved prior physical result — J026
 
