@@ -11,9 +11,10 @@
 
 ## Branch and PR
 
-- Repository: `weekssa/OPRA-EQ-for-UAPP`; branch: `codex/ja11-v0.8.1-minimal`.
-- J029 physical evidence is tied to PR #81 head `78deeddd2cce65c22a98fce7e288a608ceb813fd`; all eight required checks passed on that head before the run. Diagnostic code commit: `fc409b7d038632e67dccdeccbd5144f3d3b53bdd` (`Add diagnostic JA11 Flash report access`). The subsequent closeout commit is documentation-only and leaves the tested executable candidate unchanged.
-- PR #80 remains open/draft/unmerged as historical evidence and is unchanged.
+- Repository: `weekssa/OPRA-EQ-for-UAPP`; release-preparation branch: `codex/v0.8.1-release-notes`.
+- PR #81 head `4aca1177ac9683d3e51f8219380daf3fb789fe30` merged as `574413091cdfd819387388e501f74b11a2324639`; all eight required checks passed on that exact PR head. Its tested physical predecessor was `78deeddd2cce65c22a98fce7e288a608ceb813fd`. Diagnostic code commit: `fc409b7d038632e67dccdeccbd5144f3d3b53bdd` (`Add diagnostic JA11 Flash report access`). No `app/src/main` file changed after the accepted transaction source.
+- Exact merge-commit CI was still running at this snapshot. Public stable/latest remains v0.8.0; no v0.8.1 candidate, tag, or release exists yet.
+- PR #80 remains open/draft as historical evidence until v0.8.1 release preparation is complete. Preserve its branch and evidence.
 
 ## Exact production SHA and APK SHA
 
@@ -51,7 +52,8 @@
 ## Remaining release-critical tests
 
 - Test C is complete for the recorded J029 tuple. No Mic, UAC, volume, power-cycle, or Flash rerun is required.
-- Keep merge, publication, general persistence claims, and public support as separate owner-controlled gates.
+- Finish exact-main checks and documentation-only release-prep PR checks; build and verify the signed v0.8.1 candidate from finalized main; pass API 35 v0.8.0 upgrade and clean-install validation; complete exact artifact/provenance review.
+- Public tag/release publication, general persistence claims, and public support remain separate owner-controlled gates.
 
 ## Gate invalidation rules
 
@@ -62,4 +64,4 @@
 
 ## Exact next action
 
-No further phone or JA11 action. Next, review PR #81 and decide whether to approve merge; do not merge or publish without explicit owner approval. Do not replay Flash to reconstruct J028 evidence or repeat J029 without a concrete invalidation.
+No further phone or JA11 action. Finish the documentation-only release-preparation PR, wait for green exact-head and resulting exact-main checks, then dispatch only the Signed Release Candidate workflow for `v0.8.1`. Verify the signed artifact and API 35 upgrade/clean-install results. Stop before any public tag or release. Do not replay Flash to reconstruct J028 evidence or repeat J029 without a concrete invalidation.
