@@ -1,30 +1,37 @@
 # FiiO JA11 hands-on qualification
 
-## Current clean-branch status — 2026-10-09
+## Current clean-branch status — 2026-10-10
 
-This checklist preserves prior physical evidence. It is not the current executable procedure. The
-current off-phone gates and authorized physical procedure are maintained in
+This checklist preserves prior physical evidence. The executable procedure remains in
 [`JA11_V081_STATE.md`](implementation/JA11_V081_STATE.md),
 [`JA11_V081_GATE_MATRIX.md`](implementation/JA11_V081_GATE_MATRIX.md), and
 [`ja11-v0.8.1-acceptance/PHONE-PLAN.md`](implementation/ja11-v0.8.1-acceptance/PHONE-PLAN.md).
 
 The clean implementation branch `codex/ja11-v0.8.1-minimal` is based on
 `9b9a1f610025b3d6233d4ff6f0c2309a668577cc`, with frozen production source
-`9493cf030acb440f92e547fc667f6a5399616045`. G1-G8 and G11 pass. The exact diagnostic APK SHA-256
-is `98ee2eb876ec0d6d5bcfcebebdf55e1c77f2f7edfbecfd59322a94e5feea48ae`; package
+`9493cf030acb440f92e547fc667f6a5399616045`. Local G1-G7 pass, including seven production Android
+USB-session Robolectric tests and 768 JVM tests. Fresh independent review and exact-head CI on the
+revised PR #81 head remain pending. The host-verified diagnostic APK SHA-256 is
+`98ee2eb876ec0d6d5bcfcebebdf55e1c77f2f7edfbecfd59322a94e5feea48ae`; package
 `com.weekssa.opraeqforuapp.ja11diag`, version `0.8.1-ja11diag` / code `12`, signer certificate
-SHA-256 `73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`. The exact APK embeds
-the source SHA and clean-installed/cold-launched on the isolated API 35 emulator. Required exact-head
-CI and the PR-head portion of the tuple remain pending. No Pixel, JA11, or physical-device command
-has been run on this branch. PR #80 remains open and historical.
+SHA-256 `73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`. It embeds the source
+SHA and was host-verified, clean-installed, and cold-launched on the isolated API 35 emulator.
+PR #80 remains open and historical.
 
-Do not access the Pixel until the exact candidate tuple and all off-phone gates are reported and the
-owner confirms a fresh phone window. In that single session, follow `PHONE-PLAN.md`: verify the
-candidate, take a complete read-only baseline, restore Mic to On first only if the baseline reads
-Off, run the prepared UAC and one-Flash sequence, perform only still-required full-power
-volume/program observations, restore the complete baseline, capture sufficient evidence, and release
-the Pixel. Serial is optional continuity evidence under Model D; compare it when both sessions have
-usable serials and reject mismatch. Without matching serial evidence, do not claim same-unit proof.
+J027 is partial physical evidence on source `9493cf030acb440f92e547fc667f6a5399616045`, prior
+PR #81 head `2e81dc99f4335aaa70645fad33adb391626e7cdc`, and the APK above. It records Mic already On,
+a successful UAC round trip with fresh readback, and a matching fresh User 1 readback after one Flash
+action from Off. The transaction report expired before capture, so wire-level Save count is not
+established; Test D was not run, and cleanup/restoration/release were not verified. Do not relabel J027
+to the revised PR head. Current live phone/DAC state is unknown.
+
+The owner reported the Pixel + JA11 window ready on 2026-10-10. Begin the prepared physical session
+only after the exact candidate tuple is reported and all off-phone gates pass. Start with candidate
+verification and a read-only full baseline, restore Mic to On first only if the baseline reads Off,
+then perform the prepared UAC and single-Flash sequence, only still-required full-power observations,
+complete baseline restoration, evidence capture, and prompt Pixel release. Serial remains optional
+continuity evidence under Model D; compare it when both sessions have usable serials and reject
+mismatch. Without matching serial evidence, do not claim same-unit proof.
 
 ### Preserved prior physical result — J026
 

@@ -11,7 +11,14 @@ FAKE_APKSIGNER="$TMP_ROOT/apksigner"
 PREVIOUS_APK="$TMP_ROOT/previous.apk"
 CANDIDATE_APK="$TMP_ROOT/candidate.apk"
 INSTALL_LOG="$TMP_ROOT/install.log"
+PULL_LOG="$TMP_ROOT/pull.log"
 INSTALLED_FLAG="$TMP_ROOT/installed.flag"
+mkdir -m 700 -p "$TMP_ROOT/bin"
+cat > "$TMP_ROOT/bin/date" <<'EOF'
+#!/usr/bin/env bash
+printf '20261010T000000Z\n'
+EOF
+chmod 700 "$TMP_ROOT/bin/date"
 
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
@@ -69,6 +76,7 @@ case "${1-}" in
     esac
     ;;
   pull)
+    printf '%s\n' "${3:?destination required}" >> "$JA11_TEST_PULL_LOG"
     if [[ -f "$JA11_TEST_INSTALLED_FLAG" ]]; then cp "$JA11_TEST_CANDIDATE_APK" "${3:?destination required}"
     else cp "$JA11_TEST_PREVIOUS_APK" "${3:?destination required}"
     fi
@@ -129,10 +137,11 @@ run_install() {
   JA11_TEST_CANDIDATE_APK="$CANDIDATE_APK" \
   JA11_TEST_INSTALLED_FLAG="$INSTALLED_FLAG" \
   JA11_TEST_INSTALL_LOG="$INSTALL_LOG" \
-  "$HELPER" fixture install
+  JA11_TEST_PULL_LOG="$PULL_LOG" \
+  PATH="$TMP_ROOT/bin:$PATH" "$HELPER" fixture install
 }
 
-reset_fixture() { rm -f "$INSTALLED_FLAG" "$INSTALL_LOG"; }
+reset_fixture() { rm -f "$INSTALLED_FLAG" "$INSTALL_LOG" "$PULL_LOG"; }
 
 reset_fixture
 run_install absent "$TMP_ROOT/absent" > "$TMP_ROOT/absent.out" 2>&1 || fail "absent package did not clean install"
@@ -175,5 +184,17 @@ if run_install installed "$TMP_ROOT/signer-mismatch" 0.8.0-ja11diag "$PREVIOUS_S
 fi
 if [[ -s "$INSTALL_LOG" ]]; then fail "different installed signer reached adb install"; fi
 grep -Fq 'signers differ' "$TMP_ROOT/signer-mismatch.out" || fail "signer mismatch was not identified"
+
+reset_fixture
+COLLISION_DIR="$TMP_ROOT/backup-collision"
+mkdir -m 700 -p "$COLLISION_DIR"
+COLLISION_PATH="$COLLISION_DIR/previous-ja11diag-20261010T000000Z.apk"
+printf 'preserve this rollback copy\n' > "$COLLISION_PATH"
+if run_install installed "$COLLISION_DIR" > "$TMP_ROOT/backup-collision.out" 2>&1; then
+  fail "existing prior APK backup unexpectedly allowed update"
+fi
+grep -Fq 'Preserving existing prior APK backup' "$TMP_ROOT/backup-collision.out" || fail "backup path collision was not identified"
+grep -Fqx 'preserve this rollback copy' "$COLLISION_PATH" || fail "existing prior APK backup was overwritten"
+if [[ -s "$PULL_LOG" || -s "$INSTALL_LOG" ]]; then fail "backup path collision reached adb pull or install"; fi
 
 echo "phone-session install fixtures passed"

@@ -1,10 +1,10 @@
 # JA11 v0.8.1 physical acceptance plan
 
-Status: **blocked on exact-head CI, completion of the PR-head candidate tuple, and fresh owner confirmation**. This plan authorizes no current phone action. The verified source/APK pair is recorded in `../JA11_V081_STATE.md`; do not use it until the exact PR head and required CI are green.
+Status: **blocked on exact-head CI and completion of the PR-head candidate tuple**. The owner reported the Pixel + JA11 window ready on 2026-10-10; that confirmation is current, but physical action remains gated on the final off-phone report. The verified source/APK pair is recorded in `../JA11_V081_STATE.md`; refresh the live PR head and required CI before use.
 
 ## Candidate and window gate
 
-Before requesting the Pixel, finish G0-G11 in [the gate matrix](../JA11_V081_GATE_MATRIX.md), freeze the exact candidate tuple, and report **CLEAN v0.8.1 CANDIDATE READY**. Then send exactly `PHONE WINDOW READY — PIXEL + JA11 NEEDED` with the tuple, planned operations, expected duration, and restoration promise. Wait for the owner's confirmation.
+Before touching the Pixel, finish G0-G11 in [the gate matrix](../JA11_V081_GATE_MATRIX.md), freeze the exact candidate tuple, and report **CLEAN v0.8.1 CANDIDATE READY**. The owner has already supplied the requested fresh phone-window confirmation for this session; do not repeat the confirmation request after the report.
 
 No Pixel or ADB command is permitted before that confirmation. Use a private evidence directory with mode `700`; do not store device serials, fingerprints, screenshots, or raw reports in Git.
 

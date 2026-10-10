@@ -1,6 +1,6 @@
 # JA11 v0.8.1 Mission State
 
-As of 2026-10-09. This concise snapshot applies to the clean implementation branch. Historical physical outcomes remain append-only in the validation ledger.
+As of 2026-10-10. This concise snapshot applies to the clean implementation branch. Historical physical outcomes remain append-only in the validation ledger.
 
 ## Candidate and repository
 
@@ -11,7 +11,7 @@ As of 2026-10-09. This concise snapshot applies to the clean implementation bran
 - Frozen production source commit: `9493cf030acb440f92e547fc667f6a5399616045`. It follows the source implementation commit `32f1006fb1b1edbcba3b0470ed71772448e48886` only to correct the `applyEditorWorkingCopy` KDoc transaction order; no executable behavior changed in that final commit.
 - PR #80 remains open/draft/unmerged at head `5f471dfdce93c35f93a4632ca76ff729fcb58a6b`; it is preserved as historical evidence and has not been changed.
 - Draft PR [#81](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/81) is open for the clean candidate. Its live head and required-check results are authoritative; exact-head CI must pass before the candidate tuple is frozen.
-- The clean A-E implementation, focused regressions, helper correction, and maintained evidence updates are committed. The exact-source diagnostic APK is built and host-verified. No physical result transfers to this source.
+- The clean A-E production implementation is frozen at `9493cf030acb440f92e547fc667f6a5399616045`. This continuation adds real Android USB-session Robolectric regressions and a guarded helper backup-collision fix; those additions do not change production runtime behavior. The new local changes are being finalized for PR #81. The APK tuple below is an already host-verified exact-source artifact; physical outcomes remain tied to their recorded PR head and are not being relabelled.
 
 ## Scope and implementation status
 
@@ -31,16 +31,18 @@ The production diff is 420 insertions and 71 deletions across seven files (491 c
 | `ui/EqLibraryViewModel.kt` | A, E | Start expected-reset verification immediately and avoid a duplicate verifier when the connection collector sees the replacement session. |
 | `ui/FiioJa11DeviceUiState.kt` | A | Clear the pending reset-write record after failure so stale restart state cannot be reused. |
 
-G1-G7 pass on frozen production source `9493cf030acb440f92e547fc667f6a5399616045`: the focused JA11 regressions pass; the complete JVM suite reports 761 tests with zero failures, errors, or skips; lint, debug/release/diagnostic/Android-test assembly, R8 mapping verification, isolated API 35 instrumentation (64/64), and guarded helper fixtures pass. The required ten-question independent review and supplemental review both pass; the reviewer found no blocker. The exact diagnostic APK is `98ee2eb876ec0d6d5bcfcebebdf55e1c77f2f7edfbecfd59322a94e5feea48ae`, package `com.weekssa.opraeqforuapp.ja11diag`, version `0.8.1-ja11diag` / code `12`, signer certificate SHA-256 `73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`. Its DEX contains the source SHA; APK Signature Scheme v2 verifies and zip alignment passes. It was clean-installed and cold-launched on the disposable API 35 emulator. G9 exact-head CI and the PR-head part of G10 remain pending. G11 scope review passes. All emulator work used only `emulator-5554` on dedicated ADB port 5039; the emulator is shut down. No Pixel, JA11, or physical-device command has been run on this branch.
+Current local gates pass: focused JA11 plus Android USB-session regressions; 768 JVM tests with zero failures, errors, or skips; lint; debug/release/diagnostic/Android-test assembly; R8 mapping; and helper install fixtures. The Android session suite contains seven Robolectric tests against the production `AndroidKt02h20HidSession`. The earlier 64/64 isolated API 35 instrumentation result remains valid because the production source is unchanged; a later emulator rerun could not select the stopped AVD and was not redirected to the Pixel. G8 requires a fresh independent review of the revised tests/helper; G9 must be refreshed on the final live PR #81 head; G10 is not frozen until that head is known. G11 scope audit passes.
+
+The host-verified diagnostic APK is `98ee2eb876ec0d6d5bcfcebebdf55e1c77f2f7edfbecfd59322a94e5feea48ae`, package `com.weekssa.opraeqforuapp.ja11diag`, version `0.8.1-ja11diag` / code `12`, signer certificate SHA-256 `73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`. Its DEX contains source SHA `9493cf030acb440f92e547fc667f6a5399616045`; APK Signature Scheme v2 verifies and zip alignment passes. The APK clean-installed and cold-launched on the disposable API 35 emulator. The owner has reported the phone window ready, but no additional physical action begins until the final off-phone gates and exact tuple are reported.
 
 ## Physical evidence and restoration
 
-The latest prior physical mutation record is J026, tied to source `92c11fb0`. It records one accepted Save followed by detach about 677 ms later during final readback; no mutation was replayed, and a fresh complete snapshot matched the captured original baseline. That candidate's Flash result failed its readback step and was not qualified by that observation. The earlier Mic/UAC record J025 is separately attributed to its exact candidate. Neither physical result qualifies this clean branch.
+J025/J026 remain historical records on their exact source/APK tuples. A later partial physical session, J027, used source `9493cf030acb440f92e547fc667f6a5399616045`, prior PR #81 head `2e81dc99f4335aaa70645fad33adb391626e7cdc`, and the diagnostic APK below. It observed Mic already On (no Mic write), passed the UAC round trip and fresh readbacks, and obtained a matching fresh User 1 readback after one Flash action from Off. The app-generated transaction report was not captured after expiry, so wire-level Save count was not physically evidenced; Test D was not run. Temporary profile/device-file cleanup, complete final restoration, and phone release were not verified in that capture. Keep J027 partial and tied to that exact tuple; do not promote it to the final PR head. Current live device state is unknown.
 
-The last verified prior session recorded the original device state restored before releasing the Pixel. The live state after release is unknown. Do not infer current state from the historical record.
+The live state after the partial J027 session is unknown. Do not infer current state from a historical snapshot. Any new physical session must begin with the exact-candidate read-only baseline and use that baseline as the only restoration authority.
 
 ## Next authorized steps
 
-The required sequence is exact-head CI on the live PR #81 head, exact tuple freeze, the **CLEAN v0.8.1 CANDIDATE READY** report, then a new `PHONE WINDOW READY — PIXEL + JA11 NEEDED` request and owner confirmation. Follow the single-window test and restoration sequence in `PHONE-PLAN.md`. Do not infer the current PR head or CI status from this snapshot; read PR #81 immediately before freezing the tuple.
+The required sequence is fresh independent review, exact-head CI on the live PR #81 head, exact tuple freeze, the **CLEAN v0.8.1 CANDIDATE READY** report, then the already owner-confirmed phone window. Follow the single-window test and restoration sequence in `PHONE-PLAN.md`. Do not infer the current PR head or CI status from this snapshot; read PR #81 immediately before freezing the tuple.
 
 No merge, publication, or new public JA11 hardware-support claim is authorized.

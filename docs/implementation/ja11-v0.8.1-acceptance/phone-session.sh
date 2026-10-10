@@ -155,6 +155,15 @@ pull_single_installed_apk() {
   chmod 600 "$destination"
 }
 
+reserve_new_evidence_file() {
+  local path="$1"
+  # noclobber uses an exclusive create so an existing rollback copy cannot be replaced by adb pull.
+  if ! (set -o noclobber; : > "$path") 2>/dev/null; then
+    echo "Preserving existing prior APK backup; use a new evidence directory." >&2
+    return 9
+  fi
+}
+
 verify_previous_installed_candidate() {
   local backup="$EVIDENCE_DIR/previous-ja11diag-$(utc_stamp).apk" dump="$EVIDENCE_DIR/previous-ja11diag-package-$(utc_stamp).txt"
   local candidate_signer previous_signer
@@ -171,6 +180,7 @@ verify_previous_installed_candidate() {
     echo "Candidate version code is not newer than the installed package; stop before update." >&2
     return 14
   fi
+  reserve_new_evidence_file "$backup" || return $?
   pull_single_installed_apk "$backup" || return $?
   verify_apk "$backup" "$JA11_PREVIOUS_APK_SHA" "$JA11_PREVIOUS_SIGNER_SHA" "Previously installed" || return $?
   "$ADB_BIN" -s "$SERIAL" shell dumpsys package "$PACKAGE" > "$dump"
