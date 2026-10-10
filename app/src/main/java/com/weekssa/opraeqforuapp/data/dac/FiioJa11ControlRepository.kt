@@ -12,8 +12,17 @@ import com.weekssa.opraeqforuapp.domain.kt02h20.FiioJa11Protocol
 
 interface FiioJa11DeviceControlSource {
     val sessionGeneration: Long
+    val detachGeneration: Long
+    val connectedDeviceSerial: String?
+    val supportedCandidateCount: Int
     val connectedProductId: Int?
     fun isSessionCurrent(sessionGeneration: Long): Boolean
+    suspend fun awaitExpectedReplacementSession(
+        previousGeneration: Long,
+        previousDetachGeneration: Long,
+        previousSerial: String?,
+        timeoutMillis: Long,
+    ): Boolean
     suspend fun readOutputVolume(): Int?
     suspend fun readSampleRateLabel(): String?
     suspend fun readFirmwareVersion(): String?
@@ -37,6 +46,8 @@ data class FiioJa11PendingRestartWrite(
     val controlId: DacControlId,
     val requestedValue: DacControlValue,
     val previousSessionGeneration: Long,
+    val previousDetachGeneration: Long,
+    val previousDeviceSerial: String?,
     val baseline: FiioJa11DeviceSnapshot,
 )
 
@@ -100,7 +111,7 @@ class FiioJa11ControlRepository(
             }
 
             val generation = source.sessionGeneration
-            if (generation <= 0L || !source.isSessionCurrent(generation)) {
+            if (generation <= 0L || source.supportedCandidateCount != 1 || !source.isSessionCurrent(generation)) {
                 return@withExclusiveOperation FiioJa11ControlWriteResult.NotConnected(intent.controlId)
             }
             if (generation != intent.expectedSessionGeneration) {
@@ -142,6 +153,8 @@ class FiioJa11ControlRepository(
                 )
             }
 
+            val previousDetachGeneration = source.detachGeneration
+            val previousDeviceSerial = source.connectedDeviceSerial?.trim()?.takeIf(String::isNotEmpty)
             if (!writeTarget(intent.controlId, intent.requestedValue)) {
                 return@withExclusiveOperation if (source.isSessionCurrent(generation)) {
                     FiioJa11ControlWriteResult.TransferFailed(intent.controlId)
@@ -156,6 +169,8 @@ class FiioJa11ControlRepository(
                         controlId = intent.controlId,
                         requestedValue = intent.requestedValue,
                         previousSessionGeneration = generation,
+                        previousDetachGeneration = previousDetachGeneration,
+                        previousDeviceSerial = previousDeviceSerial,
                         baseline = baseline,
                     ),
                 )
@@ -186,11 +201,26 @@ class FiioJa11ControlRepository(
 
     suspend fun verifyRestartedControl(pending: FiioJa11PendingRestartWrite): FiioJa11ControlWriteResult =
         operationGate.withExclusiveOperation {
+            if (!source.awaitExpectedReplacementSession(
+                    previousGeneration = pending.previousSessionGeneration,
+                    previousDetachGeneration = pending.previousDetachGeneration,
+                    previousSerial = pending.previousDeviceSerial,
+                    timeoutMillis = EXPECTED_REPLACEMENT_TIMEOUT_MILLIS,
+                )
+            ) {
+                return@withExclusiveOperation FiioJa11ControlWriteResult.StaleBaseline(
+                    pending.controlId,
+                    pending.previousSessionGeneration,
+                    source.sessionGeneration,
+                )
+            }
             val generation = source.sessionGeneration
-            if (generation <= 0L || !source.isSessionCurrent(generation)) {
+            if (generation <= 0L || source.supportedCandidateCount != 1 || !source.isSessionCurrent(generation)) {
                 return@withExclusiveOperation FiioJa11ControlWriteResult.NotConnected(pending.controlId)
             }
-            if (generation == pending.previousSessionGeneration) {
+            if (generation == pending.previousSessionGeneration ||
+                source.detachGeneration == pending.previousDetachGeneration
+            ) {
                 return@withExclusiveOperation FiioJa11ControlWriteResult.StaleBaseline(
                     pending.controlId,
                     pending.previousSessionGeneration,
@@ -240,6 +270,7 @@ class FiioJa11ControlRepository(
             return read()?.takeIf { source.isSessionCurrent(generation) }
         }
 
+        if (source.supportedCandidateCount != 1) return FiioJa11ControlReadResult.NotConnected
         val productId = source.connectedProductId?.takeIf(FiioJa11Protocol::supportsProductId)
             ?: return failedOrChanged(generation, "USB identity")
         val firmware = field("firmware", source::readFirmwareVersion)
@@ -314,6 +345,10 @@ class FiioJa11ControlRepository(
     private fun failedOrChanged(generation: Long, field: String): FiioJa11ControlReadResult =
         if (source.isSessionCurrent(generation)) FiioJa11ControlReadResult.ReadFailed(field)
         else FiioJa11ControlReadResult.SessionChanged
+
+    private companion object {
+        const val EXPECTED_REPLACEMENT_TIMEOUT_MILLIS = 45_000L
+    }
 }
 
 class SessionFiioJa11DeviceControlSource(
@@ -321,12 +356,30 @@ class SessionFiioJa11DeviceControlSource(
 ) : FiioJa11DeviceControlSource {
     override val sessionGeneration: Long
         get() = sessions.fiioJa11Transport.sessionGeneration
+    override val detachGeneration: Long
+        get() = sessions.fiioJa11Transport.detachGeneration
+    override val connectedDeviceSerial: String?
+        get() = sessions.fiioJa11Transport.connectedDeviceSerial
+    override val supportedCandidateCount: Int
+        get() = sessions.fiioJa11Transport.supportedCandidateCount
     override val connectedProductId: Int?
         get() = sessions.fiioJa11Transport.connectedProductId
 
     override fun isSessionCurrent(sessionGeneration: Long): Boolean =
         sessions.fiioJa11ConnectionState.value is Kt02h20ConnectionState.Connected &&
             sessions.isFiioJa11SessionCurrent(sessionGeneration)
+
+    override suspend fun awaitExpectedReplacementSession(
+        previousGeneration: Long,
+        previousDetachGeneration: Long,
+        previousSerial: String?,
+        timeoutMillis: Long,
+    ): Boolean = sessions.fiioJa11Transport.awaitExpectedReplacementSession(
+        previousGeneration = previousGeneration,
+        previousDetachGeneration = previousDetachGeneration,
+        previousSerial = previousSerial,
+        timeoutMillis = timeoutMillis,
+    )
 
     override suspend fun readOutputVolume(): Int? = sessions.fiioJa11Transport.readOutputVolume()
     override suspend fun readSampleRateLabel(): String? = sessions.fiioJa11Transport.readSampleRateLabel()

@@ -18,12 +18,22 @@ class AndroidFiioJa11UsbTransport(
         productIds = FiioJa11Protocol.SUPPORTED_PRODUCT_IDS,
         deviceLabel = "FiiO JA11",
         permissionSuffix = "FIIO_JA11",
+        requireUniqueCandidate = true,
     )
+
+    private var savePreviousGeneration = 0L
+    private var savePreviousDetachGeneration = 0L
+    private var savePreviousSerial: String? = null
+    private var awaitingLateSaveDetach = false
 
     val state: StateFlow<Kt02h20ConnectionState> = hid.state
     val present: StateFlow<Boolean> = hid.present
     val connectedProductId: Int?
         get() = hid.connectedProductId
+    val connectedDeviceSerial: String?
+        get() = hid.connectedDeviceSerial
+    val supportedCandidateCount: Int
+        get() = hid.supportedCandidateCount
     override val deviceFingerprintKey: String?
         get() = hid.deviceFingerprintKey
     override val usbProductId: Int?
@@ -125,16 +135,50 @@ class AndroidFiioJa11UsbTransport(
     override suspend fun saveToFlash(): Boolean {
         val previousGeneration = hid.sessionGeneration
         val previousDetachGeneration = hid.detachGeneration
+        val previousSerial = hid.connectedDeviceSerial
+        savePreviousGeneration = previousGeneration
+        savePreviousDetachGeneration = previousDetachGeneration
+        savePreviousSerial = previousSerial
+        awaitingLateSaveDetach = false
         if (!sendReport(FiioJa11Protocol.saveToFlashReport())) return false
 
-        // FiiO documents Save as a chip power-cycle/restart boundary. Final readback must use a
-        // fresh session when Android observed detach/attach, while unchanged healthy sessions
-        // remain accepted for firmware variants that persist without re-enumerating.
-        return hid.awaitOptionalReconnectAfterMutation(
+        // Observe USB state changes through the bounded post-Save window. A detected detach must
+        // complete on a fresh unique session before final readback; a stable session is retained
+        // only after that window expires without a detach.
+        val completed = hid.awaitJa11SaveBoundary(
             previousGeneration = previousGeneration,
             previousDetachGeneration = previousDetachGeneration,
+            previousSerial = previousSerial,
+        )
+        if (!completed) return false
+        savePreviousGeneration = hid.sessionGeneration
+        savePreviousDetachGeneration = hid.detachGeneration
+        savePreviousSerial = hid.connectedDeviceSerial
+        awaitingLateSaveDetach = true
+        return true
+    }
+
+    override suspend fun awaitFinalReadbackReconnect(): Boolean {
+        if (!awaitingLateSaveDetach) return false
+        awaitingLateSaveDetach = false
+        return hid.awaitLateJa11SaveReconnect(
+            previousGeneration = savePreviousGeneration,
+            previousDetachGeneration = savePreviousDetachGeneration,
+            previousSerial = savePreviousSerial,
         )
     }
+
+    suspend fun awaitExpectedReplacementSession(
+        previousGeneration: Long,
+        previousDetachGeneration: Long,
+        previousSerial: String?,
+        timeoutMillis: Long,
+    ): Boolean = hid.awaitExpectedReplacementSession(
+        previousGeneration = previousGeneration,
+        previousDetachGeneration = previousDetachGeneration,
+        previousSerial = previousSerial,
+        timeoutMillis = timeoutMillis,
+    )
 
     override suspend fun sendReport(report: ByteArray): Boolean {
         val generation = hid.sessionGeneration
@@ -144,7 +188,10 @@ class AndroidFiioJa11UsbTransport(
             settleMillis = FiioJa11Timing.settleMillisForMutation(report),
         )
         val command = report.getOrNull(5)?.toInt()?.and(0xFF)
-        val accepted = sent && (command == 0x19 || hid.isCurrentSession(generation, detachGeneration))
+        val accepted = sent && (
+            command == 0x12 || command == 0x19 || command == 0x20 ||
+                hid.isCurrentSession(generation, detachGeneration)
+            )
         recordTrace(
             direction = "WRITE",
             request = report,

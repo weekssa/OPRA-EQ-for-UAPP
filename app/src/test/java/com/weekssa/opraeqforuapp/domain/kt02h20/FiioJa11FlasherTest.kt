@@ -8,6 +8,7 @@ import com.weekssa.opraeqforuapp.domain.dac.HardwareEqEditorStartResult
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotFactory
 import com.weekssa.opraeqforuapp.domain.dac.HardwareEqSnapshotState
 import com.weekssa.opraeqforuapp.domain.library.EqFilterType
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -41,7 +42,7 @@ class FiioJa11FlasherTest {
 
         assertTrue(result.toString(), result is FiioJa11EditorApplyResult.Verified)
         assertEquals(
-            listOf(0x15, 0x15, 0x15, 0x15, 0x15, 0x17, 0x16, 0x18, 0x19),
+            listOf(0x16, 0x15, 0x15, 0x15, 0x15, 0x15, 0x17, 0x18, 0x19),
             transport.sentCommands,
         )
         assertEquals(1, transport.saveCount)
@@ -107,8 +108,8 @@ class FiioJa11FlasherTest {
     }
 
     @Test
-    fun flashWritesFiveSlotsGainSelectsUserOneApplyVerifySaveAndFinalVerify() = runBlocking {
-        val transport = FakeJa11Transport(initialProgram = FiioJa11Protocol.EqProgram.VOCAL)
+    fun flashFromOffSelectsAndVerifiesUserOneBeforeWritingEqData() = runBlocking {
+        val transport = FakeJa11Transport(initialProgram = FiioJa11Protocol.EqProgram.OFF)
         val flasher = FiioJa11Flasher(transport)
 
         val result = flasher.flash(exactProfile())
@@ -117,13 +118,13 @@ class FiioJa11FlasherTest {
         result as Kt02h20FlashResult.Success
         assertTrue(result.explicitPersistenceCommandUsed)
         assertEquals(
-            listOf(0x15, 0x15, 0x15, 0x15, 0x15, 0x17, 0x16, 0x18, 0x19),
+            listOf(0x16, 0x15, 0x15, 0x15, 0x15, 0x15, 0x17, 0x18, 0x19),
             transport.sentCommands,
         )
         assertEquals(FiioJa11Protocol.EqProgram.USER_1, transport.program)
         assertEquals(10, transport.bandReadsAfterWrites)
         assertEquals(2, transport.globalGainReadsAfterWrites)
-        assertEquals(2, transport.programReadsAfterWrites)
+        assertEquals(3, transport.programReadsAfterWrites)
         assertEquals(-4.0, transport.globalGainDb, 0.001)
         assertEquals(1, transport.saveCount)
         assertEquals(2.5, transport.bands[0].gainDb, 0.0)
@@ -160,7 +161,51 @@ class FiioJa11FlasherTest {
 
         assertTrue(result is Kt02h20FlashResult.VerificationFailed)
         assertFalse(0x19 in transport.sentCommands)
+        assertFalse(transport.sentCommands.any { it == 0x15 || it == 0x17 })
         assertEquals(FiioJa11Protocol.EqProgram.VOCAL, transport.program)
+    }
+
+    @Test
+    fun delayedDetachAfterSaveUsesFreshSessionForFinalReadback() = runBlocking {
+        val transport = FakeJa11Transport(saveDetachDelayMillis = 677L)
+
+        val result = FiioJa11Flasher(transport).flash(exactProfile())
+
+        assertTrue(result.toString(), result is Kt02h20FlashResult.Success)
+        assertEquals(1, transport.saveCount)
+        assertTrue(transport.finalReadSessionGenerations.isNotEmpty())
+        assertTrue(transport.finalReadSessionGenerations.all { it == 2L })
+        assertEquals(1, transport.sentCommands.count { it == 0x19 })
+    }
+
+    @Test
+    fun lateDetachDuringFinalReadbackRetriesReadbackOnlyOnReplacementSession() = runBlocking {
+        val transport = FakeJa11Transport(detachDuringFinalReadback = true)
+
+        val result = FiioJa11Flasher(transport).flash(exactProfile())
+
+        assertTrue(result.toString(), result is Kt02h20FlashResult.Success)
+        assertEquals(1, transport.saveCount)
+        assertEquals(1, transport.sentCommands.count { it == 0x19 })
+        assertTrue(transport.finalReadSessionGenerations.any { it == 2L })
+        assertEquals(1, transport.sentCommands.count { it == 0x18 })
+        assertEquals(5, transport.sentCommands.count { it == 0x15 })
+        assertEquals(1, transport.sentCommands.count { it == 0x17 })
+    }
+
+    @Test
+    fun detachAfterLastFinalValueStillRequiresReplacementReadback() = runBlocking {
+        val transport = FakeJa11Transport(detachAfterFinalGainRead = true)
+
+        val result = FiioJa11Flasher(transport).flash(exactProfile())
+
+        assertTrue(result.toString(), result is Kt02h20FlashResult.Success)
+        assertEquals(1, transport.saveCount)
+        assertEquals(1, transport.sentCommands.count { it == 0x19 })
+        assertTrue(transport.finalReadSessionGenerations.contains(1L))
+        assertTrue(transport.finalReadSessionGenerations.contains(2L))
+        assertEquals(5, transport.sentCommands.count { it == 0x15 })
+        assertEquals(1, transport.sentCommands.count { it == 0x17 })
     }
 
     @Test
@@ -253,7 +298,7 @@ class FiioJa11FlasherTest {
         assertTrue(result is Kt02h20FlashResult.VerificationFailed)
         assertEquals(1, transport.saveCount)
         assertEquals(2, transport.globalGainReadsAfterWrites)
-        assertEquals(listOf(0x15, 0x15, 0x15, 0x15, 0x15, 0x17, 0x16, 0x18, 0x19), transport.sentCommands)
+        assertEquals(listOf(0x16, 0x15, 0x15, 0x15, 0x15, 0x15, 0x17, 0x18, 0x19), transport.sentCommands)
     }
 
     @Test
@@ -270,7 +315,7 @@ class FiioJa11FlasherTest {
         assertTrue(transport.bands.all { kotlin.math.abs(it.gainDb) < 0.000_001 })
         assertEquals(FiioJa11Protocol.EqProgram.USER_1, transport.program)
         assertEquals(
-            listOf(0x15, 0x15, 0x15, 0x15, 0x15, 0x17, 0x16, 0x18, 0x19),
+            listOf(0x16, 0x15, 0x15, 0x15, 0x15, 0x15, 0x17, 0x18, 0x19),
             transport.sentCommands,
         )
     }
@@ -315,10 +360,14 @@ class FiioJa11FlasherTest {
         private val saveReconnectAccepted: Boolean = true,
         private val postSaveGlobalGainDb: Double? = null,
         private val postWriteGlobalGainDb: Double? = null,
+        private val saveDetachDelayMillis: Long = 0L,
+        private val detachDuringFinalReadback: Boolean = false,
+        private val detachAfterFinalGainRead: Boolean = false,
     ) : FiioJa11Transport {
         override val deviceFingerprintKey: String = "serial=ja11-test|vid=2972"
         override val usbProductId: Int = FiioJa11Protocol.PRODUCT_ID_UAC_2
         override var sessionGeneration: Long = 1L
+        override var detachGeneration: Long = 0L
         val bands = FiioJa11Protocol.completeBands(emptyList()).toMutableList()
         var globalGainDb: Double = 0.0
         var program: FiioJa11Protocol.EqProgram = initialProgram
@@ -328,6 +377,8 @@ class FiioJa11FlasherTest {
         var bandReadsAfterWrites = 0
         var globalGainReadsAfterWrites = 0
         var programReadsAfterWrites = 0
+        val finalReadSessionGenerations = mutableListOf<Long>()
+        private var lateDetachTriggered = false
         private var traceActive = false
         private val traceEvents = mutableListOf<FiioJa11TransportEvent>()
 
@@ -344,13 +395,23 @@ class FiioJa11FlasherTest {
         override suspend fun readBand(index: Int): FiioJa11Protocol.Band? {
             if (!readable) return null
             if (writeStarted) bandReadsAfterWrites++
+            if (saveCount > 0) finalReadSessionGenerations += sessionGeneration
+            if (sessionGeneration == 0L) return null
             return bands[index]
         }
 
         override suspend fun readGlobalGainDb(): Double? {
             if (!readable) return null
             if (writeStarted) globalGainReadsAfterWrites++
-            return if (writeStarted) postWriteGlobalGainDb ?: globalGainDb else globalGainDb
+            if (saveCount > 0) finalReadSessionGenerations += sessionGeneration
+            if (sessionGeneration == 0L) return null
+            val value = if (writeStarted) postWriteGlobalGainDb ?: globalGainDb else globalGainDb
+            if (saveCount > 0 && detachAfterFinalGainRead && !lateDetachTriggered) {
+                lateDetachTriggered = true
+                detachGeneration++
+                sessionGeneration = 0L
+            }
+            return value
         }
 
         override suspend fun readFirmwareVersion(): String? = "2.20"
@@ -358,13 +419,34 @@ class FiioJa11FlasherTest {
         override suspend fun readEqProgram(): FiioJa11Protocol.EqProgram? {
             if (!readable) return null
             if (writeStarted) programReadsAfterWrites++
+            if (saveCount > 0) finalReadSessionGenerations += sessionGeneration
+            if (saveCount > 0 && detachDuringFinalReadback && !lateDetachTriggered) {
+                lateDetachTriggered = true
+                detachGeneration++
+                sessionGeneration = 0L
+                return null
+            }
+            if (sessionGeneration == 0L) return null
             return program
         }
 
         override suspend fun saveToFlash(): Boolean {
             val accepted = sendReport(FiioJa11Protocol.saveToFlashReport()) && saveReconnectAccepted
-            if (accepted) postSaveGlobalGainDb?.let { globalGainDb = it }
+            if (accepted) {
+                postSaveGlobalGainDb?.let { globalGainDb = it }
+                if (saveDetachDelayMillis > 0L) {
+                    delay(saveDetachDelayMillis)
+                    detachGeneration++
+                    sessionGeneration += 1L
+                }
+            }
             return accepted
+        }
+
+        override suspend fun awaitFinalReadbackReconnect(): Boolean {
+            if ((!detachDuringFinalReadback && !detachAfterFinalGainRead) || sessionGeneration != 0L) return false
+            sessionGeneration = 2L
+            return true
         }
 
         override suspend fun sendReport(report: ByteArray): Boolean {

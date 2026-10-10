@@ -82,6 +82,7 @@ data class FiioJa11DeviceUiState(
         isWriting = false,
         activeWriteControlId = null,
         isCurrentSession = false,
+        pendingRestartWrite = null,
         lastVerifiedWriteControlId = null,
         error = message,
     )

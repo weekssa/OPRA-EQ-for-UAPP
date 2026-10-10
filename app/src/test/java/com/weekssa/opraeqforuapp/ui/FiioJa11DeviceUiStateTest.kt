@@ -17,6 +17,8 @@ class FiioJa11DeviceUiStateTest {
             controlId = FiioJa11DeviceControls.UAC_MODE,
             requestedValue = DacControlValue.Discrete(FiioJa11Protocol.UacMode.UAC_1.name.lowercase()),
             previousSessionGeneration = baseline.sessionGeneration,
+            previousDetachGeneration = 0L,
+            previousDeviceSerial = null,
             baseline = baseline,
         )
 
@@ -37,6 +39,8 @@ class FiioJa11DeviceUiStateTest {
             controlId = FiioJa11DeviceControls.HEADSET_CONTROL,
             requestedValue = DacControlValue.Toggle(false),
             previousSessionGeneration = baseline.sessionGeneration,
+            previousDetachGeneration = 0L,
+            previousDeviceSerial = null,
             baseline = baseline,
         )
         val replacement = snapshot(sessionGeneration = 8L).copy(headsetControlEnabled = false)
@@ -48,6 +52,27 @@ class FiioJa11DeviceUiStateTest {
         assertFalse(verified.isBusy)
         assertTrue(verified.isCurrentSession)
         assertTrue(verified.pendingRestartWrite == null)
+    }
+
+    @Test
+    fun failedRestartVerificationClearsPendingAuthorization() {
+        val baseline = snapshot(sessionGeneration = 7L)
+        val pending = FiioJa11PendingRestartWrite(
+            controlId = FiioJa11DeviceControls.HEADSET_CONTROL,
+            requestedValue = DacControlValue.Toggle(false),
+            previousSessionGeneration = baseline.sessionGeneration,
+            previousDetachGeneration = 0L,
+            previousDeviceSerial = null,
+            baseline = baseline,
+        )
+
+        val failed = FiioJa11DeviceUiState(snapshot = baseline)
+            .reconnectRequired(pending)
+            .failure("FiiO JA11 did not reconnect before verification timed out.")
+
+        assertFalse(failed.isBusy)
+        assertTrue(failed.pendingRestartWrite == null)
+        assertFalse(failed.isCurrentSession)
     }
 
     private fun snapshot(sessionGeneration: Long): FiioJa11DeviceSnapshot = FiioJa11DeviceSnapshot(

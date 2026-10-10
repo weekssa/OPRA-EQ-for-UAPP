@@ -22,12 +22,16 @@ android {
     namespace = "com.weekssa.opraeqforuapp"
     compileSdk = 36
 
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
+
     defaultConfig {
         applicationId = "com.weekssa.opraeqforuapp"
         minSdk = 26
         targetSdk = 36
-        versionCode = 11
-        versionName = "0.8.0"
+        versionCode = 12
+        versionName = "0.8.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "OPRA_CATALOG_URL", "\"${opraCatalogUrl.get()}\"")
@@ -39,6 +43,13 @@ android {
     }
 
     buildTypes {
+        create("ja11Diagnostic") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".ja11diag"
+            versionNameSuffix = "-ja11diag"
+            matchingFallbacks += listOf("debug")
+            buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"${candidateSourceSha.get()}\"")
+        }
         release {
             isMinifyEnabled = true
             // Save qualification is already physically accepted and is never a production action.
@@ -66,6 +77,12 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
+    }
+}
+
+androidComponents {
+    beforeVariants(selector().withBuildType("ja11Diagnostic")) { variantBuilder ->
+        variantBuilder.enableAndroidTest = true
     }
 }
 
@@ -103,6 +120,7 @@ dependencies {
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("com.google.truth:truth:1.4.4")
+    testImplementation("org.robolectric:robolectric:4.17")
     androidTestImplementation(composeBom)
     androidTestImplementation("androidx.test:runner:1.7.0")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
