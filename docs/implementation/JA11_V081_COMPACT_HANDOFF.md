@@ -12,7 +12,7 @@
 ## Branch and PR
 
 - Repository: `weekssa/OPRA-EQ-for-UAPP`; branch: `codex/ja11-v0.8.1-minimal`.
-- PR #81 is open/draft/unmerged. Diagnostic code commit: `fc409b7d038632e67dccdeccbd5144f3d3b53bdd` (`Add diagnostic JA11 Flash report access`). Verify the live exact PR head and required-check state before physical work.
+- J029 physical evidence is tied to PR #81 head `78deeddd2cce65c22a98fce7e288a608ceb813fd`; all eight required checks passed on that head before the run. Diagnostic code commit: `fc409b7d038632e67dccdeccbd5144f3d3b53bdd` (`Add diagnostic JA11 Flash report access`). The subsequent closeout commit is documentation-only and leaves the tested executable candidate unchanged.
 - PR #80 remains open/draft/unmerged as historical evidence and is unchanged.
 
 ## Exact production SHA and APK SHA
@@ -26,31 +26,31 @@
 
 ## Current hardware truth
 
-- Last verified before J028 release: Mic On, UAC 2.0, User 1, volume 60/60, 384 kHz, firmware 2.20, VID/PID `0x2972:0x0102`, gain -3.70 dB, and the full User 1 band bank recorded in the ledger. Temporary EQ removed; My EQs returned to its empty pre-test state. No serial/fingerprint retained; no same-unit claim. Current live state has not been checked.
-- The 2026-10-10 diagnostic APK has not been installed on Pixel or used with JA11. The J028 phone window is closed.
+- J029 tested the exact diagnostic APK listed above with production/transaction source `9493cf030acb440f92e547fc667f6a5399616045`. Initial read-only state: Mic On, UAC 2.0, User 1, volume 60/60, sample rate 384 kHz, firmware 2.20, VID/PID `0x2972:0x0102`, gain -3.70 dB, and the five-band User 1 bank recorded in the validation ledger. One direct Flash from Off selected and verified User 1 before EQ writes, wrote the target once, applied once, saved exactly once, observed detach/reconnect, and completed authoritative final readback matching all six target values.
+- The report records Save on session generation 1/detach generation 0 and final readback on generation 2/detach generation 1. Its serial is redacted; the descriptor token matched a generic JA11 value. Model D permits the sole supported candidate plus fresh-generation readback; do not claim same-unit continuity.
+- J029 operation ID: `ae6d16fe-5b78-4c9a-bbc6-a08ec9bf2740`. Private readable report SHA-256 `da2137a798ede7cb420c459e48507a1bdf16be656dcebb91ceba601db7d42f77`; JSON report SHA-256 `a4de38b5265077562177aa2d0decbf2871832e14f13eded55a0b26794452f228`; evidence directory `/Users/stephenweeks/.codex/evidence/ja11-v081-test-c-20261010T184850Z/`.
+- A post-save Refresh showed Mic On, UAC 2.0, User 1, volume 60/60, 384 kHz, firmware 2.20, and VID/PID `0x2972:0x0102`. The temporary My EQs profile and exact temporary Downloads target were removed; the pre-existing similarly named download was untouched. My EQs returned to empty. No JA11 restoration remains. The diagnostic APK remains installed, and the Pixel has been released.
 
 ## Physical tests already passed on the current production source
 
-- Mic was already On during J028, so no Mic write occurred.
-- UAC 2.0→1.0→2.0 passed with fresh readbacks.
-- Test D observed volume 60 and User 1 after one owner power removal/reconnect; full baseline restoration passed. This does not prove general PEQ persistence.
-- One Flash from Off produced a fresh User 1 readback matching baseline. J028 did not capture the transaction report, so Save count is unknown and Test C remains incomplete. These outcomes remain tied to J028's recorded production source and previous APK; the new diagnostic UI does not invalidate them.
+- J028: Mic was already On, so no Mic write occurred; UAC 2.0→1.0→2.0 passed; Test D observed volume 60 and User 1 after one owner power removal/reconnect; baseline restoration passed. These remain tied to J028's recorded source/APK.
+- J029: Test C passed on the exact diagnostic APK and unchanged production source. The paired readable/JSON reports and private verification record prove User 1 select/read before writes; five band writes, one gain write, one Apply, one Save; no replay; fresh generation after detach; and final authoritative readback equal to the intended User 1 target.
+- J029 does not prove general PEQ retention after true power loss or same-unit serial continuity. It also does not add Save behavior to runtime volume or built-in program controls.
 
 ## Unresolved defects
 
-- No JA11 transaction defect was established. The open item is evidence access: J028 lacks the report needed to verify exact Save count and event order.
-- Do not repeat Flash to reconstruct J028 evidence. Test C needs one new, gated physical capture.
+- No JA11 transaction defect was established. The J028 Save-count gap is historical; J029 closes the Test C evidence gap for its exact candidate tuple.
+- General PEQ power-cycle persistence, same-unit continuity without a usable serial match, and public JA11 support remain unproven/out of scope for this evidence.
 
 ## Restoration obligations
 
-- J028 baseline was restored, temporary profile removed, and Pixel released; no J028 restoration is outstanding.
-- In Test C, if fresh Mic readback is Off, restore Mic On first and reread Mic plus the full unrelated DEVICE/EQ baseline. Mic On is the required final target and must not be reverted Off. If Mic is already On, make no Mic write.
-- Restore the original active program only if changed for Test C; preserve the verified User 1 target, remove the temporary profile, and release Pixel after sufficient evidence.
+- J028 restoration was complete.
+- J029 final program is User 1 and the final five-band/global-gain readback matches the original User 1 state. Mic remained On; UAC 2.0 and volume 60/60 were unchanged; sample rate remained 384 kHz. The temporary profile and its unique source file were removed. No restoration is outstanding.
+- The Pixel is released. Do not repeat physical tests without a concrete invalidation and a new owner-confirmed window.
 
 ## Remaining release-critical tests
 
-- Verify all required CI checks on the live exact PR head before physical work.
-- Complete one new owner-confirmed Test-C-only phone session. Do not repeat UAC, Mic round-trip, volume, or power-cycle tests.
+- Test C is complete for the recorded J029 tuple. No Mic, UAC, volume, power-cycle, or Flash rerun is required.
 - Keep merge, publication, general persistence claims, and public support as separate owner-controlled gates.
 
 ## Gate invalidation rules
@@ -62,4 +62,4 @@
 
 ## Exact next action
 
-Verify the live PR #81 head and all required CI checks, then refresh the candidate tuple. Only after those gates pass, request a new owner-confirmed phone window and follow the seven-step Test C procedure in `ja11-v0.8.1-acceptance/PHONE-PLAN.md`: verify the exact candidate, capture a fresh read-only baseline and exact User 1 target, make only required Off/Mic restoration changes, perform one direct Flash, immediately export both reports, verify selection/write/Apply/Save counts and reconnect/final readback evidence, restore only authorized changes, then release Pixel. No phone use before those gates pass.
+No further phone or JA11 action. Next, review PR #81 and decide whether to approve merge; do not merge or publish without explicit owner approval. Do not replay Flash to reconstruct J028 evidence or repeat J029 without a concrete invalidation.
