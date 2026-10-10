@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application android:name=".Ja11DiagnosticApplication">
+        <activity
+            android:name=".Ja11FlashReportActivity"
+            android:exported="true"
+            android:label="@string/ja11_flash_report_launcher_label"
+            android:launchMode="singleTop"
+            android:taskAffinity="com.weekssa.opraeqforuapp.ja11diag.report">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

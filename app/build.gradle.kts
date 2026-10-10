@@ -80,6 +80,12 @@ android {
     }
 }
 
+androidComponents {
+    beforeVariants(selector().withBuildType("ja11Diagnostic")) { variantBuilder ->
+        variantBuilder.enableAndroidTest = true
+    }
+}
+
 kotlin {
     compilerOptions {
         optIn.add("kotlinx.coroutines.ExperimentalCoroutinesApi")
