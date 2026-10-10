@@ -183,8 +183,8 @@ class FiioJa11Flasher(
     /**
      * Applies the shared local editor's already-reviewed User 1 working copy. The read immediately
      * before the first write compares one coherent identity/session/program/band/gain token, then
-     * reuses the exact five-band -> global gain -> User 1 -> Apply -> one Save -> final readback
-     * transaction used by direct JA11 Flash.
+     * reuses the direct Flash transaction: select and verify User 1, write five bands and global
+     * gain, Apply, send one Save, and require final readback.
      */
     suspend fun applyEditorWorkingCopy(
         workingCopy: HardwareEqEditWorkingCopy,
