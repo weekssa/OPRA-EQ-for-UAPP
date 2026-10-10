@@ -126,8 +126,9 @@ installed_package_state() {
 }
 
 save_package_dump() {
-  local path="$EVIDENCE_DIR/package-dump-$(utc_stamp).txt"
-  if [[ -e "$path" ]]; then echo "Preserving existing package dump; use a new evidence directory." >&2; return 9; fi
+  local path
+  reserve_package_dump || return $?
+  path="$PACKAGE_DUMP_PATH"
   "$ADB_BIN" -s "$SERIAL" shell dumpsys package "$PACKAGE" > "$path"
   chmod 600 "$path"
   grep -E 'versionCode=|versionName=' "$path" || true
@@ -156,12 +157,47 @@ pull_single_installed_apk() {
 }
 
 reserve_new_evidence_file() {
-  local path="$1"
-  # noclobber uses an exclusive create so an existing rollback copy cannot be replaced by adb pull.
+  local path="$1" label="${2:-evidence file}"
+  # noclobber uses an exclusive create so existing evidence cannot be replaced by a capture.
   if ! (set -o noclobber; : > "$path") 2>/dev/null; then
-    echo "Preserving existing prior APK backup; use a new evidence directory." >&2
+    echo "Preserving existing $label; use a new evidence directory." >&2
     return 9
   fi
+}
+
+reserve_package_dump() {
+  if [[ -z "${PACKAGE_DUMP_PATH:-}" ]]; then
+    PACKAGE_DUMP_PATH="$EVIDENCE_DIR/package-dump-$(utc_stamp).txt"
+  fi
+  if [[ "${PACKAGE_DUMP_RESERVED:-}" == yes ]]; then return 0; fi
+  reserve_new_evidence_file "$PACKAGE_DUMP_PATH" "package dump" || return $?
+  PACKAGE_DUMP_RESERVED=yes
+}
+
+reserve_candidate_verification_evidence() {
+  if [[ -z "${CANDIDATE_VERIFIED_APK_PATH:-}" ]]; then
+    CANDIDATE_VERIFIED_APK_PATH="$EVIDENCE_DIR/verified-ja11diag-$(utc_stamp).apk"
+  fi
+  if [[ -z "${CANDIDATE_VERIFIED_DUMP_PATH:-}" ]]; then
+    CANDIDATE_VERIFIED_DUMP_PATH="$EVIDENCE_DIR/verified-ja11diag-package-$(utc_stamp).txt"
+  fi
+  if [[ "${CANDIDATE_VERIFICATION_RESERVED:-}" == yes ]]; then return 0; fi
+  reserve_new_evidence_file "$CANDIDATE_VERIFIED_APK_PATH" "verified candidate APK" || return $?
+  reserve_new_evidence_file "$CANDIDATE_VERIFIED_DUMP_PATH" "verified candidate package dump" || return $?
+  CANDIDATE_VERIFICATION_RESERVED=yes
+}
+
+reserve_rollback_evidence() {
+  if [[ -z "${ROLLBACK_VERIFIED_APK_PATH:-}" ]]; then
+    ROLLBACK_VERIFIED_APK_PATH="$EVIDENCE_DIR/verified-rollback-ja11diag-$(utc_stamp).apk"
+  fi
+  if [[ -z "${ROLLBACK_VERIFIED_DUMP_PATH:-}" ]]; then
+    ROLLBACK_VERIFIED_DUMP_PATH="$EVIDENCE_DIR/verified-rollback-ja11diag-package-$(utc_stamp).txt"
+  fi
+  if [[ "${ROLLBACK_VERIFICATION_RESERVED:-}" == yes ]]; then return 0; fi
+  reserve_new_evidence_file "$ROLLBACK_VERIFIED_APK_PATH" "verified rollback APK" || return $?
+  reserve_new_evidence_file "$ROLLBACK_VERIFIED_DUMP_PATH" "verified rollback package dump" || return $?
+  ROLLBACK_VERIFICATION_RESERVED=yes
 }
 
 verify_previous_installed_candidate() {
@@ -180,7 +216,8 @@ verify_previous_installed_candidate() {
     echo "Candidate version code is not newer than the installed package; stop before update." >&2
     return 14
   fi
-  reserve_new_evidence_file "$backup" || return $?
+  reserve_new_evidence_file "$dump" "prior package dump" || return $?
+  reserve_new_evidence_file "$backup" "prior APK backup" || return $?
   pull_single_installed_apk "$backup" || return $?
   verify_apk "$backup" "$JA11_PREVIOUS_APK_SHA" "$JA11_PREVIOUS_SIGNER_SHA" "Previously installed" || return $?
   "$ADB_BIN" -s "$SERIAL" shell dumpsys package "$PACKAGE" > "$dump"
@@ -192,9 +229,12 @@ verify_previous_installed_candidate() {
 }
 
 verify_candidate_installed() {
-  local installed="$EVIDENCE_DIR/verified-ja11diag-$(utc_stamp).apk" dump="$EVIDENCE_DIR/verified-ja11diag-package-$(utc_stamp).txt"
+  local installed dump
   require_pin JA11_CANDIDATE_APK_SHA "${JA11_CANDIDATE_APK_SHA:-}" || return $?
   require_pin JA11_CANDIDATE_SIGNER_SHA "${JA11_CANDIDATE_SIGNER_SHA:-}" || return $?
+  reserve_candidate_verification_evidence || return $?
+  installed="$CANDIDATE_VERIFIED_APK_PATH"
+  dump="$CANDIDATE_VERIFIED_DUMP_PATH"
   pull_single_installed_apk "$installed" || return $?
   verify_apk "$installed" "$JA11_CANDIDATE_APK_SHA" "$JA11_CANDIDATE_SIGNER_SHA" "Installed candidate" || return $?
   "$ADB_BIN" -s "$SERIAL" shell dumpsys package "$PACKAGE" > "$dump"
@@ -216,6 +256,8 @@ case "$ACTION" in
   install)
     require_pin JA11_CANDIDATE_APK "$APK"
     verify_apk "$APK" "${JA11_CANDIDATE_APK_SHA:-}" "${JA11_CANDIDATE_SIGNER_SHA:-}" "Candidate"
+    reserve_candidate_verification_evidence
+    reserve_package_dump
     PACKAGE_STATE="$(installed_package_state)"
     if [[ "$PACKAGE_STATE" == installed ]]; then
       verify_previous_installed_candidate
@@ -230,6 +272,8 @@ case "$ACTION" in
     save_package_dump
     ;;
   verify-install)
+    reserve_candidate_verification_evidence
+    reserve_package_dump
     verify_candidate_installed
     save_package_dump
     ;;
@@ -246,16 +290,17 @@ case "$ACTION" in
     ;;
   rollback)
     require_pin JA11_ROLLBACK_APK "$ROLLBACK_APK"
+    reserve_candidate_verification_evidence
+    reserve_package_dump
+    reserve_rollback_evidence
     verify_candidate_installed
     verify_apk "$ROLLBACK_APK" "${JA11_PREVIOUS_APK_SHA:-}" "${JA11_PREVIOUS_SIGNER_SHA:-}" "Rollback"
     "$ADB_BIN" -s "$SERIAL" install -r "$ROLLBACK_APK"
-    rollback_copy="$EVIDENCE_DIR/verified-rollback-ja11diag-$(utc_stamp).apk"
-    rollback_dump="$EVIDENCE_DIR/verified-rollback-ja11diag-package-$(utc_stamp).txt"
-    pull_single_installed_apk "$rollback_copy"
-    verify_apk "$rollback_copy" "$JA11_PREVIOUS_APK_SHA" "$JA11_PREVIOUS_SIGNER_SHA" "Restored rollback"
-    "$ADB_BIN" -s "$SERIAL" shell dumpsys package "$PACKAGE" > "$rollback_dump"
-    chmod 600 "$rollback_dump"
-    verify_package_version "$rollback_dump" "$PREVIOUS_VERSION" "$PREVIOUS_VERSION_CODE"
+    pull_single_installed_apk "$ROLLBACK_VERIFIED_APK_PATH"
+    verify_apk "$ROLLBACK_VERIFIED_APK_PATH" "$JA11_PREVIOUS_APK_SHA" "$JA11_PREVIOUS_SIGNER_SHA" "Restored rollback"
+    "$ADB_BIN" -s "$SERIAL" shell dumpsys package "$PACKAGE" > "$ROLLBACK_VERIFIED_DUMP_PATH"
+    chmod 600 "$ROLLBACK_VERIFIED_DUMP_PATH"
+    verify_package_version "$ROLLBACK_VERIFIED_DUMP_PATH" "$PREVIOUS_VERSION" "$PREVIOUS_VERSION_CODE"
     ;;
   *) usage; exit 2 ;;
 esac

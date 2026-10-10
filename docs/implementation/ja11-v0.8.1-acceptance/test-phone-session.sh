@@ -112,7 +112,7 @@ PREVIOUS_SHA="$(shasum -a 256 "$PREVIOUS_APK" | awk '{print $1}')"
 SIGNER="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 
 run_install() {
-  local state="$1" evidence="$2" previous_version="${3:-0.8.0-ja11diag}" previous_sha="${4:-$PREVIOUS_SHA}" previous_signer="${5:-$SIGNER}"
+  local state="$1" evidence="$2" previous_version="${3:-0.8.0-ja11diag}" previous_sha="${4:-$PREVIOUS_SHA}" previous_signer="${5:-$SIGNER}" action="${6:-install}"
   mkdir -m 700 -p "$evidence"
   JA11_ADB_BIN="$FAKE_ADB" \
   JA11_APKSIGNER_BIN="$FAKE_APKSIGNER" \
@@ -126,6 +126,7 @@ run_install() {
   JA11_PREVIOUS_VERSION_CODE=11 \
   JA11_PREVIOUS_APK_SHA="$previous_sha" \
   JA11_PREVIOUS_SIGNER_SHA="$previous_signer" \
+  JA11_ROLLBACK_APK="$PREVIOUS_APK" \
   JA11_TEST_STATE="$state" \
   JA11_TEST_PREVIOUS_VERSION="$previous_version" \
   JA11_TEST_PREVIOUS_VERSION_CODE=11 \
@@ -138,7 +139,7 @@ run_install() {
   JA11_TEST_INSTALLED_FLAG="$INSTALLED_FLAG" \
   JA11_TEST_INSTALL_LOG="$INSTALL_LOG" \
   JA11_TEST_PULL_LOG="$PULL_LOG" \
-  PATH="$TMP_ROOT/bin:$PATH" "$HELPER" fixture install
+  PATH="$TMP_ROOT/bin:$PATH" "$HELPER" fixture "$action"
 }
 
 reset_fixture() { rm -f "$INSTALLED_FLAG" "$INSTALL_LOG" "$PULL_LOG"; }
@@ -196,5 +197,77 @@ fi
 grep -Fq 'Preserving existing prior APK backup' "$TMP_ROOT/backup-collision.out" || fail "backup path collision was not identified"
 grep -Fqx 'preserve this rollback copy' "$COLLISION_PATH" || fail "existing prior APK backup was overwritten"
 if [[ -s "$PULL_LOG" || -s "$INSTALL_LOG" ]]; then fail "backup path collision reached adb pull or install"; fi
+
+reset_fixture
+DUMP_COLLISION_DIR="$TMP_ROOT/package-dump-collision"
+mkdir -m 700 -p "$DUMP_COLLISION_DIR"
+DUMP_COLLISION_PATH="$DUMP_COLLISION_DIR/previous-ja11diag-package-20261010T000000Z.txt"
+printf 'preserve this prior package dump\n' > "$DUMP_COLLISION_PATH"
+if run_install installed "$DUMP_COLLISION_DIR" > "$TMP_ROOT/package-dump-collision.out" 2>&1; then
+  fail "existing prior package dump unexpectedly allowed update"
+fi
+grep -Fq 'Preserving existing prior package dump' "$TMP_ROOT/package-dump-collision.out" || fail "prior package dump collision was not identified"
+grep -Fqx 'preserve this prior package dump' "$DUMP_COLLISION_PATH" || fail "existing prior package dump was overwritten"
+if [[ -s "$PULL_LOG" || -s "$INSTALL_LOG" ]]; then fail "package dump collision reached adb pull or install"; fi
+
+reset_fixture
+CANDIDATE_APK_COLLISION_DIR="$TMP_ROOT/candidate-apk-collision"
+mkdir -m 700 -p "$CANDIDATE_APK_COLLISION_DIR"
+CANDIDATE_APK_COLLISION_PATH="$CANDIDATE_APK_COLLISION_DIR/verified-ja11diag-20261010T000000Z.apk"
+printf 'preserve this candidate APK\n' > "$CANDIDATE_APK_COLLISION_PATH"
+if run_install absent "$CANDIDATE_APK_COLLISION_DIR" > "$TMP_ROOT/candidate-apk-collision.out" 2>&1; then
+  fail "existing candidate APK evidence unexpectedly allowed install"
+fi
+grep -Fq 'Preserving existing verified candidate APK' "$TMP_ROOT/candidate-apk-collision.out" || fail "candidate APK evidence collision was not identified"
+grep -Fqx 'preserve this candidate APK' "$CANDIDATE_APK_COLLISION_PATH" || fail "existing candidate APK evidence was overwritten"
+if [[ -s "$PULL_LOG" || -s "$INSTALL_LOG" ]]; then fail "candidate APK evidence collision reached adb pull or install"; fi
+
+reset_fixture
+CANDIDATE_DUMP_COLLISION_DIR="$TMP_ROOT/candidate-dump-collision"
+mkdir -m 700 -p "$CANDIDATE_DUMP_COLLISION_DIR"
+CANDIDATE_DUMP_COLLISION_PATH="$CANDIDATE_DUMP_COLLISION_DIR/verified-ja11diag-package-20261010T000000Z.txt"
+printf 'preserve this candidate package dump\n' > "$CANDIDATE_DUMP_COLLISION_PATH"
+if run_install absent "$CANDIDATE_DUMP_COLLISION_DIR" > "$TMP_ROOT/candidate-dump-collision.out" 2>&1; then
+  fail "existing candidate package dump unexpectedly allowed install"
+fi
+grep -Fq 'Preserving existing verified candidate package dump' "$TMP_ROOT/candidate-dump-collision.out" || fail "candidate package dump collision was not identified"
+grep -Fqx 'preserve this candidate package dump' "$CANDIDATE_DUMP_COLLISION_PATH" || fail "existing candidate package dump was overwritten"
+if [[ -s "$PULL_LOG" || -s "$INSTALL_LOG" ]]; then fail "candidate package dump collision reached adb pull or install"; fi
+
+reset_fixture
+PACKAGE_DUMP_COLLISION_DIR="$TMP_ROOT/final-dump-collision"
+mkdir -m 700 -p "$PACKAGE_DUMP_COLLISION_DIR"
+PACKAGE_DUMP_COLLISION_PATH="$PACKAGE_DUMP_COLLISION_DIR/package-dump-20261010T000000Z.txt"
+printf 'preserve this package dump\n' > "$PACKAGE_DUMP_COLLISION_PATH"
+if run_install absent "$PACKAGE_DUMP_COLLISION_DIR" > "$TMP_ROOT/final-dump-collision.out" 2>&1; then
+  fail "existing package dump unexpectedly allowed install"
+fi
+grep -Fq 'Preserving existing package dump' "$TMP_ROOT/final-dump-collision.out" || fail "package dump collision was not identified"
+grep -Fqx 'preserve this package dump' "$PACKAGE_DUMP_COLLISION_PATH" || fail "existing package dump was overwritten"
+if [[ -s "$PULL_LOG" || -s "$INSTALL_LOG" ]]; then fail "package dump collision reached adb pull or install"; fi
+
+reset_fixture
+ROLLBACK_DUMP_COLLISION_DIR="$TMP_ROOT/rollback-dump-collision"
+mkdir -m 700 -p "$ROLLBACK_DUMP_COLLISION_DIR"
+ROLLBACK_DUMP_COLLISION_PATH="$ROLLBACK_DUMP_COLLISION_DIR/verified-rollback-ja11diag-package-20261010T000000Z.txt"
+printf 'preserve this rollback package dump\n' > "$ROLLBACK_DUMP_COLLISION_PATH"
+if run_install installed "$ROLLBACK_DUMP_COLLISION_DIR" 0.8.0-ja11diag "$PREVIOUS_SHA" "$SIGNER" rollback > "$TMP_ROOT/rollback-dump-collision.out" 2>&1; then
+  fail "existing rollback package dump unexpectedly allowed rollback"
+fi
+grep -Fq 'Preserving existing verified rollback package dump' "$TMP_ROOT/rollback-dump-collision.out" || fail "rollback package dump collision was not identified"
+grep -Fqx 'preserve this rollback package dump' "$ROLLBACK_DUMP_COLLISION_PATH" || fail "existing rollback package dump was overwritten"
+if [[ -s "$PULL_LOG" || -s "$INSTALL_LOG" ]]; then fail "rollback package dump collision reached adb pull or install"; fi
+
+reset_fixture
+ROLLBACK_APK_COLLISION_DIR="$TMP_ROOT/rollback-apk-collision"
+mkdir -m 700 -p "$ROLLBACK_APK_COLLISION_DIR"
+ROLLBACK_APK_COLLISION_PATH="$ROLLBACK_APK_COLLISION_DIR/verified-rollback-ja11diag-20261010T000000Z.apk"
+printf 'preserve this rollback APK\n' > "$ROLLBACK_APK_COLLISION_PATH"
+if run_install installed "$ROLLBACK_APK_COLLISION_DIR" 0.8.0-ja11diag "$PREVIOUS_SHA" "$SIGNER" rollback > "$TMP_ROOT/rollback-apk-collision.out" 2>&1; then
+  fail "existing rollback APK evidence unexpectedly allowed rollback"
+fi
+grep -Fq 'Preserving existing verified rollback APK' "$TMP_ROOT/rollback-apk-collision.out" || fail "rollback APK evidence collision was not identified"
+grep -Fqx 'preserve this rollback APK' "$ROLLBACK_APK_COLLISION_PATH" || fail "existing rollback APK evidence was overwritten"
+if [[ -s "$PULL_LOG" || -s "$INSTALL_LOG" ]]; then fail "rollback APK evidence collision reached adb pull or install"; fi
 
 echo "phone-session install fixtures passed"
