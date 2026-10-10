@@ -1,6 +1,168 @@
 # FiiO / JadeAudio JA11 protocol notes
 
-Status: **JA11 global-gain codec correction implemented; Flash/Save/final-readback and observed reconnect/restoration physically verified; explicit power-cycle persistence and full qualification pending**
+Status: **Model D makes serial optional continuity evidence while retaining exact candidate/session/cardinality, expected-reset, authoritative-readback, and no-replay gates. The clean branch `codex/ja11-v0.8.1-minimal` starts from `9b9a1f610025b3d6233d4ff6f0c2309a668577cc`; G1-G7 pass on its uncommitted source: 761 JVM tests, lint, debug/release/diagnostic/Android-test builds, R8, 64/64 isolated API 35 instrumentation, and guarded helper fixtures. The emulator used an isolated ADB server and is shut down. Independent review, exact-head CI, and candidate-provenance gates remain pending. PR #80 and its physical evidence remain historical. No Pixel, JA11, or physical-device command has been used on the clean branch. Do not use the phone until the exact tuple and all off-phone gates are reported and the owner confirms a fresh phone window.**
+
+
+## 2026-10-09 owner-approved Model D — current identity and restart policy
+
+The owner approved session-specific identity requirements for the v0.8.1 correction. This section
+supersedes the older J020/J021/J024 operational instructions in this file that make a unique
+nonblank serial mandatory. It does not change their historical evidence: J024's permissioned initial
+JA11 session opened and completed a read-only snapshot, but both Android serial readers returned
+null; no write or reset occurred.
+
+A USB serial is optional continuity evidence. Initial JA11 connection, ordinary reads, same-session
+controls, and scheduling a restart-capable control require the exact supported FiiO vendor/PID set,
+one unambiguous candidate, valid HID interface/endpoints, current Android permission, a successful
+fresh open/claim, and a current session generation. Multiple supported JA11 candidates fail closed
+regardless of serial values; never select by enumeration order. This JA11 rule does not change shared
+non-JA11 transport defaults.
+
+For expected reset/re-enumeration, require an accepted write, expected detach, invalidation of the
+old session, a fresh permissioned descriptor, successful open/claim, a new session generation, one
+supported replacement candidate, and authoritative fresh readback. Compare serials only when both
+sessions provide usable values and reject a mismatch. Missing serial is allowed only when exactly one
+supported candidate passes all operation-continuity checks. Describe the serialless result as
+**requested state verified on the sole returning supported JA11**; never claim same-physical-unit
+verification. Unsolicited reconnect without a pending operation starts a new session and baseline.
+Never replay an uncertain write.
+
+Flash/Save/Reset preserve their protocol-specific ordering while applying the same no-arbitrary-
+candidate and authoritative-final-readback rules. Keep exactly one logical Flash action and Save.
+Volume and preset persistence remain unresolved until the approved full-power physical test. J026
+on source `92c11fb0` used User 1 before data writes, passed Apply and pre-Save verification, accepted
+one Save, then detached 677 ms later during final readback. That physical result remains a failure
+for that candidate. The clean branch contains an in-progress bounded reconnect/readback-only
+correction; it has no frozen artifact or physical result. Its exact tests and all remaining gates are
+tracked in the mission State and Gate Matrix.
+
+## 2026-10-09 late Save detach — prior candidate failure and software correction
+
+The prior diagnostic source `92c11fb0e41ae11b118b2e7bb105234d6606dbdb` accepted one Save (`0x19`). The JA11 detached 677 ms later while band 4 final readback was in flight. A fresh session completed one full read-only snapshot matching the original captured state. No Save retry occurred, Test C failed for that APK, Test D did not run, and the Pixel was released. USB permission had already been granted; this was not a permission-timeout failure.
+
+The old PR #80 source used a 1-second initial observation and a 45-second control-restart deadline. Those figures and results belong to that candidate. The clean branch observes USB state events through a bounded post-Save window; a detected detach requires a sole fresh session before final readback. If detach is detected during final readback, it permits one bounded readback-only reconnect attempt. Ambiguity, serial mismatch when both values exist, timeout, and cancellation fail closed. It never replays data writes, Apply, or Save. Reconnect alone is not success; matching final readback on one stable generation is required. The exact clean-candidate timeout and behavior are not physically qualified yet.
+
+Physical qualification begins with an exact-candidate read-only baseline requiring one permissioned current JA11 session, one supported candidate, valid generation, and complete source-bound snapshot. Serial is optional. If both sessions expose usable serials, mismatch fails; without serial, report only state verified on the sole returning supported JA11 and do not claim same-unit identity. Do not address the Pixel until off-phone gates pass and the owner confirms a new `PHONE WINDOW READY — PIXEL + JA11 NEEDED` request. If Mic reads Off, restore it to On as the first mutation using expected-reset handling and authoritative post-reconnect readback; if already On, skip the write.
+
+## 2026-10-09 User 1 write-order correction — prior candidate
+
+Source commit `92c11fb0e41ae11b118b2e7bb105234d6606dbdb` changes JA11 Flash and Reset to read the
+active program, select User 1 if needed, and verify User 1 in the same current session before any
+`0x15` band or `0x17` global-gain write. An uncertain selector result stops as `TransferFailed` with
+state unknown before band/gain writes, Apply, or Save. Editor Apply checks fresh User 1 state directly
+before its data writes and does not select User 1 afterward. The confirmation copy discloses
+pre-write User 1 selection.
+
+The physical trace on the previous exact candidate strongly supports this ordering diagnosis but
+does not prove device-side bank semantics: that candidate sent five band writes and global gain
+before selecting User 1, then failed band 1 volatile readback before Save. Software regression tests
+use banked fakes to prove the application command order, not the JA11's hardware behavior.
+
+The diagnostic APK for source `92c11fb0` has SHA-256
+`ce3f417f20c275fd4d535cf5e70f658d8430af8fdd3f87ea950705fbfd574637`; package/version is
+`com.weekssa.opraeqforuapp.ja11diag`, `0.8.0-ja11diag` / 11, with the established debug signer. Full
+local G3 reports 861 JVM tests with zero failures, errors, or skips; lint/build/R8 and helper fixtures
+pass. Independent app and helper reviews found no actionable defect. The exact APK cold-launched on
+isolated API 35 with matching runtime source SHA, and source-matched debug instrumentation passed
+64/64. Exact-head PR #80 CI and physical qualification remain pending; do not reuse the old APK or
+use the Pixel before exact-head CI passes.
+
+## 2026-10-08 J021 — Android device serial getter returned null
+
+J021 used source `da1f8e25918065667648d676cb669fed4c803f17` and diagnostic APK SHA-256
+`767b42591adc92f0e1662480112bf9efe87ce15f51060d20a7aa39118b8d8c24` on the Pixel 9 / JA11,
+firmware `2.20`, VID/PID `0x2972:0x0102`. With USB permission granted, the initial session's
+`UsbDevice.serialNumber` getter returned null. The session completed a full read-only snapshot but
+reported `identityAvailable=false` while current. This was not a replacement session and recorded
+no write or restart. The visible Mic Off state means the original Mic On restoration remains
+outstanding.
+
+J021 does not prove the USB descriptor lacks a serial, and it does not resolve J020's replacement
+session. The candidate did not query the serial through its open `UsbDeviceConnection`. Android
+documents `UsbDeviceConnection.getSerial()` as the serial for that opened device connection; the
+current change queries it only when the JA11 device getter returns null. It does not substitute a
+port path, PID, firmware, product name, or interface number. Blank values and exceptions remain
+unavailable, and other shared USB transports do not enable the fallback. The change has automated
+fail-closed regression coverage but no physical result yet. See the [Android connection API
+reference](https://developer.android.com/reference/android/hardware/usb/UsbDeviceConnection) and
+[AOSP USB host implementation](https://android.googlesource.com/platform/system/core/+/3597339226f5c0681631df9039eebf07485c04de/libusbhost/usbhost.c).
+
+## 2026-10-08 opened-connection serial candidate — J024 candidate, superseded
+
+Application source `616958037349e2f0e0784a556c6430b0de6ceb18`, tree
+`fdb6c8d10c8aa865da1a4818d22a7c14b2559b21`, adds the Android connection serial as a JA11-only
+fallback when the primary `UsbDevice.serialNumber` getter returns null. The value comes from the
+same opened and claimed connection, before entering the lifecycle gate. Blank values and both
+security/runtime exceptions remain unavailable, other shared transports leave this option off, and
+`fiioJa11PhysicalIdentityKey` still requires one unique nonblank serial. Seven Robolectric identity
+regressions pass; the full local suite reports 825 tests with zero failures/errors/skips. A wiped
+API 35 emulator passed 64/64 instrumentation and the candidate's `APP_BUILD_INFO` source SHA. The
+diagnostic APK SHA-256 is `ee0fe4fbfaae7b3f959d4122f0c21c128dffdf21d47586376ee383e2534ceb0d`.
+These results do not prove the physical JA11 connection yields a serial. Exact latest PR-head checks,
+physical restoration of Mic On, and remaining acceptance tests are pending.
+
+## 2026-10-08 J020 USB permission and replacement identity findings
+
+J020 recorded one completed Mic On-to-Off write followed by USB detach. Android returned the
+replacement-session permission result about 18.5 seconds after the request. The replacement
+session then opened and read the device state, but its identity status was unavailable while the
+session remained current; no `RESTART_VERIFY_*` event was recorded. The last verified mic state is
+Off, and restoration to the original On state was not attempted.
+
+The stable JA11 restart identity is based on exactly one nonblank USB serial; expected PID and HID
+interface changes are excluded. J020's initial session passed that identity gate. On re-enumeration,
+the attach-side log had no readable serial value before permission; the later session's safe status
+was `identityAvailable=false` with `sessionCurrent=true`. Because the old diagnostic candidate
+suppressed serial-access exceptions and did not record a per-session serial status, the physical
+evidence cannot distinguish a missing/blank descriptor from permission-gated access or a
+post-permission access exception. A successful current session and readback are not identity proof.
+Do not substitute PID, name, firmware, or USB path for the serial key.
+
+The delayed permission and unavailable identity co-occurred, but the captured facts do not establish
+that one caused the other. The current implementation treats them separately: each permission
+attempt carries a request ID, device name/product ID and detach generation; an eligible grant
+re-resolves the current descriptor and checks permission before opening. A 10-second waiting
+fallback no longer destroys the JA11 attempt. JA11 has its own 25-second hard deadline; a grant
+after expiry is stale and requires a fresh Connect action. Retry, detach, explicit terminal
+cancellation and session close invalidate the applicable attempt. There is no automatic mutation
+replay.
+
+Other shared transports retain an eligible late permission callback after their 10-second retry
+fallback until an explicit retry, detach, cancellation, or close; their UI is retryable. JA11's
+prompt has a bounded 25-second lifetime. These policies are covered by Robolectric callback,
+denial, detach, stale-device, duplicate-callback, cancellation, and timeout regressions. Physical
+confirmation of the corrected JA11 path remains pending.
+
+The replacement diagnostic build reports only a per-session serial status category
+(`READABLE_NULL`, `READABLE_BLANK`, `READABLE_NONBLANK`, or exception category), never the serial
+value or a fingerprint. This provides the next physical session a read-only cause clue without
+relaxing the identity policy.
+
+Android documents that `UsbManager.requestPermission` returns the decision through the supplied
+`PendingIntent` extras but specifies no response-time service level. Android also documents that
+`UsbDevice.getSerialNumber()` can return `null`, and can throw `SecurityException` for apps
+targeting Android Q or later when they lack device permission. Those API behaviors make both
+permission-gated access and a missing descriptor plausible; neither proves which occurred in J020.
+See the official [UsbManager reference](https://developer.android.com/reference/android/hardware/usb/UsbManager)
+and [UsbDevice reference](https://developer.android.com/reference/android/hardware/usb/UsbDevice).
+
+## 2026-10-08 corrected source preflight
+
+The correction is committed at source `da1f8e25918065667648d676cb669fed4c803f17`. Its permission
+attempt tracker preserves a late grant after the shared 10-second retryable fallback, and JA11's
+own permission window terminates at 25 seconds. Each attempt is fenced by request ID, USB device
+name/PID, detach generation, and a freshly resolved permissioned `UsbDevice`. A UUID in the
+permission action makes PendingIntent identity unique across HID-session recreation, including
+reused in-memory request IDs. Grants for retired attempts remain stale. The unique-nonblank-serial
+identity key remains unchanged, and no uncertain mutation is replayed.
+
+Focused delayed-grant/stale-callback regressions and the full 818-test JVM suite passed, as did
+lint/build/R8 gates and all 64 API 35 emulator tests. The source-bound diagnostic APK and emulator
+runtime build event were verified off-phone. All eight required check rows passed on corrected-code
+PR head `ef688ca1a2c805c349439eb0e9ac24fb456641ad`; check PR #80 for any later documentation-only
+head. This narrows the software lifecycle defect; it does not identify why the J020 replacement
+session lacked a readable identity and does not prove the new candidate will pass on this JA11.
+Physical acceptance remains pending.
 
 ## 2026-09-26 J017 physical evidence — observed reconnect and exact restoration
 
@@ -138,15 +300,15 @@ The Kotlin implementation in this repository is independently written from obser
 
 The expanded v0.6 protocol facts were cross-checked against maintained public JA11 research, including `Cyfine/ja11-web-control` at commit `4d4eb83df6fcdf9e20b52e1bdf59a77f463b2c30`, which in turn documents independent comparison with FiiO Control behavior and live JA11 firmware 2.20 observations.
 
-## Current Save/readback lifecycle correction
+## Save/readback lifecycle policy
 
 FiiO's maintained FAQ documents Save as a chip restart/disconnect boundary. The current Android
-transport therefore treats Save as the explicit lifecycle exception: it waits for the optional
-detach/re-enumeration boundary before final readback, while ordinary reads and writes must remain
-on the same session and detach generation for the full exchange. This is a lifecycle-safety
-correction, not evidence that the signed gain codec, scale, tolerance, or device-domain value is
-wrong. Exact draft PR #41 head `b32c52a82a46899efd115efd8544deeb16b9eb4c` passed automated software
-gates; physical JA11 semantics remain pending raw transaction evidence.
+transport treats Save as a lifecycle boundary: it observes USB state events, requires a fresh
+session if detach is detected, and permits only final readback during replacement recovery.
+Ordinary reads and writes remain bound to one current session and detach generation. The current
+clean branch must pass its remaining gates and physical Test C before this behavior is qualified.
+This is a lifecycle-safety correction, not evidence that the signed gain codec, scale, tolerance,
+or device-domain value is wrong. Older PR #41 evidence remains historical.
 
 The diagnostic trace now performs the existing read-only firmware-version query (`0x0B`) during
 Flash/Reset preflight and records the result in both report formats. This metadata is optional: an
@@ -217,6 +379,21 @@ PEQ read/write retains the established v0.5 codec. Response parsing accepts the 
 This value is important to hardware truth. Reading stored User 1 PEQ bands does **not** prove that User 1 is currently active. My DAC must read the active EQ program before presenting User 1 bands as the current acoustic EQ.
 
 If `Off` is active, current EQ response is flat even though stored User 1 parameters may remain on-device. If Vocal/Classic/Bass is active and the device does not provide the actual underlying coefficients, EQ Library must identify the built-in program without inventing a response curve or attributing the stored User 1 bands as current.
+
+### User 1 write ordering
+
+JA11 Flash, Editor Apply, and Reset must select User 1 with `0x16` and read the active program back
+before sending any `0x15` band or `0x17` global-gain writes. If the selector transfer or readback is
+uncertain, stop before bands, gain, Apply, or Save. Apply, volatile readback, exactly one Save, and
+final readback follow the data writes. The clean branch implementation and focused ordering tests
+are pending full off-phone qualification and exact-candidate physical requalification.
+
+This ordering is a fail-closed software contract, not a claim that protocol research has proved
+per-program write-bank semantics. The J025 trace on an earlier candidate started on Off, wrote
+bands/gain before selecting User 1, and failed volatile verification before Save. J026 later selected
+and verified User 1 before writes, passed Apply/pre-Save verification, and failed only after the
+late Save detach. Those candidate-specific observations motivate the corrected order but do not
+qualify the clean branch.
 
 ### UAC mode
 
@@ -300,12 +477,7 @@ verifying the next transaction boundary. This is an evidence-backed software mit
 device-side processing/pacing loss, but it is not physical qualification: the exact unit firmware,
 PID/UAC mode, and packet trace remain owner-test evidence.
 
-FiiO's [JA11 FAQ](https://www.jadeaudio.com/details?_l=en&article_id=178) separately states that clicking Save causes the chip to power off and restart,
-so disconnect/re-enumeration is a documented Save lifecycle boundary. The Android transport must
-await the optional replacement-session boundary after Save before final readback; it must not
-assume that the ordinary mutation settle delay is sufficient. Firmware variants that persist
-without re-enumerating may continue on the same healthy session, but a detected detach requires a
-fresh connected session. This remains software behavior evidence, not physical qualification.
+FiiO's [JA11 FAQ](https://www.jadeaudio.com/details?_l=en&article_id=178) states that clicking Save causes the chip to power off and restart, so disconnect/re-enumeration is a documented lifecycle boundary. The clean branch must not treat the ordinary mutation settle delay as proof that the old session stayed valid. If no detach is observed during the bounded window, final readback is accepted only while the original session remains current; if detach is observed, readback requires a fresh connected session. A detach during final readback permits one readback-only retry. This remains software behavior evidence until the exact clean candidate passes physical acceptance.
 
 The supplied owner screenshot sequence adds a separate physical observation: after the optimized
 Jaytiss target was visible on connected JA11 hardware, My DAC displayed `-3.80 dB` global EQ gain,

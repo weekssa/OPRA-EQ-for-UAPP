@@ -42,15 +42,16 @@ interface FiioJa11Transport {
      * power-cycle/re-enumeration before final readback.
      */
     suspend fun saveToFlash(): Boolean = sendReport(FiioJa11Protocol.saveToFlashReport())
+
+    /** Re-open a fresh session for final readback if Save detached during the read sequence. */
+    suspend fun awaitFinalReadbackReconnect(): Boolean = false
 }
 
 /**
  * Direct-Flash transaction for the normal FiiO JA11 run-mode PEQ protocol.
  *
- * The five editable coefficients live in User 1. A complete Flash therefore writes every User 1
- * band, writes the global EQ gain, explicitly selects User 1, applies, verifies the active program
- * and coefficients, saves, then verifies again. This prevents a successful write to an inactive
- * User 1 bank from being misreported as an audible EQ change while Vocal/Classic/Bass/Off is active.
+ * The five editable coefficients live in User 1. A complete Flash selects and verifies User 1
+ * before writing its bands or gain, then applies, verifies, saves once, and verifies again.
  */
 class FiioJa11Flasher(
     private val transport: FiioJa11Transport,
@@ -125,6 +126,16 @@ class FiioJa11Flasher(
         )
 
         trace.stage(FiioJa11OperationStage.WRITING)
+        if (!transport.sendReport(FiioJa11Protocol.writeEqProgramReport(FiioJa11Protocol.EqProgram.USER_1))) {
+            return Kt02h20FlashResult.TransferFailed(
+                "FiiO JA11 did not accept selection of the User 1 PEQ program. No EQ data was written.",
+            )
+        }
+        if (transport.readEqProgram() != FiioJa11Protocol.EqProgram.USER_1) {
+            return Kt02h20FlashResult.VerificationFailed(
+                "FiiO JA11 could not confirm User 1 before writing. No bands, gain, Apply, or Save were sent.",
+            )
+        }
         targetBands.forEachIndexed { index, band ->
             if (!transport.sendReport(FiioJa11Protocol.writeBandReport(index, band))) {
                 return Kt02h20FlashResult.TransferFailed(
@@ -135,11 +146,6 @@ class FiioJa11Flasher(
         if (!transport.sendReport(FiioJa11Protocol.writeGlobalGainReport(representation.playbackGainDb))) {
             return Kt02h20FlashResult.TransferFailed(
                 "FiiO JA11 did not accept the required global EQ gain. The preset was not reported as applied.",
-            )
-        }
-        if (!transport.sendReport(FiioJa11Protocol.writeEqProgramReport(FiioJa11Protocol.EqProgram.USER_1))) {
-            return Kt02h20FlashResult.TransferFailed(
-                "FiiO JA11 did not accept selection of the User 1 PEQ program. The preset was not reported as applied.",
             )
         }
         if (!transport.sendReport(FiioJa11Protocol.applyReport())) {
@@ -160,7 +166,7 @@ class FiioJa11Flasher(
             )
         }
 
-        verifyTarget(targetBands, representation.playbackGainDb, trace, "FINAL_READBACK")?.let { reason ->
+        verifyFinalTarget(targetBands, representation.playbackGainDb, trace)?.let { reason ->
             return Kt02h20FlashResult.VerificationFailed(
                 "FiiO JA11 accepted Save, but the final readback did not match the intended PEQ. $reason",
             )
@@ -315,6 +321,16 @@ class FiioJa11Flasher(
         trace.targetManualEdit(targetBands, quantizedGlobalGainDb)
 
         trace.stage(FiioJa11OperationStage.WRITING)
+        if (!transport.sendReport(FiioJa11Protocol.writeEqProgramReport(FiioJa11Protocol.EqProgram.USER_1))) {
+            return FiioJa11EditorApplyResult.TransferFailed(
+                "FiiO JA11 did not accept selection of User 1. No editor EQ data was written.",
+            )
+        }
+        if (transport.readEqProgram() != FiioJa11Protocol.EqProgram.USER_1) {
+            return FiioJa11EditorApplyResult.VerificationFailed(
+                "FiiO JA11 could not confirm User 1 before writing. No bands, gain, Apply, or Save were sent.",
+            )
+        }
         targetBands.forEachIndexed { index, band ->
             if (!transport.sendReport(FiioJa11Protocol.writeBandReport(index, band))) {
                 return FiioJa11EditorApplyResult.TransferFailed(
@@ -325,11 +341,6 @@ class FiioJa11Flasher(
         if (!transport.sendReport(FiioJa11Protocol.writeGlobalGainReport(quantizedGlobalGainDb))) {
             return FiioJa11EditorApplyResult.TransferFailed(
                 "FiiO JA11 did not accept the reviewed global EQ gain. The requested state was not verified.",
-            )
-        }
-        if (!transport.sendReport(FiioJa11Protocol.writeEqProgramReport(FiioJa11Protocol.EqProgram.USER_1))) {
-            return FiioJa11EditorApplyResult.TransferFailed(
-                "FiiO JA11 did not accept selection of User 1. The requested state was not verified.",
             )
         }
         if (!transport.sendReport(FiioJa11Protocol.applyReport())) {
@@ -350,7 +361,7 @@ class FiioJa11Flasher(
                 "FiiO JA11 applied the reviewed EQ, but the one Save/reconnect boundary did not complete. The requested state was not verified.",
             )
         }
-        verifyTarget(targetBands, quantizedGlobalGainDb, trace, "FINAL_READBACK")?.let { reason ->
+        verifyFinalTarget(targetBands, quantizedGlobalGainDb, trace)?.let { reason ->
             return FiioJa11EditorApplyResult.VerificationFailed(
                 "FiiO JA11 editor Apply was not verified after Save. $reason",
             )
@@ -395,6 +406,16 @@ class FiioJa11Flasher(
         )
         val flatBands = FiioJa11Protocol.completeBands(emptyList())
         trace.stage(FiioJa11OperationStage.WRITING)
+        if (!transport.sendReport(FiioJa11Protocol.writeEqProgramReport(FiioJa11Protocol.EqProgram.USER_1))) {
+            return Kt02h20FlatResetResult.TransferFailed(
+                "FiiO JA11 did not accept selection of the flat User 1 EQ for Reset. No EQ data was written.",
+            )
+        }
+        if (transport.readEqProgram() != FiioJa11Protocol.EqProgram.USER_1) {
+            return Kt02h20FlatResetResult.VerificationFailed(
+                "FiiO JA11 could not confirm User 1 before Reset. No bands, gain, Apply, or Save were sent.",
+            )
+        }
         flatBands.forEachIndexed { index, band ->
             if (!transport.sendReport(FiioJa11Protocol.writeBandReport(index, band))) {
                 return Kt02h20FlatResetResult.TransferFailed(
@@ -405,11 +426,6 @@ class FiioJa11Flasher(
         if (!transport.sendReport(FiioJa11Protocol.writeGlobalGainReport(0.0))) {
             return Kt02h20FlatResetResult.TransferFailed(
                 "FiiO JA11 did not accept the 0 dB global EQ gain for Reset.",
-            )
-        }
-        if (!transport.sendReport(FiioJa11Protocol.writeEqProgramReport(FiioJa11Protocol.EqProgram.USER_1))) {
-            return Kt02h20FlatResetResult.TransferFailed(
-                "FiiO JA11 did not accept selection of the flat User 1 EQ for Reset.",
             )
         }
         if (!transport.sendReport(FiioJa11Protocol.applyReport())) {
@@ -425,7 +441,7 @@ class FiioJa11Flasher(
                 "The FiiO JA11 PEQ is flat in the current session, but the device did not complete the persistent Save/reconnect boundary.",
             )
         }
-        verifyTarget(flatBands, 0.0, trace, "FINAL_READBACK")?.let { reason ->
+        verifyFinalTarget(flatBands, 0.0, trace)?.let { reason ->
             return Kt02h20FlatResetResult.VerificationFailed(
                 "FiiO JA11 accepted Save, but the final flat-EQ readback did not match. $reason",
             )
@@ -463,6 +479,34 @@ class FiioJa11Flasher(
             return "JA11 global EQ gain readback did not match the intended value."
         }
         return null
+    }
+
+    private suspend fun verifyFinalTarget(
+        expectedBands: List<FiioJa11Protocol.Band>,
+        expectedGlobalGainDb: Double,
+        trace: FiioJa11OperationTraceBuilder,
+    ): String? {
+        val firstGeneration = transport.sessionGeneration
+        val firstDetachGeneration = transport.detachGeneration
+        val firstFailure = verifyTarget(expectedBands, expectedGlobalGainDb, trace, "FINAL_READBACK")
+        val firstReadbackStayedOnOneSession = firstGeneration == 0L ||
+            (transport.sessionGeneration == firstGeneration && transport.detachGeneration == firstDetachGeneration)
+        if (firstFailure == null && firstReadbackStayedOnOneSession) return null
+
+        val reason = firstFailure ?: "The JA11 USB session changed during final readback."
+        if (!transport.awaitFinalReadbackReconnect()) return reason
+
+        val retryGeneration = transport.sessionGeneration
+        val retryDetachGeneration = transport.detachGeneration
+        val retryFailure = verifyTarget(expectedBands, expectedGlobalGainDb, trace, "FINAL_READBACK")
+        if (retryFailure != null) return retryFailure
+        return if (retryGeneration == 0L ||
+            (transport.sessionGeneration == retryGeneration && transport.detachGeneration == retryDetachGeneration)
+        ) {
+            null
+        } else {
+            "The JA11 USB session changed again during final readback."
+        }
     }
 
     private suspend fun resetWithTrace(): Kt02h20FlatResetResult {

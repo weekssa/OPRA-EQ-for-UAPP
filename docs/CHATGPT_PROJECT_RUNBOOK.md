@@ -26,6 +26,7 @@ Before substantive work, read this file and the current documents relevant to th
 - `docs/BLACK_PEARL_V0.6_UAC_MODE.md` when Black Pearl UAC detection/manual-switch help is involved
 - `docs/BLACK_PEARL_V0.6_FACTORY_DEFAULTS_RESEARCH.md` and `docs/BLACK_PEARL_V0.6_RESTORE_DEFAULTS_HANDS_ON_CHECKLIST.md` for the current Black Pearl app-owned Restore-defaults contract and focused physical gate
 - `docs/FIIO_JA11_PROTOCOL_NOTES.md` and `docs/FIIO_JA11_HANDS_ON_CHECKLIST.md` when JA11 behavior is involved
+- `docs/implementation/JA11_V081_CONSTITUTION.md`, `docs/implementation/JA11_V081_STATE.md`, `docs/implementation/JA11_V081_GATE_MATRIX.md`, and `docs/implementation/ja11-v0.8.1-acceptance/PHONE-PLAN.md` for the owner-approved v0.8.1 JA11 correction and its exact-candidate physical gate
 - `docs/JCALLY_JM12_PROTOCOL_NOTES.md` and `docs/JCALLY_JM12_HANDS_ON_CHECKLIST.md` when JM12 behavior is involved
 - `docs/V0.3_HANDS_ON_CHECKLIST.md` for the qualified v0.3 Black Pearl/foundation record
 - `docs/BLACK_PEARL_FLAT_RESET_HANDS_ON_CHECKLIST.md` for the qualified v0.4 Black Pearl reset record
@@ -885,3 +886,13 @@ Main-only signing run `37769090436` produced artifact `11546549425` (ZIP SHA-256
 The qualified beta production app-source tree is unchanged, so existing C05 Class B physical qualification remains applicable. The exact read-only C05-C evidence passed on 2026-10-07 under plan revision 2.48; no phone/DAC/ADB/USB action was repeated for stable. Class B remains the honest hardware-change classification.
 
 Dependency caveat: the 2026-10-08 refresh found 56 open transitive Maven alerts in build/test tooling. The refreshed stable `releaseRuntimeClasspath` contained no alert-bearing coordinates; this is not a clean vulnerability scan, and no DEX scan was performed.
+
+## 2026-10-09 v0.8.1 clean JA11 implementation mission
+
+The owner authorized a clean implementation branch from exact `origin/main` `9b9a1f610025b3d6233d4ff6f0c2309a668577cc`. Branch `codex/ja11-v0.8.1-minimal` preserves PR #80 and its candidate-specific physical history; PR #80 remains open/draft/unmerged at head `5f471dfdce93c35f93a4632ca76ff729fcb58a6b`. Do not transplant its discarded architecture.
+
+The clean correction is limited to Mic/UAC expected-reset correctness, Model D optional serial with sole-candidate enforcement, User 1 selection and readback before Flash/Editor/Reset EQ writes, bounded Save detach observation with readback-only replacement recovery, stale-session rejection, and no write replay. The separate diagnostic-package installer verifies/preserves a known prior APK before `install -r`, uses guarded plain install only when absent, and stops on ambiguous or failed package state.
+
+The latest physical late-Save result is J026 on source `92c11fb0`: one Save was accepted, detach occurred about 677 ms later during final readback, no mutation was replayed, and a fresh complete snapshot matched the original captured baseline. Test C failed for that candidate; no result transfers to this clean branch. The full append-only ledger is `docs/FIIO_JA11_VALIDATION_LEDGER.md`; Model D and the physical acceptance sequence are governed by the Constitution, State, Gate Matrix, and acceptance `PHONE-PLAN.md`.
+
+At this checkpoint G1-G7 pass on the uncommitted source: 761 JVM tests with zero failures/errors/skips, lint, debug/release/diagnostic/Android-test assembly, R8 mapping verification, 64/64 isolated API 35 instrumentation, and guarded helper install fixtures. The emulator used a dedicated ADB server and is shut down; no Pixel, JA11, or physical hardware command has been issued on the clean branch. Independent review, exact-head CI, and the final candidate tuple remain pending. After all off-phone gates and the exact tuple are reported, request `PHONE WINDOW READY — PIXEL + JA11 NEEDED` and wait for fresh owner confirmation. Do not merge, publish, or make a new JA11 support claim without separate approval.

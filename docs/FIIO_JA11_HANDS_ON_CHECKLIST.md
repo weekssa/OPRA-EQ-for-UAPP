@@ -1,5 +1,133 @@
 # FiiO JA11 hands-on qualification
 
+## Current clean-branch status — 2026-10-09
+
+This checklist preserves prior physical evidence. It is not the current executable procedure. The
+current off-phone gates and authorized physical procedure are maintained in
+[`JA11_V081_STATE.md`](implementation/JA11_V081_STATE.md),
+[`JA11_V081_GATE_MATRIX.md`](implementation/JA11_V081_GATE_MATRIX.md), and
+[`ja11-v0.8.1-acceptance/PHONE-PLAN.md`](implementation/ja11-v0.8.1-acceptance/PHONE-PLAN.md).
+
+The clean implementation branch `codex/ja11-v0.8.1-minimal` starts from
+`9b9a1f610025b3d6233d4ff6f0c2309a668577cc`. G1-G7 pass on the uncommitted source: 761 JVM tests,
+lint, debug/release/diagnostic/Android-test builds, R8 mapping verification, 64/64 isolated API 35
+instrumentation, and guarded helper fixtures. The emulator used a dedicated ADB server and is shut
+down. Independent review, exact-head CI, and candidate provenance remain pending. No Pixel, JA11,
+or hardware command has been run on this branch. PR #80 remains open and historical.
+
+Do not access the Pixel until the exact candidate tuple and all off-phone gates are reported and the
+owner confirms a fresh phone window. In that single session, follow `PHONE-PLAN.md`: verify the
+candidate, take a complete read-only baseline, restore Mic to On first only if the baseline reads
+Off, run the prepared UAC and one-Flash sequence, perform only still-required full-power
+volume/program observations, restore the complete baseline, capture sufficient evidence, and release
+the Pixel. Serial is optional continuity evidence under Model D; compare it when both sessions have
+usable serials and reject mismatch. Without matching serial evidence, do not claim same-unit proof.
+
+### Preserved prior physical result — J026
+
+J026 used source `92c11fb0e41ae11b118b2e7bb105234d6606dbdb`. Mic Off-to-On and UAC 2.0-to-1.0-to-2.0
+passed. Flash from Off selected and verified User 1 before EQ data writes, passed Apply and pre-Save
+verification, then accepted exactly one Save. The JA11 detached about 677 ms later during final
+readback. No mutation was replayed; Test C failed for that candidate and Test D was not run. A fresh
+sole supported session completed a full snapshot matching the captured original state, and the
+Pixel was released. This record does not qualify the clean candidate. See the append-only
+[validation ledger](FIIO_JA11_VALIDATION_LEDGER.md).
+
+## Historical candidate records
+
+## 2026-10-08 replacement candidate preflight — superseded by Model D
+
+The physical session must use source `616958037349e2f0e0784a556c6430b0de6ceb18`, tree
+`fdb6c8d10c8aa865da1a4818d22a7c14b2559b21`, and diagnostic APK SHA-256
+`ee0fe4fbfaae7b3f959d4122f0c21c128dffdf21d47586376ee383e2534ceb0d`. It is package
+`com.weekssa.opraeqforuapp.ja11diag`, version `0.8.0-ja11diag`/11, with the established Android
+debug signer. The exact source-bound APK cold-launched on a wiped API 35 emulator; all 64
+instrumentation tests passed. The current JVM XML count is 825 with zero failures, errors or skips;
+local focused session tests, lint, builds and R8 verification passed. These results are not physical
+acceptance.
+
+The phone is available, but the next phone command is gated on all required checks passing on the
+final live PR #80 head and the exact helper/provenance refresh. Before any write, the read-only
+helper must verify that the exact candidate's descriptor event reports granted permission, a null
+device serial, and a nonblank opened-connection serial for JA11 PID `0x0101` or `0x0102`, then a
+matching opened session, complete snapshot, and current unique-identity result for the same process
+and generation, confirms the emitting app PID is still running, and rejects later detach/close
+events for that session. The helper prints only status, product ID, process/session metadata, and
+booleans; it never exposes the serial or fingerprint. If
+the connection fallback or stable unique identity is unavailable or ambiguous, stop and release the
+phone without mutation. J020 remains the latest mutation and Mic Off the last verified state; only
+after that gate and a complete fresh baseline may one Off-to-On write restore Mic On. Preserve the
+original baseline and no-replay rules below.
+
+## 2026-10-08 J021 read-only identity result and next candidate
+
+J021 used the `da1f8e2` diagnostic candidate, Pixel 9 / JA11 firmware `2.20`, and VID/PID
+`0x2972:0x0102`. Android granted USB permission, but `UsbDevice.serialNumber` returned null in the
+initial connected session. The read-only full snapshot completed and reported
+`identityAvailable=false` while the session was current. This was not a replacement-session test;
+no write or restart occurred. A screenshot showed Mic Off, UAC 2.0, and 384 kHz. The original Mic On
+restoration remains outstanding. Raw evidence is private under
+`/private/tmp/ja11-v0.8.1-acceptance-da1f8e25/owner-phone-session-20261008`.
+
+The replacement candidate reads `UsbDeviceConnection.getSerial()` from the same opened JA11 only
+when the device getter returns null. It keeps the unique nonblank serial requirement and does not
+fall back on blank values or exceptions. This is based on Android's documented connection serial
+API; physical behavior remains unverified. The exact source/APK tuple and local results are listed
+above; the live PR checks remain the last software gate. If the fresh candidate cannot establish
+identity, stop before mutation and report Mic On restoration as unresolved.
+
+## 2026-10-08 J020 boundary and recovery-first next session
+
+J020 used source `a78808443c71d688e0f338e96495847569fe12f7` and APK SHA-256
+`7beb5bcebbc0dc40a68b33de911cc8722d76d3f0ff2e98685b1fa25e17caed61` on Pixel 9 / JA11 firmware
+2.20, VID/PID `0x2972:0x0102`. The initial identity gate passed. One Mic On-to-Off write completed
+and detached; replacement-session USB permission arrived about 18.5 seconds after the request.
+The current replacement session freshly read Mic Off and the unchanged EQ baseline, but reported
+`identityAvailable=false` while `sessionCurrent=true`; no `RESTART_VERIFY_*` event was recorded.
+No second mutation or restoration was attempted. Tests B/C/D were not run. The last verified mic
+state is Off; restoration to the original On state is outstanding. Do not reuse the J020 APK.
+
+The identity key requires exactly one nonblank USB serial. The J020 pre-permission attach log had
+no readable serial value, but it does not distinguish a missing/blank descriptor from
+permission-gated access or a suppressed access exception after permission. Keep identity
+fail-closed; do not use PID, device name, firmware, interface number or path as a substitute.
+The corrected diagnostic candidate logs only privacy-safe per-session serial status categories.
+
+The next owner-present session must use the exact newly frozen candidate and start with a fresh
+complete baseline and identity read. Do not mutate if the candidate/source hash is wrong, the
+baseline is incomplete, or identity is missing/ambiguous. Then:
+
+- If Mic is Off, perform exactly one Off-to-On control write. This restores the required original
+  state and serves as the corrected candidate's Test A for delayed permission/restart/readback.
+  Do not toggle it again if fresh readback confirms On and the complete original baseline.
+- If Mic is already On, record that the original state is restored and skip all microphone
+  mutations. Do not turn Mic Off just to repeat Test A; continue to Test B only after the complete
+  original baseline has been captured and verified.
+- If either write becomes uncertain, or replacement identity is unavailable, stop all further
+  mutation. Do not replay. Preserve the last verified state, capture read-only evidence and release
+  the phone; restoration remains pending unless fresh authoritative readback proves otherwise.
+- Continue UAC, Flash-from-Off and volume/program checks only after Mic restoration is verified
+  (or already On in the complete fresh baseline) and the original baseline is preserved. Never start another mutation when
+  identity is unavailable.
+
+## 2026-10-08 corrected candidate preflight — code-head CI PASS; physical gate pending
+
+The corrected source is `da1f8e25918065667648d676cb669fed4c803f17` (tree
+`aa41aba1ddfe37006aab0f1cfdb21c4df63c2481`). Use diagnostic APK
+`opra-eq-ja11diag-0.8.0-source-da1f8e25.apk`, SHA-256
+`767b42591adc92f0e1662480112bf9efe87ce15f51060d20a7aa39118b8d8c24`, package
+`com.weekssa.opraeqforuapp.ja11diag`, version `0.8.0-ja11diag`/11, debug signer SHA-256
+`73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`. G2/G3 and R8 pass; the
+JVM suite counted 818 tests with zero failures, errors, or skips, and isolated API 35 instrumentation
+passed 64/64. Emulator runtime reported the exact source SHA. All eight required check rows passed
+on corrected-code PR head `ef688ca1a2c805c349439eb0e9ac24fb456641ad`; current checks for any later
+documentation-only PR head are visible in PR #80. These are software/emulator results; the
+replacement candidate has not been used with Pixel or JA11. Require green current PR-head checks
+before the owner-present physical session. The J020 Mic On restoration-first procedure above
+applies when the fresh complete baseline reads Mic Off; if it already reads On, record restoration
+as satisfied and skip all Mic writes. The last verified hardware state remains Mic Off, not a
+statement of the device's current state.
+
 ## 2026-09-26 corrected-codec owner gate — J017 FLASH/RECONNECT/RESTORATION PASS / POWER-CYCLE EVIDENCE PENDING / FINAL RELEASE BLOCKED
 
 The previous J012 failure is explained by a proven Android codec defect. Official FiiO Control

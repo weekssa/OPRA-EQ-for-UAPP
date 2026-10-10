@@ -26,8 +26,8 @@ android {
         applicationId = "com.weekssa.opraeqforuapp"
         minSdk = 26
         targetSdk = 36
-        versionCode = 11
-        versionName = "0.8.0"
+        versionCode = 12
+        versionName = "0.8.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "OPRA_CATALOG_URL", "\"${opraCatalogUrl.get()}\"")
@@ -39,6 +39,13 @@ android {
     }
 
     buildTypes {
+        create("ja11Diagnostic") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".ja11diag"
+            versionNameSuffix = "-ja11diag"
+            matchingFallbacks += listOf("debug")
+            buildConfigField("String", "CANDIDATE_SOURCE_SHA", "\"${candidateSourceSha.get()}\"")
+        }
         release {
             isMinifyEnabled = true
             // Save qualification is already physically accepted and is never a production action.
