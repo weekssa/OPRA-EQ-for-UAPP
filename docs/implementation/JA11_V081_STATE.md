@@ -10,7 +10,8 @@ As of 2026-10-09. This concise snapshot applies to the clean implementation bran
 - Base: `9b9a1f610025b3d6233d4ff6f0c2309a668577cc`, equal to refreshed `origin/main`
 - Frozen production source commit: `9493cf030acb440f92e547fc667f6a5399616045`. It follows the source implementation commit `32f1006fb1b1edbcba3b0470ed71772448e48886` only to correct the `applyEditorWorkingCopy` KDoc transaction order; no executable behavior changed in that final commit.
 - PR #80 remains open/draft/unmerged at head `5f471dfdce93c35f93a4632ca76ff729fcb58a6b`; it is preserved as historical evidence and has not been changed.
-- The clean A-E implementation, focused regressions, helper correction, and maintained evidence updates are committed. The exact-source diagnostic APK is built and host-verified. A new draft PR head and exact-head CI remain pending, so the full candidate tuple is not frozen.
+- Draft PR [#81](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/81) is open for the clean candidate. Its live head and required-check results are authoritative; exact-head CI must pass before the candidate tuple is frozen.
+- The clean A-E implementation, focused regressions, helper correction, and maintained evidence updates are committed. The exact-source diagnostic APK is built and host-verified. No physical result transfers to this source.
 
 ## Scope and implementation status
 
@@ -18,7 +19,7 @@ The candidate is limited to expected Mic/UAC reset verification, Model D optiona
 
 ### Production scope map
 
-The production diff is 418 insertions and 69 deletions across seven files (487 changed lines), all mapped to A-E or candidate identity:
+The production diff is 420 insertions and 71 deletions across seven files (491 changed lines), all mapped to A-E or candidate identity:
 
 | Production file | Requirement | Reason |
 | --- | --- | --- |
@@ -40,10 +41,6 @@ The last verified prior session recorded the original device state restored befo
 
 ## Next authorized steps
 
-1. Push the committed branch and open its draft PR without changing production source.
-2. Pass required CI on that exact PR head; record the exact PR head and checks in the live draft PR and local evidence ledger.
-3. Freeze and independently verify the tuple: source SHA `9493cf030acb440f92e547fc667f6a5399616045`, exact PR head, diagnostic APK SHA-256 `98ee2eb876ec0d6d5bcfcebebdf55e1c77f2f7edfbecfd59322a94e5feea48ae`, package `com.weekssa.opraeqforuapp.ja11diag`, version/versionCode `0.8.1-ja11diag` / `12`, and signer certificate SHA-256 `73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`.
-4. Report **CLEAN v0.8.1 CANDIDATE READY**, then request `PHONE WINDOW READY — PIXEL + JA11 NEEDED` and wait for fresh owner confirmation.
-5. During the single confirmed window, begin with exact APK verification and a read-only complete baseline. Restore Mic to On as the first mutation only if the new baseline reads Off. Follow the bounded acceptance plan, restore every changed value from that baseline, capture evidence, and release the Pixel immediately.
+The required sequence is exact-head CI on the live PR #81 head, exact tuple freeze, the **CLEAN v0.8.1 CANDIDATE READY** report, then a new `PHONE WINDOW READY — PIXEL + JA11 NEEDED` request and owner confirmation. Follow the single-window test and restoration sequence in `PHONE-PLAN.md`. Do not infer the current PR head or CI status from this snapshot; read PR #81 immediately before freezing the tuple.
 
 No merge, publication, or new public JA11 hardware-support claim is authorized.
