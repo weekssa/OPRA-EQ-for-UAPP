@@ -1,12 +1,16 @@
 # JA11 v0.8.1 acceptance package
 
-This directory contains the separate-package candidate install guard and one consolidated physical acceptance plan. It is not permission to access the Pixel. The candidate is not frozen yet.
+This directory contains the separate-package candidate install guard and one consolidated physical acceptance plan. It is not permission to access the Pixel. The APK/source pair is verified; the exact PR head and required CI are still pending.
 
 ## Current off-phone status
 
 - Clean branch: `codex/ja11-v0.8.1-minimal`
 - Base: `9b9a1f610025b3d6233d4ff6f0c2309a668577cc`
-- Exact production candidate, APK digest, package tuple, and signer: pending final gates
+- Production source SHA: `9493cf030acb440f92e547fc667f6a5399616045`
+- Diagnostic APK SHA-256: `98ee2eb876ec0d6d5bcfcebebdf55e1c77f2f7edfbecfd59322a94e5feea48ae`
+- Package/version/versionCode: `com.weekssa.opraeqforuapp.ja11diag`, `0.8.1-ja11diag` / `12`
+- Signer certificate SHA-256: `73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`
+- Exact PR head and required CI: pending; the complete tuple is not frozen
 - Pixel/JA11 commands: none on this branch
 - PR #80: preserved as open/draft historical evidence; no changes made
 

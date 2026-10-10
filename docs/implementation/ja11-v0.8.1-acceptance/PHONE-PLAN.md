@@ -1,6 +1,6 @@
 # JA11 v0.8.1 physical acceptance plan
 
-Status: **blocked on off-phone gates and fresh owner confirmation**. This plan authorizes no current phone action.
+Status: **blocked on exact-head CI, completion of the PR-head candidate tuple, and fresh owner confirmation**. This plan authorizes no current phone action. The verified source/APK pair is recorded in `../JA11_V081_STATE.md`; do not use it until the exact PR head and required CI are green.
 
 ## Candidate and window gate
 

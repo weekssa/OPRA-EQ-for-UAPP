@@ -8,12 +8,15 @@ current off-phone gates and authorized physical procedure are maintained in
 [`JA11_V081_GATE_MATRIX.md`](implementation/JA11_V081_GATE_MATRIX.md), and
 [`ja11-v0.8.1-acceptance/PHONE-PLAN.md`](implementation/ja11-v0.8.1-acceptance/PHONE-PLAN.md).
 
-The clean implementation branch `codex/ja11-v0.8.1-minimal` starts from
-`9b9a1f610025b3d6233d4ff6f0c2309a668577cc`. G1-G7 pass on the uncommitted source: 761 JVM tests,
-lint, debug/release/diagnostic/Android-test builds, R8 mapping verification, 64/64 isolated API 35
-instrumentation, and guarded helper fixtures. The emulator used a dedicated ADB server and is shut
-down. Independent review, exact-head CI, and candidate provenance remain pending. No Pixel, JA11,
-or hardware command has been run on this branch. PR #80 remains open and historical.
+The clean implementation branch `codex/ja11-v0.8.1-minimal` is based on
+`9b9a1f610025b3d6233d4ff6f0c2309a668577cc`, with frozen production source
+`9493cf030acb440f92e547fc667f6a5399616045`. G1-G8 and G11 pass. The exact diagnostic APK SHA-256
+is `98ee2eb876ec0d6d5bcfcebebdf55e1c77f2f7edfbecfd59322a94e5feea48ae`; package
+`com.weekssa.opraeqforuapp.ja11diag`, version `0.8.1-ja11diag` / code `12`, signer certificate
+SHA-256 `73aa7581c8dc7dcc8ccea7586771119a98f9a74d7d8cf23716e09c557c9f6b41`. The exact APK embeds
+the source SHA and clean-installed/cold-launched on the isolated API 35 emulator. Required exact-head
+CI and the PR-head portion of the tuple remain pending. No Pixel, JA11, or physical-device command
+has been run on this branch. PR #80 remains open and historical.
 
 Do not access the Pixel until the exact candidate tuple and all off-phone gates are reported and the
 owner confirms a fresh phone window. In that single session, follow `PHONE-PLAN.md`: verify the
