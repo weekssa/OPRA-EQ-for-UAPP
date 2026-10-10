@@ -450,8 +450,7 @@ class EqLibraryViewModel(
                 when (state) {
                     Kt02h20ConnectionState.Connected -> {
                         val pending = mutableFiioJa11DeviceState.value.pendingRestartWrite
-                        if (pending != null) verifyPendingFiioJa11Control(pending)
-                        else refreshFiioJa11DeviceState()
+                        if (pending == null) refreshFiioJa11DeviceState()
                     }
                     else -> mutableFiioJa11DeviceState.update(FiioJa11DeviceUiState::markStale)
                 }
@@ -568,6 +567,7 @@ class EqLibraryViewModel(
                 is FiioJa11ControlWriteResult.ReconnectRequired -> {
                     mutableFiioJa11DeviceState.value =
                         mutableFiioJa11DeviceState.value.reconnectRequired(result.pending)
+                    verifyPendingFiioJa11Control(result.pending)
                 }
                 else -> mutableFiioJa11DeviceState.value = mutableFiioJa11DeviceState.value.failure(
                     fiioJa11WriteFailureMessage(result),
@@ -596,6 +596,9 @@ class EqLibraryViewModel(
     private suspend fun verifyPendingFiioJa11Control(
         pending: com.weekssa.opraeqforuapp.data.dac.FiioJa11PendingRestartWrite,
     ) {
+        val current = mutableFiioJa11DeviceState.value
+        if (current.pendingRestartWrite !== pending || current.isReading) return
+        mutableFiioJa11DeviceState.value = current.beginRead()
         when (val result = fiioJa11ControlRepository.verifyRestartedControl(pending)) {
             is FiioJa11ControlWriteResult.Verified -> {
                 mutableFiioJa11DeviceState.value =

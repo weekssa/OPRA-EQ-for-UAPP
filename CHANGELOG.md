@@ -6,6 +6,12 @@ The project uses Semantic Versioning. The `0.x` series is pre-1.0; a version wit
 
 ## [Unreleased]
 
+### FiiO JA11 reliability
+
+- Verify Mic/UAC reset writes only after the old USB session detaches and one fresh JA11 session returns; do not replay an uncertain write.
+- Select and verify User 1 before Flash, editor, or Reset EQ writes. A late detach after Save can continue with final readback only.
+- Keep JA11 serial optional for continuity and fail closed when multiple supported candidates are connected. Physical requalification is pending; this entry does not add a hardware-support claim.
+
 ## [0.8.0] - 2026-10-08
 
 ### EQ Library modernization
