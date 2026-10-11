@@ -143,9 +143,32 @@ class Device:
 
     def type_text(self, label: str, value: str, *, contains: bool = False) -> None:
         self.tap_text((label,), contains=contains)
-        encoded = value.replace("%", "\\%").replace(" ", "%s")
-        self.shell("input", "text", encoded)
+        for part in re.split(r"( )", value):
+            if part == " ":
+                self.shell("input", "keyevent", "62")
+            elif part:
+                self.shell("input", "text", part.replace("%", "\\%"))
+        self.wait_edit_text(value)
         self.shell("input", "keyevent", "4")
+
+    def wait_edit_text(self, value: str, timeout: int = 15) -> None:
+        expected = " ".join(value.split())
+        deadline = time.monotonic() + timeout
+        observed: list[str] = []
+        while time.monotonic() < deadline:
+            root = self.dump("typed-input")
+            observed = [
+                " ".join(node.attrib.get("text", "").split())
+                for node in root.iter("node")
+                if node.attrib.get("class") == "android.widget.EditText"
+            ]
+            if expected in observed:
+                return
+            time.sleep(0.25)
+        raise SmokeError(
+            f"Text entry did not reach the expected editable value {expected!r}; "
+            f"observed editable values={observed!r}"
+        )
 
     def screenshot(self, name: str) -> None:
         data = subprocess.run(
@@ -200,6 +223,7 @@ def seed_persisted_state(device: Device) -> None:
         device.type_text("Equalizer APO / AutoEq text", FIXTURE_PEQ)
         device.tap_text(("Parse EQ text",))
         device.wait_text(("Step 2 of 5 · Parse",), timeout=30)
+        device.wait_text(("1 active filters",), timeout=30)
         device.tap_text(("Continue to description",))
         device.wait_text(("Describe this EQ",), timeout=30)
         device.type_text("Manufacturer", FIXTURE_MANUFACTURER)
