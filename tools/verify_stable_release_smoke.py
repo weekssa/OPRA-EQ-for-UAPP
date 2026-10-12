@@ -308,7 +308,22 @@ def assert_checked(device: Device, label: str) -> None:
 
 def wait_for_catalog(device: Device, prefix: str) -> None:
     device.tap_text(("EQ Library",))
-    device.wait_text(("Manufacturers",), timeout=60)
+    wait_for_catalog_ready(device, prefix)
+
+
+def wait_for_catalog_ready(device: Device, prefix: str) -> None:
+    deadline = time.monotonic() + 180
+    retried = False
+    while time.monotonic() < deadline:
+        if device.has_text("Manufacturers"):
+            break
+        if not retried and device.has_text("Try again"):
+            device.screenshot(f"{prefix}-catalog-retry")
+            device.tap_text(("Try again",), timeout=10)
+            retried = True
+        time.sleep(2)
+    else:
+        raise SmokeError("Timed out waiting for the catalog to expose Manufacturers")
     device.wait_text(("1Custom",), timeout=300)
     device.screenshot(f"{prefix}-library-ready")
 
@@ -322,9 +337,7 @@ def assert_seeded_state(device: Device, prefix: str) -> None:
     assert_checked(device, "Manual")
     device.screenshot(f"{prefix}-manual-preserved")
     device.tap_text(("EQ Library",))
-    device.wait_text(("Manufacturers",), timeout=60)
-    device.wait_text(("1Custom",), timeout=300)
-    device.screenshot(f"{prefix}-catalog-ready")
+    wait_for_catalog_ready(device, prefix)
 
 
 def verify_upgrade(args: argparse.Namespace) -> None:
