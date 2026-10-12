@@ -29,6 +29,17 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Bind exact candidate source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_sha="$(git rev-parse HEAD)"
+          test "$source_sha" = "$GITHUB_SHA" || {
+            echo "Checked-out source $source_sha does not match workflow source $GITHUB_SHA" >&2
+            exit 1
+          }
+          echo "CANDIDATE_SOURCE_SHA=$source_sha" >> "$GITHUB_ENV"
+
       - name: Set up JDK 17
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
@@ -83,7 +94,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Run release gate and build unsigned APK
-        run: gradle :app:testDebugUnitTest :app:lintDebug :app:assembleRelease --stacktrace
+        run: gradle :app:testDebugUnitTest :app:lintDebug :app:assembleRelease --stacktrace -PCANDIDATE_SOURCE_SHA="$CANDIDATE_SOURCE_SHA"
 
       - name: Verify minified release output
         env:
@@ -101,6 +112,15 @@ jobs:
           cp "$mapping" dist/r8-mapping.txt
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$unsigned_apk" |
             grep -F "package: name='com.weekssa.opraeqforuapp' versionCode='${VERSION_CODE}' versionName='${VERSION_NAME}'" >/dev/null
+          unzip -p "$unsigned_apk" classes.dex | strings |
+            grep -F "Signed candidate source: ${CANDIDATE_SOURCE_SHA}" >/dev/null || {
+              echo "Release APK does not embed the exact candidate source SHA" >&2
+              exit 1
+            }
+          if unzip -p "$unsigned_apk" classes.dex | strings | grep -F "local-unqualified" >/dev/null; then
+            echo "Release APK contains the unqualified candidate source fallback" >&2
+            exit 1
+          fi
 
       - name: Align, sign, and verify APK
         env:
