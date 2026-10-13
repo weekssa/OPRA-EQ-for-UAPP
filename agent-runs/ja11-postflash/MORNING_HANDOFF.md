@@ -1,43 +1,53 @@
-PRODUCTION FIX REVIEWED — EXACT-HEAD GATES RUNNING
+OWNER MERGE APPROVAL REQUIRED — SIGNED CANDIDATE BLOCKED
 
-The architectural root is established at >=95% confidence from the owner’s regular-app video, source, and automatic reproduction using real Compose/flasher and ViewModel/repository/session paths with simulated transport. During Save disconnect, Automatic output briefly changes; the old target/library mismatch removed the open managed-headphone detail and cancelled its screen-owned Flash task. Cancellation prevented terminal operation publication and existing completion reads. Stranded Running FLASH suppresses all EQ content while independent DEVICE state can become current. The original low-level null field remains unknown; no protocol/read policy guess is required.
+The JA11 architectural cause is established at >=95% confidence, the original failure state is reproduced automatically, the minimal production fix is implemented, fresh adversarial Luna High review approves it, and all pre-merge automated checks pass. The remaining blocker is explicit owner approval to merge [PR #94](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/94) and run the existing main-only candidate signer. No release, public tag, phone installation or further JA11 action has occurred during this software work.
 
-The separate production fix keeps globally owned rows visible through target changes and runs the existing JA11 Flash/EQ/DEVICE completion in the retained ViewModel scope. Screen await cancellation is independent; actual ViewModel clearing still cancels and closes the session. No extra USB command, Save, retry, delay, identity/security relaxation or transaction-policy change. Black Pearl/EW300 paths are unchanged. Prospective version0.8.2/code13 remains unpublished.
+## Cause and correction
 
-| Field | Current verified state |
+The owner’s regular-app video shows Save disconnect changing Automatic output from FiiO to UAPP, a transient empty My EQs library, automatic profile-screen removal, reconnect, current DEVICE values and a literally blank EQ tab. Source and real Compose/flasher plus ViewModel/repository/session tests establish the chain: output-key mismatch removed owned rows and disposed the screen-owned Flash caller; cancellation bypassed terminal operation publication and the existing completion read policy; stranded Running FLASH suppressed EQ content while independent DEVICE could recover. Original low-level null-field attribution remains unknown. Confidence concerns this architectural path, not captured cancellation telemetry or a statistical estimate.
+
+The fix retains globally owned managed/Personal/general rows during output changes while derived export currentness remains keyed to the selected target. The existing JA11 Flash/EQ/DEVICE completion now runs in the retained ViewModel scope; losing a screen await does not cancel it. Actual ViewModel clearing still cancels and closes the session. No protocol, USB command, Save count, retry policy, delay, mutex, identity or security change. Black Pearl and EW300 runtime paths are unchanged.
+
+## Exact reviewed software
+
+| Field | Verified state |
 | --- | --- |
-| Production branch | `codex/fix-ja11-postflash-convergence-final` |
+| Production source SHA | `a39965d34974edf704c351441038394191d052e9` |
+| Branch | `codex/fix-ja11-postflash-convergence-final` |
 | Worktree | `/Users/stephenweeks/.codex/worktrees/ja11-flash-owner-fix/OPRA-EQ-for-UAPP` |
-| Exact source | `a39965d34974edf704c351441038394191d052e9` |
-| Current main incorporated | `dbefc0fe225ff13031ef99323f4391a9a978ed02` |
-| Draft PR | [#94](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/94), attached, no merge approval |
-| Fresh Luna High review | APPROVE exacta39965d3; ownership-row P2 and deterministic disconnect fixture barrier corrected |
-| Local focused/full unit |Finala39965d3 five new focused cases and777 total PASS,0failures/errors/skips; independently run by bounded Luna and XML rechecked by primary |
-| Lint/build |0errors/118warnings/2hints; debug/release/diagnostic/test assembly + R8 PASS |
-| Workflow/security contracts |actionlint and existing candidate-signing promotion contract PASS |
-| Exact-head hosted run |[38468082823](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/38468082823), four real jobs RUNNING |
-| CodeQL |Exact-head and standard PR PENDING |
-| Catalog/community/dependency |Earlier heads PASS; final head PENDING |
-| Qualified production APK hash |NOT CREATED; no substitute debug/unsigned artifact |
-| Package/version/code |`com.weekssa.opraeqforuapp` / `0.8.2` / `13` |
-| Required official signer |`65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747` |
-| Signed-candidate provenance |PENDING main-only workflow; explicit owner merge approval required |
-| Production physical acceptance |NOT RUN |
+| PR | [#94](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/94), open/draft, attached, clean merge state |
+| Main incorporated / current remote | `dbefc0fe225ff13031ef99323f4391a9a978ed02` / `d193eb35db862b728075d32890fe5f65b40fb36d`; later drift is catalog-only |
+| Prospective package/version/code | `com.weekssa.opraeqforuapp` / `0.8.2` / `13` |
+| Qualified production APK SHA-256 | **NOT CREATED** |
+| Official signer required | `65c1c1256dae3c49e3548f334c91f0ba991969e9be9e0b223ba4e253d2114747` |
+| Signed provenance/install/upgrade | **NOT RUN / blocked by merge and official signing** |
+| Physical fix acceptance / ready | **NOT RUN / NO** |
 
-The first final-head38135528 hosted unit gate failed one healthy-fixture case: its stale-wait was already true from Flash entry and could miss the StateFlow disconnect. Original failure remains preserved; no production behavior change followed. An always-upload unit XML/HTML helper was added atbdaf168; all four hosted jobs passed on that head. Eight local repetitions also passed, but did not remove the known synchronization hole. Finala39965d3 seeds a read marker during held Save and waits for the actual disconnected collector to clear it before reconnecting, preserving all exact assertions. Fresh independent Luna High approves this barrier. Final exact-head gates are running.
+Fresh Luna High source review APPROVE on this exact SHA. Initial ownership-row P2 and the later deterministic fixture barrier were independently reviewed and corrected. There is no remaining source-review blocker. Official signing is guarded by [AGENTS.md](/Users/stephenweeks/.codex/worktrees/ja11-flash-owner-fix/OPRA-EQ-for-UAPP/AGENTS.md:141) (owner merge approval) and the unchanged [candidate workflow](/Users/stephenweeks/.codex/worktrees/ja11-flash-owner-fix/OPRA-EQ-for-UAPP/.github/workflows/github-release.yml:20) (main only). No feature signing bypass.
 
-The faithful desired-behavior regression failed before the fix with Running FLASH, reads2, stale EQgen1/current DEVICEgen2 and exactly one Save. It passes after the fix, alongside healthy first-read, bounded exhaustion, actual owner clear, and delayed global-ownership cases. Private RED evidence is preserved outside Git. The prior test-only characterization head27bb0445 passed67/67 hosted UI tests after same-head emulator focus recovery; final source adds a retained-row control and requires its own hosted execution. Historical failures remain in EVIDENCE.md, including the normal Android CI zero-job infrastructure failure; the registered exact-head fallback runs the actual gates.
+## Automated evidence
 
-Main’s automated catalog refresh was incorporated cleanly before hosted validation. All8932 canonical profiles, aliases, sources, schema and registry version compare exactly equal to prior main; only generation timestamp/formatting and currentness audit files differ. No catalog product loss or unrelated behavior edit.
+- Stable desired-behavior RED at exact test-only `84965810e0f7cf79a63f7474995b0645a0e676f5`: runtime equals original main4b2d3e67; fixture byte-identical to final candidate. It compiles/runs and fails with Running FLASH, reads2, stale EQgen1, current DEVICEgen2 and exactly one Save. This is preserved evidence, not a candidate. Global-ownership regression also failed before correction.
+- Final focused five lifetime/ownership cases and full local/hosted **777 tests: zero failures/errors/skips**. Cases cover initial startup, caller loss, healthy first read, normal-null recovery, bounded exhaustion, actual owner clear and global row retention. Primary independently reran two critical cases and parsed reports.
+- Lint **zero errors,118 warnings,2 hints**. Debug/release/diagnostic/test APK assembly, R8 mapping, actionlint and existing signing-promotion contracts pass. Local and CI debug/unsigned APKs are unqualified validation artifacts.
+- Exact-head [run38468082823](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/38468082823), attempt2: all four real jobs PASS on unchanged source. API26 minified-release launch passes. API35 UI **68/68 PASS**, including all four new JA11 cases.
+- Exact-head CodeQL analysis1946956720 binds the exact source/ref/workflow/category and reports **zero findings, empty error**. Standard PR CodeQL, catalog, community and dependency checks pass.
+- Luna and primary independently verified exact artifact IDs, API ZIP digests/CRCs, unit/UI XML counts, source guards and API26 launch. Final UI artifact11851224635 ZIP SHA-256 `44d38af9f26f72cf1d94a5beaad9d2db8c9cb27d05b9e55b5d680cee6e48f5c2`.
 
-Finish hosted gate and artifact verification, update PR/state, then stop at the genuine owner merge/signing gate. Repository AGENTS.md explicitly reserves merge for owner approval; official candidate signing is main-only. No new signing path, feature-ref signing, secret access, public tag or release is permitted. After authorized merge, validate the new exact main, use existing candidate-only signer, verify source/APK/package/version/code/certificate/provenance, and run exact signed clean-install/upgrade emulator checks before any physical request.
+Initial final-head UI attempt had eight existing Activity-window-focus failures; all four new cases passed. Only that failed job reran with unchanged source and assertions. Original artifact11850992419/logs remain preserved. Emulator evidence does not prove a power/keyguard cause; no speculative CI setting change was added. Earlier hosted unit failure exposed a test precondition race, not grounds for a production change: a stale-wait was already satisfied by Flash entry. Final fixture explicitly waits for the real disconnect collector before reconnecting; the same fixed fixture remains RED on original runtime. Historical failures are never relabeled green.
 
-The frozen diagnostic candidate remains source `f6bc1d6d87b9618bc35354f33103504c753c7f6a`, APK SHA256 `4b00ab3e1c23e435b6ca848a1a0123068ac65e41a00f2fdbae1b1cb6fae796f9`, package `com.weekssa.opraeqforuapp.ja11trace`, version0.8.1-ja11trace/code12, existing debug signer `5857646924badad4df93d8f953a57792cff75662c99d3af808d910d4081170fc`; [PR93](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/93) stays frozen/draft. Its full off-phone gates and artifact11797477044 are recorded in EVIDENCE.md. It is observation evidence, not the production fix.
+Durable private software evidence: `/Users/stephenweeks/.codex/evidence/ja11-final-software-a39965d-20261013/`; stable RED evidence: `/Users/stephenweeks/.codex/evidence/ja11-stable-red-20261013/`. EVIDENCE.md contains exact artifact/run/job hashes and boundaries. Canonical count: **22 MET / 1 UNMET / 0 abandoned**; G20 signed-candidate provenance includes the pending exact signed install/upgrade checks. Physical acceptance is separate.
 
-Owner-authorized J030 diagnostic session is complete: healthy control, exactly one Save, seven final reads on generation2, all baseline EQ/settings preserved and verified, complete EQ/Edit UI,107trace records/0drops. Temporary Personal EQ/source removed; no outstanding restoration. Original failed lifetime was not physically reproduced in that control. Video supplied later establishes visible failed sequence; owner confirms regular app, but video has no embedded APK provenance. Pixel was explicitly released. No further phone query, discovery, installation, launch, Flash, settings mutation or unplug is planned. No release has been published.
+## Next authorized work after owner approval
 
-Canonical append-only evidence, exact historical candidate tuple and private-artifact digests are in EVIDENCE.md; machine checkpoint is STATE.md. Orchestration remains on `codex/ja11-postflash-reconstruction`. Production review/gates never transfer qualification from the frozen diagnostic source.
+Refresh live main/PR head and merge only the reviewed PR. Record and validate the resulting exact main SHA, then dispatch existing candidate-only signing for v0.8.2. Independently verify workflow/run/artifact/source/embedded provenance/APK SHA/package/version/code/pinned certificate and freeze unchanged candidate bytes. Validate the exact signed APK’s clean install and v0.8.1 upgrade on a hosted emulator using the existing read-only archive/APK verifiers and smoke helper. A reviewed validation-only tooling branch can reuse the registered workflow; distinguish its workflow SHA from candidate source SHA. **Do not dispatch the full promotion workflow:** it proceeds from smoke tests to public tag creation/publication. No new signing path or weakened publisher guard.
 
-During the task pause the app archived the checkouts. Snapshot7bb5e419 preserved the uncommitted fixture barrier; restoration and descriptive cherry-pick recovery retained it. Production worktree is restored/attached and clean on the intended branch. Canonical root files are restored, usable and pushed on the original branch; app ownership registration for the old root returned an error, which does not affect durable Git checkpoints. No unrelated state was reset or deleted. Current remote main isd193eb35 with later catalog-bot updates; runtime source is unchanged from incorporateddbefc0fe, and exact merged main must be validated after owner authorization.
+Only after those artifact gates pass should the handoff begin `PHYSICAL PHONE ACCESS REQUIRED — WAITING FOR OWNER` with the exact signed tuple and one bounded owner-controlled acceptance procedure. No phone action is needed for the current merge gate.
 
-Deterministic fixture RED was rerun on exact test-only84965810e0f7cf79a63f7474995b0645a0e676f5, with runtime identical to main4b2d3e67 and fixture byte-identical to finala399. It compiles/runs and fails with RunningFLASH/reads2/staleEQgen1/currentDEVICEgen2/oneSave. Primary independently checked XML and runtime diff. Finala399 local focused5/full777/lint/all assemblies/R8 PASS; preserved reports `/private/tmp/ja11-validation-a39965d/`. RED source branch `codex/ja11-stable-red-proof` is pushed as evidence and is not a candidate.
+## Preserved physical/diagnostic boundary
+
+J030 was one owner-authorized healthy diagnostic control on frozen source `f6bc1d6d87b9618bc35354f33103504c753c7f6a`, APK SHA-256 `4b00ab3e1c23e435b6ca848a1a0123068ac65e41a00f2fdbae1b1cb6fae796f9`, package `.ja11trace`, version0.8.1-ja11trace/code12, debug signer `5857646924badad4df93d8f953a57792cff75662c99d3af808d910d4081170fc`. [PR93](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/93) remains frozen/draft, not a fix or release.
+
+That control recorded one Save, seven final generation2 reads, complete EQ/Edit UI and107 trace records/zero drops. Exact original EQ/settings/program were verified restored and temporary profile/source removed; no restoration remains. The original failure was not physically reproduced in that healthy run. The later video establishes the visible failure sequence; owner identifies regular app, but the video embeds no APK provenance. Pixel was explicitly released. No further discovery, query, install, launch, Flash, DAC setting change or unplug occurred in this software continuation. Public v0.8.1 remains unchanged.
+
+Canonical files are on `codex/ja11-postflash-reconstruction`. The app archived checkouts during a pause; pushed checkpoints and the fixture snapshot were recovered. Production worktree is active/restored, canonical filesystem and Git checkpoints remain usable, and the obsolete RED worktree is archived after evidence retention. Signing keys, raw hardware captures and private reports are never committed.

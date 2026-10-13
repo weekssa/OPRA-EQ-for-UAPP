@@ -11,6 +11,8 @@ These direct owner instructions supersede conflicting original wording below; th
 - At the physical gate, `MORNING_HANDOFF.md` and the final response must begin with `PHYSICAL PHONE ACCESS REQUIRED — WAITING FOR OWNER`, followed by the unresolved decision, exact source SHA, APK SHA-256, package/version/code, signer/provenance and all off-phone validation. This replaces the original section32 heading requirement for this diagnostic continuation.
 - The diagnostic session is complete and frozen. Owner-supplied regular-app video plus faithful automated production-path reproduction now establish the original >=95% architectural root gate. Continue the original mission with the separate minimal production fix and its exact-source gates. Low-level null-field attribution remains unknown; no protocol or retry-policy change follows. Main-only official signing and explicit owner merge approval remain required before a production signed candidate; publication remains forbidden.
 
+Current checkpoint: exact production source `a39965d34974edf704c351441038394191d052e9` has faithful deterministic RED/GREEN, fresh Luna High approval and all pre-merge automated gates PASS. PR94 remains draft/unmerged. Exact official signing and signed install/upgrade are blocked solely by required owner merge approval; no phone or publication step is authorized by these software results. Canonical details are in STATE/EVIDENCE/MORNING_HANDOFF.
+
 The source runbook below is retained for mission history; its earlier phone phrase and unamended shared-source prohibition cannot override this addendum.
 
 ---
