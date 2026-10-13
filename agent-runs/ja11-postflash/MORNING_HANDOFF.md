@@ -12,7 +12,7 @@ The separate production fix keeps globally owned rows visible through target cha
 | Current main incorporated | `dbefc0fe225ff13031ef99323f4391a9a978ed02` |
 | Draft PR | [#94](https://github.com/weekssa/OPRA-EQ-for-UAPP/pull/94), attached, no merge approval |
 | Fresh Luna High review | APPROVE exacta39965d3; ownership-row P2 and deterministic disconnect fixture barrier corrected |
-| Local focused/full unit |Prior54 focused/777 total PASS; finala39965d3 local gates running by bounded Luna |
+| Local focused/full unit |Finala39965d3 five new focused cases and777 total PASS,0failures/errors/skips; independently run by bounded Luna and XML rechecked by primary |
 | Lint/build |0errors/118warnings/2hints; debug/release/diagnostic/test assembly + R8 PASS |
 | Workflow/security contracts |actionlint and existing candidate-signing promotion contract PASS |
 | Exact-head hosted run |[38468082823](https://github.com/weekssa/OPRA-EQ-for-UAPP/actions/runs/38468082823), four real jobs RUNNING |
@@ -39,3 +39,5 @@ Owner-authorized J030 diagnostic session is complete: healthy control, exactly o
 Canonical append-only evidence, exact historical candidate tuple and private-artifact digests are in EVIDENCE.md; machine checkpoint is STATE.md. Orchestration remains on `codex/ja11-postflash-reconstruction`. Production review/gates never transfer qualification from the frozen diagnostic source.
 
 During the task pause the app archived the checkouts. Snapshot7bb5e419 preserved the uncommitted fixture barrier; restoration and descriptive cherry-pick recovery retained it. Production worktree is restored/attached and clean on the intended branch. Canonical root files are restored, usable and pushed on the original branch; app ownership registration for the old root returned an error, which does not affect durable Git checkpoints. No unrelated state was reset or deleted. Current remote main isd193eb35 with later catalog-bot updates; runtime source is unchanged from incorporateddbefc0fe, and exact merged main must be validated after owner authorization.
+
+Deterministic fixture RED was rerun on exact test-only84965810e0f7cf79a63f7474995b0645a0e676f5, with runtime identical to main4b2d3e67 and fixture byte-identical to finala399. It compiles/runs and fails with RunningFLASH/reads2/staleEQgen1/currentDEVICEgen2/oneSave. Primary independently checked XML and runtime diff. Finala399 local focused5/full777/lint/all assemblies/R8 PASS; preserved reports `/private/tmp/ja11-validation-a39965d/`. RED source branch `codex/ja11-stable-red-proof` is pushed as evidence and is not a candidate.
