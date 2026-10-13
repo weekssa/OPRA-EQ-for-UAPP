@@ -238,7 +238,7 @@ class HardwareEqRepository(
                 }
             },
             isConnected = { fiioJa11ConnectionState.value is Kt02h20ConnectionState.Connected },
-            refreshSnapshot = ::refreshFiioJa11Snapshot,
+            refreshSnapshot = { refreshFiioJa11Snapshot(allowBoundedRetry = true) },
             markSnapshotStale = { mutableFiioJa11SnapshotState.update { it.markStale() } },
         )
     }
@@ -374,34 +374,34 @@ class HardwareEqRepository(
             }
         }
 
-    private suspend fun refreshFiioJa11Snapshot(): HardwareEqSnapshotBundle? =
+    private suspend fun refreshFiioJa11Snapshot(
+        allowBoundedRetry: Boolean = false,
+    ): HardwareEqSnapshotBundle? =
         dacSessionRepository.withExclusiveFiioJa11Operation {
             if (fiioJa11ConnectionState.value !is Kt02h20ConnectionState.Connected) {
                 mutableFiioJa11SnapshotState.update { it.markStale() }
                 return@withExclusiveFiioJa11Operation null
             }
 
-            mutableFiioJa11SnapshotState.update { it.beginRead() }
-            val bundle = dacSessionRepository.readFiioJa11Snapshot()
-            val stillCurrent = bundle != null &&
-                dacSessionRepository.isFiioJa11SessionCurrent(bundle.snapshot.sessionGeneration)
-
-            when {
-                stillCurrent -> {
-                    mutableFiioJa11SnapshotState.update { it.publishCurrent(requireNotNull(bundle)) }
-                    bundle
-                }
-                fiioJa11ConnectionState.value !is Kt02h20ConnectionState.Connected -> {
-                    mutableFiioJa11SnapshotState.update { it.markStale() }
-                    null
-                }
-                else -> {
+            readFiioJa11SnapshotWithBoundedRetry(
+                allowRetry = allowBoundedRetry,
+                isConnected = { fiioJa11ConnectionState.value is Kt02h20ConnectionState.Connected },
+                currentSessionGeneration = { dacSessionRepository.fiioJa11Transport.sessionGeneration },
+                isSessionCurrent = dacSessionRepository::isFiioJa11SessionCurrent,
+                read = {
+                    mutableFiioJa11SnapshotState.update { it.beginRead() }
+                    dacSessionRepository.readFiioJa11Snapshot()
+                },
+                publishCurrent = { bundle ->
+                    mutableFiioJa11SnapshotState.update { it.publishCurrent(bundle) }
+                },
+                markReadFailed = {
                     // Built-in JA11 programs intentionally have no established coefficient snapshot.
                     // The DEVICE state still reports the active program exactly; no fake curve is shown.
                     mutableFiioJa11SnapshotState.update { it.markReadFailed() }
-                    null
-                }
-            }
+                },
+                markStale = { mutableFiioJa11SnapshotState.update { it.markStale() } },
+            )
         }
 
     private fun scheduleBlackPearlSnapshotRefresh() {
@@ -484,4 +484,49 @@ internal suspend fun <T> completeFiioJa11Flash(
     flash()
 } finally {
     if (isConnected()) refreshSnapshot() else markSnapshotStale()
+}
+
+/**
+ * Completes the post-Flash read boundary without replaying any hardware mutation. A missing or
+ * rejected first bundle gets exactly one fresh read, but only while the replacement session is
+ * still connected and current.
+ */
+internal suspend fun readFiioJa11SnapshotWithBoundedRetry(
+    allowRetry: Boolean,
+    isConnected: () -> Boolean,
+    currentSessionGeneration: () -> Long,
+    isSessionCurrent: (Long) -> Boolean,
+    read: suspend () -> HardwareEqSnapshotBundle?,
+    publishCurrent: (HardwareEqSnapshotBundle) -> Unit,
+    markReadFailed: () -> Unit,
+    markStale: () -> Unit,
+): HardwareEqSnapshotBundle? {
+    val attempts = if (allowRetry) 2 else 1
+    repeat(attempts) { attempt ->
+        if (!isConnected()) {
+            markStale()
+            return null
+        }
+
+        val sessionGeneration = currentSessionGeneration()
+        if (sessionGeneration <= 0L || !isSessionCurrent(sessionGeneration)) {
+            markReadFailed()
+            return null
+        }
+
+        val bundle = read()
+        if (
+            bundle != null &&
+            isConnected() &&
+            isSessionCurrent(bundle.snapshot.sessionGeneration)
+        ) {
+            publishCurrent(bundle)
+            return bundle
+        }
+
+        if (attempt == 0 && allowRetry && isConnected()) return@repeat
+    }
+
+    if (isConnected()) markReadFailed() else markStale()
+    return null
 }
