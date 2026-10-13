@@ -24,10 +24,12 @@ def apk_identity(path, sdk):
     if len(signers) != 1 or not re.search(r"Verified using v2 scheme.*: true", signed):
         raise ValueError("Expected one signer and an APK v2 signature")
     metadata = subprocess.check_output([str(tools / "aapt"), "dump", "badging", str(path)], text=True)
-    package = re.search(r"package: name='([^']+)' versionCode='(\d+)' versionName='([^']*)'", metadata)
+    # AGP instrumentation APKs intentionally omit version fields; the target APK must have them.
+    package = re.search(r"package: name='([^']+)' versionCode='(\d*)' versionName='([^']*)'", metadata)
     if not package:
         raise ValueError("APK package metadata missing")
-    return dict(packageId=package[1], versionCode=int(package[2]), versionName=package[3], signerSha256=signers[0])
+    return dict(packageId=package[1], versionCode=int(package[2]) if package[2] else None,
+                versionName=package[3], signerSha256=signers[0])
 
 
 def verify(directory, source, sdk):
@@ -53,6 +55,8 @@ def verify(directory, source, sdk):
         if actual["packageId"] != expected_package or actual["signerSha256"] != manifest["signerSha256"]:
             raise ValueError("APK package or signer mismatch")
         if key == "apk":
+            if not actual["versionCode"] or not actual["versionName"].endswith("-ja11trace"):
+                raise ValueError("Diagnostic target APK version missing or invalid")
             if actual["versionName"] != manifest["versionName"] or actual["versionCode"] != manifest["versionCode"]:
                 raise ValueError("APK version mismatch")
             with zipfile.ZipFile(path) as archive:

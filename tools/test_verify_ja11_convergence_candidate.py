@@ -69,6 +69,12 @@ class CandidateTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "isolated diagnostic"):
             self.verify()
 
+    def test_target_version_cannot_be_missing(self):
+        self.manifest["versionName"] = ""
+        self.write()
+        with self.assertRaisesRegex(ValueError, "version missing"):
+            self.verify()
+
     def test_paths_and_extra_files_are_rejected(self):
         self.manifest["apk"] = "../private.apk"
         self.write()
@@ -79,6 +85,23 @@ class CandidateTest(unittest.TestCase):
         (self.directory / "unrelated-report.txt").write_text("not an artifact")
         with self.assertRaisesRegex(ValueError, "Unexpected artifact"):
             self.verify()
+
+
+class ApkIdentityParserTest(unittest.TestCase):
+    def identity(self, badging):
+        signature = "Signer #1 certificate SHA-256 digest: " + "b" * 64 + "\nVerified using v2 scheme (APK Signature Scheme v2): true\n"
+        with patch.object(candidate.subprocess, "check_output", side_effect=[signature, badging]):
+            return candidate.apk_identity(Path("fixture.apk"), Path("fixture-sdk"))
+
+    def test_instrumentation_apk_without_version_is_parsed(self):
+        identity = self.identity("package: name='" + candidate.PACKAGE + ".test' versionCode='' versionName='' platformBuildVersionName='16'")
+        self.assertIsNone(identity["versionCode"])
+        self.assertEqual(identity["packageId"], candidate.PACKAGE + ".test")
+
+    def test_target_apk_keeps_exact_version_fields(self):
+        identity = self.identity("package: name='" + candidate.PACKAGE + "' versionCode='12' versionName='0.8.1-ja11trace'")
+        self.assertEqual(identity["versionCode"], 12)
+        self.assertEqual(identity["versionName"], "0.8.1-ja11trace")
 
 
 if __name__ == "__main__":
